@@ -89,6 +89,57 @@ data class ResumeMark(
     val updatedAt: Long
 )
 
+/**
+ * Profile: Adult/Kid
+ */
+@Entity(tableName = "profiles")
+data class Profile(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val type: String,          // "adult" | "kid"
+    val avatarPath: String?,   // lokaler Pfad oder null
+    val createdAt: Long,
+    val updatedAt: Long
+)
+
+/**
+ * Freigaben für Kids: welche Inhalte sind erlaubt?
+ * UNIQUE(kidProfileId, contentType, contentId)
+ */
+@Entity(
+    tableName = "kid_content",
+    indices = [
+        Index(value = ["kidProfileId"]),
+        Index(value = ["contentType"]),
+        Index(value = ["kidProfileId", "contentType", "contentId"], unique = true)
+    ]
+)
+data class KidContentItem(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val kidProfileId: Long,
+    val contentType: String, // "live" | "vod" | "series"
+    val contentId: Long
+)
+
+/**
+ * Screen-Time Tracking je Kid und Tag
+ * UNIQUE(kidProfileId, dayYyyymmdd)
+ */
+@Entity(
+    tableName = "screen_time",
+    indices = [
+        Index(value = ["kidProfileId"]),
+        Index(value = ["kidProfileId", "dayYyyymmdd"], unique = true)
+    ]
+)
+data class ScreenTimeEntry(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val kidProfileId: Long,
+    val dayYyyymmdd: String,  // z. B. "20250825"
+    val usedMinutes: Int,
+    val limitMinutes: Int
+)
+
 // -----------------------------------------------------
 // View-Models (nur für Queries, keine Tabellen!)
 // -----------------------------------------------------
@@ -227,4 +278,61 @@ interface ResumeDao {
         LIMIT :limit
     """)
     suspend fun recentEpisodes(limit: Int): List<ResumeEpisodeView>
+}
+
+/** DAO: Profile */
+@Dao
+interface ProfileDao {
+    @Query("SELECT * FROM profiles ORDER BY createdAt ASC")
+    suspend fun all(): List<Profile>
+
+    @Query("SELECT * FROM profiles WHERE id=:id LIMIT 1")
+    suspend fun byId(id: Long): Profile?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(profile: Profile): Long
+
+    @Update
+    suspend fun update(profile: Profile)
+
+    @Delete
+    suspend fun delete(profile: Profile)
+
+    @Query("SELECT COUNT(*) FROM profiles")
+    suspend fun count(): Long
+}
+
+/** DAO: Kid Content (Freigaben) */
+@Dao
+interface KidContentDao {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(item: KidContentItem): Long
+
+    @Delete
+    suspend fun delete(item: KidContentItem)
+
+    @Query("DELETE FROM kid_content WHERE kidProfileId=:kidId AND contentType=:type AND contentId=:contentId")
+    suspend fun disallow(kidId: Long, type: String, contentId: Long)
+
+    @Query("SELECT COUNT(*) FROM kid_content WHERE kidProfileId=:kidId AND contentType=:type AND contentId=:contentId")
+    suspend fun isAllowedCount(kidId: Long, type: String, contentId: Long): Int
+
+    @Query("SELECT * FROM kid_content WHERE kidProfileId=:kidId AND contentType=:type")
+    suspend fun listForKidAndType(kidId: Long, type: String): List<KidContentItem>
+}
+
+/** DAO: Screen Time */
+@Dao
+interface ScreenTimeDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entry: ScreenTimeEntry): Long
+
+    @Query("SELECT * FROM screen_time WHERE kidProfileId=:kidId AND dayYyyymmdd=:day LIMIT 1")
+    suspend fun getForDay(kidId: Long, day: String): ScreenTimeEntry?
+
+    @Query("UPDATE screen_time SET usedMinutes=:used WHERE kidProfileId=:kidId AND dayYyyymmdd=:day")
+    suspend fun updateUsed(kidId: Long, day: String, used: Int)
+
+    @Query("UPDATE screen_time SET limitMinutes=:limit WHERE kidProfileId=:kidId AND dayYyyymmdd=:day")
+    suspend fun updateLimit(kidId: Long, day: String, limit: Int)
 }
