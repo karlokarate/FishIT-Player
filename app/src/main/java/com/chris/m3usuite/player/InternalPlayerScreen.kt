@@ -2,8 +2,6 @@
 
 package com.chris.m3usuite.player
 
-import android.graphics.Typeface
-import android.view.ViewGroup
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,8 +31,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.StyledPlayerView
+import androidx.media3.ui.SubtitleView
 import com.chris.m3usuite.data.db.AppDatabase
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.ResumeMark
@@ -148,47 +146,20 @@ fun InternalPlayerScreen(
         content = { padding: PaddingValues ->
             Box(Modifier.fillMaxSize().padding(padding)) {
                 AndroidView(
-                    factory = { c ->
-                        StyledPlayerView(c).apply {
-                            // Layout
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                            )
-                            // Player setzen (kein Kotlin-Property-Shortcut)
-                            setPlayer(exoPlayer)
-                            // Untertitel-Stil anwenden (Getter statt Property)
-                            getSubtitleView()?.apply {
-                                setStyle(
-                                    CaptionStyleCompat(
-                                        subFg,
-                                        subBg,
-                                        0x00000000, // windowColor
-                                        CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW,
-                                        0xFF000000.toInt(),
-                                        Typeface.SANS_SERIF
-                                    )
-                                )
-                                setApplyEmbeddedStyles(true)
-                                setApplyEmbeddedFontSizes(false)
-                                setFractionalTextSize(subScale)
-                            }
-                            // Controller Timeout (Setter statt Property)
-                            setControllerShowTimeoutMs(3500)
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { ctx ->
+                        StyledPlayerView(ctx).apply {
+                            // useController = true
                         }
                     },
                     update = { view ->
-                        view.getSubtitleView()?.apply {
-                            setStyle(
-                                CaptionStyleCompat(
-                                    subFg, subBg, 0x00000000,
-                                    CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW,
-                                    0xFF000000.toInt(),
-                                    Typeface.SANS_SERIF
-                                )
-                            )
+                        view.player = exoPlayer
+                        view.subtitleView?.apply {
+                            setApplyEmbeddedStyles(true)
+                            setApplyEmbeddedFontSizes(true)
                             setFractionalTextSize(subScale)
                         }
+                        view.setControllerShowTimeoutMs(3000)
                     }
                 )
             }
