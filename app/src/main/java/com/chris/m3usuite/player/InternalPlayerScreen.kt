@@ -29,13 +29,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
-import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.StyledPlayerView
+import androidx.media3.ui.PlayerView
 import androidx.media3.ui.CaptionStyleCompat
-import androidx.media3.ui.SubtitleView
 import com.chris.m3usuite.data.db.AppDatabase
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.ResumeMark
@@ -167,7 +165,7 @@ fun InternalPlayerScreen(
             Box(Modifier.fillMaxSize().padding(padding)) {
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
-                    factory = { StyledPlayerView(ctx) },
+                    factory = { PlayerView(ctx) },
                     update = { view ->
                         view.player = exoPlayer
                         view.subtitleView?.apply {

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +21,7 @@ import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     store: SettingsStore,
@@ -126,14 +128,26 @@ private fun ColorRow(selected: Int, onPick: (Int) -> Unit, palette: List<Int>) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         palette.forEach { c ->
             val border = if (selected == c) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
-            OutlinedCard(border = border, modifier = Modifier.size(36.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(c))
-                        .selectable(selected = selected == c, role = Role.Button, onClick = { onPick(c) })
-                )
+            if (border != null) {
+                OutlinedCard(border = border, modifier = Modifier.size(36.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color(c))
+                            .selectable(selected = selected == c, role = Role.Button, onClick = { onPick(c) })
+                    )
+                }
+            } else {
+                OutlinedCard(modifier = Modifier.size(36.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color(c))
+                            .selectable(selected = selected == c, role = Role.Button, onClick = { onPick(c) })
+                    )
+                }
             }
         }
     }

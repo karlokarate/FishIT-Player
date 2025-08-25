@@ -101,11 +101,8 @@ dependencies {
 
     // Media3 (ExoPlayer + UI + DataSource)
     implementation("androidx.media3:media3-exoplayer:1.5.0")
-    implementation("androidx.media3:media3-ui:1.5.0")          // <— WICHTIG
+    implementation("androidx.media3:media3-ui:1.5.0")
     implementation("androidx.media3:media3-exoplayer-hls:1.5.0")
-
-    implementation("androidx.media3:media3-exoplayer:1.4.1")
-    implementation("androidx.media3:media3-ui:1.4.1")
 
     // Tests
     testImplementation("junit:junit:4.13.2")
