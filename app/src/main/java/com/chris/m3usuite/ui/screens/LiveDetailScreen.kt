@@ -18,7 +18,6 @@ import com.chris.m3usuite.core.xtream.XtreamConfig
 import com.chris.m3usuite.data.db.AppDatabase
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.player.ExternalPlayer
 import com.chris.m3usuite.player.InternalPlayerScreen
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.ui.util.buildImageRequest
@@ -95,12 +94,10 @@ fun LiveDetailScreen(id: Long) {
         PlayerChooser.start(
             context = ctx,
             store = store,
-            title = title,
             url = playUrl,
             headers = hdrs,
             startPositionMs = null, // Live hat kein Resume
             buildInternal = { startMs ->
-                // -> internen Player im selben Screen anzeigen
                 internalUrl = playUrl
                 internalStartMs = startMs
                 internalHeaders = hdrs
@@ -113,13 +110,12 @@ fun LiveDetailScreen(id: Long) {
     if (showInternal) {
         // Nutzt euren vorhandenen InternalPlayerScreen aus dem Projekt.
         InternalPlayerScreen(
-            title = title,
             url = internalUrl.orEmpty(),
-            headers = internalHeaders,
+            type = "live",
             startPositionMs = internalStartMs,
+            headers = internalHeaders,
             onExit = {
                 showInternal = false
-                // Live hat kein „Weiter schauen“ – kein Persist nötig.
             }
         )
         return

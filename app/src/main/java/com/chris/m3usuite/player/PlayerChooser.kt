@@ -17,7 +17,6 @@ object PlayerChooser {
     suspend fun start(
         context: Context,
         store: SettingsStore,
-        title: String,
         url: String,
         headers: Map<String, String> = emptyMap(),
         startPositionMs: Long? = null,
@@ -30,10 +29,9 @@ object PlayerChooser {
                 ExternalPlayer.open(
                     context = context,
                     url = url,
-                    title = title,
                     headers = headers,
                     startPositionMs = startPositionMs,
-                    preferredPackage = pkg.ifBlank { null }
+                    preferredPkg = pkg.ifBlank { null }
                 )
             }
             else -> {
@@ -46,7 +44,13 @@ object PlayerChooser {
                 val pkg = store.preferredPlayerPkg.first()
                 // Heuristik: Wenn kein bevorzugtes Paket gesetzt ist, fragen wir "intern".
                 if (pkg.isBlank()) buildInternal(startPositionMs)
-                else ExternalPlayer.open(context, url, title, headers, startPositionMs, pkg)
+                else ExternalPlayer.open(
+                    context = context,
+                    url = url,
+                    headers = headers,
+                    preferredPkg = pkg,
+                    startPositionMs = startPositionMs
+                )
             }
         }
     }
