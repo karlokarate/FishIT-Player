@@ -36,9 +36,18 @@ object Keys {
     val SUB_SCALE = floatPreferencesKey("sub_scale")         // 0.04..0.12 (FractionalTextSize)
     val SUB_FG = intPreferencesKey("sub_fg")                 // ARGB
     val SUB_BG = intPreferencesKey("sub_bg")                 // ARGB (halb transparent empfohlen)
+    val SUB_FG_OPACITY_PCT = intPreferencesKey("sub_fg_opacity_pct") // 0..100
+    val SUB_BG_OPACITY_PCT = intPreferencesKey("sub_bg_opacity_pct") // 0..100
 
     // UI-Verhalten
     val HEADER_COLLAPSED_LAND = booleanPreferencesKey("header_collapsed_land") // Default in Landscape
+    val HEADER_COLLAPSED = booleanPreferencesKey("header_collapsed") // globaler Zustand
+    val ROTATION_LOCKED = booleanPreferencesKey("rotation_locked")
+
+    // Profile/PIN
+    val CURRENT_PROFILE_ID = longPreferencesKey("current_profile_id")
+    val ADULT_PIN_SET = booleanPreferencesKey("adult_pin_set")
+    val ADULT_PIN_HASH = stringPreferencesKey("adult_pin_hash")
 }
 
 class SettingsStore(private val context: Context) {
@@ -62,9 +71,22 @@ class SettingsStore(private val context: Context) {
     val subtitleScale: Flow<Float> = context.dataStore.data.map { it[Keys.SUB_SCALE] ?: 0.06f }
     val subtitleFg: Flow<Int> = context.dataStore.data.map { it[Keys.SUB_FG] ?: 0xF2FFFFFF.toInt() } // fast Weiß
     val subtitleBg: Flow<Int> = context.dataStore.data.map { it[Keys.SUB_BG] ?: 0x66000000 }        // halbtransparent Schwarz
+    val subtitleFgOpacityPct: Flow<Int> = context.dataStore.data.map { it[Keys.SUB_FG_OPACITY_PCT] ?: 90 }
+    val subtitleBgOpacityPct: Flow<Int> = context.dataStore.data.map { it[Keys.SUB_BG_OPACITY_PCT] ?: 40 }
 
     val headerCollapsedDefaultInLandscape: Flow<Boolean> =
         context.dataStore.data.map { it[Keys.HEADER_COLLAPSED_LAND] ?: true }
+    val headerCollapsed: Flow<Boolean> =
+        context.dataStore.data.map { it[Keys.HEADER_COLLAPSED] ?: false }
+    val rotationLocked: Flow<Boolean> =
+        context.dataStore.data.map { it[Keys.ROTATION_LOCKED] ?: false }
+
+    val currentProfileId: Flow<Long> =
+        context.dataStore.data.map { it[Keys.CURRENT_PROFILE_ID] ?: -1L }
+    val adultPinSet: Flow<Boolean> =
+        context.dataStore.data.map { it[Keys.ADULT_PIN_SET] ?: false }
+    val adultPinHash: Flow<String> =
+        context.dataStore.data.map { it[Keys.ADULT_PIN_HASH].orEmpty() }
 
     // -------- Setzen --------
     suspend fun set(key: Preferences.Key<String>, value: String) {
@@ -98,6 +120,28 @@ class SettingsStore(private val context: Context) {
             it[Keys.SUB_FG] = fg
             it[Keys.SUB_BG] = bg
         }
+    }
+
+    suspend fun setSubtitleFgOpacityPct(value: Int) {
+        context.dataStore.edit { it[Keys.SUB_FG_OPACITY_PCT] = value.coerceIn(0, 100) }
+    }
+    suspend fun setSubtitleBgOpacityPct(value: Int) {
+        context.dataStore.edit { it[Keys.SUB_BG_OPACITY_PCT] = value.coerceIn(0, 100) }
+    }
+    suspend fun setHeaderCollapsed(value: Boolean) {
+        context.dataStore.edit { it[Keys.HEADER_COLLAPSED] = value }
+    }
+    suspend fun setRotationLocked(value: Boolean) {
+        context.dataStore.edit { it[Keys.ROTATION_LOCKED] = value }
+    }
+    suspend fun setCurrentProfileId(id: Long) {
+        context.dataStore.edit { it[Keys.CURRENT_PROFILE_ID] = id }
+    }
+    suspend fun setAdultPinSet(value: Boolean) {
+        context.dataStore.edit { it[Keys.ADULT_PIN_SET] = value }
+    }
+    suspend fun setAdultPinHash(hash: String) {
+        context.dataStore.edit { it[Keys.ADULT_PIN_HASH] = hash }
     }
 
     // -------- Optional: direktes Abfragen --------
