@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- 320x180 wird vom TV-Launcher erwartet, aber hier reicht eine vektorlose Farbe als Platzhalter -->
+    <size android:width="320dp" android:height="180dp" />
+    <solid android:color="#1F2937" />
+    <stroke android:width="2dp" android:color="#4F46E5" />
+</shape>

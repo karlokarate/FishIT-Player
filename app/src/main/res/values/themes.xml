@@ -1,0 +1,4 @@
+<resources>
+    <!-- App-Theme: Material3 (MDC), ohne ActionBar, mit DayNight -->
+    <style name="Theme.M3uSuite" parent="Theme.Material3.DayNight.NoActionBar" />
+</resources>

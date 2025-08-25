@@ -1,0 +1,4 @@
+-keep class androidx.room.** { *; }
+-keep class kotlinx.serialization.** { *; }
+-dontwarn org.xmlpull.v1.**
+-dontwarn org.jetbrains.annotations.**
