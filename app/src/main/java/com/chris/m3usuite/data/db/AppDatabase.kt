@@ -9,6 +9,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 
 @Database(
     entities = [
