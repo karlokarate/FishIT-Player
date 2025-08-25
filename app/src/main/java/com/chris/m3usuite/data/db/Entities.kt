@@ -4,6 +4,7 @@ import androidx.room.*
 
 // -----------------------------------------------------
 // Entities
+// (Phase 1: profiles, kid_content, screen_time with required UNIQUE constraints; Resume unique if present)
 // -----------------------------------------------------
 
 /**

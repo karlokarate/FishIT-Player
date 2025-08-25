@@ -11,6 +11,7 @@ import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
 
+// Phase 1: DB-Version 3, idempotente Migrationen (CREATE IF NOT EXISTS), Callback-Seeding Adult-Profil
 @Database(
     entities = [
         MediaItem::class,
@@ -65,7 +66,8 @@ object DbProvider {
                 .also { INSTANCE = it }
         }
 
-    // --- Migrationen ---
+    // --- Migrationen (idempotent; keine destructive migrations) ---
+    // Hinweis: CREATE TABLE/INDEX IF NOT EXISTS, damit mehrfaches Ausführen sicher ist.
     private val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(db: SupportSQLiteDatabase) {
             // Historische Migration – hier no-op, da Schema-Details von v1 nicht relevant
@@ -124,7 +126,7 @@ object DbProvider {
         }
     }
 
-    // --- Seeding: Adult-Profil + optional current_profile_id setzen ---
+    // --- Seeding: Adult-Profil + optional current_profile_id setzen (best effort) ---
     private fun trySeedAdultProfile(db: SupportSQLiteDatabase, ctx: Context) {
         try {
             val c = db.query("SELECT COUNT(*) FROM profiles")
