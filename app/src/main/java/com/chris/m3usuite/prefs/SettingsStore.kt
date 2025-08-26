@@ -112,7 +112,7 @@ class SettingsStore(private val context: Context) {
     val adultPinHash: Flow<String> =
         context.dataStore.data.map { it[Keys.ADULT_PIN_HASH].orEmpty() }
     val rememberLastProfile: Flow<Boolean> =
-        context.dataStore.data.map { it[Keys.REMEMBER_LAST_PROFILE] ?: true }
+        context.dataStore.data.map { it[Keys.REMEMBER_LAST_PROFILE] ?: false }
 
     // -------- Setzen --------
     suspend fun set(key: Preferences.Key<String>, value: String) {

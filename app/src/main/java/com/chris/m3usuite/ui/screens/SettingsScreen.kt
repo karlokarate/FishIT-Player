@@ -14,11 +14,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
@@ -46,8 +49,12 @@ fun SettingsScreen(
     val rotationLocked by store.rotationLocked.collectAsState(initial = false)
     val autoplayNext by store.autoplayNext.collectAsState(initial = false)
     val hapticsEnabled by store.hapticsEnabled.collectAsState(initial = false)
-    val rememberLast by store.rememberLastProfile.collectAsState(initial = true)
+    val rememberLast by store.rememberLastProfile.collectAsState(initial = false)
     val pinSet by store.adultPinSet.collectAsState(initial = false)
+    val m3u by store.m3uUrl.collectAsState(initial = "")
+    val epg by store.epgUrl.collectAsState(initial = "")
+    val ua by store.userAgent.collectAsState(initial = "IBOPlayer/1.4 (Android)")
+    val referer by store.referer.collectAsState(initial = "")
 
     Scaffold(
         topBar = {
@@ -141,18 +148,36 @@ fun SettingsScreen(
                 steps = 10
             )
 
-            // Vorschau
+            // Vorschau – näher am Player: Overlay-Style mit Untertitel im Zentrum
             OutlinedCard {
-                Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
-                    Text(
-                        "Untertitel-Vorschau",
-                        color = Color(subFg),
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier
-                            .clip(MaterialTheme.shapes.small)
-                            .background(Color(subBg))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                Box(Modifier.fillMaxWidth().height(180.dp)) {
+                    // Simuliertes Videobild (einfacher Verlauf)
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    0f to MaterialTheme.colorScheme.surfaceVariant,
+                                    1f to MaterialTheme.colorScheme.surface
+                                )
+                            )
                     )
+                    // Untertitel-Overlay
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        val fg = Color(subFg)
+                        val bg = Color(subBg)
+                        val textSize = (subScale * 200f).coerceIn(10f, 28f).sp
+                        Text(
+                            "Untertitel-Vorschau",
+                            color = fg.copy(alpha = (subFgOpacity / 100f)),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = textSize,
+                            modifier = Modifier
+                                .clip(MaterialTheme.shapes.small)
+                                .background(bg.copy(alpha = (subBgOpacity / 100f)))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
 
@@ -208,6 +233,47 @@ fun SettingsScreen(
             ExternalPlayerPickerButton(onPick = { packageName ->
                 scope.launch { store.set(Keys.PREF_PLAYER_PACKAGE, packageName) }
             })
+
+            HorizontalDivider()
+            Text("Quelle (M3U/Xtream/EPG)", style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(
+                value = m3u,
+                onValueChange = { scope.launch { store.set(Keys.M3U_URL, it) } },
+                label = { Text("M3U / Xtream get.php Link") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = epg,
+                onValueChange = { scope.launch { store.set(Keys.EPG_URL, it) } },
+                label = { Text("EPG XMLTV URL (optional)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = ua,
+                onValueChange = { scope.launch { store.set(Keys.USER_AGENT, it) } },
+                label = { Text("User-Agent") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = referer,
+                onValueChange = { scope.launch { store.set(Keys.REFERER, it) } },
+                label = { Text("Referer (optional)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val ctx = LocalContext.current
+                Button(onClick = {
+                    com.chris.m3usuite.work.XtreamRefreshWorker.schedule(ctx)
+                    com.chris.m3usuite.work.XtreamEnrichmentWorker.schedule(ctx)
+                }) { Text("Import aktualisieren") }
+                if (onOpenProfiles != null) {
+                    TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
+                }
+            }
         }
     }
 }
