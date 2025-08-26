@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.MediaItem
+import com.chris.m3usuite.data.repo.MediaQueryRepository
+import com.chris.m3usuite.data.repo.KidContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.common.FocusableCard
 import com.chris.m3usuite.ui.common.isTv
@@ -41,6 +43,9 @@ import com.chris.m3usuite.ui.components.CollapsibleHeader
 import com.chris.m3usuite.ui.state.rememberRouteGridState
 import com.chris.m3usuite.ui.state.rememberRouteListState
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import com.chris.m3usuite.data.db.Profile
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -53,6 +58,8 @@ fun LibraryScreen(
     val ctx = LocalContext.current
     val db = remember { DbProvider.get(ctx) }
     val store = remember { SettingsStore(ctx) }
+    val mediaRepo = remember { MediaQueryRepository(ctx, store) }
+    val kidRepo = remember { KidContentRepository(ctx) }
     val scope = rememberCoroutineScope()
     val tv = isTv(ctx)
     val focus = LocalFocusManager.current
@@ -74,18 +81,19 @@ fun LibraryScreen(
     val collapsed by store.headerCollapsed.collectAsState(initial = false)
 
     fun load() = scope.launch {
-        val dao = db.mediaDao()
         val type = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> null }
         val list = when {
             type == null -> if (searchQuery.text.isBlank()) {
-                dao.listByType("live", 4000, 0) + dao.listByType("vod", 4000, 0) + dao.listByType("series", 4000, 0)
-            } else dao.globalSearch(searchQuery.text, 6000, 0)
-            selectedCategory != null -> dao.byTypeAndCategory(type, selectedCategory)
-            searchQuery.text.isNotBlank() -> dao.globalSearch(searchQuery.text, 6000, 0).filter { it.type == type }
-            else -> dao.listByType(type, 6000, 0)
+                mediaRepo.listByTypeFiltered("live", 4000, 0) +
+                mediaRepo.listByTypeFiltered("vod", 4000, 0) +
+                mediaRepo.listByTypeFiltered("series", 4000, 0)
+            } else mediaRepo.globalSearchFiltered(searchQuery.text, 6000, 0)
+            selectedCategory != null -> mediaRepo.byTypeAndCategoryFiltered(type, selectedCategory)
+            searchQuery.text.isNotBlank() -> mediaRepo.globalSearchFiltered(searchQuery.text, 6000, 0).filter { it.type == type }
+            else -> mediaRepo.listByTypeFiltered(type, 6000, 0)
         }
         mediaItems = list
-        categories = if (type != null) dao.categoriesByType(type) else emptyList()
+        categories = if (type != null) mediaRepo.categoriesByTypeFiltered(type) else emptyList()
     }
 
     fun submitSearch() { load(); focus.clearFocus() }
@@ -93,12 +101,17 @@ fun LibraryScreen(
     LaunchedEffect(Unit) { load() }
     LaunchedEffect(tab, selectedCategory) { load() }
 
-    // Adult-only: Settings sichtbar, Kids versteckt
+    // Adult-only: Settings sichtbar, Kids versteckt; Selection-Mode für Freigaben (nur Adult)
     val profileId by store.currentProfileId.collectAsState(initial = -1L)
     var showSettings by remember { mutableStateOf(true) }
+    var selectionMode by remember { mutableStateOf(false) }
+    var selected by remember { mutableStateOf(setOf<Pair<Long, String>>()) }
+    var showGrantSheet by remember { mutableStateOf(false) }
+    var showRevokeSheet by remember { mutableStateOf(false) }
     LaunchedEffect(profileId) {
         val prof = db.profileDao().byId(profileId)
         showSettings = prof?.type != "kid"
+        if (!showSettings) { selectionMode = false; selected = emptySet() }
     }
 
     val rotationLocked by store.rotationLocked.collectAsState(initial = false)
@@ -112,6 +125,13 @@ fun LibraryScreen(
                         Icon(painterResource(android.R.drawable.ic_menu_rotate), contentDescription = if (rotationLocked) "Rotation gesperrt" else "Rotation entsperrt")
                     }
                     if (showSettings) {
+                        if (selectionMode) {
+                            TextButton(onClick = { showGrantSheet = true }, enabled = selected.isNotEmpty()) { Text("Freigeben") }
+                            TextButton(onClick = { showRevokeSheet = true }, enabled = selected.isNotEmpty()) { Text("Entfernen") }
+                            TextButton(onClick = { selectionMode = false; selected = emptySet() }) { Text("Fertig") }
+                        } else {
+                            TextButton(onClick = { selectionMode = true }) { Text("Auswahl") }
+                        }
                         IconButton(onClick = { navController.navigate("settings") }) {
                             Icon(painterResource(android.R.drawable.ic_menu_manage), contentDescription = "Einstellungen")
                         }
@@ -217,11 +237,18 @@ fun LibraryScreen(
                         ctx = ctx,
                         headers = headers,
                         state = gridState,
+                        selectionMode = selectionMode,
+                        isSelected = { id, type -> (id to type) in selected },
                         onOpen = { mi ->
-                            when (mi.type) {
-                                "live" -> openLive(mi.id)
-                                "vod" -> openVod(mi.id)
-                                "series" -> openSeries(mi.id)
+                            if (selectionMode) {
+                                val key = mi.id to mi.type
+                                selected = if (key in selected) selected - key else selected + key
+                            } else {
+                                when (mi.type) {
+                                    "live" -> openLive(mi.id)
+                                    "vod" -> openVod(mi.id)
+                                    "series" -> openSeries(mi.id)
+                                }
                             }
                         }
                     )
@@ -234,7 +261,14 @@ fun LibraryScreen(
                         ctx = ctx,
                         headers = headers,
                         state = listState,
-                        onOpenLive = { id -> openLive(id) }
+                        selectionMode = selectionMode,
+                        isSelected = { id, type -> (id to type) in selected },
+                        onOpenLive = { id ->
+                            if (selectionMode) {
+                                val key = id to "live"
+                                selected = if (key in selected) selected - key else selected + key
+                            } else openLive(id)
+                        }
                     )
                 }
             }
@@ -285,6 +319,56 @@ fun LibraryScreen(
             }
         }
     }
+
+    // Freigabe-Sheet: Kids auswählen und Freigaben anwenden
+    @Composable
+    fun KidSelectSheet(onConfirm: suspend (kidIds: List<Long>) -> Unit, onDismiss: () -> Unit) {
+        var kids by remember { mutableStateOf<List<Profile>>(emptyList()) }
+        LaunchedEffect(profileId) {
+            val list = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().all().filter { it.type == "kid" } }
+            kids = list
+        }
+        var checked by remember { mutableStateOf(setOf<Long>()) }
+        ModalBottomSheet(onDismissRequest = onDismiss) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Kinder auswählen")
+                Spacer(Modifier.height(8.dp))
+                kids.forEach { k: Profile ->
+                    val isC = k.id in checked
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(k.name)
+                        Switch(checked = isC, onCheckedChange = { v -> checked = if (v) checked + k.id else checked - k.id })
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onDismiss) { Text("Abbrechen") }
+                    Button(onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty()) { Text("OK") }
+                }
+            }
+        }
+    }
+
+    if (showGrantSheet) KidSelectSheet(onConfirm = { kidIds ->
+        scope.launch(Dispatchers.IO) {
+            // gruppiert nach Typ
+            val byType = selected.groupBy({ it.second }, { it.first })
+            for ((t, ids) in byType) {
+                kidIds.forEach { kidId -> kidRepo.allowBulk(kidId, t, ids) }
+            }
+        }
+        selected = emptySet(); selectionMode = false; showGrantSheet = false
+    }, onDismiss = { showGrantSheet = false })
+
+    if (showRevokeSheet) KidSelectSheet(onConfirm = { kidIds ->
+        scope.launch(Dispatchers.IO) {
+            val byType = selected.groupBy({ it.second }, { it.first })
+            for ((t, ids) in byType) {
+                kidIds.forEach { kidId -> kidRepo.disallowBulk(kidId, t, ids) }
+            }
+        }
+        selected = emptySet(); selectionMode = false; showRevokeSheet = false
+    }, onDismiss = { showRevokeSheet = false })
 }
 
 /* -------------------------- Extracted content composables -------------------------- */
@@ -296,6 +380,8 @@ private fun LibraryGridContent(
     ctx: android.content.Context,
     headers: com.chris.m3usuite.ui.util.ImageHeaders,
     state: androidx.compose.foundation.lazy.grid.LazyGridState,
+    selectionMode: Boolean,
+    isSelected: (Long, String) -> Boolean,
     onOpen: (MediaItem) -> Unit
 ) {
     val columns = if (tv) 4 else 2
@@ -326,6 +412,12 @@ private fun LibraryGridContent(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary
                     )
+                    if (selectionMode) {
+                        val sel = isSelected(mi.id, mi.type)
+                        if (sel) {
+                            Text("Ausgewählt", color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
                 }
             }
         }
@@ -338,6 +430,8 @@ private fun LibraryListContent(
     ctx: android.content.Context,
     headers: com.chris.m3usuite.ui.util.ImageHeaders,
     state: androidx.compose.foundation.lazy.LazyListState,
+    selectionMode: Boolean,
+    isSelected: (Long, String) -> Boolean,
     onOpenLive: (Long) -> Unit
 ) {
     LazyColumn(
@@ -364,6 +458,12 @@ private fun LibraryListContent(
                             color = MaterialTheme.colorScheme.secondary,
                             maxLines = 1
                         )
+                        if (selectionMode) {
+                            val sel = isSelected(mi.id, mi.type)
+                            if (sel) {
+                                Text("Ausgewählt", color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
                     }
                 }
             }
