@@ -193,6 +193,15 @@ fun LibraryScreen(
                     IconButton(onClick = { scope.launch { store.setRotationLocked(!rotationLocked) } }) {
                         Icon(painterResource(android.R.drawable.ic_menu_rotate), contentDescription = if (rotationLocked) "Rotation gesperrt" else "Rotation entsperrt")
                     }
+                    // Schnell: Profil wechseln – immer sichtbar
+                    TextButton(onClick = {
+                        scope.launch {
+                            store.setCurrentProfileId(-1)
+                            navController.navigate("gate") {
+                                popUpTo("library") { inclusive = true }
+                            }
+                        }
+                    }) { Text("Profil wechseln") }
                     if (showSettings) {
                         if (selectionMode) {
                             TextButton(onClick = { showGrantSheet = true }, enabled = selected.isNotEmpty()) { Text("Freigeben") }
