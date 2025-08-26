@@ -32,8 +32,24 @@ fun CollapsibleHeader(
 ) {
     val scope = rememberCoroutineScope()
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val defaultCollapsed by store.headerCollapsedDefaultInLandscape.collectAsState(initial = true)
-    var collapsed by rememberSaveable { mutableStateOf(landscape && defaultCollapsed) }
+    // Persisted global state for collapsed header
+    val persistedCollapsed by store.headerCollapsed.collectAsState(initial = false)
+    // Default preference for landscape-only initial behavior
+    val defaultCollapsedLand by store.headerCollapsedDefaultInLandscape.collectAsState(initial = true)
+    var collapsed by rememberSaveable { mutableStateOf(persistedCollapsed) }
+
+    // Keep local UI state in sync with persisted value
+    LaunchedEffect(persistedCollapsed) {
+        collapsed = persistedCollapsed
+    }
+
+    // One-time initial default in landscape if nothing persisted yet
+    LaunchedEffect(Unit) {
+        if (landscape && !persistedCollapsed && defaultCollapsedLand) {
+            collapsed = true
+            store.setHeaderCollapsed(true)
+        }
+    }
 
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -41,7 +57,7 @@ fun CollapsibleHeader(
             Spacer(Modifier.weight(1f))
             IconButton(onClick = {
                 collapsed = !collapsed
-                if (landscape) scope.launch { store.setBool(com.chris.m3usuite.prefs.Keys.HEADER_COLLAPSED_LAND, collapsed) }
+                scope.launch { store.setHeaderCollapsed(collapsed) }
             }) {
                 val icon = if (collapsed) android.R.drawable.arrow_down_float else android.R.drawable.arrow_up_float
                 Icon(painterResource(icon), contentDescription = if (collapsed) "Header anzeigen" else "Header verbergen")
