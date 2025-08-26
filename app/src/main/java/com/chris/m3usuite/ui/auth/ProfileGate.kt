@@ -73,11 +73,18 @@ fun ProfileGate(
                     if (setPin) {
                         if (pin.isBlank() || pin != pin2) { pinError = "PINs stimmen nicht"; return@TextButton }
                         val h = sha256(pin)
-                        scope.launch { store.setAdultPinHash(h); store.setAdultPinSet(true); pin = ""; pin2 = ""; showPin = false; onEnter() }
+                        scope.launch { 
+                            store.setAdultPinHash(h); store.setAdultPinSet(true)
+                            store.setCurrentProfileId(adult?.id ?: -1)
+                            pin = ""; pin2 = ""; showPin = false; onEnter() 
+                        }
                     } else {
                         scope.launch {
                             val ok = sha256(pin) == store.adultPinHash.first()
-                            if (ok) { pin = ""; showPin = false; onEnter() } else pinError = "Falscher PIN"
+                            if (ok) { 
+                                store.setCurrentProfileId(adult?.id ?: -1)
+                                pin = ""; showPin = false; onEnter() 
+                            } else pinError = "Falscher PIN"
                         }
                     }
                 }) { Text("OK") }
@@ -93,7 +100,6 @@ fun ProfileGate(
         OutlinedCard(Modifier.fillMaxWidth().clickable {
             if (!pinSet) { setPin = true; pin = ""; pin2 = ""; pinError = null; showPin = true }
             else { setPin = false; pin = ""; pinError = null; showPin = true }
-            scope.launch { store.setCurrentProfileId(adult?.id ?: -1) }
         }) { ListItem(headlineContent = { Text("Ich bin Erwachsen") }, supportingContent = { Text("Mit PIN geschützt") }) }
         Spacer(Modifier.height(16.dp))
         Text("Ich bin ein Kind", style = MaterialTheme.typography.titleMedium)

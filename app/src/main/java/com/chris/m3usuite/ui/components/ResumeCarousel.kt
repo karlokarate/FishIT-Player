@@ -28,6 +28,9 @@ import com.chris.m3usuite.player.ExternalPlayer
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.ResumeEpisodeView
 import com.chris.m3usuite.data.db.ResumeVodView
+import com.chris.m3usuite.core.xtream.XtreamConfig
+import com.chris.m3usuite.prefs.SettingsStore
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,6 +63,8 @@ fun ResumeSectionAuto(
     var eps by remember { mutableStateOf<List<ResumeEpisodeView>>(emptyList()) }
     // resume-ui: Chooser BottomSheet Intern vs Extern
     var chooserItem by remember { mutableStateOf<ResumeVodView?>(null) }
+    var chooserEpisode by remember { mutableStateOf<ResumeEpisodeView?>(null) }
+    val store = remember { SettingsStore(ctx) }
 
     // resume-ui: Laden beider Listen auf IO-Thread
     LaunchedEffect(Unit) {
@@ -103,6 +108,39 @@ fun ResumeSectionAuto(
                 }
             }
         }
+        if (chooserEpisode != null) {
+            ModalBottomSheet(onDismissRequest = { chooserEpisode = null }) {
+                val ep = chooserEpisode!!
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text("Wie abspielen?", style = MaterialTheme.typography.h6)
+                    Spacer(Modifier.height(8.dp))
+                    // Build URL from Xtream config
+                    val cfg = remember { mutableStateOf<XtreamConfig?>(null) }
+                    LaunchedEffect(Unit) {
+                        val host = store.xtHost.first(); val user = store.xtUser.first(); val pass = store.xtPass.first(); val out = store.xtOutput.first(); val port = store.xtPort.first()
+                        cfg.value = if (host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()) XtreamConfig(host, port, user, pass, out) else null
+                    }
+                    val start = ep.positionSecs.toLong() * 1000L
+                    val playUrl = cfg.value?.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                    Button(onClick = {
+                        if (playUrl != null) {
+                            val encoded = Uri.encode(playUrl)
+                            navController.navigate("player?url=$encoded&type=series&episodeId=${ep.episodeId}&startMs=$start")
+                        }
+                        chooserEpisode = null
+                    }, enabled = playUrl != null) { Text("Intern") }
+                    Spacer(Modifier.height(4.dp))
+                    Button(onClick = {
+                        if (playUrl != null) ExternalPlayer.open(ctx, playUrl, headers = emptyMap())
+                        chooserEpisode = null
+                    }, enabled = playUrl != null) { Text("Extern") }
+                }
+            }
+        }
         if (vod.isNotEmpty()) {
             SectionTitle(text = "Weiter schauen – Filme")
             // resume-ui: Fallback – wenn onClearVod leer ist, DB aufräumen, sonst Callback verwenden
@@ -137,8 +175,7 @@ fun ResumeSectionAuto(
 
             ResumeEpisodeRow(
                 items = eps,
-                // TODO: Episoden-Chooser (noch kein Chooser)
-                onPlay = onPlayEpisode,
+                onPlay = { item -> chooserEpisode = item },
                 onClear = resolvedEpClear
             )
         }

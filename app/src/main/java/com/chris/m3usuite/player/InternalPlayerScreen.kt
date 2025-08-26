@@ -338,6 +338,9 @@ fun InternalPlayerScreen(
         onDispose { exoPlayer.removeListener(listener) }
     }
 
+    var confirmExit by remember { mutableStateOf(false) }
+    var discardResume by remember { mutableStateOf(false) }
+
     fun finishAndRelease() {
         // resume: clear if near end (<10s), otherwise save
         runBlocking {
@@ -346,6 +349,10 @@ fun InternalPlayerScreen(
                     if ((type == "vod" && mediaId != null) || (type == "series" && episodeId != null)) {
                         val dur = exoPlayer.duration
                         val pos = exoPlayer.currentPosition
+                        if (pos in 1..14999 && !discardResume) {
+                            confirmExit = true
+                            return@runBlocking
+                        }
                         val remaining = if (dur > 0) dur - pos else Long.MAX_VALUE
                         if (dur > 0 && remaining in 0..9999) {
                             withContext(Dispatchers.IO) {
@@ -503,6 +510,19 @@ fun InternalPlayerScreen(
                         }
                     )
                 }
+                if (confirmExit) {
+                    AlertDialog(
+                        onDismissRequest = { confirmExit = false },
+                        title = { Text("Wiedergabe beenden?") },
+                        text = { Text("Fortschritt ist sehr gering. Resume speichern?") },
+                        confirmButton = {
+                            TextButton(onClick = { discardResume = true; confirmExit = false; finishAndRelease() }) { Text("Nicht speichern") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { discardResume = false; confirmExit = false; finishAndRelease() }) { Text("Speichern") }
+                        }
+                    )
+                }
 
                 if (showCcMenu && isAdult) {
                     ModalBottomSheet(onDismissRequest = { showCcMenu = false }) {
@@ -544,8 +564,17 @@ fun InternalPlayerScreen(
                             Slider(value = effectiveBgOpacity().toFloat(), onValueChange = { v -> localBgOpacity = v.toInt().coerceIn(0,100) }, valueRange = 0f..100f, steps = 10)
 
                             Spacer(Modifier.padding(8.dp))
-                            // Quick color presets (minimal palette)
-                            Row { Button(onClick = { localFg = 0xFFFFFFFF.toInt() }) { Text("FG Weiß") }; Spacer(Modifier.padding(4.dp)); Button(onClick = { localFg = 0xFF000000.toInt() }) { Text("FG Schwarz") } }
+                            // Quick presets
+                            Text("Presets")
+                            Row { 
+                                Button(onClick = { localScale = 0.05f }) { Text("Klein") }
+                                Spacer(Modifier.padding(4.dp))
+                                Button(onClick = { localScale = 0.06f }) { Text("Standard") }
+                                Spacer(Modifier.padding(4.dp))
+                                Button(onClick = { localScale = 0.08f }) { Text("Groß") }
+                            }
+                            Spacer(Modifier.padding(4.dp))
+                            Row { Button(onClick = { localFg = 0xFFFFFFFF.toInt(); localBg = 0x66000000 }) { Text("Hell auf dunkel") }; Spacer(Modifier.padding(4.dp)); Button(onClick = { localFg = 0xFF000000.toInt(); localBg = 0x66FFFFFF }) { Text("Dunkel auf hell") } }
                             Spacer(Modifier.padding(4.dp))
                             Row { Button(onClick = { localBg = 0x66000000 }) { Text("BG Schwarz") }; Spacer(Modifier.padding(4.dp)); Button(onClick = { localBg = 0x66FFFFFF }) { Text("BG Weiß") } }
 

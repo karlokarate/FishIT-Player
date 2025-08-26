@@ -33,6 +33,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import coil3.request.ImageRequest
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,10 +141,25 @@ fun VodDetailScreen(
             Column(Modifier.padding(16.dp)) {
                 Text("Kinder auswählen")
                 Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { checked = kids.map { it.id }.toSet() }, enabled = kids.isNotEmpty()) { Text("Alle auswählen") }
+                    TextButton(onClick = { checked = emptySet() }, enabled = checked.isNotEmpty()) { Text("Keine auswählen") }
+                }
+                Spacer(Modifier.height(4.dp))
                 kids.forEach { k ->
                     val isC = k.id in checked
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(k.name)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (!k.avatarPath.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(ctx).data(k.avatarPath).build(),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(32.dp).clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                            Text(k.name)
+                        }
                         Switch(checked = isC, onCheckedChange = { v -> checked = if (v) checked + k.id else checked - k.id })
                     }
                 }
@@ -154,7 +172,9 @@ fun VodDetailScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    val snackHost = remember { SnackbarHostState() }
+    Scaffold(snackbarHost = { SnackbarHost(snackHost) }) { pad ->
+    Column(modifier = Modifier.fillMaxSize().padding(pad)) {
         Box(
             modifier = Modifier.clickable(enabled = url != null) { play(fromStart = false) }
         ) {
@@ -241,13 +261,15 @@ fun VodDetailScreen(
 
     if (showGrantSheet) KidSelectSheet(onConfirm = { kidIds ->
         scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.allowBulk(it, "vod", listOf(id)) } }
+        scope.launch { snackHost.showSnackbar("VOD freigegeben für ${kidIds.size} Kinder") }
         showGrantSheet = false
     }, onDismiss = { showGrantSheet = false })
     if (showRevokeSheet) KidSelectSheet(onConfirm = { kidIds ->
         scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.disallowBulk(it, "vod", listOf(id)) } }
+        scope.launch { snackHost.showSnackbar("VOD aus ${kidIds.size} Kinderprofil(en) entfernt") }
         showRevokeSheet = false
     }, onDismiss = { showRevokeSheet = false })
-}
+}}
 
 private fun fmt(totalSecs: Int): String {
     val s = max(0, totalSecs)

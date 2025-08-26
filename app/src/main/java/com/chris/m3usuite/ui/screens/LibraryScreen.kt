@@ -175,7 +175,9 @@ fun LibraryScreen(
 
     val rotationLocked by store.rotationLocked.collectAsState(initial = false)
 
+    val snackHost = remember { SnackbarHostState() }
     Scaffold(
+        snackbarHost = { SnackbarHost(snackHost) },
         topBar = {
             TopAppBar(
                 title = { Text("m3uSuite") },
@@ -261,6 +263,15 @@ fun LibraryScreen(
             // LiveTV – Unterfilter (Deutsch/Kids/Provider/Genre)
             if (tab == 0) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+                    val activeFilters = (if (filterGerman) 1 else 0) + (if (filterKids) 1 else 0) + filterProviders.size + filterGenres.size
+                    if (activeFilters > 0) {
+                        AssistChip(onClick = {
+                            filterGerman = false; filterKids = false; filterProviders = emptySet(); filterGenres = emptySet();
+                            scope.launch { store.setLiveFilterGerman(false); store.setLiveFilterKids(false); store.setLiveFilterProvidersCsv(""); store.setLiveFilterGenresCsv("") }
+                            load()
+                        }, label = { Text("Aktive Filter ($activeFilters) – Reset") })
+                        Spacer(Modifier.height(4.dp))
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(selected = filterGerman, onClick = { filterGerman = !filterGerman; scope.launch { store.setLiveFilterGerman(filterGerman) }; load() }, label = { Text("Deutsch") })
                         FilterChip(selected = filterKids, onClick = { filterKids = !filterKids; scope.launch { store.setLiveFilterKids(filterKids) }; load() }, label = { Text("Kids") })
@@ -271,15 +282,33 @@ fun LibraryScreen(
                         }, label = { Text("Filter zurücksetzen") })
                     }
                     Spacer(Modifier.height(6.dp))
-                    // Provider
+                    // Provider (with small provider icon taken from first matching channel poster/logo)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         liveProviders.forEach { (key, _) ->
                             val sel = key in filterProviders
-                            FilterChip(selected = sel, onClick = {
-                                filterProviders = if (sel) filterProviders - key else filterProviders + key
-                                scope.launch { store.setLiveFilterProvidersCsv(filterProviders.joinToString(",")) }
-                                load()
-                            }, label = { Text(key) })
+                            FilterChip(
+                                selected = sel,
+                                onClick = {
+                                    filterProviders = if (sel) filterProviders - key else filterProviders + key
+                                    scope.launch { store.setLiveFilterProvidersCsv(filterProviders.joinToString(",")) }
+                                    load()
+                                },
+                                label = { Text(key) },
+                                leadingIcon = {
+                                    val sample = mediaItems.firstOrNull { hasProvider(it, key) }
+                                    val url = sample?.logo ?: sample?.poster
+                                    if (url != null) {
+                                        AsyncImage(
+                                            model = buildImageRequest(ctx, url, headers),
+                                            contentDescription = "Provider $key",
+                                            modifier = Modifier.size(18.dp),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Icon(painterResource(android.R.drawable.ic_menu_info_details), contentDescription = "Provider $key")
+                                    }
+                                }
+                            )
                         }
                     }
                     Spacer(Modifier.height(6.dp))
@@ -434,6 +463,11 @@ fun LibraryScreen(
             Column(Modifier.padding(16.dp)) {
                 Text("Kinder auswählen")
                 Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { checked = kids.map { it.id }.toSet() }, enabled = kids.isNotEmpty()) { Text("Alle auswählen") }
+                    TextButton(onClick = { checked = emptySet() }, enabled = checked.isNotEmpty()) { Text("Keine auswählen") }
+                }
+                Spacer(Modifier.height(4.dp))
                 kids.forEach { k: Profile ->
                     val isC = k.id in checked
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -458,6 +492,7 @@ fun LibraryScreen(
                 kidIds.forEach { kidId -> kidRepo.allowBulk(kidId, t, ids) }
             }
         }
+        scope.launch { snackHost.showSnackbar("Freigaben: ${selected.size} Einträge für ${kidIds.size} Kinder") }
         selected = emptySet(); selectionMode = false; showGrantSheet = false
     }, onDismiss = { showGrantSheet = false })
 
@@ -468,6 +503,7 @@ fun LibraryScreen(
                 kidIds.forEach { kidId -> kidRepo.disallowBulk(kidId, t, ids) }
             }
         }
+        scope.launch { snackHost.showSnackbar("Entfernt: ${selected.size} Einträge aus ${kidIds.size} Kinderprofil(en)") }
         selected = emptySet(); selectionMode = false; showRevokeSheet = false
     }, onDismiss = { showRevokeSheet = false })
 }
