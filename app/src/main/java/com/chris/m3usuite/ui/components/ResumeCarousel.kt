@@ -1,5 +1,6 @@
 package com.chris.m3usuite.ui.components
 
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -82,7 +83,9 @@ fun ResumeSectionAuto(
                     Text("Wie abspielen?", style = MaterialTheme.typography.h6)
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = {
-                        navController.navigate("player?type=vod&id=${chooserItem!!.mediaId}")
+                        val encoded = Uri.encode(chooserItem!!.url!!)
+                        val start = chooserItem!!.positionSecs.toLong() * 1000L
+                        navController.navigate("player?url=$encoded&type=vod&mediaId=${chooserItem!!.mediaId}&startMs=$start")
                         chooserItem = null
                     }) { Text("Intern") }
                     Spacer(Modifier.height(4.dp))
