@@ -3,6 +3,7 @@ package com.chris.m3usuite.player
 import android.content.Context
 import kotlinx.coroutines.flow.first
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.data.db.DbProvider
 
 /**
  * Zentrale Wahl "Immer fragen | Intern | Extern".
@@ -22,6 +23,20 @@ object PlayerChooser {
         startPositionMs: Long? = null,
         buildInternal: (startPositionMs: Long?) -> Unit
     ) {
+        // Phase 4: Kids immer interner Player
+        val kidForcedInternal = run {
+            val id = store.currentProfileId.first()
+            if (id > 0) {
+                val prof = DbProvider.get(context).profileDao().byId(id)
+                prof?.type == "kid"
+            } else false
+        }
+
+        if (kidForcedInternal) {
+            buildInternal(startPositionMs)
+            return
+        }
+
         when (store.playerMode.first()) {
             "internal" -> buildInternal(startPositionMs)
             "external" -> {
