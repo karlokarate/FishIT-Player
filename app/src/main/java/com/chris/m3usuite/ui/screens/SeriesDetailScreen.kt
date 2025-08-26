@@ -52,8 +52,8 @@ fun SeriesDetailScreen(
     val profileId by store.currentProfileId.collectAsState(initial = -1L)
     var isAdult by remember { mutableStateOf(true) }
     LaunchedEffect(profileId) { isAdult = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(profileId)?.type != "kid" } }
-    var showGrantSheet by remember { mutableStateOf(false) }
-    var showRevokeSheet by remember { mutableStateOf(false) }
+    var showGrantSheet by rememberSaveable { mutableStateOf(false) }
+    var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
 
     @Composable
     fun KidSelectSheet(onConfirm: suspend (kidIds: List<Long>) -> Unit, onDismiss: () -> Unit) {

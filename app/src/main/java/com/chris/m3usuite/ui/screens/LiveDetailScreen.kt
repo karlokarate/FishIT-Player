@@ -143,8 +143,8 @@ fun LiveDetailScreen(id: Long) {
         isAdult = p?.type != "kid"
     }
 
-    var showGrantSheet by remember { mutableStateOf(false) }
-    var showRevokeSheet by remember { mutableStateOf(false) }
+    var showGrantSheet by rememberSaveable { mutableStateOf(false) }
+    var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
 
     @Composable
     fun KidSelectSheet(onConfirm: suspend (kidIds: List<Long>) -> Unit, onDismiss: () -> Unit) {

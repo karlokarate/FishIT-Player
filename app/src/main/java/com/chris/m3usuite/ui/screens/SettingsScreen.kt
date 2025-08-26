@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -242,7 +243,7 @@ private enum class PinMode { Set, Change, Clear }
 
 @Composable
 private fun showPinDialog(store: SettingsStore, mode: PinMode) {
-    var open by remember { mutableStateOf(true) }
+    var open by rememberSaveable { mutableStateOf(true) }
     var pin by remember { mutableStateOf("") }
     var pin2 by remember { mutableStateOf("") }
     var old by remember { mutableStateOf("") }

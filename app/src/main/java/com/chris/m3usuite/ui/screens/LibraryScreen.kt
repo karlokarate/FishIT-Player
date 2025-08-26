@@ -168,7 +168,11 @@ fun LibraryScreen(
     val profileId by store.currentProfileId.collectAsState(initial = -1L)
     var showSettings by remember { mutableStateOf(true) }
     var selectionMode by rememberSaveable { mutableStateOf(false) }
-    var selected by remember { mutableStateOf(setOf<Pair<Long, String>>()) }
+    val selectedSaver = androidx.compose.runtime.saveable.Saver<Set<Pair<Long, String>>, List<String>>(
+        save = { set -> set.map { "${it.first}:${it.second}" } },
+        restore = { list -> list.map { s -> val p = s.split(':', limit = 2); p[0].toLong() to p[1] }.toSet() }
+    )
+    var selected by rememberSaveable(stateSaver = selectedSaver) { mutableStateOf(setOf<Pair<Long, String>>()) }
     var showGrantSheet by rememberSaveable { mutableStateOf(false) }
     var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(profileId) {

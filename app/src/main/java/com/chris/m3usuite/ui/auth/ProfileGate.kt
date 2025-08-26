@@ -34,12 +34,12 @@ fun ProfileGate(
     var adult by remember { mutableStateOf<Profile?>(null) }
     var kids by remember { mutableStateOf<List<Profile>>(emptyList()) }
 
-    // PIN UI state
-    var showPin by remember { mutableStateOf(false) }
-    var setPin by remember { mutableStateOf(false) }
-    var pin by remember { mutableStateOf("") }
-    var pin2 by remember { mutableStateOf("") }
-    var pinError by remember { mutableStateOf<String?>(null) }
+    // PIN UI state (persist across rotation)
+    var showPin by rememberSaveable { mutableStateOf(false) }
+    var setPin by rememberSaveable { mutableStateOf(false) }
+    var pin by rememberSaveable { mutableStateOf("") }
+    var pin2 by rememberSaveable { mutableStateOf("") }
+    var pinError by rememberSaveable { mutableStateOf<String?>(null) }
     val pinSet by store.adultPinSet.collectAsState(initial = false)
 
     LaunchedEffect(Unit) {

@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.unit.dp
 import com.chris.m3usuite.data.repo.PlaylistRepository
 import com.chris.m3usuite.data.repo.XtreamRepository
@@ -28,12 +29,12 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
         mutableStateOf((ctx as? Activity)?.intent?.dataString.orEmpty())
     }
 
-    var m3u by remember { mutableStateOf(TextFieldValue(initialLink)) }
-    var epg by remember { mutableStateOf(TextFieldValue("")) }
-    var ua by remember { mutableStateOf(TextFieldValue("IBOPlayer/1.4 (Android)")) }
-    var ref by remember { mutableStateOf(TextFieldValue("")) }
-    var busy by remember { mutableStateOf(false) }
-    var msg by remember { mutableStateOf("") }
+    var m3u by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(initialLink)) }
+    var epg by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
+    var ua by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("IBOPlayer/1.4 (Android)")) }
+    var ref by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
+    var busy by rememberSaveable { mutableStateOf(false) }
+    var msg by rememberSaveable { mutableStateOf("") }
 
     // Gespeicherte Werte beim Öffnen vorbefüllen (nutzt die Flows aus SettingsStore)
     LaunchedEffect(Unit) {
