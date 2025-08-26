@@ -77,8 +77,52 @@ fun LibraryScreen(
     // Kategorie-Sheet
     var showCategorySheet by remember { mutableStateOf(false) }
 
+    // LiveTV – optionale Unterfilter (Phase 11): Sprache/Provider/Genre/Kids
+    val liveProviders = listOf("NF" to listOf("nf", "netflix"), "AMZ" to listOf("amz", "amazon"), "PRMT" to listOf("p ", " p ", "param", "prmt", "paramount"), "DISNEY" to listOf("disney", "d+") )
+    val liveGenres = listOf("Sport", "News", "Doku", "Film", "Serie", "Musik", "Kinder")
+    var filterGerman by rememberSaveable { mutableStateOf(false) }
+    var filterKids by rememberSaveable { mutableStateOf(false) }
+    var filterProviders by rememberSaveable { mutableStateOf(setOf<String>()) } // keys from liveProviders labels
+    var filterGenres by rememberSaveable { mutableStateOf(setOf<String>()) }
+
     // Collapsible-State für Header (global gespeichert)
     val collapsed by store.headerCollapsed.collectAsState(initial = false)
+
+    fun isGerman(mi: MediaItem): Boolean {
+        val s = (mi.name + " " + (mi.categoryName ?: "")).lowercase()
+        return Regex("\\bde\\b|\\bger\\b|deutsch|german").containsMatchIn(s)
+    }
+    fun isKids(mi: MediaItem): Boolean {
+        val s = (mi.name + " " + (mi.categoryName ?: "")).lowercase()
+        return Regex("kid|kinder|children|cartoon|toon").containsMatchIn(s)
+    }
+    fun hasProvider(mi: MediaItem, key: String): Boolean {
+        val tokens = liveProviders.find { it.first == key }?.second ?: return false
+        val s = mi.name.lowercase()
+        return tokens.any { t -> s.contains(t) }
+    }
+    fun hasGenre(mi: MediaItem, g: String): Boolean {
+        val s = (mi.name + " " + (mi.categoryName ?: "")).lowercase()
+        return when (g) {
+            "Sport" -> s.contains("sport")
+            "News" -> s.contains("news") || s.contains("nachricht")
+            "Doku" -> s.contains("doku") || s.contains("docu")
+            "Film" -> s.contains("film") || s.contains("movie")
+            "Serie" -> s.contains("serie") || s.contains("series")
+            "Musik" -> s.contains("musik") || s.contains("music")
+            "Kinder" -> isKids(mi)
+            else -> false
+        }
+    }
+
+    fun applyLiveFilters(list: List<MediaItem>): List<MediaItem> {
+        var r = list
+        if (filterGerman) r = r.filter { isGerman(it) }
+        if (filterKids) r = r.filter { isKids(it) }
+        if (filterProviders.isNotEmpty()) r = r.filter { mi -> filterProviders.any { hasProvider(mi, it) } }
+        if (filterGenres.isNotEmpty()) r = r.filter { mi -> filterGenres.any { hasGenre(mi, it) } }
+        return r
+    }
 
     fun load() = scope.launch {
         val type = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> null }
@@ -92,7 +136,7 @@ fun LibraryScreen(
             searchQuery.text.isNotBlank() -> mediaRepo.globalSearchFiltered(searchQuery.text, 6000, 0).filter { it.type == type }
             else -> mediaRepo.listByTypeFiltered(type, 6000, 0)
         }
-        mediaItems = list
+        mediaItems = if (type == "live") applyLiveFilters(list) else list
         categories = if (type != null) mediaRepo.categoriesByTypeFiltered(type) else emptyList()
     }
 
@@ -198,6 +242,42 @@ fun LibraryScreen(
                         if (ev.key == Key.Enter && ev.type == KeyEventType.KeyUp) { submitSearch(); true } else false
                     }
             )
+
+            // LiveTV – Unterfilter (Deutsch/Kids/Provider/Genre)
+            if (tab == 0) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(selected = filterGerman, onClick = { filterGerman = !filterGerman; load() }, label = { Text("Deutsch") })
+                        FilterChip(selected = filterKids, onClick = { filterKids = !filterKids; load() }, label = { Text("Kids") })
+                        AssistChip(onClick = {
+                            filterGerman = false; filterKids = false; filterProviders = emptySet(); filterGenres = emptySet(); load()
+                        }, label = { Text("Filter zurücksetzen") })
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    // Provider
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        liveProviders.forEach { (key, _) ->
+                            val sel = key in filterProviders
+                            FilterChip(selected = sel, onClick = {
+                                filterProviders = if (sel) filterProviders - key else filterProviders + key
+                                load()
+                            }, label = { Text(key) })
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    // Genres
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        liveGenres.forEach { g ->
+                            val sel = g in filterGenres
+                            FilterChip(selected = sel, onClick = {
+                                filterGenres = if (sel) filterGenres - g else filterGenres + g
+                                load()
+                            }, label = { Text(g) })
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                }
+            }
 
             if (tab in 0..2 && categories.isNotEmpty()) {
                 // Schnellwahl: alle Kategorien horizontal scrollbar
