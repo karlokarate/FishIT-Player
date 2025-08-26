@@ -27,6 +27,7 @@ import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.theme.AppTheme
 import com.chris.m3usuite.work.XtreamEnrichmentWorker
 import com.chris.m3usuite.work.XtreamRefreshWorker
+import com.chris.m3usuite.work.ScreenTimeResetWorker
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import com.chris.m3usuite.data.db.DbProvider
@@ -60,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     if (m3uUrl.isNotBlank()) {
                         XtreamRefreshWorker.schedule(this@MainActivity)
                         XtreamEnrichmentWorker.schedule(this@MainActivity)
+                        ScreenTimeResetWorker.schedule(this@MainActivity)
                     }
                 }
 

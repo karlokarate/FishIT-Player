@@ -19,6 +19,7 @@ import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.ResumeMark
 import com.chris.m3usuite.data.repo.XtreamRepository
 import com.chris.m3usuite.player.ExternalPlayer
+import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
 import kotlin.math.max
@@ -96,10 +97,14 @@ fun VodDetailScreen(
     fun play(fromStart: Boolean = false) {
         val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
         url?.let { u ->
-            if (openInternal != null) {
-                openInternal(u, startMs)
-            } else {
-                ExternalPlayer.open(context = ctx, url = u, startPositionMs = startMs)
+            scope.launch {
+                PlayerChooser.start(
+                    context = ctx,
+                    store = SettingsStore(ctx),
+                    url = u,
+                    headers = emptyMap(),
+                    startPositionMs = startMs
+                ) { s -> openInternal?.invoke(u, s) ?: ExternalPlayer.open(context = ctx, url = u, startPositionMs = s) }
             }
         }
     }

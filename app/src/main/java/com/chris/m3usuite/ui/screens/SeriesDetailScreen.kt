@@ -20,6 +20,7 @@ import com.chris.m3usuite.data.db.ResumeMark
 import com.chris.m3usuite.data.repo.XtreamRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.player.ExternalPlayer
+import com.chris.m3usuite.player.PlayerChooser
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.max
@@ -75,15 +76,13 @@ fun SeriesDetailScreen(
                 val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
                 val playUrl = cfg.seriesEpisodeUrl(e.episodeId, e.containerExt)
 
-                if (openInternal != null) {
-                    openInternal(playUrl, startMs, e.episodeId)
-                } else {
-                    ExternalPlayer.open(
-                        context = ctx,
-                        url = playUrl,
-                        startPositionMs = startMs
-                    )
-                }
+                PlayerChooser.start(
+                    context = ctx,
+                    store = store,
+                    url = playUrl,
+                    headers = emptyMap(),
+                    startPositionMs = startMs
+                ) { s -> openInternal?.invoke(playUrl, s, e.episodeId) ?: ExternalPlayer.open(context = ctx, url = playUrl, startPositionMs = s) }
             }
         }
     }
