@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -201,6 +203,7 @@ fun ResumeEpisodeRow(
 
 // resume-ui: Einfache Karte – Titel (2 Zeilen, ellipsize), Fortschritt, Play/Clear
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 private fun ResumeCard(
     title: String,
     subtitle: String,
@@ -211,6 +214,7 @@ private fun ResumeCard(
         modifier = Modifier
             .width(200.dp)
             .height(140.dp)
+            .combinedClickable(onClick = onPlay, onLongClick = onClear)
     ) {
         Column(
             modifier = Modifier
@@ -234,17 +238,10 @@ private fun ResumeCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onPlay) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = "Abspielen")
-                }
-                IconButton(onClick = onClear) {
-                    Icon(Icons.Filled.Clear, contentDescription = "Entfernen")
-                }
+            // Tipp: Klick = Abspielen, Long-Press = Entfernen
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onPlay) { Icon(Icons.Filled.PlayArrow, contentDescription = "Abspielen") }
+                IconButton(onClick = onClear) { Icon(Icons.Filled.Clear, contentDescription = "Entfernen") }
             }
         }
     }
