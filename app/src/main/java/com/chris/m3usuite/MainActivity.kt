@@ -19,6 +19,7 @@ import androidx.navigation.navArgument
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.player.InternalPlayerScreen   // <- korrektes Paket (s. Schritt A)
 import com.chris.m3usuite.ui.screens.LibraryScreen
+import com.chris.m3usuite.ui.screens.SettingsScreen
 import com.chris.m3usuite.ui.screens.LiveDetailScreen
 import com.chris.m3usuite.ui.screens.PlaylistSetupScreen
 import com.chris.m3usuite.ui.screens.SeriesDetailScreen
@@ -28,6 +29,9 @@ import com.chris.m3usuite.work.XtreamEnrichmentWorker
 import com.chris.m3usuite.work.XtreamRefreshWorker
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import com.chris.m3usuite.data.db.DbProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
 
@@ -137,6 +141,20 @@ class MainActivity : ComponentActivity() {
                             startPositionMs = startMs,
                             onExit = { nav.popBackStack() }
                         )
+                    }
+
+                    // Settings (nur Adult; Kids werden zurück navigiert)
+                    composable("settings") {
+                        val dbLocal = remember { DbProvider.get(ctx) }
+                        val profileId = store.currentProfileId.collectAsState(initial = -1L).value
+                        LaunchedEffect(profileId) {
+                            val prof = if (profileId > 0) withContext(Dispatchers.IO) { dbLocal.profileDao().byId(profileId) } else null
+                            val isKid = prof?.type == "kid"
+                            if (isKid) {
+                                nav.popBackStack()
+                            }
+                        }
+                        SettingsScreen(store = store, onBack = { nav.popBackStack() })
                     }
                 }
             }

@@ -23,6 +23,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -90,8 +91,27 @@ fun LibraryScreen(
     LaunchedEffect(Unit) { load() }
     LaunchedEffect(tab, selectedCategory) { load() }
 
+    // Adult-only: Settings sichtbar, Kids versteckt
+    val profileId by store.currentProfileId.collectAsState(initial = -1L)
+    var showSettings by remember { mutableStateOf(true) }
+    LaunchedEffect(profileId) {
+        val prof = db.profileDao().byId(profileId)
+        showSettings = prof?.type != "kid"
+    }
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text("m3uSuite") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text("m3uSuite") },
+                actions = {
+                    if (showSettings) {
+                        IconButton(onClick = { navController.navigate("settings") }) {
+                            Icon(painterResource(android.R.drawable.ic_menu_manage), contentDescription = "Einstellungen")
+                        }
+                    }
+                }
+            )
+        }
     ) { paddingValues ->
         Column(
             Modifier

@@ -33,7 +33,10 @@ fun SettingsScreen(
     val subScale by store.subtitleScale.collectAsState(initial = 0.06f)
     val subFg by store.subtitleFg.collectAsState(initial = 0xF2FFFFFF.toInt())
     val subBg by store.subtitleBg.collectAsState(initial = 0x66000000)
+    val subFgOpacity by store.subtitleFgOpacityPct.collectAsState(initial = 90)
+    val subBgOpacity by store.subtitleBgOpacityPct.collectAsState(initial = 40)
     val headerCollapsed by store.headerCollapsedDefaultInLandscape.collectAsState(initial = true)
+    val rotationLocked by store.rotationLocked.collectAsState(initial = false)
 
     Scaffold(
         topBar = {
@@ -84,6 +87,22 @@ fun SettingsScreen(
                 palette = bgPalette()
             )
 
+            // Opacity
+            Text("Text-Deckkraft: ${subFgOpacity}%")
+            Slider(
+                value = subFgOpacity.toFloat(),
+                onValueChange = { v -> scope.launch { store.setSubtitleFgOpacityPct(v.toInt().coerceIn(0, 100)) } },
+                valueRange = 0f..100f,
+                steps = 10
+            )
+            Text("Hintergrund-Deckkraft: ${subBgOpacity}%")
+            Slider(
+                value = subBgOpacity.toFloat(),
+                onValueChange = { v -> scope.launch { store.setSubtitleBgOpacityPct(v.toInt().coerceIn(0, 100)) } },
+                valueRange = 0f..100f,
+                steps = 10
+            )
+
             // Vorschau
             OutlinedCard {
                 Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
@@ -105,6 +124,13 @@ fun SettingsScreen(
                 Text("Landscape: Header standardmäßig eingeklappt", modifier = Modifier.weight(1f))
                 Switch(checked = headerCollapsed, onCheckedChange = { v ->
                     scope.launch { store.setBool(Keys.HEADER_COLLAPSED_LAND, v) }
+                })
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Rotation in Player sperren (Landscape)", modifier = Modifier.weight(1f))
+                Switch(checked = rotationLocked, onCheckedChange = { v ->
+                    scope.launch { store.setRotationLocked(v) }
                 })
             }
         }
