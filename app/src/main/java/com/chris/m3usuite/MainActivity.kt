@@ -24,6 +24,8 @@ import com.chris.m3usuite.ui.screens.LiveDetailScreen
 import com.chris.m3usuite.ui.screens.PlaylistSetupScreen
 import com.chris.m3usuite.ui.screens.SeriesDetailScreen
 import com.chris.m3usuite.ui.screens.VodDetailScreen
+import com.chris.m3usuite.ui.auth.ProfileGate
+import com.chris.m3usuite.ui.profile.ProfileManagerScreen
 import com.chris.m3usuite.ui.theme.AppTheme
 import com.chris.m3usuite.work.XtreamEnrichmentWorker
 import com.chris.m3usuite.work.XtreamRefreshWorker
@@ -54,7 +56,7 @@ class MainActivity : ComponentActivity() {
                 val m3uUrl = store.m3uUrl.collectAsState(initial = "").value
 
                 // Startziel abhängig von gespeicherter URL
-                val startDestination = if (m3uUrl.isBlank()) "setup" else "library"
+                val startDestination = if (m3uUrl.isBlank()) "setup" else "gate"
 
                 // Worker für Refresh/Enrichment planen, sobald URL vorhanden
                 LaunchedEffect(m3uUrl) {
@@ -74,6 +76,14 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         )
+                    }
+
+                    composable("gate") {
+                        ProfileGate(onEnter = {
+                            nav.navigate("library") {
+                                popUpTo("gate") { inclusive = true }
+                            }
+                        })
                     }
 
                     composable("library") {
@@ -156,7 +166,11 @@ class MainActivity : ComponentActivity() {
                                 nav.popBackStack()
                             }
                         }
-                        SettingsScreen(store = store, onBack = { nav.popBackStack() })
+                        SettingsScreen(store = store, onBack = { nav.popBackStack() }, onOpenProfiles = { nav.navigate("profiles") })
+                    }
+
+                    composable("profiles") {
+                        ProfileManagerScreen(onBack = { nav.popBackStack() })
                     }
                 }
             }
