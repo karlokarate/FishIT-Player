@@ -58,9 +58,11 @@ fun LiveDetailScreen(id: Long) {
 
     // --- Interner Player Zustand (Fullscreen) ---
     var showInternal by rememberSaveable { mutableStateOf(false) }
-    var internalUrl by remember { mutableStateOf<String?>(null) }
-    var internalStartMs by remember { mutableStateOf<Long?>(null) }
-    var internalHeaders by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var internalUrl by rememberSaveable { mutableStateOf<String?>(null) }
+    var internalStartMs by rememberSaveable { mutableStateOf<Long?>(null) }
+    // Persist UA/Referer to reconstruct headers on rotation
+    var internalUa by rememberSaveable { mutableStateOf("") }
+    var internalRef by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(id) {
         val item = db.mediaDao().byId(id) ?: return@LaunchedEffect
@@ -114,7 +116,8 @@ fun LiveDetailScreen(id: Long) {
             buildInternal = { startMs ->
                 internalUrl = playUrl
                 internalStartMs = startMs
-                internalHeaders = hdrs
+                internalUa = hdrs["User-Agent"].orEmpty()
+                internalRef = hdrs["Referer"].orEmpty()
                 showInternal = true
             }
         )
@@ -123,11 +126,15 @@ fun LiveDetailScreen(id: Long) {
     // --- Wenn interner Player aktiv ist, zeigen wir ihn fullscreen und sonst nichts ---
     if (showInternal) {
         // Nutzt euren vorhandenen InternalPlayerScreen aus dem Projekt.
+        val hdrs = buildMap<String, String> {
+            if (internalUa.isNotBlank()) put("User-Agent", internalUa)
+            if (internalRef.isNotBlank()) put("Referer", internalRef)
+        }
         InternalPlayerScreen(
             url = internalUrl.orEmpty(),
             type = "live",
             startPositionMs = internalStartMs,
-            headers = internalHeaders,
+            headers = hdrs,
             onExit = {
                 showInternal = false
             }
