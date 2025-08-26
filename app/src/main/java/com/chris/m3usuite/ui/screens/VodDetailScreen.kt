@@ -24,7 +24,6 @@ import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
 import kotlin.math.max
-import coil3.request.ImageRequest
 import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 import com.chris.m3usuite.data.repo.KidContentRepository
@@ -33,7 +32,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import coil3.request.ImageRequest
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 

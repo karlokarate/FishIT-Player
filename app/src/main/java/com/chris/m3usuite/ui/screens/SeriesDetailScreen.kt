@@ -26,13 +26,11 @@ import com.chris.m3usuite.data.repo.KidContentRepository
 import com.chris.m3usuite.data.db.Profile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import coil3.request.ImageRequest
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.max
-import coil3.request.ImageRequest
 import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 

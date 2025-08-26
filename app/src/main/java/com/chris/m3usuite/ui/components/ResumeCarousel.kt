@@ -36,8 +36,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import com.chris.m3usuite.prefs.SettingsStore
-import kotlinx.coroutines.flow.first
 
 // resume-ui: Phase 3 – Resume-Karusselle (ohne Bilder), Material (nicht Material3)
 
