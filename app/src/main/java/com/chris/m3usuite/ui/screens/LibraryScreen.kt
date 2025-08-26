@@ -2,7 +2,6 @@ package com.chris.m3usuite.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -28,20 +27,16 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.chris.m3usuite.core.xtream.XtreamConfig
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.MediaItem
-import com.chris.m3usuite.data.db.ResumeEpisodeView
-import com.chris.m3usuite.data.db.ResumeVodView
-import com.chris.m3usuite.player.ExternalPlayer
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.common.FocusableCard
 import com.chris.m3usuite.ui.common.isTv
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlin.math.max
 import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
+import com.chris.m3usuite.ui.components.ResumeSectionAuto
+import com.chris.m3usuite.ui.components.CollapsibleHeader
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -67,32 +62,11 @@ fun LibraryScreen(
     var mediaItems by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var categories by remember { mutableStateOf<List<String?>>(emptyList()) }
 
-    var resumeVod by remember { mutableStateOf<List<ResumeVodView>>(emptyList()) }
-    var resumeEps by remember { mutableStateOf<List<ResumeEpisodeView>>(emptyList()) }
-
     // Kategorie-Sheet
     var showCategorySheet by remember { mutableStateOf(false) }
 
-    // „Weiter schauen“ ein-/ausblendbar
-    var showContinueWatching by rememberSaveable { mutableStateOf(true) }
-
-    fun fmtSecs(s: Int): String {
-        val ss = max(0, s); val h = ss / 3600; val m = (ss % 3600) / 60; val sec = ss % 60
-        return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
-    }
-
-    fun playVodResumeNow(v: ResumeVodView) {
-        val startMs = v.positionSecs.toLong() * 1000
-        v.url?.let { ExternalPlayer.open(ctx, it, startPositionMs = startMs) }
-    }
-    suspend fun buildEpisodeUrlAndPlay(e: ResumeEpisodeView) {
-        val host = store.xtHost.first(); val user = store.xtUser.first(); val pass = store.xtPass.first()
-        val out  = store.xtOutput.first(); val port = store.xtPort.first()
-        if (host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()) {
-            val cfg = XtreamConfig(host, port, user, pass, out)
-            ExternalPlayer.open(ctx, cfg.seriesEpisodeUrl(e.episodeId, e.containerExt), startPositionMs = e.positionSecs.toLong() * 1000)
-        }
-    }
+    // Collapsible-State für Header (global gespeichert)
+    val collapsed by store.headerCollapsed.collectAsState(initial = false)
 
     fun load() = scope.launch {
         val dao = db.mediaDao()
@@ -109,25 +83,9 @@ fun LibraryScreen(
         categories = if (type != null) dao.categoriesByType(type) else emptyList()
     }
 
-    fun loadResume() = scope.launch {
-        val rDao = db.resumeDao()
-        resumeVod = rDao.recentVod(limit = 12)
-        resumeEps = rDao.recentEpisodes(limit = 12)
-    }
-
     fun submitSearch() { load(); focus.clearFocus() }
 
-    // Entfernen einzelner Resume-Einträge
-    fun removeVodResume(v: ResumeVodView) = scope.launch {
-        db.resumeDao().clearVod(v.mediaId)
-        loadResume()
-    }
-    fun removeEpisodeResume(e: ResumeEpisodeView) = scope.launch {
-        db.resumeDao().clearEpisode(e.episodeId)
-        loadResume()
-    }
-
-    LaunchedEffect(Unit) { load(); loadResume() }
+    LaunchedEffect(Unit) { load() }
     LaunchedEffect(tab, selectedCategory) { load() }
 
     Scaffold(
@@ -138,86 +96,25 @@ fun LibraryScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Weiter schauen (schließbar + LongPress-Remove)
-            if (showContinueWatching && (resumeVod.isNotEmpty() || resumeEps.isNotEmpty())) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Weiter schauen", style = MaterialTheme.typography.titleMedium)
-                    TextButton(onClick = { showContinueWatching = false }) { Text("Schließen") }
-                }
+            // Neue ein-/ausklappbare Sektion "Weiter schauen"
+            @Composable
+            fun ResumeCollapsible(content: @Composable () -> Unit) {
+                CollapsibleHeader(
+                    store = store,
+                    title = { Text("Weiter schauen", style = MaterialTheme.typography.titleMedium) },
+                    headerContent = { content() },
+                    contentBelow = { _ -> if (collapsed) Spacer(Modifier.height(0.dp)) }
+                )
+            }
 
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(resumeVod.size) { i ->
-                        val v = resumeVod[i]
-                        FocusableCard(
-                            modifier = Modifier
-                                .width(if (tv) 220.dp else 180.dp)
-                                .height(if (tv) 300.dp else 260.dp)
-                                .combinedClickable(
-                                    onClick = { playVodResumeNow(v) },
-                                    onLongClick = { removeVodResume(v) }
-                                ),
-                            onClick = { /* handled in combinedClickable */ }
-                        ) {
-                            Column {
-                                AsyncImage(
-                                    model = buildImageRequest(ctx, v.poster, headers),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(if (tv) 200.dp else 160.dp)
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text(v.name, maxLines = 2, style = MaterialTheme.typography.bodyMedium)
-                                Text(
-                                    "Fortsetzen ${fmtSecs(v.positionSecs)}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                        }
-                    }
-                    items(resumeEps.size) { i ->
-                        val e = resumeEps[i]
-                        FocusableCard(
-                            modifier = Modifier
-                                .width(if (tv) 220.dp else 180.dp)
-                                .height(if (tv) 300.dp else 260.dp)
-                                .combinedClickable(
-                                    onClick = { scope.launch { buildEpisodeUrlAndPlay(e) } },
-                                    onLongClick = { removeEpisodeResume(e) }
-                                ),
-                            onClick = { /* handled in combinedClickable */ }
-                        ) {
-                            Column {
-                                AsyncImage(
-                                    model = buildImageRequest(ctx, e.poster, headers),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(if (tv) 200.dp else 160.dp)
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text("S${e.season}E${e.episodeNum}  ${e.title}", maxLines = 2, style = MaterialTheme.typography.bodyMedium)
-                                Text(
-                                    "Fortsetzen ${fmtSecs(e.positionSecs)}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                        }
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
+            ResumeCollapsible {
+                ResumeSectionAuto(
+                    limit = 20,
+                    onPlayVod = { /* TODO: später Navigation/Player */ },
+                    onPlayEpisode = { /* TODO: später Navigation/Player */ },
+                    onClearVod = {},
+                    onClearEpisode = {}
+                )
             }
 
             // Tabs
