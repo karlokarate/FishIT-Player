@@ -43,6 +43,8 @@ object Keys {
     val HEADER_COLLAPSED_LAND = booleanPreferencesKey("header_collapsed_land") // Default in Landscape
     val HEADER_COLLAPSED = booleanPreferencesKey("header_collapsed") // globaler Zustand
     val ROTATION_LOCKED = booleanPreferencesKey("rotation_locked")
+    // UI state
+    val LIBRARY_TAB_INDEX = intPreferencesKey("library_tab_index")
     // Playback extras
     val AUTOPLAY_NEXT = booleanPreferencesKey("autoplay_next")
     val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
@@ -89,6 +91,8 @@ class SettingsStore(private val context: Context) {
         context.dataStore.data.map { it[Keys.HEADER_COLLAPSED] ?: false }
     val rotationLocked: Flow<Boolean> =
         context.dataStore.data.map { it[Keys.ROTATION_LOCKED] ?: false }
+    val libraryTabIndex: Flow<Int> =
+        context.dataStore.data.map { it[Keys.LIBRARY_TAB_INDEX] ?: 0 }
     val autoplayNext: Flow<Boolean> =
         context.dataStore.data.map { it[Keys.AUTOPLAY_NEXT] ?: false }
     val hapticsEnabled: Flow<Boolean> =
@@ -151,6 +155,9 @@ class SettingsStore(private val context: Context) {
     }
     suspend fun setRotationLocked(value: Boolean) {
         context.dataStore.edit { it[Keys.ROTATION_LOCKED] = value }
+    }
+    suspend fun setLibraryTabIndex(value: Int) {
+        context.dataStore.edit { it[Keys.LIBRARY_TAB_INDEX] = value }
     }
     suspend fun setAutoplayNext(value: Boolean) { context.dataStore.edit { it[Keys.AUTOPLAY_NEXT] = value } }
     suspend fun setHapticsEnabled(value: Boolean) { context.dataStore.edit { it[Keys.HAPTICS_ENABLED] = value } }

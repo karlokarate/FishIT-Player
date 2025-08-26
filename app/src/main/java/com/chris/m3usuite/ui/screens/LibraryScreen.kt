@@ -69,7 +69,9 @@ fun LibraryScreen(
     val haptics = LocalHapticFeedback.current
     val hapticsEnabled by store.hapticsEnabled.collectAsState(initial = false)
 
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    val storedTab by store.libraryTabIndex.collectAsState(initial = 0)
+    var tab by rememberSaveable { mutableIntStateOf(storedTab) }
+    LaunchedEffect(storedTab) { if (tab != storedTab) tab = storedTab }
     val tabs = listOf("Live", "VOD", "Series", "Alle")
 
     var searchQuery by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
@@ -78,8 +80,8 @@ fun LibraryScreen(
     var mediaItems by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var categories by remember { mutableStateOf<List<String?>>(emptyList()) }
 
-    // Kategorie-Sheet
-    var showCategorySheet by remember { mutableStateOf(false) }
+    // Filter-/Such-Sheet
+    var showFilters by rememberSaveable { mutableStateOf(false) }
 
     // LiveTV – optionale Unterfilter (Phase 11): Sprache/Provider/Genre/Kids
     val liveProviders = listOf("NF" to listOf("nf", "netflix"), "AMZ" to listOf("amz", "amazon"), "PRMT" to listOf("p ", " p ", "param", "prmt", "paramount"), "DISNEY" to listOf("disney", "d+") )
@@ -235,6 +237,7 @@ fun LibraryScreen(
                         selected = tab == i,
                         onClick = {
                             tab = i
+                            scope.launch { store.setLibraryTabIndex(i) }
                             selectedCategory = null
                             searchQuery = TextFieldValue("")
                             load()
@@ -243,116 +246,7 @@ fun LibraryScreen(
                     )
                 }
             }
-
-            // Suche + Kategorien
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                singleLine = true,
-                label = { Text("Suche (Titel)") },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { submitSearch() }),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                    .onPreviewKeyEvent { ev ->
-                        if (ev.key == Key.Enter && ev.type == KeyEventType.KeyUp) { submitSearch(); true } else false
-                    }
-            )
-
-            // LiveTV – Unterfilter (Deutsch/Kids/Provider/Genre)
-            if (tab == 0) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
-                    val activeFilters = (if (filterGerman) 1 else 0) + (if (filterKids) 1 else 0) + filterProviders.size + filterGenres.size
-                    if (activeFilters > 0) {
-                        AssistChip(onClick = {
-                            filterGerman = false; filterKids = false; filterProviders = emptySet(); filterGenres = emptySet();
-                            scope.launch { store.setLiveFilterGerman(false); store.setLiveFilterKids(false); store.setLiveFilterProvidersCsv(""); store.setLiveFilterGenresCsv("") }
-                            load()
-                        }, label = { Text("Aktive Filter ($activeFilters) – Reset") })
-                        Spacer(Modifier.height(4.dp))
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = filterGerman, onClick = { filterGerman = !filterGerman; scope.launch { store.setLiveFilterGerman(filterGerman) }; load() }, label = { Text("Deutsch") })
-                        FilterChip(selected = filterKids, onClick = { filterKids = !filterKids; scope.launch { store.setLiveFilterKids(filterKids) }; load() }, label = { Text("Kids") })
-                        AssistChip(onClick = {
-                            filterGerman = false; filterKids = false; filterProviders = emptySet(); filterGenres = emptySet();
-                            scope.launch { store.setLiveFilterGerman(false); store.setLiveFilterKids(false); store.setLiveFilterProvidersCsv(""); store.setLiveFilterGenresCsv("") }
-                            load()
-                        }, label = { Text("Filter zurücksetzen") })
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    // Provider (with small provider icon taken from first matching channel poster/logo)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        liveProviders.forEach { (key, _) ->
-                            val sel = key in filterProviders
-                            FilterChip(
-                                selected = sel,
-                                onClick = {
-                                    filterProviders = if (sel) filterProviders - key else filterProviders + key
-                                    scope.launch { store.setLiveFilterProvidersCsv(filterProviders.joinToString(",")) }
-                                    load()
-                                },
-                                label = { Text(key) },
-                                leadingIcon = {
-                                    val sample = mediaItems.firstOrNull { hasProvider(it, key) }
-                                    val url = sample?.logo ?: sample?.poster
-                                    if (url != null) {
-                                        AsyncImage(
-                                            model = buildImageRequest(ctx, url, headers),
-                                            contentDescription = "Provider $key",
-                                            modifier = Modifier.size(18.dp),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    } else {
-                                        Icon(painterResource(android.R.drawable.ic_menu_info_details), contentDescription = "Provider $key")
-                                    }
-                                }
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    // Genres
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        liveGenres.forEach { g ->
-                            val sel = g in filterGenres
-                            FilterChip(selected = sel, onClick = {
-                                filterGenres = if (sel) filterGenres - g else filterGenres + g
-                                scope.launch { store.setLiveFilterGenresCsv(filterGenres.joinToString(",")) }
-                                load()
-                            }, label = { Text(g) })
-                        }
-                    }
-                    Spacer(Modifier.height(6.dp))
-                }
-            }
-
-            if (tab in 0..2 && categories.isNotEmpty()) {
-                // Schnellwahl: alle Kategorien horizontal scrollbar
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AssistChip(onClick = { selectedCategory = null; load() }, label = { Text("Alle") })
-                    AssistChip(onClick = { showCategorySheet = true }, label = { Text("Alle Kategorien…") })
-                }
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listItems(categories) { cat ->
-                        FilterChip(
-                            selected = selectedCategory == cat,
-                            onClick = { selectedCategory = cat; load() },
-                            label = { Text(cat ?: "Unbekannt") }
-                        )
-                    }
-                }
-                Spacer(Modifier.height(6.dp))
-            }
+            // Inline-Suche/Filter/Kategorien sind zugunsten eines Sheets deaktiviert
 
             // Content: Grid oder Liste – bekommt die restliche Höhe
             val useGrid = tab != 0 || tv
@@ -400,6 +294,99 @@ fun LibraryScreen(
                             } else openLive(id)
                         }
                     )
+                }
+            }
+
+            // FAB zum Öffnen der Filter-/Suche
+            Box(Modifier.fillMaxWidth()) {
+                FloatingActionButton(onClick = { showFilters = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+                    Icon(painterResource(android.R.drawable.ic_menu_search), contentDescription = "Filter & Suche")
+                }
+            }
+        }
+    }
+
+    // Overlay-Sheet für Suche/Filter/Kategorien
+    if (showFilters) {
+        ModalBottomSheet(onDismissRequest = { showFilters = false }) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Suche & Filter", style = MaterialTheme.typography.titleMedium)
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    singleLine = true,
+                    label = { Text("Suche (Titel)") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { submitSearch(); showFilters = false }),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (tab == 0) {
+                    val activeFilters = (if (filterGerman) 1 else 0) + (if (filterKids) 1 else 0) + filterProviders.size + filterGenres.size
+                    if (activeFilters > 0) {
+                        AssistChip(onClick = {
+                            filterGerman = false; filterKids = false; filterProviders = emptySet(); filterGenres = emptySet();
+                            scope.launch { store.setLiveFilterGerman(false); store.setLiveFilterKids(false); store.setLiveFilterProvidersCsv(""); store.setLiveFilterGenresCsv("") }
+                            load()
+                        }, label = { Text("Aktive Filter ($activeFilters) – Reset") })
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(selected = filterGerman, onClick = { filterGerman = !filterGerman; scope.launch { store.setLiveFilterGerman(filterGerman) }; load() }, label = { Text("Deutsch") })
+                        FilterChip(selected = filterKids, onClick = { filterKids = !filterKids; scope.launch { store.setLiveFilterKids(filterKids) }; load() }, label = { Text("Kids") })
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        liveProviders.forEach { (key, _) ->
+                            val sel = key in filterProviders
+                            FilterChip(
+                                selected = sel,
+                                onClick = {
+                                    filterProviders = if (sel) filterProviders - key else filterProviders + key
+                                    scope.launch { store.setLiveFilterProvidersCsv(filterProviders.joinToString(",")) }
+                                    load()
+                                },
+                                label = { Text(key) },
+                                leadingIcon = {
+                                    val sample = mediaItems.firstOrNull { hasProvider(it, key) }
+                                    val url = sample?.logo ?: sample?.poster
+                                    if (url != null) {
+                                        AsyncImage(
+                                            model = buildImageRequest(ctx, url, headers),
+                                            contentDescription = "Provider $key",
+                                            modifier = Modifier.size(18.dp),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Icon(painterResource(android.R.drawable.ic_menu_info_details), contentDescription = "Provider $key")
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        liveGenres.forEach { g ->
+                            val sel = g in filterGenres
+                            FilterChip(selected = sel, onClick = {
+                                filterGenres = if (sel) filterGenres - g else filterGenres + g
+                                scope.launch { store.setLiveFilterGenresCsv(filterGenres.joinToString(",")) }
+                                load()
+                            }, label = { Text(g) })
+                        }
+                    }
+                }
+                if (tab in 0..2) {
+                    Text("Kategorien", style = MaterialTheme.typography.titleSmall)
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item { AssistChip(onClick = { selectedCategory = null; load() }, label = { Text("Alle") }) }
+                        listItems(categories) { cat ->
+                            FilterChip(
+                                selected = selectedCategory == cat,
+                                onClick = { selectedCategory = cat; load() },
+                                label = { Text(cat ?: "Unbekannt") }
+                            )
+                        }
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.align(Alignment.End)) {
+                    TextButton(onClick = { showFilters = false }) { Text("Schließen") }
                 }
             }
         }
