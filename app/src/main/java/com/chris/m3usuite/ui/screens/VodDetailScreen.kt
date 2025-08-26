@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -26,7 +27,14 @@ import kotlin.math.max
 import coil3.request.ImageRequest
 import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
+import com.chris.m3usuite.data.repo.KidContentRepository
+import com.chris.m3usuite.data.db.Profile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VodDetailScreen(
     id: Long,
@@ -39,6 +47,10 @@ fun VodDetailScreen(
     val db: AppDatabase = remember { DbProvider.get(ctx) }
     val repo: XtreamRepository = remember { XtreamRepository(ctx, SettingsStore(ctx)) }
     val scope = rememberCoroutineScope()
+    val kidRepo = remember { KidContentRepository(ctx) }
+    val store = remember { SettingsStore(ctx) }
+    val haptics = LocalHapticFeedback.current
+    val hapticsEnabled by store.hapticsEnabled.collectAsState(initial = false)
 
     var title by remember { mutableStateOf("") }
     var poster by remember { mutableStateOf<String?>(null) }
@@ -100,11 +112,44 @@ fun VodDetailScreen(
             scope.launch {
                 PlayerChooser.start(
                     context = ctx,
-                    store = SettingsStore(ctx),
+                    store = store,
                     url = u,
                     headers = emptyMap(),
                     startPositionMs = startMs
                 ) { s -> openInternal?.invoke(u, s) ?: ExternalPlayer.open(context = ctx, url = u, startPositionMs = s) }
+            }
+        }
+    }
+
+    // Adult
+    val profileId by store.currentProfileId.collectAsState(initial = -1L)
+    var isAdult by remember { mutableStateOf(true) }
+    LaunchedEffect(profileId) { isAdult = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(profileId)?.type != "kid" } }
+
+    var showGrantSheet by remember { mutableStateOf(false) }
+    var showRevokeSheet by remember { mutableStateOf(false) }
+
+    @Composable
+    fun KidSelectSheet(onConfirm: suspend (kidIds: List<Long>) -> Unit, onDismiss: () -> Unit) {
+        var kids by remember { mutableStateOf<List<Profile>>(emptyList()) }
+        LaunchedEffect(profileId) { kids = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().all().filter { it.type == "kid" } } }
+        var checked by remember { mutableStateOf(setOf<Long>()) }
+        ModalBottomSheet(onDismissRequest = onDismiss) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Kinder auswählen")
+                Spacer(Modifier.height(8.dp))
+                kids.forEach { k ->
+                    val isC = k.id in checked
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(k.name)
+                        Switch(checked = isC, onCheckedChange = { v -> checked = if (v) checked + k.id else checked - k.id })
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onDismiss) { Text("Abbrechen") }
+                    Button(onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty()) { Text("OK") }
+                }
             }
         }
     }
@@ -148,9 +193,14 @@ fun VodDetailScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            Row(Modifier.fillMaxWidth()) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 rating?.let { Text("★ ${"%.1f".format(it)}  ") }
                 duration?.let { Text("• ${it / 60} min") }
+                Spacer(Modifier.weight(1f))
+                if (isAdult) {
+                    TextButton(onClick = { showGrantSheet = true }) { Text("Für Kind(er) freigeben…") }
+                    TextButton(onClick = { showRevokeSheet = true }) { Text("Aus Kinderprofil entfernen…") }
+                }
             }
 
             Spacer(Modifier.height(10.dp))
@@ -188,6 +238,15 @@ fun VodDetailScreen(
             )
         }
     }
+
+    if (showGrantSheet) KidSelectSheet(onConfirm = { kidIds ->
+        scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.allowBulk(it, "vod", listOf(id)) } }
+        showGrantSheet = false
+    }, onDismiss = { showGrantSheet = false })
+    if (showRevokeSheet) KidSelectSheet(onConfirm = { kidIds ->
+        scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.disallowBulk(it, "vod", listOf(id)) } }
+        showRevokeSheet = false
+    }, onDismiss = { showRevokeSheet = false })
 }
 
 private fun fmt(totalSecs: Int): String {

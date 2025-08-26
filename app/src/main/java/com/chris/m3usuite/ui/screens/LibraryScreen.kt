@@ -46,6 +46,8 @@ import androidx.navigation.NavHostController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.data.db.Profile
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -64,6 +66,8 @@ fun LibraryScreen(
     val tv = isTv(ctx)
     val focus = LocalFocusManager.current
     val headers = rememberImageHeaders()
+    val haptics = LocalHapticFeedback.current
+    val hapticsEnabled by store.hapticsEnabled.collectAsState(initial = false)
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val tabs = listOf("Live", "VOD", "Series", "Alle")
@@ -338,6 +342,7 @@ fun LibraryScreen(
                             if (selectionMode) {
                                 val key = mi.id to mi.type
                                 selected = if (key in selected) selected - key else selected + key
+                                if (hapticsEnabled) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             } else {
                                 when (mi.type) {
                                     "live" -> openLive(mi.id)
@@ -362,6 +367,7 @@ fun LibraryScreen(
                             if (selectionMode) {
                                 val key = id to "live"
                                 selected = if (key in selected) selected - key else selected + key
+                                if (hapticsEnabled) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             } else openLive(id)
                         }
                     )

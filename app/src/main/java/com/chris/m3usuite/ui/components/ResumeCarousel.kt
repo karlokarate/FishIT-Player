@@ -31,6 +31,10 @@ import com.chris.m3usuite.data.db.ResumeVodView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.chris.m3usuite.prefs.SettingsStore
+import kotlinx.coroutines.flow.first
 
 // resume-ui: Phase 3 – Resume-Karusselle (ohne Bilder), Material (nicht Material3)
 
@@ -71,6 +75,7 @@ fun ResumeSectionAuto(
     }
 
     val scope = rememberCoroutineScope()
+    // rows keep simple; haptics handled inside ResumeCard per onLongClick
 
     Column(modifier = Modifier.fillMaxWidth()) {
         if (chooserItem != null) {
@@ -210,11 +215,18 @@ private fun ResumeCard(
     onPlay: () -> Unit,
     onClear: () -> Unit
 ) {
+    val ctx = LocalContext.current
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    var hEnabled by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { hEnabled = SettingsStore(ctx).hapticsEnabled.first() }
     Card(
         modifier = Modifier
             .width(200.dp)
             .height(140.dp)
-            .combinedClickable(onClick = onPlay, onLongClick = onClear)
+            .combinedClickable(onClick = onPlay, onLongClick = {
+                if (hEnabled) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClear()
+            })
     ) {
         Column(
             modifier = Modifier
