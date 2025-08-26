@@ -55,6 +55,7 @@ fun SettingsScreen(
     val epg by store.epgUrl.collectAsState(initial = "")
     val ua by store.userAgent.collectAsState(initial = "IBOPlayer/1.4 (Android)")
     val referer by store.referer.collectAsState(initial = "")
+    var pinDialogMode by remember { mutableStateOf<PinMode?>(null) }
 
     Scaffold(
         topBar = {
@@ -186,12 +187,12 @@ fun SettingsScreen(
             Text("App-PIN", style = MaterialTheme.typography.titleMedium)
             if (!pinSet) {
                 Text("Es ist kein PIN gesetzt.")
-                Button(onClick = { showPinDialog(store = store, mode = PinMode.Set) }) { Text("PIN festlegen…") }
+                Button(onClick = { pinDialogMode = PinMode.Set }) { Text("PIN festlegen…") }
             } else {
                 Text("PIN ist gesetzt.")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { showPinDialog(store = store, mode = PinMode.Change) }) { Text("PIN ändern…") }
-                    TextButton(onClick = { showPinDialog(store = store, mode = PinMode.Clear) }) { Text("PIN entfernen") }
+                    Button(onClick = { pinDialogMode = PinMode.Change }) { Text("PIN ändern…") }
+                    TextButton(onClick = { pinDialogMode = PinMode.Clear }) { Text("PIN entfernen") }
                 }
             }
 
@@ -275,6 +276,12 @@ fun SettingsScreen(
             }
         }
     }
+
+    // PIN Dialog host
+    val mode = pinDialogMode
+    if (mode != null) {
+        showPinDialog(store = store, mode = mode) { pinDialogMode = null }
+    }
 }
 
 // --- External Player Picker UI ---
@@ -308,14 +315,14 @@ private fun ExternalPlayerPickerButton(onPick: (String) -> Unit) {
 private enum class PinMode { Set, Change, Clear }
 
 @Composable
-private fun showPinDialog(store: SettingsStore, mode: PinMode) {
+private fun showPinDialog(store: SettingsStore, mode: PinMode, onDismissed: () -> Unit) {
     var open by rememberSaveable { mutableStateOf(true) }
     var pin by remember { mutableStateOf("") }
     var pin2 by remember { mutableStateOf("") }
     var old by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    if (!open) return
+    if (!open) { onDismissed(); return }
     AlertDialog(
         onDismissRequest = { open = false },
         title = { Text(when (mode) { PinMode.Set -> "PIN festlegen"; PinMode.Change -> "PIN ändern"; PinMode.Clear -> "PIN entfernen" }) },
