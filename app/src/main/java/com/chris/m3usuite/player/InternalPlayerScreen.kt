@@ -327,47 +327,7 @@ fun InternalPlayerScreen(
         }
     )
 }
-
-private fun saveResume(
-    db: AppDatabase,
-    type: String,
-    mediaId: Long?,
-    episodeId: Int?,
-    posMs: Long
-) {
-    if (type == "live") return // Live nicht persistieren
-    val pos = (posMs / 1000).toInt().coerceAtLeast(0)
-    when {
-        type == "vod" && mediaId != null -> {
-            runBlocking {
-                db.resumeDao().upsert(
-                    ResumeMark(
-                        type = "vod",
-                        mediaId = mediaId,
-                        episodeId = null,
-                        positionSecs = pos,
-                        updatedAt = System.currentTimeMillis()
-                    )
-                )
-            }
-        }
-        type == "series" && episodeId != null -> {
-            runBlocking {
-                db.resumeDao().upsert(
-                    ResumeMark(
-                        type = "series",
-                        mediaId = null,
-                        episodeId = episodeId,
-                        positionSecs = pos,
-                        updatedAt = System.currentTimeMillis()
-                    )
-                )
-            }
-        }
-        else -> Unit
-    }
-}
-
+// helper: apply opacity to ARGB color
 private fun withOpacity(argb: Int, percent: Int): Int {
     val p = percent.coerceIn(0, 100)
     val a = (p / 100f * 255f).toInt().coerceIn(0, 255)
