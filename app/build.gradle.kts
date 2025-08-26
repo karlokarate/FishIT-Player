@@ -59,6 +59,7 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.8.5")
 
     implementation("androidx.compose.ui:ui:$compose")
+    implementation("androidx.compose.material:material:$compose")
     implementation("androidx.compose.material3:material3:1.3.1")
     implementation("androidx.compose.ui:ui-tooling-preview:$compose")
     debugImplementation("androidx.compose.ui:ui-tooling:$compose")

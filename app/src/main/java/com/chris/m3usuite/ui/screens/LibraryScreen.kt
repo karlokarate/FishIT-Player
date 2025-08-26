@@ -37,10 +37,12 @@ import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 import com.chris.m3usuite.ui.components.ResumeSectionAuto
 import com.chris.m3usuite.ui.components.CollapsibleHeader
+import androidx.navigation.NavHostController
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun LibraryScreen(
+    navController: NavHostController,
     openLive: (Long) -> Unit,
     openVod: (Long) -> Unit,
     openSeries: (Long) -> Unit
@@ -109,6 +111,7 @@ fun LibraryScreen(
 
             ResumeCollapsible {
                 ResumeSectionAuto(
+                    navController = navController,
                     limit = 20,
                     onPlayVod = { /* TODO: später Navigation/Player */ },
                     onPlayEpisode = { /* TODO: später Navigation/Player */ },
