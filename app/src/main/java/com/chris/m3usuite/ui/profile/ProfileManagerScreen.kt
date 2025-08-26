@@ -50,7 +50,7 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                 }
             }, enabled = newKidName.isNotBlank()) { Text("Anlegen") }
 
-            Divider()
+            HorizontalDivider()
 
             LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                 items(kids, key = { it.id }) { kid ->

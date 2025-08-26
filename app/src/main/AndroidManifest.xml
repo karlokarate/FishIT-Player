@@ -22,7 +22,8 @@
             android:name=".MainActivity"
             android:exported="true"
             android:resizeableActivity="true"
-            android:supportsPictureInPicture="false">
+            android:supportsPictureInPicture="false"
+            android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|uiMode">
 
             <!-- Phone Launcher -->
             <intent-filter>

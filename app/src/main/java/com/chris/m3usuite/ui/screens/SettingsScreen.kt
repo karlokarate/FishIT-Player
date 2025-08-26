@@ -72,7 +72,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Divider()
+            HorizontalDivider()
 
             Text("Untertitel (interner Player)", style = MaterialTheme.typography.titleMedium)
             Text("Größe")
@@ -124,7 +124,7 @@ fun SettingsScreen(
                 }
             }
 
-            Divider()
+            HorizontalDivider()
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Landscape: Header standardmäßig eingeklappt", modifier = Modifier.weight(1f))
@@ -140,7 +140,7 @@ fun SettingsScreen(
                 })
             }
 
-            Divider()
+            HorizontalDivider()
             Text("Wiedergabe", style = MaterialTheme.typography.titleMedium)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Autoplay nächste Folge (Serie)", modifier = Modifier.weight(1f))
