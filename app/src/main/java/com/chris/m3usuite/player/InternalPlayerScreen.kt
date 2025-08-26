@@ -20,6 +20,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -39,6 +40,7 @@ import androidx.media3.ui.CaptionStyleCompat
 import com.chris.m3usuite.data.db.AppDatabase
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.ResumeMark
+import com.chris.m3usuite.data.repo.ScreenTimeRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -46,6 +48,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 
 /**
  * Interner Player (Media3) mit:
@@ -72,6 +78,7 @@ fun InternalPlayerScreen(
 
     val db: AppDatabase = remember(ctx) { DbProvider.get(ctx) }
     val store = remember(ctx) { SettingsStore(ctx) }
+    val screenTimeRepo = remember(ctx) { ScreenTimeRepository(ctx) }
 
     // Settings (Untertitel)
     val subScale by store.subtitleScale.collectAsState(initial = 0.06f)
@@ -101,9 +108,34 @@ fun InternalPlayerScreen(
             .apply {
                 setMediaItem(MediaItem.fromUri(url))
                 prepare()
-                playWhenReady = true
+                playWhenReady = false // Phase 4: erst nach Screen-Time-Check starten
                 startPositionMs?.let { seekTo(it) }
             }
+    }
+
+    // Phase 4: Kid-Profil + Screen-Time-Gate vor Start
+    var kidBlocked by remember { mutableStateOf(false) }
+    var kidActive by remember { mutableStateOf(false) }
+    var kidIdState by remember { mutableStateOf<Long?>(null) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val id = store.currentProfileId.first()
+            if (id > 0) {
+                val prof = withContext(Dispatchers.IO) { db.profileDao().byId(id) }
+                kidActive = prof?.type == "kid"
+                kidIdState = if (kidActive) id else null
+            }
+            if (kidActive) {
+                val remain = screenTimeRepo.remainingMinutes(kidIdState!!)
+                kidBlocked = remain <= 0
+            }
+            if (!kidBlocked) {
+                exoPlayer.playWhenReady = true
+            }
+        } catch (_: Throwable) {
+            exoPlayer.playWhenReady = true
+        }
     }
 
     // resume: load (seek to saved position if available and >10s)
@@ -189,8 +221,9 @@ fun InternalPlayerScreen(
         }
     }
 
-    // resume: save/clear periodically (~3s)
+    // resume: save/clear periodically (~3s) + Phase 4: Screen-Time tick (Kids)
     LaunchedEffect(url, type, mediaId, episodeId, exoPlayer) {
+        var tickAccum = 0
         while (isActive) {
             try {
                 if ((type == "vod" && mediaId != null) || (type == "series" && episodeId != null)) {
@@ -216,6 +249,27 @@ fun InternalPlayerScreen(
                             dao.upsert(mark)
                         }
                     }
+                }
+
+                // Screen-Time: alle 60s Verbrauch ticken und Limit prüfen (nur Kids)
+                if (kidActive && exoPlayer.playWhenReady && exoPlayer.isPlaying) {
+                    tickAccum += 3
+                    if (tickAccum >= 60) {
+                        val kidId = kidIdState
+                        if (kidId != null) {
+                            screenTimeRepo.tickUsageIfPlaying(kidId, tickAccum)
+                            tickAccum = 0
+                            val remain = screenTimeRepo.remainingMinutes(kidId)
+                            if (remain <= 0) {
+                                exoPlayer.playWhenReady = false
+                                kidBlocked = true
+                            }
+                        } else {
+                            tickAccum = 0
+                        }
+                    }
+                } else {
+                    tickAccum = 0
                 }
             } catch (_: Throwable) {
             }
@@ -323,6 +377,17 @@ fun InternalPlayerScreen(
                         view.setControllerShowTimeoutMs(3000)
                     }
                 )
+
+                if (kidBlocked && kidActive) {
+                    AlertDialog(
+                        onDismissRequest = { /* block */ },
+                        title = { Text("Limit erreicht") },
+                        text = { Text("Das Screen-Time-Limit für heute ist aufgebraucht.") },
+                        confirmButton = {
+                            TextButton(onClick = { finishAndRelease() }) { Text("OK") }
+                        }
+                    )
+                }
             }
         }
     )
