@@ -48,6 +48,8 @@ object Keys {
     // Playback extras
     val AUTOPLAY_NEXT = booleanPreferencesKey("autoplay_next")
     val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
+    // Profile/Gate behavior
+    val REMEMBER_LAST_PROFILE = booleanPreferencesKey("remember_last_profile")
 
     // Live filters (persist UI state)
     val LIVE_FILTER_GERMAN = booleanPreferencesKey("live_filter_german")
@@ -109,6 +111,8 @@ class SettingsStore(private val context: Context) {
         context.dataStore.data.map { it[Keys.ADULT_PIN_SET] ?: false }
     val adultPinHash: Flow<String> =
         context.dataStore.data.map { it[Keys.ADULT_PIN_HASH].orEmpty() }
+    val rememberLastProfile: Flow<Boolean> =
+        context.dataStore.data.map { it[Keys.REMEMBER_LAST_PROFILE] ?: true }
 
     // -------- Setzen --------
     suspend fun set(key: Preferences.Key<String>, value: String) {
@@ -173,6 +177,9 @@ class SettingsStore(private val context: Context) {
     }
     suspend fun setAdultPinHash(hash: String) {
         context.dataStore.edit { it[Keys.ADULT_PIN_HASH] = hash }
+    }
+    suspend fun setRememberLastProfile(value: Boolean) {
+        context.dataStore.edit { it[Keys.REMEMBER_LAST_PROFILE] = value }
     }
 
     // -------- Optional: direktes Abfragen --------

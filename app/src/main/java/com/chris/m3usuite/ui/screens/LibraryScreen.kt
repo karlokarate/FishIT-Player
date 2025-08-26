@@ -82,6 +82,8 @@ fun LibraryScreen(
 
     // Filter-/Such-Sheet
     var showFilters by rememberSaveable { mutableStateOf(false) }
+    // Kategorien-Sheet (vollständige Liste)
+    var showCategorySheet by rememberSaveable { mutableStateOf(false) }
 
     // LiveTV – optionale Unterfilter (Phase 11): Sprache/Provider/Genre/Kids
     val liveProviders = listOf("NF" to listOf("nf", "netflix"), "AMZ" to listOf("amz", "amazon"), "PRMT" to listOf("p ", " p ", "param", "prmt", "paramount"), "DISNEY" to listOf("disney", "d+") )
@@ -165,10 +167,10 @@ fun LibraryScreen(
     // Adult-only: Settings sichtbar, Kids versteckt; Selection-Mode für Freigaben (nur Adult)
     val profileId by store.currentProfileId.collectAsState(initial = -1L)
     var showSettings by remember { mutableStateOf(true) }
-    var selectionMode by remember { mutableStateOf(false) }
+    var selectionMode by rememberSaveable { mutableStateOf(false) }
     var selected by remember { mutableStateOf(setOf<Pair<Long, String>>()) }
-    var showGrantSheet by remember { mutableStateOf(false) }
-    var showRevokeSheet by remember { mutableStateOf(false) }
+    var showGrantSheet by rememberSaveable { mutableStateOf(false) }
+    var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(profileId) {
         val prof = db.profileDao().byId(profileId)
         showSettings = prof?.type != "kid"
@@ -322,53 +324,88 @@ fun LibraryScreen(
                 )
                 if (tab == 0) {
                     val activeFilters = (if (filterGerman) 1 else 0) + (if (filterKids) 1 else 0) + filterProviders.size + filterGenres.size
-                    if (activeFilters > 0) {
-                        AssistChip(onClick = {
-                            filterGerman = false; filterKids = false; filterProviders = emptySet(); filterGenres = emptySet();
-                            scope.launch { store.setLiveFilterGerman(false); store.setLiveFilterKids(false); store.setLiveFilterProvidersCsv(""); store.setLiveFilterGenresCsv("") }
-                            load()
-                        }, label = { Text("Aktive Filter ($activeFilters) – Reset") })
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = filterGerman, onClick = { filterGerman = !filterGerman; scope.launch { store.setLiveFilterGerman(filterGerman) }; load() }, label = { Text("Deutsch") })
-                        FilterChip(selected = filterKids, onClick = { filterKids = !filterKids; scope.launch { store.setLiveFilterKids(filterKids) }; load() }, label = { Text("Kids") })
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        liveProviders.forEach { (key, _) ->
-                            val sel = key in filterProviders
-                            FilterChip(
-                                selected = sel,
-                                onClick = {
-                                    filterProviders = if (sel) filterProviders - key else filterProviders + key
-                                    scope.launch { store.setLiveFilterProvidersCsv(filterProviders.joinToString(",")) }
-                                    load()
-                                },
-                                label = { Text(key) },
-                                leadingIcon = {
-                                    val sample = mediaItems.firstOrNull { hasProvider(it, key) }
-                                    val url = sample?.logo ?: sample?.poster
-                                    if (url != null) {
-                                        AsyncImage(
-                                            model = buildImageRequest(ctx, url, headers),
-                                            contentDescription = "Provider $key",
-                                            modifier = Modifier.size(18.dp),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    } else {
-                                        Icon(painterResource(android.R.drawable.ic_menu_info_details), contentDescription = "Provider $key")
-                                    }
-                                }
+                    var filtersExpanded by rememberSaveable { mutableStateOf(false) }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        BadgedBox(badge = {
+                            if (activeFilters > 0) Badge { Text(activeFilters.toString()) }
+                        }) {
+                            AssistChip(
+                                onClick = { filtersExpanded = !filtersExpanded },
+                                label = { Text(if (filtersExpanded) "Filter ausblenden" else "Filter anzeigen") },
+                                leadingIcon = { Icon(painterResource(android.R.drawable.ic_menu_manage), contentDescription = "Filter") }
                             )
                         }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        liveGenres.forEach { g ->
-                            val sel = g in filterGenres
-                            FilterChip(selected = sel, onClick = {
-                                filterGenres = if (sel) filterGenres - g else filterGenres + g
-                                scope.launch { store.setLiveFilterGenresCsv(filterGenres.joinToString(",")) }
+                        TextButton(
+                            onClick = {
+                                filterGerman = false; filterKids = false; filterProviders = emptySet(); filterGenres = emptySet()
+                                scope.launch {
+                                    store.setLiveFilterGerman(false)
+                                    store.setLiveFilterKids(false)
+                                    store.setLiveFilterProvidersCsv("")
+                                    store.setLiveFilterGenresCsv("")
+                                }
                                 load()
-                            }, label = { Text(g) })
+                            },
+                            enabled = activeFilters > 0
+                        ) { Text("Reset") }
+                    }
+                    if (filtersExpanded) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = filterGerman,
+                                onClick = { filterGerman = !filterGerman; scope.launch { store.setLiveFilterGerman(filterGerman) }; load() },
+                                label = { Text("Deutsch") }
+                            )
+                            FilterChip(
+                                selected = filterKids,
+                                onClick = { filterKids = !filterKids; scope.launch { store.setLiveFilterKids(filterKids) }; load() },
+                                label = { Text("Kids") }
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            liveProviders.forEach { (key, _) ->
+                                val sel = key in filterProviders
+                                FilterChip(
+                                    selected = sel,
+                                    onClick = {
+                                        filterProviders = if (sel) filterProviders - key else filterProviders + key
+                                        scope.launch { store.setLiveFilterProvidersCsv(filterProviders.joinToString(",")) }
+                                        load()
+                                    },
+                                    label = { Text(key) },
+                                    leadingIcon = {
+                                        val sample = mediaItems.firstOrNull { hasProvider(it, key) }
+                                        val url = sample?.logo ?: sample?.poster
+                                        if (url != null) {
+                                            AsyncImage(
+                                                model = buildImageRequest(ctx, url, headers),
+                                                contentDescription = "Provider $key",
+                                                modifier = Modifier.size(18.dp),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        } else {
+                                            Icon(painterResource(android.R.drawable.ic_menu_info_details), contentDescription = "Provider $key")
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            liveGenres.forEach { g ->
+                                val sel = g in filterGenres
+                                FilterChip(
+                                    selected = sel,
+                                    onClick = {
+                                        filterGenres = if (sel) filterGenres - g else filterGenres + g
+                                        scope.launch { store.setLiveFilterGenresCsv(filterGenres.joinToString(",")) }
+                                        load()
+                                    },
+                                    label = { Text(g) }
+                                )
+                            }
                         }
                     }
                 }

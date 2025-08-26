@@ -166,7 +166,16 @@ class MainActivity : ComponentActivity() {
                                 nav.popBackStack()
                             }
                         }
-                        SettingsScreen(store = store, onBack = { nav.popBackStack() }, onOpenProfiles = { nav.navigate("profiles") })
+                        SettingsScreen(
+                            store = store,
+                            onBack = { nav.popBackStack() },
+                            onOpenProfiles = { nav.navigate("profiles") },
+                            onOpenGate = {
+                                nav.navigate("gate") {
+                                    popUpTo("library") { inclusive = false }
+                                }
+                            }
+                        )
                     }
 
                     composable("profiles") {

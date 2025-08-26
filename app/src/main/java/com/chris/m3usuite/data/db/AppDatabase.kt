@@ -54,12 +54,12 @@ object DbProvider {
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
-                        trySeedAdultProfile(db, ctx)
+                        trySeedAdultProfile(db)
                     }
                     override fun onOpen(db: SupportSQLiteDatabase) {
                         super.onOpen(db)
                         // Idempotent: Wenn keine Profile existieren (z. B. nach leerer Migration), Adult anlegen
-                        trySeedAdultProfile(db, ctx)
+                        trySeedAdultProfile(db)
                     }
                 })
                 .build()
@@ -127,7 +127,7 @@ object DbProvider {
     }
 
     // --- Seeding: Adult-Profil + optional current_profile_id setzen (best effort) ---
-    private fun trySeedAdultProfile(db: SupportSQLiteDatabase, ctx: Context) {
+    private fun trySeedAdultProfile(db: SupportSQLiteDatabase) {
         try {
             val c = db.query("SELECT COUNT(*) FROM profiles")
             var count = 0L
@@ -141,22 +141,6 @@ object DbProvider {
                     "INSERT INTO profiles(name, type, avatarPath, createdAt, updatedAt) VALUES(?,?,?,?,?)",
                     arrayOf("Adult", "adult", null, now, now)
                 )
-                val idCursor = db.query("SELECT id FROM profiles WHERE type='adult' ORDER BY id ASC LIMIT 1")
-                var adultId = -1L
-                if (idCursor.moveToFirst()) {
-                    adultId = idCursor.getLong(0)
-                }
-                idCursor.close()
-                if (adultId > 0) {
-                    // Optional: current_profile_id setzen, falls noch nicht gesetzt
-                    runBlocking {
-                        val store = SettingsStore(ctx)
-                        val current = store.currentProfileId.first()
-                        if (current <= 0L) {
-                            store.setCurrentProfileId(adultId)
-                        }
-                    }
-                }
             }
         } catch (t: Throwable) {
             Log.w("DbProvider", "Seeding skipped/failed: ${t.message}")

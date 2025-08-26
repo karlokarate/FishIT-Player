@@ -17,6 +17,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import java.security.MessageDigest
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 
 @Composable
 fun ProfileGate(
@@ -42,9 +46,10 @@ fun ProfileGate(
         val list = withContext(Dispatchers.IO) { db.profileDao().all() }
         adult = list.firstOrNull { it.type == "adult" }
         kids = list.filter { it.type == "kid" }
-        // if a current profile is set, skip gate
+        // Skip only if user opted in to remember last profile
+        val remember = store.rememberLastProfile.first()
         val cur = store.currentProfileId.first()
-        if (cur > 0) onEnter()
+        if (remember && cur > 0) onEnter()
     }
 
     fun sha256(s: String): String {
@@ -107,7 +112,23 @@ fun ProfileGate(
             items(kids, key = { it.id }) { k ->
                 OutlinedCard(Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable {
                     scope.launch { store.setCurrentProfileId(k.id); onEnter() }
-                }) { ListItem(headlineContent = { Text(k.name) }, supportingContent = { Text("Kinderprofil") }) }
+                }) {
+                    ListItem(
+                        headlineContent = { Text(k.name) },
+                        supportingContent = { Text("Kinderprofil") },
+                        leadingContent = {
+                            if (!k.avatarPath.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(ctx).data(k.avatarPath).build(),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(40.dp).clip(CircleShape)
+                                )
+                            } else {
+                                Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
+                            }
+                        }
+                    )
+                }
             }
         }
     }

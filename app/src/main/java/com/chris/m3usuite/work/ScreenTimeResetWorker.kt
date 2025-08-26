@@ -2,9 +2,12 @@ package com.chris.m3usuite.work
 
 import android.content.Context
 import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import androidx.work.WorkerParameters
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.repo.ScreenTimeRepository
@@ -17,6 +20,8 @@ class ScreenTimeResetWorker(appContext: Context, params: WorkerParameters): Coro
             val kids = db.profileDao().all().filter { it.type == "kid" }
             val repo = ScreenTimeRepository(applicationContext)
             kids.forEach { kid -> repo.resetToday(kid.id) }
+            // re-schedule next run at next midnight
+            schedule(applicationContext)
             Result.success()
         } catch (t: Throwable) {
             Result.retry()
@@ -24,12 +29,16 @@ class ScreenTimeResetWorker(appContext: Context, params: WorkerParameters): Coro
     }
 
     companion object {
-        private const val UNIQUE = "screen_time_daily_reset"
+        private const val UNIQUE_ONE = "screen_time_daily_reset_once"
         fun schedule(ctx: Context) {
-            val req = PeriodicWorkRequestBuilder<ScreenTimeResetWorker>(24, TimeUnit.HOURS)
+            // schedule one-time run at next local midnight, then re-schedule from within doWork
+            val now = LocalDateTime.now()
+            val nextMidnight = now.plusDays(1).truncatedTo(ChronoUnit.DAYS)
+            val delay = java.time.Duration.between(now, nextMidnight).toMillis().coerceAtLeast(1000L)
+            val req = OneTimeWorkRequestBuilder<ScreenTimeResetWorker>()
+                .setInitialDelay(delay, TimeUnit.MILLISECONDS)
                 .build()
-            WorkManager.getInstance(ctx).enqueueUniquePeriodicWork(UNIQUE, ExistingPeriodicWorkPolicy.UPDATE, req)
+            WorkManager.getInstance(ctx).enqueueUniqueWork(UNIQUE_ONE, ExistingWorkPolicy.REPLACE, req)
         }
     }
 }
-

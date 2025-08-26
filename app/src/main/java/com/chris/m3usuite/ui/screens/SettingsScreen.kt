@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,16 +19,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     store: SettingsStore,
     onBack: () -> Unit,
-    onOpenProfiles: (() -> Unit)? = null
+    onOpenProfiles: (() -> Unit)? = null,
+    onOpenGate: (() -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     val mode by store.playerMode.collectAsState(initial = "ask")
@@ -40,6 +45,8 @@ fun SettingsScreen(
     val rotationLocked by store.rotationLocked.collectAsState(initial = false)
     val autoplayNext by store.autoplayNext.collectAsState(initial = false)
     val hapticsEnabled by store.hapticsEnabled.collectAsState(initial = false)
+    val rememberLast by store.rememberLastProfile.collectAsState(initial = true)
+    val pinSet by store.adultPinSet.collectAsState(initial = false)
 
     Scaffold(
         topBar = {
@@ -53,9 +60,33 @@ fun SettingsScreen(
             )
         }
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             if (onOpenProfiles != null) {
                 TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
+            }
+            TextButton(onClick = {
+                val scope2 = rememberCoroutineScope()
+                scope2.launch {
+                    store.setCurrentProfileId(-1)
+                    onOpenGate?.invoke()
+                }
+            }) { Text("Zur Profilwahl…") }
+
+            HorizontalDivider()
+
+            Text("Profil/Gate", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Letztes Profil merken", modifier = Modifier.weight(1f))
+                Switch(checked = rememberLast, onCheckedChange = { v ->
+                    val scope3 = rememberCoroutineScope(); scope3.launch { store.setRememberLastProfile(v) }
+                })
             }
             Text("Player", style = MaterialTheme.typography.titleMedium)
             Column {
@@ -126,6 +157,19 @@ fun SettingsScreen(
 
             HorizontalDivider()
 
+            // App PIN
+            Text("App-PIN", style = MaterialTheme.typography.titleMedium)
+            if (!pinSet) {
+                Text("Es ist kein PIN gesetzt.")
+                Button(onClick = { showPinDialog(store = store, mode = PinMode.Set) }) { Text("PIN festlegen…") }
+            } else {
+                Text("PIN ist gesetzt.")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { showPinDialog(store = store, mode = PinMode.Change) }) { Text("PIN ändern…") }
+                    TextButton(onClick = { showPinDialog(store = store, mode = PinMode.Clear) }) { Text("PIN entfernen") }
+                }
+            }
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Landscape: Header standardmäßig eingeklappt", modifier = Modifier.weight(1f))
                 Switch(checked = headerCollapsed, onCheckedChange = { v ->
@@ -150,8 +194,114 @@ fun SettingsScreen(
                 Text("Haptisches Feedback", modifier = Modifier.weight(1f))
                 Switch(checked = hapticsEnabled, onCheckedChange = { v -> scope.launch { store.setHapticsEnabled(v) } })
             }
+
+            HorizontalDivider()
+            Text("Externer Player", style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(
+                value = pkg,
+                onValueChange = { scope.launch { store.set(Keys.PREF_PLAYER_PACKAGE, it) } },
+                label = { Text("Bevorzugtes externes Paket (optional)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            ExternalPlayerPickerButton(onPick = { packageName ->
+                scope.launch { store.set(Keys.PREF_PLAYER_PACKAGE, packageName) }
+            })
         }
     }
+}
+
+// --- External Player Picker UI ---
+@Composable
+private fun ExternalPlayerPickerButton(onPick: (String) -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var show by remember { mutableStateOf(false) }
+    TextButton(onClick = { show = true }) { Text("Externen Player auswählen…") }
+    if (!show) return
+    val pm = ctx.packageManager
+    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/video.m3u8"), "application/vnd.apple.mpegurl") }
+    val intent2 = android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/video.mp4"), "video/*") }
+    val list = remember {
+        val a = pm.queryIntentActivities(intent, 0)
+        val b = pm.queryIntentActivities(intent2, 0)
+        (a + b).distinctBy { it.activityInfo.packageName }
+    }
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = { show = false }) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Installierte Player")
+            list.forEach { ri ->
+                val label = ri.loadLabel(pm)?.toString() ?: ri.activityInfo.packageName
+                Button(onClick = { onPick(ri.activityInfo.packageName); show = false }) { Text(label) }
+            }
+        }
+    }
+}
+
+// --- PIN dialogs ---
+private enum class PinMode { Set, Change, Clear }
+
+@Composable
+private fun showPinDialog(store: SettingsStore, mode: PinMode) {
+    var open by remember { mutableStateOf(true) }
+    var pin by remember { mutableStateOf("") }
+    var pin2 by remember { mutableStateOf("") }
+    var old by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    if (!open) return
+    AlertDialog(
+        onDismissRequest = { open = false },
+        title = { Text(when (mode) { PinMode.Set -> "PIN festlegen"; PinMode.Change -> "PIN ändern"; PinMode.Clear -> "PIN entfernen" }) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (mode != PinMode.Set) {
+                    OutlinedTextField(value = old, onValueChange = { old = it }, label = { Text("Aktuelle PIN") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
+                }
+                if (mode != PinMode.Clear) {
+                    OutlinedTextField(value = pin, onValueChange = { pin = it }, label = { Text("Neue PIN") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
+                    OutlinedTextField(value = pin2, onValueChange = { pin2 = it }, label = { Text("Wiederholen") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
+                }
+                if (error != null) Text(error!!, color = MaterialTheme.colorScheme.error)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                scope.launch {
+                    when (mode) {
+                        PinMode.Set -> {
+                            if (pin.isBlank() || pin != pin2) { error = "PINs stimmen nicht"; return@launch }
+                            val h = sha256(pin)
+                            store.setAdultPinHash(h); store.setAdultPinSet(true)
+                            open = false
+                        }
+                        PinMode.Change -> {
+                            val current = store.adultPinHash.first()
+                            val ok = sha256(old) == current
+                            if (!ok) { error = "Falsche aktuelle PIN"; return@launch }
+                            if (pin.isBlank() || pin != pin2) { error = "PINs stimmen nicht"; return@launch }
+                            val h = sha256(pin)
+                            store.setAdultPinHash(h); store.setAdultPinSet(true)
+                            open = false
+                        }
+                        PinMode.Clear -> {
+                            val current = store.adultPinHash.first()
+                            val ok = sha256(old) == current
+                            if (!ok) { error = "Falsche aktuelle PIN"; return@launch }
+                            store.setAdultPinHash(""); store.setAdultPinSet(false)
+                            open = false
+                        }
+                    }
+                }
+            }) { Text("OK") }
+        },
+        dismissButton = { TextButton(onClick = { open = false }) { Text("Abbrechen") } }
+    )
+}
+
+private fun sha256(s: String): String {
+    val md = java.security.MessageDigest.getInstance("SHA-256")
+    val dig = md.digest(s.toByteArray())
+    return dig.joinToString("") { b -> "%02x".format(b) }
 }
 
 @Composable
