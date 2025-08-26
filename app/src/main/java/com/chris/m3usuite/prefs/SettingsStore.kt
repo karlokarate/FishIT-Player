@@ -43,6 +43,15 @@ object Keys {
     val HEADER_COLLAPSED_LAND = booleanPreferencesKey("header_collapsed_land") // Default in Landscape
     val HEADER_COLLAPSED = booleanPreferencesKey("header_collapsed") // globaler Zustand
     val ROTATION_LOCKED = booleanPreferencesKey("rotation_locked")
+    // Playback extras
+    val AUTOPLAY_NEXT = booleanPreferencesKey("autoplay_next")
+    val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
+
+    // Live filters (persist UI state)
+    val LIVE_FILTER_GERMAN = booleanPreferencesKey("live_filter_german")
+    val LIVE_FILTER_KIDS = booleanPreferencesKey("live_filter_kids")
+    val LIVE_FILTER_PROVIDERS = stringPreferencesKey("live_filter_providers_csv")
+    val LIVE_FILTER_GENRES = stringPreferencesKey("live_filter_genres_csv")
 
     // Profile/PIN
     val CURRENT_PROFILE_ID = longPreferencesKey("current_profile_id")
@@ -80,6 +89,15 @@ class SettingsStore(private val context: Context) {
         context.dataStore.data.map { it[Keys.HEADER_COLLAPSED] ?: false }
     val rotationLocked: Flow<Boolean> =
         context.dataStore.data.map { it[Keys.ROTATION_LOCKED] ?: false }
+    val autoplayNext: Flow<Boolean> =
+        context.dataStore.data.map { it[Keys.AUTOPLAY_NEXT] ?: false }
+    val hapticsEnabled: Flow<Boolean> =
+        context.dataStore.data.map { it[Keys.HAPTICS_ENABLED] ?: false }
+
+    val liveFilterGerman: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIVE_FILTER_GERMAN] ?: false }
+    val liveFilterKids: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIVE_FILTER_KIDS] ?: false }
+    val liveFilterProvidersCsv: Flow<String> = context.dataStore.data.map { it[Keys.LIVE_FILTER_PROVIDERS].orEmpty() }
+    val liveFilterGenresCsv: Flow<String> = context.dataStore.data.map { it[Keys.LIVE_FILTER_GENRES].orEmpty() }
 
     val currentProfileId: Flow<Long> =
         context.dataStore.data.map { it[Keys.CURRENT_PROFILE_ID] ?: -1L }
@@ -134,6 +152,12 @@ class SettingsStore(private val context: Context) {
     suspend fun setRotationLocked(value: Boolean) {
         context.dataStore.edit { it[Keys.ROTATION_LOCKED] = value }
     }
+    suspend fun setAutoplayNext(value: Boolean) { context.dataStore.edit { it[Keys.AUTOPLAY_NEXT] = value } }
+    suspend fun setHapticsEnabled(value: Boolean) { context.dataStore.edit { it[Keys.HAPTICS_ENABLED] = value } }
+    suspend fun setLiveFilterGerman(value: Boolean) { context.dataStore.edit { it[Keys.LIVE_FILTER_GERMAN] = value } }
+    suspend fun setLiveFilterKids(value: Boolean) { context.dataStore.edit { it[Keys.LIVE_FILTER_KIDS] = value } }
+    suspend fun setLiveFilterProvidersCsv(value: String) { context.dataStore.edit { it[Keys.LIVE_FILTER_PROVIDERS] = value } }
+    suspend fun setLiveFilterGenresCsv(value: String) { context.dataStore.edit { it[Keys.LIVE_FILTER_GENRES] = value } }
     suspend fun setCurrentProfileId(id: Long) {
         context.dataStore.edit { it[Keys.CURRENT_PROFILE_ID] = id }
     }

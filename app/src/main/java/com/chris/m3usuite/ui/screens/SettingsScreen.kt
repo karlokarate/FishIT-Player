@@ -37,6 +37,8 @@ fun SettingsScreen(
     val subBgOpacity by store.subtitleBgOpacityPct.collectAsState(initial = 40)
     val headerCollapsed by store.headerCollapsedDefaultInLandscape.collectAsState(initial = true)
     val rotationLocked by store.rotationLocked.collectAsState(initial = false)
+    val autoplayNext by store.autoplayNext.collectAsState(initial = false)
+    val hapticsEnabled by store.hapticsEnabled.collectAsState(initial = false)
 
     Scaffold(
         topBar = {
@@ -132,6 +134,17 @@ fun SettingsScreen(
                 Switch(checked = rotationLocked, onCheckedChange = { v ->
                     scope.launch { store.setRotationLocked(v) }
                 })
+            }
+
+            Divider()
+            Text("Wiedergabe", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Autoplay nächste Folge (Serie)", modifier = Modifier.weight(1f))
+                Switch(checked = autoplayNext, onCheckedChange = { v -> scope.launch { store.setAutoplayNext(v) } })
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Haptisches Feedback", modifier = Modifier.weight(1f))
+                Switch(checked = hapticsEnabled, onCheckedChange = { v -> scope.launch { store.setHapticsEnabled(v) } })
             }
         }
     }

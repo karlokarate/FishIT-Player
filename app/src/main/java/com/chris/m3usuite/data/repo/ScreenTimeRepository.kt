@@ -47,5 +47,10 @@ class ScreenTimeRepository(private val context: Context) {
         val newUsed = (entry.usedMinutes + added).coerceAtLeast(0)
         db.screenTimeDao().updateUsed(kidId, day, newUsed)
     }
-}
 
+    suspend fun resetToday(kidId: Long) = withContext(Dispatchers.IO) {
+        val day = todayKey()
+        ensureTodayEntry(kidId)
+        db.screenTimeDao().updateUsed(kidId, day, 0)
+    }
+}

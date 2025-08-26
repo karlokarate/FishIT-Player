@@ -98,6 +98,7 @@ fun InternalPlayerScreen(
     val subFgOpacity by store.subtitleFgOpacityPct.collectAsState(initial = 90)
     val subBgOpacity by store.subtitleBgOpacityPct.collectAsState(initial = 40)
     val rotationLocked by store.rotationLocked.collectAsState(initial = false)
+    val autoplayNext by store.autoplayNext.collectAsState(initial = false)
 
     // HTTP Factory mit Headern
     val httpFactory = remember(headers) {
@@ -298,6 +299,35 @@ fun InternalPlayerScreen(
                             try {
                                 val dao = db.resumeDao()
                                 if (type == "vod") dao.clearVod(mediaId!!) else dao.clearEpisode(episodeId!!)
+                            } catch (_: Throwable) {}
+                        }
+                    }
+                    // Phase 5: autoplay next for series
+                    if (type == "series" && episodeId != null && autoplayNext) {
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                val epDao = db.episodeDao()
+                                val current = epDao.byEpisodeId(episodeId)
+                                if (current != null) {
+                                    val next = epDao.nextEpisode(current.seriesStreamId, current.season, current.episodeNum)
+                                    if (next != null) {
+                                        // rebuild url from Xtream config
+                                        val host = store.xtHost.first()
+                                        val user = store.xtUser.first()
+                                        val pass = store.xtPass.first()
+                                        val out  = store.xtOutput.first()
+                                        val port = store.xtPort.first()
+                                        if (host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()) {
+                                            val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(host, port, user, pass, out)
+                                            val nextUrl = cfg.seriesEpisodeUrl(next.episodeId, next.containerExt)
+                                            withContext(Dispatchers.Main) {
+                                                exoPlayer.setMediaItem(MediaItem.fromUri(nextUrl))
+                                                exoPlayer.prepare()
+                                                exoPlayer.playWhenReady = true
+                                            }
+                                        }
+                                    }
+                                }
                             } catch (_: Throwable) {}
                         }
                     }

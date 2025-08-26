@@ -84,6 +84,17 @@ fun LibraryScreen(
     var filterKids by rememberSaveable { mutableStateOf(false) }
     var filterProviders by rememberSaveable { mutableStateOf(setOf<String>()) } // keys from liveProviders labels
     var filterGenres by rememberSaveable { mutableStateOf(setOf<String>()) }
+    // Load persisted filter state
+    val persistedGerman by store.liveFilterGerman.collectAsState(initial = false)
+    val persistedKids by store.liveFilterKids.collectAsState(initial = false)
+    val persistedProviders by store.liveFilterProvidersCsv.collectAsState(initial = "")
+    val persistedGenres by store.liveFilterGenresCsv.collectAsState(initial = "")
+    LaunchedEffect(persistedGerman, persistedKids, persistedProviders, persistedGenres) {
+        filterGerman = persistedGerman
+        filterKids = persistedKids
+        filterProviders = persistedProviders.split(',').filter { it.isNotBlank() }.toSet()
+        filterGenres = persistedGenres.split(',').filter { it.isNotBlank() }.toSet()
+    }
 
     // Collapsible-State für Header (global gespeichert)
     val collapsed by store.headerCollapsed.collectAsState(initial = false)
@@ -247,10 +258,12 @@ fun LibraryScreen(
             if (tab == 0) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = filterGerman, onClick = { filterGerman = !filterGerman; load() }, label = { Text("Deutsch") })
-                        FilterChip(selected = filterKids, onClick = { filterKids = !filterKids; load() }, label = { Text("Kids") })
+                        FilterChip(selected = filterGerman, onClick = { filterGerman = !filterGerman; scope.launch { store.setLiveFilterGerman(filterGerman) }; load() }, label = { Text("Deutsch") })
+                        FilterChip(selected = filterKids, onClick = { filterKids = !filterKids; scope.launch { store.setLiveFilterKids(filterKids) }; load() }, label = { Text("Kids") })
                         AssistChip(onClick = {
-                            filterGerman = false; filterKids = false; filterProviders = emptySet(); filterGenres = emptySet(); load()
+                            filterGerman = false; filterKids = false; filterProviders = emptySet(); filterGenres = emptySet();
+                            scope.launch { store.setLiveFilterGerman(false); store.setLiveFilterKids(false); store.setLiveFilterProvidersCsv(""); store.setLiveFilterGenresCsv("") }
+                            load()
                         }, label = { Text("Filter zurücksetzen") })
                     }
                     Spacer(Modifier.height(6.dp))
@@ -260,6 +273,7 @@ fun LibraryScreen(
                             val sel = key in filterProviders
                             FilterChip(selected = sel, onClick = {
                                 filterProviders = if (sel) filterProviders - key else filterProviders + key
+                                scope.launch { store.setLiveFilterProvidersCsv(filterProviders.joinToString(",")) }
                                 load()
                             }, label = { Text(key) })
                         }
@@ -271,6 +285,7 @@ fun LibraryScreen(
                             val sel = g in filterGenres
                             FilterChip(selected = sel, onClick = {
                                 filterGenres = if (sel) filterGenres - g else filterGenres + g
+                                scope.launch { store.setLiveFilterGenresCsv(filterGenres.joinToString(",")) }
                                 load()
                             }, label = { Text(g) })
                         }

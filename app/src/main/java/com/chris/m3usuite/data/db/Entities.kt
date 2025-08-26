@@ -215,6 +215,12 @@ interface EpisodeDao {
 
     @Query("SELECT * FROM Episode WHERE seriesStreamId=:seriesId AND season=:season ORDER BY episodeNum")
     suspend fun episodes(seriesId: Int, season: Int): List<Episode>
+
+    @Query("SELECT * FROM Episode WHERE episodeId=:episodeId LIMIT 1")
+    suspend fun byEpisodeId(episodeId: Int): Episode?
+
+    @Query("SELECT * FROM Episode WHERE seriesStreamId=:seriesId AND (season>:season OR (season=:season AND episodeNum>:episodeNum)) ORDER BY season, episodeNum LIMIT 1")
+    suspend fun nextEpisode(seriesId: Int, season: Int, episodeNum: Int): Episode?
 }
 
 /** DAO: Kategorien */
