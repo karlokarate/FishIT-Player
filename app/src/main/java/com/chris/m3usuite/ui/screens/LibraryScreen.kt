@@ -38,6 +38,8 @@ import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 import com.chris.m3usuite.ui.components.ResumeSectionAuto
 import com.chris.m3usuite.ui.components.CollapsibleHeader
+import com.chris.m3usuite.ui.state.rememberRouteGridState
+import com.chris.m3usuite.ui.state.rememberRouteListState
 import androidx.navigation.NavHostController
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -99,11 +101,16 @@ fun LibraryScreen(
         showSettings = prof?.type != "kid"
     }
 
+    val rotationLocked by store.rotationLocked.collectAsState(initial = false)
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("m3uSuite") },
                 actions = {
+                    IconButton(onClick = { scope.launch { store.setRotationLocked(!rotationLocked) } }) {
+                        Icon(painterResource(android.R.drawable.ic_menu_rotate), contentDescription = if (rotationLocked) "Rotation gesperrt" else "Rotation entsperrt")
+                    }
                     if (showSettings) {
                         IconButton(onClick = { navController.navigate("settings") }) {
                             Icon(painterResource(android.R.drawable.ic_menu_manage), contentDescription = "Einstellungen")
@@ -203,11 +210,13 @@ fun LibraryScreen(
             val useGrid = tab != 0 || tv
             if (useGrid) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
+                    val gridState = rememberRouteGridState("library_grid_${tab}_${selectedCategory ?: "all"}")
                     LibraryGridContent(
                         tv = tv,
                         mediaItems = mediaItems,
                         ctx = ctx,
                         headers = headers,
+                        state = gridState,
                         onOpen = { mi ->
                             when (mi.type) {
                                 "live" -> openLive(mi.id)
@@ -219,10 +228,12 @@ fun LibraryScreen(
                 }
             } else {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
+                    val listState = rememberRouteListState("library_list_${tab}_${selectedCategory ?: "all"}")
                     LibraryListContent(
                         mediaItems = mediaItems,
                         ctx = ctx,
                         headers = headers,
+                        state = listState,
                         onOpenLive = { id -> openLive(id) }
                     )
                 }
@@ -284,6 +295,7 @@ private fun LibraryGridContent(
     mediaItems: List<MediaItem>,
     ctx: android.content.Context,
     headers: com.chris.m3usuite.ui.util.ImageHeaders,
+    state: androidx.compose.foundation.lazy.grid.LazyGridState,
     onOpen: (MediaItem) -> Unit
 ) {
     val columns = if (tv) 4 else 2
@@ -291,6 +303,7 @@ private fun LibraryGridContent(
         columns = GridCells.Fixed(columns),
         // KEIN weight() hier – der liegt im Aufrufer in der Column
         modifier = Modifier.fillMaxSize(),
+        state = state,
         contentPadding = PaddingValues(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -324,11 +337,13 @@ private fun LibraryListContent(
     mediaItems: List<MediaItem>,
     ctx: android.content.Context,
     headers: com.chris.m3usuite.ui.util.ImageHeaders,
+    state: androidx.compose.foundation.lazy.LazyListState,
     onOpenLive: (Long) -> Unit
 ) {
     LazyColumn(
         // KEIN weight() hier – der liegt im Aufrufer in der Column
         modifier = Modifier.fillMaxSize(),
+        state = state,
         contentPadding = PaddingValues(12.dp)
     ) {
         listItems(mediaItems, key = { it.id }) { mi ->
