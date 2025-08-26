@@ -278,9 +278,8 @@ fun SettingsScreen(
     }
 
     // PIN Dialog host
-    val mode = pinDialogMode
-    if (mode != null) {
-        showPinDialog(store = store, mode = mode) { pinDialogMode = null }
+    pinDialogMode?.let { activePinMode ->
+        showPinDialog(store = store, mode = activePinMode) { pinDialogMode = null }
     }
 }
 
