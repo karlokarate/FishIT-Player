@@ -25,7 +25,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     store: SettingsStore,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenProfiles: (() -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     val mode by store.playerMode.collectAsState(initial = "ask")
@@ -53,6 +54,9 @@ fun SettingsScreen(
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (onOpenProfiles != null) {
+                TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
+            }
             Text("Player", style = MaterialTheme.typography.titleMedium)
             Column {
                 Radio("Immer fragen", mode == "ask") { scope.launch { store.setPlayerMode("ask") } }
