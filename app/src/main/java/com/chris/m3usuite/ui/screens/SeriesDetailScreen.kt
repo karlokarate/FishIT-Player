@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -21,6 +22,10 @@ import com.chris.m3usuite.data.repo.XtreamRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.player.ExternalPlayer
 import com.chris.m3usuite.player.PlayerChooser
+import com.chris.m3usuite.data.repo.KidContentRepository
+import com.chris.m3usuite.data.db.Profile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.max
@@ -28,6 +33,7 @@ import coil3.request.ImageRequest
 import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeriesDetailScreen(
     id: Long,
@@ -40,6 +46,37 @@ fun SeriesDetailScreen(
     val repo = remember { XtreamRepository(ctx, store) }
     val scope = rememberCoroutineScope()
     val headers = rememberImageHeaders()
+    val kidRepo = remember { KidContentRepository(ctx) }
+    val profileId by store.currentProfileId.collectAsState(initial = -1L)
+    var isAdult by remember { mutableStateOf(true) }
+    LaunchedEffect(profileId) { isAdult = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(profileId)?.type != "kid" } }
+    var showGrantSheet by remember { mutableStateOf(false) }
+    var showRevokeSheet by remember { mutableStateOf(false) }
+
+    @Composable
+    fun KidSelectSheet(onConfirm: suspend (kidIds: List<Long>) -> Unit, onDismiss: () -> Unit) {
+        var kids by remember { mutableStateOf<List<Profile>>(emptyList()) }
+        LaunchedEffect(profileId) { kids = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().all().filter { it.type == "kid" } } }
+        var checked by remember { mutableStateOf(setOf<Long>()) }
+        ModalBottomSheet(onDismissRequest = onDismiss) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Kinder auswählen")
+                Spacer(Modifier.height(8.dp))
+                kids.forEach { k ->
+                    val isC = k.id in checked
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(k.name)
+                        Switch(checked = isC, onCheckedChange = { v -> checked = if (v) checked + k.id else checked - k.id })
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onDismiss) { Text("Abbrechen") }
+                    Button(onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty()) { Text("OK") }
+                }
+            }
+        }
+    }
 
     var title by remember { mutableStateOf("") }
     var poster by remember { mutableStateOf<String?>(null) }
@@ -225,6 +262,10 @@ fun SeriesDetailScreen(
                                     onClick = { playEpisode(e, fromStart = true) },
                                     label = { Text("Von Anfang") }
                                 )
+                                if (isAdult) {
+                                    TextButton(onClick = { showGrantSheet = true }) { Text("Für Kind(er) freigeben…") }
+                                    TextButton(onClick = { showRevokeSheet = true }) { Text("Entfernen…") }
+                                }
                             }
                         }
                     },
@@ -238,6 +279,14 @@ fun SeriesDetailScreen(
                 HorizontalDivider()
             }
         }
+    if (showGrantSheet) KidSelectSheet(onConfirm = { kidIds ->
+        scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.allowBulk(it, "series", listOf(id)) } }
+        showGrantSheet = false
+    }, onDismiss = { showGrantSheet = false })
+    if (showRevokeSheet) KidSelectSheet(onConfirm = { kidIds ->
+        scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.disallowBulk(it, "series", listOf(id)) } }
+        showRevokeSheet = false
+    }, onDismiss = { showRevokeSheet = false })
     }
 }
 

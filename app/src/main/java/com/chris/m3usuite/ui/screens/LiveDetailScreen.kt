@@ -12,6 +12,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.ExperimentalMaterial3Api
 import coil3.compose.AsyncImage
 import com.chris.m3usuite.core.xtream.XtreamClient
 import com.chris.m3usuite.core.xtream.XtreamConfig
@@ -24,7 +25,14 @@ import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import com.chris.m3usuite.data.db.Profile
+import com.chris.m3usuite.data.repo.KidContentRepository
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LiveDetailScreen(id: Long) {
     val ctx = LocalContext.current
@@ -32,6 +40,9 @@ fun LiveDetailScreen(id: Long) {
     val store = remember { SettingsStore(ctx) }
     val headersImg = rememberImageHeaders()
     val scope = rememberCoroutineScope()
+    val kidRepo = remember { KidContentRepository(ctx) }
+    val haptics = LocalHapticFeedback.current
+    val hapticsEnabled by store.hapticsEnabled.collectAsState(initial = false)
 
     var title by remember { mutableStateOf("") }
     var logo by remember { mutableStateOf<String?>(null) }
@@ -121,6 +132,44 @@ fun LiveDetailScreen(id: Long) {
         return
     }
 
+    // Adult check
+    val profileId by store.currentProfileId.collectAsState(initial = -1L)
+    var isAdult by remember { mutableStateOf(true) }
+    LaunchedEffect(profileId) {
+        val p = withContext(Dispatchers.IO) { db.profileDao().byId(profileId) }
+        isAdult = p?.type != "kid"
+    }
+
+    var showGrantSheet by remember { mutableStateOf(false) }
+    var showRevokeSheet by remember { mutableStateOf(false) }
+
+    @Composable
+    fun KidSelectSheet(onConfirm: suspend (kidIds: List<Long>) -> Unit, onDismiss: () -> Unit) {
+        var kids by remember { mutableStateOf<List<Profile>>(emptyList()) }
+        LaunchedEffect(profileId) {
+            kids = withContext(Dispatchers.IO) { db.profileDao().all().filter { it.type == "kid" } }
+        }
+        var checked by remember { mutableStateOf(setOf<Long>()) }
+        ModalBottomSheet(onDismissRequest = onDismiss) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Kinder auswählen")
+                Spacer(Modifier.height(8.dp))
+                kids.forEach { k ->
+                    val isC = k.id in checked
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(k.name)
+                        Switch(checked = isC, onCheckedChange = { v -> checked = if (v) checked + k.id else checked - k.id })
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onDismiss) { Text("Abbrechen") }
+                    Button(onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty()) { Text("OK") }
+                }
+            }
+        }
+    }
+
     // --- Normale Live-Detail-Ansicht ---
     Column(Modifier.padding(16.dp)) {
         Text(title, style = MaterialTheme.typography.titleLarge)
@@ -150,8 +199,14 @@ fun LiveDetailScreen(id: Long) {
         Spacer(Modifier.height(12.dp))
 
         // Direkter Play-Button -> Playerwahl (intern/extern/fragen)
-        Button(onClick = { scope.launch { chooseAndPlay() } }, enabled = url != null) {
-            Text("Abspielen")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { scope.launch { if (hapticsEnabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); chooseAndPlay() } }, enabled = url != null) {
+                Text("Abspielen")
+            }
+            if (isAdult) {
+                TextButton(onClick = { showGrantSheet = true }) { Text("Für Kind(er) freigeben…") }
+                TextButton(onClick = { showRevokeSheet = true }) { Text("Aus Kinderprofil entfernen…") }
+            }
         }
     }
 
@@ -191,4 +246,13 @@ fun LiveDetailScreen(id: Long) {
             }
         )
     }
+
+    if (showGrantSheet) KidSelectSheet(onConfirm = { kidIds ->
+        scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.allowBulk(it, "live", listOf(id)) } }
+        showGrantSheet = false
+    }, onDismiss = { showGrantSheet = false })
+    if (showRevokeSheet) KidSelectSheet(onConfirm = { kidIds ->
+        scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.disallowBulk(it, "live", listOf(id)) } }
+        showRevokeSheet = false
+    }, onDismiss = { showRevokeSheet = false })
 }
