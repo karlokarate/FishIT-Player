@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
 
                     composable("library") {
                         LibraryScreen(
+                            navController = nav,
                             openLive   = { id -> nav.navigate("live/$id") },
                             openVod    = { id -> nav.navigate("vod/$id") },
                             openSeries = { id -> nav.navigate("series/$id") }
