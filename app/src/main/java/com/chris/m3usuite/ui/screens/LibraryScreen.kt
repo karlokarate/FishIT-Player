@@ -103,7 +103,7 @@ fun LibraryScreen(
                     store = store,
                     title = { Text("Weiter schauen", style = MaterialTheme.typography.titleMedium) },
                     headerContent = { content() },
-                    contentBelow = { _ -> if (collapsed) Spacer(Modifier.height(0.dp)) }
+                    contentBelow = { _ -> /* nichts zusätzlich */ }
                 )
             }
 
