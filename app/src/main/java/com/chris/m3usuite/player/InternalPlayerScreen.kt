@@ -9,12 +9,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Button
+import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +39,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.C
+import androidx.media3.common.Tracks
+import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
@@ -52,6 +62,7 @@ import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import androidx.media3.common.TrackSelectionOverride
 
 /**
  * Interner Player (Media3) mit:
@@ -336,6 +347,59 @@ fun InternalPlayerScreen(
 
     BackHandler { finishAndRelease() }
 
+    // Phase 6: Subtitle/CC menu (Adult only)
+    var showCcMenu by remember { mutableStateOf(false) }
+    val isAdult = !kidActive
+
+    // Local, session-only overrides applied immediately (persist optional)
+    var localScale by remember { mutableStateOf<Float?>(null) }
+    var localFg by remember { mutableStateOf<Int?>(null) }
+    var localBg by remember { mutableStateOf<Int?>(null) }
+    var localFgOpacity by remember { mutableStateOf<Int?>(null) }
+    var localBgOpacity by remember { mutableStateOf<Int?>(null) }
+
+    fun effectiveScale(): Float = localScale ?: subScale
+    fun effectiveFg(): Int = localFg ?: subFg
+    fun effectiveBg(): Int = localBg ?: subBg
+    fun effectiveFgOpacity(): Int = localFgOpacity ?: subFgOpacity
+    fun effectiveBgOpacity(): Int = localBgOpacity ?: subBgOpacity
+
+    data class SubOpt(val label: String, val groupIndex: Int?, val trackIndex: Int?)
+    var subOptions by remember { mutableStateOf(listOf<SubOpt>()) }
+    var selectedSub by remember { mutableStateOf<SubOpt?>(null) }
+
+    fun refreshSubtitleOptions() {
+        val tracks: Tracks = exoPlayer.currentTracks
+        val opts = mutableListOf<SubOpt>()
+        opts += SubOpt("Aus", null, null)
+        var currentSel: SubOpt? = null
+        tracks.groups.forEachIndexed { gi, g ->
+            if (g.type == C.TRACK_TYPE_TEXT) {
+                for (ti in 0 until g.length) {
+                    val fmt = g.getTrackFormat(ti)
+                    val lang = fmt.language ?: "Untertitel ${gi}-${ti}"
+                    val label = if (fmt.label != null) fmt.label!! else lang
+                    val opt = SubOpt(label, gi, ti)
+                    opts += opt
+                    if (g.isTrackSelected(ti)) currentSel = opt
+                }
+            }
+        }
+        subOptions = opts
+        selectedSub = currentSel ?: opts.firstOrNull()
+    }
+
+    DisposableEffect(exoPlayer) {
+        val listener = object : Player.Listener {
+            override fun onTracksChanged(tracks: Tracks) {
+                refreshSubtitleOptions()
+            }
+        }
+        exoPlayer.addListener(listener)
+        refreshSubtitleOptions()
+        onDispose { exoPlayer.removeListener(listener) }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -346,6 +410,27 @@ fun InternalPlayerScreen(
                             painter = painterResource(android.R.drawable.ic_menu_close_clear_cancel),
                             contentDescription = "Schließen"
                         )
+                    }
+                },
+                actions = {
+                    if (isAdult) {
+                        IconButton(onClick = {
+                            // initialize local overrides from current effective values when opening
+                            if (!showCcMenu) {
+                                localScale = effectiveScale()
+                                localFg = effectiveFg()
+                                localBg = effectiveBg()
+                                localFgOpacity = effectiveFgOpacity()
+                                localBgOpacity = effectiveBgOpacity()
+                                refreshSubtitleOptions()
+                            }
+                            showCcMenu = !showCcMenu
+                        }) {
+                            Icon(
+                                painter = painterResource(android.R.drawable.ic_menu_sort_by_size),
+                                contentDescription = "Untertitel-Menü"
+                            )
+                        }
                     }
                 }
             )
@@ -360,10 +445,10 @@ fun InternalPlayerScreen(
                         view.subtitleView?.apply {
                             setApplyEmbeddedStyles(true)
                             setApplyEmbeddedFontSizes(true)
-                            setFractionalTextSize(subScale)
+                            setFractionalTextSize(effectiveScale())
 
-                            val fg = withOpacity(subFg, subFgOpacity)
-                            val bg = withOpacity(subBg, subBgOpacity)
+                            val fg = withOpacity(effectiveFg(), effectiveFgOpacity())
+                            val bg = withOpacity(effectiveBg(), effectiveBgOpacity())
                             val style = CaptionStyleCompat(
                                 fg,
                                 bg,
@@ -387,6 +472,69 @@ fun InternalPlayerScreen(
                             TextButton(onClick = { finishAndRelease() }) { Text("OK") }
                         }
                     )
+                }
+
+                if (showCcMenu && isAdult) {
+                    ModalBottomSheet(onDismissRequest = { showCcMenu = false }) {
+                        // Subtitle options + live style controls
+                        Column(Modifier.padding(16.dp)) {
+                            Text("Untertitel",)
+                            Spacer(Modifier.padding(4.dp))
+                            // Track selection
+                            subOptions.forEach { opt ->
+                                val selected = selectedSub == opt
+                                Button(onClick = {
+                                    selectedSub = opt
+                                    val builder = exoPlayer.trackSelectionParameters.buildUpon()
+                                    if (opt.groupIndex == null) {
+                                        builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+                                        builder.clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                                    } else {
+                                        builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                                        builder.clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                                        val group = exoPlayer.currentTracks.groups[opt.groupIndex]
+                                        val override = TrackSelectionOverride(group.mediaTrackGroup, listOf(opt.trackIndex!!))
+                                        builder.addOverride(override)
+                                    }
+                                    exoPlayer.trackSelectionParameters = builder.build()
+                                }, enabled = true) {
+                                    Text((if (selected) "• " else "") + (opt.label))
+                                }
+                                Spacer(Modifier.padding(2.dp))
+                            }
+
+                            Spacer(Modifier.padding(8.dp))
+                            Text("Größe: ${String.format("%.2f", effectiveScale())}")
+                            Slider(value = effectiveScale(), onValueChange = { v -> localScale = v }, valueRange = 0.04f..0.12f, steps = 8)
+
+                            Text("Text-Deckkraft: ${effectiveFgOpacity()}%")
+                            Slider(value = effectiveFgOpacity().toFloat(), onValueChange = { v -> localFgOpacity = v.toInt().coerceIn(0,100) }, valueRange = 0f..100f, steps = 10)
+
+                            Text("Hintergrund-Deckkraft: ${effectiveBgOpacity()}%")
+                            Slider(value = effectiveBgOpacity().toFloat(), onValueChange = { v -> localBgOpacity = v.toInt().coerceIn(0,100) }, valueRange = 0f..100f, steps = 10)
+
+                            Spacer(Modifier.padding(8.dp))
+                            // Quick color presets (minimal palette)
+                            Row { Button(onClick = { localFg = 0xFFFFFFFF.toInt() }) { Text("FG Weiß") }; Spacer(Modifier.padding(4.dp)); Button(onClick = { localFg = 0xFF000000.toInt() }) { Text("FG Schwarz") } }
+                            Spacer(Modifier.padding(4.dp))
+                            Row { Button(onClick = { localBg = 0x66000000 }) { Text("BG Schwarz") }; Spacer(Modifier.padding(4.dp)); Button(onClick = { localBg = 0x66FFFFFF }) { Text("BG Weiß") } }
+
+                            Spacer(Modifier.padding(8.dp))
+                            Row {
+                                Button(onClick = { showCcMenu = false }) { Text("Schließen") }
+                                Spacer(Modifier.padding(8.dp))
+                                Button(onClick = {
+                                    // Persist as default
+                                    localScale?.let { scope.launch { store.setFloat(com.chris.m3usuite.prefs.Keys.SUB_SCALE, it) } }
+                                    localFg?.let { scope.launch { store.setInt(com.chris.m3usuite.prefs.Keys.SUB_FG, it) } }
+                                    localBg?.let { scope.launch { store.setInt(com.chris.m3usuite.prefs.Keys.SUB_BG, it) } }
+                                    localFgOpacity?.let { scope.launch { store.setSubtitleFgOpacityPct(it) } }
+                                    localBgOpacity?.let { scope.launch { store.setSubtitleBgOpacityPct(it) } }
+                                    showCcMenu = false
+                                }) { Text("Als Standard speichern") }
+                            }
+                        }
+                    }
                 }
             }
         }
