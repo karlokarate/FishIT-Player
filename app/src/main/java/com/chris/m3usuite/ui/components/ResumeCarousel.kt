@@ -17,6 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.navigation.NavController
+import com.chris.m3usuite.player.ExternalPlayer
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.ResumeEpisodeView
 import com.chris.m3usuite.data.db.ResumeVodView
@@ -30,8 +35,11 @@ import kotlinx.coroutines.withContext
 private val DefaultOnClearVod: (ResumeVodView) -> Unit = {}
 private val DefaultOnClearEpisode: (ResumeEpisodeView) -> Unit = {}
 
+// resume-ui: chooser Intern vs Extern (NavController + ExternalPlayer)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResumeSectionAuto(
+    navController: NavController,
     limit: Int = 20,
     onPlayVod: (ResumeVodView) -> Unit = {},
     onPlayEpisode: (ResumeEpisodeView) -> Unit = {},
@@ -43,6 +51,8 @@ fun ResumeSectionAuto(
 
     var vod by remember { mutableStateOf<List<ResumeVodView>>(emptyList()) }
     var eps by remember { mutableStateOf<List<ResumeEpisodeView>>(emptyList()) }
+    // resume-ui: Chooser BottomSheet Intern vs Extern
+    var chooserItem by remember { mutableStateOf<ResumeVodView?>(null) }
 
     // resume-ui: Laden beider Listen auf IO-Thread
     LaunchedEffect(Unit) {
@@ -60,6 +70,29 @@ fun ResumeSectionAuto(
     val scope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        if (chooserItem != null) {
+            ModalBottomSheet(
+                onDismissRequest = { chooserItem = null }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text("Wie abspielen?", style = MaterialTheme.typography.h6)
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = {
+                        navController.navigate("player?type=vod&id=${chooserItem!!.mediaId}")
+                        chooserItem = null
+                    }) { Text("Intern") }
+                    Spacer(Modifier.height(4.dp))
+                    Button(onClick = {
+                        ExternalPlayer.open(ctx, chooserItem!!.url!!, headers = emptyMap())
+                        chooserItem = null
+                    }) { Text("Extern") }
+                }
+            }
+        }
         if (vod.isNotEmpty()) {
             SectionTitle(text = "Weiter schauen – Filme")
             // resume-ui: Fallback – wenn onClearVod leer ist, DB aufräumen, sonst Callback verwenden
@@ -74,7 +107,8 @@ fun ResumeSectionAuto(
 
             ResumeVodRow(
                 items = vod,
-                onPlay = onPlayVod,
+                // statt sofort Play → Chooser öffnen
+                onPlay = { item -> chooserItem = item },
                 onClear = resolvedVodClear
             )
             Spacer(Modifier.height(12.dp))
@@ -93,6 +127,7 @@ fun ResumeSectionAuto(
 
             ResumeEpisodeRow(
                 items = eps,
+                // TODO: Episoden-Chooser (noch kein Chooser)
                 onPlay = onPlayEpisode,
                 onClear = resolvedEpClear
             )
