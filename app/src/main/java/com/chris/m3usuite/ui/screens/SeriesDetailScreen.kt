@@ -26,6 +26,7 @@ import com.chris.m3usuite.data.repo.KidContentRepository
 import com.chris.m3usuite.data.db.Profile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import coil3.request.ImageRequest
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import kotlinx.coroutines.flow.first
