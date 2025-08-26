@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -70,7 +71,9 @@ fun ProfileGate(
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(value = pin2, onValueChange = { pin2 = it }, label = { Text("PIN wiederholen") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
                     }
-                    pinError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    if (pinError != null) {
+                        Text(pinError!!, color = MaterialTheme.colorScheme.error)
+                    }
                 }
             },
             confirmButton = {

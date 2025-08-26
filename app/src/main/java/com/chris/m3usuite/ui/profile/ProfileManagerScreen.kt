@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -136,7 +137,7 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.weight(1f))
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                TextButton(onClick = { pickLauncher.launch(ActivityResultContracts.PickVisualMedia.ImageOnly) }) { Text("Avatar wählen") }
+                                TextButton(onClick = { pickLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) { Text("Avatar wählen") }
                                 TextButton(onClick = { cameraLauncher.launch(null) }) { Text("Foto aufnehmen") }
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {

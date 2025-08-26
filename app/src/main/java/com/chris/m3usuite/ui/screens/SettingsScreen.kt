@@ -80,8 +80,7 @@ fun SettingsScreen(
                 TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
             }
             TextButton(onClick = {
-                val scope2 = rememberCoroutineScope()
-                scope2.launch {
+                scope.launch {
                     store.setCurrentProfileId(-1)
                     onOpenGate?.invoke()
                 }
@@ -93,7 +92,7 @@ fun SettingsScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Letztes Profil merken", modifier = Modifier.weight(1f))
                 Switch(checked = rememberLast, onCheckedChange = { v ->
-                    val scope3 = rememberCoroutineScope(); scope3.launch { store.setRememberLastProfile(v) }
+                    scope.launch { store.setRememberLastProfile(v) }
                 })
             }
             Text("Player", style = MaterialTheme.typography.titleMedium)
@@ -279,6 +278,7 @@ fun SettingsScreen(
 }
 
 // --- External Player Picker UI ---
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ExternalPlayerPickerButton(onPick: (String) -> Unit) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
