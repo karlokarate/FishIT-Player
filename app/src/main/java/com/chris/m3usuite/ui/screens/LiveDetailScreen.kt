@@ -258,8 +258,8 @@ fun LiveDetailScreen(id: Long) {
                 Text("Abspielen")
             }
             if (isAdult) {
-                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showGrantSheet = true }) { Text("Für Kind(er) freigeben…") }
-                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showRevokeSheet = true }) { Text("Aus Kinderprofil entfernen…") }
+                com.chris.m3usuite.ui.common.AppIconButton(icon = com.chris.m3usuite.ui.common.AppIcon.AddKid, variant = com.chris.m3usuite.ui.common.IconVariant.Solid, contentDescription = "Für Kinder freigeben", onClick = { showGrantSheet = true })
+                com.chris.m3usuite.ui.common.AppIconButton(icon = com.chris.m3usuite.ui.common.AppIcon.RemoveKid, variant = com.chris.m3usuite.ui.common.IconVariant.Solid, contentDescription = "Aus Kinderprofil entfernen", onClick = { showRevokeSheet = true })
             }
         }
     }

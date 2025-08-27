@@ -11,8 +11,8 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
+import com.chris.m3usuite.ui.common.AppIcon
+import com.chris.m3usuite.ui.common.AppIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -79,12 +79,12 @@ fun AvatarCaptureAndPickButtons(
         if (uri != null) onPicked(uri)
     }
 
-    Button(modifier = Modifier.focusScaleOnTv(), onClick = { launchCameraWithPermission() }) { Text("Foto aufnehmen") }
-    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+    AppIconButton(icon = AppIcon.Camera, contentDescription = "Foto aufnehmen", onClick = { launchCameraWithPermission() })
+    AppIconButton(icon = AppIcon.Gallery, contentDescription = "Bild aus Galerie wählen", onClick = {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) pickerLauncher13.launch(
             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
         ) else legacyPickerLauncher.launch("image/*")
-    }) { Text("Bild aus Galerie wählen") }
+    })
 }
 
 private fun Context.findActivity(): Activity {

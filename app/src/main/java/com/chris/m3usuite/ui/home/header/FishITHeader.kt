@@ -10,10 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 // removed windowInsetsPadding; using statusBarsPadding()
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import com.chris.m3usuite.ui.common.AppIcon
+import com.chris.m3usuite.ui.common.AppIconButton
+import com.chris.m3usuite.ui.common.IconVariant
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -59,9 +58,7 @@ fun FishITHeader(
                 contentDescription = title,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
-            IconButton(onClick = onSettings) {
-                Icon(Icons.Outlined.Settings, contentDescription = "Einstellungen")
-            }
+            AppIconButton(icon = AppIcon.Settings, variant = IconVariant.Primary, contentDescription = "Einstellungen", onClick = onSettings, size = 28.dp)
         }
         Spacer(Modifier.height(FishITHeaderHeights.spacer))
     }
