@@ -57,6 +57,8 @@ import com.chris.m3usuite.ui.components.rows.SeriesRow
 import com.chris.m3usuite.ui.components.rows.VodRow
 import com.chris.m3usuite.ui.home.header.FishITHeader
 import com.chris.m3usuite.ui.home.header.FishITHeaderHeights
+import com.chris.m3usuite.ui.home.header.rememberHeaderAlpha
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.chris.m3usuite.data.db.MediaItem as DbMediaItem
 import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
@@ -199,6 +201,7 @@ fun LibraryScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackHost) }
     ) { paddingValues ->
+        val headerListState = rememberLazyListState()
         Box(Modifier.fillMaxSize()) {
             Column(
                 Modifier
@@ -249,20 +252,34 @@ fun LibraryScreen(
             }
 
             val railPad = if (isKidProfile) 20.dp else 16.dp
-            // Render rails without explicit headers
-            androidx.compose.foundation.layout.Column(Modifier.padding(horizontal = (railPad - 16.dp))) {
-                if (topResume.isNotEmpty()) {
-                    ResumeRow(items = topResume) { mi ->
-                        when (mi.type) {
-                            "live" -> openLive(mi.id)
-                            "vod" -> openVod(mi.id)
-                            "series" -> openSeries(mi.id)
+            // Rails inside a small LazyColumn to drive header scrim alpha
+            LazyColumn(state = headerListState, contentPadding = PaddingValues(vertical = 0.dp)) {
+                if (topResume.isNotEmpty()) item("rail_resume") {
+                    Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
+                        ResumeRow(items = topResume) { mi ->
+                            when (mi.type) {
+                                "live" -> openLive(mi.id)
+                                "vod" -> openVod(mi.id)
+                                "series" -> openSeries(mi.id)
+                            }
                         }
                     }
                 }
-                if (topLive.isNotEmpty()) LiveRow(items = topLive) { mi -> openLive(mi.id) }
-                if (topSeries.isNotEmpty()) SeriesRow(items = topSeries) { mi -> openSeries(mi.id) }
-                if (topVod.isNotEmpty()) VodRow(items = topVod) { mi -> openVod(mi.id) }
+                if (topLive.isNotEmpty()) item("rail_live") {
+                    Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
+                        LiveRow(items = topLive) { mi -> openLive(mi.id) }
+                    }
+                }
+                if (topSeries.isNotEmpty()) item("rail_series") {
+                    Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
+                        SeriesRow(items = topSeries) { mi -> openSeries(mi.id) }
+                    }
+                }
+                if (topVod.isNotEmpty()) item("rail_vod") {
+                    Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
+                        VodRow(items = topVod) { mi -> openVod(mi.id) }
+                    }
+                }
             }
 
             // Neue ein-/ausklappbare Sektion "Weiter schauen"
@@ -287,22 +304,7 @@ fun LibraryScreen(
                 )
             }
 
-            // Tabs
-            TabRow(selectedTabIndex = tab) {
-                tabs.forEachIndexed { i, t ->
-                    Tab(
-                        selected = tab == i,
-                        onClick = {
-                            tab = i
-                            scope.launch { store.setLibraryTabIndex(i) }
-                            selectedCategory = null
-                            searchQuery = TextFieldValue("")
-                            load()
-                        },
-                        text = { Text(t) }
-                    )
-                }
-            }
+            // Tabs moved to FishITHeader
             // Inline-Suche/Filter/Kategorien sind zugunsten eines Sheets deaktiviert
 
             // Content: Grid oder Liste – bekommt die restliche Höhe
@@ -363,6 +365,7 @@ fun LibraryScreen(
             }
 
             // Overlay Header (FishIT)
+            val scrimAlpha = rememberHeaderAlpha(headerListState)
             FishITHeader(
                 title = "m3uSuite",
                 tabs = listOf(
@@ -390,7 +393,7 @@ fun LibraryScreen(
                     }
                 },
                 onSettings = { navController.navigate("settings") },
-                scrimAlpha = 1f
+                scrimAlpha = scrimAlpha
             )
         }
     }
