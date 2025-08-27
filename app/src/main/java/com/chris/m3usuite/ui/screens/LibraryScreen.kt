@@ -306,7 +306,7 @@ fun LibraryScreen(
             LazyColumn(
                 state = headerListState,
                 contentPadding = PaddingValues(vertical = 0.dp),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).fillMaxWidth()
             ) {
                 // Build rows grouped by current selection
                 val selectedId = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> "all" }
@@ -473,12 +473,7 @@ fun LibraryScreen(
                 }
             }
 
-            // FAB zum Öffnen der Filter-/Suche
-            Box(Modifier.fillMaxWidth()) {
-                FloatingActionButton(onClick = { showFilters = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
-                    Icon(painterResource(android.R.drawable.ic_menu_search), contentDescription = "Filter & Suche")
-                }
-            }
+            // (Moved FAB overlay out of this Column below to avoid affecting available height)
             }
 
             // Overlay Header (FishIT)
@@ -512,6 +507,11 @@ fun LibraryScreen(
                         load()
                     }
                 )
+            }
+
+            // FAB overlay (does not consume layout height)
+            FloatingActionButton(onClick = { showFilters = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+                Icon(painterResource(android.R.drawable.ic_menu_search), contentDescription = "Filter & Suche")
             }
         }
     }

@@ -100,15 +100,10 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                 val model = rememberAvatarModel(avatarPath)
                                 if (model != null) {
                                     AsyncImage(
-                                        model = ImageRequest.Builder(ctx)
-                                            .data(model)
-                                            .build(),
+                                        model = model,
                                         contentDescription = null,
                                         modifier = Modifier.size(48.dp).clip(CircleShape),
-                                        contentScale = ContentScale.Crop,
-                                        placeholder = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image),
-                                        error = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image),
-                                        fallback = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image)
+                                        contentScale = ContentScale.Crop
                                     )
                                 } else {
                                     Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)

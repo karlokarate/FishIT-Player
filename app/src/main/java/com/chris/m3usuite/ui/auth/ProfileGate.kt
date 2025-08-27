@@ -178,15 +178,10 @@ fun ProfileGate(
                             val model = rememberAvatarModel(k.avatarPath)
                             if (model != null) {
                                 AsyncImage(
-                                    model = ImageRequest.Builder(ctx)
-                                        .data(model)
-                                        .build(),
+                                    model = model,
                                     contentDescription = null,
                                     modifier = Modifier.size(40.dp).clip(CircleShape),
-                                    contentScale = ContentScale.Crop,
-                                    placeholder = painterResource(android.R.drawable.ic_menu_report_image),
-                                    error = painterResource(android.R.drawable.ic_menu_report_image),
-                                    fallback = painterResource(android.R.drawable.ic_menu_report_image)
+                                    contentScale = ContentScale.Crop
                                 )
                             } else {
                                 Icon(painter = painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
