@@ -116,12 +116,43 @@ fun ProfileGate(
         Text("Ich bin ein Kind", style = MaterialTheme.typography.titleMedium)
         LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
             items(kids, key = { it.id }) { k ->
+                var used by remember(k.id) { mutableStateOf<Int?>(null) }
+                var limit by remember(k.id) { mutableStateOf<Int?>(null) }
+                LaunchedEffect(k.id) {
+                    withContext(Dispatchers.IO) {
+                        try {
+                            val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
+                                .format(java.util.Calendar.getInstance().time)
+                            val entry = db.screenTimeDao().getForDay(k.id, dayKey)
+                            withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                used = entry?.usedMinutes ?: 0
+                                limit = entry?.limitMinutes ?: 0
+                            }
+                        } catch (_: Throwable) {
+                            withContext(kotlinx.coroutines.Dispatchers.Main) { used = 0; limit = 0 }
+                        }
+                    }
+                }
                 OutlinedCard(Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable {
                     scope.launch { store.setCurrentProfileId(k.id); onEnter() }
                 }) {
                     ListItem(
                         headlineContent = { Text(k.name) },
-                        supportingContent = { Text("Kinderprofil") },
+                        supportingContent = {
+                            Column {
+                                Text("Kinderprofil")
+                                if (used != null && limit != null) {
+                                    val u = used ?: 0
+                                    val l = limit ?: 0
+                                    if (l > 0) {
+                                        val rem = (l - u).coerceAtLeast(0)
+                                        Text("Heute: ${u} min • verbleibend: ${rem} min", style = MaterialTheme.typography.bodySmall)
+                                    } else {
+                                        Text("Heute: ${u} min • kein Limit", style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                            }
+                        },
                         leadingContent = {
                             val ap = k.avatarPath
                             if (!ap.isNullOrBlank()) {

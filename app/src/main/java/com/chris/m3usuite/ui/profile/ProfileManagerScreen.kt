@@ -66,8 +66,25 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                 items(kids, key = { it.id }) { kid ->
                     var name by remember(kid.id) { mutableStateOf(kid.name) }
                     var limit by remember(kid.id) { mutableStateOf(60) }
+                    var usedToday by remember(kid.id) { mutableStateOf(0) }
+                    var remainingToday by remember(kid.id) { mutableStateOf(0) }
                     var avatarPath by remember(kid.id) { mutableStateOf(kid.avatarPath) }
 
+                    // Load today's usage/limit from DB
+                    LaunchedEffect(kid.id) {
+                        // Read current entry; if missing, repo will create it on first write, so we fallback to 0/0
+                        withContext(Dispatchers.IO) {
+                            // Get remaining via repo, and limit via DAO
+                            val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
+                                .format(java.util.Calendar.getInstance().time)
+                            val entry = DbProvider.get(ctx).screenTimeDao().getForDay(kid.id, dayKey)
+                            val u = entry?.usedMinutes ?: 0
+                            val l = entry?.limitMinutes ?: 0
+                            usedToday = u
+                            limit = if (l > 0) l else limit
+                            remainingToday = (limit - u).coerceAtLeast(0)
+                        }
+                    }
                     // old capture/pick logic removed; using AvatarCaptureAndPickButtons below
 
                     OutlinedCard(Modifier.fillMaxWidth()) {
@@ -97,16 +114,38 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                     }
                                 }
                             }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Tageslimit (Minuten)", modifier = Modifier.weight(1f))
-                                Slider(value = limit.toFloat(), valueRange = 0f..240f, onValueChange = { limit = it.toInt() })
-                                Text("${limit}")
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Tageslimit (Minuten)", modifier = Modifier.weight(1f))
+                                    Text("${limit}")
+                                }
+                                Slider(
+                                    value = limit.toFloat(),
+                                    valueRange = 0f..240f,
+                                    onValueChange = {
+                                        limit = it.toInt()
+                                        remainingToday = (limit - usedToday).coerceAtLeast(0)
+                                    }
+                                )
+                                Text(
+                                    "Heute genutzt: ${usedToday} min  •  Verbleibend: ${remainingToday} min",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(onClick = {
                                     scope.launch(Dispatchers.IO) {
                                         db.profileDao().update(kid.copy(name = name, updatedAt = System.currentTimeMillis()))
                                         screenRepo.setDailyLimit(kid.id, limit)
+                                        val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
+                                            .format(java.util.Calendar.getInstance().time)
+                                        val entry = DbProvider.get(ctx).screenTimeDao().getForDay(kid.id, dayKey)
+                                        val u = entry?.usedMinutes ?: 0
+                                        withContext(Dispatchers.Main) {
+                                            usedToday = u
+                                            remainingToday = (limit - u).coerceAtLeast(0)
+                                        }
                                         load()
                                     }
                                 }) { Text("Speichern") }
