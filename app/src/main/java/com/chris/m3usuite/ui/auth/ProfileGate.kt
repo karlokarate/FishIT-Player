@@ -162,12 +162,13 @@ fun ProfileGate(
                                 AsyncImage(
                                     model = ImageRequest.Builder(ctx)
                                         .data(model)
-                                        .placeholder(android.R.drawable.ic_menu_report_image)
-                                        .error(android.R.drawable.ic_menu_report_image)
                                         .build(),
                                     contentDescription = null,
                                     modifier = Modifier.size(40.dp).clip(CircleShape),
-                                    contentScale = ContentScale.Crop
+                                    contentScale = ContentScale.Crop,
+                                    placeholder = painterResource(android.R.drawable.ic_menu_report_image),
+                                    error = painterResource(android.R.drawable.ic_menu_report_image),
+                                    fallback = painterResource(android.R.drawable.ic_menu_report_image)
                                 )
                             } else {
                                 Icon(painter = painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)

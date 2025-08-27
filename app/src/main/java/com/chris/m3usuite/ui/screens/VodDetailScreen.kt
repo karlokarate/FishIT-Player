@@ -166,12 +166,13 @@ fun VodDetailScreen(
                                 AsyncImage(
                                     model = ImageRequest.Builder(ctx)
                                         .data(model)
-                                        .placeholder(android.R.drawable.ic_menu_report_image)
-                                        .error(android.R.drawable.ic_menu_report_image)
                                         .build(),
                                     contentDescription = null,
                                     modifier = Modifier.size(32.dp).clip(CircleShape),
-                                    contentScale = ContentScale.Crop
+                                    contentScale = ContentScale.Crop,
+                                    placeholder = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image),
+                                    error = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image),
+                                    fallback = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image)
                                 )
                             }
                             Text(k.name)
