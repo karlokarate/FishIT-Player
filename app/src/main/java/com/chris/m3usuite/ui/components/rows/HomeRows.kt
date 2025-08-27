@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -89,7 +91,11 @@ fun ResumeRow(
 ) {
     if (items.isEmpty()) return
     val slice = remember(items) { items.take(5) }
+    val state = rememberLazyListState()
+    val fling = rememberSnapFlingBehavior(state)
     LazyRow(
+        state = state,
+        flingBehavior = fling,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         items(slice, key = { it.id }) { m ->
@@ -105,7 +111,11 @@ fun LiveRow(
     onClick: (MediaItem) -> Unit
 ) {
     if (items.isEmpty()) return
+    val state = rememberLazyListState()
+    val fling = rememberSnapFlingBehavior(state)
     LazyRow(
+        state = state,
+        flingBehavior = fling,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         items(items, key = { it.id }) { m ->
@@ -122,7 +132,11 @@ fun SeriesRow(
     onClick: (MediaItem) -> Unit
 ) {
     if (items.isEmpty()) return
+    val state = rememberLazyListState()
+    val fling = rememberSnapFlingBehavior(state)
     LazyRow(
+        state = state,
+        flingBehavior = fling,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         items(items, key = { it.id }) { m ->
@@ -138,7 +152,11 @@ fun VodRow(
     onClick: (MediaItem) -> Unit
 ) {
     if (items.isEmpty()) return
+    val state = rememberLazyListState()
+    val fling = rememberSnapFlingBehavior(state)
     LazyRow(
+        state = state,
+        flingBehavior = fling,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         items(items, key = { it.id }) { m ->

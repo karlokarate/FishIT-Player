@@ -26,6 +26,7 @@ import com.chris.m3usuite.ui.util.rememberAvatarModel
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.auth.CreateProfileSheet
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
 
 @Composable
@@ -109,6 +110,8 @@ fun ProfileGate(
         )
     }
 
+    var showCreate by remember { mutableStateOf(false) }
+
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Wer bist du?", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(12.dp))
@@ -119,6 +122,14 @@ fun ProfileGate(
         }) { ListItem(headlineContent = { Text("Ich bin Erwachsen") }, supportingContent = { Text("Mit PIN geschützt") }) }
         Spacer(Modifier.height(16.dp))
         Text("Ich bin ein Kind", style = MaterialTheme.typography.titleMedium)
+        // Add tile
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedCard(
+                Modifier
+                    .weight(1f)
+                    .tvClickable { showCreate = true }
+            ) { ListItem(headlineContent = { Text("Neues Profil hinzufügen") }) }
+        }
         LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
             items(kids, key = { it.id }) { k ->
                 var used by remember(k.id) { mutableStateOf<Int?>(null) }
@@ -188,4 +199,20 @@ fun ProfileGate(
     }
 
     if (showPin) PinDialog(onDismiss = { showPin = false })
+    if (showCreate) CreateProfileSheet(
+        onDismiss = { showCreate = false },
+        onCreate = { name, kid ->
+            scope.launch(Dispatchers.IO) {
+                val now = System.currentTimeMillis()
+                val p = com.chris.m3usuite.data.db.Profile(name = name, type = if (kid) "kid" else "adult", avatarPath = null, createdAt = now, updatedAt = now)
+                db.profileDao().insert(p)
+                val list = db.profileDao().all()
+                withContext(Dispatchers.Main) {
+                    adult = list.firstOrNull { it.type == "adult" }
+                    kids = list.filter { it.type == "kid" }
+                    showCreate = false
+                }
+            }
+        }
+    )
 }
