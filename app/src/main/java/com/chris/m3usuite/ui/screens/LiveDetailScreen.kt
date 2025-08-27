@@ -161,21 +161,25 @@ fun LiveDetailScreen(id: Long) {
         }
         var checked by remember { mutableStateOf(setOf<Long>()) }
         ModalBottomSheet(onDismissRequest = onDismiss) {
-            Column(Modifier.padding(16.dp)) {
-                Text("Kinder auswählen")
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { checked = kids.map { it.id }.toSet() }, enabled = kids.isNotEmpty()) { Text("Alle auswählen") }
-                    TextButton(onClick = { checked = emptySet() }, enabled = checked.isNotEmpty()) { Text("Keine auswählen") }
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item { Text("Kinder auswählen") }
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { checked = kids.map { it.id }.toSet() }, enabled = kids.isNotEmpty()) { Text("Alle auswählen") }
+                        TextButton(onClick = { checked = emptySet() }, enabled = checked.isNotEmpty()) { Text("Keine auswählen") }
+                    }
                 }
-                Spacer(Modifier.height(4.dp))
-                kids.forEach { k ->
+                items(kids, key = { it.id }) { k ->
                     val isC = k.id in checked
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (!k.avatarPath.isNullOrBlank()) {
                                 AsyncImage(
-                                    model = ImageRequest.Builder(ctx).data(k.avatarPath).build(),
+                                    model = ImageRequest.Builder(ctx).data(if (k.avatarPath!!.startsWith("/")) File(k.avatarPath!!) else k.avatarPath).build(),
                                     contentDescription = null,
                                     modifier = Modifier.size(32.dp).clip(CircleShape),
                                     contentScale = ContentScale.Crop
@@ -186,10 +190,11 @@ fun LiveDetailScreen(id: Long) {
                         Switch(checked = isC, onCheckedChange = { v -> checked = if (v) checked + k.id else checked - k.id })
                     }
                 }
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onDismiss) { Text("Abbrechen") }
-                    Button(onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty()) { Text("OK") }
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Abbrechen") }
+                        Button(onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("OK") }
+                    }
                 }
             }
         }
