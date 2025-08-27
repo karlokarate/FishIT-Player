@@ -125,20 +125,16 @@ fun ProfileGate(
                         leadingContent = {
                             val ap = k.avatarPath
                             if (!ap.isNullOrBlank()) {
-                                val data: Any? = when {
-                                    ap.startsWith("/") -> java.io.File(ap).takeIf { it.exists() }
+                                val data: Any = when {
+                                    ap.startsWith("/") -> java.io.File(ap)
                                     ap.startsWith("file://") -> android.net.Uri.parse(ap)
                                     else -> ap
                                 }
-                                if (data != null) {
-                                    AsyncImage(
-                                        model = data,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(40.dp).clip(CircleShape)
-                                    )
-                                } else {
-                                    Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
-                                }
+                                AsyncImage(
+                                    model = data,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(40.dp).clip(CircleShape)
+                                )
                             } else {
                                 Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
                             }
