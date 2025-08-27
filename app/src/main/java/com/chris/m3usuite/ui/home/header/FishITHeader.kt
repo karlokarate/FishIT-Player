@@ -31,21 +31,15 @@ import androidx.compose.ui.zIndex
 data class HeaderTab(val id: String, val label: String)
 
 object FishITHeaderHeights {
-    val topBar = 64.dp
-    val tabs = 40.dp
+    val topBar = 56.dp
     val spacer = 8.dp
-    val total = topBar + tabs + spacer
+    val total = topBar + spacer
 }
 
 /** Translucent overlay header with actions + tabs; alpha controls scrim intensity. */
 @Composable
 fun FishITHeader(
     title: String,
-    tabs: List<HeaderTab>,
-    selectedTabId: String,
-    onTabSelected: (HeaderTab) -> Unit,
-    onRefresh: () -> Unit,
-    onSwitchProfile: () -> Unit,
     onSettings: () -> Unit,
     scrimAlpha: Float, // 0f..1f depending on scroll
 ) {
@@ -69,39 +63,13 @@ fun FishITHeader(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(com.chris.m3usuite.R.drawable.fisch),
+                contentDescription = title,
+                modifier = Modifier.padding(vertical = 8.dp)
             )
-            Row {
-                IconButton(onClick = onRefresh) {
-                    Icon(Icons.Outlined.Autorenew, contentDescription = "Aktualisieren")
-                }
-                IconButton(onClick = onSwitchProfile) {
-                    Icon(Icons.Outlined.ManageAccounts, contentDescription = "Profil wechseln")
-                }
-                IconButton(onClick = onSettings) {
-                    Icon(Icons.Outlined.Settings, contentDescription = "Einstellungen")
-                }
-            }
-        }
-        // Tabs (Live / VOD / Series / Alle)
-        ScrollableTabRow(
-            selectedTabIndex = tabs.indexOfFirst { it.id == selectedTabId }.coerceAtLeast(0),
-            edgePadding = 0.dp,
-            divider = {},
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ) {
-            tabs.forEach { t ->
-                Tab(
-                    selected = t.id == selectedTabId,
-                    onClick = { onTabSelected(t) },
-                    text = { Text(t.label) }
-                )
+            IconButton(onClick = onSettings) {
+                Icon(Icons.Outlined.Settings, contentDescription = "Einstellungen")
             }
         }
         Spacer(Modifier.height(FishITHeaderHeights.spacer))

@@ -59,6 +59,8 @@ import com.chris.m3usuite.ui.home.header.FishITHeader
 import com.chris.m3usuite.ui.home.header.FishITHeaderHeights
 import com.chris.m3usuite.ui.home.header.rememberHeaderAlpha
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.chris.m3usuite.ui.home.header.FishITBottomPanel
+import com.chris.m3usuite.ui.home.header.FishITBottomHeights
 import com.chris.m3usuite.data.db.MediaItem as DbMediaItem
 import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
@@ -208,6 +210,7 @@ fun LibraryScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(top = FishITHeaderHeights.total)
+                    .padding(bottom = FishITBottomHeights.bar)
             ) {
             // Top rails (Resume, Live, Series, VOD) – kid-friendly, no headers
             var topResume by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
@@ -368,32 +371,21 @@ fun LibraryScreen(
             val scrimAlpha = rememberHeaderAlpha(headerListState)
             FishITHeader(
                 title = "m3uSuite",
-                tabs = listOf(
-                    com.chris.m3usuite.ui.home.header.HeaderTab("live", "Live"),
-                    com.chris.m3usuite.ui.home.header.HeaderTab("vod", "VOD"),
-                    com.chris.m3usuite.ui.home.header.HeaderTab("series", "Series"),
-                    com.chris.m3usuite.ui.home.header.HeaderTab("all", "Alle")
-                ),
-                selectedTabId = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> "all" },
-                onTabSelected = { t ->
-                    val i = when (t.id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
+                onSettings = { navController.navigate("settings") },
+                scrimAlpha = scrimAlpha
+            )
+
+            // Bottom persistent panel (TV / Filme / Serien)
+            FishITBottomPanel(
+                selected = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> "all" },
+                onSelect = { id ->
+                    val i = when (id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
                     tab = i
                     scope.launch { store.setLibraryTabIndex(i) }
                     selectedCategory = null
                     searchQuery = TextFieldValue("")
                     load()
-                },
-                onRefresh = { scope.launch { load() } },
-                onSwitchProfile = {
-                    scope.launch {
-                        store.setCurrentProfileId(-1)
-                        navController.navigate("gate") {
-                            popUpTo("library") { inclusive = true }
-                        }
-                    }
-                },
-                onSettings = { navController.navigate("settings") },
-                scrimAlpha = scrimAlpha
+                }
             )
         }
     }
