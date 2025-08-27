@@ -12,6 +12,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +31,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import com.chris.m3usuite.data.db.MediaItem
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.core.xtream.XtreamClient
+import com.chris.m3usuite.core.xtream.XtreamConfig
+import kotlinx.coroutines.flow.first
 
 @Composable
 private fun rowItemHeight(): Int {
@@ -83,6 +100,134 @@ fun MediaCard(
     }
 }
 
+@Composable
+fun LiveTileCard(
+    item: MediaItem,
+    onClick: (MediaItem) -> Unit
+) {
+    val ctx = LocalContext.current
+    val headers = rememberImageHeaders()
+    var epg by remember { mutableStateOf("") }
+    LaunchedEffect(item.streamId) {
+        try {
+            val store = SettingsStore(ctx)
+            val host = store.xtHost.first(); val user = store.xtUser.first(); val pass = store.xtPass.first(); val out = store.xtOutput.first(); val port = store.xtPort.first()
+            if (item.streamId != null && host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()) {
+                val client = XtreamClient(ctx, store, XtreamConfig(host, port, user, pass, out))
+                epg = client.shortEPG(item.streamId, 1).firstOrNull()?.title.orEmpty()
+            }
+        } catch (_: Throwable) { epg = "" }
+    }
+    Card(
+        modifier = Modifier
+            .height(rowItemHeight().dp)
+            .padding(end = 12.dp)
+            .tvClickable { onClick(item) },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Box(Modifier.fillMaxWidth()) {
+            // small logo top-left (~32dp)
+            AsyncImage(
+                model = buildImageRequest(ctx, item.logo ?: item.poster, headers),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(32.dp)
+            )
+            // channel name top-right
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                textAlign = TextAlign.End,
+                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+            )
+            // EPG pill at bottom center
+            if (epg.isNotBlank()) {
+                Text(
+                    text = epg,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(8.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SeriesTileCard(
+    item: MediaItem,
+    onClick: (MediaItem) -> Unit
+) {
+    val ctx = LocalContext.current
+    val headers = rememberImageHeaders()
+    Card(
+        modifier = Modifier
+            .height(rowItemHeight().dp)
+            .padding(end = 12.dp)
+            .tvClickable { onClick(item) },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Column(Modifier.fillMaxWidth()) {
+            AsyncImage(
+                model = buildImageRequest(ctx, item.poster ?: item.logo ?: item.backdrop, headers),
+                contentDescription = item.name,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth().weight(1f)
+            )
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun VodTileCard(
+    item: MediaItem,
+    onClick: (MediaItem) -> Unit
+) {
+    val ctx = LocalContext.current
+    val headers = rememberImageHeaders()
+    Card(
+        modifier = Modifier
+            .height(rowItemHeight().dp)
+            .padding(end = 12.dp)
+            .tvClickable { onClick(item) },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Column(Modifier.fillMaxWidth()) {
+            AsyncImage(
+                model = buildImageRequest(ctx, item.poster ?: item.logo ?: item.backdrop, headers),
+                contentDescription = item.name,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth().weight(1f)
+            )
+            val year = item.year?.toString()?.takeIf { it.isNotBlank() } ?: ""
+            Text(
+                text = if (year.isNotBlank()) "${item.name}  •  $year" else item.name,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(8.dp)
+            )
+        }
+    }
+}
+
 /** Show last 5 resume items in a horizontal row (no header) */
 @Composable
 fun ResumeRow(
@@ -119,8 +264,7 @@ fun LiveRow(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         items(items, key = { it.id }) { m ->
-            // For live, logos often look better; hide title for a cleaner rail
-            MediaCard(item = m, onClick = onClick, showTitle = false)
+            LiveTileCard(item = m, onClick = onClick)
         }
     }
 }
@@ -140,7 +284,7 @@ fun SeriesRow(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         items(items, key = { it.id }) { m ->
-            MediaCard(item = m, onClick = onClick)
+            SeriesTileCard(item = m, onClick = onClick)
         }
     }
 }
@@ -160,7 +304,7 @@ fun VodRow(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         items(items, key = { it.id }) { m ->
-            MediaCard(item = m, onClick = onClick)
+            VodTileCard(item = m, onClick = onClick)
         }
     }
 }

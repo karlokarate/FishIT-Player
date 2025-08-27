@@ -221,6 +221,11 @@ fun LibraryScreen(
             // Determine kid profile from existing flag
             val isKidProfile = !showSettings
 
+            // Grouped source lists for rows
+            var allLive by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
+            var allVod by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
+            var allSeries by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
+
             LaunchedEffect(isKidProfile) {
                 // Resume: merge recent VOD and Series episodes by updatedAt, map to MediaItem, limit 5
                 runCatching {
@@ -249,38 +254,95 @@ fun LibraryScreen(
                     topResume = out
                 }
                 // Live/Series/VOD: lightweight lists (already filtered for kids by MediaQueryRepository)
-                runCatching { topLive = mediaRepo.listByTypeFiltered("live", 20, 0) }
-                runCatching { topSeries = mediaRepo.listByTypeFiltered("series", 20, 0) }
-                runCatching { topVod = mediaRepo.listByTypeFiltered("vod", 20, 0) }
+                runCatching { allLive = mediaRepo.listByTypeFiltered("live", 4000, 0) }
+                runCatching { allSeries = mediaRepo.listByTypeFiltered("series", 4000, 0) }
+                runCatching { allVod = mediaRepo.listByTypeFiltered("vod", 4000, 0) }
+                // top rows remain a small snapshot
+                topLive = allLive.take(50)
+                topSeries = allSeries.take(50)
+                topVod = allVod.take(50)
             }
 
             val railPad = if (isKidProfile) 20.dp else 16.dp
-            // Rails inside a small LazyColumn to drive header scrim alpha
-            LazyColumn(state = headerListState, contentPadding = PaddingValues(vertical = 0.dp)) {
-                if (topResume.isNotEmpty()) item("rail_resume") {
-                    Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
-                        ResumeRow(items = topResume) { mi ->
-                            when (mi.type) {
-                                "live" -> openLive(mi.id)
-                                "vod" -> openVod(mi.id)
-                                "series" -> openSeries(mi.id)
+            // Rails inside a LazyColumn that occupies available height, driving header scrim alpha
+            LazyColumn(
+                state = headerListState,
+                contentPadding = PaddingValues(vertical = 0.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                // Build rows grouped by current selection
+                val selectedId = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> "all" }
+                // Helper mini header
+                fun header(label: String) {
+                    item("hdr_$label") {
+                        Text(label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 2.dp))
+                    }
+                }
+                when (selectedId) {
+                    "vod" -> {
+                        if (topResume.isNotEmpty()) {
+                            header("Zuletzt angeschaut")
+                            item("vod_resume") {
+                                Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
+                                    val onlyVod = topResume.filter { it.type == "vod" }.take(50)
+                                    ResumeRow(items = onlyVod) { mi -> openVod(mi.id) }
+                                }
+                            }
+                        }
+                        // Neu hinzugefügt (id desc)
+                        if (allVod.isNotEmpty()) {
+                            header("Neu hinzugefügt")
+                            val newest = allVod.sortedByDescending { it.id }.take(50)
+                            item("vod_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = newest) { mi -> openVod(mi.id) } } }
+                        }
+                        // Genres
+                        val genres = listOf("Kinder", "Action", "Doku", "Horror")
+                        genres.forEach { g ->
+                            val list = allVod.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }.take(50)
+                            if (list.isNotEmpty()) {
+                                header(g)
+                                item("vod_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = list) { mi -> openVod(mi.id) } } }
                             }
                         }
                     }
-                }
-                if (topLive.isNotEmpty()) item("rail_live") {
-                    Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
-                        LiveRow(items = topLive) { mi -> openLive(mi.id) }
+                    "series" -> {
+                        // Zuletzt geschaut (unique per Serie)
+                        if (topResume.isNotEmpty()) {
+                            header("Zuletzt geschaut")
+                            val seriesUnique = topResume.filter { it.type == "series" }.distinctBy { it.streamId ?: it.id }.take(50)
+                            item("series_resume") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = seriesUnique) { mi -> openSeries(mi.id) } } }
+                        }
+                        if (allSeries.isNotEmpty()) {
+                            header("Neu hinzugefügt")
+                            val newest = allSeries.sortedByDescending { it.id }.take(50)
+                            item("series_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newest) { mi -> openSeries(mi.id) } } }
+                        }
+                        val genres = listOf("Kinder", "Action", "Doku", "Horror")
+                        genres.forEach { g ->
+                            val list = allSeries.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }.take(50)
+                            if (list.isNotEmpty()) {
+                                header(g)
+                                item("series_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = list) { mi -> openSeries(mi.id) } } }
+                            }
+                        }
                     }
-                }
-                if (topSeries.isNotEmpty()) item("rail_series") {
-                    Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
-                        SeriesRow(items = topSeries) { mi -> openSeries(mi.id) }
+                    "live" -> {
+                        // Anbieter-Gruppen mit Mini-Header
+                        val providers = listOf("NF", "AMZ", "PRMT", "DISNEY")
+                        providers.forEach { label ->
+                            val list = allLive.filter { hasProvider(it, label) }.take(50)
+                            if (list.isNotEmpty()) {
+                                header(label)
+                                item("live_$label") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { LiveRow(items = list) { mi -> openLive(mi.id) } } }
+                            }
+                        }
                     }
-                }
-                if (topVod.isNotEmpty()) item("rail_vod") {
-                    Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
-                        VodRow(items = topVod) { mi -> openVod(mi.id) }
+                    else -> {
+                        // All: kurzer Mix wie vorher
+                        if (topResume.isNotEmpty()) { header("Weiter schauen"); item("all_resume") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { ResumeRow(items = topResume) { mi -> when (mi.type) { "live" -> openLive(mi.id); "vod" -> openVod(mi.id); else -> openSeries(mi.id) } } } } }
+                        if (topLive.isNotEmpty()) { header("TV"); item("all_live") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { LiveRow(items = topLive) { mi -> openLive(mi.id) } } } }
+                        if (topSeries.isNotEmpty()) { header("Serien"); item("all_series") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = topSeries) { mi -> openSeries(mi.id) } } } }
+                        if (topVod.isNotEmpty()) { header("Filme"); item("all_vod") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = topVod) { mi -> openVod(mi.id) } } } }
                     }
                 }
             }
@@ -310,8 +372,9 @@ fun LibraryScreen(
             // Tabs moved to FishITHeader
             // Inline-Suche/Filter/Kategorien sind zugunsten eines Sheets deaktiviert
 
-            // Content: Grid oder Liste – bekommt die restliche Höhe
-            val useGrid = tab != 0 || tv
+            // Content unter Rails: Für diese Home-Optik blenden wir Grid/List aus,
+            // um ausschließlich die vertikal scrollbaren Rails zu zeigen.
+            val useGrid = false
             if (useGrid) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     val gridState = rememberRouteGridState("library_grid_${tab}_${selectedCategory ?: "all"}")
@@ -376,17 +439,19 @@ fun LibraryScreen(
             )
 
             // Bottom persistent panel (TV / Filme / Serien)
-            FishITBottomPanel(
-                selected = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> "all" },
-                onSelect = { id ->
-                    val i = when (id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
-                    tab = i
-                    scope.launch { store.setLibraryTabIndex(i) }
-                    selectedCategory = null
-                    searchQuery = TextFieldValue("")
-                    load()
-                }
-            )
+            Box(Modifier.fillMaxWidth().align(Alignment.BottomCenter)) {
+                FishITBottomPanel(
+                    selected = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> "all" },
+                    onSelect = { id ->
+                        val i = when (id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
+                        tab = i
+                        scope.launch { store.setLibraryTabIndex(i) }
+                        selectedCategory = null
+                        searchQuery = TextFieldValue("")
+                        load()
+                    }
+                )
+            }
         }
     }
 
