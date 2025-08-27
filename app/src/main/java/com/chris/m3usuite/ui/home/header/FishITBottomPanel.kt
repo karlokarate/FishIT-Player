@@ -8,8 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.chris.m3usuite.ui.common.AppIcon
+import com.chris.m3usuite.ui.common.AppIconButton
+import com.chris.m3usuite.ui.common.IconVariant
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -43,19 +44,8 @@ fun FishITBottomPanel(
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         @Composable
-        fun tab(label: String, id: String) {
-            val sel = selected == id
-            TextButton(onClick = { onSelect(id) }, modifier = Modifier.focusScaleOnTv()) {
-                Text(
-                    label,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = if (sel) FontWeight.SemiBold else FontWeight.Normal,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-        tab("TV", "live")
-        tab("Filme", "vod")
-        tab("Serien", "series")
+        AppIconButton(icon = AppIcon.LiveTv,    contentDescription = "TV",     onClick = { onSelect("live") },  size = 28.dp)
+        AppIconButton(icon = AppIcon.MovieVod,  contentDescription = "Filme",  onClick = { onSelect("vod") },    size = 28.dp)
+        AppIconButton(icon = AppIcon.Series,    contentDescription = "Serien", onClick = { onSelect("series") }, size = 28.dp)
     }
 }

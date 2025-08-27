@@ -469,7 +469,17 @@ fun LibraryScreen(
             FishITHeader(
                 title = "m3uSuite",
                 onSettings = { navController.navigate("settings") },
-                scrimAlpha = scrimAlpha
+                scrimAlpha = scrimAlpha,
+                onSearch = { showFilters = true },
+                onProfiles = {
+                    scope.launch {
+                        store.setCurrentProfileId(-1)
+                        navController.navigate("gate") {
+                            popUpTo("library") { inclusive = true }
+                        }
+                    }
+                },
+                onRefresh = { scope.launch { load() } }
             )
 
             // Bottom persistent panel (TV / Filme / Serien)

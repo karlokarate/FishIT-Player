@@ -32,6 +32,9 @@ fun FishITHeader(
     title: String,
     onSettings: () -> Unit,
     scrimAlpha: Float, // 0f..1f depending on scroll
+    onSearch: (() -> Unit)? = null,
+    onProfiles: (() -> Unit)? = null,
+    onRefresh: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
@@ -58,7 +61,12 @@ fun FishITHeader(
                 contentDescription = title,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
-            AppIconButton(icon = AppIcon.Settings, variant = IconVariant.Primary, contentDescription = "Einstellungen", onClick = onSettings, size = 28.dp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (onSearch != null) AppIconButton(icon = AppIcon.Search, contentDescription = "Suche öffnen", onClick = onSearch, size = 28.dp)
+                if (onProfiles != null) AppIconButton(icon = AppIcon.Profile, contentDescription = "Profile", onClick = onProfiles, size = 28.dp)
+                if (onRefresh != null) AppIconButton(icon = AppIcon.Refresh, contentDescription = "Aktualisieren", onClick = onRefresh, size = 28.dp)
+                AppIconButton(icon = AppIcon.Settings, variant = IconVariant.Primary, contentDescription = "Einstellungen", onClick = onSettings, size = 28.dp)
+            }
         }
         Spacer(Modifier.height(FishITHeaderHeights.spacer))
     }
