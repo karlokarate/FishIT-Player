@@ -28,6 +28,7 @@ import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.auth.ProfileGate
 import com.chris.m3usuite.ui.profile.ProfileManagerScreen
 import com.chris.m3usuite.ui.theme.AppTheme
+import com.chris.m3usuite.ui.skin.M3UTvSkin
 import com.chris.m3usuite.work.XtreamEnrichmentWorker
 import com.chris.m3usuite.work.XtreamRefreshWorker
 import com.chris.m3usuite.work.ScreenTimeResetWorker
@@ -48,6 +49,7 @@ class MainActivity : ComponentActivity() {
         hideSystemBars()
 
         setContent {
+            M3UTvSkin {
             AppTheme {
                 val nav = rememberNavController()
 
@@ -192,6 +194,7 @@ class MainActivity : ComponentActivity() {
                         (ctx as? Activity)?.moveTaskToBack(false)
                     }
                 }
+            }
             }
         }
     }
