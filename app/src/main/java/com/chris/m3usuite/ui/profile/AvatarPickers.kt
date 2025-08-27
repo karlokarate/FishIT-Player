@@ -28,6 +28,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
 
 @Composable
 fun AvatarCaptureAndPickButtons(
@@ -77,8 +78,8 @@ fun AvatarCaptureAndPickButtons(
         if (uri != null) onPicked(uri)
     }
 
-    Button(onClick = { launchCameraWithPermission() }) { Text("Foto aufnehmen") }
-    Button(onClick = {
+    Button(modifier = Modifier.focusScaleOnTv(), onClick = { launchCameraWithPermission() }) { Text("Foto aufnehmen") }
+    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) pickerLauncher13.launch(
             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
         ) else legacyPickerLauncher.launch("image/*")

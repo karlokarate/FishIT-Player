@@ -52,6 +52,7 @@ import com.chris.m3usuite.data.db.Profile
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -530,8 +531,8 @@ fun LibraryScreen(
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Abbrechen") }
-                        Button(onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("OK") }
+                        TextButton(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = onDismiss) { Text("Abbrechen") }
+                        Button(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty()) { Text("OK") }
                     }
                 }
             }

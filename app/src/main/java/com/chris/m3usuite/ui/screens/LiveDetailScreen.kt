@@ -41,6 +41,7 @@ import com.chris.m3usuite.ui.util.rememberAvatarModel
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -213,8 +214,8 @@ fun LiveDetailScreen(id: Long) {
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Abbrechen") }
-                        Button(onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("OK") }
+                        TextButton(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = onDismiss) { Text("Abbrechen") }
+                        Button(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty()) { Text("OK") }
                     }
                 }
             }
@@ -253,12 +254,12 @@ fun LiveDetailScreen(id: Long) {
 
         // Direkter Play-Button -> Playerwahl (intern/extern/fragen)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { scope.launch { if (hapticsEnabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); chooseAndPlay() } }, enabled = url != null) {
+            Button(modifier = Modifier.focusScaleOnTv(), onClick = { scope.launch { if (hapticsEnabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); chooseAndPlay() } }, enabled = url != null) {
                 Text("Abspielen")
             }
             if (isAdult) {
-                TextButton(onClick = { showGrantSheet = true }) { Text("Für Kind(er) freigeben…") }
-                TextButton(onClick = { showRevokeSheet = true }) { Text("Aus Kinderprofil entfernen…") }
+                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showGrantSheet = true }) { Text("Für Kind(er) freigeben…") }
+                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showRevokeSheet = true }) { Text("Aus Kinderprofil entfernen…") }
             }
         }
     }
@@ -287,6 +288,7 @@ fun LiveDetailScreen(id: Long) {
             },
             confirmButton = {
                 TextButton(
+                    modifier = Modifier.focusScaleOnTv(),
                     onClick = {
                         showEpg = false
                         scope.launch { chooseAndPlay() }
@@ -295,7 +297,7 @@ fun LiveDetailScreen(id: Long) {
                 ) { Text("Jetzt abspielen") }
             },
             dismissButton = {
-                TextButton(onClick = { showEpg = false }) { Text("Schließen") }
+                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showEpg = false }) { Text("Schließen") }
             }
         )
     }

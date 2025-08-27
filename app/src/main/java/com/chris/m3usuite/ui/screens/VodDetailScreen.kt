@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import coil3.request.ImageRequest
 import com.chris.m3usuite.ui.util.rememberAvatarModel
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import com.chris.m3usuite.ui.skin.tvClickable
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -191,8 +192,8 @@ fun VodDetailScreen(
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Abbrechen") }
-                        Button(onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("OK") }
+                        TextButton(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = onDismiss) { Text("Abbrechen") }
+                        Button(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty()) { Text("OK") }
                     }
                 }
             }
@@ -245,23 +246,23 @@ fun VodDetailScreen(
                 duration?.let { Text("• ${it / 60} min") }
                 Spacer(Modifier.weight(1f))
                 if (isAdult) {
-                    TextButton(onClick = { showGrantSheet = true }) { Text("Für Kind(er) freigeben…") }
-                    TextButton(onClick = { showRevokeSheet = true }) { Text("Aus Kinderprofil entfernen…") }
+                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showGrantSheet = true }) { Text("Für Kind(er) freigeben…") }
+                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showRevokeSheet = true }) { Text("Aus Kinderprofil entfernen…") }
                 }
             }
 
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (resumeSecs != null) {
-                    AssistChip(onClick = { play(false) }, label = { Text("Fortsetzen ab ${fmt(resumeSecs!!)}") })
-                    AssistChip(onClick = { clearResume() }, label = { Text("Zurücksetzen") })
-                    AssistChip(onClick = { setResume(max(0, (resumeSecs ?: 0) - 30)) }, label = { Text("-30s") })
-                    AssistChip(onClick = { setResume((resumeSecs ?: 0) + 30) }, label = { Text("+30s") })
-                    AssistChip(onClick = { setResume((resumeSecs ?: 0) + 300) }, label = { Text("+5m") })
+                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { play(false) }, label = { Text("Fortsetzen ab ${fmt(resumeSecs!!)}") })
+                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { clearResume() }, label = { Text("Zurücksetzen") })
+                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume(max(0, (resumeSecs ?: 0) - 30)) }, label = { Text("-30s") })
+                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume((resumeSecs ?: 0) + 30) }, label = { Text("+30s") })
+                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume((resumeSecs ?: 0) + 300) }, label = { Text("+5m") })
                 } else {
-                    AssistChip(onClick = { setResume(0) }, label = { Text("Resume setzen (0:00)") })
+                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume(0) }, label = { Text("Resume setzen (0:00)") })
                 }
-                AssistChip(onClick = { play(true) }, label = { Text("Von Anfang") })
+                AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { play(true) }, label = { Text("Von Anfang") })
             }
 
             Spacer(Modifier.height(12.dp))

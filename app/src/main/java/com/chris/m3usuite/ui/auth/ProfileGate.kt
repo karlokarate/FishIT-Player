@@ -26,6 +26,7 @@ import com.chris.m3usuite.ui.util.rememberAvatarModel
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
 
 @Composable
 fun ProfileGate(
@@ -81,7 +82,7 @@ fun ProfileGate(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                     if (setPin) {
                         if (pin.isBlank() || pin != pin2) { pinError = "PINs stimmen nicht"; return@TextButton }
                         val h = sha256(pin)
@@ -104,7 +105,7 @@ fun ProfileGate(
                     }
                 }) { Text("OK") }
             },
-            dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } }
+            dismissButton = { TextButton(modifier = Modifier.focusScaleOnTv(), onClick = onDismiss) { Text("Abbrechen") } }
         )
     }
 

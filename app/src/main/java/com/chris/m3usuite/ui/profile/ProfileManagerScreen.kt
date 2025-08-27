@@ -28,6 +28,7 @@ import coil3.request.ImageRequest
 import com.chris.m3usuite.ui.util.rememberAvatarModel
 import java.io.File
 import java.io.FileOutputStream
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +58,7 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
     }, snackbarHost = { SnackbarHost(snack) }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(value = newKidName, onValueChange = { newKidName = it }, label = { Text("Neues Kinderprofil") })
-            Button(onClick = {
+            Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                 scope.launch(Dispatchers.IO) {
                     val now = System.currentTimeMillis()
                     db.profileDao().insert(Profile(name = newKidName.ifBlank { "Kind" }, type = "kid", avatarPath = null, createdAt = now, updatedAt = now))
@@ -149,7 +150,7 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                 )
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = {
+                                Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                                     scope.launch(Dispatchers.IO) {
                                         db.profileDao().update(kid.copy(name = name, updatedAt = System.currentTimeMillis()))
                                         screenRepo.setDailyLimit(kid.id, limit)
@@ -164,7 +165,7 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                         load()
                                     }
                                 }) { Text("Speichern") }
-                                TextButton(onClick = {
+                                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                                     scope.launch(Dispatchers.IO) {
                                         db.profileDao().delete(kid)
                                         load()

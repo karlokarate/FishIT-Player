@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.max
 import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import com.chris.m3usuite.ui.skin.tvClickable
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,8 +115,8 @@ fun SeriesDetailScreen(
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Abbrechen") }
-                        Button(onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("OK") }
+                        TextButton(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = onDismiss) { Text("Abbrechen") }
+                        Button(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty()) { Text("OK") }
                     }
                 }
             }
@@ -270,28 +271,33 @@ fun SeriesDetailScreen(
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (resumeSecs != null) {
                                     AssistChip(
+                                        modifier = Modifier.focusScaleOnTv(),
                                         onClick = { playEpisode(e, fromStart = false, resumeSecs = resumeSecs) },
                                         label = { Text("Fortsetzen ${fmt(resumeSecs!!)}") }
                                     )
                                     AssistChip(
+                                        modifier = Modifier.focusScaleOnTv(),
                                         onClick = {
                                             setEpisodeResume(episodeKey, (resumeSecs ?: 0) - 30) { resumeSecs = it }
                                         },
                                         label = { Text("-30s") }
                                     )
                                     AssistChip(
+                                        modifier = Modifier.focusScaleOnTv(),
                                         onClick = {
                                             setEpisodeResume(episodeKey, (resumeSecs ?: 0) + 30) { resumeSecs = it }
                                         },
                                         label = { Text("+30s") }
                                     )
                                     AssistChip(
+                                        modifier = Modifier.focusScaleOnTv(),
                                         onClick = {
                                             setEpisodeResume(episodeKey, (resumeSecs ?: 0) + 300) { resumeSecs = it }
                                         },
                                         label = { Text("+5m") }
                                     )
                                     AssistChip(
+                                        modifier = Modifier.focusScaleOnTv(),
                                         onClick = {
                                             clearEpisodeResume(episodeKey) { resumeSecs = null }
                                         },
@@ -299,6 +305,7 @@ fun SeriesDetailScreen(
                                     )
                                 } else {
                                     AssistChip(
+                                        modifier = Modifier.focusScaleOnTv(),
                                         onClick = {
                                             setEpisodeResume(episodeKey, 0) { resumeSecs = it }
                                         },
@@ -306,12 +313,13 @@ fun SeriesDetailScreen(
                                     )
                                 }
                                 AssistChip(
+                                    modifier = Modifier.focusScaleOnTv(),
                                     onClick = { playEpisode(e, fromStart = true) },
                                     label = { Text("Von Anfang") }
                                 )
                                 if (isAdult) {
-                                    TextButton(onClick = { showGrantSheet = true }) { Text("Für Kind(er) freigeben…") }
-                                    TextButton(onClick = { showRevokeSheet = true }) { Text("Entfernen…") }
+                                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showGrantSheet = true }) { Text("Für Kind(er) freigeben…") }
+                                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showRevokeSheet = true }) { Text("Entfernen…") }
                                 }
                             }
                         }
