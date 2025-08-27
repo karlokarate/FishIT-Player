@@ -62,6 +62,7 @@ dependencies {
     implementation("androidx.compose.ui:ui:$compose")
     implementation("androidx.compose.material:material:$compose")
     implementation("androidx.compose.material3:material3:1.3.1")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-tooling-preview:$compose")
     debugImplementation("androidx.compose.ui:ui-tooling:$compose")
 
