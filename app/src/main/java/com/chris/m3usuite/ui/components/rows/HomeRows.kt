@@ -35,6 +35,8 @@ import com.chris.m3usuite.data.db.DbProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
@@ -162,14 +164,13 @@ fun LiveTileCard(
                         .padding(8.dp)
                 )
             }
-            // Info action (details) bottom-end
-            AppIconButton(
-                icon = AppIcon.Info,
-                contentDescription = "Details",
-                onClick = { onClick(item) },
+            Row(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
-                size = 24.dp
-            )
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onClick(item) }, size = 24.dp)
+                AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onClick(item) }, size = 24.dp)
+            }
         }
     }
 }
@@ -223,7 +224,8 @@ fun SeriesTileCard(
                     modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
                 )
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Row(Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 8.dp), horizontalArrangement = Arrangement.End) {
+                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onClick(item) }, size = 24.dp)
                 AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onClick(item) }, size = 24.dp)
             }
         }
@@ -269,7 +271,8 @@ fun VodTileCard(
                     modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
                 )
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Row(Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 8.dp), horizontalArrangement = Arrangement.End) {
+                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onClick(item) }, size = 24.dp)
                 AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onClick(item) }, size = 24.dp)
             }
         }
