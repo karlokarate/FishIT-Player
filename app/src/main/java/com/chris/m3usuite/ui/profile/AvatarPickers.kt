@@ -28,11 +28,10 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
 
 @Composable
 fun AvatarCaptureAndPickButtons(
-    onAvatarSaved: (File) -> Unit
+    onPicked: (Uri) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -43,9 +42,7 @@ fun AvatarCaptureAndPickButtons(
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         val f = tempFile
         if (success && f != null && f.exists()) {
-            saveAvatarPersistently(context, Uri.fromFile(f)) { saved ->
-                if (saved != null) onAvatarSaved(saved) else Toast.makeText(context, "Konnte Avatar nicht speichern", Toast.LENGTH_LONG).show()
-            }
+            onPicked(Uri.fromFile(f))
         } else Toast.makeText(context, "Foto abgebrochen", Toast.LENGTH_SHORT).show()
     }
 
@@ -74,18 +71,10 @@ fun AvatarCaptureAndPickButtons(
     }
 
     val pickerLauncher13 = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) {
-            saveAvatarPersistently(context, uri) { saved ->
-                if (saved != null) onAvatarSaved(saved) else Toast.makeText(context, "Konnte Avatar nicht speichern", Toast.LENGTH_LONG).show()
-            }
-        }
+        if (uri != null) onPicked(uri)
     }
     val legacyPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) {
-            saveAvatarPersistently(context, uri) { saved ->
-                if (saved != null) onAvatarSaved(saved) else Toast.makeText(context, "Konnte Avatar nicht speichern", Toast.LENGTH_LONG).show()
-            }
-        }
+        if (uri != null) onPicked(uri)
     }
 
     Button(onClick = { launchCameraWithPermission() }) { Text("Foto aufnehmen") }
@@ -96,25 +85,6 @@ fun AvatarCaptureAndPickButtons(
     }) { Text("Bild aus Galerie wählen") }
 }
 
-private fun saveAvatarPersistently(context: Context, source: Uri, onDone: (File?) -> Unit) {
-    GlobalScope.launch(Dispatchers.Main) {
-        val result = withContext(Dispatchers.IO) {
-            try {
-                val dir = File(context.filesDir, "avatars").apply { mkdirs() }
-                val out = File(dir, "avatar_${System.currentTimeMillis()}.jpg")
-                context.contentResolver.openInputStream(source).use { input ->
-                    FileOutputStream(out).use { output ->
-                        if (input == null) return@withContext null
-                        input.copyTo(output)
-                    }
-                }
-                out
-            } catch (t: Throwable) { null }
-        }
-        onDone(result)
-    }
-}
-
 private fun Context.findActivity(): Activity {
     var ctx: Context = this
     while (ctx is ContextWrapper) {
@@ -123,4 +93,3 @@ private fun Context.findActivity(): Activity {
     }
     throw IllegalStateException("Activity not found from context")
 }
-

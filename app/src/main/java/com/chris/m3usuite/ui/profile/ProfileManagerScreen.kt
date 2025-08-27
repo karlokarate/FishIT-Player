@@ -17,6 +17,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import com.chris.m3usuite.ui.profile.AvatarCaptureAndPickButtons
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +36,9 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
     val db = remember { DbProvider.get(ctx) }
     val scope = rememberCoroutineScope()
     val screenRepo = remember { ScreenTimeRepository(ctx) }
+    val vm: ProfileManagerViewModel = viewModel()
+    var saving by remember { mutableStateOf(false) }
+    BackHandler(enabled = saving) { /* block back while saving */ }
 
     var kids by remember { mutableStateOf<List<Profile>>(emptyList()) }
     var newKidName by remember { mutableStateOf("") }
@@ -110,12 +115,16 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.weight(1f))
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                AvatarCaptureAndPickButtons { savedFile ->
-                                    scope.launch(Dispatchers.IO) {
-                                        db.profileDao().update(kid.copy(avatarPath = savedFile.absolutePath, updatedAt = System.currentTimeMillis()))
-                                        withContext(Dispatchers.Main) {
-                                            avatarPath = savedFile.absolutePath
-                                            snack.showSnackbar("Avatar aktualisiert")
+                                AvatarCaptureAndPickButtons { uri ->
+                                    saving = true
+                                    vm.saveAvatar(kid.id, uri) { ok, file ->
+                                        saving = false
+                                        if (ok && file != null) {
+                                            avatarPath = file.absolutePath
+                                            // Snackbar kann zeigen, auch wenn man direkt zurück geht
+                                            scope.launch { snack.showSnackbar("Avatar aktualisiert") }
+                                        } else {
+                                            scope.launch { snack.showSnackbar("Avatar speichern fehlgeschlagen") }
                                         }
                                     }
                                 }
