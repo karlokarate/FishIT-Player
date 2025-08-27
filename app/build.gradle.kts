@@ -106,6 +106,9 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.5.0")
     implementation("androidx.media3:media3-exoplayer-hls:1.5.0")
 
+    // Compose for TV (Material)
+    implementation("androidx.tv:tv-material:1.0.1")
+
     // Tests
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
