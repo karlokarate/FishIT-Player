@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.max
 import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
+import com.chris.m3usuite.ui.skin.tvClickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +83,15 @@ fun SeriesDetailScreen(
                 }
                 items(kids, key = { it.id }) { k ->
                     val isC = k.id in checked
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .tvClickable {
+                                val v = !isC
+                                checked = if (v) checked + k.id else checked - k.id
+                            },
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             val model = rememberAvatarModel(k.avatarPath)
                             if (model != null) {

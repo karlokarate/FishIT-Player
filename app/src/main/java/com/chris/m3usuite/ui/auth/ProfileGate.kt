@@ -25,6 +25,7 @@ import coil3.request.ImageRequest
 import com.chris.m3usuite.ui.util.rememberAvatarModel
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
+import com.chris.m3usuite.ui.skin.tvClickable
 
 @Composable
 fun ProfileGate(
@@ -136,9 +137,14 @@ fun ProfileGate(
                         }
                     }
                 }
-                OutlinedCard(Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable {
-                    scope.launch { store.setCurrentProfileId(k.id); onEnter() }
-                }) {
+                OutlinedCard(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .tvClickable {
+                            scope.launch { store.setCurrentProfileId(k.id); onEnter() }
+                        }
+                ) {
                     ListItem(
                         headlineContent = { Text(k.name) },
                         supportingContent = {

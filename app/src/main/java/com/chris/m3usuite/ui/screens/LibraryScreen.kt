@@ -51,6 +51,7 @@ import kotlinx.coroutines.withContext
 import com.chris.m3usuite.data.db.Profile
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.chris.m3usuite.ui.skin.tvClickable
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -514,7 +515,15 @@ fun LibraryScreen(
                 }
                 listItems(kids, key = { it.id }) { k: Profile ->
                     val isC = k.id in checked
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .tvClickable {
+                                val v = !isC
+                                checked = if (v) checked + k.id else checked - k.id
+                            },
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(k.name)
                         Switch(checked = isC, onCheckedChange = { v -> checked = if (v) checked + k.id else checked - k.id })
                     }
