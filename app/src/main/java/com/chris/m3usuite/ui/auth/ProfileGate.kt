@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import androidx.compose.ui.layout.ContentScale
 
 @Composable
 fun ProfileGate(
@@ -162,9 +163,10 @@ fun ProfileGate(
                                     else -> ap
                                 }
                                 AsyncImage(
-                                    model = data,
+                                    model = ImageRequest.Builder(ctx).data(data).build(),
                                     contentDescription = null,
-                                    modifier = Modifier.size(40.dp).clip(CircleShape)
+                                    modifier = Modifier.size(40.dp).clip(CircleShape),
+                                    contentScale = ContentScale.Crop
                                 )
                             } else {
                                 Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
