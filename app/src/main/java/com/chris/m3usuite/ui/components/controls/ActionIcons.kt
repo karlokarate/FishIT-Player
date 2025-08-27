@@ -10,7 +10,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
 
@@ -52,7 +51,6 @@ fun RemoveIconButton(
         modifier = modifier.focusScaleOnTv(),
         enabled = true,
         colors = IconButtonDefaults.iconButtonColors(contentColor = tint),
-        role = Role.Button
     ) {
         Icon(
             imageVector = Icons.Rounded.RemoveCircle,
@@ -62,4 +60,3 @@ fun RemoveIconButton(
         )
     }
 }
-

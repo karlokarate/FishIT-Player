@@ -20,7 +20,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalIndication
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawWithContent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.Role
@@ -79,11 +80,20 @@ fun Modifier.tvClickable(
             scaleY = scale
             shadowElevation = if (focused) elevationFocusedDp.dp.toPx() else 0f
         }
+        .drawWithContent {
+            drawContent()
+            val alpha = when {
+                pressed -> 0.28f
+                focused -> 0.18f
+                else -> 0f
+            }
+            if (alpha > 0f) drawRect(color = Color(0xFF00E0FF), alpha = alpha)
+        }
         .clickable(
             enabled = enabled,
             role = role,
             interactionSource = interactionSource,
-            indication = LocalIndication.current, // keep global TvFocusIndication
+            indication = null,
             onClick = onClick
         )
 }
