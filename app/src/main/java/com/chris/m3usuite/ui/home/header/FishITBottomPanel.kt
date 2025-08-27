@@ -42,6 +42,7 @@ fun FishITBottomPanel(
             .height(FishITBottomHeights.bar),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
+        @Composable
         fun tab(label: String, id: String) {
             val sel = selected == id
             TextButton(onClick = { onSelect(id) }, modifier = Modifier.focusScaleOnTv()) {
@@ -58,4 +59,3 @@ fun FishITBottomPanel(
         tab("Serien", "series")
     }
 }
-
