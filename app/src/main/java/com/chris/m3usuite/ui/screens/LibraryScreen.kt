@@ -62,6 +62,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import com.chris.m3usuite.ui.home.header.FishITBottomPanel
 import com.chris.m3usuite.ui.home.header.FishITBottomHeights
 import com.chris.m3usuite.data.db.MediaItem as DbMediaItem
+import kotlinx.serialization.json.Json
 import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
 

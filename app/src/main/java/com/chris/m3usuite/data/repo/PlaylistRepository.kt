@@ -37,10 +37,30 @@ class PlaylistRepository(
 
                 // 4) DB ersetzen
                 val dao = DbProvider.get(context).mediaDao()
-                dao.clearType("live")
-                dao.clearType("vod")
-                dao.clearType("series")
-                dao.upsertAll(parsed)
+                // Preserve addedAt using url as key
+                fun parseAddedAt(extra: String?): String? = runCatching {
+                    if (extra.isNullOrBlank()) return@runCatching null
+                    kotlinx.serialization.json.Json.decodeFromString<Map<String,String>>(extra)["addedAt"]
+                }.getOrNull()
+                val prevLive = dao.listByType("live", 100000, 0).associateBy({ it.url }, { parseAddedAt(it.extraJson) })
+                val prevVod  = dao.listByType("vod", 100000, 0).associateBy({ it.url }, { parseAddedAt(it.extraJson) })
+                val prevSer  = dao.listByType("series", 100000, 0).associateBy({ it.url }, { parseAddedAt(it.extraJson) })
+                val now = System.currentTimeMillis().toString()
+
+                dao.clearType("live"); dao.clearType("vod"); dao.clearType("series")
+                dao.upsertAll(parsed.map { mi ->
+                    val key = mi.url
+                    val addedAt = when (mi.type) {
+                        "live" -> prevLive[key]
+                        "vod" -> prevVod[key]
+                        "series" -> prevSer[key]
+                        else -> null
+                    } ?: now
+                    val base = mutableMapOf<String,String>()
+                    base["addedAt"] = addedAt
+                    val extra = kotlinx.serialization.json.Json.encodeToString(base)
+                    mi.copy(extraJson = extra)
+                })
 
                 // 5) Anzahl zurückgeben
                 parsed.size

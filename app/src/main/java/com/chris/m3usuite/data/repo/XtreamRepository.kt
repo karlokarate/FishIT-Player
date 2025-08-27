@@ -50,6 +50,16 @@ class XtreamRepository(
             val mediaDao = db.mediaDao()
             val catDao = db.categoryDao()
 
+            // Build previous addedAt maps per type to preserve timestamps across updates
+            fun parseAddedAt(extra: String?): String? = runCatching {
+                if (extra.isNullOrBlank()) return@runCatching null
+                val map = kotlinx.serialization.json.Json.decodeFromString<Map<String, String>>(extra)
+                map["addedAt"]
+            }.getOrNull()
+            val prevLive = mediaDao.listByType("live", 100000, 0).associateBy({ it.streamId }, { parseAddedAt(it.extraJson) })
+            val prevVod  = mediaDao.listByType("vod", 100000, 0).associateBy({ it.streamId }, { parseAddedAt(it.extraJson) })
+            val prevSer  = mediaDao.listByType("series", 100000, 0).associateBy({ it.streamId }, { parseAddedAt(it.extraJson) })
+
             val liveCats = client.liveCategories()
             val vodCats = client.vodCategories()
             val serCats = client.seriesCategories()
@@ -61,6 +71,8 @@ class XtreamRepository(
             val live = client.liveStreams()
             mediaDao.clearType("live")
             mediaDao.upsertAll(live.map {
+                val addedAt = prevLive[it.streamId]?.takeIf { s -> !s.isNullOrBlank() } ?: System.currentTimeMillis().toString()
+                val extra = kotlinx.serialization.json.Json.encodeToString(mapOf("addedAt" to addedAt))
                 MediaItem(
                     type = "live",
                     streamId = it.streamId,
@@ -75,14 +87,16 @@ class XtreamRepository(
                     year = null, rating = null, durationSecs = null,
                     plot = null,
                     url = cfg.liveUrl(it.streamId),
-                    extraJson = null
+                    extraJson = extra
                 )
             })
 
             val vod = client.vodStreams()
             mediaDao.clearType("vod")
             mediaDao.upsertAll(vod.map {
-                val extra = Json.encodeToString(mapOf("container" to (it.containerExtension ?: "")))
+                val addedAt = prevVod[it.streamId]?.takeIf { s -> !s.isNullOrBlank() } ?: System.currentTimeMillis().toString()
+                val base = mutableMapOf("container" to (it.containerExtension ?: ""), "addedAt" to addedAt)
+                val extra = Json.encodeToString(base)
                 MediaItem(
                     type = "vod",
                     streamId = it.streamId,
@@ -106,6 +120,8 @@ class XtreamRepository(
             val series = client.seriesList()
             mediaDao.clearType("series")
             mediaDao.upsertAll(series.map {
+                val addedAt = prevSer[it.seriesId]?.takeIf { s -> !s.isNullOrBlank() } ?: System.currentTimeMillis().toString()
+                val extra = Json.encodeToString(mapOf("addedAt" to addedAt))
                 MediaItem(
                     type = "series",
                     streamId = it.seriesId,
@@ -122,7 +138,7 @@ class XtreamRepository(
                     durationSecs = null,
                     plot = it.plot,
                     url = null,
-                    extraJson = null
+                    extraJson = extra
                 )
             })
 
