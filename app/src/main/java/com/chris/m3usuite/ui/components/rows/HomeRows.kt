@@ -17,8 +17,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import com.chris.m3usuite.ui.util.rememberImageHeaders
+import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.skin.tvClickable
-import com.chris.m3usuite.ui.skin.isTvDevice
+// isTvDevice removed (unused)
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
@@ -28,8 +30,15 @@ import com.chris.m3usuite.data.db.MediaItem
 private fun rowItemHeight(): Int {
     val cfg = LocalConfiguration.current
     val isLandscape = cfg.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-    val base = if (isLandscape) 210 else 180
-    return base
+    val sw = cfg.smallestScreenWidthDp
+    val isTablet = sw >= 600
+    // Tune heights: phone 180/200, tablet 210/230 depending on orientation
+    return when {
+        isTablet && isLandscape -> 230
+        isTablet -> 210
+        isLandscape -> 200
+        else -> 180
+    }
 }
 
 @Composable
@@ -40,6 +49,7 @@ fun MediaCard(
     showTitle: Boolean = true
 ) {
     val ctx = LocalContext.current
+    val headers = rememberImageHeaders()
     val h = rowItemHeight()
     Column(
         horizontalAlignment = Alignment.Start,
@@ -49,11 +59,11 @@ fun MediaCard(
             .tvClickable { onClick(item) }
     ) {
         // Prefer poster/logo/backdrop in this order (fallback to any image field in MediaItem)
-        val model = remember(item.poster ?: item.logo ?: item.backdrop) {
+        val raw = remember(item.poster ?: item.logo ?: item.backdrop) {
             item.poster ?: item.logo ?: item.backdrop
         }
         AsyncImage(
-            model = ImageRequest.Builder(ctx).data(model).build(),
+            model = buildImageRequest(ctx, raw, headers),
             contentDescription = item.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -136,4 +146,3 @@ fun VodRow(
         }
     }
 }
-

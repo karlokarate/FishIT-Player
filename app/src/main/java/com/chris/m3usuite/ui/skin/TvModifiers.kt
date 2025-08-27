@@ -21,6 +21,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalIndication
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -88,9 +90,23 @@ fun Modifier.tvClickable(
 
 /** Add only the scale/bounce (no click). Use on Buttons etc. */
 fun Modifier.focusScaleOnTv(
-    focusedScale: Float = 1.06f,
-    pressedScale: Float = 0.98f
+    focusedScale: Float? = null,
+    pressedScale: Float? = null
 ): Modifier = composed {
+    val ctx = LocalContext.current
+    val cfg = LocalConfiguration.current
+    val sw = cfg.smallestScreenWidthDp
+    val isTablet = sw >= 600
+    val isTv = isTvDevice(ctx)
+    val effFocused = focusedScale ?: when {
+        isTv -> 1.08f
+        isTablet -> 1.04f
+        else -> 1.03f
+    }
+    val effPressed = pressedScale ?: when {
+        isTv -> 0.98f
+        else -> 0.99f
+    }
     val interactionSource = remember { MutableInteractionSource() }
     var focused by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf(false) }
@@ -105,8 +121,8 @@ fun Modifier.focusScaleOnTv(
     }
     val scale by animateFloatAsState(
         targetValue = when {
-            pressed -> pressedScale
-            focused -> focusedScale
+            pressed -> effPressed
+            focused -> effFocused
             else -> 1f
         },
         animationSpec = spring(stiffness = Spring.StiffnessMedium, dampingRatio = Spring.DampingRatioLowBouncy),
@@ -116,4 +132,3 @@ fun Modifier.focusScaleOnTv(
         .onFocusChanged { focused = it.isFocused || it.hasFocus }
         .graphicsLayer { scaleX = scale; scaleY = scale }
 }
-
