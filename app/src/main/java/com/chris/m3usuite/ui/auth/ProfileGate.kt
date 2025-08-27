@@ -83,14 +83,17 @@ fun ProfileGate(
                         val h = sha256(pin)
                         scope.launch { 
                             store.setAdultPinHash(h); store.setAdultPinSet(true)
-                            store.setCurrentProfileId(adult?.id ?: -1)
+                            // ensure we set a valid adult id
+                            val a = adult ?: withContext(Dispatchers.IO) { db.profileDao().all().firstOrNull { it.type == "adult" } }
+                            store.setCurrentProfileId(a?.id ?: -1)
                             pin = ""; pin2 = ""; showPin = false; onEnter() 
                         }
                     } else {
                         scope.launch {
                             val ok = sha256(pin) == store.adultPinHash.first()
-                            if (ok) { 
-                                store.setCurrentProfileId(adult?.id ?: -1)
+                            if (ok) {
+                                val a = adult ?: withContext(Dispatchers.IO) { db.profileDao().all().firstOrNull { it.type == "adult" } }
+                                store.setCurrentProfileId(a?.id ?: -1)
                                 pin = ""; showPin = false; onEnter() 
                             } else pinError = "Falscher PIN"
                         }
@@ -121,8 +124,9 @@ fun ProfileGate(
                         supportingContent = { Text("Kinderprofil") },
                         leadingContent = {
                             if (!k.avatarPath.isNullOrBlank()) {
+                                val src = if (k.avatarPath!!.startsWith("/")) "file://${k.avatarPath}" else k.avatarPath
                                 AsyncImage(
-                                    model = ImageRequest.Builder(ctx).data(k.avatarPath).build(),
+                                    model = ImageRequest.Builder(ctx).data(src).build(),
                                     contentDescription = null,
                                     modifier = Modifier.size(40.dp).clip(CircleShape)
                                 )

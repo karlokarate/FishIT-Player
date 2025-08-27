@@ -96,9 +96,10 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                             scope.launch {
                                 val ok = persistAvatarFromUri(uri)
                                 if (ok) {
-                                    val path = File(ctx.filesDir, "avatars/${kid.id}/avatar.jpg").absolutePath
-                                    withContext(Dispatchers.IO) { db.profileDao().update(kid.copy(avatarPath = path, updatedAt = System.currentTimeMillis())) }
-                                    avatarPath = path
+                                    val abs = File(ctx.filesDir, "avatars/${kid.id}/avatar.jpg").absolutePath
+                                    val stored = "file://$abs"
+                                    withContext(Dispatchers.IO) { db.profileDao().update(kid.copy(avatarPath = stored, updatedAt = System.currentTimeMillis())) }
+                                    avatarPath = stored
                                     snack.showSnackbar("Avatar aktualisiert")
                                 } else snack.showSnackbar("Avatar konnte nicht gespeichert werden")
                             }
@@ -111,9 +112,10 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                 val ok = persistBitmapAsJpeg(bmp, dest)
                                 withContext(Dispatchers.Main) {
                                     if (ok) {
-                                        val path = dest.absolutePath
-                                        withContext(Dispatchers.IO) { db.profileDao().update(kid.copy(avatarPath = path, updatedAt = System.currentTimeMillis())) }
-                                        avatarPath = path
+                                        val abs = dest.absolutePath
+                                        val stored = "file://$abs"
+                                        withContext(Dispatchers.IO) { db.profileDao().update(kid.copy(avatarPath = stored, updatedAt = System.currentTimeMillis())) }
+                                        avatarPath = stored
                                         snack.showSnackbar("Foto gespeichert")
                                     } else snack.showSnackbar("Foto konnte nicht gespeichert werden")
                                 }
