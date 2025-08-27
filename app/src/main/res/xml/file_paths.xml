@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <cache-path name="camera_cache" path="images/" />
+    <files-path name="avatar_images" path="avatars/" />
+    <external-cache-path name="ext_camera_cache" path="images/" />
+</paths>
+

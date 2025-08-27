@@ -124,9 +124,9 @@ fun ProfileGate(
                         supportingContent = { Text("Kinderprofil") },
                         leadingContent = {
                             if (!k.avatarPath.isNullOrBlank()) {
-                                val src = if (k.avatarPath!!.startsWith("/")) "file://${k.avatarPath}" else k.avatarPath
+                                val data: Any = if (k.avatarPath!!.startsWith("/")) java.io.File(k.avatarPath!!) else k.avatarPath!!
                                 AsyncImage(
-                                    model = ImageRequest.Builder(ctx).data(src).build(),
+                                    model = ImageRequest.Builder(ctx).data(data).build(),
                                     contentDescription = null,
                                     modifier = Modifier.size(40.dp).clip(CircleShape)
                                 )

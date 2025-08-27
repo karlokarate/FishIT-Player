@@ -16,16 +16,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.PickVisualMediaRequest
+import com.chris.m3usuite.ui.profile.AvatarCaptureAndPickButtons
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import android.graphics.Bitmap
 import java.io.File
 import java.io.FileOutputStream
 
@@ -71,64 +68,15 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                     var limit by remember(kid.id) { mutableStateOf(60) }
                     var avatarPath by remember(kid.id) { mutableStateOf(kid.avatarPath) }
 
-                    fun persistBitmapAsJpeg(bitmap: Bitmap, dest: File): Boolean {
-                        return try {
-                            dest.parentFile?.mkdirs()
-                            FileOutputStream(dest).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out) }
-                            true
-                        } catch (_: Throwable) { false }
-                    }
-                    suspend fun persistAvatarFromUri(uri: android.net.Uri): Boolean {
-                        return withContext(Dispatchers.IO) {
-                            try {
-                                val dest = File(ctx.filesDir, "avatars/${kid.id}/avatar.jpg")
-                                dest.parentFile?.mkdirs()
-                                ctx.contentResolver.openInputStream(uri)?.use { input ->
-                                    FileOutputStream(dest).use { output -> input.copyTo(output) }
-                                }
-                                true
-                            } catch (_: Throwable) { false }
-                        }
-                    }
-
-                    val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-                        if (uri != null) {
-                            scope.launch {
-                                val ok = persistAvatarFromUri(uri)
-                                if (ok) {
-                                    val abs = File(ctx.filesDir, "avatars/${kid.id}/avatar.jpg").absolutePath
-                                    val stored = "file://$abs"
-                                    withContext(Dispatchers.IO) { db.profileDao().update(kid.copy(avatarPath = stored, updatedAt = System.currentTimeMillis())) }
-                                    avatarPath = stored
-                                    snack.showSnackbar("Avatar aktualisiert")
-                                } else snack.showSnackbar("Avatar konnte nicht gespeichert werden")
-                            }
-                        }
-                    }
-                    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bmp ->
-                        if (bmp != null) {
-                            scope.launch(Dispatchers.IO) {
-                                val dest = File(ctx.filesDir, "avatars/${kid.id}/avatar.jpg")
-                                val ok = persistBitmapAsJpeg(bmp, dest)
-                                withContext(Dispatchers.Main) {
-                                    if (ok) {
-                                        val abs = dest.absolutePath
-                                        val stored = "file://$abs"
-                                        withContext(Dispatchers.IO) { db.profileDao().update(kid.copy(avatarPath = stored, updatedAt = System.currentTimeMillis())) }
-                                        avatarPath = stored
-                                        snack.showSnackbar("Foto gespeichert")
-                                    } else snack.showSnackbar("Foto konnte nicht gespeichert werden")
-                                }
-                            }
-                        }
-                    }
+                    // old capture/pick logic removed; using AvatarCaptureAndPickButtons below
 
                     OutlinedCard(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 if (!avatarPath.isNullOrBlank()) {
+                                    val data: Any = File(avatarPath!!)
                                     AsyncImage(
-                                        model = ImageRequest.Builder(ctx).data(avatarPath).build(),
+                                        model = ImageRequest.Builder(ctx).data(data).build(),
                                         contentDescription = null,
                                         modifier = Modifier.size(48.dp).clip(CircleShape),
                                         contentScale = ContentScale.Crop
@@ -139,8 +87,15 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.weight(1f))
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                TextButton(onClick = { pickLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) { Text("Avatar wählen") }
-                                TextButton(onClick = { cameraLauncher.launch(null) }) { Text("Foto aufnehmen") }
+                                AvatarCaptureAndPickButtons { savedFile ->
+                                    scope.launch(Dispatchers.IO) {
+                                        db.profileDao().update(kid.copy(avatarPath = savedFile.absolutePath, updatedAt = System.currentTimeMillis()))
+                                        withContext(Dispatchers.Main) {
+                                            avatarPath = savedFile.absolutePath
+                                            snack.showSnackbar("Avatar aktualisiert")
+                                        }
+                                    }
+                                }
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("Tageslimit (Minuten)", modifier = Modifier.weight(1f))
