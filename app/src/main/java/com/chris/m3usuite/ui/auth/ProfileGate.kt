@@ -123,13 +123,26 @@ fun ProfileGate(
                         headlineContent = { Text(k.name) },
                         supportingContent = { Text("Kinderprofil") },
                         leadingContent = {
-                            if (!k.avatarPath.isNullOrBlank()) {
-                                val data: Any = if (k.avatarPath!!.startsWith("/")) java.io.File(k.avatarPath!!) else k.avatarPath!!
-                                AsyncImage(
-                                    model = ImageRequest.Builder(ctx).data(data).build(),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(40.dp).clip(CircleShape)
-                                )
+                            val ap = k.avatarPath
+                            if (!ap.isNullOrBlank()) {
+                                if (ap.startsWith("/")) {
+                                    val f = java.io.File(ap)
+                                    if (f.exists()) {
+                                        AsyncImage(
+                                            model = f,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(40.dp).clip(CircleShape)
+                                        )
+                                    } else {
+                                        Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
+                                    }
+                                } else {
+                                    AsyncImage(
+                                        model = ap,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(40.dp).clip(CircleShape)
+                                    )
+                                }
                             } else {
                                 Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
                             }
