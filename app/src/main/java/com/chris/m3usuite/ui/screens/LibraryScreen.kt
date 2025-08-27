@@ -279,6 +279,14 @@ fun LibraryScreen(
                         Text(label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 2.dp))
                     }
                 }
+                fun parseAddedAt(mi: DbMediaItem): Long? = runCatching {
+                    val json = mi.extraJson ?: return@runCatching null
+                    val map = kotlinx.serialization.json.Json.decodeFromString<Map<String,String>>(json)
+                    map["addedAt"]?.toLongOrNull()
+                }.getOrNull()
+                val now = System.currentTimeMillis()
+                val thresholdMs = 7L * 24L * 60L * 60L * 1000L // 7 Tage
+                fun isNew(mi: DbMediaItem): Boolean = parseAddedAt(mi)?.let { now - it <= thresholdMs } == true
                 when (selectedId) {
                     "vod" -> {
                         if (topResume.isNotEmpty()) {
@@ -293,24 +301,7 @@ fun LibraryScreen(
                         // Neu hinzugefügt (id desc)
                         if (allVod.isNotEmpty()) {
                             header("Neu hinzugefügt")
-                            // persistent new tracking via SettingsStore CSV (streamId fallback to id)
-                            val currentIds = allVod.map { it.streamId?.toString() ?: "id:${it.id}" }.toSet()
-                            val firstDone = store.firstVodSnapshot.first()
-                            var newSet = store.newVodIdsCsv.first().split(',').filter { it.isNotBlank() }.toMutableSet()
-                            if (!firstDone) {
-                                // establish baseline on first run
-                                store.setNewVodIdsCsv(currentIds.joinToString(","))
-                                store.setFirstVodSnapshot(true)
-                                newSet = mutableSetOf()
-                            } else {
-                                val prev = newSet
-                                val diff = currentIds - prev
-                                if (diff.isNotEmpty()) {
-                                    newSet.addAll(diff)
-                                    store.setNewVodIdsCsv(newSet.joinToString(","))
-                                }
-                            }
-                            val newest = allVod.filter { (it.streamId?.toString() ?: "id:${it.id}") in newSet }.take(50)
+                            val newest = allVod.filter { isNew(it) }.sortedByDescending { parseAddedAt(it) ?: 0L }.take(50)
                             item("vod_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = newest, onClick = { mi -> openVod(mi.id) }, showNew = true) } }
                         }
                         // Genres
@@ -332,23 +323,33 @@ fun LibraryScreen(
                         }
                         if (allSeries.isNotEmpty()) {
                             header("Neu hinzugefügt")
-                            val currentIds = allSeries.map { it.streamId?.toString() ?: "id:${it.id}" }.toSet()
-                            val firstDone = store.firstSeriesSnapshot.first()
-                            var newSet = store.newSeriesIdsCsv.first().split(',').filter { it.isNotBlank() }.toMutableSet()
-                            if (!firstDone) {
-                                store.setNewSeriesIdsCsv(currentIds.joinToString(","))
-                                store.setFirstSeriesSnapshot(true)
-                                newSet = mutableSetOf()
-                            } else {
-                                val prev = newSet
-                                val diff = currentIds - prev
+                            val newest = allSeries.filter { isNew(it) }.sortedByDescending { parseAddedAt(it) ?: 0L }.take(50)
+                            item("series_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newest, onClick = { mi -> openSeries(mi.id) }, showNew = true) } }
+                        }
+                        // Neue Episoden seit letztem Start (Snapshot-Vergleich)
+                        run {
+                            val epCsvPrev = store.episodeSnapshotIdsCsv.first()
+                            val prev = epCsvPrev.split(',').filter { it.isNotBlank() }.toSet()
+                            val current = withContext(Dispatchers.IO) {
+                                db.episodeDao().let { dao ->
+                                    // Flatten all episode ids
+                                    allSeries.mapNotNull { it.streamId }.flatMap { sid -> dao.episodes(sid, dao.seasons(sid).firstOrNull() ?: 0) }
+                                }.map { it.episodeId.toString() }.toSet()
+                            }
+                            if (prev.isNotEmpty()) {
+                                val diff = current - prev
                                 if (diff.isNotEmpty()) {
-                                    newSet.addAll(diff)
-                                    store.setNewSeriesIdsCsv(newSet.joinToString(","))
+                                    header("Neue Episoden")
+                                    val newSeriesSet = withContext(Dispatchers.IO) {
+                                        val dao = db.episodeDao()
+                                        diff.mapNotNull { idStr -> idStr.toIntOrNull()?.let { dao.byEpisodeId(it)?.seriesStreamId } }.toSet()
+                                    }
+                                    val seriesItems = allSeries.filter { it.streamId in newSeriesSet }.distinctBy { it.streamId }.take(50)
+                                    item("series_new_episodes") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = seriesItems, onClick = { mi -> openSeries(mi.id) }, showNew = true) } }
                                 }
                             }
-                            val newest = allSeries.filter { (it.streamId?.toString() ?: "id:${it.id}") in newSet }.take(50)
-                            item("series_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newest, onClick = { mi -> openSeries(mi.id) }, showNew = true) } }
+                            // update snapshot after computing diff
+                            store.setEpisodeSnapshotIdsCsv(current.joinToString(","))
                         }
                         val genres = listOf("Kinder", "Action", "Doku", "Horror")
                         genres.forEach { g ->
@@ -361,7 +362,7 @@ fun LibraryScreen(
                     }
                     "live" -> {
                         // Anbieter-Gruppen dynamisch aus categoryName
-                        val providers = allLive.mapNotNull { it.categoryName }.groupBy { it }.keys
+                        val providers = allLive.mapNotNull { it.categoryName?.trim() }.toSet().sorted()
                         providers.forEach { label ->
                             val list = allLive.filter { (it.categoryName ?: "") == label }.take(50)
                             if (list.isNotEmpty()) {

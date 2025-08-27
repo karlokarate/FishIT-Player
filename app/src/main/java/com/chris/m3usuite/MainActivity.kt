@@ -55,6 +55,8 @@ class MainActivity : ComponentActivity() {
 
                 val ctx = LocalContext.current
                 val store = remember(ctx) { SettingsStore(ctx) }
+                // Track app start time for new-episode detection
+                LaunchedEffect(Unit) { store.setLastAppStartMs(System.currentTimeMillis()) }
 
                 // DataStore-Flow beobachten
                 val m3uUrl = store.m3uUrl.collectAsState(initial = "").value
