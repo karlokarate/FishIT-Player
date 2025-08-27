@@ -45,7 +45,7 @@ fun FishITHeader(
                     1f to Color.Transparent
                 )
             )
-            .windowInsetsPadding(WindowInsets.statusBars)
+            .windowInsetsPadding(statusBars)
             .padding(horizontal = 12.dp)
     ) {
         // Top bar
