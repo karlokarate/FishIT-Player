@@ -340,46 +340,42 @@ fun InternalPlayerScreen(
 
     var confirmExit by remember { mutableStateOf(false) }
     var discardResume by remember { mutableStateOf(false) }
+    var finishing by remember { mutableStateOf(false) }
 
     fun finishAndRelease() {
-        // resume: clear if near end (<10s), otherwise save
-        runBlocking {
+        if (finishing) return
+        // Ask before exiting when watchtime is very short
+        val dur = exoPlayer.duration
+        val pos = exoPlayer.currentPosition
+        if (type != "live" && ((type == "vod" && mediaId != null) || (type == "series" && episodeId != null))) {
+            if (pos in 1..14999 && !discardResume) { confirmExit = true; return }
+        }
+        finishing = true
+        scope.launch(Dispatchers.IO) {
             try {
-                if (type != "live") {
-                    if ((type == "vod" && mediaId != null) || (type == "series" && episodeId != null)) {
-                        val dur = exoPlayer.duration
-                        val pos = exoPlayer.currentPosition
-                        if (pos in 1..14999 && !discardResume) {
-                            confirmExit = true
-                            return@runBlocking
-                        }
-                        val remaining = if (dur > 0) dur - pos else Long.MAX_VALUE
-                        if (dur > 0 && remaining in 0..9999) {
-                            withContext(Dispatchers.IO) {
-                                val dao = db.resumeDao()
-                                if (type == "vod") dao.clearVod(mediaId!!) else dao.clearEpisode(episodeId!!)
-                            }
-                        } else {
-                            withContext(Dispatchers.IO) {
-                                val dao = db.resumeDao()
-                                val posSecs = (pos / 1000L).toInt().coerceAtLeast(0)
-                                val mark = ResumeMark(
-                                    type = if (type == "vod") "vod" else "series",
-                                    mediaId = if (type == "vod") mediaId else null,
-                                    episodeId = if (type == "series") episodeId else null,
-                                    positionSecs = posSecs,
-                                    updatedAt = System.currentTimeMillis()
-                                )
-                                dao.upsert(mark)
-                            }
-                        }
+                if (type != "live" && ((type == "vod" && mediaId != null) || (type == "series" && episodeId != null))) {
+                    val remaining = if (dur > 0) dur - pos else Long.MAX_VALUE
+                    val dao = db.resumeDao()
+                    if (dur > 0 && remaining in 0..9999) {
+                        if (type == "vod") dao.clearVod(mediaId!!) else dao.clearEpisode(episodeId!!)
+                    } else {
+                        val posSecs = (pos / 1000L).toInt().coerceAtLeast(0)
+                        val mark = ResumeMark(
+                            type = if (type == "vod") "vod" else "series",
+                            mediaId = if (type == "vod") mediaId else null,
+                            episodeId = if (type == "series") episodeId else null,
+                            positionSecs = posSecs,
+                            updatedAt = System.currentTimeMillis()
+                        )
+                        dao.upsert(mark)
                     }
                 }
-            } catch (_: Throwable) {
+            } catch (_: Throwable) {}
+            withContext(Dispatchers.Main) {
+                try { exoPlayer.release() } catch (_: Throwable) {}
+                onExit()
             }
         }
-        exoPlayer.release()
-        onExit()
     }
 
     BackHandler { finishAndRelease() }

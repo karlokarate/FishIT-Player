@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
@@ -33,6 +34,7 @@ import com.chris.m3usuite.work.ScreenTimeResetWorker
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import com.chris.m3usuite.data.db.DbProvider
+import android.app.Activity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -180,6 +182,14 @@ class MainActivity : ComponentActivity() {
 
                     composable("profiles") {
                         ProfileManagerScreen(onBack = { nav.popBackStack() })
+                    }
+                }
+
+                // Global back handling: pop if possible, otherwise move task to back
+                BackHandler {
+                    val popped = nav.popBackStack()
+                    if (!popped) {
+                        (ctx as? Activity)?.moveTaskToBack(false)
                     }
                 }
             }
