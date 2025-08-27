@@ -48,6 +48,7 @@ import com.chris.m3usuite.ui.state.rememberRouteListState
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
 import com.chris.m3usuite.data.db.Profile
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -226,6 +227,8 @@ fun LibraryScreen(
             var allLive by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
             var allVod by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
             var allSeries by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
+            // Precomputed list of series with new episodes since last snapshot
+            var newSeriesFromEpisodes by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
 
             LaunchedEffect(isKidProfile) {
                 // Resume: merge recent VOD and Series episodes by updatedAt, map to MediaItem, limit 5
@@ -262,6 +265,40 @@ fun LibraryScreen(
                 topLive = allLive.take(50)
                 topSeries = allSeries.take(50)
                 topVod = allVod.take(50)
+            }
+
+            // Compute “Neue Episoden” series whenever allSeries changes
+            LaunchedEffect(allSeries) {
+                if (allSeries.isEmpty()) {
+                    newSeriesFromEpisodes = emptyList()
+                    return@LaunchedEffect
+                }
+                runCatching {
+                    val prevCsv = store.episodeSnapshotIdsCsv.first()
+                    val prev = prevCsv.split(',').filter { it.isNotBlank() }.toSet()
+                    val (currentList, newSeriesSet) = withContext(Dispatchers.IO) {
+                        val dao = db.episodeDao()
+                        val currentIds = mutableSetOf<String>()
+                        val newSeries = mutableSetOf<Int>()
+                        val sids = allSeries.mapNotNull { it.streamId }.toSet()
+                        for (sid in sids) {
+                            val seasons = dao.seasons(sid)
+                            var markNew = false
+                            for (season in seasons) {
+                                for (e in dao.episodes(sid, season)) {
+                                    val idStr = e.episodeId.toString()
+                                    currentIds += idStr
+                                    if (!prev.contains(idStr)) markNew = true
+                                }
+                                if (markNew) break
+                            }
+                            if (markNew) newSeries += sid
+                        }
+                        currentIds.toList() to newSeries.toSet()
+                    }
+                    newSeriesFromEpisodes = allSeries.filter { it.streamId in newSeriesSet }.distinctBy { it.streamId }.take(50)
+                    store.setEpisodeSnapshotIdsCsv(currentList.joinToString(","))
+                }.onFailure { newSeriesFromEpisodes = emptyList() }
             }
 
             val railPad = if (isKidProfile) 20.dp else 16.dp
@@ -310,7 +347,7 @@ fun LibraryScreen(
                             val list = allVod.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }.take(50)
                             if (list.isNotEmpty()) {
                                 header(g)
-                                item("vod_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = list) { mi -> openVod(mi.id) } } }
+                                item("vod_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = list, onClick = { mi -> openVod(mi.id) }) } }
                             }
                         }
                     }
@@ -319,7 +356,7 @@ fun LibraryScreen(
                         if (topResume.isNotEmpty()) {
                             header("Zuletzt geschaut")
                             val seriesUnique = topResume.filter { it.type == "series" }.distinctBy { it.streamId ?: it.id }.take(50)
-                            item("series_resume") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = seriesUnique) { mi -> openSeries(mi.id) } } }
+                            item("series_resume") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = seriesUnique, onClick = { mi -> openSeries(mi.id) }) } }
                         }
                         if (allSeries.isNotEmpty()) {
                             header("Neu hinzugefügt")
@@ -327,36 +364,16 @@ fun LibraryScreen(
                             item("series_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newest, onClick = { mi -> openSeries(mi.id) }, showNew = true) } }
                         }
                         // Neue Episoden seit letztem Start (Snapshot-Vergleich)
-                        run {
-                            val epCsvPrev = store.episodeSnapshotIdsCsv.first()
-                            val prev = epCsvPrev.split(',').filter { it.isNotBlank() }.toSet()
-                            val current = withContext(Dispatchers.IO) {
-                                db.episodeDao().let { dao ->
-                                    // Flatten all episode ids
-                                    allSeries.mapNotNull { it.streamId }.flatMap { sid -> dao.episodes(sid, dao.seasons(sid).firstOrNull() ?: 0) }
-                                }.map { it.episodeId.toString() }.toSet()
-                            }
-                            if (prev.isNotEmpty()) {
-                                val diff = current - prev
-                                if (diff.isNotEmpty()) {
-                                    header("Neue Episoden")
-                                    val newSeriesSet = withContext(Dispatchers.IO) {
-                                        val dao = db.episodeDao()
-                                        diff.mapNotNull { idStr -> idStr.toIntOrNull()?.let { dao.byEpisodeId(it)?.seriesStreamId } }.toSet()
-                                    }
-                                    val seriesItems = allSeries.filter { it.streamId in newSeriesSet }.distinctBy { it.streamId }.take(50)
-                                    item("series_new_episodes") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = seriesItems, onClick = { mi -> openSeries(mi.id) }, showNew = true) } }
-                                }
-                            }
-                            // update snapshot after computing diff
-                            store.setEpisodeSnapshotIdsCsv(current.joinToString(","))
+                        if (newSeriesFromEpisodes.isNotEmpty()) {
+                            header("Neue Episoden")
+                            item("series_new_episodes") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newSeriesFromEpisodes, onClick = { mi -> openSeries(mi.id) }, showNew = true) } }
                         }
                         val genres = listOf("Kinder", "Action", "Doku", "Horror")
                         genres.forEach { g ->
                             val list = allSeries.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }.take(50)
                             if (list.isNotEmpty()) {
                                 header(g)
-                                item("series_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = list) { mi -> openSeries(mi.id) } } }
+                                item("series_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = list, onClick = { mi -> openSeries(mi.id) }) } }
                             }
                         }
                     }
@@ -375,8 +392,8 @@ fun LibraryScreen(
                         // All: kurzer Mix wie vorher
                         if (topResume.isNotEmpty()) { header("Weiter schauen"); item("all_resume") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { ResumeRow(items = topResume) { mi -> when (mi.type) { "live" -> openLive(mi.id); "vod" -> openVod(mi.id); else -> openSeries(mi.id) } } } } }
                         if (topLive.isNotEmpty()) { header("TV"); item("all_live") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { LiveRow(items = topLive) { mi -> openLive(mi.id) } } } }
-                        if (topSeries.isNotEmpty()) { header("Serien"); item("all_series") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = topSeries) { mi -> openSeries(mi.id) } } } }
-                        if (topVod.isNotEmpty()) { header("Filme"); item("all_vod") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = topVod) { mi -> openVod(mi.id) } } } }
+                        if (topSeries.isNotEmpty()) { header("Serien"); item("all_series") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = topSeries, onClick = { mi -> openSeries(mi.id) }) } } }
+                        if (topVod.isNotEmpty()) { header("Filme"); item("all_vod") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = topVod, onClick = { mi -> openVod(mi.id) }) } } }
                     }
                 }
             }

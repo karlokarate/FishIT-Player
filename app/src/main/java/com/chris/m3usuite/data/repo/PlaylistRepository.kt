@@ -38,10 +38,9 @@ class PlaylistRepository(
                 // 4) DB ersetzen
                 val dao = DbProvider.get(context).mediaDao()
                 // Preserve addedAt using url as key
-                fun parseAddedAt(extra: String?): String? = runCatching {
-                    if (extra.isNullOrBlank()) return@runCatching null
-                    kotlinx.serialization.json.Json.decodeFromString<Map<String,String>>(extra)["addedAt"]
-                }.getOrNull()
+                fun parseAddedAt(extra: String?): String? = try {
+                    if (extra.isNullOrBlank()) null else kotlinx.serialization.json.Json.decodeFromString<Map<String,String>>(extra)["addedAt"]
+                } catch (_: Throwable) { null }
                 val prevLive = dao.listByType("live", 100000, 0).associateBy({ it.url }, { parseAddedAt(it.extraJson) })
                 val prevVod  = dao.listByType("vod", 100000, 0).associateBy({ it.url }, { parseAddedAt(it.extraJson) })
                 val prevSer  = dao.listByType("series", 100000, 0).associateBy({ it.url }, { parseAddedAt(it.extraJson) })

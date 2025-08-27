@@ -43,7 +43,6 @@ fun FishITBottomPanel(
             .height(FishITBottomHeights.bar),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        @Composable
         AppIconButton(icon = AppIcon.LiveTv,    contentDescription = "TV",     onClick = { onSelect("live") },  size = 28.dp)
         AppIconButton(icon = AppIcon.MovieVod,  contentDescription = "Filme",  onClick = { onSelect("vod") },    size = 28.dp)
         AppIconButton(icon = AppIcon.Series,    contentDescription = "Serien", onClick = { onSelect("series") }, size = 28.dp)

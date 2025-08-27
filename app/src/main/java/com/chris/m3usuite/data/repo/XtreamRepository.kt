@@ -51,11 +51,9 @@ class XtreamRepository(
             val catDao = db.categoryDao()
 
             // Build previous addedAt maps per type to preserve timestamps across updates
-            fun parseAddedAt(extra: String?): String? = runCatching {
-                if (extra.isNullOrBlank()) return@runCatching null
-                val map = kotlinx.serialization.json.Json.decodeFromString<Map<String, String>>(extra)
-                map["addedAt"]
-            }.getOrNull()
+            fun parseAddedAt(extra: String?): String? = try {
+                if (extra.isNullOrBlank()) null else Json.decodeFromString<Map<String, String>>(extra)["addedAt"]
+            } catch (_: Throwable) { null }
             val prevLive = mediaDao.listByType("live", 100000, 0).associateBy({ it.streamId }, { parseAddedAt(it.extraJson) })
             val prevVod  = mediaDao.listByType("vod", 100000, 0).associateBy({ it.streamId }, { parseAddedAt(it.extraJson) })
             val prevSer  = mediaDao.listByType("series", 100000, 0).associateBy({ it.streamId }, { parseAddedAt(it.extraJson) })
@@ -72,7 +70,7 @@ class XtreamRepository(
             mediaDao.clearType("live")
             mediaDao.upsertAll(live.map {
                 val addedAt = prevLive[it.streamId]?.takeIf { s -> !s.isNullOrBlank() } ?: System.currentTimeMillis().toString()
-                val extra = kotlinx.serialization.json.Json.encodeToString(mapOf("addedAt" to addedAt))
+                val extra = Json.encodeToString(mapOf("addedAt" to addedAt))
                 MediaItem(
                     type = "live",
                     streamId = it.streamId,

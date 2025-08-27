@@ -17,12 +17,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.KeyEvent
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.focus.focusable
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -51,9 +47,13 @@ fun AppIconButton(
             .onFocusChanged { focused = it.isFocused }
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .semantics { this.contentDescription = contentDescription }
-            .onKeyEvent { ev: KeyEvent ->
-                if (ev.type == KeyEventType.KeyUp && (ev.key == Key.Enter || ev.key == Key.NumPadEnter || ev.key.keyCode == 23)) {
-                    onClick(); true
+            .onKeyEvent { ev ->
+                val n = ev.nativeKeyEvent
+                if (n.action == android.view.KeyEvent.ACTION_UP) {
+                    val code = n.keyCode
+                    if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
+                        onClick(); true
+                    } else false
                 } else false
             }
     ) {
@@ -74,4 +74,3 @@ fun AppIconButton(
         }
     }
 }
-

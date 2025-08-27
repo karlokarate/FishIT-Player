@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -311,7 +312,7 @@ fun LiveRow(
     val fling = rememberSnapFlingBehavior(state)
     var count by remember(items) { mutableStateOf(if (items.size < 30) items.size else 30) }
     LaunchedEffect(state) {
-        kotlinx.coroutines.flow.snapshotFlow { state.firstVisibleItemIndex }
+        snapshotFlow { state.firstVisibleItemIndex }
             .collect { idx ->
                 if (idx > count - 20 && count < items.size) {
                     count = (count + 50).coerceAtMost(items.size)
@@ -341,7 +342,7 @@ fun SeriesRow(
     val fling = rememberSnapFlingBehavior(state)
     var count by remember(items) { mutableStateOf(if (items.size < 30) items.size else 30) }
     LaunchedEffect(state) {
-        kotlinx.coroutines.flow.snapshotFlow { state.firstVisibleItemIndex }
+        snapshotFlow { state.firstVisibleItemIndex }
             .collect { idx ->
                 if (idx > count - 20 && count < items.size) {
                     count = (count + 50).coerceAtMost(items.size)
@@ -371,7 +372,7 @@ fun VodRow(
     val fling = rememberSnapFlingBehavior(state)
     var count by remember(items) { mutableStateOf(if (items.size < 30) items.size else 30) }
     LaunchedEffect(state) {
-        kotlinx.coroutines.flow.snapshotFlow { state.firstVisibleItemIndex }
+        snapshotFlow { state.firstVisibleItemIndex }
             .collect { idx ->
                 if (idx > count - 20 && count < items.size) {
                     count = (count + 50).coerceAtMost(items.size)
