@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsets.Companion.statusBars
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -45,7 +44,7 @@ fun FishITHeader(
                     1f to Color.Transparent
                 )
             )
-            .windowInsetsPadding(statusBars)
+            .windowInsetsPadding(WindowInsets.systemBars)
             .padding(horizontal = 12.dp)
     ) {
         // Top bar
