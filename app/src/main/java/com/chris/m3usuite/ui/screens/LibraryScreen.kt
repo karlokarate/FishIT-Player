@@ -55,6 +55,8 @@ import com.chris.m3usuite.ui.components.rows.ResumeRow
 import com.chris.m3usuite.ui.components.rows.LiveRow
 import com.chris.m3usuite.ui.components.rows.SeriesRow
 import com.chris.m3usuite.ui.components.rows.VodRow
+import com.chris.m3usuite.ui.home.header.FishITHeader
+import com.chris.m3usuite.ui.home.header.FishITHeaderHeights
 import com.chris.m3usuite.data.db.MediaItem as DbMediaItem
 import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
@@ -195,44 +197,15 @@ fun LibraryScreen(
 
     val snackHost = remember { SnackbarHostState() }
     Scaffold(
-        snackbarHost = { SnackbarHost(snackHost) },
-        topBar = {
-            TopAppBar(
-                title = { Text("m3uSuite") },
-                actions = {
-                    IconButton(onClick = { scope.launch { store.setRotationLocked(!rotationLocked) } }) {
-                        Icon(painterResource(android.R.drawable.ic_menu_rotate), contentDescription = if (rotationLocked) "Rotation gesperrt" else "Rotation entsperrt")
-                    }
-                    // Schnell: Profil wechseln – immer sichtbar
-                    TextButton(onClick = {
-                        scope.launch {
-                            store.setCurrentProfileId(-1)
-                            navController.navigate("gate") {
-                                popUpTo("library") { inclusive = true }
-                            }
-                        }
-                    }) { Text("Profil wechseln") }
-                    if (showSettings) {
-                        if (selectionMode) {
-                            TextButton(onClick = { showGrantSheet = true }, enabled = selected.isNotEmpty()) { Text("Freigeben") }
-                            TextButton(onClick = { showRevokeSheet = true }, enabled = selected.isNotEmpty()) { Text("Entfernen") }
-                            TextButton(onClick = { selectionMode = false; selected = emptySet() }) { Text("Fertig") }
-                        } else {
-                            TextButton(onClick = { selectionMode = true }) { Text("Auswahl") }
-                        }
-                        IconButton(onClick = { navController.navigate("settings") }) {
-                            Icon(painterResource(android.R.drawable.ic_menu_manage), contentDescription = "Einstellungen")
-                        }
-                    }
-                }
-            )
-        }
+        snackbarHost = { SnackbarHost(snackHost) }
     ) { paddingValues ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(Modifier.fillMaxSize()) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(top = FishITHeaderHeights.total)
+            ) {
             // Top rails (Resume, Live, Series, VOD) – kid-friendly, no headers
             var topResume by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
             var topLive by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
@@ -387,6 +360,38 @@ fun LibraryScreen(
                     Icon(painterResource(android.R.drawable.ic_menu_search), contentDescription = "Filter & Suche")
                 }
             }
+            }
+
+            // Overlay Header (FishIT)
+            FishITHeader(
+                title = "m3uSuite",
+                tabs = listOf(
+                    com.chris.m3usuite.ui.home.header.HeaderTab("live", "Live"),
+                    com.chris.m3usuite.ui.home.header.HeaderTab("vod", "VOD"),
+                    com.chris.m3usuite.ui.home.header.HeaderTab("series", "Series"),
+                    com.chris.m3usuite.ui.home.header.HeaderTab("all", "Alle")
+                ),
+                selectedTabId = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> "all" },
+                onTabSelected = { t ->
+                    val i = when (t.id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
+                    tab = i
+                    scope.launch { store.setLibraryTabIndex(i) }
+                    selectedCategory = null
+                    searchQuery = TextFieldValue("")
+                    load()
+                },
+                onRefresh = { scope.launch { load() } },
+                onSwitchProfile = {
+                    scope.launch {
+                        store.setCurrentProfileId(-1)
+                        navController.navigate("gate") {
+                            popUpTo("library") { inclusive = true }
+                        }
+                    }
+                },
+                onSettings = { navController.navigate("settings") },
+                scrimAlpha = 1f
+            )
         }
     }
 
