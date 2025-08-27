@@ -47,6 +47,8 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.core.xtream.XtreamClient
 import com.chris.m3usuite.core.xtream.XtreamConfig
 import kotlinx.coroutines.flow.first
+import com.chris.m3usuite.ui.common.AppIcon
+import com.chris.m3usuite.ui.common.AppIconButton
 
 @Composable
 private fun rowItemHeight(): Int {
@@ -160,6 +162,14 @@ fun LiveTileCard(
                         .padding(8.dp)
                 )
             }
+            // Info action (details) bottom-end
+            AppIconButton(
+                icon = AppIcon.Info,
+                contentDescription = "Details",
+                onClick = { onClick(item) },
+                modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
+                size = 24.dp
+            )
         }
     }
 }
@@ -213,6 +223,9 @@ fun SeriesTileCard(
                     modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
                 )
             }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onClick(item) }, size = 24.dp)
+            }
         }
     }
 }
@@ -255,6 +268,9 @@ fun VodTileCard(
                     color = Color.Red,
                     modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
                 )
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onClick(item) }, size = 24.dp)
             }
         }
     }
