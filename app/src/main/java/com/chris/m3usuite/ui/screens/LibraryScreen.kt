@@ -243,12 +243,31 @@ fun LibraryScreen(
             val isKidProfile = !showSettings
 
             LaunchedEffect(isKidProfile) {
-                // Resume: take recent VOD marks and map to full MediaItem, limit 5
+                // Resume: merge recent VOD and Series episodes by updatedAt, map to MediaItem, limit 5
                 runCatching {
-                    val dao = db.resumeDao()
-                    val vod = withContext(Dispatchers.IO) { dao.recentVod(5) }
-                    val mis = withContext(Dispatchers.IO) { vod.mapNotNull { v -> db.mediaDao().byId(v.mediaId) } }
-                    topResume = mis
+                    val rDao = db.resumeDao()
+                    val vod = withContext(Dispatchers.IO) { rDao.recentVod(5) }
+                    val eps = withContext(Dispatchers.IO) { rDao.recentEpisodes(5) }
+                    val merged = (vod.map { it.updatedAt to it } + eps.map { it.updatedAt to it })
+                        .sortedByDescending { it.first }
+                    val out = mutableListOf<DbMediaItem>()
+                    withContext(Dispatchers.IO) {
+                        val mDao = db.mediaDao()
+                        for ((_, any) in merged) {
+                            if (out.size >= 5) break
+                            when (any) {
+                                is com.chris.m3usuite.data.db.ResumeVodView -> {
+                                    val mi = mDao.byId(any.mediaId)
+                                    if (mi != null && out.none { it.id == mi.id }) out += mi
+                                }
+                                is com.chris.m3usuite.data.db.ResumeEpisodeView -> {
+                                    val mi = mDao.seriesByStreamId(any.seriesStreamId)
+                                    if (mi != null && out.none { it.id == mi.id }) out += mi
+                                }
+                            }
+                        }
+                    }
+                    topResume = out
                 }
                 // Live/Series/VOD: lightweight lists (already filtered for kids by MediaQueryRepository)
                 runCatching { topLive = mediaRepo.listByTypeFiltered("live", 20, 0) }

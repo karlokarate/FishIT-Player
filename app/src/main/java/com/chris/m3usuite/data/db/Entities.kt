@@ -194,6 +194,9 @@ interface MediaDao {
     @Query("SELECT * FROM MediaItem WHERE id=:id")
     suspend fun byId(id: Long): MediaItem?
 
+    @Query("SELECT * FROM MediaItem WHERE type='series' AND streamId=:sid LIMIT 1")
+    suspend fun seriesByStreamId(sid: Int): MediaItem?
+
     @Query("SELECT * FROM MediaItem WHERE type=:type AND (:cat IS NULL OR categoryName=:cat) ORDER BY sortTitle")
     suspend fun byTypeAndCategory(type: String, cat: String?): List<MediaItem>
 
