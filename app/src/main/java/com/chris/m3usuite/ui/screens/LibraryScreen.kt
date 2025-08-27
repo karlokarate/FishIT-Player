@@ -51,6 +51,11 @@ import kotlinx.coroutines.withContext
 import com.chris.m3usuite.data.db.Profile
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.chris.m3usuite.ui.components.rows.ResumeRow
+import com.chris.m3usuite.ui.components.rows.LiveRow
+import com.chris.m3usuite.ui.components.rows.SeriesRow
+import com.chris.m3usuite.ui.components.rows.VodRow
+import com.chris.m3usuite.data.db.MediaItem as DbMediaItem
 import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
 
@@ -228,6 +233,46 @@ fun LibraryScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Top rails (Resume, Live, Series, VOD) – kid-friendly, no headers
+            var topResume by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
+            var topLive by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
+            var topSeries by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
+            var topVod by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
+
+            // Determine kid profile from existing flag
+            val isKidProfile = !showSettings
+
+            LaunchedEffect(isKidProfile) {
+                // Resume: take recent VOD marks and map to full MediaItem, limit 5
+                runCatching {
+                    val dao = db.resumeDao()
+                    val vod = withContext(Dispatchers.IO) { dao.recentVod(5) }
+                    val mis = withContext(Dispatchers.IO) { vod.mapNotNull { v -> db.mediaDao().byId(v.mediaId) } }
+                    topResume = mis
+                }
+                // Live/Series/VOD: lightweight lists (already filtered for kids by MediaQueryRepository)
+                runCatching { topLive = mediaRepo.listByTypeFiltered("live", 20, 0) }
+                runCatching { topSeries = mediaRepo.listByTypeFiltered("series", 20, 0) }
+                runCatching { topVod = mediaRepo.listByTypeFiltered("vod", 20, 0) }
+            }
+
+            val railPad = if (isKidProfile) 20.dp else 16.dp
+            // Render rails without explicit headers
+            androidx.compose.foundation.layout.Column(Modifier.padding(horizontal = (railPad - 16.dp))) {
+                if (topResume.isNotEmpty()) {
+                    ResumeRow(items = topResume) { mi ->
+                        when (mi.type) {
+                            "live" -> openLive(mi.id)
+                            "vod" -> openVod(mi.id)
+                            "series" -> openSeries(mi.id)
+                        }
+                    }
+                }
+                if (topLive.isNotEmpty()) LiveRow(items = topLive) { mi -> openLive(mi.id) }
+                if (topSeries.isNotEmpty()) SeriesRow(items = topSeries) { mi -> openSeries(mi.id) }
+                if (topVod.isNotEmpty()) VodRow(items = topVod) { mi -> openVod(mi.id) }
+            }
+
             // Neue ein-/ausklappbare Sektion "Weiter schauen"
             @Composable
             fun ResumeCollapsible(content: @Composable () -> Unit) {
