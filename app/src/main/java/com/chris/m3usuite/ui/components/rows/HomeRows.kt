@@ -31,6 +31,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import com.chris.m3usuite.data.db.MediaItem
+import com.chris.m3usuite.data.db.DbProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -164,10 +167,22 @@ fun LiveTileCard(
 @Composable
 fun SeriesTileCard(
     item: MediaItem,
-    onClick: (MediaItem) -> Unit
+    onClick: (MediaItem) -> Unit,
+    isNew: Boolean = false
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
+    var seasons by remember(item.streamId) { mutableStateOf<Int?>(null) }
+    LaunchedEffect(item.streamId) {
+        val sid = item.streamId
+        if (sid != null) {
+            try {
+                val db = DbProvider.get(ctx)
+                val count = withContext(Dispatchers.IO) { db.episodeDao().seasons(sid).size }
+                seasons = count
+            } catch (_: Throwable) { seasons = null }
+        }
+    }
     Card(
         modifier = Modifier
             .height(rowItemHeight().dp)
@@ -184,12 +199,20 @@ fun SeriesTileCard(
                 modifier = Modifier.fillMaxWidth().weight(1f)
             )
             Text(
-                text = item.name,
+                text = seasons?.let { s -> "${item.name}  •  Staffeln $s" } ?: item.name,
                 style = MaterialTheme.typography.labelLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(8.dp)
             )
+            if (isNew) {
+                Text(
+                    text = "NEU",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Red,
+                    modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
+                )
+            }
         }
     }
 }
@@ -197,7 +220,8 @@ fun SeriesTileCard(
 @Composable
 fun VodTileCard(
     item: MediaItem,
-    onClick: (MediaItem) -> Unit
+    onClick: (MediaItem) -> Unit,
+    isNew: Boolean = false
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
@@ -224,6 +248,14 @@ fun VodTileCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(8.dp)
             )
+            if (isNew) {
+                Text(
+                    text = "NEU",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Red,
+                    modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
+                )
+            }
         }
     }
 }
@@ -258,12 +290,21 @@ fun LiveRow(
     if (items.isEmpty()) return
     val state = rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
+    var count by remember(items) { mutableStateOf(if (items.size < 30) items.size else 30) }
+    LaunchedEffect(state) {
+        kotlinx.coroutines.flow.snapshotFlow { state.firstVisibleItemIndex }
+            .collect { idx ->
+                if (idx > count - 20 && count < items.size) {
+                    count = (count + 50).coerceAtMost(items.size)
+                }
+            }
+    }
     LazyRow(
         state = state,
         flingBehavior = fling,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        items(items, key = { it.id }) { m ->
+        items(items.take(count), key = { it.id }) { m ->
             LiveTileCard(item = m, onClick = onClick)
         }
     }
@@ -273,18 +314,28 @@ fun LiveRow(
 @Composable
 fun SeriesRow(
     items: List<MediaItem>,
-    onClick: (MediaItem) -> Unit
+    onClick: (MediaItem) -> Unit,
+    showNew: Boolean = false
 ) {
     if (items.isEmpty()) return
     val state = rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
+    var count by remember(items) { mutableStateOf(if (items.size < 30) items.size else 30) }
+    LaunchedEffect(state) {
+        kotlinx.coroutines.flow.snapshotFlow { state.firstVisibleItemIndex }
+            .collect { idx ->
+                if (idx > count - 20 && count < items.size) {
+                    count = (count + 50).coerceAtMost(items.size)
+                }
+            }
+    }
     LazyRow(
         state = state,
         flingBehavior = fling,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        items(items, key = { it.id }) { m ->
-            SeriesTileCard(item = m, onClick = onClick)
+        items(items.take(count), key = { it.id }) { m ->
+            SeriesTileCard(item = m, onClick = onClick, isNew = showNew)
         }
     }
 }
@@ -293,18 +344,28 @@ fun SeriesRow(
 @Composable
 fun VodRow(
     items: List<MediaItem>,
-    onClick: (MediaItem) -> Unit
+    onClick: (MediaItem) -> Unit,
+    showNew: Boolean = false
 ) {
     if (items.isEmpty()) return
     val state = rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
+    var count by remember(items) { mutableStateOf(if (items.size < 30) items.size else 30) }
+    LaunchedEffect(state) {
+        kotlinx.coroutines.flow.snapshotFlow { state.firstVisibleItemIndex }
+            .collect { idx ->
+                if (idx > count - 20 && count < items.size) {
+                    count = (count + 50).coerceAtMost(items.size)
+                }
+            }
+    }
     LazyRow(
         state = state,
         flingBehavior = fling,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        items(items, key = { it.id }) { m ->
-            VodTileCard(item = m, onClick = onClick)
+        items(items.take(count), key = { it.id }) { m ->
+            VodTileCard(item = m, onClick = onClick, isNew = showNew)
         }
     }
 }

@@ -292,8 +292,25 @@ fun LibraryScreen(
                         // Neu hinzugefügt (id desc)
                         if (allVod.isNotEmpty()) {
                             header("Neu hinzugefügt")
-                            val newest = allVod.sortedByDescending { it.id }.take(50)
-                            item("vod_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = newest) { mi -> openVod(mi.id) } } }
+                            // persistent new tracking via SettingsStore CSV (streamId fallback to id)
+                            val currentIds = allVod.map { it.streamId?.toString() ?: "id:${it.id}" }.toSet()
+                            val firstDone = store.firstVodSnapshot.first()
+                            var newSet = store.newVodIdsCsv.first().split(',').filter { it.isNotBlank() }.toMutableSet()
+                            if (!firstDone) {
+                                // establish baseline on first run
+                                store.setNewVodIdsCsv(currentIds.joinToString(","))
+                                store.setFirstVodSnapshot(true)
+                                newSet = mutableSetOf()
+                            } else {
+                                val prev = newSet
+                                val diff = currentIds - prev
+                                if (diff.isNotEmpty()) {
+                                    newSet.addAll(diff)
+                                    store.setNewVodIdsCsv(newSet.joinToString(","))
+                                }
+                            }
+                            val newest = allVod.filter { (it.streamId?.toString() ?: "id:${it.id}") in newSet }.take(50)
+                            item("vod_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = newest, onClick = { mi -> openVod(mi.id) }, showNew = true) } }
                         }
                         // Genres
                         val genres = listOf("Kinder", "Action", "Doku", "Horror")
@@ -314,8 +331,23 @@ fun LibraryScreen(
                         }
                         if (allSeries.isNotEmpty()) {
                             header("Neu hinzugefügt")
-                            val newest = allSeries.sortedByDescending { it.id }.take(50)
-                            item("series_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newest) { mi -> openSeries(mi.id) } } }
+                            val currentIds = allSeries.map { it.streamId?.toString() ?: "id:${it.id}" }.toSet()
+                            val firstDone = store.firstSeriesSnapshot.first()
+                            var newSet = store.newSeriesIdsCsv.first().split(',').filter { it.isNotBlank() }.toMutableSet()
+                            if (!firstDone) {
+                                store.setNewSeriesIdsCsv(currentIds.joinToString(","))
+                                store.setFirstSeriesSnapshot(true)
+                                newSet = mutableSetOf()
+                            } else {
+                                val prev = newSet
+                                val diff = currentIds - prev
+                                if (diff.isNotEmpty()) {
+                                    newSet.addAll(diff)
+                                    store.setNewSeriesIdsCsv(newSet.joinToString(","))
+                                }
+                            }
+                            val newest = allSeries.filter { (it.streamId?.toString() ?: "id:${it.id}") in newSet }.take(50)
+                            item("series_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newest, onClick = { mi -> openSeries(mi.id) }, showNew = true) } }
                         }
                         val genres = listOf("Kinder", "Action", "Doku", "Horror")
                         genres.forEach { g ->
@@ -327,10 +359,10 @@ fun LibraryScreen(
                         }
                     }
                     "live" -> {
-                        // Anbieter-Gruppen mit Mini-Header
-                        val providers = listOf("NF", "AMZ", "PRMT", "DISNEY")
+                        // Anbieter-Gruppen dynamisch aus categoryName
+                        val providers = allLive.mapNotNull { it.categoryName }.groupBy { it }.keys
                         providers.forEach { label ->
-                            val list = allLive.filter { hasProvider(it, label) }.take(50)
+                            val list = allLive.filter { (it.categoryName ?: "") == label }.take(50)
                             if (list.isNotEmpty()) {
                                 header(label)
                                 item("live_$label") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { LiveRow(items = list) { mi -> openLive(mi.id) } } }

@@ -61,6 +61,14 @@ object Keys {
     val CURRENT_PROFILE_ID = longPreferencesKey("current_profile_id")
     val ADULT_PIN_SET = booleanPreferencesKey("adult_pin_set")
     val ADULT_PIN_HASH = stringPreferencesKey("adult_pin_hash")
+
+    // New tracking (persist new items across runs)
+    val FIRST_VOD_SNAPSHOT = booleanPreferencesKey("first_vod_snapshot_done")
+    val FIRST_SERIES_SNAPSHOT = booleanPreferencesKey("first_series_snapshot_done")
+    val FIRST_LIVE_SNAPSHOT = booleanPreferencesKey("first_live_snapshot_done")
+    val NEW_VOD_IDS_CSV = stringPreferencesKey("new_vod_ids_csv")
+    val NEW_SERIES_IDS_CSV = stringPreferencesKey("new_series_ids_csv")
+    val NEW_LIVE_IDS_CSV = stringPreferencesKey("new_live_ids_csv")
 }
 
 class SettingsStore(private val context: Context) {
@@ -113,6 +121,14 @@ class SettingsStore(private val context: Context) {
         context.dataStore.data.map { it[Keys.ADULT_PIN_HASH].orEmpty() }
     val rememberLastProfile: Flow<Boolean> =
         context.dataStore.data.map { it[Keys.REMEMBER_LAST_PROFILE] ?: false }
+
+    // New tracking flows
+    val firstVodSnapshot: Flow<Boolean> = context.dataStore.data.map { it[Keys.FIRST_VOD_SNAPSHOT] ?: false }
+    val firstSeriesSnapshot: Flow<Boolean> = context.dataStore.data.map { it[Keys.FIRST_SERIES_SNAPSHOT] ?: false }
+    val firstLiveSnapshot: Flow<Boolean> = context.dataStore.data.map { it[Keys.FIRST_LIVE_SNAPSHOT] ?: false }
+    val newVodIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.NEW_VOD_IDS_CSV].orEmpty() }
+    val newSeriesIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.NEW_SERIES_IDS_CSV].orEmpty() }
+    val newLiveIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.NEW_LIVE_IDS_CSV].orEmpty() }
 
     // -------- Setzen --------
     suspend fun set(key: Preferences.Key<String>, value: String) {
@@ -181,6 +197,14 @@ class SettingsStore(private val context: Context) {
     suspend fun setRememberLastProfile(value: Boolean) {
         context.dataStore.edit { it[Keys.REMEMBER_LAST_PROFILE] = value }
     }
+
+    // New tracking setters
+    suspend fun setFirstVodSnapshot(value: Boolean) { context.dataStore.edit { it[Keys.FIRST_VOD_SNAPSHOT] = value } }
+    suspend fun setFirstSeriesSnapshot(value: Boolean) { context.dataStore.edit { it[Keys.FIRST_SERIES_SNAPSHOT] = value } }
+    suspend fun setFirstLiveSnapshot(value: Boolean) { context.dataStore.edit { it[Keys.FIRST_LIVE_SNAPSHOT] = value } }
+    suspend fun setNewVodIdsCsv(csv: String) { context.dataStore.edit { it[Keys.NEW_VOD_IDS_CSV] = csv } }
+    suspend fun setNewSeriesIdsCsv(csv: String) { context.dataStore.edit { it[Keys.NEW_SERIES_IDS_CSV] = csv } }
+    suspend fun setNewLiveIdsCsv(csv: String) { context.dataStore.edit { it[Keys.NEW_LIVE_IDS_CSV] = csv } }
 
     // -------- Optional: direktes Abfragen --------
     suspend fun getString(key: Preferences.Key<String>, default: String = ""): String =
