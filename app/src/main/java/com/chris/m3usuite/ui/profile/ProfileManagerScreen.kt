@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import com.chris.m3usuite.ui.util.rememberAvatarModel
 import java.io.File
 import java.io.FileOutputStream
 
@@ -90,10 +91,14 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                     OutlinedCard(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                if (!avatarPath.isNullOrBlank()) {
-                                    val data: Any = File(avatarPath!!)
+                                val model = rememberAvatarModel(avatarPath)
+                                if (model != null) {
                                     AsyncImage(
-                                        model = ImageRequest.Builder(ctx).data(data).build(),
+                                        model = ImageRequest.Builder(ctx)
+                                            .data(model)
+                                            .placeholder(android.R.drawable.ic_menu_report_image)
+                                            .error(android.R.drawable.ic_menu_report_image)
+                                            .build(),
                                         contentDescription = null,
                                         modifier = Modifier.size(48.dp).clip(CircleShape),
                                         contentScale = ContentScale.Crop

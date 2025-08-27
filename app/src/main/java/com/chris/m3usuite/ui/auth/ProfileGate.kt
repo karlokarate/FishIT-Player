@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import com.chris.m3usuite.ui.util.rememberAvatarModel
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 
 @Composable
@@ -155,21 +157,20 @@ fun ProfileGate(
                             }
                         },
                         leadingContent = {
-                            val ap = k.avatarPath
-                            if (!ap.isNullOrBlank()) {
-                                val data: Any = when {
-                                    ap.startsWith("/") -> java.io.File(ap)
-                                    ap.startsWith("file://") -> android.net.Uri.parse(ap)
-                                    else -> ap
-                                }
+                            val model = rememberAvatarModel(k.avatarPath)
+                            if (model != null) {
                                 AsyncImage(
-                                    model = ImageRequest.Builder(ctx).data(data).build(),
+                                    model = ImageRequest.Builder(ctx)
+                                        .data(model)
+                                        .placeholder(android.R.drawable.ic_menu_report_image)
+                                        .error(android.R.drawable.ic_menu_report_image)
+                                        .build(),
                                     contentDescription = null,
                                     modifier = Modifier.size(40.dp).clip(CircleShape),
                                     contentScale = ContentScale.Crop
                                 )
                             } else {
-                                Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
+                                Icon(painter = painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
                             }
                         }
                     )

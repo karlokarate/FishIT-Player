@@ -37,6 +37,7 @@ import com.chris.m3usuite.data.repo.KidContentRepository
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import coil3.request.ImageRequest
+import com.chris.m3usuite.ui.util.rememberAvatarModel
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 
@@ -182,9 +183,14 @@ fun LiveDetailScreen(id: Long) {
                     val isC = k.id in checked
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (!k.avatarPath.isNullOrBlank()) {
+                            val model = rememberAvatarModel(k.avatarPath)
+                            if (model != null) {
                                 AsyncImage(
-                                    model = ImageRequest.Builder(ctx).data(if (k.avatarPath!!.startsWith("/")) File(k.avatarPath!!) else k.avatarPath).build(),
+                                    model = ImageRequest.Builder(ctx)
+                                        .data(model)
+                                        .placeholder(android.R.drawable.ic_menu_report_image)
+                                        .error(android.R.drawable.ic_menu_report_image)
+                                        .build(),
                                     contentDescription = null,
                                     modifier = Modifier.size(32.dp).clip(CircleShape),
                                     contentScale = ContentScale.Crop
