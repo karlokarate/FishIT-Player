@@ -11,24 +11,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Autorenew
-import androidx.compose.material.icons.outlined.ManageAccounts
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Tab
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-
-data class HeaderTab(val id: String, val label: String)
 
 object FishITHeaderHeights {
     val topBar = 56.dp
@@ -36,7 +27,7 @@ object FishITHeaderHeights {
     val total = topBar + spacer
 }
 
-/** Translucent overlay header with actions + tabs; alpha controls scrim intensity. */
+/** Translucent overlay header with app icon + settings gear; alpha controls scrim intensity. */
 @Composable
 fun FishITHeader(
     title: String,

@@ -4,11 +4,11 @@ import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Card
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.PlayArrow
@@ -37,7 +37,7 @@ import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
-// resume-ui: Phase 3 – Resume-Karusselle (ohne Bilder), Material (nicht Material3)
+// Resume-UI: Material3
 
 // resume-ui: Default sentinels to detect empty callbacks for clear actions
 private val DefaultOnClearVod: (ResumeVodView) -> Unit = {}
@@ -90,7 +90,7 @@ fun ResumeSectionAuto(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    Text("Wie abspielen?", style = MaterialTheme.typography.h6)
+                    Text("Wie abspielen?", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = {
                         val encoded = Uri.encode(chooserItem!!.url!!)
@@ -114,7 +114,7 @@ fun ResumeSectionAuto(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    Text("Wie abspielen?", style = MaterialTheme.typography.h6)
+                    Text("Wie abspielen?", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
                     // Build URL from Xtream config
                     val cfg = remember { mutableStateOf<XtreamConfig?>(null) }
@@ -272,15 +272,15 @@ private fun ResumeCard(
             Column(Modifier.fillMaxWidth()) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.subtitle1,
+                    style = MaterialTheme.typography.titleSmall,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.caption,
-                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -299,7 +299,7 @@ private fun ResumeCard(
 private fun SectionTitle(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.h6,
+        style = MaterialTheme.typography.titleMedium,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
