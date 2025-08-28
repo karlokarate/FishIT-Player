@@ -92,50 +92,7 @@ fun StartScreen(
     }
 }
 
-@Composable
-private fun ChannelPickTile(
-    item: MediaItem,
-    selected: Boolean,
-    onToggle: () -> Unit,
-    focusRight: FocusRequester
-) {
-    val shape = RoundedCornerShape(14.dp)
-    val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
-    Card(
-        onClick = onToggle,
-        shape = shape,
-        colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface),
-        modifier = Modifier
-            .focusable(true)
-            .focusProperties { right = focusRight }
-            .border(1.dp, borderBrush, shape)
-            .drawWithContent {
-                drawContent()
-                val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = 0.10f), 1f to Color.Transparent)
-                drawRect(brush = grad)
-            }
-    ) {
-        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(12.dp)) {
-            val sz = 77.dp // 20% larger than a 64dp baseline
-            val url = item.logo ?: item.poster
-            if (url != null) {
-                coil3.compose.AsyncImage(
-                    model = url,
-                    contentDescription = item.name,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(sz)
-                        .clip(CircleShape)
-                        .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
-                )
-            } else {
-                Text(item.name, modifier = Modifier.align(Alignment.Center), style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
-
-// moved to top-level at end of file
+// ChannelPickTile defined as top-level composable at end of file
 
     // Favorites for live row on Home
     val favCsv by store.favoriteLiveIdsCsv.collectAsState(initial = "")
