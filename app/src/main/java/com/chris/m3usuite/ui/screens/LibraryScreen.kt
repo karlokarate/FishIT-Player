@@ -43,8 +43,7 @@ import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 import com.chris.m3usuite.ui.components.ResumeSectionAuto
 import com.chris.m3usuite.ui.components.CollapsibleHeader
-import com.chris.m3usuite.ui.state.rememberRouteGridState
-import com.chris.m3usuite.ui.state.rememberRouteListState
+// removed grid/list per new design
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -362,8 +361,13 @@ fun LibraryScreen(
                             val newest = allVod.filter { isNew(it) }.sortedByDescending { parseAddedAt(it) ?: 0L }.take(50)
                             item("vod_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = newest, onClick = { mi -> openVod(mi.id) }, showNew = true) } }
                         }
-                        // Genres
-                        val genres = listOf("Kinder", "Action", "Doku", "Horror")
+                        // Genres dynamisch aus categoryName ableiten
+                        val genres = allVod
+                            .mapNotNull { it.categoryName?.trim() }
+                            .flatMap { it.split("/", "&", ",").map(String::trim) }
+                            .filter { it.isNotEmpty() }
+                            .distinct()
+                            .sorted()
                         genres.forEach { g ->
                             val list = allVod.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }.take(50)
                             if (list.isNotEmpty()) {
@@ -389,7 +393,13 @@ fun LibraryScreen(
                             header("Neue Episoden")
                             item("series_new_episodes") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newSeriesFromEpisodes, onClick = { mi -> openSeries(mi.id) }, showNew = true) } }
                         }
-                        val genres = listOf("Kinder", "Action", "Doku", "Horror")
+                        // Genres dynamisch aus categoryName
+                        val genres = allSeries
+                            .mapNotNull { it.categoryName?.trim() }
+                            .flatMap { it.split("/", "&", ",").map(String::trim) }
+                            .filter { it.isNotEmpty() }
+                            .distinct()
+                            .sorted()
                         genres.forEach { g ->
                             val list = allSeries.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }.take(50)
                             if (list.isNotEmpty()) {
@@ -399,13 +409,13 @@ fun LibraryScreen(
                         }
                     }
                     "live" -> {
-                        // Anbieter-Gruppen dynamisch aus categoryName
-                        val providers = allLive.mapNotNull { it.categoryName?.trim() }.toSet().sorted()
-                        providers.forEach { label ->
-                            val list = allLive.filter { (it.categoryName ?: "") == label }.take(50)
+                        // Live-TV nach Genre gruppieren (Sport, News, Doku, Film, Serie, Musik, Kinder)
+                        val genresForRows = liveGenres
+                        genresForRows.forEach { g ->
+                            val list = allLive.filter { hasGenre(it, g) }.take(50)
                             if (list.isNotEmpty()) {
-                                header(label)
-                                item("live_$label") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { LiveRow(items = list) { mi -> openLive(mi.id) } } }
+                                header(g)
+                                item("live_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { LiveRow(items = list) { mi -> openLive(mi.id) } } }
                             }
                         }
                     }
@@ -443,56 +453,6 @@ fun LibraryScreen(
 
             // Tabs moved to FishITHeader
             // Inline-Suche/Filter/Kategorien sind zugunsten eines Sheets deaktiviert
-
-            // Content unter Rails: Für diese Home-Optik blenden wir Grid/List aus,
-            // um ausschließlich die vertikal scrollbaren Rails zu zeigen.
-            val useGrid = false
-            if (useGrid) {
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    val gridState = rememberRouteGridState("library_grid_${tab}_${selectedCategory ?: "all"}")
-                    LibraryGridContent(
-                        tv = tv,
-                        mediaItems = mediaItems,
-                        ctx = ctx,
-                        headers = headers,
-                        state = gridState,
-                        selectionMode = selectionMode,
-                        isSelected = { id, type -> (id to type) in selected },
-                        onOpen = { mi ->
-                            if (selectionMode) {
-                                val key = mi.id to mi.type
-                                selected = if (key in selected) selected - key else selected + key
-                                if (hapticsEnabled) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            } else {
-                                when (mi.type) {
-                                    "live" -> openLive(mi.id)
-                                    "vod" -> openVod(mi.id)
-                                    "series" -> openSeries(mi.id)
-                                }
-                            }
-                        }
-                    )
-                }
-            } else {
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    val listState = rememberRouteListState("library_list_${tab}_${selectedCategory ?: "all"}")
-                    LibraryListContent(
-                        mediaItems = mediaItems,
-                        ctx = ctx,
-                        headers = headers,
-                        state = listState,
-                        selectionMode = selectionMode,
-                        isSelected = { id, type -> (id to type) in selected },
-                        onOpenLive = { id ->
-                            if (selectionMode) {
-                                val key = id to "live"
-                                selected = if (key in selected) selected - key else selected + key
-                                if (hapticsEnabled) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            } else openLive(id)
-                        }
-                    )
-                }
-            }
 
             }
             // FAB overlay (does not consume layout height)
@@ -739,103 +699,4 @@ fun LibraryScreen(
     }, onDismiss = { showRevokeSheet = false })
 }
 
-/* -------------------------- Extracted content composables -------------------------- */
-
-@Composable
-private fun LibraryGridContent(
-    tv: Boolean,
-    mediaItems: List<MediaItem>,
-    ctx: android.content.Context,
-    headers: com.chris.m3usuite.ui.util.ImageHeaders,
-    state: androidx.compose.foundation.lazy.grid.LazyGridState,
-    selectionMode: Boolean,
-    isSelected: (Long, String) -> Boolean,
-    onOpen: (MediaItem) -> Unit
-) {
-    val columns = if (tv) 4 else 2
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        // KEIN weight() hier – der liegt im Aufrufer in der Column
-        modifier = Modifier.fillMaxSize(),
-        state = state,
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        gridItems(mediaItems, key = { it.id }) { mi ->
-            FocusableCard(onClick = { onOpen(mi) }) {
-                Column {
-                    AsyncImage(
-                        model = buildImageRequest(ctx, mi.poster ?: mi.logo, headers),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(if (tv) 180.dp else 160.dp)
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(mi.name, maxLines = 2, style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        mi.categoryName ?: "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                    if (selectionMode) {
-                        val sel = isSelected(mi.id, mi.type)
-                        if (sel) {
-                            Text("Ausgewählt", color = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LibraryListContent(
-    mediaItems: List<MediaItem>,
-    ctx: android.content.Context,
-    headers: com.chris.m3usuite.ui.util.ImageHeaders,
-    state: androidx.compose.foundation.lazy.LazyListState,
-    selectionMode: Boolean,
-    isSelected: (Long, String) -> Boolean,
-    onOpenLive: (Long) -> Unit
-) {
-    LazyColumn(
-        // KEIN weight() hier – der liegt im Aufrufer in der Column
-        modifier = Modifier.fillMaxSize(),
-        state = state,
-        contentPadding = PaddingValues(12.dp)
-    ) {
-        listItems(mediaItems, key = { it.id }) { mi ->
-            FocusableCard(onClick = { onOpenLive(mi.id) }) {
-                Row {
-                    AsyncImage(
-                        model = buildImageRequest(ctx, mi.logo ?: mi.poster, headers),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(mi.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
-                        Text(
-                            mi.categoryName ?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary,
-                            maxLines = 1
-                        )
-                        if (selectionMode) {
-                            val sel = isSelected(mi.id, mi.type)
-                            if (sel) {
-                                Text("Ausgewählt", color = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-        }
-    }
-}
+/* Grid/List content removed to enforce single-rail layout */
