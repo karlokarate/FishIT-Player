@@ -17,6 +17,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Column
@@ -82,8 +89,51 @@ fun StartScreen(
             series = sortByYearDesc(rawSeries, { it.year }, { it.name })
             movies = sortByYearDesc(rawMovies, { it.year }, { it.name })
             tv = filterGermanTv(rawTv, { null }, { null }, { it.categoryName }, { it.name })
+    }
+}
+
+@Composable
+private fun ChannelPickTile(
+    item: MediaItem,
+    selected: Boolean,
+    onToggle: () -> Unit,
+    focusRight: FocusRequester
+) {
+    val shape = RoundedCornerShape(14.dp)
+    val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
+    Card(
+        onClick = onToggle,
+        shape = shape,
+        colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface),
+        modifier = Modifier
+            .focusable(true)
+            .focusProperties { right = focusRight }
+            .border(1.dp, borderBrush, shape)
+            .drawWithContent {
+                drawContent()
+                val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = 0.10f), 1f to Color.Transparent)
+                drawRect(brush = grad)
+            }
+    ) {
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(12.dp)) {
+            val sz = 77.dp // 20% larger than a 64dp baseline
+            val url = item.logo ?: item.poster
+            if (url != null) {
+                coil3.compose.AsyncImage(
+                    model = url,
+                    contentDescription = item.name,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(sz)
+                        .clip(CircleShape)
+                        .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
+                )
+            } else {
+                Text(item.name, modifier = Modifier.align(Alignment.Center), style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
+}
 
     // Favorites for live row on Home
     val favCsv by store.favoriteLiveIdsCsv.collectAsState(initial = "")
@@ -209,24 +259,24 @@ fun StartScreen(
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Sender auswählen", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(value = query, onValueChange = { query = it }, label = { Text("Suche (TV)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                val filtered = remember(allLive, query) {
+                // Provider-Chips (aus categoryName)
+                val providers = remember(allLive) { allLive.mapNotNull { it.categoryName?.trim() }.filter { it.isNotEmpty() }.distinct().sorted() }
+                androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
+                    item { FilterChip(selected = provider == null, onClick = { provider = null }, label = { Text("Alle") }) }
+                    items(providers) { p -> FilterChip(selected = provider == p, onClick = { provider = if (provider == p) null else p }, label = { Text(p) }) }
+                }
+                val filtered = remember(allLive, query, provider) {
                     val q = query.trim().lowercase()
-                    if (q.isBlank()) allLive else allLive.filter { it.name.lowercase().contains(q) || (it.categoryName ?: "").lowercase().contains(q) }
+                    allLive.filter { item ->
+                        val matchQ = if (q.isBlank()) true else item.name.lowercase().contains(q) || (item.categoryName ?: "").lowercase().contains(q)
+                        val matchP = provider?.let { p -> (item.categoryName ?: "").contains(p, ignoreCase = true) } ?: true
+                        matchQ && matchP
+                    }
                 }
                 LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 180.dp), contentPadding = PaddingValues(bottom = 80.dp), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(filtered, key = { it.id }) { mi ->
                         val isSel = mi.id in selected
-                        Card(
-                            onClick = { selected = if (isSel) selected - mi.id else selected + mi.id },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface),
-                            modifier = Modifier.focusable(true).focusProperties { right = addReq }
-                        ) {
-                            androidx.compose.foundation.layout.Column(Modifier.padding(8.dp)) {
-                                Text(mi.name, maxLines = 2, style = MaterialTheme.typography.bodyMedium)
-                                Text(mi.categoryName ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-                            }
-                        }
+                        ChannelPickTile(item = mi, selected = isSel, onToggle = { selected = if (isSel) selected - mi.id else selected + mi.id }, focusRight = addReq)
                     }
                 }
             }
