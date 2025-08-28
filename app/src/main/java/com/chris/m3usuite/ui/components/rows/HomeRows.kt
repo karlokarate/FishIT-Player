@@ -44,6 +44,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.chris.m3usuite.domain.selectors.extractYearFrom
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.chris.m3usuite.prefs.SettingsStore
@@ -60,12 +66,13 @@ private fun rowItemHeight(): Int {
     val sw = cfg.smallestScreenWidthDp
     val isTablet = sw >= 600
     // Tune heights: phone 180/200, tablet 210/230 depending on orientation
-    return when {
+    val base = when {
         isTablet && isLandscape -> 230
         isTablet -> 210
         isLandscape -> 200
         else -> 180
     }
+    return (base * 1.2f).toInt() // +20%
 }
 
 @Composable
@@ -185,6 +192,7 @@ fun SeriesTileCard(
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
     var seasons by remember(item.streamId) { mutableStateOf<Int?>(null) }
+    var focused by remember { mutableStateOf(false) }
     LaunchedEffect(item.streamId) {
         val sid = item.streamId
         if (sid != null) {
@@ -195,13 +203,24 @@ fun SeriesTileCard(
             } catch (_: Throwable) { seasons = null }
         }
     }
+    val shape = RoundedCornerShape(14.dp)
+    val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
     Card(
         modifier = Modifier
             .height(rowItemHeight().dp)
-            .padding(end = 12.dp)
-            .tvClickable { onClick(item) },
+            .padding(end = 6.dp)
+            .tvClickable { onClick(item) }
+            .onFocusChanged { focused = it.isFocused || it.hasFocus }
+            .border(1.dp, borderBrush, shape)
+            .drawWithContent {
+                drawContent()
+                // subtle top reflection
+                val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
+                drawRect(brush = grad)
+            }
+            .graphicsLayer { shadowElevation = if (focused) 16f else 6f },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(10.dp)
+        shape = shape
     ) {
         Column(Modifier.fillMaxWidth()) {
             AsyncImage(
@@ -210,19 +229,23 @@ fun SeriesTileCard(
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxWidth().weight(1f)
             )
-            Text(
-                text = seasons?.let { s -> "${item.name}  •  Staffeln $s" } ?: item.name,
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(8.dp)
-            )
+            if (focused) {
+                val year = item.year ?: extractYearFrom(item.name)
+                val title = item.name.substringAfter(" - ", item.name)
+                Text(
+                    text = if (year != null) "$title ($year)" else title,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                )
+            }
             if (isNew) {
                 Text(
                     text = "NEU",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Red,
-                    modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
+                    modifier = Modifier.padding(start = 10.dp, bottom = 8.dp)
                 )
             }
             Row(Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 8.dp), horizontalArrangement = Arrangement.End) {
@@ -241,13 +264,24 @@ fun VodTileCard(
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(14.dp)
+    val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
     Card(
         modifier = Modifier
             .height(rowItemHeight().dp)
-            .padding(end = 12.dp)
-            .tvClickable { onClick(item) },
+            .padding(end = 6.dp)
+            .tvClickable { onClick(item) }
+            .onFocusChanged { focused = it.isFocused || it.hasFocus }
+            .border(1.dp, borderBrush, shape)
+            .drawWithContent {
+                drawContent()
+                val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
+                drawRect(brush = grad)
+            }
+            .graphicsLayer { shadowElevation = if (focused) 16f else 6f },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(10.dp)
+        shape = shape
     ) {
         Column(Modifier.fillMaxWidth()) {
             AsyncImage(
@@ -256,20 +290,23 @@ fun VodTileCard(
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxWidth().weight(1f)
             )
-            val year = item.year?.toString()?.takeIf { it.isNotBlank() } ?: ""
-            Text(
-                text = if (year.isNotBlank()) "${item.name}  •  $year" else item.name,
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(8.dp)
-            )
+            if (focused) {
+                val y = item.year ?: extractYearFrom(item.name)
+                val title = item.name.substringAfter(" - ", item.name)
+                Text(
+                    text = if (y != null) "$title ($y)" else title,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                )
+            }
             if (isNew) {
                 Text(
                     text = "NEU",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Red,
-                    modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
+                    modifier = Modifier.padding(start = 10.dp, bottom = 8.dp)
                 )
             }
             Row(Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 8.dp), horizontalArrangement = Arrangement.End) {
@@ -322,7 +359,7 @@ fun LiveRow(
     LazyRow(
         state = state,
         flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
     ) {
         items(items.take(count), key = { it.id }) { m ->
             LiveTileCard(item = m, onClick = onClick)
@@ -352,7 +389,7 @@ fun SeriesRow(
     LazyRow(
         state = state,
         flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
     ) {
         items(items.take(count), key = { it.id }) { m ->
             SeriesTileCard(item = m, onClick = onClick, isNew = showNew)
@@ -382,7 +419,7 @@ fun VodRow(
     LazyRow(
         state = state,
         flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
     ) {
         items(items.take(count), key = { it.id }) { m ->
             VodTileCard(item = m, onClick = onClick, isNew = showNew)
