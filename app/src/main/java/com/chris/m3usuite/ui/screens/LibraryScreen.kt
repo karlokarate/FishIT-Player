@@ -375,7 +375,9 @@ fun LibraryScreen(
                             .distinct()
                             .sorted()
                         genres.forEach { g ->
-                            val list = allVod.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }.take(50)
+                            val list = allVod.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }
+                                .distinctBy { it.id }
+                                .take(50)
                             if (list.isNotEmpty()) {
                                 header(g)
                                 item("vod_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = list, onClick = { mi -> openVod(mi.id) }) } }
@@ -407,7 +409,9 @@ fun LibraryScreen(
                             .distinct()
                             .sorted()
                         genres.forEach { g ->
-                            val list = allSeries.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }.take(50)
+                            val list = allSeries.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }
+                                .distinctBy { it.id }
+                                .take(50)
                             if (list.isNotEmpty()) {
                                 header(g)
                                 item("series_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = list, onClick = { mi -> openSeries(mi.id) }) } }
@@ -418,7 +422,9 @@ fun LibraryScreen(
                         // Live-TV nach Genre gruppieren (Sport, News, Doku, Film, Serie, Musik, Kinder)
                         val genresForRows = liveGenres
                         genresForRows.forEach { g ->
-                            val list = allLive.filter { hasGenre(it, g) }.take(50)
+                            val list = allLive.filter { hasGenre(it, g) }
+                                .distinctBy { it.id }
+                                .take(50)
                             if (list.isNotEmpty()) {
                                 header(g)
                                 item("live_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { LiveRow(items = list) { mi -> openLive(mi.id) } } }
