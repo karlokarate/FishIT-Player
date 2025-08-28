@@ -135,6 +135,8 @@ private fun ChannelPickTile(
     }
 }
 
+// moved to top-level at end of file
+
     // Favorites for live row on Home
     val favCsv by store.favoriteLiveIdsCsv.collectAsState(initial = "")
     LaunchedEffect(favCsv) {
@@ -249,6 +251,7 @@ private fun ChannelPickTile(
         var allLive by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
         var query by remember { mutableStateOf("") }
         var selected by remember { mutableStateOf(favCsv.split(',').mapNotNull { it.toLongOrNull() }.toSet()) }
+        var provider by remember { mutableStateOf<String?>(null) }
         LaunchedEffect(Unit) {
             withContext(kotlinx.coroutines.Dispatchers.IO) { DbProvider.get(ctx).mediaDao().listByType("live", 6000, 0) }
                 .let { list -> allLive = list }
