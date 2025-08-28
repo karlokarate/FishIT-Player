@@ -65,6 +65,7 @@ import kotlinx.coroutines.flow.first
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 // removed unused zIndex/IntOffset/animateFloatAsState/mutableStateListOf
+import com.chris.m3usuite.data.repo.MediaQueryRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +79,17 @@ fun StartScreen(
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val db = remember { DbProvider.get(ctx) }
     val store = remember { SettingsStore(ctx) }
+    val mediaRepo = remember { MediaQueryRepository(ctx, store) }
+
+    // Kid/Adult flag
+    val currentProfileId by store.currentProfileId.collectAsState(initial = -1L)
+    var isKid by remember { mutableStateOf(false) }
+    LaunchedEffect(currentProfileId) {
+        isKid = withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val p = if (currentProfileId > 0) db.profileDao().byId(currentProfileId) else null
+            p?.type == "kid"
+        }
+    }
 
     var series by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var movies by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
@@ -85,12 +97,11 @@ fun StartScreen(
     var favLive by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var showLivePicker by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(isKid) {
         scope.launch {
-            val dao = db.mediaDao()
-            val rawSeries = dao.listByType("series", 2000, 0)
-            val rawMovies = dao.listByType("vod", 2000, 0)
-            val rawTv = dao.listByType("live", 2000, 0)
+            val rawSeries = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("series", 2000, 0) }
+            val rawMovies = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("vod", 2000, 0) }
+            val rawTv = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("live", 2000, 0) }
             series = sortByYearDesc(rawSeries, { it.year }, { it.name })
             movies = sortByYearDesc(rawMovies, { it.year }, { it.name })
             tv = filterGermanTv(rawTv, { null }, { null }, { it.categoryName }, { it.name })
@@ -99,11 +110,10 @@ fun StartScreen(
 
     // Favorites for live row on Home
     val favCsv by store.favoriteLiveIdsCsv.collectAsState(initial = "")
-    LaunchedEffect(favCsv) {
+    LaunchedEffect(favCsv, isKid) {
         val idsList = favCsv.split(',').mapNotNull { it.toLongOrNull() }
-        val idsSet = idsList.toSet()
         favLive = if (idsList.isEmpty()) emptyList() else withContext(kotlinx.coroutines.Dispatchers.IO) {
-            val all = DbProvider.get(ctx).mediaDao().listByType("live", 6000, 0)
+            val all = mediaRepo.listByTypeFiltered("live", 6000, 0)
             val map = all.associateBy { it.id }
             idsList.mapNotNull { map[it] }
         }
@@ -122,7 +132,7 @@ fun StartScreen(
                 }
             }
         },
-        onSettings = {
+        onSettings = if (isKid) null else {
             val current = navController.currentBackStackEntry?.destination?.route
             if (current != "settings") {
                 navController.navigate("settings") { launchSingleTop = true }
@@ -139,20 +149,20 @@ fun StartScreen(
                 tv = filterGermanTv(rawTv, { null }, { null }, { it.categoryName }, { it.name })
             }
         },
-        bottomBar = {
-            com.chris.m3usuite.ui.home.header.FishITBottomPanel(
-                selected = "all",
-                onSelect = { id ->
-                    val tab = when (id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
-                    scope.launch { store.setLibraryTabIndex(tab) }
-                    val current = navController.currentBackStackEntry?.destination?.route
-                    if (current != "browse") {
-                        navController.navigate("browse") {
-                            launchSingleTop = true
+        bottomBar = if (isKid) ({}) else {
+            {
+                com.chris.m3usuite.ui.home.header.FishITBottomPanel(
+                    selected = "all",
+                    onSelect = { id ->
+                        val tab = when (id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
+                        scope.launch { store.setLibraryTabIndex(tab) }
+                        val current = navController.currentBackStackEntry?.destination?.route
+                        if (current != "browse") {
+                            navController.navigate("browse") { launchSingleTop = true }
                         }
                     }
-                }
-            )
+                )
+            }
         },
         listState = listState,
         onLogo = {
@@ -224,8 +234,8 @@ fun StartScreen(
         var query by remember { mutableStateOf("") }
         var selected by remember { mutableStateOf(favCsv.split(',').mapNotNull { it.toLongOrNull() }.toSet()) }
         var provider by remember { mutableStateOf<String?>(null) }
-        LaunchedEffect(Unit) {
-            withContext(kotlinx.coroutines.Dispatchers.IO) { DbProvider.get(ctx).mediaDao().listByType("live", 6000, 0) }
+        LaunchedEffect(isKid) {
+            withContext(kotlinx.coroutines.Dispatchers.IO) { MediaQueryRepository(ctx, store).listByTypeFiltered("live", 6000, 0) }
                 .let { list -> allLive = list }
         }
         androidx.compose.material3.ModalBottomSheet(onDismissRequest = { showLivePicker = false }) {
