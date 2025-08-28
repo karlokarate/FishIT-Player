@@ -42,11 +42,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.chris.m3usuite.domain.selectors.extractYearFrom
@@ -218,7 +216,6 @@ fun SeriesTileCard(
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
                 drawRect(brush = grad)
             }
-            ,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
@@ -279,7 +276,6 @@ fun VodTileCard(
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
                 drawRect(brush = grad)
             }
-            ,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
