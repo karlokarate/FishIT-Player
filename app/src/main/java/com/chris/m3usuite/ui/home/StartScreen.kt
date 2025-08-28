@@ -237,11 +237,33 @@ fun ChannelPickTile(
                                 }
                             }
                         } else {
+                            // Selection mode for favorites (long press to enter)
+                            var liveSelectMode by remember { mutableStateOf(false) }
+                            var liveSelected by remember { mutableStateOf(setOf<Long>()) }
+                            fun commitRemove() {
+                                scope.launch {
+                                    val current = store.favoriteLiveIdsCsv.first()
+                                    val order = current.split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
+                                    order.removeAll(liveSelected)
+                                    store.setFavoriteLiveIdsCsv(order.joinToString(","))
+                                    liveSelected = emptySet(); liveSelectMode = false
+                                }
+                            }
                             LiveRow(
                                 items = favLive,
-                                onClick = { mi -> openLive(mi.id) },
-                                leading = { com.chris.m3usuite.ui.components.rows.LiveAddTile { showLivePicker = true } }
+                                onClick = { mi -> if (liveSelectMode) liveSelected = if (mi.id in liveSelected) liveSelected - mi.id else liveSelected + mi.id else openLive(mi.id) },
+                                leading = { com.chris.m3usuite.ui.components.rows.LiveAddTile { showLivePicker = true } },
+                                selectionMode = liveSelectMode,
+                                isSelected = { id -> id in liveSelected },
+                                onToggleSelect = { mi -> liveSelected = if (mi.id in liveSelected) liveSelected - mi.id else liveSelected + mi.id },
+                                onLongPress = { mi -> liveSelectMode = true; liveSelected = setOf(mi.id) }
                             )
+                            if (liveSelectMode) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
+                                    TextButton(onClick = { liveSelectMode = false; liveSelected = emptySet() }) { Text("Abbrechen") }
+                                    TextButton(onClick = { commitRemove() }, enabled = liveSelected.isNotEmpty()) { Text("Entfernen (${liveSelected.size})") }
+                                }
+                            }
                         }
                     }
                 }

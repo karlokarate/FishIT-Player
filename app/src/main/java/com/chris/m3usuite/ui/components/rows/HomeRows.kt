@@ -125,7 +125,9 @@ fun MediaCard(
 @Composable
 fun LiveTileCard(
     item: MediaItem,
-    onClick: (MediaItem) -> Unit
+    onClick: (MediaItem) -> Unit,
+    selected: Boolean = false,
+    onLongPress: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
@@ -148,7 +150,10 @@ fun LiveTileCard(
         modifier = Modifier
             .height(rowItemHeight().dp)
             .padding(end = 6.dp)
-            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { preview = !preview }
+            .combinedClickable(
+                onClick = { onClick(item) },
+                onLongClick = { onLongPress?.invoke() }
+            )
             .onFocusChanged { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
@@ -197,6 +202,11 @@ fun LiveTileCard(
                         .clip(CircleShape)
                         .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
                 )
+            }
+
+            // Selection overlay
+            if (selected) {
+                Box(Modifier.matchParentSize().graphicsLayer { alpha = 0.18f }.background(Color.Yellow.copy(alpha = 0.2f)))
             }
 
             // Channel name shown only on focus (top center)
