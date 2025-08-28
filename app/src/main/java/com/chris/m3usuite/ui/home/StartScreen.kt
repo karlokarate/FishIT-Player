@@ -274,6 +274,7 @@ fun StartScreen(
         }
     }
 }
+}
 
 @Composable
 fun ChannelPickTile(
