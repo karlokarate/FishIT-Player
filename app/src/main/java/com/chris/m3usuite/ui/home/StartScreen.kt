@@ -60,6 +60,7 @@ import com.chris.m3usuite.ui.common.AppIconButton
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.withContext
 import androidx.compose.material3.ExperimentalMaterial3Api
+import kotlinx.coroutines.flow.first
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 // removed unused zIndex/IntOffset/animateFloatAsState/mutableStateListOf
