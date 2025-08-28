@@ -550,13 +550,15 @@ fun ReorderableLiveRow(
                                 val current = visible.find { it.key == id }
                                 if (current != null) {
                                     val center = current.offset + dragOffset + current.size / 2f
-                                    val others = visible.filter { it.key != id }
+                                    // Only consider real channel items (exclude leading/add tile and any non-Long keys)
+                                    val others = visible.filter { it.key is Long && it.key != id }
                                     val target = others.minByOrNull { kotlin.math.abs(center - (it.offset + it.size / 2f)) }
                                     if (target != null) {
+                                        val toKey = target.key as Long
                                         val from = order.indexOf(id)
-                                        val to = order.indexOf(target.key as Long)
+                                        val to = order.indexOf(toKey)
                                         insertAfter = center > (target.offset + target.size / 2f)
-                                        targetKey = target.key as Long
+                                        targetKey = toKey
                                         if (from != -1 && to != -1 && from != to) {
                                             order.removeAt(from)
                                             val insertIndex = if (insertAfter) to + (if (from < to) 0 else 1) else to + (if (from < to) -1 else 0)
