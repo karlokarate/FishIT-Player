@@ -30,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.flow.first
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.chris.m3usuite.ui.backup.BackupRestoreSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -275,6 +276,9 @@ fun SettingsScreen(
                     TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
                 }
             }
+
+            Divider()
+            BackupRestoreSection()
         }
     }
 

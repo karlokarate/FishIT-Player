@@ -51,6 +51,7 @@ import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.components.rows.LiveRow
+import com.chris.m3usuite.ui.backup.QuickImportRow
 import com.chris.m3usuite.ui.components.rows.SeriesRow
 import com.chris.m3usuite.ui.components.rows.VodRow
 import com.chris.m3usuite.domain.selectors.sortByYearDesc
@@ -174,6 +175,7 @@ fun StartScreen(
     ) { pads ->
         Box(Modifier.fillMaxSize().padding(pads)) {
             LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
+                item("backup_quick_import") { QuickImportRow() }
                 item("hdr_series") {
                     Text("Serien", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 2.dp))
                 }
