@@ -93,7 +93,7 @@ fun StartScreen(
         Box(Modifier.fillMaxSize().padding(pads)) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item("hdr_series") {
-                    Text("Serien", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp))
+                    Text("Serien", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 2.dp))
                 }
                 item("row_series") {
                     Box(Modifier.padding(horizontal = 0.dp)) {
@@ -101,7 +101,7 @@ fun StartScreen(
                     }
                 }
                 item("hdr_movies") {
-                    Text("Filme", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp))
+                    Text("Filme", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 2.dp))
                 }
                 item("row_movies") {
                     Box(Modifier.padding(horizontal = 0.dp)) {
@@ -110,7 +110,7 @@ fun StartScreen(
                 }
                 // TV ohne Header
                 item("row_tv") {
-                    Box(Modifier.padding(top = 8.dp)) {
+                    Box(Modifier.padding(top = 4.dp)) {
                         LiveRow(items = tv, onClick = { mi -> openLive(mi.id) })
                     }
                 }
@@ -118,4 +118,3 @@ fun StartScreen(
         }
     }
 }
-

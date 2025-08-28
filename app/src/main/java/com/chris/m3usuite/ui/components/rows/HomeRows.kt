@@ -19,6 +19,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.viewinterop.AndroidView
+import android.net.Uri
+import androidx.media3.common.MediaItem as ExoMediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -122,6 +128,8 @@ fun LiveTileCard(
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
     var epg by remember { mutableStateOf("") }
+    var focused by remember { mutableStateOf(false) }
+    var preview by remember { mutableStateOf(false) }
     LaunchedEffect(item.streamId) {
         try {
             val store = SettingsStore(ctx)
@@ -136,30 +144,63 @@ fun LiveTileCard(
         modifier = Modifier
             .height(rowItemHeight().dp)
             .padding(end = 6.dp)
-            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onClick(item) },
+            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { preview = !preview }
+            .onFocusChanged { focused = it.isFocused || it.hasFocus },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(10.dp)
     ) {
         Box(Modifier.fillMaxWidth()) {
-            // small logo top-left (~32dp)
-            AsyncImage(
-                model = buildImageRequest(ctx, item.logo ?: item.poster, headers),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .padding(8.dp)
-                    .size(32.dp)
-            )
-            // channel name top-right
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                textAlign = TextAlign.End,
-                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
-            )
-            // EPG pill at bottom center
+            if (preview && !item.url.isNullOrBlank()) {
+                // Inline preview player (muted), dimmed to 70% opacity
+                val url = item.url!!
+                AndroidView(
+                    factory = { c ->
+                        val view = PlayerView(c)
+                        val player = ExoPlayer.Builder(c).build().apply {
+                            volume = 0f
+                            repeatMode = ExoPlayer.REPEAT_MODE_ALL
+                            playWhenReady = true
+                            setMediaItem(ExoMediaItem.fromUri(Uri.parse(url)))
+                            prepare()
+                        }
+                        view.player = player
+                        view.useController = false
+                        view.tag = player
+                        view
+                    },
+                    modifier = Modifier.fillMaxWidth().graphicsLayer(alpha = 0.7f),
+                    update = { v ->
+                        val p = (v.tag as? ExoPlayer)
+                        if (p != null && p.playWhenReady != true) {
+                            p.playWhenReady = true
+                        }
+                    },
+                    onRelease = { v -> (v.tag as? ExoPlayer)?.release() }
+                )
+            } else {
+                // Fallback preview image/logo
+                AsyncImage(
+                    model = buildImageRequest(ctx, item.logo ?: item.poster, headers),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .size(32.dp)
+                )
+            }
+
+            // Channel name shown only on focus
+            if (focused) {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                )
+            }
+            // EPG pill stays
             if (epg.isNotBlank()) {
                 Text(
                     text = epg,
@@ -175,7 +216,7 @@ fun LiveTileCard(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onClick(item) }, size = 24.dp)
+                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Öffnen", onClick = { onClick(item) }, size = 24.dp)
                 AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onClick(item) }, size = 24.dp)
             }
         }
@@ -356,7 +397,7 @@ fun LiveRow(
     LazyRow(
         state = state,
         flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
     ) {
         items(items.take(count), key = { it.id }) { m ->
             LiveTileCard(item = m, onClick = onClick)
@@ -386,7 +427,7 @@ fun SeriesRow(
     LazyRow(
         state = state,
         flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
     ) {
         items(items.take(count), key = { it.id }) { m ->
             SeriesTileCard(item = m, onClick = onClick, isNew = showNew)
@@ -416,7 +457,7 @@ fun VodRow(
     LazyRow(
         state = state,
         flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
     ) {
         items(items.take(count), key = { it.id }) { m ->
             VodTileCard(item = m, onClick = onClick, isNew = showNew)
