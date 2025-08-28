@@ -6,7 +6,7 @@ import androidx.activity.compose.BackHandler
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Column
@@ -16,9 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Button
 import androidx.compose.material3.Slider
@@ -34,6 +32,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.background
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -433,70 +436,79 @@ fun InternalPlayerScreen(
         onDispose { exoPlayer.removeListener(listener) }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = "Wiedergabe") },
-                navigationIcon = {
-                    IconButton(onClick = { finishAndRelease() }) {
+    // Fullscreen player with tap-to-show controls overlay
+    var controlsVisible by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxSize()) {
+        AndroidView(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { controlsVisible = !controlsVisible })
+                },
+            factory = { PlayerView(ctx) },
+            update = { view ->
+                view.player = exoPlayer
+                view.useController = false
+                view.subtitleView?.apply {
+                    setApplyEmbeddedStyles(true)
+                    setApplyEmbeddedFontSizes(true)
+                    setFractionalTextSize(effectiveScale())
+
+                    val fg = withOpacity(effectiveFg(), effectiveFgOpacity())
+                    val bg = withOpacity(effectiveBg(), effectiveBgOpacity())
+                    val style = CaptionStyleCompat(
+                        fg,
+                        bg,
+                        0x00000000, // windowColor transparent
+                        CaptionStyleCompat.EDGE_TYPE_NONE,
+                        0x00000000,
+                        /* typeface = */ null
+                    )
+                    setStyle(style)
+                }
+            }
+        )
+
+        // Overlay controls (top bar) shown only when toggled
+        if (controlsVisible) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.35f))
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .align(Alignment.TopCenter),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { finishAndRelease() }) {
+                    Icon(
+                        painter = painterResource(android.R.drawable.ic_menu_close_clear_cancel),
+                        contentDescription = "Schließen"
+                    )
+                }
+                if (isAdult) {
+                    IconButton(onClick = {
+                        if (!showCcMenu) {
+                            localScale = effectiveScale()
+                            localFg = effectiveFg()
+                            localBg = effectiveBg()
+                            localFgOpacity = effectiveFgOpacity()
+                            localBgOpacity = effectiveBgOpacity()
+                            refreshSubtitleOptions()
+                        }
+                        showCcMenu = true
+                        controlsVisible = false
+                    }) {
                         Icon(
-                            painter = painterResource(android.R.drawable.ic_menu_close_clear_cancel),
-                            contentDescription = "Schließen"
+                            painter = painterResource(android.R.drawable.ic_menu_sort_by_size),
+                            contentDescription = "Untertitel-Menü"
                         )
                     }
-                },
-                actions = {
-                    if (isAdult) {
-                        IconButton(onClick = {
-                            // initialize local overrides from current effective values when opening
-                            if (!showCcMenu) {
-                                localScale = effectiveScale()
-                                localFg = effectiveFg()
-                                localBg = effectiveBg()
-                                localFgOpacity = effectiveFgOpacity()
-                                localBgOpacity = effectiveBgOpacity()
-                                refreshSubtitleOptions()
-                            }
-                            showCcMenu = !showCcMenu
-                        }) {
-                            Icon(
-                                painter = painterResource(android.R.drawable.ic_menu_sort_by_size),
-                                contentDescription = "Untertitel-Menü"
-                            )
-                        }
-                    }
                 }
-            )
-        },
-        content = { padding: PaddingValues ->
-            Box(Modifier.fillMaxSize().padding(padding)) {
-                AndroidView(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = { PlayerView(ctx) },
-                    update = { view ->
-                        view.player = exoPlayer
-                        view.subtitleView?.apply {
-                            setApplyEmbeddedStyles(true)
-                            setApplyEmbeddedFontSizes(true)
-                            setFractionalTextSize(effectiveScale())
+            }
+        }
 
-                            val fg = withOpacity(effectiveFg(), effectiveFgOpacity())
-                            val bg = withOpacity(effectiveBg(), effectiveBgOpacity())
-                            val style = CaptionStyleCompat(
-                                fg,
-                                bg,
-                                0x00000000, // windowColor transparent
-                                CaptionStyleCompat.EDGE_TYPE_NONE,
-                                0x00000000,
-                                /* typeface = */ null
-                            )
-                            setStyle(style)
-                        }
-                        view.setControllerShowTimeoutMs(3000)
-                    }
-                )
-
-                if (kidBlocked && kidActive) {
+        if (kidBlocked && kidActive) {
                     AlertDialog(
                         onDismissRequest = { /* block */ },
                         title = { Text("Limit erreicht") },
@@ -505,8 +517,8 @@ fun InternalPlayerScreen(
                             TextButton(onClick = { finishAndRelease() }) { Text("OK") }
                         }
                     )
-                }
-                if (confirmExit) {
+        }
+        if (confirmExit) {
                     AlertDialog(
                         onDismissRequest = { confirmExit = false },
                         title = { Text("Wiedergabe beenden?") },
@@ -518,9 +530,9 @@ fun InternalPlayerScreen(
                             TextButton(onClick = { discardResume = false; confirmExit = false; finishAndRelease() }) { Text("Speichern") }
                         }
                     )
-                }
+        }
 
-                if (showCcMenu && isAdult) {
+        if (showCcMenu && isAdult) {
                     ModalBottomSheet(onDismissRequest = { showCcMenu = false }) {
                         // Subtitle options + live style controls
                         Column(Modifier.padding(16.dp)) {
@@ -590,10 +602,8 @@ fun InternalPlayerScreen(
                             }
                         }
                     }
-                }
-            }
         }
-    )
+    }
 }
 // helper: apply opacity to ARGB color
 private fun withOpacity(argb: Int, percent: Int): Int {
