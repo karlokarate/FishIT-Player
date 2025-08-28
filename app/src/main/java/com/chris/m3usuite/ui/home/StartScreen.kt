@@ -66,10 +66,16 @@ fun StartScreen(
                 store.setCurrentProfileId(-1)
                 navController.navigate("gate") {
                     popUpTo("library") { inclusive = true }
+                    launchSingleTop = true
                 }
             }
         },
-        onSettings = { navController.navigate("settings") },
+        onSettings = {
+            val current = navController.currentBackStackEntry?.destination?.route
+            if (current != "settings") {
+                navController.navigate("settings") { launchSingleTop = true }
+            }
+        },
         onRefresh = {
             scope.launch {
                 val dao = db.mediaDao()
@@ -87,7 +93,12 @@ fun StartScreen(
                 onSelect = { id ->
                     val tab = when (id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
                     scope.launch { store.setLibraryTabIndex(tab) }
-                    navController.navigate("browse")
+                    val current = navController.currentBackStackEntry?.destination?.route
+                    if (current != "browse") {
+                        navController.navigate("browse") {
+                            launchSingleTop = true
+                        }
+                    }
                 }
             )
         },

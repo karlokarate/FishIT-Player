@@ -203,13 +203,19 @@ fun LibraryScreen(
     val headerListState = rememberLazyListState()
     HomeChromeScaffold(
         title = "m3uSuite",
-        onSettings = { navController.navigate("settings") },
+        onSettings = {
+            val current = navController.currentBackStackEntry?.destination?.route
+            if (current != "settings") {
+                navController.navigate("settings") { launchSingleTop = true }
+            }
+        },
         onSearch = { showFilters = true },
         onProfiles = {
             scope.launch {
                 store.setCurrentProfileId(-1)
                 navController.navigate("gate") {
                     popUpTo("library") { inclusive = true }
+                    launchSingleTop = true
                 }
             }
         },
