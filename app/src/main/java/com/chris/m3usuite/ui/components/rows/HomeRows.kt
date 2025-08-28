@@ -140,18 +140,25 @@ fun LiveTileCard(
             }
         } catch (_: Throwable) { epg = "" }
     }
+    val shape = RoundedCornerShape(14.dp)
+    val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
     Card(
         modifier = Modifier
             .height(rowItemHeight().dp)
             .padding(end = 6.dp)
             .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { preview = !preview }
-            .onFocusChanged { focused = it.isFocused || it.hasFocus },
+            .onFocusChanged { focused = it.isFocused || it.hasFocus }
+            .border(1.dp, borderBrush, shape)
+            .drawWithContent {
+                drawContent()
+                val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = 0.12f), 1f to Color.Transparent)
+                drawRect(brush = grad)
+            },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(10.dp)
+        shape = shape
     ) {
         Box(Modifier.fillMaxWidth()) {
             if (preview && !item.url.isNullOrBlank()) {
-                // Inline preview player (muted), dimmed to 70% opacity
                 val url = item.url!!
                 AndroidView(
                     factory = { c ->
@@ -169,38 +176,39 @@ fun LiveTileCard(
                         view
                     },
                     modifier = Modifier.fillMaxWidth().graphicsLayer(alpha = 0.7f),
-                    update = { v ->
-                        val p = (v.tag as? ExoPlayer)
-                        if (p != null && p.playWhenReady != true) {
-                            p.playWhenReady = true
-                        }
-                    },
+                    update = { v -> (v.tag as? ExoPlayer)?.let { if (!it.playWhenReady) it.playWhenReady = true } },
                     onRelease = { v -> (v.tag as? ExoPlayer)?.release() }
-                )
-            } else {
-                // Fallback preview image/logo
-                AsyncImage(
-                    model = buildImageRequest(ctx, item.logo ?: item.poster, headers),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .size(32.dp)
                 )
             }
 
-            // Channel name shown only on focus
+            // Centered circular logo (20% larger than baseline)
+            val sz = 77.dp
+            val logoUrl = item.logo ?: item.poster
+            if (logoUrl != null) {
+                AsyncImage(
+                    model = buildImageRequest(ctx, logoUrl, headers),
+                    contentDescription = item.name,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(sz)
+                        .clip(CircleShape)
+                        .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
+                )
+            }
+
+            // Channel name shown only on focus (top center)
             if (focused) {
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp).padding(horizontal = 8.dp)
                 )
             }
-            // EPG pill stays
+            // EPG pill at bottom center
             if (epg.isNotBlank()) {
                 Text(
                     text = epg,
