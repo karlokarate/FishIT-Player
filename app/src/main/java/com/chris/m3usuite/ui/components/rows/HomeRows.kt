@@ -47,6 +47,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.graphics.Color
@@ -65,6 +67,16 @@ import com.chris.m3usuite.core.xtream.XtreamConfig
 import kotlinx.coroutines.flow.first
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.type
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.matchParentSize
 
 @Composable
 private fun rowItemHeight(): Int {
@@ -127,7 +139,11 @@ fun LiveTileCard(
     item: MediaItem,
     onClick: (MediaItem) -> Unit,
     selected: Boolean = false,
-    onLongPress: (() -> Unit)? = null
+    onLongPress: (() -> Unit)? = null,
+    onMoveLeft: (() -> Unit)? = null,
+    onMoveRight: (() -> Unit)? = null,
+    insertionLeft: Boolean = false,
+    insertionRight: Boolean = false
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
@@ -154,6 +170,16 @@ fun LiveTileCard(
                 onClick = { onClick(item) },
                 onLongClick = { onLongPress?.invoke() }
             )
+            .onPreviewKeyEvent { ev ->
+                if (ev.type == KeyEventType.KeyUp) {
+                    when (ev.key) {
+                        Key.DirectionLeft -> { onMoveLeft?.invoke(); return@onPreviewKeyEvent onMoveLeft != null }
+                        Key.DirectionRight -> { onMoveRight?.invoke(); return@onPreviewKeyEvent onMoveRight != null }
+                        else -> {}
+                    }
+                }
+                false
+            }
             .onFocusChanged { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
@@ -165,6 +191,25 @@ fun LiveTileCard(
         shape = shape
     ) {
         Box(Modifier.fillMaxWidth()) {
+            // Explicit insertion indicator lines inside tile bounds
+            if (insertionLeft) {
+                Box(
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .width(3.dp)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+            }
+            if (insertionRight) {
+                Box(
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .width(3.dp)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+            }
             if (preview && !item.url.isNullOrBlank()) {
                 val url = item.url!!
                 AndroidView(
@@ -455,6 +500,108 @@ fun LiveAddTile(onClick: () -> Unit) {
                 modifier = Modifier.align(Alignment.Center),
                 size = 36.dp
             )
+        }
+    }
+}
+
+@Composable
+fun ReorderableLiveRow(
+    items: List<MediaItem>,
+    onOpen: (Long) -> Unit,
+    onAdd: () -> Unit,
+    onReorder: (List<Long>) -> Unit,
+    onRemove: (List<Long>) -> Unit
+) {
+    val state = rememberLazyListState()
+    val order = remember(items) { androidx.compose.runtime.mutableStateListOf<Long>().apply { addAll(items.map { it.id }) } }
+    var draggingId by remember { mutableStateOf<Long?>(null) }
+    var dragOffset by remember { mutableStateOf(0f) }
+    var targetKey by remember { mutableStateOf<Long?>(null) }
+    var insertAfter by remember { mutableStateOf(false) }
+    var selected by remember { mutableStateOf(setOf<Long>()) }
+    val tileLift by animateFloatAsState(if (draggingId != null) 1.05f else 1f, label = "lift")
+
+    LazyRow(
+        state = state,
+        flingBehavior = rememberSnapFlingBehavior(state),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
+    ) {
+        item("leading") { LiveAddTile(onClick = onAdd) }
+        items(order, key = { it }) { id ->
+            val mi = items.find { it.id == id } ?: return@items
+            val isDragging = draggingId == id
+            val translationX = if (isDragging) dragOffset else 0f
+            val trans by animateFloatAsState(translationX, label = "drag")
+            val padStart = if (targetKey == id && !insertAfter) 10.dp else 0.dp
+            val padEnd = if (targetKey == id && insertAfter) 10.dp else 0.dp
+            Box(
+                Modifier
+                    .padding(start = padStart, end = padEnd)
+                    .graphicsLayer { translationX = trans; scaleX = if (isDragging) tileLift else 1f; scaleY = if (isDragging) tileLift else 1f; shadowElevation = if (isDragging) 18f else 0f }
+                    .pointerInput(id) {
+                        detectDragGestures(
+                            onDragStart = { draggingId = id; dragOffset = 0f },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                dragOffset += dragAmount.x
+                                val visible = state.layoutInfo.visibleItemsInfo
+                                val current = visible.find { it.key == id }
+                                if (current != null) {
+                                    val center = current.offset + dragOffset + current.size / 2f
+                                    val others = visible.filter { it.key != id }
+                                    val target = others.minByOrNull { kotlin.math.abs(center - (it.offset + it.size / 2f)) }
+                                    if (target != null) {
+                                        val from = order.indexOf(id)
+                                        val to = order.indexOf(target.key as Long)
+                                        insertAfter = center > (target.offset + target.size / 2f)
+                                        targetKey = target.key as Long
+                                        if (from != -1 && to != -1 && from != to) {
+                                            order.removeAt(from)
+                                            val insertIndex = if (insertAfter) to + (if (from < to) 0 else 1) else to + (if (from < to) -1 else 0)
+                                            order.add(insertIndex.coerceIn(0, order.size), id)
+                                        }
+                                    }
+                                }
+                            },
+                            onDragEnd = { draggingId = null; dragOffset = 0f; targetKey = null; onReorder(order.toList()) },
+                            onDragCancel = { draggingId = null; dragOffset = 0f; targetKey = null }
+                        )
+                    }
+            ) {
+                LiveTileCard(
+                    item = mi,
+                    onClick = { if (draggingId == null) onOpen(mi.id) },
+                    selected = id in selected,
+                    onLongPress = { selected = if (id in selected) selected - id else selected + id },
+                    onMoveLeft = {
+                        val idx = order.indexOf(id)
+                        if (idx > 0) { order.removeAt(idx); order.add(idx - 1, id); onReorder(order.toList()) }
+                    },
+                    onMoveRight = {
+                        val idx = order.indexOf(id)
+                        if (idx != -1 && idx < order.lastIndex) { order.removeAt(idx); order.add(idx + 1, id); onReorder(order.toList()) }
+                    },
+                    insertionLeft = (targetKey == id && !insertAfter),
+                    insertionRight = (targetKey == id && insertAfter)
+                )
+            }
+        }
+    }
+    if (selected.isNotEmpty()) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
+            TextButton(onClick = { selected = emptySet() }) { Text("Abbrechen") }
+            if (selected.size == 1) {
+                val id = selected.first()
+                TextButton(onClick = {
+                    val idx = order.indexOf(id)
+                    if (idx > 0) { order.removeAt(idx); order.add(idx - 1, id); onReorder(order.toList()) }
+                }) { Text("← Verschieben") }
+                TextButton(onClick = {
+                    val idx = order.indexOf(id)
+                    if (idx != -1 && idx < order.lastIndex) { order.removeAt(idx); order.add(idx + 1, id); onReorder(order.toList()) }
+                }) { Text("Verschieben →") }
+            }
+            TextButton(onClick = { onRemove(selected.toList()); selected = emptySet() }) { Text("Entfernen (${selected.size})") }
         }
     }
 }

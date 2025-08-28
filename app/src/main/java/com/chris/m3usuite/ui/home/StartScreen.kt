@@ -60,6 +60,9 @@ import com.chris.m3usuite.ui.common.AppIconButton
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.withContext
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGestures
+// removed unused zIndex/IntOffset/animateFloatAsState/mutableStateListOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -140,10 +143,12 @@ fun ChannelPickTile(
     // Favorites for live row on Home
     val favCsv by store.favoriteLiveIdsCsv.collectAsState(initial = "")
     LaunchedEffect(favCsv) {
-        val ids = favCsv.split(',').mapNotNull { it.toLongOrNull() }.toSet()
-        favLive = if (ids.isEmpty()) emptyList() else withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val idsList = favCsv.split(',').mapNotNull { it.toLongOrNull() }
+        val idsSet = idsList.toSet()
+        favLive = if (idsList.isEmpty()) emptyList() else withContext(kotlinx.coroutines.Dispatchers.IO) {
             val all = DbProvider.get(ctx).mediaDao().listByType("live", 6000, 0)
-            all.filter { it.id in ids }
+            val map = all.associateBy { it.id }
+            idsList.mapNotNull { map[it] }
         }
     }
 
@@ -237,39 +242,27 @@ fun ChannelPickTile(
                                 }
                             }
                         } else {
-                            // Selection mode for favorites (long press to enter)
-                            var liveSelectMode by remember { mutableStateOf(false) }
-                            var liveSelected by remember { mutableStateOf(setOf<Long>()) }
-                            fun commitRemove() {
-                                scope.launch {
-                                    val current = store.favoriteLiveIdsCsv.first()
-                                    val order = current.split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
-                                    order.removeAll(liveSelected)
-                                    store.setFavoriteLiveIdsCsv(order.joinToString(","))
-                                    liveSelected = emptySet(); liveSelectMode = false
-                                }
-                            }
-                            LiveRow(
+                            com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
                                 items = favLive,
-                                onClick = { mi -> if (liveSelectMode) liveSelected = if (mi.id in liveSelected) liveSelected - mi.id else liveSelected + mi.id else openLive(mi.id) },
-                                leading = { com.chris.m3usuite.ui.components.rows.LiveAddTile { showLivePicker = true } },
-                                selectionMode = liveSelectMode,
-                                isSelected = { id -> id in liveSelected },
-                                onToggleSelect = { mi -> liveSelected = if (mi.id in liveSelected) liveSelected - mi.id else liveSelected + mi.id },
-                                onLongPress = { mi -> liveSelectMode = true; liveSelected = setOf(mi.id) }
-                            )
-                            if (liveSelectMode) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
-                                    TextButton(onClick = { liveSelectMode = false; liveSelected = emptySet() }) { Text("Abbrechen") }
-                                    TextButton(onClick = { commitRemove() }, enabled = liveSelected.isNotEmpty()) { Text("Entfernen (${liveSelected.size})") }
+                                onOpen = { openLive(it) },
+                                onAdd = { showLivePicker = true },
+                                onReorder = { newOrder -> scope.launch { store.setFavoriteLiveIdsCsv(newOrder.joinToString(",")) } },
+                                onRemove = { removeIds ->
+                                    scope.launch {
+                                        val current = store.favoriteLiveIdsCsv.first().split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
+                                        current.removeAll(removeIds.toSet())
+                                        store.setFavoriteLiveIdsCsv(current.joinToString(","))
+                                    }
                                 }
-                            }
+                            )
                         }
                     }
                 }
             }
         }
-    }
+}
+
+// ReorderableLiveFavoritesRow replaced by reusable ReorderableLiveRow in HomeRows
 
     // Live picker sheet: multi-select grid + search + category chips (simple: only search + all)
     if (showLivePicker) {
