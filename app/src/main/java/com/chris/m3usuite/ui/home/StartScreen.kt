@@ -176,7 +176,6 @@ fun StartScreen(
                                     ) {
                                         androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().padding(8.dp)) {
                                             AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Sender hinzufügen", onClick = { showLivePicker = true }, size = 36.dp)
-                                            androidx.compose.foundation.layout.Box(Modifier.matchParentSize())
                                         }
                                     }
                                 }
