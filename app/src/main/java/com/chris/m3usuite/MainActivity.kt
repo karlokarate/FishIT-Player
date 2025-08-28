@@ -20,6 +20,7 @@ import androidx.navigation.navArgument
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.player.InternalPlayerScreen   // <- korrektes Paket (s. Schritt A)
 import com.chris.m3usuite.ui.screens.LibraryScreen
+import com.chris.m3usuite.ui.home.StartScreen
 import com.chris.m3usuite.ui.screens.SettingsScreen
 import com.chris.m3usuite.ui.screens.LiveDetailScreen
 import com.chris.m3usuite.ui.screens.PlaylistSetupScreen
@@ -93,6 +94,16 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("library") {
+                        StartScreen(
+                            navController = nav,
+                            openLive   = { id -> nav.navigate("live/$id") },
+                            openVod    = { id -> nav.navigate("vod/$id") },
+                            openSeries = { id -> nav.navigate("series/$id") }
+                        )
+                    }
+
+                    // Full browser (previous LibraryScreen)
+                    composable("browse") {
                         LibraryScreen(
                             navController = nav,
                             openLive   = { id -> nav.navigate("live/$id") },
