@@ -28,6 +28,8 @@ import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.flow.first
+import com.chris.m3usuite.ui.home.HomeChromeScaffold
+import androidx.compose.foundation.lazy.rememberLazyListState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,26 +59,25 @@ fun SettingsScreen(
     val referer by store.referer.collectAsState(initial = "")
     var pinDialogMode by remember { mutableStateOf<PinMode?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Einstellungen") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(painterResource(android.R.drawable.ic_menu_revert), contentDescription = "Zurück")
-                    }
-                }
-            )
-        }
-    ) { padding ->
+    val listState = rememberLazyListState()
+    HomeChromeScaffold(
+        title = "Einstellungen",
+        onSettings = null,
+        onSearch = null,
+        onProfiles = null,
+        onRefresh = null,
+        listState = listState,
+        bottomBar = {}
+    ) { pads ->
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(pads)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            TextButton(onClick = onBack) { Text("Zurück") }
             if (onOpenProfiles != null) {
                 TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
             }

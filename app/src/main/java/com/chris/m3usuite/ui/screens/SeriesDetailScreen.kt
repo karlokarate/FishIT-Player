@@ -43,6 +43,8 @@ import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.home.HomeChromeScaffold
+import androidx.compose.foundation.lazy.rememberLazyListState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -197,12 +199,21 @@ fun SeriesDetailScreen(
     }
 
     val snackHost = remember { SnackbarHostState() }
-    Scaffold(snackbarHost = { SnackbarHost(snackHost) }) { pad ->
+    val listState = rememberLazyListState()
+    HomeChromeScaffold(
+        title = "Serie",
+        onSettings = null,
+        onSearch = null,
+        onProfiles = null,
+        onRefresh = null,
+        listState = listState,
+        bottomBar = {}
+    ) { pads ->
     Column(
         Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .padding(pad)
+            .padding(pads)
     ) {
         Text(title, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(8.dp))

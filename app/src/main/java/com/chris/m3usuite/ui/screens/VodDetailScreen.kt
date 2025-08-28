@@ -43,6 +43,8 @@ import coil3.request.ImageRequest
 import com.chris.m3usuite.ui.util.rememberAvatarModel
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.home.HomeChromeScaffold
+import androidx.compose.foundation.lazy.rememberLazyListState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -201,8 +203,17 @@ fun VodDetailScreen(
     }
 
     val snackHost = remember { SnackbarHostState() }
-    Scaffold(snackbarHost = { SnackbarHost(snackHost) }) { pad ->
-    Column(modifier = Modifier.fillMaxSize().padding(pad)) {
+    val listState = rememberLazyListState()
+    HomeChromeScaffold(
+        title = "Details",
+        onSettings = null,
+        onSearch = null,
+        onProfiles = null,
+        onRefresh = null,
+        listState = listState,
+        bottomBar = {}
+    ) { pads ->
+    Column(modifier = Modifier.fillMaxSize().padding(pads)) {
         Box(
             modifier = Modifier.clickable(enabled = url != null) { play(fromStart = false) }
         ) {

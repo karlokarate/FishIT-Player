@@ -16,6 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
+import com.chris.m3usuite.ui.home.HomeChromeScaffold
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.chris.m3usuite.ui.profile.AvatarCaptureAndPickButtons
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.compose.BackHandler
@@ -51,12 +53,18 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
     LaunchedEffect(Unit) { load() }
 
     val snack = remember { SnackbarHostState() }
-    Scaffold(topBar = {
-        TopAppBar(title = { Text("Profile verwalten") }, navigationIcon = {
-            IconButton(onClick = onBack) { Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_revert), contentDescription = "Zurück") }
-        })
-    }, snackbarHost = { SnackbarHost(snack) }) { pad ->
-        Column(Modifier.fillMaxSize().padding(pad).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    val listState = rememberLazyListState()
+    HomeChromeScaffold(
+        title = "Profile",
+        onSettings = null,
+        onSearch = null,
+        onProfiles = null,
+        onRefresh = null,
+        listState = listState,
+        bottomBar = {}
+    ) { pads ->
+        Column(Modifier.fillMaxSize().padding(pads).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            TextButton(onClick = onBack) { Text("Zurück") }
             OutlinedTextField(value = newKidName, onValueChange = { newKidName = it }, label = { Text("Neues Kinderprofil") })
             Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                 scope.launch(Dispatchers.IO) {
