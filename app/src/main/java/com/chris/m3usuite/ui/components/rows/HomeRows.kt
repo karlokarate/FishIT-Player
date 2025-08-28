@@ -447,8 +447,8 @@ fun ResumeRow(
 @Composable
 fun LiveRow(
     items: List<MediaItem>,
+    leading: (@Composable (() -> Unit))? = null,
     onClick: (MediaItem) -> Unit,
-    leading: (@Composable (() -> Unit))? = null
 ) {
     if (items.isEmpty()) return
     val state = rememberLazyListState()
