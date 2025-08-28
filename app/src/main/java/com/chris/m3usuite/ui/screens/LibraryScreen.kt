@@ -56,9 +56,8 @@ import com.chris.m3usuite.ui.components.rows.ResumeRow
 import com.chris.m3usuite.ui.components.rows.LiveRow
 import com.chris.m3usuite.ui.components.rows.SeriesRow
 import com.chris.m3usuite.ui.components.rows.VodRow
-import com.chris.m3usuite.ui.home.header.FishITHeader
 import com.chris.m3usuite.ui.home.header.FishITHeaderHeights
-import com.chris.m3usuite.ui.home.header.rememberHeaderAlpha
+import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.chris.m3usuite.ui.home.header.FishITBottomPanel
 import com.chris.m3usuite.ui.home.header.FishITBottomHeights
@@ -202,17 +201,39 @@ fun LibraryScreen(
     val rotationLocked by store.rotationLocked.collectAsState(initial = false)
 
     val snackHost = remember { SnackbarHostState() }
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackHost) }
-    ) { paddingValues ->
-        val headerListState = rememberLazyListState()
-        Box(Modifier.fillMaxSize()) {
+    val headerListState = rememberLazyListState()
+    HomeChromeScaffold(
+        title = "m3uSuite",
+        onSettings = { navController.navigate("settings") },
+        onSearch = { showFilters = true },
+        onProfiles = {
+            scope.launch {
+                store.setCurrentProfileId(-1)
+                navController.navigate("gate") {
+                    popUpTo("library") { inclusive = true }
+                }
+            }
+        },
+        onRefresh = { scope.launch { load() } },
+        listState = headerListState,
+        bottomBar = {
+            FishITBottomPanel(
+                selected = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> "all" },
+                onSelect = { id ->
+                    val i = when (id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
+                    tab = i
+                    scope.launch { store.setLibraryTabIndex(i) }
+                    selectedCategory = null
+                    searchQuery = TextFieldValue("")
+                    load()
+                }
+            )
+        }
+    ) { pads ->
+        Box(Modifier.fillMaxSize().padding(pads)) {
             Column(
                 Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(top = FishITHeaderHeights.total)
-                    .padding(bottom = FishITBottomHeights.bar)
             ) {
             // Top rails (Resume, Live, Series, VOD) – kid-friendly, no headers
             var topResume by remember { mutableStateOf<List<DbMediaItem>>(emptyList()) }
@@ -310,10 +331,10 @@ fun LibraryScreen(
             ) {
                 // Build rows grouped by current selection
                 val selectedId = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> "all" }
-                // Helper mini header
+                // Helper mini header (match StartScreen optics)
                 fun header(label: String) {
                     item("hdr_$label") {
-                        Text(label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 2.dp))
+                        Text(label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 2.dp))
                     }
                 }
                 fun parseAddedAt(mi: DbMediaItem): Long? = runCatching {
@@ -473,42 +494,7 @@ fun LibraryScreen(
                 }
             }
 
-            // (Moved FAB overlay out of this Column below to avoid affecting available height)
             }
-
-            // Overlay Header (FishIT)
-            val scrimAlpha = rememberHeaderAlpha(headerListState)
-            FishITHeader(
-                title = "m3uSuite",
-                onSettings = { navController.navigate("settings") },
-                scrimAlpha = scrimAlpha,
-                onSearch = { showFilters = true },
-                onProfiles = {
-                    scope.launch {
-                        store.setCurrentProfileId(-1)
-                        navController.navigate("gate") {
-                            popUpTo("library") { inclusive = true }
-                        }
-                    }
-                },
-                onRefresh = { scope.launch { load() } }
-            )
-
-            // Bottom persistent panel (TV / Filme / Serien)
-            Box(Modifier.fillMaxWidth().align(Alignment.BottomCenter)) {
-                FishITBottomPanel(
-                    selected = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> "all" },
-                    onSelect = { id ->
-                        val i = when (id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
-                        tab = i
-                        scope.launch { store.setLibraryTabIndex(i) }
-                        selectedCategory = null
-                        searchQuery = TextFieldValue("")
-                        load()
-                    }
-                )
-            }
-
             // FAB overlay (does not consume layout height)
             FloatingActionButton(onClick = { showFilters = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
                 Icon(painterResource(android.R.drawable.ic_menu_search), contentDescription = "Filter & Suche")

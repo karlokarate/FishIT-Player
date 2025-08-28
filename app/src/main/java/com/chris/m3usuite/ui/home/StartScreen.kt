@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -56,6 +57,7 @@ fun StartScreen(
         }
     }
 
+    val listState = rememberLazyListState()
     HomeChromeScaffold(
         title = "m3uSuite",
         onSearch = { /* future */ },
@@ -88,10 +90,11 @@ fun StartScreen(
                     navController.navigate("browse")
                 }
             )
-        }
+        },
+        listState = listState
     ) { pads ->
         Box(Modifier.fillMaxSize().padding(pads)) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
                 item("hdr_series") {
                     Text("Serien", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 2.dp))
                 }

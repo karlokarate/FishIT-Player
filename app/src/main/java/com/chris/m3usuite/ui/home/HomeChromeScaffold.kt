@@ -18,7 +18,7 @@ import androidx.compose.ui.platform.LocalDensity
 import com.chris.m3usuite.ui.home.header.FishITHeader
 import com.chris.m3usuite.ui.home.header.FishITHeaderHeights
 import com.chris.m3usuite.ui.home.header.rememberHeaderAlpha
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
 import com.chris.m3usuite.ui.home.header.FishITBottomPanel
 import com.chris.m3usuite.ui.home.header.FishITBottomHeights
 
@@ -29,6 +29,7 @@ fun HomeChromeScaffold(
     onProfiles: (() -> Unit)? = null,
     onSettings: (() -> Unit)? = null,
     onRefresh: (() -> Unit)? = null,
+    listState: LazyListState,
     bottomBar: @Composable (() -> Unit) = {
         FishITBottomPanel(selected = "all", onSelect = {})
     },
@@ -45,7 +46,6 @@ fun HomeChromeScaffold(
         bottom = navPad + bottomBarHeight
     )
 
-    val listState = rememberLazyListState()
     val scrimAlpha = rememberHeaderAlpha(listState)
 
     Box(Modifier.fillMaxSize()) {
@@ -68,4 +68,3 @@ fun HomeChromeScaffold(
         }
     }
 }
-
