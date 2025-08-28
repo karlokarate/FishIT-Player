@@ -136,8 +136,8 @@ fun LiveTileCard(
     Card(
         modifier = Modifier
             .height(rowItemHeight().dp)
-            .padding(end = 12.dp)
-            .tvClickable { onClick(item) },
+            .padding(end = 6.dp)
+            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onClick(item) },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(10.dp)
     ) {
@@ -209,7 +209,7 @@ fun SeriesTileCard(
         modifier = Modifier
             .height(rowItemHeight().dp)
             .padding(end = 6.dp)
-            .tvClickable { onClick(item) }
+            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onClick(item) }
             .onFocusChanged { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
@@ -218,7 +218,7 @@ fun SeriesTileCard(
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
                 drawRect(brush = grad)
             }
-            .graphicsLayer { shadowElevation = if (focused) 16f else 6f },
+            ,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
@@ -271,7 +271,7 @@ fun VodTileCard(
         modifier = Modifier
             .height(rowItemHeight().dp)
             .padding(end = 6.dp)
-            .tvClickable { onClick(item) }
+            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onClick(item) }
             .onFocusChanged { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
@@ -279,7 +279,7 @@ fun VodTileCard(
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
                 drawRect(brush = grad)
             }
-            .graphicsLayer { shadowElevation = if (focused) 16f else 6f },
+            ,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
