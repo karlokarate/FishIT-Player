@@ -390,7 +390,8 @@ fun ResumeRow(
 @Composable
 fun LiveRow(
     items: List<MediaItem>,
-    onClick: (MediaItem) -> Unit
+    onClick: (MediaItem) -> Unit,
+    leading: (@Composable (() -> Unit))? = null
 ) {
     if (items.isEmpty()) return
     val state = rememberLazyListState()
@@ -409,8 +410,41 @@ fun LiveRow(
         flingBehavior = fling,
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
     ) {
+        if (leading != null) {
+            item("leading") { leading() }
+        }
         items(items.take(count), key = { it.id }) { m ->
             LiveTileCard(item = m, onClick = onClick)
+        }
+    }
+}
+
+@Composable
+fun LiveAddTile(onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
+    Card(
+        modifier = Modifier
+            .height(rowItemHeight().dp)
+            .padding(end = 6.dp)
+            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onClick() }
+            .border(1.dp, borderBrush, shape)
+            .drawWithContent {
+                drawContent()
+                val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = 0.12f), 1f to Color.Transparent)
+                drawRect(brush = grad)
+            },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = shape
+    ) {
+        Box(Modifier.fillMaxWidth()) {
+            AppIconButton(
+                icon = AppIcon.BookmarkAdd,
+                contentDescription = "Sender hinzufügen",
+                onClick = onClick,
+                modifier = Modifier.align(Alignment.Center),
+                size = 36.dp
+            )
         }
     }
 }

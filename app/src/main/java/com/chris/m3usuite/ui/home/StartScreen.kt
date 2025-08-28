@@ -237,7 +237,11 @@ fun ChannelPickTile(
                                 }
                             }
                         } else {
-                            LiveRow(items = favLive, onClick = { mi -> openLive(mi.id) })
+                            LiveRow(
+                                items = favLive,
+                                onClick = { mi -> openLive(mi.id) },
+                                leading = { com.chris.m3usuite.ui.components.rows.LiveAddTile { showLivePicker = true } }
+                            )
                         }
                     }
                 }
