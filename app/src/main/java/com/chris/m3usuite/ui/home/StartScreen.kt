@@ -92,6 +92,49 @@ fun StartScreen(
     }
 }
 
+@Composable
+fun ChannelPickTile(
+    item: MediaItem,
+    selected: Boolean,
+    onToggle: () -> Unit,
+    focusRight: FocusRequester
+) {
+    val shape = RoundedCornerShape(14.dp)
+    val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
+    androidx.compose.material3.Card(
+        onClick = onToggle,
+        shape = shape,
+        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = if (selected) androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer else androidx.compose.material3.MaterialTheme.colorScheme.surface),
+        modifier = Modifier
+            .focusable(true)
+            .focusProperties { right = focusRight }
+            .border(1.dp, borderBrush, shape)
+            .drawWithContent {
+                drawContent()
+                val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = 0.10f), 1f to Color.Transparent)
+                drawRect(brush = grad)
+            }
+    ) {
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(12.dp)) {
+            val sz = 77.dp
+            val url = item.logo ?: item.poster
+            if (url != null) {
+                coil3.compose.AsyncImage(
+                    model = url,
+                    contentDescription = item.name,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(sz)
+                        .clip(CircleShape)
+                        .border(2.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
+                )
+            } else {
+                androidx.compose.material3.Text(item.name, modifier = Modifier.align(Alignment.Center), style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
 // ChannelPickTile defined as top-level composable at end of file
 
     // Favorites for live row on Home
