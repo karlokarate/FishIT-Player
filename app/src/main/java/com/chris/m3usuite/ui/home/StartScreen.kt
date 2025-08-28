@@ -194,6 +194,9 @@ fun StartScreen(
                 item("row_tv") {
                     Box(Modifier.padding(top = 4.dp)) {
                         if (favLive.isEmpty()) {
+                            if (isKid) {
+                                // Kids: keine Hinzufügen-Kachel anzeigen
+                            } else {
                             androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
                                 item {
                                     Card(
@@ -209,19 +212,24 @@ fun StartScreen(
                                 }
                             }
                         } else {
-                            com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
-                                items = favLive,
-                                onOpen = { openLive(it) },
-                                onAdd = { showLivePicker = true },
-                                onReorder = { newOrder -> scope.launch { store.setFavoriteLiveIdsCsv(newOrder.joinToString(",")) } },
-                                onRemove = { removeIds ->
-                                    scope.launch {
-                                        val current = store.favoriteLiveIdsCsv.first().split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
-                                        current.removeAll(removeIds.toSet())
-                                        store.setFavoriteLiveIdsCsv(current.joinToString(","))
+                            if (isKid) {
+                                // Kids: nur lesen, keine Reorder/Remove/Add UI
+                                com.chris.m3usuite.ui.components.rows.LiveRow(items = favLive) { mi -> openLive(mi.id) }
+                            } else {
+                                com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
+                                    items = favLive,
+                                    onOpen = { openLive(it) },
+                                    onAdd = { showLivePicker = true },
+                                    onReorder = { newOrder -> scope.launch { store.setFavoriteLiveIdsCsv(newOrder.joinToString(",")) } },
+                                    onRemove = { removeIds ->
+                                        scope.launch {
+                                            val current = store.favoriteLiveIdsCsv.first().split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
+                                            current.removeAll(removeIds.toSet())
+                                            store.setFavoriteLiveIdsCsv(current.joinToString(","))
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }

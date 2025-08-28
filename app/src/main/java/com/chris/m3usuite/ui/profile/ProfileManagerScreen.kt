@@ -127,6 +127,8 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                             avatarPath = file.absolutePath
                                             // Snackbar kann zeigen, auch wenn man direkt zurück geht
                                             scope.launch { snack.showSnackbar("Avatar aktualisiert") }
+                                            // Reload list to reflect changes elsewhere
+                                            scope.launch { load() }
                                         } else {
                                             scope.launch { snack.showSnackbar("Avatar speichern fehlgeschlagen") }
                                         }
