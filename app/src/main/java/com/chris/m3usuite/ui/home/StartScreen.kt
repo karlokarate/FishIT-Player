@@ -45,6 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavHostController
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.MediaItem
@@ -299,7 +300,12 @@ fun ChannelPickTile(
                 drawRect(brush = grad)
             }
     ) {
-        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(12.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             val sz = 77.dp
             val url = item.logo ?: item.poster
             if (url != null) {
@@ -307,14 +313,19 @@ fun ChannelPickTile(
                     model = url,
                     contentDescription = item.name,
                     modifier = Modifier
-                        .align(Alignment.Center)
                         .size(sz)
                         .clip(CircleShape)
                         .border(2.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
                 )
-            } else {
-                androidx.compose.material3.Text(item.name, modifier = Modifier.align(Alignment.Center), style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
             }
+            androidx.compose.foundation.layout.Spacer(Modifier.size(12.dp))
+            Text(
+                text = item.name.uppercase(),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
