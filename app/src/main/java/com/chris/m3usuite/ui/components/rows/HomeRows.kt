@@ -215,7 +215,7 @@ fun SeriesTileCard(
                 // subtle top reflection
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
                 drawRect(brush = grad)
-            }
+            },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
@@ -275,7 +275,7 @@ fun VodTileCard(
                 drawContent()
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
                 drawRect(brush = grad)
-            }
+            },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
