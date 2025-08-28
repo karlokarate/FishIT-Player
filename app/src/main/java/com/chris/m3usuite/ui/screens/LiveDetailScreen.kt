@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.border
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -246,7 +248,10 @@ fun LiveDetailScreen(id: Long) {
             contentDescription = null,
             contentScale = ContentScale.Fit, // Logos nicht beschneiden
             modifier = Modifier
-                .size(120.dp)
+                .align(Alignment.CenterHorizontally)
+                .size(140.dp)
+                .clip(CircleShape)
+                .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
                 .semantics { role = Role.Button }
                 .clickable(enabled = url != null) {
                     if (showEpg) {
