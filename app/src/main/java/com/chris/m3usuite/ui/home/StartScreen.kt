@@ -102,7 +102,13 @@ fun StartScreen(
                 }
             )
         },
-        listState = listState
+        listState = listState,
+        onLogo = {
+            val current = navController.currentBackStackEntry?.destination?.route
+            if (current != "library") {
+                navController.navigate("library") { launchSingleTop = true }
+            }
+        }
     ) { pads ->
         Box(Modifier.fillMaxSize().padding(pads)) {
             LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {

@@ -35,6 +35,7 @@ fun FishITHeader(
     onSearch: (() -> Unit)? = null,
     onProfiles: (() -> Unit)? = null,
     onRefresh: (() -> Unit)? = null,
+    onLogo: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
@@ -56,10 +57,13 @@ fun FishITHeader(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            val logoModifier = Modifier
+                .padding(vertical = 8.dp)
+                .let { m -> if (onLogo != null) m.clickable { onLogo() } else m }
             androidx.compose.foundation.Image(
                 painter = androidx.compose.ui.res.painterResource(com.chris.m3usuite.R.drawable.fisch),
                 contentDescription = title,
-                modifier = Modifier.padding(vertical = 8.dp)
+                modifier = logoModifier
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (onSearch != null) AppIconButton(icon = AppIcon.Search, contentDescription = "Suche öffnen", onClick = onSearch, size = 28.dp)

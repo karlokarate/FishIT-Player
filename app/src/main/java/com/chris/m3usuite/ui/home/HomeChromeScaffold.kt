@@ -30,6 +30,7 @@ fun HomeChromeScaffold(
     onSettings: (() -> Unit)? = null,
     onRefresh: (() -> Unit)? = null,
     listState: LazyListState,
+    onLogo: (() -> Unit)? = null,
     bottomBar: @Composable (() -> Unit) = {
         FishITBottomPanel(selected = "all", onSelect = {})
     },
@@ -59,7 +60,8 @@ fun HomeChromeScaffold(
             scrimAlpha = scrimAlpha,
             onSearch = onSearch,
             onProfiles = onProfiles,
-            onRefresh = onRefresh
+            onRefresh = onRefresh,
+            onLogo = onLogo
         )
 
         // Bottom bar overlay

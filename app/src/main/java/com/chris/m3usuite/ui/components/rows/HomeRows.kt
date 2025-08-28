@@ -265,7 +265,7 @@ fun SeriesTileCard(
             AsyncImage(
                 model = buildImageRequest(ctx, item.poster ?: item.logo ?: item.backdrop, headers),
                 contentDescription = item.name,
-                contentScale = ContentScale.Fit,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxWidth().weight(1f)
             )
             if (focused) {
@@ -325,7 +325,7 @@ fun VodTileCard(
             AsyncImage(
                 model = buildImageRequest(ctx, item.poster ?: item.logo ?: item.backdrop, headers),
                 contentDescription = item.name,
-                contentScale = ContentScale.Fit,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxWidth().weight(1f)
             )
             if (focused) {

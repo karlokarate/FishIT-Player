@@ -221,6 +221,12 @@ fun LibraryScreen(
         },
         onRefresh = { scope.launch { load() } },
         listState = headerListState,
+        onLogo = {
+            val current = navController.currentBackStackEntry?.destination?.route
+            if (current != "library") {
+                navController.navigate("library") { launchSingleTop = true }
+            }
+        },
         bottomBar = {
             FishITBottomPanel(
                 selected = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> "all" },
