@@ -78,7 +78,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material3.TextButton
-import androidx.compose.foundation.layout.matchParentSize
+import androidx.compose.ui.input.key.key
 
 @Composable
 private fun rowItemHeight(): Int {
@@ -253,7 +253,7 @@ fun LiveTileCard(
 
             // Selection overlay
             if (selected) {
-                Box(Modifier.matchParentSize().graphicsLayer { alpha = 0.18f }.background(Color.Yellow.copy(alpha = 0.2f)))
+                Box(Modifier.fillMaxWidth().fillMaxHeight().graphicsLayer { alpha = 0.18f }.background(Color.Yellow.copy(alpha = 0.2f)))
             }
 
             // Channel name shown only on focus (top center)
@@ -532,8 +532,8 @@ fun ReorderableLiveRow(
         items(order, key = { it }) { id ->
             val mi = items.find { it.id == id } ?: return@items
             val isDragging = draggingId == id
-            val translationX = if (isDragging) dragOffset else 0f
-            val trans by animateFloatAsState(translationX, label = "drag")
+            val dragTranslationX = if (isDragging) dragOffset else 0f
+            val trans by animateFloatAsState(dragTranslationX, label = "drag")
             val padStart = if (targetKey == id && !insertAfter) 10.dp else 0.dp
             val padEnd = if (targetKey == id && insertAfter) 10.dp else 0.dp
             Box(
