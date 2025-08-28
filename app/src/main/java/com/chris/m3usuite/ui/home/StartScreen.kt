@@ -134,9 +134,11 @@ fun StartScreen(
             }
         },
         onSettings = if (isKid) null else {
-            val current = navController.currentBackStackEntry?.destination?.route
-            if (current != "settings") {
-                navController.navigate("settings") { launchSingleTop = true }
+            {
+                val current = navController.currentBackStackEntry?.destination?.route
+                if (current != "settings") {
+                    navController.navigate("settings") { launchSingleTop = true }
+                }
             }
         },
         onRefresh = {
