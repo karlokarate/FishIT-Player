@@ -15,14 +15,18 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Button
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.foundation.focusable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -200,22 +204,23 @@ fun StartScreen(
                 .let { list -> allLive = list }
         }
         androidx.compose.material3.ModalBottomSheet(onDismissRequest = { showLivePicker = false }) {
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val addReq = remember { FocusRequester() }
+            Box(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Sender auswählen", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(value = query, onValueChange = { query = it }, label = { Text("Suche (TV)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 val filtered = remember(allLive, query) {
                     val q = query.trim().lowercase()
                     if (q.isBlank()) allLive else allLive.filter { it.name.lowercase().contains(q) || (it.categoryName ?: "").lowercase().contains(q) }
                 }
-                LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 180.dp), contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 180.dp), contentPadding = PaddingValues(bottom = 80.dp), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(filtered, key = { it.id }) { mi ->
                         val isSel = mi.id in selected
                         Card(
-                            onClick = {
-                                selected = if (isSel) selected - mi.id else selected + mi.id
-                            },
+                            onClick = { selected = if (isSel) selected - mi.id else selected + mi.id },
                             shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
+                            colors = CardDefaults.cardColors(containerColor = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface),
+                            modifier = Modifier.focusable(true).focusProperties { right = addReq }
                         ) {
                             androidx.compose.foundation.layout.Column(Modifier.padding(8.dp)) {
                                 Text(mi.name, maxLines = 2, style = MaterialTheme.typography.bodyMedium)
@@ -224,17 +229,24 @@ fun StartScreen(
                         }
                     }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.align(Alignment.End)) {
-                    TextButton(onClick = { showLivePicker = false }) { Text("Abbrechen") }
-                    Button(onClick = {
-                        scopePick.launch {
-                            val csv = selected.joinToString(",")
-                            store.setFavoriteLiveIdsCsv(csv)
-                            showLivePicker = false
-                        }
-                    }, enabled = true) { Text("Hinzufügen") }
-                }
             }
+            FloatingActionButton(
+                onClick = {
+                    scopePick.launch {
+                        val csv = selected.joinToString(",")
+                        store.setFavoriteLiveIdsCsv(csv)
+                        showLivePicker = false
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp).focusRequester(addReq).focusable(true)
+            ) { AppIconButton(icon = com.chris.m3usuite.ui.common.AppIcon.BookmarkAdd, contentDescription = "Hinzufügen", onClick = {
+                    scopePick.launch {
+                        val csv = selected.joinToString(",")
+                        store.setFavoriteLiveIdsCsv(csv)
+                        showLivePicker = false
+                    }
+                }, size = 28.dp) }
+        }
         }
     }
 }
