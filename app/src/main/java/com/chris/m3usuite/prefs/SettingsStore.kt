@@ -72,6 +72,9 @@ object Keys {
     // Episodes snapshot to detect new episodes since last run
     val EPISODE_SNAPSHOT_IDS_CSV = stringPreferencesKey("episode_snapshot_ids_csv")
     val LAST_APP_START_MS = longPreferencesKey("last_app_start_ms")
+
+    // Home selections
+    val FAV_LIVE_IDS_CSV = stringPreferencesKey("fav_live_ids_csv")
 }
 
 class SettingsStore(private val context: Context) {
@@ -134,6 +137,7 @@ class SettingsStore(private val context: Context) {
     val newLiveIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.NEW_LIVE_IDS_CSV].orEmpty() }
     val episodeSnapshotIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.EPISODE_SNAPSHOT_IDS_CSV].orEmpty() }
     val lastAppStartMs: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_APP_START_MS] ?: 0L }
+    val favoriteLiveIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.FAV_LIVE_IDS_CSV].orEmpty() }
 
     // -------- Setzen --------
     suspend fun set(key: Preferences.Key<String>, value: String) {
@@ -212,6 +216,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setNewLiveIdsCsv(csv: String) { context.dataStore.edit { it[Keys.NEW_LIVE_IDS_CSV] = csv } }
     suspend fun setEpisodeSnapshotIdsCsv(csv: String) { context.dataStore.edit { it[Keys.EPISODE_SNAPSHOT_IDS_CSV] = csv } }
     suspend fun setLastAppStartMs(value: Long) { context.dataStore.edit { it[Keys.LAST_APP_START_MS] = value } }
+    suspend fun setFavoriteLiveIdsCsv(csv: String) { context.dataStore.edit { it[Keys.FAV_LIVE_IDS_CSV] = csv } }
 
     // -------- Optional: direktes Abfragen --------
     suspend fun getString(key: Preferences.Key<String>, default: String = ""): String =

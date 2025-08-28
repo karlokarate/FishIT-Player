@@ -5,6 +5,16 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +38,8 @@ import com.chris.m3usuite.ui.components.rows.VodRow
 import com.chris.m3usuite.domain.selectors.sortByYearDesc
 import com.chris.m3usuite.domain.selectors.filterGermanTv
 import kotlinx.coroutines.launch
+import com.chris.m3usuite.ui.common.AppIcon
+import com.chris.m3usuite.ui.common.AppIconButton
 
 @Composable
 fun StartScreen(
@@ -44,6 +56,8 @@ fun StartScreen(
     var series by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var movies by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var tv by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+    var favLive by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+    var showLivePicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         scope.launch {
@@ -54,6 +68,16 @@ fun StartScreen(
             series = sortByYearDesc(rawSeries, { it.year }, { it.name })
             movies = sortByYearDesc(rawMovies, { it.year }, { it.name })
             tv = filterGermanTv(rawTv, { null }, { null }, { it.categoryName }, { it.name })
+        }
+    }
+
+    // Favorites for live row on Home
+    val favCsv by store.favoriteLiveIdsCsv.collectAsState(initial = "")
+    LaunchedEffect(favCsv) {
+        val ids = favCsv.split(',').mapNotNull { it.toLongOrNull() }.toSet()
+        favLive = if (ids.isEmpty()) emptyList() else withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val all = DbProvider.get(ctx).mediaDao().listByType("live", 6000, 0)
+            all.filter { it.id in ids }
         }
     }
 
@@ -128,11 +152,78 @@ fun StartScreen(
                         VodRow(items = movies, onClick = { mi -> openVod(mi.id) })
                     }
                 }
-                // TV ohne Header
+                // TV (favorisierte Kanäle). Wenn leer: Plus-Kachel zum Hinzufügen.
                 item("row_tv") {
                     Box(Modifier.padding(top = 4.dp)) {
-                        LiveRow(items = tv, onClick = { mi -> openLive(mi.id) })
+                        if (favLive.isEmpty()) {
+                            androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
+                                item {
+                                    Card(
+                                        modifier = Modifier.size(200.dp, 112.dp).padding(end = 12.dp)
+                                            .let { m -> m },
+                                        shape = RoundedCornerShape(14.dp),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                    ) {
+                                        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().padding(8.dp)) {
+                                            AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Sender hinzufügen", onClick = { showLivePicker = true }, size = 36.dp)
+                                            androidx.compose.foundation.layout.Box(Modifier.matchParentSize())
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            LiveRow(items = favLive, onClick = { mi -> openLive(mi.id) })
+                        }
                     }
+                }
+            }
+        }
+    }
+
+    // Live picker sheet: multi-select grid + search + category chips (simple: only search + all)
+    if (showLivePicker) {
+        val scopePick = rememberCoroutineScope()
+        var allLive by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+        var query by remember { mutableStateOf("") }
+        var selected by remember { mutableStateOf(favCsv.split(',').mapNotNull { it.toLongOrNull() }.toSet()) }
+        LaunchedEffect(Unit) {
+            withContext(kotlinx.coroutines.Dispatchers.IO) { DbProvider.get(ctx).mediaDao().listByType("live", 6000, 0) }
+                .let { list -> allLive = list }
+        }
+        androidx.compose.material3.ModalBottomSheet(onDismissRequest = { showLivePicker = false }) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Sender auswählen", style = MaterialTheme.typography.titleMedium)
+                OutlinedTextField(value = query, onValueChange = { query = it }, label = { Text("Suche (TV)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                val filtered = remember(allLive, query) {
+                    val q = query.trim().lowercase()
+                    if (q.isBlank()) allLive else allLive.filter { it.name.lowercase().contains(q) || (it.categoryName ?: "").lowercase().contains(q) }
+                }
+                LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 180.dp), contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(filtered, key = { it.id }) { mi ->
+                        val isSel = mi.id in selected
+                        Card(
+                            onClick = {
+                                selected = if (isSel) selected - mi.id else selected + mi.id
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
+                        ) {
+                            androidx.compose.foundation.layout.Column(Modifier.padding(8.dp)) {
+                                Text(mi.name, maxLines = 2, style = MaterialTheme.typography.bodyMedium)
+                                Text(mi.categoryName ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                            }
+                        }
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.align(Alignment.End)) {
+                    TextButton(onClick = { showLivePicker = false }) { Text("Abbrechen") }
+                    Button(onClick = {
+                        scopePick.launch {
+                            val csv = selected.joinToString(",")
+                            store.setFavoriteLiveIdsCsv(csv)
+                            showLivePicker = false
+                        }
+                    }, enabled = true) { Text("Hinzufügen") }
                 }
             }
         }
