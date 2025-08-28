@@ -1,192 +1,196 @@
-# m3uSuite – Roadmap (auf Basis des aktuellen Projektstands)
+Ziele (was am Ende steht)
 
-## Grundsätze
-- Einmal-anpacken-Prinzip: Settings & DB → Repos/Services → UI.
-- Rückwärtskompatibel: EPG/Xtream, Listen/Detail, bestehende Playerpfade bleiben erhalten.
-- Profile: Adult vs. Kids (Playerwahl, Untertitel global, Freigaben/Filter, Screen-Time).
-- Keine Repos in Modul-Buildfiles; zentrale Repos in `settings.gradle.kts`.
+- Startseite hat genau drei horizontale Rows – Serien, Filme, TV – unter einem persistenten, halbtransparenten Header; Inhalte scrollen darunter.
+- Sortierung: Serien & Filme nach Release‑Jahr absteigend (neueste zuerst), robuste Fallbacks (Jahr in Klammern aus dem Titel extrahieren).
+- TV‑Row zeigt nur deutsche Sender (per Country/Language/Group/Name‑Heuristik).
+- Keine überdeckten Inhalte: Top/Bottom‑Bar belegen Platz via Insets; kein verschachteltes Scaffold mehr.
+- TV‑Focus/Remote tauglich und Icon‑Buttons aus dem PNG‑Pack überall konsistent.
 
----
+Phase 1 – Globaler Chrome (pinned Header + kompakte Bottom‑Bar)
 
-## Phase 1 — Fundament & Datenmodell (IST erweitern, keine Brüche)
-**Module:** `prefs/SettingsStore.kt`, `data/db/AppDatabase.kt`, `data/db/Entities.kt`, `settings.gradle.kts`
+- HomeChromeScaffold (bereitgestellt) ist einzige Chroming‑Instanz.
+- TopBar: halbtransparent + Blur; BottomBar: kompakt.
+- Content erhält PaddingValues(top=status+TopBarHeight, bottom=navigation+BottomBarHeight) → nichts wird verdeckt.
+- Aufräumen: Alle untergeordneten Screens: keine eigenen Scaffolds, keine statusBarsPadding()/navigationBarsPadding() mehr.
 
-- [ ] `SettingsStore.kt`: neue Flows
-    - `player_mode` = `ask|internal|external`
-    - `rotation_locked` (bool)
-    - `header_collapsed` (bool)
-    - Untertitel global:
-        - `subtitle_scale` (Float/Int)
-        - `subtitle_fg_color` (ARGB)
-        - `subtitle_bg_color` (ARGB)
-        - `subtitle_fg_opacity_pct` (0–100)
-        - `subtitle_bg_opacity_pct` (0–100)
-    - Profile/PIN:
-        - `current_profile_id` (Adult/Kid)
-        - `adult_pin_set` (bool)
-        - `adult_pin_hash` (String, Hash)
-    - Defaults: Text 90 % Opacity, Hintergrund 40 %.
+Akzeptanzkriterien
 
-- [ ] DB: Tabellen ergänzen (in **`Entities.kt`** + Migrationen in **`AppDatabase.kt`**)
-    - `profiles (id, name, type {adult,kid}, avatar_path, created_at, updated_at)`
-    - `kid_content (kid_profile_id, content_type {live,vod,series}, content_id, UNIQUE(kid_profile_id, content_type, content_id))`
-    - `screen_time (kid_profile_id, day_yyyymmdd, used_minutes, limit_minutes, UNIQUE(kid_profile_id, day_yyyymmdd))`
-    - Resume-UNIQUE: VOD per `media_id`, Serien per `episode_id`.
-    - Seeding: Wenn keine Profile → Adult anlegen, `current_profile_id` auf Adult.
+- Beim Scrollen bleiben Header‑Icons sichtbar; Rows beginnen unterhalb des Headers.
+- Kein „Mischmasch“: Startseite zeigt nur die 3 definierten Rows.
 
-- [ ] `settings.gradle.kts`: stabile Repos (ohne Incubating-Flags).
+Phase 2 – Daten-Selektion, Sortierung & Filter
 
-**Abnahme:** Settings-Keys les-/schreibbar per Flow, Migrationen idempotent, Adult als Startprofil.
+Lege einen kleinen, wiederverwendbaren Selector‑Helper an (neutral gegenüber deinen Modellen):
 
----
+// ContentSelectors.kt (neu)
+package com.chris.m3usuite.domain.selectors
 
-## Phase 2 — ProfileGate & Profilverwaltung
-**Module:** `MainActivity.kt` (Nav-Entry), **neu** `ui/auth/ProfileGate.kt`, **neu** `ui/profile/ProfileManagerScreen.kt`, Link in `ui/screens/LibraryScreen.kt` (nur Navigation)
+private val yearRegex = Regex("""\((\d{4})\)""")
 
-- [ ] `ProfileGate.kt` (neu):
-    - Startscreen mit: „Ich bin ein Kind“ (Avatare der Kids) und „Ich bin ein Erwachsener“ (PIN).
-    - Kind-Tap ⇒ `current_profile_id = kidId` ⇒ Library.
-    - Adult-Tap ⇒ PIN (Setup, falls nicht gesetzt) ⇒ `current_profile_id = adultId` ⇒ Library.
-    - Optional: „Zuletzt genutztes Profil merken“ (Setting), Gate bleibt erreichbar.
+fun extractYearFrom(text: String?): Int? =
+    text?.let { yearRegex.find(it)?.groupValues?.getOrNull(1)?.toIntOrNull() }
 
-- [ ] `ProfileManagerScreen.kt` (neu, nur Adult):
-    - Kinder anlegen/umbenennen/löschen.
-    - Avatar Aufnahme/Picker → Datei unter `/files/avatars/{kidId}/avatar.jpg`, Thumbnail erzeugen.
-    - Screen-Time-Limit je Kind (Tageslimit, Min/Max/Step).
+fun <T> sortByYearDesc(
+    items: List<T>,
+    yearOf: (T) -> Int?,
+    titleOf: (T) -> String
+): List<T> = items.sortedWith(
+    compareByDescending<T> { yearOf(it) ?: extractYearFrom(titleOf(it)) ?: Int.MIN_VALUE }
+        .thenBy { titleOf(it) } // stabiler Fallback
+)
 
-- [ ] `MainActivity.kt`:
-    - Gate vor Library vorschalten, Routing nach Profil.
+fun <T> filterGermanTv(
+    items: List<T>,
+    countryOf: (T) -> String?,    // "DE", "Germany", ...
+    languageOf: (T) -> String?,   // "de", "German", ...
+    groupOf: (T) -> String?,      // z.B. "DE", "Germany"
+    nameOf: (T) -> String         // Kanalname als Fallback
+): List<T> {
+    fun isDe(s: String?) = s?.contains("de", true) == true || s?.contains("germ", true) == true
+    return items.filter { item ->
+        isDe(countryOf(item)) || isDe(languageOf(item)) || isDe(groupOf(item)) ||
+        // Fallback: häufige Präfixe/Kennungen im Namen
+        nameOf(item).contains(" DE ", true) ||
+        nameOf(item).startsWith("DE-", true) ||
+        nameOf(item).contains("Germany", true)
+    }
+}
 
-**Abnahme:** Mehrere Kids inkl. Avatare/Limit, Gate erscheint und routet korrekt.
 
----
+Einbindung:
 
-## Phase 3 — Repositories & Filter/Limit-Logik
-**Module:** `data/repo/PlaylistRepository.kt`, `data/repo/XtreamRepository.kt`, `data/db/*`
+Serien/Filme: sortByYearDesc(list, { it.year }, { it.name }) – wenn kein year im Modell: nur extractYearFrom(it.name).
 
-- [ ] Freigabe-API:
-    - `allow(kidId, type, contentId)`, `disallow(...)`, `isAllowed(...)`, Bulk-Varianten.
-    - Indizes auf `kid_content`.
+TV: filterGermanTv(channels, { it.country }, { it.language }, { it.group }, { it.name }).
 
-- [ ] Profil-Filter:
-    - Adult → unverändert (bestehende Queries).
-    - Kid → Queries erweitern: nur Einträge, die in `kid_content` für dieses Kid freigegeben sind.
+Akzeptanzkriterien
 
-- [ ] Screen-Time:
-    - `remainingMinutes(kidId)` (legt „heute“ an, falls fehlt).
-    - `tickUsageIfPlaying(kidId, deltaSecs)` (nur bei Play).
-    - Tages-Reset (lokale TZ) vor jedem Tick & bei Appstart.
+- Fehlt das Jahr im Modell, wird es stabil aus „(YYYY)“ im Titel geparst.
+- TV‑Row enthält nur DE‑Sender (sichtbar am UI).
 
-- [ ] Resume:
-    - Upsert/Get/Delete → UNIQUE je Inhalt greifen.
+Phase 3 – Startseite exakt 3 Rows (Serien → Filme → TV)
 
-**Abnahme:** Repo-Methoden liefern gefilterte Resultate; Limit-Funktionen arbeiten nachvollziehbar.
+StartScreen (bereitgestellt) wird präzisiert:
 
----
+- maxRowsStart = 3.
+- Reihenfolge fix: Serien, Filme, TV.
+- Serien/Filme: sortByYearDesc; TV: filterGermanTv.
+- Row‑Header: „Serien“, „Filme“, kein Header bei TV (wie gewünscht möglich).
 
-## Phase 4 — Player-Grundlogik (UI unverändert halten)
-**Module:** `player/PlayerChooser.kt` (neu klein), `player/InternalPlayerScreen.kt`
+Beispiel‑Wiring im ViewModel (skizziert):
 
-- [ ] `PlayerChooser`: Kids ⇒ immer Internal (Extern/Ask ignorieren); Adults ⇒ Setting `player_mode` respektieren.
-- [ ] `InternalPlayerScreen.kt`:
-    - Vor Start (Kids): `remainingMinutes` prüfen, bei 0 ⇒ Blockdialog.
-    - Während Wiedergabe (Kids): zyklisch `tickUsageIfPlaying`; bei 0 ⇒ Pause/Stop + Hinweis.
-    - Untertitel: globale Settings (`SettingsStore`) anwenden.
-    - Live **nicht** in Resume aufnehmen; bestehende Logik beibehalten.
-    - Keine Untertitel-/Player-Settings-UI, wenn aktives Profil Kid.
+// HomeViewModel.kt (skizze)
+val startSeries = repository.seriesFlow
+    .map { sortByYearDesc(it, { s -> s.year }, { s -> s.name }) }
 
-**Abnahme:** Kids: nur internal & Zeitlimit greift; Adults: unverändert mit globalen Untertiteln.
+val startMovies = repository.vodFlow
+    .map { sortByYearDesc(it, { v -> v.year }, { v -> v.name }) }
 
----
+val startTv = repository.liveFlow
+    .map { filterGermanTv(it, { c -> c.country }, { c -> c.language }, { c -> c.group }, { c -> c.name }) }
 
-## Phase 5 — SettingsScreen (nur Adult sichtbar)
-**Module:** `ui/screens/SettingsScreen.kt` (neu), `prefs/SettingsStore.kt` (Konsum)
 
-- [ ] Sektionen:
-    - Player: ask|internal|external
-    - Untertitel: Größe, Textfarbe, Hintergrundfarbe, Opacity Text/BG
-    - Wiedergabe: Autoplay nächste Folge (Serie), Haptik
-    - UI: Header default „eingeklappt“, Rotation-Lock
-    - Profile: Link „Profile verwalten…“ (öffnet `ProfileManagerScreen`)
+StartScreen-Aufruf:
 
-- [ ] Sichtbarkeit: Settings nur im Adult-Profil.
+StartScreen(
+  series = uiState.series,   // sortierte Liste
+  movies = uiState.movies,   // sortierte Liste
+  tv = uiState.tv,           // nur DE
+  onSearch = { /* ... */ },
+  onProfiles = { /* ... */ },
+  onSettings = { /* ... */ },
+  onRefresh = { /* ... */ },
+  bottomBar = { /* Icons: Alle / VOD / Serien / Live */ },
+  poster = { item -> PosterCard(item) } // eure bestehende Card
+)
 
-**Abnahme:** Änderungen persistieren und wirken sofort (z. B. Untertitel).
 
----
+Hinweis: Wir hatten vorher resume entfernt; jetzt exakt 3 Rows. Wenn du später „Weiter schauen“ zurückwillst: einfach vor Serien einfügen und maxRowsStart = 4 setzen.
 
-## Phase 6 — Untertitel-On-Screen-Menü (nur Adult)
-**Module:** `player/InternalPlayerScreen.kt`
+Akzeptanzkriterien
 
-- [ ] Overlay (CC-Button nur für Adult):
-    - Spurwahl (falls mehrere Spuren)
-    - Größe/Farben/Opacity, „Als Standard speichern“ ⇒ `SettingsStore`
-    - Sofort anwenden; TV-Fokus beachten.
+- Die Startseite zeigt nur 3 Rows.
+- Serien und Filme eindeutig „neuste zuerst“.
+- TV enthält nur DE.
 
-**Abnahme:** Menü nur Adult sichtbar; Änderungen wirken sofort; Persist optional.
+Phase 4 – Listen‑Screens (viele vertikale Sections)
 
----
+Live/Serien/VOD‑Screens nutzen SectionsScreen (bereitgestellt) → beliebig viele horizontale Rows untereinander.
 
-## Phase 7 — Universal-Header & Rotation-Lock
-**Module:** `ui/screens/LibraryScreen.kt` (+ ggf. `ui/components/CollapsibleHeader*.kt` neu)
+Gleicher Header/BottomBar wie Startseite (über HomeChromeScaffold).
 
-- [ ] Collapsible Header (sticky Pfeil) in Portrait & Landscape:
-    - Pfeil „hoch“ ⇒ Header slide-up; Pfeil bleibt sichtbar (zeigt dann „runter“).
-    - State in `SettingsStore.header_collapsed` global persistieren.
-- [ ] Rotation-Lock-Button in TopBar spiegeln.
+Kein zweites Scaffold, keine zusätzlichen Insets.
 
-**Abnahme:** Togglen mit Animation, Zustand bleibt über Appstart/Rotation.
+Akzeptanzkriterien
 
----
+- Jede Liste scrollt weich unter dem persistierenden Header.
+- Keine Überlappung durch Top/Bottom‑Bar.
 
-## Phase 8 — LibraryScreen: Profil-Filter & Freigaben
-**Module:** `ui/screens/LibraryScreen.kt`, ggf. `ui/common/*` (Kontextmenü)
+Phase 5 – Icons, Fokus & Interaktion (bereits integriert, Feinschliff)
 
-- [ ] Adult: „Für Kind(er) freigeben…“ (Multi-Select).
-- [ ] Adult: „Aus Kinderprofil entfernen…“.
-- [ ] Kid: zeigt nur freigegebene Inhalte (Repo-Filter).
-- [ ] „Weiter-schauen“: dedupliziert; Klick = Play; Long-Press = entfernen.
+- PNG‑Pack Option B in drawable-* (fertig).
+- AppIconButton nutzt PNGs + TV‑Focus‑Scale & Overlay.
+- Header: Search, Profile, Settings, Refresh als Icons.
+- Card‑Overlays (Play/Info) weiterhin als Icons (32/28 dp).
 
-**Abnahme:** Sichtbare Wirkung der Freigaben ohne Neustart; deduplizierte Weiter-schauen-Row.
+Akzeptanzkriterien
 
----
+- Buttons sind sofort erkennbar (Icon + contentDescription).
+- Fire TV‑Remote: Fokus‑Vergrößerung sichtbar, kein „Focus‑Loss“ beim Scroll.
 
-## Phase 9 — DetailScreens (Live/VOD/Series)
-**Module:** `ui/screens/LiveDetailScreen.kt`, `VodDetailScreen.kt`, `SeriesDetailScreen.kt`
+Phase 6 – Performance/UX‑Polish
 
-- [ ] Playerwahl via `PlayerChooser` (Kids intern erzwingen).
-- [ ] Freigabe-Menü wie in Library (nur Adult).
-- [ ] Live: weiter unverändert; nicht in Resume.
+- Image‑Prefetch für die nächsten 1‑2 Rows (Coil: ImageRequest prefetch).
+- Shimmer/Skeleton für Row‑Items, bis Daten da sind.
+- Snap‑Scrolling für LazyRow (Netflix‑Gefühl): snapFlingBehavior.
+- Remembered scroll state pro Row (Zurückspringen an gleiche Position).
+- Stabiler key (nutze serverseitige ID, nicht Index).
 
-**Abnahme:** Konsistente Startpfade; keine Regressionen bei EPG/Details.
+Akzeptanzkriterien
 
----
+- Reibungsloses Scrollen ohne Jank.
+- Zurücknavigieren erhält Row‑Positionen.
 
-## Phase 10 — Resume finalisieren
-**Module:** `data/db/Entities.kt` (UNIQUE), Repo-Methoden, Startseite/Library
+Phase 7 – Checks & Debug
 
-- [ ] UNIQUE je Inhalt erzwungen; Upsert statt Duplikate.
-- [ ] Interaktionen: Klick = Resume; Long-Press = Entfernen.
-- [ ] Serien-Resume pro Episode; VOD pro `media_id`; Live ignorieren.
+- Insets‑Audit: Suche projektweit nach Scaffold(, statusBarsPadding(, navigationBarsPadding(.
+- Es darf nur noch das Root‑Chrome paddings setzen.
+- TV‑Filter: Stichproben (5–10 Kanäle) – alle deutsch.
+- Sortierung: Stichprobe Serien/Filme — Jahre strikt absteigend; wenn Jahr fehlt, prüfe Regex‑Fallback.
+- A11y: contentDescriptions auf Header‑Icons und Poster‑Overlays.
 
-**Abnahme:** stabil, dedupliziert, erwartetes Abspielverhalten.
+Optional: Codex‑Startpaket (3 präzise Blöcke)
 
----
+A) Selector‑Helpers
 
-## Phase 11 — Feinschliff & QA
-- [ ] Berechtigungen: Kamera nur bei Avatar-Nutzung; ansonsten Photo Picker.
-- [ ] Zeitzone: täglicher Reset (Europe/Berlin) — auch nach App-Sleep.
-- [ ] A11y & UI: TalkBack-Labels, Untertitel-Kontrast (Preset-Palette).
-- [ ] Performance: Poster-Caching, Scroll-Smoothness, Player-State-Transitions.
-- [ ] Fehlerfälle: Netz down beim EPG, kaputte Poster-URLs ⇒ Platzhalter.
+Create file app/src/main/java/com/chris/m3usuite/domain/selectors/ContentSelectors.kt
+[Inhalt = extractYearFrom, sortByYearDesc, filterGermanTv (siehe oben)]
 
-**Testmatrix (Auszug):**
-- ProfileGate: PIN-Setup, falsche PIN, mehrere Kids/Avatare
-- Screen-Time: zählt nur bei `playWhenReady==true`, Reset 00:00
-- Player: Kids intern, Adult CC-Overlay
-- Header: Toggle & Persist in beiden Orientierungen
-- Settings: wirken sofort; Kids sehen keine Settings
-- Freigaben: Kid-Sichten unterscheiden sich
-- Resume: keine Duplikate; Remove per Long-Press
 
----
+B) StartScreen final (3 Rows)
+
+Edit app/src/main/java/com/chris/m3usuite/ui/home/StartScreen.kt
+- Entferne "resume"
+- API: fun StartScreen(series: List<Any>, movies: List<Any>, tv: List<Any>, ...)
+- Reihenfolge: item { SectionRow("Serien", series, ...) }
+               item { SectionRow("Filme", movies, ...) }
+               item { SectionRow(null, tv, ...) } // TV ohne Header-Text
+- maxRowsStart fix auf 3 (oder entferne param)
+
+
+C) ViewModel‑Selektion
+
+Edit HomeViewModel.kt
+- Wandle Flows/Livedata so, dass:
+  seriesUi = sortByYearDesc(seriesRaw, { it.year }, { it.name })
+  moviesUi = sortByYearDesc(vodRaw,    { it.year }, { it.name })
+  tvUi     = filterGermanTv(liveRaw,   { it.country }, { it.language }, { it.group }, { it.name })
+- Übergib seriesUi/moviesUi/tvUi an StartScreen
+
+Ergebnisbild (erwartet)
+
+- Oben: schmaler, leicht transparenter Header (Icons: Suche, Profil, Settings, Refresh).
+- Darunter: Serien (neu → alt) • Filme (neu → alt) • TV (DE), jeweils horizontal scrollbar.
+- Unten: kompakte Bottom‑Bar (Icons), die nichts überdeckt.
+- TV‑Remote: klare Fokus‑Indikation.
+
