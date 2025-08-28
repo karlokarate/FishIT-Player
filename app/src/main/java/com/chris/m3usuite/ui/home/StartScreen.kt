@@ -53,6 +53,7 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.components.rows.LiveRow
 import com.chris.m3usuite.ui.components.rows.SeriesRow
 import com.chris.m3usuite.ui.components.rows.VodRow
+import com.chris.m3usuite.backup.QuickImportRow
 import com.chris.m3usuite.domain.selectors.sortByYearDesc
 import com.chris.m3usuite.domain.selectors.filterGermanTv
 import kotlinx.coroutines.launch
@@ -133,9 +134,11 @@ fun StartScreen(
             }
         },
         onSettings = if (isKid) null else {
-            val current = navController.currentBackStackEntry?.destination?.route
-            if (current != "settings") {
-                navController.navigate("settings") { launchSingleTop = true }
+            {
+                val current = navController.currentBackStackEntry?.destination?.route
+                if (current != "settings") {
+                    navController.navigate("settings") { launchSingleTop = true }
+                }
             }
         },
         onRefresh = {
@@ -174,6 +177,7 @@ fun StartScreen(
     ) { pads ->
         Box(Modifier.fillMaxSize().padding(pads)) {
             LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
+                item("backup_quick_import") { QuickImportRow() }
                 item("hdr_series") {
                     Text("Serien", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 2.dp))
                 }
