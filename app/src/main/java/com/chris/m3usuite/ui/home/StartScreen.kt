@@ -213,6 +213,7 @@ fun StartScreen(
                                     }
                                 }
                             }
+                            }
                         } else {
                             if (isKid) {
                                 // Kids: nur lesen, keine Reorder/Remove/Add UI
@@ -236,6 +237,7 @@ fun StartScreen(
                     }
                 }
             }
+        }
         }
     // Live picker sheet: multi-select grid + search + provider chips
     if (showLivePicker) {
@@ -294,7 +296,6 @@ fun StartScreen(
         }
         }
     }
-}
 }
 
 @Composable
