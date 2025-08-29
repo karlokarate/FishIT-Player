@@ -1,196 +1,133 @@
-Ziele (was am Ende steht)
+#
+# m3uSuite – **Roadmap: Import/Export finalisieren**
 
-- Startseite hat genau drei horizontale Rows – Serien, Filme, TV – unter einem persistenten, halbtransparenten Header; Inhalte scrollen darunter.
-- Sortierung: Serien & Filme nach Release‑Jahr absteigend (neueste zuerst), robuste Fallbacks (Jahr in Klammern aus dem Titel extrahieren).
-- TV‑Row zeigt nur deutsche Sender (per Country/Language/Group/Name‑Heuristik).
-- Keine überdeckten Inhalte: Top/Bottom‑Bar belegen Platz via Insets; kein verschachteltes Scaffold mehr.
-- TV‑Focus/Remote tauglich und Icon‑Buttons aus dem PNG‑Pack überall konsistent.
+Zielbild:
+- **Schnell‑Import** ausschließlich im **Erststart‑Screen (`setup`)**.
+- **Settings‑Export/Import** in **Settings** (manuell + optional Auto‑Backup).
+- **Google‑Drive** (optional): Login + Zielordner wählen + Upload/Download.
+- Nach **Import**: automatischer **Refresh** (M3U/Xtream) und Worker‑Scheduling.
 
-Phase 1 – Globaler Chrome (pinned Header + kompakte Bottom‑Bar)
+---
 
-- HomeChromeScaffold (bereitgestellt) ist einzige Chroming‑Instanz.
-- TopBar: halbtransparent + Blur; BottomBar: kompakt.
-- Content erhält PaddingValues(top=status+TopBarHeight, bottom=navigation+BottomBarHeight) → nichts wird verdeckt.
-- Aufräumen: Alle untergeordneten Screens: keine eigenen Scaffolds, keine statusBarsPadding()/navigationBarsPadding() mehr.
+## 0) Architekturentscheidungen
 
-Akzeptanzkriterien
+- **Export‑Format**: JSON (`m3usuite-settings-v1.json`)  
+  - enthält alle **DataStore‑Keys** (siehe ARCHITECTURE_OVERVIEW.md §8).  
+  - optionaler Block `"profiles"` (Profile + Kids‑Whitelist) → aktivierbar per Checkbox.
+- **Sicherheit**: Sensible Felder (`XT_PASS`, ggf. Adult‑PIN‑Hash) werden **AES‑verschlüsselt** (Schlüssel via Android Keystore) oder – Minimalversion – Klartext mit deutlichem Hinweis.
+- **Speicherorte**:
+  - **Lokal** via **SAF** (ACTION_CREATE_DOCUMENT / OPEN_DOCUMENT).
+  - **Drive (optional)** via **REST v3** + Google Sign-In (`https://www.googleapis.com/auth/drive.file`).
 
-- Beim Scrollen bleiben Header‑Icons sichtbar; Rows beginnen unterhalb des Headers.
-- Kein „Mischmasch“: Startseite zeigt nur die 3 definierten Rows.
+---
 
-Phase 2 – Daten-Selektion, Sortierung & Filter
+## 1) UI-Änderungen
 
-Lege einen kleinen, wiederverwendbaren Selector‑Helper an (neutral gegenüber deinen Modellen):
+### 1.1 Erststart („Setup“)
+- In `PlaylistSetupScreen.kt` folgenden Block ergänzen (oberhalb der Formularfelder):
+  - **„Schnell‑Import von Drive“**: Button „Bei Google anmelden“ → Drive‑Login; Button „Von Drive importieren“ → öffnet Dateipicker (Drive).
+  - Hinweis-Text für unterstütztes Format (`m3usuite-settings-v1.json`).
+- Beim erfolgreichen Import:
+  - Settings in DataStore schreiben → `XtreamRepository.configureFromM3uUrl()` (falls M3U gesetzt).  
+  - `XtreamRefreshWorker.schedule(...)` + `XtreamEnrichmentWorker.schedule(...)`.  
+  - Navigation zu `gate`.
 
-// ContentSelectors.kt (neu)
-package com.chris.m3usuite.domain.selectors
+### 1.2 Home (`StartScreen.kt`)
+- **Schnell‑Import‑Karte entfernen** (nicht mehr angezeigt).
 
-private val yearRegex = Regex("""\((\d{4})\)""")
+### 1.3 Settings (`SettingsScreen.kt`)
+Abschnitt **„Daten & Backup“** ergänzen:
+- **Settings‑Export**  
+  - Buttons: „Als Datei exportieren …“ (SAF), „Zu Drive exportieren“ (sofern angemeldet).
+- **Settings‑Import**  
+  - Buttons: „Aus Datei importieren …“, „Aus Drive importieren“.
+- **Drive‑Einstellungen**  
+  - Status (angemeldet/abgemeldet, Konto), „Bei Google anmelden/abmelden“, Zielordner wählen.  
+  - Toggle: „Automatisches Backup nach Änderungen“ (optional Phase 2).
 
-fun extractYearFrom(text: String?): Int? =
-    text?.let { yearRegex.find(it)?.groupValues?.getOrNull(1)?.toIntOrNull() }
+---
 
-fun <T> sortByYearDesc(
-    items: List<T>,
-    yearOf: (T) -> Int?,
-    titleOf: (T) -> String
-): List<T> = items.sortedWith(
-    compareByDescending<T> { yearOf(it) ?: extractYearFrom(titleOf(it)) ?: Int.MIN_VALUE }
-        .thenBy { titleOf(it) } // stabiler Fallback
-)
+## 2) Implementierungsschritte (Schritt‑für‑Schritt)
 
-fun <T> filterGermanTv(
-    items: List<T>,
-    countryOf: (T) -> String?,    // "DE", "Germany", ...
-    languageOf: (T) -> String?,   // "de", "German", ...
-    groupOf: (T) -> String?,      // z.B. "DE", "Germany"
-    nameOf: (T) -> String         // Kanalname als Fallback
-): List<T> {
-    fun isDe(s: String?) = s?.contains("de", true) == true || s?.contains("germ", true) == true
-    return items.filter { item ->
-        isDe(countryOf(item)) || isDe(languageOf(item)) || isDe(groupOf(item)) ||
-        // Fallback: häufige Präfixe/Kennungen im Namen
-        nameOf(item).contains(" DE ", true) ||
-        nameOf(item).startsWith("DE-", true) ||
-        nameOf(item).contains("Germany", true)
-    }
-}
+### 2.1 Settings‑Serialisierung
+- Neues Paket `settings/` mit `SettingsBackup.kt`:
+  - `suspend fun export(context): SettingsSnapshot` (liest alle Keys aus `SettingsStore`)
+  - `suspend fun import(context, snapshot: SettingsSnapshot)` (schreibt Werte zurück; migriert alte Keys).
+  - `data class SettingsSnapshot(v: Int = 1, prefs: Map<String, Any?>, profiles?: List<Profile>, kidAllow?: Map<Long, Map<String, List<Long>>>>)`
+  - Verschlüsselungs‑Helper (optional): `SecretHelper` (AES/GCM mit Keystore).
 
+### 2.2 Dateiexport/-import (lokal, SAF)
+- Utility `FilePickers.kt`: `createDocument()`, `openDocument()` Intents mit `application/json`.
+- In `SettingsScreen` die Buttons verdrahten; Progress/Fehler‑Snackbars; Neustart‑Hinweis wenn nötig.
 
-Einbindung:
+### 2.3 Drive‑Integration (optional Phase 2)
+- Gradle:
+  - `implementation("com.google.android.gms:play-services-auth:21.x")`
+  - `implementation("com.google.api-client:google-api-client-android:2.x")`
+  - `implementation("com.google.apis:google-api-services-drive:v3-rev###-1.###.0")`
+- Paket `drive/`:
+  - `DriveAuth.kt` – Google Sign-In + Token Refresh
+  - `DriveClient.kt` – Upload/Download `m3usuite-settings-v1.json` im app‑eigenen Ordner (`drive.file`‑Scope)
+- UI‑Status in `SettingsScreen`/`PlaylistSetupScreen` anzeigen und Aktionen anbinden.
 
-Serien/Filme: sortByYearDesc(list, { it.year }, { it.name }) – wenn kein year im Modell: nur extractYearFrom(it.name).
+### 2.4 Onboarding‑Anpassungen
+- `PlaylistSetupScreen`:
+  - „Schnell‑Import“ Abschnitt (Drive + Lokal) einbauen.
+  - Nach erfolgreichem Import: **M3U/EPG/UA/Referer** gesetzt? → **Import anstoßen** (Xtream/M3U) → Worker planen → `onDone()`.
+- `MainActivity` bleibt unverändert (Startziel `setup` wenn `m3uUrl` leer).
 
-TV: filterGermanTv(channels, { it.country }, { it.language }, { it.group }, { it.name }).
+### 2.5 Post‑Import Aktionen
+- `XtreamRepository.configureFromM3uUrl()` aufrufen, wenn nur M3U im Snapshot steht (Host/Port/User/Pass setzen).
+- `XtreamRefreshWorker.schedule(...)` + `XtreamEnrichmentWorker.schedule(...)` immer auslösen.
+- Optional: **Snackbar/Toast** „Import erfolgreich – Inhalte werden aktualisiert“.
 
-Akzeptanzkriterien
+### 2.6 Auto‑Backup (optional Phase 3)
+- Worker `SettingsAutoBackupWorker` (Unique, Network CONNECTED):
+  - Trigger: beim Wechsel relevanter Keys (DataStore `data` Flow → Debounce → Enqueue) oder täglich.
+  - Ziel: Drive (falls angemeldet) **und** optional lokaler Export‑Ordner.
 
-- Fehlt das Jahr im Modell, wird es stabil aus „(YYYY)“ im Titel geparst.
-- TV‑Row enthält nur DE‑Sender (sichtbar am UI).
+### 2.7 Tests
+- Unit‑Tests `SettingsBackupTest` (Round‑Trip: export→import→Vergleich).
+- Repo‑Smoke‑Tests (Playlist/Xtream mit Fake‑HTTP).
+- UI‑Tests: Onboarding‑Pfad, Settings‑Buttons sichtbar/funktional.
 
-Phase 3 – Startseite exakt 3 Rows (Serien → Filme → TV)
+---
 
-StartScreen (bereitgestellt) wird präzisiert:
+## 3) Akzeptanzkriterien
 
-- maxRowsStart = 3.
-- Reihenfolge fix: Serien, Filme, TV.
-- Serien/Filme: sortByYearDesc; TV: filterGermanTv.
-- Row‑Header: „Serien“, „Filme“, kein Header bei TV (wie gewünscht möglich).
+- **Setup**: „Schnell‑Import“ vorhanden; Import einer gültigen `m3usuite-settings-v1.json` setzt **alle** relevanten Settings.
+- **Home**: keine Schnell‑Import‑Karte mehr.
+- **Settings**: Abschnitte *Export*, *Import*, *Drive‑Einstellungen* vorhanden und funktional.
+- **Nach Import**: Inhalte werden aktualisiert (Sync gestartet), Worker geplant.
+- **Optional**: Drive‑Login, Upload/Download funktionieren zuverlässig.
 
-Beispiel‑Wiring im ViewModel (skizziert):
+---
 
-// HomeViewModel.kt (skizze)
-val startSeries = repository.seriesFlow
-    .map { sortByYearDesc(it, { s -> s.year }, { s -> s.name }) }
+## 4) Migration & Fallbacks
 
-val startMovies = repository.vodFlow
-    .map { sortByYearDesc(it, { v -> v.year }, { v -> v.name }) }
+- Wenn keine Drive‑Anmeldung → **nur** Datei‑Export/-Import anbieten.
+- Bei unvollständigem Snapshot (z. B. fehlende `EPG_URL`): keine Fehlermeldung, nur setzen was vorhanden ist.
+- Versionierung über `v`‑Feld (künftige Felder rückwärtskompatibel).
 
-val startTv = repository.liveFlow
-    .map { filterGermanTv(it, { c -> c.country }, { c -> c.language }, { c -> c.group }, { c -> c.name }) }
+---
 
+## 5) Risiken & Gegenmaßnahmen
 
-StartScreen-Aufruf:
+- **Drive REST** ist komplex → Minimal‑Viable zuerst mit **SAF** (Datei) fertigstellen.
+- **Sensible Daten** (Xtream‑Passwort) → Verschlüsselung + Hinweistext.
+- **Große Kataloge** → Kids‑Filter performant halten (möglichst DAO‑seitig selektieren, nicht nur in Memory).
+- **User‑Agent/Referer** müssen überall identisch sein (HttpClient & Coil – bereits zentralisiert).
 
-StartScreen(
-  series = uiState.series,   // sortierte Liste
-  movies = uiState.movies,   // sortierte Liste
-  tv = uiState.tv,           // nur DE
-  onSearch = { /* ... */ },
-  onProfiles = { /* ... */ },
-  onSettings = { /* ... */ },
-  onRefresh = { /* ... */ },
-  bottomBar = { /* Icons: Alle / VOD / Serien / Live */ },
-  poster = { item -> PosterCard(item) } // eure bestehende Card
-)
+---
 
+## 6) Aufgabenliste (Checkliste)
 
-Hinweis: Wir hatten vorher resume entfernt; jetzt exakt 3 Rows. Wenn du später „Weiter schauen“ zurückwillst: einfach vor Serien einfügen und maxRowsStart = 4 setzen.
-
-Akzeptanzkriterien
-
-- Die Startseite zeigt nur 3 Rows.
-- Serien und Filme eindeutig „neuste zuerst“.
-- TV enthält nur DE.
-
-Phase 4 – Listen‑Screens (viele vertikale Sections)
-
-Live/Serien/VOD‑Screens nutzen SectionsScreen (bereitgestellt) → beliebig viele horizontale Rows untereinander.
-
-Gleicher Header/BottomBar wie Startseite (über HomeChromeScaffold).
-
-Kein zweites Scaffold, keine zusätzlichen Insets.
-
-Akzeptanzkriterien
-
-- Jede Liste scrollt weich unter dem persistierenden Header.
-- Keine Überlappung durch Top/Bottom‑Bar.
-
-Phase 5 – Icons, Fokus & Interaktion (bereits integriert, Feinschliff)
-
-- PNG‑Pack Option B in drawable-* (fertig).
-- AppIconButton nutzt PNGs + TV‑Focus‑Scale & Overlay.
-- Header: Search, Profile, Settings, Refresh als Icons.
-- Card‑Overlays (Play/Info) weiterhin als Icons (32/28 dp).
-
-Akzeptanzkriterien
-
-- Buttons sind sofort erkennbar (Icon + contentDescription).
-- Fire TV‑Remote: Fokus‑Vergrößerung sichtbar, kein „Focus‑Loss“ beim Scroll.
-
-Phase 6 – Performance/UX‑Polish
-
-- Image‑Prefetch für die nächsten 1‑2 Rows (Coil: ImageRequest prefetch).
-- Shimmer/Skeleton für Row‑Items, bis Daten da sind.
-- Snap‑Scrolling für LazyRow (Netflix‑Gefühl): snapFlingBehavior.
-- Remembered scroll state pro Row (Zurückspringen an gleiche Position).
-- Stabiler key (nutze serverseitige ID, nicht Index).
-
-Akzeptanzkriterien
-
-- Reibungsloses Scrollen ohne Jank.
-- Zurücknavigieren erhält Row‑Positionen.
-
-Phase 7 – Checks & Debug
-
-- Insets‑Audit: Suche projektweit nach Scaffold(, statusBarsPadding(, navigationBarsPadding(.
-- Es darf nur noch das Root‑Chrome paddings setzen.
-- TV‑Filter: Stichproben (5–10 Kanäle) – alle deutsch.
-- Sortierung: Stichprobe Serien/Filme — Jahre strikt absteigend; wenn Jahr fehlt, prüfe Regex‑Fallback.
-- A11y: contentDescriptions auf Header‑Icons und Poster‑Overlays.
-
-Optional: Codex‑Startpaket (3 präzise Blöcke)
-
-A) Selector‑Helpers
-
-Create file app/src/main/java/com/chris/m3usuite/domain/selectors/ContentSelectors.kt
-[Inhalt = extractYearFrom, sortByYearDesc, filterGermanTv (siehe oben)]
-
-
-B) StartScreen final (3 Rows)
-
-Edit app/src/main/java/com/chris/m3usuite/ui/home/StartScreen.kt
-- Entferne "resume"
-- API: fun StartScreen(series: List<Any>, movies: List<Any>, tv: List<Any>, ...)
-- Reihenfolge: item { SectionRow("Serien", series, ...) }
-               item { SectionRow("Filme", movies, ...) }
-               item { SectionRow(null, tv, ...) } // TV ohne Header-Text
-- maxRowsStart fix auf 3 (oder entferne param)
-
-
-C) ViewModel‑Selektion
-
-Edit HomeViewModel.kt
-- Wandle Flows/Livedata so, dass:
-  seriesUi = sortByYearDesc(seriesRaw, { it.year }, { it.name })
-  moviesUi = sortByYearDesc(vodRaw,    { it.year }, { it.name })
-  tvUi     = filterGermanTv(liveRaw,   { it.country }, { it.language }, { it.group }, { it.name })
-- Übergib seriesUi/moviesUi/tvUi an StartScreen
-
-Ergebnisbild (erwartet)
-
-- Oben: schmaler, leicht transparenter Header (Icons: Suche, Profil, Settings, Refresh).
-- Darunter: Serien (neu → alt) • Filme (neu → alt) • TV (DE), jeweils horizontal scrollbar.
-- Unten: kompakte Bottom‑Bar (Icons), die nichts überdeckt.
-- TV‑Remote: klare Fokus‑Indikation.
+- [ ] `StartScreen`: Schnell‑Import entfernen.
+- [ ] `PlaylistSetupScreen`: Drive/Lokal **Import** einbauen (Erststart).
+- [ ] `SettingsScreen`: **Export**, **Import**, **Drive‑Einstellungen** ergänzen.
+- [ ] `settings/SettingsBackup.kt` + `FilePickers.kt` implementieren.
+- [ ] (Optional) `drive/DriveAuth.kt` + `drive/DriveClient.kt` + Gradle‑Deps.
+- [ ] (Optional) `work/SettingsAutoBackupWorker.kt`.
+- [ ] Unit‑ & UI‑Tests ergänzen.
+- [ ] AGENTS.md & ROADMAP.md im Repo aktualisieren.
 
