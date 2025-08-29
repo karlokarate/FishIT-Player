@@ -30,6 +30,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.flow.first
 import com.chris.m3usuite.data.repo.XtreamRepository
 import com.chris.m3usuite.data.repo.PlaylistRepository
+import com.chris.m3usuite.core.xtream.XtreamClient
+import com.chris.m3usuite.core.xtream.XtreamConfig
+import com.chris.m3usuite.data.db.DbProvider
+import android.util.Log
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.chris.m3usuite.backup.BackupRestoreSection
@@ -325,6 +329,36 @@ fun SettingsScreen(
                         xtRepo.configureFromM3uUrl()
                     }
                 }) { Text("Aus M3U ableiten") }
+                TextButton(onClick = {
+                    scope.launch {
+                        val tag = "XtreamEPGTest"
+                        try {
+                            val hostNow = store.xtHost.first(); val userNow = store.xtUser.first(); val passNow = store.xtPass.first(); val outNow = store.xtOutput.first(); val portNow = store.xtPort.first()
+                            Log.d(tag, "Testing shortEPG with host=${hostNow}:${portNow}, user=${userNow}, output=${outNow}")
+                            if (hostNow.isBlank() || userNow.isBlank() || passNow.isBlank()) {
+                                Log.w(tag, "Xtream config missing; cannot test shortEPG")
+                                snackHost.showSnackbar("EPG-Test: Xtream-Konfig fehlt")
+                                return@launch
+                            }
+                            val db = DbProvider.get(ctx)
+                            val sid = withContext(Dispatchers.IO) { db.mediaDao().listByType("live", 1000, 0).firstOrNull { it.streamId != null }?.streamId }
+                            if (sid == null) {
+                                Log.w(tag, "No live streamId found in DB; import might be required")
+                                snackHost.showSnackbar("EPG-Test: keine Live-StreamId gefunden")
+                                return@launch
+                            }
+                            val cfg = XtreamConfig(hostNow, portNow, userNow, passNow, outNow)
+                            Log.d(tag, "Portal base: ${cfg.portalBase}")
+                            val client = XtreamClient(ctx, store, cfg)
+                            val list = client.shortEPG(sid, 2)
+                            Log.d(tag, "shortEPG result count=${list.size}; entries=${list.map { it.title }}")
+                            snackHost.showSnackbar("EPG-Test: ${list.getOrNull(0)?.title ?: "(leer)"}")
+                        } catch (t: Throwable) {
+                            Log.e(tag, "EPG test failed", t)
+                            snackHost.showSnackbar("EPG-Test fehlgeschlagen: ${t.message}")
+                        }
+                    }
+                }) { Text("Test EPG (Debug)") }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val ctx = LocalContext.current
