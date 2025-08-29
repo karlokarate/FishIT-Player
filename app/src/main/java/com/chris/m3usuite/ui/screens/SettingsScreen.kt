@@ -39,6 +39,10 @@ import kotlinx.coroutines.withContext
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.chris.m3usuite.backup.BackupRestoreSection
+import android.content.Intent
+import androidx.core.content.FileProvider
+import com.chris.m3usuite.core.m3u.M3UExporter
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -424,6 +428,40 @@ fun SettingsScreen(
 
             HorizontalDivider()
             com.chris.m3usuite.backup.BackupRestoreSection()
+
+            // --- M3U Export ---
+            Text("M3U Export", style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val ctx = LocalContext.current
+                Button(onClick = {
+                    scope.launch {
+                        val text = com.chris.m3usuite.core.m3u.M3UExporter.build(ctx, store)
+                        // Share as text/plain
+                        val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(android.content.Intent.EXTRA_SUBJECT, "m3uSuite Playlist")
+                            putExtra(android.content.Intent.EXTRA_TEXT, text)
+                        }
+                        ctx.startActivity(android.content.Intent.createChooser(send, "M3U teilen"))
+                    }
+                }) { Text("Teilen…") }
+
+                Button(onClick = {
+                    scope.launch {
+                        val text = com.chris.m3usuite.core.m3u.M3UExporter.build(ctx, store)
+                        val dir = java.io.File(ctx.cacheDir, "exports").apply { mkdirs() }
+                        val file = java.io.File(dir, "playlist.m3u").apply { writeText(text, Charsets.UTF_8) }
+                        val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".provider", file)
+                        val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "application/x-mpegURL"
+                            putExtra(android.content.Intent.EXTRA_SUBJECT, "playlist.m3u")
+                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        ctx.startActivity(android.content.Intent.createChooser(send, "M3U speichern/teilen"))
+                    }
+                }) { Text("Als Datei speichern…") }
+            }
         }
     }
 

@@ -44,6 +44,9 @@ All notable changes to this project are documented here. Keep entries concise an
 - feat(settings): Sichtbare Schaltfläche „EPG testen (Debug)“ unter Quelle.
   - Datei: `ui/screens/SettingsScreen.kt`
   - Status (nach Änderung): zu testen durch Nutzer
+ - feat(export): M3U Export in Settings – Teilen als Text oder als Datei speichern (Playlist aus DB generiert inkl. url-tvg, LIVE+VOD URLs).
+  - Dateien: `core/m3u/M3UExporter.kt`, `ui/screens/SettingsScreen.kt`
+  - Status (nach Änderung): zu testen durch Nutzer
 - fix(xtream): Schonendes Port‑Update in `configureFromM3uUrl()` (passt nur Port an, wenn Host übereinstimmt); Output nur setzen, wenn leer.
   - Datei: `data/repo/XtreamRepository.kt`
   - Status (vor Änderung): ggf. falscher Port bei https‑M3U
