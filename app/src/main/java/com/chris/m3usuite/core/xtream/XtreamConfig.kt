@@ -9,7 +9,8 @@ data class XtreamConfig(
     val password: String,
     val output: String = "m3u8"
 ) {
-    val portalBase: String get() = "http://$host:$port"
+    private val scheme: String get() = if (port == 443) "https" else "http"
+    val portalBase: String get() = "$scheme://$host:$port"
     val baseQuery: String get() = "$portalBase/player_api.php?username=$username&password=$password"
 
     fun liveUrl(streamId: Int): String {
@@ -29,7 +30,8 @@ data class XtreamConfig(
         fun fromM3uUrl(m3u: String): XtreamConfig? = runCatching {
             val u = Uri.parse(m3u)
             val host = u.host ?: return null
-            val port = if (u.port > 0) u.port else 80
+            val scheme = u.scheme ?: "http"
+            val port = if (u.port > 0) u.port else if (scheme.equals("https", true)) 443 else 80
             val user = u.getQueryParameter("username") ?: return null
             val pass = u.getQueryParameter("password") ?: return null
             val out = u.getQueryParameter("output") ?: "m3u8"
