@@ -28,6 +28,8 @@ import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.flow.first
+import com.chris.m3usuite.data.repo.XtreamRepository
+import com.chris.m3usuite.data.repo.PlaylistRepository
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.chris.m3usuite.backup.BackupRestoreSection
@@ -56,6 +58,11 @@ fun SettingsScreen(
     val pinSet by store.adultPinSet.collectAsState(initial = false)
     val m3u by store.m3uUrl.collectAsState(initial = "")
     val epg by store.epgUrl.collectAsState(initial = "")
+    val xtHost by store.xtHost.collectAsState(initial = "")
+    val xtPort by store.xtPort.collectAsState(initial = 80)
+    val xtUser by store.xtUser.collectAsState(initial = "")
+    val xtPass by store.xtPass.collectAsState(initial = "")
+    val xtOut  by store.xtOutput.collectAsState(initial = "m3u8")
     val ua by store.userAgent.collectAsState(initial = "IBOPlayer/1.4 (Android)")
     val referer by store.referer.collectAsState(initial = "")
     var pinDialogMode by remember { mutableStateOf<PinMode?>(null) }
@@ -266,11 +273,73 @@ fun SettingsScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
+            // Xtream (optional) — can be auto-filled from M3U get.php
+            Text("Xtream (optional)", style = MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = xtHost,
+                    onValueChange = { scope.launch { store.set(Keys.XT_HOST, it) } },
+                    label = { Text("Host") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = xtPort.toString(),
+                    onValueChange = { s -> s.toIntOrNull()?.let { p -> scope.launch { store.setInt(Keys.XT_PORT, p) } } },
+                    label = { Text("Port") },
+                    singleLine = true,
+                    modifier = Modifier.width(120.dp)
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = xtUser,
+                    onValueChange = { scope.launch { store.set(Keys.XT_USER, it) } },
+                    label = { Text("Benutzername") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = xtPass,
+                    onValueChange = { scope.launch { store.set(Keys.XT_PASS, it) } },
+                    label = { Text("Passwort") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = xtOut,
+                    onValueChange = { scope.launch { store.set(Keys.XT_OUTPUT, it) } },
+                    label = { Text("Output (ts|m3u8|mp4)") },
+                    singleLine = true,
+                    modifier = Modifier.width(200.dp)
+                )
+                val ctx = LocalContext.current
+                TextButton(onClick = {
+                    scope.launch {
+                        val xtRepo = XtreamRepository(ctx, store)
+                        xtRepo.configureFromM3uUrl()
+                    }
+                }) { Text("Aus M3U ableiten") }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val ctx = LocalContext.current
                 Button(onClick = {
-                    com.chris.m3usuite.work.XtreamRefreshWorker.schedule(ctx)
-                    com.chris.m3usuite.work.XtreamEnrichmentWorker.schedule(ctx)
+                    // Run immediate import: prefer Xtream if we can configure from M3U, else M3U parser
+                    scope.launch {
+                        val xtRepo = XtreamRepository(ctx, store)
+                        val plRepo = PlaylistRepository(ctx, store)
+                        val cfg = runCatching { xtRepo.configureFromM3uUrl() }.getOrNull()
+                        if (cfg != null) {
+                            xtRepo.importAll()
+                        } else {
+                            plRepo.refreshFromM3U()
+                        }
+                        com.chris.m3usuite.work.XtreamRefreshWorker.schedule(ctx)
+                        com.chris.m3usuite.work.XtreamEnrichmentWorker.schedule(ctx)
+                    }
                 }) { Text("Import aktualisieren") }
                 if (onOpenProfiles != null) {
                     TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
