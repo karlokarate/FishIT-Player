@@ -39,6 +39,7 @@ import com.chris.m3usuite.data.db.DbProvider
 import android.app.Activity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.chris.m3usuite.data.repo.XtreamRepository
 
 class MainActivity : ComponentActivity() {
 
@@ -65,9 +66,14 @@ class MainActivity : ComponentActivity() {
                 // Startziel abhängig von gespeicherter URL
                 val startDestination = if (m3uUrl.isBlank()) "setup" else "gate"
 
-                // Worker für Refresh/Enrichment planen, sobald URL vorhanden
+                // Wenn M3U vorhanden aber Xtream noch nicht konfiguriert (z. B. nach App-Reinstall via Backup):
+                // automatisch aus der M3U ableiten und direkt die Worker planen.
                 LaunchedEffect(m3uUrl) {
                     if (m3uUrl.isNotBlank()) {
+                        // Auto-configure Xtream from M3U if missing
+                        if (!store.hasXtream()) {
+                            runCatching { XtreamRepository(this@MainActivity, store).configureFromM3uUrl() }
+                        }
                         XtreamRefreshWorker.schedule(this@MainActivity)
                         XtreamEnrichmentWorker.schedule(this@MainActivity)
                         ScreenTimeResetWorker.schedule(this@MainActivity)
