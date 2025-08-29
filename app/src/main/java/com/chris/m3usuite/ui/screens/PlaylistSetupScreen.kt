@@ -17,6 +17,7 @@ import com.chris.m3usuite.work.XtreamEnrichmentWorker
 import com.chris.m3usuite.work.XtreamRefreshWorker
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.chris.m3usuite.backup.QuickImportRow
 
 @Composable
 fun PlaylistSetupScreen(onDone: () -> Unit) {
@@ -53,6 +54,10 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
 
     Column(Modifier.padding(16.dp)) {
         Text("Setup", style = MaterialTheme.typography.titleLarge)
+        Spacer(Modifier.height(8.dp))
+
+        // Quick import (Drive/File) so users can pull settings before entering URLs
+        QuickImportRow()
         Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
