@@ -3,8 +3,11 @@ package com.chris.m3usuite.data.repo
 import android.content.Context
 import com.chris.m3usuite.core.http.HttpClientFactory
 import com.chris.m3usuite.core.m3u.M3UParser
+import com.chris.m3usuite.core.xtream.XtreamDetect
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.work.XtreamEnrichmentWorker
+import com.chris.m3usuite.work.XtreamRefreshWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -35,6 +38,32 @@ class PlaylistRepository(
                 // 3) Parsen → List<MediaItem>
                 val parsed = M3UParser.parse(body)
 
+                // 3a) Xtream auto-detect & persist if not set
+                if (!settings.hasXtream()) {
+                    val m3uUrl = url
+                    val fromGet = XtreamDetect.detectFromGetPhp(m3uUrl)
+                    val creds = fromGet ?: run {
+                        val firstLiveUrl = parsed.firstOrNull { it.type == "live" }?.url
+                        if (!firstLiveUrl.isNullOrBlank()) XtreamDetect.detectFromStreamUrl(firstLiveUrl) else null
+                    }
+                    if (creds != null) {
+                        settings.setXtream(creds)
+                    }
+                }
+
+                // 3b) Fallback EPG from #EXTM3U url-tvg if not set
+                val currentEpg = settings.epgUrl.first()
+                if (currentEpg.isBlank()) {
+                    val firstLine = body.lineSequence().firstOrNull()?.trim().orEmpty()
+                    if (firstLine.startsWith("#EXTM3U")) {
+                        val m = Regex("""url-tvg=\"([^\"]+)\"""").find(firstLine)
+                        val epg = m?.groupValues?.getOrNull(1)
+                        if (!epg.isNullOrBlank()) {
+                            settings.setEpgUrl(epg)
+                        }
+                    }
+                }
+
                 // 4) DB ersetzen
                 val dao = DbProvider.get(context).mediaDao()
                 // Preserve addedAt using url as key
@@ -61,7 +90,11 @@ class PlaylistRepository(
                     mi.copy(extraJson = extra)
                 })
 
-                // 5) Anzahl zurückgeben
+                // 5) Schedule workers after import
+                XtreamRefreshWorker.schedule(context)
+                XtreamEnrichmentWorker.schedule(context)
+
+                // 6) Anzahl zurückgeben
                 parsed.size
             }
         }

@@ -1,6 +1,7 @@
 package com.chris.m3usuite.core.m3u
 
 import com.chris.m3usuite.data.db.MediaItem
+import com.chris.m3usuite.core.xtream.XtreamDetect
 import java.util.Locale
 
 object M3UParser {
@@ -18,9 +19,10 @@ object M3UParser {
                 val (attrs, name) = parseExtInf(lastInf!!)
                 val url = line.substringBefore('|')
                 val type = inferType(attrs, url)
+                val detectedStreamId = if (type == "live") XtreamDetect.parseStreamId(url) else null
                 out += MediaItem(
                     type = type,
-                    streamId = null,
+                    streamId = detectedStreamId,
                     name = name,
                     sortTitle = normalize(name),
                     categoryId = attrs["group-title"],

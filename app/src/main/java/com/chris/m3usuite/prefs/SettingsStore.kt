@@ -3,6 +3,7 @@ package com.chris.m3usuite.prefs
 import android.content.Context
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import com.chris.m3usuite.core.xtream.XtreamCreds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -194,6 +195,22 @@ class SettingsStore(private val context: Context) {
     suspend fun setLiveFilterKids(value: Boolean) { context.dataStore.edit { it[Keys.LIVE_FILTER_KIDS] = value } }
     suspend fun setLiveFilterProvidersCsv(value: String) { context.dataStore.edit { it[Keys.LIVE_FILTER_PROVIDERS] = value } }
     suspend fun setLiveFilterGenresCsv(value: String) { context.dataStore.edit { it[Keys.LIVE_FILTER_GENRES] = value } }
+    // Explicit setters for frequently used settings
+    suspend fun setM3uUrl(value: String) { context.dataStore.edit { it[Keys.M3U_URL] = value } }
+    suspend fun setEpgUrl(value: String) { context.dataStore.edit { it[Keys.EPG_URL] = value } }
+    suspend fun setXtHost(value: String) { context.dataStore.edit { it[Keys.XT_HOST] = value } }
+    suspend fun setXtPort(value: Int) { context.dataStore.edit { it[Keys.XT_PORT] = value } }
+    suspend fun setXtUser(value: String) { context.dataStore.edit { it[Keys.XT_USER] = value } }
+    suspend fun setXtPass(value: String) { context.dataStore.edit { it[Keys.XT_PASS] = value } }
+    suspend fun setXtOutput(value: String) { context.dataStore.edit { it[Keys.XT_OUTPUT] = value } }
+    // Helper to set all Xtream creds at once (no removal of existing API)
+    suspend fun setXtream(creds: XtreamCreds) {
+        setXtHost(creds.host)
+        setXtPort(creds.port)
+        setXtUser(creds.username)
+        setXtPass(creds.password)
+        setXtOutput(creds.output)
+    }
     suspend fun setCurrentProfileId(id: Long) {
         context.dataStore.edit { it[Keys.CURRENT_PROFILE_ID] = id }
     }
@@ -230,4 +247,12 @@ class SettingsStore(private val context: Context) {
 
     suspend fun getFloat(key: Preferences.Key<Float>, default: Float = 0.06f): Float =
         context.dataStore.data.map { it[key] ?: default }.first()
+
+    // Optional convenience
+    suspend fun hasXtream(): Boolean {
+        val host = xtHost.first()
+        val user = xtUser.first()
+        val pass = xtPass.first()
+        return host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()
+    }
 }
