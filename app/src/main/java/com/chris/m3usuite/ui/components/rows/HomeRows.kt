@@ -156,6 +156,7 @@ fun LiveTileCard(
     val store = remember { SettingsStore(ctx) }
     val ua by store.userAgent.collectAsState(initial = "")
     val ref by store.referer.collectAsState(initial = "")
+    val extraJson by store.extraHeadersJson.collectAsState(initial = "")
     var epg by remember { mutableStateOf("") }
     var focused by remember { mutableStateOf(false) }
     var preview by remember { mutableStateOf(false) }
@@ -224,12 +225,22 @@ fun LiveTileCard(
                 AndroidView(
                     factory = { c ->
                         val view = PlayerView(c)
-                        val httpFactory = DefaultHttpDataSource.Factory().apply {
-                            val props = mutableMapOf<String, String>()
-                            if (ua.isNotBlank()) props["User-Agent"] = ua
-                            if (ref.isNotBlank()) props["Referer"] = ref
-                            if (props.isNotEmpty()) setDefaultRequestProperties(props)
-                        }
+                        val httpFactory = DefaultHttpDataSource.Factory()
+                            .setAllowCrossProtocolRedirects(true)
+                            .apply {
+                                val props = mutableMapOf<String, String>()
+                                if (ua.isNotBlank()) props["User-Agent"] = ua
+                                if (ref.isNotBlank()) props["Referer"] = ref
+                                try {
+                                    val o = org.json.JSONObject(extraJson)
+                                    val it = o.keys()
+                                    while (it.hasNext()) {
+                                        val k = it.next()
+                                        props[k] = o.optString(k)
+                                    }
+                                } catch (_: Throwable) {}
+                                if (props.isNotEmpty()) setDefaultRequestProperties(props)
+                            }
                         val dsFactory = DefaultDataSource.Factory(c, httpFactory)
                         val mediaFactory = DefaultMediaSourceFactory(dsFactory)
                         val player = ExoPlayer.Builder(c)

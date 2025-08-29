@@ -105,10 +105,25 @@ fun InternalPlayerScreen(
     val autoplayNext by store.autoplayNext.collectAsState(initial = false)
 
     // HTTP Factory mit Headern
-    val httpFactory = remember(headers) {
-        DefaultHttpDataSource.Factory().apply {
-            if (headers.isNotEmpty()) setDefaultRequestProperties(headers)
-        }
+    val extraJson by store.extraHeadersJson.collectAsState(initial = "")
+    val mergedHeaders = remember(headers, extraJson) {
+        val props = headers.toMutableMap()
+        try {
+            val o = org.json.JSONObject(extraJson)
+            val it = o.keys()
+            while (it.hasNext()) {
+                val k = it.next()
+                props[k] = o.optString(k)
+            }
+        } catch (_: Throwable) {}
+        props.toMap()
+    }
+    val httpFactory = remember(mergedHeaders) {
+        DefaultHttpDataSource.Factory()
+            .setAllowCrossProtocolRedirects(true)
+            .apply {
+                if (mergedHeaders.isNotEmpty()) setDefaultRequestProperties(mergedHeaders)
+            }
     }
     val dataSourceFactory = remember(httpFactory, ctx) {
         DefaultDataSource.Factory(ctx, httpFactory)

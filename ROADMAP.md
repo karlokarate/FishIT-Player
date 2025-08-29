@@ -148,3 +148,7 @@ Abschnitt **„Daten & Backup“** ergänzen:
 - Build‑Korrekturen
   - Vor Änderung: nicht funktionierend (Build brach ab wegen fehlender Imports und runBlocking in Composable Buttons).
   - Nach Änderung: zu testen durch Nutzer – Coroutine‑basierte Umsetzung der Header‑Ermittlung in ResumeCarousel, Importe ergänzt.
+
+- Redirect‑Handling
+  - Vor Änderung: nicht funktionierend (302 bei Cross‑Protocol Redirects).
+  - Nach Änderung: zu testen durch Nutzer – `DefaultHttpDataSource.Factory.setAllowCrossProtocolRedirects(true)` im internen Player und Live‑Preview aktiv.

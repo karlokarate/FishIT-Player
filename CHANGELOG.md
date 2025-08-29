@@ -26,3 +26,9 @@ All notable changes to this project are documented here. Keep entries concise an
   - Dateien: `ui/components/ResumeCarousel.kt`, `ui/components/rows/HomeRows.kt`, `ui/screens/VodDetailScreen.kt`
   - Status (vor Änderung): nicht funktionierend (Build-Fehler)
   - Status (nach Änderung): zu testen durch Nutzer
+
+2025-08-29
+- fix(redirect): Erlaube Cross‑Protocol Redirects (http↔https) in allen Player‑HTTP‑Factories; zusätzliche Extra‑Header (JSON aus Settings) werden bei internen Playern und Live‑Preview angewandt.
+  - Dateien: `player/InternalPlayerScreen.kt`, `ui/components/rows/HomeRows.kt`
+  - Status (vor Änderung): nicht funktionierend (302 bei Redirects)
+  - Status (nach Änderung): zu testen durch Nutzer
