@@ -70,6 +70,7 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.core.xtream.XtreamClient
 import com.chris.m3usuite.core.xtream.XtreamConfig
 import kotlinx.coroutines.flow.first
+import androidx.compose.runtime.collectAsState
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
 import androidx.compose.foundation.combinedClickable

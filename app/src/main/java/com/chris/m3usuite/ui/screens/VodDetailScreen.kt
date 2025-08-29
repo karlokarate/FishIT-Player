@@ -45,6 +45,7 @@ import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import androidx.compose.foundation.lazy.rememberLazyListState
+import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

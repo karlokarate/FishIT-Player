@@ -100,16 +100,16 @@ fun ResumeSectionAuto(
                     }) { Text("Intern") }
                     Spacer(Modifier.height(4.dp))
                     Button(onClick = {
-                        val headers = run {
-                            val ua = runBlocking { SettingsStore(ctx).userAgent.first() }
-                            val ref = runBlocking { SettingsStore(ctx).referer.first() }
-                            buildMap<String, String> {
+                        scope.launch {
+                            val ua = store.userAgent.first()
+                            val ref = store.referer.first()
+                            val headers = buildMap<String, String> {
                                 if (ua.isNotBlank()) put("User-Agent", ua)
                                 if (ref.isNotBlank()) put("Referer", ref)
                             }
+                            ExternalPlayer.open(ctx, chooserItem!!.url!!, headers = headers)
+                            chooserItem = null
                         }
-                        ExternalPlayer.open(ctx, chooserItem!!.url!!, headers = headers)
-                        chooserItem = null
                     }) { Text("Extern") }
                 }
             }
@@ -141,18 +141,18 @@ fun ResumeSectionAuto(
                     }, enabled = playUrl != null) { Text("Intern") }
                     Spacer(Modifier.height(4.dp))
                     Button(onClick = {
-                        if (playUrl != null) {
-                            val headers = run {
-                                val ua = runBlocking { store.userAgent.first() }
-                                val ref = runBlocking { store.referer.first() }
-                                buildMap<String, String> {
+                        scope.launch {
+                            if (playUrl != null) {
+                                val ua = store.userAgent.first()
+                                val ref = store.referer.first()
+                                val headers = buildMap<String, String> {
                                     if (ua.isNotBlank()) put("User-Agent", ua)
                                     if (ref.isNotBlank()) put("Referer", ref)
                                 }
+                                ExternalPlayer.open(ctx, playUrl, headers = headers)
                             }
-                            ExternalPlayer.open(ctx, playUrl, headers = headers)
+                            chooserEpisode = null
                         }
-                        chooserEpisode = null
                     }, enabled = playUrl != null) { Text("Extern") }
                 }
             }

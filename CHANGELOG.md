@@ -20,3 +20,9 @@ All notable changes to this project are documented here. Keep entries concise an
   - Dateien: `ui/screens/VodDetailScreen.kt`, `ui/screens/SeriesDetailScreen.kt`, `ui/components/ResumeCarousel.kt`, `ui/components/rows/HomeRows.kt`
   - Status (vor Änderung): nicht funktionierend (302/Redirect ohne Header)
   - Status (nach Änderung): zu testen durch Nutzer
+
+2025-08-29
+- fix(build): Korrigierte Header-Implementierung in ResumeCarousel (Coroutine statt runBlocking; Flow.first korrekt aus Coroutine), fehlende Importe (`collectAsState`, `flow.first`) ergänzt.
+  - Dateien: `ui/components/ResumeCarousel.kt`, `ui/components/rows/HomeRows.kt`, `ui/screens/VodDetailScreen.kt`
+  - Status (vor Änderung): nicht funktionierend (Build-Fehler)
+  - Status (nach Änderung): zu testen durch Nutzer

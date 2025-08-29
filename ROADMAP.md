@@ -144,3 +144,7 @@ Abschnitt **„Daten & Backup“** ergänzen:
 - Playback‑Header
   - Vor Änderung: nicht funktionierend/302 bei VOD/Serie/Resume und Live‑Preview (fehlende UA/Referer).
   - Nach Änderung: zu testen durch Nutzer – Header (User‑Agent/Referer) werden für VOD/Serie/Resume sowie Live‑Preview gesetzt.
+
+- Build‑Korrekturen
+  - Vor Änderung: nicht funktionierend (Build brach ab wegen fehlender Imports und runBlocking in Composable Buttons).
+  - Nach Änderung: zu testen durch Nutzer – Coroutine‑basierte Umsetzung der Header‑Ermittlung in ResumeCarousel, Importe ergänzt.
