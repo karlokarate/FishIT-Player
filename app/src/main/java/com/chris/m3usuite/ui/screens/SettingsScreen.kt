@@ -34,6 +34,8 @@ import com.chris.m3usuite.core.xtream.XtreamClient
 import com.chris.m3usuite.core.xtream.XtreamConfig
 import com.chris.m3usuite.data.db.DbProvider
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.chris.m3usuite.backup.BackupRestoreSection
@@ -350,7 +352,7 @@ fun SettingsScreen(
                             val cfg = XtreamConfig(hostNow, portNow, userNow, passNow, outNow)
                             Log.d(tag, "Portal base: ${cfg.portalBase}")
                             val client = XtreamClient(ctx, store, cfg)
-                            val list = client.shortEPG(sid, 2)
+                            val list = client.shortEPG(sid!!, 2)
                             Log.d(tag, "shortEPG result count=${list.size}; entries=${list.map { it.title }}")
                             snackHost.showSnackbar("EPG-Test: ${list.getOrNull(0)?.title ?: "(leer)"}")
                         } catch (t: Throwable) {
@@ -387,7 +389,7 @@ fun SettingsScreen(
             // Quick import (Drive/File) visible in settings too
             com.chris.m3usuite.backup.QuickImportRow()
 
-            Divider()
+            HorizontalDivider()
             com.chris.m3usuite.backup.BackupRestoreSection()
         }
     }
