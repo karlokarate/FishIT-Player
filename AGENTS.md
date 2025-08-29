@@ -37,3 +37,7 @@ Policies (Do/Don't)
 
 For the complete module-by-module guide, see `ARCHITECTURE_OVERVIEW.md`.
 
+---
+
+Recent (ungeprüft)
+- EPG/Xtream: Automatische Erkennung von Xtream‑Creds aus `get.php`/Stream‑URLs; `streamId` wird für Live‑Einträge im M3U‑Parser gesetzt; Playlist‑Import speichert erkannte Creds (kein Überschreiben vorhandener) und plant Xtream‑Worker nach Import. Now/Next nutzt `get_short_epg` ohne zusätzliche Eingaben, sofern StreamId+Creds vorhanden sind. Status: ungeprüft.

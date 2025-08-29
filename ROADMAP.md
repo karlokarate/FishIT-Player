@@ -130,4 +130,12 @@ Abschnitt **„Daten & Backup“** ergänzen:
 - [ ] (Optional) `work/SettingsAutoBackupWorker.kt`.
 - [ ] Unit‑ & UI‑Tests ergänzen.
 - [ ] AGENTS.md & ROADMAP.md im Repo aktualisieren.
+ 
+---
 
+## Status‑Notizen (ungeprüft)
+
+- EPG FIX: Auto‑Erkennung & Speicherung von Xtream‑Daten + `streamId` bei M3U‑Import umgesetzt (Helfer `XtreamDetect`, `M3UParser` setzt `streamId` für Live).
+- Playlist‑Import speichert erkannte Xtream‑Creds (überschreibt bestehende nicht) und extrahiert `url-tvg` als EPG‑Fallback; plant `XtreamRefreshWorker`/`XtreamEnrichmentWorker` nach Import.
+- Now/Next via `XtreamClient.get_short_epg` wird angezeigt, wenn `streamId` vorhanden und Xtream‑Creds gesetzt sind.
+- Status: ungeprüft — Nutzer‑Build/Test steht aus; ROADMAP‑Einträge bleiben bis zur Bestätigung bestehen.
