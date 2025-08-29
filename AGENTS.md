@@ -1,5 +1,9 @@
 # Codex Agent Rules – m3uSuite (Android/Kotlin)
 
+- Zusätzlich immer AGENTS_NEW.md lesen. sie bietet einen Komplettüberblick
+- zusätzlich zur Roadmap immmer auch ROADMAP_NEW.md beachten
+- Regelmäßiges update und Anpassung von Agents.md und Roadmap.md Beide Dateien stets pflegen und beide Roadmaps zu einer immer aktuellen zusammenfassen.
+- Ab jetzt auch Changelog schreiben zu allen Vorgängen. Initial für Changelog einmal alle merges im repo durchgehen und erstes vollständiges Changelog anhand der Beschreibungen der commits erstellen 
 ## Build & Test
 - JDK **17**, Build via Gradle Wrapper.
 - Initial: `./gradlew --version`
@@ -51,3 +55,4 @@
 - WSL/Ubuntu empfohlen (Sandbox stabil, Netzwerkzugriff für Gradle ok).
 - Netz: erlaubt (Dependencies laden).
 - Unit-Tests priorisieren; UI-/Instrumented-Tests nur bei gestarteten Emulatoren.
+
