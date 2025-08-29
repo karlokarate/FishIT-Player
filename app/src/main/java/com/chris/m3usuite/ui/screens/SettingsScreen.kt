@@ -68,6 +68,7 @@ fun SettingsScreen(
     var pinDialogMode by remember { mutableStateOf<PinMode?>(null) }
 
     val listState = rememberLazyListState()
+    val snackHost = remember { SnackbarHostState() }
     HomeChromeScaffold(
         title = "Einstellungen",
         onSettings = null,
@@ -75,6 +76,7 @@ fun SettingsScreen(
         onProfiles = null,
         onRefresh = null,
         listState = listState,
+        snackbarHost = snackHost,
         bottomBar = {}
     ) { pads ->
         Column(
@@ -332,13 +334,15 @@ fun SettingsScreen(
                         val xtRepo = XtreamRepository(ctx, store)
                         val plRepo = PlaylistRepository(ctx, store)
                         val cfg = runCatching { xtRepo.configureFromM3uUrl() }.getOrNull()
-                        if (cfg != null) {
-                            xtRepo.importAll()
-                        } else {
-                            plRepo.refreshFromM3U()
-                        }
+                        val result = if (cfg != null) xtRepo.importAll() else plRepo.refreshFromM3U()
                         com.chris.m3usuite.work.XtreamRefreshWorker.schedule(ctx)
                         com.chris.m3usuite.work.XtreamEnrichmentWorker.schedule(ctx)
+                        val count = result.getOrNull()
+                        if (count != null) {
+                            snackHost.showSnackbar("Import abgeschlossen: $count Einträge")
+                        } else {
+                            snackHost.showSnackbar("Import fehlgeschlagen – wird erneut versucht")
+                        }
                     }
                 }) { Text("Import aktualisieren") }
                 if (onOpenProfiles != null) {

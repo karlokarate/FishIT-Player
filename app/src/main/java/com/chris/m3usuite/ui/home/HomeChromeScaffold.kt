@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +33,7 @@ fun HomeChromeScaffold(
     onRefresh: (() -> Unit)? = null,
     listState: LazyListState,
     onLogo: (() -> Unit)? = null,
+    snackbarHost: SnackbarHostState? = null,
     bottomBar: @Composable (() -> Unit) = {
         FishITBottomPanel(selected = "all", onSelect = {})
     },
@@ -67,6 +70,13 @@ fun HomeChromeScaffold(
         // Bottom bar overlay
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
             bottomBar()
+        }
+
+        // Snackbar host (optional)
+        if (snackbarHost != null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                SnackbarHost(hostState = snackbarHost)
+            }
         }
     }
 }
