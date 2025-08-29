@@ -48,7 +48,12 @@ object XtreamDetect {
     fun parseStreamId(url: String): Int? = runCatching {
         val u = Uri.parse(url)
         val q = u.getQueryParameter("stream_id") ?: u.getQueryParameter("stream")
-        q?.toIntOrNull() ?: u.pathSegments?.lastOrNull()?.substringBeforeLast('.')?.toIntOrNull()
+        if (q != null) return@runCatching q.toIntOrNull()
+        val segs = u.pathSegments ?: emptyList()
+        // Try last segment (e.g., 12345.ts or 12345.m3u8)
+        val lastId = segs.lastOrNull()?.substringBeforeLast('.')?.toIntOrNull()
+        if (lastId != null) return@runCatching lastId
+        // Some portals use .../<id>/index.m3u8 → check previous segment
+        if (segs.size >= 2) segs[segs.size - 2].toIntOrNull() else null
     }.getOrNull()
 }
-
