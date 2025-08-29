@@ -67,8 +67,7 @@ import com.chris.m3usuite.domain.selectors.extractYearFrom
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.core.xtream.XtreamClient
-import com.chris.m3usuite.core.xtream.XtreamConfig
+import com.chris.m3usuite.data.repo.EpgRepository
 import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.collectAsState
 import com.chris.m3usuite.ui.common.AppIcon
@@ -162,11 +161,10 @@ fun LiveTileCard(
     var preview by remember { mutableStateOf(false) }
     LaunchedEffect(item.streamId) {
         try {
-            val store = SettingsStore(ctx)
-            val host = store.xtHost.first(); val user = store.xtUser.first(); val pass = store.xtPass.first(); val out = store.xtOutput.first(); val port = store.xtPort.first()
-            if (item.streamId != null && host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()) {
-                val client = XtreamClient(ctx, store, XtreamConfig(host, port, user, pass, out))
-                epg = client.shortEPG(item.streamId, 1).firstOrNull()?.title.orEmpty()
+            val sid = item.streamId
+            if (sid != null) {
+                val repo = EpgRepository(ctx, SettingsStore(ctx))
+                epg = repo.nowNext(sid, 1).firstOrNull()?.title.orEmpty()
             }
         } catch (_: Throwable) { epg = "" }
     }

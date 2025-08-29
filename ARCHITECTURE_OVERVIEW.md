@@ -41,6 +41,7 @@ app/src/main/java/com/chris/m3usuite
 │   └── repo/                               # Repositories (IO/Business-Logik)
 │       ├── PlaylistRepository.kt           # Download & Import M3U → MediaItem (live/vod/series)
 │       ├── XtreamRepository.kt             # Vollimport via Xtream (Kategorien, Streams, Episoden, Details)
+│       ├── EpgRepository.kt                # Now/Next (get_short_epg) mit kurzem TTL‑Cache
 │       ├── MediaQueryRepository.kt         # Gefilterte Queries (Kids-Whitelist), Suche
 │       ├── ProfileRepository.kt            # Profile & aktuelles Profil (Adult/Kid), PIN/Remember
 │       ├── KidContentRepository.kt         # Whitelist-Verwaltung (allow/disallow/bulk)
@@ -163,6 +164,7 @@ Wichtige DAOs & Constraints
 - Live‑Preview (HomeRows): nutzt ExoPlayer mit `DefaultHttpDataSource.Factory` und setzt Default‑Request‑Properties (User‑Agent/Referer) für Provider, die Header erzwingen. Status: zu testen durch Nutzer.
 - Images.kt: Liefert Coil ImageRequest mit denselben Headern.
 - M3UParser: Attribute‑Parser, `inferType()` (Heuristik: Group‑Title/Dateiendung).
+- EpgRepository: kapselt `XtreamClient.shortEPG`, liefert Now/Next mit kurzem In‑Memory‑TTL (Standard ~90s), reduziert Netzlast.
 - XtreamDetect: Ableitung von Xtream‑Creds aus `get.php`/Stream‑URLs; `parseStreamId` (unterstützt `<id>.<ext>`, Query `stream_id|stream`, HLS `.../<id>/index.m3u8`). Status: zu testen durch Nutzer.
 
 ---

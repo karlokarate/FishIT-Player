@@ -18,11 +18,27 @@ class XtreamRepository(
     suspend fun configureFromM3uUrl(): XtreamConfig? = withContext(Dispatchers.IO) {
         val m3u = settings.m3uUrl.first()
         val cfg = XtreamConfig.fromM3uUrl(m3u) ?: return@withContext null
-        settings.set(Keys.XT_HOST, cfg.host)
-        settings.setInt(Keys.XT_PORT, cfg.port)
-        settings.set(Keys.XT_USER, cfg.username)
-        settings.set(Keys.XT_PASS, cfg.password)
-        settings.set(Keys.XT_OUTPUT, cfg.output)
+        val curHost = settings.xtHost.first()
+        val curUser = settings.xtUser.first()
+        val curPass = settings.xtPass.first()
+        val curPort = settings.xtPort.first()
+        val curOut  = settings.xtOutput.first()
+
+        if (curHost.isBlank() && curUser.isBlank() && curPass.isBlank()) {
+            // Fresh configuration
+            settings.set(Keys.XT_HOST, cfg.host)
+            settings.setInt(Keys.XT_PORT, cfg.port)
+            settings.set(Keys.XT_USER, cfg.username)
+            settings.set(Keys.XT_PASS, cfg.password)
+            settings.set(Keys.XT_OUTPUT, cfg.output)
+        } else {
+            // Conservative update: adjust port if host matches but port differs (e.g., https→443)
+            if (curHost.equals(cfg.host, ignoreCase = true) && curPort != cfg.port) {
+                settings.setInt(Keys.XT_PORT, cfg.port)
+            }
+            // Output: set only if empty
+            if (curOut.isBlank()) settings.set(Keys.XT_OUTPUT, cfg.output)
+        }
         if (settings.epgUrl.first().isBlank()) {
             settings.set(Keys.EPG_URL, "${cfg.portalBase}/xmltv.php?username=${cfg.username}&password=${cfg.password}")
         }

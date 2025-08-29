@@ -32,3 +32,13 @@ All notable changes to this project are documented here. Keep entries concise an
   - Dateien: `player/InternalPlayerScreen.kt`, `ui/components/rows/HomeRows.kt`
   - Status (vor Änderung): nicht funktionierend (302 bei Redirects)
   - Status (nach Änderung): zu testen durch Nutzer
+
+2025-08-29
+- feat(epg): Neuer `EpgRepository` mit kurzem TTL‑Cache (Now/Next via `get_short_epg`), UI‑Integration in Live‑Tiles und Live‑Detail.
+  - Dateien: `data/repo/EpgRepository.kt`, `ui/components/rows/HomeRows.kt`, `ui/screens/LiveDetailScreen.kt`
+  - Status (vor Änderung): nicht funktionierend (Now/Next inkonsistent, keine Caches)
+  - Status (nach Änderung): zu testen durch Nutzer
+- fix(xtream): Schonendes Port‑Update in `configureFromM3uUrl()` (passt nur Port an, wenn Host übereinstimmt); Output nur setzen, wenn leer.
+  - Datei: `data/repo/XtreamRepository.kt`
+  - Status (vor Änderung): ggf. falscher Port bei https‑M3U
+  - Status (nach Änderung): zu testen durch Nutzer

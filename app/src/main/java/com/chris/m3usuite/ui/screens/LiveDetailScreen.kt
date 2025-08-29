@@ -21,8 +21,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import coil3.compose.AsyncImage
-import com.chris.m3usuite.core.xtream.XtreamClient
-import com.chris.m3usuite.core.xtream.XtreamConfig
+import com.chris.m3usuite.data.repo.EpgRepository
 import com.chris.m3usuite.data.db.AppDatabase
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.prefs.SettingsStore
@@ -88,20 +87,11 @@ fun LiveDetailScreen(id: Long) {
         val pass = store.xtPass.first()
         val out  = store.xtOutput.first()
 
-        if (item.streamId != null && host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()) {
-            runCatching {
-                val cfg = XtreamConfig(host, port, user, pass, out)
-                val client = XtreamClient(ctx, store, cfg)
-                client.shortEPG(item.streamId, 2)
-            }.onSuccess { epg ->
-                epgNow = epg.getOrNull(0)?.title.orEmpty()
-                epgNext = epg.getOrNull(1)?.title.orEmpty()
-            }.onFailure {
-                epgNow = ""; epgNext = ""
-            }
-        } else {
-            epgNow = ""; epgNext = ""
-        }
+        if (item.streamId != null) {
+            val list = runCatching { EpgRepository(ctx, store).nowNext(item.streamId!!, 2) }.getOrDefault(emptyList())
+            epgNow = list.getOrNull(0)?.title.orEmpty()
+            epgNext = list.getOrNull(1)?.title.orEmpty()
+        } else { epgNow = ""; epgNext = "" }
     }
 
     // Header für den VIDEO-Request (nicht für Bilder)
