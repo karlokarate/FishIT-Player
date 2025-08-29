@@ -139,6 +139,7 @@ Abschnitt **„Daten & Backup“** ergänzen:
   - Vor Änderung: nicht funktionierend (keine/instabile Now/Next‑Daten bei M3U‑Only Setups).
   - Nach Änderung: Auto‑Erkennung & Speicherung von Xtream‑Daten + `streamId` bei M3U‑Import (Helfer `XtreamDetect`, `M3UParser` setzt `streamId` für Live) – zu testen durch Nutzer.
   - Neu: `EpgRepository` mit kurzem TTL‑Cache; UI (Live‑Tiles/Live‑Detail) nutzt Repository statt Direktaufrufen (Performanz, weniger Flaps).
+  - Neu: Settings enthält „EPG testen (Debug)“ zur schnellen Diagnose.
   - Playlist‑Import speichert erkannte Xtream‑Creds (überschreibt bestehende nicht) und extrahiert `url-tvg` als EPG‑Fallback; plant `XtreamRefreshWorker`/`XtreamEnrichmentWorker` nach Import.
   - Now/Next via `XtreamClient.get_short_epg` wenn `streamId` vorhanden und Xtream‑Creds gesetzt sind.
 

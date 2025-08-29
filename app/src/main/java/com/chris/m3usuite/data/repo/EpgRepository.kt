@@ -47,8 +47,16 @@ class EpgRepository(
         val res = runCatching { client.shortEPG(streamId, limit) }.onFailure {
             Log.w(tag, "shortEPG failed for sid=$streamId on ${cfg.portalBase}: ${it.message}")
         }.getOrDefault(emptyList())
+        if (res.isEmpty()) {
+            // Diagnostics: check auth state to differentiate empty vs bad creds
+            runCatching { client.handshake() }.onSuccess { hs ->
+                val a = hs.userInfo?.auth
+                Log.w(tag, "shortEPG empty for sid=$streamId; handshake auth=$a exp=${hs.userInfo?.expDate}")
+            }.onFailure {
+                Log.w(tag, "handshake failed during epg diagnostics: ${it.message}")
+            }
+        }
         lock.withLock { cache[streamId] = Cache(System.currentTimeMillis(), res) }
         res
     }
 }
-

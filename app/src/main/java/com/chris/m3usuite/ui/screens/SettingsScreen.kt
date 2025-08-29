@@ -362,6 +362,39 @@ fun SettingsScreen(
                     }
                 }) { Text("Test EPG (Debug)") }
             }
+
+            // Make EPG test visible as a full-width button as well
+            val ctx2 = LocalContext.current
+            Button(onClick = {
+                scope.launch {
+                    val tag = "XtreamEPGTest"
+                    try {
+                        val hostNow = store.xtHost.first(); val userNow = store.xtUser.first(); val passNow = store.xtPass.first(); val outNow = store.xtOutput.first(); val portNow = store.xtPort.first()
+                        Log.d(tag, "Testing shortEPG with host=${hostNow}:${portNow}, user=${userNow}, output=${outNow}")
+                        if (hostNow.isBlank() || userNow.isBlank() || passNow.isBlank()) {
+                            Log.w(tag, "Xtream config missing; cannot test shortEPG")
+                            snackHost.showSnackbar("EPG-Test: Xtream-Konfig fehlt")
+                            return@launch
+                        }
+                        val db = DbProvider.get(ctx2)
+                        val sid = withContext(Dispatchers.IO) { db.mediaDao().listByType("live", 1000, 0).firstOrNull { it.streamId != null }?.streamId }
+                        if (sid == null) {
+                            Log.w(tag, "No live streamId found in DB; import might be required")
+                            snackHost.showSnackbar("EPG-Test: keine Live-StreamId gefunden")
+                            return@launch
+                        }
+                        val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(hostNow, portNow, userNow, passNow, outNow)
+                        Log.d(tag, "Portal base: ${cfg.portalBase}")
+                        val client = com.chris.m3usuite.core.xtream.XtreamClient(ctx2, store, cfg)
+                        val list = client.shortEPG(sid!!, 2)
+                        Log.d(tag, "shortEPG result count=${list.size}; entries=${list.map { it.title }}")
+                        snackHost.showSnackbar("EPG-Test: ${list.getOrNull(0)?.title ?: "(leer)"}")
+                    } catch (t: Throwable) {
+                        Log.e(tag, "EPG test failed", t)
+                        snackHost.showSnackbar("EPG-Test fehlgeschlagen: ${t.message}")
+                    }
+                }
+            }) { Text("EPG testen (Debug)") }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val ctx = LocalContext.current
                 Button(onClick = {

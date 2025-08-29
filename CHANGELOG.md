@@ -38,6 +38,9 @@ All notable changes to this project are documented here. Keep entries concise an
   - Dateien: `data/repo/EpgRepository.kt`, `ui/components/rows/HomeRows.kt`, `ui/screens/LiveDetailScreen.kt`
   - Status (vor Änderung): nicht funktionierend (Now/Next inkonsistent, keine Caches)
   - Status (nach Änderung): zu testen durch Nutzer
+- feat(settings): Sichtbare Schaltfläche „EPG testen (Debug)“ unter Quelle.
+  - Datei: `ui/screens/SettingsScreen.kt`
+  - Status (nach Änderung): zu testen durch Nutzer
 - fix(xtream): Schonendes Port‑Update in `configureFromM3uUrl()` (passt nur Port an, wenn Host übereinstimmt); Output nur setzen, wenn leer.
   - Datei: `data/repo/XtreamRepository.kt`
   - Status (vor Änderung): ggf. falscher Port bei https‑M3U
