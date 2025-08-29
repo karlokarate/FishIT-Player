@@ -38,6 +38,9 @@ All notable changes to this project are documented here. Keep entries concise an
   - Dateien: `data/repo/EpgRepository.kt`, `ui/components/rows/HomeRows.kt`, `ui/screens/LiveDetailScreen.kt`
   - Status (vor Änderung): nicht funktionierend (Now/Next inkonsistent, keine Caches)
   - Status (nach Änderung): zu testen durch Nutzer
+- feat(epg): XMLTV‑Fallback für Now/Next, falls `get_short_epg` leer/fehlerhaft ist (nutzt `tvg-id` → XMLTV `programme`, streaming Parser, frühzeitiger Abbruch).
+  - Dateien: `core/epg/XmlTv.kt`, `data/repo/EpgRepository.kt`
+  - Status (nach Änderung): zu testen durch Nutzer
 - feat(settings): Sichtbare Schaltfläche „EPG testen (Debug)“ unter Quelle.
   - Datei: `ui/screens/SettingsScreen.kt`
   - Status (nach Änderung): zu testen durch Nutzer

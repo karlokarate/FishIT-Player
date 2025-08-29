@@ -5,7 +5,9 @@ import android.util.Log
 import com.chris.m3usuite.core.xtream.XtreamClient
 import com.chris.m3usuite.core.xtream.XtreamConfig
 import com.chris.m3usuite.core.xtream.XtShortEPGProgramme
+import com.chris.m3usuite.core.epg.XmlTv
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.data.db.DbProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -54,6 +56,23 @@ class EpgRepository(
                 Log.w(tag, "shortEPG empty for sid=$streamId; handshake auth=$a exp=${hs.userInfo?.expDate}")
             }.onFailure {
                 Log.w(tag, "handshake failed during epg diagnostics: ${it.message}")
+            }
+            // XMLTV fallback if available and we can map streamId -> epgChannelId
+            val epgUrl = settings.epgUrl.first()
+            if (epgUrl.isNotBlank()) {
+                val dao = DbProvider.get(context).mediaDao()
+                val live = dao.listByType("live", 50000, 0).firstOrNull { it.streamId == streamId }
+                val chan = live?.epgChannelId
+                if (!chan.isNullOrBlank()) {
+                    val (now, next) = XmlTv.currentNext(context, settings, chan)
+                    if (now != null || next != null) {
+                        val list = mutableListOf<XtShortEPGProgramme>()
+                        if (now != null) list += XtShortEPGProgramme(title = now.title, start = now.startMs/1000, end = now.stopMs/1000)
+                        if (next != null) list += XtShortEPGProgramme(title = next.title, start = next.startMs/1000, end = next.stopMs/1000)
+                        lock.withLock { cache[streamId] = Cache(System.currentTimeMillis(), list) }
+                        return@withContext list
+                    }
+                }
             }
         }
         lock.withLock { cache[streamId] = Cache(System.currentTimeMillis(), res) }

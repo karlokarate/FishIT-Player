@@ -1,0 +1,12 @@
+HTTP/2 200 
+date: Fri, 29 Aug 2025 10:52:21 GMT
+content-type: application/octet-stream
+content-length: 0
+server: cloudflare
+pragma: public
+cache-control: public, must-revalidate, proxy-revalidate
+cf-cache-status: DYNAMIC
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=2%2BLiTjVLPTHpeIXf12%2Fksfq9yzZ7atHWzHJT%2B2OKWrzt1AWStppWXSakYEjB%2Fz9Fg9SgatwNWsr0wvNkLMOrypBG0FRHER3E5wTZWUw5"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+cf-ray: 976b7f984ee5d8a1-EWR
+

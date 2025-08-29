@@ -154,3 +154,14 @@ Abschnitt **„Daten & Backup“** ergänzen:
 - Redirect‑Handling
   - Vor Änderung: nicht funktionierend (302 bei Cross‑Protocol Redirects).
   - Nach Änderung: zu testen durch Nutzer – `DefaultHttpDataSource.Factory.setAllowCrossProtocolRedirects(true)` im internen Player und Live‑Preview aktiv.
+
+- XMLTV‑Fallback
+  - Nach Änderung: zu testen durch Nutzer – Fallback in `EpgRepository` nutzt `tvg-id` und streamt XMLTV nur bis aktuellem/nächstem `programme`.
+
+---
+
+## Spätere Anreicherung (vorbereitet)
+
+- Live: Besseres Mapping `tvg-id` ↔ XMLTV‑Sendernamen (Normalisierung/Alias‑Listen), Anzeigen von Start/End‑Zeit + Fortschrittsbalken.
+- VOD: Heuristiken aus M3U‑Namen (Jahr, Staffel/Episode), De‑Duping nach `sortTitle`, Backdrop/Poster‑Fallbacks.
+- Series: Staffel/Episode aus M3U‑Episoden‑Titeln ableiten und mit Xtream `series_info` verifizieren.
