@@ -122,11 +122,18 @@ fun VodDetailScreen(
         val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
         url?.let { u ->
             scope.launch {
+                // Build headers like in Live detail
+                val hdrs = buildMap<String, String> {
+                    val ua = store.userAgent.first()
+                    val ref = store.referer.first()
+                    if (ua.isNotBlank()) put("User-Agent", ua)
+                    if (ref.isNotBlank()) put("Referer", ref)
+                }
                 PlayerChooser.start(
                     context = ctx,
                     store = store,
                     url = u,
-                    headers = emptyMap(),
+                    headers = hdrs,
                     startPositionMs = startMs
                 ) { s -> openInternal?.invoke(u, s) ?: ExternalPlayer.open(context = ctx, url = u, startPositionMs = s) }
             }

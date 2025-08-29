@@ -25,6 +25,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import android.net.Uri
 import androidx.media3.common.MediaItem as ExoMediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -149,6 +152,9 @@ fun LiveTileCard(
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
+    val store = remember { SettingsStore(ctx) }
+    val ua by store.userAgent.collectAsState(initial = "")
+    val ref by store.referer.collectAsState(initial = "")
     var epg by remember { mutableStateOf("") }
     var focused by remember { mutableStateOf(false) }
     var preview by remember { mutableStateOf(false) }
@@ -217,7 +223,17 @@ fun LiveTileCard(
                 AndroidView(
                     factory = { c ->
                         val view = PlayerView(c)
-                        val player = ExoPlayer.Builder(c).build().apply {
+                        val httpFactory = DefaultHttpDataSource.Factory().apply {
+                            val props = mutableMapOf<String, String>()
+                            if (ua.isNotBlank()) props["User-Agent"] = ua
+                            if (ref.isNotBlank()) props["Referer"] = ref
+                            if (props.isNotEmpty()) setDefaultRequestProperties(props)
+                        }
+                        val dsFactory = DefaultDataSource.Factory(c, httpFactory)
+                        val mediaFactory = DefaultMediaSourceFactory(dsFactory)
+                        val player = ExoPlayer.Builder(c)
+                            .setMediaSourceFactory(mediaFactory)
+                            .build().apply {
                             volume = 0f
                             repeatMode = ExoPlayer.REPEAT_MODE_ALL
                             playWhenReady = true

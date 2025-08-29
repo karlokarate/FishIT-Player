@@ -159,14 +159,18 @@ fun SeriesDetailScreen(
                 val cfg = XtreamConfig(host, port, user, pass, out)
                 val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
                 val playUrl = cfg.seriesEpisodeUrl(e.episodeId, e.containerExt)
+                val headers = buildMap<String, String> {
+                    val ua = store.userAgent.first(); if (ua.isNotBlank()) put("User-Agent", ua)
+                    val ref = store.referer.first(); if (ref.isNotBlank()) put("Referer", ref)
+                }
 
                 PlayerChooser.start(
                     context = ctx,
                     store = store,
                     url = playUrl,
-                    headers = emptyMap(),
+                    headers = headers,
                     startPositionMs = startMs
-                ) { s -> openInternal?.invoke(playUrl, s, e.episodeId) ?: ExternalPlayer.open(context = ctx, url = playUrl, startPositionMs = s) }
+                ) { s -> openInternal?.invoke(playUrl, s, e.episodeId) ?: ExternalPlayer.open(context = ctx, url = playUrl, headers = headers, startPositionMs = s) }
             }
         }
     }

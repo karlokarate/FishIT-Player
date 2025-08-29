@@ -135,7 +135,12 @@ Abschnitt **„Daten & Backup“** ergänzen:
 
 ## Status‑Notizen (ungeprüft)
 
-- EPG FIX: Auto‑Erkennung & Speicherung von Xtream‑Daten + `streamId` bei M3U‑Import umgesetzt (Helfer `XtreamDetect`, `M3UParser` setzt `streamId` für Live).
-- Playlist‑Import speichert erkannte Xtream‑Creds (überschreibt bestehende nicht) und extrahiert `url-tvg` als EPG‑Fallback; plant `XtreamRefreshWorker`/`XtreamEnrichmentWorker` nach Import.
-- Now/Next via `XtreamClient.get_short_epg` wird angezeigt, wenn `streamId` vorhanden und Xtream‑Creds gesetzt sind.
-- Status: ungeprüft — Nutzer‑Build/Test steht aus; ROADMAP‑Einträge bleiben bis zur Bestätigung bestehen.
+- EPG/Now‑Next
+  - Vor Änderung: nicht funktionierend (keine/instabile Now/Next‑Daten bei M3U‑Only Setups).
+  - Nach Änderung: Auto‑Erkennung & Speicherung von Xtream‑Daten + `streamId` bei M3U‑Import (Helfer `XtreamDetect`, `M3UParser` setzt `streamId` für Live) – zu testen durch Nutzer.
+  - Playlist‑Import speichert erkannte Xtream‑Creds (überschreibt bestehende nicht) und extrahiert `url-tvg` als EPG‑Fallback; plant `XtreamRefreshWorker`/`XtreamEnrichmentWorker` nach Import.
+  - Now/Next via `XtreamClient.get_short_epg` wenn `streamId` vorhanden und Xtream‑Creds gesetzt sind.
+
+- Playback‑Header
+  - Vor Änderung: nicht funktionierend/302 bei VOD/Serie/Resume und Live‑Preview (fehlende UA/Referer).
+  - Nach Änderung: zu testen durch Nutzer – Header (User‑Agent/Referer) werden für VOD/Serie/Resume sowie Live‑Preview gesetzt.

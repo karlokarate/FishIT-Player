@@ -100,7 +100,15 @@ fun ResumeSectionAuto(
                     }) { Text("Intern") }
                     Spacer(Modifier.height(4.dp))
                     Button(onClick = {
-                        ExternalPlayer.open(ctx, chooserItem!!.url!!, headers = emptyMap())
+                        val headers = run {
+                            val ua = runBlocking { SettingsStore(ctx).userAgent.first() }
+                            val ref = runBlocking { SettingsStore(ctx).referer.first() }
+                            buildMap<String, String> {
+                                if (ua.isNotBlank()) put("User-Agent", ua)
+                                if (ref.isNotBlank()) put("Referer", ref)
+                            }
+                        }
+                        ExternalPlayer.open(ctx, chooserItem!!.url!!, headers = headers)
                         chooserItem = null
                     }) { Text("Extern") }
                 }
@@ -133,7 +141,17 @@ fun ResumeSectionAuto(
                     }, enabled = playUrl != null) { Text("Intern") }
                     Spacer(Modifier.height(4.dp))
                     Button(onClick = {
-                        if (playUrl != null) ExternalPlayer.open(ctx, playUrl, headers = emptyMap())
+                        if (playUrl != null) {
+                            val headers = run {
+                                val ua = runBlocking { store.userAgent.first() }
+                                val ref = runBlocking { store.referer.first() }
+                                buildMap<String, String> {
+                                    if (ua.isNotBlank()) put("User-Agent", ua)
+                                    if (ref.isNotBlank()) put("Referer", ref)
+                                }
+                            }
+                            ExternalPlayer.open(ctx, playUrl, headers = headers)
+                        }
                         chooserEpisode = null
                     }, enabled = playUrl != null) { Text("Extern") }
                 }

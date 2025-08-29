@@ -160,8 +160,10 @@ Wichtige DAOs & Constraints
 ## 6) Core/HTTP & Media
 
 - HttpClientFactory: OkHttp‑Client, setzt User‑Agent, Referer und optionale Extra‑Header aus DataStore (einheitlich für Streams & Bilder).
+- Live‑Preview (HomeRows): nutzt ExoPlayer mit `DefaultHttpDataSource.Factory` und setzt Default‑Request‑Properties (User‑Agent/Referer) für Provider, die Header erzwingen. Status: zu testen durch Nutzer.
 - Images.kt: Liefert Coil ImageRequest mit denselben Headern.
 - M3UParser: Attribute‑Parser, `inferType()` (Heuristik: Group‑Title/Dateiendung).
+- XtreamDetect: Ableitung von Xtream‑Creds aus `get.php`/Stream‑URLs; `parseStreamId` (unterstützt `<id>.<ext>`, Query `stream_id|stream`, HLS `.../<id>/index.m3u8`). Status: zu testen durch Nutzer.
 
 ---
 
@@ -237,4 +239,3 @@ Export/Import‑Scope siehe Roadmap – Standard: alle DataStore‑Keys + option
 - Home zeigt keinen Schnell‑Import‑Block mehr.  
 - Settings enthält Export, Import, Drive‑Einstellungen; Export erzeugt Datei; Import setzt Settings und stößt Refresh an.  
 - (Optional) Drive‑Login funktioniert; Up/Download der Settings‑Datei ok.
-

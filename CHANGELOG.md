@@ -12,4 +12,11 @@ All notable changes to this project are documented here. Keep entries concise an
 2025-08-29
 - feat(epg): Auto-Erkennung Xtream-Creds + streamId aus M3U/Stream-URLs; Persistenz in SettingsStore; Worker-Scheduling nach Import; Now/Next via `get_short_epg` ohne manuelle EPG-URL.
   - Dateien: `core/xtream/XtreamDetect.kt`, `core/m3u/M3UParser.kt`, `prefs/SettingsStore.kt`, `data/repo/PlaylistRepository.kt`
-  - Status: ungeprüft (Build/Test durch Nutzer ausstehend)
+  - Status (vor Änderung): nicht funktionierend (Now/Next unzuverlässig)
+  - Status (nach Änderung): zu testen durch Nutzer
+
+2025-08-29
+- fix(playback): Einheitliche Header (User-Agent/Referer) auch für VOD/Serie/Resume und Live-Preview gesetzt; Live-Tile-Preview nutzt nun MediaSource mit DefaultHttpDataSource und Default-Request-Properties.
+  - Dateien: `ui/screens/VodDetailScreen.kt`, `ui/screens/SeriesDetailScreen.kt`, `ui/components/ResumeCarousel.kt`, `ui/components/rows/HomeRows.kt`
+  - Status (vor Änderung): nicht funktionierend (302/Redirect ohne Header)
+  - Status (nach Änderung): zu testen durch Nutzer
