@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+.wsl-android-sdk/
+.wsl-gradle/
+.wsl-java-17/
