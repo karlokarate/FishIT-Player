@@ -57,9 +57,28 @@ object M3UParser {
 
     private fun inferType(attrs: Map<String,String>, url: String): String {
         val grp = (attrs["group-title"] ?: "").lowercase(Locale.ROOT)
-        if (grp.contains("series") || grp.contains("serien") || grp.contains("tv shows")) return "series"
-        if (grp.contains("vod") || grp.contains("movie") || grp.contains("filme")) return "vod"
-        if (url.contains(Regex("""\.(mp4|mkv|avi|mov)$""", RegexOption.IGNORE_CASE))) return "vod"
+        val u = url.lowercase(Locale.ROOT)
+
+        // 1) Strong URL pattern matches (Xtream & common providers)
+        // Xtream style: .../(live|movie|series)/user/pass/<id>.(ext) or HLS index
+        when {
+            "/series/" in u -> return "series"
+            "/movie/" in u -> return "vod"
+            "/live/" in u -> return "live"
+        }
+        // Query hints (e.g., get.php?type=movie or stream_id for series)
+        if (Regex("[?&]type=series").containsMatchIn(u)) return "series"
+        if (Regex("[?&]type=movie").containsMatchIn(u)) return "vod"
+        if (Regex("[?&]type=live").containsMatchIn(u)) return "live"
+
+        // 2) Group-title heuristics
+        if (grp.contains("series") || grp.contains("serien") || grp.contains("tv shows") || grp.contains("episod")) return "series"
+        if (grp.contains("vod") || grp.contains("movie") || grp.contains("filme") || grp.contains("film")) return "vod"
+
+        // 3) File extension hints (progressive VOD)
+        if (u.contains(Regex("""\.(mp4|mkv|avi|mov)$""", RegexOption.IGNORE_CASE))) return "vod"
+
+        // 4) Fallback: live (covers m3u8 HLS if not matched above)
         return "live"
     }
 }

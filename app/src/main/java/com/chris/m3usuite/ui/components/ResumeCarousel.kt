@@ -205,7 +205,8 @@ fun ResumeVodRow(
     onClear: (ResumeVodView) -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val state = remember(items) { mutableStateOf(items) }
+    // Ensure keys remain unique even if upstream accidentally duplicates
+    val state = remember(items) { mutableStateOf(items.distinctBy { it.mediaId }) }
 
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
@@ -235,7 +236,8 @@ fun ResumeEpisodeRow(
     onClear: (ResumeEpisodeView) -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val state = remember(items) { mutableStateOf(items) }
+    // Ensure keys remain unique even if upstream accidentally duplicates
+    val state = remember(items) { mutableStateOf(items.distinctBy { it.episodeId }) }
 
     LazyRow(
         modifier = Modifier.fillMaxWidth(),

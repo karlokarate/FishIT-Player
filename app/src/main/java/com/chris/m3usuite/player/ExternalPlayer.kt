@@ -21,32 +21,58 @@ object ExternalPlayer {
         preferredPkg: String? = null,
         startPositionMs: Long? = null
     ) {
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(url.toUri(), guessMime(url))
+        val uri = url.toUri()
+        android.util.Log.d(
+            "ExternalPlayer",
+            "open: pkg=${preferredPkg ?: "<chooser>"} url=${uri.scheme}://${uri.host}${uri.path?.let { if (it.length>24) it.takeLast(24) else it } ?: ""}"
+        )
+        // Build candidate intents (typed + generic) for robustness with different players
+        val typed = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, guessMime(url))
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val generic = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "video/*")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val dataOnly = Intent(Intent.ACTION_VIEW).apply {
+            data = uri
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
-        if (headers.isNotEmpty()) {
+        fun putHeaders(i: Intent) {
             val b = Bundle()
             headers.forEach { (k,v) -> b.putString(k,v) }
-            intent.putExtra("headers", b)
-            intent.putExtra("android.media.intent.extra.HTTP_HEADERS", b)
+            i.putExtra("headers", b)
+            i.putExtra("android.media.intent.extra.HTTP_HEADERS", b)
         }
+        if (headers.isNotEmpty()) { putHeaders(typed); putHeaders(generic); putHeaders(dataOnly) }
 
         // Best-effort Startposition für gängige Player
         startPositionMs?.let { pos ->
-            intent.putExtra("android.media.intent.extra.START_PLAYBACK_POSITION_MILLIS", pos) // generisch
-            intent.putExtra("position", pos)            // MX Player
-            intent.putExtra("extra_position", pos)      // Just Player
-            intent.putExtra("seek_position", pos)       // manche Player
+            fun putStart(i: Intent) {
+                i.putExtra("android.media.intent.extra.START_PLAYBACK_POSITION_MILLIS", pos) // generisch
+                i.putExtra("position", pos)            // MX Player
+                i.putExtra("extra_position", pos)      // Just Player
+                i.putExtra("seek_position", pos)       // manche Player
+            }
+            listOf(typed, generic, dataOnly).forEach(::putStart)
         }
 
-        // bevorzugter Player (Default VLC)
-        intent.`package` = preferredPkg?.takeIf { it.isNotBlank() } ?: VLC
-
-        runCatching { context.startActivity(intent) }.onFailure {
-            intent.`package` = null
-            context.startActivity(Intent.createChooser(intent, "Open with"))
+        // bevorzugter Player: nur setzen, wenn gewünscht; sonst System-Chooser anzeigen
+        val pkg = preferredPkg?.takeIf { it.isNotBlank() }
+        if (pkg != null) {
+            // Try typed → generic → dataOnly for the target package
+            for (i in listOf(typed, generic, dataOnly)) {
+                i.`package` = pkg
+                val r = runCatching { context.startActivity(i) }
+                if (r.isSuccess) return
+            }
+            // Fallback: system chooser without package
+            context.startActivity(Intent.createChooser(typed, "Mit öffnen"))
+        } else {
+            // Ohne bevorzugtes Paket: immer den System-Chooser anzeigen (typed Intent)
+            context.startActivity(Intent.createChooser(typed, "Mit öffnen"))
         }
     }
 

@@ -28,6 +28,8 @@ Short bullet summary (current highlights)
 - Start/Home shows Serien, Filme, TV; Kids get filtered content (MediaQueryRepository), no settings/bottom bar, read‑only favorites.
 - Backup/Restore present in Setup (Quick Import) and Settings (Quick Import + full section). Drive client optional (shim by default).
 - Player fullscreen with tap-to-show overlay controls; Live favorites reorder fixed/stable.
+- EPG: persistent Now/Next cache (Room) with XMLTV fallback; background refresh worker; Live tiles show title + progress.
+- Unified UI polish: Accent tokens (adult/kid), carded sections (`AccentCard`), gradient + glow background with blurred app icon; kid profiles use a vibrant palette.
 
 Policies (Do/Don't)
 - Preserve existing flows (EPG/Xtream, player paths, list/detail) unless requested.
@@ -39,5 +41,8 @@ For the complete module-by-module guide, see `ARCHITECTURE_OVERVIEW.md`.
 
 ---
 
-Recent (ungeprüft)
-- EPG/Xtream: Automatische Erkennung von Xtream‑Creds aus `get.php`/Stream‑URLs; `streamId` wird für Live‑Einträge im M3U‑Parser gesetzt; Playlist‑Import speichert erkannte Creds (kein Überschreiben vorhandener) und plant Xtream‑Worker nach Import. Now/Next nutzt `get_short_epg` ohne zusätzliche Eingaben, sofern StreamId+Creds vorhanden sind. Status: ungeprüft.
+Recent
+- EPG: Persistent Now/Next cache (`epg_now_next`) + XMLTV multi-index; fallback aktiv auch ohne Xtream; periodic refresh (15m) + stale cleanup.
+- UI: Live tiles enriched with current programme + progress bar.
+- Xtream: Detection supports compact stream URLs; import merges missing `epg_channel_id` from existing DB by `streamId`.
+- UI polish: Long-press reordering for Live favorites (touch-friendly), carded look across Start/Library/Details/Setup, Accent/KidAccent tokens, background glow treatment.

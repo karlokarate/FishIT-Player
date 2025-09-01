@@ -13,29 +13,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
-val Context.settingsBackupDataStore by preferencesDataStore(name = "settings")
+// Removed separate DataStore instance to avoid "multiple DataStores active" crash.
 
 object SettingsSnapshot {
     suspend fun dump(context: Context): Map<String, String> = withContext(Dispatchers.IO) {
-        val prefs = context.settingsBackupDataStore.data.first()
-        prefs.asMap().mapKeys { it.key.name }.mapValues { (_, v) -> v?.toString() ?: "" }
+        SettingsStore(context).dumpAll()
     }
 
     suspend fun restore(context: Context, values: Map<String, String>, replace: Boolean) = withContext(Dispatchers.IO) {
-        context.settingsBackupDataStore.edit { prefs ->
-            if (replace) prefs.clear()
-            for ((name, s) in values) {
-                when {
-                    s.equals("true", true) || s.equals("false", true) -> prefs[booleanPreferencesKey(name)] = s.equals("true", true)
-                    s.toLongOrNull() != null -> {
-                        val lv = s.toLong()
-                        if (lv in Int.MIN_VALUE..Int.MAX_VALUE) prefs[intPreferencesKey(name)] = lv.toInt() else prefs[longPreferencesKey(name)] = lv
-                    }
-                    s.toFloatOrNull() != null -> prefs[floatPreferencesKey(name)] = s.toFloat()
-                    else -> prefs[stringPreferencesKey(name)] = s
-                }
-            }
-        }
+        SettingsStore(context).restoreAll(values, replace)
     }
 }
-

@@ -141,6 +141,21 @@ data class ScreenTimeEntry(
     val limitMinutes: Int
 )
 
+/**
+ * Persistenter EPG-Cache (Now/Next) je tvg-id (XMLTV channel id)
+ */
+@Entity(tableName = "epg_now_next")
+data class EpgNowNext(
+    @PrimaryKey val channelId: String,
+    val nowTitle: String?,
+    val nowStartMs: Long?,
+    val nowEndMs: Long?,
+    val nextTitle: String?,
+    val nextStartMs: Long?,
+    val nextEndMs: Long?,
+    val updatedAt: Long
+)
+
 // -----------------------------------------------------
 // View-Models (nur für Queries, keine Tabellen!)
 // -----------------------------------------------------
@@ -174,7 +189,7 @@ data class ResumeEpisodeView(
 
 /** DAO: Media */
 @Dao
-interface MediaDao {
+    interface MediaDao {
     @Query("DELETE FROM MediaItem WHERE type=:type")
     suspend fun clearType(type: String)
 
@@ -194,8 +209,11 @@ interface MediaDao {
     @Query("SELECT * FROM MediaItem WHERE id=:id")
     suspend fun byId(id: Long): MediaItem?
 
-    @Query("SELECT * FROM MediaItem WHERE type='series' AND streamId=:sid LIMIT 1")
-    suspend fun seriesByStreamId(sid: Int): MediaItem?
+        @Query("SELECT * FROM MediaItem WHERE type='series' AND streamId=:sid LIMIT 1")
+        suspend fun seriesByStreamId(sid: Int): MediaItem?
+
+        @Query("SELECT * FROM MediaItem WHERE type='live' AND streamId=:sid LIMIT 1")
+        suspend fun liveByStreamId(sid: Int): MediaItem?
 
     @Query("SELECT * FROM MediaItem WHERE type=:type AND (:cat IS NULL OR categoryName=:cat) ORDER BY sortTitle")
     suspend fun byTypeAndCategory(type: String, cat: String?): List<MediaItem>
@@ -224,6 +242,19 @@ interface EpisodeDao {
 
     @Query("SELECT * FROM Episode WHERE seriesStreamId=:seriesId AND (season>:season OR (season=:season AND episodeNum>:episodeNum)) ORDER BY season, episodeNum LIMIT 1")
     suspend fun nextEpisode(seriesId: Int, season: Int, episodeNum: Int): Episode?
+}
+
+/** DAO: EPG Now/Next Cache */
+@Dao
+interface EpgDao {
+    @Query("SELECT * FROM epg_now_next WHERE channelId=:channelId LIMIT 1")
+    suspend fun byChannel(channelId: String): EpgNowNext?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(items: List<EpgNowNext>)
+
+    @Query("DELETE FROM epg_now_next WHERE updatedAt < :cutoff")
+    suspend fun deleteOlderThan(cutoff: Long)
 }
 
 /** DAO: Kategorien */

@@ -32,6 +32,7 @@ import com.chris.m3usuite.ui.theme.AppTheme
 import com.chris.m3usuite.ui.skin.M3UTvSkin
 import com.chris.m3usuite.work.XtreamEnrichmentWorker
 import com.chris.m3usuite.work.XtreamRefreshWorker
+import com.chris.m3usuite.work.EpgRefreshWorker
 import com.chris.m3usuite.work.ScreenTimeResetWorker
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -76,6 +77,7 @@ class MainActivity : ComponentActivity() {
                         }
                         XtreamRefreshWorker.schedule(this@MainActivity)
                         XtreamEnrichmentWorker.schedule(this@MainActivity)
+                        EpgRefreshWorker.schedule(this@MainActivity)
                         ScreenTimeResetWorker.schedule(this@MainActivity)
                     }
                 }

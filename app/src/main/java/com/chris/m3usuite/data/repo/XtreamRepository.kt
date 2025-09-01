@@ -83,10 +83,13 @@ class XtreamRepository(
             catDao.upsertAll(serCats.map { Category(kind="series", categoryId=it.categoryId, categoryName=it.categoryName) })
 
             val live = client.liveStreams()
+            // Prepare map of existing epg_channel_id from current DB by streamId to merge missing values
+            val existingLive = mediaDao.listByType("live", 100000, 0).associateBy({ it.streamId }, { it.epgChannelId })
             mediaDao.clearType("live")
             mediaDao.upsertAll(live.map {
                 val addedAt = prevLive[it.streamId]?.takeIf { s -> !s.isNullOrBlank() } ?: System.currentTimeMillis().toString()
                 val extra = Json.encodeToString(mapOf("addedAt" to addedAt))
+                val epgId = it.epgChannelId ?: existingLive[it.streamId]
                 MediaItem(
                     type = "live",
                     streamId = it.streamId,
@@ -97,7 +100,7 @@ class XtreamRepository(
                     logo = it.streamIcon,
                     poster = it.streamIcon,
                     backdrop = null,
-                    epgChannelId = it.epgChannelId,
+                    epgChannelId = epgId,
                     year = null, rating = null, durationSecs = null,
                     plot = null,
                     url = cfg.liveUrl(it.streamId),

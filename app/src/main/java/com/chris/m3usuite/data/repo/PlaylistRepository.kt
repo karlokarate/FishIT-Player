@@ -93,6 +93,7 @@ class PlaylistRepository(
                 // 5) Schedule workers after import
                 XtreamRefreshWorker.schedule(context)
                 XtreamEnrichmentWorker.schedule(context)
+                com.chris.m3usuite.work.EpgRefreshWorker.schedule(context)
 
                 // 6) Anzahl zurückgeben
                 parsed.size

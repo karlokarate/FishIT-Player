@@ -37,6 +37,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 import com.chris.m3usuite.ui.util.buildImageRequest
+import com.chris.m3usuite.ui.fx.ShimmerBox
 import com.chris.m3usuite.ui.skin.tvClickable
 // isTvDevice removed (unused)
 import androidx.compose.foundation.layout.Column
@@ -62,6 +63,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import com.chris.m3usuite.ui.fx.tvFocusGlow
+import com.chris.m3usuite.ui.fx.ShimmerCircle
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.Box
+// use fillMaxSize() for broad Compose compatibility
 import androidx.compose.ui.draw.clip
 import com.chris.m3usuite.domain.selectors.extractYearFrom
 import androidx.compose.ui.text.font.FontWeight
@@ -71,6 +79,7 @@ import com.chris.m3usuite.data.repo.EpgRepository
 import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.collectAsState
 import com.chris.m3usuite.ui.common.AppIcon
+import com.chris.m3usuite.ui.fx.ShimmerCircle
 import com.chris.m3usuite.ui.common.AppIconButton
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -79,7 +88,8 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.type
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.input.key.key
 
@@ -142,7 +152,8 @@ fun MediaCard(
 @Composable
 fun LiveTileCard(
     item: MediaItem,
-    onClick: (MediaItem) -> Unit,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlayDirect: (MediaItem) -> Unit,
     selected: Boolean = false,
     onLongPress: (() -> Unit)? = null,
     onMoveLeft: (() -> Unit)? = null,
@@ -157,6 +168,7 @@ fun LiveTileCard(
     val ref by store.referer.collectAsState(initial = "")
     val extraJson by store.extraHeadersJson.collectAsState(initial = "")
     var epg by remember { mutableStateOf("") }
+    var epgProgress by remember { mutableStateOf<Float?>(null) }
     var focused by remember { mutableStateOf(false) }
     var preview by remember { mutableStateOf(false) }
     LaunchedEffect(item.streamId) {
@@ -164,7 +176,16 @@ fun LiveTileCard(
             val sid = item.streamId
             if (sid != null) {
                 val repo = EpgRepository(ctx, SettingsStore(ctx))
-                epg = repo.nowNext(sid, 1).firstOrNull()?.title.orEmpty()
+                val list = repo.nowNext(sid, 1)
+                val first = list.firstOrNull()
+                epg = first?.title.orEmpty()
+                val start = first?.start?.toLongOrNull()?.let { it * 1000 }
+                val end = first?.end?.toLongOrNull()?.let { it * 1000 }
+                if (start != null && end != null && end > start) {
+                    val now = System.currentTimeMillis()
+                    val progress = ((now - start).coerceAtLeast(0).toFloat() / (end - start).toFloat()).coerceIn(0f, 1f)
+                    epgProgress = progress
+                } else epgProgress = null
             }
         } catch (_: Throwable) { epg = "" }
     }
@@ -175,7 +196,7 @@ fun LiveTileCard(
             .height(rowItemHeight().dp)
             .padding(end = 6.dp)
             .combinedClickable(
-                onClick = { onClick(item) },
+                onClick = { onOpenDetails(item) },
                 onLongClick = { onLongPress?.invoke() }
             )
             .onPreviewKeyEvent { ev ->
@@ -194,7 +215,8 @@ fun LiveTileCard(
                 drawContent()
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = 0.12f), 1f to Color.Transparent)
                 drawRect(brush = grad)
-            },
+            }
+            .tvFocusGlow(focused = focused, shape = shape),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
@@ -261,20 +283,41 @@ fun LiveTileCard(
                 )
             }
 
-            // Centered circular logo (20% larger than baseline)
+            // Centered circular logo with shimmer placeholder
             val sz = 77.dp
             val logoUrl = item.logo ?: item.poster
-            if (logoUrl != null) {
-                AsyncImage(
-                    model = buildImageRequest(ctx, logoUrl, headers),
-                    contentDescription = item.name,
-                    contentScale = ContentScale.Fit,
+            run {
+                var loaded by remember { mutableStateOf(false) }
+                Box(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .size(sz)
-                        .clip(CircleShape)
-                        .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
-                )
+                ) {
+                    if (!loaded) {
+                        ShimmerCircle(Modifier.fillMaxSize())
+                    }
+                    if (logoUrl != null) {
+                        AsyncImage(
+                            model = buildImageRequest(ctx, logoUrl, headers),
+                            contentDescription = item.name,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape),
+                            onLoading = { loaded = false },
+                            onSuccess = { loaded = true },
+                            onError   = { loaded = true }
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
+                        )
+                    }
+                }
             }
 
             // Selection overlay
@@ -293,24 +336,59 @@ fun LiveTileCard(
                     modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp).padding(horizontal = 8.dp)
                 )
             }
-            // EPG pill at bottom center
+            // LIVE indicator (top-left)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(8.dp)
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF1DB954))
+            )
+
+            // EPG pill at bottom
             if (epg.isNotBlank()) {
-                Text(
-                    text = epg,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
+                Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(8.dp)
+                        .padding(horizontal = 8.dp, vertical = 10.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.80f))
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                ) {
+                    Text(
+                        text = epg,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+            // Progress bar (current programme)
+            epgProgress?.let { p ->
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .background(Color.White.copy(alpha = 0.15f))
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth(p)
+                        .height(3.dp)
+                        .background(MaterialTheme.colorScheme.primary)
                 )
             }
             Row(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Öffnen", onClick = { onClick(item) }, size = 24.dp)
-                AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onClick(item) }, size = 24.dp)
+                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
+                AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onOpenDetails(item) }, size = 24.dp)
             }
         }
     }
@@ -319,7 +397,9 @@ fun LiveTileCard(
 @Composable
 fun SeriesTileCard(
     item: MediaItem,
-    onClick: (MediaItem) -> Unit,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlayDirect: (MediaItem) -> Unit,
+    onAssignToKid: (MediaItem) -> Unit,
     isNew: Boolean = false
 ) {
     val ctx = LocalContext.current
@@ -338,11 +418,22 @@ fun SeriesTileCard(
     }
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
+    var armed by remember { mutableStateOf(false) }
+    var armTime by remember { mutableStateOf(0L) }
     Card(
         modifier = Modifier
             .height(rowItemHeight().dp)
             .padding(end = 6.dp)
-            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onClick(item) }
+            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) {
+                val now = System.currentTimeMillis()
+                if (armed && now - armTime < 1500) {
+                    armed = false
+                    onOpenDetails(item)
+                } else {
+                    armed = true
+                    armTime = now
+                }
+            }
             .onFocusChanged { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
@@ -355,12 +446,24 @@ fun SeriesTileCard(
         shape = shape
     ) {
         Column(Modifier.fillMaxWidth()) {
-            AsyncImage(
-                model = buildImageRequest(ctx, item.poster ?: item.logo ?: item.backdrop, headers),
-                contentDescription = item.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth().weight(1f)
-            )
+            run {
+                var loaded by remember { mutableStateOf(false) }
+                Box(Modifier.fillMaxWidth().weight(1f)) {
+                    if (!loaded) ShimmerBox(
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)),
+                        cornerRadius = 0.dp
+                    )
+                    AsyncImage(
+                        model = buildImageRequest(ctx, item.poster ?: item.logo ?: item.backdrop, headers),
+                        contentDescription = item.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                        onLoading = { loaded = false },
+                        onSuccess = { loaded = true },
+                        onError = { loaded = true }
+                    )
+                }
+            }
             if (focused) {
                 val year = item.year ?: extractYearFrom(item.name)
                 val title = item.name.substringAfter(" - ", item.name)
@@ -381,8 +484,8 @@ fun SeriesTileCard(
                 )
             }
             Row(Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 8.dp), horizontalArrangement = Arrangement.End) {
-                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onClick(item) }, size = 24.dp)
-                AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onClick(item) }, size = 24.dp)
+                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
+                AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
             }
         }
     }
@@ -391,7 +494,9 @@ fun SeriesTileCard(
 @Composable
 fun VodTileCard(
     item: MediaItem,
-    onClick: (MediaItem) -> Unit,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlayDirect: (MediaItem) -> Unit,
+    onAssignToKid: (MediaItem) -> Unit,
     isNew: Boolean = false
 ) {
     val ctx = LocalContext.current
@@ -399,11 +504,22 @@ fun VodTileCard(
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
+    var armed by remember { mutableStateOf(false) }
+    var armTime by remember { mutableStateOf(0L) }
     Card(
         modifier = Modifier
             .height(rowItemHeight().dp)
             .padding(end = 6.dp)
-            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onClick(item) }
+            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) {
+                val now = System.currentTimeMillis()
+                if (armed && now - armTime < 1500) {
+                    armed = false
+                    onOpenDetails(item)
+                } else {
+                    armed = true
+                    armTime = now
+                }
+            }
             .onFocusChanged { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
@@ -415,12 +531,24 @@ fun VodTileCard(
         shape = shape
     ) {
         Column(Modifier.fillMaxWidth()) {
-            AsyncImage(
-                model = buildImageRequest(ctx, item.poster ?: item.logo ?: item.backdrop, headers),
-                contentDescription = item.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth().weight(1f)
-            )
+            run {
+                var loaded by remember { mutableStateOf(false) }
+                Box(Modifier.fillMaxWidth().weight(1f)) {
+                    if (!loaded) ShimmerBox(
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)),
+                        cornerRadius = 0.dp
+                    )
+                    AsyncImage(
+                        model = buildImageRequest(ctx, item.poster ?: item.logo ?: item.backdrop, headers),
+                        contentDescription = item.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                        onLoading = { loaded = false },
+                        onSuccess = { loaded = true },
+                        onError = { loaded = true }
+                    )
+                }
+            }
             if (focused) {
                 val y = item.year ?: extractYearFrom(item.name)
                 val title = item.name.substringAfter(" - ", item.name)
@@ -441,8 +569,8 @@ fun VodTileCard(
                 )
             }
             Row(Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 8.dp), horizontalArrangement = Arrangement.End) {
-                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onClick(item) }, size = 24.dp)
-                AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onClick(item) }, size = 24.dp)
+                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
+                AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
             }
         }
     }
@@ -455,7 +583,8 @@ fun ResumeRow(
     onClick: (MediaItem) -> Unit,
 ) {
     if (items.isEmpty()) return
-    val slice = remember(items) { items.take(5) }
+    // Ensure no duplicate ids to keep LazyRow keys unique
+    val slice = remember(items) { items.distinctBy { it.id }.take(5) }
     val state = rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
     LazyRow(
@@ -474,17 +603,20 @@ fun ResumeRow(
 fun LiveRow(
     items: List<MediaItem>,
     leading: (@Composable (() -> Unit))? = null,
-    onClick: (MediaItem) -> Unit,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlayDirect: (MediaItem) -> Unit,
 ) {
     if (items.isEmpty()) return
+    // Deduplicate by stable id to avoid key collisions
+    val unique = remember(items) { items.distinctBy { it.id } }
     val state = rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
-    var count by remember(items) { mutableStateOf(if (items.size < 30) items.size else 30) }
+    var count by remember(unique) { mutableStateOf(if (unique.size < 30) unique.size else 30) }
     LaunchedEffect(state) {
         snapshotFlow { state.firstVisibleItemIndex }
             .collect { idx ->
-                if (idx > count - 20 && count < items.size) {
-                    count = (count + 50).coerceAtMost(items.size)
+                if (idx > count - 20 && count < unique.size) {
+                    count = (count + 50).coerceAtMost(unique.size)
                 }
             }
     }
@@ -496,8 +628,8 @@ fun LiveRow(
         if (leading != null) {
             item("leading") { leading() }
         }
-        items(items.take(count), key = { it.id }) { m ->
-            LiveTileCard(item = m, onClick = onClick)
+        items(unique.take(count), key = { it.id }) { m ->
+            LiveTileCard(item = m, onOpenDetails = onOpenDetails, onPlayDirect = onPlayDirect)
         }
     }
 }
@@ -536,12 +668,14 @@ fun LiveAddTile(onClick: () -> Unit) {
 fun ReorderableLiveRow(
     items: List<MediaItem>,
     onOpen: (Long) -> Unit,
+    onPlay: (Long) -> Unit,
     onAdd: () -> Unit,
     onReorder: (List<Long>) -> Unit,
     onRemove: (List<Long>) -> Unit
 ) {
     val state = rememberLazyListState()
-    val order = remember(items) { androidx.compose.runtime.mutableStateListOf<Long>().apply { addAll(items.map { it.id }) } }
+    // Ensure stable, unique keys to avoid LazyRow key collisions
+    val order = remember(items) { androidx.compose.runtime.mutableStateListOf<Long>().apply { addAll(items.map { it.id }.distinct()) } }
     var draggingId by remember { mutableStateOf<Long?>(null) }
     var dragOffset by remember { mutableStateOf(0f) }
     var targetKey by remember { mutableStateOf<Long?>(null) }
@@ -567,7 +701,8 @@ fun ReorderableLiveRow(
                     .padding(start = padStart, end = padEnd)
                     .graphicsLayer { translationX = trans; scaleX = if (isDragging) tileLift else 1f; scaleY = if (isDragging) tileLift else 1f; shadowElevation = if (isDragging) 18f else 0f }
                     .pointerInput(id) {
-                        detectDragGestures(
+                        // Drag starts only after a long press to keep swipe-scrolling smooth on touch devices
+                        detectDragGesturesAfterLongPress(
                             onDragStart = { draggingId = id; dragOffset = 0f },
                             onDrag = { change, dragAmount ->
                                 change.consume()
@@ -600,7 +735,8 @@ fun ReorderableLiveRow(
             ) {
                 LiveTileCard(
                     item = mi,
-                    onClick = { if (draggingId == null) onOpen(mi.id) },
+                    onOpenDetails = { if (draggingId == null) onOpen(mi.id) },
+                    onPlayDirect = { if (draggingId == null) onPlay(mi.id) },
                     selected = id in selected,
                     onLongPress = { selected = if (id in selected) selected - id else selected + id },
                     onMoveLeft = {
@@ -640,18 +776,22 @@ fun ReorderableLiveRow(
 @Composable
 fun SeriesRow(
     items: List<MediaItem>,
-    onClick: (MediaItem) -> Unit,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlayDirect: (MediaItem) -> Unit,
+    onAssignToKid: (MediaItem) -> Unit,
     showNew: Boolean = false
 ) {
     if (items.isEmpty()) return
+    // Deduplicate by id to keep keys stable/unique
+    val unique = remember(items) { items.distinctBy { it.id } }
     val state = rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
-    var count by remember(items) { mutableStateOf(if (items.size < 30) items.size else 30) }
+    var count by remember(unique) { mutableStateOf(if (unique.size < 30) unique.size else 30) }
     LaunchedEffect(state) {
         snapshotFlow { state.firstVisibleItemIndex }
             .collect { idx ->
-                if (idx > count - 20 && count < items.size) {
-                    count = (count + 50).coerceAtMost(items.size)
+                if (idx > count - 20 && count < unique.size) {
+                    count = (count + 50).coerceAtMost(unique.size)
                 }
             }
     }
@@ -660,8 +800,8 @@ fun SeriesRow(
         flingBehavior = fling,
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
     ) {
-        items(items.take(count), key = { it.id }) { m ->
-            SeriesTileCard(item = m, onClick = onClick, isNew = showNew)
+        items(unique.take(count), key = { it.id }) { m ->
+            SeriesTileCard(item = m, onOpenDetails = onOpenDetails, onPlayDirect = onPlayDirect, onAssignToKid = onAssignToKid, isNew = showNew)
         }
     }
 }
@@ -670,18 +810,22 @@ fun SeriesRow(
 @Composable
 fun VodRow(
     items: List<MediaItem>,
-    onClick: (MediaItem) -> Unit,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlayDirect: (MediaItem) -> Unit,
+    onAssignToKid: (MediaItem) -> Unit,
     showNew: Boolean = false
 ) {
     if (items.isEmpty()) return
+    // Deduplicate by id to keep keys stable/unique
+    val unique = remember(items) { items.distinctBy { it.id } }
     val state = rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
-    var count by remember(items) { mutableStateOf(if (items.size < 30) items.size else 30) }
+    var count by remember(unique) { mutableStateOf(if (unique.size < 30) unique.size else 30) }
     LaunchedEffect(state) {
         snapshotFlow { state.firstVisibleItemIndex }
             .collect { idx ->
-                if (idx > count - 20 && count < items.size) {
-                    count = (count + 50).coerceAtMost(items.size)
+                if (idx > count - 20 && count < unique.size) {
+                    count = (count + 50).coerceAtMost(unique.size)
                 }
             }
     }
@@ -690,8 +834,8 @@ fun VodRow(
         flingBehavior = fling,
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
     ) {
-        items(items.take(count), key = { it.id }) { m ->
-            VodTileCard(item = m, onClick = onClick, isNew = showNew)
+        items(unique.take(count), key = { it.id }) { m ->
+            VodTileCard(item = m, onOpenDetails = onOpenDetails, onPlayDirect = onPlayDirect, onAssignToKid = onAssignToKid, isNew = showNew)
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.chris.m3usuite.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
@@ -14,6 +15,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import android.os.Build
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import com.chris.m3usuite.ui.theme.DesignTokens
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -23,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.foundation.layout.ColumnScope
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
@@ -89,14 +99,70 @@ fun SettingsScreen(
         snackbarHost = snackHost,
         bottomBar = {}
     ) { pads ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(pads)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+            val Accent = com.chris.m3usuite.ui.theme.DesignTokens.Accent
+            val tfColors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                focusedLabelColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                disabledContainerColor = MaterialTheme.colorScheme.surface,
+                cursorColor = Accent,
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+            )
+            // Background layers
+            Box(Modifier.fillMaxSize().padding(pads)) {
+                // Gradient base
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                0f to MaterialTheme.colorScheme.background,
+                                1f to MaterialTheme.colorScheme.surface
+                            )
+                        )
+                )
+                // Radial accent glow
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(Accent.copy(alpha = 0.18f), Color.Transparent),
+                                radius = with(LocalDensity.current) { 600.dp.toPx() }
+                            )
+                        )
+                )
+                // Center blurred app icon
+                Image(
+                    painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(520.dp)
+                        .graphicsLayer {
+                            alpha = 0.06f
+                            try {
+                                if (Build.VERSION.SDK_INT >= 31) {
+                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(40f, 40f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                }
+                            } catch (_: Throwable) {}
+                        }
+                )
+            }
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(pads)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             TextButton(onClick = onBack) { Text("Zurück") }
             if (onOpenProfiles != null) {
                 TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
@@ -110,31 +176,36 @@ fun SettingsScreen(
 
             HorizontalDivider()
 
-            Text("Profil/Gate", style = MaterialTheme.typography.titleMedium)
+            SectionHeader("Profil & Gate")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Letztes Profil merken", modifier = Modifier.weight(1f))
                 Switch(checked = rememberLast, onCheckedChange = { v ->
                     scope.launch { store.setRememberLastProfile(v) }
                 })
             }
-            Text("Player", style = MaterialTheme.typography.titleMedium)
+            SectionHeader("Player")
             Column {
                 Radio("Immer fragen", mode == "ask") { scope.launch { store.setPlayerMode("ask") } }
                 Radio("Interner Player", mode == "internal") { scope.launch { store.setPlayerMode("internal") } }
                 Radio("Externer Player", mode == "external") { scope.launch { store.setPlayerMode("external") } }
+                Spacer(Modifier.height(8.dp))
+                // Preferred external app: value + picker (einmalig hier)
+                OutlinedTextField(
+                    value = pkg,
+                    onValueChange = { scope.launch { store.set(Keys.PREF_PLAYER_PACKAGE, it) } },
+                    label = { Text("Bevorzugtes externes Paket (optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = tfColors
+                )
+                ExternalPlayerPickerButton(onPick = { packageName ->
+                    scope.launch { store.set(Keys.PREF_PLAYER_PACKAGE, packageName) }
+                })
             }
-
-            OutlinedTextField(
-                value = pkg,
-                onValueChange = { scope.launch { store.set(Keys.PREF_PLAYER_PACKAGE, it) } },
-                label = { Text("Bevorzugtes externes Paket (optional)") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
 
             HorizontalDivider()
 
-            Text("Untertitel (interner Player)", style = MaterialTheme.typography.titleMedium)
+            SectionHeader("Untertitel (interner Player)")
             Text("Größe")
             Slider(value = subScale, onValueChange = { v -> scope.launch { store.setFloat(Keys.SUB_SCALE, v) } },
                 valueRange = 0.04f..0.12f, steps = 8)
@@ -205,7 +276,7 @@ fun SettingsScreen(
             HorizontalDivider()
 
             // App PIN
-            Text("App-PIN", style = MaterialTheme.typography.titleMedium)
+            SectionHeader("App-PIN")
             if (!pinSet) {
                 Text("Es ist kein PIN gesetzt.")
                 Button(onClick = { pinDialogMode = PinMode.Set }) { Text("PIN festlegen…") }
@@ -232,7 +303,7 @@ fun SettingsScreen(
             }
 
             HorizontalDivider()
-            Text("Wiedergabe", style = MaterialTheme.typography.titleMedium)
+            SectionHeader("Wiedergabe")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Autoplay nächste Folge (Serie)", modifier = Modifier.weight(1f))
                 Switch(checked = autoplayNext, onCheckedChange = { v -> scope.launch { store.setAutoplayNext(v) } })
@@ -242,48 +313,41 @@ fun SettingsScreen(
                 Switch(checked = hapticsEnabled, onCheckedChange = { v -> scope.launch { store.setHapticsEnabled(v) } })
             }
 
-            HorizontalDivider()
-            Text("Externer Player", style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(
-                value = pkg,
-                onValueChange = { scope.launch { store.set(Keys.PREF_PLAYER_PACKAGE, it) } },
-                label = { Text("Bevorzugtes externes Paket (optional)") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            ExternalPlayerPickerButton(onPick = { packageName ->
-                scope.launch { store.set(Keys.PREF_PLAYER_PACKAGE, packageName) }
-            })
+            // (entfernt) Duplikat "Externer Player" – alles oben unter Player zusammengeführt
 
             HorizontalDivider()
-            Text("Quelle (M3U/Xtream/EPG)", style = MaterialTheme.typography.titleMedium)
+            SectionHeader("Quelle (M3U/Xtream/EPG)")
             OutlinedTextField(
                 value = m3u,
                 onValueChange = { scope.launch { store.set(Keys.M3U_URL, it) } },
                 label = { Text("M3U / Xtream get.php Link") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = tfColors
             )
             OutlinedTextField(
                 value = epg,
                 onValueChange = { scope.launch { store.set(Keys.EPG_URL, it) } },
                 label = { Text("EPG XMLTV URL (optional)") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = tfColors
             )
             OutlinedTextField(
                 value = ua,
                 onValueChange = { scope.launch { store.set(Keys.USER_AGENT, it) } },
                 label = { Text("User-Agent") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = tfColors
             )
             OutlinedTextField(
                 value = referer,
                 onValueChange = { scope.launch { store.set(Keys.REFERER, it) } },
                 label = { Text("Referer (optional)") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = tfColors
             )
             // Xtream (optional) — can be auto-filled from M3U get.php
             Text("Xtream (optional)", style = MaterialTheme.typography.titleSmall)
@@ -293,14 +357,16 @@ fun SettingsScreen(
                     onValueChange = { scope.launch { store.set(Keys.XT_HOST, it) } },
                     label = { Text("Host") },
                     singleLine = true,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = tfColors
                 )
                 OutlinedTextField(
                     value = xtPort.toString(),
                     onValueChange = { s -> s.toIntOrNull()?.let { p -> scope.launch { store.setInt(Keys.XT_PORT, p) } } },
                     label = { Text("Port") },
                     singleLine = true,
-                    modifier = Modifier.width(120.dp)
+                    modifier = Modifier.width(120.dp),
+                    colors = tfColors
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -309,7 +375,8 @@ fun SettingsScreen(
                     onValueChange = { scope.launch { store.set(Keys.XT_USER, it) } },
                     label = { Text("Benutzername") },
                     singleLine = true,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = tfColors
                 )
                 OutlinedTextField(
                     value = xtPass,
@@ -317,7 +384,8 @@ fun SettingsScreen(
                     label = { Text("Passwort") },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = tfColors
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -326,7 +394,8 @@ fun SettingsScreen(
                     onValueChange = { scope.launch { store.set(Keys.XT_OUTPUT, it) } },
                     label = { Text("Output (ts|m3u8|mp4)") },
                     singleLine = true,
-                    modifier = Modifier.width(200.dp)
+                    modifier = Modifier.width(200.dp),
+                    colors = tfColors
                 )
                 val ctx = LocalContext.current
                 TextButton(onClick = {
@@ -367,38 +436,40 @@ fun SettingsScreen(
                 }) { Text("Test EPG (Debug)") }
             }
 
-            // Make EPG test visible as a full-width button as well
+            // Make EPG test visible as a full-width button using repository (includes XMLTV fallback)
             val ctx2 = LocalContext.current
             Button(onClick = {
                 scope.launch {
                     val tag = "XtreamEPGTest"
                     try {
                         val hostNow = store.xtHost.first(); val userNow = store.xtUser.first(); val passNow = store.xtPass.first(); val outNow = store.xtOutput.first(); val portNow = store.xtPort.first()
-                        Log.d(tag, "Testing shortEPG with host=${hostNow}:${portNow}, user=${userNow}, output=${outNow}")
+                        Log.d(tag, "Testing EPG via repo with host=${hostNow}:${portNow}, user=${userNow}, output=${outNow}")
                         if (hostNow.isBlank() || userNow.isBlank() || passNow.isBlank()) {
-                            Log.w(tag, "Xtream config missing; cannot test shortEPG")
+                            Log.w(tag, "Xtream config missing; cannot test EPG")
                             snackHost.showSnackbar("EPG-Test: Xtream-Konfig fehlt")
                             return@launch
                         }
                         val db = DbProvider.get(ctx2)
-                        val sid = withContext(Dispatchers.IO) { db.mediaDao().listByType("live", 1000, 0).firstOrNull { it.streamId != null }?.streamId }
+                        val lives = withContext(Dispatchers.IO) { db.mediaDao().listByType("live", 20000, 0) }
+                        val preferred = lives.firstOrNull { it.streamId != null && !it.epgChannelId.isNullOrBlank() }
+                        val candidate = preferred ?: lives.firstOrNull { it.streamId != null }
+                        val sid = candidate?.streamId
+                        Log.d(tag, "Selected sid=${sid} tvg-id=${candidate?.epgChannelId} name=${candidate?.name}")
                         if (sid == null) {
                             Log.w(tag, "No live streamId found in DB; import might be required")
                             snackHost.showSnackbar("EPG-Test: keine Live-StreamId gefunden")
                             return@launch
                         }
-                        val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(hostNow, portNow, userNow, passNow, outNow)
-                        Log.d(tag, "Portal base: ${cfg.portalBase}")
-                        val client = com.chris.m3usuite.core.xtream.XtreamClient(ctx2, store, cfg)
-                        val list = client.shortEPG(sid!!, 2)
-                        Log.d(tag, "shortEPG result count=${list.size}; entries=${list.map { it.title }}")
+                        val repo = com.chris.m3usuite.data.repo.EpgRepository(ctx2, store)
+                        val list = repo.nowNext(sid, 2)
+                        Log.d(tag, "repo EPG count=${list.size}; entries=${list.map { it.title }}")
                         snackHost.showSnackbar("EPG-Test: ${list.getOrNull(0)?.title ?: "(leer)"}")
                     } catch (t: Throwable) {
                         Log.e(tag, "EPG test failed", t)
                         snackHost.showSnackbar("EPG-Test fehlgeschlagen: ${t.message}")
                     }
                 }
-            }) { Text("EPG testen (Debug)") }
+            }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("EPG testen (Debug)") }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val ctx = LocalContext.current
                 Button(onClick = {
@@ -417,7 +488,7 @@ fun SettingsScreen(
                             snackHost.showSnackbar("Import fehlgeschlagen – wird erneut versucht")
                         }
                     }
-                }) { Text("Import aktualisieren") }
+                }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("Import aktualisieren") }
                 if (onOpenProfiles != null) {
                     TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
                 }
@@ -430,28 +501,32 @@ fun SettingsScreen(
             com.chris.m3usuite.backup.BackupRestoreSection()
 
             // --- M3U Export ---
-            Text("M3U Export", style = MaterialTheme.typography.titleMedium)
+            SectionHeader("M3U Export")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val ctx = LocalContext.current
                 Button(onClick = {
                     scope.launch {
                         val text = com.chris.m3usuite.core.m3u.M3UExporter.build(ctx, store)
-                        // Share as text/plain
+                        val dir = java.io.File(ctx.cacheDir, "exports").apply { mkdirs() }
+                        val file = java.io.File(dir, "playlist.m3u").apply { writeText(text, Charsets.UTF_8) }
+                        // Use FileProvider with the authority declared in manifest: ${applicationId}.fileprovider
+                        val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".fileprovider", file)
                         val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(android.content.Intent.EXTRA_SUBJECT, "m3uSuite Playlist")
-                            putExtra(android.content.Intent.EXTRA_TEXT, text)
+                            type = "application/x-mpegURL"
+                            putExtra(android.content.Intent.EXTRA_SUBJECT, "playlist.m3u")
+                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
                         ctx.startActivity(android.content.Intent.createChooser(send, "M3U teilen"))
                     }
-                }) { Text("Teilen…") }
+                }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("Teilen…") }
 
                 Button(onClick = {
                     scope.launch {
                         val text = com.chris.m3usuite.core.m3u.M3UExporter.build(ctx, store)
                         val dir = java.io.File(ctx.cacheDir, "exports").apply { mkdirs() }
                         val file = java.io.File(dir, "playlist.m3u").apply { writeText(text, Charsets.UTF_8) }
-                        val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".provider", file)
+                        val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".fileprovider", file)
                         val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                             type = "application/x-mpegURL"
                             putExtra(android.content.Intent.EXTRA_SUBJECT, "playlist.m3u")
@@ -460,7 +535,8 @@ fun SettingsScreen(
                         }
                         ctx.startActivity(android.content.Intent.createChooser(send, "M3U speichern/teilen"))
                     }
-                }) { Text("Als Datei speichern…") }
+                }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("Als Datei speichern…") }
+            }
             }
         }
     }
@@ -480,12 +556,19 @@ private fun ExternalPlayerPickerButton(onPick: (String) -> Unit) {
     TextButton(onClick = { show = true }) { Text("Externen Player auswählen…") }
     if (!show) return
     val pm = ctx.packageManager
-    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/video.m3u8"), "application/vnd.apple.mpegurl") }
-    val intent2 = android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/video.mp4"), "video/*") }
     val list = remember {
-        val a = pm.queryIntentActivities(intent, 0)
-        val b = pm.queryIntentActivities(intent2, 0)
-        (a + b).distinctBy { it.activityInfo.packageName }
+        val i1 = android.content.Intent(android.content.Intent.ACTION_VIEW).apply { type = "video/*" }
+        val i2 = android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/sample.m3u8"), "application/vnd.apple.mpegurl") }
+        val i3 = android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/sample.mp4"), "video/mp4") }
+        val flags = android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
+        val a = pm.queryIntentActivities(i1, flags)
+        val b = pm.queryIntentActivities(i2, flags)
+        val c = pm.queryIntentActivities(i3, flags)
+        val all = (a + b + c)
+            .filter { it.activityInfo.packageName != ctx.packageName }
+            .distinctBy { it.activityInfo.packageName }
+            .sortedBy { it.loadLabel(pm)?.toString() ?: it.activityInfo.packageName }
+        all
     }
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = { show = false }) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -494,6 +577,36 @@ private fun ExternalPlayerPickerButton(onPick: (String) -> Unit) {
                 val label = ri.loadLabel(pm)?.toString() ?: ri.activityInfo.packageName
                 Button(onClick = { onPick(ri.activityInfo.packageName); show = false }) { Text(label) }
             }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            text,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+            thickness = 1.dp,
+            color = com.chris.m3usuite.ui.theme.DesignTokens.Accent.copy(alpha = 0.35f)
+        )
+    }
+}
+
+@Composable
+private fun SectionCard(accent: Color, content: @Composable ColumnScope.() -> Unit) {
+    ElevatedCard(
+        modifier = Modifier.border(BorderStroke(1.dp, accent.copy(alpha = 0.25f)), shape = MaterialTheme.shapes.medium),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f)),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            content()
         }
     }
 }
@@ -510,17 +623,30 @@ private fun showPinDialog(store: SettingsStore, mode: PinMode, onDismissed: () -
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     if (!open) { onDismissed(); return }
+    val dlgColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+        disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+        focusedLabelColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        disabledContainerColor = MaterialTheme.colorScheme.surface,
+        cursorColor = MaterialTheme.colorScheme.primary,
+        focusedBorderColor = MaterialTheme.colorScheme.outline,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+    )
     AlertDialog(
         onDismissRequest = { open = false },
         title = { Text(when (mode) { PinMode.Set -> "PIN festlegen"; PinMode.Change -> "PIN ändern"; PinMode.Clear -> "PIN entfernen" }) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (mode != PinMode.Set) {
-                    OutlinedTextField(value = old, onValueChange = { old = it }, label = { Text("Aktuelle PIN") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
+                    OutlinedTextField(value = old, onValueChange = { old = it }, label = { Text("Aktuelle PIN") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), colors = dlgColors)
                 }
                 if (mode != PinMode.Clear) {
-                    OutlinedTextField(value = pin, onValueChange = { pin = it }, label = { Text("Neue PIN") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
-                    OutlinedTextField(value = pin2, onValueChange = { pin2 = it }, label = { Text("Wiederholen") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
+                    OutlinedTextField(value = pin, onValueChange = { pin = it }, label = { Text("Neue PIN") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), colors = dlgColors)
+                    OutlinedTextField(value = pin2, onValueChange = { pin2 = it }, label = { Text("Wiederholen") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), colors = dlgColors)
                 }
                 if (error != null) Text(error!!, color = MaterialTheme.colorScheme.error)
             }

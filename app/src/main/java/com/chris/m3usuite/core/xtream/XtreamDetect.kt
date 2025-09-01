@@ -31,18 +31,32 @@ object XtreamDetect {
         val host = u.host ?: return null
         val port = if (u.port > 0) u.port else if (scheme.equals("https", true)) 443 else 80
         val segs = u.pathSegments ?: emptyList()
-        if (segs.size < 4) return null
-        val kind = segs[0].lowercase()
-        if (kind !in listOf("live", "hls", "movie", "series")) return null
-        val user = segs[1]
-        val pass = segs[2]
-        val last = segs.lastOrNull().orEmpty()
-        val ext = last.substringAfterLast('.', "").lowercase()
-        val output = when (ext) {
-            "ts", "m3u8", "mp4" -> ext
-            else -> "m3u8"
+        // Case 1: Standard xtream paths with kind prefix (live|hls|movie|series)
+        if (segs.size >= 4 && segs[0].lowercase() in listOf("live", "hls", "movie", "series")) {
+            val user = segs[1]
+            val pass = segs[2]
+            val last = segs.lastOrNull().orEmpty()
+            val ext = last.substringAfterLast('.', "").lowercase()
+            val output = when (ext) {
+                "ts", "m3u8", "mp4" -> ext
+                else -> "m3u8"
+            }
+            return@runCatching XtreamCreds(scheme, host, port, user, pass, output)
         }
-        XtreamCreds(scheme, host, port, user, pass, output)
+        // Case 2: Compact paths without kind (/<user>/<pass>/<id>[.ext]) as seen in older lists
+        if (segs.size >= 3) {
+            val user = segs[0]
+            val pass = segs[1]
+            val last = segs.lastOrNull().orEmpty()
+            val ext = last.substringAfterLast('.', "").lowercase()
+            val output = when (ext) {
+                "ts", "m3u8", "mp4" -> ext
+                "" -> "ts" // default for bare numeric IDs
+                else -> "m3u8"
+            }
+            return@runCatching XtreamCreds(scheme, host, port, user, pass, output)
+        }
+        null
     }.getOrNull()
 
     fun parseStreamId(url: String): Int? = runCatching {

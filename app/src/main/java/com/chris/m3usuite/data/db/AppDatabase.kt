@@ -20,9 +20,10 @@ import kotlinx.coroutines.flow.first
         ResumeMark::class,
         Profile::class,
         KidContentItem::class,
-        ScreenTimeEntry::class
+        ScreenTimeEntry::class,
+        EpgNowNext::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,6 +34,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun kidContentDao(): KidContentDao
     abstract fun screenTimeDao(): ScreenTimeDao
+    abstract fun epgDao(): EpgDao
 }
 
 /**
@@ -50,7 +52,7 @@ object DbProvider {
                 AppDatabase::class.java,
                 DB_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
@@ -123,6 +125,24 @@ object DbProvider {
                 CREATE UNIQUE INDEX IF NOT EXISTS `index_screen_time_unique_day`
                 ON `screen_time`(`kidProfileId`, `dayYyyymmdd`)
             """.trimIndent())
+        }
+    }
+    private val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `epg_now_next` (
+                    `channelId` TEXT NOT NULL PRIMARY KEY,
+                    `nowTitle` TEXT,
+                    `nowStartMs` INTEGER,
+                    `nowEndMs` INTEGER,
+                    `nextTitle` TEXT,
+                    `nextStartMs` INTEGER,
+                    `nextEndMs` INTEGER,
+                    `updatedAt` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
         }
     }
 

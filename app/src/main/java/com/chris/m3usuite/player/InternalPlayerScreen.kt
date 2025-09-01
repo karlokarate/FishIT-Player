@@ -1,56 +1,81 @@
-@file:OptIn(androidx.media3.common.util.UnstableApi::class)
-
 package com.chris.m3usuite.player
 
-import androidx.activity.compose.BackHandler
 import android.app.Activity
 import android.content.pm.ActivityInfo
-import androidx.compose.foundation.layout.Box
+import android.view.LayoutInflater
+import androidx.activity.compose.BackHandler
+import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Button
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.background
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.common.C
+import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
-import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
+import androidx.media3.ui.PlayerView
+import com.chris.m3usuite.R
 import com.chris.m3usuite.data.db.AppDatabase
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.ResumeMark
@@ -58,15 +83,11 @@ import com.chris.m3usuite.data.repo.ScreenTimeRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.first
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.media3.common.TrackSelectionOverride
 
 /**
  * Interner Player (Media3) mit:
@@ -76,7 +97,8 @@ import androidx.media3.common.TrackSelectionOverride
  *
  * type: "vod" | "series" | "live"  (live wird nicht persistiert)
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@androidx.media3.common.util.UnstableApi
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun InternalPlayerScreen(
     url: String,
@@ -453,18 +475,98 @@ fun InternalPlayerScreen(
     }
 
     // Fullscreen player with tap-to-show controls overlay
-    var controlsVisible by remember { mutableStateOf(false) }
+    var controlsVisible by remember { mutableStateOf(true) }
+    var controlsTick by remember { mutableStateOf(0) }
+    var sliderValue by remember { mutableStateOf(0f) }
+    var isSeeking by remember { mutableStateOf(false) }
+    var positionMs by remember { mutableStateOf(0L) }
+    var durationMs by remember { mutableStateOf(0L) }
+    var canSeek by remember { mutableStateOf(false) }
+
+    // Aspect / resize controls
+    var resizeMode by remember { mutableStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIT) }
+    // Overlays: make container fully transparent (only buttons visible)
+    val scrimAlpha = 0f
+    val bottomScrimAlpha = 0f
+    var showAspectMenu by remember { mutableStateOf(false) }
+    var customScaleEnabled by remember { mutableStateOf(false) }
+    var customScaleX by remember { mutableStateOf(1f) }
+    var customScaleY by remember { mutableStateOf(1f) }
+
+    fun cycleResize() {
+        customScaleEnabled = false
+        resizeMode = when (resizeMode) {
+            AspectRatioFrameLayout.RESIZE_MODE_FIT -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            AspectRatioFrameLayout.RESIZE_MODE_ZOOM -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+            else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }
+    }
+
+    fun togglePlayPause() {
+        val nowPlaying = exoPlayer.playWhenReady && exoPlayer.isPlaying
+        exoPlayer.playWhenReady = !nowPlaying
+    }
+
+    // Update seekability from player (handles live/dynamic cases correctly)
+    DisposableEffect(exoPlayer) {
+        canSeek = exoPlayer.isCurrentMediaItemSeekable
+        val listener = object : Player.Listener {
+            override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
+                canSeek = exoPlayer.isCurrentMediaItemSeekable
+            }
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                canSeek = exoPlayer.isCurrentMediaItemSeekable
+            }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                canSeek = exoPlayer.isCurrentMediaItemSeekable
+            }
+        }
+        exoPlayer.addListener(listener)
+        onDispose { exoPlayer.removeListener(listener) }
+    }
+
+    // Auto-hide controls after 3 seconds when visible and no modal open
+    LaunchedEffect(controlsVisible, controlsTick, showCcMenu, showAspectMenu) {
+        if (controlsVisible && !showCcMenu && !showAspectMenu) {
+            delay(3000)
+            controlsVisible = false
+        }
+    }
+
     Box(Modifier.fillMaxSize()) {
         AndroidView(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = { controlsVisible = !controlsVisible })
+                .graphicsLayer {
+                    if (customScaleEnabled) {
+                        scaleX = customScaleX.coerceIn(0.5f, 2.0f)
+                        scaleY = customScaleY.coerceIn(0.5f, 2.0f)
+                    }
                 },
-            factory = { PlayerView(ctx) },
+            factory = { LayoutInflater.from(ctx).inflate(R.layout.compose_player_view, null, false) as PlayerView },
             update = { view ->
                 view.player = exoPlayer
                 view.useController = false
+                view.resizeMode = resizeMode
+                // Ensure view can receive media keys
+                try {
+                    view.isFocusable = true
+                    view.isFocusableInTouchMode = true
+                    view.requestFocus()
+                    view.setOnKeyListener { _, keyCode, event ->
+                        if (event.action != android.view.KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+                        when (keyCode) {
+                            android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+                            android.view.KeyEvent.KEYCODE_SPACE,
+                            android.view.KeyEvent.KEYCODE_DPAD_CENTER,
+                            android.view.KeyEvent.KEYCODE_MEDIA_PLAY,
+                            android.view.KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                                togglePlayPause(); true
+                            }
+                            else -> false
+                        }
+                    }
+                } catch (_: Throwable) {}
                 view.subtitleView?.apply {
                     setApplyEmbeddedStyles(true)
                     setApplyEmbeddedFontSizes(true)
@@ -485,43 +587,115 @@ fun InternalPlayerScreen(
             }
         )
 
-        // Overlay controls (top bar) shown only when toggled
-        if (controlsVisible) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.35f))
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
-                    .align(Alignment.TopCenter),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { finishAndRelease() }) {
-                    Icon(
-                        painter = painterResource(android.R.drawable.ic_menu_close_clear_cancel),
-                        contentDescription = "Schließen"
-                    )
-                }
-                if (isAdult) {
-                    IconButton(onClick = {
-                        if (!showCcMenu) {
-                            localScale = effectiveScale()
-                            localFg = effectiveFg()
-                            localBg = effectiveBg()
-                            localFgOpacity = effectiveFgOpacity()
-                            localBgOpacity = effectiveBgOpacity()
-                            refreshSubtitleOptions()
-                        }
-                        showCcMenu = true
-                        controlsVisible = false
-                    }) {
+        // Tap catcher to toggle controls
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) { detectTapGestures(onTap = { controlsVisible = !controlsVisible; if (controlsVisible) controlsTick++ }) }
+        )
+
+        // Controls overlay
+        if (controlsVisible) Popup(
+            alignment = Alignment.Center,
+            properties = PopupProperties(focusable = false, dismissOnBackPress = false, usePlatformDefaultWidth = false)
+        ) {
+            Box(Modifier.fillMaxSize()) {
+                // Top seekbar + close (80% opacity)
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconButton(onClick = { finishAndRelease() }) {
                         Icon(
-                            painter = painterResource(android.R.drawable.ic_menu_sort_by_size),
-                            contentDescription = "Untertitel-Menü"
+                            painter = painterResource(android.R.drawable.ic_menu_close_clear_cancel),
+                            contentDescription = "Schließen",
+                            tint = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+                    if (canSeek) {
+                        LaunchedEffect(Unit) {
+                            while (true) {
+                                durationMs = exoPlayer.duration.coerceAtLeast(0)
+                                positionMs = exoPlayer.currentPosition.coerceAtLeast(0)
+                                if (!isSeeking && durationMs > 0) sliderValue = (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                                delay(250)
+                            }
+                        }
+                        androidx.compose.material3.Slider(
+                            value = sliderValue,
+                            onValueChange = { isSeeking = true; sliderValue = it; controlsTick++ },
+                            onValueChangeFinished = {
+                                val target = (sliderValue * durationMs).toLong().coerceIn(0L, durationMs)
+                                exoPlayer.seekTo(target)
+                                isSeeking = false
+                                controlsTick++
+                            },
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
+
+                // Center controls (transparent container)
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = {
+                        val pos = exoPlayer.currentPosition
+                        exoPlayer.seekTo((pos - 10_000L).coerceAtLeast(0L))
+                    }) { Icon(painter = painterResource(android.R.drawable.ic_media_rew), contentDescription = "-10s", tint = Color.White.copy(alpha = 0.8f)) }
+                    IconButton(onClick = { val playing = exoPlayer.playWhenReady && exoPlayer.isPlaying; exoPlayer.playWhenReady = !playing }) {
+                        val icon = if (exoPlayer.playWhenReady && exoPlayer.isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+                        Icon(painter = painterResource(icon), contentDescription = "Play/Pause", tint = Color.White.copy(alpha = 0.8f))
+                    }
+                    IconButton(onClick = {
+                        val pos = exoPlayer.currentPosition
+                        val dur = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
+                        exoPlayer.seekTo((pos + 10_000L).coerceAtMost(dur))
+                    }) { Icon(painter = painterResource(android.R.drawable.ic_media_ff), contentDescription = "+10s", tint = Color.White.copy(alpha = 0.8f)) }
+                }
+
+                // Bottom-right icon-only tiles (70% opacity, colored)
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                        .navigationBarsPadding(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OverlayIconButton(
+                        iconRes = android.R.drawable.ic_menu_sort_by_size,
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                        contentColor = Color.White
+                    ) {
+                        if (!showCcMenu) {
+                            localScale = effectiveScale(); localFg = effectiveFg(); localBg = effectiveBg();
+                            localFgOpacity = effectiveFgOpacity(); localBgOpacity = effectiveBgOpacity();
+                            refreshSubtitleOptions()
+                        }
+                        showCcMenu = true
+                    }
+                    OverlayIconButton(
+                        iconRes = android.R.drawable.ic_menu_crop,
+                        containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
+                        contentColor = Color.White,
+                        onLongClick = { showAspectMenu = true }
+                    ) {
+                        customScaleEnabled = false
+                        cycleResize()
+                    }
+                }
             }
+        }
         }
 
         if (kidBlocked && kidActive) {
@@ -616,15 +790,110 @@ fun InternalPlayerScreen(
                                     showCcMenu = false
                                 }) { Text("Als Standard speichern") }
                             }
+                }
+            }
+            // Bottom controls now rendered inside the consolidated popup above
+
+            if (showAspectMenu) {
+                ModalBottomSheet(onDismissRequest = { showAspectMenu = false }) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Bildformat", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT; customScaleEnabled = false }) { Text("Original") }
+                            Button(onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM; customScaleEnabled = false }) { Text("Vollbild") }
+                            Button(onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL; customScaleEnabled = false }) { Text("Stretch") }
+                        }
+                        Spacer(Modifier.padding(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Custom")
+                            androidx.compose.material3.Switch(checked = customScaleEnabled, onCheckedChange = { enabled ->
+                                customScaleEnabled = enabled
+                                if (enabled) resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                            })
+                        }
+                        if (customScaleEnabled) {
+                            Text("Horizontal: ${String.format("%.2f", customScaleX)}x")
+                            Slider(value = customScaleX, onValueChange = { customScaleX = it }, valueRange = 0.5f..2.0f, steps = 10)
+                            Text("Vertikal: ${String.format("%.2f", customScaleY)}x")
+                            Slider(value = customScaleY, onValueChange = { customScaleY = it }, valueRange = 0.5f..2.0f, steps = 10)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(onClick = { customScaleX = 1f; customScaleY = 1f }) { Text("Reset") }
+                            }
+                        }
+                        Row(Modifier.padding(top = 8.dp)) {
+                            Button(onClick = { showAspectMenu = false }) { Text("Schließen") }
                         }
                     }
+                }
+            }
         }
     }
-}
 // helper: apply opacity to ARGB color
 private fun withOpacity(argb: Int, percent: Int): Int {
     val p = percent.coerceIn(0, 100)
     val a = (p / 100f * 255f).toInt().coerceIn(0, 255)
     val rgb = argb and 0x00FFFFFF
     return (a shl 24) or rgb
+}
+
+// helper: format milliseconds to mm:ss or hh:mm:ss
+private fun formatTime(ms: Long): String {
+    if (ms <= 0) return "0:00"
+    val total = ms / 1000
+    val s = (total % 60).toInt()
+    val m = ((total / 60) % 60).toInt()
+    val h = (total / 3600).toInt()
+    return if (h > 0) String.format("%d:%02d:%02d", h, m, s) else String.format("%d:%02d", m, s)
+}
+
+@Composable
+private fun OverlayActionTile(
+    @DrawableRes iconRes: Int,
+    label: String,
+    onClick: () -> Unit
+) {
+    ElevatedCard(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.elevatedCardElevation(),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+            contentColor = contentColorFor(MaterialTheme.colorScheme.surface)
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(painter = painterResource(iconRes), contentDescription = null)
+            Text(label, style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun OverlayIconButton(
+    @DrawableRes iconRes: Int,
+    containerColor: Color,
+    contentColor: Color,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit
+) {
+    val shape = MaterialTheme.shapes.large
+    val modifier = if (onLongClick != null) {
+        Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+    } else Modifier.then(Modifier.clickable(onClick = onClick))
+    ElevatedCard(
+        onClick = onClick,
+        shape = shape,
+        elevation = CardDefaults.elevatedCardElevation(),
+        colors = CardDefaults.elevatedCardColors(containerColor = containerColor, contentColor = contentColor),
+        modifier = modifier
+    ) {
+        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(painter = painterResource(iconRes), contentDescription = null, tint = contentColor)
+        }
+    }
 }

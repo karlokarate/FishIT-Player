@@ -1,50 +1,83 @@
 package com.chris.m3usuite.ui.screens
 
+import android.os.Build
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.heightIn
-import java.io.File
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.foundation.border
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.ExperimentalMaterial3Api
 import coil3.compose.AsyncImage
-import com.chris.m3usuite.data.repo.EpgRepository
+import coil3.request.ImageRequest
 import com.chris.m3usuite.data.db.AppDatabase
 import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.data.db.Profile
+import com.chris.m3usuite.data.repo.EpgRepository
+import com.chris.m3usuite.data.repo.KidContentRepository
 import com.chris.m3usuite.player.InternalPlayerScreen
 import com.chris.m3usuite.player.PlayerChooser
+import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.ui.home.HomeChromeScaffold
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.util.buildImageRequest
+import com.chris.m3usuite.ui.util.rememberAvatarModel
 import com.chris.m3usuite.ui.util.rememberImageHeaders
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import com.chris.m3usuite.data.db.Profile
-import com.chris.m3usuite.data.repo.KidContentRepository
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import coil3.request.ImageRequest
-import com.chris.m3usuite.ui.util.rememberAvatarModel
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.CircleShape
-import com.chris.m3usuite.ui.skin.tvClickable
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
-import com.chris.m3usuite.ui.home.HomeChromeScaffold
-import androidx.compose.foundation.lazy.rememberLazyListState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -208,8 +241,9 @@ fun LiveDetailScreen(id: Long) {
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        TextButton(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = onDismiss) { Text("Abbrechen") }
-                        Button(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty()) { Text("OK") }
+                        val Accent = com.chris.m3usuite.ui.theme.DesignTokens.Accent
+                        TextButton(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("Abbrechen") }
+                        Button(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("OK") }
                     }
                 }
             }
@@ -228,9 +262,18 @@ fun LiveDetailScreen(id: Long) {
         listState = listState,
         bottomBar = {}
     ) { pads ->
-    Column(Modifier.padding(16.dp).padding(pads)) {
+    Box(Modifier.fillMaxSize().padding(pads)) {
+        val Accent = if (isAdult) com.chris.m3usuite.ui.theme.DesignTokens.Accent else com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
+        androidx.compose.foundation.layout.Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to MaterialTheme.colorScheme.background, 1f to MaterialTheme.colorScheme.surface)))
+        androidx.compose.foundation.layout.Box(Modifier.matchParentSize().background(Brush.radialGradient(colors = listOf(Accent.copy(alpha = if (isAdult) 0.12f else 0.20f), Color.Transparent), radius = with(LocalDensity.current) { 640.dp.toPx() })))
+        androidx.compose.foundation.Image(painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch), contentDescription = null, modifier = Modifier.align(Alignment.Center).size(520.dp).graphicsLayer { alpha = 0.05f; try { if (Build.VERSION.SDK_INT >= 31) renderEffect = android.graphics.RenderEffect.createBlurEffect(34f, 34f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect() } catch (_: Throwable) {} })
+    com.chris.m3usuite.ui.common.AccentCard(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        accent = Accent
+    ) {
+        Column(Modifier.animateContentSize()) {
         Text(title, style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(8.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Accent.copy(alpha = 0.35f))
 
         // LOGO: 1. Klick -> EPG-Overlay anzeigen, 2. Klick (wenn offen) -> Playerwahl/Abspielen
         AsyncImage(
@@ -260,13 +303,19 @@ fun LiveDetailScreen(id: Long) {
 
         // Direkter Play-Button -> Playerwahl (intern/extern/fragen)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(modifier = Modifier.focusScaleOnTv(), onClick = { scope.launch { if (hapticsEnabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); chooseAndPlay() } }, enabled = url != null) {
+            Button(
+                modifier = Modifier.focusScaleOnTv(),
+                onClick = { scope.launch { if (hapticsEnabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); chooseAndPlay() } },
+                enabled = url != null,
+                colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)
+            ) {
                 Text("Abspielen")
             }
             if (isAdult) {
                 com.chris.m3usuite.ui.common.AppIconButton(icon = com.chris.m3usuite.ui.common.AppIcon.AddKid, variant = com.chris.m3usuite.ui.common.IconVariant.Solid, contentDescription = "Für Kinder freigeben", onClick = { showGrantSheet = true })
                 com.chris.m3usuite.ui.common.AppIconButton(icon = com.chris.m3usuite.ui.common.AppIcon.RemoveKid, variant = com.chris.m3usuite.ui.common.IconVariant.Solid, contentDescription = "Aus Kinderprofil entfernen", onClick = { showRevokeSheet = true })
             }
+        }
         }
     }
 
@@ -299,11 +348,12 @@ fun LiveDetailScreen(id: Long) {
                         showEpg = false
                         scope.launch { chooseAndPlay() }
                     },
-                    enabled = url != null
+                    enabled = url != null,
+                    colors = ButtonDefaults.textButtonColors(contentColor = Accent)
                 ) { Text("Jetzt abspielen") }
             },
             dismissButton = {
-                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showEpg = false }) { Text("Schließen") }
+                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showEpg = false }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("Schließen") }
             }
         )
     }
@@ -319,3 +369,4 @@ fun LiveDetailScreen(id: Long) {
         showRevokeSheet = false
     }, onDismiss = { showRevokeSheet = false })
 }}
+}

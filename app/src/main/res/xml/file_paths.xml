@@ -3,5 +3,6 @@
     <cache-path name="camera_cache" path="images/" />
     <files-path name="avatar_images" path="avatars/" />
     <external-cache-path name="ext_camera_cache" path="images/" />
+    <!-- Allow sharing exported playlists from cache/exports/ -->
+    <cache-path name="exports_cache" path="exports/" />
 </paths>
-

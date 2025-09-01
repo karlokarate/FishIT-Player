@@ -26,10 +26,20 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.foundation.Image
+import android.os.Build
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import coil3.compose.AsyncImage
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.MediaItem
@@ -64,6 +74,8 @@ import com.chris.m3usuite.data.db.MediaItem as DbMediaItem
 import kotlinx.serialization.json.Json
 import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
+// removed duplicate imports
+import com.chris.m3usuite.ui.theme.DesignTokens
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -242,6 +254,40 @@ fun LibraryScreen(
         }
     ) { pads ->
         Box(Modifier.fillMaxSize().padding(pads)) {
+            val isKidProfile = !showSettings
+            val Accent = if (isKidProfile) DesignTokens.KidAccent else DesignTokens.Accent
+            // Background layers
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to MaterialTheme.colorScheme.background,
+                            1f to MaterialTheme.colorScheme.surface
+                        )
+                    )
+            )
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(Accent.copy(alpha = 0.12f), Color.Transparent),
+                            radius = with(LocalDensity.current) { 720.dp.toPx() }
+                        )
+                    )
+            )
+            Image(
+                painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(580.dp)
+                    .graphicsLayer {
+                        alpha = 0.05f
+                        try { if (Build.VERSION.SDK_INT >= 31) renderEffect = android.graphics.RenderEffect.createBlurEffect(36f, 36f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect() } catch (_: Throwable) {}
+                    }
+            )
             Column(
                 Modifier
                     .fillMaxSize()
@@ -290,9 +336,12 @@ fun LibraryScreen(
                     topResume = out
                 }
                 // Live/Series/VOD: lightweight lists (already filtered for kids by MediaQueryRepository)
-                runCatching { allLive = mediaRepo.listByTypeFiltered("live", 4000, 0) }
-                runCatching { allSeries = mediaRepo.listByTypeFiltered("series", 4000, 0) }
-                runCatching { allVod = mediaRepo.listByTypeFiltered("vod", 4000, 0) }
+                runCatching { allLive = mediaRepo.listByTypeFiltered("live", 4000, 0).distinctBy { it.id } }
+                runCatching { allSeries = mediaRepo.listByTypeFiltered("series", 4000, 0).distinctBy { it.id } }
+                runCatching {
+                    val filtered = mediaRepo.listByTypeFiltered("vod", 4000, 0).distinctBy { it.id }
+                    allVod = if (filtered.isNotEmpty()) filtered else db.mediaDao().listByType("vod", 4000, 0).distinctBy { it.id }
+                }
                 // top rows remain a small snapshot
                 topLive = allLive.take(50)
                 topSeries = allSeries.take(50)
@@ -367,11 +416,35 @@ fun LibraryScreen(
                                 }
                             }
                         }
-                        // Neu hinzugefügt (id desc)
+                        // Neu hinzugefügt – bevorzugt über addedAt, Fallback: lokale ID desc
                         if (allVod.isNotEmpty()) {
+                            val byAdded = allVod.filter { isNew(it) }.sortedByDescending { parseAddedAt(it) ?: 0L }
+                            val newest = (if (byAdded.isNotEmpty()) byAdded else allVod.sortedByDescending { it.id }).take(50)
                             header("Neu hinzugefügt")
-                            val newest = allVod.filter { isNew(it) }.sortedByDescending { parseAddedAt(it) ?: 0L }.take(50)
-                            item("vod_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = newest, onClick = { mi -> openVod(mi.id) }, showNew = true) } }
+                            item("vod_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
+                                VodRow(
+                                    items = newest,
+                                    onOpenDetails = { mi -> openVod(mi.id) },
+                                    onPlayDirect = { mi ->
+                                        scope.launch {
+                                            val url = mi.url ?: return@launch
+                                            val headers = buildMap<String,String> {
+                                                val ua = store.userAgent.first(); val ref = store.referer.first()
+                                                if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref)
+                                            }
+                                            com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = url, headers = headers, startPositionMs = withContext(Dispatchers.IO) { db.resumeDao().getVod(mi.id)?.positionSecs?.toLong()?.times(1000) }) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = url, startPositionMs = s) }
+                                        }
+                                    },
+                                    onAssignToKid = { mi ->
+                                        scope.launch(Dispatchers.IO) {
+                                            val kids = db.profileDao().all().filter { it.type == "kid" }
+                                            val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                            kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                        }
+                                    },
+                                    showNew = byAdded.isNotEmpty()
+                                )
+                            } }
                         }
                         // Genres dynamisch aus categoryName ableiten
                         val genres = allVod
@@ -380,14 +453,20 @@ fun LibraryScreen(
                             .filter { it.isNotEmpty() }
                             .distinct()
                             .sorted()
-                        genres.forEach { g ->
-                            val list = allVod.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }
-                                .distinctBy { it.id }
-                                .take(50)
-                            if (list.isNotEmpty()) {
-                                header(g)
-                                item("vod_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = list, onClick = { mi -> openVod(mi.id) }) } }
+                        if (genres.isNotEmpty()) {
+                            genres.forEach { g ->
+                                val list = allVod.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }
+                                    .distinctBy { it.id }
+                                    .take(50)
+                                if (list.isNotEmpty()) {
+                                    header(g)
+                                    item("vod_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = list, onOpenDetails = { mi -> openVod(mi.id) }, onPlayDirect = { mi -> scope.launch { val url = mi.url ?: return@launch; val headers = buildMap<String,String>{ val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }; com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = url, headers = headers, startPositionMs = withContext(Dispatchers.IO){ db.resumeDao().getVod(mi.id)?.positionSecs?.toLong()?.times(1000) }) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = url, startPositionMs = s) } } }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "vod", mi.id) } } }) } }
+                                }
                             }
+                        } else {
+                            // Fallback: Zeige eine einzelne "Alle"-Reihe, damit Seite nicht leer ist
+                            header("Alle Filme")
+                            item("vod_all") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = allVod.take(50), onOpenDetails = { mi -> openVod(mi.id) }, onPlayDirect = { mi -> scope.launch { val url = mi.url ?: return@launch; val headers = buildMap<String,String>{ val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }; com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = url, headers = headers, startPositionMs = withContext(Dispatchers.IO){ db.resumeDao().getVod(mi.id)?.positionSecs?.toLong()?.times(1000) }) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = url, startPositionMs = s) } } }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "vod", mi.id) } } }) } }
                         }
                     }
                     "series" -> {
@@ -395,17 +474,62 @@ fun LibraryScreen(
                         if (topResume.isNotEmpty()) {
                             header("Zuletzt geschaut")
                             val seriesUnique = topResume.filter { it.type == "series" }.distinctBy { it.streamId ?: it.id }.take(50)
-                            item("series_resume") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = seriesUnique, onClick = { mi -> openSeries(mi.id) }) } }
+                            item("series_resume") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = seriesUnique, onOpenDetails = { mi -> openSeries(mi.id) }, onPlayDirect = { mi ->
+                                scope.launch {
+                                    val sid = mi.streamId ?: return@launch
+                                    val last = withContext(Dispatchers.IO) { db.resumeDao().recentEpisodes(50).firstOrNull { it.seriesStreamId == sid } }
+                                    val ep = if (last != null) withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(last.episodeId) } else {
+                                        val seasons = withContext(Dispatchers.IO) { db.episodeDao().seasons(sid) }
+                                        val fs = seasons.firstOrNull(); fs?.let { withContext(Dispatchers.IO) { db.episodeDao().episodes(sid, it).firstOrNull() } }
+                                    }
+                                    if (ep != null) {
+                                        val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(store.xtHost.first(), store.xtPort.first(), store.xtUser.first(), store.xtPass.first(), store.xtOutput.first())
+                                        val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                                        val headers = buildMap<String,String> { val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }
+                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = playUrl, startPositionMs = s) }
+                                    }
+                                }
+                            }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "series", mi.id) } } }) } }
                         }
                         if (allSeries.isNotEmpty()) {
                             header("Neu hinzugefügt")
                             val newest = allSeries.filter { isNew(it) }.sortedByDescending { parseAddedAt(it) ?: 0L }.take(50)
-                            item("series_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newest, onClick = { mi -> openSeries(mi.id) }, showNew = true) } }
+                            item("series_new") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newest, onOpenDetails = { mi -> openSeries(mi.id) }, onPlayDirect = { mi -> /* see above pattern */
+                                scope.launch {
+                                    val sid = mi.streamId ?: return@launch
+                                    val last = withContext(Dispatchers.IO) { db.resumeDao().recentEpisodes(50).firstOrNull { it.seriesStreamId == sid } }
+                                    val ep = if (last != null) withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(last.episodeId) } else {
+                                        val seasons = withContext(Dispatchers.IO) { db.episodeDao().seasons(sid) }
+                                        val fs = seasons.firstOrNull(); fs?.let { withContext(Dispatchers.IO) { db.episodeDao().episodes(sid, it).firstOrNull() } }
+                                    }
+                                    if (ep != null) {
+                                        val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(store.xtHost.first(), store.xtPort.first(), store.xtUser.first(), store.xtPass.first(), store.xtOutput.first())
+                                        val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                                        val headers = buildMap<String,String> { val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }
+                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = playUrl, startPositionMs = s) }
+                                    }
+                                }
+                            }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "series", mi.id) } } }, showNew = true) } }
                         }
                         // Neue Episoden seit letztem Start (Snapshot-Vergleich)
                         if (newSeriesFromEpisodes.isNotEmpty()) {
                             header("Neue Episoden")
-                            item("series_new_episodes") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newSeriesFromEpisodes, onClick = { mi -> openSeries(mi.id) }, showNew = true) } }
+                            item("series_new_episodes") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = newSeriesFromEpisodes, onOpenDetails = { mi -> openSeries(mi.id) }, onPlayDirect = { mi -> /* same as above */
+                                scope.launch {
+                                    val sid = mi.streamId ?: return@launch
+                                    val last = withContext(Dispatchers.IO) { db.resumeDao().recentEpisodes(50).firstOrNull { it.seriesStreamId == sid } }
+                                    val ep = if (last != null) withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(last.episodeId) } else {
+                                        val seasons = withContext(Dispatchers.IO) { db.episodeDao().seasons(sid) }
+                                        val fs = seasons.firstOrNull(); fs?.let { withContext(Dispatchers.IO) { db.episodeDao().episodes(sid, it).firstOrNull() } }
+                                    }
+                                    if (ep != null) {
+                                        val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(store.xtHost.first(), store.xtPort.first(), store.xtUser.first(), store.xtPass.first(), store.xtOutput.first())
+                                        val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                                        val headers = buildMap<String,String> { val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }
+                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = playUrl, startPositionMs = s) }
+                                    }
+                                }
+                            }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "series", mi.id) } } }, showNew = true) } }
                         }
                         // Genres dynamisch aus categoryName
                         val genres = allSeries
@@ -420,7 +544,25 @@ fun LibraryScreen(
                                 .take(50)
                             if (list.isNotEmpty()) {
                                 header(g)
-                                item("series_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = list, onClick = { mi -> openSeries(mi.id) }) } }
+                                item("series_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = list, onOpenDetails = { mi -> openSeries(mi.id) }, onPlayDirect = { mi -> /* see pattern */
+                                    scope.launch {
+                                        val sid = mi.streamId ?: return@launch
+                                        val last = withContext(Dispatchers.IO) { db.resumeDao().recentEpisodes(50).firstOrNull { it.seriesStreamId == sid } }
+                                        val ep = if (last != null) withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(last.episodeId) } else {
+                                            val seasons = withContext(Dispatchers.IO) { db.episodeDao().seasons(sid) }
+                                            val fs = seasons.firstOrNull(); fs?.let { withContext(Dispatchers.IO) { db.episodeDao().episodes(sid, it).firstOrNull() } }
+                                        }
+                                        if (ep != null) {
+                                            val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(store.xtHost.first(), store.xtPort.first(), store.xtUser.first(), store.xtPass.first(), store.xtOutput.first())
+                                            val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                                            val headers = buildMap<String,String> { val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }
+                                            com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s ->
+                                                val encoded = java.net.URLEncoder.encode(playUrl, java.nio.charset.StandardCharsets.UTF_8.name())
+                                                navController.navigate("player?url=$encoded&type=series&episodeId=${ep.episodeId}&startMs=${s ?: -1}")
+                                            }
+                                        }
+                                    }
+                                }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "series", mi.id) } } }) } }
                             }
                         }
                     }
@@ -433,16 +575,60 @@ fun LibraryScreen(
                                 .take(50)
                             if (list.isNotEmpty()) {
                                 header(g)
-                                item("live_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { LiveRow(items = list) { mi -> openLive(mi.id) } } }
+                                item("live_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { LiveRow(items = list, onOpenDetails = { mi -> openLive(mi.id) }, onPlayDirect = { mi ->
+                                    scope.launch {
+                                        val url = mi.url ?: return@launch
+                                        val headers = buildMap<String, String> {
+                                            val ua = store.userAgent.first(); val ref = store.referer.first()
+                                            if (ua.isNotBlank()) put("User-Agent", ua)
+                                            if (ref.isNotBlank()) put("Referer", ref)
+                                        }
+                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = url, headers = headers, startPositionMs = null) { startMs ->
+                                            val encoded = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8.name())
+                                            navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}")
+                                        }
+                                    }
+                                } ) } }
                             }
                         }
                     }
                     else -> {
                         // All: kurzer Mix wie vorher
-                        if (topResume.isNotEmpty()) { header("Weiter schauen"); item("all_resume") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { ResumeRow(items = topResume) { mi -> when (mi.type) { "live" -> openLive(mi.id); "vod" -> openVod(mi.id); else -> openSeries(mi.id) } } } } }
-                        if (topLive.isNotEmpty()) { header("TV"); item("all_live") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { LiveRow(items = topLive) { mi -> openLive(mi.id) } } } }
-                        if (topSeries.isNotEmpty()) { header("Serien"); item("all_series") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = topSeries, onClick = { mi -> openSeries(mi.id) }) } } }
-                        if (topVod.isNotEmpty()) { header("Filme"); item("all_vod") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = topVod, onClick = { mi -> openVod(mi.id) }) } } }
+                        if (topResume.isNotEmpty()) { header("Weiter schauen"); item("all_resume") { com.chris.m3usuite.ui.common.AccentCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { ResumeRow(items = topResume) { mi -> when (mi.type) { "live" -> openLive(mi.id); "vod" -> openVod(mi.id); else -> openSeries(mi.id) } } } } }
+                        if (topLive.isNotEmpty()) { header("TV"); item("all_live") { com.chris.m3usuite.ui.common.AccentCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { LiveRow(items = topLive, onOpenDetails = { mi -> openLive(mi.id) }, onPlayDirect = { mi ->
+                                scope.launch {
+                                    val url = mi.url ?: return@launch
+                                    val headers = buildMap<String, String> {
+                                        val ua = store.userAgent.first(); val ref = store.referer.first()
+                                        if (ua.isNotBlank()) put("User-Agent", ua)
+                                        if (ref.isNotBlank()) put("Referer", ref)
+                                    }
+                                    com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = url, headers = headers, startPositionMs = null) { startMs ->
+                                        val encoded = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8.name())
+                                        navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}")
+                                    }
+                                }
+                            } ) } } }
+                        if (topSeries.isNotEmpty()) { header("Serien"); item("all_series") { com.chris.m3usuite.ui.common.AccentCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { SeriesRow(items = topSeries, onOpenDetails = { mi -> openSeries(mi.id) }, onPlayDirect = { mi -> /* see pattern */
+                            scope.launch {
+                                val sid = mi.streamId ?: return@launch
+                                val last = withContext(Dispatchers.IO) { db.resumeDao().recentEpisodes(50).firstOrNull { it.seriesStreamId == sid } }
+                                val ep = if (last != null) withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(last.episodeId) } else {
+                                    val seasons = withContext(Dispatchers.IO) { db.episodeDao().seasons(sid) }
+                                    val fs = seasons.firstOrNull(); fs?.let { withContext(Dispatchers.IO) { db.episodeDao().episodes(sid, it).firstOrNull() } }
+                                }
+                                if (ep != null) {
+                                    val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(store.xtHost.first(), store.xtPort.first(), store.xtUser.first(), store.xtPass.first(), store.xtOutput.first())
+                                    val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                                    val headers = buildMap<String,String> { val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }
+                                    com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s ->
+                                        val encoded = java.net.URLEncoder.encode(playUrl, java.nio.charset.StandardCharsets.UTF_8.name())
+                                        navController.navigate("player?url=$encoded&type=series&episodeId=${ep.episodeId}&startMs=${s ?: -1}")
+                                    }
+                                }
+                            }
+                        }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "series", mi.id) } } }) } } }
+                        if (topVod.isNotEmpty()) { header("Filme"); item("all_vod") { com.chris.m3usuite.ui.common.AccentCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { VodRow(items = topVod, onOpenDetails = { mi -> openVod(mi.id) }, onPlayDirect = { mi -> scope.launch { val url = mi.url ?: return@launch; val headers = buildMap<String,String>{ val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }; com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = url, headers = headers, startPositionMs = withContext(Dispatchers.IO){ db.resumeDao().getVod(mi.id)?.positionSecs?.toLong()?.times(1000) }) { s -> val encoded = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8.name()); navController.navigate("player?url=$encoded&type=vod&mediaId=${mi.id}&startMs=${s ?: -1}") } } }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "vod", mi.id) } } }) } } }
                     }
                 }
             }

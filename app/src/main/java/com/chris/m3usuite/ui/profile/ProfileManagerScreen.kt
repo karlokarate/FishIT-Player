@@ -9,6 +9,17 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import android.os.Build
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import com.chris.m3usuite.ui.theme.DesignTokens
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.Profile
 import com.chris.m3usuite.data.repo.ScreenTimeRepository
@@ -63,7 +74,12 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
         listState = listState,
         bottomBar = {}
     ) { pads ->
-        Column(Modifier.fillMaxSize().padding(pads).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(Modifier.fillMaxSize().padding(pads)) {
+            val Accent = DesignTokens.KidAccent
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to MaterialTheme.colorScheme.background, 1f to MaterialTheme.colorScheme.surface)))
+            Box(Modifier.matchParentSize().background(Brush.radialGradient(colors = listOf(Accent.copy(alpha = 0.20f), androidx.compose.ui.graphics.Color.Transparent), radius = with(LocalDensity.current) { 660.dp.toPx() })))
+            Image(painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch), contentDescription = null, modifier = Modifier.align(Alignment.Center).size(540.dp).graphicsLayer { alpha = 0.06f; try { if (Build.VERSION.SDK_INT >= 31) renderEffect = android.graphics.RenderEffect.createBlurEffect(34f, 34f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect() } catch (_: Throwable) {} })
+        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(onClick = onBack) { Text("Zurück") }
             OutlinedTextField(value = newKidName, onValueChange = { newKidName = it }, label = { Text("Neues Kinderprofil") })
             Button(modifier = Modifier.focusScaleOnTv(), onClick = {
@@ -73,7 +89,7 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                     newKidName = ""
                     load()
                 }
-            }, enabled = newKidName.isNotBlank()) { Text("Anlegen") }
+            }, enabled = newKidName.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent, contentColor = androidx.compose.ui.graphics.Color.Black)) { Text("Anlegen") }
 
             HorizontalDivider()
 
@@ -167,13 +183,13 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                         }
                                         load()
                                     }
-                                }) { Text("Speichern") }
+                                }, colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent, contentColor = androidx.compose.ui.graphics.Color.Black)) { Text("Speichern") }
                                 TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                                     scope.launch(Dispatchers.IO) {
                                         db.profileDao().delete(kid)
                                         load()
                                     }
-                                }) { Text("Löschen") }
+                                }, colors = ButtonDefaults.textButtonColors(contentColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent)) { Text("Löschen") }
                             }
                         }
                     }
@@ -182,4 +198,5 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
             }
         }
     }
+}
 }

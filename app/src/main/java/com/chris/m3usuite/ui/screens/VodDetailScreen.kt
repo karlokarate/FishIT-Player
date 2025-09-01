@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
+import com.chris.m3usuite.ui.fx.FadeThrough
+import androidx.compose.animation.animateContentSize
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +21,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import android.os.Build
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import coil3.compose.AsyncImage
 import com.chris.m3usuite.data.db.AppDatabase
 import com.chris.m3usuite.data.db.DbProvider
@@ -202,8 +213,9 @@ fun VodDetailScreen(
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        TextButton(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = onDismiss) { Text("Abbrechen") }
-                        Button(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty()) { Text("OK") }
+                        val Accent = com.chris.m3usuite.ui.theme.DesignTokens.Accent
+                        TextButton(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("Abbrechen") }
+                        Button(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("OK") }
                     }
                 }
             }
@@ -221,7 +233,43 @@ fun VodDetailScreen(
         listState = listState,
         bottomBar = {}
     ) { pads ->
-    Column(modifier = Modifier.fillMaxSize().padding(pads)) {
+    Box(modifier = Modifier.fillMaxSize().padding(pads)) {
+        val Accent = com.chris.m3usuite.ui.theme.DesignTokens.Accent
+        // Background
+        Box(
+            Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        0f to MaterialTheme.colorScheme.background,
+                        1f to MaterialTheme.colorScheme.surface
+                    )
+                )
+        )
+        // Radial accent glow + blurred icon
+        Box(
+            Modifier
+                .matchParentSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(Accent.copy(alpha = 0.12f), Color.Transparent),
+                        radius = with(LocalDensity.current) { 660.dp.toPx() }
+                    )
+                )
+        )
+        Image(
+            painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
+            contentDescription = null,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .size(540.dp)
+                .graphicsLayer { alpha = 0.05f; try { if (Build.VERSION.SDK_INT >= 31) renderEffect = android.graphics.RenderEffect.createBlurEffect(36f, 36f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect() } catch (_: Throwable) {} }
+        )
+        com.chris.m3usuite.ui.common.AccentCard(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            accent = Accent
+        ) {
+        Column(Modifier.animateContentSize()) {
         Box(
             modifier = Modifier.clickable(enabled = url != null) { play(fromStart = false) }
         ) {
@@ -247,19 +295,13 @@ fun VodDetailScreen(
             )
         }
 
-        Column(Modifier.padding(16.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                maxLines = 2,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
-                    .clickable(enabled = url != null) { play(fromStart = false) }
-            )
+        Column(Modifier.padding(top = 12.dp)) {
+            Text(text = title, style = MaterialTheme.typography.titleLarge, maxLines = 2, modifier = Modifier.fillMaxWidth().clickable(enabled = url != null) { play(fromStart = false) })
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = com.chris.m3usuite.ui.theme.DesignTokens.Accent.copy(alpha = 0.35f))
 
             Spacer(Modifier.height(8.dp))
 
+            val Accent = if (isAdult) com.chris.m3usuite.ui.theme.DesignTokens.Accent else com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 rating?.let { Text("★ ${"%.1f".format(it)}  ") }
                 duration?.let { Text("• ${it / 60} min") }
@@ -273,15 +315,15 @@ fun VodDetailScreen(
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (resumeSecs != null) {
-                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { play(false) }, label = { Text("Fortsetzen ab ${fmt(resumeSecs!!)}") })
+                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { play(false) }, label = { Text("Fortsetzen ab ${fmt(resumeSecs!!)}") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.22f)))
                     AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { clearResume() }, label = { Text("Zurücksetzen") })
-                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume(max(0, (resumeSecs ?: 0) - 30)) }, label = { Text("-30s") })
-                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume((resumeSecs ?: 0) + 30) }, label = { Text("+30s") })
-                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume((resumeSecs ?: 0) + 300) }, label = { Text("+5m") })
+                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume(max(0, (resumeSecs ?: 0) - 30)) }, label = { Text("-30s") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.16f)))
+                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume((resumeSecs ?: 0) + 30) }, label = { Text("+30s") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.16f)))
+                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume((resumeSecs ?: 0) + 300) }, label = { Text("+5m") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.16f)))
                 } else {
-                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume(0) }, label = { Text("Resume setzen (0:00)") })
+                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume(0) }, label = { Text("Resume setzen (0:00)") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.20f)))
                 }
-                AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { play(true) }, label = { Text("Von Anfang") })
+                AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { play(true) }, label = { Text("Von Anfang") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.22f)))
             }
 
             Spacer(Modifier.height(12.dp))
@@ -304,6 +346,7 @@ fun VodDetailScreen(
                 color = MaterialTheme.colorScheme.secondary
             )
         }
+        }
     }
 
     if (showGrantSheet) KidSelectSheet(onConfirm = { kidIds ->
@@ -317,6 +360,7 @@ fun VodDetailScreen(
         showRevokeSheet = false
     }, onDismiss = { showRevokeSheet = false })
 }}
+}
 
 private fun fmt(totalSecs: Int): String {
     val s = max(0, totalSecs)

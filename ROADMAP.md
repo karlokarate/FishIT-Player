@@ -162,6 +162,23 @@ Abschnitt **„Daten & Backup“** ergänzen:
 
 ## Spätere Anreicherung (vorbereitet)
 
-- Live: Besseres Mapping `tvg-id` ↔ XMLTV‑Sendernamen (Normalisierung/Alias‑Listen), Anzeigen von Start/End‑Zeit + Fortschrittsbalken.
-- VOD: Heuristiken aus M3U‑Namen (Jahr, Staffel/Episode), De‑Duping nach `sortTitle`, Backdrop/Poster‑Fallbacks.
-- Series: Staffel/Episode aus M3U‑Episoden‑Titeln ableiten und mit Xtream `series_info` verifizieren.
+ - Live: Besseres Mapping `tvg-id` ↔ XMLTV‑Sendernamen (Normalisierung/Alias‑Listen).
+  - VOD: Heuristiken aus M3U‑Namen (Jahr, Staffel/Episode), De‑Duping nach `sortTitle`, Backdrop/Poster‑Fallbacks.
+  - Series: Staffel/Episode aus M3U‑Episoden‑Titeln ableiten und mit Xtream `series_info` verifizieren.
+
+---
+
+Erledigt (EPG) – 2025‑08‑29
+- Persistenter EPG‑Cache (Room `epg_now_next`) inkl. TTL und Bereinigung.
+- XMLTV Multi‑Indexing und Fallback (auch ohne Xtream).
+- Hintergrund‑Worker `EpgRefreshWorker` (15 min) + Scheduling.
+- UI: Live‑Tiles mit Programmtitel + Fortschrittsbalken.
+- Xtream‑Import: Merge `epg_channel_id` aus DB, falls fehlend.
+- Xtream‑Detection: kompaktes URL‑Schema unterstützt.
+
+Erledigt (UI‑Polish) – 2025‑08‑29
+- Einheitliches Accent‑Design (DesignTokens.Accent/KidAccent).
+- Hintergrund‑Polish (Gradient + Glow + geblurrtes App‑Icon) in Settings, Start, Library, PlaylistSetup, ProfileGate/Manager, Live/VOD/Series.
+- „Carded Look“ mit `AccentCard` für Start‑Rows, Library‑Rails und Detail‑Screens.
+- Buttons/Chips akzentuiert (Detail‑CTAs, FilterChips, AssistChips).
+- Touch: Live‑Favoriten nur per Long‑Press verschiebbar; Scroll bleibt smooth.

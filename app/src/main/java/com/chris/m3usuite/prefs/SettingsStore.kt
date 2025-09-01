@@ -248,6 +248,29 @@ class SettingsStore(private val context: Context) {
     suspend fun getFloat(key: Preferences.Key<Float>, default: Float = 0.06f): Float =
         context.dataStore.data.map { it[key] ?: default }.first()
 
+    // Raw dump/restore helpers to avoid multiple DataStore instances elsewhere
+    suspend fun dumpAll(): Map<String, String> =
+        context.dataStore.data.map { prefs ->
+            prefs.asMap().mapKeys { it.key.name }.mapValues { (_, v) -> v?.toString() ?: "" }
+        }.first()
+
+    suspend fun restoreAll(values: Map<String, String>, replace: Boolean) {
+        context.dataStore.edit { prefs ->
+            if (replace) prefs.clear()
+            for ((name, s) in values) {
+                when {
+                    s.equals("true", true) || s.equals("false", true) -> prefs[booleanPreferencesKey(name)] = s.equals("true", true)
+                    s.toLongOrNull() != null -> {
+                        val lv = s.toLong()
+                        if (lv in Int.MIN_VALUE..Int.MAX_VALUE) prefs[intPreferencesKey(name)] = lv.toInt() else prefs[longPreferencesKey(name)] = lv
+                    }
+                    s.toFloatOrNull() != null -> prefs[floatPreferencesKey(name)] = s.toFloat()
+                    else -> prefs[stringPreferencesKey(name)] = s
+                }
+            }
+        }
+    }
+
     // Optional convenience
     suspend fun hasXtream(): Boolean {
         val host = xtHost.first()

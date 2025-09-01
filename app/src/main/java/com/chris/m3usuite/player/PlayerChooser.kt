@@ -50,23 +50,49 @@ object PlayerChooser {
                 )
             }
             else -> {
-                // Immer fragen – einfache Entscheidung: intern vs extern
-                // Wir verwenden hier eine Dialog-Activity-freie Variante: externer sofort,
-                // interner via buildInternal. Für UI-Dialog könntest du eine Sheet-Variante verwenden.
-                // Aus Einfachheitsgründen: Bei "ask" zuerst externer (falls installiert)? – Nein:
-                // wir starten einen kleinen Inline-Chooser per Kotlin (hier: extern bevorzugt).
-                // Wenn du einen echten Dialog willst, sag Bescheid; ich liefere ihn als Composable.
-                val pkg = store.preferredPlayerPkg.first()
-                // Heuristik: Wenn kein bevorzugtes Paket gesetzt ist, fragen wir "intern".
-                if (pkg.isBlank()) buildInternal(startPositionMs)
-                else ExternalPlayer.open(
-                    context = context,
-                    url = url,
-                    headers = headers,
-                    preferredPkg = pkg,
-                    startPositionMs = startPositionMs
-                )
+                // Immer fragen: Dialog mit "Intern" oder "Extern"
+                val wantInternal = askInternalOrExternal(context)
+                if (wantInternal) {
+                    buildInternal(startPositionMs)
+                } else {
+                    val pkg = store.preferredPlayerPkg.first().ifBlank { null }
+                    ExternalPlayer.open(
+                        context = context,
+                        url = url,
+                        headers = headers,
+                        preferredPkg = pkg,
+                        startPositionMs = startPositionMs
+                    )
+                }
             }
         }
+    }
+
+    private suspend fun askInternalOrExternal(context: Context): Boolean {
+        // true -> internal, false -> external
+        return kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+            val act = findActivity(context)
+            if (act == null) {
+                cont.resume(true, onCancellation = null) // Fallback: intern
+                return@suspendCancellableCoroutine
+            }
+            act.runOnUiThread {
+                val dlg = android.app.AlertDialog.Builder(act)
+                    .setTitle("Wie abspielen?")
+                    .setItems(arrayOf("Intern", "Extern")) { d, which ->
+                        cont.resume(which == 0, onCancellation = null)
+                        d.dismiss()
+                    }
+                    .setOnCancelListener { cont.resume(true, onCancellation = null) }
+                    .create()
+                dlg.show()
+            }
+        }
+    }
+
+    private tailrec fun findActivity(ctx: Context?): android.app.Activity? = when (ctx) {
+        is android.app.Activity -> ctx
+        is android.content.ContextWrapper -> findActivity(ctx.baseContext)
+        else -> null
     }
 }

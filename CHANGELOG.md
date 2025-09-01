@@ -16,6 +16,34 @@ All notable changes to this project are documented here. Keep entries concise an
   - Status (nach Änderung): zu testen durch Nutzer
 
 2025-08-29
+- feat(epg): Persistenter EPG-Cache (Room `epg_now_next`) mit Now/Next pro `tvg-id`, inkl. In-Memory TTL.
+  - Dateien: `data/db/Entities.kt`, `data/db/AppDatabase.kt`, `data/repo/EpgRepository.kt`
+- feat(epg): XMLTV Multi-Indexing (`XmlTv.indexNowNext`) für mehrere Kanäle in einem Durchlauf; EPG-Fallback auch ohne Xtream-Creds aktiv.
+  - Dateien: `core/epg/XmlTv.kt`, `data/repo/EpgRepository.kt`
+- feat(epg): Hintergrund-Refresh (WorkManager) alle 15 Minuten; bereinigt veraltete Cache-Daten (>24h).
+  - Dateien: `work/EpgRefreshWorker.kt`, `MainActivity.kt`, `data/repo/PlaylistRepository.kt`
+- feat(ui): Live-Tiles zeigen aktuellen Programmtitel + Fortschrittsbalken.
+  - Datei: `ui/components/rows/HomeRows.kt`
+- feat(xtream): Import fusioniert `epg_channel_id` aus bestehender DB, wenn Provider sie nicht liefert (Match per `streamId`).
+  - Datei: `data/repo/XtreamRepository.kt`
+- fix(xtream): Auto-Detection ergänzt kompaktes URL-Schema `http(s)://host/<user>/<pass>/<id>` (ohne `/live`/Extension).
+  - Datei: `core/xtream/XtreamDetect.kt`
+Status: zu testen durch Nutzer
+
+2025-08-29
+- feat(ui): Einheitliches Accent-Design (DesignTokens) + „Carded Look“ mit `AccentCard`.
+  - Dateien: `ui/theme/DesignTokens.kt`, `ui/common/CardKit.kt`
+- feat(ui): Hintergrund-Polish (Gradient + radialer Glow + geblurrtes App‑Icon) für Settings, Start, Library, PlaylistSetup, ProfileGate/Manager, Live/VOD/Series Detail.
+  - Dateien: diverse `ui/screens/*`, `ui/home/StartScreen.kt`, `ui/auth/ProfileGate.kt`, `ui/profile/ProfileManagerScreen.kt`
+- feat(ui): Kids‑Profile mit kräftigem KidAccent (#FF5E5B) und stärkerem Glow.
+  - Dateien: `ui/theme/DesignTokens.kt`, Hintergründe in Screens
+- feat(ui): CTAs/Chips: Akzentuierte Buttons und Chips (Assist/Filter) auf Detail‑Screens.
+  - Dateien: `ui/screens/VodDetailScreen.kt`, `ui/screens/SeriesDetailScreen.kt`, `ui/screens/LiveDetailScreen.kt`
+- fix(ui/touch): Reordering der Live‑Favoriten nur per Long‑Press; Scrollen auf Touch bleibt flüssig.
+  - Datei: `ui/components/rows/HomeRows.kt` (detectDragGesturesAfterLongPress)
+Status: zu testen durch Nutzer
+
+2025-08-29
 - fix(playback): Einheitliche Header (User-Agent/Referer) auch für VOD/Serie/Resume und Live-Preview gesetzt; Live-Tile-Preview nutzt nun MediaSource mit DefaultHttpDataSource und Default-Request-Properties.
   - Dateien: `ui/screens/VodDetailScreen.kt`, `ui/screens/SeriesDetailScreen.kt`, `ui/components/ResumeCarousel.kt`, `ui/components/rows/HomeRows.kt`
   - Status (vor Änderung): nicht funktionierend (302/Redirect ohne Header)
@@ -44,8 +72,11 @@ All notable changes to this project are documented here. Keep entries concise an
 - feat(settings): Sichtbare Schaltfläche „EPG testen (Debug)“ unter Quelle.
   - Datei: `ui/screens/SettingsScreen.kt`
   - Status (nach Änderung): zu testen durch Nutzer
- - feat(export): M3U Export in Settings – Teilen als Text oder als Datei speichern (Playlist aus DB generiert inkl. url-tvg, LIVE+VOD URLs).
+- feat(export): M3U Export in Settings – Teilen als Text oder als Datei speichern (Playlist aus DB generiert inkl. url-tvg, LIVE+VOD URLs).
   - Dateien: `core/m3u/M3UExporter.kt`, `ui/screens/SettingsScreen.kt`
+  - Status (nach Änderung): zu testen durch Nutzer
+ - fix(export): Teilen als Datei (FileProvider) statt EXTRA_TEXT, um `TransactionTooLargeException` bei großen Playlists zu vermeiden; Provider/paths korrigiert.
+  - Dateien: `ui/screens/SettingsScreen.kt`, `app/src/main/res/xml/file_paths.xml`
   - Status (nach Änderung): zu testen durch Nutzer
 - fix(xtream): Schonendes Port‑Update in `configureFromM3uUrl()` (passt nur Port an, wenn Host übereinstimmt); Output nur setzen, wenn leer.
   - Datei: `data/repo/XtreamRepository.kt`

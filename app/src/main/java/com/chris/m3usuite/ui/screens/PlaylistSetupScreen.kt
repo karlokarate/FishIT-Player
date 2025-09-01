@@ -4,7 +4,19 @@ import android.app.Activity
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import android.os.Build
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import com.chris.m3usuite.ui.theme.DesignTokens
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.background
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -52,7 +64,12 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
         ref = TextFieldValue(savedRef)
     }
 
-    Column(Modifier.padding(16.dp)) {
+    Box(Modifier.fillMaxSize()) {
+        val Accent = DesignTokens.Accent
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to MaterialTheme.colorScheme.background, 1f to MaterialTheme.colorScheme.surface)))
+        Box(Modifier.matchParentSize().background(Brush.radialGradient(colors = listOf(Accent.copy(alpha = 0.12f), androidx.compose.ui.graphics.Color.Transparent), radius = with(LocalDensity.current) { 640.dp.toPx() })))
+        Image(painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch), contentDescription = null, modifier = Modifier.align(Alignment.Center).size(520.dp).graphicsLayer { alpha = 0.05f; try { if (Build.VERSION.SDK_INT >= 31) renderEffect = android.graphics.RenderEffect.createBlurEffect(34f, 34f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect() } catch (_: Throwable) {} })
+    com.chris.m3usuite.ui.common.AccentCard(modifier = Modifier.padding(16.dp)) {
         Text("Setup", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(8.dp))
 
@@ -122,8 +139,9 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
                     }
                 }
             }
-        ) {
+        , colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.Accent, contentColor = androidx.compose.ui.graphics.Color.Black)) {
             Text(if (busy) "Bitte warten…" else "Speichern & Importieren")
         }
     }
+}
 }

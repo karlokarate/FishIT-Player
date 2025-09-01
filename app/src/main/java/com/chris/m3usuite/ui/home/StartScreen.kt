@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.background
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -39,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import com.chris.m3usuite.ui.fx.FadeThrough
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -66,6 +68,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 // removed unused zIndex/IntOffset/animateFloatAsState/mutableStateListOf
 import com.chris.m3usuite.data.repo.MediaQueryRepository
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import android.os.Build
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import com.chris.m3usuite.ui.theme.DesignTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,20 +113,21 @@ fun StartScreen(
             val rawSeries = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("series", 2000, 0) }
             val rawMovies = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("vod", 2000, 0) }
             val rawTv = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("live", 2000, 0) }
-            series = sortByYearDesc(rawSeries, { it.year }, { it.name })
-            movies = sortByYearDesc(rawMovies, { it.year }, { it.name })
-            tv = filterGermanTv(rawTv, { null }, { null }, { it.categoryName }, { it.name })
+            series = sortByYearDesc(rawSeries, { it.year }, { it.name }).distinctBy { it.id }
+            movies = sortByYearDesc(rawMovies, { it.year }, { it.name }).distinctBy { it.id }
+            tv = filterGermanTv(rawTv, { null }, { null }, { it.categoryName }, { it.name }).distinctBy { it.id }
         }
     }
 
     // Favorites for live row on Home
     val favCsv by store.favoriteLiveIdsCsv.collectAsState(initial = "")
     LaunchedEffect(favCsv, isKid) {
-        val idsList = favCsv.split(',').mapNotNull { it.toLongOrNull() }
-        favLive = if (idsList.isEmpty()) emptyList() else withContext(kotlinx.coroutines.Dispatchers.IO) {
+        // Always sanitize favorites: numeric, distinct, existing only
+        val ids = favCsv.split(',').mapNotNull { it.toLongOrNull() }.distinct()
+        favLive = if (ids.isEmpty()) emptyList() else withContext(kotlinx.coroutines.Dispatchers.IO) {
             val all = mediaRepo.listByTypeFiltered("live", 6000, 0)
             val map = all.associateBy { it.id }
-            idsList.mapNotNull { map[it] }
+            ids.mapNotNull { map[it] }.distinctBy { it.id }
         }
     }
 
@@ -146,9 +158,9 @@ fun StartScreen(
                 val rawSeries = dao.listByType("series", 2000, 0)
                 val rawMovies = dao.listByType("vod", 2000, 0)
                 val rawTv = dao.listByType("live", 2000, 0)
-                series = sortByYearDesc(rawSeries, { it.year }, { it.name })
-                movies = sortByYearDesc(rawMovies, { it.year }, { it.name })
-                tv = filterGermanTv(rawTv, { null }, { null }, { it.categoryName }, { it.name })
+                series = sortByYearDesc(rawSeries, { it.year }, { it.name }).distinctBy { it.id }
+                movies = sortByYearDesc(rawMovies, { it.year }, { it.name }).distinctBy { it.id }
+                tv = filterGermanTv(rawTv, { null }, { null }, { it.categoryName }, { it.name }).distinctBy { it.id }
             }
         },
         bottomBar = if (isKid) ({}) else {
@@ -174,22 +186,142 @@ fun StartScreen(
             }
         }
     ) { pads ->
+        val Accent = if (isKid) DesignTokens.KidAccent else DesignTokens.Accent
         Box(Modifier.fillMaxSize().padding(pads)) {
+            // Background
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to MaterialTheme.colorScheme.background,
+                            1f to MaterialTheme.colorScheme.surface
+                        )
+                    )
+            )
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(Accent.copy(alpha = if (isKid) 0.22f else 0.14f), Color.Transparent),
+                            radius = with(LocalDensity.current) { 680.dp.toPx() }
+                        )
+                    )
+            )
+            Image(
+                painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(560.dp)
+                    .graphicsLayer {
+                        alpha = 0.05f
+                        try { if (Build.VERSION.SDK_INT >= 31) renderEffect = android.graphics.RenderEffect.createBlurEffect(38f, 38f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect() } catch (_: Throwable) {}
+                    }
+            )
             LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
                 item("hdr_series") {
                     Text("Serien", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 2.dp))
                 }
                 item("row_series") {
-                    Box(Modifier.padding(horizontal = 0.dp)) {
-                        SeriesRow(items = series, onClick = { mi -> openSeries(mi.id) })
+                    com.chris.m3usuite.ui.common.AccentCard(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        accent = Accent
+                    ) {
+                        SeriesRow(
+                            items = series,
+                            onOpenDetails = { mi -> openSeries(mi.id) },
+                            onPlayDirect = { mi ->
+                                scope.launch {
+                                    val sid = mi.streamId ?: return@launch
+                                    val dbLocal = DbProvider.get(ctx)
+                                    val storeLocal = store
+                                    val last = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        dbLocal.resumeDao().recentEpisodes(50).firstOrNull { it.seriesStreamId == sid }
+                                    }
+                                    val ep = if (last != null) withContext(kotlinx.coroutines.Dispatchers.IO) { dbLocal.episodeDao().byEpisodeId(last.episodeId) } else {
+                                        val seasons = withContext(kotlinx.coroutines.Dispatchers.IO) { dbLocal.episodeDao().seasons(sid) }
+                                        val firstSeason = seasons.firstOrNull()
+                                        firstSeason?.let { fs -> withContext(kotlinx.coroutines.Dispatchers.IO) { dbLocal.episodeDao().episodes(sid, fs).firstOrNull() } }
+                                    }
+                                    if (ep != null) {
+                                        val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(
+                                            host = storeLocal.xtHost.first(),
+                                            port = storeLocal.xtPort.first(),
+                                            username = storeLocal.xtUser.first(),
+                                            password = storeLocal.xtPass.first(),
+                                            output = storeLocal.xtOutput.first()
+                                        )
+                                        val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                                        val headers = buildMap<String,String> {
+                                            val ua = storeLocal.userAgent.first(); val ref = storeLocal.referer.first()
+                                            if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref)
+                                        }
+                                        com.chris.m3usuite.player.PlayerChooser.start(
+                                            context = ctx,
+                                            store = storeLocal,
+                                            url = playUrl,
+                                            headers = headers,
+                                            startPositionMs = last?.positionSecs?.toLong()?.times(1000)
+                                        ) { s ->
+                                            val encoded = java.net.URLEncoder.encode(playUrl, java.nio.charset.StandardCharsets.UTF_8.name())
+                                            navController.navigate("player?url=$encoded&type=series&episodeId=${ep.episodeId}&startMs=${s ?: -1}")
+                                        }
+                                    }
+                                }
+                            },
+                            onAssignToKid = { mi ->
+                                scope.launch {
+                                    val kids = withContext(kotlinx.coroutines.Dispatchers.IO) { DbProvider.get(ctx).profileDao().all().filter { it.type == "kid" } }
+                                    // Quick assign to all kids for simplicity; could show sheet later
+                                    withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                        kids.forEach { repo.allow(it.id, "series", mi.id) }
+                                    }
+                                }
+                            }
+                        )
                     }
                 }
                 item("hdr_movies") {
                     Text("Filme", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 2.dp))
                 }
                 item("row_movies") {
-                    Box(Modifier.padding(horizontal = 0.dp)) {
-                        VodRow(items = movies, onClick = { mi -> openVod(mi.id) })
+                    com.chris.m3usuite.ui.common.AccentCard(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        accent = Accent
+                    ) {
+                        VodRow(
+                            items = movies,
+                            onOpenDetails = { mi -> openVod(mi.id) },
+                            onPlayDirect = { mi ->
+                                scope.launch {
+                                    val url = mi.url ?: return@launch
+                                    val headers = buildMap<String,String> {
+                                        val ua = store.userAgent.first(); val ref = store.referer.first()
+                                        if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref)
+                                    }
+                                    com.chris.m3usuite.player.PlayerChooser.start(
+                                        context = ctx,
+                                        store = store,
+                                        url = url,
+                                        headers = headers,
+                                        startPositionMs = withContext(kotlinx.coroutines.Dispatchers.IO) { DbProvider.get(ctx).resumeDao().getVod(mi.id)?.positionSecs?.toLong()?.times(1000) }
+                                    ) { s ->
+                                        val encoded = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8.name())
+                                        navController.navigate("player?url=$encoded&type=vod&mediaId=${mi.id}&startMs=${s ?: -1}")
+                                    }
+                                }
+                            },
+                            onAssignToKid = { mi ->
+                                scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                    val kids = DbProvider.get(ctx).profileDao().all().filter { it.type == "kid" }
+                                    val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                    kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                }
+                            }
+                        )
                     }
                 }
                 // TV (favorisierte Kanäle). Wenn leer: Plus-Kachel zum Hinzufügen.
@@ -211,19 +343,49 @@ fun StartScreen(
                                 }
                             }
                         } else {
-                            com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
-                                items = favLive,
-                                onOpen = { openLive(it) },
-                                onAdd = { showLivePicker = true },
-                                onReorder = { newOrder -> scope.launch { store.setFavoriteLiveIdsCsv(newOrder.joinToString(",")) } },
-                                onRemove = { removeIds ->
-                                    scope.launch {
-                                        val current = store.favoriteLiveIdsCsv.first().split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
-                                        current.removeAll(removeIds.toSet())
-                                        store.setFavoriteLiveIdsCsv(current.joinToString(","))
+                            com.chris.m3usuite.ui.common.AccentCard(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                accent = Accent
+                            ) {
+                                FadeThrough(key = favLive.size) {
+                                    androidx.compose.foundation.layout.Column {
+                                        com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
+                                            items = favLive,
+                                            onOpen = { openLive(it) },
+                                            onPlay = { id ->
+                                                scope.launch {
+                                                    val mi = favLive.firstOrNull { it.id == id } ?: return@launch
+                                                    val url = mi.url ?: return@launch
+                                                    val headers = buildMap<String, String> {
+                                                        val ua = store.userAgent.first(); val ref = store.referer.first()
+                                                        if (ua.isNotBlank()) put("User-Agent", ua)
+                                                        if (ref.isNotBlank()) put("Referer", ref)
+                                                    }
+                                                    com.chris.m3usuite.player.PlayerChooser.start(
+                                                        context = ctx,
+                                                        store = store,
+                                                        url = url,
+                                                        headers = headers,
+                                                        startPositionMs = null
+                                                    ) { startMs ->
+                                                        val encoded = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8.name())
+                                                        navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}")
+                                                    }
+                                                }
+                                            },
+                                            onAdd = { showLivePicker = true },
+                                            onReorder = { newOrder -> scope.launch { store.setFavoriteLiveIdsCsv(newOrder.joinToString(",")) } },
+                                            onRemove = { removeIds ->
+                                                scope.launch {
+                                                    val current = store.favoriteLiveIdsCsv.first().split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
+                                                    current.removeAll(removeIds.toSet())
+                                                    store.setFavoriteLiveIdsCsv(current.joinToString(","))
+                                                }
+                                            }
+                                        )
                                     }
                                 }
-                            )
+                            }
                         }
                     }
                 }
@@ -258,7 +420,7 @@ fun StartScreen(
                         val matchQ = if (q.isBlank()) true else item.name.lowercase().contains(q) || (item.categoryName ?: "").lowercase().contains(q)
                         val matchP = provider?.let { p -> (item.categoryName ?: "").contains(p, ignoreCase = true) } ?: true
                         matchQ && matchP
-                    }
+                    }.distinctBy { it.id }
                 }
                 LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 180.dp), contentPadding = PaddingValues(bottom = 80.dp), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(filtered, key = { it.id }) { mi ->
