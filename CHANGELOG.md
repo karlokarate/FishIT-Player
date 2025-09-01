@@ -3,6 +3,9 @@
 
 All notable changes to this project are documented here. Keep entries concise and tied to commits/PRs.
 
+2025-09-01
+- Docs: ROADMAP erweitert um „Performance & Reliability Plan (Top 5)“: Header/HTTP‑Zentralisierung, WorkManager‑Idempotenz, UI‑Lifecycle/Struktur‑Härtung, Streaming‑Exporter + Batch‑I/O, DataStore/EPG‑Hygiene. Siehe Commit 1fbbb49.
+
 2025-08-29
 - Docs: Rebuilt `ARCHITECTURE_OVERVIEW.md` from latest `AGENTS_NEW.md` overview.
 - Docs: Refreshed `AGENTS.md` (policies, quick build/test, summary).
