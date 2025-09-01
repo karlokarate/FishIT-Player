@@ -9,6 +9,38 @@ Zielbild:
 
 ---
 
+## Performance & Reliability Plan (Top 5)
+
+- HTTP/Headers vereinheitlichen
+  - Zentralen `RequestHeadersProvider` + `HttpClientFactory` einführen (ExoPlayer, Live‑Preview, Coil, External Player).
+  - Einheitliches Header‑Merging (User‑Agent/Referer/`extraHeadersJson`) und konsistente Redirect‑Policy.
+  - Intent‑Header‑Mapper (Bundle + VLC `String[]`) bereitstellen; Duplikate in `InternalPlayerScreen`, `HomeRows`, `ExternalPlayer` entfernen.
+
+- WorkManager entkoppeln und idempotent machen
+  - Scheduling‑Gateway mit Unique‑Names (Periodic + OneTime) und klaren `KEEP/REPLACE`‑Policies.
+  - Startup/Settings/Import auf das Gateway umstellen; „Sofort ausführen“ als Unique OneTimeWork; Doppel‑Enqueues eliminieren.
+
+- UI‑Lifecycle + Strukturhärtung
+  - Überall `collectAsStateWithLifecycle()` statt `collectAsState()`; Side‑Effects über `repeatOnLifecycle`.
+  - Monolithische Screens (Library, InternalPlayer, Episodes, Start) in kleinere Composables splitten; State hoisten; stabile Keys/`rememberLazy*State`; Such‑Debounce; teure Berechnungen off‑thread.
+  - JankStats aktivieren; Cold/Warm‑Start messen.
+
+- Streaming‑Exporter + Batch‑I/O
+  - `M3UExporter` auf streamingfähiges Schreiben (Writer/Uri) umstellen; DB‑Reads paginieren (z. B. 5k‑Batches).
+  - Große `StringBuilder` vermeiden; Speicher‑Peak und Export‑Latenz deutlich senken.
+
+- Repo/Settings‑Hygiene für globale Performance
+  - EPG ausschließlich über `EpgRepository`; Altpfade entfernen; Cache als LRU mit TTL begrenzen.
+  - DataStore‑Writes batchen (z. B. `setXtream` in einer `edit {}`); „SettingsSnapshot“ für mehrfaches `first()`.
+  - Unused Imports/Funktionen aufräumen; Detekt/Ktlint schärfen; Logging in Hotpaths drosseln.
+
+### Aufgaben (Plan 5‑Punkte)
+- [ ] RequestHeadersProvider + HttpClientFactory erstellen; Player/Preview/Coil/External aufrufen umstellen.
+- [ ] Scheduling‑Gateway einführen; Unique Work (Periodic/OneTime) konsolidieren; UI‑Trigger anpassen.
+- [ ] Lifecycle‑Sammlung migrieren; große Screens aufteilen; JankStats + Start‑Metriken aktivieren.
+- [ ] `M3UExporter` auf Streaming + Batching migrieren.
+- [ ] DataStore‑Batch‑Edits & SettingsSnapshot; EPG‑Altpfade entfernen; LRU+TTL finalisieren.
+
 ## 0) Architekturentscheidungen
 
 - **Export‑Format**: JSON (`m3usuite-settings-v1.json`)  
