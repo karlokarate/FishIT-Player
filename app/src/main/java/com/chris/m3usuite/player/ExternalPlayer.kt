@@ -43,8 +43,13 @@ object ExternalPlayer {
         fun putHeaders(i: Intent) {
             val b = Bundle()
             headers.forEach { (k,v) -> b.putString(k,v) }
-            i.putExtra("headers", b)
+            // Standard Android/most players: Bundle under the standard key
             i.putExtra("android.media.intent.extra.HTTP_HEADERS", b)
+            // VLC expects String[] of "Key: Value" under the "headers" key
+            if (headers.isNotEmpty()) {
+                val asArray = headers.entries.map { (k,v) -> "$k: $v" }.toTypedArray()
+                i.putExtra("headers", asArray)
+            }
         }
         if (headers.isNotEmpty()) { putHeaders(typed); putHeaders(generic); putHeaders(dataOnly) }
 
