@@ -57,6 +57,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -98,6 +99,8 @@ fun LiveDetailScreen(id: Long) {
     // EPG-Infos
     var epgNow by remember { mutableStateOf("") }
     var epgNext by remember { mutableStateOf("") }
+    var nowStartMs by remember { mutableStateOf<Long?>(null) }
+    var nowEndMs by remember { mutableStateOf<Long?>(null) }
     var showEpg by rememberSaveable { mutableStateOf(false) } // Overlay behält Zustand bei Rotation
 
     // --- Interner Player Zustand (Fullscreen) ---
@@ -124,7 +127,25 @@ fun LiveDetailScreen(id: Long) {
             val list = runCatching { EpgRepository(ctx, store).nowNext(item.streamId!!, 2) }.getOrDefault(emptyList())
             epgNow = list.getOrNull(0)?.title.orEmpty()
             epgNext = list.getOrNull(1)?.title.orEmpty()
-        } else { epgNow = ""; epgNext = "" }
+            nowStartMs = list.getOrNull(0)?.start?.toLongOrNull()?.let { it * 1000 }
+            nowEndMs = list.getOrNull(0)?.end?.toLongOrNull()?.let { it * 1000 }
+        } else { epgNow = ""; epgNext = ""; nowStartMs = null; nowEndMs = null }
+    }
+
+    // Observe DB for immediate seeding/updates from prefetch (favorites or background)
+    LaunchedEffect(id) {
+        val item = db.mediaDao().byId(id) ?: return@LaunchedEffect
+        val ch = item.epgChannelId?.trim()
+        if (!ch.isNullOrEmpty()) {
+            db.epgDao().observeByChannel(ch).collect { row ->
+                if (row != null) {
+                    epgNow = row.nowTitle.orEmpty()
+                    epgNext = row.nextTitle.orEmpty()
+                    nowStartMs = row.nowStartMs
+                    nowEndMs = row.nowEndMs
+                }
+            }
+        }
     }
 
     // Header für den VIDEO-Request (nicht für Bilder)
@@ -296,9 +317,50 @@ fun LiveDetailScreen(id: Long) {
                 }
         )
 
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+
         Spacer(Modifier.height(8.dp))
-        if (epgNow.isNotBlank()) Text("Jetzt: $epgNow")
-        if (epgNext.isNotBlank()) Text("Danach: $epgNext")
+        if (epgNow.isNotBlank() || epgNext.isNotBlank()) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.70f))
+                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), CircleShape)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    if (epgNow.isNotBlank()) {
+                        val meta = if (nowStartMs != null && nowEndMs != null && nowEndMs!! > nowStartMs!!) {
+                            val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                            val range = fmt.format(java.util.Date(nowStartMs!!)) + "–" + fmt.format(java.util.Date(nowEndMs!!))
+                            val rem = ((nowEndMs!! - System.currentTimeMillis()).coerceAtLeast(0L) / 60000L).toInt()
+                            " $range • noch ${rem}m"
+                        } else ""
+                        Text(
+                            text = "Jetzt: $epgNow$meta",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
+                    if (epgNext.isNotBlank()) {
+                        Text(
+                            text = "Danach: $epgNext",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(12.dp))
 
         // Direkter Play-Button -> Playerwahl (intern/extern/fragen)

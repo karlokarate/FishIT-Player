@@ -76,6 +76,13 @@ object Keys {
 
     // Home selections
     val FAV_LIVE_IDS_CSV = stringPreferencesKey("fav_live_ids_csv")
+    // EPG behavior toggles
+    val EPG_FAV_USE_XTREAM = booleanPreferencesKey("epg_fav_use_xtream")
+    val EPG_FAV_SKIP_XMLTV_IF_X_OK = booleanPreferencesKey("epg_fav_skip_xmltv_if_xtream_ok")
+
+    // Live TV category rows: collapsed set + expansion order (CSV of category keys)
+    val LIVE_CAT_COLLAPSED_CSV = stringPreferencesKey("live_cat_collapsed_csv")
+    val LIVE_CAT_EXPANDED_ORDER_CSV = stringPreferencesKey("live_cat_expanded_order_csv")
 }
 
 class SettingsStore(private val context: Context) {
@@ -139,6 +146,12 @@ class SettingsStore(private val context: Context) {
     val episodeSnapshotIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.EPISODE_SNAPSHOT_IDS_CSV].orEmpty() }
     val lastAppStartMs: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_APP_START_MS] ?: 0L }
     val favoriteLiveIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.FAV_LIVE_IDS_CSV].orEmpty() }
+    val epgFavUseXtream: Flow<Boolean> = context.dataStore.data.map { it[Keys.EPG_FAV_USE_XTREAM] ?: true }
+    val epgFavSkipXmltvIfXtreamOk: Flow<Boolean> = context.dataStore.data.map { it[Keys.EPG_FAV_SKIP_XMLTV_IF_X_OK] ?: false }
+
+    // Live category rows state
+    val liveCatCollapsedCsv: Flow<String> = context.dataStore.data.map { it[Keys.LIVE_CAT_COLLAPSED_CSV].orEmpty() }
+    val liveCatExpandedOrderCsv: Flow<String> = context.dataStore.data.map { it[Keys.LIVE_CAT_EXPANDED_ORDER_CSV].orEmpty() }
 
     // -------- Setzen --------
     suspend fun set(key: Preferences.Key<String>, value: String) {
@@ -234,6 +247,8 @@ class SettingsStore(private val context: Context) {
     suspend fun setEpisodeSnapshotIdsCsv(csv: String) { context.dataStore.edit { it[Keys.EPISODE_SNAPSHOT_IDS_CSV] = csv } }
     suspend fun setLastAppStartMs(value: Long) { context.dataStore.edit { it[Keys.LAST_APP_START_MS] = value } }
     suspend fun setFavoriteLiveIdsCsv(csv: String) { context.dataStore.edit { it[Keys.FAV_LIVE_IDS_CSV] = csv } }
+    suspend fun setEpgFavUseXtream(value: Boolean) { context.dataStore.edit { it[Keys.EPG_FAV_USE_XTREAM] = value } }
+    suspend fun setEpgFavSkipXmltvIfXtreamOk(value: Boolean) { context.dataStore.edit { it[Keys.EPG_FAV_SKIP_XMLTV_IF_X_OK] = value } }
 
     // -------- Optional: direktes Abfragen --------
     suspend fun getString(key: Preferences.Key<String>, default: String = ""): String =
@@ -278,4 +293,8 @@ class SettingsStore(private val context: Context) {
         val pass = xtPass.first()
         return host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()
     }
+
+    // Live category rows state setters
+    suspend fun setLiveCatCollapsedCsv(value: String) { context.dataStore.edit { it[Keys.LIVE_CAT_COLLAPSED_CSV] = value } }
+    suspend fun setLiveCatExpandedOrderCsv(value: String) { context.dataStore.edit { it[Keys.LIVE_CAT_EXPANDED_ORDER_CSV] = value } }
 }

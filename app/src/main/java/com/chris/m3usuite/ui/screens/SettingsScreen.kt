@@ -333,6 +333,17 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = tfColors
             )
+            // EPG behavior
+            val favUseXtream by store.epgFavUseXtream.collectAsState(initial = true)
+            val favSkipXmltv by store.epgFavSkipXmltvIfXtreamOk.collectAsState(initial = false)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Favoriten-EPG via Xtream (falls konfiguriert)", modifier = Modifier.weight(1f))
+                Switch(checked = favUseXtream, onCheckedChange = { v -> scope.launch { store.setEpgFavUseXtream(v) } })
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Aggressiv: XMLTV für Favoriten überspringen, wenn Xtream liefert", modifier = Modifier.weight(1f))
+                Switch(checked = favSkipXmltv, onCheckedChange = { v -> scope.launch { store.setEpgFavSkipXmltvIfXtreamOk(v) } })
+            }
             OutlinedTextField(
                 value = ua,
                 onValueChange = { scope.launch { store.set(Keys.USER_AGENT, it) } },
@@ -557,18 +568,31 @@ private fun ExternalPlayerPickerButton(onPick: (String) -> Unit) {
     if (!show) return
     val pm = ctx.packageManager
     val list = remember {
-        val i1 = android.content.Intent(android.content.Intent.ACTION_VIEW).apply { type = "video/*" }
-        val i2 = android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/sample.m3u8"), "application/vnd.apple.mpegurl") }
-        val i3 = android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/sample.mp4"), "video/mp4") }
-        val flags = android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
-        val a = pm.queryIntentActivities(i1, flags)
-        val b = pm.queryIntentActivities(i2, flags)
-        val c = pm.queryIntentActivities(i3, flags)
-        val all = (a + b + c)
-            .filter { it.activityInfo.packageName != ctx.packageName }
+        val intents = listOf(
+            // Broad video handler
+            android.content.Intent(android.content.Intent.ACTION_VIEW).apply { type = "video/*" },
+            // Common streaming/container types
+            android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/sample.m3u8"), "application/vnd.apple.mpegurl") },
+            android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/sample.m3u8"), "application/x-mpegurl") },
+            android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/sample.mpd"), "application/dash+xml") },
+            android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/sample.ts"), "video/MP2T") },
+            android.content.Intent(android.content.Intent.ACTION_VIEW).apply { setDataAndType(android.net.Uri.parse("http://example.com/sample.mp4"), "video/mp4") },
+            // Data-only fallback (some players accept ACTION_VIEW with just data)
+            android.content.Intent(android.content.Intent.ACTION_VIEW).apply { data = android.net.Uri.parse("http://example.com/stream") }
+        )
+        val flagSets = listOf(0, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+        val results = mutableListOf<android.content.pm.ResolveInfo>()
+        for (intent in intents) {
+            for (flags in flagSets) {
+                try {
+                    results += pm.queryIntentActivities(intent, flags)
+                } catch (_: Throwable) { /* ignore */ }
+            }
+        }
+        results
+            .filter { it.activityInfo?.packageName != null && it.activityInfo.packageName != ctx.packageName }
             .distinctBy { it.activityInfo.packageName }
             .sortedBy { it.loadLabel(pm)?.toString() ?: it.activityInfo.packageName }
-        all
     }
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = { show = false }) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -164,30 +164,53 @@ fun LiveTileCard(
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
     val store = remember { SettingsStore(ctx) }
+    val db = remember { DbProvider.get(ctx) }
     val ua by store.userAgent.collectAsState(initial = "")
     val ref by store.referer.collectAsState(initial = "")
     val extraJson by store.extraHeadersJson.collectAsState(initial = "")
-    var epg by remember { mutableStateOf("") }
+    var epgNow by remember { mutableStateOf("") }
+    var epgNext by remember { mutableStateOf("") }
+    var nowStartMs by remember { mutableStateOf<Long?>(null) }
+    var nowEndMs by remember { mutableStateOf<Long?>(null) }
     var epgProgress by remember { mutableStateOf<Float?>(null) }
     var focused by remember { mutableStateOf(false) }
     var preview by remember { mutableStateOf(false) }
-    LaunchedEffect(item.streamId) {
+    // Show cached EPG immediately if present (reactive to DB updates from prefetch)
+    val epgChannelId = remember(item.epgChannelId) { item.epgChannelId?.trim().orEmpty() }
+    if (epgChannelId.isNotEmpty()) {
+        val row by remember(epgChannelId) { db.epgDao().observeByChannel(epgChannelId) }.collectAsState(initial = null)
+        LaunchedEffect(row?.updatedAt) {
+            epgNow = row?.nowTitle.orEmpty()
+            epgNext = row?.nextTitle.orEmpty()
+            nowStartMs = row?.nowStartMs
+            nowEndMs = row?.nowEndMs
+            epgProgress = if (nowStartMs != null && nowEndMs != null && nowEndMs!! > nowStartMs!!) {
+                val now = System.currentTimeMillis()
+                ((now - nowStartMs!!).coerceAtLeast(0).toFloat() / (nowEndMs!! - nowStartMs!!).toFloat()).coerceIn(0f, 1f)
+            } else null
+        }
+    }
+
+    // Load EPG when tile becomes active (focused). Prefetch happens separately for favorites.
+    LaunchedEffect(item.streamId, focused) {
+        val sid = item.streamId ?: return@LaunchedEffect
+        if (!focused) return@LaunchedEffect
         try {
-            val sid = item.streamId
-            if (sid != null) {
-                val repo = EpgRepository(ctx, SettingsStore(ctx))
-                val list = repo.nowNext(sid, 1)
-                val first = list.firstOrNull()
-                epg = first?.title.orEmpty()
-                val start = first?.start?.toLongOrNull()?.let { it * 1000 }
-                val end = first?.end?.toLongOrNull()?.let { it * 1000 }
-                if (start != null && end != null && end > start) {
-                    val now = System.currentTimeMillis()
-                    val progress = ((now - start).coerceAtLeast(0).toFloat() / (end - start).toFloat()).coerceIn(0f, 1f)
-                    epgProgress = progress
-                } else epgProgress = null
-            }
-        } catch (_: Throwable) { epg = "" }
+            val repo = EpgRepository(ctx, SettingsStore(ctx))
+            val list = repo.nowNext(sid, 2)
+            val first = list.getOrNull(0)
+            val second = list.getOrNull(1)
+            epgNow = first?.title.orEmpty()
+            epgNext = second?.title.orEmpty()
+            val start = first?.start?.toLongOrNull()?.let { it * 1000 }
+            val end = first?.end?.toLongOrNull()?.let { it * 1000 }
+            nowStartMs = start; nowEndMs = end
+            if (start != null && end != null && end > start) {
+                val now = System.currentTimeMillis()
+                val progress = ((now - start).coerceAtLeast(0).toFloat() / (end - start).toFloat()).coerceIn(0f, 1f)
+                epgProgress = progress
+            } else epgProgress = null
+        } catch (_: Throwable) { epgNow = ""; epgNext = "" }
     }
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
@@ -346,24 +369,45 @@ fun LiveTileCard(
                     .background(Color(0xFF1DB954))
             )
 
-            // EPG pill at bottom
-            if (epg.isNotBlank()) {
-                Box(
+            // EPG under logo (now + next)
+            if (epgNow.isNotBlank() || epgNext.isNotBlank()) {
+                Column(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(horizontal = 8.dp, vertical = 10.dp)
+                        .align(Alignment.Center)
+                        .padding(top = 96.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.80f))
+                        .background(Color.Black.copy(alpha = 0.70f))
                         .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = epg,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
+                    if (epgNow.isNotBlank()) {
+                        val meta = remember(nowStartMs, nowEndMs) {
+                            if (nowStartMs != null && nowEndMs != null && nowEndMs!! > nowStartMs!!) {
+                                val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                                val range = fmt.format(java.util.Date(nowStartMs!!)) + "–" + fmt.format(java.util.Date(nowEndMs!!))
+                                val rem = ((nowEndMs!! - System.currentTimeMillis()).coerceAtLeast(0L) / 60000L).toInt()
+                                " $range • noch ${rem}m"
+                            } else ""
+                        }
+                        Text(
+                            text = "Jetzt: ${epgNow}${meta}",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color.White,
+                            maxLines = 1,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    if (epgNext.isNotBlank()) {
+                        Text(
+                            text = "Danach: ${epgNext}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            maxLines = 1,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
             // Progress bar (current programme)
@@ -380,7 +424,7 @@ fun LiveTileCard(
                         .align(Alignment.BottomStart)
                         .fillMaxWidth(p)
                         .height(3.dp)
-                        .background(MaterialTheme.colorScheme.primary)
+                        .background(Color(0xFF2196F3))
                 )
             }
             Row(

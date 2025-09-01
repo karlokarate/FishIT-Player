@@ -62,6 +62,7 @@ import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.withContext
+import com.chris.m3usuite.work.EpgRefreshWorker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import kotlinx.coroutines.flow.first
 import androidx.compose.ui.input.pointer.pointerInput
@@ -349,6 +350,16 @@ fun StartScreen(
                             ) {
                                 FadeThrough(key = favLive.size) {
                                     androidx.compose.foundation.layout.Column {
+                                        if (favLive.isNotEmpty()) {
+                                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                                TextButton(onClick = {
+                                                    scope.launch {
+                                                        val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+                                                        EpgRefreshWorker.refreshFavoritesNow(ctx, aggressive = aggressive)
+                                                    }
+                                                }) { Text("Jetzt EPG aktualisieren") }
+                                            }
+                                        }
                                         com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
                                             items = favLive,
                                             onOpen = { openLive(it) },
@@ -374,12 +385,18 @@ fun StartScreen(
                                                 }
                                             },
                                             onAdd = { showLivePicker = true },
-                                            onReorder = { newOrder -> scope.launch { store.setFavoriteLiveIdsCsv(newOrder.joinToString(",")) } },
+                                            onReorder = { newOrder -> scope.launch {
+                                                store.setFavoriteLiveIdsCsv(newOrder.joinToString(","))
+                                                val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+                                                runCatching { EpgRefreshWorker.refreshFavoritesNow(ctx, aggressive = aggressive) }
+                                            } },
                                             onRemove = { removeIds ->
                                                 scope.launch {
                                                     val current = store.favoriteLiveIdsCsv.first().split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
                                                     current.removeAll(removeIds.toSet())
                                                     store.setFavoriteLiveIdsCsv(current.joinToString(","))
+                                                    val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+                                                    runCatching { EpgRefreshWorker.refreshFavoritesNow(ctx, aggressive = aggressive) }
                                                 }
                                             }
                                         )
@@ -434,6 +451,8 @@ fun StartScreen(
                     scopePick.launch {
                         val csv = selected.joinToString(",")
                         store.setFavoriteLiveIdsCsv(csv)
+                        val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+                        runCatching { EpgRefreshWorker.refreshFavoritesNow(ctx, aggressive = aggressive) }
                         showLivePicker = false
                     }
                 },
@@ -442,6 +461,8 @@ fun StartScreen(
                     scopePick.launch {
                         val csv = selected.joinToString(",")
                         store.setFavoriteLiveIdsCsv(csv)
+                        val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+                        runCatching { EpgRefreshWorker.refreshFavoritesNow(ctx, aggressive = aggressive) }
                         showLivePicker = false
                     }
                 }, size = 28.dp) }

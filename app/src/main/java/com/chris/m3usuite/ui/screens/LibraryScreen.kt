@@ -567,28 +567,125 @@ fun LibraryScreen(
                         }
                     }
                     "live" -> {
-                        // Live-TV nach Genre gruppieren (Sport, News, Doku, Film, Serie, Musik, Kinder)
-                        val genresForRows = liveGenres
-                        genresForRows.forEach { g ->
-                            val list = allLive.filter { hasGenre(it, g) }
+                        // Live-TV nach Kategorien (group-title) gruppieren, mit einklappbaren Zeilen + persistenter Ordnung
+                        // Category key helper: persist null as empty string
+                        fun keyOf(cat: String?): String = cat ?: ""
+                        fun labelOf(key: String): String = if (key.isEmpty()) "Unbekannt" else key
+
+                        // All categories present in current list (stable set)
+                        val allCats: List<String> = allLive.map { keyOf(it.categoryName?.trim()) }
+                            .distinct()
+                            .sortedBy { it.lowercase() }
+
+                        // Persisted state
+                        val collapsedCsv by store.liveCatCollapsedCsv.collectAsState(initial = "")
+                        val expandedOrderCsv by store.liveCatExpandedOrderCsv.collectAsState(initial = "")
+                        val collapsedSet = remember(collapsedCsv) { collapsedCsv.split(',').filter { it.isNotEmpty() }.toMutableSet() }
+                        val expandedOrder = remember(expandedOrderCsv) { expandedOrderCsv.split(',').filter { it.isNotEmpty() } }
+
+                        // Partition categories
+                        val expandedCats = remember(allCats, collapsedCsv) { allCats.filterNot { it in collapsedSet } }
+                        val collapsedCats = remember(allCats, collapsedCsv) { allCats.filter { it in collapsedSet } }
+
+                        // Expanded display order: recently expanded first, then remaining expanded cats alphabetically
+                        val expandedOrdered = remember(expandedCats, expandedOrderCsv) {
+                            val head = expandedOrder.filter { it in expandedCats }
+                            val tail = expandedCats.filterNot { it in head }.sortedBy { it.lowercase() }
+                            head + tail
+                        }
+
+                        // Controls row: collapse all
+                        item("live_controls") {
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Live-Kategorien", style = MaterialTheme.typography.titleMedium)
+                                TextButton(
+                                    onClick = {
+                                        scope.launch {
+                                            val allCsv = allCats.joinToString(",")
+                                            store.setLiveCatCollapsedCsv(allCsv)
+                                            store.setLiveCatExpandedOrderCsv("")
+                                        }
+                                    },
+                                    enabled = expandedCats.isNotEmpty()
+                                ) { Text("Alle einklappen") }
+                            }
+                        }
+
+                        // Render expanded categories as rows (with clickable category chip above each row)
+                        expandedOrdered.forEach { catKey ->
+                            val catLabel = labelOf(catKey)
+                            val list = allLive.filter { keyOf(it.categoryName?.trim()) == catKey }
                                 .distinctBy { it.id }
-                                .take(50)
+                                .take(200)
                             if (list.isNotEmpty()) {
-                                header(g)
-                                item("live_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { LiveRow(items = list, onOpenDetails = { mi -> openLive(mi.id) }, onPlayDirect = { mi ->
-                                    scope.launch {
-                                        val url = mi.url ?: return@launch
-                                        val headers = buildMap<String, String> {
-                                            val ua = store.userAgent.first(); val ref = store.referer.first()
-                                            if (ua.isNotBlank()) put("User-Agent", ua)
-                                            if (ref.isNotBlank()) put("Referer", ref)
-                                        }
-                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = url, headers = headers, startPositionMs = null) { startMs ->
-                                            val encoded = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8.name())
-                                            navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}")
-                                        }
+                                // Category chip above row: click -> collapse and persist
+                                item("live_cat_chip_$catKey") {
+                                    Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp, bottom = 2.dp)) {
+                                        FilterChip(
+                                            selected = false,
+                                            onClick = {
+                                                scope.launch {
+                                                    val newCollapsed = (collapsedSet + catKey).joinToString(",")
+                                                    // Remove from expanded order (if present)
+                                                    val newOrder = expandedOrder.filterNot { it == catKey }.joinToString(",")
+                                                    store.setLiveCatCollapsedCsv(newCollapsed)
+                                                    store.setLiveCatExpandedOrderCsv(newOrder)
+                                                }
+                                            },
+                                            label = { Text(catLabel) }
+                                        )
                                     }
-                                } ) } }
+                                }
+                                item("live_cat_row_$catKey") {
+                                    Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
+                                        LiveRow(
+                                            items = list,
+                                            onOpenDetails = { mi -> openLive(mi.id) },
+                                            onPlayDirect = { mi ->
+                                                scope.launch {
+                                                    val url = mi.url ?: return@launch
+                                                    val headers = buildMap<String, String> {
+                                                        val ua = store.userAgent.first(); val ref = store.referer.first()
+                                                        if (ua.isNotBlank()) put("User-Agent", ua)
+                                                        if (ref.isNotBlank()) put("Referer", ref)
+                                                    }
+                                                    com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = url, headers = headers, startPositionMs = null) { startMs ->
+                                                        val encoded = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8.name())
+                                                        navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}")
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Collapsed categories area at bottom: show as vertical list of chips to re-expand
+                        if (collapsedCats.isNotEmpty()) {
+                            item("live_collapsed_header") {
+                                Spacer(Modifier.height(8.dp))
+                            }
+                            collapsedCats.sortedBy { it.lowercase() }.forEach { catKey ->
+                                val catLabel = labelOf(catKey)
+                                item("live_collapsed_$catKey") {
+                                    Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
+                                        FilterChip(
+                                            selected = true,
+                                            onClick = {
+                                                // Expand: remove from collapsed set, add to head of expanded order
+                                                scope.launch {
+                                                    val newCollapsed = (collapsedSet - catKey).joinToString(",")
+                                                    val currentOrder = expandedOrder.toMutableList().apply { removeAll { it == catKey } }
+                                                    currentOrder.add(0, catKey)
+                                                    store.setLiveCatCollapsedCsv(newCollapsed)
+                                                    store.setLiveCatExpandedOrderCsv(currentOrder.joinToString(","))
+                                                }
+                                            },
+                                            label = { Text(catLabel) }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

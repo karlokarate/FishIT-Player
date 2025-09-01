@@ -38,12 +38,16 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import com.chris.m3usuite.data.db.DbProvider
 import android.app.Activity
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.data.repo.XtreamRepository
+import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
 
+    @OptIn(UnstableApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -79,6 +83,19 @@ class MainActivity : ComponentActivity() {
                         XtreamEnrichmentWorker.schedule(this@MainActivity)
                         EpgRefreshWorker.schedule(this@MainActivity)
                         ScreenTimeResetWorker.schedule(this@MainActivity)
+                        // Fast-path: refresh favorites EPG immediately and then every 5 minutes while app is active
+                        // We are already inside a coroutine (LaunchedEffect)
+                        runCatching {
+                            val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+                            EpgRefreshWorker.refreshFavoritesNow(this@MainActivity, aggressive = aggressive)
+                        }
+                        while (true) {
+                            kotlinx.coroutines.delay(5 * 60 * 1000L)
+                            runCatching {
+                                val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+                                EpgRefreshWorker.refreshFavoritesNow(this@MainActivity, aggressive = aggressive)
+                            }
+                        }
                     }
                 }
 

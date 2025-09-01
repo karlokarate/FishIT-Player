@@ -250,6 +250,9 @@ interface EpgDao {
     @Query("SELECT * FROM epg_now_next WHERE channelId=:channelId LIMIT 1")
     suspend fun byChannel(channelId: String): EpgNowNext?
 
+    @Query("SELECT * FROM epg_now_next WHERE channelId=:channelId LIMIT 1")
+    fun observeByChannel(channelId: String): kotlinx.coroutines.flow.Flow<EpgNowNext?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<EpgNowNext>)
 

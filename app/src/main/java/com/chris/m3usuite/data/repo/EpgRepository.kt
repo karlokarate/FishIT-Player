@@ -10,6 +10,8 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.db.EpgNowNext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -22,10 +24,13 @@ import kotlinx.coroutines.flow.first
 class EpgRepository(
     private val context: Context,
     private val settings: SettingsStore,
-    private val ttlMillis: Long = 90_000L
+    private val ttlMillis: Long = 90_000L,
+    private val emptyTtlMillis: Long = 10_000L
 ) {
+    private val TAG = "EPGRepo"
     private data class Cache(val at: Long, val data: List<XtShortEPGProgramme>)
     private val cache = mutableMapOf<Int, Cache>()
+    private val emptyCache = mutableMapOf<Int, Long>()
     private val lock = Mutex()
     private fun secStrToMs(s: String?): Long? = s?.toLongOrNull()?.let { it * 1000 }
 
@@ -41,10 +46,20 @@ class EpgRepository(
 
     suspend fun nowNext(streamId: Int, limit: Int = 2): List<XtShortEPGProgramme> = withContext(Dispatchers.IO) {
         // Fast path: valid cache
-        lock.withLock {
+        val cached: List<XtShortEPGProgramme>? = lock.withLock {
+            val eAt = emptyCache[streamId]
+            if (eAt != null && (System.currentTimeMillis() - eAt) < emptyTtlMillis) {
+                Log.d(TAG, "sid=$streamId cache=empty within ${emptyTtlMillis}ms")
+                return@withLock emptyList<XtShortEPGProgramme>()
+            }
             val c = cache[streamId]
-            if (c != null && (System.currentTimeMillis() - c.at) < ttlMillis) return@withLock c.data
+            if (c != null && (System.currentTimeMillis() - c.at) < ttlMillis) {
+                Log.d(TAG, "sid=$streamId cache=hit size=${c.data.size}")
+                return@withLock c.data
+            }
+            null
         }
+        if (cached != null) return@withContext cached
         val tag = "XtreamEPG"
         val db = DbProvider.get(context)
         val mediaDao = db.mediaDao()
@@ -63,7 +78,10 @@ class EpgRepository(
                 if (row.nextTitle != null && row.nextStartMs != null && row.nextEndMs != null) {
                     list += XtShortEPGProgramme(title = row.nextTitle, start = (row.nextStartMs/1000).toString(), end = (row.nextEndMs/1000).toString())
                 }
-                if (list.isNotEmpty()) return@withContext list.take(limit)
+                if (list.isNotEmpty()) {
+                    Log.d(TAG, "sid=$streamId source=db-fresh ch=$chanId size=${list.size}")
+                    return@withContext list.take(limit)
+                }
             }
         }
 
@@ -90,12 +108,10 @@ class EpgRepository(
         // Try Xtream first if configured
         val cfg = config()
         val xtreamRes: List<XtShortEPGProgramme> = if (cfg != null) {
-            val client = XtreamClient(context, settings, cfg)
-            val res = runCatching { client.shortEPG(streamId, limit) }.onFailure {
-                Log.w(tag, "shortEPG failed for sid=$streamId on ${cfg.portalBase}: ${it.message}")
-            }.getOrDefault(emptyList())
+            val res = fetchXtreamShortEpg(context, settings, cfg, streamId, limit)
             if (res.isEmpty()) {
                 // Diagnostics: check auth state to differentiate empty vs bad creds
+                val client = XtreamClient(context, settings, cfg)
                 runCatching { client.handshake() }.onSuccess { hs ->
                     val a = hs.userInfo?.auth
                     Log.w(tag, "shortEPG empty for sid=$streamId; handshake auth=$a")
@@ -103,10 +119,11 @@ class EpgRepository(
                     Log.w(tag, "handshake failed during epg diagnostics: ${it.message}")
                 }
             }
+            if (res.isNotEmpty()) Log.d(TAG, "sid=$streamId source=xtream size=${res.size}")
             res
         } else emptyList()
 
-        var final = if (xtreamRes.isNotEmpty()) xtreamRes else fallbackXmlTv()
+        var final = xtreamRes.ifEmpty { fallbackXmlTv().also { if (it.isNotEmpty()) Log.d(TAG, "sid=$streamId source=xmltv size=${it.size}") } }
         // Soft fallback: if network yielded nothing but we have a stale row, reuse it to avoid blank UI
         if (final.isEmpty() && !chanId.isNullOrBlank()) {
             val row = withContext(Dispatchers.IO) { epgDao.byChannel(chanId) }
@@ -119,10 +136,11 @@ class EpgRepository(
                     list += XtShortEPGProgramme(title = row.nextTitle, start = (row.nextStartMs/1000).toString(), end = (row.nextEndMs/1000).toString())
                 }
                 final = list
+                Log.d(TAG, "sid=$streamId source=db-stale ch=$chanId size=${final.size}")
             }
         }
-        // Persist into DB cache if we have a channel id
-        if (!chanId.isNullOrBlank()) {
+        // Persist into DB cache if we have a channel id and actual content
+        if (!chanId.isNullOrBlank() && final.isNotEmpty()) {
             val now = final.getOrNull(0)
             val next = final.getOrNull(1)
             val row = EpgNowNext(
@@ -136,8 +154,42 @@ class EpgRepository(
                 updatedAt = System.currentTimeMillis()
             )
             withContext(Dispatchers.IO) { epgDao.upsertAll(listOf(row)) }
+            Log.d(TAG, "sid=$streamId persist ch=$chanId now=${now?.title} next=${next?.title}")
         }
-        lock.withLock { cache[streamId] = Cache(System.currentTimeMillis(), final) }
+        // Cache hit bookkeeping: content uses normal TTL; empty uses short TTL
+        if (final.isNotEmpty()) {
+            lock.withLock { cache[streamId] = Cache(System.currentTimeMillis(), final) }
+        } else {
+            lock.withLock { emptyCache[streamId] = System.currentTimeMillis() }
+        }
+        Log.d(TAG, "sid=$streamId result size=${final.size}")
         final.take(limit)
+    }
+
+    companion object {
+        private val flightMutex = Mutex()
+        private val inFlight = mutableMapOf<Int, kotlinx.coroutines.Deferred<List<XtShortEPGProgramme>>>()
+
+        suspend fun fetchXtreamShortEpg(
+            context: Context,
+            settings: SettingsStore,
+            cfg: XtreamConfig,
+            streamId: Int,
+            limit: Int
+        ): List<XtShortEPGProgramme> = coroutineScope {
+            // Single-flight per streamId: coalesce concurrent requests
+            val existing = flightMutex.withLock { inFlight[streamId] }
+            if (existing != null) return@coroutineScope existing.await()
+            val deferred = async(Dispatchers.IO) {
+                val client = XtreamClient(context, settings, cfg)
+                runCatching { client.shortEPG(streamId, limit) }.getOrDefault(emptyList())
+            }
+            try {
+                flightMutex.withLock { inFlight[streamId] = deferred }
+                deferred.await()
+            } finally {
+                flightMutex.withLock { inFlight.remove(streamId) }
+            }
+        }
     }
 }
