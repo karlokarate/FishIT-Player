@@ -122,6 +122,38 @@ data class KidContentItem(
     val contentId: Long
 )
 
+/** Kategorie-Freigaben pro Kind und Typ */
+@Entity(
+    tableName = "kid_category_allow",
+    indices = [
+        Index(value = ["kidProfileId"]),
+        Index(value = ["contentType"]),
+        Index(value = ["kidProfileId", "contentType", "categoryId"], unique = true)
+    ]
+)
+data class KidCategoryAllow(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val kidProfileId: Long,
+    val contentType: String, // "live" | "vod" | "series"
+    val categoryId: String
+)
+
+/** Item-Blocklist (Ausnahmen) pro Kind und Typ */
+@Entity(
+    tableName = "kid_content_block",
+    indices = [
+        Index(value = ["kidProfileId"]),
+        Index(value = ["contentType"]),
+        Index(value = ["kidProfileId", "contentType", "contentId"], unique = true)
+    ]
+)
+data class KidContentBlock(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val kidProfileId: Long,
+    val contentType: String,
+    val contentId: Long
+)
+
 /**
  * Screen-Time Tracking je Kid und Tag
  * UNIQUE(kidProfileId, dayYyyymmdd)
@@ -154,6 +186,22 @@ data class EpgNowNext(
     val nextStartMs: Long?,
     val nextEndMs: Long?,
     val updatedAt: Long
+)
+/** Rechte pro Profil */
+@Entity(
+    tableName = "profile_permissions",
+    indices = [Index(value = ["profileId"], unique = true)]
+)
+data class ProfilePermissions(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val profileId: Long,
+    val canOpenSettings: Boolean,
+    val canChangeSources: Boolean,
+    val canUseExternalPlayer: Boolean,
+    val canEditFavorites: Boolean,
+    val canSearch: Boolean,
+    val canSeeResume: Boolean,
+    val canEditWhitelist: Boolean
 )
 
 // -----------------------------------------------------
@@ -218,8 +266,14 @@ data class ResumeEpisodeView(
     @Query("SELECT * FROM MediaItem WHERE type=:type AND (:cat IS NULL OR categoryName=:cat) ORDER BY sortTitle")
     suspend fun byTypeAndCategory(type: String, cat: String?): List<MediaItem>
 
+    @Query("SELECT id FROM MediaItem WHERE type=:type AND categoryName IN (:cats)")
+    suspend fun idsByTypeAndCategories(type: String, cats: List<String>): List<Long>
+
     @Query("SELECT * FROM MediaItem WHERE name LIKE '%' || :query || '%' ORDER BY sortTitle LIMIT :limit OFFSET :offset")
     suspend fun globalSearch(query: String, limit: Int, offset: Int): List<MediaItem>
+
+    @Query("SELECT * FROM MediaItem WHERE id IN (:ids) ORDER BY sortTitle")
+    suspend fun byIds(ids: List<Long>): List<MediaItem>
 }
 
 /** DAO: Episoden */
@@ -365,6 +419,35 @@ interface KidContentDao {
     suspend fun listForKidAndType(kidId: Long, type: String): List<KidContentItem>
 }
 
+/** DAO: Kid Category Allow */
+@Dao
+interface KidCategoryAllowDao {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(item: KidCategoryAllow): Long
+
+    @Query("DELETE FROM kid_category_allow WHERE kidProfileId=:kidId AND contentType=:type AND categoryId=:categoryId")
+    suspend fun disallow(kidId: Long, type: String, categoryId: String)
+
+    @Query("SELECT * FROM kid_category_allow WHERE kidProfileId=:kidId AND contentType=:type")
+    suspend fun listForKidAndType(kidId: Long, type: String): List<KidCategoryAllow>
+}
+
+/** DAO: Kid Content Block (Ausnahmen) */
+@Dao
+interface KidContentBlockDao {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(item: KidContentBlock): Long
+
+    @Query("DELETE FROM kid_content_block WHERE kidProfileId=:kidId AND contentType=:type AND contentId=:contentId")
+    suspend fun unblock(kidId: Long, type: String, contentId: Long)
+
+    @Query("SELECT COUNT(*) FROM kid_content_block WHERE kidProfileId=:kidId AND contentType=:type AND contentId=:contentId")
+    suspend fun isBlockedCount(kidId: Long, type: String, contentId: Long): Int
+
+    @Query("SELECT * FROM kid_content_block WHERE kidProfileId=:kidId AND contentType=:type")
+    suspend fun listForKidAndType(kidId: Long, type: String): List<KidContentBlock>
+}
+
 /** DAO: Screen Time */
 @Dao
 interface ScreenTimeDao {
@@ -379,4 +462,17 @@ interface ScreenTimeDao {
 
     @Query("UPDATE screen_time SET limitMinutes=:limit WHERE kidProfileId=:kidId AND dayYyyymmdd=:day")
     suspend fun updateLimit(kidId: Long, day: String, limit: Int)
+}
+
+/** DAO: Profile Permissions */
+@Dao
+interface ProfilePermissionsDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(pp: ProfilePermissions): Long
+
+    @Query("SELECT * FROM profile_permissions WHERE profileId=:profileId LIMIT 1")
+    suspend fun byProfile(profileId: Long): ProfilePermissions?
+
+    @Query("DELETE FROM profile_permissions WHERE profileId=:profileId")
+    suspend fun deleteByProfile(profileId: Long)
 }

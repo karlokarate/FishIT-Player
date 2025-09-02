@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -90,6 +91,7 @@ fun LibraryScreen(
     val store = remember { SettingsStore(ctx) }
     val mediaRepo = remember { MediaQueryRepository(ctx, store) }
     val kidRepo = remember { KidContentRepository(ctx) }
+    val permRepo = remember { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
     val scope = rememberCoroutineScope()
     val tv = isTv(ctx)
     val focus = LocalFocusManager.current
@@ -97,7 +99,7 @@ fun LibraryScreen(
     val haptics = LocalHapticFeedback.current
     val hapticsEnabled by store.hapticsEnabled.collectAsState(initial = false)
 
-    val storedTab by store.libraryTabIndex.collectAsState(initial = 0)
+    val storedTab by store.libraryTabIndex.collectAsStateWithLifecycle(initialValue = 0)
     var tab by rememberSaveable { mutableIntStateOf(storedTab) }
     LaunchedEffect(storedTab) { if (tab != storedTab) tab = storedTab }
     val tabs = listOf("Live", "VOD", "Series", "Alle")
@@ -107,6 +109,13 @@ fun LibraryScreen(
 
     var mediaItems by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var categories by remember { mutableStateOf<List<String?>>(emptyList()) }
+    var canSeeResume by remember { mutableStateOf(true) }
+    var canSearch by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        val p = permRepo.current()
+        canSeeResume = p.canSeeResume
+        canSearch = p.canSearch
+    }
 
     // Filter-/Such-Sheet
     var showFilters by rememberSaveable { mutableStateOf(false) }
@@ -121,10 +130,10 @@ fun LibraryScreen(
     var filterProviders by rememberSaveable { mutableStateOf(setOf<String>()) } // keys from liveProviders labels
     var filterGenres by rememberSaveable { mutableStateOf(setOf<String>()) }
     // Load persisted filter state
-    val persistedGerman by store.liveFilterGerman.collectAsState(initial = false)
-    val persistedKids by store.liveFilterKids.collectAsState(initial = false)
-    val persistedProviders by store.liveFilterProvidersCsv.collectAsState(initial = "")
-    val persistedGenres by store.liveFilterGenresCsv.collectAsState(initial = "")
+    val persistedGerman by store.liveFilterGerman.collectAsStateWithLifecycle(initialValue = false)
+    val persistedKids by store.liveFilterKids.collectAsStateWithLifecycle(initialValue = false)
+    val persistedProviders by store.liveFilterProvidersCsv.collectAsStateWithLifecycle(initialValue = "")
+    val persistedGenres by store.liveFilterGenresCsv.collectAsStateWithLifecycle(initialValue = "")
     LaunchedEffect(persistedGerman, persistedKids, persistedProviders, persistedGenres) {
         filterGerman = persistedGerman
         filterKids = persistedKids
@@ -132,8 +141,12 @@ fun LibraryScreen(
         filterGenres = persistedGenres.split(',').filter { it.isNotBlank() }.toSet()
     }
 
+    // Live categories collapse/expand state (reactive at top-level, not inside LazyListScope)
+    val liveCollapsedCsv by store.liveCatCollapsedCsv.collectAsStateWithLifecycle(initialValue = "")
+    val liveExpandedOrderCsv by store.liveCatExpandedOrderCsv.collectAsStateWithLifecycle(initialValue = "")
+
     // Collapsible-State für Header (global gespeichert)
-    val collapsed by store.headerCollapsed.collectAsState(initial = false)
+    val collapsed by store.headerCollapsed.collectAsStateWithLifecycle(initialValue = false)
 
     fun isGerman(mi: MediaItem): Boolean {
         val s = (mi.name + " " + (mi.categoryName ?: "")).lowercase()
@@ -193,7 +206,7 @@ fun LibraryScreen(
     LaunchedEffect(tab, selectedCategory) { load() }
 
     // Adult-only: Settings sichtbar, Kids versteckt; Selection-Mode für Freigaben (nur Adult)
-    val profileId by store.currentProfileId.collectAsState(initial = -1L)
+    val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
     var showSettings by remember { mutableStateOf(true) }
     var selectionMode by rememberSaveable { mutableStateOf(false) }
     val selectedSaver = androidx.compose.runtime.saveable.Saver<Set<Pair<Long, String>>, List<String>>(
@@ -333,7 +346,13 @@ fun LibraryScreen(
                             }
                         }
                     }
-                    topResume = out
+                    // Filter resume items by effective allow-set for non-adult profiles
+                    val prof = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(store.currentProfileId.first()) }
+                    topResume = if (prof?.type == "adult") out else withContext(Dispatchers.IO) {
+                        out.filter { mi ->
+                            com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store).isAllowed(mi.type, mi.id)
+                        }
+                    }
                 }
                 // Live/Series/VOD: lightweight lists (already filtered for kids by MediaQueryRepository)
                 runCatching { allLive = mediaRepo.listByTypeFiltered("live", 4000, 0).distinctBy { it.id } }
@@ -577,18 +596,18 @@ fun LibraryScreen(
                             .distinct()
                             .sortedBy { it.lowercase() }
 
-                        // Persisted state
-                        val collapsedCsv by store.liveCatCollapsedCsv.collectAsState(initial = "")
-                        val expandedOrderCsv by store.liveCatExpandedOrderCsv.collectAsState(initial = "")
-                        val collapsedSet = remember(collapsedCsv) { collapsedCsv.split(',').filter { it.isNotEmpty() }.toMutableSet() }
-                        val expandedOrder = remember(expandedOrderCsv) { expandedOrderCsv.split(',').filter { it.isNotEmpty() } }
+                        // Persisted state (reactive from top-level)
+                        val collapsedCsv = liveCollapsedCsv
+                        val expandedOrderCsv = liveExpandedOrderCsv
+                        val collapsedSet = collapsedCsv.split(',').filter { it.isNotEmpty() }.toMutableSet()
+                        val expandedOrder = expandedOrderCsv.split(',').filter { it.isNotEmpty() }
 
                         // Partition categories
-                        val expandedCats = remember(allCats, collapsedCsv) { allCats.filterNot { it in collapsedSet } }
-                        val collapsedCats = remember(allCats, collapsedCsv) { allCats.filter { it in collapsedSet } }
+                        val expandedCats = allCats.filterNot { it in collapsedSet }
+                        val collapsedCats = allCats.filter { it in collapsedSet }
 
                         // Expanded display order: recently expanded first, then remaining expanded cats alphabetically
-                        val expandedOrdered = remember(expandedCats, expandedOrderCsv) {
+                        val expandedOrdered = run {
                             val head = expandedOrder.filter { it in expandedCats }
                             val tail = expandedCats.filterNot { it in head }.sortedBy { it.lowercase() }
                             head + tail
@@ -691,7 +710,7 @@ fun LibraryScreen(
                     }
                     else -> {
                         // All: kurzer Mix wie vorher
-                        if (topResume.isNotEmpty()) { header("Weiter schauen"); item("all_resume") { com.chris.m3usuite.ui.common.AccentCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { ResumeRow(items = topResume) { mi -> when (mi.type) { "live" -> openLive(mi.id); "vod" -> openVod(mi.id); else -> openSeries(mi.id) } } } } }
+                        if (canSeeResume && topResume.isNotEmpty()) { header("Weiter schauen"); item("all_resume") { com.chris.m3usuite.ui.common.AccentCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { ResumeRow(items = topResume) { mi -> when (mi.type) { "live" -> openLive(mi.id); "vod" -> openVod(mi.id); else -> openSeries(mi.id) } } } } }
                         if (topLive.isNotEmpty()) { header("TV"); item("all_live") { com.chris.m3usuite.ui.common.AccentCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) { LiveRow(items = topLive, onOpenDetails = { mi -> openLive(mi.id) }, onPlayDirect = { mi ->
                                 scope.launch {
                                     val url = mi.url ?: return@launch
@@ -741,15 +760,17 @@ fun LibraryScreen(
                 )
             }
 
-            ResumeCollapsible {
-                ResumeSectionAuto(
-                    navController = navController,
-                    limit = 20,
-                    onPlayVod = { /* TODO: später Navigation/Player */ },
-                    onPlayEpisode = { /* TODO: später Navigation/Player */ },
-                    onClearVod = {},
-                    onClearEpisode = {}
-                )
+            if (canSeeResume) {
+                ResumeCollapsible {
+                    ResumeSectionAuto(
+                        navController = navController,
+                        limit = 20,
+                        onPlayVod = { /* TODO: später Navigation/Player */ },
+                        onPlayEpisode = { /* TODO: später Navigation/Player */ },
+                        onClearVod = {},
+                        onClearEpisode = {}
+                    )
+                }
             }
 
             // Tabs moved to FishITHeader
@@ -757,7 +778,7 @@ fun LibraryScreen(
 
             }
             // FAB overlay (does not consume layout height)
-            FloatingActionButton(onClick = { showFilters = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+            if (canSearch) FloatingActionButton(onClick = { showFilters = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
                 Icon(painterResource(android.R.drawable.ic_menu_search), contentDescription = "Filter & Suche")
             }
         }
@@ -770,13 +791,17 @@ fun LibraryScreen(
                 Text("Suche & Filter", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    onValueChange = { if (canSearch) searchQuery = it },
                     singleLine = true,
                     label = { Text("Suche (Titel)") },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { submitSearch(); showFilters = false }),
+                    keyboardActions = KeyboardActions(onSearch = { submitSearch(); if (canSearch) showFilters = false }),
+                    enabled = canSearch,
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (!canSearch) {
+                    Text("Suche für dieses Profil deaktiviert", color = MaterialTheme.colorScheme.secondary)
+                }
                 if (tab == 0) {
                     val activeFilters = (if (filterGerman) 1 else 0) + (if (filterKids) 1 else 0) + filterProviders.size + filterGenres.size
                     var filtersExpanded by rememberSaveable { mutableStateOf(false) }

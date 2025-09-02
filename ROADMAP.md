@@ -162,8 +162,28 @@ Abschnitt **„Daten & Backup“** ergänzen:
 - [ ] (Optional) `work/SettingsAutoBackupWorker.kt`.
 - [ ] Unit‑ & UI‑Tests ergänzen.
 - [ ] AGENTS.md & ROADMAP.md im Repo aktualisieren.
- 
----
+
+--- 
+
+Erledigt (Profiles/Permissions) – 2025‑09‑02
+- Gast‑Profil (konservative Defaults).
+- Pro‑Profil Rechte inkl. Enforcements (Settings, Externer Player, Favoriten, Weiter‑schauen, Whitelist).
+- Kid‑Mode Refresh fix (Start/Home → gefilterte Queries).
+- Favoriten read‑only für eingeschränkte Profile.
+- Whitelist v1: Kategorien erlauben + Item‑Ausnahmen; Admin‑Sheet (Badges, expandierbare Items mit Kästchen).
+
+Nächste Schritte (Kurzfristig)
+- Rechte‑Defaults je Rolle: Admin‑Templates für Kid/Gast, anwenden beim Neuanlegen.
+- Resume v2: Alle Resume‑Oberflächen strikt nach effektiver Freigabe filtern.
+- Suche‑Gating: Suchfeld/Interaktionen verbergen, falls `canSearch=false`.
+- Whitelist‑Sheet Performance: Paginierung/Batch‑Loading bei sehr großen Kategorien.
+- Migration‑QA: Upgrade v4/v5→v6 mit realen Daten testen; Idempotenz sicherstellen.
+
+Akzeptanz (Ergänzungen)
+- Wechsel auf Kid/Gast zeigt niemals ungefilterte Rows, auch nicht nach manuellem Refresh.
+- Favoriten‑Zeile ohne Hinzufügen/Sortieren/Entfernen, wenn `canEditFavorites=false`.
+- Routen: „Einstellungen“ nur bei `canOpenSettings`; „Profiles“ nur für Adult‑Profil.
+
 
 ## Status‑Notizen (ungeprüft)
 

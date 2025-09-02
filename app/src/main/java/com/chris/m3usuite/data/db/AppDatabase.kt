@@ -20,10 +20,13 @@ import kotlinx.coroutines.flow.first
         ResumeMark::class,
         Profile::class,
         KidContentItem::class,
+        KidCategoryAllow::class,
+        KidContentBlock::class,
+        ProfilePermissions::class,
         ScreenTimeEntry::class,
         EpgNowNext::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,7 +36,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun resumeDao(): ResumeDao
     abstract fun profileDao(): ProfileDao
     abstract fun kidContentDao(): KidContentDao
+    abstract fun kidCategoryAllowDao(): KidCategoryAllowDao
+    abstract fun kidContentBlockDao(): KidContentBlockDao
     abstract fun screenTimeDao(): ScreenTimeDao
+    abstract fun profilePermissionsDao(): ProfilePermissionsDao
     abstract fun epgDao(): EpgDao
 }
 
@@ -52,7 +58,7 @@ object DbProvider {
                 AppDatabase::class.java,
                 DB_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
@@ -143,6 +149,59 @@ object DbProvider {
                 )
                 """.trimIndent()
             )
+        }
+    }
+
+    private val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `kid_category_allow` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `kidProfileId` INTEGER NOT NULL,
+                    `contentType` TEXT NOT NULL,
+                    `categoryId` TEXT NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_kid_category_allow_kidProfileId` ON `kid_category_allow`(`kidProfileId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_kid_category_allow_contentType` ON `kid_category_allow`(`contentType`)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_kid_category_allow_unique` ON `kid_category_allow`(`kidProfileId`, `contentType`, `categoryId`)")
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `kid_content_block` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `kidProfileId` INTEGER NOT NULL,
+                    `contentType` TEXT NOT NULL,
+                    `contentId` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_kid_content_block_kidProfileId` ON `kid_content_block`(`kidProfileId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_kid_content_block_contentType` ON `kid_content_block`(`contentType`)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_kid_content_block_unique` ON `kid_content_block`(`kidProfileId`, `contentType`, `contentId`)")
+        }
+    }
+
+    private val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `profile_permissions` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `profileId` INTEGER NOT NULL,
+                    `canOpenSettings` INTEGER NOT NULL,
+                    `canChangeSources` INTEGER NOT NULL,
+                    `canUseExternalPlayer` INTEGER NOT NULL,
+                    `canEditFavorites` INTEGER NOT NULL,
+                    `canSearch` INTEGER NOT NULL,
+                    `canSeeResume` INTEGER NOT NULL,
+                    `canEditWhitelist` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_profile_permissions_profileId` ON `profile_permissions`(`profileId`)")
         }
     }
 

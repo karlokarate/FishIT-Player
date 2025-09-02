@@ -61,8 +61,9 @@ import kotlinx.coroutines.launch
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.withContext
-import com.chris.m3usuite.work.EpgRefreshWorker
+import com.chris.m3usuite.work.SchedulingGateway
 import androidx.compose.material3.ExperimentalMaterial3Api
 import kotlinx.coroutines.flow.first
 import androidx.compose.ui.input.pointer.pointerInput
@@ -78,6 +79,7 @@ import android.os.Build
 import android.graphics.RenderEffect
 import android.graphics.Shader
 import com.chris.m3usuite.ui.theme.DesignTokens
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +96,7 @@ fun StartScreen(
     val mediaRepo = remember { MediaQueryRepository(ctx, store) }
 
     // Kid/Adult flag
-    val currentProfileId by store.currentProfileId.collectAsState(initial = -1L)
+    val currentProfileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
     var isKid by remember { mutableStateOf(false) }
     LaunchedEffect(currentProfileId) {
         isKid = withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -108,6 +110,17 @@ fun StartScreen(
     var tv by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var favLive by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var showLivePicker by remember { mutableStateOf(false) }
+    val vm: StartViewModel = viewModel()
+    val homeQuery by vm.query.collectAsStateWithLifecycle(initialValue = "")
+    val debouncedQuery by vm.debouncedQuery.collectAsStateWithLifecycle(initialValue = "")
+    val permRepo = remember { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
+    var canEditFavorites by remember { mutableStateOf(true) }
+    var canEditWhitelist by remember { mutableStateOf(true) }
+    LaunchedEffect(currentProfileId) {
+        val p = permRepo.current()
+        canEditFavorites = p.canEditFavorites
+        canEditWhitelist = p.canEditWhitelist
+    }
 
     LaunchedEffect(isKid) {
         scope.launch {
@@ -121,7 +134,7 @@ fun StartScreen(
     }
 
     // Favorites for live row on Home
-    val favCsv by store.favoriteLiveIdsCsv.collectAsState(initial = "")
+    val favCsv by store.favoriteLiveIdsCsv.collectAsStateWithLifecycle(initialValue = "")
     LaunchedEffect(favCsv, isKid) {
         // Always sanitize favorites: numeric, distinct, existing only
         val ids = favCsv.split(',').mapNotNull { it.toLongOrNull() }.distinct()
@@ -145,7 +158,7 @@ fun StartScreen(
                 }
             }
         },
-        onSettings = if (isKid) null else {
+        onSettings = if (!canEditWhitelist && isKid) null else {
             {
                 val current = navController.currentBackStackEntry?.destination?.route
                 if (current != "settings") {
@@ -155,10 +168,9 @@ fun StartScreen(
         },
         onRefresh = {
             scope.launch {
-                val dao = db.mediaDao()
-                val rawSeries = dao.listByType("series", 2000, 0)
-                val rawMovies = dao.listByType("vod", 2000, 0)
-                val rawTv = dao.listByType("live", 2000, 0)
+                val rawSeries = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("series", 2000, 0) }
+                val rawMovies = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("vod", 2000, 0) }
+                val rawTv = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("live", 2000, 0) }
                 series = sortByYearDesc(rawSeries, { it.year }, { it.name }).distinctBy { it.id }
                 movies = sortByYearDesc(rawMovies, { it.year }, { it.name }).distinctBy { it.id }
                 tv = filterGermanTv(rawTv, { null }, { null }, { it.categoryName }, { it.name }).distinctBy { it.id }
@@ -222,6 +234,17 @@ fun StartScreen(
                     }
             )
             LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
+                item("search") {
+                    OutlinedTextField(
+                        value = homeQuery,
+                        onValueChange = { vm.query.value = it },
+                        singleLine = true,
+                        label = { Text("Suche (global)") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
                 item("hdr_series") {
                     Text("Serien", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 2.dp))
                 }
@@ -230,8 +253,22 @@ fun StartScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         accent = Accent
                     ) {
+                        val sFiltered = remember(series, debouncedQuery) {
+                            val q = debouncedQuery.trim().lowercase()
+                            if (q.isBlank()) series else series.filter {
+                                it.name.lowercase().contains(q) || (it.plot ?: "").lowercase().contains(q) || (it.categoryName ?: "").lowercase().contains(q)
+                            }
+                        }
+                        if (sFiltered.isEmpty() && homeQuery.isNotBlank()) {
+                            Text(
+                                "Keine Treffer",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                         SeriesRow(
-                            items = series,
+                            items = sFiltered,
                             onOpenDetails = { mi -> openSeries(mi.id) },
                             onPlayDirect = { mi ->
                                 scope.launch {
@@ -281,7 +318,8 @@ fun StartScreen(
                                         kids.forEach { repo.allow(it.id, "series", mi.id) }
                                     }
                                 }
-                            }
+                            },
+                            showAssign = canEditWhitelist
                         )
                     }
                 }
@@ -293,8 +331,22 @@ fun StartScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         accent = Accent
                     ) {
+                        val vFiltered = remember(movies, debouncedQuery) {
+                            val q = debouncedQuery.trim().lowercase()
+                            if (q.isBlank()) movies else movies.filter {
+                                it.name.lowercase().contains(q) || (it.plot ?: "").lowercase().contains(q) || (it.categoryName ?: "").lowercase().contains(q)
+                            }
+                        }
+                        if (vFiltered.isEmpty() && homeQuery.isNotBlank()) {
+                            Text(
+                                "Keine Treffer",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                         VodRow(
-                            items = movies,
+                            items = vFiltered,
                             onOpenDetails = { mi -> openVod(mi.id) },
                             onPlayDirect = { mi ->
                                 scope.launch {
@@ -321,27 +373,44 @@ fun StartScreen(
                                     val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
                                     kids.forEach { repo.allow(it.id, "vod", mi.id) }
                                 }
-                            }
+                            },
+                            showAssign = canEditWhitelist
                         )
                     }
                 }
-                // TV (favorisierte Kanäle). Wenn leer: Plus-Kachel zum Hinzufügen.
+                // TV (Favoriten oder globale Suche)
                 item("row_tv") {
                     Box(Modifier.padding(top = 4.dp)) {
-                        if (favLive.isEmpty()) {
-                            androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
-                                item {
-                                    Card(
-                                        modifier = Modifier.size(200.dp, 112.dp).padding(end = 12.dp)
-                                            .let { m -> m },
-                                        shape = RoundedCornerShape(14.dp),
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                                    ) {
-                                        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().padding(8.dp)) {
-                                            AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Sender hinzufügen", onClick = { showLivePicker = true }, size = 36.dp)
+                        val q = debouncedQuery.trim().lowercase()
+                        val liveSearch: List<MediaItem> = if (q.isBlank()) emptyList() else run {
+                            val all = runCatching { kotlinx.coroutines.runBlocking { mediaRepo.listByTypeFiltered("live", 6000, 0) } }.getOrDefault(emptyList())
+                            all.filter { it.name.lowercase().contains(q) || (it.categoryName ?: "").lowercase().contains(q) }
+                        }
+                        val liveItems = if (q.isBlank()) favLive else liveSearch
+                        if (liveItems.isEmpty()) {
+                            if (canEditFavorites) {
+                                androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
+                                    item {
+                                        Card(
+                                            modifier = Modifier.size(200.dp, 112.dp).padding(end = 12.dp),
+                                            shape = RoundedCornerShape(14.dp),
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                        ) {
+                                            androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().padding(8.dp)) {
+                                                AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Sender hinzufügen", onClick = { showLivePicker = true }, size = 36.dp)
+                                            }
                                         }
                                     }
                                 }
+                            }
+                            if (homeQuery.isNotBlank()) {
+                                // Keine Treffer Hinweis für Live bei Suche
+                                Text(
+                                    "Keine Treffer",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
                             }
                         } else {
                             com.chris.m3usuite.ui.common.AccentCard(
@@ -350,56 +419,84 @@ fun StartScreen(
                             ) {
                                 FadeThrough(key = favLive.size) {
                                     androidx.compose.foundation.layout.Column {
-                                        if (favLive.isNotEmpty()) {
+                                        if (liveItems.isNotEmpty() && q.isBlank()) {
                                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                                 TextButton(onClick = {
                                                     scope.launch {
                                                         val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                                                        EpgRefreshWorker.refreshFavoritesNow(ctx, aggressive = aggressive)
+                                                        SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive)
                                                     }
                                                 }) { Text("Jetzt EPG aktualisieren") }
                                             }
                                         }
-                                        com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
-                                            items = favLive,
-                                            onOpen = { openLive(it) },
-                                            onPlay = { id ->
-                                                scope.launch {
-                                                    val mi = favLive.firstOrNull { it.id == id } ?: return@launch
-                                                    val url = mi.url ?: return@launch
-                                                    val headers = buildMap<String, String> {
-                                                        val ua = store.userAgent.first(); val ref = store.referer.first()
-                                                        if (ua.isNotBlank()) put("User-Agent", ua)
-                                                        if (ref.isNotBlank()) put("Referer", ref)
-                                                    }
-                                                    com.chris.m3usuite.player.PlayerChooser.start(
-                                                        context = ctx,
-                                                        store = store,
-                                                        url = url,
-                                                        headers = headers,
-                                                        startPositionMs = null
-                                                    ) { startMs ->
-                                                        val encoded = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8.name())
-                                                        navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}")
+                                        val liveFiltered = liveItems
+                                        if (!canEditFavorites) {
+                                            com.chris.m3usuite.ui.components.rows.LiveRow(
+                                                items = liveFiltered,
+                                                onOpenDetails = { mi -> openLive(mi.id) },
+                                                onPlayDirect = { mi ->
+                                                    scope.launch {
+                                                        val url = mi.url ?: return@launch
+                                                        val headers = buildMap<String, String> {
+                                                            val ua = store.userAgent.first(); val ref = store.referer.first()
+                                                            if (ua.isNotBlank()) put("User-Agent", ua)
+                                                            if (ref.isNotBlank()) put("Referer", ref)
+                                                        }
+                                                        com.chris.m3usuite.player.PlayerChooser.start(
+                                                            context = ctx,
+                                                            store = store,
+                                                            url = url,
+                                                            headers = headers,
+                                                            startPositionMs = null
+                                                        ) { startMs ->
+                                                            val encoded = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8.name())
+                                                            navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}")
+                                                        }
                                                     }
                                                 }
-                                            },
-                                            onAdd = { showLivePicker = true },
-                                            onReorder = { newOrder -> scope.launch {
-                                                store.setFavoriteLiveIdsCsv(newOrder.joinToString(","))
-                                                val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                                                runCatching { EpgRefreshWorker.refreshFavoritesNow(ctx, aggressive = aggressive) }
-                                            } },
-                                            onRemove = { removeIds ->
-                                                scope.launch {
-                                                    val current = store.favoriteLiveIdsCsv.first().split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
-                                                    current.removeAll(removeIds.toSet())
-                                                    store.setFavoriteLiveIdsCsv(current.joinToString(","))
+                                            )
+                                        } else {
+                                            com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
+                                                items = liveFiltered,
+                                                onOpen = { openLive(it) },
+                                                onPlay = { id ->
+                                                    scope.launch {
+                                                        val mi = favLive.firstOrNull { it.id == id } ?: return@launch
+                                                        val url = mi.url ?: return@launch
+                                                        val headers = buildMap<String, String> {
+                                                            val ua = store.userAgent.first(); val ref = store.referer.first()
+                                                            if (ua.isNotBlank()) put("User-Agent", ua)
+                                                            if (ref.isNotBlank()) put("Referer", ref)
+                                                        }
+                                                        com.chris.m3usuite.player.PlayerChooser.start(
+                                                            context = ctx,
+                                                            store = store,
+                                                            url = url,
+                                                            headers = headers,
+                                                            startPositionMs = null
+                                                        ) { startMs ->
+                                                            val encoded = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8.name())
+                                                            navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}")
+                                                        }
+                                                    }
+                                                },
+                                                onAdd = { showLivePicker = true },
+                                                onReorder = { newOrder -> scope.launch {
+                                                    store.setFavoriteLiveIdsCsv(newOrder.joinToString(","))
                                                     val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                                                    runCatching { EpgRefreshWorker.refreshFavoritesNow(ctx, aggressive = aggressive) }
+                                                    runCatching { SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive) }
+                                                } },
+                                                onRemove = { removeIds ->
+                                                    scope.launch {
+                                                        val current = store.favoriteLiveIdsCsv.first().split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
+                                                        current.removeAll(removeIds.toSet())
+                                                        store.setFavoriteLiveIdsCsv(current.joinToString(","))
+                                                        val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+                                                        runCatching { SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive) }
+                                                    }
                                                 }
-                                            }
-                                        )
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -409,7 +506,8 @@ fun StartScreen(
             }
         }
     // Live picker sheet: multi-select grid + search + provider chips
-    if (showLivePicker) {
+    // Disable for kid profiles (read-only favorites)
+    if (showLivePicker && !isKid) {
         val scopePick = rememberCoroutineScope()
         var allLive by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
         var query by remember { mutableStateOf("") }
@@ -452,7 +550,7 @@ fun StartScreen(
                         val csv = selected.joinToString(",")
                         store.setFavoriteLiveIdsCsv(csv)
                         val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                        runCatching { EpgRefreshWorker.refreshFavoritesNow(ctx, aggressive = aggressive) }
+                        runCatching { SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive) }
                         showLivePicker = false
                     }
                 },
@@ -462,7 +560,7 @@ fun StartScreen(
                         val csv = selected.joinToString(",")
                         store.setFavoriteLiveIdsCsv(csv)
                         val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                        runCatching { EpgRefreshWorker.refreshFavoritesNow(ctx, aggressive = aggressive) }
+                        runCatching { SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive) }
                         showLivePicker = false
                     }
                 }, size = 28.dp) }

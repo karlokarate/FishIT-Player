@@ -294,6 +294,60 @@ class SettingsStore(private val context: Context) {
         return host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()
     }
 
+    // Batch setters to avoid multiple edit blocks
+    suspend fun setXtream(host: String, port: Int, user: String, pass: String, output: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.XT_HOST] = host
+            prefs[Keys.XT_PORT] = port
+            prefs[Keys.XT_USER] = user
+            prefs[Keys.XT_PASS] = pass
+            prefs[Keys.XT_OUTPUT] = output
+        }
+    }
+
+    suspend fun setSources(m3u: String, epg: String, ua: String, referer: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.M3U_URL] = m3u
+            prefs[Keys.EPG_URL] = epg
+            prefs[Keys.USER_AGENT] = ua
+            prefs[Keys.REFERER] = referer
+        }
+    }
+
+    data class Snapshot(
+        val m3uUrl: String,
+        val epgUrl: String,
+        val userAgent: String,
+        val referer: String,
+        val extraHeadersJson: String,
+        val xtHost: String,
+        val xtPort: Int,
+        val xtUser: String,
+        val xtPass: String,
+        val xtOutput: String,
+        val epgFavUseXtream: Boolean,
+        val epgFavSkipXmltvIfXtreamOk: Boolean
+    )
+
+    suspend fun snapshot(): Snapshot {
+        val prefs = context.dataStore.data.first()
+        fun <T> get(k: Preferences.Key<T>, def: T): T = prefs[k] ?: def
+        return Snapshot(
+            m3uUrl = get(Keys.M3U_URL, ""),
+            epgUrl = get(Keys.EPG_URL, ""),
+            userAgent = get(Keys.USER_AGENT, "IBOPlayer/1.4 (Android)"),
+            referer = get(Keys.REFERER, ""),
+            extraHeadersJson = get(Keys.EXTRA_HEADERS, ""),
+            xtHost = get(Keys.XT_HOST, ""),
+            xtPort = get(Keys.XT_PORT, 80),
+            xtUser = get(Keys.XT_USER, ""),
+            xtPass = get(Keys.XT_PASS, ""),
+            xtOutput = get(Keys.XT_OUTPUT, "m3u8"),
+            epgFavUseXtream = get(Keys.EPG_FAV_USE_XTREAM, true),
+            epgFavSkipXmltvIfXtreamOk = get(Keys.EPG_FAV_SKIP_XMLTV_IF_X_OK, false)
+        )
+    }
+
     // Live category rows state setters
     suspend fun setLiveCatCollapsedCsv(value: String) { context.dataStore.edit { it[Keys.LIVE_CAT_COLLAPSED_CSV] = value } }
     suspend fun setLiveCatExpandedOrderCsv(value: String) { context.dataStore.edit { it[Keys.LIVE_CAT_EXPANDED_ORDER_CSV] = value } }

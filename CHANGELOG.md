@@ -1,7 +1,17 @@
-#
+# 
 # m3uSuite – Changelog
 
 All notable changes to this project are documented here. Keep entries concise and tied to commits/PRs.
+
+2025-09-02
+- feat(profiles): Gast‑Profil eingeführt (konservative Defaults).
+- feat(permissions): Pro‑Profil‑Rechte (canOpenSettings, canChangeSources, canUseExternalPlayer, canEditFavorites, canSearch, canSeeResume, canEditWhitelist) + Enforcements (Settings‑Route‑Gating, Externer Player → intern bei Verbot, Favoriten/Assign‑UI‑Gating, Resume‑Sichtbarkeit).
+  - Dateien: data/db/Entities.kt, data/db/AppDatabase.kt (v6 + MIGRATION_5_6), data/repo/PermissionRepository.kt, player/PlayerChooser.kt, MainActivity.kt, ui/home/StartScreen.kt, ui/screens/LibraryScreen.kt
+- feat(whitelist): Kategorien‑Freigaben + Item‑Ausnahmen; Admin‑UI im ProfileManager (Badges, expandierbare Items mit Kästchen).
+  - Dateien: data/db/Entities.kt (kid_category_allow, kid_content_block), data/db/AppDatabase.kt (v5 + MIGRATION_4_5), data/repo/MediaQueryRepository.kt, ui/profile/ProfileManagerScreen.kt
+- fix(kid-mode): Home‑Refresh nutzt gefilterte Queries; Favoriten read‑only für eingeschränkte Profile; „Für Kinder freigeben“ nur bei Rechten sichtbar.
+  - Dateien: ui/home/StartScreen.kt, ui/components/rows/HomeRows.kt
+- chore(db): Schema auf v6; Migrationen idempotent und rückwärtskompatibel.
 
 2025-09-01
 - Docs: ROADMAP erweitert um „Performance & Reliability Plan (Top 5)“: Header/HTTP‑Zentralisierung, WorkManager‑Idempotenz, UI‑Lifecycle/Struktur‑Härtung, Streaming‑Exporter + Batch‑I/O, DataStore/EPG‑Hygiene. Siehe Commit 1fbbb49.

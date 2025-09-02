@@ -64,7 +64,7 @@ fun ProfileGate(
     LaunchedEffect(Unit) {
         val list = withContext(Dispatchers.IO) { db.profileDao().all() }
         adult = list.firstOrNull { it.type == "adult" }
-        kids = list.filter { it.type == "kid" }
+        kids = list.filter { it.type != "adult" } // show Kid + Guest
         // Skip only if user opted in to remember last profile
         val remember = store.rememberLastProfile.first()
         val cur = store.currentProfileId.first()
@@ -138,7 +138,7 @@ fun ProfileGate(
             else { setPin = false; pin = ""; pinError = null; showPin = true }
         }) { ListItem(headlineContent = { Text("Ich bin Erwachsen") }, supportingContent = { Text("Mit PIN geschützt") }) }
         Spacer(Modifier.height(16.dp))
-        Text("Ich bin ein Kind", style = MaterialTheme.typography.titleMedium)
+        Text("Ich bin ein Kind / Gast", style = MaterialTheme.typography.titleMedium)
         // Add tile
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedCard(
@@ -178,7 +178,7 @@ fun ProfileGate(
                         headlineContent = { Text(k.name) },
                         supportingContent = {
                             Column {
-                                Text("Kinderprofil")
+                                Text(if (k.type == "guest") "Gastprofil" else "Kinderprofil")
                                 if (used != null && limit != null) {
                                     val u = used ?: 0
                                     val l = limit ?: 0

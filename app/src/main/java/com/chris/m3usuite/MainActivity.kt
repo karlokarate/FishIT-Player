@@ -4,10 +4,16 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -30,10 +36,7 @@ import com.chris.m3usuite.ui.auth.ProfileGate
 import com.chris.m3usuite.ui.profile.ProfileManagerScreen
 import com.chris.m3usuite.ui.theme.AppTheme
 import com.chris.m3usuite.ui.skin.M3UTvSkin
-import com.chris.m3usuite.work.XtreamEnrichmentWorker
-import com.chris.m3usuite.work.XtreamRefreshWorker
-import com.chris.m3usuite.work.EpgRefreshWorker
-import com.chris.m3usuite.work.ScreenTimeResetWorker
+import com.chris.m3usuite.work.SchedulingGateway
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import com.chris.m3usuite.data.db.DbProvider
@@ -75,26 +78,25 @@ class MainActivity : ComponentActivity() {
                 // automatisch aus der M3U ableiten und direkt die Worker planen.
                 LaunchedEffect(m3uUrl) {
                     if (m3uUrl.isNotBlank()) {
-                        // Auto-configure Xtream from M3U if missing
                         if (!store.hasXtream()) {
                             runCatching { XtreamRepository(this@MainActivity, store).configureFromM3uUrl() }
                         }
-                        XtreamRefreshWorker.schedule(this@MainActivity)
-                        XtreamEnrichmentWorker.schedule(this@MainActivity)
-                        EpgRefreshWorker.schedule(this@MainActivity)
-                        ScreenTimeResetWorker.schedule(this@MainActivity)
-                        // Fast-path: refresh favorites EPG immediately and then every 5 minutes while app is active
-                        // We are already inside a coroutine (LaunchedEffect)
+                        SchedulingGateway.scheduleAll(this@MainActivity)
+                        // Immediate once
                         runCatching {
                             val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                            EpgRefreshWorker.refreshFavoritesNow(this@MainActivity, aggressive = aggressive)
+                            SchedulingGateway.refreshFavoritesEpgNow(this@MainActivity, aggressive = aggressive)
                         }
+                    }
+                }
+
+                // Tie periodic EPG refresh to Activity lifecycle (STARTED)
+                lifecycleScope.launch {
+                    repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                         while (true) {
+                            val aggressive = SettingsStore(this@MainActivity).epgFavSkipXmltvIfXtreamOk.first()
+                            runCatching { SchedulingGateway.refreshFavoritesEpgNow(this@MainActivity, aggressive = aggressive) }
                             kotlinx.coroutines.delay(5 * 60 * 1000L)
-                            runCatching {
-                                val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                                EpgRefreshWorker.refreshFavoritesNow(this@MainActivity, aggressive = aggressive)
-                            }
                         }
                     }
                 }
@@ -197,14 +199,12 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    // Settings (nur Adult; Kids werden zurück navigiert)
+                    // Settings (permissions)
                     composable("settings") {
-                        val dbLocal = remember { DbProvider.get(ctx) }
                         val profileId = store.currentProfileId.collectAsState(initial = -1L).value
                         LaunchedEffect(profileId) {
-                            val prof = if (profileId > 0) withContext(Dispatchers.IO) { dbLocal.profileDao().byId(profileId) } else null
-                            val isKid = prof?.type == "kid"
-                            if (isKid) {
+                            val perms = com.chris.m3usuite.data.repo.PermissionRepository(this@MainActivity, store).current()
+                            if (!perms.canOpenSettings) {
                                 nav.popBackStack()
                             }
                         }
@@ -221,7 +221,17 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("profiles") {
-                        ProfileManagerScreen(onBack = { nav.popBackStack() })
+                        // Require adult to open profile manager. Wait for a valid profileId before deciding.
+                        val profileId = store.currentProfileId.collectAsState(initial = -1L).value
+                        var allow: Boolean? by remember { mutableStateOf(null) }
+                        LaunchedEffect(profileId) {
+                            if (profileId <= 0) { allow = null; return@LaunchedEffect }
+                            val dbLocal = DbProvider.get(ctx)
+                            val prof = withContext(Dispatchers.IO) { dbLocal.profileDao().byId(profileId) }
+                            allow = (prof?.type == "adult")
+                            if (allow == false) nav.popBackStack()
+                        }
+                        if (allow == true) ProfileManagerScreen(onBack = { nav.popBackStack() })
                     }
                 }
 
@@ -249,3 +259,4 @@ class MainActivity : ComponentActivity() {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 }
+

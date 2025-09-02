@@ -63,6 +63,10 @@ fun SettingsScreen(
     onOpenGate: (() -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
+    val ctx = LocalContext.current
+    val permRepo = remember(ctx) { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
+    var canChangeSources by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) { canChangeSources = permRepo.current().canChangeSources }
     val mode by store.playerMode.collectAsState(initial = "ask")
     val pkg by store.preferredPlayerPkg.collectAsState(initial = "")
     val subScale by store.subtitleScale.collectAsState(initial = 0.06f)
@@ -165,7 +169,12 @@ fun SettingsScreen(
             ) {
             TextButton(onClick = onBack) { Text("Zurück") }
             if (onOpenProfiles != null) {
-                TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
+                // Button nur zeigen, wenn der aktuelle Nutzer Whitelists bearbeiten darf
+                val allowProfiles = remember { mutableStateOf(true) }
+                LaunchedEffect(Unit) { allowProfiles.value = permRepo.current().canEditWhitelist }
+                if (allowProfiles.value) {
+                    TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
+                }
             }
             TextButton(onClick = {
                 scope.launch {
@@ -319,17 +328,19 @@ fun SettingsScreen(
             SectionHeader("Quelle (M3U/Xtream/EPG)")
             OutlinedTextField(
                 value = m3u,
-                onValueChange = { scope.launch { store.set(Keys.M3U_URL, it) } },
+                onValueChange = { if (canChangeSources) scope.launch { store.set(Keys.M3U_URL, it) } },
                 label = { Text("M3U / Xtream get.php Link") },
                 singleLine = true,
+                enabled = canChangeSources,
                 modifier = Modifier.fillMaxWidth(),
                 colors = tfColors
             )
             OutlinedTextField(
                 value = epg,
-                onValueChange = { scope.launch { store.set(Keys.EPG_URL, it) } },
+                onValueChange = { if (canChangeSources) scope.launch { store.set(Keys.EPG_URL, it) } },
                 label = { Text("EPG XMLTV URL (optional)") },
                 singleLine = true,
+                enabled = canChangeSources,
                 modifier = Modifier.fillMaxWidth(),
                 colors = tfColors
             )
@@ -480,7 +491,7 @@ fun SettingsScreen(
                         snackHost.showSnackbar("EPG-Test fehlgeschlagen: ${t.message}")
                     }
                 }
-            }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("EPG testen (Debug)") }
+            }, enabled = canChangeSources, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("EPG testen (Debug)") }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val ctx = LocalContext.current
                 Button(onClick = {
@@ -490,8 +501,8 @@ fun SettingsScreen(
                         val plRepo = PlaylistRepository(ctx, store)
                         val cfg = runCatching { xtRepo.configureFromM3uUrl() }.getOrNull()
                         val result = if (cfg != null) xtRepo.importAll() else plRepo.refreshFromM3U()
-                        com.chris.m3usuite.work.XtreamRefreshWorker.schedule(ctx)
-                        com.chris.m3usuite.work.XtreamEnrichmentWorker.schedule(ctx)
+                        com.chris.m3usuite.work.SchedulingGateway.scheduleXtreamPeriodic(ctx)
+                        com.chris.m3usuite.work.SchedulingGateway.scheduleXtreamEnrichment(ctx)
                         val count = result.getOrNull()
                         if (count != null) {
                             snackHost.showSnackbar("Import abgeschlossen: $count Einträge")
@@ -499,7 +510,7 @@ fun SettingsScreen(
                             snackHost.showSnackbar("Import fehlgeschlagen – wird erneut versucht")
                         }
                     }
-                }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("Import aktualisieren") }
+                }, enabled = canChangeSources, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("Import aktualisieren") }
                 if (onOpenProfiles != null) {
                     TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
                 }
@@ -517,9 +528,11 @@ fun SettingsScreen(
                 val ctx = LocalContext.current
                 Button(onClick = {
                     scope.launch {
-                        val text = com.chris.m3usuite.core.m3u.M3UExporter.build(ctx, store)
                         val dir = java.io.File(ctx.cacheDir, "exports").apply { mkdirs() }
-                        val file = java.io.File(dir, "playlist.m3u").apply { writeText(text, Charsets.UTF_8) }
+                        val file = java.io.File(dir, "playlist.m3u")
+                        java.io.OutputStreamWriter(java.io.FileOutputStream(file), Charsets.UTF_8).use { w ->
+                            com.chris.m3usuite.core.m3u.M3UExporter.stream(ctx, store, w)
+                        }
                         // Use FileProvider with the authority declared in manifest: ${applicationId}.fileprovider
                         val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".fileprovider", file)
                         val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
@@ -534,9 +547,11 @@ fun SettingsScreen(
 
                 Button(onClick = {
                     scope.launch {
-                        val text = com.chris.m3usuite.core.m3u.M3UExporter.build(ctx, store)
                         val dir = java.io.File(ctx.cacheDir, "exports").apply { mkdirs() }
-                        val file = java.io.File(dir, "playlist.m3u").apply { writeText(text, Charsets.UTF_8) }
+                        val file = java.io.File(dir, "playlist.m3u")
+                        java.io.OutputStreamWriter(java.io.FileOutputStream(file), Charsets.UTF_8).use { w ->
+                            com.chris.m3usuite.core.m3u.M3UExporter.stream(ctx, store, w)
+                        }
                         val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".fileprovider", file)
                         val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                             type = "application/x-mpegURL"

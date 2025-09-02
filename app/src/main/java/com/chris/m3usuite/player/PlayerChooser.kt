@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.flow.first
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.data.db.DbProvider
+import com.chris.m3usuite.data.repo.PermissionRepository
 
 /**
  * Zentrale Wahl "Immer fragen | Intern | Extern".
@@ -23,16 +24,10 @@ object PlayerChooser {
         startPositionMs: Long? = null,
         buildInternal: (startPositionMs: Long?) -> Unit
     ) {
-        // Phase 4: Kids immer interner Player
-        val kidForcedInternal = run {
-            val id = store.currentProfileId.first()
-            if (id > 0) {
-                val prof = DbProvider.get(context).profileDao().byId(id)
-                prof?.type == "kid"
-            } else false
-        }
-
-        if (kidForcedInternal) {
+        // Enforce permissions: no external for kids/guests unless allowed
+        val perms = PermissionRepository(context, store).current()
+        val disallowExternal = !perms.canUseExternalPlayer
+        if (disallowExternal) {
             buildInternal(startPositionMs)
             return
         }

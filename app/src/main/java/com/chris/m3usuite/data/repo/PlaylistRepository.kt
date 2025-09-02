@@ -6,8 +6,7 @@ import com.chris.m3usuite.core.m3u.M3UParser
 import com.chris.m3usuite.core.xtream.XtreamDetect
 import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.work.XtreamEnrichmentWorker
-import com.chris.m3usuite.work.XtreamRefreshWorker
+import com.chris.m3usuite.work.SchedulingGateway
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -91,9 +90,9 @@ class PlaylistRepository(
                 })
 
                 // 5) Schedule workers after import
-                XtreamRefreshWorker.schedule(context)
-                XtreamEnrichmentWorker.schedule(context)
-                com.chris.m3usuite.work.EpgRefreshWorker.schedule(context)
+                SchedulingGateway.scheduleXtreamPeriodic(context)
+                SchedulingGateway.scheduleXtreamEnrichment(context)
+                SchedulingGateway.scheduleEpgPeriodic(context)
 
                 // 6) Anzahl zurückgeben
                 parsed.size

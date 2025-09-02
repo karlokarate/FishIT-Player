@@ -9,6 +9,7 @@ import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.flow.first
+import com.chris.m3usuite.core.http.RequestHeadersProvider
 
 /**
  * Liest User-Agent und Referer aus dem SettingsStore einmalig ein
@@ -21,17 +22,20 @@ fun rememberImageHeaders(): ImageHeaders {
 
     var ua by remember { mutableStateOf("IBOPlayer/1.4 (Android)") }
     var ref by remember { mutableStateOf("") }
+    var extras by remember { mutableStateOf<Map<String,String>>(emptyMap()) }
 
     LaunchedEffect(Unit) {
         runCatching {
             ua = store.userAgent.first()
             ref = store.referer.first()
+            val extraJson = store.extraHeadersJson.first()
+            extras = RequestHeadersProvider.parseExtraHeaders(extraJson)
         }
     }
-    return ImageHeaders(ua = ua, referer = ref)
+    return ImageHeaders(ua = ua, referer = ref, extras = extras)
 }
 
-data class ImageHeaders(val ua: String, val referer: String)
+data class ImageHeaders(val ua: String, val referer: String, val extras: Map<String,String>)
 
 /**
  * Baut einen Coil-3 ImageRequest inkl. HTTP-Headern (User-Agent/Referer).
@@ -49,6 +53,7 @@ fun buildImageRequest(
         .set("User-Agent", headers.ua.ifBlank { "IBOPlayer/1.4 (Android)" })
         .apply {
             if (headers.referer.isNotBlank()) set("Referer", headers.referer)
+            headers.extras.forEach { (k,v) -> set(k, v) }
         }
         .build()
 

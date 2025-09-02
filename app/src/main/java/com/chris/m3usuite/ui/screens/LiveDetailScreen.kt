@@ -35,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +60,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.chris.m3usuite.data.db.AppDatabase
@@ -80,6 +82,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LiveDetailScreen(id: Long) {
@@ -90,7 +93,7 @@ fun LiveDetailScreen(id: Long) {
     val scope = rememberCoroutineScope()
     val kidRepo = remember { KidContentRepository(ctx) }
     val haptics = LocalHapticFeedback.current
-    val hapticsEnabled by store.hapticsEnabled.collectAsState(initial = false)
+    val hapticsEnabled by store.hapticsEnabled.collectAsStateWithLifecycle(initialValue = false)
 
     var title by remember { mutableStateOf("") }
     var logo by remember { mutableStateOf<String?>(null) }
@@ -149,19 +152,21 @@ fun LiveDetailScreen(id: Long) {
     }
 
     // Header für den VIDEO-Request (nicht für Bilder)
-    suspend fun buildStreamHeaders(): Map<String, String> {
-        val ua = store.userAgent.first()
-        val ref = store.referer.first()
-        val map = mutableMapOf<String, String>()
-        if (ua.isNotBlank()) map["User-Agent"] = ua
-        if (ref.isNotBlank()) map["Referer"] = ref
-        // Falls du extra JSON-Header im Store hältst, könntest du sie hier zusätzlich mappen.
-        return map
-    }
+    suspend fun buildStreamHeaders(): Map<String, String> =
+        com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
 
     // Playerwahl + Start
     suspend fun chooseAndPlay() {
         val playUrl = url ?: return
+        // Gate: deny if profile not allowed
+        val allowed = withContext(Dispatchers.IO) {
+            val prof = DbProvider.get(ctx).profileDao().byId(store.currentProfileId.first())
+            if (prof?.type == "adult") true else com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store).isAllowed("live", id)
+        }
+        if (!allowed) {
+            android.widget.Toast.makeText(ctx, "Nicht freigegeben", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
         val hdrs = buildStreamHeaders()
         PlayerChooser.start(
             context = ctx,
@@ -199,7 +204,7 @@ fun LiveDetailScreen(id: Long) {
     }
 
     // Adult check
-    val profileId by store.currentProfileId.collectAsState(initial = -1L)
+    val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
     var isAdult by remember { mutableStateOf(true) }
     LaunchedEffect(profileId) {
         val p = withContext(Dispatchers.IO) { db.profileDao().byId(profileId) }
@@ -318,11 +323,15 @@ fun LiveDetailScreen(id: Long) {
         )
 
         Spacer(Modifier.height(6.dp))
+        // Sendername unter dem runden Sender-Icon
         Text(
             text = title,
             style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(horizontal = 12.dp)
         )
 
         Spacer(Modifier.height(8.dp))

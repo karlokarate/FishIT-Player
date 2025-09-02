@@ -43,6 +43,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,6 +74,7 @@ import com.chris.m3usuite.data.repo.KidContentRepository
 import com.chris.m3usuite.data.repo.XtreamRepository
 import com.chris.m3usuite.player.ExternalPlayer
 import com.chris.m3usuite.player.PlayerChooser
+import com.chris.m3usuite.player.InternalPlayerScreen
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.fx.FadeThrough
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
@@ -102,9 +104,16 @@ fun SeriesDetailScreen(
     val scope = rememberCoroutineScope()
     val headers = rememberImageHeaders()
     val kidRepo = remember { KidContentRepository(ctx) }
-    val profileId by store.currentProfileId.collectAsState(initial = -1L)
+    val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
     var isAdult by remember { mutableStateOf(true) }
     LaunchedEffect(profileId) { isAdult = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(profileId)?.type != "kid" } }
+    val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
+    var contentAllowed by remember { mutableStateOf(true) }
+    LaunchedEffect(id, profileId) {
+        val prof = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(profileId) }
+        val adult = prof?.type == "adult"
+        contentAllowed = if (adult) true else mediaRepo.isAllowed("series", id)
+    }
     var showGrantSheet by rememberSaveable { mutableStateOf(false) }
     var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
 
@@ -191,21 +200,42 @@ fun SeriesDetailScreen(
         seasonSel?.let { episodes = db.episodeDao().episodes(sid, it) }
     }
 
+    // --- Interner Player Zustand (Fullscreen) ---
+    var showInternal by rememberSaveable { mutableStateOf(false) }
+    var internalUrl by rememberSaveable { mutableStateOf<String?>(null) }
+    var internalStartMs by rememberSaveable { mutableStateOf<Long?>(null) }
+    var internalEpisodeId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var internalUa by rememberSaveable { mutableStateOf("") }
+    var internalRef by rememberSaveable { mutableStateOf("") }
+
+    if (showInternal) {
+        val hdrs = buildMap<String, String> {
+            if (internalUa.isNotBlank()) put("User-Agent", internalUa)
+            if (internalRef.isNotBlank()) put("Referer", internalRef)
+        }
+        InternalPlayerScreen(
+            url = internalUrl.orEmpty(),
+            type = "series",
+            episodeId = internalEpisodeId,
+            startPositionMs = internalStartMs,
+            headers = hdrs,
+            onExit = { showInternal = false }
+        )
+        return
+    }
+
     fun playEpisode(e: Episode, fromStart: Boolean = false, resumeSecs: Int? = null) {
         scope.launch {
-            val host = store.xtHost.first()
-            val user = store.xtUser.first()
-            val pass = store.xtPass.first()
-            val out  = store.xtOutput.first()
-            val port = store.xtPort.first()
-            if (host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()) {
-                val cfg = XtreamConfig(host, port, user, pass, out)
+            if (!contentAllowed) {
+                android.widget.Toast.makeText(ctx, "Nicht freigegeben", android.widget.Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val snap = store.snapshot()
+            if (snap.xtHost.isNotBlank() && snap.xtUser.isNotBlank() && snap.xtPass.isNotBlank()) {
+                val cfg = XtreamConfig(snap.xtHost, snap.xtPort, snap.xtUser, snap.xtPass, snap.xtOutput)
                 val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
                 val playUrl = cfg.seriesEpisodeUrl(e.episodeId, e.containerExt)
-                val headers = buildMap<String, String> {
-                    val ua = store.userAgent.first(); if (ua.isNotBlank()) put("User-Agent", ua)
-                    val ref = store.referer.first(); if (ref.isNotBlank()) put("Referer", ref)
-                }
+                val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
 
                 PlayerChooser.start(
                     context = ctx,
@@ -213,7 +243,18 @@ fun SeriesDetailScreen(
                     url = playUrl,
                     headers = headers,
                     startPositionMs = startMs
-                ) { s -> openInternal?.invoke(playUrl, s, e.episodeId) ?: ExternalPlayer.open(context = ctx, url = playUrl, headers = headers, startPositionMs = s) }
+                ) { s ->
+                    if (openInternal != null) {
+                        openInternal(playUrl, s, e.episodeId)
+                    } else {
+                        internalUrl = playUrl
+                        internalEpisodeId = e.episodeId
+                        internalStartMs = s
+                        internalUa = headers["User-Agent"].orEmpty()
+                        internalRef = headers["Referer"].orEmpty()
+                        showInternal = true
+                    }
+                }
             }
         }
     }
@@ -267,85 +308,69 @@ fun SeriesDetailScreen(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             accent = Accent
         ) {
-        Column(Modifier.animateContentSize()) {
-        Text(title, style = MaterialTheme.typography.titleLarge)
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Accent.copy(alpha = 0.35f))
-        Spacer(Modifier.height(8.dp))
-        AsyncImage(
-            model = buildImageRequest(ctx, poster, headers),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .height(220.dp)
-                .fillMaxWidth()
-        )
-        Spacer(Modifier.height(8.dp))
-        if (!plot.isNullOrBlank()) {
-            var plotExpanded by remember { mutableStateOf(false) }
-            val gradAlpha by animateFloatAsState(if (plotExpanded) 0f else 1f, animationSpec = tween(180), label = "plotGrad")
-            Column(Modifier.animateContentSize()) {
-                Box(Modifier.fillMaxWidth()) {
-                    Text(plot!!, maxLines = if (plotExpanded) Int.MAX_VALUE else 8)
-                    if (!plotExpanded) {
-                        Box(
-                            Modifier
-                                .align(Alignment.BottomCenter)
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .graphicsLayer { alpha = gradAlpha }
-                                .background(
-                                    Brush.verticalGradient(
-                                        0f to Color.Transparent,
-                                        1f to MaterialTheme.colorScheme.background
-                                    )
-                                )
-                        )
-                    }
-                }
-                TextButton(onClick = { plotExpanded = !plotExpanded }) {
-                    Text(if (plotExpanded) "Weniger anzeigen" else "Mehr anzeigen")
-                }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        // Staffel-Auswahl (scrollbar)
-        if (seasons.isNotEmpty()) {
-            Text("Staffeln:", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(6.dp))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(end = 8.dp)
-            ) {
-                items(seasons, key = { it }) { s ->
-                    val Accent = if (!isAdult) com.chris.m3usuite.ui.theme.DesignTokens.KidAccent else com.chris.m3usuite.ui.theme.DesignTokens.Accent
-                    FilterChip(
-                        selected = seasonSel == s,
-                        onClick = {
-                            seasonSel = s
-                            scope.launch {
-                                val sid = seriesStreamId ?: return@launch
-                                episodes = db.episodeDao().episodes(sid, s)
-                            }
-                        },
-                        label = { Text("S$s") },
-                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Accent.copy(alpha = 0.18f))
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        // Episodenliste – bekommt restliche Höhe
         val ftKey = remember(seasonSel, episodes.size) { (seasonSel ?: -1) to episodes.size }
         FadeThrough(key = ftKey) {
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-        ) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 16.dp)) {
+            item {
+                Column(Modifier.fillMaxWidth()) {
+                    Text(title, style = MaterialTheme.typography.titleLarge)
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Accent.copy(alpha = 0.35f))
+                    Spacer(Modifier.height(8.dp))
+                    AsyncImage(
+                        model = buildImageRequest(ctx, poster, headers),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.height(220.dp).fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+            if (!plot.isNullOrBlank()) {
+                item {
+                    var plotExpanded by remember { mutableStateOf(false) }
+                    val gradAlpha by animateFloatAsState(if (plotExpanded) 0f else 1f, animationSpec = tween(180), label = "plotGrad")
+                    Column(Modifier.animateContentSize()) {
+                        Box(Modifier.fillMaxWidth()) {
+                            Text(plot!!, maxLines = if (plotExpanded) Int.MAX_VALUE else 8)
+                            if (!plotExpanded) {
+                                Box(
+                                    Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp)
+                                        .graphicsLayer { alpha = gradAlpha }
+                                        .background(Brush.verticalGradient(0f to Color.Transparent, 1f to MaterialTheme.colorScheme.background))
+                                )
+                            }
+                        }
+                        TextButton(onClick = { plotExpanded = !plotExpanded }) {
+                            Text(if (plotExpanded) "Weniger anzeigen" else "Mehr anzeigen")
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
+            }
+            if (seasons.isNotEmpty()) {
+                item {
+                    Text("Staffeln:", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(6.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(end = 8.dp)) {
+                        items(seasons, key = { it }) { s ->
+                            val Accent = if (!isAdult) com.chris.m3usuite.ui.theme.DesignTokens.KidAccent else com.chris.m3usuite.ui.theme.DesignTokens.Accent
+                            FilterChip(
+                                selected = seasonSel == s,
+                                onClick = {
+                                    seasonSel = s
+                                    scope.launch {
+                                        val sid = seriesStreamId ?: return@launch
+                                        episodes = db.episodeDao().episodes(sid, s)
+                                    }
+                                },
+                                label = { Text("S$s") },
+                                colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Accent.copy(alpha = 0.18f))
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
             items(episodes, key = { it.episodeId }) { e ->
                 val episodeKey = e.episodeId
                 var resumeSecs by remember(episodeKey) { mutableStateOf<Int?>(null) }
@@ -449,7 +474,6 @@ fun SeriesDetailScreen(
         scope.launch { snackHost.showSnackbar("Serie aus ${kidIds.size} Kinderprofil(en) entfernt") }
         showRevokeSheet = false
     }, onDismiss = { showRevokeSheet = false })
-}
 }
 }
 }

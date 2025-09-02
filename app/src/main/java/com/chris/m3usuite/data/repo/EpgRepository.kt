@@ -29,8 +29,19 @@ class EpgRepository(
 ) {
     private val TAG = "EPGRepo"
     private data class Cache(val at: Long, val data: List<XtShortEPGProgramme>)
-    private val cache = mutableMapOf<Int, Cache>()
-    private val emptyCache = mutableMapOf<Int, Long>()
+    private val cache = LinkedHashMap<Int, Cache>(128, 0.75f, true)
+    private val emptyCache = LinkedHashMap<Int, Long>(128, 0.75f, true)
+    private val maxEntries = 2000
+    private fun trimIfNeeded() {
+        while (cache.size > maxEntries) {
+            val it = cache.entries.iterator()
+            if (it.hasNext()) { it.next(); it.remove() } else break
+        }
+        while (emptyCache.size > maxEntries) {
+            val it = emptyCache.entries.iterator()
+            if (it.hasNext()) { it.next(); it.remove() } else break
+        }
+    }
     private val lock = Mutex()
     private fun secStrToMs(s: String?): Long? = s?.toLongOrNull()?.let { it * 1000 }
 
@@ -158,9 +169,9 @@ class EpgRepository(
         }
         // Cache hit bookkeeping: content uses normal TTL; empty uses short TTL
         if (final.isNotEmpty()) {
-            lock.withLock { cache[streamId] = Cache(System.currentTimeMillis(), final) }
+            lock.withLock { cache[streamId] = Cache(System.currentTimeMillis(), final); trimIfNeeded() }
         } else {
-            lock.withLock { emptyCache[streamId] = System.currentTimeMillis() }
+            lock.withLock { emptyCache[streamId] = System.currentTimeMillis(); trimIfNeeded() }
         }
         Log.d(TAG, "sid=$streamId result size=${final.size}")
         final.take(limit)

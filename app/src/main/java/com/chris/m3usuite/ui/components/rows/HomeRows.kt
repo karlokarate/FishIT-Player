@@ -271,18 +271,13 @@ fun LiveTileCard(
                         val httpFactory = DefaultHttpDataSource.Factory()
                             .setAllowCrossProtocolRedirects(true)
                             .apply {
-                                val props = mutableMapOf<String, String>()
-                                if (ua.isNotBlank()) props["User-Agent"] = ua
-                                if (ref.isNotBlank()) props["Referer"] = ref
-                                try {
-                                    val o = org.json.JSONObject(extraJson)
-                                    val it = o.keys()
-                                    while (it.hasNext()) {
-                                        val k = it.next()
-                                        props[k] = o.optString(k)
-                                    }
-                                } catch (_: Throwable) {}
-                                if (props.isNotEmpty()) setDefaultRequestProperties(props)
+                                val base = buildMap<String, String> {
+                                    if (ua.isNotBlank()) put("User-Agent", ua)
+                                    if (ref.isNotBlank()) put("Referer", ref)
+                                }
+                                val extras = com.chris.m3usuite.core.http.RequestHeadersProvider.parseExtraHeaders(extraJson)
+                                val merged = com.chris.m3usuite.core.http.RequestHeadersProvider.merge(base, extras)
+                                if (merged.isNotEmpty()) setDefaultRequestProperties(merged)
                             }
                         val dsFactory = DefaultDataSource.Factory(c, httpFactory)
                         val mediaFactory = DefaultMediaSourceFactory(dsFactory)
@@ -306,14 +301,18 @@ fun LiveTileCard(
                 )
             }
 
-            // Centered circular logo with shimmer placeholder
+            // Circular logo with shimmer placeholder (top-aligned)
             val sz = 77.dp
+            val logoTop = 8.dp
+            val epgTop = logoTop + sz + 8.dp
+            val labelTop = if (epgNow.isNotBlank() || epgNext.isNotBlank()) epgTop + 8.dp else (logoTop + sz + 8.dp)
             val logoUrl = item.logo ?: item.poster
             run {
                 var loaded by remember { mutableStateOf(false) }
                 Box(
                     modifier = Modifier
-                        .align(Alignment.Center)
+                        .align(Alignment.TopCenter)
+                        .padding(top = logoTop)
                         .size(sz)
                 ) {
                     if (!loaded) {
@@ -348,17 +347,8 @@ fun LiveTileCard(
                 Box(Modifier.fillMaxWidth().fillMaxHeight().graphicsLayer { alpha = 0.18f }.background(Color.Yellow.copy(alpha = 0.2f)))
             }
 
-            // Channel name shown only on focus (top center)
-            if (focused) {
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp).padding(horizontal = 8.dp)
-                )
-            }
+            // Channel name always visible (bottom center)
+            // Moved play/info below the name to avoid covering the logo
             // LIVE indicator (top-left)
             Box(
                 modifier = Modifier
@@ -373,8 +363,8 @@ fun LiveTileCard(
             if (epgNow.isNotBlank() || epgNext.isNotBlank()) {
                 Column(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(top = 96.dp)
+                        .align(Alignment.TopCenter)
+                        .padding(top = epgTop)
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color.Black.copy(alpha = 0.70f))
                         .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
@@ -410,6 +400,35 @@ fun LiveTileCard(
                     }
                 }
             }
+            // Label und Actions direkt unter dem Icon platzieren (keine Überlagerung)
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = labelTop, start = 8.dp, end = 8.dp, bottom = 6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
+                    AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onOpenDetails(item) }, size = 24.dp)
+                }
+                // Sendername im Rahmen mit dunklem BG (70% Opacity), weiße Schrift, bis 2 Zeilen
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.Black.copy(alpha = 0.70f))
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                ) {
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                        maxLines = 2,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    )
+                }
+            }
             // Progress bar (current programme)
             epgProgress?.let { p ->
                 Box(
@@ -427,13 +446,6 @@ fun LiveTileCard(
                         .background(Color(0xFF2196F3))
                 )
             }
-            Row(
-                modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
-                AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onOpenDetails(item) }, size = 24.dp)
-            }
         }
     }
 }
@@ -444,7 +456,8 @@ fun SeriesTileCard(
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
     onAssignToKid: (MediaItem) -> Unit,
-    isNew: Boolean = false
+    isNew: Boolean = false,
+    showAssign: Boolean = true
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
@@ -529,7 +542,9 @@ fun SeriesTileCard(
             }
             Row(Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 8.dp), horizontalArrangement = Arrangement.End) {
                 AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
-                AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
+                if (showAssign) {
+                    AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
+                }
             }
         }
     }
@@ -541,7 +556,8 @@ fun VodTileCard(
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
     onAssignToKid: (MediaItem) -> Unit,
-    isNew: Boolean = false
+    isNew: Boolean = false,
+    showAssign: Boolean = true
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
@@ -614,7 +630,9 @@ fun VodTileCard(
             }
             Row(Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 8.dp), horizontalArrangement = Arrangement.End) {
                 AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
-                AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
+                if (showAssign) {
+                    AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
+                }
             }
         }
     }
@@ -823,7 +841,8 @@ fun SeriesRow(
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
     onAssignToKid: (MediaItem) -> Unit,
-    showNew: Boolean = false
+    showNew: Boolean = false,
+    showAssign: Boolean = true
 ) {
     if (items.isEmpty()) return
     // Deduplicate by id to keep keys stable/unique
@@ -845,7 +864,14 @@ fun SeriesRow(
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
     ) {
         items(unique.take(count), key = { it.id }) { m ->
-            SeriesTileCard(item = m, onOpenDetails = onOpenDetails, onPlayDirect = onPlayDirect, onAssignToKid = onAssignToKid, isNew = showNew)
+            SeriesTileCard(
+                item = m,
+                onOpenDetails = onOpenDetails,
+                onPlayDirect = onPlayDirect,
+                onAssignToKid = onAssignToKid,
+                isNew = showNew,
+                showAssign = showAssign
+            )
         }
     }
 }
@@ -857,7 +883,8 @@ fun VodRow(
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
     onAssignToKid: (MediaItem) -> Unit,
-    showNew: Boolean = false
+    showNew: Boolean = false,
+    showAssign: Boolean = true
 ) {
     if (items.isEmpty()) return
     // Deduplicate by id to keep keys stable/unique
@@ -879,7 +906,14 @@ fun VodRow(
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
     ) {
         items(unique.take(count), key = { it.id }) { m ->
-            VodTileCard(item = m, onOpenDetails = onOpenDetails, onPlayDirect = onPlayDirect, onAssignToKid = onAssignToKid, isNew = showNew)
+            VodTileCard(
+                item = m,
+                onOpenDetails = onOpenDetails,
+                onPlayDirect = onPlayDirect,
+                onAssignToKid = onAssignToKid,
+                isNew = showNew,
+                showAssign = showAssign
+            )
         }
     }
 }

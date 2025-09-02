@@ -56,13 +56,15 @@ fun ResumeSectionAuto(
 ) {
     val ctx = LocalContext.current
     val db = remember { DbProvider.get(ctx) }
+    val store = remember { SettingsStore(ctx) }
+    val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
 
     var vod by remember { mutableStateOf<List<ResumeVodView>>(emptyList()) }
     var eps by remember { mutableStateOf<List<ResumeEpisodeView>>(emptyList()) }
     // resume-ui: Chooser BottomSheet Intern vs Extern
     var chooserItem by remember { mutableStateOf<ResumeVodView?>(null) }
     var chooserEpisode by remember { mutableStateOf<ResumeEpisodeView?>(null) }
-    val store = remember { SettingsStore(ctx) }
+    // store already defined above
 
     // resume-ui: Laden beider Listen auf IO-Thread
     LaunchedEffect(Unit) {
@@ -70,8 +72,24 @@ fun ResumeSectionAuto(
             val dao = db.resumeDao()
             val v = withContext(Dispatchers.IO) { dao.recentVod(limit) }
             val e = withContext(Dispatchers.IO) { dao.recentEpisodes(limit) }
-            vod = v
-            eps = e
+            // Filter by effective allow-set for non-adult profiles
+            val prof = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(store.currentProfileId.first()) }
+            if (prof?.type == "adult") {
+                vod = v; eps = e
+            } else {
+                val allowedVodIds = withContext(Dispatchers.IO) { mediaRepo.listByTypeFiltered("vod", 100000, 0).map { it.id }.toSet() }
+                val seriesAllowedIds = withContext(Dispatchers.IO) { mediaRepo.listByTypeFiltered("series", 100000, 0).map { it.id }.toSet() }
+                val filteredVod = v.filter { it.mediaId in allowedVodIds }
+                // Map episode -> series mediaItem by seriesStreamId
+                val filteredEp = withContext(Dispatchers.IO) {
+                    e.filter { rev ->
+                        val seriesMi = db.mediaDao().seriesByStreamId(rev.seriesStreamId)
+                        seriesMi != null && (seriesMi.id in seriesAllowedIds)
+                    }
+                }
+                vod = filteredVod
+                eps = filteredEp
+            }
         } catch (_: Throwable) {
             // Ignorieren – bleibt leer
         }
@@ -101,12 +119,7 @@ fun ResumeSectionAuto(
                     Spacer(Modifier.height(4.dp))
                     Button(onClick = {
                         scope.launch {
-                            val ua = store.userAgent.first()
-                            val ref = store.referer.first()
-                            val headers = buildMap<String, String> {
-                                if (ua.isNotBlank()) put("User-Agent", ua)
-                                if (ref.isNotBlank()) put("Referer", ref)
-                            }
+                            val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
                             ExternalPlayer.open(ctx, chooserItem!!.url!!, headers = headers)
                             chooserItem = null
                         }
@@ -143,12 +156,7 @@ fun ResumeSectionAuto(
                     Button(onClick = {
                         scope.launch {
                             if (playUrl != null) {
-                                val ua = store.userAgent.first()
-                                val ref = store.referer.first()
-                                val headers = buildMap<String, String> {
-                                    if (ua.isNotBlank()) put("User-Agent", ua)
-                                    if (ref.isNotBlank()) put("Referer", ref)
-                                }
+                                val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
                                 ExternalPlayer.open(ctx, playUrl, headers = headers)
                             }
                             chooserEpisode = null

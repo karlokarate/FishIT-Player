@@ -129,16 +129,8 @@ fun InternalPlayerScreen(
     // HTTP Factory mit Headern
     val extraJson by store.extraHeadersJson.collectAsState(initial = "")
     val mergedHeaders = remember(headers, extraJson) {
-        val props = headers.toMutableMap()
-        try {
-            val o = org.json.JSONObject(extraJson)
-            val it = o.keys()
-            while (it.hasNext()) {
-                val k = it.next()
-                props[k] = o.optString(k)
-            }
-        } catch (_: Throwable) {}
-        props.toMap()
+        val extras = com.chris.m3usuite.core.http.RequestHeadersProvider.parseExtraHeaders(extraJson)
+        com.chris.m3usuite.core.http.RequestHeadersProvider.merge(headers, extras)
     }
     val httpFactory = remember(mergedHeaders) {
         DefaultHttpDataSource.Factory()
@@ -352,14 +344,10 @@ fun InternalPlayerScreen(
                                 if (current != null) {
                                     val next = epDao.nextEpisode(current.seriesStreamId, current.season, current.episodeNum)
                                     if (next != null) {
-                                        // rebuild url from Xtream config
-                                        val host = store.xtHost.first()
-                                        val user = store.xtUser.first()
-                                        val pass = store.xtPass.first()
-                                        val out  = store.xtOutput.first()
-                                        val port = store.xtPort.first()
-                                        if (host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()) {
-                                            val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(host, port, user, pass, out)
+                                        // rebuild url from Xtream config (snapshot to avoid multiple first())
+                                        val snap = store.snapshot()
+                                        if (snap.xtHost.isNotBlank() && snap.xtUser.isNotBlank() && snap.xtPass.isNotBlank()) {
+                                            val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(snap.xtHost, snap.xtPort, snap.xtUser, snap.xtPass, snap.xtOutput)
                                             val nextUrl = cfg.seriesEpisodeUrl(next.episodeId, next.containerExt)
                                             withContext(Dispatchers.Main) {
                                                 exoPlayer.setMediaItem(MediaItem.fromUri(nextUrl))

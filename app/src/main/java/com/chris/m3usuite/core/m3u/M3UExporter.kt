@@ -14,39 +14,61 @@ object M3UExporter {
      * - Exports LIVE and VOD entries that have a concrete URL
      */
     suspend fun build(context: Context, settings: SettingsStore): String = withContext(Dispatchers.IO) {
+        val sw = java.io.StringWriter(1024 * 1024)
+        stream(context, settings, sw)
+        sw.toString()
+    }
+
+    /**
+     * Streaming export to an Appendable/Writer to reduce memory usage.
+     * Reads DB in batches to avoid large heap spikes.
+     */
+    suspend fun stream(
+        context: Context,
+        settings: SettingsStore,
+        out: java.lang.Appendable,
+        batchSize: Int = 5000
+    ) = withContext(Dispatchers.IO) {
         val db = DbProvider.get(context)
-        val live = db.mediaDao().listByType("live", 200000, 0)
-        val vod = db.mediaDao().listByType("vod", 200000, 0)
         val epg = settings.epgUrl.first().trim()
-        val sb = StringBuilder()
-        if (epg.isNotBlank()) sb.append("#EXTM3U url-tvg=\"$epg\"\n") else sb.append("#EXTM3U\n")
+        if (epg.isNotBlank()) out.append("#EXTM3U url-tvg=\"").append(epg).append("\"\n") else out.append("#EXTM3U\n")
 
         fun esc(s: String?): String = s?.replace("\"", "'") ?: ""
 
-        live.filter { !it.url.isNullOrBlank() }.forEach { it ->
-            val name = it.name
-            val tvgId = esc(it.epgChannelId)
-            val logo = esc(it.logo)
-            val group = esc(it.categoryName)
-            sb.append("#EXTINF:-1")
-            if (tvgId.isNotBlank()) sb.append(" tvg-id=\"$tvgId\"")
-            if (logo.isNotBlank()) sb.append(" tvg-logo=\"$logo\"")
-            if (group.isNotBlank()) sb.append(" group-title=\"$group\"")
-            sb.append(", ").append(name).append('\n')
-            sb.append(it.url).append('\n')
+        suspend fun writeType(type: String) {
+            var offset = 0
+            while (true) {
+                val chunk = db.mediaDao().listByType(type, batchSize, offset)
+                if (chunk.isEmpty()) break
+                for (it in chunk) {
+                    val url = it.url ?: continue
+                    if (url.isBlank()) continue
+                    val name = it.name
+                    val group = esc(it.categoryName)
+                    if (type == "live") {
+                        val tvgId = esc(it.epgChannelId)
+                        val logo = esc(it.logo)
+                        out.append("#EXTINF:-1")
+                        if (tvgId.isNotBlank()) out.append(" tvg-id=\"").append(tvgId).append("\"")
+                        if (logo.isNotBlank()) out.append(" tvg-logo=\"").append(logo).append("\"")
+                        if (group.isNotBlank()) out.append(" group-title=\"").append(group).append("\"")
+                        out.append(", ").append(name).append('\n')
+                        out.append(url).append('\n')
+                    } else if (type == "vod") {
+                        val poster = esc(it.poster)
+                        out.append("#EXTINF:-1")
+                        if (poster.isNotBlank()) out.append(" tvg-logo=\"").append(poster).append("\"")
+                        if (group.isNotBlank()) out.append(" group-title=\"").append(group).append("\"")
+                        out.append(", ").append(name).append('\n')
+                        out.append(url).append('\n')
+                    }
+                }
+                if (chunk.size < batchSize) break
+                offset += batchSize
+            }
         }
 
-        vod.filter { !it.url.isNullOrBlank() }.forEach { it ->
-            val name = it.name
-            val poster = esc(it.poster)
-            val group = esc(it.categoryName)
-            sb.append("#EXTINF:-1")
-            if (poster.isNotBlank()) sb.append(" tvg-logo=\"$poster\"")
-            if (group.isNotBlank()) sb.append(" group-title=\"$group\"")
-            sb.append(", ").append(name).append('\n')
-            sb.append(it.url).append('\n')
-        }
-        sb.toString()
+        writeType("live")
+        writeType("vod")
     }
 }
-

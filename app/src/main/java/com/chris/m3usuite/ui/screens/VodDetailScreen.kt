@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.ui.fx.FadeThrough
 import androidx.compose.animation.animateContentSize
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -37,6 +38,7 @@ import com.chris.m3usuite.data.db.ResumeMark
 import com.chris.m3usuite.data.repo.XtreamRepository
 import com.chris.m3usuite.player.ExternalPlayer
 import com.chris.m3usuite.player.PlayerChooser
+import com.chris.m3usuite.player.InternalPlayerScreen
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
 import kotlin.math.max
@@ -73,8 +75,9 @@ fun VodDetailScreen(
     val scope = rememberCoroutineScope()
     val kidRepo = remember { KidContentRepository(ctx) }
     val store = remember { SettingsStore(ctx) }
+    val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
     val haptics = LocalHapticFeedback.current
-    val hapticsEnabled by store.hapticsEnabled.collectAsState(initial = false)
+    val hapticsEnabled by store.hapticsEnabled.collectAsStateWithLifecycle(initialValue = false)
 
     var title by remember { mutableStateOf("") }
     var poster by remember { mutableStateOf<String?>(null) }
@@ -130,30 +133,69 @@ fun VodDetailScreen(
         db.resumeDao().clearVod(id)
     }
 
+    // --- Interner Player Zustand (Fullscreen) ---
+    var showInternal by rememberSaveable { mutableStateOf(false) }
+    var internalUrl by rememberSaveable { mutableStateOf<String?>(null) }
+    var internalStartMs by rememberSaveable { mutableStateOf<Long?>(null) }
+    var internalUa by rememberSaveable { mutableStateOf("") }
+    var internalRef by rememberSaveable { mutableStateOf("") }
+
+    // Wenn interner Player aktiv ist, fullscreen anzeigen
+    if (showInternal) {
+        val hdrs = buildMap<String, String> {
+            if (internalUa.isNotBlank()) put("User-Agent", internalUa)
+            if (internalRef.isNotBlank()) put("Referer", internalRef)
+        }
+        InternalPlayerScreen(
+            url = internalUrl.orEmpty(),
+            type = "vod",
+            mediaId = id,
+            startPositionMs = internalStartMs,
+            headers = hdrs,
+            onExit = { showInternal = false }
+        )
+        return
+    }
+
+    var contentAllowed by remember { mutableStateOf(true) }
+    LaunchedEffect(id) {
+        val isAdultNow = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(store.currentProfileId.first())?.type == "adult" }
+        contentAllowed = if (isAdultNow) true else mediaRepo.isAllowed("vod", id)
+    }
+
     fun play(fromStart: Boolean = false) {
         val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
         url?.let { u ->
             scope.launch {
-                // Build headers like in Live detail
-                val hdrs = buildMap<String, String> {
-                    val ua = store.userAgent.first()
-                    val ref = store.referer.first()
-                    if (ua.isNotBlank()) put("User-Agent", ua)
-                    if (ref.isNotBlank()) put("Referer", ref)
+                if (!contentAllowed) {
+                    if (hapticsEnabled) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    android.widget.Toast.makeText(ctx, "Nicht freigegeben", android.widget.Toast.LENGTH_SHORT).show()
+                    return@launch
                 }
+                val hdrs = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
                 PlayerChooser.start(
                     context = ctx,
                     store = store,
                     url = u,
                     headers = hdrs,
                     startPositionMs = startMs
-                ) { s -> openInternal?.invoke(u, s) ?: ExternalPlayer.open(context = ctx, url = u, startPositionMs = s) }
+                ) { s ->
+                    if (openInternal != null) {
+                        openInternal(u, s)
+                    } else {
+                        internalUrl = u
+                        internalStartMs = s
+                        internalUa = hdrs["User-Agent"].orEmpty()
+                        internalRef = hdrs["Referer"].orEmpty()
+                        showInternal = true
+                    }
+                }
             }
         }
     }
 
     // Adult
-    val profileId by store.currentProfileId.collectAsState(initial = -1L)
+    val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
     var isAdult by remember { mutableStateOf(true) }
     LaunchedEffect(profileId) { isAdult = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(profileId)?.type != "kid" } }
 

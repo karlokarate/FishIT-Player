@@ -25,8 +25,7 @@ import com.chris.m3usuite.data.repo.PlaylistRepository
 import com.chris.m3usuite.data.repo.XtreamRepository
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.work.XtreamEnrichmentWorker
-import com.chris.m3usuite.work.XtreamRefreshWorker
+import com.chris.m3usuite.work.SchedulingGateway
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.chris.m3usuite.backup.QuickImportRow
@@ -111,11 +110,8 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
                     busy = true
                     msg = "Import läuft…"
 
-                    // Speichern
-                    store.set(Keys.M3U_URL, m3u.text.trim())
-                    store.set(Keys.EPG_URL, epg.text.trim())
-                    store.set(Keys.USER_AGENT, ua.text.trim())
-                    store.set(Keys.REFERER, ref.text.trim())
+                    // Speichern (batch)
+                    store.setSources(m3u.text.trim(), epg.text.trim(), ua.text.trim(), ref.text.trim())
 
                     // Import: Xtream bevorzugt, sonst M3U-Parser
                     val xtRepo = XtreamRepository(ctx, store)
@@ -131,8 +127,8 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
                     if (imported.isSuccess) {
                         msg = "Fertig: ${imported.getOrThrow()} Einträge"
                         // Hintergrund-Updates einplanen
-                        XtreamRefreshWorker.schedule(ctx)
-                        XtreamEnrichmentWorker.schedule(ctx)
+                        SchedulingGateway.scheduleXtreamPeriodic(ctx)
+                        SchedulingGateway.scheduleXtreamEnrichment(ctx)
                         onDone()
                     } else {
                         msg = "Fehler: ${imported.exceptionOrNull()?.message}"
