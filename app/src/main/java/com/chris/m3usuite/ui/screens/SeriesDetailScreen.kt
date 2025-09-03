@@ -547,6 +547,20 @@ fun SeriesDetailScreen(
                                         onSuccess = { loaded = true },
                                         onError = { loaded = true }
                                     )
+                                    // Play overlay when focused
+                                    val vis by remember { derivedStateOf { epFocused } }
+                                    val a by animateFloatAsState(if (vis) 1f else 0f, animationSpec = tween(150), label = "epPlayFade")
+                                    if (a > 0f) {
+                                        Box(Modifier.matchParentSize()) {
+                                            com.chris.m3usuite.ui.common.AppIconButton(
+                                                icon = com.chris.m3usuite.ui.common.AppIcon.PlayCircle,
+                                                contentDescription = "Abspielen",
+                                                onClick = { if (resumeSecs != null) playEpisode(e, fromStart = false, resumeSecs = resumeSecs) else playEpisode(e, fromStart = true) },
+                                                modifier = Modifier.align(Alignment.Center).graphicsLayer { this.alpha = a },
+                                                size = 28.dp
+                                            )
+                                        }
+                                    }
                                 }
                                 // Centered label area
                                 Row(

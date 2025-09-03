@@ -95,6 +95,24 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.input.key.key
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.alpha
+
+@Composable
+private fun PlayOverlay(visible: Boolean, sizeDp: Int = 56) {
+    val a by animateFloatAsState(targetValue = if (visible) 1f else 0f, animationSpec = tween(150), label = "playFade")
+    if (a > 0f) {
+        Box(Modifier.fillMaxSize()) {
+            AppIconButton(
+                icon = AppIcon.PlayCircle,
+                contentDescription = null,
+                onClick = {},
+                modifier = Modifier.align(Alignment.Center).alpha(a),
+                size = sizeDp.dp
+            )
+        }
+    }
+}
 
 @Composable
 private fun rowItemHeight(): Int {
@@ -449,6 +467,8 @@ fun LiveTileCard(
                         .background(Color(0xFF2196F3))
                 )
             }
+            // Center play overlay while focused
+            PlayOverlay(visible = focused)
         }
     }
 }
@@ -522,6 +542,8 @@ fun SeriesTileCard(
                         onSuccess = { loaded = true },
                         onError = { loaded = true }
                     )
+                    PlayOverlay(visible = focused)
+                    PlayOverlay(visible = focused)
                     // Minimal resume tooltip on focus (series)
                     val db = remember(ctx) { DbProvider.get(ctx) }
                     var resumeSecs by remember(item.streamId) { mutableStateOf<Int?>(null) }

@@ -23,6 +23,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
@@ -91,7 +92,14 @@ fun FishITHeader(
             }
             val logoModifier = Modifier
                 .padding(vertical = 8.dp)
-                .let { m -> if (onLogo != null) m.clickable { onLogo() } else m }
+                .let { m ->
+                    if (onLogo != null) {
+                        m.clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { onLogo() }
+                    } else m
+                }
                 .graphicsLayer { rotationZ = angle.value }
             androidx.compose.foundation.Image(
                 painter = androidx.compose.ui.res.painterResource(com.chris.m3usuite.R.drawable.fisch),
