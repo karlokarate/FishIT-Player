@@ -1,4 +1,7 @@
-# m3uSuite – Architecture Overview (derived from AGENTS_NEW.md)
+# FishIT Player – Architecture Overview (derived from AGENTS_NEW.md)
+
+Deep‑Dive Update: 2025‑09‑03
+- Inventory, dependencies and build notes refreshed per current repo. Non‑breaking optimization guidance added.
 
 Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module, Flows und Verantwortlichkeiten der App. Es ist aus `AGENTS_NEW.md` abgeleitet und wird hier als zentrale Architektur‑Referenz gepflegt.
 
@@ -19,6 +22,9 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 - App-Entry: `com.chris.m3usuite.MainActivity`
 - Min. Laufzeit-Voraussetzung: Netzwerkzugriff (für M3U/Xtream, Bilder).
 
+WSL/Linux Hinweise
+- Siehe `AGENTS.md` → „WSL/Linux Build & Test“ (Repo‑lokale Ordner `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`, empfohlene Env‑Variablen). Windows‑Builds bleiben kompatibel.
+
 ---
 
 ## 2) Top‑Level Projektstruktur
@@ -26,6 +32,11 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 ```
 app/src/main/java/com/chris/m3usuite
 ├── MainActivity.kt                         # Root-Navigation, Startziel (setup|gate), Worker-Scheduling
+├── backup/                                 # Settings Backup/Restore (Datei/Drive), Quick Import UI
+│   ├── BackupFormat.kt                     # JSON-Manifeste + Payload-Modelle
+│   ├── SettingsBackupManager.kt            # Export/Import Orchestrierung (Settings/DB-Teilmengen)
+│   ├── BackupRestoreSection.kt             # Settings-Abschnitt (Export/Import UI)
+│   └── QuickImportRow.kt                   # Setup/Home-Kachel (optional) für Schnell-Import
 ├── core/
 │   ├── http/HttpClient.kt                  # OkHttp mit UA/Referer/Extra-Headern aus SettingsStore
 │   ├── m3u/M3UParser.kt                    # Parser für M3U → MediaItem (Type-Heuristik)
@@ -52,7 +63,12 @@ app/src/main/java/com/chris/m3usuite
 │   ├── InternalPlayerScreen.kt             # Media3 Player; Resume; Subs (Style aus Settings); Audio‑Spurauswahl (Sprache/Kanäle/Bitrate); Tap‑Overlay
 │   └── ExternalPlayer.kt                   # ACTION_VIEW mit Headern; bevorzugtes Paket
 ├── prefs/
-│   └── SettingsStore.kt                    # DataStore (alle App-Settings & Flags)
+│   ├── SettingsStore.kt                    # DataStore (alle App-Settings & Flags)
+│   └── SettingsSnapshot.kt                 # Serialisierte Sicht (Backup/Restore)
+├── domain/
+│   └── selectors/ContentSelectors.kt       # Selektoren/Heuristiken für Content-Listen
+├── drive/
+│   └── DriveClient.kt                      # Optionaler Drive‑Client (Login/Upload/Download)
 ├── ui/
 │   ├── auth/                               # ProfileGate (PIN, Profile wählen), CreateProfileSheet
 │   ├── components/                         # UI-Bausteine (Header, Carousels, Controls)
@@ -71,6 +87,7 @@ app/src/main/java/com/chris/m3usuite
 └── work/
     ├── Workers.kt                          # XtreamRefreshWorker, XtreamEnrichmentWorker
     ├── EpgRefreshWorker.kt                 # Periodisches Now/Next‑Refresh (15m) + Stale‑Cleanup
+    ├── SchedulingGateway.kt                # Zentrales Unique-Work Scheduling (KEEP/REPLACE)
     ├── ScreenTimeResetWorker.kt            # täglicher Reset der ScreenTime
     └── BootCompletedReceiver.kt            # Re-Scheduling nach Boot
 ```
@@ -93,6 +110,7 @@ Routen (aus `MainActivity`):
    - Live‑Tiles zeigen Now/Next + Fortschrittsbalken (EPG‑Cache).
    - Live‑Favoriten (persistiert via `FAV_LIVE_IDS_CSV`).
    - Kid‑Profile berücksichtigen (Queries über `MediaQueryRepository` filtern per Whitelist).
+   - Optional: „Quick Import“ (Drive/Datei), sofern im Build/UI aktiviert.
 
 3. **library/browse = `LibraryScreen`**
    - Browsing mit Suchfeld, Grid‑Ansicht, Filter/Sortier‑Heuristiken.
@@ -106,7 +124,7 @@ Routen (aus `MainActivity`):
 
 6. **settings = `SettingsScreen`**
    - Player-Modus (ask/internal/external + bevorzugtes externes Paket), Subtitle‑Stil, Header‑Verhalten, Autoplay Next, TV‑Filter.
-   - Roadmap‑Erweiterung: Settings‑Import/Export & Drive‑Einstellungen.
+   - Daten & Backup: Export/Import (Datei/Drive), Drive‑Einstellungen.
 
 7. **profiles = `ProfileGate` & `ProfileManagerScreen`**
    - Adult-PIN, „Remember last profile“, Anlage Kind‑Profile inkl. Avatar; Kids‑Whitelist‑Listen.
@@ -165,6 +183,14 @@ Wichtige DAOs & Constraints
 - ScreenTimeRepository
   - Tages‑Key (yyyy‑MM‑dd), ensure‑Entry, addUsage(delta), resetToday; verwendet `ScreenTimeResetWorker` täglich.
 
+Backup/Restore
+- SettingsBackupManager
+  - Export/Import von Settings (DataStore) und optionalen Teilmengen (Profile/Resume‑Marks) gemäß BackupFormat.
+- BackupFormat
+  - JSON‑Struktur: Manifest + Payload (inkl. Versionierung); kompatibel mit zukünftigen Erweiterungen.
+- DriveClient (optional)
+  - Upload/Download der Backup‑Datei; Konto/Ordner‑Verwaltung für Drive‑Ziel.
+
 ---
 
 ## 6) Core/HTTP & Media
@@ -183,6 +209,7 @@ Wichtige DAOs & Constraints
 
 - XtreamRefreshWorker: Regelmäßiger Sync (Xtream.importAll oder Playlist.refreshFromM3U – je nach Konfiguration).
 - XtreamEnrichmentWorker: Lädt VOD‑Details nach (Poster, Plot, Dauer, Rating).
+  (über `SchedulingGateway` mit Unique‑Work geplant)
 - EpgRefreshWorker: Aktualisiert periodisch den Now/Next‑Cache; bereinigt veraltete Cache‑Einträge (>24h).
 - ScreenTimeResetWorker: Setzt täglich den Verbrauch der Kinder‑Profile zurück.
 - BootCompletedReceiver: Plant Worker nach Reboot neu.
@@ -221,6 +248,9 @@ Export/Import‑Scope siehe Roadmap – Standard: alle DataStore‑Keys + option
 - `work/*` → periodische Tasks.  
 - `prefs/SettingsStore.kt` → sämtliche Preferences und Typed Getter/Setter.  
 - `ui/util/Images.kt` → einheitliche Header für Coil/Streams.
+ - `backup/*` → Backup/Restore Flow (UI + Manager + Formate).  
+ - `drive/DriveClient.kt` → Drive‑Integration (optional).  
+ - `work/SchedulingGateway.kt` → Einheitliche Unique‑Work Steuerung.
 
 ---
 
@@ -252,3 +282,30 @@ Export/Import‑Scope siehe Roadmap – Standard: alle DataStore‑Keys + option
 - Home zeigt keinen Schnell‑Import‑Block mehr.  
 - Settings enthält Export, Import, Drive‑Einstellungen; Export erzeugt Datei; Import setzt Settings und stößt Refresh an.  
 - (Optional) Drive‑Login funktioniert; Up/Download der Settings‑Datei ok.
+
+---
+
+## 13) Abhängigkeitskarte (Deep Dependency Map)
+
+- UI → Repositories → DB/HTTP: Screens und ViewModels konsumieren Repositories; direkte DAO‑Zugriffe vermeiden (Kid/Gast stets via `MediaQueryRepository`).
+- Player → core/http + prefs: `InternalPlayerScreen`/`ExternalPlayer` nutzen `RequestHeadersProvider`/`HttpClientFactory` und `SettingsStore` (Header/Player‑Modus).
+- EPG: `EpgRepository` nutzt `core/epg/XmlTv`, `SettingsStore` (EPG URL), DB‑Tabelle `epg_now_next`; UI‑Tiles/Details konsumieren Repository.
+- Import: `PlaylistRepository` nutzt `core/m3u` (Parser/Exporter), `core/xtream/XtreamDetect`, `HttpClientFactory`, DB, `SchedulingGateway`.
+- Xtream: `XtreamRepository` nutzt `core/xtream` (Client/Config/Models), DB und `SettingsStore`.
+- Backup: `SettingsBackupManager` nutzt `SettingsStore`, `DbProvider` (optionale Daten), `DriveClient` (optional) und `BackupFormat`.
+- Work: `SchedulingGateway` orchestriert XtreamRefresh/XtreamEnrichment/EpgRefresh; `BootCompletedReceiver` re‑schedules.
+
+Querschnitt
+- `prefs/SettingsStore` ist zentrale Quelle für Header/Quellen/Filter/Player.
+- `core/http/RequestHeadersProvider` wird in Player, Preview (HomeRows), Images (Coil) und ExternalPlayer angewandt.
+
+---
+
+## 14) Optimierungsempfehlungen (nicht‑brechend)
+
+- Scheduling konsolidieren: Alle Jobs ausschließlich über `SchedulingGateway` (UniqueName + klare KEEP/REPLACE Policies). Bei neuen Jobs verpflichtend.
+- Lifecycle Hygiene: In UI durchgängig `collectAsStateWithLifecycle`; lange Flows in `repeatOnLifecycle` kapseln; große Composables weiter entflechten.
+- Settings‑Snapshot: Bei mehrfachen `first()`‑Zugriffen `SettingsSnapshot` einsetzen; Writes batched via `DataStore.edit {}`.
+- HTTP/Headers: `RequestHeadersProvider` flächendeckend sichern (Internal/External/Preview/Coil); Extra‑Header JSON konsistent mergen.
+- DB‑Filter: Optional DAO‑seitige Pfade für Kid‑Whitelist bei sehr großen Katalogen (statt rein in‑memory).
+- Tests: Unit‑Tests für Backup‑Roundtrip, EPG‑TTL/LRU, SchedulingGateway‑Policies ergänzen.

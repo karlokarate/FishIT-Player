@@ -1,9 +1,11 @@
 # 
-# m3uSuite – Changelog
+# FishIT Player – Changelog
 
 All notable changes to this project are documented here. Keep entries concise and tied to commits/PRs.
 
 2025-09-03
+- docs(agents): Add Codex operating rules (override) and WSL build guidance; document repo-local WSL folders `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17` and env setup.
+- docs(roadmap): Add cross-reference to AGENTS.md WSL/Linux Build & Test section.
 - fix(build): Add missing `animateFloat` imports in `ProfileManagerScreen` and `LibraryScreen`; resolves compile errors.
 - fix(player): Define `refreshAudioOptions()` in scope before first use; track options refresh on `onTracksChanged`. No behavior change intended.
 - docs(architecture): Update EPG design (persistent Now/Next cache + XMLTV fallback + periodic refresh) and permissions repo; minor player notes.

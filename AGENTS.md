@@ -1,4 +1,4 @@
-# m3uSuite – Agents & Architecture Guide (consolidated)
+# FishIT Player – Agents & Architecture Guide (consolidated)
 
 This file is the single source of truth for contributors (Codex + humans). It supersedes split/older variants and always provides a complete overview.
 
@@ -13,10 +13,43 @@ Update Policy (mandatory)
   - If the change is substantial (new modules/flows/features or architectural impact), also update AGENTS.md so a one-stop read remains accurate.
 - Diffs must be shown first; only apply after user approval.
 
+Codex – Operating Rules (override)
+- Scope: These rules override conflicting prior rules in this file. Where the runtime environment imposes sandbox/approval limits, Codex follows the intent and asks for minimal one‑shot approval when required.
+- Single source of truth: Codex always reads AGENTS.md fully first and treats it as the single source of truth for contributor workflow.
+- Full context gathering: For a complete overview, Codex also reads ROADMAP.md, CHANGELOG.md, ARCHITECTURE_OVERVIEW.md, and the latest commits/PRs to understand the current state before making changes.
+- Auto documentation upkeep: After patches, Codex updates the full documentation set (AGENTS.md, ROADMAP.md, CHANGELOG.md, ARCHITECTURE_OVERVIEW.md) and pushes to `master`. If the environment blocks direct writes or pushes, Codex prepares diffs and requests the smallest possible approval to finalize.
+- Deep dependency awareness: When patching, Codex reads all relevant modules in appropriately sized batches and considers all dependent modules. ARCHITECTURE_OVERVIEW.md is the dependency authority (single source for module relations). The architecture document should be periodically deep‑dived and refined based on a thorough repo analysis.
+- Cascading fixes allowed: If additional modules must change to keep the system consistent after a patch, Codex proceeds to implement those changes directly under these rules.
+- End‑to‑end execution: When the user requests a change/fix/implementation, Codex performs it end‑to‑end (no TODOs/placeholders). For major changes requiring iterative passes over the same files, Codex proceeds autonomously without waiting for intermediate applies, unless sandbox constraints force an approval.
+- Minimize approvals: User approvals are limited to the absolute minimum (e.g., privileged ops, irreversible deletions, external auth). Otherwise Codex applies directly.
+- Pragmatic alternatives: If a request is technically not feasible, Codex proposes the best alternative solution and requests approval where appropriate.
+- Respectful scope: Codex does not change/trim/expand modules or files without instruction, except where necessary to uphold these rules or maintain architectural integrity. Existing flows (EPG/Xtream, player paths, list/detail) must be preserved unless requested.
+- Ongoing hygiene: Codex periodically tidies the repo, highlights obsolete files/code to the user, and removes uncritical leftovers (e.g., stale *.old files). Never touch `.gradle/`, `.idea/`, or `app/build/` artifacts, and avoid dependency upgrades unless fixing builds.
+- Cross‑platform builds: Codex uses Linux/WSL for builds/tests via Gradle wrapper while keeping settings compatible with Windows. Ensure no corruption of Windows‑side project files.
+- WSL build files: Projektstamm enthält Linux‑spezifische Ordner für Build/Tests: `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`. Codex verwendet diese Ordner unter WSL; Windows‑seitige Einstellungen bleiben kompatibel.
+- Tooling upgrades: If Codex needs additional tools or configuration to work better, it informs the user and, where possible, sets them up itself; otherwise it provides clear, copy‑pastable step‑by‑step commands for the user to establish the optimal environment.
+
 Quick Build & Test
 - JDK 17; Gradle wrapper
 - Commands: `./gradlew --version`, `./gradlew build`, `./gradlew test`
 - Optional: `./gradlew lint ktlintFormat detekt`
+
+WSL/Linux Build & Test
+- Android SDK (WSL): Setze `ANDROID_SDK_ROOT` auf den Repo‑lokalen SDK‑Pfad: `<repo>/.wsl-android-sdk`. Keine Windows‑`local.properties` committen; in WSL/CI per Env‑Vars arbeiten.
+- Java 17 (WSL): Verwende den Repo‑lokalen JDK‑Pfad `<repo>/.wsl-java-17` (oder System‑JDK 17). Setze `JAVA_HOME` entsprechend. Prüfen mit `java -version` und `./gradlew --version`.
+- Gradle (WSL): Immer den Wrapper `./gradlew` verwenden. Setze `GRADLE_USER_HOME` auf `<repo>/.wsl-gradle`, um Caches zu isolieren (keine Windows‑Caches anfassen).
+- Lizenzen/SDK Tools: Lizenzen in WSL akzeptieren (`yes | sdkmanager --licenses`) und notwendige Pakete installieren (z. B. `platform-tools`, `platforms;android-34`, `build-tools;34.0.0`).
+- Windows‑Kompatibilität: Windows‑Builds (Android Studio auf Windows) müssen weiterhin funktionieren. WSL‑Anpassungen dürfen `local.properties`, `.idea/` oder Windows‑Gradle‑Caches nicht beschädigen.
+
+Empfohlene WSL‑Umgebungsvariablen (Shell)
+```
+# vom Projektstamm aus
+export REPO="$(pwd)"
+export ANDROID_SDK_ROOT="$REPO/.wsl-android-sdk"
+export JAVA_HOME="$REPO/.wsl-java-17"
+export GRADLE_USER_HOME="$REPO/.wsl-gradle"
+export PATH="$JAVA_HOME/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+```
 
 Where to find the full overview
 - The complete, continuously updated architecture overview (modules, flows, responsibilities) is maintained in:

@@ -1,11 +1,14 @@
 #
-# m3uSuite – **Roadmap: Import/Export finalisieren**
+# FishIT Player – **Roadmap: Import/Export finalisieren**
 
 Zielbild:
 - **Schnell‑Import** ausschließlich im **Erststart‑Screen (`setup`)**.
 - **Settings‑Export/Import** in **Settings** (manuell + optional Auto‑Backup).
 - **Google‑Drive** (optional): Login + Zielordner wählen + Upload/Download.
 - Nach **Import**: automatischer **Refresh** (M3U/Xtream) und Worker‑Scheduling.
+
+Hinweis (Build & WSL)
+- Für konsistente Linux‑Builds unter WSL siehe `AGENTS.md` → Abschnitt „WSL/Linux Build & Test“ (Repo‑lokale Ordner: `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`, empfohlene Env‑Variablen).
 
 ---
 
