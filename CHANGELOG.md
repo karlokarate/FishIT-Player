@@ -4,6 +4,8 @@
 All notable changes to this project are documented here. Keep entries concise and tied to commits/PRs.
 
 2025-09-03
+- docs(agents): Make AGENTS.md canonical; remove diff-approval; doc updates immediate post-patch.
+- chore(gitignore): Ignore SSH/private keys and Android signing keystores to avoid accidental commits.
 - docs(consolidate): Set AGENTS.md as sole source; removed AGENTS_NEW.md. Set ROADMAP.md as sole source; removed ROADMAP_NEW.md. Updated references and ARCHITECTURE_OVERVIEW header.
 - docs(agents): Add Codex operating rules (override) and WSL build guidance; document repo-local WSL folders `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17` and env setup.
 - docs(roadmap): Add cross-reference to AGENTS.md WSL/Linux Build & Test section.
