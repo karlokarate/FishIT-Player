@@ -151,7 +151,7 @@ fun StartScreen(
 
     val listState = rememberLazyListState()
     HomeChromeScaffold(
-        title = "m3uSuite",
+        title = "FishIT Player",
         onSearch = { /* future */ },
         onProfiles = {
             scope.launch {

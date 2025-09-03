@@ -105,7 +105,7 @@ private fun PlayOverlay(visible: Boolean, sizeDp: Int = 56) {
         Box(Modifier.fillMaxSize()) {
             AppIconButton(
                 icon = AppIcon.PlayCircle,
-                contentDescription = null,
+                contentDescription = "Abspielen",
                 onClick = {},
                 modifier = Modifier.align(Alignment.Center).alpha(a),
                 size = sizeDp.dp

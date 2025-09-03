@@ -228,7 +228,7 @@ fun LibraryScreen(
     val snackHost = remember { SnackbarHostState() }
     val headerListState = rememberLazyListState()
     HomeChromeScaffold(
-        title = "m3uSuite",
+        title = "FishIT Player",
         onSettings = {
             val current = navController.currentBackStackEntry?.destination?.route
             if (current != "settings") {
