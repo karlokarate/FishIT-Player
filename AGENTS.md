@@ -65,7 +65,7 @@ Git Push Policy (SSH, codex‑wsl)
 
 Where to find the full overview
 - The complete, continuously updated architecture overview (modules, flows, responsibilities) is maintained in:
-  - `ARCHITECTURE_OVERVIEW.md` (derived from AGENTS_NEW.md)
+  - `ARCHITECTURE_OVERVIEW.md` (derived from AGENTS.md)
 - Read `ARCHITECTURE_OVERVIEW.md` for a deep, comprehensive view. Keep it updated whenever new modules/features are added.
 
 Short bullet summary (current highlights)

@@ -1,9 +1,9 @@
-# FishIT Player – Architecture Overview (derived from AGENTS_NEW.md)
+# FishIT Player – Architecture Overview (derived from AGENTS.md)
 
 Deep‑Dive Update: 2025‑09‑03
 - Inventory, dependencies and build notes refreshed per current repo. Non‑breaking optimization guidance added.
 
-Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module, Flows und Verantwortlichkeiten der App. Es ist aus `AGENTS_NEW.md` abgeleitet und wird hier als zentrale Architektur‑Referenz gepflegt.
+Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module, Flows und Verantwortlichkeiten der App. Es ist aus `AGENTS.md` abgeleitet und wird hier als zentrale Architektur‑Referenz gepflegt.
 
 > Technologie-Stack
 >
