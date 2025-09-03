@@ -14,6 +14,9 @@ import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
 import com.chris.m3usuite.ui.common.IconVariant
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.infiniteRepeatable
@@ -66,7 +69,7 @@ fun FishITHeader(
         ) {
             // Rotate logo with global fish spin controller
             val angle = remember { androidx.compose.animation.core.Animatable(0f) }
-            val loading by com.chris.m3usuite.ui.fx.FishSpin.isLoading.collectAsState()
+            val loading = com.chris.m3usuite.ui.fx.FishSpin.isLoading.collectAsState().value
             LaunchedEffect(loading) {
                 if (loading) {
                     while (com.chris.m3usuite.ui.fx.FishSpin.isLoading.value) {

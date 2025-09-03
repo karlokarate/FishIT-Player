@@ -2,7 +2,6 @@ package com.chris.m3usuite.ui.fx
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
@@ -10,8 +9,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import kotlinx.coroutines.launch
+import androidx.compose.animation.core.animateFloat
 import com.chris.m3usuite.R
 
 @Composable
@@ -22,42 +23,33 @@ fun FishBackground(
     fastSpinMillis: Int = 500,
     loadingSpinMillis: Int = 1000
 ) {
-    val scope = rememberCoroutineScope()
-    val angle = remember { Animatable(0f) }
-    val isLoading by FishSpin.isLoading.collectAsState()
+    // Loading-driven infinite rotation uses an InfiniteTransition for reliability
+    val isLoading = FishSpin.isLoading.collectAsState().value
+    val infinite = rememberInfiniteTransition(label = "fishBg")
+    val loadingAngle = if (isLoading) {
+        infinite.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(animation = tween(loadingSpinMillis, easing = LinearEasing)),
+            label = "deg"
+        ).value
+    } else 0f
 
-    LaunchedEffect(isLoading) {
-        if (isLoading) {
-            // Continuous rotation until loading turns off
-            while (FishSpin.isLoading.value) {
-                val target = angle.value + 360f
-                angle.animateTo(
-                    targetValue = target,
-                    animationSpec = tween(durationMillis = loadingSpinMillis, easing = LinearEasing)
-                )
-            }
-            angle.snapTo(0f)
-        }
-    }
-
+    // Kick animation overlays one quick spin on top of loading angle
+    val kick = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         FishSpin.spinTrigger.collect {
-            // One quick spin regardless of current state
-            angle.stop()
-            angle.snapTo(0f)
-            angle.animateTo(
-                targetValue = 360f,
-                animationSpec = tween(durationMillis = fastSpinMillis, easing = LinearEasing)
-            )
-            angle.snapTo(0f)
+            kick.stop(); kick.snapTo(0f)
+            kick.animateTo(360f, tween(fastSpinMillis, easing = LinearEasing))
+            kick.snapTo(0f)
         }
     }
+
+    val angle = (loadingAngle + kick.value) % 360f
 
     Image(
         painter = painterResource(id = R.drawable.fisch),
         contentDescription = null,
-        modifier = modifier
-            .graphicsLayer { this.alpha = alpha; rotationZ = angle.value }
+        modifier = modifier.graphicsLayer { this.alpha = alpha; rotationZ = angle }
     )
 }
-

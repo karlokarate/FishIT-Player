@@ -275,10 +275,21 @@ fun StartScreen(
                                     val last = withContext(kotlinx.coroutines.Dispatchers.IO) {
                                         dbLocal.resumeDao().recentEpisodes(50).firstOrNull { it.seriesStreamId == sid }
                                     }
-                                    val ep = if (last != null) withContext(kotlinx.coroutines.Dispatchers.IO) { dbLocal.episodeDao().byEpisodeId(last.episodeId) } else {
+                                    var ep = if (last != null) withContext(kotlinx.coroutines.Dispatchers.IO) { dbLocal.episodeDao().byEpisodeId(last.episodeId) } else {
                                         val seasons = withContext(kotlinx.coroutines.Dispatchers.IO) { dbLocal.episodeDao().seasons(sid) }
                                         val firstSeason = seasons.firstOrNull()
                                         firstSeason?.let { fs -> withContext(kotlinx.coroutines.Dispatchers.IO) { dbLocal.episodeDao().episodes(sid, fs).firstOrNull() } }
+                                    }
+                                    if (ep == null) {
+                                        // First app start: episodes likely not fetched yet → load once, then retry
+                                        withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                            runCatching { com.chris.m3usuite.data.repo.XtreamRepository(ctx, storeLocal).loadSeriesInfo(sid) }
+                                        }
+                                        val seasons = withContext(kotlinx.coroutines.Dispatchers.IO) { dbLocal.episodeDao().seasons(sid) }
+                                        val firstSeason = seasons.firstOrNull()
+                                        if (firstSeason != null) {
+                                            ep = withContext(kotlinx.coroutines.Dispatchers.IO) { dbLocal.episodeDao().episodes(sid, firstSeason).firstOrNull() }
+                                        }
                                     }
                                     if (ep != null) {
                                         val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(
