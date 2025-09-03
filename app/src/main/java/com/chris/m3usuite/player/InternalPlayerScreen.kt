@@ -54,6 +54,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -367,18 +370,16 @@ fun InternalPlayerScreen(
         onDispose { exoPlayer.removeListener(listener) }
     }
 
-    var confirmExit by remember { mutableStateOf(false) }
-    var discardResume by remember { mutableStateOf(false) }
+    // Auto-save resume on exit without prompting
+    var confirmExit by remember { mutableStateOf(false) } // retained no-op
+    var discardResume by remember { mutableStateOf(false) } // retained no-op
     var finishing by remember { mutableStateOf(false) }
 
     fun finishAndRelease() {
         if (finishing) return
-        // Ask before exiting when watchtime is very short
+        // Auto-save resume without confirmation
         val dur = exoPlayer.duration
         val pos = exoPlayer.currentPosition
-        if (type != "live" && ((type == "vod" && mediaId != null) || (type == "series" && episodeId != null))) {
-            if (pos in 1..14999 && !discardResume) { confirmExit = true; return }
-        }
         finishing = true
         scope.launch(Dispatchers.IO) {
             try {
@@ -429,6 +430,9 @@ fun InternalPlayerScreen(
     data class SubOpt(val label: String, val groupIndex: Int?, val trackIndex: Int?)
     var subOptions by remember { mutableStateOf(listOf<SubOpt>()) }
     var selectedSub by remember { mutableStateOf<SubOpt?>(null) }
+    data class AudioOpt(val label: String, val groupIndex: Int?, val trackIndex: Int?)
+    var audioOptions by remember { mutableStateOf(listOf<AudioOpt>()) }
+    var selectedAudio by remember { mutableStateOf<AudioOpt?>(null) }
 
     fun refreshSubtitleOptions() {
         val tracks: Tracks = exoPlayer.currentTracks
@@ -439,8 +443,9 @@ fun InternalPlayerScreen(
             if (g.type == C.TRACK_TYPE_TEXT) {
                 for (ti in 0 until g.length) {
                     val fmt = g.getTrackFormat(ti)
-                    val lang = fmt.language ?: "Untertitel ${gi}-${ti}"
-                    val label = if (fmt.label != null) fmt.label!! else lang
+                    val lang = fmt.language?.uppercase() ?: ""
+                    val base = fmt.label ?: (if (lang.isNotBlank()) "Untertitel $lang" else "Untertitel ${gi}-${ti}")
+                    val label = if (lang.isNotBlank() && !base.contains("[$lang]")) "$base [$lang]" else base
                     val opt = SubOpt(label, gi, ti)
                     opts += opt
                     if (g.isTrackSelected(ti)) currentSel = opt
@@ -451,14 +456,42 @@ fun InternalPlayerScreen(
         selectedSub = currentSel ?: opts.firstOrNull()
     }
 
+    fun refreshAudioOptions() {
+        val tracks: Tracks = exoPlayer.currentTracks
+        val opts = mutableListOf<AudioOpt>()
+        opts += AudioOpt("Auto", null, null)
+        var currentSel: AudioOpt? = null
+        tracks.groups.forEachIndexed { gi, g ->
+            if (g.type == C.TRACK_TYPE_AUDIO) {
+                for (ti in 0 until g.length) {
+                    val fmt = g.getTrackFormat(ti)
+                    val lang = fmt.language?.uppercase() ?: ""
+                    val ch = if (fmt.channelCount != androidx.media3.common.Format.NO_VALUE) "${fmt.channelCount}ch" else ""
+                    val br = if (fmt.averageBitrate != androidx.media3.common.Format.NO_VALUE) "${fmt.averageBitrate/1000}kbps" else ""
+                    val base0 = fmt.label ?: (if (lang.isNotBlank()) "Audio $lang" else "Audio ${gi}-${ti}")
+                    val base = if (lang.isNotBlank() && !base0.contains("[$lang]")) "$base0 [$lang]" else base0
+                    val meta = listOf(ch, br).filter { it.isNotBlank() }.joinToString(" · ")
+                    val label = if (meta.isNotBlank()) "$base ($meta)" else base
+                    val opt = AudioOpt(label, gi, ti)
+                    opts += opt
+                    if (g.isTrackSelected(ti)) currentSel = opt
+                }
+            }
+        }
+        audioOptions = opts
+        selectedAudio = currentSel ?: opts.firstOrNull()
+    }
+
     DisposableEffect(exoPlayer) {
         val listener = object : Player.Listener {
             override fun onTracksChanged(tracks: Tracks) {
                 refreshSubtitleOptions()
+                refreshAudioOptions()
             }
         }
         exoPlayer.addListener(listener)
         refreshSubtitleOptions()
+        refreshAudioOptions()
         onDispose { exoPlayer.removeListener(listener) }
     }
 
@@ -520,6 +553,8 @@ fun InternalPlayerScreen(
             controlsVisible = false
         }
     }
+
+    
 
     Box(Modifier.fillMaxSize()) {
         AndroidView(
@@ -696,24 +731,35 @@ fun InternalPlayerScreen(
                         }
                     )
         }
-        if (confirmExit) {
-                    AlertDialog(
-                        onDismissRequest = { confirmExit = false },
-                        title = { Text("Wiedergabe beenden?") },
-                        text = { Text("Fortschritt ist sehr gering. Resume speichern?") },
-                        confirmButton = {
-                            TextButton(onClick = { discardResume = true; confirmExit = false; finishAndRelease() }) { Text("Nicht speichern") }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { discardResume = false; confirmExit = false; finishAndRelease() }) { Text("Speichern") }
-                        }
-                    )
-        }
+        // No exit confirmation; resume is always auto-saved/cleared per logic above
 
         if (showCcMenu && isAdult) {
                     ModalBottomSheet(onDismissRequest = { showCcMenu = false }) {
-                        // Subtitle options + live style controls
-                        Column(Modifier.padding(16.dp)) {
+                        // Audio + Subtitle options + live style controls (scrollable)
+                        Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
+                            Text("Audio")
+                            Spacer(Modifier.padding(4.dp))
+                            audioOptions.forEach { opt ->
+                                val selected = selectedAudio == opt
+                                Button(onClick = {
+                                    selectedAudio = opt
+                                    val builder = exoPlayer.trackSelectionParameters.buildUpon()
+                                    builder.clearOverridesOfType(C.TRACK_TYPE_AUDIO)
+                                    builder.setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
+                                    if (opt.groupIndex != null && opt.trackIndex != null) {
+                                        val group = exoPlayer.currentTracks.groups[opt.groupIndex]
+                                        val override = TrackSelectionOverride(group.mediaTrackGroup, listOf(opt.trackIndex))
+                                        builder.addOverride(override)
+                                    }
+                                    exoPlayer.trackSelectionParameters = builder.build()
+                                }) { Text((if (selected) "• " else "") + opt.label) }
+                                Spacer(Modifier.padding(2.dp))
+                            }
+
+                            Spacer(Modifier.padding(8.dp))
+                            HorizontalDivider()
+                            Spacer(Modifier.padding(8.dp))
+
                             Text("Untertitel",)
                             Spacer(Modifier.padding(4.dp))
                             // Track selection

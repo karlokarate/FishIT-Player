@@ -3,6 +3,8 @@ package com.chris.m3usuite.ui.profile
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,6 +54,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Checkbox
 import androidx.compose.foundation.lazy.items
+import androidx.compose.animation.core.animateFloat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,14 +93,22 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
             val Accent = DesignTokens.KidAccent
             Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to MaterialTheme.colorScheme.background, 1f to MaterialTheme.colorScheme.surface)))
             Box(Modifier.matchParentSize().background(Brush.radialGradient(colors = listOf(Accent.copy(alpha = 0.20f), androidx.compose.ui.graphics.Color.Transparent), radius = with(LocalDensity.current) { 660.dp.toPx() })))
-            Image(painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch), contentDescription = null, modifier = Modifier.align(Alignment.Center).size(540.dp).graphicsLayer { alpha = 0.06f; try { if (Build.VERSION.SDK_INT >= 31) renderEffect = android.graphics.RenderEffect.createBlurEffect(34f, 34f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect() } catch (_: Throwable) {} })
+            run {
+                val rot = androidx.compose.animation.core.rememberInfiniteTransition(label = "fishRot").animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = androidx.compose.animation.core.infiniteRepeatable(animation = androidx.compose.animation.core.tween(5000, easing = androidx.compose.animation.core.LinearEasing)),
+                    label = "deg"
+                )
+                Image(painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch), contentDescription = null, modifier = Modifier.align(Alignment.Center).size(540.dp).graphicsLayer { alpha = 0.06f; rotationZ = rot.value })
+            }
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(onClick = onBack) { Text("Zurück") }
             OutlinedTextField(value = newKidName, onValueChange = { newKidName = it }, label = { Text("Neues Profil (Name)") })
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Typ:")
-                FilterChip(selected = newType == "kid", onClick = { newType = "kid" }, label = { Text("Kind") })
-                FilterChip(selected = newType == "guest", onClick = { newType = "guest" }, label = { Text("Gast") })
+                FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = newType == "kid", onClick = { newType = "kid" }, label = { Text("Kind") })
+                FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = newType == "guest", onClick = { newType = "guest" }, label = { Text("Gast") })
             }
             Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                 scope.launch(Dispatchers.IO) {
@@ -151,7 +162,7 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                     Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
                                 }
                                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.weight(1f))
-                                AssistChip(onClick = {}, label = { Text(if (kid.type == "guest") "Gast" else "Kind") })
+                                AssistChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), onClick = {}, label = { Text(if (kid.type == "guest") "Gast" else "Kind") })
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 AvatarCaptureAndPickButtons { uri ->
@@ -162,6 +173,8 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
                                             avatarPath = file.absolutePath
                                             // Snackbar kann zeigen, auch wenn man direkt zurück geht
                                             scope.launch { snack.showSnackbar("Avatar aktualisiert") }
+                                            // Liste neu laden, damit künftige Recompositionen den DB‑Wert nutzen
+                                            scope.launch { withContext(Dispatchers.IO) { load() } }
                                         } else {
                                             scope.launch { snack.showSnackbar("Avatar speichern fehlgeschlagen") }
                                         }
@@ -383,10 +396,17 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
     val types = listOf("live", "vod", "series")
     val titles = listOf("TV", "Filme", "Serien")
     ModalBottomSheet(onDismissRequest = onClose) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 520.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 titles.forEachIndexed { i, t ->
-                    FilterChip(selected = tab == i, onClick = { tab = i }, label = { Text(t) })
+                    FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = tab == i, onClick = { tab = i }, label = { Text(t) })
                 }
             }
             val type = types[tab]
@@ -423,7 +443,7 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                     val allowed = cat in allowedCats
                     Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
                         Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                            AssistChip(onClick = { expanded = if (expanded == cat) null else cat }, label = { Text(cat) })
+                            AssistChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), onClick = { expanded = if (expanded == cat) null else cat }, label = { Text(cat) })
                             Switch(checked = allowed, onCheckedChange = { v ->
                                 scope.launch(Dispatchers.IO) {
                                     if (v) db.kidCategoryAllowDao().insert(KidCategoryAllow(kidProfileId = kidId, contentType = type, categoryId = cat))

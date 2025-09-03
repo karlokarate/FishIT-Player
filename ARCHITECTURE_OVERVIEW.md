@@ -41,7 +41,7 @@ app/src/main/java/com/chris/m3usuite
 │   └── repo/                               # Repositories (IO/Business-Logik)
 │       ├── PlaylistRepository.kt           # Download & Import M3U → MediaItem (live/vod/series)
 │       ├── XtreamRepository.kt             # Vollimport via Xtream (Kategorien, Streams, Episoden, Details)
-│       ├── EpgRepository.kt                # Now/Next (get_short_epg) mit kurzem TTL‑Cache
+│       ├── EpgRepository.kt                # Now/Next: persistenter Room‑Cache (epg_now_next) + XMLTV‑Fallback
 │       ├── MediaQueryRepository.kt         # Gefilterte Queries (Kids-Whitelist), Suche
 │       ├── ProfileRepository.kt            # Profile & aktuelles Profil (Adult/Kid), PIN/Remember
 │       ├── KidContentRepository.kt         # Whitelist-Verwaltung (allow/disallow/bulk)
@@ -49,7 +49,7 @@ app/src/main/java/com/chris/m3usuite
 │       └── ScreenTimeRepository.kt         # Tages-Limits, Verbrauch, Reset
 ├── player/
 │   ├── PlayerChooser.kt                    # „Ask | Internal | External“ – zentrale Startlogik
-│   ├── InternalPlayerScreen.kt             # Media3 Player; Resume; Subs (Style aus Settings)
+│   ├── InternalPlayerScreen.kt             # Media3 Player; Resume; Subs (Style aus Settings); Audio‑Spurauswahl (Sprache/Kanäle/Bitrate); Tap‑Overlay
 │   └── ExternalPlayer.kt                   # ACTION_VIEW mit Headern; bevorzugtes Paket
 ├── prefs/
 │   └── SettingsStore.kt                    # DataStore (alle App-Settings & Flags)
@@ -70,6 +70,7 @@ app/src/main/java/com/chris/m3usuite
 │   └── util/Images.kt, AvatarModel.kt      # Coil-ImageRequests mit Headers aus Settings
 └── work/
     ├── Workers.kt                          # XtreamRefreshWorker, XtreamEnrichmentWorker
+    ├── EpgRefreshWorker.kt                 # Periodisches Now/Next‑Refresh (15m) + Stale‑Cleanup
     ├── ScreenTimeResetWorker.kt            # täglicher Reset der ScreenTime
     └── BootCompletedReceiver.kt            # Re-Scheduling nach Boot
 ```
@@ -89,6 +90,7 @@ Routen (aus `MainActivity`):
 
 2. **gate = Start/Home (`StartScreen`)**
    - Suche, Resume‑Carousels (VOD/Episoden), Serien/Filme/TV‑Rows.
+   - Live‑Tiles zeigen Now/Next + Fortschrittsbalken (EPG‑Cache).
    - Live‑Favoriten (persistiert via `FAV_LIVE_IDS_CSV`).
    - Kid‑Profile berücksichtigen (Queries über `MediaQueryRepository` filtern per Whitelist).
 
@@ -119,8 +121,12 @@ Zentrale Entities (Auszug aus `Entities.kt`)
 - Category (kind: live/vod/series).
 - Profile: `type` (`adult`|`kid`), `name`, `avatarId` …
 - KidContentItem: Whitelist‑Tabelle (Kind weist Content `type+id` frei).
+- KidCategoryAllow: Kategorien‑Freigaben pro Profil (Whitelist auf Kategorie‑Ebene).
+- KidContentBlock: Item‑Ausnahmen (Block auf Item‑Ebene trotz Kategorien‑Freigabe).
+- ProfilePermissions: Rechtematrix pro Profil (Settings, Quellen, Externer Player, Favoriten, Suche, Resume, Whitelist).
 - ResumeMark: VOD/Episode Fortschritt (ms/sek, Zeitstempel).
 - ScreenTimeEntry: Limit und Verbrauch pro Tag+Kind.
+- EpgNowNext (Tabelle `epg_now_next`): Persistenter Now/Next‑Cache pro Kanal (`tvg-id`), inkl. Titel/Zeiten und `updatedAt`.
 
 Wichtige DAOs & Constraints
 - Indizes auf `type+streamId`, `categoryId` etc. für schnelle Queries.
@@ -147,6 +153,9 @@ Wichtige DAOs & Constraints
 - ProfileRepository
   - Aktuelles Profil (Adult/Kid), „remember last profile“, Adult‑PIN‑Gate.
 
+- PermissionRepository
+  - Liefert effektive Rechtematrix je aktuellem Profil; seeden von Defaults je Profiltyp (Adult/Kid/Gast); UI‑Gating (Settings, Quellen, Externer Player, Favoriten, Suche, Resume, Whitelist).
+
 - KidContentRepository
   - allow/disallow (einzeln/bulk) von Content‑IDs pro Kind und Typ.
 
@@ -164,7 +173,8 @@ Wichtige DAOs & Constraints
 - Live‑Preview (HomeRows): nutzt ExoPlayer mit `DefaultHttpDataSource.Factory` und setzt Default‑Request‑Properties (User‑Agent/Referer) für Provider, die Header erzwingen. Status: zu testen durch Nutzer.
 - Images.kt: Liefert Coil ImageRequest mit denselben Headern.
 - M3UParser: Attribute‑Parser, `inferType()` (Heuristik: Group‑Title/Dateiendung).
-- EpgRepository: kapselt `XtreamClient.shortEPG`, liefert Now/Next mit kurzem In‑Memory‑TTL (Standard ~90s), reduziert Netzlast.
+- EpgRepository: Liefert Now/Next mit persistentem Room‑Cache (`epg_now_next`), XMLTV‑Fallback bei leeren/fehlenden Xtream‑Antworten und kurzer In‑Memory‑TTL. Integrationen in Live‑Tiles und Live‑Detail.
+  - EPG‑Refresh läuft periodisch via `EpgRefreshWorker` (Standard 15 Minuten) mit Bereinigung veralteter Einträge (>24h).
 - XtreamDetect: Ableitung von Xtream‑Creds aus `get.php`/Stream‑URLs; `parseStreamId` (unterstützt `<id>.<ext>`, Query `stream_id|stream`, HLS `.../<id>/index.m3u8`). Status: zu testen durch Nutzer.
 
 ---
@@ -173,6 +183,7 @@ Wichtige DAOs & Constraints
 
 - XtreamRefreshWorker: Regelmäßiger Sync (Xtream.importAll oder Playlist.refreshFromM3U – je nach Konfiguration).
 - XtreamEnrichmentWorker: Lädt VOD‑Details nach (Poster, Plot, Dauer, Rating).
+- EpgRefreshWorker: Aktualisiert periodisch den Now/Next‑Cache; bereinigt veraltete Cache‑Einträge (>24h).
 - ScreenTimeResetWorker: Setzt täglich den Verbrauch der Kinder‑Profile zurück.
 - BootCompletedReceiver: Plant Worker nach Reboot neu.
 

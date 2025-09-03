@@ -74,7 +74,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
 import android.os.Build
 import android.graphics.RenderEffect
 import android.graphics.Shader
@@ -222,17 +226,22 @@ fun StartScreen(
                         )
                     )
             )
-            Image(
+            run {
+                val rot = rememberInfiniteTransition(label = "fishRot").animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = infiniteRepeatable(animation = tween(5000, easing = LinearEasing)),
+                    label = "deg"
+                )
+                Image(
                 painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
                 contentDescription = null,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .size(560.dp)
-                    .graphicsLayer {
-                        alpha = 0.05f
-                        try { if (Build.VERSION.SDK_INT >= 31) renderEffect = android.graphics.RenderEffect.createBlurEffect(38f, 38f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect() } catch (_: Throwable) {}
-                    }
-            )
+                    .graphicsLayer { alpha = 0.05f; rotationZ = rot.value }
+                )
+            }
             LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
                 item("search") {
                     OutlinedTextField(
@@ -526,8 +535,8 @@ fun StartScreen(
                 // Provider-Chips (aus categoryName)
                 val providers = remember(allLive) { allLive.mapNotNull { it.categoryName?.trim() }.filter { it.isNotEmpty() }.distinct().sorted() }
                 androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
-                    item { FilterChip(selected = provider == null, onClick = { provider = null }, label = { Text("Alle") }) }
-                    items(providers) { p -> FilterChip(selected = provider == p, onClick = { provider = if (provider == p) null else p }, label = { Text(p) }) }
+                    item { FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = provider == null, onClick = { provider = null }, label = { Text("Alle") }) }
+                    items(providers) { p -> FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = provider == p, onClick = { provider = if (provider == p) null else p }, label = { Text(p) }) }
                 }
                 val filtered = remember(allLive, query, provider) {
                     val q = query.trim().lowercase()

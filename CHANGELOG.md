@@ -3,6 +3,11 @@
 
 All notable changes to this project are documented here. Keep entries concise and tied to commits/PRs.
 
+2025-09-03
+- fix(build): Add missing `animateFloat` imports in `ProfileManagerScreen` and `LibraryScreen`; resolves compile errors.
+- fix(player): Define `refreshAudioOptions()` in scope before first use; track options refresh on `onTracksChanged`. No behavior change intended.
+- docs(architecture): Update EPG design (persistent Now/Next cache + XMLTV fallback + periodic refresh) and permissions repo; minor player notes.
+
 2025-09-02
 - feat(profiles): Gast‑Profil eingeführt (konservative Defaults).
 - feat(permissions): Pro‑Profil‑Rechte (canOpenSettings, canChangeSources, canUseExternalPlayer, canEditFavorites, canSearch, canSeeResume, canEditWhitelist) + Enforcements (Settings‑Route‑Gating, Externer Player → intern bei Verbot, Favoriten/Assign‑UI‑Gating, Resume‑Sichtbarkeit).

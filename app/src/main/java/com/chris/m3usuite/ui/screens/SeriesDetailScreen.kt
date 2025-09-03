@@ -2,8 +2,13 @@ package com.chris.m3usuite.ui.screens
 
 import android.os.Build
 import androidx.compose.animation.animateContentSize
+// AnimatedVisibility not used to keep compatibility with older compose
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -34,6 +39,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.Surface
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHostState
@@ -61,7 +67,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.border
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.draw.drawBehind
+// stickyHeader not available on current Compose; emulate with overlay instead
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.chris.m3usuite.core.xtream.XtreamConfig
@@ -85,9 +101,11 @@ import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberAvatarModel
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.runtime.derivedStateOf
 import kotlin.math.max
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -184,6 +202,36 @@ fun SeriesDetailScreen(
     var seasons by remember { mutableStateOf<List<Int>>(emptyList()) }
     var episodes by remember { mutableStateOf<List<Episode>>(emptyList()) }
     var seasonSel by remember { mutableStateOf<Int?>(null) }
+    var year by remember { mutableStateOf<Int?>(null) }
+
+    fun cleanSeriesName(raw: String, year: Int?): String {
+        // Many providers prefix the category before a hyphen, e.g. "4K-A+ - Berlin ER (2025) (DE)".
+        // Use the portion AFTER the first hyphen as the actual title when present.
+        var base = raw.substringAfter(" - ", raw)
+        // Remove year parentheses if supplied
+        if (year != null) base = base.replace(" (" + year + ")", "")
+        // Remove country codes like (DE), (EN), (US/UK)
+        base = base.replace(Regex("\\s*\\(([A-Z]{2,3})(/[A-Z]{2,3})*\\)\\s*"), " ")
+        return base.trim()
+    }
+
+    fun cleanEpisodeTitle(raw: String, seriesName: String?): String {
+        // Prefer last segment after ' - ' which usually is the true episode title
+        val lastSeg = raw.split(" - ").lastOrNull()?.trim().orEmpty()
+        var t = if (lastSeg.isNotEmpty()) lastSeg else raw
+        // Remove series name prefix if present
+        if (!seriesName.isNullOrBlank()) {
+            t = t.removePrefix(seriesName).trim()
+        }
+        // Remove year (yyyy) and country codes in parentheses
+        t = t.replace(Regex("\\s*\\(\\d{4}\\)\\s*"), " ")
+        t = t.replace(Regex("\\s*\\(([A-Z]{2,3})(/[A-Z]{2,3})*\\)\\s*"), " ")
+        // Remove embedded season/episode markers like S01E01
+        t = t.replace(Regex("(?i)S\\d{1,2}E\\d{1,3}"), " ")
+        // Collapse extra separators
+        t = t.replace(Regex("[-:–]+"), " ")
+        return t.trim()
+    }
 
     // Daten laden
     LaunchedEffect(id) {
@@ -191,6 +239,7 @@ fun SeriesDetailScreen(
         title = item.name
         poster = item.poster
         plot = item.plot
+        year = item.year
         seriesStreamId = item.streamId
 
         val sid = seriesStreamId ?: return@LaunchedEffect
@@ -207,6 +256,9 @@ fun SeriesDetailScreen(
     var internalEpisodeId by rememberSaveable { mutableStateOf<Int?>(null) }
     var internalUa by rememberSaveable { mutableStateOf("") }
     var internalRef by rememberSaveable { mutableStateOf("") }
+    var nextHintEpisodeId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var nextHintText by rememberSaveable { mutableStateOf<String?>(null) }
+    var resumeRefreshKey by rememberSaveable { mutableStateOf(0) }
 
     if (showInternal) {
         val hdrs = buildMap<String, String> {
@@ -222,6 +274,27 @@ fun SeriesDetailScreen(
             onExit = { showInternal = false }
         )
         return
+    }
+
+    // After player exit: suggest next episode briefly
+    LaunchedEffect(showInternal) {
+        if (!showInternal && internalEpisodeId != null) {
+            try {
+                val current = withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(internalEpisodeId!!) }
+                if (current != null) {
+                    val next = withContext(Dispatchers.IO) { db.episodeDao().nextEpisode(current.seriesStreamId, current.season, current.episodeNum) }
+                    if (next != null) {
+                        nextHintEpisodeId = next.episodeId
+                        nextHintText = "Weiter mit S%02dE%02d".format(next.season, next.episodeNum)
+                        delay(2500)
+                    }
+                }
+            } catch (_: Throwable) {}
+            nextHintEpisodeId = null
+            nextHintText = null
+            // trigger reload of resume marks so progress bar updates
+            resumeRefreshKey++
+        }
     }
 
     fun playEpisode(e: Episode, fromStart: Boolean = false, resumeSecs: Int? = null) {
@@ -300,10 +373,28 @@ fun SeriesDetailScreen(
     Box(Modifier.fillMaxSize().padding(pads)) {
         val profileIsAdult = isAdult
         val Accent = if (!profileIsAdult) DesignTokens.KidAccent else DesignTokens.Accent
+        // Unified badge container color; plot will be ~15% darker
+        val badgeColor = if (!profileIsAdult) Accent.copy(alpha = 0.26f) else Accent.copy(alpha = 0.20f)
+        val badgeColorDarker = if (!profileIsAdult) Accent.copy(alpha = 0.32f) else Accent.copy(alpha = 0.26f)
         // Background
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to MaterialTheme.colorScheme.background, 1f to MaterialTheme.colorScheme.surface)))
         Box(Modifier.matchParentSize().background(Brush.radialGradient(colors = listOf(Accent.copy(alpha = if (!profileIsAdult) 0.20f else 0.12f), androidx.compose.ui.graphics.Color.Transparent), radius = with(LocalDensity.current) { 680.dp.toPx() })))
-        Image(painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch), contentDescription = null, modifier = Modifier.align(Alignment.Center).size(560.dp).graphicsLayer { alpha = 0.05f; try { if (Build.VERSION.SDK_INT >= 31) renderEffect = android.graphics.RenderEffect.createBlurEffect(36f, 36f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect() } catch (_: Throwable) {} })
+        run {
+            val rot = rememberInfiniteTransition(label = "fishRot").animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(animation = tween(5000, easing = LinearEasing)),
+                label = "deg"
+            )
+            Image(
+                painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(560.dp)
+                    .graphicsLayer { alpha = 0.05f; rotationZ = rot.value }
+            )
+        }
         com.chris.m3usuite.ui.common.AccentCard(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             accent = Accent
@@ -313,7 +404,14 @@ fun SeriesDetailScreen(
         LazyColumn(modifier = Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 16.dp)) {
             item {
                 Column(Modifier.fillMaxWidth()) {
-                    Text(title, style = MaterialTheme.typography.titleLarge)
+                    val cleanTitle = remember(title, year) { cleanSeriesName(title, year) }
+                    Surface(shape = RoundedCornerShape(50), color = badgeColor, contentColor = Color.White, modifier = Modifier.graphicsLayer(alpha = DesignTokens.BadgeAlpha)) {
+                        Text(
+                            if (year != null) "$cleanTitle ($year)" else cleanTitle,
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Accent.copy(alpha = 0.35f))
                     Spacer(Modifier.height(8.dp))
                     AsyncImage(
@@ -322,6 +420,16 @@ fun SeriesDetailScreen(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.height(220.dp).fillMaxWidth()
                     )
+                    if (isAdult) {
+                        Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+                            com.chris.m3usuite.ui.common.AppIconButton(
+                                icon = com.chris.m3usuite.ui.common.AppIcon.AddKid,
+                                variant = com.chris.m3usuite.ui.common.IconVariant.Solid,
+                                contentDescription = "Für Kinder freigeben",
+                                onClick = { showGrantSheet = true }
+                            )
+                        }
+                    }
                     Spacer(Modifier.height(8.dp))
                 }
             }
@@ -330,15 +438,17 @@ fun SeriesDetailScreen(
                     var plotExpanded by remember { mutableStateOf(false) }
                     val gradAlpha by animateFloatAsState(if (plotExpanded) 0f else 1f, animationSpec = tween(180), label = "plotGrad")
                     Column(Modifier.animateContentSize()) {
-                        Box(Modifier.fillMaxWidth()) {
-                            Text(plot!!, maxLines = if (plotExpanded) Int.MAX_VALUE else 8)
-                            if (!plotExpanded) {
-                                Box(
-                                    Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp)
-                                        .graphicsLayer { alpha = gradAlpha }
-                                        .background(Brush.verticalGradient(0f to Color.Transparent, 1f to MaterialTheme.colorScheme.background))
-                                )
-                            }
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = badgeColorDarker,
+                            contentColor = Color.White,
+                            modifier = Modifier.fillMaxWidth().graphicsLayer(alpha = DesignTokens.BadgeAlpha)
+                        ) {
+                            Text(
+                                plot!!,
+                                maxLines = if (plotExpanded) Int.MAX_VALUE else 8,
+                                modifier = Modifier.padding(12.dp)
+                            )
                         }
                         TextButton(onClick = { plotExpanded = !plotExpanded }) {
                             Text(if (plotExpanded) "Weniger anzeigen" else "Mehr anzeigen")
@@ -349,12 +459,15 @@ fun SeriesDetailScreen(
             }
             if (seasons.isNotEmpty()) {
                 item {
-                    Text("Staffeln:", style = MaterialTheme.typography.titleMedium)
+                    Surface(shape = RoundedCornerShape(50), color = badgeColor, contentColor = Color.White, modifier = Modifier.graphicsLayer(alpha = DesignTokens.BadgeAlpha)) {
+                        Text("Staffeln", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
+                    }
                     Spacer(Modifier.height(6.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(end = 8.dp)) {
                         items(seasons, key = { it }) { s ->
                             val Accent = if (!isAdult) com.chris.m3usuite.ui.theme.DesignTokens.KidAccent else com.chris.m3usuite.ui.theme.DesignTokens.Accent
                             FilterChip(
+                                modifier = Modifier.graphicsLayer(alpha = DesignTokens.BadgeAlpha),
                                 selected = seasonSel == s,
                                 onClick = {
                                     seasonSel = s
@@ -364,105 +477,190 @@ fun SeriesDetailScreen(
                                     }
                                 },
                                 label = { Text("S$s") },
-                                colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Accent.copy(alpha = 0.18f))
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = badgeColor,
+                                    selectedLabelColor = Color.White
+                                )
                             )
                         }
                     }
                     Spacer(Modifier.height(8.dp))
                 }
             }
+            // Floating series title badge while scrolling (emulated overlay added below outside the list)
             items(episodes, key = { it.episodeId }) { e ->
                 val episodeKey = e.episodeId
                 var resumeSecs by remember(episodeKey) { mutableStateOf<Int?>(null) }
 
-                // Resume für diese Episode laden
-                LaunchedEffect(episodeKey) {
+                // Resume für diese Episode laden (auch nach Player-Rückkehr)
+                LaunchedEffect(episodeKey, resumeRefreshKey) {
                     resumeSecs = getEpisodeResume(episodeKey)
                 }
 
-                ListItem(
-                    headlineContent = { Text("S${e.season}E${e.episodeNum}  ${e.title}") },
-                    supportingContent = {
-                        Column {
-                            if (!e.plot.isNullOrBlank()) {
-                                Text(e.plot)
-                                Spacer(Modifier.height(6.dp))
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                val Accent = if (!isAdult) com.chris.m3usuite.ui.theme.DesignTokens.KidAccent else com.chris.m3usuite.ui.theme.DesignTokens.Accent
-                                if (resumeSecs != null) {
-                                    AssistChip(
-                                        modifier = Modifier.focusScaleOnTv(),
-                                        onClick = { playEpisode(e, fromStart = false, resumeSecs = resumeSecs) },
-                                        label = { Text("Fortsetzen ${fmt(resumeSecs!!)}") },
-                                        colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.22f))
-                                    )
-                                    AssistChip(
-                                        modifier = Modifier.focusScaleOnTv(),
-                                        onClick = {
-                                            setEpisodeResume(episodeKey, (resumeSecs ?: 0) - 30) { resumeSecs = it }
-                                        },
-                                        label = { Text("-30s") },
-                                        colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.16f))
-                                    )
-                                    AssistChip(
-                                        modifier = Modifier.focusScaleOnTv(),
-                                        onClick = {
-                                            setEpisodeResume(episodeKey, (resumeSecs ?: 0) + 30) { resumeSecs = it }
-                                        },
-                                        label = { Text("+30s") },
-                                        colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.16f))
-                                    )
-                                    AssistChip(
-                                        modifier = Modifier.focusScaleOnTv(),
-                                        onClick = {
-                                            setEpisodeResume(episodeKey, (resumeSecs ?: 0) + 300) { resumeSecs = it }
-                                        },
-                                        label = { Text("+5m") },
-                                        colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.16f))
-                                    )
-                                    AssistChip(
-                                        modifier = Modifier.focusScaleOnTv(),
-                                        onClick = {
-                                            clearEpisodeResume(episodeKey) { resumeSecs = null }
-                                        },
-                                        label = { Text("Zurücksetzen") },
-                                        colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.10f))
-                                    )
-                                } else {
-                                    AssistChip(
-                                        modifier = Modifier.focusScaleOnTv(),
-                                        onClick = {
-                                            setEpisodeResume(episodeKey, 0) { resumeSecs = it }
-                                        },
-                                        label = { Text("Resume setzen") },
-                                        colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.20f))
-                                    )
-                                }
-                                AssistChip(
-                                    modifier = Modifier.focusScaleOnTv(),
-                                    onClick = { playEpisode(e, fromStart = true) },
-                                    label = { Text("Von Anfang") },
-                                    colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.22f))
+                BoxWithConstraints(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                    val Accent = if (!isAdult) com.chris.m3usuite.ui.theme.DesignTokens.KidAccent else com.chris.m3usuite.ui.theme.DesignTokens.Accent
+                    val seriesClean = remember(title, year) { cleanSeriesName(title, year) }
+                    val epName = remember(e.title, seriesClean) { cleanEpisodeTitle(e.title, seriesClean) }
+                    val thumbSize = 48.dp
+                    val shape = RoundedCornerShape(28.dp)
+                    var epFocused by remember { mutableStateOf(false) }
+                    Box(Modifier.fillMaxWidth()) {
+                        // Chip container
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (epFocused)
+                                        Modifier.border(
+                                            width = 2.dp,
+                                            brush = Brush.linearGradient(listOf(Accent, Color.Transparent)),
+                                            shape = shape
+                                        ) else Modifier
                                 )
-                                if (isAdult) {
-                                    com.chris.m3usuite.ui.common.AppIconButton(icon = com.chris.m3usuite.ui.common.AppIcon.AddKid, variant = com.chris.m3usuite.ui.common.IconVariant.Solid, contentDescription = "Für Kinder freigeben", onClick = { showGrantSheet = true })
-                                    com.chris.m3usuite.ui.common.AppIconButton(icon = com.chris.m3usuite.ui.common.AppIcon.RemoveKid, variant = com.chris.m3usuite.ui.common.IconVariant.Solid, contentDescription = "Aus Kinderprofil entfernen", onClick = { showRevokeSheet = true })
+                        ) {
+                            Surface(
+                                shape = shape,
+                                color = badgeColor,
+                                contentColor = Color.White,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
+                                    .focusScaleOnTv()
+                                    .onFocusChanged { epFocused = it.isFocused || it.hasFocus }
+                                    .tvClickable {
+                                        if (resumeSecs != null) playEpisode(e, fromStart = false, resumeSecs = resumeSecs)
+                                        else playEpisode(e, fromStart = true)
+                                    }
+                            ) {
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                // Poster thumbnail, rounded + subtle border
+                                val model = remember(e.poster) { e.poster }
+                                Box(
+                                    Modifier
+                                        .size(thumbSize)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                                ) {
+                                    var loaded by remember(model) { mutableStateOf(false) }
+                                    val alpha by animateFloatAsState(if (loaded) 1f else 0f, animationSpec = tween(260), label = "thumbFade")
+                                    if (!loaded) com.chris.m3usuite.ui.fx.ShimmerBox(modifier = Modifier.fillMaxSize(), cornerRadius = 12.dp)
+                                    AsyncImage(
+                                        model = buildImageRequest(ctx, model, headers),
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha },
+                                        onLoading = { loaded = false },
+                                        onSuccess = { loaded = true },
+                                        onError = { loaded = true }
+                                    )
+                                }
+                                // Centered label area
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        "S%02dE%02d".format(e.season, e.episodeNum),
+                                        color = Accent,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(Modifier.size(8.dp))
+                                    Text(
+                                        epName,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            }
+                        }
+
+                        // Progress pill overlay (thin bar near bottom), full width minus 5% margins
+                        val duration = e.durationSecs ?: 0
+                        val prog = (resumeSecs ?: 0).toFloat() / (if (duration > 0) duration.toFloat() else 1f)
+                        val clamped = prog.coerceIn(0f, 1f)
+                        val errorColor = MaterialTheme.colorScheme.error
+                        Canvas(Modifier.matchParentSize()) {
+                            val wPx = size.width
+                            val hPx = size.height
+                            val margin = wPx * 0.05f
+                            val start = Offset(margin, hPx - 6f)
+                            val end = Offset(wPx - margin, hPx - 6f)
+                            val fillEnd = Offset(start.x + (end.x - start.x) * clamped, start.y)
+                            // Track
+                            drawLine(
+                                color = Color.White.copy(alpha = 0.35f),
+                                start = start,
+                                end = end,
+                                strokeWidth = 3f,
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
+                            // Progress
+                            if (duration > 0 && (resumeSecs ?: 0) > 0) {
+                                drawLine(
+                                    color = errorColor,
+                                    start = start,
+                                    end = fillEnd,
+                                    strokeWidth = 3.5f,
+                                    cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                )
+                            }
+                        }
+
+                        // Progress tooltip on focus
+                        if (epFocused) {
+                            val secs = (resumeSecs ?: 0).coerceAtLeast(0)
+                            val pct = if (duration > 0) ((secs * 100) / duration) else 0
+                            Box(Modifier.matchParentSize()) {
+                                Surface(shape = RoundedCornerShape(50), color = Color.Black.copy(alpha = 0.65f), contentColor = Color.White, modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 10.dp)) {
+                                    Text(
+                                        if (secs > 0) "Fortgesetzt bei ${fmt(secs)} (${pct}%)" else "0%",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
                                 }
                             }
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            if (resumeSecs != null) playEpisode(e, fromStart = false, resumeSecs = resumeSecs)
-                            else playEpisode(e, fromStart = true)
+
+                        // Next hint overlay (after player exit)
+                        if (nextHintEpisodeId == e.episodeId && !nextHintText.isNullOrBlank()) {
+                            Box(Modifier.matchParentSize()) {
+                                Surface(shape = RoundedCornerShape(50), color = Accent.copy(alpha = 0.85f), contentColor = Color.Black, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 6.dp)) {
+                                    Text(nextHintText!!, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp))
+                                }
+                            }
                         }
-                )
+                    }
+                }
                 HorizontalDivider()
             }
         }
         }
+        }
+
+        // Overlay sticky-like floating series badge when scrolled
+        val showPinned by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 120 } }
+        if (showPinned) {
+            val cleanTitlePinned = remember(title, year) { cleanSeriesName(title, year) }
+            Row(
+                Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 24.dp, top = 20.dp)
+            ) {
+                Surface(shape = RoundedCornerShape(50), color = badgeColor, contentColor = Color.White, modifier = Modifier.graphicsLayer(alpha = DesignTokens.BadgeAlpha)) {
+                    Text(
+                        if (year != null) "$cleanTitlePinned ($year)" else cleanTitlePinned,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                    )
+                }
+            }
         }
     if (showGrantSheet) KidSelectSheet(onConfirm = { kidIds ->
         scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.allowBulk(it, "series", listOf(id)) } }

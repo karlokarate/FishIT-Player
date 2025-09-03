@@ -28,9 +28,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import android.os.Build
-import android.graphics.RenderEffect
-import android.graphics.Shader
-import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
 import coil3.compose.AsyncImage
 import com.chris.m3usuite.data.db.AppDatabase
 import com.chris.m3usuite.data.db.DbProvider
@@ -59,6 +61,10 @@ import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import androidx.compose.foundation.lazy.rememberLazyListState
 import kotlinx.coroutines.flow.first
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.runtime.derivedStateOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -299,14 +305,22 @@ fun VodDetailScreen(
                     )
                 )
         )
-        Image(
-            painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
-            contentDescription = null,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(540.dp)
-                .graphicsLayer { alpha = 0.05f; try { if (Build.VERSION.SDK_INT >= 31) renderEffect = android.graphics.RenderEffect.createBlurEffect(36f, 36f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect() } catch (_: Throwable) {} }
-        )
+        run {
+            val rot = rememberInfiniteTransition(label = "fishRot").animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(animation = tween(5000, easing = LinearEasing)),
+                label = "deg"
+            )
+            Image(
+                painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(540.dp)
+                    .graphicsLayer { alpha = 0.05f; rotationZ = rot.value }
+            )
+        }
         com.chris.m3usuite.ui.common.AccentCard(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             accent = Accent
@@ -338,12 +352,16 @@ fun VodDetailScreen(
         }
 
         Column(Modifier.padding(top = 12.dp)) {
-            Text(text = title, style = MaterialTheme.typography.titleLarge, maxLines = 2, modifier = Modifier.fillMaxWidth().clickable(enabled = url != null) { play(fromStart = false) })
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = com.chris.m3usuite.ui.theme.DesignTokens.Accent.copy(alpha = 0.35f))
+            val AccentDyn = if (isAdult) com.chris.m3usuite.ui.theme.DesignTokens.Accent else com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
+            val badgeColor = if (!isAdult) AccentDyn.copy(alpha = 0.26f) else AccentDyn.copy(alpha = 0.20f)
+            val badgeColorDarker = if (!isAdult) AccentDyn.copy(alpha = 0.32f) else AccentDyn.copy(alpha = 0.26f)
+            Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(50), color = badgeColor, contentColor = Color.White, modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)) {
+                Text(text = title, style = MaterialTheme.typography.titleLarge, maxLines = 2, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp).clickable(enabled = url != null) { play(fromStart = false) })
+            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = AccentDyn.copy(alpha = 0.35f))
 
             Spacer(Modifier.height(8.dp))
 
-            val Accent = if (isAdult) com.chris.m3usuite.ui.theme.DesignTokens.Accent else com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 rating?.let { Text("★ ${"%.1f".format(it)}  ") }
                 duration?.let { Text("• ${it / 60} min") }
@@ -356,29 +374,57 @@ fun VodDetailScreen(
 
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (resumeSecs != null) {
-                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { play(false) }, label = { Text("Fortsetzen ab ${fmt(resumeSecs!!)}") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.22f)))
-                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { clearResume() }, label = { Text("Zurücksetzen") })
-                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume(max(0, (resumeSecs ?: 0) - 30)) }, label = { Text("-30s") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.16f)))
-                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume((resumeSecs ?: 0) + 30) }, label = { Text("+30s") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.16f)))
-                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume((resumeSecs ?: 0) + 300) }, label = { Text("+5m") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.16f)))
-                } else {
-                    AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { setResume(0) }, label = { Text("Resume setzen (0:00)") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.20f)))
+                val label = if (resumeSecs != null) "Fortsetzen ab ${fmt(resumeSecs!!)}" else "Abspielen"
+                AssistChip(
+                    modifier = Modifier.focusScaleOnTv().graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
+                    onClick = { if (resumeSecs != null) play(false) else play(true) },
+                    label = { Text(label) },
+                    colors = AssistChipDefaults.assistChipColors(containerColor = AccentDyn.copy(alpha = 0.22f))
+                )
+            }
+
+            // Thin progress pill across full width (minus 5% margins)
+            if ((duration ?: 0) > 0 && (resumeSecs ?: 0) > 0) {
+                BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                    val total = duration ?: 0
+                    val prog = (resumeSecs ?: 0).toFloat() / total.toFloat()
+                    val clamped = prog.coerceIn(0f, 1f)
+                    val errorColor = MaterialTheme.colorScheme.error
+                    Canvas(Modifier.fillMaxWidth().height(8.dp)) {
+                        val w = size.width
+                        val h = size.height
+                        val y = h / 2f
+                        val margin = w * 0.05f
+                        val start = Offset(margin, y)
+                        val end = Offset(w - margin, y)
+                        val fillEnd = Offset(start.x + (end.x - start.x) * clamped, y)
+                        drawLine(color = Color.White.copy(alpha = 0.35f), start = start, end = end, strokeWidth = 3f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                        drawLine(color = errorColor, start = start, end = fillEnd, strokeWidth = 3.5f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                    }
                 }
-                AssistChip(modifier = Modifier.focusScaleOnTv(), onClick = { play(true) }, label = { Text("Von Anfang") }, colors = AssistChipDefaults.assistChipColors(containerColor = Accent.copy(alpha = 0.22f)))
             }
 
             Spacer(Modifier.height(12.dp))
 
             if (!plot.isNullOrBlank()) {
-                Text(
-                    plot!!,
-                    maxLines = 8,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = url != null) { play(fromStart = false) }
-                )
+                var expanded by remember { mutableStateOf(false) }
+                Surface(
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    color = badgeColorDarker,
+                    contentColor = Color.White,
+                    modifier = Modifier.fillMaxWidth().graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
+                ) {
+                    Text(
+                        plot!!,
+                        maxLines = if (expanded) Int.MAX_VALUE else 8,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                            .clickable(enabled = url != null) { play(fromStart = false) }
+                    )
+                }
+                TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Weniger anzeigen" else "Mehr anzeigen") }
             }
 
             Spacer(Modifier.height(12.dp))
@@ -388,6 +434,23 @@ fun VodDetailScreen(
                 color = MaterialTheme.colorScheme.secondary
             )
         }
+        }
+        // Overlay sticky-like floating title badge when scrolled
+        val showPinned by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 120 } }
+        if (showPinned) {
+            val AccentDyn2 = if (isAdult) com.chris.m3usuite.ui.theme.DesignTokens.Accent else com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
+            val badgeColorSticky = if (!isAdult) AccentDyn2.copy(alpha = 0.26f) else AccentDyn2.copy(alpha = 0.20f)
+            Box(Modifier.fillMaxSize()) {
+                Row(
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 24.dp, top = 20.dp)
+                ) {
+                    Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(50), color = badgeColorSticky, contentColor = Color.White, modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)) {
+                        Text(title, modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp))
+                    }
+                }
+            }
         }
     }
 

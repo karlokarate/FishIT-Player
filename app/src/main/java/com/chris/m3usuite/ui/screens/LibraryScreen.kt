@@ -77,6 +77,7 @@ import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
 // removed duplicate imports
 import com.chris.m3usuite.ui.theme.DesignTokens
+import androidx.compose.animation.core.animateFloat
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -290,17 +291,22 @@ fun LibraryScreen(
                         )
                     )
             )
-            Image(
+            run {
+                val rot = androidx.compose.animation.core.rememberInfiniteTransition(label = "fishRot").animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = androidx.compose.animation.core.infiniteRepeatable(animation = androidx.compose.animation.core.tween(5000, easing = androidx.compose.animation.core.LinearEasing)),
+                    label = "deg"
+                )
+                Image(
                 painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
                 contentDescription = null,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .size(580.dp)
-                    .graphicsLayer {
-                        alpha = 0.05f
-                        try { if (Build.VERSION.SDK_INT >= 31) renderEffect = android.graphics.RenderEffect.createBlurEffect(36f, 36f, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect() } catch (_: Throwable) {}
-                    }
-            )
+                    .graphicsLayer { alpha = 0.05f; rotationZ = rot.value }
+                )
+            }
             Column(
                 Modifier
                     .fillMaxSize()
@@ -505,7 +511,10 @@ fun LibraryScreen(
                                         val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(store.xtHost.first(), store.xtPort.first(), store.xtUser.first(), store.xtPass.first(), store.xtOutput.first())
                                         val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
                                         val headers = buildMap<String,String> { val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }
-                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = playUrl, startPositionMs = s) }
+                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s ->
+                                            val encoded = java.net.URLEncoder.encode(playUrl, java.nio.charset.StandardCharsets.UTF_8.name())
+                                            navController.navigate("player?url=$encoded&type=series&episodeId=${ep.episodeId}&startMs=${s ?: -1}")
+                                        }
                                     }
                                 }
                             }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "series", mi.id) } } }) } }
@@ -525,7 +534,10 @@ fun LibraryScreen(
                                         val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(store.xtHost.first(), store.xtPort.first(), store.xtUser.first(), store.xtPass.first(), store.xtOutput.first())
                                         val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
                                         val headers = buildMap<String,String> { val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }
-                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = playUrl, startPositionMs = s) }
+                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s ->
+                                            val encoded = java.net.URLEncoder.encode(playUrl, java.nio.charset.StandardCharsets.UTF_8.name())
+                                            navController.navigate("player?url=$encoded&type=series&episodeId=${ep.episodeId}&startMs=${s ?: -1}")
+                                        }
                                     }
                                 }
                             }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "series", mi.id) } } }, showNew = true) } }
@@ -545,7 +557,10 @@ fun LibraryScreen(
                                         val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(store.xtHost.first(), store.xtPort.first(), store.xtUser.first(), store.xtPass.first(), store.xtOutput.first())
                                         val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
                                         val headers = buildMap<String,String> { val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }
-                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = playUrl, startPositionMs = s) }
+                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s ->
+                                            val encoded = java.net.URLEncoder.encode(playUrl, java.nio.charset.StandardCharsets.UTF_8.name())
+                                            navController.navigate("player?url=$encoded&type=series&episodeId=${ep.episodeId}&startMs=${s ?: -1}")
+                                        }
                                     }
                                 }
                             }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "series", mi.id) } } }, showNew = true) } }
@@ -641,6 +656,7 @@ fun LibraryScreen(
                                 item("live_cat_chip_$catKey") {
                                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp, bottom = 2.dp)) {
                                         FilterChip(
+                                            modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
                                             selected = false,
                                             onClick = {
                                                 scope.launch {
@@ -690,6 +706,7 @@ fun LibraryScreen(
                                 item("live_collapsed_$catKey") {
                                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
                                         FilterChip(
+                                            modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
                                             selected = true,
                                             onClick = {
                                                 // Expand: remove from collapsed set, add to head of expanded order
@@ -892,9 +909,10 @@ fun LibraryScreen(
                 if (tab in 0..2) {
                     Text("Kategorien", style = MaterialTheme.typography.titleSmall)
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        item { AssistChip(onClick = { selectedCategory = null; load() }, label = { Text("Alle") }) }
+                        item { AssistChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), onClick = { selectedCategory = null; load() }, label = { Text("Alle") }) }
                         listItems(categories) { cat ->
                             FilterChip(
+                                modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
                                 selected = selectedCategory == cat,
                                 onClick = { selectedCategory = cat; load() },
                                 label = { Text(cat ?: "Unbekannt") }

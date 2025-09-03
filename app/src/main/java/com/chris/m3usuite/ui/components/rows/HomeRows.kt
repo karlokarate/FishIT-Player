@@ -32,6 +32,9 @@ import androidx.media3.ui.PlayerView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -519,6 +522,58 @@ fun SeriesTileCard(
                         onSuccess = { loaded = true },
                         onError = { loaded = true }
                     )
+                    // Minimal resume tooltip on focus (series)
+                    val db = remember(ctx) { DbProvider.get(ctx) }
+                    var resumeSecs by remember(item.streamId) { mutableStateOf<Int?>(null) }
+                    var totalSecs by remember(item.streamId) { mutableStateOf<Int?>(null) }
+                    LaunchedEffect(item.streamId) {
+                        val sid = item.streamId
+                        if (sid != null) {
+                            try {
+                                val last = withContext(Dispatchers.IO) { db.resumeDao().recentEpisodes(50).firstOrNull { it.seriesStreamId == sid } }
+                                if (last != null) {
+                                    resumeSecs = last.positionSecs
+                                    val ep = withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(last.episodeId) }
+                                    totalSecs = ep?.durationSecs
+                                }
+                            } catch (_: Throwable) {}
+                        }
+                    }
+                    // Thin progress line near bottom if last-episode resume exists
+                    if ((resumeSecs ?: 0) > 0 && (totalSecs ?: 0) > 0) {
+                        val errorColor = MaterialTheme.colorScheme.error
+                        Canvas(Modifier.matchParentSize()) {
+                            val w = size.width
+                            val h = size.height
+                            val y = h - 10f
+                            val margin = w * 0.06f
+                            val start = Offset(margin, y)
+                            val end = Offset(w - margin, y)
+                            val frac = (resumeSecs!!.toFloat() / totalSecs!!.toFloat()).coerceIn(0f, 1f)
+                            val fillEnd = Offset(start.x + (end.x - start.x) * frac, y)
+                            drawLine(color = Color.White.copy(alpha = 0.35f), start = start, end = end, strokeWidth = 3f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                            drawLine(color = errorColor, start = start, end = fillEnd, strokeWidth = 3.5f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                        }
+                    }
+                    if (focused && (resumeSecs ?: 0) > 0 && (totalSecs ?: 0) > 0) {
+                        val secs = resumeSecs!!.coerceAtLeast(0)
+                        val total = totalSecs!!.coerceAtLeast(1)
+                        val pct = (secs * 100) / total
+                        Box(Modifier.matchParentSize()) {
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = Color.Black.copy(alpha = 0.65f),
+                                contentColor = Color.White,
+                                modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 8.dp)
+                            ) {
+                                Text(
+                                    text = "Weiter ${String.format("%d:%02d", secs / 60, secs % 60)} (${pct}%)",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
             if (focused) {
@@ -607,6 +662,47 @@ fun VodTileCard(
                         onSuccess = { loaded = true },
                         onError = { loaded = true }
                     )
+                    // Resume progress overlay (thin line near bottom)
+                    val db = remember(ctx) { DbProvider.get(ctx) }
+                    var resumeSecs by remember(item.id) { mutableStateOf<Int?>(null) }
+                    LaunchedEffect(item.id) {
+                        try { resumeSecs = withContext(Dispatchers.IO) { db.resumeDao().getVod(item.id)?.positionSecs } } catch (_: Throwable) {}
+                    }
+                    val total = item.durationSecs ?: 0
+                    if ((resumeSecs ?: 0) > 0 && total > 0) {
+                        val errorColor = MaterialTheme.colorScheme.error
+                        Canvas(Modifier.matchParentSize()) {
+                            val w = size.width
+                            val h = size.height
+                            val y = h - 10f
+                            val margin = w * 0.06f
+                            val start = Offset(margin, y)
+                            val end = Offset(w - margin, y)
+                            val frac = (resumeSecs!!.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+                            val fillEnd = Offset(start.x + (end.x - start.x) * frac, y)
+                            drawLine(color = Color.White.copy(alpha = 0.35f), start = start, end = end, strokeWidth = 3f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                            drawLine(color = errorColor, start = start, end = fillEnd, strokeWidth = 3.5f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                        }
+                        // Minimal tooltip on focus
+                        if (focused) {
+                            val secs = resumeSecs!!.coerceAtLeast(0)
+                            val pct = if (total > 0) ((secs * 100) / total) else 0
+                            Box(Modifier.matchParentSize()) {
+                                Surface(
+                                    shape = RoundedCornerShape(50),
+                                    color = Color.Black.copy(alpha = 0.65f),
+                                    contentColor = Color.White,
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 8.dp)
+                                ) {
+                                    Text(
+                                        text = "Weiter ${String.format("%d:%02d", secs / 60, secs % 60)} (${pct}%)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
             if (focused) {
