@@ -16,3 +16,18 @@ local.properties
 .wsl-android-sdk/
 .wsl-gradle/
 .wsl-java-17/
+ 
+# Security: never commit private keys or SSH configs
+# Ignore common SSH key locations and filenames
+**/.ssh/
+**/id_ed25519
+**/id_rsa
+**/id_ecdsa
+**/id_ed448
+**/*.pem
+**/*.ppk
+**/*.p12
+**/*.pfx
+# Android signing keys
+**/*.jks
+**/*.keystore
