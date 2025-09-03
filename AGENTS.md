@@ -51,6 +51,18 @@ export GRADLE_USER_HOME="$REPO/.wsl-gradle"
 export PATH="$JAVA_HOME/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
 ```
 
+Git Push Policy (SSH, codex‑wsl)
+- Transport: Alle Pushes erfolgen ausschließlich per SSH mit dem Deploy‑Key „codex‑wsl“.
+- Remote‑URL: `git@github.com:karlokarate/m3uSuite.git` (kein HTTPS/PAT).
+- Key‑Pfad (privat): `~/.ssh/id_ed25519_m3usuite` (Dateirechte 600; nicht auf Windows‑Mounts benutzen).
+- Optionales SSH‑Config‑Snippet (`~/.ssh/config`):
+  - Host github.com
+    IdentityFile ~/.ssh/id_ed25519_m3usuite
+    IdentitiesOnly yes
+- Einmalige Fallback‑Nutzung ohne Config:
+  - `GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519_m3usuite -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new' git push origin HEAD:master`
+- Hinweis: Private Keys niemals im Repo/versioniert ablegen. Der öffentliche Schlüssel ist als Deploy‑Key „Allow write“ im Repo hinterlegt.
+
 Where to find the full overview
 - The complete, continuously updated architecture overview (modules, flows, responsibilities) is maintained in:
   - `ARCHITECTURE_OVERVIEW.md` (derived from AGENTS_NEW.md)

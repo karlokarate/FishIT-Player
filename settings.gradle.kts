@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "m3uSuite"
+rootProject.name = "FishITPlayer"
 include(":app")

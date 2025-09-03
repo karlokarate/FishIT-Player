@@ -1,5 +1,5 @@
 
-# m3uSuite – **Agents & Architecture Guide** (aktualisiert)
+# FishIT Player – **Agents & Architecture Guide** (aktualisiert)
 
 Dieses Dokument ist die Startseite für **Codex** (und alle Mitwirkenden). Es erklärt präzise:
 - **Wofür** jedes Modul zuständig ist,

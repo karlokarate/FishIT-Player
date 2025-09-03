@@ -1,5 +1,5 @@
 
-# m3uSuite – **Roadmap: Import/Export finalisieren**
+# FishIT Player – **Roadmap: Import/Export finalisieren**
 
 Zielbild:
 - **Schnell‑Import** ausschließlich im **Erststart‑Screen (`setup`)**.
