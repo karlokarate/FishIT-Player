@@ -127,14 +127,14 @@ fun StartScreen(
     }
 
     LaunchedEffect(isKid) {
-        scope.launch {
-            val rawSeries = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("series", 2000, 0) }
-            val rawMovies = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("vod", 2000, 0) }
-            val rawTv = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("live", 2000, 0) }
-            series = sortByYearDesc(rawSeries, { it.year }, { it.name }).distinctBy { it.id }
-            movies = sortByYearDesc(rawMovies, { it.year }, { it.name }).distinctBy { it.id }
-            tv = filterGermanTv(rawTv, { null }, { null }, { it.categoryName }, { it.name }).distinctBy { it.id }
-        }
+        val rawSeries = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("series", 2000, 0) }
+        val rawMovies = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("vod", 2000, 0) }
+        val rawTv = withContext(kotlinx.coroutines.Dispatchers.IO) { mediaRepo.listByTypeFiltered("live", 2000, 0) }
+        series = sortByYearDesc(rawSeries, { it.year }, { it.name }).distinctBy { it.id }
+        movies = sortByYearDesc(rawMovies, { it.year }, { it.name }).distinctBy { it.id }
+        tv = filterGermanTv(rawTv, { null }, { null }, { it.categoryName }, { it.name }).distinctBy { it.id }
+        // initial data loaded → stop continuous spin
+        com.chris.m3usuite.ui.fx.FishSpin.setLoading(false)
     }
 
     // Favorites for live row on Home
@@ -226,22 +226,10 @@ fun StartScreen(
                         )
                     )
             )
-            run {
-                val rot = rememberInfiniteTransition(label = "fishRot").animateFloat(
-                    initialValue = 0f,
-                    targetValue = 360f,
-                    animationSpec = infiniteRepeatable(animation = tween(5000, easing = LinearEasing)),
-                    label = "deg"
-                )
-                Image(
-                painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
-                contentDescription = null,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(560.dp)
-                    .graphicsLayer { alpha = 0.05f; rotationZ = rot.value }
-                )
-            }
+            com.chris.m3usuite.ui.fx.FishBackground(
+                modifier = Modifier.align(Alignment.Center).size(560.dp),
+                alpha = 0.05f
+            )
             LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
                 item("search") {
                     OutlinedTextField(

@@ -93,15 +93,10 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
             val Accent = DesignTokens.KidAccent
             Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to MaterialTheme.colorScheme.background, 1f to MaterialTheme.colorScheme.surface)))
             Box(Modifier.matchParentSize().background(Brush.radialGradient(colors = listOf(Accent.copy(alpha = 0.20f), androidx.compose.ui.graphics.Color.Transparent), radius = with(LocalDensity.current) { 660.dp.toPx() })))
-            run {
-                val rot = androidx.compose.animation.core.rememberInfiniteTransition(label = "fishRot").animateFloat(
-                    initialValue = 0f,
-                    targetValue = 360f,
-                    animationSpec = androidx.compose.animation.core.infiniteRepeatable(animation = androidx.compose.animation.core.tween(5000, easing = androidx.compose.animation.core.LinearEasing)),
-                    label = "deg"
-                )
-                Image(painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch), contentDescription = null, modifier = Modifier.align(Alignment.Center).size(540.dp).graphicsLayer { alpha = 0.06f; rotationZ = rot.value })
-            }
+            com.chris.m3usuite.ui.fx.FishBackground(
+                modifier = Modifier.align(Alignment.Center).size(540.dp),
+                alpha = 0.06f
+            )
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(onClick = onBack) { Text("Zurück") }
             OutlinedTextField(value = newKidName, onValueChange = { newKidName = it }, label = { Text("Neues Profil (Name)") })

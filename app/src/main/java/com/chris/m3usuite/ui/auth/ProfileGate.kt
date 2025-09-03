@@ -130,13 +130,10 @@ fun ProfileGate(
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to MaterialTheme.colorScheme.background, 1f to MaterialTheme.colorScheme.surface)))
         Box(Modifier.matchParentSize().background(Brush.radialGradient(colors = listOf(Accent.copy(alpha = 0.24f), androidx.compose.ui.graphics.Color.Transparent), radius = with(LocalDensity.current) { 640.dp.toPx() })))
         run {
-            val rot = rememberInfiniteTransition(label = "fishRot").animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(animation = tween(5000, easing = LinearEasing)),
-                label = "deg"
+            com.chris.m3usuite.ui.fx.FishBackground(
+                modifier = Modifier.align(Alignment.Center).size(540.dp),
+                alpha = 0.06f
             )
-            Image(painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch), contentDescription = null, modifier = Modifier.align(Alignment.Center).size(540.dp).graphicsLayer { alpha = 0.06f; rotationZ = rot.value })
         }
         Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Wer bist du?", style = MaterialTheme.typography.titleLarge)

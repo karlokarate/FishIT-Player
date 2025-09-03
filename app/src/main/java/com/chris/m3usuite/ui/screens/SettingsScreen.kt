@@ -144,22 +144,10 @@ fun SettingsScreen(
                         )
                 )
                 // Center rotated app icon
-                run {
-                    val rot = rememberInfiniteTransition(label = "fishRot").animateFloat(
-                        initialValue = 0f,
-                        targetValue = 360f,
-                        animationSpec = infiniteRepeatable(animation = tween(5000, easing = LinearEasing)),
-                        label = "deg"
-                    )
-                    Image(
-                        painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(520.dp)
-                            .graphicsLayer { alpha = 0.06f; rotationZ = rot.value }
-                    )
-                }
+                com.chris.m3usuite.ui.fx.FishBackground(
+                    modifier = Modifier.align(Alignment.Center).size(520.dp),
+                    alpha = 0.06f
+                )
             }
             Column(
                 Modifier

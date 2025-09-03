@@ -291,22 +291,12 @@ fun LibraryScreen(
                         )
                     )
             )
-            run {
-                val rot = androidx.compose.animation.core.rememberInfiniteTransition(label = "fishRot").animateFloat(
-                    initialValue = 0f,
-                    targetValue = 360f,
-                    animationSpec = androidx.compose.animation.core.infiniteRepeatable(animation = androidx.compose.animation.core.tween(5000, easing = androidx.compose.animation.core.LinearEasing)),
-                    label = "deg"
-                )
-                Image(
-                painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
-                contentDescription = null,
+            com.chris.m3usuite.ui.fx.FishBackground(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .size(580.dp)
-                    .graphicsLayer { alpha = 0.05f; rotationZ = rot.value }
-                )
-            }
+                    .size(580.dp),
+                alpha = 0.05f
+            )
             Column(
                 Modifier
                     .fillMaxSize()

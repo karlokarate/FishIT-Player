@@ -64,16 +64,32 @@ fun FishITHeader(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            val rot = rememberInfiniteTransition(label = "fishRot").animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(animation = tween(5000, easing = LinearEasing)),
-                label = "deg"
-            )
+            // Rotate logo with global fish spin controller
+            val angle = remember { androidx.compose.animation.core.Animatable(0f) }
+            val loading by com.chris.m3usuite.ui.fx.FishSpin.isLoading.collectAsState()
+            LaunchedEffect(loading) {
+                if (loading) {
+                    while (com.chris.m3usuite.ui.fx.FishSpin.isLoading.value) {
+                        val target = angle.value + 360f
+                        angle.animateTo(
+                            targetValue = target,
+                            animationSpec = androidx.compose.animation.core.tween(1000, easing = androidx.compose.animation.core.LinearEasing)
+                        )
+                    }
+                    angle.snapTo(0f)
+                }
+            }
+            LaunchedEffect(Unit) {
+                com.chris.m3usuite.ui.fx.FishSpin.spinTrigger.collect {
+                    angle.stop(); angle.snapTo(0f)
+                    angle.animateTo(360f, androidx.compose.animation.core.tween(500, easing = androidx.compose.animation.core.LinearEasing))
+                    angle.snapTo(0f)
+                }
+            }
             val logoModifier = Modifier
                 .padding(vertical = 8.dp)
                 .let { m -> if (onLogo != null) m.clickable { onLogo() } else m }
-                .graphicsLayer { rotationZ = rot.value }
+                .graphicsLayer { rotationZ = angle.value }
             androidx.compose.foundation.Image(
                 painter = androidx.compose.ui.res.painterResource(com.chris.m3usuite.R.drawable.fisch),
                 contentDescription = title,

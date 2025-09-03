@@ -379,22 +379,10 @@ fun SeriesDetailScreen(
         // Background
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to MaterialTheme.colorScheme.background, 1f to MaterialTheme.colorScheme.surface)))
         Box(Modifier.matchParentSize().background(Brush.radialGradient(colors = listOf(Accent.copy(alpha = if (!profileIsAdult) 0.20f else 0.12f), androidx.compose.ui.graphics.Color.Transparent), radius = with(LocalDensity.current) { 680.dp.toPx() })))
-        run {
-            val rot = rememberInfiniteTransition(label = "fishRot").animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(animation = tween(5000, easing = LinearEasing)),
-                label = "deg"
-            )
-            Image(
-                painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
-                contentDescription = null,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(560.dp)
-                    .graphicsLayer { alpha = 0.05f; rotationZ = rot.value }
-            )
-        }
+        com.chris.m3usuite.ui.fx.FishBackground(
+            modifier = Modifier.align(Alignment.Center).size(560.dp),
+            alpha = 0.05f
+        )
         com.chris.m3usuite.ui.common.AccentCard(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             accent = Accent

@@ -305,22 +305,10 @@ fun VodDetailScreen(
                     )
                 )
         )
-        run {
-            val rot = rememberInfiniteTransition(label = "fishRot").animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(animation = tween(5000, easing = LinearEasing)),
-                label = "deg"
-            )
-            Image(
-                painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
-                contentDescription = null,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(540.dp)
-                    .graphicsLayer { alpha = 0.05f; rotationZ = rot.value }
-            )
-        }
+        com.chris.m3usuite.ui.fx.FishBackground(
+            modifier = Modifier.align(Alignment.Center).size(540.dp),
+            alpha = 0.05f
+        )
         com.chris.m3usuite.ui.common.AccentCard(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             accent = Accent

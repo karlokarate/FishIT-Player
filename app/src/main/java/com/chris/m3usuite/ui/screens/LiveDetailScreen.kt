@@ -303,7 +303,10 @@ fun LiveDetailScreen(id: Long) {
                 animationSpec = infiniteRepeatable(animation = tween(5000, easing = LinearEasing)),
                 label = "deg"
             )
-            androidx.compose.foundation.Image(painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch), contentDescription = null, modifier = Modifier.align(Alignment.Center).size(520.dp).graphicsLayer { alpha = 0.05f; rotationZ = rot.value })
+            com.chris.m3usuite.ui.fx.FishBackground(
+                modifier = Modifier.align(Alignment.Center).size(520.dp),
+                alpha = 0.05f
+            )
         }
     com.chris.m3usuite.ui.common.AccentCard(
         modifier = Modifier.fillMaxSize().padding(16.dp),

@@ -63,6 +63,18 @@ class MainActivity : ComponentActivity() {
             AppTheme {
                 val nav = rememberNavController()
 
+                // Kick fish spin on every route change (single fast spin)
+                LaunchedEffect(nav) {
+                    var last: String? = null
+                    nav.currentBackStackEntryFlow.collect { entry ->
+                        val route = entry.destination.route
+                        if (route != null && route != last) {
+                            com.chris.m3usuite.ui.fx.FishSpin.kickOnce()
+                            last = route
+                        }
+                    }
+                }
+
                 val ctx = LocalContext.current
                 val store = remember(ctx) { SettingsStore(ctx) }
                 // Track app start time for new-episode detection
@@ -73,6 +85,10 @@ class MainActivity : ComponentActivity() {
 
                 // Startziel abhängig von gespeicherter URL
                 val startDestination = if (m3uUrl.isBlank()) "setup" else "gate"
+                // App start: enable loading spin; screens disable when their initial data finished loading
+                LaunchedEffect(startDestination) {
+                    com.chris.m3usuite.ui.fx.FishSpin.setLoading(true)
+                }
 
                 // Wenn M3U vorhanden aber Xtream noch nicht konfiguriert (z. B. nach App-Reinstall via Backup):
                 // automatisch aus der M3U ableiten und direkt die Worker planen.
