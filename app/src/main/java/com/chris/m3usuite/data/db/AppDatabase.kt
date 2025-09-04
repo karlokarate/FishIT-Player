@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.first
 @Database(
     entities = [
         MediaItem::class,
+        MediaItemFts::class,
         Episode::class,
         Category::class,
         ResumeMark::class,
@@ -24,9 +25,10 @@ import kotlinx.coroutines.flow.first
         KidContentBlock::class,
         ProfilePermissions::class,
         ScreenTimeEntry::class,
-        EpgNowNext::class
+        EpgNowNext::class,
+        TelegramMessage::class
     ],
-    version = 6,
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -41,6 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun screenTimeDao(): ScreenTimeDao
     abstract fun profilePermissionsDao(): ProfilePermissionsDao
     abstract fun epgDao(): EpgDao
+    abstract fun telegramDao(): TelegramDao
 }
 
 /**
@@ -58,7 +61,7 @@ object DbProvider {
                 AppDatabase::class.java,
                 DB_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
@@ -202,6 +205,88 @@ object DbProvider {
                 """.trimIndent()
             )
             db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_profile_permissions_profileId` ON `profile_permissions`(`profileId`)")
+        }
+    }
+
+    private val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Create FTS virtual table and idempotent triggers to sync with MediaItem
+            db.execSQL(
+                """
+                CREATE VIRTUAL TABLE IF NOT EXISTS `mediaitem_fts`
+                USING fts4(
+                  `name`,
+                  `sortTitle`,
+                  content=`MediaItem`,
+                  tokenize=unicode61 `remove_diacritics=2`
+                )
+                """.trimIndent()
+            )
+            // Triggers (IF NOT EXISTS not supported for triggers in SQLite), so guard by try/catch
+            fun safe(sql: String) { try { db.execSQL(sql) } catch (_: Throwable) {} }
+            safe(
+                """
+                CREATE TRIGGER mediaitem_fts_ai AFTER INSERT ON MediaItem BEGIN
+                  INSERT INTO mediaitem_fts(rowid, name, sortTitle) VALUES (new.id, new.name, new.sortTitle);
+                END;
+                """.trimIndent()
+            )
+            safe(
+                """
+                CREATE TRIGGER mediaitem_fts_ad AFTER DELETE ON MediaItem BEGIN
+                  INSERT INTO mediaitem_fts(mediaitem_fts, rowid, name, sortTitle) VALUES('delete', old.id, old.name, old.sortTitle);
+                END;
+                """.trimIndent()
+            )
+            safe(
+                """
+                CREATE TRIGGER mediaitem_fts_au AFTER UPDATE ON MediaItem BEGIN
+                  INSERT INTO mediaitem_fts(mediaitem_fts, rowid, name, sortTitle) VALUES('delete', old.id, old.name, old.sortTitle);
+                  INSERT INTO mediaitem_fts(rowid, name, sortTitle) VALUES (new.id, new.name, new.sortTitle);
+                END;
+                """.trimIndent()
+            )
+            // Initial (re)build of the index
+            db.execSQL("INSERT OR REPLACE INTO mediaitem_fts(rowid, name, sortTitle) SELECT id, name, sortTitle FROM MediaItem")
+        }
+    }
+
+    private val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Add source + tg columns to MediaItem
+            try { db.execSQL("ALTER TABLE MediaItem ADD COLUMN source TEXT NOT NULL DEFAULT 'M3U'") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE MediaItem ADD COLUMN tgChatId INTEGER") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE MediaItem ADD COLUMN tgMessageId INTEGER") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE MediaItem ADD COLUMN tgFileId INTEGER") } catch (_: Throwable) {}
+
+            // Create telegram_messages table
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `telegram_messages` (
+                    `chatId` INTEGER NOT NULL,
+                    `messageId` INTEGER NOT NULL,
+                    `fileId` INTEGER,
+                    `fileUniqueId` TEXT,
+                    `supportsStreaming` INTEGER,
+                    `caption` TEXT,
+                    `date` INTEGER,
+                    `localPath` TEXT,
+                    `thumbFileId` INTEGER,
+                    PRIMARY KEY(`chatId`, `messageId`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_telegram_messages_fileId` ON `telegram_messages`(`fileId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_telegram_messages_fileUniqueId` ON `telegram_messages`(`fileUniqueId`)")
+        }
+    }
+
+    private val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Add TG columns to Episode (nullable)
+            try { db.execSQL("ALTER TABLE Episode ADD COLUMN tgChatId INTEGER") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE Episode ADD COLUMN tgMessageId INTEGER") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE Episode ADD COLUMN tgFileId INTEGER") } catch (_: Throwable) {}
         }
     }
 

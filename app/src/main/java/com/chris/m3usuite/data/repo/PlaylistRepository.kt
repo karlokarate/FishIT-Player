@@ -65,13 +65,29 @@ class PlaylistRepository(
 
                 // 4) DB ersetzen
                 val dao = DbProvider.get(context).mediaDao()
-                // Preserve addedAt using url as key
-                fun parseAddedAt(extra: String?): String? = try {
-                    if (extra.isNullOrBlank()) null else kotlinx.serialization.json.Json.decodeFromString<Map<String,String>>(extra)["addedAt"]
-                } catch (_: Throwable) { null }
-                val prevLive = dao.listByType("live", 100000, 0).associateBy({ it.url }, { parseAddedAt(it.extraJson) })
-                val prevVod  = dao.listByType("vod", 100000, 0).associateBy({ it.url }, { parseAddedAt(it.extraJson) })
-                val prevSer  = dao.listByType("series", 100000, 0).associateBy({ it.url }, { parseAddedAt(it.extraJson) })
+                // Preserve addedAt using url as key (read minimal columns in batches)
+                fun parseAddedAt(extra: String?): String? {
+                    if (extra.isNullOrBlank()) return null
+                    // Minimal JSON scan: "addedAt":"..."
+                    val m = Regex("\\\"addedAt\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"").find(extra)
+                    return m?.groupValues?.getOrNull(1)
+                }
+                suspend fun loadPrevByType(type: String): Map<String?, String?> {
+                    val acc = HashMap<String?, String?>(4096)
+                    var offset = 0
+                    val batch = 10_000
+                    while (true) {
+                        val chunk = dao.urlsWithExtraByType(type, batch, offset)
+                        if (chunk.isEmpty()) break
+                        for (row in chunk) acc[row.url] = parseAddedAt(row.extraJson)
+                        offset += chunk.size
+                        if (chunk.size < batch) break
+                    }
+                    return acc
+                }
+                val prevLive = loadPrevByType("live")
+                val prevVod  = loadPrevByType("vod")
+                val prevSer  = loadPrevByType("series")
                 val now = System.currentTimeMillis().toString()
 
                 dao.clearType("live"); dao.clearType("vod"); dao.clearType("series")

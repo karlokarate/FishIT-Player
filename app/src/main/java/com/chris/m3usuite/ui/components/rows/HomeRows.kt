@@ -81,6 +81,7 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.data.repo.EpgRepository
 import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.fx.ShimmerCircle
 import com.chris.m3usuite.ui.common.AppIconButton
@@ -186,9 +187,9 @@ fun LiveTileCard(
     val headers = rememberImageHeaders()
     val store = remember { SettingsStore(ctx) }
     val db = remember { DbProvider.get(ctx) }
-    val ua by store.userAgent.collectAsState(initial = "")
-    val ref by store.referer.collectAsState(initial = "")
-    val extraJson by store.extraHeadersJson.collectAsState(initial = "")
+    val ua by store.userAgent.collectAsStateWithLifecycle(initialValue = "")
+    val ref by store.referer.collectAsStateWithLifecycle(initialValue = "")
+    val extraJson by store.extraHeadersJson.collectAsStateWithLifecycle(initialValue = "")
     var epgNow by remember { mutableStateOf("") }
     var epgNext by remember { mutableStateOf("") }
     var nowStartMs by remember { mutableStateOf<Long?>(null) }
@@ -199,7 +200,7 @@ fun LiveTileCard(
     // Show cached EPG immediately if present (reactive to DB updates from prefetch)
     val epgChannelId = remember(item.epgChannelId) { item.epgChannelId?.trim().orEmpty() }
     if (epgChannelId.isNotEmpty()) {
-        val row by remember(epgChannelId) { db.epgDao().observeByChannel(epgChannelId) }.collectAsState(initial = null)
+        val row by remember(epgChannelId) { db.epgDao().observeByChannel(epgChannelId) }.collectAsStateWithLifecycle(initialValue = null)
         LaunchedEffect(row?.updatedAt) {
             epgNow = row?.nowTitle.orEmpty()
             epgNext = row?.nextTitle.orEmpty()

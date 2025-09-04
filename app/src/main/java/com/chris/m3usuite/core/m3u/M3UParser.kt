@@ -3,10 +3,18 @@ package com.chris.m3usuite.core.m3u
 import com.chris.m3usuite.data.db.MediaItem
 import com.chris.m3usuite.core.xtream.XtreamDetect
 import java.util.Locale
+import java.text.Normalizer
 
 object M3UParser {
     private val attrRegex = Regex("""(\w[\w\-]*)="([^"]*)"""")
     private const val EXTINF = "#EXTINF"
+    private data class PatternRule(val regex: Regex, val type: String)
+    private val providerPatterns: List<PatternRule> = listOf(
+        PatternRule(Regex("/(series)/", RegexOption.IGNORE_CASE), "series"),
+        PatternRule(Regex("/(movie|vod)/", RegexOption.IGNORE_CASE), "vod"),
+        PatternRule(Regex("/(live|channel|stream)/[^\\s]+", RegexOption.IGNORE_CASE), "live"),
+        PatternRule(Regex("index\\.m3u8(\\?.*)?$", RegexOption.IGNORE_CASE), "live")
+    )
 
     fun parse(text: String): List<MediaItem> {
         val lines = text.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
@@ -52,20 +60,21 @@ object M3UParser {
         return attrs to name
     }
 
-    private fun normalize(name: String): String =
-        name.lowercase(Locale.ROOT).replace(Regex("""[^\p{L}\p{N}]+"""), " ").trim()
+    private fun normalize(name: String): String {
+        // NFKD normalize, strip combining marks, lowercase, collapse whitespace
+        val decomposed = Normalizer.normalize(name, Normalizer.Form.NFKD)
+        val noMarks = decomposed.replace(Regex("\\p{M}+"), "")
+        return noMarks.lowercase(Locale.ROOT)
+            .replace(Regex("""[^\p{L}\p{N}]+"""), " ")
+            .trim()
+    }
 
     private fun inferType(attrs: Map<String,String>, url: String): String {
         val grp = (attrs["group-title"] ?: "").lowercase(Locale.ROOT)
         val u = url.lowercase(Locale.ROOT)
 
-        // 1) Strong URL pattern matches (Xtream & common providers)
-        // Xtream style: .../(live|movie|series)/user/pass/<id>.(ext) or HLS index
-        when {
-            "/series/" in u -> return "series"
-            "/movie/" in u -> return "vod"
-            "/live/" in u -> return "live"
-        }
+        // 1) Provider pattern table first
+        providerPatterns.firstOrNull { it.regex.containsMatchIn(u) }?.let { return it.type }
         // Query hints (e.g., get.php?type=movie or stream_id for series)
         if (Regex("[?&]type=series").containsMatchIn(u)) return "series"
         if (Regex("[?&]type=movie").containsMatchIn(u)) return "vod"

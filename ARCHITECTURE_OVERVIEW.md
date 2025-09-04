@@ -2,6 +2,7 @@
 
 Deep‑Dive Update: 2025‑09‑03
 - Inventory, dependencies and build notes refreshed per current repo. Non‑breaking optimization guidance added.
+- Lifecycle/Performance: Key composables now use `collectAsStateWithLifecycle`; JankStats wired in MainActivity for jank logging.
 
 Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module, Flows und Verantwortlichkeiten der App. Es ist aus `AGENTS.md` abgeleitet und wird hier als zentrale Architektur‑Referenz gepflegt.
 
@@ -14,6 +15,21 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 
 ---
 
+## Telegram (Login + Scaffold)
+
+- Feature Flag: Global in Settings (`tg_enabled`, default false). Zusatzoptionen: `tg_selected_chats_csv`, `tg_cache_limit_gb`.
+- Room v8: `MediaItem` erweitert um `source` (default `M3U`) sowie TG‑Referenzen (`tgChatId`, `tgMessageId`, `tgFileId`). Neue Tabelle `telegram_messages` mit `localPath`, `supportsStreaming`, `file(Unique)Id`, `thumbFileId`.
+- DAO: `TelegramDao`; Repo: `TelegramRepository` löst lokale Datei‑Pfad → `file://` URI für Playback auf, falls vorhanden.
+- DAO/Index: `TelegramDao` für Tabelle `telegram_messages` (chatId/messageId → fileId/uniqueId, caption, supportsStreaming, date, thumbFileId, localPath). Sync befüllt Index; DataSources aktualisieren `localPath` beim ersten Download.
+- Login (Alpha): Reflection‑Bridge `telegram/TdLibReflection.kt` + `TelegramAuthRepository` (kein direkter TDLib‑Compile‑Dep). Settings: Button „Telegram verbinden“ (Telefon → Code → Passwort), auto DB‑Key‑Check, Status‑Debug.
+- Playback DataSource: `TelegramRoutingDataSource` für Media3 routet `tg://message?chatId=&messageId=` auf lokale Pfade und triggert bei Bedarf `DownloadFile(fileId)`; `localPath` wird persistiert.
+- Streaming DataSource: `TelegramTdlibDataSource` (gated via `tg_enabled` + AUTH) lädt/streamt Dateien progressiv (Seek) via TDLib; persistiert `localPath`; Fallback auf Routing/HTTP.
+- Build: `TG_API_ID`/`TG_API_HASH` als BuildConfig (aus `gradle.properties`). Packaging vorbereitet für TDLib (`armeabi-v7a`/`arm64-v8a`); ProGuard‑Keep für `org.drinkless.td.libcore.telegram.**`. Native Libs nicht im Repo.
+- Packaging: `:libtd` Android‑Library mit `jniLibs` (zunächst `arm64-v8a/libtdjni.so`). App hängt an `:libtd`, sodass TDLib zur Laufzeit vorhanden ist; BuildConfig `TG_API_ID`/`TG_API_HASH` kommen aus `gradle.properties`.
+- Build v7a: `scripts/tdlib-build-v7a.sh` kompiliert TDLib (JNI) für `armeabi-v7a` und kopiert `libtdjni.so` in das Modul.
+ - Cache: `TelegramCacheCleanupWorker` trimmt lokale TD‑Dateien täglich auf `TG_CACHE_LIMIT_GB` (GB) – best‑effort Datei‑System‑Trim.
+
+
 ## 1) Build, Run & Tests
 
 - JDK 17, Build via Gradle Wrapper
@@ -21,6 +37,9 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
   - (Optional) Lint/Static‑Checks, falls konfiguriert: `./gradlew lint detekt ktlintFormat`
 - App-Entry: `com.chris.m3usuite.MainActivity`
 - Min. Laufzeit-Voraussetzung: Netzwerkzugriff (für M3U/Xtream, Bilder).
+
+Telegram Gating
+- `tg_enabled` (Settings) und AUTHENTICATED (TDLib) sind Pflicht, bevor Sync/Picker/DataSources aktiv werden. Ohne diese Gateways sind alle Telegram‑Funktionen no‑op; M3U/Xtream bleibt unbeeinflusst.
 
 WSL/Linux Hinweise
 - Siehe `AGENTS.md` → „WSL/Linux Build & Test“ (Repo‑lokale Ordner `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`, empfohlene Env‑Variablen). Windows‑Builds bleiben kompatibel.
@@ -47,13 +66,13 @@ app/src/main/java/com/chris/m3usuite
 ├── data/
 │   ├── db/                                 # Room: Entities, DAOs, Database
 │   │   ├── AppDatabase.kt                  # Versionierung, Migrations, Seeding (Adult Profile)
-│   │   └── Entities.kt                     # MediaItem, Episode, Category, Profile, KidContent,
+│   │   └── Entities.kt                     # MediaItem, MediaItemFts (FTS4), Episode, Category, Profile, KidContent,
 │   │                                       # ResumeMark, ScreenTimeEntry, Views + DAOs
 │   └── repo/                               # Repositories (IO/Business-Logik)
 │       ├── PlaylistRepository.kt           # Download & Import M3U → MediaItem (live/vod/series)
 │       ├── XtreamRepository.kt             # Vollimport via Xtream (Kategorien, Streams, Episoden, Details)
 │       ├── EpgRepository.kt                # Now/Next: persistenter Room‑Cache (epg_now_next) + XMLTV‑Fallback
-│       ├── MediaQueryRepository.kt         # Gefilterte Queries (Kids-Whitelist), Suche
+│       ├── MediaQueryRepository.kt         # Gefilterte Queries (Kids-Whitelist), Suche (FTS)
 │       ├── ProfileRepository.kt            # Profile & aktuelles Profil (Adult/Kid), PIN/Remember
 │       ├── KidContentRepository.kt         # Whitelist-Verwaltung (allow/disallow/bulk)
 │       ├── ResumeRepository.kt             # Wiedergabe-Fortschritt (vod/episode)

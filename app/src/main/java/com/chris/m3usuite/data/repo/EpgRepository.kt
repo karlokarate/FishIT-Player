@@ -16,6 +16,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
+import android.os.SystemClock
 
 /**
  * Lightweight EPG helper with short TTL cache per streamId.
@@ -28,7 +29,7 @@ class EpgRepository(
     private val emptyTtlMillis: Long = 10_000L
 ) {
     private val TAG = "EPGRepo"
-    private data class Cache(val at: Long, val data: List<XtShortEPGProgramme>)
+    private data class Cache(val atElapsedMs: Long, val data: List<XtShortEPGProgramme>)
     private val cache = LinkedHashMap<Int, Cache>(128, 0.75f, true)
     private val emptyCache = LinkedHashMap<Int, Long>(128, 0.75f, true)
     private val maxEntries = 2000
@@ -59,12 +60,12 @@ class EpgRepository(
         // Fast path: valid cache
         val cached: List<XtShortEPGProgramme>? = lock.withLock {
             val eAt = emptyCache[streamId]
-            if (eAt != null && (System.currentTimeMillis() - eAt) < emptyTtlMillis) {
+            if (eAt != null && (SystemClock.elapsedRealtime() - eAt) < emptyTtlMillis) {
                 Log.d(TAG, "sid=$streamId cache=empty within ${emptyTtlMillis}ms")
                 return@withLock emptyList<XtShortEPGProgramme>()
             }
             val c = cache[streamId]
-            if (c != null && (System.currentTimeMillis() - c.at) < ttlMillis) {
+            if (c != null && (SystemClock.elapsedRealtime() - c.atElapsedMs) < ttlMillis) {
                 Log.d(TAG, "sid=$streamId cache=hit size=${c.data.size}")
                 return@withLock c.data
             }
@@ -169,9 +170,9 @@ class EpgRepository(
         }
         // Cache hit bookkeeping: content uses normal TTL; empty uses short TTL
         if (final.isNotEmpty()) {
-            lock.withLock { cache[streamId] = Cache(System.currentTimeMillis(), final); trimIfNeeded() }
+            lock.withLock { cache[streamId] = Cache(SystemClock.elapsedRealtime(), final); trimIfNeeded() }
         } else {
-            lock.withLock { emptyCache[streamId] = System.currentTimeMillis(); trimIfNeeded() }
+            lock.withLock { emptyCache[streamId] = SystemClock.elapsedRealtime(); trimIfNeeded() }
         }
         Log.d(TAG, "sid=$streamId result size=${final.size}")
         final.take(limit)

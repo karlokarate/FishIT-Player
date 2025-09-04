@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +41,7 @@ import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.flow.first
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.data.repo.XtreamRepository
 import com.chris.m3usuite.data.repo.PlaylistRepository
 import com.chris.m3usuite.core.xtream.XtreamClient
@@ -49,11 +52,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import com.chris.m3usuite.backup.BackupRestoreSection
 import android.content.Intent
 import androidx.core.content.FileProvider
 import com.chris.m3usuite.core.m3u.M3UExporter
 import java.io.File
+import com.chris.m3usuite.telegram.TdLibReflection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,28 +74,28 @@ fun SettingsScreen(
     val permRepo = remember(ctx) { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
     var canChangeSources by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) { canChangeSources = permRepo.current().canChangeSources }
-    val mode by store.playerMode.collectAsState(initial = "ask")
-    val pkg by store.preferredPlayerPkg.collectAsState(initial = "")
-    val subScale by store.subtitleScale.collectAsState(initial = 0.06f)
-    val subFg by store.subtitleFg.collectAsState(initial = 0xF2FFFFFF.toInt())
-    val subBg by store.subtitleBg.collectAsState(initial = 0x66000000)
-    val subFgOpacity by store.subtitleFgOpacityPct.collectAsState(initial = 90)
-    val subBgOpacity by store.subtitleBgOpacityPct.collectAsState(initial = 40)
-    val headerCollapsed by store.headerCollapsedDefaultInLandscape.collectAsState(initial = true)
-    val rotationLocked by store.rotationLocked.collectAsState(initial = false)
-    val autoplayNext by store.autoplayNext.collectAsState(initial = false)
-    val hapticsEnabled by store.hapticsEnabled.collectAsState(initial = false)
-    val rememberLast by store.rememberLastProfile.collectAsState(initial = false)
-    val pinSet by store.adultPinSet.collectAsState(initial = false)
-    val m3u by store.m3uUrl.collectAsState(initial = "")
-    val epg by store.epgUrl.collectAsState(initial = "")
-    val xtHost by store.xtHost.collectAsState(initial = "")
-    val xtPort by store.xtPort.collectAsState(initial = 80)
-    val xtUser by store.xtUser.collectAsState(initial = "")
-    val xtPass by store.xtPass.collectAsState(initial = "")
-    val xtOut  by store.xtOutput.collectAsState(initial = "m3u8")
-    val ua by store.userAgent.collectAsState(initial = "IBOPlayer/1.4 (Android)")
-    val referer by store.referer.collectAsState(initial = "")
+    val mode by store.playerMode.collectAsStateWithLifecycle(initialValue = "ask")
+    val pkg by store.preferredPlayerPkg.collectAsStateWithLifecycle(initialValue = "")
+    val subScale by store.subtitleScale.collectAsStateWithLifecycle(initialValue = 0.06f)
+    val subFg by store.subtitleFg.collectAsStateWithLifecycle(initialValue = 0xF2FFFFFF.toInt())
+    val subBg by store.subtitleBg.collectAsStateWithLifecycle(initialValue = 0x66000000)
+    val subFgOpacity by store.subtitleFgOpacityPct.collectAsStateWithLifecycle(initialValue = 90)
+    val subBgOpacity by store.subtitleBgOpacityPct.collectAsStateWithLifecycle(initialValue = 40)
+    val headerCollapsed by store.headerCollapsedDefaultInLandscape.collectAsStateWithLifecycle(initialValue = true)
+    val rotationLocked by store.rotationLocked.collectAsStateWithLifecycle(initialValue = false)
+    val autoplayNext by store.autoplayNext.collectAsStateWithLifecycle(initialValue = false)
+    val hapticsEnabled by store.hapticsEnabled.collectAsStateWithLifecycle(initialValue = false)
+    val rememberLast by store.rememberLastProfile.collectAsStateWithLifecycle(initialValue = false)
+    val pinSet by store.adultPinSet.collectAsStateWithLifecycle(initialValue = false)
+    val m3u by store.m3uUrl.collectAsStateWithLifecycle(initialValue = "")
+    val epg by store.epgUrl.collectAsStateWithLifecycle(initialValue = "")
+    val xtHost by store.xtHost.collectAsStateWithLifecycle(initialValue = "")
+    val xtPort by store.xtPort.collectAsStateWithLifecycle(initialValue = 80)
+    val xtUser by store.xtUser.collectAsStateWithLifecycle(initialValue = "")
+    val xtPass by store.xtPass.collectAsStateWithLifecycle(initialValue = "")
+    val xtOut  by store.xtOutput.collectAsStateWithLifecycle(initialValue = "m3u8")
+    val ua by store.userAgent.collectAsStateWithLifecycle(initialValue = "IBOPlayer/1.4 (Android)")
+    val referer by store.referer.collectAsStateWithLifecycle(initialValue = "")
     var pinDialogMode by remember { mutableStateOf<PinMode?>(null) }
 
     val listState = rememberLazyListState()
@@ -507,6 +513,121 @@ fun SettingsScreen(
             }
 
             // Quick import (Drive/File) visible in settings too
+            // Telegram section (global toggle; default OFF)
+            HorizontalDivider()
+            SectionHeader("Telegram")
+            val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Telegram-Integration aktivieren (Beta)", modifier = Modifier.weight(1f))
+                Switch(checked = tgEnabled, onCheckedChange = { v -> scope.launch { store.setTelegramEnabled(v) } })
+            }
+            val tgChats by store.tgSelectedChatsCsv.collectAsStateWithLifecycle(initialValue = "")
+            val tgVodSel by store.tgSelectedVodChatsCsv.collectAsStateWithLifecycle(initialValue = "")
+            val tgSeriesSel by store.tgSelectedSeriesChatsCsv.collectAsStateWithLifecycle(initialValue = "")
+            val tgCacheGb by store.tgCacheLimitGb.collectAsStateWithLifecycle(initialValue = 2)
+            OutlinedTextField(
+                value = tgChats,
+                onValueChange = { scope.launch { store.setTelegramSelectedChatsCsv(it) } },
+                label = { Text("Chat-IDs (CSV), optional") },
+                singleLine = true,
+                enabled = tgEnabled,
+                modifier = Modifier.fillMaxWidth(),
+                colors = tfColors
+            )
+            OutlinedTextField(
+                value = tgCacheGb.toString(),
+                onValueChange = { s -> s.toIntOrNull()?.let { g -> scope.launch { store.setTelegramCacheLimitGb(g.coerceIn(1, 20)) } } },
+                label = { Text("Cache-Limit (GB)") },
+                singleLine = true,
+                enabled = tgEnabled,
+                modifier = Modifier.width(220.dp),
+                colors = tfColors
+            )
+            if (tgEnabled) {
+                var showTgDialog by remember { mutableStateOf(false) }
+                val ctx2 = LocalContext.current
+                val authRepo = remember {
+                    val apiId = runCatching {
+                        val f = Class.forName(ctx2.packageName + ".BuildConfig").getDeclaredField("TG_API_ID"); f.isAccessible = true; (f.get(null) as? Int) ?: 0
+                    }.getOrDefault(0)
+                    val apiHash = runCatching {
+                        val f = Class.forName(ctx2.packageName + ".BuildConfig").getDeclaredField("TG_API_HASH"); f.isAccessible = true; (f.get(null) as? String) ?: ""
+                    }.getOrDefault("")
+                    com.chris.m3usuite.data.repo.TelegramAuthRepository(ctx2, apiId, apiHash)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Button(onClick = {
+                        if (!authRepo.isAvailable()) {
+                            scope.launch { snackHost.showSnackbar("TDLib nicht verfügbar – bitte Bibliotheken bündeln.") }
+                        } else { authRepo.start(); showTgDialog = true }
+                    }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("Telegram verbinden") }
+                    TextButton(onClick = { val st = authRepo.authState.value; scope.launch { snackHost.showSnackbar("Telegram-Status: $st") } }) { Text("Status (Debug)") }
+                }
+                if (showTgDialog) TelegramLoginDialog(onDismiss = { showTgDialog = false }, repo = authRepo)
+
+                // Sync Sources: Filme und Serien – Auswahl per Chat-Picker
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    var showVodPicker by remember { mutableStateOf(false) }
+                    var showSeriesPicker by remember { mutableStateOf(false) }
+                    Button(onClick = { showVodPicker = true }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("Film Sync") }
+                    Button(onClick = { showSeriesPicker = true }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("Serien Sync") }
+                    if (tgVodSel.isNotBlank()) {
+                        TextButton(onClick = { com.chris.m3usuite.work.SchedulingGateway.scheduleTelegramSync(ctx2, com.chris.m3usuite.work.TelegramSyncWorker.MODE_VOD) }) { Text("Filme synchronisieren") }
+                    }
+                    if (tgSeriesSel.isNotBlank()) {
+                        TextButton(onClick = { com.chris.m3usuite.work.SchedulingGateway.scheduleTelegramSync(ctx2, com.chris.m3usuite.work.TelegramSyncWorker.MODE_SERIES) }) { Text("Serien synchronisieren") }
+                    }
+                    if (showVodPicker) TelegramChatPickerDialog(onDismiss = { showVodPicker = false }, onSelect = { chatId ->
+                        val cur = tgVodSel.split(',').filter { it.isNotBlank() }.toMutableSet()
+                        cur.add(chatId.toString())
+                        scope.launch { store.setTelegramSelectedVodChatsCsv(cur.joinToString(",")) }
+                        showVodPicker = false
+                    })
+                    if (showSeriesPicker) TelegramChatPickerDialog(onDismiss = { showSeriesPicker = false }, onSelect = { chatId ->
+                        val cur = tgSeriesSel.split(',').filter { it.isNotBlank() }.toMutableSet()
+                        cur.add(chatId.toString())
+                        scope.launch { store.setTelegramSelectedSeriesChatsCsv(cur.joinToString(",")) }
+                        showSeriesPicker = false
+                    })
+                }
+                // Selected chips (scrollable row)
+                if (tgVodSel.isNotBlank() || tgSeriesSel.isNotBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text("Quellen:", style = MaterialTheme.typography.labelLarge)
+                }
+                if (tgVodSel.isNotBlank()) {
+                    Text("• Filme: ${tgVodSel}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (tgSeriesSel.isNotBlank()) {
+                    Text("• Serien: ${tgSeriesSel}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                // Minimal sync progress UI (poll WorkManager for RUNNING states)
+                val wm = remember { androidx.work.WorkManager.getInstance(ctx2) }
+                var vodProcessed by remember { mutableStateOf<Int?>(null) }
+                var seriesProcessed by remember { mutableStateOf<Int?>(null) }
+                LaunchedEffect(tgEnabled) {
+                    while (tgEnabled) {
+                        try {
+                            val vodInfos = withContext(kotlinx.coroutines.Dispatchers.IO) { wm.getWorkInfosForUniqueWork("tg_sync_vod").get() }
+                            val vi = vodInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.RUNNING }
+                            vodProcessed = vi?.progress?.getInt("processed", -1)?.takeIf { it >= 0 }
+                            val seriesInfos = withContext(kotlinx.coroutines.Dispatchers.IO) { wm.getWorkInfosForUniqueWork("tg_sync_series").get() }
+                            val si = seriesInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.RUNNING }
+                            seriesProcessed = si?.progress?.getInt("processed", -1)?.takeIf { it >= 0 }
+                        } catch (_: Throwable) {}
+                        kotlinx.coroutines.delay(600)
+                    }
+                }
+                if (vodProcessed != null || seriesProcessed != null) {
+                    Spacer(Modifier.height(4.dp))
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    val vp = vodProcessed?.let { "Filme: $it" } ?: ""
+                    val sp = seriesProcessed?.let { "Serien: $it" } ?: ""
+                    Text("Telegram Sync läuft… ${listOf(vp, sp).filter { it.isNotBlank() }.joinToString("  ")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
             com.chris.m3usuite.backup.QuickImportRow()
 
             HorizontalDivider()
@@ -560,6 +681,192 @@ fun SettingsScreen(
     // PIN Dialog host
     pinDialogMode?.let { activePinMode ->
         showPinDialog(store = store, mode = activePinMode) { pinDialogMode = null }
+    }
+}
+
+@Composable
+private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.data.repo.TelegramAuthRepository) {
+    val state by repo.authState.collectAsStateWithLifecycle(initialValue = com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
+    var phone by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var didCheckDbKey by remember { mutableStateOf(false) }
+    val title = when (state) {
+        com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_NUMBER, com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNAUTHENTICATED, com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> "Telegram verbinden"
+        com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE -> "Bestätigungscode"
+        com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_PASSWORD -> "Passwort"
+        com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> "Verbunden"
+        else -> "Telegram"
+    }
+    // Auto-trigger DB key check when TDLib asks for it
+    LaunchedEffect(state) {
+        when (state) {
+            com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> {
+                if (!didCheckDbKey) {
+                    busy = true
+                    repo.checkDbKey()
+                    didCheckDbKey = true
+                }
+            }
+            com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE,
+            com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_PASSWORD,
+            com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> busy = false
+            else -> {}
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                when (state) {
+                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_NUMBER, com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNAUTHENTICATED -> {
+                        OutlinedTextField(
+                            value = phone,
+                            onValueChange = { phone = it },
+                            label = { Text("Telefonnummer") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            colors = TextFieldDefaults.colors()
+                        )
+                        Text("Gib deine Telefonnummer im internationalen Format ein (z. B. +491701234567)", style = MaterialTheme.typography.bodySmall)
+                    }
+                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        Text("Datenbank‑Schlüssel wird überprüft…", style = MaterialTheme.typography.bodySmall)
+                    }
+                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE -> {
+                        OutlinedTextField(
+                            value = code,
+                            onValueChange = { code = it },
+                            label = { Text("Bestätigungscode") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = TextFieldDefaults.colors()
+                        )
+                        Text("Den Code aus der Telegram-App eingeben.", style = MaterialTheme.typography.bodySmall)
+                    }
+                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_PASSWORD -> {
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Passwort") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            colors = TextFieldDefaults.colors()
+                        )
+                        Text("Zwei-Faktor-Passwort eingeben (falls aktiviert).", style = MaterialTheme.typography.bodySmall)
+                    }
+                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> {
+                        Text("Erfolgreich verbunden.")
+                    }
+                    else -> {
+                        Text("Warte auf Status…")
+                    }
+                }
+                if (busy) {
+                    Spacer(Modifier.height(4.dp))
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text("Warte auf Antwort…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        },
+        confirmButton = {
+            when (state) {
+                com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_NUMBER, com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNAUTHENTICATED -> {
+                    TextButton(onClick = {
+                        if (repo.start() && phone.isNotBlank()) { busy = true; repo.sendPhoneNumber(phone) }
+                    }) { Text("Weiter") }
+                }
+                com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE -> {
+                    TextButton(onClick = { if (code.isNotBlank()) { busy = true; repo.sendCode(code) } }) { Text("Bestätigen") }
+                }
+                com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_PASSWORD -> {
+                    TextButton(onClick = { if (password.isNotBlank()) { busy = true; repo.sendPassword(password) } }) { Text("Bestätigen") }
+                }
+                com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> {
+                    TextButton(onClick = { }) { Text("Weiter") }
+                }
+                com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> {
+                    TextButton(onClick = onDismiss) { Text("Schließen") }
+                }
+                else -> { TextButton(onClick = {}) { Text("OK") } }
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TelegramChatPickerDialog(
+    onDismiss: () -> Unit,
+    onSelect: (Long) -> Unit
+) {
+    val ctx = LocalContext.current
+    val authState = remember { mutableStateOf(TdLibReflection.AuthState.UNKNOWN) }
+    val chatsMain = remember { mutableStateListOf<Pair<Long, String>>() }
+    val chatsArchive = remember { mutableStateListOf<Pair<Long, String>>() }
+    var loading by remember { mutableStateOf(true) }
+    var folder by remember { mutableStateOf("main") }
+
+    LaunchedEffect(Unit) {
+        loading = true
+        val flow = kotlinx.coroutines.flow.MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
+        val client = TdLibReflection.getOrCreateClient(ctx, flow)
+        authState.value = flow.value
+        if (client != null) {
+            fun load(listObj: Any?, target: MutableList<Pair<Long, String>>) {
+                if (listObj == null) return
+                val get = TdLibReflection.buildGetChats(listObj, 200) ?: return
+                val res = TdLibReflection.sendForResult(client, get) ?: return
+                val ids = TdLibReflection.extractChatsIds(res) ?: longArrayOf()
+                for (id in ids) {
+                    val q = TdLibReflection.buildGetChat(id) ?: continue
+                    val chatObj = TdLibReflection.sendForResult(client, q)
+                    val title = chatObj?.let { TdLibReflection.extractChatTitle(it) } ?: id.toString()
+                    target.add(id to title)
+                }
+            }
+            load(TdLibReflection.buildChatListMain(), chatsMain)
+            load(TdLibReflection.buildChatListArchive(), chatsArchive)
+        }
+        loading = false
+    }
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+            Text("Telegram – Ordner auswählen", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AssistChip(label = { Text("Hauptordner") }, onClick = { folder = "main" }, leadingIcon = null, enabled = !loading)
+                AssistChip(label = { Text("Archiv") }, onClick = { folder = "archive" }, leadingIcon = null, enabled = !loading)
+            }
+            Spacer(Modifier.height(8.dp))
+            if (loading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                Text("Lade Chats…", style = MaterialTheme.typography.bodySmall)
+            } else {
+                val items = if (folder == "archive") chatsArchive else chatsMain
+                LazyColumn(Modifier.fillMaxWidth().heightIn(max = 520.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    items(items) { (id, title) ->
+                        ElevatedCard(onClick = { onSelect(id) }, modifier = Modifier.fillMaxWidth()) {
+                            Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text(title)
+                                Text(id.toString(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) { Text("Schließen") }
+            }
+        }
     }
 }
 

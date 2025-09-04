@@ -24,6 +24,11 @@ object PlayerChooser {
         startPositionMs: Long? = null,
         buildInternal: (startPositionMs: Long?) -> Unit
     ) {
+        // Force internal for Telegram scheme
+        if (url.startsWith("tg://", ignoreCase = true)) {
+            buildInternal(startPositionMs)
+            return
+        }
         // Enforce permissions: no external for kids/guests unless allowed
         val perms = PermissionRepository(context, store).current()
         val disallowExternal = !perms.canUseExternalPlayer
@@ -35,14 +40,19 @@ object PlayerChooser {
         when (store.playerMode.first()) {
             "internal" -> buildInternal(startPositionMs)
             "external" -> {
-                val pkg = store.preferredPlayerPkg.first()
-                ExternalPlayer.open(
-                    context = context,
-                    url = url,
-                    headers = headers,
-                    startPositionMs = startPositionMs,
-                    preferredPkg = pkg.ifBlank { null }
-                )
+                val pkg = store.preferredPlayerPkg.first().ifBlank { null }
+                if (pkg == null) {
+                    // No preferred external player selected → avoid system chooser; play internally
+                    buildInternal(startPositionMs)
+                } else {
+                    ExternalPlayer.open(
+                        context = context,
+                        url = url,
+                        headers = headers,
+                        startPositionMs = startPositionMs,
+                        preferredPkg = pkg
+                    )
+                }
             }
             else -> {
                 // Immer fragen: Dialog mit "Intern" oder "Extern"

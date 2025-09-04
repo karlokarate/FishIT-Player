@@ -78,6 +78,7 @@ fun VodDetailScreen(
 
     val db: AppDatabase = remember { DbProvider.get(ctx) }
     val repo: XtreamRepository = remember { XtreamRepository(ctx, SettingsStore(ctx)) }
+    val tgRepo: com.chris.m3usuite.data.repo.TelegramRepository = remember { com.chris.m3usuite.data.repo.TelegramRepository(ctx, SettingsStore(ctx)) }
     val scope = rememberCoroutineScope()
     val kidRepo = remember { KidContentRepository(ctx) }
     val store = remember { SettingsStore(ctx) }
@@ -104,6 +105,18 @@ fun VodDetailScreen(
         rating = item.rating
         duration = item.durationSecs
         url = item.url
+
+        // Telegram: if source is TG, prefer tg://message uri handled by TelegramRoutingDataSource
+        if (item.source == "TG") {
+            val chat = item.tgChatId
+            val msg = item.tgMessageId
+            url = if (chat != null && msg != null) {
+                "tg://message?chatId=$chat&messageId=$msg"
+            } else {
+                // fallback to local path if available
+                tgRepo.resolvePlaybackUriFor(item)?.toString()
+            }
+        }
 
         resumeSecs = db.resumeDao().getVod(id)?.positionSecs
 

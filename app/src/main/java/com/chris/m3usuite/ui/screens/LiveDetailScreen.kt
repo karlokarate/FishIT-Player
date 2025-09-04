@@ -35,6 +35,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -140,16 +142,19 @@ fun LiveDetailScreen(id: Long) {
     }
 
     // Observe DB for immediate seeding/updates from prefetch (favorites or background)
-    LaunchedEffect(id) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(id, lifecycleOwner) {
         val item = db.mediaDao().byId(id) ?: return@LaunchedEffect
         val ch = item.epgChannelId?.trim()
         if (!ch.isNullOrEmpty()) {
-            db.epgDao().observeByChannel(ch).collect { row ->
-                if (row != null) {
-                    epgNow = row.nowTitle.orEmpty()
-                    epgNext = row.nextTitle.orEmpty()
-                    nowStartMs = row.nowStartMs
-                    nowEndMs = row.nowEndMs
+            lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                db.epgDao().observeByChannel(ch).collect { row ->
+                    if (row != null) {
+                        epgNow = row.nowTitle.orEmpty()
+                        epgNext = row.nextTitle.orEmpty()
+                        nowStartMs = row.nowStartMs
+                        nowEndMs = row.nowEndMs
+                    }
                 }
             }
         }

@@ -44,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +65,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.zIndex
+import android.app.PictureInPictureParams
+import android.util.Rational
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -121,16 +124,16 @@ fun InternalPlayerScreen(
     val screenTimeRepo = remember(ctx) { ScreenTimeRepository(ctx) }
 
     // Settings (Untertitel)
-    val subScale by store.subtitleScale.collectAsState(initial = 0.06f)
-    val subFg by store.subtitleFg.collectAsState(initial = 0xF2FFFFFF.toInt())
-    val subBg by store.subtitleBg.collectAsState(initial = 0x66000000)
-    val subFgOpacity by store.subtitleFgOpacityPct.collectAsState(initial = 90)
-    val subBgOpacity by store.subtitleBgOpacityPct.collectAsState(initial = 40)
-    val rotationLocked by store.rotationLocked.collectAsState(initial = false)
-    val autoplayNext by store.autoplayNext.collectAsState(initial = false)
+    val subScale by store.subtitleScale.collectAsStateWithLifecycle(initialValue = 0.06f)
+    val subFg by store.subtitleFg.collectAsStateWithLifecycle(initialValue = 0xF2FFFFFF.toInt())
+    val subBg by store.subtitleBg.collectAsStateWithLifecycle(initialValue = 0x66000000)
+    val subFgOpacity by store.subtitleFgOpacityPct.collectAsStateWithLifecycle(initialValue = 90)
+    val subBgOpacity by store.subtitleBgOpacityPct.collectAsStateWithLifecycle(initialValue = 40)
+    val rotationLocked by store.rotationLocked.collectAsStateWithLifecycle(initialValue = false)
+    val autoplayNext by store.autoplayNext.collectAsStateWithLifecycle(initialValue = false)
 
     // HTTP Factory mit Headern
-    val extraJson by store.extraHeadersJson.collectAsState(initial = "")
+    val extraJson by store.extraHeadersJson.collectAsStateWithLifecycle(initialValue = "")
     val mergedHeaders = remember(headers, extraJson) {
         val extras = com.chris.m3usuite.core.http.RequestHeadersProvider.parseExtraHeaders(extraJson)
         com.chris.m3usuite.core.http.RequestHeadersProvider.merge(headers, extras)
@@ -143,7 +146,9 @@ fun InternalPlayerScreen(
             }
     }
     val dataSourceFactory = remember(httpFactory, ctx) {
-        DefaultDataSource.Factory(ctx, httpFactory)
+        val base = DefaultDataSource.Factory(ctx, httpFactory)
+        // Prefer TDLib streaming; fallback routing handles local-file cases
+        com.chris.m3usuite.telegram.TelegramTdlibDataSource.Factory(ctx, base)
     }
 
     // Player
@@ -347,16 +352,18 @@ fun InternalPlayerScreen(
                                 if (current != null) {
                                     val next = epDao.nextEpisode(current.seriesStreamId, current.season, current.episodeNum)
                                     if (next != null) {
-                                        // rebuild url from Xtream config (snapshot to avoid multiple first())
-                                        val snap = store.snapshot()
-                                        if (snap.xtHost.isNotBlank() && snap.xtUser.isNotBlank() && snap.xtPass.isNotBlank()) {
-                                            val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(snap.xtHost, snap.xtPort, snap.xtUser, snap.xtPass, snap.xtOutput)
-                                            val nextUrl = cfg.seriesEpisodeUrl(next.episodeId, next.containerExt)
-                                            withContext(Dispatchers.Main) {
-                                                exoPlayer.setMediaItem(MediaItem.fromUri(nextUrl))
-                                                exoPlayer.prepare()
-                                                exoPlayer.playWhenReady = true
-                                            }
+                                        val nextTg = if (next.tgChatId != null && next.tgMessageId != null) "tg://message?chatId=${next.tgChatId}&messageId=${next.tgMessageId}" else null
+                                        val nextUrl = nextTg ?: run {
+                                            val snap = store.snapshot()
+                                            if (snap.xtHost.isNotBlank() && snap.xtUser.isNotBlank() && snap.xtPass.isNotBlank()) {
+                                                val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(snap.xtHost, snap.xtPort, snap.xtUser, snap.xtPass, snap.xtOutput)
+                                                cfg.seriesEpisodeUrl(next.episodeId, next.containerExt)
+                                            } else null
+                                        }
+                                        if (nextUrl != null) withContext(Dispatchers.Main) {
+                                            exoPlayer.setMediaItem(MediaItem.fromUri(nextUrl))
+                                            exoPlayer.prepare()
+                                            exoPlayer.playWhenReady = true
                                         }
                                     }
                                 }
@@ -695,6 +702,18 @@ fun InternalPlayerScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    OverlayIconButton(
+                        iconRes = android.R.drawable.ic_menu_slideshow,
+                        containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
+                        contentColor = Color.White
+                    ) {
+                        (ctx as? Activity)?.let { act ->
+                            val params = PictureInPictureParams.Builder()
+                                .setAspectRatio(Rational(16, 9))
+                                .build()
+                            act.enterPictureInPictureMode(params)
+                        }
+                    }
                     OverlayIconButton(
                         iconRes = android.R.drawable.ic_menu_sort_by_size,
                         containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),

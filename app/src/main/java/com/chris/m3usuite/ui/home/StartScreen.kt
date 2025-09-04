@@ -84,6 +84,10 @@ import android.graphics.RenderEffect
 import android.graphics.Shader
 import com.chris.m3usuite.ui.theme.DesignTokens
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
+import kotlinx.coroutines.flow.map
+import androidx.paging.filter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -205,6 +209,7 @@ fun StartScreen(
     ) { pads ->
         val Accent = if (isKid) DesignTokens.KidAccent else DesignTokens.Accent
         Box(Modifier.fillMaxSize().padding(pads)) {
+            LaunchedEffect(Unit) { com.chris.m3usuite.metrics.RouteTag.set("home") }
             // Background
             Box(
                 Modifier
@@ -292,14 +297,17 @@ fun StartScreen(
                                         }
                                     }
                                     if (ep != null) {
-                                        val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(
-                                            host = storeLocal.xtHost.first(),
-                                            port = storeLocal.xtPort.first(),
-                                            username = storeLocal.xtUser.first(),
-                                            password = storeLocal.xtPass.first(),
-                                            output = storeLocal.xtOutput.first()
-                                        )
-                                        val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                                        val tgUrl = if (ep.tgChatId != null && ep.tgMessageId != null) "tg://message?chatId=${ep.tgChatId}&messageId=${ep.tgMessageId}" else null
+                                        val playUrl = tgUrl ?: run {
+                                            val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(
+                                                host = storeLocal.xtHost.first(),
+                                                port = storeLocal.xtPort.first(),
+                                                username = storeLocal.xtUser.first(),
+                                                password = storeLocal.xtPass.first(),
+                                                output = storeLocal.xtOutput.first()
+                                            )
+                                            cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                                        }
                                         val headers = buildMap<String,String> {
                                             val ua = storeLocal.userAgent.first(); val ref = storeLocal.referer.first()
                                             if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref)
@@ -517,38 +525,50 @@ fun StartScreen(
     // Disable for kid profiles (read-only favorites)
     if (showLivePicker && !isKid) {
         val scopePick = rememberCoroutineScope()
-        var allLive by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
         var query by remember { mutableStateOf("") }
         var selected by remember { mutableStateOf(favCsv.split(',').mapNotNull { it.toLongOrNull() }.toSet()) }
         var provider by remember { mutableStateOf<String?>(null) }
-        LaunchedEffect(isKid) {
-            withContext(kotlinx.coroutines.Dispatchers.IO) { MediaQueryRepository(ctx, store).listByTypeFiltered("live", 6000, 0) }
-                .let { list -> allLive = list }
+        val pagingFlow = remember(query, provider) {
+            when {
+                query.isNotBlank() -> MediaQueryRepository(ctx, store).pagingSearchFilteredFlow(query)
+                    .map { data -> data.filter { mi -> mi.type == "live" && (provider?.let { p -> (mi.categoryName ?: "").contains(p, ignoreCase = true) } ?: true) } }
+                else -> MediaQueryRepository(ctx, store).pagingByTypeFilteredFlow("live", provider)
+            }
         }
+        val liveItems = pagingFlow.collectAsLazyPagingItems()
         androidx.compose.material3.ModalBottomSheet(onDismissRequest = { showLivePicker = false }) {
             val addReq = remember { FocusRequester() }
             Box(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Sender auswählen", style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(value = query, onValueChange = { query = it }, label = { Text("Suche (TV)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                // Provider-Chips (aus categoryName)
-                val providers = remember(allLive) { allLive.mapNotNull { it.categoryName?.trim() }.filter { it.isNotEmpty() }.distinct().sorted() }
+                // Provider-Chips (aus categoryName) – einfache Ableitung aus aktueller Seite
+                val providers = remember(liveItems.itemCount) {
+                    val set = linkedSetOf<String>()
+                    for (i in 0 until minOf(liveItems.itemCount, 100)) {
+                        val it = liveItems[i]
+                        val c = it?.categoryName?.trim()
+                        if (!c.isNullOrEmpty()) set += c
+                    }
+                    set.toList().sorted()
+                }
                 androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
                     item { FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = provider == null, onClick = { provider = null }, label = { Text("Alle") }) }
                     items(providers) { p -> FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = provider == p, onClick = { provider = if (provider == p) null else p }, label = { Text(p) }) }
                 }
-                val filtered = remember(allLive, query, provider) {
-                    val q = query.trim().lowercase()
-                    allLive.filter { item ->
-                        val matchQ = if (q.isBlank()) true else item.name.lowercase().contains(q) || (item.categoryName ?: "").lowercase().contains(q)
-                        val matchP = provider?.let { p -> (item.categoryName ?: "").contains(p, ignoreCase = true) } ?: true
-                        matchQ && matchP
-                    }.distinctBy { it.id }
-                }
                 LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 180.dp), contentPadding = PaddingValues(bottom = 80.dp), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(filtered, key = { it.id }) { mi ->
+                    val refreshing = liveItems.loadState.refresh is androidx.paging.LoadState.Loading && liveItems.itemCount == 0
+                    if (refreshing) {
+                        items(12) { _ -> com.chris.m3usuite.ui.fx.ShimmerBox(modifier = Modifier.size(180.dp)) }
+                    }
+                    items(liveItems.itemCount, key = { idx -> liveItems[idx]?.id ?: idx.toLong() }) { idx ->
+                        val mi = liveItems[idx] ?: return@items
                         val isSel = mi.id in selected
                         ChannelPickTile(item = mi, selected = isSel, onToggle = { selected = if (isSel) selected - mi.id else selected + mi.id }, focusRight = addReq)
+                    }
+                    val appending = liveItems.loadState.append is androidx.paging.LoadState.Loading
+                    if (appending) {
+                        items(6) { _ -> com.chris.m3usuite.ui.fx.ShimmerBox(modifier = Modifier.size(180.dp)) }
                     }
                 }
             }

@@ -14,35 +14,38 @@ Hinweis (Build & WSL)
 
 ## Performance & Reliability Plan (Top 5)
 
-- HTTP/Headers vereinheitlichen
-  - Zentralen `RequestHeadersProvider` + `HttpClientFactory` einführen (ExoPlayer, Live‑Preview, Coil, External Player).
-  - Einheitliches Header‑Merging (User‑Agent/Referer/`extraHeadersJson`) und konsistente Redirect‑Policy.
-  - Intent‑Header‑Mapper (Bundle + VLC `String[]`) bereitstellen; Duplikate in `InternalPlayerScreen`, `HomeRows`, `ExternalPlayer` entfernen.
-
-- WorkManager entkoppeln und idempotent machen
-  - Scheduling‑Gateway mit Unique‑Names (Periodic + OneTime) und klaren `KEEP/REPLACE`‑Policies.
-  - Startup/Settings/Import auf das Gateway umstellen; „Sofort ausführen“ als Unique OneTimeWork; Doppel‑Enqueues eliminieren.
-
 - UI‑Lifecycle + Strukturhärtung
-  - Überall `collectAsStateWithLifecycle()` statt `collectAsState()`; Side‑Effects über `repeatOnLifecycle`.
-  - Monolithische Screens (Library, InternalPlayer, Episodes, Start) in kleinere Composables splitten; State hoisten; stabile Keys/`rememberLazy*State`; Such‑Debounce; teure Berechnungen off‑thread.
-  - JankStats aktivieren; Cold/Warm‑Start messen.
-
-- Streaming‑Exporter + Batch‑I/O
-  - `M3UExporter` auf streamingfähiges Schreiben (Writer/Uri) umstellen; DB‑Reads paginieren (z. B. 5k‑Batches).
-  - Große `StringBuilder` vermeiden; Speicher‑Peak und Export‑Latenz deutlich senken.
+  - [Teilerledigt] Wichtige UI‑States migriert auf `collectAsStateWithLifecycle()` (Player, Settings, Header, BG, Live‑Row). Weitere Screens folgen inkrementell.
+  - [Teilerledigt] Side‑Effects auf `repeatOnLifecycle(STARTED)` umgestellt für: Routenwechsel (Fish‑Kick), FishSpin‑Trigger, EPG‑Observer (Live‑Detail), globale Header‑Snapshots.
+  - Monolithische Screens (Library, Start, Detail) weiter entflechten; State hoisten; stabile Keys/`rememberLazy*State`; Such‑Debounce; teure Berechnungen off‑thread.
+  - [Erledigt] JankStats aktiviert; Start‑Metriken verfeinern (Dashboards/Logs konsolidieren).
 
 - Repo/Settings‑Hygiene für globale Performance
-  - EPG ausschließlich über `EpgRepository`; Altpfade entfernen; Cache als LRU mit TTL begrenzen.
-  - DataStore‑Writes batchen (z. B. `setXtream` in einer `edit {}`); „SettingsSnapshot“ für mehrfaches `first()`.
+  - EPG‑Altpfade entfernen; Cache‑Policy (LRU + TTL) final verifizieren.
   - Unused Imports/Funktionen aufräumen; Detekt/Ktlint schärfen; Logging in Hotpaths drosseln.
 
-### Aufgaben (Plan 5‑Punkte)
-- [ ] RequestHeadersProvider + HttpClientFactory erstellen; Player/Preview/Coil/External aufrufen umstellen.
-- [ ] Scheduling‑Gateway einführen; Unique Work (Periodic/OneTime) konsolidieren; UI‑Trigger anpassen.
-- [ ] Lifecycle‑Sammlung migrieren; große Screens aufteilen; JankStats + Start‑Metriken aktivieren.
-- [ ] `M3UExporter` auf Streaming + Batching migrieren.
-- [ ] DataStore‑Batch‑Edits & SettingsSnapshot; EPG‑Altpfade entfernen; LRU+TTL finalisieren.
+### Aufgaben (Plan 5‑Punkte – offen)
+- [ ] Lifecycle‑Sammlung migrieren; große Screens aufteilen; Start‑Metriken konsolidieren.
+- [ ] EPG‑Altpfade entfernen; Cache‑Policy verifizieren (LRU + TTL).
+
+## Telegram Integration (TDLib)
+
+Status: Opt‑in Alpha live. Login/Picker/Sync/DataSource/Packaging umgesetzt; v7a‑Buildscript vorhanden.
+
+- Erledigt
+  - [x] Settings: Global toggle `tg_enabled`, Login (Telefon→Code→Passwort), auto DB‑Key‑Check, Status‑Debug.
+  - [x] Chat/Folder Picker: getrennte Quellen für Film/Serien Sync (CSV in Settings).
+  - [x] DB: `MediaItem.source=TG`, `telegram_messages`, Episode.tg* + Migration v8→v9.
+  - [x] Worker: `TelegramSyncWorker` (Heuristik SxxExx, Dedupe, Mapping auf VOD/Series).
+  - [x] Player: `TelegramTdlibDataSource` (Streaming) + `TelegramRoutingDataSource` (lokal) + tg:// URIs in UI/Autoplay.
+  - [x] Packaging: `:libtd` mit `arm64-v8a/libtdjni.so`; Script `scripts/tdlib-build-v7a.sh` für `armeabi-v7a`.
+
+- Nächste Schritte
+  - [x] Heuristik ausbauen (deutsche Schreibweisen, Episoden‑Titel), Container/Ext ableiten, Laufzeit. (v1: S/E de‑Regex, ext/duration best‑effort)
+  - [x] Fortschritt/Status UI für Sync (Sheets/Toasts), Retry‑Strategie, Throttling. (v1: Settings zeigt laufenden Sync + Zähler)
+  - [x] Cache‑Policy (GB/TTL) durchsetzen (Cleanup Worker), Limits pro Quelle. (v1: GB‑Limit, täglicher Trim)
+  - [x] Thumbs/Chat‑Photos in Poster‑Pipeline (Coil) integrieren. (v1: Nachricht‑Thumb als Poster, Chat‑Photo für Serien)
+  - [ ] Optional: CI‑Jobs zum Bauen der TDLib‑.so für v7a/v8a.
 
 ## 0) Architekturentscheidungen
 
@@ -68,32 +71,25 @@ Hinweis (Build & WSL)
   - Navigation zu `gate`.
 
 ### 1.2 Home (`StartScreen.kt`)
-- **Schnell‑Import‑Karte entfernen** (nicht mehr angezeigt).
+– (Erledigt) Schnell‑Import‑Karte entfernt.
 
 ### 1.3 Settings (`SettingsScreen.kt`)
-Abschnitt **„Daten & Backup“** ergänzen:
-- **Settings‑Export**  
-  - Buttons: „Als Datei exportieren …“ (SAF), „Zu Drive exportieren“ (sofern angemeldet).
-- **Settings‑Import**  
-  - Buttons: „Aus Datei importieren …“, „Aus Drive importieren“.
+Abschnitt **„Daten & Backup“** – offen:
 - **Drive‑Einstellungen**  
   - Status (angemeldet/abgemeldet, Konto), „Bei Google anmelden/abmelden“, Zielordner wählen.  
+  - Buttons: „Zu Drive exportieren“, „Aus Drive importieren“.
   - Toggle: „Automatisches Backup nach Änderungen“ (optional Phase 2).
+Hinweis: Lokaler Export/Import (SAF) ist implementiert.
 
 ---
 
 ## 2) Implementierungsschritte (Schritt‑für‑Schritt)
 
 ### 2.1 Settings‑Serialisierung
-- Neues Paket `settings/` mit `SettingsBackup.kt`:
-  - `suspend fun export(context): SettingsSnapshot` (liest alle Keys aus `SettingsStore`)
-  - `suspend fun import(context, snapshot: SettingsSnapshot)` (schreibt Werte zurück; migriert alte Keys).
-  - `data class SettingsSnapshot(v: Int = 1, prefs: Map<String, Any?>, profiles?: List<Profile>, kidAllow?: Map<Long, Map<String, List<Long>>>>)`
-  - Verschlüsselungs‑Helper (optional): `SecretHelper` (AES/GCM mit Keystore).
+(Erledigt) Über `prefs/SettingsSnapshot.kt` + `backup/SettingsBackupManager.kt` (Dump/Restore aller Keys, Profile, Resume‑Marks).
 
 ### 2.2 Dateiexport/-import (lokal, SAF)
-- Utility `FilePickers.kt`: `createDocument()`, `openDocument()` Intents mit `application/json`.
-- In `SettingsScreen` die Buttons verdrahten; Progress/Fehler‑Snackbars; Neustart‑Hinweis wenn nötig.
+(Erledigt) `backup/BackupRestoreSection.kt` (Export/Import via SAF) + Integration in `SettingsScreen`.
 
 ### 2.3 Drive‑Integration (optional Phase 2)
 - Gradle:
@@ -107,14 +103,12 @@ Abschnitt **„Daten & Backup“** ergänzen:
 
 ### 2.4 Onboarding‑Anpassungen
 - `PlaylistSetupScreen`:
-  - „Schnell‑Import“ Abschnitt (Drive + Lokal) einbauen.
-  - Nach erfolgreichem Import: **M3U/EPG/UA/Referer** gesetzt? → **Import anstoßen** (Xtream/M3U) → Worker planen → `onDone()`.
-- `MainActivity` bleibt unverändert (Startziel `setup` wenn `m3uUrl` leer).
+  - (Teilweise) „Schnell‑Import“ via Drive vorhanden (`QuickImportRow`). Lokaler Import‑Button noch offen.
+  - Nach erfolgreichem Schnell‑Import: Import anstoßen (Xtream/M3U) → Worker planen → Navigieren zu `gate` (offen).
+  - `MainActivity` bleibt unverändert (Startziel `setup` wenn `m3uUrl` leer).
 
 ### 2.5 Post‑Import Aktionen
-- `XtreamRepository.configureFromM3uUrl()` aufrufen, wenn nur M3U im Snapshot steht (Host/Port/User/Pass setzen).
-- `XtreamRefreshWorker.schedule(...)` + `XtreamEnrichmentWorker.schedule(...)` immer auslösen.
-- Optional: **Snackbar/Toast** „Import erfolgreich – Inhalte werden aktualisiert“.
+- Offen für „Schnell‑Import“ (Setup/Settings): Nach Restore Import anstoßen (Xtream/M3U) + Worker planen + Erfolgs‑Feedback.
 
 ### 2.6 Auto‑Backup (optional Phase 3)
 - Worker `SettingsAutoBackupWorker` (Unique, Network CONNECTED):
@@ -155,16 +149,24 @@ Abschnitt **„Daten & Backup“** ergänzen:
 
 ---
 
-## 6) Aufgabenliste (Checkliste)
+## 6) Aufgabenliste (Checkliste – offen)
 
-- [ ] `StartScreen`: Schnell‑Import entfernen.
-- [ ] `PlaylistSetupScreen`: Drive/Lokal **Import** einbauen (Erststart).
-- [ ] `SettingsScreen`: **Export**, **Import**, **Drive‑Einstellungen** ergänzen.
-- [ ] `settings/SettingsBackup.kt` + `FilePickers.kt` implementieren.
-- [ ] (Optional) `drive/DriveAuth.kt` + `drive/DriveClient.kt` + Gradle‑Deps.
+- [ ] `PlaylistSetupScreen`: Lokalen Schnell‑Import ergänzen; nach Schnell‑Import Import/Worker starten.
+- [ ] `SettingsScreen`: Drive‑Einstellungen und Drive‑Import/Export integrieren.
+- [ ] (Optional) `drive/DriveAuth.kt` + `drive/DriveClient.kt` + Gradle‑Deps (vollwertig statt Shim).
 - [ ] (Optional) `work/SettingsAutoBackupWorker.kt`.
 - [ ] Unit‑ & UI‑Tests ergänzen.
-- [ ] AGENTS.md & ROADMAP.md im Repo aktualisieren.
+
+Erledigt (Search v1.5 – FTS)
+- [x] Room‑FTS4 über `name/sortTitle` mit `unicode61` (`remove_diacritics=2`).
+- [x] DAO + Repository auf FTS umgestellt (Prefix‑Suche via `*`, AND über Tokens).
+- [x] Migration v6→v7: FTS‑Tabelle, Trigger, Backfill.
+- [x] Debounce der Tipp‑Suche (300 ms) mit Abbruch älterer Läufe (`collectLatest`).
+
+Erledigt (Paging 3 – große Listen)
+- [x] DAO‑Paging‑Queries (`PagingSource` für Typ/Kategorie und FTS‑Suche).
+- [x] Repository: `Flow<PagingData<MediaItem>>` + Kids‑Filter auf Paging‑Ebene.
+- [x] UI: Paged Grid in `LibraryScreen` mit stabilen Keys.
 
 --- 
 
@@ -237,3 +239,188 @@ Erledigt (UI‑Polish) – 2025‑08‑29
 - „Carded Look“ mit `AccentCard` für Start‑Rows, Library‑Rails und Detail‑Screens.
 - Buttons/Chips akzentuiert (Detail‑CTAs, FilterChips, AssistChips).
 - Touch: Live‑Favoriten nur per Long‑Press verschiebbar; Scroll bleibt smooth.
+#
+# FishIT Player – **Roadmap: Import/Export finalisieren**
+
+## m3uSuite · Roadmap vNext (Q4 2025 – Q2 2026)
+
+**Ziel**  
+m3uSuite stabilisieren und beschleunigen (Parsing/EPG/DB/Netzwerk), UI straffen (Compose), Wartung vereinfachen (CI/Diagnostik), und gezielte neue Funktionen ergänzen (Suche v2, PiP, Backup/Restore).
+
+**Grundsätze**
+- „Single Source of Truth“ pro Schicht (Settings/Headers, EPG, DB).
+- Keine Blocker im UI‑Thread; Streaming‑/Batch‑I/O in Worker.
+- Messbar: Jede Maßnahme bekommt Metriken (Zeit, Jank, Cache‑Hit).
+
+---
+
+## 0) Status-Snapshot (aus dem Repo)
+- **Projekt**: Android‑App in **Kotlin**, Gradle‑Build, Ordner `app/`, `analysis_epg/`, `epg_inputs/`. :contentReference[oaicite:1]{index=1}
+- **Domänenmodule (implizit)**: M3U‑Parser, EPG‑Handling, Netzwerk (OkHttp/Coil), Playback (Media3/Exo), Room‑DB, WorkManager, Compose UI.
+
+> Hinweis: Inhalte der alten `ROADMAP*.md` sind im Browser‑Plugin nicht lesbar; erledigte Punkte wurden daher **aus Erfahrungsstand und Code‑Struktur** bereinigt und die erfahrungsgemäß noch offenen Themen (Settings‑Hygiene, Scheduling/Lifecycle, Suche/Performance, EPG‑Caching) übernommen.
+
+---
+
+## 1) Meilensteine & Deliverables
+
+### M0 · Stabilisierung & schnelle Gewinne (4–6 Wochen)
+**Ziele:** Header‑Latenz rausnehmen, Import‑Peaks senken, EPG‑Doppler vermeiden, Parser robuster machen.
+
+- [x] **RequestHeadersProvider (Snapshot)**  
+  _Deliverable:_ `core/http` erhält Provider mit `StateFlow` + atomic Snapshot. OkHttp‑Interceptor liest **nur** aus Snapshot (kein `runBlocking`/DataStore im Interceptor).
+  _Akzeptanz:_ Bilder/EPG laden ≥15 % schneller; 0 Interceptor‑Waits >5 ms in Trace.
+
+- [x] **DAO‑Projektionen + Batch‑Reads**  
+  _Deliverable:_ Schlanke Queries (z. B. `SELECT url, extraJson`, `SELECT streamId, epgChannelId`) + Import in Batches (5–10k).  
+  _Akzeptanz:_ Peak‑RAM bei großen Imports −30 %; GC‑Pauses im Import‑Trace halbiert.
+
+- [x] **EPG‑Refresh entkoppeln**  
+  _Deliverable:_ Entfernt UI‑Loops; stattdessen `enqueueUnique` **OneTimeWork** bei App‑Start + PeriodicWork (Policies dokumentiert).  
+  _Akzeptanz:_ Kein Doppel‑Refresh, Akku‑Last sinkt messbar (Android Battery Historian).
+
+- [ ] **M3U‑Parser „Provider‑Pattern“-Tabelle**  
+  _Deliverable:_ Erweiterbare Regex‑Tabelle (HLS‑Pfade, `channel/…`, `index.m3u8`, Query‑Flags) + optional JSON‑Overrides.  
+  _Akzeptanz:_ Fehlklassifikationen bei Test‑Playlists <1 %.
+
+- [ ] **EPG‑Cache auf monotone Zeitquelle**  
+  _Deliverable:_ TTL/Delays via `elapsedRealtime()`, optionale LRU‑Größe konfigurierbar.  
+  _Akzeptanz:_ „Now/Next“‑Latenz stabil, weniger Flaps bei Zeitwechsel.
+
+- [ ] **Settings‑Hygiene (Batch‑Edits + Encryption)**  
+  _Deliverable:_ Zusammengefasste DataStore‑Writes; Passwörter/Keys via Keystore AES/GCM verschlüsselt.  
+  _Akzeptanz:_ ≤1 I/O‑Write pro Nutzeraktion; Secrets ruhen verschlüsselt.
+
+---
+
+### M1 · Performance-Welle (6–8 Wochen)
+**Ziele:** Listen & Suche beschleunigen, UI‑Jank senken, I/O optimieren.
+
+- [ ] **Room‑FTS (Suche v1.5)**  
+  _Deliverable:_ FTS‑Tabelle für `name/sortTitle` (mit Normalisierung: NFKD + combining marks strip), `COLLATE NOCASE`‑Indizes.  
+  _Akzeptanz:_ Globale Suche ≤100 ms bei 100k Einträgen; Tipp‑Suche ruckelfrei.
+
+- [ ] **Paging 3 in allen großen Listen**  
+  _Deliverable:_ DAO‑Paging‑Queries, `Lazy*` mit stabilen Keys.  
+  _Akzeptanz:_ Scroll‑Jank (JankStats) −50 %, Time‑to‑First‑Viewport <200 ms.
+
+- [ ] **Streaming‑I/O & Batch‑Writes (DB)**  
+  _Deliverable:_ Große Updates über `INSERT OR REPLACE` in Batches + WAL‑Tuning.  
+  _Akzeptanz:_ Import‑Zeit −30 % ggü. vorher.
+
+- [ ] **JankStats + Startup‑Metriken**  
+  _Deliverable:_ JankStats aktiv, Cold/Warm Start Messung + einfache In‑App Diagnose.
+
+---
+
+### M2 · UX‑Welle (8–10 Wochen)
+**Ziele:** Bedienung verbessern, EPG sichtbarer, Playback‑Komfort.
+
+- [ ] **EPG‑Overlay & Erinnerungen**  
+  _Deliverable:_ Now/Next‑BottomSheet, „Erinnern“ (Alarm/Notif + WM), Favoriten‑Priorität.  
+  _Akzeptanz:_ Reminder zuverlässig; Overlay <1 s Datenzeit.
+
+- [ ] **PiP‑Modus (Media3)**  
+  _Deliverable:_ Player mit PiP, Auto‑Resize, Resume.  
+  _Akzeptanz:_ Kein Audio‑Drop beim Wechsel; „Zurück in App“ führt korrekt in Detail.
+
+- [ ] **Favoriten 2.0**  
+  _Deliverable:_ Mehrere Favoriten‑Listen („Sport“, „News“) mit eigenem Sortierzustand; DAO‑Filter statt In‑Memory.  
+  _Akzeptanz:_ Wechseln/Filtern <50 ms.
+
+- [ ] **Suche v2 (Suggest + Ranking)**  
+  _Deliverable:_ Tipp‑Vorschläge (FTS Prefix), Ranking nach Favorit/Resume‑Score; Synonym‑CSV als Option.  
+  _Akzeptanz:_ Erste Vorschläge <80 ms, Trefferqualität spürbar besser.
+
+- [ ] **Settings‑Backup/Restore**  
+  _Deliverable:_ SAF‑Datei + optional Google‑Drive‑Sync; `m3usuite-settings-v1.json` (verschlüsselte Secrets).  
+  _Akzeptanz:_ Vollständiger Roundtrip auf Testgeräten.
+
+---
+
+### M3 · Ops & Qualität (laufend, harte Gates vor Release)
+- [ ] **CI‑Checks**: detekt, ktlint, Android Lint (fatal im Release), Gradle Doctor.  
+- [ ] **Baseline Profiles & Macrobenchmark**: Start/Scroll‑Benchmarks, Gate in CI.  
+- [ ] **Crash‑/ANR‑Monitoring**: Crashlytics/Sentry (Opt‑In), Privacy‑Hinweise.  
+- [ ] **Version Catalog + BOMs**: zentrale Pflege (Compose/Media3/OkHttp/Coil/Room).  
+- [ ] **Security**: Network‑Security‑Config, StrictMode in Debug, LeakCanary im Debug.
+
+---
+
+## 2) Konkrete Fix‑Liste (umsetzbar ab M0)
+
+1. (Erledigt) **Headers‑Snapshot + Provider**: Kein `runBlocking` im OkHttp‑Interceptor.
+2. (Erledigt) **DAO‑Projektionen** statt massiver Entity‑Hydrierung; `addedAt` aus `extraJson` minimal lesen.
+3. (Erledigt) **M1 Loop → WorkManager**: In der UI keine 5‑Minuten‑Loops; OneTimeWork beim Start + PeriodicWork.
+4. (Teilweise) **collectAsStateWithLifecycle** überall; Side‑Effects via `repeatOnLifecycle`.
+5. (Erledigt) **Sprachrobuste Sort‑Keys**: NFKD + Entfernen combining marks; `COLLATE NOCASE`‑Index.
+6. **EPG‑Cache → monotone Zeit**; **adaptive TTL** (Favoriten kurz, Rest länger); optional **LRU**.
+7. **M3U‑Provider‑Patterns** erweitern + JSON‑Overrides für Edge‑Provider.
+8. **DataStore Batch‑Edits** bündeln; weniger Writes.
+9. **FTS für Suche** + passende Indizes; `globalSearch` auf FTS umstellen.
+10. **Expedited OneTimeWork** (wo erlaubt) für schnelle On‑Demand‑Refreshes.
+11. **Secrets verschlüsseln** (Keystore AES/GCM) vor DataStore‑Persist.
+12. **DAO‑Views für UI‑Rows** (schlank), Paging‑fähig.
+
+---
+
+## 3) Performance‑Hebel (Top‑5, messbar)
+
+- **P1: Paging 3 + stabile Keys** → massiv weniger Memory/GC in Listen.
+- **P2: Streaming‑I/O & Batch‑DB‑Writes** → schnellerer Import, weniger WAL‑Contention.
+- **P3: JankStats + Split‑Composables** → gezielte Jank‑Reduktion an Hot‑Paths.
+- **P4: Header‑Snapshot** → niedrigere Netz‑Latenz für Thumbnails/EPG.
+- **P5: EPG‑Cache‑Strategie** → weniger Requests, konstantere UI‑Zeit.
+
+---
+
+## 4) Neue Implementierungen (10 Vorschläge)
+
+1. **Settings‑Backup/Restore** (SAF + optional Drive; Secrets verschlüsselt).  
+2. **EPG‑Overlay & Reminder** (Now/Next, Erinnern mit Notification/Alarm + WM).  
+3. **Suche v2** (FTS‑Suggest, Ranking nach Favorit/Resume/Sichtungen, Synonyme als CSV).  
+4. **TMDb/TvMaze‑Fallback** für Poster/Backdrop/Plot (Opt‑In).  
+5. **PiP‑Modus** im internen Player (Media3).  
+6. **Rollen‑Vorlagen für Profile** (Admin/Kid/Gast Defaults; schneller Setup‑Flow).  
+7. **Crash‑/ANR‑Monitoring** (Crashlytics oder Sentry; Opt‑In in Settings).  
+8. **Baseline Profiles & Macrobenchmarks** (Start/Scroll Gate vor Release).  
+9. **Externer Cast‑Pfad (optional)**: Chromecast/DLNA hinter Feature‑Flag.  
+10. **Favoriten 2.0**: Mehrere Listen + schnelle Kategorie‑Filterung via DAO.
+
+---
+
+## 5) Abhängigkeits- & Build-Strategie
+
+- **Version Catalog (`libs.versions.toml`)** + **BOMs** (Compose, Media3, OkHttp, Coil, Room) → einheitliche Updates ohne Versionsdrift.  
+- **CI (GitHub Actions)**: Lint/Detekt/Ktlint, Unit‑ und Instrumented‑Tests, Macrobenchmarks auf Referenzgerät.  
+- **Release‑Gates**: Zero‑crash‑Regression, Startzeit ≤ definiertem Schwellwert, JankRate unter Ziel.
+
+---
+
+## 6) Risiken & Gegenmaßnahmen
+
+- **Doppel‑Scheduling EPG** → _Fix_: Nur WM (OneTime + Periodic).  
+- **Import‑RAM‑Peaks** → _Fix_: Projektionen + Batching.  
+- **Netzwerk‑Latenz durch Interceptor‑Blocking** → _Fix_: Header‑Snapshot.  
+- **Parser‑Fehlklassifikation** → _Fix_: Muster‑Tabelle + Provider‑Overrides + Testsuiten mit realen Playlists.
+
+---
+
+## 7) Messgrößen (Definition of Done)
+
+- **TTFP (Time‑to‑first‑poster)**: −15 % ggü. Basis.
+- **Cold Start**: −20 % ggü. Basis (Baseline Profile aktiv).
+- **Scroll‑JankRate**: −50 % in großen Listen.
+- **Import‑Zeit**: −30 % bei 100k Items.
+- **EPG‑Trefferquote (Cache)**: +25 % (Hits / Gesamt).
+
+---
+
+## 8) Umsetzungsreihenfolge (Kurzform)
+
+1) **M0**: Headers‑Provider, DAO‑Projektionen, WM‑Scheduling, Parser‑Pattern, monotone EPG‑TTL, Settings‑Batch+Encrypt.  
+2) **M1**: Room‑FTS, Paging 3, Streaming‑I/O, JankStats/Startup‑Metriken.  
+3) **M2**: EPG‑Overlay/Reminder, PiP, Favoriten 2.0, Suche v2, Backup/Restore.  
+4) **M3**: CI‑Härtung, Baseline Profiles, Macrobench, Crash‑Monitoring, Version‑Catalog/BOMs.
+
+---

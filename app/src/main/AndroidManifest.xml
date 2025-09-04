@@ -27,7 +27,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:resizeableActivity="true"
-            android:supportsPictureInPicture="false"
+            android:supportsPictureInPicture="true"
             android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|uiMode">
 
             <!-- Phone Launcher -->

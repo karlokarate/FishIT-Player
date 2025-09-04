@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.metrics.performance.JankStats
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -58,30 +60,47 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         hideSystemBars()
 
+        // JankStats: lightweight performance tracking with per-route counters
+        runCatching {
+            JankStats.createAndTrack(window) { frameData ->
+                val route = com.chris.m3usuite.metrics.RouteTag.current
+                com.chris.m3usuite.metrics.JankReporter.record(route, frameData.isJank, frameData.frameDurationUiNanos)
+            }
+        }
+
         setContent {
             M3UTvSkin {
             AppTheme {
                 val nav = rememberNavController()
 
-                // Kick fish spin on every route change (single fast spin)
-                LaunchedEffect(nav) {
-                    var last: String? = null
-                    nav.currentBackStackEntryFlow.collect { entry ->
-                        val route = entry.destination.route
-                        if (route != null && route != last) {
-                            com.chris.m3usuite.ui.fx.FishSpin.kickOnce()
-                            last = route
+                // Kick fish spin on every route change (single fast spin), lifecycle-aware
+                val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                LaunchedEffect(nav, lifecycleOwner) {
+                    lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                        var last: String? = null
+                        nav.currentBackStackEntryFlow.collect { entry ->
+                            val route = entry.destination.route
+                            if (route != null && route != last) {
+                                com.chris.m3usuite.ui.fx.FishSpin.kickOnce()
+                                last = route
+                            }
                         }
                     }
                 }
 
                 val ctx = LocalContext.current
                 val store = remember(ctx) { SettingsStore(ctx) }
+                // Keep HTTP header snapshot updated globally for OkHttp/Coil, lifecycle-aware
+                LaunchedEffect(lifecycleOwner) {
+                    lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                        com.chris.m3usuite.core.http.RequestHeadersProvider.collect(store)
+                    }
+                }
                 // Track app start time for new-episode detection
                 LaunchedEffect(Unit) { store.setLastAppStartMs(System.currentTimeMillis()) }
 
                 // DataStore-Flow beobachten
-                val m3uUrl = store.m3uUrl.collectAsState(initial = "").value
+                val m3uUrl = store.m3uUrl.collectAsStateWithLifecycle(initialValue = "").value
 
                 // Startziel abhängig von gespeicherter URL
                 val startDestination = if (m3uUrl.isBlank()) "setup" else "gate"
@@ -106,16 +125,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Tie periodic EPG refresh to Activity lifecycle (STARTED)
-                lifecycleScope.launch {
-                    repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                        while (true) {
-                            val aggressive = SettingsStore(this@MainActivity).epgFavSkipXmltvIfXtreamOk.first()
-                            runCatching { SchedulingGateway.refreshFavoritesEpgNow(this@MainActivity, aggressive = aggressive) }
-                            kotlinx.coroutines.delay(5 * 60 * 1000L)
-                        }
-                    }
-                }
+                // Periodic EPG refresh via WorkManager only (no UI-owned loops)
 
                 NavHost(navController = nav, startDestination = startDestination) {
                     composable("setup") {
@@ -217,7 +227,7 @@ class MainActivity : ComponentActivity() {
 
                     // Settings (permissions)
                     composable("settings") {
-                        val profileId = store.currentProfileId.collectAsState(initial = -1L).value
+                        val profileId = store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L).value
                         LaunchedEffect(profileId) {
                             val perms = com.chris.m3usuite.data.repo.PermissionRepository(this@MainActivity, store).current()
                             if (!perms.canOpenSettings) {
@@ -238,7 +248,7 @@ class MainActivity : ComponentActivity() {
 
                     composable("profiles") {
                         // Require adult to open profile manager. Wait for a valid profileId before deciding.
-                        val profileId = store.currentProfileId.collectAsState(initial = -1L).value
+                        val profileId = store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L).value
                         var allow: Boolean? by remember { mutableStateOf(null) }
                         LaunchedEffect(profileId) {
                             if (profileId <= 0) { allow = null; return@LaunchedEffect }

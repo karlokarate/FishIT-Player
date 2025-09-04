@@ -1,6 +1,9 @@
 package com.chris.m3usuite.data.db
 
 import androidx.room.*
+import androidx.paging.PagingSource
+import androidx.room.Fts4
+import androidx.room.FtsOptions
 
 // -----------------------------------------------------
 // Entities
@@ -34,7 +37,30 @@ data class MediaItem(
     val durationSecs: Int?,           // vod
     val plot: String?,
     val url: String?,                 // Play-URL (bei Serien null → Episoden separat)
-    val extraJson: String?
+    val extraJson: String?,
+    // Source + Telegram references (default off unless imported)
+    val source: String = "M3U",      // "M3U" | "TG" | ...
+    val tgChatId: Long? = null,
+    val tgMessageId: Long? = null,
+    val tgFileId: Int? = null
+)
+
+/** Telegram message index for playback and metadata bridge */
+@Entity(
+    tableName = "telegram_messages",
+    primaryKeys = ["chatId", "messageId"],
+    indices = [Index("fileId"), Index("fileUniqueId")]
+)
+data class TelegramMessage(
+    val chatId: Long,
+    val messageId: Long,
+    val fileId: Int?,
+    val fileUniqueId: String?,
+    val supportsStreaming: Boolean?,
+    val caption: String?,
+    val date: Long?,
+    val localPath: String?,
+    val thumbFileId: Int?
 )
 
 /**
@@ -57,7 +83,11 @@ data class Episode(
     val plot: String?,
     val durationSecs: Int?,
     val containerExt: String?,
-    val poster: String?
+    val poster: String?,
+    // Telegram references (optional per-episode mapping)
+    val tgChatId: Long? = null,
+    val tgMessageId: Long? = null,
+    val tgFileId: Int? = null
 )
 
 /**
@@ -120,6 +150,23 @@ data class KidContentItem(
     val kidProfileId: Long,
     val contentType: String, // "live" | "vod" | "series"
     val contentId: Long
+)
+
+/**
+ * FTS4-Volltextindex für globale Suche über name und sortTitle.
+ * - unicode61 Tokenizer mit remove_diacritics=2 entfernt Akzente.
+ * - contentEntity sorgt für automatische Trigger bei Neuaufbau; Migration ergänzt IF NOT EXISTS-Trigger für Bestandsdatenbanken.
+ */
+@Fts4(
+    contentEntity = MediaItem::class,
+    tokenizer = FtsOptions.TOKENIZER_UNICODE61,
+    tokenizerArgs = ["remove_diacritics=2"]
+)
+@Entity(tableName = "mediaitem_fts")
+data class MediaItemFts(
+    @PrimaryKey @ColumnInfo(name = "rowid") val rowId: Long,
+    val name: String,
+    val sortTitle: String
 )
 
 /** Kategorie-Freigaben pro Kind und Typ */
@@ -235,6 +282,12 @@ data class ResumeEpisodeView(
 // DAOs
 // -----------------------------------------------------
 
+/** Lightweight projection for URL + extraJson to avoid hydrating full rows during imports */
+data class MediaUrlExtra(
+    val url: String?,
+    val extraJson: String?
+)
+
 /** DAO: Media */
 @Dao
     interface MediaDao {
@@ -248,7 +301,7 @@ data class ResumeEpisodeView(
     @Suppress("FunctionName")
     suspend fun upsertALL(items: List<MediaItem>) = upsertAll(items)
 
-    @Query("SELECT * FROM MediaItem WHERE type=:type ORDER BY sortTitle LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM MediaItem WHERE type=:type ORDER BY sortTitle COLLATE NOCASE LIMIT :limit OFFSET :offset")
     suspend fun listByType(type: String, limit: Int, offset: Int): List<MediaItem>
 
     @Query("SELECT DISTINCT categoryName FROM MediaItem WHERE type=:type ORDER BY categoryName")
@@ -263,17 +316,51 @@ data class ResumeEpisodeView(
         @Query("SELECT * FROM MediaItem WHERE type='live' AND streamId=:sid LIMIT 1")
         suspend fun liveByStreamId(sid: Int): MediaItem?
 
-    @Query("SELECT * FROM MediaItem WHERE type=:type AND (:cat IS NULL OR categoryName=:cat) ORDER BY sortTitle")
+    @Query("SELECT * FROM MediaItem WHERE type=:type AND (:cat IS NULL OR categoryName=:cat) ORDER BY sortTitle COLLATE NOCASE")
     suspend fun byTypeAndCategory(type: String, cat: String?): List<MediaItem>
 
     @Query("SELECT id FROM MediaItem WHERE type=:type AND categoryName IN (:cats)")
     suspend fun idsByTypeAndCategories(type: String, cats: List<String>): List<Long>
 
-    @Query("SELECT * FROM MediaItem WHERE name LIKE '%' || :query || '%' ORDER BY sortTitle LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM MediaItem WHERE name LIKE '%' || :query || '%' ORDER BY sortTitle COLLATE NOCASE LIMIT :limit OFFSET :offset")
     suspend fun globalSearch(query: String, limit: Int, offset: Int): List<MediaItem>
 
-    @Query("SELECT * FROM MediaItem WHERE id IN (:ids) ORDER BY sortTitle")
+    @Query(
+        """
+        SELECT m.* FROM MediaItem m
+        JOIN mediaitem_fts f ON f.rowid = m.id
+        WHERE mediaitem_fts MATCH :ftsQuery
+        ORDER BY m.sortTitle COLLATE NOCASE
+        LIMIT :limit OFFSET :offset
+        """
+    )
+    suspend fun globalSearchFts(ftsQuery: String, limit: Int, offset: Int): List<MediaItem>
+
+    // Paging variants
+    @Query("SELECT * FROM MediaItem WHERE type=:type ORDER BY sortTitle COLLATE NOCASE")
+    fun pagingByType(type: String): PagingSource<Int, MediaItem>
+
+    @Query("SELECT * FROM MediaItem WHERE type=:type AND (:cat IS NULL OR categoryName=:cat) ORDER BY sortTitle COLLATE NOCASE")
+    fun pagingByTypeAndCategory(type: String, cat: String?): PagingSource<Int, MediaItem>
+
+    @Query(
+        """
+        SELECT m.* FROM MediaItem m
+        JOIN mediaitem_fts f ON f.rowid = m.id
+        WHERE mediaitem_fts MATCH :ftsQuery
+        ORDER BY m.sortTitle COLLATE NOCASE
+        """
+    )
+    fun pagingSearchFts(ftsQuery: String): PagingSource<Int, MediaItem>
+
+    @Query("SELECT * FROM MediaItem WHERE id IN (:ids) ORDER BY sortTitle COLLATE NOCASE")
     suspend fun byIds(ids: List<Long>): List<MediaItem>
+
+    @Query("SELECT url, extraJson FROM MediaItem WHERE type=:type LIMIT :limit OFFSET :offset")
+    suspend fun urlsWithExtraByType(type: String, limit: Int, offset: Int): List<MediaUrlExtra>
+
+    @Query("SELECT * FROM MediaItem WHERE tgChatId=:chatId AND tgMessageId=:messageId LIMIT 1")
+    suspend fun byTelegram(chatId: Long, messageId: Long): MediaItem?
 }
 
 /** DAO: Episoden */
@@ -312,6 +399,19 @@ interface EpgDao {
 
     @Query("DELETE FROM epg_now_next WHERE updatedAt < :cutoff")
     suspend fun deleteOlderThan(cutoff: Long)
+}
+
+/** DAO: Telegram messages */
+@Dao
+interface TelegramDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(items: List<TelegramMessage>)
+
+    @Query("SELECT * FROM telegram_messages WHERE chatId=:chatId AND messageId=:messageId LIMIT 1")
+    suspend fun byKey(chatId: Long, messageId: Long): TelegramMessage?
+
+    @Query("UPDATE telegram_messages SET localPath=:path WHERE chatId=:chatId AND messageId=:messageId")
+    suspend fun updateLocalPath(chatId: Long, messageId: Long, path: String)
 }
 
 /** DAO: Kategorien */

@@ -1,6 +1,9 @@
 package com.chris.m3usuite.ui.fx
 
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
@@ -24,7 +27,7 @@ fun FishBackground(
     loadingSpinMillis: Int = 1000
 ) {
     // Loading-driven infinite rotation uses an InfiniteTransition for reliability
-    val isLoading = FishSpin.isLoading.collectAsState().value
+    val isLoading = FishSpin.isLoading.collectAsStateWithLifecycle(initialValue = false).value
     val infinite = rememberInfiniteTransition(label = "fishBg")
     val loadingAngle = if (isLoading) {
         infinite.animateFloat(
@@ -37,11 +40,14 @@ fun FishBackground(
 
     // Kick animation overlays one quick spin on top of loading angle
     val kick = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        FishSpin.spinTrigger.collect {
-            kick.stop(); kick.snapTo(0f)
-            kick.animateTo(360f, tween(fastSpinMillis, easing = LinearEasing))
-            kick.snapTo(0f)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            FishSpin.spinTrigger.collect {
+                kick.stop(); kick.snapTo(0f)
+                kick.animateTo(360f, tween(fastSpinMillis, easing = LinearEasing))
+                kick.snapTo(0f)
+            }
         }
     }
 

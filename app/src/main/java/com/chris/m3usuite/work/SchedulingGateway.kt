@@ -15,12 +15,15 @@ object SchedulingGateway {
     const val NAME_XTREAM_ENRICH  = "xtream_enrich"
     const val NAME_EPG_REFRESH    = "epg_refresh"
     const val NAME_SCREEN_RESET   = "screen_time_daily_reset_once"
+    const val NAME_TG_SYNC_VOD    = "tg_sync_vod"
+    const val NAME_TG_SYNC_SERIES = "tg_sync_series"
 
     fun scheduleAll(ctx: Context) {
         scheduleXtreamPeriodic(ctx)
         scheduleXtreamEnrichment(ctx)
         scheduleEpgPeriodic(ctx)
         scheduleScreenTimeReset(ctx)
+        TelegramCacheCleanupWorker.schedule(ctx)
     }
 
     fun scheduleXtreamPeriodic(ctx: Context) {
@@ -44,7 +47,10 @@ object SchedulingGateway {
         WorkManager.getInstance(ctx).enqueueUniqueWork(uniqueName, policy, req)
     }
 
+    fun scheduleTelegramSync(ctx: Context, mode: String) {
+        TelegramSyncWorker.enqueue(ctx, mode)
+    }
+
     suspend fun refreshFavoritesEpgNow(ctx: Context, aggressive: Boolean = false): Boolean =
         EpgRefreshWorker.refreshFavoritesNow(ctx, aggressive = aggressive)
 }
-

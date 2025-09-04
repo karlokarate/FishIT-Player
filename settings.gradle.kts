@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "FishITPlayer"
 include(":app")
+include(":libtd")

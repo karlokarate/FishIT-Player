@@ -137,14 +137,19 @@ fun ResumeSectionAuto(
                 ) {
                     Text("Wie abspielen?", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
-                    // Build URL from Xtream config
+                    // Build URL from TG or Xtream config
                     val cfg = remember { mutableStateOf<XtreamConfig?>(null) }
                     LaunchedEffect(Unit) {
                         val host = store.xtHost.first(); val user = store.xtUser.first(); val pass = store.xtPass.first(); val out = store.xtOutput.first(); val port = store.xtPort.first()
                         cfg.value = if (host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()) XtreamConfig(host, port, user, pass, out) else null
                     }
                     val start = ep.positionSecs.toLong() * 1000L
-                    val playUrl = cfg.value?.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                    var tgUrl by remember { mutableStateOf<String?>(null) }
+                    LaunchedEffect(ep.episodeId) {
+                        val full = withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(ep.episodeId) }
+                        tgUrl = if (full?.tgChatId != null && full.tgMessageId != null) "tg://message?chatId=${full.tgChatId}&messageId=${full.tgMessageId}" else null
+                    }
+                    val playUrl = tgUrl ?: cfg.value?.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
                     Button(onClick = {
                         if (playUrl != null) {
                             val encoded = Uri.encode(playUrl)
@@ -155,13 +160,13 @@ fun ResumeSectionAuto(
                     Spacer(Modifier.height(4.dp))
                     Button(onClick = {
                         scope.launch {
-                            if (playUrl != null) {
+                            if (playUrl != null && !playUrl.startsWith("tg://")) {
                                 val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
                                 ExternalPlayer.open(ctx, playUrl, headers = headers)
                             }
                             chooserEpisode = null
                         }
-                    }, enabled = playUrl != null) { Text("Extern") }
+                    }, enabled = playUrl != null && !playUrl.startsWith("tg://")) { Text("Extern") }
                 }
             }
         }

@@ -19,6 +19,16 @@ android {
         vectorDrawables { useSupportLibrary = true }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
+
+        // Telegram API credentials (optional; set in gradle.properties as TG_API_ID=123456 and TG_API_HASH=yourhash)
+        val tgApiIdProp = project.findProperty("TG_API_ID")?.toString()?.toIntOrNull() ?: 0
+        val tgApiHashProp = project.findProperty("TG_API_HASH")?.toString() ?: ""
+        buildConfigField("int", "TG_API_ID", tgApiIdProp.toString())
+        buildConfigField("String", "TG_API_HASH", "\"${tgApiHashProp}\"")
     }
 
     compileOptions {
@@ -38,11 +48,17 @@ android {
         debug { isMinifyEnabled = false }
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
 
     packaging {
         resources.excludes += setOf("META-INF/AL2.0", "META-INF/LGPL2.1")
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 
     testOptions {
@@ -82,12 +98,17 @@ dependencies {
     implementation("androidx.room:room-runtime:2.7.0")
     kapt("androidx.room:room-compiler:2.7.0")
     implementation("androidx.room:room-ktx:2.7.0")
+    implementation("androidx.room:room-paging:2.7.0")
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.2")
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.10.0")
+
+    // Paging 3
+    implementation("androidx.paging:paging-runtime-ktx:3.3.2")
+    implementation("androidx.paging:paging-compose:3.3.2")
 
     // Coil (Bilder)
     // Coil 3
@@ -101,6 +122,9 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
+    // JankStats (performance diagnostics)
+    implementation("androidx.metrics:metrics-performance:1.0.0-beta01")
+
     // Media3 (ExoPlayer + UI + DataSource)
     implementation("androidx.media3:media3-exoplayer:1.5.0")
     implementation("androidx.media3:media3-ui:1.5.0")
@@ -108,6 +132,13 @@ dependencies {
 
     // Compose for TV (Material)
     implementation("androidx.tv:tv-material:1.0.1")
+
+    implementation(project(":libtd"))
+    // Optional: if a prebuilt TDLib Java AAR is placed at app/libs/tdlib.aar, include it for runtime classes
+    val tdlibAar = File(projectDir, "libs/tdlib.aar")
+    if (tdlibAar.exists()) {
+        implementation(files(tdlibAar))
+    }
 
     // Tests
     testImplementation("junit:junit:4.13.2")

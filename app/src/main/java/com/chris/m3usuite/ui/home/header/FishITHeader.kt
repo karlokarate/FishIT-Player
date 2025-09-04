@@ -16,6 +16,9 @@ import com.chris.m3usuite.ui.common.IconVariant
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.LinearEasing
@@ -70,7 +73,7 @@ fun FishITHeader(
         ) {
             // Rotate logo with global fish spin controller
             val angle = remember { androidx.compose.animation.core.Animatable(0f) }
-            val loading = com.chris.m3usuite.ui.fx.FishSpin.isLoading.collectAsState().value
+            val loading = com.chris.m3usuite.ui.fx.FishSpin.isLoading.collectAsStateWithLifecycle(initialValue = false).value
             LaunchedEffect(loading) {
                 if (loading) {
                     while (com.chris.m3usuite.ui.fx.FishSpin.isLoading.value) {
@@ -83,11 +86,14 @@ fun FishITHeader(
                     angle.snapTo(0f)
                 }
             }
-            LaunchedEffect(Unit) {
-                com.chris.m3usuite.ui.fx.FishSpin.spinTrigger.collect {
-                    angle.stop(); angle.snapTo(0f)
-                    angle.animateTo(360f, androidx.compose.animation.core.tween(500, easing = androidx.compose.animation.core.LinearEasing))
-                    angle.snapTo(0f)
+            val lifecycleOwner = LocalLifecycleOwner.current
+            LaunchedEffect(lifecycleOwner) {
+                lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                    com.chris.m3usuite.ui.fx.FishSpin.spinTrigger.collect {
+                        angle.stop(); angle.snapTo(0f)
+                        angle.animateTo(360f, androidx.compose.animation.core.tween(500, easing = androidx.compose.animation.core.LinearEasing))
+                        angle.snapTo(0f)
+                    }
                 }
             }
             val logoModifier = Modifier

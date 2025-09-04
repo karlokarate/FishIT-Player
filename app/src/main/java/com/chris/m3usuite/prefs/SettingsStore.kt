@@ -83,6 +83,22 @@ object Keys {
     // Live TV category rows: collapsed set + expansion order (CSV of category keys)
     val LIVE_CAT_COLLAPSED_CSV = stringPreferencesKey("live_cat_collapsed_csv")
     val LIVE_CAT_EXPANDED_ORDER_CSV = stringPreferencesKey("live_cat_expanded_order_csv")
+
+    // VOD category rows: collapsed set + expansion order
+    val VOD_CAT_COLLAPSED_CSV = stringPreferencesKey("vod_cat_collapsed_csv")
+    val VOD_CAT_EXPANDED_ORDER_CSV = stringPreferencesKey("vod_cat_expanded_order_csv")
+
+    // Series category rows: collapsed set + expansion order
+    val SERIES_CAT_COLLAPSED_CSV = stringPreferencesKey("series_cat_collapsed_csv")
+    val SERIES_CAT_EXPANDED_ORDER_CSV = stringPreferencesKey("series_cat_expanded_order_csv")
+
+    // Telegram (global feature flag + options)
+    val TG_ENABLED = booleanPreferencesKey("tg_enabled")
+    val TG_SELECTED_CHATS_CSV = stringPreferencesKey("tg_selected_chats_csv")
+    val TG_CACHE_LIMIT_GB = intPreferencesKey("tg_cache_limit_gb")
+    // Telegram sync mapping (separate selections for VOD and Series)
+    val TG_SELECTED_VOD_CHATS_CSV = stringPreferencesKey("tg_selected_vod_chats_csv")
+    val TG_SELECTED_SERIES_CHATS_CSV = stringPreferencesKey("tg_selected_series_chats_csv")
 }
 
 class SettingsStore(private val context: Context) {
@@ -100,7 +116,7 @@ class SettingsStore(private val context: Context) {
     val xtHost: Flow<String> = context.dataStore.data.map { it[Keys.XT_HOST].orEmpty() }
     val xtPort: Flow<Int> = context.dataStore.data.map { it[Keys.XT_PORT] ?: 80 }
     val xtUser: Flow<String> = context.dataStore.data.map { it[Keys.XT_USER].orEmpty() }
-    val xtPass: Flow<String> = context.dataStore.data.map { it[Keys.XT_PASS].orEmpty() }
+    val xtPass: Flow<String> = context.dataStore.data.map { Crypto.decrypt(it[Keys.XT_PASS].orEmpty()) }
     val xtOutput: Flow<String> = context.dataStore.data.map { it[Keys.XT_OUTPUT] ?: "m3u8" }
 
     val subtitleScale: Flow<Float> = context.dataStore.data.map { it[Keys.SUB_SCALE] ?: 0.06f }
@@ -152,6 +168,19 @@ class SettingsStore(private val context: Context) {
     // Live category rows state
     val liveCatCollapsedCsv: Flow<String> = context.dataStore.data.map { it[Keys.LIVE_CAT_COLLAPSED_CSV].orEmpty() }
     val liveCatExpandedOrderCsv: Flow<String> = context.dataStore.data.map { it[Keys.LIVE_CAT_EXPANDED_ORDER_CSV].orEmpty() }
+
+    // VOD/Series category rows state
+    val vodCatCollapsedCsv: Flow<String> = context.dataStore.data.map { it[Keys.VOD_CAT_COLLAPSED_CSV].orEmpty() }
+    val vodCatExpandedOrderCsv: Flow<String> = context.dataStore.data.map { it[Keys.VOD_CAT_EXPANDED_ORDER_CSV].orEmpty() }
+    val seriesCatCollapsedCsv: Flow<String> = context.dataStore.data.map { it[Keys.SERIES_CAT_COLLAPSED_CSV].orEmpty() }
+    val seriesCatExpandedOrderCsv: Flow<String> = context.dataStore.data.map { it[Keys.SERIES_CAT_EXPANDED_ORDER_CSV].orEmpty() }
+
+    // Telegram (default off)
+    val tgSelectedVodChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_VOD_CHATS_CSV].orEmpty() }
+    val tgSelectedSeriesChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_SERIES_CHATS_CSV].orEmpty() }
+    val tgEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_ENABLED] ?: false }
+    val tgSelectedChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_CHATS_CSV].orEmpty() }
+    val tgCacheLimitGb: Flow<Int> = context.dataStore.data.map { it[Keys.TG_CACHE_LIMIT_GB] ?: 2 }
 
     // -------- Setzen --------
     suspend fun set(key: Preferences.Key<String>, value: String) {
@@ -214,7 +243,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setXtHost(value: String) { context.dataStore.edit { it[Keys.XT_HOST] = value } }
     suspend fun setXtPort(value: Int) { context.dataStore.edit { it[Keys.XT_PORT] = value } }
     suspend fun setXtUser(value: String) { context.dataStore.edit { it[Keys.XT_USER] = value } }
-    suspend fun setXtPass(value: String) { context.dataStore.edit { it[Keys.XT_PASS] = value } }
+    suspend fun setXtPass(value: String) { context.dataStore.edit { it[Keys.XT_PASS] = Crypto.encrypt(value) } }
     suspend fun setXtOutput(value: String) { context.dataStore.edit { it[Keys.XT_OUTPUT] = value } }
     // Helper to set all Xtream creds at once (no removal of existing API)
     suspend fun setXtream(creds: XtreamCreds) {
@@ -280,7 +309,9 @@ class SettingsStore(private val context: Context) {
                         if (lv in Int.MIN_VALUE..Int.MAX_VALUE) prefs[intPreferencesKey(name)] = lv.toInt() else prefs[longPreferencesKey(name)] = lv
                     }
                     s.toFloatOrNull() != null -> prefs[floatPreferencesKey(name)] = s.toFloat()
-                    else -> prefs[stringPreferencesKey(name)] = s
+                    else -> {
+                        if (name == Keys.XT_PASS.name) prefs[Keys.XT_PASS] = Crypto.encrypt(s) else prefs[stringPreferencesKey(name)] = s
+                    }
                 }
             }
         }
@@ -314,6 +345,13 @@ class SettingsStore(private val context: Context) {
         }
     }
 
+    // Telegram setters
+    suspend fun setTelegramEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_ENABLED] = value } }
+    suspend fun setTelegramSelectedChatsCsv(value: String) { context.dataStore.edit { it[Keys.TG_SELECTED_CHATS_CSV] = value } }
+    suspend fun setTelegramCacheLimitGb(value: Int) { context.dataStore.edit { it[Keys.TG_CACHE_LIMIT_GB] = value } }
+    suspend fun setTelegramSelectedVodChatsCsv(value: String) { context.dataStore.edit { it[Keys.TG_SELECTED_VOD_CHATS_CSV] = value } }
+    suspend fun setTelegramSelectedSeriesChatsCsv(value: String) { context.dataStore.edit { it[Keys.TG_SELECTED_SERIES_CHATS_CSV] = value } }
+
     data class Snapshot(
         val m3uUrl: String,
         val epgUrl: String,
@@ -326,7 +364,10 @@ class SettingsStore(private val context: Context) {
         val xtPass: String,
         val xtOutput: String,
         val epgFavUseXtream: Boolean,
-        val epgFavSkipXmltvIfXtreamOk: Boolean
+        val epgFavSkipXmltvIfXtreamOk: Boolean,
+        val tgEnabled: Boolean,
+        val tgSelectedChatsCsv: String,
+        val tgCacheLimitGb: Int
     )
 
     suspend fun snapshot(): Snapshot {
@@ -341,14 +382,23 @@ class SettingsStore(private val context: Context) {
             xtHost = get(Keys.XT_HOST, ""),
             xtPort = get(Keys.XT_PORT, 80),
             xtUser = get(Keys.XT_USER, ""),
-            xtPass = get(Keys.XT_PASS, ""),
+            xtPass = Crypto.decrypt(get(Keys.XT_PASS, "")),
             xtOutput = get(Keys.XT_OUTPUT, "m3u8"),
             epgFavUseXtream = get(Keys.EPG_FAV_USE_XTREAM, true),
-            epgFavSkipXmltvIfXtreamOk = get(Keys.EPG_FAV_SKIP_XMLTV_IF_X_OK, false)
+            epgFavSkipXmltvIfXtreamOk = get(Keys.EPG_FAV_SKIP_XMLTV_IF_X_OK, false),
+            tgEnabled = get(Keys.TG_ENABLED, false),
+            tgSelectedChatsCsv = get(Keys.TG_SELECTED_CHATS_CSV, ""),
+            tgCacheLimitGb = get(Keys.TG_CACHE_LIMIT_GB, 2)
         )
     }
 
     // Live category rows state setters
     suspend fun setLiveCatCollapsedCsv(value: String) { context.dataStore.edit { it[Keys.LIVE_CAT_COLLAPSED_CSV] = value } }
     suspend fun setLiveCatExpandedOrderCsv(value: String) { context.dataStore.edit { it[Keys.LIVE_CAT_EXPANDED_ORDER_CSV] = value } }
+
+    // VOD/Series category rows state setters
+    suspend fun setVodCatCollapsedCsv(value: String) { context.dataStore.edit { it[Keys.VOD_CAT_COLLAPSED_CSV] = value } }
+    suspend fun setVodCatExpandedOrderCsv(value: String) { context.dataStore.edit { it[Keys.VOD_CAT_EXPANDED_ORDER_CSV] = value } }
+    suspend fun setSeriesCatCollapsedCsv(value: String) { context.dataStore.edit { it[Keys.SERIES_CAT_COLLAPSED_CSV] = value } }
+    suspend fun setSeriesCatExpandedOrderCsv(value: String) { context.dataStore.edit { it[Keys.SERIES_CAT_EXPANDED_ORDER_CSV] = value } }
 }

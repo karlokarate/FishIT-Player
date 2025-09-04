@@ -2,8 +2,6 @@ package com.chris.m3usuite.core.http
 
 import android.content.Context
 import com.chris.m3usuite.prefs.SettingsStore
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
@@ -18,6 +16,9 @@ class MemoryCookieJar : CookieJar {
 
 object HttpClientFactory {
     fun create(context: Context, settings: SettingsStore): OkHttpClient {
+        // Seed headers snapshot once to avoid blocking in interceptor
+        val seeded = RequestHeadersProvider.ensureSeededBlocking(settings)
+
         return OkHttpClient.Builder()
             .cookieJar(MemoryCookieJar())
             .connectTimeout(20, TimeUnit.SECONDS)
@@ -25,18 +26,9 @@ object HttpClientFactory {
             .followRedirects(true)
             .addInterceptor { chain ->
                 val req = chain.request()
-                val ua = runBlocking { settings.userAgent.first() }
-                val ref = runBlocking { settings.referer.first() }
-                val extrasJson = runBlocking { settings.extraHeadersJson.first() }
-                val extras = runCatching {
-                    kotlinx.serialization.json.Json.decodeFromString<Map<String,String>>(extrasJson)
-                }.getOrNull() ?: emptyMap()
-
-                val nb = req.newBuilder()
-                    .header("User-Agent", ua)
-                    .header("Accept", "*/*")
-                if (ref.isNotBlank()) nb.header("Referer", ref)
-                for ((k, v) in extras) nb.header(k, v)
+                val headers = RequestHeadersProvider.snapshot().ifEmpty { seeded }
+                val nb = req.newBuilder().header("Accept", "*/*")
+                for ((k, v) in headers) nb.header(k, v)
                 chain.proceed(nb.build())
             }
             .build()

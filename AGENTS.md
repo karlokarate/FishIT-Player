@@ -69,6 +69,10 @@ Where to find the full overview
 
 Short bullet summary (current highlights)
 - Single-module app (`app`) with Compose UI, Room DB/DAOs, WorkManager, DataStore, Media3 player, OkHttp/Coil.
+- Telegram integration (opt‑in, alpha): Login (Phone→Code→Passwort) mit auto DB‑Key‑Check; Settings‑Block mit Ordner/Chat‑Picker und separaten Quellen für Film/Serien‑Sync; Sync‑Worker mappt Nachrichten auf VOD (`MediaItem.source=TG`) oder Serie (Episode.tg*; SxxExx‑Heuristik). Player streamt `tg://message?...` via Telegram‑DataSource (Seek, progressive Download). Packaging über `:libtd` (arm64; v7a‑Buildscript vorhanden).
+  - Index/Cache: `telegram_messages` wird beim Sync befüllt (fileId/uniqueId, caption, supportsStreaming, date, thumbFileId); `localPath` wird durch DataSources aktualisiert. Minimaler Sync‑Fortschritt in Settings; täglicher Cache‑Trim (GB‑Limit) via `TelegramCacheCleanupWorker`.
+- TDLib packaging: Added `:libtd` module bundling JNI libs (`libtdjni.so`) for `arm64-v8a` (and optional `armeabi-v7a`). App depends on `:libtd` to ensure TDLib availability at runtime.
+ - TDLib v7a build: Script `scripts/tdlib-build-v7a.sh` builds `libtdjni.so` for `armeabi-v7a` via CMake/NDK and copies it to `libtd/src/main/jniLibs/armeabi-v7a/`.
 - Start/Home shows Serien, Filme, TV; Kids get filtered content (MediaQueryRepository), no settings/bottom bar, read‑only favorites.
 - Backup/Restore present in Setup (Quick Import) and Settings (Quick Import + full section). Drive client optional (shim by default).
 - Player fullscreen with tap-to-show overlay controls; Live favorites reorder fixed/stable.
@@ -86,6 +90,7 @@ Policies (Do/Don't)
 - WSL/Ubuntu recommended; network allowed for Gradle.
 - Enforce profile permissions rigorously; do not expose admin‑only affordances (whitelist/favorites/Quellen/Settings) without permission.
 - For kid/guest reads, always use `MediaQueryRepository`; do not bypass via raw DAO queries in UI paths.
+ - Telegram gating: Keine TDLib‑Nutzung ohne aktives Flag (`tg_enabled=true`) und erfolgreichen Login (AUTHENTICATED). Worker/DataSources/Picker sind ansonsten no‑op.
 
 For the complete module-by-module guide, see `ARCHITECTURE_OVERVIEW.md`.
 
@@ -100,3 +105,4 @@ Recent
 - Kid-mode correctness: Home refresh now uses filtered queries; favorites read‑only for restricted profiles; “Für Kinder freigeben” visible only when permitted.
 - Whitelist UX: Category‑level allow with item‑level exceptions; admin sheet in ProfileManager to manage both.
 - Data: New tables `kid_category_allow`, `kid_content_block`, `profile_permissions`; DB schema bumped with idempotent migrations.
+ - Telegram (scaffold): Global feature flag, Settings section, DB v8 with `MediaItem.source` + TG refs and `telegram_messages` table; Gradle packaging prepped for universal ABI; ProGuard keep rules added. Playback resolves local TG paths when available. Default OFF to preserve current behavior.

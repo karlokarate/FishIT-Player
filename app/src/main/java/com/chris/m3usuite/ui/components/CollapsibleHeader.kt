@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,9 +34,9 @@ fun CollapsibleHeader(
     val scope = rememberCoroutineScope()
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     // Persisted global state for collapsed header
-    val persistedCollapsed by store.headerCollapsed.collectAsState(initial = false)
+    val persistedCollapsed by store.headerCollapsed.collectAsStateWithLifecycle(initialValue = false)
     // Default preference for landscape-only initial behavior
-    val defaultCollapsedLand by store.headerCollapsedDefaultInLandscape.collectAsState(initial = true)
+    val defaultCollapsedLand by store.headerCollapsedDefaultInLandscape.collectAsStateWithLifecycle(initialValue = true)
     var collapsed by rememberSaveable { mutableStateOf(persistedCollapsed) }
 
     // Keep local UI state in sync with persisted value

@@ -303,30 +303,34 @@ fun SeriesDetailScreen(
                 android.widget.Toast.makeText(ctx, "Nicht freigegeben", android.widget.Toast.LENGTH_SHORT).show()
                 return@launch
             }
-            val snap = store.snapshot()
-            if (snap.xtHost.isNotBlank() && snap.xtUser.isNotBlank() && snap.xtPass.isNotBlank()) {
-                val cfg = XtreamConfig(snap.xtHost, snap.xtPort, snap.xtUser, snap.xtPass, snap.xtOutput)
-                val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
-                val playUrl = cfg.seriesEpisodeUrl(e.episodeId, e.containerExt)
-                val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
+            val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
+            // Prefer Telegram if episode has TG refs
+            val tgUrl = if (e.tgChatId != null && e.tgMessageId != null) "tg://message?chatId=${e.tgChatId}&messageId=${e.tgMessageId}" else null
+            val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
+            val urlToPlay = tgUrl ?: run {
+                val snap = store.snapshot()
+                if (snap.xtHost.isNotBlank() && snap.xtUser.isNotBlank() && snap.xtPass.isNotBlank()) {
+                    val cfg = XtreamConfig(snap.xtHost, snap.xtPort, snap.xtUser, snap.xtPass, snap.xtOutput)
+                    cfg.seriesEpisodeUrl(e.episodeId, e.containerExt)
+                } else null
+            } ?: return@launch
 
-                PlayerChooser.start(
-                    context = ctx,
-                    store = store,
-                    url = playUrl,
-                    headers = headers,
-                    startPositionMs = startMs
-                ) { s ->
-                    if (openInternal != null) {
-                        openInternal(playUrl, s, e.episodeId)
-                    } else {
-                        internalUrl = playUrl
-                        internalEpisodeId = e.episodeId
-                        internalStartMs = s
-                        internalUa = headers["User-Agent"].orEmpty()
-                        internalRef = headers["Referer"].orEmpty()
-                        showInternal = true
-                    }
+            PlayerChooser.start(
+                context = ctx,
+                store = store,
+                url = urlToPlay,
+                headers = headers,
+                startPositionMs = startMs
+            ) { s ->
+                if (openInternal != null) {
+                    openInternal(urlToPlay, s, e.episodeId)
+                } else {
+                    internalUrl = urlToPlay
+                    internalEpisodeId = e.episodeId
+                    internalStartMs = s
+                    internalUa = headers["User-Agent"].orEmpty()
+                    internalRef = headers["Referer"].orEmpty()
+                    showInternal = true
                 }
             }
         }

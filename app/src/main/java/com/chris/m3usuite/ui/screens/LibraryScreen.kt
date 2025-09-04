@@ -78,6 +78,13 @@ import com.chris.m3usuite.ui.skin.focusScaleOnTv
 // removed duplicate imports
 import com.chris.m3usuite.ui.theme.DesignTokens
 import androidx.compose.animation.core.animateFloat
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import android.os.SystemClock
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -146,6 +153,12 @@ fun LibraryScreen(
     val liveCollapsedCsv by store.liveCatCollapsedCsv.collectAsStateWithLifecycle(initialValue = "")
     val liveExpandedOrderCsv by store.liveCatExpandedOrderCsv.collectAsStateWithLifecycle(initialValue = "")
 
+    // VOD/Series categories collapse/expand state
+    val vodCatCollapsedCsv by store.vodCatCollapsedCsv.collectAsStateWithLifecycle(initialValue = "")
+    val vodCatExpandedOrderCsv by store.vodCatExpandedOrderCsv.collectAsStateWithLifecycle(initialValue = "")
+    val seriesCatCollapsedCsv by store.seriesCatCollapsedCsv.collectAsStateWithLifecycle(initialValue = "")
+    val seriesCatExpandedOrderCsv by store.seriesCatExpandedOrderCsv.collectAsStateWithLifecycle(initialValue = "")
+
     // Collapsible-State für Header (global gespeichert)
     val collapsed by store.headerCollapsed.collectAsStateWithLifecycle(initialValue = false)
 
@@ -199,6 +212,36 @@ fun LibraryScreen(
         }
         mediaItems = if (type == "live") applyLiveFilters(list) else list
         categories = if (type != null) mediaRepo.categoriesByTypeFiltered(type) else emptyList()
+    }
+
+    // Debounce tippen → ruckelfreie Live-Suche
+    LaunchedEffect(Unit) {
+        snapshotFlow { searchQuery.text }
+            .debounce(300)
+            .distinctUntilChanged()
+            .collectLatest { load() }
+    }
+
+    // Paging source for large lists (type/category or search)
+    val currentType = when (tab) { 0 -> "live"; 1 -> "vod"; 2 -> "series"; else -> null }
+    val pagingFlow = remember(currentType, selectedCategory, searchQuery.text) {
+        when {
+            searchQuery.text.isNotBlank() -> mediaRepo.pagingSearchFilteredFlow(searchQuery.text)
+            currentType != null -> mediaRepo.pagingByTypeFilteredFlow(currentType, selectedCategory)
+            else -> null
+        }
+    }
+    val pagingItems = pagingFlow?.collectAsLazyPagingItems()
+    LaunchedEffect(Unit) { com.chris.m3usuite.metrics.RouteTag.set("library") }
+    // Time to first viewport for paged content
+    val ttfvStart = remember { SystemClock.uptimeMillis() }
+    LaunchedEffect(pagingItems?.loadState?.refresh, pagingItems?.itemCount) {
+        val items = pagingItems ?: return@LaunchedEffect
+        val ls = items.loadState.refresh
+        if (ls is androidx.paging.LoadState.NotLoading && items.itemCount > 0) {
+            val ms = SystemClock.uptimeMillis() - ttfvStart
+            android.util.Log.d("Perf", "TTFV library: ${ms} ms (items=${items.itemCount})")
+        }
     }
 
     fun submitSearch() { load(); focus.clearFocus() }
@@ -461,27 +504,113 @@ fun LibraryScreen(
                                 )
                             } }
                         }
-                        // Genres dynamisch aus categoryName ableiten
-                        val genres = allVod
-                            .mapNotNull { it.categoryName?.trim() }
-                            .flatMap { it.split("/", "&", ",").map(String::trim) }
-                            .filter { it.isNotEmpty() }
-                            .distinct()
-                            .sorted()
-                        if (genres.isNotEmpty()) {
-                            genres.forEach { g ->
-                                val list = allVod.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }
-                                    .distinctBy { it.id }
-                                    .take(50)
-                                if (list.isNotEmpty()) {
-                                    header(g)
-                                    item("vod_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = list, onOpenDetails = { mi -> openVod(mi.id) }, onPlayDirect = { mi -> scope.launch { val url = mi.url ?: return@launch; val headers = buildMap<String,String>{ val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }; com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = url, headers = headers, startPositionMs = withContext(Dispatchers.IO){ db.resumeDao().getVod(mi.id)?.positionSecs?.toLong()?.times(1000) }) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = url, startPositionMs = s) } } }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "vod", mi.id) } } }) } }
+                        // Kategorien (collapsible rows), wie Live
+                        run {
+                            fun keyOf(cat: String?): String = (cat ?: "").trim()
+                            fun labelOf(key: String): String = if (key.isEmpty()) "Unbekannt" else key
+                            val allCats = allVod.map { keyOf(it.categoryName) }.distinct().sortedBy { it.lowercase() }
+
+                            val collapsedCsv = vodCatCollapsedCsv
+                            val expandedOrderCsv = vodCatExpandedOrderCsv
+                            val collapsedSet = collapsedCsv.split(',').filter { it.isNotEmpty() }.toMutableSet()
+                            val expandedCats = allCats.filterNot { it in collapsedSet }
+                            val collapsedCats = allCats.filter { it in collapsedSet }
+                            val expandedOrdered = run {
+                                val head = expandedOrderCsv.split(',').filter { it.isNotEmpty() && it in expandedCats }
+                                val tail = expandedCats.filterNot { it in head }.sortedBy { it.lowercase() }
+                                head + tail
+                            }
+
+                            // Controls row
+                            if (allCats.isNotEmpty()) {
+                                header("VOD-Kategorien")
+                                item("vod_controls") {
+                                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("VOD-Kategorien", style = MaterialTheme.typography.titleMedium)
+                                        TextButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    store.setVodCatCollapsedCsv(allCats.joinToString(","))
+                                                    store.setVodCatExpandedOrderCsv("")
+                                                }
+                                            },
+                                            enabled = expandedCats.isNotEmpty()
+                                        ) { Text("Alle einklappen") }
+                                    }
                                 }
                             }
-                        } else {
-                            // Fallback: Zeige eine einzelne "Alle"-Reihe, damit Seite nicht leer ist
-                            header("Alle Filme")
-                            item("vod_all") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { VodRow(items = allVod.take(50), onOpenDetails = { mi -> openVod(mi.id) }, onPlayDirect = { mi -> scope.launch { val url = mi.url ?: return@launch; val headers = buildMap<String,String>{ val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }; com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = url, headers = headers, startPositionMs = withContext(Dispatchers.IO){ db.resumeDao().getVod(mi.id)?.positionSecs?.toLong()?.times(1000) }) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = url, startPositionMs = s) } } }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "vod", mi.id) } } }) } }
+
+                            // Expanded categories as rows
+                            expandedOrdered.forEach { catKey ->
+                                val list = allVod.filter { keyOf(it.categoryName) == catKey }.distinctBy { it.id }.take(200)
+                                if (list.isNotEmpty()) {
+                                    val catLabel = labelOf(catKey)
+                                    item("vod_cat_chip_$catKey") {
+                                        Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp, bottom = 2.dp)) {
+                                            FilterChip(
+                                                modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
+                                                selected = false,
+                                                onClick = {
+                                                    scope.launch {
+                                                        val newCollapsed = (collapsedSet + catKey).joinToString(",")
+                                                        val newOrder = expandedOrderCsv.split(',').filterNot { it == catKey }.joinToString(",")
+                                                        store.setVodCatCollapsedCsv(newCollapsed)
+                                                        store.setVodCatExpandedOrderCsv(newOrder)
+                                                    }
+                                                },
+                                                label = { Text(catLabel) }
+                                            )
+                                        }
+                                    }
+                                    item("vod_cat_row_$catKey") {
+                                        Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
+                                            VodRow(
+                                                items = list,
+                                                onOpenDetails = { mi -> openVod(mi.id) },
+                                                onPlayDirect = { mi ->
+                                                    scope.launch {
+                                                        val url = mi.url ?: return@launch
+                                                        val headers = buildMap<String,String> { val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }
+                                                        com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = url, headers = headers, startPositionMs = withContext(Dispatchers.IO){ db.resumeDao().getVod(mi.id)?.positionSecs?.toLong()?.times(1000) }) { s -> com.chris.m3usuite.player.ExternalPlayer.open(context = ctx, url = url, startPositionMs = s) }
+                                                    }
+                                                },
+                                                onAssignToKid = { mi ->
+                                                    scope.launch(Dispatchers.IO) {
+                                                        val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                                        db.profileDao().all().filter { it.type == "kid" }.forEach { repo.allow(it.id, "vod", mi.id) }
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Collapsed chips
+                            if (collapsedCats.isNotEmpty()) {
+                                item("vod_collapsed_header") { Spacer(Modifier.height(8.dp)) }
+                                collapsedCats.sortedBy { it.lowercase() }.forEach { catKey ->
+                                    val catLabel = labelOf(catKey)
+                                    item("vod_collapsed_$catKey") {
+                                        Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
+                                            FilterChip(
+                                                modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
+                                                selected = true,
+                                                onClick = {
+                                                    scope.launch {
+                                                        val newCollapsed = (collapsedSet - catKey).joinToString(",")
+                                                        val current = expandedOrderCsv.split(',').filter { it.isNotEmpty() }.toMutableList().apply { removeAll { it == catKey } }
+                                                        current.add(0, catKey)
+                                                        store.setVodCatCollapsedCsv(newCollapsed)
+                                                        store.setVodCatExpandedOrderCsv(current.joinToString(","))
+                                                    }
+                                                },
+                                                label = { Text(catLabel) }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     "series" -> {
@@ -555,38 +684,123 @@ fun LibraryScreen(
                                 }
                             }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "series", mi.id) } } }, showNew = true) } }
                         }
-                        // Genres dynamisch aus categoryName
-                        val genres = allSeries
-                            .mapNotNull { it.categoryName?.trim() }
-                            .flatMap { it.split("/", "&", ",").map(String::trim) }
-                            .filter { it.isNotEmpty() }
-                            .distinct()
-                            .sorted()
-                        genres.forEach { g ->
-                            val list = allSeries.filter { (it.categoryName ?: "").contains(g, ignoreCase = true) }
-                                .distinctBy { it.id }
-                                .take(50)
-                            if (list.isNotEmpty()) {
-                                header(g)
-                                item("series_genre_$g") { Box(Modifier.padding(horizontal = (railPad - 16.dp))) { SeriesRow(items = list, onOpenDetails = { mi -> openSeries(mi.id) }, onPlayDirect = { mi -> /* see pattern */
-                                    scope.launch {
-                                        val sid = mi.streamId ?: return@launch
-                                        val last = withContext(Dispatchers.IO) { db.resumeDao().recentEpisodes(50).firstOrNull { it.seriesStreamId == sid } }
-                                        val ep = if (last != null) withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(last.episodeId) } else {
-                                            val seasons = withContext(Dispatchers.IO) { db.episodeDao().seasons(sid) }
-                                            val fs = seasons.firstOrNull(); fs?.let { withContext(Dispatchers.IO) { db.episodeDao().episodes(sid, it).firstOrNull() } }
-                                        }
-                                        if (ep != null) {
-                                            val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(store.xtHost.first(), store.xtPort.first(), store.xtUser.first(), store.xtPass.first(), store.xtOutput.first())
-                                            val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
-                                            val headers = buildMap<String,String> { val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }
-                                            com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s ->
-                                                val encoded = java.net.URLEncoder.encode(playUrl, java.nio.charset.StandardCharsets.UTF_8.name())
-                                                navController.navigate("player?url=$encoded&type=series&episodeId=${ep.episodeId}&startMs=${s ?: -1}")
-                                            }
+                        // Kategorien (collapsible rows), wie Live
+                        run {
+                            fun keyOf(cat: String?): String = (cat ?: "").trim()
+                            fun labelOf(key: String): String = if (key.isEmpty()) "Unbekannt" else key
+                            val allCats = allSeries.map { keyOf(it.categoryName) }.distinct().sortedBy { it.lowercase() }
+
+                            val collapsedCsv = seriesCatCollapsedCsv
+                            val expandedOrderCsv = seriesCatExpandedOrderCsv
+                            val collapsedSet = collapsedCsv.split(',').filter { it.isNotEmpty() }.toMutableSet()
+                            val expandedCats = allCats.filterNot { it in collapsedSet }
+                            val collapsedCats = allCats.filter { it in collapsedSet }
+                            val expandedOrdered = run {
+                                val head = expandedOrderCsv.split(',').filter { it.isNotEmpty() && it in expandedCats }
+                                val tail = expandedCats.filterNot { it in head }.sortedBy { it.lowercase() }
+                                head + tail
+                            }
+
+                            if (allCats.isNotEmpty()) {
+                                header("Serien-Kategorien")
+                                item("series_controls") {
+                                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Serien-Kategorien", style = MaterialTheme.typography.titleMedium)
+                                        TextButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    store.setSeriesCatCollapsedCsv(allCats.joinToString(","))
+                                                    store.setSeriesCatExpandedOrderCsv("")
+                                                }
+                                            },
+                                            enabled = expandedCats.isNotEmpty()
+                                        ) { Text("Alle einklappen") }
+                                    }
+                                }
+                            }
+
+                            // Expanded categories as rows
+                            expandedOrdered.forEach { catKey ->
+                                val list = allSeries.filter { keyOf(it.categoryName) == catKey }.distinctBy { it.id }.take(200)
+                                if (list.isNotEmpty()) {
+                                    val catLabel = labelOf(catKey)
+                                    item("series_cat_chip_$catKey") {
+                                        Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp, bottom = 2.dp)) {
+                                            FilterChip(
+                                                modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
+                                                selected = false,
+                                                onClick = {
+                                                    scope.launch {
+                                                        val newCollapsed = (collapsedSet + catKey).joinToString(",")
+                                                        val newOrder = expandedOrderCsv.split(',').filterNot { it == catKey }.joinToString(",")
+                                                        store.setSeriesCatCollapsedCsv(newCollapsed)
+                                                        store.setSeriesCatExpandedOrderCsv(newOrder)
+                                                    }
+                                                },
+                                                label = { Text(catLabel) }
+                                            )
                                         }
                                     }
-                                }, onAssignToKid = { mi -> scope.launch(Dispatchers.IO) { val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx); db.profileDao().all().filter { it.type=="kid" }.forEach { repo.allow(it.id, "series", mi.id) } } }) } }
+                                    item("series_cat_row_$catKey") {
+                                        Box(Modifier.padding(horizontal = (railPad - 16.dp))) {
+                                            SeriesRow(
+                                                items = list,
+                                                onOpenDetails = { mi -> openSeries(mi.id) },
+                                                onPlayDirect = { mi ->
+                                                    scope.launch {
+                                                        val sid = mi.streamId ?: return@launch
+                                                        val last = withContext(Dispatchers.IO) { db.resumeDao().recentEpisodes(50).firstOrNull { it.seriesStreamId == sid } }
+                                                        val ep = if (last != null) withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(last.episodeId) } else {
+                                                            val seasons = withContext(Dispatchers.IO) { db.episodeDao().seasons(sid) }
+                                                            val fs = seasons.firstOrNull(); fs?.let { withContext(Dispatchers.IO) { db.episodeDao().episodes(sid, it).firstOrNull() } }
+                                                        }
+                                                        if (ep != null) {
+                                                            val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(store.xtHost.first(), store.xtPort.first(), store.xtUser.first(), store.xtPass.first(), store.xtOutput.first())
+                                                            val playUrl = cfg.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                                                            val headers = buildMap<String,String> { val ua = store.userAgent.first(); val ref = store.referer.first(); if (ua.isNotBlank()) put("User-Agent", ua); if (ref.isNotBlank()) put("Referer", ref) }
+                                                            com.chris.m3usuite.player.PlayerChooser.start(context = ctx, store = store, url = playUrl, headers = headers, startPositionMs = last?.positionSecs?.toLong()?.times(1000)) { s ->
+                                                                val encoded = java.net.URLEncoder.encode(playUrl, java.nio.charset.StandardCharsets.UTF_8.name())
+                                                                navController.navigate("player?url=$encoded&type=series&episodeId=${ep.episodeId}&startMs=${s ?: -1}")
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                onAssignToKid = { mi ->
+                                                    scope.launch(Dispatchers.IO) {
+                                                        val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                                        db.profileDao().all().filter { it.type == "kid" }.forEach { repo.allow(it.id, "series", mi.id) }
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Collapsed category chips
+                            if (collapsedCats.isNotEmpty()) {
+                                item("series_collapsed_header") { Spacer(Modifier.height(8.dp)) }
+                                collapsedCats.sortedBy { it.lowercase() }.forEach { catKey ->
+                                    val catLabel = labelOf(catKey)
+                                    item("series_collapsed_$catKey") {
+                                        Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
+                                            FilterChip(
+                                                modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
+                                                selected = true,
+                                                onClick = {
+                                                    scope.launch {
+                                                        val newCollapsed = (collapsedSet - catKey).joinToString(",")
+                                                        val current = expandedOrderCsv.split(',').filter { it.isNotEmpty() }.toMutableList().apply { removeAll { it == catKey } }
+                                                        current.add(0, catKey)
+                                                        store.setSeriesCatCollapsedCsv(newCollapsed)
+                                                        store.setSeriesCatExpandedOrderCsv(current.joinToString(","))
+                                                    }
+                                                },
+                                                label = { Text(catLabel) }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -768,15 +982,76 @@ fun LibraryScreen(
             }
 
             if (canSeeResume) {
+                // Render outside of LazyColumn to avoid DSL scope issues
                 ResumeCollapsible {
                     ResumeSectionAuto(
                         navController = navController,
                         limit = 20,
-                        onPlayVod = { /* TODO: später Navigation/Player */ },
-                        onPlayEpisode = { /* TODO: später Navigation/Player */ },
+                        onPlayVod = { /* TODO */ },
+                        onPlayEpisode = { /* TODO */ },
                         onClearVod = {},
                         onClearEpisode = {}
                     )
+                }
+                // Paged grid for large result sets (search or type browsing)
+                // Show grid only for global search or "Alle" view; keep rows for Live/VOD/Series tabs
+                if (pagingItems != null && (currentType == null || searchQuery.text.isNotBlank())) {
+                    Text("Alle Ergebnisse", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp))
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 180.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.heightIn(min = 240.dp)
+                    ) {
+                        val lp = pagingItems
+                        if (lp != null) {
+                            val refreshing = lp.loadState.refresh is androidx.paging.LoadState.Loading && lp.itemCount == 0
+                            if (refreshing) {
+                                items(12) { _ ->
+                                    androidx.compose.foundation.layout.Column {
+                                        com.chris.m3usuite.ui.fx.ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f))
+                                        Spacer(Modifier.padding(4.dp))
+                                        com.chris.m3usuite.ui.fx.ShimmerBox(modifier = Modifier.height(12.dp))
+                                    }
+                                }
+                            }
+                            items(lp.itemCount, key = { idx -> lp[idx]?.id ?: idx.toLong() }) { idx ->
+                                val mi = lp[idx] ?: return@items
+                                FocusableCard(onClick = {
+                                    when (mi.type) {
+                                        "live" -> openLive(mi.id)
+                                        "vod" -> openVod(mi.id)
+                                        "series" -> openSeries(mi.id)
+                                    }
+                                }) {
+                                    val imageHeaders = headers
+                                    AsyncImage(
+                                        model = buildImageRequest(ctx, mi.poster ?: mi.logo ?: mi.backdrop, imageHeaders),
+                                        contentDescription = mi.name,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.aspectRatio(16f / 9f)
+                                    )
+                                    Text(
+                                        text = mi.name,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        maxLines = 1,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                            val appending = lp.loadState.append is androidx.paging.LoadState.Loading
+                            if (appending) {
+                                items(6) { _ ->
+                                    androidx.compose.foundation.layout.Column {
+                                        com.chris.m3usuite.ui.fx.ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f))
+                                        Spacer(Modifier.padding(4.dp))
+                                        com.chris.m3usuite.ui.fx.ShimmerBox(modifier = Modifier.height(12.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

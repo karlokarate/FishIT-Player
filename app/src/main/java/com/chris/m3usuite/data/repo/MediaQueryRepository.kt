@@ -7,6 +7,12 @@ import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import androidx.paging.filter
 
 /**
  * Filtered media queries that respect Kid profile allowances when active.
@@ -66,14 +72,56 @@ class MediaQueryRepository(
         db.mediaDao().byTypeAndCategory(type, null).filter { it.id in allowed }.map { it.categoryName }.distinct()
     }
 
+    private fun toFtsQuery(input: String): String {
+        val cleaned = input.trim().lowercase()
+        if (cleaned.isEmpty()) return ""
+        val tokens = cleaned.split(Regex("\\s+")).filter { it.length >= 2 }.map { it + "*" }
+        return if (tokens.isEmpty()) "" else tokens.joinToString(" AND ")
+    }
+
     suspend fun globalSearchFiltered(query: String, limit: Int, offset: Int): List<MediaItem> = withContext(Dispatchers.IO) {
-        if (!isKid()) return@withContext db.mediaDao().globalSearch(query, limit, offset)
+        val fts = toFtsQuery(query)
+        val base = if (fts.isNotBlank()) db.mediaDao().globalSearchFts(fts, limit, offset)
+                   else db.mediaDao().globalSearch(query, limit, offset)
+        if (!isKid()) return@withContext base
         val kidId = settings.currentProfileId.first()
         val types = listOf("live", "vod", "series")
         val allowedByType = types.associateWith { effectiveAllowedIds(kidId, it) }
-        db.mediaDao().globalSearch(query, limit, offset).filter { item ->
+        base.filter { item ->
             val set = allowedByType[item.type] ?: emptySet()
             item.id in set
+        }
+    }
+
+    private fun pagerConfig(): PagingConfig = PagingConfig(
+        pageSize = 60,
+        prefetchDistance = 2,
+        initialLoadSize = 120,
+        enablePlaceholders = false
+    )
+
+    fun pagingByTypeFilteredFlow(type: String, cat: String?): Flow<PagingData<MediaItem>> {
+        val source = { db.mediaDao().pagingByTypeAndCategory(type, cat) }
+        val flow = Pager(pagerConfig(), pagingSourceFactory = source).flow
+        return flow.map { data ->
+            if (!isKid()) return@map data
+            val kidId = settings.currentProfileId.first()
+            val allowed = effectiveAllowedIds(kidId, type)
+            data.filter { mi -> mi.id in allowed }
+        }
+    }
+
+    fun pagingSearchFilteredFlow(query: String): Flow<PagingData<MediaItem>> {
+        val fts = toFtsQuery(query)
+        val source = if (fts.isNotBlank()) { { db.mediaDao().pagingSearchFts(fts) } }
+                     else { { db.mediaDao().pagingByType("vod") } } // harmless fallback
+        val flow = Pager(pagerConfig(), pagingSourceFactory = source).flow
+        return flow.map { data ->
+            if (!isKid()) return@map data
+            val kidId = settings.currentProfileId.first()
+            val types = listOf("live", "vod", "series")
+            val allowedByType = types.associateWith { effectiveAllowedIds(kidId, it) }
+            data.filter { mi -> (allowedByType[mi.type] ?: emptySet()).contains(mi.id) }
         }
     }
 
