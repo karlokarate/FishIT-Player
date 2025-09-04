@@ -91,7 +91,7 @@ import kotlinx.coroutines.withContext
 @androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LiveDetailScreen(id: Long) {
+fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
     val ctx = LocalContext.current
     val db: AppDatabase = remember { DbProvider.get(ctx) }
     val store = remember { SettingsStore(ctx) }
@@ -295,6 +295,7 @@ fun LiveDetailScreen(id: Long) {
         onProfiles = null,
         onRefresh = null,
         listState = listState,
+        onLogo = onLogo,
         bottomBar = {}
     ) { pads ->
     Box(Modifier.fillMaxSize().padding(pads)) {

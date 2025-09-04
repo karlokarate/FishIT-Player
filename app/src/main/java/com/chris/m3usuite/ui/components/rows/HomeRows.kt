@@ -499,22 +499,11 @@ fun SeriesTileCard(
     }
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
-    var armed by remember { mutableStateOf(false) }
-    var armTime by remember { mutableStateOf(0L) }
     Card(
         modifier = Modifier
             .height(rowItemHeight().dp)
             .padding(end = 6.dp)
-            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) {
-                val now = System.currentTimeMillis()
-                if (armed && now - armTime < 1500) {
-                    armed = false
-                    onOpenDetails(item)
-                } else {
-                    armed = true
-                    armTime = now
-                }
-            }
+            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onOpenDetails(item) }
             .onFocusChanged { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
@@ -609,6 +598,16 @@ fun SeriesTileCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                 )
+                val plot = item.plot
+                if (!plot.isNullOrBlank()) {
+                    Text(
+                        text = plot,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 10.dp)
+                    )
+                }
             }
             if (isNew) {
                 Text(
@@ -642,22 +641,11 @@ fun VodTileCard(
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
-    var armed by remember { mutableStateOf(false) }
-    var armTime by remember { mutableStateOf(0L) }
     Card(
         modifier = Modifier
             .height(rowItemHeight().dp)
             .padding(end = 6.dp)
-            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) {
-                val now = System.currentTimeMillis()
-                if (armed && now - armTime < 1500) {
-                    armed = false
-                    onOpenDetails(item)
-                } else {
-                    armed = true
-                    armTime = now
-                }
-            }
+            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onOpenDetails(item) }
             .onFocusChanged { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
@@ -738,6 +726,16 @@ fun VodTileCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                 )
+                val plot = item.plot
+                if (!plot.isNullOrBlank()) {
+                    Text(
+                        text = plot,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 10.dp)
+                    )
+                }
             }
             if (isNew) {
                 Text(

@@ -167,7 +167,12 @@ class MainActivity : ComponentActivity() {
 
                     composable("live/{id}") { back ->
                         val id = back.arguments?.getString("id")?.toLongOrNull() ?: return@composable
-                        LiveDetailScreen(id)
+                        LiveDetailScreen(id, onLogo = {
+                            val current = nav.currentBackStackEntry?.destination?.route
+                            if (current != "library") {
+                                nav.navigate("library") { launchSingleTop = true }
+                            }
+                        })
                     }
 
                     // VOD-Details – mit Lambda für internen Player
@@ -179,6 +184,12 @@ class MainActivity : ComponentActivity() {
                                 val encoded = Uri.encode(url)
                                 val start   = startMs ?: -1L
                                 nav.navigate("player?url=$encoded&type=vod&mediaId=$id&startMs=$start")
+                            },
+                            onLogo = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "library") {
+                                    nav.navigate("library") { launchSingleTop = true }
+                                }
                             }
                         )
                     }
@@ -193,6 +204,12 @@ class MainActivity : ComponentActivity() {
                                 val encoded = Uri.encode(playUrl)
                                 val start   = startMs ?: -1L
                                 nav.navigate("player?url=$encoded&type=series&episodeId=$episodeId&startMs=$start")
+                            },
+                            onLogo = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "library") {
+                                    nav.navigate("library") { launchSingleTop = true }
+                                }
                             }
                         )
                     }
@@ -236,7 +253,12 @@ class MainActivity : ComponentActivity() {
                         }
                         SettingsScreen(
                             store = store,
-                            onBack = { nav.popBackStack() },
+                            onBack = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "library") {
+                                    nav.navigate("library") { launchSingleTop = true }
+                                }
+                            },
                             onOpenProfiles = { nav.navigate("profiles") },
                             onOpenGate = {
                                 nav.navigate("gate") {
@@ -257,7 +279,15 @@ class MainActivity : ComponentActivity() {
                             allow = (prof?.type == "adult")
                             if (allow == false) nav.popBackStack()
                         }
-                        if (allow == true) ProfileManagerScreen(onBack = { nav.popBackStack() })
+                        if (allow == true) ProfileManagerScreen(
+                            onBack = { nav.popBackStack() },
+                            onLogo = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "library") {
+                                    nav.navigate("library") { launchSingleTop = true }
+                                }
+                            }
+                        )
                     }
                 }
 

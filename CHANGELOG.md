@@ -5,6 +5,8 @@ All notable changes to this project are documented here. Keep entries concise an
 
 2025-09-04
 - chore(tdlib/java): Bundle TDLib Java classes (`Client.java`, `TdApi.java`) in `:libtd` from TGX-Android/tdlib so reflection can find `org.drinkless.tdlib.*` at runtime. Added keep-rules for `org.drinkless.tdlib.**`.
+- fix(tdlib/native): Ensure TDLib JNI is loaded by adding `System.loadLibrary("tdjni")` static initializer in `:libtd` `Client.java`. Prevents `UnsatisfiedLinkError` on first TDLib call; works with packaged `arm64-v8a` and `armeabi-v7a` `jniLibs`.
+ - chore(build/telegram): Secure secrets sourcing for `TG_API_ID`/`TG_API_HASH`. Precedence: ENV → root `/.tg.secrets.properties` (untracked) → `-P` Gradle props → default. Avoids committing keys while enabling local test builds.
 
 2025-09-04
 - fix(player/routing): Default to internal when `playerMode=external` but no preferred external package is set; prevents unwanted Android app chooser and keeps playback in the internal player.
@@ -178,3 +180,13 @@ Status: zu testen durch Nutzer
   - Datei: `data/repo/XtreamRepository.kt`
   - Status (vor Änderung): ggf. falscher Port bei https‑M3U
   - Status (nach Änderung): zu testen durch Nutzer
+- fix(player/chooser): Default playback mode set to "internal" and settings UI already allows override. Prevents unwanted ask-dialog on details Play.
+- fix(library/rows): Show all items per category (removed hard caps of 200 in VOD/Series category rows). Keeps top rows limited but category rows complete.
+- fix(kids/assign): After assigning to kid profiles from tiles, show a toast for feedback. No permissions change.
+- fix(settings/profile/whitelist): Avoid state updates from background threads in ManageWhitelist; update Compose state on main thread to prevent crashes when opening/editing category contents.
+- fix(player/pip): Do not pause playback on Activity onPause when entering Picture-in-Picture; continues stream instead of freezing the last frame.
+- fix(vod/plot): Show plot in VOD detail page and add a short 2‑line plot snippet on focused VOD/Series tiles.
+- fix(tiles/new): "NEU" badge rendering preserved for new rows; no caps.
+- fix(tiles/open): Switch from double‑click to single‑click to open tiles across screens; removes leftover zoom/armed state issues after closing.
+- fix(vod/title): Strip category prefixes like "4k-A+ - " from displayed titles in details and tiles.
+- feat(header/logo): Fish button in header is now clickable from all major screens (Settings, Details, Profiles) to return to Home without losing in‑progress state.

@@ -74,7 +74,7 @@ fun SettingsScreen(
     val permRepo = remember(ctx) { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
     var canChangeSources by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) { canChangeSources = permRepo.current().canChangeSources }
-    val mode by store.playerMode.collectAsStateWithLifecycle(initialValue = "ask")
+    val mode by store.playerMode.collectAsStateWithLifecycle(initialValue = "internal")
     val pkg by store.preferredPlayerPkg.collectAsStateWithLifecycle(initialValue = "")
     val subScale by store.subtitleScale.collectAsStateWithLifecycle(initialValue = 0.06f)
     val subFg by store.subtitleFg.collectAsStateWithLifecycle(initialValue = 0xF2FFFFFF.toInt())
@@ -107,6 +107,7 @@ fun SettingsScreen(
         onProfiles = null,
         onRefresh = null,
         listState = listState,
+        onLogo = onBack,
         snackbarHost = snackHost,
         bottomBar = {}
     ) { pads ->

@@ -72,6 +72,10 @@ Short bullet summary (current highlights)
 - Telegram integration (opt‑in, alpha): Login (Phone→Code→Passwort) mit auto DB‑Key‑Check; Settings‑Block mit Ordner/Chat‑Picker und separaten Quellen für Film/Serien‑Sync; Sync‑Worker mappt Nachrichten auf VOD (`MediaItem.source=TG`) oder Serie (Episode.tg*; SxxExx‑Heuristik). Player streamt `tg://message?...` via Telegram‑DataSource (Seek, progressive Download). Packaging über `:libtd` (arm64; v7a‑Buildscript vorhanden).
   - Index/Cache: `telegram_messages` wird beim Sync befüllt (fileId/uniqueId, caption, supportsStreaming, date, thumbFileId); `localPath` wird durch DataSources aktualisiert. Minimaler Sync‑Fortschritt in Settings; täglicher Cache‑Trim (GB‑Limit) via `TelegramCacheCleanupWorker`.
 - TDLib packaging: Added `:libtd` module bundling JNI libs (`libtdjni.so`) for `arm64-v8a` (and optional `armeabi-v7a`). App depends on `:libtd` to ensure TDLib availability at runtime.
+- TDLib packaging: Added `:libtd` module bundling JNI libs (`libtdjni.so`) for `arm64-v8a` (and optional `armeabi-v7a`). App depends on `:libtd` to ensure TDLib availability at runtime. Native JNI is auto‑loaded via a static initializer in `org.drinkless.tdlib.Client`.
+ - TDLib secrets sourcing: `TG_API_ID`/`TG_API_HASH` are injected at build time without committing secrets.
+   - Precedence: ENV vars (`TG_API_ID`, `TG_API_HASH`) → root `/.tg.secrets.properties` (not tracked) → `-P` Gradle props → default 0/empty.
+   - To test locally: either set env vars for the Gradle run, or create a root‑level file `.tg.secrets.properties` with `TG_API_ID=...` and `TG_API_HASH=...`.
  - TDLib v7a build: Script `scripts/tdlib-build-v7a.sh` builds `libtdjni.so` for `armeabi-v7a` via CMake/NDK and copies it to `libtd/src/main/jniLibs/armeabi-v7a/`.
 - Start/Home shows Serien, Filme, TV; Kids get filtered content (MediaQueryRepository), no settings/bottom bar, read‑only favorites.
 - Backup/Restore present in Setup (Quick Import) and Settings (Quick Import + full section). Drive client optional (shim by default).

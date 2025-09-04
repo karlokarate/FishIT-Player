@@ -24,11 +24,22 @@ android {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")
         }
 
-        // Telegram API credentials (optional; set in gradle.properties as TG_API_ID=123456 and TG_API_HASH=yourhash)
-        val tgApiIdProp = project.findProperty("TG_API_ID")?.toString()?.toIntOrNull() ?: 0
-        val tgApiHashProp = project.findProperty("TG_API_HASH")?.toString() ?: ""
-        buildConfigField("int", "TG_API_ID", tgApiIdProp.toString())
-        buildConfigField("String", "TG_API_HASH", "\"${tgApiHashProp}\"")
+        // Telegram API credentials (secure lookup, non-committed):
+        // Precedence: ENV → .tg.secrets.properties (root, untracked) → project -P props → default
+        val secretsFile = File(rootDir, ".tg.secrets.properties")
+        val secrets = java.util.Properties().apply {
+            if (secretsFile.exists()) secretsFile.inputStream().use { load(it) }
+        }
+        fun prop(name: String): String? =
+            System.getenv(name)
+                ?: (secrets.getProperty(name))
+                ?: (project.findProperty(name)?.toString())
+
+        val tgApiIdValue = prop("TG_API_ID")?.toIntOrNull() ?: 0
+        val tgApiHashValue = prop("TG_API_HASH") ?: ""
+
+        buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
+        buildConfigField("String", "TG_API_HASH", "\"${tgApiHashValue}\"")
     }
 
     compileOptions {

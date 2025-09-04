@@ -328,11 +328,11 @@ fun StartScreen(
                             onAssignToKid = { mi ->
                                 scope.launch {
                                     val kids = withContext(kotlinx.coroutines.Dispatchers.IO) { DbProvider.get(ctx).profileDao().all().filter { it.type == "kid" } }
-                                    // Quick assign to all kids for simplicity; could show sheet later
                                     withContext(kotlinx.coroutines.Dispatchers.IO) {
                                         val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
                                         kids.forEach { repo.allow(it.id, "series", mi.id) }
                                     }
+                                    android.widget.Toast.makeText(ctx, "Für Kinder freigegeben", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             },
                             showAssign = canEditWhitelist
@@ -384,10 +384,13 @@ fun StartScreen(
                                 }
                             },
                             onAssignToKid = { mi ->
-                                scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                                    val kids = DbProvider.get(ctx).profileDao().all().filter { it.type == "kid" }
-                                    val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
-                                    kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                scope.launch {
+                                    withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        val kids = DbProvider.get(ctx).profileDao().all().filter { it.type == "kid" }
+                                        val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                        kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                    }
+                                    android.widget.Toast.makeText(ctx, "Für Kinder freigegeben", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             },
                             showAssign = canEditWhitelist

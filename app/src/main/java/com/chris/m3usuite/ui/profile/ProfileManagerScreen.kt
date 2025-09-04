@@ -58,7 +58,7 @@ import androidx.compose.animation.core.animateFloat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileManagerScreen(onBack: () -> Unit) {
+fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
     val ctx = LocalContext.current
     val db = remember { DbProvider.get(ctx) }
     val scope = rememberCoroutineScope()
@@ -87,6 +87,7 @@ fun ProfileManagerScreen(onBack: () -> Unit) {
         onProfiles = null,
         onRefresh = null,
         listState = listState,
+        onLogo = onLogo,
         bottomBar = {}
     ) { pads ->
         Box(Modifier.fillMaxSize().padding(pads)) {
@@ -409,10 +410,13 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
             var allowedCats by remember(tab) { mutableStateOf<Set<String>>(emptySet()) }
             var expanded by remember { mutableStateOf<String?>(null) }
             LaunchedEffect(tab) {
-                withContext(Dispatchers.IO) {
-                    categories = db.mediaDao().categoriesByType(type).mapNotNull { it }.distinct()
-                    allowedCats = db.kidCategoryAllowDao().listForKidAndType(kidId, type).map { it.categoryId }.toSet()
+                val result = withContext(Dispatchers.IO) {
+                    val cats = db.mediaDao().categoriesByType(type).mapNotNull { it }.distinct()
+                    val allowed = db.kidCategoryAllowDao().listForKidAndType(kidId, type).map { it.categoryId }.toSet()
+                    cats to allowed
                 }
+                categories = result.first
+                allowedCats = result.second
             }
             // Quick actions for current tab (after state init)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -420,7 +424,8 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                     scope.launch(Dispatchers.IO) {
                         val catsAll = db.mediaDao().categoriesByType(type).mapNotNull { it }.distinct()
                         catsAll.forEach { c -> db.kidCategoryAllowDao().insert(KidCategoryAllow(kidProfileId = kidId, contentType = type, categoryId = c)) }
-                        allowedCats = db.kidCategoryAllowDao().listForKidAndType(kidId, type).map { it.categoryId }.toSet()
+                        val allowed = db.kidCategoryAllowDao().listForKidAndType(kidId, type).map { it.categoryId }.toSet()
+                        withContext(Dispatchers.Main) { allowedCats = allowed }
                     }
                 }) { Text("Alle Kategorien erlauben") }
                 TextButton(onClick = {
@@ -443,7 +448,8 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                                 scope.launch(Dispatchers.IO) {
                                     if (v) db.kidCategoryAllowDao().insert(KidCategoryAllow(kidProfileId = kidId, contentType = type, categoryId = cat))
                                     else db.kidCategoryAllowDao().disallow(kidId, type, cat)
-                                    allowedCats = db.kidCategoryAllowDao().listForKidAndType(kidId, type).map { it.categoryId }.toSet()
+                                    val allowedNow = db.kidCategoryAllowDao().listForKidAndType(kidId, type).map { it.categoryId }.toSet()
+                                    withContext(Dispatchers.Main) { allowedCats = allowedNow }
                                 }
                             })
                         }
@@ -453,11 +459,15 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                             var blocked by remember(cat) { mutableStateOf<Set<Long>>(emptySet()) }
                             var allowedItems by remember(cat) { mutableStateOf<Set<Long>>(emptySet()) }
                             LaunchedEffect(cat) {
-                                withContext(Dispatchers.IO) {
-                                    items = db.mediaDao().byTypeAndCategory(type, cat)
-                                    blocked = db.kidContentBlockDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
-                                    allowedItems = db.kidContentDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
+                                val triple = withContext(Dispatchers.IO) {
+                                    val lst = db.mediaDao().byTypeAndCategory(type, cat)
+                                    val bl = db.kidContentBlockDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
+                                    val al = db.kidContentDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
+                                    Triple(lst, bl, al)
                                 }
+                                items = triple.first
+                                blocked = triple.second
+                                allowedItems = triple.third
                             }
                             // If category is allowed: checking an item removes block; unchecking adds block.
                             // If category is not allowed: checking an item adds explicit allow; unchecking removes allow.
@@ -470,10 +480,12 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                                         scope.launch(Dispatchers.IO) {
                                             if (allowed) {
                                                 if (v) db.kidContentBlockDao().unblock(kidId, type, id) else db.kidContentBlockDao().insert(KidContentBlock(kidProfileId = kidId, contentType = type, contentId = id))
-                                                blocked = db.kidContentBlockDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
+                                                val blNow = db.kidContentBlockDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
+                                                withContext(Dispatchers.Main) { blocked = blNow }
                                             } else {
                                                 if (v) db.kidContentDao().insert(KidContentItem(kidProfileId = kidId, contentType = type, contentId = id)) else db.kidContentDao().disallow(kidId, type, id)
-                                                allowedItems = db.kidContentDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
+                                                val alNow = db.kidContentDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
+                                                withContext(Dispatchers.Main) { allowedItems = alNow }
                                             }
                                         }
                                     })

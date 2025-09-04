@@ -113,7 +113,8 @@ import kotlin.math.max
 fun SeriesDetailScreen(
     id: Long,
     // optionaler Callback für internen Player (url, startMs, episodeId)
-    openInternal: ((url: String, startMs: Long?, episodeId: Int) -> Unit)? = null
+    openInternal: ((url: String, startMs: Long?, episodeId: Int) -> Unit)? = null,
+    onLogo: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
     val db: AppDatabase = remember { DbProvider.get(ctx) }
@@ -372,6 +373,7 @@ fun SeriesDetailScreen(
         onProfiles = null,
         onRefresh = null,
         listState = listState,
+        onLogo = onLogo,
         bottomBar = {}
     ) { pads ->
     Box(Modifier.fillMaxSize().padding(pads)) {

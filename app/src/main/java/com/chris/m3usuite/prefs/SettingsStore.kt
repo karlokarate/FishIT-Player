@@ -111,7 +111,7 @@ class SettingsStore(private val context: Context) {
     val extraHeadersJson: Flow<String> = context.dataStore.data.map { it[Keys.EXTRA_HEADERS].orEmpty() }
 
     val preferredPlayerPkg: Flow<String> = context.dataStore.data.map { it[Keys.PREF_PLAYER_PACKAGE].orEmpty() }
-    val playerMode: Flow<String> = context.dataStore.data.map { it[Keys.PLAYER_MODE] ?: "ask" } // ask/internal/external
+    val playerMode: Flow<String> = context.dataStore.data.map { it[Keys.PLAYER_MODE] ?: "internal" } // ask/internal/external
 
     val xtHost: Flow<String> = context.dataStore.data.map { it[Keys.XT_HOST].orEmpty() }
     val xtPort: Flow<Int> = context.dataStore.data.map { it[Keys.XT_PORT] ?: 80 }

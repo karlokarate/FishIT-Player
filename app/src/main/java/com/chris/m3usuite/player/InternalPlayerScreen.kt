@@ -216,7 +216,13 @@ fun InternalPlayerScreen(
     DisposableEffect(lifecycleOwner, exoPlayer) {
         val obs = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_PAUSE -> exoPlayer.playWhenReady = false
+                Lifecycle.Event.ON_PAUSE -> {
+                    // Don't pause when entering Picture-in-Picture
+                    val act = ctx as? Activity
+                    if (act?.isInPictureInPictureMode != true) {
+                        exoPlayer.playWhenReady = false
+                    }
+                }
                 Lifecycle.Event.ON_RESUME -> exoPlayer.playWhenReady = true
                 Lifecycle.Event.ON_DESTROY -> {
                     // resume: clear if near end (<10s), otherwise save

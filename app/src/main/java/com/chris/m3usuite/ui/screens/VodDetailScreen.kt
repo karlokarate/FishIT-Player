@@ -71,7 +71,8 @@ import androidx.compose.runtime.derivedStateOf
 fun VodDetailScreen(
     id: Long,
     // optional: interner Player (url, startMs)
-    openInternal: ((url: String, startMs: Long?) -> Unit)? = null
+    openInternal: ((url: String, startMs: Long?) -> Unit)? = null,
+    onLogo: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
@@ -98,7 +99,7 @@ fun VodDetailScreen(
 
     LaunchedEffect(id) {
         val item = db.mediaDao().byId(id) ?: return@LaunchedEffect
-        title = item.name
+        title = item.name.substringAfter(" - ", item.name)
         poster = item.poster
         backdrop = item.backdrop
         plot = item.plot
@@ -292,6 +293,7 @@ fun VodDetailScreen(
         onProfiles = null,
         onRefresh = null,
         listState = listState,
+        onLogo = onLogo,
         bottomBar = {}
     ) { pads ->
     Box(modifier = Modifier.fillMaxSize().padding(pads)) {

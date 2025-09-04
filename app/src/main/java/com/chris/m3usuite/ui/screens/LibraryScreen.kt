@@ -494,10 +494,13 @@ fun LibraryScreen(
                                         }
                                     },
                                     onAssignToKid = { mi ->
-                                        scope.launch(Dispatchers.IO) {
-                                            val kids = db.profileDao().all().filter { it.type == "kid" }
-                                            val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
-                                            kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                        scope.launch {
+                                            withContext(Dispatchers.IO) {
+                                                val kids = db.profileDao().all().filter { it.type == "kid" }
+                                                val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                                kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                            }
+                                            android.widget.Toast.makeText(ctx, "Für Kinder freigegeben", android.widget.Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     showNew = byAdded.isNotEmpty()
@@ -542,7 +545,7 @@ fun LibraryScreen(
 
                             // Expanded categories as rows
                             expandedOrdered.forEach { catKey ->
-                                val list = allVod.filter { keyOf(it.categoryName) == catKey }.distinctBy { it.id }.take(200)
+                                val list = allVod.filter { keyOf(it.categoryName) == catKey }.distinctBy { it.id }
                                 if (list.isNotEmpty()) {
                                     val catLabel = labelOf(catKey)
                                     item("vod_cat_chip_$catKey") {
@@ -721,7 +724,7 @@ fun LibraryScreen(
 
                             // Expanded categories as rows
                             expandedOrdered.forEach { catKey ->
-                                val list = allSeries.filter { keyOf(it.categoryName) == catKey }.distinctBy { it.id }.take(200)
+                                val list = allSeries.filter { keyOf(it.categoryName) == catKey }.distinctBy { it.id }
                                 if (list.isNotEmpty()) {
                                     val catLabel = labelOf(catKey)
                                     item("series_cat_chip_$catKey") {
