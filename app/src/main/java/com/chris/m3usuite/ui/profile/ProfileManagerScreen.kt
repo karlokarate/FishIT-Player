@@ -152,8 +152,8 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 val model = rememberAvatarModel(avatarPath)
                                 if (model != null) {
-                                    AsyncImage(
-                                        model = model,
+                                    com.chris.m3usuite.ui.util.AppAsyncImage(
+                                        url = model,
                                         contentDescription = null,
                                         modifier = Modifier.size(48.dp).clip(CircleShape),
                                         contentScale = ContentScale.Crop

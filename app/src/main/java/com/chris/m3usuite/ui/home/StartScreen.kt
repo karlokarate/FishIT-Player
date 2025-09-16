@@ -754,8 +754,8 @@ fun ChannelPickTile(
             val sz = 77.dp
             val url = item.logo ?: item.poster
             if (url != null) {
-                coil3.compose.AsyncImage(
-                    model = url,
+                com.chris.m3usuite.ui.util.AppAsyncImage(
+                    url = url,
                     contentDescription = item.name,
                     modifier = Modifier
                         .size(sz)

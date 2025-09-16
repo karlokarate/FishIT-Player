@@ -210,8 +210,8 @@ fun ProfileGate(
                         leadingContent = {
                             val model = rememberAvatarModel(k.avatarPath)
                             if (model != null) {
-                                AsyncImage(
-                                    model = model,
+                                com.chris.m3usuite.ui.util.AppAsyncImage(
+                                    url = model,
                                     contentDescription = null,
                                     modifier = Modifier.size(40.dp).clip(CircleShape),
                                     contentScale = ContentScale.Crop
