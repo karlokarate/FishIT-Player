@@ -4,6 +4,7 @@
 All notable changes to this project are documented here. Keep entries concise and tied to commits/PRs.
 
 2025-09-16
+- refactor(ui): Deduplicate KidSelectSheet; Live/Series/Vod detail screens now import `ui.components.sheets.KidSelectSheet` instead of local duplicates.
 - fix(xtream/port): Respect explicit port from Base URL/Settings and skip the port resolver when provided. Propagated `portOverride` through `XtreamClient.initialize(...)` and updated all callers to pass the stored port.
 - fix(xtream/category): Use `category_id=0` consistently for list endpoints and discovery probes instead of `*`.
 - feat(http/timeouts): Increase OkHttp connect/read/write timeouts to 120s to better handle slow portals and large responses.
