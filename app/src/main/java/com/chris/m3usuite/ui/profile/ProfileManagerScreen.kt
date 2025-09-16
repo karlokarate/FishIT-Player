@@ -22,12 +22,16 @@ import android.os.Build
 import android.graphics.RenderEffect
 import android.graphics.Shader
 import com.chris.m3usuite.ui.theme.DesignTokens
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.Profile
-import com.chris.m3usuite.data.db.MediaItem
+import com.chris.m3usuite.data.repo.ProfileObxRepository
+import com.chris.m3usuite.data.obx.ObxProfile
+import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.model.MediaItem
+import com.chris.m3usuite.data.obx.ObxKidCategoryAllow_
+import com.chris.m3usuite.data.obx.ObxKidContentAllow_
+import com.chris.m3usuite.data.obx.ObxKidContentBlock_
 import com.chris.m3usuite.data.repo.KidContentRepository
 import com.chris.m3usuite.data.repo.ScreenTimeRepository
-import com.chris.m3usuite.data.db.ProfilePermissions
+import com.chris.m3usuite.data.obx.ObxProfilePermissions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
@@ -47,9 +51,9 @@ import com.chris.m3usuite.ui.util.rememberAvatarModel
 import java.io.File
 import java.io.FileOutputStream
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
-import com.chris.m3usuite.data.db.KidCategoryAllow
-import com.chris.m3usuite.data.db.KidContentBlock
-import com.chris.m3usuite.data.db.KidContentItem
+import com.chris.m3usuite.data.obx.ObxKidCategoryAllow
+import com.chris.m3usuite.data.obx.ObxKidContentBlock
+import com.chris.m3usuite.data.obx.ObxKidContentAllow
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Checkbox
@@ -60,20 +64,21 @@ import androidx.compose.animation.core.animateFloat
 @Composable
 fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
     val ctx = LocalContext.current
-    val db = remember { DbProvider.get(ctx) }
     val scope = rememberCoroutineScope()
+    val profileRepo = remember { ProfileObxRepository(ctx) }
+    val obx = remember { ObxStore.get(ctx) }
     val screenRepo = remember { ScreenTimeRepository(ctx) }
     val vm: ProfileManagerViewModel = viewModel()
     val kidRepo = remember { KidContentRepository(ctx) }
     var saving by remember { mutableStateOf(false) }
     BackHandler(enabled = saving) { /* block back while saving */ }
 
-    var kids by remember { mutableStateOf<List<Profile>>(emptyList()) }
+    var kids by remember { mutableStateOf<List<ObxProfile>>(emptyList()) }
     var newKidName by remember { mutableStateOf("") }
     var newType by remember { mutableStateOf("kid") } // kid | guest
 
     suspend fun load() {
-        kids = withContext(Dispatchers.IO) { db.profileDao().all().filter { it.type != "adult" } }
+        kids = withContext(Dispatchers.IO) { profileRepo.all().filter { it.type != "adult" } }
     }
 
     LaunchedEffect(Unit) { load() }
@@ -109,7 +114,7 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
             Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                 scope.launch(Dispatchers.IO) {
                     val now = System.currentTimeMillis()
-                    db.profileDao().insert(Profile(name = newKidName.ifBlank { if (newType == "guest") "Gast" else "Kind" }, type = newType, avatarPath = null, createdAt = now, updatedAt = now))
+                    profileRepo.insert(ObxProfile(name = newKidName.ifBlank { if (newType == "guest") "Gast" else "Kind" }, type = newType, avatarPath = null, createdAt = now, updatedAt = now))
                     newKidName = ""
                     newType = "kid"
                     load()
@@ -128,12 +133,11 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
 
                     // Load today's usage/limit from DB
                     LaunchedEffect(kid.id) {
-                        // Read current entry; if missing, repo will create it on first write, so we fallback to 0/0
                         withContext(Dispatchers.IO) {
-                            // Get remaining via repo, and limit via DAO
-                            val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
-                                .format(java.util.Calendar.getInstance().time)
-                            val entry = DbProvider.get(ctx).screenTimeDao().getForDay(kid.id, dayKey)
+                            val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Calendar.getInstance().time)
+                            val b = obx.boxFor(com.chris.m3usuite.data.obx.ObxScreenTimeEntry::class.java)
+                            val q = b.query(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.kidProfileId.equal(kid.id).and(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.dayYyyymmdd.equal(dayKey))).build()
+                            val entry = q.findFirst()
                             val u = entry?.usedMinutes ?: 0
                             val l = entry?.limitMinutes ?: 0
                             usedToday = u
@@ -234,32 +238,17 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
                                     scope.launch(Dispatchers.IO) {
                                         val now = System.currentTimeMillis()
                                         val newType = if (kid.type == "guest") "kid" else "guest"
-                                        db.profileDao().update(kid.copy(type = newType, updatedAt = now))
-                                        // Default-Rechte für neuen Typ setzen
-                                        val ppDao = db.profilePermissionsDao()
+                                        val b = obx.boxFor(ObxProfile::class.java)
+                                        val p = b.get(kid.id) ?: kid
+                                        p.type = newType; p.updatedAt = now; b.put(p)
+                                        val permBox = obx.boxFor(ObxProfilePermissions::class.java)
                                         val defaults = when (newType) {
-                                            "guest" -> com.chris.m3usuite.data.db.ProfilePermissions(
-                                                profileId = kid.id,
-                                                canOpenSettings = false,
-                                                canChangeSources = false,
-                                                canUseExternalPlayer = false,
-                                                canEditFavorites = false,
-                                                canSearch = true,
-                                                canSeeResume = false,
-                                                canEditWhitelist = false
-                                            )
-                                            else -> com.chris.m3usuite.data.db.ProfilePermissions(
-                                                profileId = kid.id,
-                                                canOpenSettings = false,
-                                                canChangeSources = false,
-                                                canUseExternalPlayer = false,
-                                                canEditFavorites = false,
-                                                canSearch = true,
-                                                canSeeResume = true,
-                                                canEditWhitelist = false
-                                            )
+                                            "guest" -> ObxProfilePermissions(profileId = kid.id, canOpenSettings = false, canChangeSources = false, canUseExternalPlayer = false, canEditFavorites = false, canSearch = true, canSeeResume = false, canEditWhitelist = false)
+                                            else -> ObxProfilePermissions(profileId = kid.id, canOpenSettings = false, canChangeSources = false, canUseExternalPlayer = false, canEditFavorites = false, canSearch = true, canSeeResume = true, canEditWhitelist = false)
                                         }
-                                        ppDao.upsert(defaults)
+                                        val ex = permBox.query(com.chris.m3usuite.data.obx.ObxProfilePermissions_.profileId.equal(kid.id)).build().findFirst()
+                                        if (ex != null) defaults.id = ex.id
+                                        permBox.put(defaults)
                                         withContext(Dispatchers.Main) { load() }
                                     }
                                 }) { Text(if (kid.type == "guest") "Zu Kind wechseln" else "Zu Gast wechseln") }
@@ -267,11 +256,13 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                                     scope.launch(Dispatchers.IO) {
-                                        db.profileDao().update(kid.copy(name = name, updatedAt = System.currentTimeMillis()))
+                                        val b = obx.boxFor(ObxProfile::class.java)
+                                        val p = b.get(kid.id)
+                                        if (p != null) { p.name = name; p.updatedAt = System.currentTimeMillis(); b.put(p) }
                                         screenRepo.setDailyLimit(kid.id, limit)
                                         val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
                                             .format(java.util.Calendar.getInstance().time)
-                                        val entry = DbProvider.get(ctx).screenTimeDao().getForDay(kid.id, dayKey)
+                                        val entry = obx.boxFor(com.chris.m3usuite.data.obx.ObxScreenTimeEntry::class.java).query(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.kidProfileId.equal(kid.id).and(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.dayYyyymmdd.equal(dayKey))).build().findFirst()
                                         val u = entry?.usedMinutes ?: 0
                                         withContext(Dispatchers.Main) {
                                             usedToday = u
@@ -283,23 +274,15 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
                                 TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                                     scope.launch(Dispatchers.IO) {
                                         // Orphan-Cleanup: remove whitelist/blocks/permissions for this profile
-                                        try {
-                                            db.kidContentDao().listForKidAndType(kid.id, "live").forEach { db.kidContentDao().disallow(kid.id, "live", it.contentId) }
-                                            db.kidContentDao().listForKidAndType(kid.id, "vod").forEach { db.kidContentDao().disallow(kid.id, "vod", it.contentId) }
-                                            db.kidContentDao().listForKidAndType(kid.id, "series").forEach { db.kidContentDao().disallow(kid.id, "series", it.contentId) }
-                                        } catch (_: Throwable) {}
-                                        try {
-                                            db.kidCategoryAllowDao().listForKidAndType(kid.id, "live").forEach { db.kidCategoryAllowDao().disallow(kid.id, "live", it.categoryId) }
-                                            db.kidCategoryAllowDao().listForKidAndType(kid.id, "vod").forEach { db.kidCategoryAllowDao().disallow(kid.id, "vod", it.categoryId) }
-                                            db.kidCategoryAllowDao().listForKidAndType(kid.id, "series").forEach { db.kidCategoryAllowDao().disallow(kid.id, "series", it.categoryId) }
-                                        } catch (_: Throwable) {}
-                                        try {
-                                            db.kidContentBlockDao().listForKidAndType(kid.id, "live").forEach { db.kidContentBlockDao().unblock(kid.id, "live", it.contentId) }
-                                            db.kidContentBlockDao().listForKidAndType(kid.id, "vod").forEach { db.kidContentBlockDao().unblock(kid.id, "vod", it.contentId) }
-                                            db.kidContentBlockDao().listForKidAndType(kid.id, "series").forEach { db.kidContentBlockDao().unblock(kid.id, "series", it.contentId) }
-                                        } catch (_: Throwable) {}
-                                        try { db.profilePermissionsDao().deleteByProfile(kid.id) } catch (_: Throwable) {}
-                                        db.profileDao().delete(kid)
+                                        val allowBox = obx.boxFor(ObxKidContentAllow::class.java)
+                                        allowBox.remove(allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id)).build().find())
+                                        val catBox = obx.boxFor(ObxKidCategoryAllow::class.java)
+                                        catBox.remove(catBox.query(ObxKidCategoryAllow_.kidProfileId.equal(kid.id)).build().find())
+                                        val blockBox = obx.boxFor(ObxKidContentBlock::class.java)
+                                        blockBox.remove(blockBox.query(ObxKidContentBlock_.kidProfileId.equal(kid.id)).build().find())
+                                        val permBox = obx.boxFor(ObxProfilePermissions::class.java)
+                                        permBox.query(com.chris.m3usuite.data.obx.ObxProfilePermissions_.profileId.equal(kid.id)).build().findFirst()?.let { permBox.remove(it) }
+                                        obx.boxFor(ObxProfile::class.java).remove(kid)
                                         load()
                                     }
                                 }, colors = ButtonDefaults.textButtonColors(contentColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent)) { Text("Löschen") }
@@ -315,14 +298,14 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
                             suspend fun loadWhitelist() {
                                 loading = true
                                 withContext(Dispatchers.IO) {
-                                    val dao = db.kidContentDao()
-                                    val mediaDao = db.mediaDao()
-                                    val liveIds = dao.listForKidAndType(kid.id, "live").map { it.contentId }
-                                    val vodIds = dao.listForKidAndType(kid.id, "vod").map { it.contentId }
-                                    val serIds = dao.listForKidAndType(kid.id, "series").map { it.contentId }
-                                    val liveList = if (liveIds.isNotEmpty()) mediaDao.byIds(liveIds) else emptyList()
-                                    val vodList = if (vodIds.isNotEmpty()) mediaDao.byIds(vodIds) else emptyList()
-                                    val serList = if (serIds.isNotEmpty()) mediaDao.byIds(serIds) else emptyList()
+                                    val allowBox = obx.boxFor(ObxKidContentAllow::class.java)
+                                    val liveIds = allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id).and(ObxKidContentAllow_.contentType.equal("live"))).build().find().map { it.contentId }
+                                    val vodIds = allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id).and(ObxKidContentAllow_.contentType.equal("vod"))).build().find().map { it.contentId }
+                                    val serIds = allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id).and(ObxKidContentAllow_.contentType.equal("series"))).build().find().map { it.contentId }
+                                    val repo = com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, com.chris.m3usuite.prefs.SettingsStore(ctx))
+                                    val liveList = repo.listByTypeFiltered("live", 6000, 0).filter { it.id in liveIds }
+                                    val vodList = repo.listByTypeFiltered("vod", 6000, 0).filter { it.id in vodIds }
+                                    val serList = repo.listByTypeFiltered("series", 6000, 0).filter { it.id in serIds }
                                     withContext(Dispatchers.Main) {
                                         live = liveList
                                         vod = vodList
@@ -386,7 +369,8 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
 @OptIn(ExperimentalMaterial3Api::class)
 private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
     val ctx = LocalContext.current
-    val db = remember { DbProvider.get(ctx) }
+    val profileRepo = remember { ProfileObxRepository(ctx) }
+    val obx = remember { ObxStore.get(ctx) }
     val scope = rememberCoroutineScope()
     var tab by remember { mutableStateOf(0) } // 0 live, 1 vod, 2 series
     val types = listOf("live", "vod", "series")
@@ -411,8 +395,10 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
             var expanded by remember { mutableStateOf<String?>(null) }
             LaunchedEffect(tab) {
                 val result = withContext(Dispatchers.IO) {
-                    val cats = db.mediaDao().categoriesByType(type).mapNotNull { it }.distinct()
-                    val allowed = db.kidCategoryAllowDao().listForKidAndType(kidId, type).map { it.categoryId }.toSet()
+                    val obxRepo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, com.chris.m3usuite.prefs.SettingsStore(ctx))
+                    val cats = obxRepo.categories(type).mapNotNull { it.categoryName }.distinct()
+                    val allowBox = obx.boxFor(ObxKidCategoryAllow::class.java)
+                    val allowed = allowBox.query(ObxKidCategoryAllow_.kidProfileId.equal(kidId).and(ObxKidCategoryAllow_.contentType.equal(type))).build().find().map { it.categoryId }.toSet()
                     cats to allowed
                 }
                 categories = result.first
@@ -422,17 +408,22 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = {
                     scope.launch(Dispatchers.IO) {
-                        val catsAll = db.mediaDao().categoriesByType(type).mapNotNull { it }.distinct()
-                        catsAll.forEach { c -> db.kidCategoryAllowDao().insert(KidCategoryAllow(kidProfileId = kidId, contentType = type, categoryId = c)) }
-                        val allowed = db.kidCategoryAllowDao().listForKidAndType(kidId, type).map { it.categoryId }.toSet()
+                        val obxRepo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, com.chris.m3usuite.prefs.SettingsStore(ctx))
+                        val catsAll = obxRepo.categories(type).mapNotNull { it.categoryName }.distinct()
+                        val catBox = obx.boxFor(ObxKidCategoryAllow::class.java)
+                        catsAll.forEach { c -> catBox.put(ObxKidCategoryAllow(kidProfileId = kidId, contentType = type, categoryId = c)) }
+                        val allowed = catBox.query(ObxKidCategoryAllow_.kidProfileId.equal(kidId).and(ObxKidCategoryAllow_.contentType.equal(type))).build().find().map { it.categoryId }.toSet()
                         withContext(Dispatchers.Main) { allowedCats = allowed }
                     }
                 }) { Text("Alle Kategorien erlauben") }
                 TextButton(onClick = {
                     scope.launch(Dispatchers.IO) {
-                        db.kidCategoryAllowDao().listForKidAndType(kidId, type).forEach { db.kidCategoryAllowDao().disallow(kidId, type, it.categoryId) }
-                        db.kidContentDao().listForKidAndType(kidId, type).forEach { db.kidContentDao().disallow(kidId, type, it.contentId) }
-                        db.kidContentBlockDao().listForKidAndType(kidId, type).forEach { db.kidContentBlockDao().unblock(kidId, type, it.contentId) }
+                        val catBox = obx.boxFor(ObxKidCategoryAllow::class.java)
+                        catBox.remove(catBox.query(ObxKidCategoryAllow_.kidProfileId.equal(kidId).and(ObxKidCategoryAllow_.contentType.equal(type))).build().find())
+                        val allowBox = obx.boxFor(ObxKidContentAllow::class.java)
+                        allowBox.remove(allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kidId).and(ObxKidContentAllow_.contentType.equal(type))).build().find())
+                        val blockBox = obx.boxFor(ObxKidContentBlock::class.java)
+                        blockBox.remove(blockBox.query(ObxKidContentBlock_.kidProfileId.equal(kidId).and(ObxKidContentBlock_.contentType.equal(type))).build().find())
                         withContext(Dispatchers.Main) { allowedCats = emptySet(); expanded = null }
                     }
                 }) { Text("Whitelist leeren") }
@@ -446,9 +437,10 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                             AssistChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), onClick = { expanded = if (expanded == cat) null else cat }, label = { Text(cat) })
                             Switch(checked = allowed, onCheckedChange = { v ->
                                 scope.launch(Dispatchers.IO) {
-                                    if (v) db.kidCategoryAllowDao().insert(KidCategoryAllow(kidProfileId = kidId, contentType = type, categoryId = cat))
-                                    else db.kidCategoryAllowDao().disallow(kidId, type, cat)
-                                    val allowedNow = db.kidCategoryAllowDao().listForKidAndType(kidId, type).map { it.categoryId }.toSet()
+                                    val catBox = obx.boxFor(ObxKidCategoryAllow::class.java)
+                                    if (v) catBox.put(ObxKidCategoryAllow(kidProfileId = kidId, contentType = type, categoryId = cat))
+                                    else catBox.remove(catBox.query(ObxKidCategoryAllow_.kidProfileId.equal(kidId).and(ObxKidCategoryAllow_.contentType.equal(type)).and(ObxKidCategoryAllow_.categoryId.equal(cat))).build().find())
+                                    val allowedNow = catBox.query(ObxKidCategoryAllow_.kidProfileId.equal(kidId).and(ObxKidCategoryAllow_.contentType.equal(type))).build().find().map { it.categoryId }.toSet()
                                     withContext(Dispatchers.Main) { allowedCats = allowedNow }
                                 }
                             })
@@ -459,15 +451,15 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                             var blocked by remember(cat) { mutableStateOf<Set<Long>>(emptySet()) }
                             var allowedItems by remember(cat) { mutableStateOf<Set<Long>>(emptySet()) }
                             LaunchedEffect(cat) {
-                                val triple = withContext(Dispatchers.IO) {
-                                    val lst = db.mediaDao().byTypeAndCategory(type, cat)
-                                    val bl = db.kidContentBlockDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
-                                    val al = db.kidContentDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
-                                    Triple(lst, bl, al)
+                                withContext(Dispatchers.IO) {
+                                    val repo = com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, com.chris.m3usuite.prefs.SettingsStore(ctx))
+                                    val lst = repo.byTypeAndCategoryFiltered(type, cat)
+                                    val blockBox = obx.boxFor(ObxKidContentBlock::class.java)
+                                    val allowBox = obx.boxFor(ObxKidContentAllow::class.java)
+                                    val bl = blockBox.query(ObxKidContentBlock_.kidProfileId.equal(kidId).and(ObxKidContentBlock_.contentType.equal(type))).build().find().map { it.contentId }.toSet()
+                                    val al = allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kidId).and(ObxKidContentAllow_.contentType.equal(type))).build().find().map { it.contentId }.toSet()
+                                    withContext(Dispatchers.Main) { items = lst; blocked = bl; allowedItems = al }
                                 }
-                                items = triple.first
-                                blocked = triple.second
-                                allowedItems = triple.third
                             }
                             // If category is allowed: checking an item removes block; unchecking adds block.
                             // If category is not allowed: checking an item adds explicit allow; unchecking removes allow.
@@ -479,12 +471,15 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                                     Checkbox(checked = checked, onCheckedChange = { v ->
                                         scope.launch(Dispatchers.IO) {
                                             if (allowed) {
-                                                if (v) db.kidContentBlockDao().unblock(kidId, type, id) else db.kidContentBlockDao().insert(KidContentBlock(kidProfileId = kidId, contentType = type, contentId = id))
-                                                val blNow = db.kidContentBlockDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
+                                                val blockBox = obx.boxFor(ObxKidContentBlock::class.java)
+                                                if (v) blockBox.remove(blockBox.query(ObxKidContentBlock_.kidProfileId.equal(kidId).and(ObxKidContentBlock_.contentType.equal(type)).and(ObxKidContentBlock_.contentId.equal(id))).build().find())
+                                                else blockBox.put(ObxKidContentBlock(kidProfileId = kidId, contentType = type, contentId = id))
+                                                val blNow = blockBox.query(ObxKidContentBlock_.kidProfileId.equal(kidId).and(ObxKidContentBlock_.contentType.equal(type))).build().find().map { it.contentId }.toSet()
                                                 withContext(Dispatchers.Main) { blocked = blNow }
                                             } else {
-                                                if (v) db.kidContentDao().insert(KidContentItem(kidProfileId = kidId, contentType = type, contentId = id)) else db.kidContentDao().disallow(kidId, type, id)
-                                                val alNow = db.kidContentDao().listForKidAndType(kidId, type).map { it.contentId }.toSet()
+                                                val allowBox = obx.boxFor(ObxKidContentAllow::class.java)
+                                                if (v) allowBox.put(ObxKidContentAllow(kidProfileId = kidId, contentType = type, contentId = id)) else allowBox.remove(allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kidId).and(ObxKidContentAllow_.contentType.equal(type)).and(ObxKidContentAllow_.contentId.equal(id))).build().find())
+                                                val alNow = allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kidId).and(ObxKidContentAllow_.contentType.equal(type))).build().find().map { it.contentId }.toSet()
                                                 withContext(Dispatchers.Main) { allowedItems = alNow }
                                             }
                                         }
@@ -506,14 +501,14 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun PermissionsSheet(profile: Profile, onClose: () -> Unit) {
+private fun PermissionsSheet(profile: ObxProfile, onClose: () -> Unit) {
     val ctx = LocalContext.current
-    val db = remember { DbProvider.get(ctx) }
+    val obx = remember { ObxStore.get(ctx) }
     val scope = rememberCoroutineScope()
     var loading by remember { mutableStateOf(true) }
     var state by remember {
         mutableStateOf(
-            ProfilePermissions(
+            ObxProfilePermissions(
                 profileId = profile.id,
                 canOpenSettings = profile.type == "adult",
                 canChangeSources = profile.type == "adult",
@@ -527,7 +522,7 @@ private fun PermissionsSheet(profile: Profile, onClose: () -> Unit) {
     }
     LaunchedEffect(profile.id) {
         withContext(Dispatchers.IO) {
-            val row = db.profilePermissionsDao().byProfile(profile.id)
+            val row = obx.boxFor(ObxProfilePermissions::class.java).query(com.chris.m3usuite.data.obx.ObxProfilePermissions_.profileId.equal(profile.id)).build().findFirst()
             withContext(Dispatchers.Main) {
                 if (row != null) state = row
                 loading = false
@@ -561,7 +556,10 @@ private fun PermissionsSheet(profile: Profile, onClose: () -> Unit) {
                     Spacer(Modifier.width(8.dp))
                     Button(onClick = {
                         scope.launch(Dispatchers.IO) {
-                            db.profilePermissionsDao().upsert(state)
+                            val box = obx.boxFor(ObxProfilePermissions::class.java)
+                            val existing = box.query(com.chris.m3usuite.data.obx.ObxProfilePermissions_.profileId.equal(profile.id)).build().findFirst()
+                            if (existing != null) state = state.copy(id = existing.id)
+                            box.put(state)
                             withContext(Dispatchers.Main) { onClose() }
                         }
                     }) { Text("Speichern") }

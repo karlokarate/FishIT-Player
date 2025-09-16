@@ -35,7 +35,7 @@ fun BackupRestoreSection() {
 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Backup & Restore", style = MaterialTheme.typography.titleMedium)
-        if (status.isNotBlank()) LinearProgressIndicator(progress = (progress / 100f).coerceIn(0f, 1f), modifier = Modifier.fillMaxWidth())
+        if (status.isNotBlank()) LinearProgressIndicator(progress = { (progress / 100f).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = {
                 scope.launch {
@@ -48,4 +48,3 @@ fun BackupRestoreSection() {
         }
     }
 }
-

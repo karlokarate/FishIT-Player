@@ -9,7 +9,7 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 > Technologie-Stack
 >
 > - Android (Kotlin), Jetpack Compose, Navigation‑Compose  
-> - Room (SQLite), DataStore Preferences, WorkManager  
+> - DataStore Preferences, WorkManager  
 > - OkHttp (HTTP), Coil 3 (Bilder), Media3/ExoPlayer (Video)  
 > - Struktur: Single‑Module‑Projekt `app`
 
@@ -18,15 +18,14 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 ## Telegram (Login + Scaffold)
 
 - Feature Flag: Global in Settings (`tg_enabled`, default false). Zusatzoptionen: `tg_selected_chats_csv`, `tg_cache_limit_gb`.
-- Room v8: `MediaItem` erweitert um `source` (default `M3U`) sowie TG‑Referenzen (`tgChatId`, `tgMessageId`, `tgFileId`). Neue Tabelle `telegram_messages` mit `localPath`, `supportsStreaming`, `file(Unique)Id`, `thumbFileId`.
-- DAO: `TelegramDao`; Repo: `TelegramRepository` löst lokale Datei‑Pfad → `file://` URI für Playback auf, falls vorhanden.
-- DAO/Index: `TelegramDao` für Tabelle `telegram_messages` (chatId/messageId → fileId/uniqueId, caption, supportsStreaming, date, thumbFileId, localPath). Sync befüllt Index; DataSources aktualisieren `localPath` beim ersten Download.
+ - ObjectBox: Telegram messages are stored in `ObxTelegramMessage` (chatId/messageId/fileId/uniqueId/supportsStreaming/caption/date/localPath/thumbFileId). Repository/DataSources update OBX directly.
 - Login (Alpha): Reflection‑Bridge `telegram/TdLibReflection.kt` + `TelegramAuthRepository` (kein direkter TDLib‑Compile‑Dep). Settings: Button „Telegram verbinden“ (Telefon → Code → Passwort), auto DB‑Key‑Check, Status‑Debug.
 - Playback DataSource: `TelegramRoutingDataSource` für Media3 routet `tg://message?chatId=&messageId=` auf lokale Pfade und triggert bei Bedarf `DownloadFile(fileId)`; `localPath` wird persistiert.
 - Streaming DataSource: `TelegramTdlibDataSource` (gated via `tg_enabled` + AUTH) lädt/streamt Dateien progressiv (Seek) via TDLib; persistiert `localPath`; Fallback auf Routing/HTTP.
-- Build: `TG_API_ID`/`TG_API_HASH` als BuildConfig via sichere Lookup‑Kette (ohne Secrets im Repo). Reihenfolge: ENV → `/.tg.secrets.properties` (root, untracked) → `-P` Gradle‑Props → Default 0/leer. Packaging vorbereitet für TDLib (`armeabi-v7a`/`arm64-v8a`); ProGuard‑Keep für `org.drinkless.td.libcore.telegram.**`. Die JNI‑Lib `libtdjni.so` wird durch einen statischen Initializer in `org.drinkless.tdlib.Client` automatisch geladen.
-- Packaging: `:libtd` Android‑Library mit `jniLibs` (zunächst `arm64-v8a/libtdjni.so`). App hängt an `:libtd`, sodass TDLib zur Laufzeit vorhanden ist; BuildConfig `TG_API_ID`/`TG_API_HASH` kommen aus `gradle.properties`.
-- Build v7a: `scripts/tdlib-build-v7a.sh` kompiliert TDLib (JNI) für `armeabi-v7a` und kopiert `libtdjni.so` in das Modul.
+- Build: `TG_API_ID`/`TG_API_HASH` als BuildConfig via sichere Lookup‑Kette (ohne Secrets im Repo). Reihenfolge: ENV → `/.tg.secrets.properties` (root, untracked) → `-P` Gradle‑Props → Default 0/leer. Packaging: TDLib (arm64‑v8a), ProGuard‑Keep für `org.drinkless.td.libcore.telegram.**`. Die JNI‑Lib `libtdjni.so` wird durch einen statischen Initializer in `org.drinkless.tdlib.Client` automatisch geladen.
+- Packaging: `:libtd` Android‑Library mit `jniLibs` (`arm64-v8a/libtdjni.so`). App hängt an `:libtd`, sodass TDLib zur Laufzeit vorhanden ist; BuildConfig `TG_API_ID`/`TG_API_HASH` kommen aus `gradle.properties`.
+- Build TDLib/JNI: Single‑ABI arm64‑v8a wird mit statisch gelinktem BoringSSL gebaut und ins Modul kopiert.
+  - arm64: `scripts/tdlib-build-arm64.sh` (Phase‑2: LTO/GC‑sections/strip‑unneeded zur Größenreduktion)
  - Cache: `TelegramCacheCleanupWorker` trimmt lokale TD‑Dateien täglich auf `TG_CACHE_LIMIT_GB` (GB) – best‑effort Datei‑System‑Trim.
 
 
@@ -39,7 +38,28 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 - Min. Laufzeit-Voraussetzung: Netzwerkzugriff (für M3U/Xtream, Bilder).
 
 Telegram Gating
-- `tg_enabled` (Settings) und AUTHENTICATED (TDLib) sind Pflicht, bevor Sync/Picker/DataSources aktiv werden. Ohne diese Gateways sind alle Telegram‑Funktionen no‑op; M3U/Xtream bleibt unbeeinflusst.
+- `tg_enabled` (Settings) und AUTHENTICATED (TDLib) sind Pflicht, bevor Sync/Picker/DataSources aktiv werden. Ohne diese Gateways sind alle Telegram‑Funktionen no‑op; M3U/Xtream bleibt unbeeinflusst. Phase‑2: separater TDLib‑Service‑Prozess (eigenes `:tdlib`), FCM Push (`registerDevice`/`processPushNotification`) → weniger Polling (WorkManager als Fallback), QR‑Login zusätzlich.
+ - Start‑Up Verhalten: `TdLibReflection.available()` prüft nur die Klassenpräsenz (Class.forName mit `initialize=false`) und triggert keinen statischen Initializer in `org.drinkless.tdlib.Client`. Dadurch wird `libtdjni.so` erst geladen, wenn die Telegram‑Funktionalität tatsächlich aktiviert und genutzt wird. Bei FCM‑Push startet der Service TDLib lazy mit BuildConfig‑Keys, verarbeitet Push und bleibt ansonsten im Leerlauf.
+
+## Telegram Service Process
+
+- Service (`.telegram.service.TelegramTdlibService`) läuft in separatem Prozess `:tdlib` und hostet genau eine TDLib‑Client‑Instanz.
+- IPC via `Messenger` (minimal): Start/Params, Auth‑Kommandos (Phone/Code/Passwort/QR), Logout, Abfrage Auth‑State; Push‑Kommandos (`registerDevice`, `processPushNotification`); Lifecycle (`SetInBackground`).
+- Events: `REPLY_AUTH_STATE` bei Zustandswechseln.
+- Foreground: Vordergrund‑Modus bei interaktivem Login und aktiven Downloads (`UpdateFile`); stoppt im Leerlauf/bei AUTHENTICATED.
+- Network: beobachtet Connectivity und setzt `SetNetworkType(WiFi/Mobile/Other/None)` entsprechend.
+
+Push (FCM)
+- `FirebasePushService` (optional) registriert Token (opportunistisch) und leitet Daten‑Payload an den TDLib‑Service weiter.
+- Service startet TDLib bei erstem Token/Push lazy (BuildConfig TG‑Keys) und ruft `RegisterDevice`/`ProcessPushNotification` per Reflection.
+- Keine Foreground‑Nutzung für Push, minimaler RAM/CPU‑Footprint; ohne google‑services.json bleibt es no‑op.
+
+Client‑Wrapper (`.telegram.service.TelegramServiceClient`)
+- Bind/Unbind; Befehle (`start`, `requestQr`, `sendPhone`, `sendCode`, `sendPassword`, `getAuth`, `logout`, `registerFcm`, `processPush`, `setInBackground`).
+- `authStates(): Flow<String>` liefert Zustandswechsel an die UI/Repos.
+
+Repository/Settings Lifecycle
+- `TelegramAuthRepository` bevorzugt den Service (Fallback: Reflection). Settings binden den Service bei `ON_START` (senden `SetInBackground(false)`) und lösen bei `ON_STOP` `SetInBackground(true)` + Unbind aus.
 
 WSL/Linux Hinweise
 - Siehe `AGENTS.md` → „WSL/Linux Build & Test“ (Repo‑lokale Ordner `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`, empfohlene Env‑Variablen). Windows‑Builds bleiben kompatibel.
@@ -60,9 +80,16 @@ app/src/main/java/com/chris/m3usuite
 │   ├── http/HttpClient.kt                  # OkHttp mit UA/Referer/Extra-Headern aus SettingsStore
 │   ├── m3u/M3UParser.kt                    # Parser für M3U → MediaItem (Type-Heuristik)
 │   └── xtream/                             # Xtream Codes REST-Client & Models
-│       ├── XtreamClient.kt
+│       ├── XtreamClient.kt                 # canonical client (discovery + lists + details + EPG + play URLs)
 │       ├── XtreamConfig.kt                 # Konfiguration + Ableitung aus M3U-URL
 │       └── XtreamModels.kt
+        
+        Xtream Client Notes
+        - Discovery→Fetch: On first run, the app forces discovery and immediately fires the six reference list calls (live/vod/series: categories + streams).
+        - Wildcard category: when no category is selected, requests include `&category_id=0` to avoid empty panels on strict servers.
+        - VOD alias: client uses the discovered alias (`vod|movie|movies`) for categories/streams and falls back in a defined order.
+        - Telemetry: every `player_api.php?action=...` URL is logged at info level to aid debugging traffic sequences.
+        - WAF-friendly probes: discovery pings include explicit `action` and `category_id=0` so Cloudflare/WAF returns JSON instead of 521.
 ├── data/
 │   ├── db/                                 # Room: Entities, DAOs, Database
 │   │   ├── AppDatabase.kt                  # Versionierung, Migrations, Seeding (Adult Profile)
@@ -92,9 +119,13 @@ app/src/main/java/com/chris/m3usuite
 │   ├── auth/                               # ProfileGate (PIN, Profile wählen), CreateProfileSheet
 │   ├── components/                         # UI-Bausteine (Header, Carousels, Controls)
 │   ├── home/StartScreen.kt                 # „Gate“-Home: Suche, Carousels, Live-Favoriten
+│   │   - Reihen (Serien/Filme) laden lazy per Paging3 über ObjectBox; horizontale Rows mit Skeletons (fisch.png, Shimmer/Puls)
+│   │   - Live: Favoriten-Row bleibt; ohne Favoriten globale paged Live-Row mit EPG-Prefetch
 │   ├── screens/                            # Setup/Library/Details/Settings
 │   │   ├── PlaylistSetupScreen.kt          # Erststart: M3U/EPG/UA/Referer speichern & Import auslösen
 │   │   ├── LibraryScreen.kt                # Durchsuchen (Filter, Raster/Listen)
+│   │   │   - VOD: Kategorien zuerst; bei ausgewählter Kategorie horizontale, paginierte Row (Paging3 über ObjectBox)
+│   │   │     mit Material3 Skeleton‑Placeholders (Shimmer/Puls, fisch.png). EPG‑Prefetch für sichtbare Items bleibt aktiv.
 │   │   ├── LiveDetailScreen.kt             # Live-Details, Play/Favorit/Kids-Freigabe
 │   │   ├── VodDetailScreen.kt              # VOD-Details, Enrichment-Fetch, Resume
 │   │   ├── SeriesDetailScreen.kt           # Serien, Staffel/Episoden-Listing, Resume Next
@@ -104,8 +135,10 @@ app/src/main/java/com/chris/m3usuite
 │   ├── theme/                              # Farben, Typo, Theme
 │   └── util/Images.kt, AvatarModel.kt      # Coil-ImageRequests mit Headers aus Settings
 └── work/
-    ├── Workers.kt                          # XtreamRefreshWorker, XtreamEnrichmentWorker
-    ├── EpgRefreshWorker.kt                 # Periodisches Now/Next‑Refresh (15m) + Stale‑Cleanup
+    ├── Workers.kt                          # XtreamRefreshWorker, XtreamEnrichmentWorker (deaktiviert)
+    ├── XtreamDeltaImportWorker.kt          # Periodischer Delta‑Import (unmetered+charging) + one-shot trigger
+    ├── ObxKeyBackfillWorker.kt             # One‑shot Key‑Backfill (sort/provider/genre/year)
+    ├── (removed)                           # EPG periodic worker removed; OBX prefetch on-demand
     ├── SchedulingGateway.kt                # Zentrales Unique-Work Scheduling (KEEP/REPLACE)
     ├── ScreenTimeResetWorker.kt            # täglicher Reset der ScreenTime
     └── BootCompletedReceiver.kt            # Re-Scheduling nach Boot
@@ -119,9 +152,11 @@ Routen (aus `MainActivity`):
 `setup` → `gate` → (`library`/`browse`) → `live/{id}` | `vod/{id}` | `series/{id}` → `settings` → `profiles`
 
 1. **setup = `PlaylistSetupScreen`**
-   - Eingaben: M3U‑URL, optional EPG‑URL, User‑Agent, Referer.
-   - Speichert in `SettingsStore`, triggert M3U‑Import (*PlaylistRepository.refreshFromM3U*) oder Xtream‑Konfiguration+Import (*XtreamRepository*).
-   - Nach Erfolg: Scheduling `XtreamRefreshWorker` + `XtreamEnrichmentWorker`, Navigation zu `gate`.
+   - Eingaben: Erstauswahl zwischen M3U‑Link oder Xtream‑Login.  
+     - M3U‑Modus: M3U/EPG/UA/Referer; Xtream wird (falls get.php) automatisch abgeleitet.  
+     - Xtream‑Modus: Host/Port/HTTPS/User/Pass/Output; M3U (`get.php`) und EPG (`xmltv.php`) werden automatisch gebildet und gespeichert.  
+   - Speichert in `SettingsStore`, triggert OBX‑Delta‑Import (*XtreamObxRepository.importDelta*) oder M3U‑Fallback.  
+   - Nach Erfolg: `SchedulingGateway.scheduleAll()` (Xtream Delta periodic + Key‑Backfill + Telegram‑Cleanup; kein EPG‑Periodic), Navigation zu `gate`.
    - Unterstützt „VIEW“-Deep‑Links (URL vorbefüllt).
 
 2. **gate = Start/Home (`StartScreen`)**
@@ -132,11 +167,15 @@ Routen (aus `MainActivity`):
    - Optional: „Quick Import“ (Drive/Datei), sofern im Build/UI aktiviert.
 
 3. **library/browse = `LibraryScreen`**
-   - Browsing mit Suchfeld, Grid‑Ansicht, Filter/Sortier‑Heuristiken.
+   - Browsing mit Suchfeld, Grid‑Ansicht und dynamischer Gruppierung/Filter je Typ:
+     - VOD: Gruppierung Provider (normalisiert), Jahr, Genre; Textfilter. "Unbekannt" bündelt nicht zuordenbares.
+     - Serien: Gruppierung Provider (normalisiert), Jahr, Genre; Textfilter. Episoden on‑demand.
+     - Live: Gruppierung Provider (normalisiert) oder Genre (News/Sport/Kids/Music/Doku); kein Jahr; Textfilter.
+   - Expand/Collapse je Kategorie mit persistenter Ordnung (CSV in Settings), Rows laden lazy nach.
 
 4. **Details: `live/{id}`, `vod/{id}`, `series/{id}`**
    - Aktionen: Play (via `PlayerChooser`), Favorisieren, Kids freigeben/sperren.
-   - VOD lädt ggf. Details/Poster/Backdrop (Enrichment) über `XtreamRepository.enrichVodDetailsOnce`.
+   - VOD/Series Details/Poster/Episoden per OBX: delta‑import; Serien on‑demand via `XtreamObxRepository.importSeriesDetailOnce`.
 
 5. **player = `InternalPlayerScreen`**
    - Media3/ExoPlayer, Resume‑Handling (`ResumeRepository`), Untertitel‑Stil, Rotation‑Lock Option.
@@ -174,11 +213,15 @@ Wichtige DAOs & Constraints
 
 ## 5) Repositories (Domänenlogik)
 
+Hinweis (OBX‑Only für M3U/Xtream):
+- M3U/Xtream‑Pfade sind OBX‑first. Room‑DAOs in diesem Abschnitt existieren primär für Telegram‑Seite und Legacy‑Shims; UI‑Pfade dürfen nicht mehr auf Room‑Queries für M3U/Xtream zurückfallen.
+
 - PlaylistRepository
   - `refreshFromM3U()` lädt M3U über OkHttp, parst via `M3UParser`, ersetzt DB‑Inhalte der Typen live/vod/series.
   - `extraJson` enthält `addedAt` (Zeitstempel bleibt bei Re‑Import erhalten; Matching per URL).
 
-- XtreamRepository
+- XtreamRepository (adapts to new XtreamClient; Xtream-first import, M3U fallback)
+ - XtreamObxRepository: ObjectBox-first repository. Imports full content (categories, live, vod, series, episodes) and exposes paged lists, per-category lists, search (nameLower + category match), EPG prefetch, and EPG upsert helpers.
   - `configureFromM3uUrl()` leitet Host/Port/User/Pass/Output aus der M3U ab und speichert sie in `SettingsStore` (inkl. EPG‑Fallback).
   - `importAll()`: Vollabgleich Kategorien, Live, VOD, Serien, Episoden; `addedAt` konserviert (Matching per `streamId`).  
   - `enrichVodDetailsOnce(mediaId)` lädt Poster/Backdrop/Plot/Rating/Duration nach und aktualisiert `MediaItem`.
@@ -214,24 +257,55 @@ Backup/Restore
 
 ## 6) Core/HTTP & Media
 
-- HttpClientFactory: OkHttp‑Client, setzt User‑Agent, Referer und optionale Extra‑Header aus DataStore (einheitlich für Streams & Bilder).
+- HttpClientFactory: Singleton‑OkHttpClient mit zusammenführendem in‑Memory Cookie‑Jar (Session/CF‑Cookies bleiben erhalten). Headers kommen aus `RequestHeadersProvider`‑Snapshot. Einheitlich für Streams & Bilder.
 - Live‑Preview (HomeRows): nutzt ExoPlayer mit `DefaultHttpDataSource.Factory` und setzt Default‑Request‑Properties (User‑Agent/Referer) für Provider, die Header erzwingen. Status: zu testen durch Nutzer.
 - Images.kt: Liefert Coil ImageRequest mit denselben Headern.
-- M3UParser: Attribute‑Parser, `inferType()` (Heuristik: Group‑Title/Dateiendung).
-- EpgRepository: Liefert Now/Next mit persistentem Room‑Cache (`epg_now_next`), XMLTV‑Fallback bei leeren/fehlenden Xtream‑Antworten und kurzer In‑Memory‑TTL. Integrationen in Live‑Tiles und Live‑Detail.
-  - EPG‑Refresh läuft periodisch via `EpgRefreshWorker` (Standard 15 Minuten) mit Bereinigung veralteter Einträge (>24h).
+- M3UParser: Attribute‑Parser, `inferType()` (Heuristik: Provider‑Patterns, URL‑Substrings `series`/`movie(s)`/`vod`, Group‑Title, Dateiendung).  
+  - Fallback: Kompakte Xtream‑Pfade `/<user>/<pass>/<id>[.ext]` → `live`.  
+  - Sprachableitung: Wenn `group-title` fehlt, werden für VOD/Serien Sprache/Region aus `DE: …`, `[EN]` oder bekannten Namen/Codes erkannt und als `categoryName` verwendet; Titel werden von führenden Sprachpräfixen bereinigt.
+- EpgRepository: Liefert Now/Next mit Persistenz in ObjectBox `ObxEpgNowNext`, XMLTV‑Fallback bei leeren/fehlenden Xtream‑Antworten und kurzer In‑Memory‑TTL. Integrationen in Live‑Tiles und Live‑Detail. Periodischer Worker entfällt; Aktualisierung erfolgt on‑demand.
 - XtreamDetect: Ableitung von Xtream‑Creds aus `get.php`/Stream‑URLs; `parseStreamId` (unterstützt `<id>.<ext>`, Query `stream_id|stream`, HLS `.../<id>/index.m3u8`). Status: zu testen durch Nutzer.
+- CapabilityDiscoverer: Strenger Port‑Resolver. Ein Port gilt nur dann als „erreichbar“, wenn eine `player_api.php`‑Probe mit HTTP 2xx beantwortet wird und die Antwort parsebares JSON enthält. Probes setzen jetzt explizit `action` (`get_live_streams|get_series|get_vod_streams`) und `category_id=0` (Wildcard), um WAF/Cloudflare 521 zu vermeiden. HTTP‑Kandidaten priorisieren `8080`; `2095` wurde entfernt. Cache‑Treffer werden einmal revalidiert; bei Fehlschlag wird der Cache‑Eintrag verworfen und ein neuer Kandidatenlauf durchgeführt. Falls kein Kandidat gewinnt, greift als letzte Option der schema‑abhängige Standardport (80/443), den die folgenden Action‑Probes validieren. Wenn der Benutzer explizit einen Port angibt, wird der Resolver übersprungen und der Port unverändert verwendet.
 
 ---
 
 ## 7) Hintergrund‑Jobs (WorkManager)
 
-- XtreamRefreshWorker: Regelmäßiger Sync (Xtream.importAll oder Playlist.refreshFromM3U – je nach Konfiguration).
-- XtreamEnrichmentWorker: Lädt VOD‑Details nach (Poster, Plot, Dauer, Rating).
+- XtreamRefreshWorker: deaktiviert (no‑op). On‑demand Lazy Loading statt Periodic Sync.
+- XtreamEnrichmentWorker: deaktiviert (no‑op). Details werden on‑demand geladen.
+- XtreamDeltaImportWorker: Periodischer Delta‑Import (12h; unmetered + charging) + on‑demand One‑Shot Trigger.
+- ObxKeyBackfillWorker: One‑shot Backfill der neuen OBX‑Keys.
+
+ObjectBox Store (Primary)
+- Entities: `ObxCategory`, `ObxLive(nameLower)`, `ObxVod(nameLower)`, `ObxSeries(nameLower)`, `ObxEpisode`, `ObxEpgNowNext`.
+- Store bootstrap in `ObxStore` (singleton `BoxStore`).
+- Import: `XtreamObxRepository.importAllFull()` schreibt Full Content inkl. robust `categoryId`.
+- Search: Queries on `nameLower.contains(q)` + category-name matches; sort by `nameLower`.
+- EPG: `prefetchEpgForVisible` persists short EPG to `ObxEpgNowNext`. `LiveDetailScreen` subscribes to query results (event-based updates).
+
+ID Bridging for UI
+- OBX-backed lists adapt to the existing `MediaItem` view-model by encoding stable IDs into `MediaItem.id`:
+  - live: `1_000_000_000_000L + streamId`
+  - vod: `2_000_000_000_000L + vodId`
+  - series: `3_000_000_000_000L + seriesId`
+- Detail screens resolve these IDs to OBX rows and construct play URLs via `XtreamClient`. Legacy Room IDs remain supported for backwards compatibility during transition (favorites/resume).
+
+UI Consumption
+- Start: lists from ObjectBox; Live favorites prefer OBX; LiveRow EPG prefetch.
+- Library: full load path ObjectBox-first; category sheet from `ObxCategory` with counts + search; Room only if OBX empty.
+- SeriesDetail: episodes from OBX (playExt) when available; robust series episode URLs; Room fallback remains.
+- LiveDetail: initial repo Now/Next; subsequent updates via ObjectBox subscription.
   (über `SchedulingGateway` mit Unique‑Work geplant)
-- EpgRefreshWorker: Aktualisiert periodisch den Now/Next‑Cache; bereinigt veraltete Cache‑Einträge (>24h).
+- EPG periodic worker removed: No background WorkManager job. Freshness via on‑demand prefetch (visible rows/favorites at app start) writing to ObjectBox; Room remains as secondary cache for compatibility.
 - ScreenTimeResetWorker: Setzt täglich den Verbrauch der Kinder‑Profile zurück.
 - BootCompletedReceiver: Plant Worker nach Reboot neu.
+
+Profiles/Kids/Resume/Telegram (OBX)
+- Profiles: `ObxProfile` replaces Room `profiles`; `PermissionRepository` seeds/reads `ObxProfilePermissions`.
+- Kids whitelist: `ObxKidContentAllow`/`ObxKidCategoryAllow`/`ObxKidContentBlock` query keys referenced by `MediaQueryRepository` gating.
+- Screen Time: `ObxScreenTimeEntry` stores per‑day usage/limit; `ScreenTimeRepository` reads/writes ObjectBox.
+- Resume: `ObxResumeMark` stores VOD resume by encoded mediaId; series resume migrates later when stable episode keys are available.
+- Telegram: `ObxTelegramMessage` stores metadata/localPath; DataSources and Sync worker update this store.
 
 > Scheduling wird in `MainActivity` aktiviert, sobald `m3uUrl` gesetzt ist.
 
@@ -264,7 +338,7 @@ Export/Import‑Scope siehe Roadmap – Standard: alle DataStore‑Keys + option
 - `player/InternalPlayerScreen.kt` → interner Player inkl. Resume/Subs/Rotation.  
 - `core/xtream/*` → REST‑Client und Modelle für Xtream, plus Konfig‑Ableitung aus M3U.  
 - `data/repo/*` → sämtliche IO/Business‑Operationen (Import, Query, Profile, Resume, ScreenTime).  
-- `work/*` → periodische Tasks.  
+- `work/*` → on‑demand/maintenance Tasks (periodic jobs überwiegend entfernt).  
 - `prefs/SettingsStore.kt` → sämtliche Preferences und Typed Getter/Setter.  
 - `ui/util/Images.kt` → einheitliche Header für Coil/Streams.
  - `backup/*` → Backup/Restore Flow (UI + Manager + Formate).  
@@ -278,7 +352,7 @@ Export/Import‑Scope siehe Roadmap – Standard: alle DataStore‑Keys + option
 - Drive‑Integration fehlt vollständig (kein Auth/Drive‑Client im Projekt).  
 - Schnell‑Import liegt aktuell auf dem Home‑Screen; soll in `setup` (Onboarding).  
 - Import/Export für Settings existiert nicht – UI‑Hooks in `SettingsScreen` fehlen.  
-- Heuristik `M3UParser.inferType` kann bei exotischen Gruppen/Titeln fehlklassifizieren.  
+- Heuristik `M3UParser.inferType` kann bei exotischen Gruppen/Titeln fehlklassifizieren. JSON‑Overrides/Provider‑Profile (vNext) bleiben vorgesehen.
 - Kids‑Filter: `MediaQueryRepository` berechnet erlaubt‑Sets in Memory; bei großen Katalogen ggf. optimieren (Join im DAO).  
 - Worker starten abhängig von `m3uUrl`; bei Import‑Fehlern ist kein automatischer Retry geplant (nur WorkManager‑Retry).  
 - Headers: UA/Referer müssen für Streams und Bilder konsistent gesetzt werden (bereits implementiert; bei Anpassungen beachten).

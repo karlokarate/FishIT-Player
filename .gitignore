@@ -31,3 +31,7 @@ local.properties
 # Android signing keys
 **/*.jks
 **/*.keystore
+ 
+# Local Telegram API secrets (never commit)
+/.tg.secrets.properties
+.ua.secrets.properties

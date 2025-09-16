@@ -2,8 +2,9 @@ package com.chris.m3usuite.data.repo
 
 import android.content.Context
 import android.net.Uri
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.MediaItem
+import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.data.obx.ObxTelegramMessage
+import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -19,7 +20,7 @@ class TelegramRepository(
     private val context: Context,
     private val settings: SettingsStore
 ) {
-    private val db by lazy { DbProvider.get(context) }
+    private val box by lazy { ObxStore.get(context) }
 
     suspend fun isEnabled(): Boolean = settings.tgEnabled.first()
 
@@ -28,10 +29,9 @@ class TelegramRepository(
         if (item.source != "TG") return@withContext null
         val chatId = item.tgChatId ?: return@withContext null
         val msgId = item.tgMessageId ?: return@withContext null
-        val tg = db.telegramDao().byKey(chatId, msgId) ?: return@withContext null
+        val tg = box.boxFor(ObxTelegramMessage::class.java).query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId).and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(msgId))).build().findFirst() ?: return@withContext null
         val path = tg.localPath ?: return@withContext null
         val f = File(path)
         if (f.exists()) Uri.fromFile(f) else null
     }
 }
-

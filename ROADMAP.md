@@ -6,27 +6,62 @@ Zielbild:
 - **Settings‑Export/Import** in **Settings** (manuell + optional Auto‑Backup).
 - **Google‑Drive** (optional): Login + Zielordner wählen + Upload/Download.
 - Nach **Import**: automatischer **Refresh** (M3U/Xtream) und Worker‑Scheduling.
+  - Update 2025‑09‑11: Xtream‑Worker abgeschaltet (no‑op). Xtream wird on‑demand verwendet (Lazy Loading), M3U nur Fallback.
 
 Hinweis (Build & WSL)
 - Für konsistente Linux‑Builds unter WSL siehe `AGENTS.md` → Abschnitt „WSL/Linux Build & Test“ (Repo‑lokale Ordner: `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`, empfohlene Env‑Variablen).
 
 ---
 
-## Performance & Reliability Plan (Top 5)
+## Kurzfristige Roadmap (konkret, verifiziert)
 
-- UI‑Lifecycle + Strukturhärtung
-  - [Teilerledigt] Wichtige UI‑States migriert auf `collectAsStateWithLifecycle()` (Player, Settings, Header, BG, Live‑Row). Weitere Screens folgen inkrementell.
-  - [Teilerledigt] Side‑Effects auf `repeatOnLifecycle(STARTED)` umgestellt für: Routenwechsel (Fish‑Kick), FishSpin‑Trigger, EPG‑Observer (Live‑Detail), globale Header‑Snapshots.
-  - Monolithische Screens (Library, Start, Detail) weiter entflechten; State hoisten; stabile Keys/`rememberLazy*State`; Such‑Debounce; teure Berechnungen off‑thread.
-  - [Erledigt] JankStats aktiviert; Start‑Metriken verfeinern (Dashboards/Logs konsolidieren).
+- Lazy Loading global aktiv (OBX‑Prefetch sichtbar/Favoriten). Periodische Worker entfernt/no‑op (Xtream/EPG). Telegram‑Cleanup/Sync bleiben.
+- OBX‑Only (M3U/Xtream/EPG/Telegram): alle Pfade nutzen ObjectBox; Room entfernt.
 
-- Repo/Settings‑Hygiene für globale Performance
-  - EPG‑Altpfade entfernen; Cache‑Policy (LRU + TTL) final verifizieren.
-  - Unused Imports/Funktionen aufräumen; Detekt/Ktlint schärfen; Logging in Hotpaths drosseln.
+To‑Dos (umsetzbar):
+- [ ] UI‑Details anreichern: VOD/Serien‑Detailscreens um zusätzliche Felder erweitern (director/cast/genre/trailer/images; bei Serien optional Backdrop/Poster Fallbacks).
+- [ ] Import‑Feedback: Dezente Fortschrittsanzeige/Toast beim Delta‑Import (on‑demand und Settings‑Aktionen).
+  - Note: Settings now correctly detects a running on-demand Xtream delta job (name alignment); follow-up: optional progress surface/snackbar from WorkManager state.
+- [ ] EPG: Optional Stale‑Cleanup (OBX) und kleine Diagnoseansicht (aktuelle Now/Next je Sender).
+- [ ] Doku‑Hygiene: AGENTS/ARCHITECTURE/CHANGELOG konsistent halten (AGENTS als Single Source).
+  - Update: HTTP‑Logs Export in Settings umgesetzt (ZIP + Share Sheet). AGENTS/ARCH kept unchanged (keine Architektur‑Auswirkung).
 
-### Aufgaben (Plan 5‑Punkte – offen)
-- [ ] Lifecycle‑Sammlung migrieren; große Screens aufteilen; Start‑Metriken konsolidieren.
-- [ ] EPG‑Altpfade entfernen; Cache‑Policy verifizieren (LRU + TTL).
+Erledigt (Discovery/Delta‑Import – 2025‑09‑15)
+- [x] Xtream Discovery: Strenger Port‑Resolver – nur 2xx + parsebares JSON zählen als Treffer. Cloudflare 5xx/521 werden verworfen; Kandidatenlauf (z. B. 8080) findet funktionsfähigen Port. Fallback auf 80/443 bleibt letzte Option.
+- [x] Port‑Probes senden jetzt explizite Actions (`get_live_streams|get_series|get_vod_streams`) inkl. `category_id=*`, um WAF‑Regeln zu erfüllen. HTTP‑Kandidaten priorisieren `8080`; `2095` entfernt.
+- [x] Settings „Import aktualisieren“: Inline‑Delta‑Import wieder aktiviert (kein frühzeitiges `return@launch`), damit Port‑Fallback/Feedback sofort greifen; One‑Time‑Worker läuft parallel.
+
+Erledigt (Stabilität HTTP/Xtream – 2025‑09‑08)
+- [x] OkHttp als Singleton mit zusammenführendem Cookie‑Jar (Session/CF‑Cookies bleiben erhalten; Keep‑Alive aktiv).
+- [x] Interceptor nutzt nicht‑blockierende Header‑Snapshots (RequestHeadersProvider).
+- [x] Xtream‑Enrichment gedrosselt (Batch 75, kurze Delays, Retry bei 429/513).
+- [x] Auto‑Scheduling von Enrichment aus `scheduleAll` entfernt (manuell/gezielt triggern).
+  - Update 2025‑09‑11: Enrichment‑ und Refresh‑Worker deaktiviert; Xtream wird on‑demand genutzt.
+
+---
+
+Wiederaufnahmepunkt (2025‑09‑11) – ObjectBox + Xtream-first UI
+
+Status (Erledigt)
+- core/xtream ist Single Source of Truth (Detect/Config/Capabilities/Client/Models).
+- ObjectBox integriert als Primärstore: `ObxCategory`, `ObxLive/Vod/Series(nameLower)`, `ObxEpisode`, `ObxEpgNowNext`, `ObxStore`.
+- Import (`XtreamObxRepository.importAllFull`): Full Content inkl. robuster `categoryId` und Details (trailer, images, imdb/tmdb, episodes mit playExt).
+- EPG: `EpgRepository` persistiert Now/Next in Room + ObjectBox; `prefetchEpgForVisible` schreibt Short‑EPG direkt in ObjectBox.
+- Start/Library/SeriesDetail: ObjectBox‑first (Listen, Kategorien, Episoden). Category‑Sheet zieht aus `ObxCategory` (mit Counts + Suche). Suche voll OBX‑gestützt (nameLower + Kategorienamen).
+- LiveDetail: Event‑basierte Updates via ObjectBox‑Subscription (kein Polling).
+
+Nächste Schritte (To‑Do)
+- Optional: OBX‑Search um `sortTitleLower` erweitern (zusätzlicher Index) für konsistentere Treffer bei normalisierten Titeln.
+- [x] Provider/Genre/Year direkt in OBX‑Queries abbilden (normalisierte Felder `providerKey`/`genreKey`/`yearKey` + Indizes).
+- [x] Content‑Flows (Start/Library/Details/Suche) ausschließlich über ObjectBox.
+- [x] Schritt 2 (Teil A): Profile/Permissions/Kids/Resume/Telegram auf OBX-Repos umgestellt; ProfileGate, Start/Details/Player angepasst. Nächster Schritt: ProfileManagerScreen, restliche UI und komplettes Entfernen der Room‑DAOs.
+- UI: Schrittweise Migration verbleibender Room‑Pfade (z. B. globale Paging‑Sichten) auf ObjectBox; Room nur für Profile/Permissions/Resume/FTS belassen.
+- Cleanup: Alte Xtream‑Altpfade, ungenutzte Worker‑Trigger endgültig entfernen, sobald alle Screens umgestellt sind.
+- [x] Lazy Loading: Live/VOD/Series gruppiert über OBX‑Keys; sichtbare Rows laden paged. Header listen per Distinct‑Keys.
+- [x] Start/Home: Series/VOD paged; globale Live‑Row bei fehlenden Favoriten.
+- [x] Delta‑Import (OBX Upsert + Orphan‑Cleanup) inkl. Worker (periodisch + on-demand); One‑shot Key‑Backfill Worker.
+
+
 
 ## Telegram Integration (TDLib)
 
@@ -35,17 +70,47 @@ Status: Opt‑in Alpha live. Login/Picker/Sync/DataSource/Packaging umgesetzt; v
 - Erledigt
   - [x] Settings: Global toggle `tg_enabled`, Login (Telefon→Code→Passwort), auto DB‑Key‑Check, Status‑Debug.
   - [x] Chat/Folder Picker: getrennte Quellen für Film/Serien Sync (CSV in Settings).
-  - [x] DB: `MediaItem.source=TG`, `telegram_messages`, Episode.tg* + Migration v8→v9.
+  - [x] DB: Telegram index via `ObxTelegramMessage`; DataSources/Service updaten `localPath` direkt in OBX.
   - [x] Worker: `TelegramSyncWorker` (Heuristik SxxExx, Dedupe, Mapping auf VOD/Series).
   - [x] Player: `TelegramTdlibDataSource` (Streaming) + `TelegramRoutingDataSource` (lokal) + tg:// URIs in UI/Autoplay.
-  - [x] Packaging: `:libtd` mit `arm64-v8a/libtdjni.so`; Script `scripts/tdlib-build-v7a.sh` für `armeabi-v7a`.
+  - [x] Packaging: `:libtd` mit `arm64-v8a/libtdjni.so`. v7a entfällt.
+  - [x] v7a Fix: BoringSSL statisch in `libtdjni.so` gelinkt, um 32‑bit OpenSSL‑Dyn‑Deps zu vermeiden.
 
 - Nächste Schritte
   - [x] Heuristik ausbauen (deutsche Schreibweisen, Episoden‑Titel), Container/Ext ableiten, Laufzeit. (v1: S/E de‑Regex, ext/duration best‑effort)
   - [x] Fortschritt/Status UI für Sync (Sheets/Toasts), Retry‑Strategie, Throttling. (v1: Settings zeigt laufenden Sync + Zähler)
   - [x] Cache‑Policy (GB/TTL) durchsetzen (Cleanup Worker), Limits pro Quelle. (v1: GB‑Limit, täglicher Trim)
   - [x] Thumbs/Chat‑Photos in Poster‑Pipeline (Coil) integrieren. (v1: Nachricht‑Thumb als Poster, Chat‑Photo für Serien)
-  - [ ] Optional: CI‑Jobs zum Bauen der TDLib‑.so für v7a/v8a.
+  - [ ] Optional: CI‑Jobs zum Bauen der TDLib‑.so für arm64.
+
+### Phase 2 — Next‑gen TDLib Integration (State of the Art)
+- Auth & Security
+  - [x] QR‑Login unterstützen (`requestQrCodeAuthentication`) zusätzlich zu Telefon/Code/Passwort.
+  - [x] 2FA: `AuthorizationStateWaitPassword` (Dialog + Service; senden/prüfen Passwort).
+  - [ ] E‑Mail‑Flows: `AuthorizationStateWaitEmailAddress`, `AuthorizationStateWaitEmailCode` (später; UI/Service‑Kommandos vorbereiten).
+  - [x] DB‑Verschlüsselung: 256‑bit `databaseEncryptionKey` einmalig generieren, im Android Keystore lagern (AES‑GCM), beim Start `checkDatabaseEncryptionKey`.
+  - [x] `TdlibParameters` voll befüllen (use*Database, systemLanguageCode, deviceModel, systemVersion, applicationVersion, files/database dirs) und genau einmal setzen.
+- Prozess‑/Lebenszyklus
+  - [x] TDLib in dediziertem Service in separatem Prozess (`android:process=":tdlib"`) betreiben; Foreground nur bei aktiven Downloads/Login.
+  - [x] `setInBackground(true/false)` an App‑Lifecycle koppeln; `setNetworkType` bei Konnektivitätswechsel aktualisieren.
+- Push‑Sync (FCM)
+  - [x] FCM integrieren: `registerDevice` mit Token; in Service `processPushNotification` weiterreichen. Optional ohne google‑services.json lauffähig (No‑op wenn nicht konfiguriert).
+  - [x] Polling reduzieren: Updates ereignisgetrieben (Basis): Service wertet TDLib‑Updates aus und indiziert Minimal‑Metadaten. WorkManager bleibt Backfill/Fallback.
+- Files/Streaming & Index
+  - [x] Updates‑First: `UpdateNewMessage`/`UpdateMessageContent` für Index (Minimal‑Metadaten in Room). Folgearbeiten: vollständige Medientyp‑Erkennung/Mapping.
+  - [ ] Backfill zielgerichtet: `searchChatMessages`/Filter statt Vollverlauf.
+  - [x] Downloads priorisieren: `downloadFile(..., priority, offset, limit, synchronous=false)` + `UpdateFile` auswerten (Pfad/Progress) → Foreground steuern; (DB `localPath` bislang via DataSources, Service‑Pfad folgt).
+  - [x] Playback weiter über progressive TDLib‑Downloads (Seek) mit Fallback Routing/HTTP.
+- Storage & Cleanup
+  - [ ] `getStorageStatistics` nutzen für intelligente Bereinigung (LRU/kaum genutzt) statt reiner GB‑Grenze; Worker bleibt als Guardrail.
+- API‑Schicht & Logging
+  - [x] Eine Client‑Instanz pro Session im Service; Repository/Client‑Wrapper für IPC.
+  - [ ] Logging kontrollieren: `setLogStream` (optional Datei), `setVerbosityLevel(1)` in Prod; Debug gezielt aktivierbar.
+- Versionierung & Build‑Hygiene
+  - [ ] JNI/Java immer aus demselben TDLib Tag/Commit bauen; `TdApi.java` regenerieren.
+  - [x] Start‑Assertion: einfache Binding‑Prüfung (`verifyBindings`) → Logwarnung bei möglichem Mismatch.
+- Größenoptimierung (arm64)
+  - [ ] `tdlib-build-arm64.sh`: LTO (`-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON`), `-ffunction-sections -fdata-sections`, Linker `--gc-sections --icf=safe`, `-fvisibility=hidden`, `llvm-strip --strip-unneeded`.
 
 ## 0) Architekturentscheidungen
 
@@ -68,6 +133,7 @@ Status: Opt‑in Alpha live. Login/Picker/Sync/DataSource/Packaging umgesetzt; v
 - Beim erfolgreichen Import:
   - Settings in DataStore schreiben → `XtreamRepository.configureFromM3uUrl()` (falls M3U gesetzt).  
   - `XtreamRefreshWorker.schedule(...)` + `XtreamEnrichmentWorker.schedule(...)`.  
+    - Update 2025‑09‑11: Beide no‑op; EPG‑PeriodicWorker wurde inzwischen entfernt (Lazy Prefetch übernimmt).
   - Navigation zu `gate`.
 
 ### 1.2 Home (`StartScreen.kt`)
@@ -149,13 +215,13 @@ Hinweis: Lokaler Export/Import (SAF) ist implementiert.
 
 ---
 
-## 6) Aufgabenliste (Checkliste – offen)
+## Aufgabenliste (Checkliste – offen)
 
-- [ ] `PlaylistSetupScreen`: Lokalen Schnell‑Import ergänzen; nach Schnell‑Import Import/Worker starten.
-- [ ] `SettingsScreen`: Drive‑Einstellungen und Drive‑Import/Export integrieren.
-- [ ] (Optional) `drive/DriveAuth.kt` + `drive/DriveClient.kt` + Gradle‑Deps (vollwertig statt Shim).
-- [ ] (Optional) `work/SettingsAutoBackupWorker.kt`.
-- [ ] Unit‑ & UI‑Tests ergänzen.
+- [ ] UI‑Details anreichern (neue Metadaten aus Repos einbinden).
+- [x] Room vollständig entfernen (OBX‑Only). M3U/Xtream/EPG/Telegram/Start/Library/Details/Worker nutzen OBX. Room‑Dateien/Deps entfernt; UI/Repos angepasst.
+- [ ] SchedulingGateway: tote Pfade/Refs entfernen, Doku angleichen.
+- [ ] Drive‑Integration (optional Phase 2): Auth/Upload/Download für Settings‑Backup.
+- [ ] Unit‑ & UI‑Tests aktualisieren (OBX‑Pfade, Lazy Prefetch, Details‑Rendering).
 
 Erledigt (Search v1.5 – FTS)
 - [x] Room‑FTS4 über `name/sortTitle` mit `unicode61` (`remove_diacritics=2`).
@@ -228,7 +294,7 @@ Akzeptanz (Ergänzungen)
 Erledigt (EPG) – 2025‑08‑29
 - Persistenter EPG‑Cache (Room `epg_now_next`) inkl. TTL und Bereinigung.
 - XMLTV Multi‑Indexing und Fallback (auch ohne Xtream).
-- Hintergrund‑Worker `EpgRefreshWorker` (15 min) + Scheduling.
+  - Hintergrund‑Worker entfernt: EPG wird on‑demand (sichtbare Tiles/Favoriten beim App‑Start) nach OBX vorgepflegt.
 - UI: Live‑Tiles mit Programmtitel + Fortschrittsbalken.
 - Xtream‑Import: Merge `epg_channel_id` aus DB, falls fehlend.
 - Xtream‑Detection: kompaktes URL‑Schema unterstützt.
@@ -257,6 +323,8 @@ m3uSuite stabilisieren und beschleunigen (Parsing/EPG/DB/Netzwerk), UI straffen 
 ## 0) Status-Snapshot (aus dem Repo)
 - **Projekt**: Android‑App in **Kotlin**, Gradle‑Build, Ordner `app/`, `analysis_epg/`, `epg_inputs/`. :contentReference[oaicite:1]{index=1}
 - **Domänenmodule (implizit)**: M3U‑Parser, EPG‑Handling, Netzwerk (OkHttp/Coil), Playback (Media3/Exo), Room‑DB, WorkManager, Compose UI.
+ - **Workers aktiv**: XtreamDeltaImport (periodisch + on‑demand), TelegramCacheCleanup (periodisch), ScreenTimeReset (täglich), TelegramSync (on‑demand), ObxKeyBackfill (one‑shot).  
+   **Workers entfernt/no‑op**: EPG Refresh (entfernt), Xtream Refresh/Enrichment (no‑op).
 
 > Hinweis: Inhalte der alten `ROADMAP*.md` sind im Browser‑Plugin nicht lesbar; erledigte Punkte wurden daher **aus Erfahrungsstand und Code‑Struktur** bereinigt und die erfahrungsgemäß noch offenen Themen (Settings‑Hygiene, Scheduling/Lifecycle, Suche/Performance, EPG‑Caching) übernommen.
 
@@ -280,7 +348,8 @@ m3uSuite stabilisieren und beschleunigen (Parsing/EPG/DB/Netzwerk), UI straffen 
   _Akzeptanz:_ Kein Doppel‑Refresh, Akku‑Last sinkt messbar (Android Battery Historian).
 
 - [ ] **M3U‑Parser „Provider‑Pattern“-Tabelle**  
-  _Deliverable:_ Erweiterbare Regex‑Tabelle (HLS‑Pfade, `channel/…`, `index.m3u8`, Query‑Flags) + optional JSON‑Overrides.  
+  _Status:_ Erste Ausbaustufe umgesetzt (URL‑Heuristiken für `series`/`movie(s)`/`vod`, kompakte Xtream‑Pfade).  
+  _Deliverable:_ Erweiterbare Regex‑Tabelle (HLS‑Pfade, `channel/…`, `index.m3u8`, Query‑Flags) + optionale JSON‑Overrides (offen) und Provider‑Spezifische Lang/Group‑Mapper.  
   _Akzeptanz:_ Fehlklassifikationen bei Test‑Playlists <1 %.
 
 - [ ] **EPG‑Cache auf monotone Zeitquelle**  

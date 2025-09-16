@@ -8,11 +8,9 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import androidx.work.WorkerParameters
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.Episode
-import com.chris.m3usuite.data.db.MediaItem
+import com.chris.m3usuite.data.obx.ObxStore
+// Removed Room dependencies; Telegram sync is OBX-only
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.data.db.TelegramMessage
 import com.chris.m3usuite.telegram.TdLibReflection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -36,7 +34,7 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
         if (auth != TdLibReflection.AuthState.AUTHENTICATED) {
             return@withContext Result.success() // do nothing unless authorized
         }
-        val db = DbProvider.get(applicationContext)
+        val obx = ObxStore.get(applicationContext)
 
         val chatIdsCsv = when (mode) {
             MODE_VOD -> store.tgSelectedVodChatsCsv.first()
@@ -56,33 +54,7 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
             var seriesStreamId: Int? = null
             if (mode == MODE_SERIES) {
                 seriesStreamId = stableSeriesIdFromChat(chatId)
-                val parent = db.mediaDao().seriesByStreamId(seriesStreamId)
-                if (parent == null) {
-                    val m = MediaItem(
-                        id = 0,
-                        type = "series",
-                        streamId = seriesStreamId,
-                        name = chatTitle,
-                        sortTitle = chatTitle,
-                        categoryId = null,
-                        categoryName = "Telegram",
-                        logo = null,
-                        poster = downloadChatPhotoAsPoster(client, chatObj),
-                        backdrop = null,
-                        epgChannelId = null,
-                        year = null,
-                        rating = null,
-                        durationSecs = null,
-                        plot = null,
-                        url = null,
-                        extraJson = null,
-                        source = "TG",
-                        tgChatId = chatId,
-                        tgMessageId = null,
-                        tgFileId = null
-                    )
-                    db.mediaDao().upsertAll(listOf(m))
-                }
+                // No Room parent creation; OBX import path handles Series entities
             }
 
             var fromMessageId = 0L
@@ -104,28 +76,40 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
                     val thumbFileId = TdLibReflection.extractThumbFileId(content)
                     val title = TdLibReflection.extractCaptionOrText(msg)?.takeIf { it.isNotBlank() } ?: "Telegram ${msgId}"
 
-                    // index the message
-                    db.telegramDao().upsertAll(listOf(TelegramMessage(
-                        chatId = chatId,
-                        messageId = msgId,
-                        fileId = fileInfo.fileId,
-                        fileUniqueId = fileUniqueId,
-                        supportsStreaming = supportsStreaming,
-                        caption = title,
-                        date = date,
-                        localPath = fileInfo.localPath,
-                        thumbFileId = thumbFileId
-                    )))
-
-                    if (mode == MODE_VOD) {
-                        val posterPath = thumbFileId?.let { downloadSmallFile(client, it) }?.let { p -> if (p.isNotBlank()) "file://${p}" else null }
-                        upsertVod(db, chatId, msgId, fileInfo.fileId, title, posterPath, content)
-                    } else {
-                        val epKey = stableEpisodeId(chatId, msgId)
-                        val (season, epnum) = parseSeasonEpisode(title) ?: continue
-                        val posterPath = thumbFileId?.let { downloadSmallFile(client, it) }?.let { p -> if (p.isNotBlank()) "file://${p}" else null }
-                        upsertEpisode(db, seriesStreamId!!, epKey, season, epnum, title, chatId, msgId, fileInfo.fileId, posterPath, content)
+                    // Soft dedupe: if a message with same uniqueId already indexed, skip media upsert
+                    var skipMedia = false
+                    if (!fileUniqueId.isNullOrBlank()) {
+                        val prior = runCatching {
+                            obx.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+                                .query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.fileUniqueId.equal(fileUniqueId)).build().findFirst()
+                        }.getOrNull()
+                        if (prior != null && (prior.chatId != chatId || prior.messageId != msgId)) {
+                            skipMedia = true
+                        }
                     }
+
+                    // index the message
+                    runCatching {
+                        val box = obx.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+                        val row = com.chris.m3usuite.data.obx.ObxTelegramMessage(
+                            chatId = chatId,
+                            messageId = msgId,
+                            fileId = fileInfo.fileId,
+                            fileUniqueId = fileUniqueId,
+                            supportsStreaming = supportsStreaming,
+                            caption = title,
+                            date = date,
+                            localPath = fileInfo.localPath,
+                            thumbFileId = thumbFileId
+                        )
+                        val existing = box.query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId).and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(msgId))).build().findFirst()
+                        if (existing != null) row.id = existing.id
+                        box.put(row)
+                    }
+
+                    // Media upserts no longer target Room; OBX import handles content population.
+                    // Optionally, we could tag OBX items with TG references in future.
+                    
                     totalProcessed++
                     setProgress(workDataOf("chatId" to chatId, "processed" to totalProcessed))
                 }
@@ -136,80 +120,7 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
         Result.success()
     }
 
-    private suspend fun upsertVod(
-        db: com.chris.m3usuite.data.db.AppDatabase,
-        chatId: Long,
-        messageId: Long,
-        fileId: Int,
-        title: String,
-        posterFileUrl: String?,
-        content: Any?
-    ) {
-        val dao = db.mediaDao()
-        val existing = dao.byTelegram(chatId, messageId)
-        val sorted = title
-        val duration = extractDurationSecs(content)
-        val containerExt = deriveExtension(content, title)
-        val item = MediaItem(
-            id = existing?.id ?: 0,
-            type = "vod",
-            streamId = null,
-            name = title,
-            sortTitle = sorted,
-            categoryId = null,
-            categoryName = "Telegram",
-            logo = null,
-            poster = posterFileUrl ?: existing?.poster,
-            backdrop = null,
-            epgChannelId = null,
-            year = null,
-            rating = null,
-            durationSecs = duration ?: existing?.durationSecs,
-            plot = null,
-            url = null,
-            extraJson = null,
-            source = "TG",
-            tgChatId = chatId,
-            tgMessageId = messageId,
-            tgFileId = fileId
-        )
-        dao.upsertAll(listOf(item))
-    }
-
-    private suspend fun upsertEpisode(
-        db: com.chris.m3usuite.data.db.AppDatabase,
-        seriesStreamId: Int,
-        episodeId: Int,
-        season: Int,
-        epnum: Int,
-        title: String,
-        chatId: Long,
-        messageId: Long,
-        fileId: Int,
-        posterFileUrl: String?,
-        content: Any?
-    ) {
-        val dao = db.episodeDao()
-        val prior = dao.byEpisodeId(episodeId)
-        val duration = extractDurationSecs(content)
-        val containerExt = deriveExtension(content, title)
-        val ep = Episode(
-            id = prior?.id ?: 0,
-            seriesStreamId = seriesStreamId,
-            episodeId = episodeId,
-            season = season,
-            episodeNum = epnum,
-            title = title,
-            plot = null,
-            durationSecs = duration ?: prior?.durationSecs,
-            containerExt = containerExt ?: prior?.containerExt,
-            poster = posterFileUrl ?: prior?.poster,
-            tgChatId = chatId,
-            tgMessageId = messageId,
-            tgFileId = fileId
-        )
-        dao.upsertAll(listOf(ep))
-    }
+    // Note: legacy Room upsert methods removed; Telegram index is OBX-only.
 
     private fun parseSeasonEpisode(text: String): Pair<Int, Int>? {
         val s = text.lowercase()
@@ -285,7 +196,10 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
 
         fun enqueue(context: Context, mode: String) {
             val data = Data.Builder().putString(KEY_MODE, mode).build()
-            val req = OneTimeWorkRequestBuilder<TelegramSyncWorker>().setInputData(data).build()
+            val req = OneTimeWorkRequestBuilder<TelegramSyncWorker>()
+                .setInputData(data)
+                .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, java.time.Duration.ofSeconds(30))
+                .build()
             val unique = if (mode == MODE_VOD) "tg_sync_vod" else "tg_sync_series"
             WorkManager.getInstance(context).enqueueUniqueWork(unique, ExistingWorkPolicy.REPLACE, req)
         }

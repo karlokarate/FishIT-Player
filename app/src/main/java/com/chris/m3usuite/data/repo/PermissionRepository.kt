@@ -1,9 +1,9 @@
 package com.chris.m3usuite.data.repo
 
 import android.content.Context
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.Profile
-import com.chris.m3usuite.data.db.ProfilePermissions
+import com.chris.m3usuite.data.obx.ObxProfile
+import com.chris.m3usuite.data.obx.ObxProfilePermissions
+import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -20,7 +20,7 @@ data class Permissions(
 )
 
 class PermissionRepository(private val context: Context, private val settings: SettingsStore) {
-    private val db get() = DbProvider.get(context)
+    private val box get() = ObxStore.get(context)
 
     private fun defaultsFor(type: String): Permissions = when (type) {
         "adult" -> Permissions(
@@ -55,13 +55,14 @@ class PermissionRepository(private val context: Context, private val settings: S
     suspend fun current(): Permissions = withContext(Dispatchers.IO) {
         val id = settings.currentProfileId.first()
         if (id <= 0) return@withContext defaultsFor("adult")
-        val prof = db.profileDao().byId(id) ?: return@withContext defaultsFor("adult")
-        val row = db.profilePermissionsDao().byProfile(id)
+        val prof = box.boxFor(ObxProfile::class.java).get(id) ?: return@withContext defaultsFor("adult")
+        val permBox = box.boxFor(ObxProfilePermissions::class.java)
+        val row = permBox.query(com.chris.m3usuite.data.obx.ObxProfilePermissions_.profileId.equal(id)).build().findFirst()
         if (row == null) {
             // Seed defaults lazily
             val d = defaultsFor(prof.type)
-            db.profilePermissionsDao().upsert(
-                ProfilePermissions(
+            permBox.put(
+                ObxProfilePermissions(
                     profileId = id,
                     canOpenSettings = d.canOpenSettings,
                     canChangeSources = d.canChangeSources,
@@ -86,4 +87,3 @@ class PermissionRepository(private val context: Context, private val settings: S
         }
     }
 }
-

@@ -5,8 +5,9 @@ import android.net.Uri
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.FileDataSource
-import com.chris.m3usuite.data.db.DbProvider
+import com.chris.m3usuite.data.obx.ObxStore
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import java.io.EOFException
 import java.io.IOException
 
@@ -43,9 +44,9 @@ class TelegramRoutingDataSource(
     private fun buildTelegramDataSource(uri: Uri): DataSource? {
         val chatId = uri.getQueryParameter("chatId")?.toLongOrNull() ?: return null
         val msgId = uri.getQueryParameter("messageId")?.toLongOrNull() ?: return null
-        val db = DbProvider.get(context)
+        val obx = ObxStore.get(context)
         // 1) Try local path
-        val path = runBlocking { db.telegramDao().byKey(chatId, msgId)?.localPath }
+        val path = runBlocking { obx.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java).query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId).and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(msgId))).build().findFirst()?.localPath }
         if (path != null) {
             val f = java.io.File(path)
             if (f.exists()) {
@@ -54,9 +55,11 @@ class TelegramRoutingDataSource(
                 return FileDataSource()
             }
         }
-        // 2) Try to trigger download via TDLib if available and fileId is known in DB
+        // 2) Try to trigger download via TDLib if enabled, available, and fileId is known in DB
         runCatching {
-            if (TdLibReflection.available()) {
+            val store = com.chris.m3usuite.prefs.SettingsStore(context)
+            val enabled = runBlocking { store.tgEnabled.first() }
+            if (enabled && TdLibReflection.available()) {
                 val flow = kotlinx.coroutines.flow.MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
                 val client = TdLibReflection.getOrCreateClient(context, flow)
                 if (client != null) {
@@ -65,7 +68,7 @@ class TelegramRoutingDataSource(
                         TdLibReflection.buildGetAuthorizationState()?.let { TdLibReflection.sendForResult(client, it, 500) }
                     )
                     if (auth == TdLibReflection.AuthState.AUTHENTICATED) {
-                        val tg = runBlocking { db.telegramDao().byKey(chatId, msgId) }
+                        val tg = runBlocking { obx.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java).query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId).and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(msgId))).build().findFirst() }
                         val fid = tg?.fileId
                         if (fid != null && fid > 0) {
                             val dl = TdLibReflection.buildDownloadFile(fid, 16, 0, 0, false)
@@ -78,7 +81,12 @@ class TelegramRoutingDataSource(
                                 val info = fo?.let { TdLibReflection.extractFileInfo(it) }
                                 val pnow = info?.localPath
                                 if (!pnow.isNullOrBlank() && java.io.File(pnow).exists()) {
-                                    runBlocking { db.telegramDao().updateLocalPath(chatId, msgId, pnow) }
+                                    runBlocking {
+                                        val b = obx.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+                                        val row = b.query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId).and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(msgId))).build().findFirst() ?: com.chris.m3usuite.data.obx.ObxTelegramMessage(chatId = chatId, messageId = msgId)
+                                        row.localPath = pnow
+                                        b.put(row)
+                                    }
                                     break
                                 }
                                 Thread.sleep(120)
@@ -91,7 +99,7 @@ class TelegramRoutingDataSource(
         }
         // Short wait-loop (up to ~2s) for localPath to appear
         repeat(10) {
-            val p = runBlocking { db.telegramDao().byKey(chatId, msgId)?.localPath }
+            val p = runBlocking { obx.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java).query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId).and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(msgId))).build().findFirst()?.localPath }
             if (p != null) {
                 val f = java.io.File(p)
                 if (f.exists()) {

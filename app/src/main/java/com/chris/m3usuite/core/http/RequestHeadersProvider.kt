@@ -26,7 +26,8 @@ object RequestHeadersProvider {
         scope.launch {
             combine(store.userAgent, store.referer, store.extraHeadersJson) { ua, ref, extrasJson ->
                 val base = buildMap<String, String> {
-                    put("User-Agent", ua.ifBlank { "IBOPlayer/1.4 (Android)" })
+                    val fallbackUa = com.chris.m3usuite.BuildConfig.DEFAULT_UA.ifBlank { "IBOPlayer/1.4 (Android)" }
+                    if (ua.isNotBlank()) put("User-Agent", ua) else if (fallbackUa.isNotBlank()) put("User-Agent", fallbackUa)
                     if (ref.isNotBlank()) put("Referer", ref)
                 }
                 merge(base, parseExtraHeaders(extrasJson))
@@ -43,7 +44,8 @@ object RequestHeadersProvider {
     suspend fun collect(store: SettingsStore) {
         combine(store.userAgent, store.referer, store.extraHeadersJson) { ua, ref, extrasJson ->
             val base = buildMap<String, String> {
-                put("User-Agent", ua.ifBlank { "IBOPlayer/1.4 (Android)" })
+                val fallbackUa = "IBOPlayer/1.4 (Android)"
+                if (ua.isNotBlank()) put("User-Agent", ua) else if (fallbackUa.isNotBlank()) put("User-Agent", fallbackUa)
                 if (ref.isNotBlank()) put("Referer", ref)
             }
             merge(base, parseExtraHeaders(extrasJson))
@@ -67,11 +69,13 @@ object RequestHeadersProvider {
     }
 
     suspend fun defaultHeaders(store: SettingsStore): Map<String, String> {
-        val ua = store.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
+        val storedUa = store.userAgent.first()
+        val fallbackUa = com.chris.m3usuite.BuildConfig.DEFAULT_UA.ifBlank { "IBOPlayer/1.4 (Android)" }
+        val ua = if (storedUa.isNotBlank()) storedUa else fallbackUa
         val ref = store.referer.first()
         val extrasJson = store.extraHeadersJson.first()
         val base = buildMap {
-            put("User-Agent", ua)
+            if (ua.isNotBlank()) put("User-Agent", ua)
             if (ref.isNotBlank()) put("Referer", ref)
         }
         return merge(base, parseExtraHeaders(extrasJson))

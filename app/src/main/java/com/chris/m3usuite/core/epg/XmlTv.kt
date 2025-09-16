@@ -5,6 +5,7 @@ import android.util.Xml
 import com.chris.m3usuite.core.http.HttpClientFactory
 import com.chris.m3usuite.prefs.SettingsStore
 import okhttp3.Request
+import android.util.Log
 import org.xmlpull.v1.XmlPullParser
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -32,8 +33,15 @@ object XmlTv {
             if (url.isBlank()) return@withContext null to null
             val client = HttpClientFactory.create(context, settings)
             val req = okhttp3.Request.Builder().url(url).build()
+            try {
+                val uaVal = settings.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
+                Log.d("XmlTv", "currentNext url=\"${url}\" chan=${channelId} ua=\"${uaVal}\"")
+            } catch (_: Throwable) {}
             client.newCall(req).execute().use { res ->
-                if (!res.isSuccessful) return@withContext null to null
+                if (!res.isSuccessful) {
+                    Log.w("XmlTv", "status=${res.code} chan=${channelId}")
+                    return@withContext null to null
+                }
                 val body = res.body ?: return@withContext null to null
                 val parser: XmlPullParser = Xml.newPullParser()
                 parser.setInput(body.byteStream(), null)
@@ -95,8 +103,15 @@ object XmlTv {
             if (url.isBlank()) return@withContext emptyMap()
             val client = HttpClientFactory.create(context, settings)
             val req = okhttp3.Request.Builder().url(url).build()
+            try {
+                val uaVal = settings.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
+                Log.d("XmlTv", "index url=\"${url}\" chans=${channelIds.size} ua=\"${uaVal}\"")
+            } catch (_: Throwable) {}
             client.newCall(req).execute().use { res ->
-                if (!res.isSuccessful) return@withContext emptyMap()
+                if (!res.isSuccessful) {
+                    Log.w("XmlTv", "status=${res.code} chans=${channelIds.size}")
+                    return@withContext emptyMap()
+                }
                 val body = res.body ?: return@withContext emptyMap()
                 val parser: XmlPullParser = Xml.newPullParser()
                 parser.setInput(body.byteStream(), null)

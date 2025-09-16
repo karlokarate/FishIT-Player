@@ -5,17 +5,9 @@ import android.content.pm.ActivityInfo
 import android.view.LayoutInflater
 import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,7 +35,6 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,7 +55,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import androidx.compose.ui.zIndex
 import android.app.PictureInPictureParams
 import android.util.Rational
 import androidx.lifecycle.Lifecycle
@@ -82,9 +72,8 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.chris.m3usuite.R
-import com.chris.m3usuite.data.db.AppDatabase
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.ResumeMark
+import com.chris.m3usuite.data.repo.ResumeRepository
+import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.ScreenTimeRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
@@ -110,7 +99,10 @@ fun InternalPlayerScreen(
     url: String,
     type: String,                 // "vod" | "series" | "live"
     mediaId: Long? = null,        // VOD
-    episodeId: Int? = null,       // Series
+    episodeId: Int? = null,       // Series (legacy id)
+    seriesId: Int? = null,        // Series composite
+    season: Int? = null,
+    episodeNum: Int? = null,
     startPositionMs: Long? = null,
     headers: Map<String, String> = emptyMap(),
     onExit: () -> Unit
@@ -119,7 +111,8 @@ fun InternalPlayerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
 
-    val db: AppDatabase = remember(ctx) { DbProvider.get(ctx) }
+    val obxStore = remember(ctx) { ObxStore.get(ctx) }
+    val resumeRepo = remember(ctx) { ResumeRepository(ctx) }
     val store = remember(ctx) { SettingsStore(ctx) }
     val screenTimeRepo = remember(ctx) { ScreenTimeRepository(ctx) }
 
@@ -139,11 +132,19 @@ fun InternalPlayerScreen(
         com.chris.m3usuite.core.http.RequestHeadersProvider.merge(headers, extras)
     }
     val httpFactory = remember(mergedHeaders) {
+        val ua = mergedHeaders["User-Agent"] ?: "IBOPlayer/1.4 (Android)"
+        val props = HashMap<String, String>(mergedHeaders)
+        if (!props.containsKey("Accept")) props["Accept"] = "*/*"
+        runCatching {
+            android.util.Log.d(
+                "PlayerHTTP",
+                "prepare ua=\"${ua ?: ""}\" ref=\"${props["Referer"] ?: ""}\" accept=\"${props["Accept"] ?: ""}\""
+            )
+        }
         DefaultHttpDataSource.Factory()
+            .apply { if (!ua.isNullOrBlank()) setUserAgent(ua) }
             .setAllowCrossProtocolRedirects(true)
-            .apply {
-                if (mergedHeaders.isNotEmpty()) setDefaultRequestProperties(mergedHeaders)
-            }
+            .apply { if (props.isNotEmpty()) setDefaultRequestProperties(props) }
     }
     val dataSourceFactory = remember(httpFactory, ctx) {
         val base = DefaultDataSource.Factory(ctx, httpFactory)
@@ -175,7 +176,7 @@ fun InternalPlayerScreen(
         try {
             val id = store.currentProfileId.first()
             if (id > 0) {
-                val prof = withContext(Dispatchers.IO) { db.profileDao().byId(id) }
+                val prof = withContext(Dispatchers.IO) { obxStore.boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(id) }
                 kidActive = prof?.type == "kid"
                 kidIdState = if (kidActive) id else null
             }
@@ -192,14 +193,14 @@ fun InternalPlayerScreen(
     }
 
     // resume: load (seek to saved position if available and >10s)
-    LaunchedEffect(type, mediaId, episodeId, exoPlayer) {
-        if ((type == "vod" && mediaId != null) || (type == "series" && episodeId != null)) {
+    LaunchedEffect(type, mediaId, episodeId, seriesId, season, episodeNum, exoPlayer) {
+        if ((type == "vod" && mediaId != null) || (type == "series" && (episodeId != null || (seriesId != null && season != null && episodeNum != null)))) {
             try {
                 if (startPositionMs == null) {
                     val posSecs = withContext(Dispatchers.IO) {
-                        val dao = db.resumeDao()
-                        val mark = if (type == "vod") dao.getVod(mediaId ?: -1) else dao.getEpisode(episodeId ?: -1)
-                        mark?.positionSecs
+                        if (type == "vod") resumeRepo.recentVod(1).firstOrNull { it.mediaId == mediaId }?.positionSecs else if (seriesId != null && season != null && episodeNum != null) {
+                            resumeRepo.recentEpisodes(50).firstOrNull { it.seriesId == seriesId && it.season == season && it.episodeNum == episodeNum }?.positionSecs
+                        } else null
                     }
                     val p = (posSecs ?: 0)
                     if (p > 10) {
@@ -232,24 +233,17 @@ fun InternalPlayerScreen(
                                 val dur = exoPlayer.duration
                                 val pos = exoPlayer.currentPosition
                                 val remaining = if (dur > 0) dur - pos else Long.MAX_VALUE
-                                if ((type == "vod" && mediaId != null) || (type == "series" && episodeId != null)) {
+                                if ((type == "vod" && mediaId != null) || (type == "series" && (seriesId != null && season != null && episodeNum != null))) {
                                     if (dur > 0 && remaining in 0..9999) {
                                         withContext(Dispatchers.IO) {
-                                            val dao = db.resumeDao()
-                                            if (type == "vod") dao.clearVod(mediaId!!) else dao.clearEpisode(episodeId!!)
+                                            if (type == "vod") resumeRepo.clearVod(mediaId!!) else Unit
                                         }
                                     } else {
                                         withContext(Dispatchers.IO) {
-                                            val dao = db.resumeDao()
                                             val posSecs = (pos / 1000L).toInt().coerceAtLeast(0)
-                                            val mark = ResumeMark(
-                                                type = if (type == "vod") "vod" else "series",
-                                                mediaId = if (type == "vod") mediaId else null,
-                                                episodeId = if (type == "series") episodeId else null,
-                                                positionSecs = posSecs,
-                                                updatedAt = System.currentTimeMillis()
-                                            )
-                                            dao.upsert(mark)
+                                            if (type == "vod" && mediaId != null) resumeRepo.setVodResume(mediaId, posSecs) else if (type == "series" && (seriesId != null && season != null && episodeNum != null)) {
+                                                resumeRepo.setSeriesResume(seriesId, season, episodeNum, posSecs)
+                                            }
                                         }
                                     }
                                 }
@@ -285,27 +279,18 @@ fun InternalPlayerScreen(
         var tickAccum = 0
         while (isActive) {
             try {
-                if ((type == "vod" && mediaId != null) || (type == "series" && episodeId != null)) {
+                if ((type == "vod" && mediaId != null) || (type == "series" && seriesId != null && season != null && episodeNum != null)) {
                     val dur = exoPlayer.duration
                     val pos = exoPlayer.currentPosition
                     val remaining = if (dur > 0) dur - pos else Long.MAX_VALUE
                     if (dur > 0 && remaining in 0..9999) {
                         withContext(Dispatchers.IO) {
-                            val dao = db.resumeDao()
-                            if (type == "vod") dao.clearVod(mediaId!!) else dao.clearEpisode(episodeId!!)
+                            if (type == "vod") resumeRepo.clearVod(mediaId!!) else resumeRepo.clearSeriesResume(seriesId!!, season!!, episodeNum!!)
                         }
                     } else if (type != "live") {
                         val posSecs = (pos / 1000L).toInt().coerceAtLeast(0)
                         withContext(Dispatchers.IO) {
-                            val dao = db.resumeDao()
-                            val mark = ResumeMark(
-                                type = if (type == "vod") "vod" else "series",
-                                mediaId = if (type == "vod") mediaId else null,
-                                episodeId = if (type == "series") episodeId else null,
-                                positionSecs = posSecs,
-                                updatedAt = System.currentTimeMillis()
-                            )
-                            dao.upsert(mark)
+                            if (type == "vod" && mediaId != null) resumeRepo.setVodResume(mediaId, posSecs) else resumeRepo.setSeriesResume(seriesId!!, season!!, episodeNum!!, posSecs)
                         }
                     }
                 }
@@ -341,36 +326,39 @@ fun InternalPlayerScreen(
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_ENDED) {
-                    if ((type == "vod" && mediaId != null) || (type == "series" && episodeId != null)) {
+                    if ((type == "vod" && mediaId != null) || (type == "series" && seriesId != null && season != null && episodeNum != null)) {
                         scope.launch(Dispatchers.IO) {
                             try {
-                                val dao = db.resumeDao()
-                                if (type == "vod") dao.clearVod(mediaId!!) else dao.clearEpisode(episodeId!!)
+                                if (type == "vod") resumeRepo.clearVod(mediaId!!) else resumeRepo.clearSeriesResume(seriesId!!, season!!, episodeNum!!)
                             } catch (_: Throwable) {}
                         }
                     }
                     // Phase 5: autoplay next for series
-                    if (type == "series" && episodeId != null && autoplayNext) {
+                    if (type == "series" && (seriesId != null && season != null && episodeNum != null) && autoplayNext) {
                         scope.launch(Dispatchers.IO) {
                             try {
-                                val epDao = db.episodeDao()
-                                val current = epDao.byEpisodeId(episodeId)
-                                if (current != null) {
-                                    val next = epDao.nextEpisode(current.seriesStreamId, current.season, current.episodeNum)
-                                    if (next != null) {
-                                        val nextTg = if (next.tgChatId != null && next.tgMessageId != null) "tg://message?chatId=${next.tgChatId}&messageId=${next.tgMessageId}" else null
-                                        val nextUrl = nextTg ?: run {
-                                            val snap = store.snapshot()
-                                            if (snap.xtHost.isNotBlank() && snap.xtUser.isNotBlank() && snap.xtPass.isNotBlank()) {
-                                                val cfg = com.chris.m3usuite.core.xtream.XtreamConfig(snap.xtHost, snap.xtPort, snap.xtUser, snap.xtPass, snap.xtOutput)
-                                                cfg.seriesEpisodeUrl(next.episodeId, next.containerExt)
-                                            } else null
-                                        }
-                                        if (nextUrl != null) withContext(Dispatchers.Main) {
-                                            exoPlayer.setMediaItem(MediaItem.fromUri(nextUrl))
-                                            exoPlayer.prepare()
-                                            exoPlayer.playWhenReady = true
-                                        }
+                                val box = obxStore.boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
+                                val curSeason = season
+                                val curEp = episodeNum
+                                val q = box.query(
+                                    com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(seriesId.toLong())
+                                ).build()
+                                val list = q.find().sortedWith(compareBy<com.chris.m3usuite.data.obx.ObxEpisode> { it.season }.thenBy { it.episodeNum })
+                                val idx = list.indexOfFirst { it.season == curSeason && it.episodeNum == curEp }
+                                val next = if (idx >= 0 && idx + 1 < list.size) list[idx + 1] else null
+                                if (next != null) {
+                                    val snap = store.snapshot()
+                                    val scheme = if (snap.xtPort == 443) "https" else "http"
+                                    val http = com.chris.m3usuite.core.http.HttpClientFactory.create(ctx, store)
+                                    val client = com.chris.m3usuite.core.xtream.XtreamClient(http)
+                                    val caps = com.chris.m3usuite.core.xtream.ProviderCapabilityStore(ctx)
+                                    val ports = com.chris.m3usuite.core.xtream.EndpointPortStore(ctx)
+                                    client.initialize(scheme, snap.xtHost, snap.xtUser, snap.xtPass, basePath = null, store = caps, portStore = ports, portOverride = snap.xtPort)
+                                    val nextUrl = client.buildSeriesEpisodePlayUrl(seriesId, next.season, next.episodeNum, next.playExt)
+                                    withContext(Dispatchers.Main) {
+                                        exoPlayer.setMediaItem(MediaItem.fromUri(nextUrl))
+                                        exoPlayer.prepare()
+                                        exoPlayer.playWhenReady = true
                                     }
                                 }
                             } catch (_: Throwable) {}
@@ -398,19 +386,11 @@ fun InternalPlayerScreen(
             try {
                 if (type != "live" && ((type == "vod" && mediaId != null) || (type == "series" && episodeId != null))) {
                     val remaining = if (dur > 0) dur - pos else Long.MAX_VALUE
-                    val dao = db.resumeDao()
                     if (dur > 0 && remaining in 0..9999) {
-                        if (type == "vod") dao.clearVod(mediaId!!) else dao.clearEpisode(episodeId!!)
+                        if (type == "vod") resumeRepo.clearVod(mediaId!!) else Unit
                     } else {
                         val posSecs = (pos / 1000L).toInt().coerceAtLeast(0)
-                        val mark = ResumeMark(
-                            type = if (type == "vod") "vod" else "series",
-                            mediaId = if (type == "vod") mediaId else null,
-                            episodeId = if (type == "series") episodeId else null,
-                            positionSecs = posSecs,
-                            updatedAt = System.currentTimeMillis()
-                        )
-                        dao.upsert(mark)
+                        if (type == "vod" && mediaId != null) resumeRepo.setVodResume(mediaId, posSecs)
                     }
                 }
             } catch (_: Throwable) {}

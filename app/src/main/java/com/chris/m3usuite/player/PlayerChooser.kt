@@ -3,7 +3,6 @@ package com.chris.m3usuite.player
 import android.content.Context
 import kotlinx.coroutines.flow.first
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.data.db.DbProvider
 import com.chris.m3usuite.data.repo.PermissionRepository
 
 /**

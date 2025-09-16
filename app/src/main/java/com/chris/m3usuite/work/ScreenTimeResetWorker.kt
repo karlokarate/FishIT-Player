@@ -9,15 +9,15 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import androidx.work.WorkerParameters
-import com.chris.m3usuite.data.db.DbProvider
+import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.ScreenTimeRepository
 import java.util.concurrent.TimeUnit
 
 class ScreenTimeResetWorker(appContext: Context, params: WorkerParameters): CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
         return try {
-            val db = DbProvider.get(applicationContext)
-            val kids = db.profileDao().all().filter { it.type == "kid" }
+            val box = ObxStore.get(applicationContext).boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java)
+            val kids = box.all.filter { it.type == "kid" }
             val repo = ScreenTimeRepository(applicationContext)
             kids.forEach { kid -> repo.resetToday(kid.id) }
             // re-schedule next run at next midnight

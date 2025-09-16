@@ -6,9 +6,8 @@ import com.chris.m3usuite.backup.BackupFormat.Payload
 import com.chris.m3usuite.backup.BackupFormat.ProfileExport
 import com.chris.m3usuite.backup.BackupFormat.ResumeEpisodeMark
 import com.chris.m3usuite.backup.BackupFormat.ResumeVodMark
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.Profile
-import com.chris.m3usuite.data.db.ResumeMark
+import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.data.obx.ObxProfile
 import com.chris.m3usuite.prefs.SettingsSnapshot
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
@@ -32,8 +31,8 @@ class SettingsBackupManager(private val context: Context) {
             val settings = SettingsSnapshot.dump(context)
 
             progress(15, "Lese Profile…")
-            val db = DbProvider.get(context)
-            val profiles = db.profileDao().all()
+            val box = ObxStore.get(context).boxFor(ObxProfile::class.java)
+            val profiles = box.all
             val assets = LinkedHashMap<String, ByteArray>()
             val profExports = profiles.map { p ->
                 val entry = p.avatarPath?.let { ap ->
@@ -47,9 +46,12 @@ class SettingsBackupManager(private val context: Context) {
             }
 
             progress(45, "Lese Weiterschauen…")
-            val rdao = db.resumeDao()
-            val recentVod = rdao.recentVod(10_000).map { ResumeVodMark(it.mediaId, it.positionSecs, it.updatedAt) }
-            val recentEp = rdao.recentEpisodes(10_000).map { ResumeEpisodeMark(it.episodeId, it.positionSecs, it.updatedAt) }
+            val resumeRepo = com.chris.m3usuite.data.repo.ResumeRepository(context)
+            val recentVod = resumeRepo.recentVod(10_000).map { ResumeVodMark(it.mediaId, it.positionSecs, it.updatedAt) }
+            val recentEp = resumeRepo.recentEpisodes(10_000).map {
+                val key = it.seriesId * 1_000_000 + it.season * 1_000 + it.episodeNum
+                ResumeEpisodeMark(key, it.positionSecs, it.updatedAt)
+            }
 
             val manifest = Manifest(schema = 1, exportedAtUtc = nowIsoUtc(), appVersion = try {
                 context.packageManager.getPackageInfo(context.packageName, 0).versionName
@@ -72,11 +74,11 @@ class SettingsBackupManager(private val context: Context) {
             SettingsSnapshot.restore(context, payload.settings, replace = (mode == ImportMode.Replace))
 
             progress(35, "Wende Profile an…")
-            val db = DbProvider.get(context)
-            val pdao = db.profileDao()
-            if (mode == ImportMode.Replace) pdao.all().forEach { pdao.delete(it) }
+            val obx = ObxStore.get(context)
+            val pbox = obx.boxFor(ObxProfile::class.java)
+            if (mode == ImportMode.Replace) pbox.removeAll()
             for (p in payload.profiles) {
-                val existing = pdao.byId(p.id)
+                val existing = pbox.get(p.id)
                 val now = System.currentTimeMillis()
                 val avatarPath = p.avatarFile?.let { path ->
                     val data = assets[path] ?: return@let null
@@ -84,21 +86,27 @@ class SettingsBackupManager(private val context: Context) {
                     val ext = path.substringAfterLast('.', "png")
                     val out = File(outDir, "avatar.$ext"); out.writeBytes(data); out.absolutePath
                 }
-                if (existing == null)
-                    pdao.insert(Profile(id = 0, name = p.name, type = p.type, avatarPath = avatarPath, createdAt = now, updatedAt = now))
-                else
-                    pdao.update(existing.copy(name = p.name, type = p.type, avatarPath = avatarPath ?: existing.avatarPath, updatedAt = now))
+                val row = existing ?: ObxProfile(id = 0, name = p.name, type = p.type, avatarPath = avatarPath, createdAt = now, updatedAt = now)
+                if (existing != null) {
+                    row.name = p.name; row.type = p.type; row.avatarPath = avatarPath ?: existing.avatarPath; row.updatedAt = now
+                }
+                pbox.put(row)
             }
 
             progress(70, "Setze Weiterschauen…")
-            val rdao = db.resumeDao()
-            payload.resumeVod.forEach { m -> rdao.upsert(ResumeMark(0, "vod", m.mediaId, null, m.positionSecs, m.updatedAt)) }
-            payload.resumeEpisodes.forEach { m -> rdao.upsert(ResumeMark(0, "series", null, m.episodeId, m.positionSecs, m.updatedAt)) }
+            val resumeRepo2 = com.chris.m3usuite.data.repo.ResumeRepository(context)
+            payload.resumeVod.forEach { m -> resumeRepo2.setVodResume(m.mediaId, m.positionSecs) }
+            payload.resumeEpisodes.forEach { m ->
+                val seriesId = (m.episodeId / 1_000_000)
+                val season = (m.episodeId % 1_000_000) / 1_000
+                val epnum = m.episodeId % 1_000
+                resumeRepo2.setSeriesResume(seriesId, season, epnum, m.positionSecs)
+            }
 
             runCatching {
                 val store = SettingsStore(context)
                 val currentId = store.currentProfileId.first()
-                val all = pdao.all()
+                val all = pbox.all
                 if (all.none { it.id == currentId }) {
                     val fallback = all.firstOrNull { it.type == "adult" }?.id ?: all.firstOrNull()?.id ?: -1L
                     if (fallback > 0) store.setCurrentProfileId(fallback)
@@ -109,4 +117,3 @@ class SettingsBackupManager(private val context: Context) {
             Report(payload.settings.size, payload.profiles.size, payload.resumeVod.size, payload.resumeEpisodes.size)
         }
 }
-

@@ -18,20 +18,12 @@ import com.chris.m3usuite.core.http.RequestHeadersProvider
 @Composable
 fun rememberImageHeaders(): ImageHeaders {
     val ctx = LocalContext.current
-    val store = remember { SettingsStore(ctx) }
-
-    var ua by remember { mutableStateOf("IBOPlayer/1.4 (Android)") }
-    var ref by remember { mutableStateOf("") }
-    var extras by remember { mutableStateOf<Map<String,String>>(emptyMap()) }
-
-    LaunchedEffect(Unit) {
-        runCatching {
-            ua = store.userAgent.first()
-            ref = store.referer.first()
-            val extraJson = store.extraHeadersJson.first()
-            extras = RequestHeadersProvider.parseExtraHeaders(extraJson)
-        }
-    }
+    // Subscribe to unified header snapshot for perfect consistency with OkHttp
+    val initial = remember { RequestHeadersProvider.snapshot() }
+    val headers by RequestHeadersProvider.state.collectAsState(initial = initial)
+    val ua = headers["User-Agent"] ?: "IBOPlayer/1.4 (Android)"
+    val ref = headers["Referer"].orEmpty()
+    val extras = remember(headers) { headers.filterKeys { it != "User-Agent" && it != "Referer" && it != "Accept" } }
     return ImageHeaders(ua = ua, referer = ref, extras = extras)
 }
 

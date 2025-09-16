@@ -33,6 +33,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -69,9 +70,8 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import com.chris.m3usuite.data.db.AppDatabase
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.Profile
+// Room access moved behind feature gate to avoid opening DB in OBX-first paths
+// Room removed
 import com.chris.m3usuite.data.repo.EpgRepository
 import com.chris.m3usuite.data.repo.KidContentRepository
 import com.chris.m3usuite.player.InternalPlayerScreen
@@ -87,14 +87,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import io.objectbox.android.AndroidScheduler
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
     val ctx = LocalContext.current
-    val db: AppDatabase = remember { DbProvider.get(ctx) }
     val store = remember { SettingsStore(ctx) }
+    // Room removed; OBX-only path
     val headersImg = rememberImageHeaders()
     val scope = rememberCoroutineScope()
     val kidRepo = remember { KidContentRepository(ctx) }
@@ -121,19 +122,40 @@ fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
     var internalRef by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(id) {
-        val item = db.mediaDao().byId(id) ?: return@LaunchedEffect
-        title = item.name
-        logo = item.logo ?: item.poster
-        url = item.url
+        // Support OBX-encoded IDs and legacy Room IDs
+        fun decodeObxLiveId(v: Long): Int? = if (v >= 1_000_000_000_000L && v < 2_000_000_000_000L) (v - 1_000_000_000_000L).toInt() else null
+        val obxSid = decodeObxLiveId(id)
+        val sid: Int?
+        if (obxSid != null) {
+            sid = obxSid
+            val box = com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
+            val row = box.query(com.chris.m3usuite.data.obx.ObxLive_.streamId.equal(sid.toLong())).build().findFirst()
+            title = row?.name.orEmpty()
+            logo = row?.logo
+            // Build play URL via Xtream client
+            val scheme = if (store.xtPort.first() == 443) "https" else "http"
+            val http = com.chris.m3usuite.core.http.HttpClientFactory.create(ctx, store)
+            val client = com.chris.m3usuite.core.xtream.XtreamClient(http)
+            val caps = com.chris.m3usuite.core.xtream.ProviderCapabilityStore(ctx)
+            val ports = com.chris.m3usuite.core.xtream.EndpointPortStore(ctx)
+            client.initialize(
+                scheme = scheme,
+                host = store.xtHost.first(),
+                username = store.xtUser.first(),
+                password = store.xtPass.first(),
+                basePath = null,
+                store = caps,
+                portStore = ports,
+                portOverride = store.xtPort.first()
+            )
+            url = client.buildLivePlayUrl(sid)
+        } else {
+            // No Room fallback; abort gracefully
+            sid = null
+        }
 
-        val host = store.xtHost.first()
-        val port = store.xtPort.first()
-        val user = store.xtUser.first()
-        val pass = store.xtPass.first()
-        val out  = store.xtOutput.first()
-
-        if (item.streamId != null) {
-            val list = runCatching { EpgRepository(ctx, store).nowNext(item.streamId!!, 2) }.getOrDefault(emptyList())
+        if (sid != null) {
+            val list = runCatching { EpgRepository(ctx, store).nowNext(sid, 2) }.getOrDefault(emptyList())
             epgNow = list.getOrNull(0)?.title.orEmpty()
             epgNext = list.getOrNull(1)?.title.orEmpty()
             nowStartMs = list.getOrNull(0)?.start?.toLongOrNull()?.let { it * 1000 }
@@ -141,23 +163,36 @@ fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
         } else { epgNow = ""; epgNext = ""; nowStartMs = null; nowEndMs = null }
     }
 
-    // Observe DB for immediate seeding/updates from prefetch (favorites or background)
-    val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(id, lifecycleOwner) {
-        val item = db.mediaDao().byId(id) ?: return@LaunchedEffect
-        val ch = item.epgChannelId?.trim()
-        if (!ch.isNullOrEmpty()) {
-            lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                db.epgDao().observeByChannel(ch).collect { row ->
-                    if (row != null) {
-                        epgNow = row.nowTitle.orEmpty()
-                        epgNext = row.nextTitle.orEmpty()
-                        nowStartMs = row.nowStartMs
-                        nowEndMs = row.nowEndMs
-                    }
-                }
+    // Direct ObjectBox EPG read (fast path) with light polling for updates
+    DisposableEffect(id) {
+        fun decodeObxLiveId(v: Long): Int? = if (v >= 1_000_000_000_000L && v < 2_000_000_000_000L) (v - 1_000_000_000_000L).toInt() else null
+        val obxSid = decodeObxLiveId(id)
+        val ch: String? = null
+        val sid = obxSid
+        val box = com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxEpgNowNext::class.java)
+        val query = when {
+            !ch.isNullOrEmpty() -> box.query(com.chris.m3usuite.data.obx.ObxEpgNowNext_.channelId.equal(ch)).build()
+            sid != null -> box.query(com.chris.m3usuite.data.obx.ObxEpgNowNext_.streamId.equal(sid.toLong())).build()
+            else -> null
+        }
+        if (query == null) return@DisposableEffect onDispose { }
+        // initial state
+        query.findFirst()?.let { row ->
+            epgNow = row.nowTitle.orEmpty()
+            epgNext = row.nextTitle.orEmpty()
+            nowStartMs = row.nowStartMs
+            nowEndMs = row.nowEndMs
+        }
+        val sub = query.subscribe().on(AndroidScheduler.mainThread()).observer { results ->
+            val row = results.firstOrNull()
+            if (row != null) {
+                epgNow = row.nowTitle.orEmpty()
+                epgNext = row.nextTitle.orEmpty()
+                nowStartMs = row.nowStartMs
+                nowEndMs = row.nowEndMs
             }
         }
+        onDispose { sub.cancel() }
     }
 
     // Header für den VIDEO-Request (nicht für Bilder)
@@ -169,7 +204,7 @@ fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
         val playUrl = url ?: return
         // Gate: deny if profile not allowed
         val allowed = withContext(Dispatchers.IO) {
-            val prof = DbProvider.get(ctx).profileDao().byId(store.currentProfileId.first())
+            val prof = com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(store.currentProfileId.first())
             if (prof?.type == "adult") true else com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store).isAllowed("live", id)
         }
         if (!allowed) {
@@ -216,7 +251,7 @@ fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
     val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
     var isAdult by remember { mutableStateOf(true) }
     LaunchedEffect(profileId) {
-        val p = withContext(Dispatchers.IO) { db.profileDao().byId(profileId) }
+        val p = withContext(Dispatchers.IO) { com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(profileId) }
         isAdult = p?.type != "kid"
     }
 
@@ -225,9 +260,9 @@ fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
 
     @Composable
     fun KidSelectSheet(onConfirm: suspend (kidIds: List<Long>) -> Unit, onDismiss: () -> Unit) {
-        var kids by remember { mutableStateOf<List<Profile>>(emptyList()) }
+        var kids by remember { mutableStateOf<List<com.chris.m3usuite.data.obx.ObxProfile>>(emptyList()) }
         LaunchedEffect(profileId) {
-            kids = withContext(Dispatchers.IO) { db.profileDao().all().filter { it.type == "kid" } }
+            kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } }
         }
         var checked by remember { mutableStateOf(setOf<Long>()) }
         ModalBottomSheet(onDismissRequest = onDismiss) {

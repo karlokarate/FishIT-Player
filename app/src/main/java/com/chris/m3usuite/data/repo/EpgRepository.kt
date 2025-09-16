@@ -1,22 +1,30 @@
 package com.chris.m3usuite.data.repo
 
 import android.content.Context
+import android.os.SystemClock
 import android.util.Log
-import com.chris.m3usuite.core.xtream.XtreamClient
-import com.chris.m3usuite.core.xtream.XtreamConfig
-import com.chris.m3usuite.core.xtream.XtShortEPGProgramme
 import com.chris.m3usuite.core.epg.XmlTv
+import com.chris.m3usuite.data.obx.ObxEpgNowNext
+import com.chris.m3usuite.data.obx.ObxLive
+import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.core.xtream.EndpointPortStore
+import com.chris.m3usuite.core.xtream.ProviderCapabilityStore
+import com.chris.m3usuite.core.xtream.XtShortEPGProgramme
+import com.chris.m3usuite.core.xtream.XtreamClient
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.EpgNowNext
+// Room removed; OBX-only
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
-import android.os.SystemClock
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import okhttp3.OkHttpClient
 
 /**
  * Lightweight EPG helper with short TTL cache per streamId.
@@ -46,14 +54,28 @@ class EpgRepository(
     private val lock = Mutex()
     private fun secStrToMs(s: String?): Long? = s?.toLongOrNull()?.let { it * 1000 }
 
-    private suspend fun config(): XtreamConfig? {
+    private suspend fun buildClient(): XtreamClient? = withContext(Dispatchers.IO) {
         val host = settings.xtHost.first()
         val user = settings.xtUser.first()
         val pass = settings.xtPass.first()
-        if (host.isBlank() || user.isBlank() || pass.isBlank()) return null
+        if (host.isBlank() || user.isBlank() || pass.isBlank()) return@withContext null
         val port = settings.xtPort.first()
-        val out = settings.xtOutput.first()
-        return XtreamConfig(host, port, user, pass, out)
+        val scheme = if (port == 443) "https" else "http"
+        val http = com.chris.m3usuite.core.http.HttpClientFactory.create(context, settings)
+        val caps = ProviderCapabilityStore(context)
+        val portStore = EndpointPortStore(context)
+        val client = XtreamClient(http)
+        client.initialize(
+            scheme = scheme,
+            host = host,
+            username = user,
+            password = pass,
+            basePath = null,
+            store = caps,
+            portStore = portStore,
+            portOverride = port
+        )
+        client
     }
 
     suspend fun nowNext(streamId: Int, limit: Int = 2): List<XtShortEPGProgramme> = withContext(Dispatchers.IO) {
@@ -73,37 +95,21 @@ class EpgRepository(
         }
         if (cached != null) return@withContext cached
         val tag = "XtreamEPG"
-        val db = DbProvider.get(context)
-        val mediaDao = db.mediaDao()
-        val epgDao = db.epgDao()
+        // Room removed; OBX-only
 
         // Check persistent cache first via tvg-id
-        val live = withContext(Dispatchers.IO) { runCatching { mediaDao.liveByStreamId(streamId) }.getOrNull() ?: mediaDao.listByType("live", 50000, 0).firstOrNull { it.streamId == streamId } }
-        val chanId = live?.epgChannelId
-        if (!chanId.isNullOrBlank()) {
-            val row = withContext(Dispatchers.IO) { epgDao.byChannel(chanId) }
-            if (row != null && (System.currentTimeMillis() - row.updatedAt) < ttlMillis) {
-                val list = mutableListOf<XtShortEPGProgramme>()
-                if (row.nowTitle != null && row.nowStartMs != null && row.nowEndMs != null) {
-                    list += XtShortEPGProgramme(title = row.nowTitle, start = (row.nowStartMs/1000).toString(), end = (row.nowEndMs/1000).toString())
-                }
-                if (row.nextTitle != null && row.nextStartMs != null && row.nextEndMs != null) {
-                    list += XtShortEPGProgramme(title = row.nextTitle, start = (row.nextStartMs/1000).toString(), end = (row.nextEndMs/1000).toString())
-                }
-                if (list.isNotEmpty()) {
-                    Log.d(TAG, "sid=$streamId source=db-fresh ch=$chanId size=${list.size}")
-                    return@withContext list.take(limit)
-                }
-            }
-        }
+        // Prefer OBX channel mapping; optionally check Room cache if enabled
+        val obxLive = runCatching {
+            ObxStore.get(context).boxFor(ObxLive::class.java).query(com.chris.m3usuite.data.obx.ObxLive_.streamId.equal(streamId.toLong())).build().findFirst()
+        }.getOrNull()
+        val chanId = obxLive?.epgChannelId
+        // Skip Room persistent cache; rely on OBX + network
 
         // Helper: XMLTV fallback using tvg-id mapped from DB
         suspend fun fallbackXmlTv(): List<XtShortEPGProgramme> {
             val epgUrl = settings.epgUrl.first()
             if (epgUrl.isBlank()) return emptyList()
-            val dao = DbProvider.get(context).mediaDao()
-            val live = runCatching { dao.liveByStreamId(streamId) }.getOrNull() ?: dao.listByType("live", 50000, 0).firstOrNull { it.streamId == streamId }
-            val chan = live?.epgChannelId
+            val chan = chanId
             if (!chan.isNullOrBlank()) {
                 val (now, next) = XmlTv.currentNext(context, settings, chan)
                 if (now != null || next != null) {
@@ -118,54 +124,64 @@ class EpgRepository(
         }
 
         // Try Xtream first if configured
-        val cfg = config()
-        val xtreamRes: List<XtShortEPGProgramme> = if (cfg != null) {
-            val res = fetchXtreamShortEpg(context, settings, cfg, streamId, limit)
-            if (res.isEmpty()) {
-                // Diagnostics: check auth state to differentiate empty vs bad creds
-                val client = XtreamClient(context, settings, cfg)
-                runCatching { client.handshake() }.onSuccess { hs ->
-                    val a = hs.userInfo?.auth
-                    Log.w(tag, "shortEPG empty for sid=$streamId; handshake auth=$a")
-                }.onFailure {
-                    Log.w(tag, "handshake failed during epg diagnostics: ${it.message}")
-                }
-            }
-            if (res.isNotEmpty()) Log.d(TAG, "sid=$streamId source=xtream size=${res.size}")
-            res
+        val client = buildClient()
+        val xtreamRes: List<XtShortEPGProgramme> = if (client != null) {
+            val raw = runCatching { client.fetchShortEpg(streamId, limit) }.getOrNull()
+            val list = if (!raw.isNullOrBlank()) parseShortEpg(raw) else emptyList()
+            if (list.isNotEmpty()) Log.d(TAG, "sid=$streamId source=xtream size=${list.size}")
+            list
         } else emptyList()
 
         var final = xtreamRes.ifEmpty { fallbackXmlTv().also { if (it.isNotEmpty()) Log.d(TAG, "sid=$streamId source=xmltv size=${it.size}") } }
-        // Soft fallback: if network yielded nothing but we have a stale row, reuse it to avoid blank UI
+        // Soft fallback: if network yielded nothing but we have a stale OBX row, reuse it to avoid blank UI
         if (final.isEmpty() && !chanId.isNullOrBlank()) {
-            val row = withContext(Dispatchers.IO) { epgDao.byChannel(chanId) }
+            val row = withContext(Dispatchers.IO) {
+                val box = ObxStore.get(context).boxFor(ObxEpgNowNext::class.java)
+                box.query(com.chris.m3usuite.data.obx.ObxEpgNowNext_.channelId.equal(chanId)).build().findFirst()
+            }
             if (row != null) {
                 val list = mutableListOf<XtShortEPGProgramme>()
-                if (row.nowTitle != null && row.nowStartMs != null && row.nowEndMs != null) {
-                    list += XtShortEPGProgramme(title = row.nowTitle, start = (row.nowStartMs/1000).toString(), end = (row.nowEndMs/1000).toString())
+                val nStart = row.nowStartMs
+                val nEnd = row.nowEndMs
+                val nTitle = row.nowTitle
+                if (nTitle != null && nStart != null && nEnd != null) {
+                    list += XtShortEPGProgramme(title = nTitle, start = (nStart / 1000).toString(), end = (nEnd / 1000).toString())
                 }
-                if (row.nextTitle != null && row.nextStartMs != null && row.nextEndMs != null) {
-                    list += XtShortEPGProgramme(title = row.nextTitle, start = (row.nextStartMs/1000).toString(), end = (row.nextEndMs/1000).toString())
+                val xStart = row.nextStartMs
+                val xEnd = row.nextEndMs
+                val xTitle = row.nextTitle
+                if (xTitle != null && xStart != null && xEnd != null) {
+                    list += XtShortEPGProgramme(title = xTitle, start = (xStart / 1000).toString(), end = (xEnd / 1000).toString())
                 }
                 final = list
-                Log.d(TAG, "sid=$streamId source=db-stale ch=$chanId size=${final.size}")
+                Log.d(TAG, "sid=$streamId source=obx-stale ch=$chanId size=${final.size}")
             }
         }
-        // Persist into DB cache if we have a channel id and actual content
+        // Persist into caches if we have a channel id and actual content
         if (!chanId.isNullOrBlank() && final.isNotEmpty()) {
             val now = final.getOrNull(0)
             val next = final.getOrNull(1)
-            val row = EpgNowNext(
-                channelId = chanId,
-                nowTitle = now?.title,
-                nowStartMs = secStrToMs(now?.start),
-                nowEndMs = secStrToMs(now?.end),
-                nextTitle = next?.title,
-                nextStartMs = secStrToMs(next?.start),
-                nextEndMs = secStrToMs(next?.end),
-                updatedAt = System.currentTimeMillis()
-            )
-            withContext(Dispatchers.IO) { epgDao.upsertAll(listOf(row)) }
+            val nowStart = secStrToMs(now?.start)
+            val nowEnd = secStrToMs(now?.end)
+            val nextStart = secStrToMs(next?.start)
+            val nextEnd = secStrToMs(next?.end)
+            // Also persist into ObjectBox for fast startup/offline
+            runCatching {
+                val box = ObxStore.get(context).boxFor(ObxEpgNowNext::class.java)
+                val obx = ObxEpgNowNext(
+                    channelId = chanId,
+                    nowTitle = now?.title,
+                    nowStartMs = nowStart,
+                    nowEndMs = nowEnd,
+                    nextTitle = next?.title,
+                    nextStartMs = nextStart,
+                    nextEndMs = nextEnd,
+                    updatedAt = System.currentTimeMillis()
+                )
+                val existing = box.query(com.chris.m3usuite.data.obx.ObxEpgNowNext_.channelId.equal(chanId)).build().findFirst()
+                if (existing != null) obx.id = existing.id
+                box.put(obx)
+            }
             Log.d(TAG, "sid=$streamId persist ch=$chanId now=${now?.title} next=${next?.title}")
         }
         // Cache hit bookkeeping: content uses normal TTL; empty uses short TTL
@@ -178,30 +194,17 @@ class EpgRepository(
         final.take(limit)
     }
 
-    companion object {
-        private val flightMutex = Mutex()
-        private val inFlight = mutableMapOf<Int, kotlinx.coroutines.Deferred<List<XtShortEPGProgramme>>>()
-
-        suspend fun fetchXtreamShortEpg(
-            context: Context,
-            settings: SettingsStore,
-            cfg: XtreamConfig,
-            streamId: Int,
-            limit: Int
-        ): List<XtShortEPGProgramme> = coroutineScope {
-            // Single-flight per streamId: coalesce concurrent requests
-            val existing = flightMutex.withLock { inFlight[streamId] }
-            if (existing != null) return@coroutineScope existing.await()
-            val deferred = async(Dispatchers.IO) {
-                val client = XtreamClient(context, settings, cfg)
-                runCatching { client.shortEPG(streamId, limit) }.getOrDefault(emptyList())
+    private fun parseShortEpg(jsonStr: String): List<XtShortEPGProgramme> = runCatching {
+        val root = Json.parseToJsonElement(jsonStr)
+        if (root is JsonArray) {
+            root.jsonArray.mapNotNull { el ->
+                val obj = el.jsonObject
+                XtShortEPGProgramme(
+                    title = obj["title"]?.jsonPrimitive?.contentOrNull,
+                    start = obj["start"]?.jsonPrimitive?.contentOrNull,
+                    end = obj["end"]?.jsonPrimitive?.contentOrNull,
+                )
             }
-            try {
-                flightMutex.withLock { inFlight[streamId] = deferred }
-                deferred.await()
-            } finally {
-                flightMutex.withLock { inFlight.remove(streamId) }
-            }
-        }
-    }
+        } else emptyList()
+    }.getOrDefault(emptyList())
 }

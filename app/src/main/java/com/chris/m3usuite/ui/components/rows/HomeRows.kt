@@ -46,8 +46,8 @@ import com.chris.m3usuite.ui.skin.tvClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
-import com.chris.m3usuite.data.db.MediaItem
-import com.chris.m3usuite.data.db.DbProvider
+import com.chris.m3usuite.model.MediaItem
+import androidx.compose.runtime.DisposableEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.Box
@@ -98,6 +98,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.ui.input.key.key
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.alpha
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.LoadState
 
 @Composable
 private fun PlayOverlay(visible: Boolean, sizeDp: Int = 56) {
@@ -186,7 +188,7 @@ fun LiveTileCard(
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
     val store = remember { SettingsStore(ctx) }
-    val db = remember { DbProvider.get(ctx) }
+    val roomEnabled by store.roomEnabled.collectAsStateWithLifecycle(initialValue = false)
     val ua by store.userAgent.collectAsStateWithLifecycle(initialValue = "")
     val ref by store.referer.collectAsStateWithLifecycle(initialValue = "")
     val extraJson by store.extraHeadersJson.collectAsStateWithLifecycle(initialValue = "")
@@ -200,16 +202,23 @@ fun LiveTileCard(
     // Show cached EPG immediately if present (reactive to DB updates from prefetch)
     val epgChannelId = remember(item.epgChannelId) { item.epgChannelId?.trim().orEmpty() }
     if (epgChannelId.isNotEmpty()) {
-        val row by remember(epgChannelId) { db.epgDao().observeByChannel(epgChannelId) }.collectAsStateWithLifecycle(initialValue = null)
-        LaunchedEffect(row?.updatedAt) {
-            epgNow = row?.nowTitle.orEmpty()
-            epgNext = row?.nextTitle.orEmpty()
-            nowStartMs = row?.nowStartMs
-            nowEndMs = row?.nowEndMs
-            epgProgress = if (nowStartMs != null && nowEndMs != null && nowEndMs!! > nowStartMs!!) {
-                val now = System.currentTimeMillis()
-                ((now - nowStartMs!!).coerceAtLeast(0).toFloat() / (nowEndMs!! - nowStartMs!!).toFloat()).coerceIn(0f, 1f)
-            } else null
+        // Subscribe to OBX EPG updates by channelId
+        val box = remember { com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxEpgNowNext::class.java) }
+        DisposableEffect(epgChannelId) {
+            val q = box.query(com.chris.m3usuite.data.obx.ObxEpgNowNext_.channelId.equal(epgChannelId)).build()
+            fun apply(row: com.chris.m3usuite.data.obx.ObxEpgNowNext?) {
+                epgNow = row?.nowTitle.orEmpty()
+                epgNext = row?.nextTitle.orEmpty()
+                nowStartMs = row?.nowStartMs
+                nowEndMs = row?.nowEndMs
+                epgProgress = if (nowStartMs != null && nowEndMs != null && nowEndMs!! > nowStartMs!!) {
+                    val now = System.currentTimeMillis()
+                    ((now - nowStartMs!!).coerceAtLeast(0).toFloat() / (nowEndMs!! - nowStartMs!!).toFloat()).coerceIn(0f, 1f)
+                } else null
+            }
+            apply(q.findFirst())
+            val sub = q.subscribe().on(io.objectbox.android.AndroidScheduler.mainThread()).observer { res -> apply(res.firstOrNull()) }
+            onDispose { sub.cancel() }
         }
     }
 
@@ -290,15 +299,27 @@ fun LiveTileCard(
                 AndroidView(
                     factory = { c ->
                         val view = PlayerView(c)
-                        val httpFactory = DefaultHttpDataSource.Factory()
+                        val httpFactory = DefaultHttpDataSource.Factory().apply {
+                            // Prefer explicit UA at factory level
+                            val effUa = (if (ua.isNotBlank()) ua else "IBOPlayer/1.4 (Android)")
+                            if (effUa.isNotBlank()) setUserAgent(effUa)
+                        }
                             .setAllowCrossProtocolRedirects(true)
                             .apply {
                                 val base = buildMap<String, String> {
-                                    if (ua.isNotBlank()) put("User-Agent", ua)
+                                    val effUa = (if (ua.isNotBlank()) ua else "IBOPlayer/1.4 (Android)")
+                                    if (effUa.isNotBlank()) put("User-Agent", effUa)
                                     if (ref.isNotBlank()) put("Referer", ref)
+                                    put("Accept", "*/*")
                                 }
                                 val extras = com.chris.m3usuite.core.http.RequestHeadersProvider.parseExtraHeaders(extraJson)
                                 val merged = com.chris.m3usuite.core.http.RequestHeadersProvider.merge(base, extras)
+                                runCatching {
+                                    android.util.Log.d(
+                                        "TilePreviewHTTP",
+                                        "prepare ua=\"${merged["User-Agent"] ?: ""}\" ref=\"${merged["Referer"] ?: ""}\" accept=\"${merged["Accept"] ?: ""}\""
+                                    )
+                                }
                                 if (merged.isNotEmpty()) setDefaultRequestProperties(merged)
                             }
                         val dsFactory = DefaultDataSource.Factory(c, httpFactory)
@@ -488,14 +509,12 @@ fun SeriesTileCard(
     var seasons by remember(item.streamId) { mutableStateOf<Int?>(null) }
     var focused by remember { mutableStateOf(false) }
     LaunchedEffect(item.streamId) {
-        val sid = item.streamId
-        if (sid != null) {
-            try {
-                val db = DbProvider.get(ctx)
-                val count = withContext(Dispatchers.IO) { db.episodeDao().seasons(sid).size }
-                seasons = count
-            } catch (_: Throwable) { seasons = null }
-        }
+        val sid = item.streamId ?: return@LaunchedEffect
+        try {
+            val obx = com.chris.m3usuite.data.obx.ObxStore.get(ctx)
+            val eps = withContext(Dispatchers.IO) { obx.boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java).query(com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(sid.toLong())).build().find() }
+            seasons = eps.map { it.season }.distinct().size
+        } catch (_: Throwable) { seasons = null }
     }
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
@@ -535,17 +554,22 @@ fun SeriesTileCard(
                     PlayOverlay(visible = focused)
                     PlayOverlay(visible = focused)
                     // Minimal resume tooltip on focus (series)
-                    val db = remember(ctx) { DbProvider.get(ctx) }
                     var resumeSecs by remember(item.streamId) { mutableStateOf<Int?>(null) }
                     var totalSecs by remember(item.streamId) { mutableStateOf<Int?>(null) }
                     LaunchedEffect(item.streamId) {
                         val sid = item.streamId
                         if (sid != null) {
                             try {
-                                val last = withContext(Dispatchers.IO) { db.resumeDao().recentEpisodes(50).firstOrNull { it.seriesStreamId == sid } }
+                                val last = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ResumeRepository(ctx).recentEpisodes(50).firstOrNull { it.seriesId == sid } }
                                 if (last != null) {
                                     resumeSecs = last.positionSecs
-                                    val ep = withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(last.episodeId) }
+                                    val ep = withContext(Dispatchers.IO) {
+                                        val b = com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
+                                        b.query(
+                                            com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(sid.toLong())
+                                                .and(com.chris.m3usuite.data.obx.ObxEpisode_.season.equal(last.season.toLong()))
+                                        ).build().find().firstOrNull { it.episodeNum == last.episodeNum }
+                                    }
                                     totalSecs = ep?.durationSecs
                                 }
                             } catch (_: Throwable) {}
@@ -674,10 +698,9 @@ fun VodTileCard(
                         onError = { loaded = true }
                     )
                     // Resume progress overlay (thin line near bottom)
-                    val db = remember(ctx) { DbProvider.get(ctx) }
                     var resumeSecs by remember(item.id) { mutableStateOf<Int?>(null) }
                     LaunchedEffect(item.id) {
-                        try { resumeSecs = withContext(Dispatchers.IO) { db.resumeDao().getVod(item.id)?.positionSecs } } catch (_: Throwable) {}
+                        try { resumeSecs = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ResumeRepository(ctx).getVodResume(item.id) } } catch (_: Throwable) {}
                     }
                     val total = item.durationSecs ?: 0
                     if ((resumeSecs ?: 0) > 0 && total > 0) {
@@ -791,12 +814,26 @@ fun LiveRow(
     val state = rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
     var count by remember(unique) { mutableStateOf(if (unique.size < 30) unique.size else 30) }
+    // Lazy-load more tiles while scrolling
     LaunchedEffect(state) {
         snapshotFlow { state.firstVisibleItemIndex }
             .collect { idx ->
                 if (idx > count - 20 && count < unique.size) {
                     count = (count + 50).coerceAtMost(unique.size)
                 }
+            }
+    }
+    // Ultra-fast EPG prefetch for visible window: writes short EPG directly to ObjectBox
+    val ctx = LocalContext.current
+    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
+    val xtObx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
+    LaunchedEffect(state, unique) {
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.mapNotNull { it.key as? Long } }
+            .collect { keys ->
+                if (keys.isEmpty()) return@collect
+                // Map currently visible item IDs to streamIds
+                val visibleStreamIds = keys.mapNotNull { id -> unique.firstOrNull { it.id == id }?.streamId }
+                xtObx.prefetchEpgForVisible(visibleStreamIds, perStreamLimit = 2, parallelism = 4)
             }
     }
     LazyRow(
@@ -1031,6 +1068,157 @@ fun VodRow(
                 isNew = showNew,
                 showAssign = showAssign
             )
+        }
+    }
+}
+
+/** VOD row backed by Paging3; keeps horizontal row optics with skeleton placeholders. */
+@Composable
+fun VodRowPaged(
+    items: LazyPagingItems<MediaItem>,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlayDirect: (MediaItem) -> Unit,
+    onAssignToKid: (MediaItem) -> Unit,
+    showAssign: Boolean = true
+) {
+    val state = rememberLazyListState()
+    val fling = rememberSnapFlingBehavior(state)
+    LazyRow(
+        state = state,
+        flingBehavior = fling,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
+    ) {
+        val isRefreshing = items.loadState.refresh is LoadState.Loading && items.itemCount == 0
+        if (isRefreshing) {
+            // Show 10 shimmer tiles to mimic row content while first page loads
+            items(10, key = { it }) { _ ->
+                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
+                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
+                }
+            }
+        }
+        items(items.itemCount, key = { idx -> items[idx]?.id ?: idx.toLong() }) { index ->
+            val mi = items[index] ?: return@items
+            VodTileCard(
+                item = mi,
+                onOpenDetails = onOpenDetails,
+                onPlayDirect = onPlayDirect,
+                onAssignToKid = onAssignToKid,
+                isNew = false,
+                showAssign = showAssign
+            )
+        }
+        val isAppending = items.loadState.append is LoadState.Loading
+        if (isAppending) {
+            items(6, key = { it + 100000 }) { _ ->
+                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
+                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
+                }
+            }
+        }
+    }
+}
+
+/** Live row backed by Paging3; preserves horizontal row look and prefetches EPG for visible items. */
+@Composable
+fun LiveRowPaged(
+    items: LazyPagingItems<MediaItem>,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlayDirect: (MediaItem) -> Unit,
+) {
+    val state = rememberLazyListState()
+    val fling = rememberSnapFlingBehavior(state)
+    val ctx = LocalContext.current
+    val store = remember { SettingsStore(ctx) }
+    val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
+
+    // EPG prefetch for visible items (map indices to items to streamIds)
+    LaunchedEffect(state, items) {
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
+            .collect { indices ->
+                val count = items.itemCount
+                if (count <= 0) return@collect
+                val sids = indices
+                    .filter { idx -> idx in 0 until count }
+                    .mapNotNull { idx -> items.peek(idx)?.streamId }
+                if (sids.isNotEmpty()) obx.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
+            }
+    }
+
+    LazyRow(
+        state = state,
+        flingBehavior = fling,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
+    ) {
+        val isRefreshing = items.loadState.refresh is LoadState.Loading && items.itemCount == 0
+        if (isRefreshing) {
+            items(10, key = { it }) { _ ->
+                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
+                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
+                }
+            }
+        }
+        items(items.itemCount, key = { idx -> items[idx]?.id ?: idx.toLong() }) { index ->
+            val mi = items[index] ?: return@items
+            LiveTileCard(
+                item = mi,
+                onOpenDetails = onOpenDetails,
+                onPlayDirect = onPlayDirect
+            )
+        }
+        val isAppending = items.loadState.append is LoadState.Loading
+        if (isAppending) {
+            items(6, key = { it + 200000 }) { _ ->
+                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
+                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
+                }
+            }
+        }
+    }
+}
+
+/** Series row backed by Paging3; preserves horizontal row look with skeletons. */
+@Composable
+fun SeriesRowPaged(
+    items: LazyPagingItems<MediaItem>,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlayDirect: (MediaItem) -> Unit,
+    onAssignToKid: (MediaItem) -> Unit,
+    showAssign: Boolean = true
+) {
+    val state = rememberLazyListState()
+    val fling = rememberSnapFlingBehavior(state)
+    LazyRow(
+        state = state,
+        flingBehavior = fling,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
+    ) {
+        val isRefreshing = items.loadState.refresh is LoadState.Loading && items.itemCount == 0
+        if (isRefreshing) {
+            items(10, key = { it }) { _ ->
+                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
+                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
+                }
+            }
+        }
+        items(items.itemCount, key = { idx -> items[idx]?.id ?: idx.toLong() }) { index ->
+            val mi = items[index] ?: return@items
+            SeriesTileCard(
+                item = mi,
+                onOpenDetails = onOpenDetails,
+                onPlayDirect = onPlayDirect,
+                onAssignToKid = onAssignToKid,
+                isNew = false,
+                showAssign = showAssign
+            )
+        }
+        val isAppending = items.loadState.append is LoadState.Loading
+        if (isAppending) {
+            items(6, key = { it + 300000 }) { _ ->
+                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
+                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
+                }
+            }
         }
     }
 }

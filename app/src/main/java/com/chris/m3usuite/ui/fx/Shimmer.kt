@@ -62,11 +62,18 @@ fun ShimmerBox(
       .background(brush)
   ) {
     if (showFish) {
+      // Gentle pulse + slow rotation for a pleasant Material3 effect
       val rot by anim.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
-        animationSpec = infiniteRepeatable(animation = tween(1000, easing = LinearEasing)),
+        animationSpec = infiniteRepeatable(animation = tween(2400, easing = LinearEasing)),
         label = "fishRot"
+      )
+      val pulse by anim.animateFloat(
+        initialValue = 0.12f,
+        targetValue = 0.30f,
+        animationSpec = infiniteRepeatable(animation = tween(900, easing = LinearEasing)),
+        label = "fishPulse"
       )
       val density = LocalDensity.current
       val dynamicDp = remember(widthPx, heightPx, fishSizeRatio) {
@@ -81,7 +88,7 @@ fun ShimmerBox(
         modifier = Modifier
           .align(Alignment.Center)
           .size(resolvedSize)
-          .graphicsLayer { rotationZ = rot; alpha = fishAlpha }
+          .graphicsLayer { rotationZ = rot; alpha = (fishAlpha * (0.7f + 0.3f * (pulse / 0.30f))).coerceIn(0f, 1f) }
       )
     }
   }

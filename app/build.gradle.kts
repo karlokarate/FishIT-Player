@@ -1,9 +1,14 @@
+import java.io.File
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.kapt")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("io.objectbox") version "3.7.1"
+    // id("com.google.gms.google-services") // enable if google-services.json is configured
 }
 
 android {
@@ -20,14 +25,16 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        // Target only arm64-v8a to reduce APK size and simplify TDLib packaging
         ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+            abiFilters.clear()
+            abiFilters += listOf("arm64-v8a")
         }
 
         // Telegram API credentials (secure lookup, non-committed):
         // Precedence: ENV → .tg.secrets.properties (root, untracked) → project -P props → default
         val secretsFile = File(rootDir, ".tg.secrets.properties")
-        val secrets = java.util.Properties().apply {
+        val secrets = Properties().apply {
             if (secretsFile.exists()) secretsFile.inputStream().use { load(it) }
         }
         fun prop(name: String): String? =
@@ -40,6 +47,22 @@ android {
 
         buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
         buildConfigField("String", "TG_API_HASH", "\"${tgApiHashValue}\"")
+
+        // Default HTTP User-Agent (secret-injected, non-committed):
+        // Precedence: ENV HEADER → /.ua.secrets.properties HEADER → -P HEADER → default empty
+        val uaSecretsFile = File(rootDir, ".ua.secrets.properties")
+        val uaSecrets = Properties().apply { if (uaSecretsFile.exists()) uaSecretsFile.inputStream().use { load(it) } }
+        fun uaProp(name: String): String? =
+            System.getenv(name)
+                ?: (uaSecrets.getProperty(name))
+                ?: (project.findProperty(name)?.toString())
+        val defaultUa = uaProp("HEADER").orEmpty()
+        buildConfigField("String", "DEFAULT_UA", "\"${defaultUa}\"")
+
+        // Feature switches
+        // Toggle visibility of header (User-Agent) editing UI
+        val showHeaderUi = (project.findProperty("SHOW_HEADER_UI")?.toString()?.toBooleanStrictOrNull()) ?: false
+        buildConfigField("boolean", "SHOW_HEADER_UI", showHeaderUi.toString())
     }
 
     compileOptions {
@@ -67,14 +90,29 @@ android {
 
     packaging {
         resources.excludes += setOf("META-INF/AL2.0", "META-INF/LGPL2.1")
-        jniLibs {
-            useLegacyPackaging = false
+        // Exclude heavy reference artifacts from packaging (kept in repo for reference only)
+        resources.excludes += setOf("**/com/chris/m3usuite/reference/**")
+        jniLibs { useLegacyPackaging = false }
+    }
+
+    // Keep reference APK dump in repo but exclude it from compilation so it doesn't interfere
+    sourceSets {
+        getByName("main") {
+            java.srcDirs("src/main/java")
         }
     }
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
+}
+
+// Exclude reference sources from Kotlin/Java compilation tasks to avoid receiver ambiguities in sourceSets DSL
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    exclude("**/com/chris/m3usuite/reference/**")
+}
+tasks.withType<JavaCompile>().configureEach {
+    exclude("**/com/chris/m3usuite/reference/**")
 }
 
 dependencies {
@@ -105,11 +143,7 @@ dependencies {
     // JSON (Kotlin Serialization)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
 
-    // Room
-    implementation("androidx.room:room-runtime:2.7.0")
-    kapt("androidx.room:room-compiler:2.7.0")
-    implementation("androidx.room:room-ktx:2.7.0")
-    implementation("androidx.room:room-paging:2.7.0")
+    // Room removed
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.2")
@@ -133,8 +167,14 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
+    // Firebase Cloud Messaging (optional; used for TDLib push integration)
+    implementation("com.google.firebase:firebase-messaging:24.0.0")
+
     // JankStats (performance diagnostics)
     implementation("androidx.metrics:metrics-performance:1.0.0-beta01")
+
+    // QR (ZXing core for QR bitmap generation)
+    implementation("com.google.zxing:core:3.5.2")
 
     // Media3 (ExoPlayer + UI + DataSource)
     implementation("androidx.media3:media3-exoplayer:1.5.0")
@@ -155,4 +195,8 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+
+    // ObjectBox (high-performance local DB)
+    implementation("io.objectbox:objectbox-android:3.7.1")
+    kapt("io.objectbox:objectbox-processor:3.7.1")
 }

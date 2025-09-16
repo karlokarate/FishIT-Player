@@ -25,23 +25,23 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.navigation.NavController
 import com.chris.m3usuite.player.ExternalPlayer
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.ResumeEpisodeView
-import com.chris.m3usuite.data.db.ResumeVodView
-import com.chris.m3usuite.core.xtream.XtreamConfig
+import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.data.repo.ResumeRepository
+import com.chris.m3usuite.core.xtream.XtreamClient
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
 // Resume-UI: Material3
 
 // resume-ui: Default sentinels to detect empty callbacks for clear actions
-private val DefaultOnClearVod: (ResumeVodView) -> Unit = {}
-private val DefaultOnClearEpisode: (ResumeEpisodeView) -> Unit = {}
+data class VodResume(val mediaId: Long, val name: String, val url: String?, val positionSecs: Int)
+data class SeriesResume(val seriesId: Int, val season: Int, val episodeNum: Int, val title: String, val url: String?, val positionSecs: Int)
+private val DefaultOnClearVod: (VodResume) -> Unit = {}
+private val DefaultOnClearEpisode: (SeriesResume) -> Unit = {}
 
 // resume-ui: chooser Intern vs Extern (NavController + ExternalPlayer)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,46 +49,66 @@ private val DefaultOnClearEpisode: (ResumeEpisodeView) -> Unit = {}
 fun ResumeSectionAuto(
     navController: NavController,
     limit: Int = 20,
-    onPlayVod: (ResumeVodView) -> Unit = {},
-    onPlayEpisode: (ResumeEpisodeView) -> Unit = {},
-    onClearVod: (ResumeVodView) -> Unit = DefaultOnClearVod,
-    onClearEpisode: (ResumeEpisodeView) -> Unit = DefaultOnClearEpisode
+    onPlayVod: (VodResume) -> Unit = {},
+    onPlayEpisode: (SeriesResume) -> Unit = {},
+    onClearVod: (VodResume) -> Unit = DefaultOnClearVod,
+    onClearEpisode: (SeriesResume) -> Unit = DefaultOnClearEpisode
 ) {
     val ctx = LocalContext.current
-    val db = remember { DbProvider.get(ctx) }
     val store = remember { SettingsStore(ctx) }
     val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
+    val obx = remember { ObxStore.get(ctx) }
+    val resumeRepo = remember { ResumeRepository(ctx) }
+    val http = remember(ctx) { com.chris.m3usuite.core.http.HttpClientFactory.create(ctx, store) }
+    suspend fun buildClient(): XtreamClient? {
+        val host = store.xtHost.first(); val user = store.xtUser.first(); val pass = store.xtPass.first(); val port = store.xtPort.first()
+        if (host.isBlank() || user.isBlank() || pass.isBlank()) return null
+        val scheme = if (port == 443) "https" else "http"
+        val caps = com.chris.m3usuite.core.xtream.ProviderCapabilityStore(ctx)
+        val portStore = com.chris.m3usuite.core.xtream.EndpointPortStore(ctx)
+        return XtreamClient(http).also { it.initialize(scheme, host, user, pass, basePath = null, store = caps, portStore = portStore, portOverride = port) }
+    }
 
-    var vod by remember { mutableStateOf<List<ResumeVodView>>(emptyList()) }
-    var eps by remember { mutableStateOf<List<ResumeEpisodeView>>(emptyList()) }
+    var vod by remember { mutableStateOf<List<VodResume>>(emptyList()) }
+    var eps by remember { mutableStateOf<List<SeriesResume>>(emptyList()) }
     // resume-ui: Chooser BottomSheet Intern vs Extern
-    var chooserItem by remember { mutableStateOf<ResumeVodView?>(null) }
-    var chooserEpisode by remember { mutableStateOf<ResumeEpisodeView?>(null) }
+    var chooserItem by remember { mutableStateOf<VodResume?>(null) }
+    var chooserEpisode by remember { mutableStateOf<SeriesResume?>(null) }
     // store already defined above
 
     // resume-ui: Laden beider Listen auf IO-Thread
     LaunchedEffect(Unit) {
         try {
-            val dao = db.resumeDao()
-            val v = withContext(Dispatchers.IO) { dao.recentVod(limit) }
-            val e = withContext(Dispatchers.IO) { dao.recentEpisodes(limit) }
+            val client = withContext(Dispatchers.IO) { buildClient() }
+            val v = withContext(Dispatchers.IO) {
+                resumeRepo.recentVod(limit).mapNotNull { mark ->
+                    val enc = mark.mediaId
+                    val vid = (enc - 2_000_000_000_000L).toInt()
+                    val vodBox = obx.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
+                    val row = vodBox.query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(vid.toLong())).build().findFirst()
+                    val name = row?.name ?: "VOD $vid"
+                    val url = client?.buildVodPlayUrl(vid, row?.containerExt)
+                    VodResume(mediaId = enc, name = name, url = url, positionSecs = mark.positionSecs)
+                }
+            }
+            val e = withContext(Dispatchers.IO) {
+                resumeRepo.recentEpisodes(limit).mapNotNull { mk ->
+                    val epBox = obx.boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
+                    val ep = epBox.query(com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(mk.seriesId.toLong()).and(com.chris.m3usuite.data.obx.ObxEpisode_.season.equal(mk.season.toLong())).and(com.chris.m3usuite.data.obx.ObxEpisode_.episodeNum.equal(mk.episodeNum.toLong()))).build().findFirst()
+                    val title = ep?.title ?: "S${mk.season}E${mk.episodeNum}"
+                    val url = client?.buildSeriesEpisodePlayUrl(mk.seriesId, mk.season, mk.episodeNum, ep?.playExt)
+                    SeriesResume(seriesId = mk.seriesId, season = mk.season, episodeNum = mk.episodeNum, title = title, url = url, positionSecs = mk.positionSecs)
+                }
+            }
             // Filter by effective allow-set for non-adult profiles
-            val prof = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(store.currentProfileId.first()) }
+            val prof = withContext(Dispatchers.IO) { obx.boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(store.currentProfileId.first()) }
             if (prof?.type == "adult") {
                 vod = v; eps = e
             } else {
                 val allowedVodIds = withContext(Dispatchers.IO) { mediaRepo.listByTypeFiltered("vod", 100000, 0).map { it.id }.toSet() }
-                val seriesAllowedIds = withContext(Dispatchers.IO) { mediaRepo.listByTypeFiltered("series", 100000, 0).map { it.id }.toSet() }
-                val filteredVod = v.filter { it.mediaId in allowedVodIds }
-                // Map episode -> series mediaItem by seriesStreamId
-                val filteredEp = withContext(Dispatchers.IO) {
-                    e.filter { rev ->
-                        val seriesMi = db.mediaDao().seriesByStreamId(rev.seriesStreamId)
-                        seriesMi != null && (seriesMi.id in seriesAllowedIds)
-                    }
-                }
-                vod = filteredVod
-                eps = filteredEp
+                val seriesAllowedStreamIds = withContext(Dispatchers.IO) { mediaRepo.listByTypeFiltered("series", 100000, 0).mapNotNull { it.streamId }.toSet() }
+                vod = v.filter { it.mediaId in allowedVodIds }
+                eps = e.filter { it.seriesId in seriesAllowedStreamIds }
             }
         } catch (_: Throwable) {
             // Ignorieren – bleibt leer
@@ -137,23 +157,12 @@ fun ResumeSectionAuto(
                 ) {
                     Text("Wie abspielen?", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
-                    // Build URL from TG or Xtream config
-                    val cfg = remember { mutableStateOf<XtreamConfig?>(null) }
-                    LaunchedEffect(Unit) {
-                        val host = store.xtHost.first(); val user = store.xtUser.first(); val pass = store.xtPass.first(); val out = store.xtOutput.first(); val port = store.xtPort.first()
-                        cfg.value = if (host.isNotBlank() && user.isNotBlank() && pass.isNotBlank()) XtreamConfig(host, port, user, pass, out) else null
-                    }
                     val start = ep.positionSecs.toLong() * 1000L
-                    var tgUrl by remember { mutableStateOf<String?>(null) }
-                    LaunchedEffect(ep.episodeId) {
-                        val full = withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(ep.episodeId) }
-                        tgUrl = if (full?.tgChatId != null && full.tgMessageId != null) "tg://message?chatId=${full.tgChatId}&messageId=${full.tgMessageId}" else null
-                    }
-                    val playUrl = tgUrl ?: cfg.value?.seriesEpisodeUrl(ep.episodeId, ep.containerExt)
+                    val playUrl = ep.url
                     Button(onClick = {
                         if (playUrl != null) {
                             val encoded = Uri.encode(playUrl)
-                            navController.navigate("player?url=$encoded&type=series&episodeId=${ep.episodeId}&startMs=$start")
+                            navController.navigate("player?url=$encoded&type=series&episodeId=-1&startMs=$start")
                         }
                         chooserEpisode = null
                     }, enabled = playUrl != null) { Text("Intern") }
@@ -173,11 +182,10 @@ fun ResumeSectionAuto(
         if (vod.isNotEmpty()) {
             SectionTitle(text = "Weiter schauen – Filme")
             // resume-ui: Fallback – wenn onClearVod leer ist, DB aufräumen, sonst Callback verwenden
-            val resolvedVodClear: (ResumeVodView) -> Unit = if (onClearVod === DefaultOnClearVod) {
+            val resolvedVodClear: (VodResume) -> Unit = if (onClearVod === DefaultOnClearVod) {
                 { item ->
                     try {
-                        val dao = db.resumeDao()
-                        scope.launch(Dispatchers.IO) { dao.clearVod(item.mediaId) }
+                        scope.launch(Dispatchers.IO) { resumeRepo.clearVod(item.mediaId) }
                     } catch (_: Throwable) { /* ignore */ }
                 }
             } else onClearVod
@@ -193,12 +201,9 @@ fun ResumeSectionAuto(
         if (eps.isNotEmpty()) {
             SectionTitle(text = "Weiter schauen – Serien")
             // resume-ui: Fallback – wenn onClearEpisode leer ist, DB aufräumen
-            val resolvedEpClear: (ResumeEpisodeView) -> Unit = if (onClearEpisode === DefaultOnClearEpisode) {
+            val resolvedEpClear: (SeriesResume) -> Unit = if (onClearEpisode === DefaultOnClearEpisode) {
                 { item ->
-                    try {
-                        val dao = db.resumeDao()
-                        scope.launch(Dispatchers.IO) { dao.clearEpisode(item.episodeId) }
-                    } catch (_: Throwable) { /* ignore */ }
+                    // OBX series resume not persisted per-episode yet; handled via set during playback
                 }
             } else onClearEpisode
 
@@ -213,9 +218,9 @@ fun ResumeSectionAuto(
 
 @Composable
 fun ResumeVodRow(
-    items: List<ResumeVodView>,
-    onPlay: (ResumeVodView) -> Unit,
-    onClear: (ResumeVodView) -> Unit
+    items: List<VodResume>,
+    onPlay: (VodResume) -> Unit,
+    onClear: (VodResume) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     // Ensure keys remain unique even if upstream accidentally duplicates
@@ -244,20 +249,20 @@ fun ResumeVodRow(
 
 @Composable
 fun ResumeEpisodeRow(
-    items: List<ResumeEpisodeView>,
-    onPlay: (ResumeEpisodeView) -> Unit,
-    onClear: (ResumeEpisodeView) -> Unit
+    items: List<SeriesResume>,
+    onPlay: (SeriesResume) -> Unit,
+    onClear: (SeriesResume) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     // Ensure keys remain unique even if upstream accidentally duplicates
-    val state = remember(items) { mutableStateOf(items.distinctBy { it.episodeId }) }
+    val state = remember(items) { mutableStateOf(items.distinctBy { Triple(it.seriesId, it.season, it.episodeNum) }) }
 
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(state.value, key = { it.episodeId }) { e ->
+        items(state.value, key = { "${it.seriesId}:${it.season}:${it.episodeNum}" }) { e ->
             val title = "S${e.season}E${e.episodeNum} – ${e.title}"
             ResumeCard(
                 title = title,
@@ -266,7 +271,7 @@ fun ResumeEpisodeRow(
                 onClear = {
                     scope.launch {
                         onClear(e)
-                        state.removeItem { it.episodeId == e.episodeId }
+                        state.removeItem { it.seriesId == e.seriesId && it.season == e.season && it.episodeNum == e.episodeNum }
                     }
                 }
             )

@@ -34,10 +34,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloat
 import coil3.compose.AsyncImage
-import com.chris.m3usuite.data.db.AppDatabase
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.ResumeMark
-import com.chris.m3usuite.data.repo.XtreamRepository
+import com.chris.m3usuite.data.repo.ResumeRepository
+// XtreamRepository not needed for OBX-only flow
 import com.chris.m3usuite.player.ExternalPlayer
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.player.InternalPlayerScreen
@@ -47,7 +45,7 @@ import kotlin.math.max
 import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 import com.chris.m3usuite.data.repo.KidContentRepository
-import com.chris.m3usuite.data.db.Profile
+// Room removed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -65,6 +63,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.derivedStateOf
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,13 +76,11 @@ fun VodDetailScreen(
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
-
-    val db: AppDatabase = remember { DbProvider.get(ctx) }
-    val repo: XtreamRepository = remember { XtreamRepository(ctx, SettingsStore(ctx)) }
+    val store = remember { SettingsStore(ctx) }
+    // OBX-only (Room removed)
     val tgRepo: com.chris.m3usuite.data.repo.TelegramRepository = remember { com.chris.m3usuite.data.repo.TelegramRepository(ctx, SettingsStore(ctx)) }
     val scope = rememberCoroutineScope()
     val kidRepo = remember { KidContentRepository(ctx) }
-    val store = remember { SettingsStore(ctx) }
     val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
     val haptics = LocalHapticFeedback.current
     val hapticsEnabled by store.hapticsEnabled.collectAsStateWithLifecycle(initialValue = false)
@@ -96,61 +94,53 @@ fun VodDetailScreen(
     var url by remember { mutableStateOf<String?>(null) }
 
     var resumeSecs by rememberSaveable { mutableStateOf<Int?>(null) }
+    val resumeRepo = remember { ResumeRepository(ctx) }
 
     LaunchedEffect(id) {
-        val item = db.mediaDao().byId(id) ?: return@LaunchedEffect
-        title = item.name.substringAfter(" - ", item.name)
-        poster = item.poster
-        backdrop = item.backdrop
-        plot = item.plot
-        rating = item.rating
-        duration = item.durationSecs
-        url = item.url
-
-        // Telegram: if source is TG, prefer tg://message uri handled by TelegramRoutingDataSource
-        if (item.source == "TG") {
-            val chat = item.tgChatId
-            val msg = item.tgMessageId
-            url = if (chat != null && msg != null) {
-                "tg://message?chatId=$chat&messageId=$msg"
-            } else {
-                // fallback to local path if available
-                tgRepo.resolvePlaybackUriFor(item)?.toString()
-            }
-        }
-
-        resumeSecs = db.resumeDao().getVod(id)?.positionSecs
-
-        if (plot.isNullOrBlank() || poster.isNullOrBlank() || duration == null) {
-            repo.enrichVodDetailsOnce(id).onSuccess {
-                db.mediaDao().byId(id)?.let { upd ->
-                    poster = upd.poster
-                    backdrop = upd.backdrop
-                    plot = upd.plot
-                    rating = upd.rating
-                    duration = upd.durationSecs
-                }
-            }
+        fun decodeObxVodId(v: Long): Int? = if (v >= 2_000_000_000_000L && v < 3_000_000_000_000L) (v - 2_000_000_000_000L).toInt() else null
+        val obxVid = decodeObxVodId(id)
+        if (obxVid != null) {
+            val box = com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
+            val row = box.query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(obxVid.toLong())).build().findFirst()
+            title = (row?.name ?: "").substringAfter(" - ", row?.name ?: "")
+            poster = row?.poster
+            backdrop = row?.imagesJson?.let { runCatching { kotlinx.serialization.json.Json.parseToJsonElement(it).jsonArray.firstOrNull()?.jsonPrimitive?.content }.getOrNull() }
+            plot = row?.plot
+            rating = row?.rating
+            duration = null
+            // Build play URL
+            val scheme = if (store.xtPort.first() == 443) "https" else "http"
+            val http = com.chris.m3usuite.core.http.HttpClientFactory.create(ctx, store)
+            val client = com.chris.m3usuite.core.xtream.XtreamClient(http)
+            val caps = com.chris.m3usuite.core.xtream.ProviderCapabilityStore(ctx)
+            val ports = com.chris.m3usuite.core.xtream.EndpointPortStore(ctx)
+            client.initialize(
+                scheme = scheme,
+                host = store.xtHost.first(),
+                username = store.xtUser.first(),
+                password = store.xtPass.first(),
+                basePath = null,
+                store = caps,
+                portStore = ports,
+                portOverride = store.xtPort.first()
+            )
+            url = client.buildVodPlayUrl(obxVid, row?.containerExt)
+            // resume not available for OBX-backed ids via Room; leave null
+        } else {
+            // No Room fallback available
+            return@LaunchedEffect
         }
     }
 
     fun setResume(newSecs: Int) = scope.launch {
         val pos = max(0, newSecs)
         resumeSecs = pos
-        db.resumeDao().upsert(
-            ResumeMark(
-                type = "vod",
-                mediaId = id,
-                episodeId = null,
-                positionSecs = pos,
-                updatedAt = System.currentTimeMillis()
-            )
-        )
+        withContext(Dispatchers.IO) { resumeRepo.setVodResume(id, pos) }
     }
 
     fun clearResume() = scope.launch {
         resumeSecs = null
-        db.resumeDao().clearVod(id)
+        withContext(Dispatchers.IO) { resumeRepo.clearVod(id) }
     }
 
     // --- Interner Player Zustand (Fullscreen) ---
@@ -179,7 +169,7 @@ fun VodDetailScreen(
 
     var contentAllowed by remember { mutableStateOf(true) }
     LaunchedEffect(id) {
-        val isAdultNow = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(store.currentProfileId.first())?.type == "adult" }
+        val isAdultNow = withContext(Dispatchers.IO) { com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(store.currentProfileId.first())?.type == "adult" }
         contentAllowed = if (isAdultNow) true else mediaRepo.isAllowed("vod", id)
     }
 
@@ -217,15 +207,17 @@ fun VodDetailScreen(
     // Adult
     val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
     var isAdult by remember { mutableStateOf(true) }
-    LaunchedEffect(profileId) { isAdult = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(profileId)?.type != "kid" } }
+    LaunchedEffect(profileId) { isAdult = withContext(Dispatchers.IO) { com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(profileId)?.type != "kid" } }
 
     var showGrantSheet by rememberSaveable { mutableStateOf(false) }
     var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
 
     @Composable
     fun KidSelectSheet(onConfirm: suspend (kidIds: List<Long>) -> Unit, onDismiss: () -> Unit) {
-        var kids by remember { mutableStateOf<List<Profile>>(emptyList()) }
-        LaunchedEffect(profileId) { kids = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().all().filter { it.type == "kid" } } }
+        var kids by remember { mutableStateOf<List<com.chris.m3usuite.data.obx.ObxProfile>>(emptyList()) }
+        LaunchedEffect(profileId) {
+            kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } }
+        }
         var checked by remember { mutableStateOf(setOf<Long>()) }
         ModalBottomSheet(onDismissRequest = onDismiss) {
             LazyColumn(

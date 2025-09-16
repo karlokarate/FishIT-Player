@@ -21,7 +21,8 @@ import java.io.RandomAccessFile
 class TelegramTdlibDataSource(
     private val context: Context,
     private val fallbackFactory: DataSource.Factory,
-    private val routingFallback: DataSource.Factory = TelegramRoutingDataSource.Factory(context, fallbackFactory)
+    private val routingFallback: DataSource.Factory = TelegramRoutingDataSource.Factory(context, fallbackFactory),
+    private val notify: ((String) -> Unit)? = null
 ) : DataSource {
 
     private var opened = false
@@ -33,6 +34,7 @@ class TelegramTdlibDataSource(
 
     private var delegate: DataSource? = null
     private var listener: TransferListener? = null
+    private var authFallbackNotified: Boolean = false
 
     override fun addTransferListener(transferListener: TransferListener) { listener = transferListener }
 
@@ -47,17 +49,17 @@ class TelegramTdlibDataSource(
             return d.open(dataSpec)
         }
 
-        // Need TDLib
-        if (!TdLibReflection.available()) {
+        // Gate by Settings flag first (avoid any TDLib touch when disabled)
+        val store = com.chris.m3usuite.prefs.SettingsStore(context)
+        val enabled = runBlocking { store.tgEnabled.first() }
+        if (!enabled) {
             val d = routingFallback.createDataSource().also { delegate = it; listener?.let(it::addTransferListener) }
             opened = true
             return d.open(dataSpec)
         }
 
-        // Gate by Settings flag
-        val store = com.chris.m3usuite.prefs.SettingsStore(context)
-        val enabled = runBlocking { store.tgEnabled.first() }
-        if (!enabled) {
+        // Need TDLib presence
+        if (!TdLibReflection.available()) {
             val d = routingFallback.createDataSource().also { delegate = it; listener?.let(it::addTransferListener) }
             opened = true
             return d.open(dataSpec)
@@ -81,6 +83,11 @@ class TelegramTdlibDataSource(
             val st = TdLibReflection.mapAuthorizationState(a)
             if (st != AuthState.AUTHENTICATED) throw IOException("TDLib not authenticated")
         }.onFailure {
+            if (!authFallbackNotified) {
+                val msg = "Telegram nicht verbunden – lokale Dateien werden verwendet"
+                if (notify != null) notify.invoke(msg) else try { android.widget.Toast.makeText(context.applicationContext, msg, android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) {}
+                authFallbackNotified = true
+            }
             val d = routingFallback.createDataSource().also { delegate = it; listener?.let(it::addTransferListener) }
             opened = true
             return d.open(dataSpec)
@@ -117,11 +124,15 @@ class TelegramTdlibDataSource(
         val file = java.io.File(path)
         if (!file.exists()) throw IOException("tdlib: local file missing")
 
-        // Best-effort: persist localPath in DB telegram_messages
+        // Best-effort: persist localPath in ObjectBox telegram_messages
         runBlocking {
             runCatching {
-                val db = com.chris.m3usuite.data.db.DbProvider.get(context)
-                db.telegramDao().updateLocalPath(chatId, msgId, path)
+                val box = com.chris.m3usuite.data.obx.ObxStore.get(context)
+                val b = box.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+                val q = b.query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId).and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(msgId))).build()
+                val row = q.findFirst() ?: com.chris.m3usuite.data.obx.ObxTelegramMessage(chatId = chatId, messageId = msgId)
+                row.localPath = path
+                b.put(row)
             }
         }
 
@@ -175,8 +186,9 @@ class TelegramTdlibDataSource(
 
     class Factory(
         private val context: Context,
-        private val fallback: DataSource.Factory
+        private val fallback: DataSource.Factory,
+        private val notify: ((String) -> Unit)? = null
     ) : DataSource.Factory {
-        override fun createDataSource(): DataSource = TelegramTdlibDataSource(context, fallback)
+        override fun createDataSource(): DataSource = TelegramTdlibDataSource(context, fallback, TelegramRoutingDataSource.Factory(context, fallback), notify)
     }
 }

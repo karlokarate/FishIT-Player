@@ -1,7 +1,9 @@
 package com.chris.m3usuite.core.m3u
 
 import android.content.Context
-import com.chris.m3usuite.data.db.DbProvider
+// Room removed; export from OBX only
+import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.data.obx.toMediaItem
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,7 +31,6 @@ object M3UExporter {
         out: java.lang.Appendable,
         batchSize: Int = 5000
     ) = withContext(Dispatchers.IO) {
-        val db = DbProvider.get(context)
         val epg = settings.epgUrl.first().trim()
         if (epg.isNotBlank()) out.append("#EXTM3U url-tvg=\"").append(epg).append("\"\n") else out.append("#EXTM3U\n")
 
@@ -38,7 +39,12 @@ object M3UExporter {
         suspend fun writeType(type: String) {
             var offset = 0
             while (true) {
-                val chunk = db.mediaDao().listByType(type, batchSize, offset)
+                val box = ObxStore.get(context)
+                val chunk = when (type) {
+                    "live" -> box.boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java).all.map { it.toMediaItem(context) }
+                    "vod" -> box.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java).all.map { it.toMediaItem(context) }
+                    else -> emptyList()
+                }
                 if (chunk.isEmpty()) break
                 for (it in chunk) {
                     val url = it.url ?: continue

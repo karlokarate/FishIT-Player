@@ -4,7 +4,8 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.chris.m3usuite.data.db.DbProvider
+import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.data.obx.ObxProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -24,11 +25,10 @@ class ProfileManagerViewModel(app: Application) : AndroidViewModel(app) {
                         input.copyTo(output)
                     }
                 }
-                val db = DbProvider.get(ctx)
-                val p = db.profileDao().byId(kidId)
-                if (p != null) {
-                    db.profileDao().update(p.copy(avatarPath = out.absolutePath, updatedAt = System.currentTimeMillis()))
-                }
+                val obx = ObxStore.get(ctx)
+                val b = obx.boxFor(ObxProfile::class.java)
+                val p = b.get(kidId)
+                if (p != null) { p.avatarPath = out.absolutePath; p.updatedAt = System.currentTimeMillis(); b.put(p) }
                 withContext(Dispatchers.Main) { onResult(true, out) }
             } catch (_: Throwable) {
                 withContext(Dispatchers.Main) { onResult(false, null) }
@@ -36,4 +36,3 @@ class ProfileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 }
-

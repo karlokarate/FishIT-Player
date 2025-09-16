@@ -18,16 +18,64 @@ Codex – Operating Rules (override)
 - Single source of truth: `AGENTS.md` is the canonical source for workflow, architecture, and dependencies. All other documents (including `ARCHITECTURE_OVERVIEW.md`, `ROADMAP.md`, `CHANGELOG.md`) are derived/synced from here. In case of discrepancies, `AGENTS.md` prevails.
 - Full context gathering: For a complete overview, Codex also reads ROADMAP.md, CHANGELOG.md, ARCHITECTURE_OVERVIEW.md, and the latest commits/PRs to understand the current state before making changes.
 - Auto documentation upkeep: Immediately after patches, Codex updates the full documentation set (AGENTS.md, ROADMAP.md, CHANGELOG.md, ARCHITECTURE_OVERVIEW.md) and pushes to `master`. If the environment blocks direct writes or pushes, Codex prepares diffs and requests the smallest possible approval to finalize.
-- Deep dependency awareness: When patching, Codex reads all relevant modules in appropriately sized batches and considers all dependent modules. `ARCHITECTURE_OVERVIEW.md` is maintained as a detailed, human‑friendly derivative; if it disagrees with this file, this file wins.
+ - Deep dependency awareness: When patching, Codex reads all relevant modules in appropriately sized batches and considers all dependent modules. `ARCHITECTURE_OVERVIEW.md` is maintained as a detailed, human‑friendly derivative; if it disagrees with this file, this file wins.
+- Xtream single source: The folder `app/src/main/java/com/chris/m3usuite/core/xtream` is the canonical source for Xtream handling (detect, config, capabilities, client, models). Other usages must adapt to these APIs.
+- ObjectBox primary store: ObjectBox is the primary local store for content (categories, live, vod, series, episodes, epg_now_next). Telegram metadata is now stored in ObjectBox as well (`ObxTelegramMessage`). Room has been removed from app flows.
+- OBX ID bridging: OBX‑backed lists encode stable IDs into `MediaItem.id` for navigation: live=`1e12+streamId`, vod=`2e12+vodId`, series=`3e12+seriesId`. Detail screens resolve these IDs to OBX and build play URLs via `XtreamClient`. Legacy Room IDs remain supported where present (favorites/resume) during the transition.
+- ObjectBox search: Search uses indexed `nameLower` fields and category-name matches with page-aware merging (no full in-memory merges). Avoid Room paging in Library. Prefer OBX queries.
+- EPG fast path: Short EPG is fetched on-demand for visible live items and written to ObjectBox. Screens subscribe to `ObxEpgNowNext` (event-based). Room persistence has been removed.
+- Lazy loading: Global strategy. Visible rows/details prefetch on demand into OBX; periodic background jobs for M3U/Xtream/EPG are removed or no‑op. Telegram jobs remain (sync/cleanup).
 - Cascading fixes allowed: If additional modules must change to keep the system consistent after a patch, Codex proceeds to implement those changes directly under these rules.
 - End‑to‑end execution: When the user requests a change/fix/implementation, Codex performs it end‑to‑end (no TODOs/placeholders). For major changes requiring iterative passes over the same files, Codex proceeds autonomously without waiting for intermediate applies, unless sandbox constraints force an approval.
 - Minimize approvals: Routine repo/Documentation changes are applied directly. Approvals are limited to privileged ops, irreversible deletions, or external authentication.
 - Pragmatic alternatives: If a request is technically not feasible, Codex proposes the best alternative solution and requests approval where appropriate.
 - Respectful scope: Codex does not change/trim/expand modules or files without instruction, except where necessary to uphold these rules or maintain architectural integrity. Existing flows (EPG/Xtream, player paths, list/detail) must be preserved unless requested.
-- Ongoing hygiene: Codex periodically tidies the repo, highlights obsolete files/code to the user, and removes uncritical leftovers (e.g., stale *.old files). Never touch `.gradle/`, `.idea/`, or `app/build/` artifacts, and avoid dependency upgrades unless fixing builds.
+ - Ongoing hygiene: Codex periodically tidies the repo, highlights obsolete files/code to the user, and removes uncritical leftovers (e.g., stale *.old files). Never touch `.gradle/`, `.idea/`, or `app/build/` artifacts, and avoid dependency upgrades unless fixing builds.
+- Xtream workers & delta: Legacy `XtreamRefreshWorker`/`XtreamEnrichmentWorker` remain disabled (no‑op). Xtream content updates via `XtreamDeltaImportWorker`: periodic (12h, unmetered+charging) plus on‑demand one‑shot trigger.
+  - One‑shot `ObxKeyBackfillWorker` fills missing `sortTitleLower`/`providerKey`/`genreKey`/`yearKey` for existing OBX rows.
+- UI data flows: Start/Library/Details are ObjectBox-first.
+  - Library grouped views (Live/VOD/Series) use indexed OBX keys for headers (provider/genre/year) and page per visible row.
+  - Start uses paged rows (Series/VOD) and a global paged Live row when no favorites exist; direct-play for Series navigates to details after on-demand OBX import if episodes absent.
 - Cross‑platform builds: Codex uses Linux/WSL for builds/tests via Gradle wrapper while keeping settings compatible with Windows. Ensure no corruption of Windows‑side project files.
-- WSL build files: Projektstamm enthält Linux‑spezifische Ordner für Build/Tests: `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`. Codex verwendet diese Ordner unter WSL; Windows‑seitige Einstellungen bleiben kompatibel.
+ - WSL build files: Projektstamm enthält Linux‑spezifische Ordner für Build/Tests: `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`. Optional: `.wsl-cmake` (portable CMake), `.wsl-gperf` (portable gperf). Codex verwendet diese Ordner unter WSL; Windows‑seitige Einstellungen bleiben kompatibel.
 - Tooling upgrades: If Codex needs additional tools or configuration to work better, it informs the user and, where possible, sets them up itself; otherwise it provides clear, copy‑pastable step‑by‑step commands for the user to establish the optimal environment.
+
+Sandbox/WSL – Agent Execution Rules (Best Effort)
+- Repo‑local tools only: never use `sudo` or modify system config. Install portable binaries under `.wsl-*` and prefer them in `PATH`.
+  - `.wsl-android-sdk`, `.wsl-java-17`, `.wsl-gradle` (existing)
+  - `.wsl-cmake` (portable CMake) via `scripts/setup-wsl-build-tools.sh`
+  - `.wsl-gperf` (portable gperf) via `scripts/setup-wsl-gperf.sh`
+- PATH precedence in shells and scripts: `export PATH="$REPO/.wsl-cmake/bin:$REPO/.wsl-gperf:$PATH"`
+- Required env vars for Android builds: set `ANDROID_SDK_ROOT`, `ANDROID_NDK_HOME`, `JAVA_HOME`, `GRADLE_USER_HOME` to repo‑local folders.
+- Shell I/O discipline: use `rg` for searches and `sed -n` chunking to avoid output truncation; don’t dump large files.
+- Builds: prefer Ninja if present, otherwise let CMake fall back to Make; split long work into generate → build → verify steps.
+Note: TDLib v7a builds have been removed. We ship arm64‑v8a only.
+- Network/downloads: use shallow `git clone` and robust `curl`; if a tool is missing, prefer portable installs (e.g., `apt-get download gperf` + `dpkg-deb -x` into `.wsl-gperf`).
+- Safety: never touch `.gradle/`, `.idea/`, or Android Studio settings; don’t push or alter remotes/keys; keep secrets out of the repo.
+- Documentation upkeep: after any patch, immediately update `CHANGELOG.md`, `ROADMAP.md`, and—if architecture changes—`AGENTS.md` and `ARCHITECTURE_OVERVIEW.md`.
+
+Quick Verify (WSL)
+- Env exports:
+  - `export REPO="$(pwd)"`
+  - `export ANDROID_SDK_ROOT="$REPO/.wsl-android-sdk"`
+  - `export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/26.1.10909125"`
+  - `export JAVA_HOME="$REPO/.wsl-java-17"`
+  - `export GRADLE_USER_HOME="$REPO/.wsl-gradle"`
+  - `export PATH="$REPO/.wsl-cmake/bin:$REPO/.wsl-gperf:$JAVA_HOME/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"`
+- Tools present:
+  - `cmake --version | head -n1`
+  - `gperf --version | head -n1`
+  - `"$ANDROID_NDK_HOME"/build/cmake/android.toolchain.cmake` exists
+  - `java -version` prints 17
+
+One-liner: setup + verify
+```
+bash scripts/setup-wsl-build-tools.sh && \
+bash scripts/setup-wsl-gperf.sh && \
+export REPO="$(pwd)" ANDROID_SDK_ROOT="$REPO/.wsl-android-sdk" ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/26.1.10909125" JAVA_HOME="$REPO/.wsl-java-17" GRADLE_USER_HOME="$REPO/.wsl-gradle" && \
+export PATH="$REPO/.wsl-cmake/bin:$REPO/.wsl-gperf:$JAVA_HOME/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH" && \
+cmake --version | head -n1 && gperf --version | head -n1 && test -f "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" && java -version
+```
 
 Quick Build & Test
 - JDK 17; Gradle wrapper
@@ -69,18 +117,27 @@ Where to find the full overview
 
 Short bullet summary (current highlights)
 - Single-module app (`app`) with Compose UI, Room DB/DAOs, WorkManager, DataStore, Media3 player, OkHttp/Coil.
-- Telegram integration (opt‑in, alpha): Login (Phone→Code→Passwort) mit auto DB‑Key‑Check; Settings‑Block mit Ordner/Chat‑Picker und separaten Quellen für Film/Serien‑Sync; Sync‑Worker mappt Nachrichten auf VOD (`MediaItem.source=TG`) oder Serie (Episode.tg*; SxxExx‑Heuristik). Player streamt `tg://message?...` via Telegram‑DataSource (Seek, progressive Download). Packaging über `:libtd` (arm64; v7a‑Buildscript vorhanden).
-  - Index/Cache: `telegram_messages` wird beim Sync befüllt (fileId/uniqueId, caption, supportsStreaming, date, thumbFileId); `localPath` wird durch DataSources aktualisiert. Minimaler Sync‑Fortschritt in Settings; täglicher Cache‑Trim (GB‑Limit) via `TelegramCacheCleanupWorker`.
-- TDLib packaging: Added `:libtd` module bundling JNI libs (`libtdjni.so`) for `arm64-v8a` (and optional `armeabi-v7a`). App depends on `:libtd` to ensure TDLib availability at runtime.
-- TDLib packaging: Added `:libtd` module bundling JNI libs (`libtdjni.so`) for `arm64-v8a` (and optional `armeabi-v7a`). App depends on `:libtd` to ensure TDLib availability at runtime. Native JNI is auto‑loaded via a static initializer in `org.drinkless.tdlib.Client`.
- - TDLib secrets sourcing: `TG_API_ID`/`TG_API_HASH` are injected at build time without committing secrets.
+  - Telegram integration (opt‑in, alpha → phase‑2 in progress): Login (Phone→Code→Passwort) mit auto DB‑Key‑Check; Settings‑Block mit Ordner/Chat‑Picker und separaten Quellen für Film/Serien‑Sync; Sync‑Worker mappt Nachrichten auf VOD (`MediaItem.source=TG`) oder Serie (Episode.tg*; SxxExx‑Heuristik). Player streamt `tg://message?...` via Telegram‑DataSource (Seek, progressive Download). Packaging über `:libtd` (arm64). Phase‑2: QR‑Login (done), dedicated TDLib service process (done), foreground switching on downloads/auth (done), lifecycle/network hooks (done), FCM push hooks (prepped), event‑driven indexing (basis done), LTO (next).
+    - Event‑driven indexing (Basis): TDLib‑Service lauscht auf `UpdateNewMessage`/`UpdateMessageContent`/`UpdateFile` und persistiert Minimal‑Metadaten in `telegram_messages` inkl. `localPath`‑Updates per `fileId`. Backfill via `TelegramSyncWorker` bleibt erhalten.
+  - Index/Cache: `telegram_messages` wird beim Sync befüllt (fileId/uniqueId, caption, supportsStreaming, date, thumbFileId); `localPath` wird durch DataSources aktualisiert. Minimaler Sync‑Fortschritt in Settings; täglicher Cache‑Trim (GB‑Limit) via `TelegramCacheCleanupWorker`. FCM Push integriert (Token‑Registrierung + `processPushNotification`), Service startet lazy bei Push.
+- TDLib packaging: `:libtd` bundles JNI `libtdjni.so` for `arm64-v8a`. Native JNI is auto‑loaded via a static initializer in `org.drinkless.tdlib.Client`.
+- TDLib secrets sourcing: `TG_API_ID`/`TG_API_HASH` are injected at build time without committing secrets.
    - Precedence: ENV vars (`TG_API_ID`, `TG_API_HASH`) → root `/.tg.secrets.properties` (not tracked) → `-P` Gradle props → default 0/empty.
    - To test locally: either set env vars for the Gradle run, or create a root‑level file `.tg.secrets.properties` with `TG_API_ID=...` and `TG_API_HASH=...`.
- - TDLib v7a build: Script `scripts/tdlib-build-v7a.sh` builds `libtdjni.so` for `armeabi-v7a` via CMake/NDK and copies it to `libtd/src/main/jniLibs/armeabi-v7a/`.
+ - Default UA (secret): HTTP `User-Agent` is injected as `BuildConfig.DEFAULT_UA`.
+   - Precedence: ENV var `HEADER` → root `/.ua.secrets.properties` (not tracked) → `-P HEADER` → empty.
+   - Neither the repo nor the compiled APK contain the literal UA; app fallbacks read `DEFAULT_UA`.
+- TDLib native packaging: Single ABI (arm64‑v8a) with static BoringSSL linking for a self‑contained JNI lib.
+  - arm64: `scripts/tdlib-build-arm64.sh` builds `libtdjni.so` for `arm64-v8a` with static BoringSSL and copies to `libtd/src/main/jniLibs/arm64-v8a/`.
+  - Size hygiene: Stripping enabled; Phase‑2 adds LTO/GC‑sections/strip‑unneeded to further reduce size.
 - Start/Home shows Serien, Filme, TV; Kids get filtered content (MediaQueryRepository), no settings/bottom bar, read‑only favorites.
+- Library grouping/filter: VOD/Serien gruppieren nach Provider (normalisiert), Jahr, Genre; Live nach Provider/Genre (kein Jahr). Textfilter pro Typ; "Unbekannt" bündelt nicht zuordenbare Inhalte. Kategorie‑Normalisierung konsolidiert Provider‑Varianten (Apple TV+, Netflix, Disney+, Prime …) → Rows nicht mehr zersplittert.
 - Backup/Restore present in Setup (Quick Import) and Settings (Quick Import + full section). Drive client optional (shim by default).
 - Player fullscreen with tap-to-show overlay controls; Live favorites reorder fixed/stable.
-- EPG: persistent Now/Next cache (Room) with XMLTV fallback; background refresh worker; Live tiles show title + progress.
+ - HTTP layer: Singleton OkHttpClient + merging CookieJar; headers via RequestHeadersProvider snapshot for consistency.
+ - Xtream enrichment: Throttled batches with retry/backoff; not auto-scheduled in scheduleAll.
+
+- EPG: Now/Next dual-persist (Room + ObjectBox) with XMLTV fallback; no periodic worker. UI reads OBX; on-demand prefetch for visible tiles and favorites at app start; Live tiles show title + progress.
 - Unified UI polish: Accent tokens (adult/kid), carded sections (`AccentCard`), gradient + glow background with blurred app icon; kid profiles use a vibrant palette.
 - Kid/Guest profiles: per‑profile permissions (Settings/Quellen, External Player, Favorites, Search, Resume, Whitelist).
 - Kid filtering: Effective allow = item allows ∪ category allows − item blocks; category‑level whitelist + per‑item exceptions via admin UI.
@@ -94,14 +151,18 @@ Policies (Do/Don't)
 - WSL/Ubuntu recommended; network allowed for Gradle.
 - Enforce profile permissions rigorously; do not expose admin‑only affordances (whitelist/favorites/Quellen/Settings) without permission.
 - For kid/guest reads, always use `MediaQueryRepository`; do not bypass via raw DAO queries in UI paths.
- - Telegram gating: Keine TDLib‑Nutzung ohne aktives Flag (`tg_enabled=true`) und erfolgreichen Login (AUTHENTICATED). Worker/DataSources/Picker sind ansonsten no‑op.
+- Provider normalization: UI-Gruppierungen nutzen `CategoryNormalizer`; Rows gruppieren nach normalisierten Schlüsseln, nicht nach rohen group‑title Strings.
+- Telegram gating: Keine TDLib‑Nutzung ohne aktives Flag (`tg_enabled=true`) und erfolgreichen Login (AUTHENTICATED). Worker/DataSources/Picker sind ansonsten no‑op.
+ - TDLib service model: TDLib im separaten Prozess via Service; foreground nur bei Downloads/Auth; `SetInBackground` am Lifecycle; `SetNetworkType` bei Net‑Wechseln. FCM Push (hooks vorhanden), weniger Polling; WorkManager bleibt Fallback.
 
 For the complete module-by-module guide, see `ARCHITECTURE_OVERVIEW.md`.
 
 ---
 
 Recent
-- EPG: Persistent Now/Next cache (`epg_now_next`) + XMLTV multi-index; fallback aktiv auch ohne Xtream; periodic refresh (15m) + stale cleanup.
+ - Xtream onboarding/telemetry: After discovery, the app immediately triggers Discovery → Client → Fetch (the six reference list calls). All `player_api.php?action=...` URLs are logged at info level for quick verification. VOD alias from discovery is honored, and wildcard `category_id=0` is used when no category is selected.
+ - Xtream: Port-Resolver verschärft – nur HTTP 2xx + parsebares JSON zählen als gültiger Treffer. Probes senden nun explizite `action`‑Parameter (`get_live_streams|get_series|get_vod_streams`) mit `category_id=0`, um WAF/Cloudflare 521 zu vermeiden. HTTP‑Kandidaten priorisieren `8080`; `2095` wurde entfernt. Cache‑Treffer werden einmal revalidiert; bei Fehlschlag wird der Eintrag verworfen und neu ermittelt. Wenn die Basis‑URL/Settings bereits einen Port enthalten, wird dieser unverändert übernommen und der Resolver übersprungen.
+- EPG: Now/Next dual-persist (Room + OBX) + XMLTV multi-index; fallback aktiv auch ohne Xtream; kein periodischer Worker mehr (on‑demand Prefetch sichtbar/Favoriten), optional stale cleanup.
 - UI: Live tiles enriched with current programme + progress bar.
 - Xtream: Detection supports compact stream URLs; import merges missing `epg_channel_id` from existing DB by `streamId`.
 - UI polish: Long-press reordering for Live favorites (touch-friendly), carded look across Start/Library/Details/Setup, Accent/KidAccent tokens, background glow treatment.
@@ -110,3 +171,4 @@ Recent
 - Whitelist UX: Category‑level allow with item‑level exceptions; admin sheet in ProfileManager to manage both.
 - Data: New tables `kid_category_allow`, `kid_content_block`, `profile_permissions`; DB schema bumped with idempotent migrations.
  - Telegram (scaffold): Global feature flag, Settings section, DB v8 with `MediaItem.source` + TG refs and `telegram_messages` table; Gradle packaging prepped for universal ABI; ProGuard keep rules added. Playback resolves local TG paths when available. Default OFF to preserve current behavior.
+- UI/Library: Dynamische Gruppierung/Filter (VOD/Serien: Provider/Jahr/Genre; Live: Provider/Genre). Kategorie‑Normalisierung vereinheitlicht Provider (Apple TV+, Netflix, Disney+, Prime …). Textfilter pro Typ; "Unbekannt" fängt Reste ab.

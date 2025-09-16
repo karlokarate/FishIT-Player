@@ -1,18 +1,11 @@
 package com.chris.m3usuite.ui.screens
 
-import android.os.Build
 import androidx.compose.animation.animateContentSize
 // AnimatedVisibility not used to keep compatibility with older compose
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,15 +23,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -48,7 +38,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,12 +50,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
@@ -76,19 +63,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.border
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.draw.drawBehind
 // stickyHeader not available on current Compose; emulate with overlay instead
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.chris.m3usuite.core.xtream.XtreamConfig
-import com.chris.m3usuite.data.db.AppDatabase
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.Episode
-import com.chris.m3usuite.data.db.Profile
-import com.chris.m3usuite.data.db.ResumeMark
+// Room access moved behind feature gate for OBX-first
+import com.chris.m3usuite.model.Episode
+// Room removed
 import com.chris.m3usuite.data.repo.KidContentRepository
-import com.chris.m3usuite.data.repo.XtreamRepository
-import com.chris.m3usuite.player.ExternalPlayer
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.player.InternalPlayerScreen
 import com.chris.m3usuite.prefs.SettingsStore
@@ -100,9 +82,10 @@ import com.chris.m3usuite.ui.theme.DesignTokens
 import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberAvatarModel
 import com.chris.m3usuite.ui.util.rememberImageHeaders
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.derivedStateOf
@@ -112,24 +95,23 @@ import kotlin.math.max
 @Composable
 fun SeriesDetailScreen(
     id: Long,
-    // optionaler Callback für internen Player (url, startMs, episodeId)
-    openInternal: ((url: String, startMs: Long?, episodeId: Int) -> Unit)? = null,
+    // optionaler Callback für internen Player (url, startMs, seriesId, season, episodeNum)
+    openInternal: ((url: String, startMs: Long?, seriesId: Int, season: Int, episodeNum: Int) -> Unit)? = null,
     onLogo: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
-    val db: AppDatabase = remember { DbProvider.get(ctx) }
     val store = remember { SettingsStore(ctx) }
-    val repo = remember { XtreamRepository(ctx, store) }
+    val roomEnabled by store.roomEnabled.collectAsStateWithLifecycle(initialValue = false)
     val scope = rememberCoroutineScope()
     val headers = rememberImageHeaders()
     val kidRepo = remember { KidContentRepository(ctx) }
     val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
     var isAdult by remember { mutableStateOf(true) }
-    LaunchedEffect(profileId) { isAdult = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(profileId)?.type != "kid" } }
+    LaunchedEffect(profileId) { isAdult = withContext(Dispatchers.IO) { com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(profileId)?.type != "kid" } }
     val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
     var contentAllowed by remember { mutableStateOf(true) }
     LaunchedEffect(id, profileId) {
-        val prof = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().byId(profileId) }
+        val prof = withContext(Dispatchers.IO) { com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(profileId) }
         val adult = prof?.type == "adult"
         contentAllowed = if (adult) true else mediaRepo.isAllowed("series", id)
     }
@@ -138,8 +120,8 @@ fun SeriesDetailScreen(
 
     @Composable
     fun KidSelectSheet(onConfirm: suspend (kidIds: List<Long>) -> Unit, onDismiss: () -> Unit) {
-        var kids by remember { mutableStateOf<List<Profile>>(emptyList()) }
-        LaunchedEffect(profileId) { kids = withContext(Dispatchers.IO) { DbProvider.get(ctx).profileDao().all().filter { it.type == "kid" } } }
+    var kids by remember { mutableStateOf<List<com.chris.m3usuite.data.obx.ObxProfile>>(emptyList()) }
+        LaunchedEffect(profileId) { kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } } }
         var checked by remember { mutableStateOf(setOf<Long>()) }
         ModalBottomSheet(onDismissRequest = onDismiss) {
             LazyColumn(
@@ -216,10 +198,10 @@ fun SeriesDetailScreen(
         return base.trim()
     }
 
-    fun cleanEpisodeTitle(raw: String, seriesName: String?): String {
+    fun cleanEpisodeTitle(raw: String?, seriesName: String?): String {
         // Prefer last segment after ' - ' which usually is the true episode title
-        val lastSeg = raw.split(" - ").lastOrNull()?.trim().orEmpty()
-        var t = if (lastSeg.isNotEmpty()) lastSeg else raw
+        val lastSeg = raw.orEmpty().split(" - ").lastOrNull()?.trim().orEmpty()
+        var t = if (lastSeg.isNotEmpty()) lastSeg else raw.orEmpty()
         // Remove series name prefix if present
         if (!seriesName.isNullOrBlank()) {
             t = t.removePrefix(seriesName).trim()
@@ -236,18 +218,74 @@ fun SeriesDetailScreen(
 
     // Daten laden
     LaunchedEffect(id) {
-        val item = db.mediaDao().byId(id) ?: return@LaunchedEffect
-        title = item.name
-        poster = item.poster
-        plot = item.plot
-        year = item.year
-        seriesStreamId = item.streamId
-
+        fun decodeObxSeriesId(v: Long): Int? = if (v >= 3_000_000_000_000L) (v - 3_000_000_000_000L).toInt() else null
+        val obxSid = decodeObxSeriesId(id)
+        if (obxSid != null) {
+            seriesStreamId = obxSid
+            val box = com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
+            val row = box.query(com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(obxSid.toLong())).build().findFirst()
+            title = row?.name.orEmpty()
+            poster = row?.imagesJson?.let { runCatching { kotlinx.serialization.json.Json.parseToJsonElement(it).jsonArray.firstOrNull()?.jsonPrimitive?.content }.getOrNull() }
+            plot = row?.plot
+            year = row?.year
+        } else {
+            // No Room fallback available for legacy ID
+            return@LaunchedEffect
+        }
         val sid = seriesStreamId ?: return@LaunchedEffect
-        repo.loadSeriesInfo(sid).getOrElse { 0 }
-        seasons = db.episodeDao().seasons(sid)
-        seasonSel = seasons.firstOrNull()
-        seasonSel?.let { episodes = db.episodeDao().episodes(sid, it) }
+        // Prefer ObjectBox episodes if present; fallback to Room/import path
+        val obx = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store)
+        val obxEps = withContext(kotlinx.coroutines.Dispatchers.IO) { obx.episodesForSeries(sid) }
+        if (obxEps.isNotEmpty()) {
+            val allSeasons = obxEps.map { it.season }.distinct().sorted()
+            seasons = allSeasons
+            seasonSel = allSeasons.firstOrNull()
+            val season = seasonSel
+            if (season != null) {
+                episodes = obxEps.filter { it.season == season }.map { e ->
+                        com.chris.m3usuite.model.Episode(
+                            seriesStreamId = sid,
+                            episodeId = 0, // 0 → use series/season/episode for play URL
+                            season = e.season,
+                            episodeNum = e.episodeNum,
+                            title = e.title ?: "Episode ${e.episodeNum}",
+                            plot = e.plot,
+                            durationSecs = e.durationSecs,
+                            rating = e.rating,
+                            airDate = e.airDate,
+                            containerExt = e.playExt,
+                            poster = null
+                        )
+                }
+            }
+        } else {
+            // Import to OBX and try again
+            withContext(kotlinx.coroutines.Dispatchers.IO) { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store).importSeriesDetailOnce(sid) }
+            val obxEps2 = withContext(kotlinx.coroutines.Dispatchers.IO) { obx.episodesForSeries(sid) }
+            if (obxEps2.isNotEmpty()) {
+                val allSeasons = obxEps2.map { it.season }.distinct().sorted()
+                seasons = allSeasons
+                seasonSel = allSeasons.firstOrNull()
+                val season = seasonSel
+                if (season != null) {
+                        episodes = obxEps2.filter { it.season == season }.map { e ->
+                            com.chris.m3usuite.model.Episode(
+                                seriesStreamId = sid,
+                                episodeId = 0,
+                                season = e.season,
+                                episodeNum = e.episodeNum,
+                                title = e.title ?: "Episode ${e.episodeNum}",
+                                plot = e.plot,
+                                durationSecs = e.durationSecs,
+                                rating = e.rating,
+                                airDate = e.airDate,
+                                containerExt = e.playExt,
+                                poster = null
+                            )
+                        }
+                }
+            }
+        }
     }
 
     // --- Interner Player Zustand (Fullscreen) ---
@@ -280,20 +318,9 @@ fun SeriesDetailScreen(
     // After player exit: suggest next episode briefly
     LaunchedEffect(showInternal) {
         if (!showInternal && internalEpisodeId != null) {
-            try {
-                val current = withContext(Dispatchers.IO) { db.episodeDao().byEpisodeId(internalEpisodeId!!) }
-                if (current != null) {
-                    val next = withContext(Dispatchers.IO) { db.episodeDao().nextEpisode(current.seriesStreamId, current.season, current.episodeNum) }
-                    if (next != null) {
-                        nextHintEpisodeId = next.episodeId
-                        nextHintText = "Weiter mit S%02dE%02d".format(next.season, next.episodeNum)
-                        delay(2500)
-                    }
-                }
-            } catch (_: Throwable) {}
+            // Room removed: cannot compute next by episodeId; skip hint
             nextHintEpisodeId = null
             nextHintText = null
-            // trigger reload of resume marks so progress bar updates
             resumeRefreshKey++
         }
     }
@@ -311,8 +338,22 @@ fun SeriesDetailScreen(
             val urlToPlay = tgUrl ?: run {
                 val snap = store.snapshot()
                 if (snap.xtHost.isNotBlank() && snap.xtUser.isNotBlank() && snap.xtPass.isNotBlank()) {
-                    val cfg = XtreamConfig(snap.xtHost, snap.xtPort, snap.xtUser, snap.xtPass, snap.xtOutput)
-                    cfg.seriesEpisodeUrl(e.episodeId, e.containerExt)
+                    val scheme = if (snap.xtPort == 443) "https" else "http"
+                    val http = com.chris.m3usuite.core.http.HttpClientFactory.create(ctx, store)
+                    val client = com.chris.m3usuite.core.xtream.XtreamClient(http)
+                    val caps = com.chris.m3usuite.core.xtream.ProviderCapabilityStore(ctx)
+                    val ports = com.chris.m3usuite.core.xtream.EndpointPortStore(ctx)
+                    client.initialize(
+                        scheme = scheme,
+                        host = snap.xtHost,
+                        username = snap.xtUser,
+                        password = snap.xtPass,
+                        basePath = null,
+                        store = caps,
+                        portStore = ports,
+                        portOverride = snap.xtPort
+                    )
+                    client.buildSeriesEpisodePlayUrl(seriesStreamId ?: 0, e.season, e.episodeNum, e.containerExt)
                 } else null
             } ?: return@launch
 
@@ -323,11 +364,11 @@ fun SeriesDetailScreen(
                 headers = headers,
                 startPositionMs = startMs
             ) { s ->
-                if (openInternal != null) {
-                    openInternal(urlToPlay, s, e.episodeId)
+                    if (openInternal != null) {
+                    openInternal(urlToPlay, s, seriesStreamId ?: 0, e.season, e.episodeNum)
                 } else {
                     internalUrl = urlToPlay
-                    internalEpisodeId = e.episodeId
+                    internalEpisodeId = null
                     internalStartMs = s
                     internalUa = headers["User-Agent"].orEmpty()
                     internalRef = headers["Referer"].orEmpty()
@@ -337,29 +378,20 @@ fun SeriesDetailScreen(
         }
     }
 
-    // Resume lesen/setzen/löschen
-    suspend fun getEpisodeResume(episodeKey: Int): Int? =
-        db.resumeDao().getEpisode(episodeKey)?.positionSecs
+    // Resume lesen/setzen/löschen (OBX-backed)
+    suspend fun getEpisodeResume(episodeKey: Int): Int? = null
 
     fun setEpisodeResume(episodeKey: Int, newSecs: Int, onUpdated: (Int) -> Unit) {
         scope.launch {
             val pos = max(0, newSecs)
-            db.resumeDao().upsert(
-                ResumeMark(
-                    type = "series",
-                    mediaId = null,
-                    episodeId = episodeKey,
-                    positionSecs = pos,
-                    updatedAt = System.currentTimeMillis()
-                )
-            )
+            // Room removed: episode resume by episodeId not supported in this path
             onUpdated(pos)
         }
     }
 
     fun clearEpisodeResume(episodeKey: Int, onCleared: () -> Unit) {
         scope.launch {
-            db.resumeDao().clearEpisode(episodeKey)
+            // Room removed: episode resume by episodeId not supported in this path
             onCleared()
         }
     }
@@ -467,7 +499,21 @@ fun SeriesDetailScreen(
                                     seasonSel = s
                                     scope.launch {
                                         val sid = seriesStreamId ?: return@launch
-                                        episodes = db.episodeDao().episodes(sid, s)
+                                        val obxRepo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store)
+                                        val eps = withContext(kotlinx.coroutines.Dispatchers.IO) { obxRepo.episodesForSeries(sid) }
+                                        episodes = eps.filter { it.season == s }.map { e ->
+                                            com.chris.m3usuite.model.Episode(
+                                                seriesStreamId = sid,
+                                                episodeId = 0,
+                                                season = e.season,
+                                                episodeNum = e.episodeNum,
+                                                title = e.title ?: "Episode ${e.episodeNum}",
+                                                plot = e.plot,
+                                                durationSecs = e.durationSecs,
+                                                containerExt = e.playExt,
+                                                poster = null
+                                            )
+                                        }
                                     }
                                 },
                                 label = { Text("S$s") },
@@ -482,13 +528,16 @@ fun SeriesDetailScreen(
                 }
             }
             // Floating series title badge while scrolling (emulated overlay added below outside the list)
-            items(episodes, key = { it.episodeId }) { e ->
-                val episodeKey = e.episodeId
-                var resumeSecs by remember(episodeKey) { mutableStateOf<Int?>(null) }
+            items(episodes, key = { "${it.seriesStreamId}-${it.season}-${it.episodeNum}" }) { e ->
+                val compositeKey = "${e.seriesStreamId}-${e.season}-${e.episodeNum}"
+                var resumeSecs by remember(compositeKey) { mutableStateOf<Int?>(null) }
 
                 // Resume für diese Episode laden (auch nach Player-Rückkehr)
-                LaunchedEffect(episodeKey, resumeRefreshKey) {
-                    resumeSecs = getEpisodeResume(episodeKey)
+                LaunchedEffect(compositeKey, resumeRefreshKey) {
+                    resumeSecs = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        val sid = seriesStreamId
+                        if (sid != null) com.chris.m3usuite.data.repo.ResumeRepository(ctx).getSeriesResume(sid, e.season, e.episodeNum) else null
+                    }
                 }
 
                 BoxWithConstraints(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {

@@ -1,34 +1,39 @@
 package com.chris.m3usuite.data.repo
 
 import android.content.Context
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.KidContentItem
+import com.chris.m3usuite.data.obx.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class KidContentRepository(private val context: Context) {
-    private val db get() = DbProvider.get(context)
+    private val box get() = ObxStore.get(context)
 
     suspend fun allow(kidId: Long, type: String, contentId: Long) = withContext(Dispatchers.IO) {
-        db.kidContentDao().insert(KidContentItem(kidProfileId = kidId, contentType = type, contentId = contentId))
+        box.boxFor(ObxKidContentAllow::class.java).put(ObxKidContentAllow(kidProfileId = kidId, contentType = type, contentId = contentId))
     }
 
     suspend fun disallow(kidId: Long, type: String, contentId: Long) = withContext(Dispatchers.IO) {
-        db.kidContentDao().disallow(kidId, type, contentId)
+        val b = box.boxFor(ObxKidContentAllow::class.java)
+        val rows = b.query(ObxKidContentAllow_.kidProfileId.equal(kidId).and(ObxKidContentAllow_.contentType.equal(type)).and(ObxKidContentAllow_.contentId.equal(contentId))).build().find()
+        if (rows.isNotEmpty()) b.remove(rows)
     }
 
     suspend fun isAllowed(kidId: Long, type: String, contentId: Long): Boolean = withContext(Dispatchers.IO) {
-        db.kidContentDao().isAllowedCount(kidId, type, contentId) > 0
+        val b = box.boxFor(ObxKidContentAllow::class.java)
+        b.query(ObxKidContentAllow_.kidProfileId.equal(kidId).and(ObxKidContentAllow_.contentType.equal(type)).and(ObxKidContentAllow_.contentId.equal(contentId))).build().count() > 0
     }
 
     suspend fun allowBulk(kidId: Long, type: String, contentIds: Collection<Long>) = withContext(Dispatchers.IO) {
-        val dao = db.kidContentDao()
-        for (id in contentIds) dao.insert(KidContentItem(kidProfileId = kidId, contentType = type, contentId = id))
+        val b = box.boxFor(ObxKidContentAllow::class.java)
+        val rows = contentIds.map { id -> ObxKidContentAllow(kidProfileId = kidId, contentType = type, contentId = id) }
+        if (rows.isNotEmpty()) b.put(rows)
     }
 
     suspend fun disallowBulk(kidId: Long, type: String, contentIds: Collection<Long>) = withContext(Dispatchers.IO) {
-        val dao = db.kidContentDao()
-        for (id in contentIds) dao.disallow(kidId, type, id)
+        val b = box.boxFor(ObxKidContentAllow::class.java)
+        val q = b.query(ObxKidContentAllow_.kidProfileId.equal(kidId).and(ObxKidContentAllow_.contentType.equal(type))).build()
+        val all = q.find()
+        val toRemove = all.filter { it.contentId in contentIds }
+        if (toRemove.isNotEmpty()) b.remove(toRemove)
     }
 }
-

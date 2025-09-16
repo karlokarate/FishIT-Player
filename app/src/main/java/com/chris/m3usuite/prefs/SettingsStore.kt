@@ -1,6 +1,7 @@
 package com.chris.m3usuite.prefs
 
 import android.content.Context
+import com.chris.m3usuite.BuildConfig
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.chris.m3usuite.core.xtream.XtreamCreds
@@ -32,6 +33,9 @@ object Keys {
     val XT_USER = stringPreferencesKey("xt_user")
     val XT_PASS = stringPreferencesKey("xt_pass")
     val XT_OUTPUT = stringPreferencesKey("xt_output")
+    // Verified flags to prevent later auto-overwrite after successful fallback
+    val XT_PORT_VERIFIED = booleanPreferencesKey("xt_port_verified")
+    val XT_OUTPUT_VERIFIED = booleanPreferencesKey("xt_output_verified")
 
     // Untertitel (Media3)
     val SUB_SCALE = floatPreferencesKey("sub_scale")         // 0.04..0.12 (FractionalTextSize)
@@ -99,6 +103,14 @@ object Keys {
     // Telegram sync mapping (separate selections for VOD and Series)
     val TG_SELECTED_VOD_CHATS_CSV = stringPreferencesKey("tg_selected_vod_chats_csv")
     val TG_SELECTED_SERIES_CHATS_CSV = stringPreferencesKey("tg_selected_series_chats_csv")
+    // Telegram API overrides (optional)
+    val TG_API_ID = intPreferencesKey("tg_api_id")
+    val TG_API_HASH = stringPreferencesKey("tg_api_hash")
+
+    // Debug/Logging
+    val HTTP_LOG_ENABLED = booleanPreferencesKey("http_log_enabled")
+    // Feature gates
+    val ROOM_ENABLED = booleanPreferencesKey("room_enabled")
 }
 
 class SettingsStore(private val context: Context) {
@@ -118,6 +130,8 @@ class SettingsStore(private val context: Context) {
     val xtUser: Flow<String> = context.dataStore.data.map { it[Keys.XT_USER].orEmpty() }
     val xtPass: Flow<String> = context.dataStore.data.map { Crypto.decrypt(it[Keys.XT_PASS].orEmpty()) }
     val xtOutput: Flow<String> = context.dataStore.data.map { it[Keys.XT_OUTPUT] ?: "m3u8" }
+    val xtPortVerified: Flow<Boolean> = context.dataStore.data.map { it[Keys.XT_PORT_VERIFIED] ?: false }
+    val xtOutputVerified: Flow<Boolean> = context.dataStore.data.map { it[Keys.XT_OUTPUT_VERIFIED] ?: false }
 
     val subtitleScale: Flow<Float> = context.dataStore.data.map { it[Keys.SUB_SCALE] ?: 0.06f }
     val subtitleFg: Flow<Int> = context.dataStore.data.map { it[Keys.SUB_FG] ?: 0xE6FFFFFF.toInt() } // Weiß, ~90% Deckkraft (Default)
@@ -137,6 +151,9 @@ class SettingsStore(private val context: Context) {
         context.dataStore.data.map { it[Keys.AUTOPLAY_NEXT] ?: false }
     val hapticsEnabled: Flow<Boolean> =
         context.dataStore.data.map { it[Keys.HAPTICS_ENABLED] ?: false }
+
+    // Feature gates
+    val roomEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.ROOM_ENABLED] ?: false }
 
     val liveFilterGerman: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIVE_FILTER_GERMAN] ?: false }
     val liveFilterKids: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIVE_FILTER_KIDS] ?: false }
@@ -181,6 +198,11 @@ class SettingsStore(private val context: Context) {
     val tgEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_ENABLED] ?: false }
     val tgSelectedChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_CHATS_CSV].orEmpty() }
     val tgCacheLimitGb: Flow<Int> = context.dataStore.data.map { it[Keys.TG_CACHE_LIMIT_GB] ?: 2 }
+    val tgApiId: Flow<Int> = context.dataStore.data.map { it[Keys.TG_API_ID] ?: 0 }
+    val tgApiHash: Flow<String> = context.dataStore.data.map { it[Keys.TG_API_HASH].orEmpty() }
+
+    // Debug/Logging
+    val httpLogEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.HTTP_LOG_ENABLED] ?: false }
 
     // -------- Setzen --------
     suspend fun set(key: Preferences.Key<String>, value: String) {
@@ -245,6 +267,8 @@ class SettingsStore(private val context: Context) {
     suspend fun setXtUser(value: String) { context.dataStore.edit { it[Keys.XT_USER] = value } }
     suspend fun setXtPass(value: String) { context.dataStore.edit { it[Keys.XT_PASS] = Crypto.encrypt(value) } }
     suspend fun setXtOutput(value: String) { context.dataStore.edit { it[Keys.XT_OUTPUT] = value } }
+    suspend fun setXtPortVerified(v: Boolean) { context.dataStore.edit { it[Keys.XT_PORT_VERIFIED] = v } }
+    suspend fun setXtOutputVerified(v: Boolean) { context.dataStore.edit { it[Keys.XT_OUTPUT_VERIFIED] = v } }
     // Helper to set all Xtream creds at once (no removal of existing API)
     suspend fun setXtream(creds: XtreamCreds) {
         setXtHost(creds.host)
@@ -351,6 +375,8 @@ class SettingsStore(private val context: Context) {
     suspend fun setTelegramCacheLimitGb(value: Int) { context.dataStore.edit { it[Keys.TG_CACHE_LIMIT_GB] = value } }
     suspend fun setTelegramSelectedVodChatsCsv(value: String) { context.dataStore.edit { it[Keys.TG_SELECTED_VOD_CHATS_CSV] = value } }
     suspend fun setTelegramSelectedSeriesChatsCsv(value: String) { context.dataStore.edit { it[Keys.TG_SELECTED_SERIES_CHATS_CSV] = value } }
+    suspend fun setTelegramApiId(value: Int) { context.dataStore.edit { it[Keys.TG_API_ID] = value } }
+    suspend fun setTelegramApiHash(value: String) { context.dataStore.edit { it[Keys.TG_API_HASH] = value } }
 
     data class Snapshot(
         val m3uUrl: String,
@@ -401,4 +427,9 @@ class SettingsStore(private val context: Context) {
     suspend fun setVodCatExpandedOrderCsv(value: String) { context.dataStore.edit { it[Keys.VOD_CAT_EXPANDED_ORDER_CSV] = value } }
     suspend fun setSeriesCatCollapsedCsv(value: String) { context.dataStore.edit { it[Keys.SERIES_CAT_COLLAPSED_CSV] = value } }
     suspend fun setSeriesCatExpandedOrderCsv(value: String) { context.dataStore.edit { it[Keys.SERIES_CAT_EXPANDED_ORDER_CSV] = value } }
+
+    // Logging
+    suspend fun setHttpLogEnabled(value: Boolean) { context.dataStore.edit { it[Keys.HTTP_LOG_ENABLED] = value } }
+    // Feature gates setters
+    suspend fun setRoomEnabled(value: Boolean) { context.dataStore.edit { it[Keys.ROOM_ENABLED] = value } }
 }

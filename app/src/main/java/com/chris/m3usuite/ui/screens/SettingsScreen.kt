@@ -18,18 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.Image
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateFloat
-import com.chris.m3usuite.ui.theme.DesignTokens
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,24 +36,30 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.flow.first
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chris.m3usuite.data.repo.XtreamRepository
+import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.data.repo.PlaylistRepository
 import com.chris.m3usuite.core.xtream.XtreamClient
 import com.chris.m3usuite.core.xtream.XtreamConfig
-import com.chris.m3usuite.data.db.DbProvider
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import com.chris.m3usuite.backup.BackupRestoreSection
-import android.content.Intent
-import androidx.core.content.FileProvider
-import com.chris.m3usuite.core.m3u.M3UExporter
-import java.io.File
 import com.chris.m3usuite.telegram.TdLibReflection
+import com.chris.m3usuite.core.http.HttpClientFactory
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.qrcode.QRCodeWriter
+import android.graphics.Bitmap
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +67,8 @@ fun SettingsScreen(
     store: SettingsStore,
     onBack: () -> Unit,
     onOpenProfiles: (() -> Unit)? = null,
-    onOpenGate: (() -> Unit)? = null
+    onOpenGate: (() -> Unit)? = null,
+    onOpenXtreamCfCheck: (() -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
@@ -96,6 +97,7 @@ fun SettingsScreen(
     val xtOut  by store.xtOutput.collectAsStateWithLifecycle(initialValue = "m3u8")
     val ua by store.userAgent.collectAsStateWithLifecycle(initialValue = "IBOPlayer/1.4 (Android)")
     val referer by store.referer.collectAsStateWithLifecycle(initialValue = "")
+    val httpLogEnabled by store.httpLogEnabled.collectAsStateWithLifecycle(initialValue = false)
     var pinDialogMode by remember { mutableStateOf<PinMode?>(null) }
 
     val listState = rememberLazyListState()
@@ -352,22 +354,26 @@ fun SettingsScreen(
                 Text("Aggressiv: XMLTV für Favoriten überspringen, wenn Xtream liefert", modifier = Modifier.weight(1f))
                 Switch(checked = favSkipXmltv, onCheckedChange = { v -> scope.launch { store.setEpgFavSkipXmltvIfXtreamOk(v) } })
             }
-            OutlinedTextField(
-                value = ua,
-                onValueChange = { scope.launch { store.set(Keys.USER_AGENT, it) } },
-                label = { Text("User-Agent") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = tfColors
-            )
-            OutlinedTextField(
-                value = referer,
-                onValueChange = { scope.launch { store.set(Keys.REFERER, it) } },
-                label = { Text("Referer (optional)") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = tfColors
-            )
+            if (BuildConfig.SHOW_HEADER_UI) {
+                OutlinedTextField(
+                    value = ua,
+                    onValueChange = { scope.launch { store.set(Keys.USER_AGENT, it) } },
+                    label = { Text("User-Agent") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = tfColors
+                )
+            }
+            if (BuildConfig.SHOW_HEADER_UI) {
+                OutlinedTextField(
+                    value = referer,
+                    onValueChange = { scope.launch { store.set(Keys.REFERER, it) } },
+                    label = { Text("Referer (optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = tfColors
+                )
+            }
             // Xtream (optional) — can be auto-filled from M3U get.php
             Text("Xtream (optional)", style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -407,6 +413,14 @@ fun SettingsScreen(
                     colors = tfColors
                 )
             }
+            Spacer(Modifier.height(8.dp))
+            val xtConfigured = remember(xtHost, xtUser, xtPass) { xtHost.isNotBlank() && xtUser.isNotBlank() && xtPass.isNotBlank() }
+            if (xtConfigured) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { onOpenXtreamCfCheck?.invoke() }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("Portal checken (WebView)") }
+                    TextButton(onClick = { onOpenXtreamCfCheck?.invoke() }) { Text("Cloudflare lösen (WebView)") }
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = xtOut,
@@ -419,10 +433,67 @@ fun SettingsScreen(
                 val ctx = LocalContext.current
                 TextButton(onClick = {
                     scope.launch {
-                        val xtRepo = XtreamRepository(ctx, store)
-                        xtRepo.configureFromM3uUrl()
+                        val m3u = store.m3uUrl.first()
+                        val cfg = com.chris.m3usuite.core.xtream.XtreamConfig.fromM3uUrl(m3u)
+                        if (cfg != null) {
+                            store.setXtHost(cfg.host); store.setXtPort(cfg.port); store.setXtUser(cfg.username); store.setXtPass(cfg.password)
+                            cfg.liveExtPrefs.firstOrNull()?.let { store.setXtOutput(it) }
+                        }
                     }
                 }) { Text("Aus M3U ableiten") }
+                // Diagnose: Xtream testen (player_api) + Capabilities anzeigen
+                TextButton(onClick = {
+                    scope.launch {
+                        val hostNow = store.xtHost.first(); val portNow = store.xtPort.first(); val userNow = store.xtUser.first(); val passNow = store.xtPass.first()
+                        if (hostNow.isBlank() || userNow.isBlank() || passNow.isBlank()) { snackHost.showSnackbar("Xtream unvollständig."); return@launch }
+                        val scheme = if (portNow == 443) "https" else "http"
+                        val base = "$scheme://$hostNow:$portNow"
+                        val url = "$base/player_api.php?username=${userNow}&password=${passNow}"
+                        val client = HttpClientFactory.create(ctx, store)
+                        val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
+                        val startNs = System.nanoTime()
+                        val req = okhttp3.Request.Builder().url(url).get().apply { headers.forEach { (k, v) -> header(k, v) } }.build()
+                        runCatching {
+                            client.newCall(req).execute().use { res ->
+                                val dur = (System.nanoTime() - startNs)/1_000_000
+                                val code = res.code; val ctype = res.header("Content-Type").orEmpty()
+                                val peek = res.peekBody(2048).string()
+                                val jsonOk = runCatching { kotlinx.serialization.json.Json.parseToJsonElement(peek); true }.getOrDefault(false)
+                                Log.i("XtreamDiag", "ua='${headers["User-Agent"]}' code=${code} type='${ctype}' jsonOk=${jsonOk} durMs=${dur}")
+                                snackHost.showSnackbar("Xt: code=${code} json=${jsonOk}")
+                            }
+                        }.onFailure { e -> Log.w("XtreamDiag", "fail: ${e.message}", e); snackHost.showSnackbar("Xt: Fehler ${e.message}") }
+                    }
+                }) { Text("Xtream testen") }
+                TextButton(onClick = {
+                    scope.launch {
+                        val hostNow = store.xtHost.first(); val portNow = store.xtPort.first(); val userNow = store.xtUser.first(); val passNow = store.xtPass.first()
+                        if (hostNow.isBlank() || userNow.isBlank() || passNow.isBlank()) { snackHost.showSnackbar("Xtream unvollständig."); return@launch }
+                        val scheme = if (portNow == 443) "https" else "http"
+                        val http = com.chris.m3usuite.core.http.HttpClientFactory.create(ctx, store)
+                        val capsStore = com.chris.m3usuite.core.xtream.ProviderCapabilityStore(ctx)
+                        val portStore = com.chris.m3usuite.core.xtream.EndpointPortStore(ctx)
+                        val disc = com.chris.m3usuite.core.xtream.CapabilityDiscoverer(http, capsStore, portStore)
+                        val cfgExplicit = com.chris.m3usuite.core.xtream.XtreamConfig(
+                            scheme = scheme,
+                            host = hostNow,
+                            port = portNow,
+                            username = userNow,
+                            password = passNow
+                        )
+                        val caps = runCatching { withContext(Dispatchers.IO) { disc.discover(cfgExplicit, false) } }.getOrElse { e ->
+                            Log.w("XtreamCaps", "discover failed: ${e.message}", e); snackHost.showSnackbar("Caps: Fehler ${e.message}"); return@launch
+                        }
+                        val info = buildString {
+                            append("baseUrl=").append(caps.baseUrl).append('\n')
+                            append("vodKind=").append(caps.resolvedAliases.vodKind ?: "-").append('\n')
+                            append("actions=")
+                            append(caps.actions.entries.joinToString { (k,v) -> "$k:${if (v.supported) '1' else '0'}" })
+                        }
+                        Log.i("XtreamCaps", info)
+                        snackHost.showSnackbar("Capabilities: ${caps.resolvedAliases.vodKind ?: "-"}")
+                    }
+                }) { Text("Capabilities") }
                 TextButton(onClick = {
                     scope.launch {
                         val tag = "XtreamEPGTest"
@@ -434,17 +505,30 @@ fun SettingsScreen(
                                 snackHost.showSnackbar("EPG-Test: Xtream-Konfig fehlt")
                                 return@launch
                             }
-                            val db = DbProvider.get(ctx)
-                            val sid = withContext(Dispatchers.IO) { db.mediaDao().listByType("live", 1000, 0).firstOrNull { it.streamId != null }?.streamId }
+                            val obx = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store)
+                            val sid = withContext(Dispatchers.IO) { obx.livePaged(0, 1).firstOrNull()?.streamId }
                             if (sid == null) {
                                 Log.w(tag, "No live streamId found in DB; import might be required")
                                 snackHost.showSnackbar("EPG-Test: keine Live-StreamId gefunden")
                                 return@launch
                             }
-                            val cfg = XtreamConfig(hostNow, portNow, userNow, passNow, outNow)
-                            Log.d(tag, "Portal base: ${cfg.portalBase}")
-                            val client = XtreamClient(ctx, store, cfg)
-                            val list = client.shortEPG(sid!!, 2)
+                            val scheme = if (portNow == 443) "https" else "http"
+                            val http = com.chris.m3usuite.core.http.HttpClientFactory.create(ctx, store)
+                            val caps = com.chris.m3usuite.core.xtream.ProviderCapabilityStore(ctx)
+                            val portStore = com.chris.m3usuite.core.xtream.EndpointPortStore(ctx)
+                            val client = com.chris.m3usuite.core.xtream.XtreamClient(http)
+                            client.initialize(scheme, hostNow, userNow, passNow, basePath = null, store = caps, portStore = portStore, portOverride = portNow)
+                            val list = client.fetchShortEpg(sid!!, 2)?.let { json ->
+                                val root = kotlinx.serialization.json.Json.parseToJsonElement(json).jsonArray
+                                root.mapNotNull { el ->
+                                    val obj = el.jsonObject
+                                    com.chris.m3usuite.core.xtream.XtShortEPGProgramme(
+                                        title = obj["title"]?.jsonPrimitive?.contentOrNull,
+                                        start = obj["start"]?.jsonPrimitive?.contentOrNull,
+                                        end = obj["end"]?.jsonPrimitive?.contentOrNull,
+                                    )
+                                }
+                            } ?: emptyList()
                             Log.d(tag, "shortEPG result count=${list.size}; entries=${list.map { it.title }}")
                             snackHost.showSnackbar("EPG-Test: ${list.getOrNull(0)?.title ?: "(leer)"}")
                         } catch (t: Throwable) {
@@ -456,7 +540,7 @@ fun SettingsScreen(
             }
 
             // Make EPG test visible as a full-width button using repository (includes XMLTV fallback)
-            val ctx2 = LocalContext.current
+            val ctxRepo = LocalContext.current
             Button(onClick = {
                 scope.launch {
                     val tag = "XtreamEPGTest"
@@ -468,18 +552,16 @@ fun SettingsScreen(
                             snackHost.showSnackbar("EPG-Test: Xtream-Konfig fehlt")
                             return@launch
                         }
-                        val db = DbProvider.get(ctx2)
-                        val lives = withContext(Dispatchers.IO) { db.mediaDao().listByType("live", 20000, 0) }
-                        val preferred = lives.firstOrNull { it.streamId != null && !it.epgChannelId.isNullOrBlank() }
-                        val candidate = preferred ?: lives.firstOrNull { it.streamId != null }
-                        val sid = candidate?.streamId
-                        Log.d(tag, "Selected sid=${sid} tvg-id=${candidate?.epgChannelId} name=${candidate?.name}")
+                        val obx = com.chris.m3usuite.data.repo.XtreamObxRepository(ctxRepo, store)
+                        val firstLive = withContext(Dispatchers.IO) { obx.livePaged(0, 200).firstOrNull() }
+                        val sid = firstLive?.streamId
+                        Log.d(tag, "Selected sid=${sid} tvg-id=${firstLive?.epgChannelId} name=${firstLive?.name}")
                         if (sid == null) {
                             Log.w(tag, "No live streamId found in DB; import might be required")
                             snackHost.showSnackbar("EPG-Test: keine Live-StreamId gefunden")
                             return@launch
                         }
-                        val repo = com.chris.m3usuite.data.repo.EpgRepository(ctx2, store)
+                        val repo = com.chris.m3usuite.data.repo.EpgRepository(ctxRepo, store)
                         val list = repo.nowNext(sid, 2)
                         Log.d(tag, "repo EPG count=${list.size}; entries=${list.map { it.title }}")
                         snackHost.showSnackbar("EPG-Test: ${list.getOrNull(0)?.title ?: "(leer)"}")
@@ -489,22 +571,124 @@ fun SettingsScreen(
                     }
                 }
             }, enabled = canChangeSources, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("EPG testen (Debug)") }
+
+            // Debug / Logging
+            Spacer(Modifier.height(16.dp))
+            Text("Debug", style = MaterialTheme.typography.titleSmall)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("HTTP-Traffic-Log speichern (JSONL)", modifier = Modifier.weight(1f))
+                Switch(checked = httpLogEnabled, onCheckedChange = { v -> scope.launch { store.setHttpLogEnabled(v); com.chris.m3usuite.core.http.TrafficLogger.setEnabled(v) } })
+            }
+            TextButton(onClick = {
+                val dir = java.io.File(ctxRepo.filesDir, "http-logs")
+                runCatching { dir.listFiles()?.forEach { it.delete() }; dir.delete() }
+                scope.launch { snackHost.showSnackbar("HTTP-Logs gelöscht") }
+            }) { Text("HTTP-Logs löschen") }
+            Button(onClick = {
+                scope.launch {
+                    val logsDir = java.io.File(ctxRepo.filesDir, "http-logs")
+                    val files = logsDir.listFiles()?.filter { it.isFile }?.sortedBy { it.name } ?: emptyList()
+                    if (files.isEmpty()) {
+                        snackHost.showSnackbar("Keine HTTP-Logs vorhanden")
+                        return@launch
+                    }
+                    val exportDir = java.io.File(ctxRepo.cacheDir, "exports").apply { mkdirs() }
+                    val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
+                    val zipFile = java.io.File(exportDir, "http-logs-$stamp.zip")
+                    runCatching {
+                        java.util.zip.ZipOutputStream(java.io.BufferedOutputStream(java.io.FileOutputStream(zipFile))).use { zos ->
+                            val buf = ByteArray(16 * 1024)
+                            for (f in files) {
+                                val entry = java.util.zip.ZipEntry(f.name)
+                                entry.time = f.lastModified()
+                                zos.putNextEntry(entry)
+                                java.io.BufferedInputStream(java.io.FileInputStream(f)).use { ins ->
+                                    while (true) {
+                                        val n = ins.read(buf)
+                                        if (n <= 0) break
+                                        zos.write(buf, 0, n)
+                                    }
+                                }
+                                zos.closeEntry()
+                            }
+                        }
+                    }.onFailure {
+                        snackHost.showSnackbar("Export fehlgeschlagen: ${it.message ?: "Unbekannt"}")
+                        return@launch
+                    }
+                    // Share/save via chooser
+                    val uri = androidx.core.content.FileProvider.getUriForFile(ctxRepo, ctxRepo.packageName + ".fileprovider", zipFile)
+                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "application/zip"
+                        putExtra(android.content.Intent.EXTRA_SUBJECT, zipFile.name)
+                        putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    ctxRepo.startActivity(android.content.Intent.createChooser(send, "HTTP-Logs exportieren"))
+                }
+            }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("HTTP-Logs exportieren/teilen…") }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val ctx = LocalContext.current
                 Button(onClick = {
-                    // Run immediate import: prefer Xtream if we can configure from M3U, else M3U parser
+                    // Run immediate import via OneTime Work; avoid parallel runs by checking the matching unique name
                     scope.launch {
-                        val xtRepo = XtreamRepository(ctx, store)
+                        val wm = withContext(kotlinx.coroutines.Dispatchers.IO) { androidx.work.WorkManager.getInstance(ctx) }
+                        val infosOnce = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            wm.getWorkInfosForUniqueWork("xtream_delta_import_once").get()
+                        }
+                        val running = infosOnce.any { it.state == androidx.work.WorkInfo.State.RUNNING || it.state == androidx.work.WorkInfo.State.ENQUEUED }
+                        if (running) {
+                            snackHost.showSnackbar("Import läuft bereits…")
+                            return@launch
+                        }
+                        com.chris.m3usuite.work.SchedulingGateway.triggerXtreamRefreshNow(ctx)
+                        snackHost.showSnackbar("Import gestartet")
+                        val tag = "ImportUpdate"
+                        try {
+                            val snap = store.snapshot()
+                            android.util.Log.d(tag, "start m3u=\"${snap.m3uUrl}\" epg=\"${snap.epgUrl}\" ua=\"${snap.userAgent}\" ref=\"${snap.referer}\" defaultUa=\"${com.chris.m3usuite.BuildConfig.DEFAULT_UA}\"")
+                        } catch (_: Throwable) {}
+                        val xtObx = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store)
                         val plRepo = PlaylistRepository(ctx, store)
-                        val cfg = runCatching { xtRepo.configureFromM3uUrl() }.getOrNull()
-                        val result = if (cfg != null) xtRepo.importAll() else plRepo.refreshFromM3U()
+                        val cfg = runCatching { com.chris.m3usuite.core.xtream.XtreamConfig.fromM3uUrl(store.m3uUrl.first()) }.getOrNull()?.also { c ->
+                            android.util.Log.d(tag, "xtream.cfg host=${c.host} port=${c.port}")
+                            store.setXtHost(c.host); store.setXtPort(c.port); store.setXtUser(c.username); store.setXtPass(c.password)
+                        }
+                        var result = if (cfg != null) xtObx.importDelta(deleteOrphans = true).map { it.first + it.second + it.third } else plRepo.refreshFromM3U()
+                        // If Xtream import failed, try automatic port fallback with common ports and persist the first working one.
+                        if (cfg != null && result.isFailure) {
+                            val originalPort = store.xtPort.first()
+                            val ports = listOf(originalPort, 443, 80, 8080, 8443, 2082, 2083, 2086, 2095, 2096, 8880, 8000, 8081, 9999).distinct()
+                            for (p in ports) {
+                                if (p == originalPort) continue // already tried
+                                snackHost.showSnackbar("Xtream-Import fehlgeschlagen. Probiere Port $p…")
+                                store.setInt(Keys.XT_PORT, p)
+                                val tryRes = xtObx.importDelta(deleteOrphans = true).map { it.first + it.second + it.third }
+                                if (tryRes.isSuccess) {
+                                    result = tryRes
+                                    snackHost.showSnackbar("Port $p erfolgreich – gespeichert")
+                                    store.setXtPortVerified(true)
+                                    break
+                                }
+                            }
+                            if (result.isFailure) {
+                                // Restore original port if no candidate worked
+                                store.setInt(Keys.XT_PORT, originalPort)
+                            }
+                        }
+                        // Room removed: skip legacy DB emptiness checks
+                        // Optional: Output fallback if Xtream import succeeded but live playback likely fails (wrong container)
+                        // Room removed: skip live URL output testing against DB samples
+
                         com.chris.m3usuite.work.SchedulingGateway.scheduleXtreamPeriodic(ctx)
                         com.chris.m3usuite.work.SchedulingGateway.scheduleXtreamEnrichment(ctx)
                         val count = result.getOrNull()
                         if (count != null) {
+                            android.util.Log.d(tag, "done count=${count}")
                             snackHost.showSnackbar("Import abgeschlossen: $count Einträge")
                         } else {
-                            snackHost.showSnackbar("Import fehlgeschlagen – wird erneut versucht")
+                            android.util.Log.e(tag, "failed ex=${result.exceptionOrNull()?.message}")
+                            snackHost.showSnackbar("Import fehlgeschlagen – wird erneut versucht", withDismissAction = true, duration = androidx.compose.material3.SnackbarDuration.Indefinite)
                         }
                     }
                 }, enabled = canChangeSources, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("Import aktualisieren") }
@@ -518,9 +702,45 @@ fun SettingsScreen(
             HorizontalDivider()
             SectionHeader("Telegram")
             val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
+            val ctx2 = LocalContext.current
+            // BuildConfig fallback
+            val bcApiId = remember {
+                runCatching {
+                    val f = Class.forName(ctx2.packageName + ".BuildConfig").getDeclaredField("TG_API_ID"); f.isAccessible = true; (f.get(null) as? Int) ?: 0
+                }.getOrDefault(0)
+            }
+            val bcApiHash = remember {
+                runCatching {
+                    val f = Class.forName(ctx2.packageName + ".BuildConfig").getDeclaredField("TG_API_HASH"); f.isAccessible = true; (f.get(null) as? String) ?: ""
+                }.getOrDefault("")
+            }
+            val overrideApiId by store.tgApiId.collectAsStateWithLifecycle(initialValue = 0)
+            val overrideApiHash by store.tgApiHash.collectAsStateWithLifecycle(initialValue = "")
+            val effApiId = if (overrideApiId > 0) overrideApiId else bcApiId
+            val effApiHash = if (overrideApiHash.isNotBlank()) overrideApiHash else bcApiHash
+            val authRepo = remember(effApiId, effApiHash) { com.chris.m3usuite.data.repo.TelegramAuthRepository(ctx2, effApiId, effApiHash) }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Telegram-Integration aktivieren (Beta)", modifier = Modifier.weight(1f))
-                Switch(checked = tgEnabled, onCheckedChange = { v -> scope.launch { store.setTelegramEnabled(v) } })
+                Switch(
+                    checked = tgEnabled,
+                    onCheckedChange = { v ->
+                        scope.launch {
+                            store.setTelegramEnabled(v)
+                            if (v) {
+                                if (!authRepo.isAvailable()) {
+                                    snackHost.showSnackbar("TDLib nicht verfügbar – Bibliotheken prüfen.")
+                                } else if (!authRepo.hasValidKeys()) {
+                                    snackHost.showSnackbar("API-Keys fehlen – ID/HASH setzen.")
+                                } else {
+                                    runCatching { authRepo.bindService(); authRepo.setInBackground(false); authRepo.start() }
+                                        .onFailure { snackHost.showSnackbar("Start fehlgeschlagen: ${it.message ?: "Unbekannt"}") }
+                                }
+                            } else {
+                                runCatching { authRepo.setInBackground(true); authRepo.unbindService() }
+                            }
+                        }
+                    }
+                )
             }
             val tgChats by store.tgSelectedChatsCsv.collectAsStateWithLifecycle(initialValue = "")
             val tgVodSel by store.tgSelectedVodChatsCsv.collectAsStateWithLifecycle(initialValue = "")
@@ -546,23 +766,126 @@ fun SettingsScreen(
             )
             if (tgEnabled) {
                 var showTgDialog by remember { mutableStateOf(false) }
-                val ctx2 = LocalContext.current
-                val authRepo = remember {
-                    val apiId = runCatching {
-                        val f = Class.forName(ctx2.packageName + ".BuildConfig").getDeclaredField("TG_API_ID"); f.isAccessible = true; (f.get(null) as? Int) ?: 0
-                    }.getOrDefault(0)
-                    val apiHash = runCatching {
-                        val f = Class.forName(ctx2.packageName + ".BuildConfig").getDeclaredField("TG_API_HASH"); f.isAccessible = true; (f.get(null) as? String) ?: ""
-                    }.getOrDefault("")
-                    com.chris.m3usuite.data.repo.TelegramAuthRepository(ctx2, apiId, apiHash)
+                val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                val keysValid = effApiId > 0 && effApiHash.isNotBlank()
+                // Bind/unbind TDLib service with Settings lifecycle (only when Telegram enabled)
+                DisposableEffect(lifecycleOwner, tgEnabled) {
+                    val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                        if (!tgEnabled) return@LifecycleEventObserver
+                        when (event) {
+                            androidx.lifecycle.Lifecycle.Event.ON_START -> {
+                                authRepo.bindService()
+                                authRepo.setInBackground(false)
+                            }
+                            androidx.lifecycle.Lifecycle.Event.ON_STOP -> {
+                                authRepo.setInBackground(true)
+                                authRepo.unbindService()
+                            }
+                            else -> {}
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    if (tgEnabled && lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+                        authRepo.bindService()
+                        authRepo.setInBackground(false)
+                    }
+                    onDispose {
+                        lifecycleOwner.lifecycle.removeObserver(observer)
+                        if (tgEnabled) runCatching { authRepo.setInBackground(true); authRepo.unbindService() }
+                    }
+                }
+                val authState by authRepo.authState.collectAsStateWithLifecycle(initialValue = com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
+                // Surface service errors as snackbars
+                LaunchedEffect(tgEnabled) {
+                    if (tgEnabled) {
+                        authRepo.errors.collect { em -> snackHost.showSnackbar("Telegram: $em") }
+                    }
+                }
+                var showLogout by remember { mutableStateOf(false) }
+                if (tgEnabled && !keysValid) {
+                    Spacer(Modifier.height(6.dp))
+                    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(imageVector = Icons.Outlined.Info, contentDescription = null)
+                            Text("API‑Keys fehlen – bitte API ID und API HASH setzen, um TDLib zu starten.")
+                        }
+                    }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Button(onClick = {
+                    Button(enabled = tgEnabled && keysValid, onClick = {
                         if (!authRepo.isAvailable()) {
                             scope.launch { snackHost.showSnackbar("TDLib nicht verfügbar – bitte Bibliotheken bündeln.") }
-                        } else { authRepo.start(); showTgDialog = true }
+                        } else if (!authRepo.hasValidKeys()) {
+                            scope.launch { snackHost.showSnackbar("API-Keys fehlen – TG_API_ID/HASH setzen.") }
+                        } else {
+                            val ok = runCatching { authRepo.start() }.getOrElse { e ->
+                                scope.launch { snackHost.showSnackbar("Telegram-Start fehlgeschlagen: ${e.message ?: "Unbekannter Fehler"}") }
+                                false
+                            }
+                            if (ok) showTgDialog = true
+                        }
                     }, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("Telegram verbinden") }
+                    TextButton(enabled = tgEnabled && keysValid, onClick = {
+                        if (!authRepo.hasValidKeys()) {
+                            scope.launch { snackHost.showSnackbar("API-Keys fehlen – bitte ID/HASH setzen.") }
+                        } else {
+                            runCatching { authRepo.start() }
+                            authRepo.requestQrLogin(); showTgDialog = true
+                        }
+                    }) { Text("QR‑Login anfordern") }
+                    TextButton(onClick = { showLogout = true }) { Text("Abmelden/Reset") }
                     TextButton(onClick = { val st = authRepo.authState.value; scope.launch { snackHost.showSnackbar("Telegram-Status: $st") } }) { Text("Status (Debug)") }
+                }
+                if (showLogout) {
+                    var wipe by remember { mutableStateOf(true) }
+                    AlertDialog(
+                        onDismissRequest = { showLogout = false },
+                        title = { Text("Telegram abmelden") },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Willst du dich von Telegram abmelden?")
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Checkbox(checked = wipe, onCheckedChange = { wipe = it })
+                                    Text("Lokalen Telegram-Cache löschen")
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                authRepo.logout()
+                                if (wipe) com.chris.m3usuite.work.TelegramCacheCleanupWorker.wipeAll(ctx2)
+                                scope.launch { snackHost.showSnackbar("Abmeldung ausgelöst") }
+                                showLogout = false
+                            }) { Text("Abmelden") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showLogout = false }) { Text("Abbrechen") }
+                        }
+                    )
+                }
+                // Statuszeile + Secrets Quick-Check (maskiert)
+                val maskedHash = if (effApiHash.isNotBlank()) effApiHash.take(4) + "…" else "(leer)"
+                Text("Status: ${authState}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Keys: ID=${effApiId}  HASH=${maskedHash}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // Optional API override inputs
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = if (overrideApiId > 0) overrideApiId.toString() else "",
+                        onValueChange = { s -> s.toIntOrNull()?.let { v -> scope.launch { store.setTelegramApiId(v) } } },
+                        label = { Text("API ID (optional)") },
+                        singleLine = true,
+                        enabled = tgEnabled,
+                        modifier = Modifier.width(200.dp)
+                    )
+                    OutlinedTextField(
+                        value = overrideApiHash,
+                        onValueChange = { s -> scope.launch { store.setTelegramApiHash(s.trim()) } },
+                        label = { Text("API HASH (optional)") },
+                        singleLine = true,
+                        enabled = tgEnabled,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
                 if (showTgDialog) TelegramLoginDialog(onDismiss = { showTgDialog = false }, repo = authRepo)
 
@@ -584,13 +907,13 @@ fun SettingsScreen(
                         cur.add(chatId.toString())
                         scope.launch { store.setTelegramSelectedVodChatsCsv(cur.joinToString(",")) }
                         showVodPicker = false
-                    })
+                    }, onRequestLogin = { showTgDialog = true })
                     if (showSeriesPicker) TelegramChatPickerDialog(onDismiss = { showSeriesPicker = false }, onSelect = { chatId ->
                         val cur = tgSeriesSel.split(',').filter { it.isNotBlank() }.toMutableSet()
                         cur.add(chatId.toString())
                         scope.launch { store.setTelegramSelectedSeriesChatsCsv(cur.joinToString(",")) }
                         showSeriesPicker = false
-                    })
+                    }, onRequestLogin = { showTgDialog = true })
                 }
                 // Selected chips (scrollable row)
                 if (tgVodSel.isNotBlank() || tgSeriesSel.isNotBlank()) {
@@ -686,6 +1009,31 @@ fun SettingsScreen(
 }
 
 @Composable
+private fun QrCodeBox(data: String, sizeDp: Int = 200) {
+    val sizePx = with(LocalDensity.current) { sizeDp.dp.toPx().toInt() }
+    val bmp = remember(data, sizePx) { generateQrBitmap(data, sizePx, sizePx) }
+    if (bmp != null) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Image(painter = BitmapPainter(bmp.asImageBitmap()), contentDescription = "QR Code", modifier = Modifier.size(sizeDp.dp))
+        }
+    }
+}
+
+private fun generateQrBitmap(text: String, width: Int, height: Int): Bitmap? {
+    return try {
+        val hints = mapOf(EncodeHintType.MARGIN to 1)
+        val bitMatrix = QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, width, height, hints)
+        val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        for (x in 0 until width) {
+            for (y in 0 until height) {
+                bmp.setPixel(x, y, if (bitMatrix.get(x, y)) 0xFF000000.toInt() else 0xFFFFFFFF.toInt())
+            }
+        }
+        bmp
+    } catch (_: Throwable) { null }
+}
+
+@Composable
 private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.data.repo.TelegramAuthRepository) {
     val state by repo.authState.collectAsStateWithLifecycle(initialValue = com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
     var phone by remember { mutableStateOf("") }
@@ -693,10 +1041,16 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
     var password by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var didCheckDbKey by remember { mutableStateOf(false) }
+    var qrLink by remember { mutableStateOf<String?>(null) }
+    // Collect QR links from service when available
+    LaunchedEffect(Unit) {
+        repo.qrLinks.collect { link -> qrLink = link }
+    }
     val title = when (state) {
         com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_NUMBER, com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNAUTHENTICATED, com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> "Telegram verbinden"
         com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE -> "Bestätigungscode"
         com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_PASSWORD -> "Passwort"
+        com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_OTHER_DEVICE -> "QR‑Bestätigung"
         com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> "Verbunden"
         else -> "Telegram"
     }
@@ -733,6 +1087,8 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
                             colors = TextFieldDefaults.colors()
                         )
                         Text("Gib deine Telefonnummer im internationalen Format ein (z. B. +491701234567)", style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.height(6.dp))
+                        Text("Oder melde dich per QR an: In der Telegram‑App auf deinem Smartphone zu Einstellungen → Geräte → Gerät verbinden gehen.", style = MaterialTheme.typography.bodySmall)
                     }
                     com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -762,6 +1118,29 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
                     }
                     com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> {
                         Text("Erfolgreich verbunden.")
+                    }
+                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_OTHER_DEVICE -> {
+                        Text("Warten auf Bestätigung auf einem anderen Gerät.", style = MaterialTheme.typography.bodySmall)
+                        val link = qrLink
+                        if (!link.isNullOrBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            QrCodeBox(data = link)
+                            Spacer(Modifier.height(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                val ctx = LocalContext.current
+                                Text(link, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                                TextButton(onClick = {
+                                    val clip = android.content.ClipData.newPlainText("tg_login", link)
+                                    val cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    cm.setPrimaryClip(clip)
+                                }) { Text("Link kopieren") }
+                                TextButton(onClick = { repo.requestQrLogin() }) { Text("Neu laden") }
+                            }
+                        } else {
+                            Text("Öffne Telegram auf deinem Smartphone → Einstellungen → Geräte → QR‑Code scannen.", style = MaterialTheme.typography.bodySmall)
+                            Spacer(Modifier.height(6.dp))
+                            TextButton(onClick = { repo.requestQrLogin() }) { Text("QR erneut anfordern") }
+                        }
                     }
                     else -> {
                         Text("Warte auf Status…")
@@ -796,7 +1175,18 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
                 else -> { TextButton(onClick = {}) { Text("OK") } }
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } }
+        dismissButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = {
+                    // Reset transient inputs
+                    phone = ""; code = ""; password = ""; busy = false
+                    onDismiss()
+                }) { Text("Abbrechen") }
+                if (state == com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_OTHER_DEVICE) {
+                    TextButton(onClick = { repo.requestQrLogin() }) { Text("Erneut versuchen") }
+                }
+            }
+        }
     )
 }
 
@@ -804,7 +1194,8 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
 @Composable
 private fun TelegramChatPickerDialog(
     onDismiss: () -> Unit,
-    onSelect: (Long) -> Unit
+    onSelect: (Long) -> Unit,
+    onRequestLogin: () -> Unit
 ) {
     val ctx = LocalContext.current
     val authState = remember { mutableStateOf(TdLibReflection.AuthState.UNKNOWN) }
@@ -812,13 +1203,22 @@ private fun TelegramChatPickerDialog(
     val chatsArchive = remember { mutableStateListOf<Pair<Long, String>>() }
     var loading by remember { mutableStateOf(true) }
     var folder by remember { mutableStateOf("main") }
+    var search by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         loading = true
         val flow = kotlinx.coroutines.flow.MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
-        val client = TdLibReflection.getOrCreateClient(ctx, flow)
+        val client = runCatching { TdLibReflection.getOrCreateClient(ctx, flow) }.getOrNull()
         authState.value = flow.value
         if (client != null) {
+            // Ensure authenticated
+            val authObj = TdLibReflection.buildGetAuthorizationState()?.let { TdLibReflection.sendForResult(client, it, 1000) }
+            val st = TdLibReflection.mapAuthorizationState(authObj)
+            authState.value = st
+            if (st != TdLibReflection.AuthState.AUTHENTICATED) {
+                loading = false
+                return@LaunchedEffect
+            }
             fun load(listObj: Any?, target: MutableList<Pair<Long, String>>) {
                 if (listObj == null) return
                 val get = TdLibReflection.buildGetChats(listObj, 200) ?: return
@@ -841,17 +1241,36 @@ private fun TelegramChatPickerDialog(
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
             Text("Telegram – Ordner auswählen", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
+            if (authState.value != TdLibReflection.AuthState.AUTHENTICATED) {
+                Text("Bitte zuerst Telegram verbinden.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { onRequestLogin() }, colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.Accent, contentColor = Color.Black)) { Text("Jetzt verbinden") }
+                    TextButton(onClick = onDismiss) { Text("Schließen") }
+                }
+                return@ModalBottomSheet
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 AssistChip(label = { Text("Hauptordner") }, onClick = { folder = "main" }, leadingIcon = null, enabled = !loading)
                 AssistChip(label = { Text("Archiv") }, onClick = { folder = "archive" }, leadingIcon = null, enabled = !loading)
             }
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it },
+                label = { Text("Suchen…") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
             Spacer(Modifier.height(8.dp))
             if (loading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
                 Text("Lade Chats…", style = MaterialTheme.typography.bodySmall)
             } else {
-                val items = if (folder == "archive") chatsArchive else chatsMain
+                val itemsBase = if (folder == "archive") chatsArchive else chatsMain
+                val q = search.trim().lowercase()
+                val items = if (q.isBlank()) itemsBase else itemsBase.filter { it.second.lowercase().contains(q) || it.first.toString().contains(q) }
                 LazyColumn(Modifier.fillMaxWidth().heightIn(max = 520.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     items(items) { (id, title) ->
                         ElevatedCard(onClick = { onSelect(id) }, modifier = Modifier.fillMaxWidth()) {

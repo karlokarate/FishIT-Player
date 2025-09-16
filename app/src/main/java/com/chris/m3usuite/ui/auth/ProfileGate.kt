@@ -23,8 +23,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.chris.m3usuite.data.db.DbProvider
-import com.chris.m3usuite.data.db.Profile
+import com.chris.m3usuite.data.repo.ProfileObxRepository
+import com.chris.m3usuite.data.obx.ObxProfile
+import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -48,11 +49,11 @@ fun ProfileGate(
 ) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val store = remember { SettingsStore(ctx) }
-    val db = remember { DbProvider.get(ctx) }
+    val profileRepo = remember { ProfileObxRepository(ctx) }
     val scope = rememberCoroutineScope()
 
-    var adult by remember { mutableStateOf<Profile?>(null) }
-    var kids by remember { mutableStateOf<List<Profile>>(emptyList()) }
+    var adult by remember { mutableStateOf<ObxProfile?>(null) }
+    var kids by remember { mutableStateOf<List<ObxProfile>>(emptyList()) }
 
     // PIN UI state (persist across rotation)
     var showPin by rememberSaveable { mutableStateOf(false) }
@@ -63,7 +64,7 @@ fun ProfileGate(
     val pinSet by store.adultPinSet.collectAsState(initial = false)
 
     LaunchedEffect(Unit) {
-        val list = withContext(Dispatchers.IO) { db.profileDao().all() }
+        val list = withContext(Dispatchers.IO) { profileRepo.all() }
         adult = list.firstOrNull { it.type == "adult" }
         kids = list.filter { it.type != "adult" } // show Kid + Guest
         // Skip only if user opted in to remember last profile
@@ -102,17 +103,32 @@ fun ProfileGate(
                         val h = sha256(pin)
                         scope.launch { 
                             store.setAdultPinHash(h); store.setAdultPinSet(true)
-                            // ensure we set a valid adult id
-                            val a = adult ?: withContext(Dispatchers.IO) { db.profileDao().all().firstOrNull { it.type == "adult" } }
-                            store.setCurrentProfileId(a?.id ?: -1)
+                            // ensure we have an adult profile; create if missing
+                            val existing = withContext(Dispatchers.IO) { profileRepo.all().firstOrNull { it.type == "adult" } }
+                            if (existing != null) {
+                                store.setCurrentProfileId(existing.id)
+                            } else {
+                                val now = System.currentTimeMillis()
+                                val p = ObxProfile(name = "Erwachsen", type = "adult", avatarPath = null, createdAt = now, updatedAt = now)
+                                val newId = withContext(Dispatchers.IO) { profileRepo.insert(p) }
+                                store.setCurrentProfileId(newId)
+                            }
                             pin = ""; pin2 = ""; showPin = false; onEnter() 
                         }
                     } else {
                         scope.launch {
                             val ok = sha256(pin) == store.adultPinHash.first()
                             if (ok) {
-                                val a = adult ?: withContext(Dispatchers.IO) { db.profileDao().all().firstOrNull { it.type == "adult" } }
-                                store.setCurrentProfileId(a?.id ?: -1)
+                                // ensure adult profile exists and select it
+                                val existing = withContext(Dispatchers.IO) { profileRepo.all().firstOrNull { it.type == "adult" } }
+                                if (existing != null) {
+                                    store.setCurrentProfileId(existing.id)
+                                } else {
+                                    val now = System.currentTimeMillis()
+                                    val p = ObxProfile(name = "Erwachsen", type = "adult", avatarPath = null, createdAt = now, updatedAt = now)
+                                    val newId = withContext(Dispatchers.IO) { profileRepo.insert(p) }
+                                    store.setCurrentProfileId(newId)
+                                }
                                 pin = ""; showPin = false; onEnter() 
                             } else pinError = "Falscher PIN"
                         }
@@ -159,17 +175,11 @@ fun ProfileGate(
                 var limit by remember(k.id) { mutableStateOf<Int?>(null) }
                 LaunchedEffect(k.id) {
                     withContext(Dispatchers.IO) {
-                        try {
-                            val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
-                                .format(java.util.Calendar.getInstance().time)
-                            val entry = db.screenTimeDao().getForDay(k.id, dayKey)
-                            withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                used = entry?.usedMinutes ?: 0
-                                limit = entry?.limitMinutes ?: 0
-                            }
-                        } catch (_: Throwable) {
-                            withContext(kotlinx.coroutines.Dispatchers.Main) { used = 0; limit = 0 }
-                        }
+                        val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Calendar.getInstance().time)
+                        val b = ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxScreenTimeEntry::class.java)
+                        val q = b.query(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.kidProfileId.equal(k.id).and(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.dayYyyymmdd.equal(dayKey))).build()
+                        val entry = q.findFirst()
+                        withContext(kotlinx.coroutines.Dispatchers.Main) { used = entry?.usedMinutes ?: 0; limit = entry?.limitMinutes ?: 0 }
                     }
                 }
                 OutlinedCard(
@@ -223,12 +233,12 @@ fun ProfileGate(
         onCreate = { name, kid ->
             scope.launch(Dispatchers.IO) {
                 val now = System.currentTimeMillis()
-                val p = com.chris.m3usuite.data.db.Profile(name = name, type = if (kid) "kid" else "adult", avatarPath = null, createdAt = now, updatedAt = now)
-                db.profileDao().insert(p)
-                val list = db.profileDao().all()
+                val p = com.chris.m3usuite.data.obx.ObxProfile(name = name, type = if (kid) "kid" else "adult", avatarPath = null, createdAt = now, updatedAt = now)
+                profileRepo.insert(p)
+                val list = profileRepo.all()
                 withContext(Dispatchers.Main) {
                     adult = list.firstOrNull { it.type == "adult" }
-                    kids = list.filter { it.type == "kid" }
+                    kids = list.filter { it.type != "adult" }
                     showCreate = false
                 }
             }

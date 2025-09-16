@@ -22,7 +22,7 @@ import java.util.Locale
  */
 object TdLibReflection {
 
-    enum class AuthState { UNKNOWN, UNAUTHENTICATED, WAIT_ENCRYPTION_KEY, WAIT_FOR_NUMBER, WAIT_FOR_CODE, WAIT_FOR_PASSWORD, AUTHENTICATED, LOGGING_OUT }
+    enum class AuthState { UNKNOWN, UNAUTHENTICATED, WAIT_ENCRYPTION_KEY, WAIT_FOR_NUMBER, WAIT_FOR_CODE, WAIT_FOR_PASSWORD, WAIT_OTHER_DEVICE, AUTHENTICATED, LOGGING_OUT }
 
     // Some builds ship TDLib under different Java package names. Try both.
     private val PKGS = listOf(
@@ -32,11 +32,26 @@ object TdLibReflection {
 
     fun available(): Boolean = PKGS.any { p ->
         try {
-            Class.forName("$p.Client")
-            Class.forName("$p.TdApi")
+            // Check for presence without triggering static initializers
+            Class.forName("$p.Client", /* initialize = */ false, TdLibReflection::class.java.classLoader)
+            Class.forName("$p.TdApi", /* initialize = */ false, TdLibReflection::class.java.classLoader)
             true
         } catch (_: Throwable) { false }
     }
+
+    /** Shallow verification that Java TdApi contains expected classes used by our JNI. */
+    fun verifyBindings(): Boolean = PKGS.any { p ->
+        try {
+            Class.forName("$p.TdApi\$AuthorizationStateWaitCode", false, TdLibReflection::class.java.classLoader)
+            // Optional legacy/new classes; just probe a couple of likely ones
+            runCatching { Class.forName("$p.TdApi\$AuthorizationStateWaitOtherDeviceConfirmation", false, TdLibReflection::class.java.classLoader) }
+            runCatching { Class.forName("$p.TdApi\$AuthorizationStateWaitEmailAddress", false, TdLibReflection::class.java.classLoader) }
+            true
+        } catch (_: Throwable) { false }
+    }
+
+    @Volatile private var updateListener: ((Any) -> Unit)? = null
+    fun setUpdateListener(l: ((Any) -> Unit)?) { updateListener = l }
 
     class ClientHandle internal constructor(
         internal val client: Any,
@@ -52,19 +67,26 @@ object TdLibReflection {
 
     private var singleton: ClientHandle? = null
 
-    /** Create a TDLib client and start auth state flow */
-    fun createClient(authStateFlow: MutableStateFlow<AuthState>): ClientHandle? {
+    /** Create a TDLib client and start auth/download state flows */
+    fun createClient(authStateFlow: MutableStateFlow<AuthState>, downloadActive: MutableStateFlow<Boolean>? = null): ClientHandle? {
         if (!available()) return null
         val clientCls = td("Client")
         val resultHandlerCls = td("Client\$ResultHandler")
         val exceptionHandlerCls = td("Client\$ExceptionHandler")
+        if (!verifyBindings()) {
+            android.util.Log.e("TdLib", "TdApi bindings likely mismatched with JNI – please align Java/JNI versions.")
+        }
 
         val resultHandler = java.lang.reflect.Proxy.newProxyInstance(
             resultHandlerCls.classLoader, arrayOf(resultHandlerCls)
         ) { _, method, args ->
             if (method.name == "onResult") {
                 val obj = args?.getOrNull(0)
-                if (obj != null) handleResult(obj, authStateFlow)
+                if (obj != null) {
+                    // Forward all updates to listener first (updates-first indexing), then handle built-ins
+                    kotlin.runCatching { updateListener?.invoke(obj) }
+                    handleResult(obj, authStateFlow, downloadActive)
+                }
             }
             null
         }
@@ -90,7 +112,7 @@ object TdLibReflection {
     fun getOrCreateClient(context: Context, authStateFlow: MutableStateFlow<AuthState>): ClientHandle? {
         if (!available()) return null
         if (singleton == null) {
-            singleton = createClient(authStateFlow)
+            singleton = createClient(authStateFlow, null)
             // best-effort set parameters
             val (apiId, apiHash) = try {
                 val bc = Class.forName(context.packageName + ".BuildConfig")
@@ -107,7 +129,7 @@ object TdLibReflection {
         return singleton
     }
 
-    private fun handleResult(obj: Any, authStateFlow: MutableStateFlow<AuthState>) {
+    private fun handleResult(obj: Any, authStateFlow: MutableStateFlow<AuthState>, downloadActive: MutableStateFlow<Boolean>? = null) {
         val clsName = obj.javaClass.name
         if (PKGS.any { clsName == "$it.TdApi\$UpdateAuthorizationState" }) {
             val field = obj.javaClass.getDeclaredField("authorizationState").apply { isAccessible = true }
@@ -119,11 +141,21 @@ object TdLibReflection {
                 in PKGS.map { "$it.TdApi\$AuthorizationStateWaitPhoneNumber" } -> AuthState.WAIT_FOR_NUMBER
                 in PKGS.map { "$it.TdApi\$AuthorizationStateWaitCode" } -> AuthState.WAIT_FOR_CODE
                 in PKGS.map { "$it.TdApi\$AuthorizationStateWaitPassword" } -> AuthState.WAIT_FOR_PASSWORD
+                in PKGS.map { "$it.TdApi\$AuthorizationStateWaitOtherDeviceConfirmation" } -> AuthState.WAIT_OTHER_DEVICE
                 in PKGS.map { "$it.TdApi\$AuthorizationStateReady" } -> AuthState.AUTHENTICATED
                 in PKGS.map { "$it.TdApi\$AuthorizationStateLoggingOut" } -> AuthState.LOGGING_OUT
                 else -> AuthState.UNKNOWN
             }
             authStateFlow.value = state
+        }
+        if (PKGS.any { clsName == "$it.TdApi\$UpdateFile" }) {
+            runCatching {
+                val f = obj.javaClass.getDeclaredField("file"); f.isAccessible = true
+                val fileObj = f.get(obj)
+                extractFileInfo(fileObj ?: return)
+            }.onSuccess { info ->
+                if (info != null) downloadActive?.value = (info.downloadingActive && !info.downloadingCompleted)
+            }
         }
     }
 
@@ -144,13 +176,20 @@ object TdLibReflection {
         set("apiId", apiId)
         set("apiHash", apiHash)
         set("useMessageDatabase", true)
+        runCatching { set("useChatInfoDatabase", true) }
+        runCatching { set("useFileDatabase", true) }
         set("useSecretChats", true)
         set("systemLanguageCode", Locale.getDefault().language)
-        set("databaseDirectory", context.filesDir.absolutePath)
+        val base = context.filesDir.absolutePath
+        set("databaseDirectory", base)
+        runCatching { set("filesDirectory", base) }
         set("deviceModel", Build.MODEL)
         set("systemVersion", Build.VERSION.RELEASE)
         set("applicationVersion", "m3uSuite-telemetry-0")
         set("enableStorageOptimizer", true)
+        // Database encryption key (32 bytes) via KeyStore helper
+        val key = TelegramKeyStore.getOrCreateDatabaseKey(context)
+        runCatching { set("databaseEncryptionKey", key) }
         return params
     }
 
@@ -212,6 +251,7 @@ object TdLibReflection {
             in PKGS.map { "$it.TdApi\$AuthorizationStateWaitPhoneNumber" } -> AuthState.WAIT_FOR_NUMBER
             in PKGS.map { "$it.TdApi\$AuthorizationStateWaitCode" } -> AuthState.WAIT_FOR_CODE
             in PKGS.map { "$it.TdApi\$AuthorizationStateWaitPassword" } -> AuthState.WAIT_FOR_PASSWORD
+            in PKGS.map { "$it.TdApi\$AuthorizationStateWaitOtherDeviceConfirmation" } -> AuthState.WAIT_OTHER_DEVICE
             in PKGS.map { "$it.TdApi\$AuthorizationStateReady" } -> AuthState.AUTHENTICATED
             in PKGS.map { "$it.TdApi\$AuthorizationStateLoggingOut" } -> AuthState.LOGGING_OUT
             else -> AuthState.UNKNOWN
@@ -259,10 +299,104 @@ object TdLibReflection {
         client.sendMethod.invoke(client.client, fn, rh, eh)
     }
 
+    // Request QR-Code-based login (user scans from another device)
+    fun sendRequestQrCodeAuthentication(client: ClientHandle) {
+        val fn = runCatching { new("TdApi\$RequestQrCodeAuthentication") }.getOrNull() ?: return
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    // Extract QR link for AuthorizationStateWaitOtherDeviceConfirmation
+    fun extractQrLink(authStateObj: Any?): String? {
+        return try {
+            if (authStateObj == null) null else {
+                val name = authStateObj.javaClass.name
+                if (PKGS.any { name == "$it.TdApi\$AuthorizationStateWaitOtherDeviceConfirmation" }) {
+                    val f = authStateObj.javaClass.getDeclaredField("link"); f.isAccessible = true
+                    f.get(authStateObj) as? String
+                } else null
+            }
+        } catch (_: Throwable) { null }
+    }
+
     fun sendCheckPassword(client: ClientHandle, password: String) {
         val fn = new("TdApi\$CheckAuthenticationPassword", arrayOf(String::class.java), arrayOf(password))
         val handlerType = td("Client\$ResultHandler")
         val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    fun sendLogOut(client: ClientHandle) {
+        val fn = runCatching { new("TdApi\$LogOut") }.getOrNull() ?: return
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    fun sendClose(client: ClientHandle) {
+        val fn = runCatching { new("TdApi\$Close") }.getOrNull() ?: return
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    // --- Push integration (FCM) ---
+    fun sendRegisterFcm(client: ClientHandle, fcmToken: String) {
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        // Build DeviceTokenFirebaseCloudMessaging with best-effort constructor resolution
+        val tokenObj = runCatching {
+            // Newer: (String token, boolean encrypt, String data)
+            new("TdApi\$DeviceTokenFirebaseCloudMessaging", arrayOf(String::class.java, Boolean::class.javaPrimitiveType!!, String::class.java), arrayOf(fcmToken, false, ""))
+        }.getOrElse {
+            runCatching { new("TdApi\$DeviceTokenFirebaseCloudMessaging", arrayOf(String::class.java, Boolean::class.javaPrimitiveType!!), arrayOf(fcmToken, false)) }.getOrNull()
+        } ?: return
+        val arrCls = java.lang.reflect.Array.newInstance(tokenObj.javaClass.superclass, 1).javaClass // DeviceToken[]
+        val tokensArray = java.lang.reflect.Array.newInstance(tokenObj.javaClass.superclass, 1).apply { java.lang.reflect.Array.set(this, 0, tokenObj) }
+        val reg = runCatching { new("TdApi\$RegisterDevice", arrayOf(arrCls), arrayOf(tokensArray)) }.getOrNull() ?: return
+        client.sendMethod.invoke(client.client, reg, rh, eh)
+    }
+
+    fun sendProcessPushNotification(client: ClientHandle, payload: String) {
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        val fn = runCatching { new("TdApi\$ProcessPushNotification", arrayOf(String::class.java), arrayOf(payload)) }.getOrNull() ?: return
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    // --- App lifecycle/network hooks ---
+    fun sendSetInBackground(client: ClientHandle, isInBackground: Boolean) {
+        val fn = runCatching { new("TdApi\$SetInBackground", arrayOf(Boolean::class.javaPrimitiveType!!), arrayOf(isInBackground)) }.getOrNull() ?: return
+        val handlerType = td("Client\$ResultHandler"); val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    enum class Net { NONE, WIFI, MOBILE, OTHER }
+
+    fun sendSetNetworkType(client: ClientHandle, net: Net) {
+        val nt = when (net) {
+            Net.NONE -> runCatching { new("TdApi\$NetworkTypeNone") }.getOrNull()
+            Net.WIFI -> runCatching { new("TdApi\$NetworkTypeWiFi") }.getOrNull()
+            Net.MOBILE -> runCatching { new("TdApi\$NetworkTypeMobile") }.getOrNull()
+            Net.OTHER -> runCatching { new("TdApi\$NetworkTypeOther") }.getOrNull()
+        } ?: return
+        val fn = runCatching { new("TdApi\$SetNetworkType", arrayOf(td("TdApi\$NetworkType")), arrayOf(nt)) }.getOrNull() ?: return
+        val handlerType = td("Client\$ResultHandler"); val exceptionHandlerType = td("Client\$ExceptionHandler")
         val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
         val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
         client.sendMethod.invoke(client.client, fn, rh, eh)
@@ -292,24 +426,26 @@ object TdLibReflection {
         new("TdApi\$DownloadFile", arrayOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!), arrayOf(fileId, priority, offset, limit, synchronous))
     } catch (_: Throwable) { null }
 
-    data class FileInfo(val fileId: Int, val localPath: String?, val downloadingCompleted: Boolean, val downloadedSize: Long, val expectedSize: Long)
+    data class FileInfo(val fileId: Int, val localPath: String?, val downloadingActive: Boolean, val downloadingCompleted: Boolean, val downloadedSize: Long, val expectedSize: Long)
 
     /** Attempts to extract TdApi.File info, including local.path/download flags. */
     fun extractFileInfo(fileObj: Any): FileInfo? = try {
         val id = fileObj.javaClass.getDeclaredField("id").apply { isAccessible = true }.getInt(fileObj)
         val local = runCatching { fileObj.javaClass.getDeclaredField("local").apply { isAccessible = true }.get(fileObj) }.getOrNull()
         var path: String? = null
+        var active = false
         var completed = false
         var downloaded: Long = 0
         if (local != null) {
             path = runCatching { local.javaClass.getDeclaredField("path").apply { isAccessible = true }.get(local) as? String }.getOrNull()
+            active = runCatching { local.javaClass.getDeclaredField("isDownloadingActive").apply { isAccessible = true }.getBoolean(local) }.getOrDefault(false)
             completed = runCatching { local.javaClass.getDeclaredField("isDownloadingCompleted").apply { isAccessible = true }.getBoolean(local) }.getOrDefault(false)
             downloaded = runCatching { local.javaClass.getDeclaredField("downloadedSize").apply { isAccessible = true }.getInt(local).toLong() }.getOrDefault(0L)
         }
         val expected: Long = runCatching { fileObj.javaClass.getDeclaredField("expectedSize").apply { isAccessible = true }.getInt(fileObj).toLong() }
             .recoverCatching { fileObj.javaClass.getDeclaredField("size").apply { isAccessible = true }.getInt(fileObj).toLong() }
             .getOrDefault(0L)
-        FileInfo(id, path, completed, downloaded, expected)
+        FileInfo(id, path, active, completed, downloaded, expected)
     } catch (_: Throwable) { null }
 
     /** Attempts to extract File.remote.uniqueId if present. */
