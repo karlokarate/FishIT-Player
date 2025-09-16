@@ -36,10 +36,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
-import com.chris.m3usuite.ui.util.buildImageRequest
+import com.chris.m3usuite.ui.util.AppAsyncImage
 import com.chris.m3usuite.ui.fx.ShimmerBox
 import com.chris.m3usuite.ui.skin.tvClickable
 // isTvDevice removed (unused)
@@ -141,7 +139,6 @@ fun MediaCard(
     showTitle: Boolean = true
 ) {
     val ctx = LocalContext.current
-    val headers = rememberImageHeaders()
     val h = rowItemHeight()
     Column(
         horizontalAlignment = Alignment.Start,
@@ -154,12 +151,11 @@ fun MediaCard(
         val raw = remember(item.poster ?: item.logo ?: item.backdrop) {
             item.poster ?: item.logo ?: item.backdrop
         }
-        AsyncImage(
-            model = buildImageRequest(ctx, raw, headers),
+        AppAsyncImage(
+            url = raw,
             contentDescription = item.name,
             contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .aspectRatio(16f / 9f)
+            modifier = Modifier.aspectRatio(16f / 9f)
         )
         if (showTitle) {
             Text(
@@ -362,8 +358,8 @@ fun LiveTileCard(
                         ShimmerCircle(Modifier.fillMaxSize())
                     }
                     if (logoUrl != null) {
-                        AsyncImage(
-                            model = buildImageRequest(ctx, logoUrl, headers),
+                        AppAsyncImage(
+                            url = logoUrl,
                             contentDescription = item.name,
                             contentScale = ContentScale.Fit,
                             modifier = Modifier
@@ -542,8 +538,8 @@ fun SeriesTileCard(
                         modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)),
                         cornerRadius = 0.dp
                     )
-                    AsyncImage(
-                        model = buildImageRequest(ctx, item.poster ?: item.logo ?: item.backdrop, headers),
+                    AppAsyncImage(
+                        url = item.poster ?: item.logo ?: item.backdrop,
                         contentDescription = item.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
@@ -688,8 +684,8 @@ fun VodTileCard(
                         modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)),
                         cornerRadius = 0.dp
                     )
-                    AsyncImage(
-                        model = buildImageRequest(ctx, item.poster ?: item.logo ?: item.backdrop, headers),
+                    AppAsyncImage(
+                        url = item.poster ?: item.logo ?: item.backdrop,
                         contentDescription = item.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),

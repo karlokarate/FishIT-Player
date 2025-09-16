@@ -299,8 +299,8 @@ fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Accent.copy(alpha = 0.35f))
 
         // LOGO: 1. Klick -> EPG-Overlay anzeigen, 2. Klick (wenn offen) -> Playerwahl/Abspielen
-        AsyncImage(
-            model = buildImageRequest(ctx, logo, headersImg),
+        com.chris.m3usuite.ui.util.AppAsyncImage(
+            url = logo,
             contentDescription = null,
             contentScale = ContentScale.Fit, // Logos nicht beschneiden
             modifier = Modifier

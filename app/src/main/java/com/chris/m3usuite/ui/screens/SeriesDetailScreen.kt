@@ -383,8 +383,8 @@ fun SeriesDetailScreen(
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Accent.copy(alpha = 0.35f))
                     Spacer(Modifier.height(8.dp))
-                    AsyncImage(
-                        model = buildImageRequest(ctx, poster, headers),
+                    com.chris.m3usuite.ui.util.AppAsyncImage(
+                        url = poster,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.height(220.dp).fillMaxWidth()
@@ -536,8 +536,8 @@ fun SeriesDetailScreen(
                                     var loaded by remember(model) { mutableStateOf(false) }
                                     val alpha by animateFloatAsState(if (loaded) 1f else 0f, animationSpec = tween(260), label = "thumbFade")
                                     if (!loaded) com.chris.m3usuite.ui.fx.ShimmerBox(modifier = Modifier.fillMaxSize(), cornerRadius = 12.dp)
-                                    AsyncImage(
-                                        model = buildImageRequest(ctx, model, headers),
+                                    com.chris.m3usuite.ui.util.AppAsyncImage(
+                                        url = model,
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha },

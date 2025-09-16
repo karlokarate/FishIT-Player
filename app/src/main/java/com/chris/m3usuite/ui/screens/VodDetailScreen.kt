@@ -263,8 +263,8 @@ fun VodDetailScreen(
         Box(
             modifier = Modifier.clickable(enabled = url != null) { play(fromStart = false) }
         ) {
-            AsyncImage(
-                model = buildImageRequest(ctx, backdrop ?: poster, headers),
+            com.chris.m3usuite.ui.util.AppAsyncImage(
+                url = backdrop ?: poster,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
