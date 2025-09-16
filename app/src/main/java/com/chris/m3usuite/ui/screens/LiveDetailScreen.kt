@@ -78,6 +78,7 @@ import com.chris.m3usuite.player.InternalPlayerScreen
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
+import com.chris.m3usuite.ui.components.sheets.KidSelectSheet
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.util.buildImageRequest
@@ -258,67 +259,7 @@ fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
     var showGrantSheet by rememberSaveable { mutableStateOf(false) }
     var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
 
-    @Composable
-    fun KidSelectSheet(onConfirm: suspend (kidIds: List<Long>) -> Unit, onDismiss: () -> Unit) {
-        var kids by remember { mutableStateOf<List<com.chris.m3usuite.data.obx.ObxProfile>>(emptyList()) }
-        LaunchedEffect(profileId) {
-            kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } }
-        }
-        var checked by remember { mutableStateOf(setOf<Long>()) }
-        ModalBottomSheet(onDismissRequest = onDismiss) {
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item { Text("Kinder auswählen") }
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = { checked = kids.map { it.id }.toSet() }, enabled = kids.isNotEmpty()) { Text("Alle auswählen") }
-                        TextButton(onClick = { checked = emptySet() }, enabled = checked.isNotEmpty()) { Text("Keine auswählen") }
-                    }
-                }
-                items(kids, key = { it.id }) { k ->
-                    val isC = k.id in checked
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .tvClickable {
-                                val v = !isC
-                                checked = if (v) checked + k.id else checked - k.id
-                            },
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val model = rememberAvatarModel(k.avatarPath)
-                            if (model != null) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(ctx)
-                                        .data(model)
-                                        .build(),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(32.dp).clip(CircleShape),
-                                    contentScale = ContentScale.Crop,
-                                    placeholder = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image),
-                                    error = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image),
-                                    fallback = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image)
-                                )
-                            }
-                            Text(k.name)
-                        }
-                        Switch(checked = isC, onCheckedChange = { v -> checked = if (v) checked + k.id else checked - k.id })
-                    }
-                }
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        val Accent = com.chris.m3usuite.ui.theme.DesignTokens.Accent
-                        TextButton(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("Abbrechen") }
-                        Button(modifier = Modifier.weight(1f).focusScaleOnTv(), onClick = { scope.launch { onConfirm(checked.toList()); onDismiss() } }, enabled = checked.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) { Text("OK") }
-                    }
-                }
-            }
-        }
-    }
+    // Local KidSelectSheet removed; using shared component via import
 
     // --- Normale Live-Detail-Ansicht ---
     val snackHost = remember { SnackbarHostState() }
