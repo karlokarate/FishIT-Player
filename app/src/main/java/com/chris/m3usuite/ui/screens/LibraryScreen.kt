@@ -918,23 +918,8 @@ fun LibraryScreen(
                         }
                     }
 
-                    // 5) Adults at the very bottom if enabled
+                    // 5) Adults at the very bottom if enabled (handled below in dedicated section)
                     val adultProviders = groupKeys.providers.filter { it.startsWith("adult_") }
-                    if (showAdultsEnabled && adultProviders.isNotEmpty()) {
-                        item {
-                            ExpandableAdultGroupsSection(
-                                tab = selectedTab,
-                                stateKey = "library:${selectedTabKey}:adults",
-                                refreshSignal = cacheVersion + resumeTick,
-                                providerKeys = adultProviders,
-                                loadItems = { k -> loadItemsForProvider(selectedTab, k) },
-                                onOpenDetails = onOpen,
-                                onPlayDirect = onPlay,
-                                onAssignToKid = onAssignVod,
-                                showAssign = canEditWhitelist
-                            )
-                        }
-                    }
                 } else if (selectedTab != ContentTab.Live && !showGenres && groupKeys.providers.isNotEmpty()) {
                     item {
                         Text(
@@ -1166,53 +1151,7 @@ private fun ExpandableGroupSection(
     }
 }
 
-@Composable
-private fun ExpandableAdultGroupsSection(
-    tab: ContentTab,
-    stateKey: String,
-    refreshSignal: Int,
-    providerKeys: List<String>,
-    loadItems: suspend (String) -> List<MediaItem>,
-    onOpenDetails: (MediaItem) -> Unit,
-    onPlayDirect: (MediaItem) -> Unit,
-    onAssignToKid: ((MediaItem) -> Unit)?,
-    showAssign: Boolean
-) {
-    var expanded by rememberSaveable(stateKey) { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            com.chris.m3usuite.ui.components.chips.CategoryChip(key = "adult", label = "FOR ADULTS")
-            TextButton(onClick = { expanded = !expanded }) {
-                Text(if (expanded) "Weniger" else "Mehr")
-            }
-        }
-        if (expanded) {
-            // Render each adult provider as its own expandable row
-            providerKeys.forEach { key ->
-                val sectionKey = "$stateKey:$key"
-                val subLabel = remember(key) {
-                    key.removePrefix("adult_").replace('_', ' ').replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() }
-                }
-                ExpandableGroupSection(
-                    tab = tab,
-                    stateKey = sectionKey,
-                    refreshSignal = refreshSignal,
-                    groupLabel = { subLabel },
-                    chipKey = key,
-                    expandedDefault = true,
-                    loadItems = { loadItems(key) },
-                    onOpenDetails = onOpenDetails,
-                    onPlayDirect = onPlayDirect,
-                    onAssignToKid = onAssignToKid,
-                    showAssign = showAssign
-                )
-            }
-        }
-    }
-}
+// (removed ExpandableAdultGroupsSection: adult umbrella now rendered as separate LazyColumn items)
 
 @Composable
 private fun MediaRowForTab(
