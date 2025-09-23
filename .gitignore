@@ -35,3 +35,8 @@ local.properties
 # Local Telegram API secrets (never commit)
 /.tg.secrets.properties
 .ua.secrets.properties
+
+# Ignore release outputs and stray artifacts
+app/release/
+app/src/main/java/*.tar
+app/src/main/java/*.jsonl
