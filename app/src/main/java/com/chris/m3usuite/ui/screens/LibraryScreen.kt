@@ -990,18 +990,35 @@ fun LibraryScreen(
 
                     // Adults umbrella (only when enabled and present; VOD only)
                     if (selectedTab == ContentTab.Vod && showAdultsEnabled && adultProviders.isNotEmpty()) {
+                        var adultsExpanded by rememberSaveable("library:${selectedTabKey}:adults") { mutableStateOf(false) }
                         item {
-                            ExpandableAdultGroupsSection(
-                                tab = selectedTab,
-                                stateKey = "library:${selectedTabKey}:adults",
-                                refreshSignal = cacheVersion + resumeTick,
-                                providerKeys = adultProviders,
-                                loadItems = { k -> loadItemsForProvider(selectedTab, k) },
-                                onOpenDetails = onOpen,
-                                onPlayDirect = onPlay,
-                                onAssignToKid = onAssignVod,
-                                showAssign = canEditWhitelist
-                            )
+                            Row(
+                                Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                com.chris.m3usuite.ui.components.chips.CategoryChip(key = "adult", label = "FOR ADULTS")
+                                TextButton(onClick = { adultsExpanded = !adultsExpanded }) { Text(if (adultsExpanded) "Weniger" else "Mehr") }
+                            }
+                        }
+                        if (adultsExpanded) {
+                            items(adultProviders, key = { it }) { key ->
+                                val sectionKey = "library:${selectedTabKey}:adults:$key"
+                                val subLabel = key.removePrefix("adult_").replace('_', ' ').replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() }
+                                ExpandableGroupSection(
+                                    tab = selectedTab,
+                                    stateKey = sectionKey,
+                                    refreshSignal = cacheVersion + resumeTick,
+                                    groupLabel = { subLabel },
+                                    chipKey = key,
+                                    expandedDefault = true,
+                                    loadItems = { loadItemsForProvider(selectedTab, key) },
+                                    onOpenDetails = onOpen,
+                                    onPlayDirect = onPlay,
+                                    onAssignToKid = onAssignVod,
+                                    showAssign = canEditWhitelist
+                                )
+                            }
                         }
                     }
                 }
