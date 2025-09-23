@@ -817,7 +817,11 @@ class XtreamObxRepository(
             // --- Live (upsert by streamId, aggregated per-category to avoid global caps) ---
             val liveSeen = mutableSetOf<Int>()
             if (includeLive) run {
-                val liveCatRows = catBox.query(ObxCategory_.kind.equal("live")).build().find()
+                val allowed = runBlocking { settings.seedPrefixesSet() }
+                val liveCatRows = catBox.query(ObxCategory_.kind.equal("live")).build().find().filter { row ->
+                    val p = extractPrefix(row.categoryName)
+                    allowed.contains(p)
+                }
                 val liveCats = liveCatRows.associateBy({ it.categoryId }, { it.categoryName })
                 val catIds = liveCatRows.mapNotNull { it.categoryId }.ifEmpty { listOf<String?>(null) }
                 catIds.forEach { catId ->
@@ -869,7 +873,11 @@ class XtreamObxRepository(
             run {
                 val updates = mutableListOf<ObxVod>()
                 val now = System.currentTimeMillis()
-                val vodCatRows = catBox.query(ObxCategory_.kind.equal("vod")).build().find()
+                val allowed = runBlocking { settings.seedPrefixesSet() }
+                val vodCatRows = catBox.query(ObxCategory_.kind.equal("vod")).build().find().filter { row ->
+                    val p = extractPrefix(row.categoryName)
+                    allowed.contains(p)
+                }
                 val vodCats = vodCatRows.associateBy({ it.categoryId }, { it.categoryName })
                 val toDetail = mutableListOf<Triple<Int, String?, String?>>()
 
@@ -923,16 +931,8 @@ class XtreamObxRepository(
                     }
                 }
 
-                // Opportunistic wildcard: try category_id=*, then fill gaps per category
-                val wildcard = runCatching { client.getVodStreams(categoryId = "*", offset = 0, limit = Int.MAX_VALUE) }.getOrNull().orEmpty()
-                val coveredCats = mutableSetOf<String>()
-                if (wildcard.isNotEmpty()) {
-                    processListChunk(wildcard, vodCats)
-                    wildcard.forEach { c -> c.category_id?.let { coveredCats += it } }
-                }
-
-                // Fetch only categories not covered by wildcard
-                val catIds = vodCatRows.mapNotNull { it.categoryId }.filterNot { it in coveredCats }.ifEmpty { emptyList() }
+                // Prefix-filtered: fetch only allowed categories (skip wildcard to avoid scanning all)
+                val catIds = vodCatRows.mapNotNull { it.categoryId }.ifEmpty { emptyList() }
                 catIds.forEach { catId ->
                     val chunk = client.getVodStreams(categoryId = catId, offset = 0, limit = Int.MAX_VALUE)
                     if (chunk.isEmpty()) return@forEach
@@ -1035,9 +1035,16 @@ class XtreamObxRepository(
             val seriesSeen = mutableSetOf<Int>()
             run {
                 val updates = mutableListOf<ObxSeries>()
-                val serCatNameMap = catBox.query(ObxCategory_.kind.equal("series")).build().find().associateBy({ it.categoryId }, { it.categoryName })
+                val allowed = runBlocking { settings.seedPrefixesSet() }
+                val serCatRows = catBox.query(ObxCategory_.kind.equal("series")).build().find().filter { row ->
+                    val p = extractPrefix(row.categoryName)
+                    allowed.contains(p)
+                }
+                val serCatNameMap = serCatRows.associateBy({ it.categoryId }, { it.categoryName })
                 val toDetail = mutableListOf<Pair<Int, String?>>()
-                val allSeriesHeads = client.getSeries(categoryId = null, offset = 0, limit = Int.MAX_VALUE)
+                val allSeriesHeads = serCatRows.mapNotNull { it.categoryId }.flatMap { catId ->
+                    runCatching { client.getSeries(categoryId = catId, offset = 0, limit = Int.MAX_VALUE) }.getOrNull().orEmpty()
+                }
                 allSeriesHeads.forEach { r ->
                         val sid = r.series_id ?: return@forEach
                         seriesSeen += sid
