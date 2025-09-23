@@ -272,6 +272,7 @@ Backup/Restore
 - Player (Media3): `DefaultRenderersFactory` (Decoder‑Fallback an, Extensions aus) bevorzugt Hardware‑Decoder. `PlayerView` verwendet `surface_view` (TV performanter). `DefaultLoadControl` konservativ.
 - UI‑State: Scrollpositionen von LazyColumn/LazyRow/LazyVerticalGrid werden pro Route/Gruppe gespeichert und beim Wiederbetreten wiederhergestellt. Zentrale Helper in `ui/state/ScrollStateRegistry.kt` (`rememberRouteListState`, `rememberRouteGridState`).
 - XtreamSeeder / XtreamObxRepository: Kopf-Import (Live/VOD/Series) erstellt Provider-/Genre-/Year-Indizes (`ObxIndex*`) direkt aus den Xtream-Listen.
+- Seeding-Whitelist: Globales Prefix-Set (DE/US/UK/VOD als Default) begrenzt die initialen Quick-Seed-Requests auf ausgewählte Regionen; weitere Prefixe können in Settings aktiviert werden.
 - Kategorie-Buckets: `CategoryNormalizer.normalizeBucket(kind, groupTitle, tvgName, url)` bleibt aktiv und wird während des Xtream-Kopfimports angewandt (≤10 stabile Buckets je Kind; Qualitätstoken werden ignoriert).
  - Aggregatindizes: `XtreamSeeder` aktualisiert `ObxIndexProvider/Year/Genre` nach jedem Kopf-Import; UI-Gruppierungen lesen ausschließlich daraus (keine Vollscans).
 - EpgRepository: Liefert Now/Next mit Persistenz in ObjectBox `ObxEpgNowNext`, XMLTV‑Fallback bei leeren/fehlenden Xtream‑Antworten und kurzer In‑Memory‑TTL. Integrationen in Live‑Tiles und Live‑Detail. Kein periodischer Worker; Aktualisierung erfolgt on‑demand und beim App‑Start für Favoriten.

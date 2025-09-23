@@ -22,6 +22,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import io.objectbox.query.QueryBuilder
@@ -42,6 +43,16 @@ class XtreamObxRepository(
     private val context: Context,
     private val settings: SettingsStore
 ) {
+    private fun extractPrefix(name: String?): String? {
+        if (name.isNullOrBlank()) return null
+        var s = name.trim()
+        if (s.startsWith("[")) {
+            val idx = s.indexOf(']')
+            if (idx > 0) s = s.substring(1, idx)
+        }
+        val m = Regex("^([A-Z\\-]{2,6})").find(s.uppercase()) ?: return null
+        return m.groupValues[1].replace("-", "").trim().takeIf { it.isNotBlank() }
+    }
     // In-flight de-duplication for detail calls (avoid parallel duplicate fetches)
     private val inflightVod = mutableMapOf<Int, kotlinx.coroutines.CompletableDeferred<Result<Boolean>>>()
     private val inflightSeries = mutableMapOf<Int, kotlinx.coroutines.CompletableDeferred<Result<Int>>>()
@@ -186,7 +197,10 @@ class XtreamObxRepository(
             coroutineScope {
                 val liveJob = async(Dispatchers.IO) {
                     val toPut = mutableListOf<ObxLive>()
-                    val liveCatsRows = catBox.query(ObxCategory_.kind.equal("live")).build().find()
+                    val liveCatsRows = catBox.query(ObxCategory_.kind.equal("live")).build().find().filter { row ->
+                        val p = extractPrefix(row.categoryName)
+                        runBlocking { settings.seedPrefixesSet() }.contains(p)
+                    }
                     val liveCats = liveCatsRows.associateBy({ it.categoryId }, { it.categoryName })
                     if (perCategoryLimit != null && perCategoryLimit > 0) {
                         val sem = Semaphore(4)
@@ -251,7 +265,10 @@ class XtreamObxRepository(
 
                 val vodJob = async(Dispatchers.IO) {
                     val now = System.currentTimeMillis()
-                    val vodCatRows = catBox.query(ObxCategory_.kind.equal("vod")).build().find()
+                    val vodCatRows = catBox.query(ObxCategory_.kind.equal("vod")).build().find().filter { row ->
+                        val p = extractPrefix(row.categoryName)
+                        runBlocking { settings.seedPrefixesSet() }.contains(p)
+                    }
                     val vodCats = vodCatRows.associateBy({ it.categoryId }, { it.categoryName })
                     val toPut = mutableListOf<ObxVod>()
                     if (perCategoryLimit != null && perCategoryLimit > 0) {
@@ -333,7 +350,10 @@ class XtreamObxRepository(
 
                 val seriesJob = async(Dispatchers.IO) {
                     val now = System.currentTimeMillis()
-                    val serCatRows = catBox.query(ObxCategory_.kind.equal("series")).build().find()
+                    val serCatRows = catBox.query(ObxCategory_.kind.equal("series")).build().find().filter { row ->
+                        val p = extractPrefix(row.categoryName)
+                        runBlocking { settings.seedPrefixesSet() }.contains(p)
+                    }
                     val serCats = serCatRows.associateBy({ it.categoryId }, { it.categoryName })
                     val toPut = mutableListOf<ObxSeries>()
                     if (perCategoryLimit != null && perCategoryLimit > 0) {

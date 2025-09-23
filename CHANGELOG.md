@@ -16,6 +16,7 @@ All notable changes to this project are documented here. Keep entries concise an
 - ui/home-rows: Throttle visible-items snapshot with `distinctUntilChanged + debounce(100ms)` for EPG/detail prefetch across Live/VOD/Series rows (paged + non-paged). Focus EPG fetch uses a 120ms cooldown to avoid churn. Preview videos remain OFF by default.
 - media3/exo: Keep rules minimal — only `-dontwarn androidx.media3.**` (no global keep). Player now explicitly uses `DefaultRenderersFactory` (decoder fallback ON, extension renderers OFF) to prefer hardware decode. Internal PlayerView switched to SurfaceView (was TextureView) for better TV performance. LoadControl left at `DefaultLoadControl`.
  - build/splits: Remove `ndk.abiFilters` from app module to resolve AGP warning when ABI splits are enabled; per‑ABI release APKs remain via `splits.abi` (arm64‑v8a, armeabi‑v7a).
+ - seed/prefix: Added global seeding prefix whitelist (Settings → Seeding/Regionen). Default DE/US/UK/VOD; Xtream quick seed now fetches only these categories to reduce network and DB load. Additional regions can be enabled on demand.
  - docs: Roadmap cleaned (near/mid‑term only) and Architecture Overview synced (OBX‑first, dynamic caches, Media3). AGENTS.md push policy now includes a repo‑local `core.sshCommand` so pushes work out of the box in WSL.
 
 2025-09-22

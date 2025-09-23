@@ -15,7 +15,7 @@ private val Context.dataStore by preferencesDataStore("settings")
  * Zentraler Settings-Store der App.
  * Erweiterungen: Player-Modus (ask/internal/external) + Subtitle-Stil + Landscape-Header-Default.
  */
-object Keys {
+    object Keys {
     // Basis / Netzwerk
     val M3U_URL = stringPreferencesKey("m3u_url")
     val EPG_URL = stringPreferencesKey("epg_url")
@@ -81,8 +81,11 @@ object Keys {
     // Home selections
     val FAV_LIVE_IDS_CSV = stringPreferencesKey("fav_live_ids_csv")
     // EPG behavior toggles
-    val EPG_FAV_USE_XTREAM = booleanPreferencesKey("epg_fav_use_xtream")
-    val EPG_FAV_SKIP_XMLTV_IF_X_OK = booleanPreferencesKey("epg_fav_skip_xmltv_if_xtream_ok")
+        val EPG_FAV_USE_XTREAM = booleanPreferencesKey("epg_fav_use_xtream")
+        val EPG_FAV_SKIP_XMLTV_IF_X_OK = booleanPreferencesKey("epg_fav_skip_xmltv_if_xtream_ok")
+
+        // Seeding: Prefix-Whitelist (z. B. DE, US, UK, VOD)
+        val SEED_PREFIXES_GLOBAL_CSV = stringPreferencesKey("seed_prefixes_global_csv")
 
     // Live TV category rows: collapsed set + expansion order (CSV of category keys)
     val LIVE_CAT_COLLAPSED_CSV = stringPreferencesKey("live_cat_collapsed_csv")
@@ -172,6 +175,15 @@ class SettingsStore(private val context: Context) {
         context.dataStore.data.map { it[Keys.AUTOPLAY_NEXT] ?: false }
     val hapticsEnabled: Flow<Boolean> =
         context.dataStore.data.map { it[Keys.HAPTICS_ENABLED] ?: false }
+
+    // Seeding prefixes (global). Default: DE,US,UK,VOD
+    val seedPrefixesCsv: Flow<String> = context.dataStore.data.map { it[Keys.SEED_PREFIXES_GLOBAL_CSV].orEmpty() }
+    suspend fun seedPrefixesSet(): Set<String> {
+        val csv = seedPrefixesCsv.first().trim()
+        val def = setOf("DE", "US", "UK", "VOD")
+        if (csv.isBlank()) return def
+        return csv.split(',').mapNotNull { it.trim().uppercase().takeIf { s -> s.isNotBlank() } }.toSet().ifEmpty { def }
+    }
 
     // Feature gates
     val roomEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.ROOM_ENABLED] ?: false }
@@ -340,6 +352,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setFavoriteLiveIdsCsv(csv: String) { context.dataStore.edit { it[Keys.FAV_LIVE_IDS_CSV] = csv } }
     suspend fun setEpgFavUseXtream(value: Boolean) { context.dataStore.edit { it[Keys.EPG_FAV_USE_XTREAM] = value } }
     suspend fun setEpgFavSkipXmltvIfXtreamOk(value: Boolean) { context.dataStore.edit { it[Keys.EPG_FAV_SKIP_XMLTV_IF_X_OK] = value } }
+    suspend fun setSeedPrefixesCsv(csv: String) { context.dataStore.edit { it[Keys.SEED_PREFIXES_GLOBAL_CSV] = csv } }
     // Library sort setters
     suspend fun setLibVodSortNewest(value: Boolean) { context.dataStore.edit { it[Keys.LIB_VOD_SORT_NEWEST] = value } }
     suspend fun setLibSeriesSortNewest(value: Boolean) { context.dataStore.edit { it[Keys.LIB_SERIES_SORT_NEWEST] = value } }

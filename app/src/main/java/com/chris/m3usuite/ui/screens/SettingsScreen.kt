@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.rememberScrollState
@@ -938,6 +939,50 @@ fun SettingsScreen(
                 if (onOpenProfiles != null) {
                     TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
                 }
+            }
+
+            // Seeding (Regionen) – Prefix-Whitelist
+            HorizontalDivider()
+            SectionHeader("Seeding (Regionen)")
+            val ctx3 = LocalContext.current
+            val obx = remember { com.chris.m3usuite.data.obx.ObxStore.get(ctx3) }
+            // Build dynamic list of prefixes from current categories
+            fun extractPrefix(name: String?): String? {
+                if (name.isNullOrBlank()) return null
+                var s = name.trim()
+                if (s.startsWith("[")) {
+                    val idx = s.indexOf(']')
+                    if (idx > 0) s = s.substring(1, idx)
+                }
+                val m = Regex("^([A-Z\\-]{2,6})").find(s.uppercase()) ?: return null
+                return m.groupValues[1].replace("-", "").trim().takeIf { it.isNotBlank() }
+            }
+            val availablePrefixes = remember {
+                val catBox = obx.boxFor(com.chris.m3usuite.data.obx.ObxCategory::class.java)
+                val cats = catBox.all.mapNotNull { extractPrefix(it.categoryName) }
+                (cats + listOf("DE","US","UK","VOD")).toSet().toList().sorted()
+            }
+            val seedCsv by store.seedPrefixesCsv.collectAsStateWithLifecycle(initialValue = "")
+            val currentSet = remember(seedCsv) {
+                val def = setOf("DE","US","UK","VOD")
+                if (seedCsv.isBlank()) def else seedCsv.split(',').map { it.trim().uppercase() }.filter { it.isNotBlank() }.toSet().ifEmpty { def }
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                availablePrefixes.forEach { pfx ->
+                    val checked = pfx in currentSet
+                    FilterChip(
+                        selected = checked,
+                        onClick = {
+                            val next = if (checked) currentSet - pfx else currentSet + pfx
+                            scope.launch { store.setSeedPrefixesCsv(next.joinToString(",")) }
+                        },
+                        label = { Text(pfx) }
+                    )
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = { scope.launch { store.setSeedPrefixesCsv("DE,US,UK,VOD") } }) { Text("Standard: DE/US/UK/VOD") }
+                TextButton(onClick = { scope.launch { store.setSeedPrefixesCsv(availablePrefixes.joinToString(",")) } }) { Text("Alle aktivieren") }
             }
 
 
