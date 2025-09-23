@@ -223,11 +223,27 @@ fun LibraryScreen(
     suspend fun loadGroupKeys(tab: ContentTab): GroupKeys = withContext(Dispatchers.IO) {
         when (tab) {
             ContentTab.Live -> {
+                // Use API categories directly for Live (filtered by seeding whitelist)
+                fun extractPrefix(name: String?): String? {
+                    if (name.isNullOrBlank()) return null
+                    var s = name.trim()
+                    if (s.startsWith("[")) {
+                        val idx = s.indexOf(']')
+                        if (idx > 0) s = s.substring(1, idx)
+                    }
+                    val m = Regex("^([A-Z\\-]{2,6})").find(s.uppercase()) ?: return null
+                    return m.groupValues[1].replace("-", "").trim().takeIf { it.isNotBlank() }
+                }
+                val allowed = store.seedPrefixesSet()
+                val liveCats = repo.categories("live")
+                val catIds = liveCats
+                    .filter { row -> allowed.contains(extractPrefix(row.categoryName)) }
+                    .mapNotNull { it.categoryId }
                 GroupKeys(
-                    providers = repo.indexProviderKeys("live"),
-                    genres = repo.indexGenreKeys("live"),
+                    providers = emptyList(),
+                    genres = emptyList(),
                     years = emptyList(),
-                    categories = emptyList()
+                    categories = catIds
                 )
             }
             ContentTab.Vod -> GroupKeys(
@@ -722,11 +738,35 @@ fun LibraryScreen(
                         }
                     }
                 }
-                // Live: Provider-Gruppen und Genres
+                // Live: Kategorien (aus API), keine Provider/Genre-Buckets
+                if (selectedTab == ContentTab.Live && query.text.isBlank() && groupKeys.categories.isNotEmpty()) {
+                    val labelById = runCatching { repo.categories("live").associateBy({ it.categoryId }, { it.categoryName }) }.getOrElse { emptyMap() }
+                    item {
+                        Text("Live – Kategorien", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
+                    }
+                    items(groupKeys.categories, key = { it }) { catId ->
+                        val sectionKey = "library:${selectedTabKey}:category:$catId"
+                        val label = (labelById[catId] ?: catId).trim()
+                        ExpandableGroupSection(
+                            tab = selectedTab,
+                            stateKey = sectionKey,
+                            refreshSignal = cacheVersion + resumeTick,
+                            groupLabel = { label },
+                            expandedDefault = true,
+                            loadItems = { loadItemsForLiveCategory(catId) },
+                            onOpenDetails = onOpen,
+                            onPlayDirect = onPlay,
+                            onAssignToKid = null,
+                            showAssign = false
+                        )
+                    }
+                }
+
+                // Live: Provider-Gruppen und Genres (deaktiviert – wir nutzen Kategorien)
 
                 // Anbieter-Gruppierung (alle Tabs)
                 // Top-level switch: Anbieter vs Genres (per tab)
-                if (selectedTab != ContentTab.Vod) {
+                if (selectedTab != ContentTab.Vod && selectedTab != ContentTab.Live) {
                     item {
                         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("Gruppierung:")
@@ -879,7 +919,7 @@ fun LibraryScreen(
                             )
                         }
                     }
-                } else if (!showGenres && groupKeys.providers.isNotEmpty()) {
+                } else if (selectedTab != ContentTab.Live && !showGenres && groupKeys.providers.isNotEmpty()) {
                     item {
                         Text(
                             when (selectedTab) { ContentTab.Live -> "Live – Anbieter"; ContentTab.Vod -> "Filme – Anbieter"; ContentTab.Series -> "Serien – Anbieter" },
@@ -987,7 +1027,7 @@ fun LibraryScreen(
                 }
 
                 // Genres (nur wenn Genre-Ansicht aktiv)
-                if (groupKeys.genres.isNotEmpty() && showGenres && selectedTab != ContentTab.Vod) {
+                if (groupKeys.genres.isNotEmpty() && showGenres && selectedTab == ContentTab.Series) {
                     item {
                         Text(
                             when (selectedTab) {
