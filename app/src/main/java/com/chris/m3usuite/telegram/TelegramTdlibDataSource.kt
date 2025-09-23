@@ -114,7 +114,7 @@ class TelegramTdlibDataSource(
         var info = initialInfo
         var attempts = 0
         while ((info.localPath.isNullOrBlank() || !java.io.File(info.localPath).exists()) && attempts < 50) {
-            Thread.sleep(100)
+            Thread.sleep(300)
             val getFile = TdLibReflection.buildGetFile(fileId) ?: break
             val f = TdLibReflection.sendForResult(client, getFile) ?: break
             TdLibReflection.extractFileInfo(f)?.let { info = it }
@@ -172,7 +172,7 @@ class TelegramTdlibDataSource(
                     if (info != null) completed = info.downloadingCompleted
                 }
             }
-            try { Thread.sleep(120) } catch (_: InterruptedException) { }
+            try { Thread.sleep(350) } catch (_: InterruptedException) { }
         }
     }
 

@@ -37,6 +37,7 @@ data class RawVod(
     val vod_id: Int? = null,
     val stream_icon: String? = null,
     val category_id: String? = null,
+    val container_extension: String? = null,
 )
 
 @Serializable
@@ -104,6 +105,13 @@ data class RawEpisodeInfo(
     val rating: String? = null,
     val plot: String? = null,
     @SerialName("releasedate") val releaseDate: String? = null,
+    // common episode image fields (varies by panel)
+    @SerialName("movie_image") val movieImage: String? = null,
+    val cover: String? = null,
+    @SerialName("poster_path") val posterPath: String? = null,
+    val thumbnail: String? = null,
+    val img: String? = null,
+    @SerialName("still_path") val stillPath: String? = null,
 )
 
 // -----------------------------
@@ -135,6 +143,8 @@ data class NormalizedVodDetail(
     val tmdbId: String? = null,
     val images: List<String> = emptyList(),
     val trailer: String? = null,
+    val containerExt: String? = null,
+    val durationSecs: Int? = null,
 )
 
 @Serializable
@@ -151,6 +161,8 @@ data class NormalizedSeriesDetail(
     val tmdbId: String? = null,
     val images: List<String> = emptyList(),
     val trailer: String? = null,
+    val country: String? = null,
+    val releaseDate: String? = null,
     val seasons: List<NormalizedSeason> = emptyList(),
 )
 
@@ -162,6 +174,7 @@ data class NormalizedSeason(
 
 @Serializable
 data class NormalizedEpisode(
+    val episodeId: Int? = null,
     val episodeNum: Int,
     val title: String? = null,
     val durationSecs: Int? = null,
@@ -169,6 +182,7 @@ data class NormalizedEpisode(
     val plot: String? = null,
     val airDate: String? = null,
     val playExt: String? = null,
+    val posterUrl: String? = null,
 )
 
 // -----------------------------

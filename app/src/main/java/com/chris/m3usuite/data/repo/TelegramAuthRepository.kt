@@ -7,6 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelChildren
 
 /**
  * Repository to manage Telegram authentication using reflection-based TDLib bridge.
@@ -23,6 +27,8 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
     private var useService: Boolean = true
     private val _qr = kotlinx.coroutines.flow.MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 8)
     val qrLinks: kotlinx.coroutines.flow.Flow<String> get() = _qr
+    private val job = SupervisorJob()
+    private val scope = CoroutineScope(job + Dispatchers.Main.immediate)
 
     fun isAvailable(): Boolean = TdLibReflection.available()
 
@@ -35,17 +41,17 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
             svc = TelegramServiceClient(context.applicationContext).also { s ->
                 s.bind()
                 // Bridge service auth states into local flow
-                kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                scope.launch(Dispatchers.Main.immediate) {
                     s.authStates().collect { st ->
                         _authState.value = runCatching { TdLibReflection.AuthState.valueOf(st) }.getOrDefault(TdLibReflection.AuthState.UNKNOWN)
                     }
                 }
                 // Bridge service errors into local flow
-                kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                scope.launch(Dispatchers.Main.immediate) {
                     s.errors().collect { em -> _errors.tryEmit(em) }
                 }
                 // QR links from service
-                kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) { s.qrLinks().collect { link -> _qr.tryEmit(link) } }
+                scope.launch(Dispatchers.Main.immediate) { s.qrLinks().collect { link -> _qr.tryEmit(link) } }
             }
         }
     }
@@ -56,6 +62,8 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
         runCatching { svc?.setInBackground(true) }
         svc?.unbind()
         svc = null
+        // Cancel any running collectors bound to this repo scope
+        try { job.cancelChildren() } catch (_: Throwable) {}
     }
 
     /** Explicitly inform TDLib about app background/foreground state when service is bound. */
@@ -72,17 +80,17 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
                 svc = TelegramServiceClient(context.applicationContext).also { s ->
                     s.bind()
                     // Bridge service auth states into local flow
-                    kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    scope.launch(Dispatchers.Main.immediate) {
                         s.authStates().collect { st ->
                             _authState.value = runCatching { TdLibReflection.AuthState.valueOf(st) }.getOrDefault(TdLibReflection.AuthState.UNKNOWN)
                         }
                     }
                     // Bridge service errors into local flow
-                    kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    scope.launch(Dispatchers.Main.immediate) {
                         s.errors().collect { em -> _errors.tryEmit(em) }
                     }
                     // QR links from service
-                    kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) { s.qrLinks().collect { link -> _qr.tryEmit(link) } }
+                    scope.launch(Dispatchers.Main.immediate) { s.qrLinks().collect { link -> _qr.tryEmit(link) } }
                 }
             }
             svc?.start(apiId, apiHash)

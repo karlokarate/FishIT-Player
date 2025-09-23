@@ -6,7 +6,6 @@ import androidx.work.WorkManager
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import androidx.work.WorkerParameters
 import com.chris.m3usuite.data.obx.ObxStore
@@ -16,14 +15,17 @@ import java.util.concurrent.TimeUnit
 class ScreenTimeResetWorker(appContext: Context, params: WorkerParameters): CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
         return try {
-            val box = ObxStore.get(applicationContext).boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java)
+            val store = ObxStore.get(applicationContext)
+            val box = store.boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java)
             val kids = box.all.filter { it.type == "kid" }
             val repo = ScreenTimeRepository(applicationContext)
             kids.forEach { kid -> repo.resetToday(kid.id) }
             // re-schedule next run at next midnight
             schedule(applicationContext)
+            // cleanup thread-locals
+            store.closeThreadResources()
             Result.success()
-        } catch (t: Throwable) {
+        } catch (_: Throwable) {
             Result.retry()
         }
     }

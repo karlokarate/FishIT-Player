@@ -62,7 +62,7 @@ import androidx.compose.animation.core.animateFloat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
+fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null, onGlobalSearch: (() -> Unit)? = null) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val profileRepo = remember { ProfileObxRepository(ctx) }
@@ -84,13 +84,12 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
     LaunchedEffect(Unit) { load() }
 
     val snack = remember { SnackbarHostState() }
-    val listState = rememberLazyListState()
+    val listState = com.chris.m3usuite.ui.state.rememberRouteListState("profiles:manager")
     HomeChromeScaffold(
         title = "Profile",
         onSettings = null,
-        onSearch = null,
+        onSearch = onGlobalSearch,
         onProfiles = null,
-        onRefresh = null,
         listState = listState,
         onLogo = onLogo,
         bottomBar = {}
@@ -103,266 +102,268 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null) {
                 modifier = Modifier.align(Alignment.Center).size(540.dp),
                 alpha = 0.06f
             )
-        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            TextButton(onClick = onBack) { Text("Zurück") }
-            OutlinedTextField(value = newKidName, onValueChange = { newKidName = it }, label = { Text("Neues Profil (Name)") })
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Typ:")
-                FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = newType == "kid", onClick = { newType = "kid" }, label = { Text("Kind") })
-                FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = newType == "guest", onClick = { newType = "guest" }, label = { Text("Gast") })
-            }
-            Button(modifier = Modifier.focusScaleOnTv(), onClick = {
-                scope.launch(Dispatchers.IO) {
-                    val now = System.currentTimeMillis()
-                    profileRepo.insert(ObxProfile(name = newKidName.ifBlank { if (newType == "guest") "Gast" else "Kind" }, type = newType, avatarPath = null, createdAt = now, updatedAt = now))
-                    newKidName = ""
-                    newType = "kid"
-                    load()
+            Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(onClick = onBack) { Text("Zurück") }
+                OutlinedTextField(value = newKidName, onValueChange = { newKidName = it }, label = { Text("Neues Profil (Name)") })
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Typ:")
+                    FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = newType == "kid", onClick = { newType = "kid" }, label = { Text("Kind") })
+                    FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = newType == "guest", onClick = { newType = "guest" }, label = { Text("Gast") })
                 }
-            }, enabled = newKidName.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent, contentColor = androidx.compose.ui.graphics.Color.Black)) { Text("Anlegen") }
-
-            HorizontalDivider()
-
-            LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                items(kids, key = { it.id }) { kid ->
-                    var name by remember(kid.id) { mutableStateOf(kid.name) }
-                    var limit by remember(kid.id) { mutableStateOf(60) }
-                    var usedToday by remember(kid.id) { mutableStateOf(0) }
-                    var remainingToday by remember(kid.id) { mutableStateOf(0) }
-                    var avatarPath by remember(kid.id) { mutableStateOf(kid.avatarPath) }
-
-                    // Load today's usage/limit from DB
-                    LaunchedEffect(kid.id) {
-                        withContext(Dispatchers.IO) {
-                            val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Calendar.getInstance().time)
-                            val b = obx.boxFor(com.chris.m3usuite.data.obx.ObxScreenTimeEntry::class.java)
-                            val q = b.query(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.kidProfileId.equal(kid.id).and(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.dayYyyymmdd.equal(dayKey))).build()
-                            val entry = q.findFirst()
-                            val u = entry?.usedMinutes ?: 0
-                            val l = entry?.limitMinutes ?: 0
-                            usedToday = u
-                            limit = if (l > 0) l else limit
-                            remainingToday = (limit - u).coerceAtLeast(0)
-                        }
+                Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                    scope.launch(Dispatchers.IO) {
+                        val now = System.currentTimeMillis()
+                        profileRepo.insert(ObxProfile(name = newKidName.ifBlank { if (newType == "guest") "Gast" else "Kind" }, type = newType, avatarPath = null, createdAt = now, updatedAt = now))
+                        newKidName = ""
+                        newType = "kid"
+                        load()
                     }
-                    // old capture/pick logic removed; using AvatarCaptureAndPickButtons below
+                }, enabled = newKidName.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent, contentColor = androidx.compose.ui.graphics.Color.Black)) { Text("Anlegen") }
 
-                    OutlinedCard(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                val model = rememberAvatarModel(avatarPath)
-                                if (model != null) {
-                                    com.chris.m3usuite.ui.util.AppAsyncImage(
-                                        url = model,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(48.dp).clip(CircleShape),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
-                                }
-                                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.weight(1f))
-                                AssistChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), onClick = {}, label = { Text(if (kid.type == "guest") "Gast" else "Kind") })
+                HorizontalDivider()
+
+                LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+                    items(kids, key = { it.id }) { kid ->
+                        var name by remember(kid.id) { mutableStateOf(kid.name) }
+                        var limit by remember(kid.id) { mutableStateOf(60) }
+                        var usedToday by remember(kid.id) { mutableStateOf(0) }
+                        var remainingToday by remember(kid.id) { mutableStateOf(0) }
+                        var avatarPath by remember(kid.id) { mutableStateOf(kid.avatarPath) }
+
+                        // Load today's usage/limit from DB
+                        LaunchedEffect(kid.id) {
+                            withContext(Dispatchers.IO) {
+                                val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Calendar.getInstance().time)
+                                val b = obx.boxFor(com.chris.m3usuite.data.obx.ObxScreenTimeEntry::class.java)
+                                val q = b.query(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.kidProfileId.equal(kid.id).and(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.dayYyyymmdd.equal(dayKey))).build()
+                                val entry = q.findFirst()
+                                val u = entry?.usedMinutes ?: 0
+                                val l = entry?.limitMinutes ?: 0
+                                usedToday = u
+                                limit = if (l > 0) l else limit
+                                remainingToday = (limit - u).coerceAtLeast(0)
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                AvatarCaptureAndPickButtons { uri ->
-                                    saving = true
-                                    vm.saveAvatar(kid.id, uri) { ok, file ->
-                                        saving = false
-                                        if (ok && file != null) {
-                                            avatarPath = file.absolutePath
-                                            // Snackbar kann zeigen, auch wenn man direkt zurück geht
-                                            scope.launch { snack.showSnackbar("Avatar aktualisiert") }
-                                            // Liste neu laden, damit künftige Recompositionen den DB‑Wert nutzen
-                                            scope.launch { withContext(Dispatchers.IO) { load() } }
-                                        } else {
-                                            scope.launch { snack.showSnackbar("Avatar speichern fehlgeschlagen") }
+                        }
+                        // old capture/pick logic removed; using AvatarCaptureAndPickButtons below
+
+                        OutlinedCard(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    val model = rememberAvatarModel(avatarPath)
+                                    if (model != null) {
+                                        com.chris.m3usuite.ui.util.AppAsyncImage(
+                                            url = model,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(48.dp).clip(CircleShape),
+                                            contentScale = ContentScale.Crop,
+                                            crossfade = true,
+                                            preferRgb565 = true
+                                        )
+                                    } else {
+                                        Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
+                                    }
+                                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.weight(1f))
+                                    AssistChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), onClick = {}, label = { Text(if (kid.type == "guest") "Gast" else "Kind") })
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    AvatarCaptureAndPickButtons { uri ->
+                                        saving = true
+                                        vm.saveAvatar(kid.id, uri) { ok, file ->
+                                            saving = false
+                                            if (ok && file != null) {
+                                                avatarPath = file.absolutePath
+                                                // Snackbar kann zeigen, auch wenn man direkt zurück geht
+                                                scope.launch { snack.showSnackbar("Avatar aktualisiert") }
+                                                // Liste neu laden, damit künftige Recompositionen den DB‑Wert nutzen
+                                                scope.launch { withContext(Dispatchers.IO) { load() } }
+                                            } else {
+                                                scope.launch { snack.showSnackbar("Avatar speichern fehlgeschlagen") }
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            // Permissions editor (Admin)
-                            var showPerms by remember { mutableStateOf(false) }
-                            TextButton(onClick = { showPerms = true }) { Text("Berechtigungen") }
-                            if (showPerms) PermissionsSheet(profile = kid, onClose = { showPerms = false })
-                            // Whitelist management (categories + item exceptions)
-                            var showManage by remember { mutableStateOf(false) }
-                            TextButton(onClick = { showManage = true }) { Text("Freigaben verwalten") }
-                            if (showManage) {
-                                ManageWhitelistSheet(kid.id, onClose = { showManage = false })
-                            }
-                            var limitActive by remember(kid.id) { mutableStateOf(false) }
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Zeitlimit aktiv", modifier = Modifier.weight(1f))
-                                    Switch(checked = limitActive, onCheckedChange = { v ->
-                                        limitActive = v
-                                        scope.launch(Dispatchers.IO) { screenRepo.setDailyLimit(kid.id, if (v) limit else 0) }
-                                    })
+                                // Permissions editor (Admin)
+                                var showPerms by remember { mutableStateOf(false) }
+                                TextButton(onClick = { showPerms = true }) { Text("Berechtigungen") }
+                                if (showPerms) PermissionsSheet(profile = kid, onClose = { showPerms = false })
+                                // Whitelist management (categories + item exceptions)
+                                var showManage by remember { mutableStateOf(false) }
+                                TextButton(onClick = { showManage = true }) { Text("Freigaben verwalten") }
+                                if (showManage) {
+                                    ManageWhitelistSheet(kid.id, onClose = { showManage = false })
                                 }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Tageslimit (Minuten)", modifier = Modifier.weight(1f))
-                                    Text("${limit}")
-                                }
-                                Slider(
-                                    value = limit.toFloat(),
-                                    valueRange = 0f..240f,
-                                    onValueChange = {
-                                        limit = it.toInt()
-                                        remainingToday = (limit - usedToday).coerceAtLeast(0)
-                                    },
-                                    onValueChangeFinished = {
-                                        if (limitActive) scope.launch(Dispatchers.IO) { screenRepo.setDailyLimit(kid.id, limit) }
-                                    },
-                                    enabled = limitActive
-                                )
-                                Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        "Heute genutzt: ${usedToday} min  •  Verbleibend: ${remainingToday} min",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.secondary,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    TextButton(onClick = {
-                                        scope.launch {
-                                            screenRepo.resetToday(kid.id)
-                                            usedToday = 0
+                                var limitActive by remember(kid.id) { mutableStateOf(false) }
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Zeitlimit aktiv", modifier = Modifier.weight(1f))
+                                        Switch(checked = limitActive, onCheckedChange = { v ->
+                                            limitActive = v
+                                            scope.launch(Dispatchers.IO) { screenRepo.setDailyLimit(kid.id, if (v) limit else 0) }
+                                        })
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Tageslimit (Minuten)", modifier = Modifier.weight(1f))
+                                        Text("${limit}")
+                                    }
+                                    Slider(
+                                        value = limit.toFloat(),
+                                        valueRange = 0f..240f,
+                                        onValueChange = {
+                                            limit = it.toInt()
                                             remainingToday = (limit - usedToday).coerceAtLeast(0)
-                                        }
-                                    }) { Text("Heute zurücksetzen") }
+                                        },
+                                        onValueChangeFinished = {
+                                            if (limitActive) scope.launch(Dispatchers.IO) { screenRepo.setDailyLimit(kid.id, limit) }
+                                        },
+                                        enabled = limitActive
+                                    )
+                                    Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            "Heute genutzt: ${usedToday} min  •  Verbleibend: ${remainingToday} min",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.secondary,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        TextButton(onClick = {
+                                            scope.launch {
+                                                screenRepo.resetToday(kid.id)
+                                                usedToday = 0
+                                                remainingToday = (limit - usedToday).coerceAtLeast(0)
+                                            }
+                                        }) { Text("Heute zurücksetzen") }
+                                    }
                                 }
-                            }
-                            // Typ wechseln (Kind ↔ Gast)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                TextButton(onClick = {
-                                    scope.launch(Dispatchers.IO) {
-                                        val now = System.currentTimeMillis()
-                                        val newType = if (kid.type == "guest") "kid" else "guest"
-                                        val b = obx.boxFor(ObxProfile::class.java)
-                                        val p = b.get(kid.id) ?: kid
-                                        p.type = newType; p.updatedAt = now; b.put(p)
-                                        val permBox = obx.boxFor(ObxProfilePermissions::class.java)
-                                        val defaults = when (newType) {
-                                            "guest" -> ObxProfilePermissions(profileId = kid.id, canOpenSettings = false, canChangeSources = false, canUseExternalPlayer = false, canEditFavorites = false, canSearch = true, canSeeResume = false, canEditWhitelist = false)
-                                            else -> ObxProfilePermissions(profileId = kid.id, canOpenSettings = false, canChangeSources = false, canUseExternalPlayer = false, canEditFavorites = false, canSearch = true, canSeeResume = true, canEditWhitelist = false)
+                                // Typ wechseln (Kind ↔ Gast)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    TextButton(onClick = {
+                                        scope.launch(Dispatchers.IO) {
+                                            val now = System.currentTimeMillis()
+                                            val newType = if (kid.type == "guest") "kid" else "guest"
+                                            val b = obx.boxFor(ObxProfile::class.java)
+                                            val p = b.get(kid.id) ?: kid
+                                            p.type = newType; p.updatedAt = now; b.put(p)
+                                            val permBox = obx.boxFor(ObxProfilePermissions::class.java)
+                                            val defaults = when (newType) {
+                                                "guest" -> ObxProfilePermissions(profileId = kid.id, canOpenSettings = false, canChangeSources = false, canUseExternalPlayer = false, canEditFavorites = false, canSearch = true, canSeeResume = false, canEditWhitelist = false)
+                                                else -> ObxProfilePermissions(profileId = kid.id, canOpenSettings = false, canChangeSources = false, canUseExternalPlayer = false, canEditFavorites = false, canSearch = true, canSeeResume = true, canEditWhitelist = false)
+                                            }
+                                            val ex = permBox.query(com.chris.m3usuite.data.obx.ObxProfilePermissions_.profileId.equal(kid.id)).build().findFirst()
+                                            if (ex != null) defaults.id = ex.id
+                                            permBox.put(defaults)
+                                            withContext(Dispatchers.Main) { load() }
                                         }
-                                        val ex = permBox.query(com.chris.m3usuite.data.obx.ObxProfilePermissions_.profileId.equal(kid.id)).build().findFirst()
-                                        if (ex != null) defaults.id = ex.id
-                                        permBox.put(defaults)
-                                        withContext(Dispatchers.Main) { load() }
-                                    }
-                                }) { Text(if (kid.type == "guest") "Zu Kind wechseln" else "Zu Gast wechseln") }
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(modifier = Modifier.focusScaleOnTv(), onClick = {
-                                    scope.launch(Dispatchers.IO) {
-                                        val b = obx.boxFor(ObxProfile::class.java)
-                                        val p = b.get(kid.id)
-                                        if (p != null) { p.name = name; p.updatedAt = System.currentTimeMillis(); b.put(p) }
-                                        screenRepo.setDailyLimit(kid.id, limit)
-                                        val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
-                                            .format(java.util.Calendar.getInstance().time)
-                                        val entry = obx.boxFor(com.chris.m3usuite.data.obx.ObxScreenTimeEntry::class.java).query(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.kidProfileId.equal(kid.id).and(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.dayYyyymmdd.equal(dayKey))).build().findFirst()
-                                        val u = entry?.usedMinutes ?: 0
-                                        withContext(Dispatchers.Main) {
-                                            usedToday = u
-                                            remainingToday = (limit - u).coerceAtLeast(0)
+                                    }) { Text(if (kid.type == "guest") "Zu Kind wechseln" else "Zu Gast wechseln") }
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                                        scope.launch(Dispatchers.IO) {
+                                            val b = obx.boxFor(ObxProfile::class.java)
+                                            val p = b.get(kid.id)
+                                            if (p != null) { p.name = name; p.updatedAt = System.currentTimeMillis(); b.put(p) }
+                                            screenRepo.setDailyLimit(kid.id, limit)
+                                            val dayKey = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
+                                                .format(java.util.Calendar.getInstance().time)
+                                            val entry = obx.boxFor(com.chris.m3usuite.data.obx.ObxScreenTimeEntry::class.java).query(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.kidProfileId.equal(kid.id).and(com.chris.m3usuite.data.obx.ObxScreenTimeEntry_.dayYyyymmdd.equal(dayKey))).build().findFirst()
+                                            val u = entry?.usedMinutes ?: 0
+                                            withContext(Dispatchers.Main) {
+                                                usedToday = u
+                                                remainingToday = (limit - u).coerceAtLeast(0)
+                                            }
+                                            load()
                                         }
-                                        load()
-                                    }
-                                }, colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent, contentColor = androidx.compose.ui.graphics.Color.Black)) { Text("Speichern") }
-                                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
-                                    scope.launch(Dispatchers.IO) {
-                                        // Orphan-Cleanup: remove whitelist/blocks/permissions for this profile
+                                    }, colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent, contentColor = androidx.compose.ui.graphics.Color.Black)) { Text("Speichern") }
+                                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
+                                        scope.launch(Dispatchers.IO) {
+                                            // Orphan-Cleanup: remove whitelist/blocks/permissions for this profile
+                                            val allowBox = obx.boxFor(ObxKidContentAllow::class.java)
+                                            allowBox.remove(allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id)).build().find())
+                                            val catBox = obx.boxFor(ObxKidCategoryAllow::class.java)
+                                            catBox.remove(catBox.query(ObxKidCategoryAllow_.kidProfileId.equal(kid.id)).build().find())
+                                            val blockBox = obx.boxFor(ObxKidContentBlock::class.java)
+                                            blockBox.remove(blockBox.query(ObxKidContentBlock_.kidProfileId.equal(kid.id)).build().find())
+                                            val permBox = obx.boxFor(ObxProfilePermissions::class.java)
+                                            permBox.query(com.chris.m3usuite.data.obx.ObxProfilePermissions_.profileId.equal(kid.id)).build().findFirst()?.let { permBox.remove(it) }
+                                            obx.boxFor(ObxProfile::class.java).remove(kid)
+                                            load()
+                                        }
+                                    }, colors = ButtonDefaults.textButtonColors(contentColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent)) { Text("Löschen") }
+                                }
+
+                                // Freigaben (Whitelist) – ausklappbar
+                                var expanded by remember(kid.id) { mutableStateOf(false) }
+                                var loading by remember(kid.id) { mutableStateOf(false) }
+                                var live by remember(kid.id) { mutableStateOf<List<MediaItem>>(emptyList()) }
+                                var vod by remember(kid.id) { mutableStateOf<List<MediaItem>>(emptyList()) }
+                                var series by remember(kid.id) { mutableStateOf<List<MediaItem>>(emptyList()) }
+
+                                suspend fun loadWhitelist() {
+                                    loading = true
+                                    withContext(Dispatchers.IO) {
                                         val allowBox = obx.boxFor(ObxKidContentAllow::class.java)
-                                        allowBox.remove(allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id)).build().find())
-                                        val catBox = obx.boxFor(ObxKidCategoryAllow::class.java)
-                                        catBox.remove(catBox.query(ObxKidCategoryAllow_.kidProfileId.equal(kid.id)).build().find())
-                                        val blockBox = obx.boxFor(ObxKidContentBlock::class.java)
-                                        blockBox.remove(blockBox.query(ObxKidContentBlock_.kidProfileId.equal(kid.id)).build().find())
-                                        val permBox = obx.boxFor(ObxProfilePermissions::class.java)
-                                        permBox.query(com.chris.m3usuite.data.obx.ObxProfilePermissions_.profileId.equal(kid.id)).build().findFirst()?.let { permBox.remove(it) }
-                                        obx.boxFor(ObxProfile::class.java).remove(kid)
-                                        load()
-                                    }
-                                }, colors = ButtonDefaults.textButtonColors(contentColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent)) { Text("Löschen") }
-                            }
-
-                            // Freigaben (Whitelist) – ausklappbar
-                            var expanded by remember(kid.id) { mutableStateOf(false) }
-                            var loading by remember(kid.id) { mutableStateOf(false) }
-                            var live by remember(kid.id) { mutableStateOf<List<MediaItem>>(emptyList()) }
-                            var vod by remember(kid.id) { mutableStateOf<List<MediaItem>>(emptyList()) }
-                            var series by remember(kid.id) { mutableStateOf<List<MediaItem>>(emptyList()) }
-
-                            suspend fun loadWhitelist() {
-                                loading = true
-                                withContext(Dispatchers.IO) {
-                                    val allowBox = obx.boxFor(ObxKidContentAllow::class.java)
-                                    val liveIds = allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id).and(ObxKidContentAllow_.contentType.equal("live"))).build().find().map { it.contentId }
-                                    val vodIds = allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id).and(ObxKidContentAllow_.contentType.equal("vod"))).build().find().map { it.contentId }
-                                    val serIds = allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id).and(ObxKidContentAllow_.contentType.equal("series"))).build().find().map { it.contentId }
-                                    val repo = com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, com.chris.m3usuite.prefs.SettingsStore(ctx))
-                                    val liveList = repo.listByTypeFiltered("live", 6000, 0).filter { it.id in liveIds }
-                                    val vodList = repo.listByTypeFiltered("vod", 6000, 0).filter { it.id in vodIds }
-                                    val serList = repo.listByTypeFiltered("series", 6000, 0).filter { it.id in serIds }
-                                    withContext(Dispatchers.Main) {
-                                        live = liveList
-                                        vod = vodList
-                                        series = serList
-                                        loading = false
+                                        val liveIds = allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id).and(ObxKidContentAllow_.contentType.equal("live"))).build().find().map { it.contentId }
+                                        val vodIds = allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id).and(ObxKidContentAllow_.contentType.equal("vod"))).build().find().map { it.contentId }
+                                        val serIds = allowBox.query(ObxKidContentAllow_.kidProfileId.equal(kid.id).and(ObxKidContentAllow_.contentType.equal("series"))).build().find().map { it.contentId }
+                                        val repo = com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, com.chris.m3usuite.prefs.SettingsStore(ctx))
+                                        val liveList = repo.listByTypeFiltered("live", 6000, 0).filter { it.id in liveIds }
+                                        val vodList = repo.listByTypeFiltered("vod", 6000, 0).filter { it.id in vodIds }
+                                        val serList = repo.listByTypeFiltered("series", 6000, 0).filter { it.id in serIds }
+                                        withContext(Dispatchers.Main) {
+                                            live = liveList
+                                            vod = vodList
+                                            series = serList
+                                            loading = false
+                                        }
                                     }
                                 }
-                            }
 
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                                Text("Freigaben (${live.size + vod.size + series.size})", style = MaterialTheme.typography.titleMedium)
-                                TextButton(onClick = { scope.launch { if (!expanded) loadWhitelist(); expanded = !expanded } }) { Text(if (expanded) "Schließen" else "Anzeigen") }
-                            }
-                            if (expanded) {
-                                if (loading) {
-                                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                                } else {
-                                    if (live.isNotEmpty()) {
-                                        Text("TV", style = MaterialTheme.typography.labelLarge)
-                                        live.forEach { mi ->
-                                            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                                Text(mi.name, modifier = Modifier.weight(1f))
-                                                TextButton(onClick = { scope.launch { kidRepo.disallow(kid.id, "live", mi.id); loadWhitelist() } }) { Text("Entfernen") }
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                                    Text("Freigaben (${live.size + vod.size + series.size})", style = MaterialTheme.typography.titleMedium)
+                                    TextButton(onClick = { scope.launch { if (!expanded) loadWhitelist(); expanded = !expanded } }) { Text(if (expanded) "Schließen" else "Anzeigen") }
+                                }
+                                if (expanded) {
+                                    if (loading) {
+                                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                    } else {
+                                        if (live.isNotEmpty()) {
+                                            Text("TV", style = MaterialTheme.typography.labelLarge)
+                                            live.forEach { mi ->
+                                                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(mi.name, modifier = Modifier.weight(1f))
+                                                    TextButton(onClick = { scope.launch { kidRepo.disallow(kid.id, "live", mi.id); loadWhitelist() } }) { Text("Entfernen") }
+                                                }
                                             }
                                         }
-                                    }
-                                    if (vod.isNotEmpty()) {
-                                        Spacer(Modifier.height(6.dp)); Text("Filme", style = MaterialTheme.typography.labelLarge)
-                                        vod.forEach { mi ->
-                                            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                                Text(mi.name, modifier = Modifier.weight(1f))
-                                                TextButton(onClick = { scope.launch { kidRepo.disallow(kid.id, "vod", mi.id); loadWhitelist() } }) { Text("Entfernen") }
+                                        if (vod.isNotEmpty()) {
+                                            Spacer(Modifier.height(6.dp)); Text("Filme", style = MaterialTheme.typography.labelLarge)
+                                            vod.forEach { mi ->
+                                                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(mi.name, modifier = Modifier.weight(1f))
+                                                    TextButton(onClick = { scope.launch { kidRepo.disallow(kid.id, "vod", mi.id); loadWhitelist() } }) { Text("Entfernen") }
+                                                }
                                             }
                                         }
-                                    }
-                                    if (series.isNotEmpty()) {
-                                        Spacer(Modifier.height(6.dp)); Text("Serien", style = MaterialTheme.typography.labelLarge)
-                                        series.forEach { mi ->
-                                            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                                Text(mi.name, modifier = Modifier.weight(1f))
-                                                TextButton(onClick = { scope.launch { kidRepo.disallow(kid.id, "series", mi.id); loadWhitelist() } }) { Text("Entfernen") }
+                                        if (series.isNotEmpty()) {
+                                            Spacer(Modifier.height(6.dp)); Text("Serien", style = MaterialTheme.typography.labelLarge)
+                                            series.forEach { mi ->
+                                                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(mi.name, modifier = Modifier.weight(1f))
+                                                    TextButton(onClick = { scope.launch { kidRepo.disallow(kid.id, "series", mi.id); loadWhitelist() } }) { Text("Entfernen") }
+                                                }
                                             }
                                         }
-                                    }
-                                    if (live.isEmpty() && vod.isEmpty() && series.isEmpty()) {
-                                        Text("Keine Freigaben", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                                        if (live.isEmpty() && vod.isEmpty() && series.isEmpty()) {
+                                            Text("Keine Freigaben", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                                        }
                                     }
                                 }
                             }
                         }
+                        Spacer(Modifier.height(8.dp))
                     }
-                    Spacer(Modifier.height(8.dp))
                 }
             }
         }
     }
-}
 }
 
 @Composable
@@ -380,7 +381,7 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .heightIn(max = 520.dp)
-                .verticalScroll(rememberScrollState())
+
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -429,7 +430,7 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                 }) { Text("Whitelist leeren") }
             }
             // Categories as badges with checkbox
-            LazyColumn(contentPadding = PaddingValues(bottom = 40.dp)) {
+            LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(bottom = 40.dp)) {
                 items(categories, key = { it }) { cat ->
                     val allowed = cat in allowedCats
                     Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {

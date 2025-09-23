@@ -21,28 +21,34 @@ object PlayerChooser {
         url: String,
         headers: Map<String, String> = emptyMap(),
         startPositionMs: Long? = null,
-        buildInternal: (startPositionMs: Long?) -> Unit
+        mimeType: String? = null,
+        buildInternal: (startPositionMs: Long?, mimeType: String?) -> Unit
     ) {
         // Force internal for Telegram scheme
         if (url.startsWith("tg://", ignoreCase = true)) {
-            buildInternal(startPositionMs)
+            buildInternal(startPositionMs, mimeType)
             return
         }
         // Enforce permissions: no external for kids/guests unless allowed
         val perms = PermissionRepository(context, store).current()
         val disallowExternal = !perms.canUseExternalPlayer
         if (disallowExternal) {
-            buildInternal(startPositionMs)
+            buildInternal(startPositionMs, mimeType)
             return
         }
 
         when (store.playerMode.first()) {
-            "internal" -> buildInternal(startPositionMs)
+            "internal" -> {
+                android.util.Log.d("PlayerChooser", "mode=internal; starting internal")
+                buildInternal(startPositionMs, mimeType)
+            }
             "external" -> {
+                android.util.Log.d("PlayerChooser", "mode=external; starting external preferredPkg=${'$'}{store.preferredPlayerPkg.first()}")
                 val pkg = store.preferredPlayerPkg.first().ifBlank { null }
                 if (pkg == null) {
                     // No preferred external player selected → avoid system chooser; play internally
-                    buildInternal(startPositionMs)
+                    android.util.Log.d("PlayerChooser", "no preferred package; fallback to internal")
+                    buildInternal(startPositionMs, mimeType)
                 } else {
                     ExternalPlayer.open(
                         context = context,
@@ -56,8 +62,9 @@ object PlayerChooser {
             else -> {
                 // Immer fragen: Dialog mit "Intern" oder "Extern"
                 val wantInternal = askInternalOrExternal(context)
+                android.util.Log.d("PlayerChooser", "ask result: wantInternal=${'$'}wantInternal")
                 if (wantInternal) {
-                    buildInternal(startPositionMs)
+                    buildInternal(startPositionMs, mimeType)
                 } else {
                     val pkg = store.preferredPlayerPkg.first().ifBlank { null }
                     ExternalPlayer.open(
@@ -77,18 +84,19 @@ object PlayerChooser {
         return kotlinx.coroutines.suspendCancellableCoroutine { cont ->
             val act = findActivity(context)
             if (act == null) {
-                cont.resume(true, onCancellation = null) // Fallback: intern
+                cont.resumeWith(Result.success(true))
                 return@suspendCancellableCoroutine
             }
             act.runOnUiThread {
                 val dlg = android.app.AlertDialog.Builder(act)
                     .setTitle("Wie abspielen?")
                     .setItems(arrayOf("Intern", "Extern")) { d, which ->
-                        cont.resume(which == 0, onCancellation = null)
+                        if (cont.isActive) cont.resumeWith(Result.success(which == 0))
                         d.dismiss()
                     }
-                    .setOnCancelListener { cont.resume(true, onCancellation = null) }
+                    .setOnCancelListener { if (cont.isActive) cont.resumeWith(Result.success(true)) }
                     .create()
+                cont.invokeOnCancellation { runCatching { dlg.dismiss() } }
                 dlg.show()
             }
         }

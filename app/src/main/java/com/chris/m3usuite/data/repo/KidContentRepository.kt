@@ -4,6 +4,8 @@ import android.content.Context
 import com.chris.m3usuite.data.obx.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import io.objectbox.Box
+import kotlin.math.min
 
 class KidContentRepository(private val context: Context) {
     private val box get() = ObxStore.get(context)
@@ -24,16 +26,35 @@ class KidContentRepository(private val context: Context) {
     }
 
     suspend fun allowBulk(kidId: Long, type: String, contentIds: Collection<Long>) = withContext(Dispatchers.IO) {
+        if (contentIds.isEmpty()) return@withContext
         val b = box.boxFor(ObxKidContentAllow::class.java)
         val rows = contentIds.map { id -> ObxKidContentAllow(kidProfileId = kidId, contentType = type, contentId = id) }
-        if (rows.isNotEmpty()) b.put(rows)
+        b.putChunked(rows, 2000)
     }
 
     suspend fun disallowBulk(kidId: Long, type: String, contentIds: Collection<Long>) = withContext(Dispatchers.IO) {
+        if (contentIds.isEmpty()) return@withContext
         val b = box.boxFor(ObxKidContentAllow::class.java)
-        val q = b.query(ObxKidContentAllow_.kidProfileId.equal(kidId).and(ObxKidContentAllow_.contentType.equal(type))).build()
-        val all = q.find()
+        // Eingrenzen auf kind+type, dann in-memory Filter – und chunked remove
+        val all = b.query(ObxKidContentAllow_.kidProfileId.equal(kidId).and(ObxKidContentAllow_.contentType.equal(type))).build().find()
+        if (all.isEmpty()) return@withContext
         val toRemove = all.filter { it.contentId in contentIds }
-        if (toRemove.isNotEmpty()) b.remove(toRemove)
+        if (toRemove.isEmpty()) return@withContext
+        var i = 0
+        while (i < toRemove.size) {
+            val to = min(i + 2000, toRemove.size)
+            b.remove(toRemove.subList(i, to))
+            i = to
+        }
+    }
+}
+
+private fun <T> Box<T>.putChunked(items: List<T>, chunkSize: Int = 2000) {
+    var i = 0
+    val n = items.size
+    while (i < n) {
+        val to = min(i + chunkSize, n)
+        this.put(items.subList(i, to))
+        i = to
     }
 }

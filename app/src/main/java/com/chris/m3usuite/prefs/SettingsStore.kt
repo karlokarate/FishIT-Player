@@ -111,6 +111,27 @@ object Keys {
     val HTTP_LOG_ENABLED = booleanPreferencesKey("http_log_enabled")
     // Feature gates
     val ROOM_ENABLED = booleanPreferencesKey("room_enabled")
+    // Global gate to allow M3U/Xtream workers & related API calls
+    val M3U_WORKERS_ENABLED = booleanPreferencesKey("m3u_workers_enabled")
+    // Global toggle: show "For Adults" category
+    val SHOW_ADULTS = booleanPreferencesKey("show_adults")
+
+    // Library sort toggles
+    val LIB_VOD_SORT_NEWEST = booleanPreferencesKey("lib_vod_sort_newest")
+    val LIB_SERIES_SORT_NEWEST = booleanPreferencesKey("lib_series_sort_newest")
+    // Library grouping: per-tab toggle for grouping by Genres (true) vs Providers (false)
+    val LIB_GROUP_BY_GENRE_LIVE = booleanPreferencesKey("lib_group_by_genre_live")
+    val LIB_GROUP_BY_GENRE_VOD = booleanPreferencesKey("lib_group_by_genre_vod")
+    val LIB_GROUP_BY_GENRE_SERIES = booleanPreferencesKey("lib_group_by_genre_series")
+
+    // Import diagnostics
+    val LAST_IMPORT_AT_MS = longPreferencesKey("last_import_at_ms")
+    val LAST_SEED_LIVE = intPreferencesKey("last_seed_live")
+    val LAST_SEED_VOD = intPreferencesKey("last_seed_vod")
+    val LAST_SEED_SERIES = intPreferencesKey("last_seed_series")
+    val LAST_DELTA_LIVE = intPreferencesKey("last_delta_live")
+    val LAST_DELTA_VOD = intPreferencesKey("last_delta_vod")
+    val LAST_DELTA_SERIES = intPreferencesKey("last_delta_series")
 }
 
 class SettingsStore(private val context: Context) {
@@ -154,6 +175,23 @@ class SettingsStore(private val context: Context) {
 
     // Feature gates
     val roomEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.ROOM_ENABLED] ?: false }
+    // Global M3U/Xtream worker + API gate (default ON)
+    val m3uWorkersEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.M3U_WORKERS_ENABLED] ?: true }
+    val showAdults: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_ADULTS] ?: false }
+    // Library sort toggles
+    val libVodSortNewest: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIB_VOD_SORT_NEWEST] ?: true }
+    val libSeriesSortNewest: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIB_SERIES_SORT_NEWEST] ?: true }
+    val libGroupByGenreLive: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIB_GROUP_BY_GENRE_LIVE] ?: false }
+    val libGroupByGenreVod: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIB_GROUP_BY_GENRE_VOD] ?: false }
+    val libGroupByGenreSeries: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIB_GROUP_BY_GENRE_SERIES] ?: false }
+    // Import diagnostics flows
+    val lastImportAtMs: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_IMPORT_AT_MS] ?: 0L }
+    val lastSeedLive: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_SEED_LIVE] ?: 0 }
+    val lastSeedVod: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_SEED_VOD] ?: 0 }
+    val lastSeedSeries: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_SEED_SERIES] ?: 0 }
+    val lastDeltaLive: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_DELTA_LIVE] ?: 0 }
+    val lastDeltaVod: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_DELTA_VOD] ?: 0 }
+    val lastDeltaSeries: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_DELTA_SERIES] ?: 0 }
 
     val liveFilterGerman: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIVE_FILTER_GERMAN] ?: false }
     val liveFilterKids: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIVE_FILTER_KIDS] ?: false }
@@ -302,6 +340,25 @@ class SettingsStore(private val context: Context) {
     suspend fun setFavoriteLiveIdsCsv(csv: String) { context.dataStore.edit { it[Keys.FAV_LIVE_IDS_CSV] = csv } }
     suspend fun setEpgFavUseXtream(value: Boolean) { context.dataStore.edit { it[Keys.EPG_FAV_USE_XTREAM] = value } }
     suspend fun setEpgFavSkipXmltvIfXtreamOk(value: Boolean) { context.dataStore.edit { it[Keys.EPG_FAV_SKIP_XMLTV_IF_X_OK] = value } }
+    // Library sort setters
+    suspend fun setLibVodSortNewest(value: Boolean) { context.dataStore.edit { it[Keys.LIB_VOD_SORT_NEWEST] = value } }
+    suspend fun setLibSeriesSortNewest(value: Boolean) { context.dataStore.edit { it[Keys.LIB_SERIES_SORT_NEWEST] = value } }
+    // Import diagnostics setters
+    suspend fun setLastImportAtMs(value: Long) { context.dataStore.edit { it[Keys.LAST_IMPORT_AT_MS] = value } }
+    suspend fun setLastSeedCounts(live: Int, vod: Int, series: Int) {
+        context.dataStore.edit {
+            it[Keys.LAST_SEED_LIVE] = live
+            it[Keys.LAST_SEED_VOD] = vod
+            it[Keys.LAST_SEED_SERIES] = series
+        }
+    }
+    suspend fun setLastDeltaCounts(live: Int, vod: Int, series: Int) {
+        context.dataStore.edit {
+            it[Keys.LAST_DELTA_LIVE] = live
+            it[Keys.LAST_DELTA_VOD] = vod
+            it[Keys.LAST_DELTA_SERIES] = series
+        }
+    }
 
     // -------- Optional: direktes Abfragen --------
     suspend fun getString(key: Preferences.Key<String>, default: String = ""): String =
@@ -427,9 +484,16 @@ class SettingsStore(private val context: Context) {
     suspend fun setVodCatExpandedOrderCsv(value: String) { context.dataStore.edit { it[Keys.VOD_CAT_EXPANDED_ORDER_CSV] = value } }
     suspend fun setSeriesCatCollapsedCsv(value: String) { context.dataStore.edit { it[Keys.SERIES_CAT_COLLAPSED_CSV] = value } }
     suspend fun setSeriesCatExpandedOrderCsv(value: String) { context.dataStore.edit { it[Keys.SERIES_CAT_EXPANDED_ORDER_CSV] = value } }
+    // Library grouping setters
+    suspend fun setLibGroupByGenreLive(value: Boolean) { context.dataStore.edit { it[Keys.LIB_GROUP_BY_GENRE_LIVE] = value } }
+    suspend fun setLibGroupByGenreVod(value: Boolean) { context.dataStore.edit { it[Keys.LIB_GROUP_BY_GENRE_VOD] = value } }
+    suspend fun setLibGroupByGenreSeries(value: Boolean) { context.dataStore.edit { it[Keys.LIB_GROUP_BY_GENRE_SERIES] = value } }
 
     // Logging
     suspend fun setHttpLogEnabled(value: Boolean) { context.dataStore.edit { it[Keys.HTTP_LOG_ENABLED] = value } }
     // Feature gates setters
     suspend fun setRoomEnabled(value: Boolean) { context.dataStore.edit { it[Keys.ROOM_ENABLED] = value } }
+    suspend fun setM3uWorkersEnabled(value: Boolean) { context.dataStore.edit { it[Keys.M3U_WORKERS_ENABLED] = value } }
+    suspend fun setShowAdults(value: Boolean) { context.dataStore.edit { it[Keys.SHOW_ADULTS] = value } }
+
 }

@@ -29,6 +29,7 @@ import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.ResumeRepository
 import com.chris.m3usuite.core.xtream.XtreamClient
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.core.playback.PlayUrlHelper
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,8 +39,17 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 // Resume-UI: Material3
 
 // resume-ui: Default sentinels to detect empty callbacks for clear actions
-data class VodResume(val mediaId: Long, val name: String, val url: String?, val positionSecs: Int)
-data class SeriesResume(val seriesId: Int, val season: Int, val episodeNum: Int, val title: String, val url: String?, val positionSecs: Int)
+data class VodResume(val mediaId: Long, val name: String, val url: String?, val positionSecs: Int, val containerExt: String? = null)
+data class SeriesResume(
+    val seriesId: Int,
+    val season: Int,
+    val episodeNum: Int,
+    val title: String,
+    val url: String?,
+    val positionSecs: Int,
+    val episodeId: Int? = null,
+    val containerExt: String? = null
+)
 private val DefaultOnClearVod: (VodResume) -> Unit = {}
 private val DefaultOnClearEpisode: (SeriesResume) -> Unit = {}
 
@@ -88,16 +98,37 @@ fun ResumeSectionAuto(
                     val row = vodBox.query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(vid.toLong())).build().findFirst()
                     val name = row?.name ?: "VOD $vid"
                     val url = client?.buildVodPlayUrl(vid, row?.containerExt)
-                    VodResume(mediaId = enc, name = name, url = url, positionSecs = mark.positionSecs)
+                    VodResume(mediaId = enc, name = name, url = url, positionSecs = mark.positionSecs, containerExt = row?.containerExt)
                 }
             }
             val e = withContext(Dispatchers.IO) {
                 resumeRepo.recentEpisodes(limit).mapNotNull { mk ->
                     val epBox = obx.boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
-                    val ep = epBox.query(com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(mk.seriesId.toLong()).and(com.chris.m3usuite.data.obx.ObxEpisode_.season.equal(mk.season.toLong())).and(com.chris.m3usuite.data.obx.ObxEpisode_.episodeNum.equal(mk.episodeNum.toLong()))).build().findFirst()
+                    val ep = epBox.query(
+                        com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(mk.seriesId.toLong())
+                            .and(com.chris.m3usuite.data.obx.ObxEpisode_.season.equal(mk.season.toLong()))
+                            .and(com.chris.m3usuite.data.obx.ObxEpisode_.episodeNum.equal(mk.episodeNum.toLong()))
+                    ).build().findFirst()
                     val title = ep?.title ?: "S${mk.season}E${mk.episodeNum}"
-                    val url = client?.buildSeriesEpisodePlayUrl(mk.seriesId, mk.season, mk.episodeNum, ep?.playExt)
-                    SeriesResume(seriesId = mk.seriesId, season = mk.season, episodeNum = mk.episodeNum, title = title, url = url, positionSecs = mk.positionSecs)
+                    val episodeId = ep?.episodeId?.takeIf { it > 0 }
+                    val rawUrl = client?.buildSeriesEpisodePlayUrl(
+                        seriesId = mk.seriesId,
+                        season = mk.season,
+                        episode = mk.episodeNum,
+                        episodeExt = ep?.playExt,
+                        episodeId = episodeId
+                    )
+                    val url = rawUrl
+                    SeriesResume(
+                        seriesId = mk.seriesId,
+                        season = mk.season,
+                        episodeNum = mk.episodeNum,
+                        title = title,
+                        url = url,
+                        positionSecs = mk.positionSecs,
+                        episodeId = episodeId,
+                        containerExt = ep?.playExt
+                    )
                 }
             }
             // Filter by effective allow-set for non-adult profiles
@@ -133,7 +164,9 @@ fun ResumeSectionAuto(
                     Button(onClick = {
                         val encoded = Uri.encode(chooserItem!!.url!!)
                         val start = chooserItem!!.positionSecs.toLong() * 1000L
-                        navController.navigate("player?url=$encoded&type=vod&mediaId=${chooserItem!!.mediaId}&startMs=$start")
+                        val mime = PlayUrlHelper.guessMimeType(chooserItem!!.url, chooserItem!!.containerExt)
+                        val mimeArg = mime?.let { Uri.encode(it) } ?: ""
+                        navController.navigate("player?url=$encoded&type=vod&mediaId=${chooserItem!!.mediaId}&startMs=$start&mime=$mimeArg")
                         chooserItem = null
                     }) { Text("Intern") }
                     Spacer(Modifier.height(4.dp))
@@ -159,10 +192,15 @@ fun ResumeSectionAuto(
                     Spacer(Modifier.height(8.dp))
                     val start = ep.positionSecs.toLong() * 1000L
                     val playUrl = ep.url
+                    val mime = PlayUrlHelper.guessMimeType(playUrl, ep.containerExt)
+                    val mimeArg = mime?.let { Uri.encode(it) } ?: ""
                     Button(onClick = {
                         if (playUrl != null) {
                             val encoded = Uri.encode(playUrl)
-                            navController.navigate("player?url=$encoded&type=series&episodeId=-1&startMs=$start")
+                            val epId = ep.episodeId?.takeIf { it > 0 } ?: -1
+                            navController.navigate(
+                                "player?url=$encoded&type=series&mediaId=-1&seriesId=${ep.seriesId}&season=${ep.season}&episodeNum=${ep.episodeNum}&episodeId=$epId&startMs=$start&mime=$mimeArg"
+                            )
                         }
                         chooserEpisode = null
                     }, enabled = playUrl != null) { Text("Intern") }

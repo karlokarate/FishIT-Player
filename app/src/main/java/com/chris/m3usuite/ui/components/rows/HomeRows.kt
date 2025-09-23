@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -25,6 +26,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import android.net.Uri
 import androidx.media3.common.MediaItem as ExoMediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -66,10 +68,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import com.chris.m3usuite.ui.fx.tvFocusGlow
 import com.chris.m3usuite.ui.fx.ShimmerCircle
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.foundation.layout.Box
 // use fillMaxSize() for broad Compose compatibility
 import androidx.compose.ui.draw.clip
 import com.chris.m3usuite.domain.selectors.extractYearFrom
@@ -78,10 +76,12 @@ import androidx.compose.ui.text.style.TextAlign
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.data.repo.EpgRepository
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.ui.common.AppIcon
-import com.chris.m3usuite.ui.fx.ShimmerCircle
 import com.chris.m3usuite.ui.common.AppIconButton
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -96,8 +96,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.ui.input.key.key
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.alpha
+import androidx.media3.common.util.UnstableApi
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.LoadState
+
+val LocalRowItemHeightOverride = compositionLocalOf<Int?> { null }
 
 @Composable
 private fun PlayOverlay(visible: Boolean, sizeDp: Int = 56) {
@@ -117,6 +120,7 @@ private fun PlayOverlay(visible: Boolean, sizeDp: Int = 56) {
 
 @Composable
 private fun rowItemHeight(): Int {
+    LocalRowItemHeightOverride.current?.let { return it }
     val cfg = LocalConfiguration.current
     val isLandscape = cfg.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val sw = cfg.smallestScreenWidthDp
@@ -169,6 +173,7 @@ fun MediaCard(
     }
 }
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun LiveTileCard(
     item: MediaItem,
@@ -183,7 +188,8 @@ fun LiveTileCard(
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
-    val store = remember { SettingsStore(ctx) }
+    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
+    val epgRepo = remember(store) { EpgRepository(ctx, store) }
     val roomEnabled by store.roomEnabled.collectAsStateWithLifecycle(initialValue = false)
     val ua by store.userAgent.collectAsStateWithLifecycle(initialValue = "")
     val ref by store.referer.collectAsStateWithLifecycle(initialValue = "")
@@ -221,10 +227,13 @@ fun LiveTileCard(
     // Load EPG when tile becomes active (focused). Prefetch happens separately for favorites.
     LaunchedEffect(item.streamId, focused) {
         val sid = item.streamId ?: return@LaunchedEffect
+        if (item.type != "live") return@LaunchedEffect
+        if (!focused) return@LaunchedEffect
+        // Cooldown to avoid rapid focus churn EPG fetches
+        delay(120)
         if (!focused) return@LaunchedEffect
         try {
-            val repo = EpgRepository(ctx, SettingsStore(ctx))
-            val list = repo.nowNext(sid, 2)
+            val list = epgRepo.nowNext(sid, 2)
             val first = list.getOrNull(0)
             val second = list.getOrNull(1)
             epgNow = first?.title.orEmpty()
@@ -320,7 +329,11 @@ fun LiveTileCard(
                             }
                         val dsFactory = DefaultDataSource.Factory(c, httpFactory)
                         val mediaFactory = DefaultMediaSourceFactory(dsFactory)
+                        val renderers = DefaultRenderersFactory(c)
+                            .setEnableDecoderFallback(true)
+                            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
                         val player = ExoPlayer.Builder(c)
+                            .setRenderersFactory(renderers)
                             .setMediaSourceFactory(mediaFactory)
                             .build().apply {
                             volume = 0f
@@ -606,6 +619,27 @@ fun SeriesTileCard(
                             }
                         }
                     }
+                    // Overlay: action buttons bottom-right (avoid extra layout space)
+                    Row(
+                        Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
+                        if (showAssign) {
+                            AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
+                        }
+                    }
+                    // Overlay: NEW badge (top-left)
+                    if (isNew) {
+                        Surface(
+                            color = Color.Black.copy(alpha = 0.28f),
+                            contentColor = Color.Red,
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                        ) {
+                            Text(text = "NEU", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                        }
+                    }
                 }
             }
             if (focused) {
@@ -629,20 +663,7 @@ fun SeriesTileCard(
                     )
                 }
             }
-            if (isNew) {
-                Text(
-                    text = "NEU",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Red,
-                    modifier = Modifier.padding(start = 10.dp, bottom = 8.dp)
-                )
-            }
-            Row(Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 8.dp), horizontalArrangement = Arrangement.End) {
-                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
-                if (showAssign) {
-                    AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
-                }
-            }
+            // actions and badges are overlaid inside the image box now
         }
     }
 }
@@ -733,6 +754,16 @@ fun VodTileCard(
                             }
                         }
                     }
+                    // Overlay: action buttons bottom-right
+                    Row(
+                        Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
+                        if (showAssign) {
+                            AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
+                        }
+                    }
                 }
             }
             if (focused) {
@@ -756,20 +787,7 @@ fun VodTileCard(
                     )
                 }
             }
-            if (isNew) {
-                Text(
-                    text = "NEU",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Red,
-                    modifier = Modifier.padding(start = 10.dp, bottom = 8.dp)
-                )
-            }
-            Row(Modifier.fillMaxWidth().padding(end = 8.dp, bottom = 8.dp), horizontalArrangement = Arrangement.End) {
-                AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
-                if (showAssign) {
-                    AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
-                }
-            }
+            // actions and badges are overlaid inside the image box now
         }
     }
 }
@@ -800,6 +818,7 @@ fun ResumeRow(
 @Composable
 fun LiveRow(
     items: List<MediaItem>,
+    stateKey: String? = null,
     leading: (@Composable (() -> Unit))? = null,
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
@@ -807,7 +826,7 @@ fun LiveRow(
     if (items.isEmpty()) return
     // Deduplicate by stable id to avoid key collisions
     val unique = remember(items) { items.distinctBy { it.id } }
-    val state = rememberLazyListState()
+    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
     var count by remember(unique) { mutableStateOf(if (unique.size < 30) unique.size else 30) }
     // Lazy-load more tiles while scrolling
@@ -825,10 +844,14 @@ fun LiveRow(
     val xtObx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
     LaunchedEffect(state, unique) {
         snapshotFlow { state.layoutInfo.visibleItemsInfo.mapNotNull { it.key as? Long } }
+            .distinctUntilChanged()
+            .debounce(100)
             .collect { keys ->
                 if (keys.isEmpty()) return@collect
                 // Map currently visible item IDs to streamIds
-                val visibleStreamIds = keys.mapNotNull { id -> unique.firstOrNull { it.id == id }?.streamId }
+                val visibleStreamIds = keys.mapNotNull { id ->
+                    unique.firstOrNull { it.id == id && it.type == "live" }?.streamId
+                }
                 xtObx.prefetchEpgForVisible(visibleStreamIds, perStreamLimit = 2, parallelism = 4)
             }
     }
@@ -988,16 +1011,18 @@ fun ReorderableLiveRow(
 @Composable
 fun SeriesRow(
     items: List<MediaItem>,
+    stateKey: String? = null,
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
     onAssignToKid: (MediaItem) -> Unit,
+    newIds: Set<Long> = emptySet(),
     showNew: Boolean = false,
     showAssign: Boolean = true
 ) {
     if (items.isEmpty()) return
     // Deduplicate by id to keep keys stable/unique
     val unique = remember(items) { items.distinctBy { it.id } }
-    val state = rememberLazyListState()
+    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
     var count by remember(unique) { mutableStateOf(if (unique.size < 30) unique.size else 30) }
     LaunchedEffect(state) {
@@ -1006,6 +1031,19 @@ fun SeriesRow(
                 if (idx > count - 20 && count < unique.size) {
                     count = (count + 50).coerceAtMost(unique.size)
                 }
+            }
+    }
+    // Prefetch Series details for visible tiles (bounded and deduped in repo)
+    val ctx = LocalContext.current
+    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
+    val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
+    LaunchedEffect(state, unique) {
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.mapNotNull { it.key as? Long } }
+            .distinctUntilChanged()
+            .debounce(100)
+            .collect { keys ->
+                val sids = keys.mapNotNull { id -> if (id in 3_000_000_000_000L until 4_000_000_000_000L) (id - 3_000_000_000_000L).toInt() else null }
+                if (sids.isNotEmpty()) obx.importSeriesDetailsForIds(sids, max = 8)
             }
     }
     LazyRow(
@@ -1019,7 +1057,7 @@ fun SeriesRow(
                 onOpenDetails = onOpenDetails,
                 onPlayDirect = onPlayDirect,
                 onAssignToKid = onAssignToKid,
-                isNew = showNew,
+                isNew = showNew || newIds.contains(m.id),
                 showAssign = showAssign
             )
         }
@@ -1030,16 +1068,18 @@ fun SeriesRow(
 @Composable
 fun VodRow(
     items: List<MediaItem>,
+    stateKey: String? = null,
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
     onAssignToKid: (MediaItem) -> Unit,
+    newIds: Set<Long> = emptySet(),
     showNew: Boolean = false,
     showAssign: Boolean = true
 ) {
     if (items.isEmpty()) return
     // Deduplicate by id to keep keys stable/unique
     val unique = remember(items) { items.distinctBy { it.id } }
-    val state = rememberLazyListState()
+    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
     var count by remember(unique) { mutableStateOf(if (unique.size < 30) unique.size else 30) }
     LaunchedEffect(state) {
@@ -1048,6 +1088,22 @@ fun VodRow(
                 if (idx > count - 20 && count < unique.size) {
                     count = (count + 50).coerceAtMost(unique.size)
                 }
+            }
+    }
+    // Prefetch VOD details for visible tiles (bounded and deduped in repo)
+    val ctx = LocalContext.current
+    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
+    val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
+    LaunchedEffect(state, unique) {
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.mapNotNull { it.key as? Long } }
+            .distinctUntilChanged()
+            .debounce(100)
+            .collect { keys ->
+                if (keys.isEmpty()) return@collect
+                val vodIds = keys.mapNotNull { id ->
+                    if (id in 2_000_000_000_000L until 3_000_000_000_000L) (id - 2_000_000_000_000L).toInt() else null
+                }.distinct()
+                if (vodIds.isNotEmpty()) obx.importVodDetailsForIds(vodIds, max = 12)
             }
     }
     LazyRow(
@@ -1061,7 +1117,7 @@ fun VodRow(
                 onOpenDetails = onOpenDetails,
                 onPlayDirect = onPlayDirect,
                 onAssignToKid = onAssignToKid,
-                isNew = showNew,
+                isNew = showNew || newIds.contains(m.id),
                 showAssign = showAssign
             )
         }
@@ -1072,13 +1128,35 @@ fun VodRow(
 @Composable
 fun VodRowPaged(
     items: LazyPagingItems<MediaItem>,
+    stateKey: String? = null,
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
     onAssignToKid: (MediaItem) -> Unit,
     showAssign: Boolean = true
 ) {
-    val state = rememberLazyListState()
+    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
+    val ctx = LocalContext.current
+    val store = remember { SettingsStore(ctx) }
+    val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
+    // Prefetch VOD details for visible tiles in paged row
+    LaunchedEffect(state, items) {
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
+            .distinctUntilChanged()
+            .debounce(100)
+            .collect { indices ->
+                val count = items.itemCount
+                if (count <= 0) return@collect
+                val vodIds = indices
+                    .filter { idx -> idx in 0 until count }
+                    .mapNotNull { idx ->
+                        val media = items.peek(idx)
+                        val id = media?.id ?: return@mapNotNull null
+                        if (id in 2_000_000_000_000L until 3_000_000_000_000L) (id - 2_000_000_000_000L).toInt() else null
+                    }.distinct()
+                if (vodIds.isNotEmpty()) obx.importVodDetailsForIds(vodIds, max = 12)
+            }
+    }
     LazyRow(
         state = state,
         flingBehavior = fling,
@@ -1119,10 +1197,11 @@ fun VodRowPaged(
 @Composable
 fun LiveRowPaged(
     items: LazyPagingItems<MediaItem>,
+    stateKey: String? = null,
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
 ) {
-    val state = rememberLazyListState()
+    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
@@ -1131,12 +1210,17 @@ fun LiveRowPaged(
     // EPG prefetch for visible items (map indices to items to streamIds)
     LaunchedEffect(state, items) {
         snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
+            .distinctUntilChanged()
+            .debounce(100)
             .collect { indices ->
                 val count = items.itemCount
                 if (count <= 0) return@collect
                 val sids = indices
                     .filter { idx -> idx in 0 until count }
-                    .mapNotNull { idx -> items.peek(idx)?.streamId }
+                    .mapNotNull { idx ->
+                        val media = items.peek(idx)
+                        media?.takeIf { it.type == "live" }?.streamId
+                    }
                 if (sids.isNotEmpty()) obx.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
             }
     }
@@ -1173,16 +1257,19 @@ fun LiveRowPaged(
     }
 }
 
+// (duplicate SeriesRow removed – logic added to primary SeriesRow above)
+
 /** Series row backed by Paging3; preserves horizontal row look with skeletons. */
 @Composable
 fun SeriesRowPaged(
     items: LazyPagingItems<MediaItem>,
+    stateKey: String? = null,
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
     onAssignToKid: (MediaItem) -> Unit,
     showAssign: Boolean = true
 ) {
-    val state = rememberLazyListState()
+    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
     LazyRow(
         state = state,

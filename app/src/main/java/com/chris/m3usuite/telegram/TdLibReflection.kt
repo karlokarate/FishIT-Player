@@ -104,7 +104,8 @@ object TdLibReflection {
         val getAuth = new("TdApi\$GetAuthorizationState")
         send.invoke(client, getAuth, resultHandler, excHandler)
 
-        return ClientHandle(client, send)
+        val nonNullClient = client ?: return null
+        return ClientHandle(nonNullClient, send)
     }
 
     /** Returns a shared TDLib client; initializes parameters from BuildConfig TG_API_ID/HASH if possible. */
@@ -185,7 +186,13 @@ object TdLibReflection {
         runCatching { set("filesDirectory", base) }
         set("deviceModel", Build.MODEL)
         set("systemVersion", Build.VERSION.RELEASE)
-        set("applicationVersion", "m3uSuite-telemetry-0")
+        // Prefer app's VERSION_NAME; fallback to a sane semantic string
+        val appVer = runCatching {
+            val bc = Class.forName(context.packageName + ".BuildConfig")
+            val f = bc.getDeclaredField("VERSION_NAME"); f.isAccessible = true
+            (f.get(null) as? String)?.ifBlank { null }
+        }.getOrNull() ?: "1.0.0"
+        set("applicationVersion", appVer)
         set("enableStorageOptimizer", true)
         // Database encryption key (32 bytes) via KeyStore helper
         val key = TelegramKeyStore.getOrCreateDatabaseKey(context)
@@ -268,17 +275,41 @@ object TdLibReflection {
     }
 
     fun sendSetPhoneNumber(client: ClientHandle, phone: String) {
-        val settings = new("TdApi\$PhoneNumberAuthenticationSettings", arrayOf(Boolean::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, Array<String>::class.java), arrayOf(false, false, false, false, emptyArray<String>()))
+        val settings = new(
+            "TdApi\$PhoneNumberAuthenticationSettings",
+            arrayOf(Boolean::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, Array<String>::class.java),
+            arrayOf(false, false, false, false, emptyArray<String>())
+        )
         val fn = new("TdApi\$SetAuthenticationPhoneNumber", arrayOf(String::class.java, settings.javaClass), arrayOf(phone, settings))
         val handlerType = td("Client\$ResultHandler")
         val exceptionHandlerType = td("Client\$ExceptionHandler")
-        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        // Forward function results (incl. TdApi.Error) to the global update listener
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
+            val obj = args?.getOrNull(0)
+            if (obj != null) kotlin.runCatching { updateListener?.invoke(obj) }
+            null
+        }
         val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
         client.sendMethod.invoke(client.client, fn, rh, eh)
+        // Proactively request current auth state to refresh UI promptly
+        runCatching { sendGetAuthorizationState(client) }
     }
 
     fun sendCheckCode(client: ClientHandle, code: String) {
         val fn = new("TdApi\$CheckAuthenticationCode", arrayOf(String::class.java), arrayOf(code))
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
+            val obj = args?.getOrNull(0)
+            if (obj != null) kotlin.runCatching { updateListener?.invoke(obj) }
+            null
+        }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    fun sendGetAuthorizationState(client: ClientHandle) {
+        val fn = new("TdApi\$GetAuthorizationState")
         val handlerType = td("Client\$ResultHandler")
         val exceptionHandlerType = td("Client\$ExceptionHandler")
         val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
@@ -326,7 +357,11 @@ object TdLibReflection {
         val fn = new("TdApi\$CheckAuthenticationPassword", arrayOf(String::class.java), arrayOf(password))
         val handlerType = td("Client\$ResultHandler")
         val exceptionHandlerType = td("Client\$ExceptionHandler")
-        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
+            val obj = args?.getOrNull(0)
+            if (obj != null) kotlin.runCatching { updateListener?.invoke(obj) }
+            null
+        }
         val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
         client.sendMethod.invoke(client.client, fn, rh, eh)
     }
@@ -362,8 +397,9 @@ object TdLibReflection {
         }.getOrElse {
             runCatching { new("TdApi\$DeviceTokenFirebaseCloudMessaging", arrayOf(String::class.java, Boolean::class.javaPrimitiveType!!), arrayOf(fcmToken, false)) }.getOrNull()
         } ?: return
-        val arrCls = java.lang.reflect.Array.newInstance(tokenObj.javaClass.superclass, 1).javaClass // DeviceToken[]
-        val tokensArray = java.lang.reflect.Array.newInstance(tokenObj.javaClass.superclass, 1).apply { java.lang.reflect.Array.set(this, 0, tokenObj) }
+        val superCls = (tokenObj.javaClass.superclass as Class<*>)
+        val arrCls = java.lang.reflect.Array.newInstance(superCls, 1).javaClass // DeviceToken[]
+        val tokensArray = java.lang.reflect.Array.newInstance(superCls, 1).apply { java.lang.reflect.Array.set(this, 0, tokenObj) }
         val reg = runCatching { new("TdApi\$RegisterDevice", arrayOf(arrCls), arrayOf(tokensArray)) }.getOrNull() ?: return
         client.sendMethod.invoke(client.client, reg, rh, eh)
     }

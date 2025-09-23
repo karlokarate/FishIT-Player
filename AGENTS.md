@@ -24,7 +24,10 @@ Codex – Operating Rules (override)
 - OBX ID bridging: OBX‑backed lists encode stable IDs into `MediaItem.id` for navigation: live=`1e12+streamId`, vod=`2e12+vodId`, series=`3e12+seriesId`. Detail screens resolve these IDs to OBX and build play URLs via `XtreamClient`. Legacy Room IDs remain supported where present (favorites/resume) during the transition.
 - ObjectBox search: Search uses indexed `nameLower` fields and category-name matches with page-aware merging (no full in-memory merges). Avoid Room paging in Library. Prefer OBX queries.
 - EPG fast path: Short EPG is fetched on-demand for visible live items and written to ObjectBox. Screens subscribe to `ObxEpgNowNext` (event-based). Room persistence has been removed.
-- Lazy loading: Global strategy. Visible rows/details prefetch on demand into OBX; periodic background jobs for M3U/Xtream/EPG are removed or no‑op. Telegram jobs remain (sync/cleanup).
+- Xtream-first seeding: `XtreamSeeder` importiert die Kopf-Listen (Live/VOD/Series) sofort, sobald Xtream-Zugangsdaten vorhanden sind. Setup akzeptiert Xtream-Formulare oder `get.php`-Links und nutzt Letztere nur zur Credential-Ableitung; eine M3U-Parsing-Pipeline existiert nicht mehr.
+- Lazy loading: Nach dem Kopf-Import werden Details/Poster weiterhin bedarfsgesteuert über Detail-Screens und `XtreamDetailsWorker` nachgeladen. Periodische Hintergrundjobs bleiben deaktiviert, damit Portale nicht unnötig belastet werden.
+- Refresh: Die Settings-Aktion "Import aktualisieren" triggert `XtreamSeeder` (optional mit Discovery-Force) und plant Detail-Updates. Es gibt keinen strikten M3U-Rebuild und keinen Prune-Schalter mehr; Delta-Pfade löschen keine Einträge.
+  - Orphan-Bereinigung passiert nur über separate Wartungsjobs; reguläre Delta-Läufe bleiben auf reine Anreicherung beschränkt.
 - Cascading fixes allowed: If additional modules must change to keep the system consistent after a patch, Codex proceeds to implement those changes directly under these rules.
 - End‑to‑end execution: When the user requests a change/fix/implementation, Codex performs it end‑to‑end (no TODOs/placeholders). For major changes requiring iterative passes over the same files, Codex proceeds autonomously without waiting for intermediate applies, unless sandbox constraints force an approval.
 - Minimize approvals: Routine repo/Documentation changes are applied directly. Approvals are limited to privileged ops, irreversible deletions, or external authentication.
@@ -32,6 +35,7 @@ Codex – Operating Rules (override)
 - Respectful scope: Codex does not change/trim/expand modules or files without instruction, except where necessary to uphold these rules or maintain architectural integrity. Existing flows (EPG/Xtream, player paths, list/detail) must be preserved unless requested.
  - Ongoing hygiene: Codex periodically tidies the repo, highlights obsolete files/code to the user, and removes uncritical leftovers (e.g., stale *.old files). Never touch `.gradle/`, `.idea/`, or `app/build/` artifacts, and avoid dependency upgrades unless fixing builds.
 - Xtream workers & delta: Legacy `XtreamRefreshWorker`/`XtreamEnrichmentWorker` remain disabled (no‑op). Xtream content updates via `XtreamDeltaImportWorker`: periodic (12h, unmetered+charging) plus on‑demand one‑shot trigger.
+  - Global gate: `M3U_WORKERS_ENABLED` in DataStore controls whether Xtream workers/scheduling and related API paths run. When false, workers early‑exit (no network), app‑start auto‑discovery/seed is skipped, and Settings actions for Xtream diagnostics/import are disabled.
   - One‑shot `ObxKeyBackfillWorker` fills missing `sortTitleLower`/`providerKey`/`genreKey`/`yearKey` for existing OBX rows.
 - UI data flows: Start/Library/Details are ObjectBox-first.
   - Library grouped views (Live/VOD/Series) use indexed OBX keys for headers (provider/genre/year) and page per visible row.
@@ -39,6 +43,7 @@ Codex – Operating Rules (override)
 - Cross‑platform builds: Codex uses Linux/WSL for builds/tests via Gradle wrapper while keeping settings compatible with Windows. Ensure no corruption of Windows‑side project files.
  - WSL build files: Projektstamm enthält Linux‑spezifische Ordner für Build/Tests: `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`. Optional: `.wsl-cmake` (portable CMake), `.wsl-gperf` (portable gperf). Codex verwendet diese Ordner unter WSL; Windows‑seitige Einstellungen bleiben kompatibel.
 - Tooling upgrades: If Codex needs additional tools or configuration to work better, it informs the user and, where possible, sets them up itself; otherwise it provides clear, copy‑pastable step‑by‑step commands for the user to establish the optimal environment.
+- TDLib pinning: TDLib (JNI + Java bindings) is pinned to a specific upstream tag for reproducibility. The build script `scripts/tdlib-build-arm64.sh` checks out the tag and copies `TdApi.java`/`Client.java` from TDLib’s `example/java` into `libtd/src/main/java/org/drinkless/tdlib/`. Default pin: `v1.8.0` (the latest upstream tag as of now; override via env `TD_TAG`/`TD_COMMIT` or CLI `--ref <tag|commit>`). `Log.java` stays local to match JNI signatures.
 
 Sandbox/WSL – Agent Execution Rules (Best Effort)
 - Repo‑local tools only: never use `sudo` or modify system config. Install portable binaries under `.wsl-*` and prefer them in `PATH`.
@@ -49,7 +54,7 @@ Sandbox/WSL – Agent Execution Rules (Best Effort)
 - Required env vars for Android builds: set `ANDROID_SDK_ROOT`, `ANDROID_NDK_HOME`, `JAVA_HOME`, `GRADLE_USER_HOME` to repo‑local folders.
 - Shell I/O discipline: use `rg` for searches and `sed -n` chunking to avoid output truncation; don’t dump large files.
 - Builds: prefer Ninja if present, otherwise let CMake fall back to Make; split long work into generate → build → verify steps.
-Note: TDLib v7a builds have been removed. We ship arm64‑v8a only.
+Note: We ship arm64‑v8a by default. The build script can also produce armeabi‑v7a for legacy devices. Use `--only-arm64`, `--only-v7a`, or omit flags to build both. Shipping APK/Bundle stays arm64‑first unless explicitly configured otherwise.
 - Network/downloads: use shallow `git clone` and robust `curl`; if a tool is missing, prefer portable installs (e.g., `apt-get download gperf` + `dpkg-deb -x` into `.wsl-gperf`).
 - Safety: never touch `.gradle/`, `.idea/`, or Android Studio settings; don’t push or alter remotes/keys; keep secrets out of the repo.
 - Documentation upkeep: after any patch, immediately update `CHANGELOG.md`, `ROADMAP.md`, and—if architecture changes—`AGENTS.md` and `ARCHITECTURE_OVERVIEW.md`.
@@ -110,6 +115,9 @@ Git Push Policy (SSH, codex‑wsl)
 - Einmalige Fallback‑Nutzung ohne Config:
   - `GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519_m3usuite -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new' git push origin HEAD:master`
 - Hinweis: Private Keys niemals im Repo/versioniert ablegen. Der öffentliche Schlüssel ist als Deploy‑Key „Allow write“ im Repo hinterlegt.
+ - Repo‑lokale Default‑Konfiguration (empfohlen):
+   - `git config core.sshCommand "ssh -i ~/.ssh/id_ed25519_m3usuite -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"`
+   - Danach funktionieren `git fetch`, `git pull` und `git push` ohne extra Env‑Variablen.
 
 Where to find the full overview
 - The canonical, continuously updated source is `AGENTS.md` (this file).
@@ -120,25 +128,34 @@ Short bullet summary (current highlights)
   - Telegram integration (opt‑in, alpha → phase‑2 in progress): Login (Phone→Code→Passwort) mit auto DB‑Key‑Check; Settings‑Block mit Ordner/Chat‑Picker und separaten Quellen für Film/Serien‑Sync; Sync‑Worker mappt Nachrichten auf VOD (`MediaItem.source=TG`) oder Serie (Episode.tg*; SxxExx‑Heuristik). Player streamt `tg://message?...` via Telegram‑DataSource (Seek, progressive Download). Packaging über `:libtd` (arm64). Phase‑2: QR‑Login (done), dedicated TDLib service process (done), foreground switching on downloads/auth (done), lifecycle/network hooks (done), FCM push hooks (prepped), event‑driven indexing (basis done), LTO (next).
     - Event‑driven indexing (Basis): TDLib‑Service lauscht auf `UpdateNewMessage`/`UpdateMessageContent`/`UpdateFile` und persistiert Minimal‑Metadaten in `telegram_messages` inkl. `localPath`‑Updates per `fileId`. Backfill via `TelegramSyncWorker` bleibt erhalten.
   - Index/Cache: `telegram_messages` wird beim Sync befüllt (fileId/uniqueId, caption, supportsStreaming, date, thumbFileId); `localPath` wird durch DataSources aktualisiert. Minimaler Sync‑Fortschritt in Settings; täglicher Cache‑Trim (GB‑Limit) via `TelegramCacheCleanupWorker`. FCM Push integriert (Token‑Registrierung + `processPushNotification`), Service startet lazy bei Push.
-- TDLib packaging: `:libtd` bundles JNI `libtdjni.so` for `arm64-v8a`. Native JNI is auto‑loaded via a static initializer in `org.drinkless.tdlib.Client`.
+- TDLib packaging: `:libtd` bundles JNI `libtdjni.so` for `arm64-v8a` (primary). A `armeabi-v7a` slice can be built on demand via the build script. Native JNI is auto‑loaded via a static initializer in `org.drinkless.tdlib.Client`.
 - TDLib secrets sourcing: `TG_API_ID`/`TG_API_HASH` are injected at build time without committing secrets.
    - Precedence: ENV vars (`TG_API_ID`, `TG_API_HASH`) → root `/.tg.secrets.properties` (not tracked) → `-P` Gradle props → default 0/empty.
    - To test locally: either set env vars for the Gradle run, or create a root‑level file `.tg.secrets.properties` with `TG_API_ID=...` and `TG_API_HASH=...`.
  - Default UA (secret): HTTP `User-Agent` is injected as `BuildConfig.DEFAULT_UA`.
    - Precedence: ENV var `HEADER` → root `/.ua.secrets.properties` (not tracked) → `-P HEADER` → empty.
    - Neither the repo nor the compiled APK contain the literal UA; app fallbacks read `DEFAULT_UA`.
-- TDLib native packaging: Single ABI (arm64‑v8a) with static BoringSSL linking for a self‑contained JNI lib.
-  - arm64: `scripts/tdlib-build-arm64.sh` builds `libtdjni.so` for `arm64-v8a` with static BoringSSL and copies to `libtd/src/main/jniLibs/arm64-v8a/`.
+- TDLib native packaging: Primary ABI (arm64‑v8a) with static BoringSSL linking for a self‑contained JNI lib; optional `armeabi‑v7a` output for legacy devices.
+  - arm64: `scripts/tdlib-build-arm64.sh [--only-arm64|--ref <tag>]` builds `libtdjni.so` for `arm64-v8a` to `libtd/src/main/jniLibs/arm64-v8a/` and syncs Java bindings.
+  - v7a (optional): `scripts/tdlib-build-arm64.sh --only-v7a` builds `libtdjni.so` for `armeabi-v7a` to `libtd/src/main/jniLibs/armeabi-v7a/`.
+  - One‑shot rebuild helper: `scripts/tdlib-rebuild-latest.sh` cleans old artifacts, sets envs (repo‑local), auto‑detects latest upstream tag (or use `--ref`), builds both ABIs, syncs Java, and verifies the outputs.
   - Size hygiene: Stripping enabled; Phase‑2 adds LTO/GC‑sections/strip‑unneeded to further reduce size.
 - Start/Home shows Serien, Filme, TV; Kids get filtered content (MediaQueryRepository), no settings/bottom bar, read‑only favorites.
-- Library grouping/filter: VOD/Serien gruppieren nach Provider (normalisiert), Jahr, Genre; Live nach Provider/Genre (kein Jahr). Textfilter pro Typ; "Unbekannt" bündelt nicht zuordenbare Inhalte. Kategorie‑Normalisierung konsolidiert Provider‑Varianten (Apple TV+, Netflix, Disney+, Prime …) → Rows nicht mehr zersplittert.
+- Library grouping/filter: VOD/Serien gruppieren primär nach Provider (normalisiert: Apple TV+, Netflix, Disney+, Amazon Prime, Paramount+, Max, …). Reihenfolge: Zuletzt gesehen → Neu → 2025–2024 → Anbieter‑Rows. Live gruppiert nach Provider/Genre. Textfilter pro Typ. Fallback für nicht zuordenbare Inhalte: serverseitige Kategorien (optional).
+  - Aggregatindizes: Provider/Genre/Jahr werden beim Xtream-Kopfimport (`XtreamSeeder`) in `ObxIndex*` Tabellen persisted (keine Vollscans). Library liest Gruppen aus `ObxIndexProvider/Year/Genre` (Live: Provider/Genre; VOD/Series: Provider/Genre/Jahr optional), nicht mehr per `distinct()` auf den Haupttabellen.
 - Backup/Restore present in Setup (Quick Import) and Settings (Quick Import + full section). Drive client optional (shim by default).
 - Player fullscreen with tap-to-show overlay controls; Live favorites reorder fixed/stable.
- - HTTP layer: Singleton OkHttpClient + merging CookieJar; headers via RequestHeadersProvider snapshot for consistency.
- - Xtream enrichment: Throttled batches with retry/backoff; not auto-scheduled in scheduleAll.
+ - HTTP layer: Singleton OkHttpClient + persistent CookieJar; 50 MiB disk HTTP cache (respects Cache-Control); headers via RequestHeadersProvider snapshot for consistency.
+ - Images (Coil 3): Global ImageLoader uses hardware bitmaps, ~25% memory cache, 512 MiB disk cache; requests set pixel size (w×h) automatically for optimal decoding. Crossfade is disabled in large list rows for performance; enabled on detail/hero views and small avatar/icon uses.
+- Xtream enrichment: Throttled batches with retry/backoff; not auto-scheduled in scheduleAll.
+ - Diagnostics: Settings zeigt OBX-Zähler (Live/VOD/Series) und eine "Import aktualisieren"-Aktion, die `XtreamSeeder` erneut ausführt (optional mit Discovery-Force) und Detailjobs plant. Eine Strict-M3U-Option existiert nicht mehr; explizite Prune-Läufe sind Separate Wartungsjobs.
 
 - EPG: Now/Next dual-persist (Room + ObjectBox) with XMLTV fallback; no periodic worker. UI reads OBX; on-demand prefetch for visible tiles and favorites at app start; Live tiles show title + progress.
 - Unified UI polish: Accent tokens (adult/kid), carded sections (`AccentCard`), gradient + glow background with blurred app icon; kid profiles use a vibrant palette.
+- TV buttons: Use `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton` (in `ui/common/TvButtons.kt`) to get focus glow + bounce by default. Avoid raw Material3 buttons in TV paths.
+- TV live controls: DPAD Select toggles a bottom‑right quick‑actions popup (PiP, Subtitle/Audio, Format). Popup stays until Select again or Back. When open, DPAD_DOWN focuses the first button; LEFT/RIGHT navigate; Select activates; Back saves CC settings (if open) and closes the popup.
+- Persistent UI state: All major lists/grids use a route‑scoped state saver so screens and rows restore their scroll/focus position when navigating away and back (Start, Library groups/rows, Details, Settings, Live/VOD/Series). Helpers: `rememberRouteListState(key)`, `rememberRouteGridState(key)` in `ui/state/ScrollStateRegistry.kt`.
+- Dev UX: Compose Live Literals are compiled for debug variants (Gradle config). Use Android Studio Live Edit to tweak literals (`dp`/colors/strings) without redeploy.
 - Kid/Guest profiles: per‑profile permissions (Settings/Quellen, External Player, Favorites, Search, Resume, Whitelist).
 - Kid filtering: Effective allow = item allows ∪ category allows − item blocks; category‑level whitelist + per‑item exceptions via admin UI.
 - Favorites: Live favorites are read‑only when the profile lacks edit permission (default Kid/Guest).
@@ -152,6 +169,7 @@ Policies (Do/Don't)
 - Enforce profile permissions rigorously; do not expose admin‑only affordances (whitelist/favorites/Quellen/Settings) without permission.
 - For kid/guest reads, always use `MediaQueryRepository`; do not bypass via raw DAO queries in UI paths.
 - Provider normalization: UI-Gruppierungen nutzen `CategoryNormalizer`; Rows gruppieren nach normalisierten Schlüsseln, nicht nach rohen group‑title Strings.
+  - Neu: `normalizeBucket(kind, groupTitle, tvgName, url)` begrenzt je Kind (live/vod/series) die Kategorien auf ≤10 stabile Buckets (z. B. live: sports/news/documentary/kids/music/international/entertainment/screensaver/movies; vod: netflix/amazon_prime/disney_plus/apple_tv_plus/sky_warner/anime/new/kids/german/other; series analog). Qualitätstoken (HEVC/FHD/HD/SD/4K) fließen nicht in die Buckets ein.
 - Telegram gating: Keine TDLib‑Nutzung ohne aktives Flag (`tg_enabled=true`) und erfolgreichen Login (AUTHENTICATED). Worker/DataSources/Picker sind ansonsten no‑op.
  - TDLib service model: TDLib im separaten Prozess via Service; foreground nur bei Downloads/Auth; `SetInBackground` am Lifecycle; `SetNetworkType` bei Net‑Wechseln. FCM Push (hooks vorhanden), weniger Polling; WorkManager bleibt Fallback.
 
@@ -160,8 +178,22 @@ For the complete module-by-module guide, see `ARCHITECTURE_OVERVIEW.md`.
 ---
 
 Recent
- - Xtream onboarding/telemetry: After discovery, the app immediately triggers Discovery → Client → Fetch (the six reference list calls). All `player_api.php?action=...` URLs are logged at info level for quick verification. VOD alias from discovery is honored, and wildcard `category_id=0` is used when no category is selected.
- - Xtream: Port-Resolver verschärft – nur HTTP 2xx + parsebares JSON zählen als gültiger Treffer. Probes senden nun explizite `action`‑Parameter (`get_live_streams|get_series|get_vod_streams`) mit `category_id=0`, um WAF/Cloudflare 521 zu vermeiden. HTTP‑Kandidaten priorisieren `8080`; `2095` wurde entfernt. Cache‑Treffer werden einmal revalidiert; bei Fehlschlag wird der Eintrag verworfen und neu ermittelt. Wenn die Basis‑URL/Settings bereits einen Port enthalten, wird dieser unverändert übernommen und der Resolver übersprungen.
+- Xtream networking: Global per-host pacing (~120 ms minimal interval) and in-memory response cache (60s; EPG 15s) added to `XtreamClient` to prevent bursts and duplicate list calls. `importDelta` is heads-only; detail chunks run separately with strict limits.
+- Xtream delta import: Listen werden weiterhin pro Kategorie (Live/VOD/Series) aggregiert, um Panel-Limits zu umgehen. Orphan-Pruning ist standardmäßig deaktiviert; reguläre Delta-Läufe ergänzen ausschließlich fehlende Felder/Posterdaten.
+- Library rows stability: Horizontal rows (provider/genre/year and top rows) use route-scoped list state so navigating into details and back does not visibly rebuild cards; scroll/focus positions persist.
+- Xtream Seeder: Setup nutzt `XtreamSeeder.seedListsQuick(limit=200)`, um extrem schnell sichtbare Kopf-Listen (Live/VOD/Series) zu importieren (Heads only). Playlist-Parsing (M3U) wurde entfernt; `get.php`-Links dienen ausschließlich der Credential-Ableitung.
+- Adults toggle: Global setting "Kategorie 'For Adults' anzeigen" controls visibility of the "For Adults" category across Start, Library and search. Default OFF; when disabled, items in that category are filtered at repository/UI query level.
+- Home rows: Serien/Filme rows merge "Zuletzt gesehen" (left) with "Neu" (right). On first start (no resume marks), rows show only new items with a NEU badge.
+- Startup flow: Der bisherige Bootstrap-Screen entfällt. Sobald Xtream-Creds vorliegen, wird `XtreamSeeder.ensureSeeded` ausgelöst; UI bleibt erreichbar und Kopf-Daten erscheinen ohne Blockierung.
+- TV usability: Remote seeks (DPAD/MEDIA ±10s), focusable player overlay incl. slider via D‑Pad, Settings text fields on TV are read‑only with explicit edit dialogs to avoid on‑focus keyboard traps; debounced writes prevent lag and accidental imports while typing; dynamic colors disabled on TV for consistent palette.
+- Xtream series playback: Episode URLs use the returned episode_id, fixing HTTP 401 on KönigTV.
+- Xtream trailers: normalize youtube IDs into full URLs so trailer playback works without crashes.
+- Xtream VOD import: handles `stream_id`-only panels (e.g., KönigTV), so delta diagnostics show real VOD counts instead of `vod=0`.
+- Live detail: Profile gating tolerates missing/initial profile IDs (no ObjectBox crash when opening tiles).
+- Start live picker: search pulls from OBX live rows, so favorites search matches Library results.
+- Xtream onboarding/telemetry: After discovery, the app immediately triggers Discovery → Client → Fetch (the six reference list calls). All `player_api.php?action=...` URLs are logged at info level for quick verification. VOD alias from discovery is honored, wildcard `category_id=0` is used when no category is selected, and panels that reject both now fall back to a request without `category_id`.
+- Xtream playback: `XtreamUrlFactory` reads the cached capability alias/basePath before building URLs so VOD streams hit the resolved `/vod|movie|.../` path for internal playback.
+- Xtream: Port-Resolver verschärft – nur HTTP 2xx + parsebares JSON zählen als gültiger Treffer. Probes senden nun explizite `action`‑Parameter (`get_live_streams|get_series|get_vod_streams`) mit `category_id=0`, um WAF/Cloudflare 521 zu vermeiden. HTTP‑Kandidaten priorisieren `8080`; `2095` wurde entfernt. Cache‑Treffer werden einmal revalidiert; bei Fehlschlag wird der Eintrag verworfen und neu ermittelt. Wenn die Basis‑URL/Settings bereits einen Port enthalten, wird dieser unverändert übernommen und der Resolver übersprungen.
 - EPG: Now/Next dual-persist (Room + OBX) + XMLTV multi-index; fallback aktiv auch ohne Xtream; kein periodischer Worker mehr (on‑demand Prefetch sichtbar/Favoriten), optional stale cleanup.
 - UI: Live tiles enriched with current programme + progress bar.
 - Xtream: Detection supports compact stream URLs; import merges missing `epg_channel_id` from existing DB by `streamId`.
@@ -170,5 +202,5 @@ Recent
 - Kid-mode correctness: Home refresh now uses filtered queries; favorites read‑only for restricted profiles; “Für Kinder freigeben” visible only when permitted.
 - Whitelist UX: Category‑level allow with item‑level exceptions; admin sheet in ProfileManager to manage both.
 - Data: New tables `kid_category_allow`, `kid_content_block`, `profile_permissions`; DB schema bumped with idempotent migrations.
- - Telegram (scaffold): Global feature flag, Settings section, DB v8 with `MediaItem.source` + TG refs and `telegram_messages` table; Gradle packaging prepped for universal ABI; ProGuard keep rules added. Playback resolves local TG paths when available. Default OFF to preserve current behavior.
+- Telegram (scaffold): Global feature flag, Settings section, DB v8 with `MediaItem.source` + TG refs and `telegram_messages` table; Gradle packaging prepped for universal ABI; ProGuard keep rules added. Playback resolves local TG paths when available. Default OFF to preserve current behavior.
 - UI/Library: Dynamische Gruppierung/Filter (VOD/Serien: Provider/Jahr/Genre; Live: Provider/Genre). Kategorie‑Normalisierung vereinheitlicht Provider (Apple TV+, Netflix, Disney+, Prime …). Textfilter pro Typ; "Unbekannt" fängt Reste ab.

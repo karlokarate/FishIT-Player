@@ -3,7 +3,184 @@
 
 All notable changes to this project are documented here. Keep entries concise and tied to commits/PRs.
 
+2025-09-23
+- build(release): Enable R8 minify + resource shrinking; set `debuggable=false` for the release buildType and wire ProGuard with `proguard-android-optimize.txt` and `proguard-rules.pro`.
+- proguard: Strip Android `Log` calls in release via `-assumenosideeffects`. Add keep rules for ObjectBox entities, and suppress warnings for Media3, OkHttp/Okio, and `kotlinx.coroutines.debug`.
+- deps: Verified `kotlinx-coroutines-debug` is not included in release; ensure it remains debug-only if added in the future.
+- packaging: Exclude redundant META-INF licenses/notices, Kotlin module metadata, and non-target JNI ABIs (x86/x86_64/mips/armeabi) to reduce package size and avoid duplicate resource merges.
+- splits: Enable ABI splits for APKs — generates separate 32‑bit (`armeabi-v7a`) and 64‑bit (`arm64-v8a`) release APKs.
+- images(coil3): Global ImageLoader caches tuned (memory ~25%, disk dynamic) and per-request NetworkHeaders wiring. OkHttp integration remains via module dependency; explicit factory injection deferred.
+- cache(dyn): HTTP (OkHttp) cache size now dynamic by ABI/Low‑RAM/available space (32‑bit base 32 MiB, 64‑bit base 96 MiB; caps 64/128 MiB; min 1% free). Coil disk cache now dynamic too (32‑bit base 256 MiB, 64‑bit base 512 MiB; caps 384/768 MiB; min 2% free).
+- images(coil3/rgb565): Use RGB_565 for small images (avatars, provider icons) to reduce RAM without affecting posters/hero. Implemented via `preferRgb565` flag in `AppAsyncImage` and targeted call sites.
+- ui/images: Explicit ContentScale set where implicit before — ProviderIcons and StartScreen logos use `Fit` (no crop), avatars use `Crop` (fill circular). Performance-neutral but improves visual correctness and consistency.
+- ui/home-rows: Throttle visible-items snapshot with `distinctUntilChanged + debounce(100ms)` for EPG/detail prefetch across Live/VOD/Series rows (paged + non-paged). Focus EPG fetch uses a 120ms cooldown to avoid churn. Preview videos remain OFF by default.
+- media3/exo: Keep rules minimal — only `-dontwarn androidx.media3.**` (no global keep). Player now explicitly uses `DefaultRenderersFactory` (decoder fallback ON, extension renderers OFF) to prefer hardware decode. Internal PlayerView switched to SurfaceView (was TextureView) for better TV performance. LoadControl left at `DefaultLoadControl`.
+ - build/splits: Remove `ndk.abiFilters` from app module to resolve AGP warning when ABI splits are enabled; per‑ABI release APKs remain via `splits.abi` (arm64‑v8a, armeabi‑v7a).
+ - docs: Roadmap cleaned (near/mid‑term only) and Architecture Overview synced (OBX‑first, dynamic caches, Media3). AGENTS.md push policy now includes a repo‑local `core.sshCommand` so pushes work out of the box in WSL.
+
+2025-09-22
+- fix(delta): Heads-only delta now upserts new VOD/Series rows from list heads even when details are skipped. Previously, brand-new items were only created during the detail phase, leaving counts stuck at the quick-seed size until many details completed.
+- change(seed): Increase quick seed per-category cap from 20 → 200 (as documented). First paint still spreads evenly across categories but shows more items immediately.
+- perf(net/xtream): Add global per-host rate limiter (~120ms min interval) and 60s in-memory response cache (15s for EPG) in `XtreamClient`. Repeated list/detail calls now hit cache and respect pacing.
+- perf(delta): `importDelta` is heads-only by default (no bulk details). Details are handled by `refreshDetailsChunk` with strict chunk sizes (VOD 50, Series 30). Series delta uses a single list fetch instead of repeated paging calls.
+- perf(details): In-flight de-dup in `XtreamObxRepository` prevents parallel duplicate detail fetches for the same ID (VOD/Series). Detail semaphores tuned to 4.
+- perf(epg): EPG prefetch keeps a 4-wide concurrency cap; combined with client caching/rate-limit this avoids hammering panels while keeping tiles fresh.
+- perf(seed): XtreamSeeder uses `seedListsQuick(limit=200)` for an ultra-fast first paint (heads only), then other flows enrich in background.
+- perf/ui-prefetch: Visible VOD/Series tiles prefetch missing details (posters/plots/etc.) on scroll with small batches (VOD ≤12, Series ≤8) and in-flight dedupe; keeps on-screen tiles filled quickly without bursts.
+- fix(images): TMDb image wrappers `AppPosterImage`/`AppHeroImage` now auto-fallback to smaller buckets (w342→w185→w154→original; w780→w500→w342→original) if a desired size 404s, avoiding broken/blank tiles.
+- revert(vod/library): Remove provider fallback in curated VOD view. Keep genre layout stable; rely on minimal genre key ["other"] until index warms.
+- perf(vod/detail): Reduce neighbor prefetch from 50 → 16 and keep concurrency modest; avoids long tails of `get_vod_info` when opening one detail.
+- change(worker): Default `include_live=false` in `XtreamDeltaImportWorker` to avoid heavy Live bursts in one‑shot imports. Live remains handled by periodic jobs or explicit runs.
+- fix(repo/index): `indexGenreKeys(kind)` now returns a minimal fallback ["other"] when the index is not yet built but content exists, so VOD shows at least "Unkategorisiert" immediately.
+- fix(worker/build): Add missing import `androidx.work.workDataOf` in `XtreamDeltaImportWorker` to fix compile error (Unresolved reference 'workDataOf').
+- feat(vod/normalizer+ui): Curated VOD rows without providers: order = Zuletzt gespielt → Neu – Aktuell → alphabetisch (Abenteuer, Action, …, Western) → 4K → Kollektionen → Unkategorisiert; Adults block appended at bottom when enabled. Implemented via expanded deriveGenreKey mapping and LibraryScreen curated rendering for VOD. Added German display labels for new keys.
+- feat(ui/fonts): Embedded Google Fonts TTFs for category chips (Nosifer, Bangers, Orbitron, Cinzel, Rye, Mountains of Christmas, Parisienne, Fredoka, Playfair Display, Merriweather, Teko, Advent Pro, Baloo2, M+ Rounded 1c, Yatra One, Russo One, Oswald, Inter, Staatliches) and wired per‑category FontFamily.
+- feat(ui/library/vod): Add FOR ADULTS umbrella section (visible only when Adults setting is ON). Expanding it shows each adult subcategory (e.g., MILF, AMATEUR, FULL HD, …) as its own row. Adult items now bucketize to "adult_*" keys.
+- feat(normalizer/vod): Preserve FOR ADULTS subcategories as distinct provider buckets (e.g., "FOR ADULTS ➾ MILF" -> bucket "adult_milf"). Added dynamic display labels ("For Adults – MILF"). Adults toggle behavior unchanged.
+- fix(ui/fonts): Prevent crash (IllegalStateException: Could not load font) by remapping families with corrupted TTFs to safe fallbacks in `CategoryFonts`, and embedding valid Google Fonts TTFs for: Advent Pro, Baloo 2, Cinzel, Fredoka, Inter, Merriweather, Orbitron, Oswald, Playfair Display, Teko. "Mountains Of Christmas" remains on system default until a valid TTF is added.
+- fix(vod/library): Curated VOD rows (Genres & Themen, 4K, Kollektionen, Unkategorisiert) were missing because `genreKey` wasn’t set on heads/seed imports. Now we derive and persist `genreKey` during `seedListsQuick` and `importDelta` list-only updates, then rebuild indexes. Series seeding also persists `genreKey` for consistency.
+ - change(vod/ui): Remove provider fallback on VOD. We always render the curated genre layout; while the genre index warms up, sections may be temporarily sparse instead of switching to provider rows.
+- change(settings/import): "Import aktualisieren" triggers a background WorkManager one‑shot (`xtream_delta_import_once`) so the import continues even if the user leaves the screen. A quick discovery runs opportunistisch; a toast indicates background start.
+- change(worker/delta): `XtreamDeltaImportWorker` now runs a full list delta (`importDelta(deleteOrphans=false)`) before the detail chunk. This updates provider/genre keys for all items and rebuilds indexes, so curated VOD rows populate reliably without waiting for per‑item details.
+- change(genre-normalizer): Genre keys are now derived strictly from category names only (no scanning of titles or explicit genre strings). This avoids false matches like "show" in titles and speeds up index building. 4K/Collection are taken only when indicated by the category name.
+- chore(scripts): Add quick_m3u_normalize.py and quick_m3u_vod_category_mapping.py to analyze M3U files and report CategoryNormalizer bucket mappings (no app/runtime impact).
+- fix(ui/library/resume): Ensure VOD/Series library rows repopulate after returning from details/player. Added lifecycle ON_RESUME tick to re-run data loads and refresh expandable provider/genre/year sections. Avoids empty rows until tab switch.
+- feat(import/xtream): Replace strict M3U bootstrap and PlaylistRepository with `XtreamSeeder`. Setup/Settings now derive Xtream credentials from `get.php` links or manual input and immediately seed live/vod/series heads. No playlist parsing remains.
+- change(settings/import): "Import aktualisieren" reruns `XtreamSeeder` (optional forced discovery) and schedules detail refresh; prune/strict-M3U flows removed.
+- change(startup/ui): Removed blocking bootstrap screen. Start/Landing trigger `XtreamSeeder.ensureSeeded` when ObjectBox is empty and credentials exist, keeping UI responsive while heads load.
+- refactor(workers): `XtreamDeltaImportWorker` limits itself to detail chunks and EPG refresh; seeding now single-sourced through `XtreamSeeder`.
+
+2025-09-20
+- fix(xtream/delta, 400-cap): Delta import now iterates per-category for live/vod/series and aggregates results before pruning. This avoids panels that cap wildcard list calls at ~400 entries. No more unintended content shrink after M3U → Xtream delta; orphan removal only happens after full aggregation.
+- fix(ui/library/rebuild): Library rows (provider/year/genre and top rows) now use route-scoped LazyListState via rememberRouteListState, preserving horizontal scroll and preventing row rebuilds on navigation (open/back, tab switch). Cards no longer visibly recompose on small interactions.
+ - change(m3u→delta semantics): After strict M3U import, subsequent Xtream delta runs in enrichment mode (deleteOrphans=false) so M3U skeleton stays intact; delta only fills missing fields/posters. Periodic/on-demand delta paths may still prune when explicitly requested.
+- feat(settings/diagnostics): Added OBX diagnostics in Settings: shows Live/VOD/Series counters and a one-shot “Leeren + Strict M3U Refresh” action to rebuild the M3U skeleton without pruning.
+- ux(import/prune): Settings “Import aktualisieren” now asks whether to prune (delete orphans) or only enrich. Playlist setup (Xtream) gets a toggle “Fehlende Einträge löschen (Prune)” default OFF.
+- fix(oom/m3u): HTTP path switched to streaming parser (`byteStream` → `M3UParser.parseStreaming`). Avoids reading the full playlist into a String (previous Reader overload caused ~130MB allocations and OOM on large M3U files).
+ - policy(bootstrap): Bootstrap now does strict M3U only (skeleton + keys), with no automatic Xtream delta/seeding. Xtream runs lazily at runtime for visible content only. Periodic Xtream worker scheduling is disabled globally.
+
+2025-09-21
+- refactor(m3u/import): Always build the full OBX key-skeleton from M3U on refresh (even when Xtream creds exist). Xtream delta now runs after skeleton for lazy enrichment. Removed the pre-parse Xtream short-circuit and the per-batch skip that previously left only ~400 hot-seeded items visible.
+- chore(tools): Add scripts/M3UParseProbe.kt — tiny Kotlin CLI to parse M3U files with the in-repo M3UParser (no Gradle build). Helps validate large playlists offline and inspect type/category distribution.
+- fix(library/index): Rebuild ObjectBox aggregate provider/genre/year indexes after M3U/Xtream imports so Library tabs render bucket rows again. PlaylistRepository triggers a rebuild after strict M3U runs; XtreamObxRepository refreshes indexes for seed/delta/full imports.
+- fix(m3u/import): Assign deterministic fallback IDs for live/vod/series entries when no Xtream stream_id is present. The strict M3U import no longer drops pure-M3U items, so large playlists surface fully in the UI and exports.
+- feat(settings/import): Strict M3U refreshes now record current OBX totals and the Settings screen displays live counts, so the Seed/Delta diagnostics stay accurate even without Xtream credentials.
+
+- perf(m3u/parser): Replaced the Reader-based import with a direct `ReadableByteChannel` pipeline (1 MiB direct buffers, byte-level line scanner, coroutine worker fan-out). Strings are now materialised right before batching and `parseExtInf` uses a hand-written attribute scanner instead of Regex. PlaylistRepository passes the raw `InputStream`, enabling multi-worker decoding and preparing for chunked parallel parsing.
+- perf(m3u/parser): Added ASCII transliteration fast path (ä→a, ß→ss, …), string-only type heuristics and pooled attribute/media builders. Known M3U fields land in a reusable `AttrBag`, unknown ones stream into a tiny list, and each worker reuses a `MediaItemBuilder` before emitting an immutable `MediaItem` (~35 % CPU cut + lower GC churn in local benches).
+- chore(m3u/testing): Added `app/src/test/java/com/chris/m3usuite/core/m3u/M3UParserPerfTest.kt` to benchmark large playlists via the new streaming path (disabled for release builds, CLI helper only).
+
+2025-09-19
+- fix(library/groups): Preserve expanded provider/year/genre sections with saveable state and cache invalidation, so ObjectBox refreshes no longer collapse rows or trigger visible rebuild flicker across Library tabs.
+- fix(epg/live): Skip short EPG prefetch for non-live tiles so VOD/Serie/Resume rows stop spamming `get_short_epg` and reuse the live cache correctly.
+- fix(xtream/repo): Resolve compile error by replacing incorrect references to normalizeProvider with CategoryNormalizer-backed bucketProvider per kind (live/vod/series) in XtreamObxRepository.
+- feat(images/coil): Enforce fixed TMDb sizes for consistent caching and lower IO. Added `AppPosterImage` (w342) for tiles/posters and `AppHeroImage` (w780) for hero/backdrops; wired into Home rows, MediaCard, Start and VOD/Series detail headers. Non‑TMDb URLs remain unchanged. Global ImageLoader/caches unchanged.
+- perf(bootstrap/m3u): Faster strict M3U import. Reuse ObjectBox queries with setParameter (avoid per-item query rebuild), throttle byte-progress updates (~100ms/256KiB) to reduce state churn, and increase M3U parser buffer (64KiB → 1MiB). Large lists import noticeably faster on low-end devices.
+- perf(bootstrap/m3u): Dynamic OBX put chunk size based on device RAM (≈2GB → 2000, ≥2GB → 4000, ≥4GB → 6000, ≥6GB → 8000). Reduces transaction overhead on higher-memory devices without risking OOM on low-end.
+- perf(bootstrap/m3u): Parser batch size now RAM‑aware as well (≈<2GB → 2000, ≥2GB → 3000, ≥4GB → 4000, ≥6GB → 6000) to balance memory footprint and throughput.
+- feat(xtream/details): On-demand detail open prefetches a batch of neighbors (≈50) by provider group (fallback: newest), with bounded concurrency, to improve perceived latency for subsequent tiles. VOD detail needs expanded to include missing rating/genre/duration. Series detail need check scans all episodes for small series (≤80) to avoid false negatives.
+- chore(xtream/gate): All on-demand Xtream detail calls (single + batch, VOD/Series) respect the global M3U_WORKERS_ENABLED switch and early-exit when disabled.
+- feat(bootstrap): Add OBX content pre-check to skip strict M3U parsing on subsequent app starts when the ObjectBox store already has content (e.g., after restore). Marks bootstrap as done and resumes background work immediately.
+- fix(bootstrap): On failure, show precise debug output in the bootstrap screen (step and root cause chain) and log full stacktrace to Logcat. Ensures no hang or silent crash.
+- feat(settings/adults): Global toggle to show/hide category "For Adults" across the app. Applied to Start (rows and search), Library (groups, search, recents/new), and repository flows. Defaults OFF. When disabled, items in the "For Adults" category are filtered out.
+- feat(home/start): Serien/Filme rows now merge "Zuletzt gesehen" on the left and "Neu" on the right. On first app start (no resume marks), rows show only newly added items. "NEU" badge marks only the items coming from the newest set.
+- fix(home/search): StartScreen search rows now use MediaQueryRepository paging, so Kid/Guest allowances and the Adults toggle are respected.
+- feat(theme): Force dark palette globally in Compose (AppTheme always uses DarkFancy; dynamic color disabled; DayNight still at XML but Compose UI renders dark). Ensures identical look on phones and Fire TV regardless of system theme.
+- perf(playback/series): SeriesDetailScreen nutzt jetzt direkte Episode-URLs via XtreamUrlFactory/OBX (Episode.buildPlayUrl). Kein on‑the‑fly XtreamClient‑Init, keine Redirect‑Probes.
+- perf(playback/live): LiveDetailScreen baut Play‑URLs direkt aus XtreamUrlFactory/OBX (toMediaItem). Kein Client‑Init beim Öffnen.
+- perf(redirects): Standardweg entfernt separate HEAD/Range Redirect‑Auflösung; OkHttp/Exo folgen Redirects. `resolveFinalUrl` bleibt optional (Debug).
+- perf/home): StartScreen reduziert Snapshots von 2000 → 600 Items pro Typ; Paging‑Rows bleiben.
+- perf/import/delta): Xtream `importDelta()` chunked (5k‑Seiten) statt `Int.MAX_VALUE`; Orphans werden seitenweise entfernt (keine `*.all()` Vollscans).
+- perf/epg): EpgRepository cached XtreamClient (AtomicReference) statt Neuaufbau je Anfrage.
+- perf/telegram): TelegramTdlibDataSource Poll‑Intervalle erhöht (100/120ms → 300/350ms); empfohlen: Event‑Wakeup über `UpdateFile`.
+- refactor(vod/detail): Redirect‑Auflösung im VOD‑Detail entfernt (reduzierter Netz‑Roundtrip). Resume‑Carousel ebenfalls ohne Redirect‑Probe.
+- feat(settings/m3u): Global toggle to enable/disable M3U/Xtream workers and API. When off, workers skip all network calls and any enqueued Xtream work is cancelled (periodic and one-shots). App start auto-discovery/seed is gated, and related Settings actions (Portal check/Capabilities/EPG test/Import aktualisieren) are disabled. ObjectBox browsing remains fully functional.
+- feat(normalizer): Deterministic bucket normalizer per kind (live/vod/series) to cap provider/group categories to ≤10 buckets. New API `CategoryNormalizer.normalizeBucket(kind, groupTitle, tvgName, url)` maps KönigTV groups into stable buckets (e.g., live: sports/news/documentary/kids/music/international/entertainment/screensaver/movies; vod: netflix/amazon_prime/disney_plus/apple_tv_plus/sky_warner/anime/new/kids/german/other; series: netflix_series/amazon_apple_series/disney_plus_series/sky_warner_series/anime_series/kids_series/german_series/other). Integrated in M3U import and OBX key backfill.
+- feat(indexes): Aggregated indexes persisted during M3U import: `ObxIndexProvider/Year/Genre/Lang/Quality`. Library now reads provider/genre/year groups from these tables (no full DB scans), and Live grouping switches to provider/genre buckets.
+- feat(bootstrap): Strict M3U bootstrap importer with blocking black screen and real-time progress. While bootstrap runs, UI and workers are gated. On completion, counts are stored and normal navigation resumes.
+
+2025-09-18
+- compat(minSdk): Lower minSdk from 24 → 21 to support older Fire TV devices (e.g., Fire TV Stick 2nd gen on Fire OS 5/Android 5.1). Packaging keeps both ABIs (`arm64-v8a`, `armeabi-v7a`) so 32‑bit sticks can install.
+
+2025-09-18
+- feat(share/xtream): Detailscreens für Live/VOD/Serien bieten jetzt „Link teilen“ (nur Xtream). Teilt den direkten Xtream‑Play‑Link per System‑Share (z. B. an VLC/MX Player oder auf Geräte im selben WLAN). Kein Proxy, keine Header – nur nackte URL.
+- feat(library): VOD/Serien zeigen nun Provider‑Gruppen (normalisierte Anbieterlabels wie „Apple TV+“, „Netflix“, „Disney+“, „Amazon Prime“, …). Reihenfolge: 1) Zuletzt gesehen, 2) Neu, 3) 2025–2024 (neu→alt), 4) Anbieter‑Rows. Live behält Anbieter‑Gruppierung bei.
+- fix(normalizer): Entferne Sprach/Region‑Präfixe robuster (z. B. „DE=>“, "DE:", "[DE] ") bei Provider‑Erkennung. Kategorie‑Strings mit gemischten Marken („Amazon & Apple …“) bevorzugen Titel‑Heuristik → stabilere Providerkeys.
+- feat(ui/state): Persist and restore scroll state across screens and rows. All major LazyColumn/LazyRow/LazyVerticalGrid instances now use route-scoped keys so navigation returns to the previous position (Start, Library groups/rows, Details, Settings, Live/VOD/Series).
+- feat(tv/live): DPAD Select toggles a persistent quick‑actions popup (PiP, Subtitle/Audio, Format). While open, DPAD_DOWN focuses the first button; LEFT/RIGHT navigate; Select activates; Back saves CC settings (if open) and closes the popup.
+- perf(compose/lists): Add stable keys to LazyRow/LazyColumn/LazyVerticalGrid across player sheets, Start providers, detail galleries, settings pickers to reduce recompositions and avoid flicker/loading glitches.
+- perf(images/ui): Disable image crossfade in large list rows; keep crossfade enabled on detail/hero screens and small avatar/icon uses to balance smoothness and performance.
+- perf(images/coil): Global ImageLoader tuned — enable hardware bitmaps, set ~25% memory cache and 512 MiB disk cache; AppAsyncImage now supplies pixel size (w×h) to ImageRequest for optimal downsampling/decoding.
+- feat(http/cache): Enable 50 MiB OkHttp disk HTTP cache in HttpClientFactory (under app cache dir). Respects server Cache-Control to reduce redundant network fetches for M3U/Xtream/XMLTV requests.
+- fix(settings/tg): Prevent Compose Start/End imbalance crash when opening the Telegram chat picker (Film Sync) by removing early returns in `ModalBottomSheet` content.
+- feat(settings/tg): Disable “Film Sync”/“Serien Sync” buttons until Telegram is enabled and authenticated; chat picker now handles unauthenticated state inline without composition imbalance.
+- feat(settings/tg): Add “In Telegram öffnen” action to open the QR/login link directly in the Telegram app on the same device (no second device needed to scan).
+- chore(tdlib): Set TdlibParameters.applicationVersion from BuildConfig.VERSION_NAME for accurate version reporting.
+- fix(tg/errors): Surface `TdApi.Error` results from TDLib to the UI via service broadcasts. Prevents silent stalls in WAIT_FOR_NUMBER by showing concrete error messages (e.g., invalid phone format or API key issues).
+- feat(tg/phone): Sanitize phone input (strip spaces/dashes/parentheses; convert leading `00` to `+`) before calling `SetAuthenticationPhoneNumber`.
+- fix(tg/result-forward): Forward function results (incl. `TdApi.Error`) from `sendSetPhoneNumber`/`sendCheckCode`/`sendCheckPassword` to the global update listener. Ensures the service can report TDLib errors to the UI.
+- fix(tg/login): Eliminate Telegram login stall on “Warte auf Antwort…” by queueing IPC commands in `TelegramServiceClient` until the service is bound. Ensures `CMD_START` registers the client before auth commands (phone/code/password) and guarantees auth state broadcasts reach the UI.
+- fix(telegram/tdlib): Auto-load `tdjni` in `Client.java`, send `SetTdlibParameters` and the correct database encryption key from Android Keystore, and react to `AuthorizationStateWaitEncryptionKey` in the service. Unblocks Telegram login flow (QR/Phone).
+- fix(tdlib/build): Generate `TdApi.java` via `td_generate_java_api` so Java bindings exist even when not stored in the upstream repository; fix unclosed "fi" causing "unexpected end of file" in v7a block.
+- chore(wsl/tools): Make `scripts/setup-wsl-build-tools.sh` idempotent (skip CMake download if the expected version is already installed; add `--force` to override).
+- chore(tdlib): Add `scripts/tdlib-rebuild-latest.sh` for a one‑shot rebuild that cleans old artifacts, sets envs, auto‑selects the latest upstream TDLib tag (currently v1.8.0), builds both ABIs, syncs Java bindings, and verifies outputs.
+- chore(tdlib/build): Enhance `scripts/tdlib-build-arm64.sh` to support `--only-arm64`, `--only-v7a`, and `--ref <tag|commit>`; make stripping robust across host OSes; keep Java bindings in sync with the built native. Optional v7a output now built via the same CMake path as arm64.
+- docs(tdlib): Update AGENTS.md to clarify arm64 is primary and v7a builds are optional via the build script; add CLI usage hints.
+- build(compose): Enable Compose Live Literals for debug KotlinCompile tasks via compiler plugin arg. Facilitates project‑wide Live Edit of literals in Android Studio.
+- feat(ui/fish): Add `neutralizeUnderlay` option in FishBackground to draw a flat background under the fish and avoid gradient bleed through transparent pixels. Enabled on major screens.
+- feat(tv/player): D‑Pad/Media keys mapped in internal player. DPAD_LEFT/RIGHT and MEDIA_FF/REW now seek ±10s; PLAY/PAUSE and DPAD_CENTER toggle playback. Controls overlay becomes focusable and requests focus, so slider and buttons are reachable via remote.
+  - feat(player/live overlays): On playback start, a top‑left title banner shows for 4s (title/episode/channel). For Live TV, EPG (Now/Next) appears for 3s with light opacity.
+  - feat(player/live navigation): Live TV channel switching via DPAD/swipe — LEFT/RIGHT switch channel; DOWN re‑shows EPG; UP opens a selectable list.
+    - Context aware: Outside Live Library, navigation uses favorite channels. From the Live Library page, navigation follows the library list; UP opens a global sender list with quick category switching.
+  - fix(library/providers): VOD/Series grouping now uses normalized provider keys consistently (ignores country-only categories like "DE"). Provider labels derive from canonical slugs (e.g., "Apple TV+", "Netflix"). Backfill worker upgraded to correct bad provider keys in existing OBX rows.
+ - fix(tv/focus): Player overlay gains TV focus handling (default focus on center control; slider focusable). Improves accessibility of seek bar with remotes.
+  - feat(home/start): Start screen’s three sections (Serien/Filme/LiveTV) now fill the full space between header and bottom bar. Section titles are centered above each card, 20% larger, in white, sitting directly on the card’s top edge to minimize vertical gaps.
+- fix(tv/settings): Text fields in Settings are read‑only on TV and open explicit edit dialogs instead of popping the on‑screen keyboard on focus. Prevents getting “stuck” when scrolling.
+- perf(settings/input): Debounce writes for M3U/EPG/UA/Referer and Xtream fields (~500–800ms). Avoids heavy discovery/import work on every keystroke ("hungrig" Eingabefeld/Lag).
+- feat(tv/theme): Disable dynamic color on TV to keep colors consistent with the app’s defined palette across devices.
+- feat(tv/ui): Global button focus mask + bounce (focusScaleOnTv) and dark focus overlay. Added wrapper API: TvButton/TvTextButton/TvOutlinedButton/TvIconButton and migrated core screens (Setup/Settings/Details/Backup/Player overlay). New buttons should use Tv* wrappers.
+- feat(gate): ProfileGate focuses “Ich bin Erwachsener” by default so remote OK works immediately; wording fixed.
+- fix(setup/crash): Implement `sanitizeHost(...)` return in `PlaylistSetupScreen`; removes TODO that could crash on valid input.
+
+2025-09-17
+- chore(ui/rows): Tidy `ui/components/rows/HomeRows.kt` – remove duplicate auto-center effect, extract reusable TitleBadge, introduce constants for scales/durations, and trim unused imports. Improves readability/consistency without changing behavior.
+  - fix(build): Correct labeled return in `ReorderableLiveRow` (`return@itemsIndexed`).
+  - fix(ui/scale): Restore multi-tile visibility per row: remove row-level 1.1x scaling, disable per-tile scale where width-scaling is applied, set neighbor scale to 1.0, and revert tile height to the prior base (no extra 1.2x). Only the focused tile grows by +30%.
+  - fix(ui/posters): Use ContentScale.Fit for poster images (MediaCard/VOD/Series tiles) to keep posters 100% visible without cropping; reduce base tile height ~12% to make focus growth stand out.
+- fix(tdlib/java): Add compatibility shim TdApi.AuthorizationStateWaitEncryptionKey to match native libtdjni expectations. Fixes crash in :tdlib process and unblocks Telegram login dialog stuck on “Warte auf Status…”.
+- chore(build/tdlib): Pin TDLib build to a stable upstream tag by default and make the build script auto-fallback to the latest v* tag if the requested ref is missing. Always sync TdApi.java/Client.java from the same upstream checkout to keep Java/JNI aligned.
+
 2025-09-16
+  - fix(player/vod): Increase DefaultHttpDataSource timeouts for VOD/movie URLs (20s connect, 30s read), add keep-alive and identity encoding to avoid initial GET timeouts on panels like KönigTV; Live/Series unaffected.
+  - fix(xtream/vod-ext): PlayUrlHelper now prefers ObjectBox VOD.containerExt (then detail API) when building VOD URLs to avoid hardcoding .mp4. Ensures MKV streams are requested as .mkv and sets the matching MIME (video/x-matroska).
+  - fix(xtream/vod-url): Even when a direct `item.url` is present for VOD, adjust Xtream movie URLs to the known container extension (from OBX/detail) so `.mp4` is not forced if the panel uses `.mkv`.
+ - feat(library/grouping): Library VOD and Series pages group by normalized providers only (no country/genre as main groups). Live grouping unchanged.
+  - feat(library/layout): VOD/Series pages now show top rows: "Zuletzt gesehen" (resume items with progress) and "Neu" (recently imported), followed by normalized provider rows.
+- fix(xtream/mime): Capture `container_extension` from Xtream lists/details, backfill ObjectBox, and have `PlayUrlHelper` fetch/cache missing values so playback requests use the correct MKV/MP4 container instead of blindly forcing `.mp4`.
+- fix(xtream/bootstrap): Run Xtream seeding/refresh only once per credential change and skip quick seeding when ObjectBox already has data, avoiding the 60+ redundant player_api calls observed on app start.
+- chore(xtream/details): Detail worker now refreshes at most 40 VOD / 20 series per run, reuses a single client, waits ~10 min after the delta pass, and requires battery-not-low to keep CPU/RAM/network impact minimal.
+- fix(profiles/kid): Start screen lists now honour kid/guest whitelists so restricted profiles only see allowed content.
+- feat(ui/detail): Surface provider/category/runtime/release metadata plus IMDB/TMDB links on VOD & Series details, including richer chips and per-episode runtime info.
+- fix(playback/internal): Provide explicit mime hints for Xtream streams so Media3 no longer hits `ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED`.
+- fix(ui/library): Wire tile play buttons to direct playback for Live/VOD rows instead of routing to detail screens.
+- fix(xtream/playback): Reuse discovered base paths + live output prefs when building OBX/PlayUrlHelper streams so live/VOD/trailer playback succeeds again.
+- fix(playback/url): Use `Dispatchers.IO` when resolving HEAD/GET redirects so `PlayUrlHelper` compiles and keeps network work off the main dispatcher.
+- fix(live/detail): Guard profile lookups when no active profile is loaded so Live detail/player no longer crashes with `Illegal ID value: -1`.
+- fix(ui/live-picker): Start screen live picker search now queries ObjectBox live rows (not VOD), matching Library results when adding favorites.
+- fix(player/internal): Toast now shows the actual Media3 error code name (no stray `$`) so debugging playback failures is readable.
+- fix(xtream/playback): `XtreamUrlFactory` loads the cached capability alias/basePath before building play URLs, keeping VOD streams on the resolved `/vod|movie|…/` path so the internal player can start.
+- fix(xtream/seed): List slicing now falls back to requests without `category_id` when wildcard and `0` responses are empty; VOD quick seed works on panels that require the default endpoint.
+- fix(xtream/vod): Accept `stream_id` as VOD identifier so portals like KönigTV populate ObjectBox instead of reporting `vod=0` in delta imports.
+- fix(series/playback): Persist Xtream episode IDs and use them when building play URLs; KönigTV episodes no longer fail with HTTP 401.
+- fix(trailer): Normalize Xtream trailer values (YouTube IDs → full URLs) so trailer playback no longer crashes with `MalformedURLException`.
+- fix(playback): Align `PlayUrlHelper` with `XtreamClient.initialize(username, password)`; remove old `user/pass` args.
+- fix(ui/insets): Replace deprecated padding extensions with density-based insets in `HomeChromeScaffold`.
+- fix(ui/composable-scope): Avoid calling composables inside `remember {}` in `SettingsScreen`; compute `OutlinedTextFieldDefaults.colors(...)` directly in composition.
+- fix(ui/state): Move `showLivePicker` declaration before first use and use `rememberUpdatedState` for scope in `StartScreen`.
+- fix(ui/series): Replace reserved `_` variable from `animateFloatAsState` in `SeriesDetailScreen`.
+- fix(paging/crash): Guard `LiveRowPaged` EPG prefetch against empty `LazyPagingItems`; check bounds before `peek()` and `distinctUntilChanged()` the stream IDs.
+- chore(telemetry): ANR watchdog now has 10s warmup + debounce and logs `ANR.Warning` as event (not error) to avoid noisy startup false positives.
+  - fix(telemetry): ANR watchdog false positives caused by tick inc/dec netting to zero. Reworked to a main-thread heartbeat (lastBeatMs) + 60s rate limit.
 - refactor(ui): Deduplicate KidSelectSheet; Live/Series/Vod detail screens now import `ui.components.sheets.KidSelectSheet` instead of local duplicates.
 - fix(xtream/port): Respect explicit port from Base URL/Settings and skip the port resolver when provided. Propagated `portOverride` through `XtreamClient.initialize(...)` and updated all callers to pass the stored port.
 - fix(xtream/category): Use `category_id=0` consistently for list endpoints and discovery probes instead of `*`.
@@ -39,6 +216,16 @@ All notable changes to this project are documented here. Keep entries concise an
 - feat(m3u): Support `content://` and `file://` sources in PlaylistRepository (Reader-based streaming parse + optional url-tvg extraction). HTTP path unchanged; Xtream auto-detect still applies.
 - fix(auth): Ensure Adult profile exists in PIN flow; auto-create Adult profile on first PIN set/entry and select it.
 - feat(xtream): Always prefer Xtream for M3U links without explicit port. Integrate `CapabilityDiscoverer` (with `EndpointPortStore`) into M3U import and app startup to resolve ports quickly; set `XT_PORT_VERIFIED=true` only after successful discovery. If discovery/import fail, fall back to M3U parsing. Fixed port resolver to avoid forcing std (80/443) fallback when probing fails.
+ - fix(epg/compile): Resolve unresolved refs in `EpgRepository` (`get`, `async`, `withPermit`). Switched XMLTV fallback to `XmlTv.currentNext(...)` and added bounded concurrent prefetch with `Semaphore` + `awaitAll`.
+- fix(xtream/categories): Ensure `upsertCategories` receives `Map<String, String>` by coercing nullable `category_name` to empty.
+- fix(telegram/cache): Correct `TelegramCacheCleanupWorker` OBX typing to `BoxStore` for helpers and use `closeThreadResources()` safely after batch updates.
+- chore(work): Add `TelegramSyncWorker` (no-op backfill stub) to satisfy Settings actions and keep manual sync entry points. Real-time indexing remains event-driven in the TDLib service.
+ - chore(xtream/logging): Add detailed diagnostics in `XtreamClient` for HTTP status, content-type, non-JSON bodies (length + head snippet), and category_id fallback. Redact credentials in logged URLs.
+ - chore(warnings):
+   - Replace deprecated `CategoryNormalizer` import with `core.util.CategoryNormalizer` across data/work.
+   - Migrate `suspendCancellableCoroutine` resumes to stable API (no internal/legacy overloads) in `PlayerChooser`.
+   - Use Media3 `@UnstableApi` annotation directly where needed; remove invalid `@OptIn` usages.
+   - Switch remaining GlobalScope collectors in Telegram auth/service to structured `CoroutineScope`.
 
 2025-09-11
 - feat(obx-only): Remove Room from app flows. Telegram metadata, EPG cache, and all M3U/Xtream paths now use ObjectBox exclusively. Added neutral model classes (`model.MediaItem`, `model.Episode`) to replace Room entities in UI.
@@ -383,3 +570,31 @@ Status: zu testen durch Nutzer
 - chore(xtream/delta): Re‑enable periodic Xtream delta import (12h; unmetered+charging) alongside on‑demand trigger. Docs aligned.
  - refactor(resume/obx): Unify resume to ObjectBox. Added `setSeriesResume`/`clearSeriesResume` to `ResumeRepository`; `InternalPlayerScreen` and UI (HomeRows/Library) no longer write/read Room resume marks. Carousel and details already used OBX.
 - feat(player/series-obx): Remove last Room lookups from series playback. `InternalPlayerScreen` accepts series composites (`seriesId`,`season`,`episodeNum`) and uses `ObxEpisode` to resolve next episode and `ResumeRepository` for resume. `SeriesDetailScreen` and resume UI pass composites; navigation route extended with optional series keys. Kept legacy `episodeId` param for backward compatibility.
+- Fix: Restore centralized Coil 3 global ImageLoader via AppImageLoader singleton; resolved Coil 3 API mismatches (no ImageLoaderFactory in v3) and kept tuned disk/memory caches with request-level headers.
+- Fix: XtreamObxRepository serialization – use String.serializer() for ListSerializer to avoid unresolved builtins.serializer issues.
+- DX: Add detailed playback logging (PlayerChooser decisions, ExoPlayer errors) and toast on error to speed up diagnosing playback issues.
+## 2025-09-16
+- UI loading order refined: lists (Live/VOD/Series) load first via OBX seeding; images/metadata follow via delta import. Tiles appear immediately.
+- EPG prefetch limited to Live rows only; removed unnecessary prefetch from VOD/Series rows. EPG remains lazy and loads when Live tiles are visible; Live detail screen still fetches EPG immediately for the opened channel.
+- Playback: VOD play URL builder now respects `containerExt` when reconstructing URLs (better extension fidelity if `MediaItem.url` is absent).
+- Xtream seeding: added log `XtreamObxRepo seedListsQuick live=.. vod=.. series=..` to aid diagnosing empty categories (e.g., VOD).
+- XtreamDeltaImportWorker tuned for speed: 6h periodic (CONNECTED + battery-not-low), expedited one-shots, exponential backoff; triggers favorite EPG prefetch after successful import.
+- Import concurrency: increased detail-fetch parallelism in XtreamObxRepository from 6 → 8 for VOD/Series detail fetches.
+- Safe playback diagnostics: PlayUrlHelper logs non-sensitive URL resolution info (host/port/kind/id/ext) to verify stream parsing and propagation.
+- VOD container extension: capture `container_extension` from Xtream `movie_data` and persist to OBX; builders and player now honor the correct extension.
+- Settings: Added “Import & Diagnose” section showing last import timestamp and seed/delta counts, plus buttons for expedited import and favorites-EPG refresh.
+- Series episodes: Parse episode images from Xtream (movie_image/cover/poster_path/thumbnail/img/still_path), persist in ObjectBox, and show in Series detail list.
+- Trailers: Embedded trailer player added to VOD and Series details. YouTube links render via in-app WebView (embed), others play via a lightweight in-app ExoPlayer box. Both support expanding to a full-screen dialog.
+ - Performance (Start): Reduced paging sizes to show content faster. Start screen now preloads 30 items for Series, VOD, and Live rows (initialLoad=30, pageSize=30, prefetchDistance=10); further items load on scroll. Default sort for Series/VOD switched to newest-first (importedAt desc, fallback yearKey desc) with normalized title tie-breaker.
+- Library grouping: For VOD and Series, grouping focuses on Providers only (Years/Genres sections hidden). Live keeps existing grouping.
+- TDLib: Rebuild script now focuses on minimal size.
+  - Enabled LTO/IPO, MinSizeRel, GC-sections/ICF, and aggressive strip of `libtdjni.so`.
+  - Keeps static BoringSSL but compiles with size flags; no dynamic OpenSSL deps.
+  - Expect a significant APK size reduction (primarily native .so).
+## Unreleased
+- Bootstrap performance: reduce UI overhead while parsing
+  - Replace animated Material3 progress with lightweight bar.
+  - Suppress live progress during bootstrap (single final update).
+  - Increase streaming batch size during bootstrap (8000) to cut event frequency (fallback paths).
+  - HTTP bootstrap path uses Reader-based parse to avoid per-batch UI/logic overhead.
+- Fix deprecations and warnings (Compose progress overload, Button border, FlowPreview opt-ins, Xtream URL DEPRECATION suppression) without changing core flows.

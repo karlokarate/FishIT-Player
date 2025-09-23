@@ -3,6 +3,7 @@ package com.chris.m3usuite.data.repo
 import android.content.Context
 import com.chris.m3usuite.data.obx.ObxProfile
 import com.chris.m3usuite.data.obx.ObxProfilePermissions
+import com.chris.m3usuite.data.obx.ObxProfilePermissions_
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
@@ -20,46 +21,23 @@ data class Permissions(
 )
 
 class PermissionRepository(private val context: Context, private val settings: SettingsStore) {
-    private val box get() = ObxStore.get(context)
+    private val store get() = ObxStore.get(context)
 
     private fun defaultsFor(type: String): Permissions = when (type) {
-        "adult" -> Permissions(
-            canOpenSettings = true,
-            canChangeSources = true,
-            canUseExternalPlayer = true,
-            canEditFavorites = true,
-            canSearch = true,
-            canSeeResume = true,
-            canEditWhitelist = true
-        )
-        "guest" -> Permissions(
-            canOpenSettings = false,
-            canChangeSources = false,
-            canUseExternalPlayer = false,
-            canEditFavorites = false,
-            canSearch = true,
-            canSeeResume = false,
-            canEditWhitelist = false
-        )
-        else -> /* kid */ Permissions(
-            canOpenSettings = false,
-            canChangeSources = false,
-            canUseExternalPlayer = false,
-            canEditFavorites = false,
-            canSearch = true,
-            canSeeResume = true,
-            canEditWhitelist = false
-        )
+        "adult" -> Permissions(true,  true,  true,  true,  true,  true,  true)
+        "guest" -> Permissions(false, false, false, false, true,  false, false)
+        else    -> Permissions(false, false, false, false, true,  true,  false) // kid
     }
 
     suspend fun current(): Permissions = withContext(Dispatchers.IO) {
         val id = settings.currentProfileId.first()
         if (id <= 0) return@withContext defaultsFor("adult")
-        val prof = box.boxFor(ObxProfile::class.java).get(id) ?: return@withContext defaultsFor("adult")
-        val permBox = box.boxFor(ObxProfilePermissions::class.java)
-        val row = permBox.query(com.chris.m3usuite.data.obx.ObxProfilePermissions_.profileId.equal(id)).build().findFirst()
+        val prof = store.boxFor(ObxProfile::class.java).get(id) ?: return@withContext defaultsFor("adult")
+
+        val permBox = store.boxFor(ObxProfilePermissions::class.java)
+        val row = permBox.query(ObxProfilePermissions_.profileId.equal(id)).build().findFirst()
         if (row == null) {
-            // Seed defaults lazily
+            // Lazy-Seed (idempotent)
             val d = defaultsFor(prof.type)
             permBox.put(
                 ObxProfilePermissions(

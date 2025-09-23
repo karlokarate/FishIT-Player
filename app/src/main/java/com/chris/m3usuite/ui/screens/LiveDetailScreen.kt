@@ -1,6 +1,6 @@
 package com.chris.m3usuite.ui.screens
 
-import android.os.Build
+import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,41 +8,30 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,188 +39,239 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-// Room access moved behind feature gate to avoid opening DB in OBX-first paths
-// Room removed
 import com.chris.m3usuite.data.repo.EpgRepository
 import com.chris.m3usuite.data.repo.KidContentRepository
+import com.chris.m3usuite.data.obx.toMediaItem
 import com.chris.m3usuite.player.InternalPlayerScreen
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import com.chris.m3usuite.ui.components.sheets.KidSelectSheet
+import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
-import com.chris.m3usuite.ui.skin.tvClickable
-import com.chris.m3usuite.ui.util.buildImageRequest
-import com.chris.m3usuite.ui.util.rememberAvatarModel
-import com.chris.m3usuite.ui.util.rememberImageHeaders
+import io.objectbox.android.AndroidScheduler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import io.objectbox.android.AndroidScheduler
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-@androidx.annotation.OptIn(UnstableApi::class)
-@OptIn(ExperimentalMaterial3Api::class)
+// Zentralisierte ID-Dekodierung (OBX-Stream-ID aus Long extrahieren)
+private fun decodeObxLiveId(v: Long): Int? =
+    if (v in 1_000_000_000_000L..1_999_999_999_999L) (v - 1_000_000_000_000L).toInt() else null
+
+@androidx.media3.common.util.UnstableApi
 @Composable
-fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
+fun LiveDetailScreen(
+    id: Long,
+    onLogo: (() -> Unit)? = null,
+    onGlobalSearch: (() -> Unit)? = null
+) {
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
-    // Room removed; OBX-only path
-    val headersImg = rememberImageHeaders()
     val scope = rememberCoroutineScope()
-    val kidRepo = remember { KidContentRepository(ctx) }
-    val haptics = LocalHapticFeedback.current
-    val hapticsEnabled by store.hapticsEnabled.collectAsStateWithLifecycle(initialValue = false)
 
+    // --- UI / Haptics ---
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val hapticsEnabled by store.hapticsEnabled.collectAsStateWithLifecycle(initialValue = false)
+    val hapticsEnabledState by rememberUpdatedState(newValue = hapticsEnabled)
+
+    // --- Channel/Stream UI State ---
     var title by remember { mutableStateOf("") }
     var logo by remember { mutableStateOf<String?>(null) }
     var url by remember { mutableStateOf<String?>(null) }
 
-    // EPG-Infos
+    // --- EPG UI State ---
     var epgNow by remember { mutableStateOf("") }
     var epgNext by remember { mutableStateOf("") }
     var nowStartMs by remember { mutableStateOf<Long?>(null) }
     var nowEndMs by remember { mutableStateOf<Long?>(null) }
-    var showEpg by rememberSaveable { mutableStateOf(false) } // Overlay behält Zustand bei Rotation
+    var showEpg by rememberSaveable(id) { mutableStateOf(false) }
+    var providerLabel by remember { mutableStateOf<String?>(null) }
+    var categoryName by remember { mutableStateOf<String?>(null) }
+    var hasArchive by remember { mutableStateOf<Boolean>(false) }
 
-    // --- Interner Player Zustand (Fullscreen) ---
-    var showInternal by rememberSaveable { mutableStateOf(false) }
-    var internalUrl by rememberSaveable { mutableStateOf<String?>(null) }
-    var internalStartMs by rememberSaveable { mutableStateOf<Long?>(null) }
-    // Persist UA/Referer to reconstruct headers on rotation
-    var internalUa by rememberSaveable { mutableStateOf("") }
-    var internalRef by rememberSaveable { mutableStateOf("") }
+    // --- Internal Player State ---
+    var showInternal by rememberSaveable(id) { mutableStateOf(false) }
+    var internalUrl by rememberSaveable(id) { mutableStateOf<String?>(null) }
+    var internalStartMs by rememberSaveable(id) { mutableStateOf<Long?>(null) }
+    // Persist headers and mime for rotation
+    var internalUa by rememberSaveable(id) { mutableStateOf("") }
+    var internalRef by rememberSaveable(id) { mutableStateOf("") }
+    var internalMime by rememberSaveable(id) { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(id) {
-        // Support OBX-encoded IDs and legacy Room IDs
-        fun decodeObxLiveId(v: Long): Int? = if (v >= 1_000_000_000_000L && v < 2_000_000_000_000L) (v - 1_000_000_000_000L).toInt() else null
-        val obxSid = decodeObxLiveId(id)
-        val sid: Int?
-        if (obxSid != null) {
-            sid = obxSid
-            val box = com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
-            val row = box.query(com.chris.m3usuite.data.obx.ObxLive_.streamId.equal(sid.toLong())).build().findFirst()
-            title = row?.name.orEmpty()
-            logo = row?.logo
-            // Build play URL via Xtream client
-            val scheme = if (store.xtPort.first() == 443) "https" else "http"
-            val http = com.chris.m3usuite.core.http.HttpClientFactory.create(ctx, store)
-            val client = com.chris.m3usuite.core.xtream.XtreamClient(http)
-            val caps = com.chris.m3usuite.core.xtream.ProviderCapabilityStore(ctx)
-            val ports = com.chris.m3usuite.core.xtream.EndpointPortStore(ctx)
-            client.initialize(
-                scheme = scheme,
-                host = store.xtHost.first(),
-                username = store.xtUser.first(),
-                password = store.xtPass.first(),
-                basePath = null,
-                store = caps,
-                portStore = ports,
-                portOverride = store.xtPort.first()
-            )
-            url = client.buildLivePlayUrl(sid)
-        } else {
-            // No Room fallback; abort gracefully
-            sid = null
+    // --- Profile / Adult Gate ---
+    val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
+    var isAdult by remember { mutableStateOf(true) }
+    LaunchedEffect(profileId) {
+        if (profileId <= 0) {
+            isAdult = true
+            return@LaunchedEffect
         }
-
-        if (sid != null) {
-            val list = runCatching { EpgRepository(ctx, store).nowNext(sid, 2) }.getOrDefault(emptyList())
-            epgNow = list.getOrNull(0)?.title.orEmpty()
-            epgNext = list.getOrNull(1)?.title.orEmpty()
-            nowStartMs = list.getOrNull(0)?.start?.toLongOrNull()?.let { it * 1000 }
-            nowEndMs = list.getOrNull(0)?.end?.toLongOrNull()?.let { it * 1000 }
-        } else { epgNow = ""; epgNext = ""; nowStartMs = null; nowEndMs = null }
+        isAdult = withContext(Dispatchers.IO) {
+            val p = com.chris.m3usuite.data.obx.ObxStore
+                .get(ctx)
+                .boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java)
+                .get(profileId)
+            p?.type != "kid"
+        }
     }
 
-    // Direct ObjectBox EPG read (fast path) with light polling for updates
-    DisposableEffect(id) {
-        fun decodeObxLiveId(v: Long): Int? = if (v >= 1_000_000_000_000L && v < 2_000_000_000_000L) (v - 1_000_000_000_000L).toInt() else null
-        val obxSid = decodeObxLiveId(id)
-        val ch: String? = null
-        val sid = obxSid
-        val box = com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxEpgNowNext::class.java)
-        val query = when {
-            !ch.isNullOrEmpty() -> box.query(com.chris.m3usuite.data.obx.ObxEpgNowNext_.channelId.equal(ch)).build()
-            sid != null -> box.query(com.chris.m3usuite.data.obx.ObxEpgNowNext_.streamId.equal(sid.toLong())).build()
-            else -> null
-        }
-        if (query == null) return@DisposableEffect onDispose { }
-        // initial state
-        query.findFirst()?.let { row ->
-            epgNow = row.nowTitle.orEmpty()
-            epgNext = row.nextTitle.orEmpty()
-            nowStartMs = row.nowStartMs
-            nowEndMs = row.nowEndMs
-        }
-        val sub = query.subscribe().on(AndroidScheduler.mainThread()).observer { results ->
-            val row = results.firstOrNull()
-            if (row != null) {
-                epgNow = row.nowTitle.orEmpty()
-                epgNext = row.nextTitle.orEmpty()
-                nowStartMs = row.nowStartMs
-                nowEndMs = row.nowEndMs
-            }
-        }
-        onDispose { sub.cancel() }
-    }
+    // --- Kid Repo (Whitelist) ---
+    val kidRepo = remember { KidContentRepository(ctx) }
+    var showGrantSheet by rememberSaveable { mutableStateOf(false) }
+    var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
 
-    // Header für den VIDEO-Request (nicht für Bilder)
+    // --- Helpers ---
+
     suspend fun buildStreamHeaders(): Map<String, String> =
         com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
 
-    // Playerwahl + Start
     suspend fun chooseAndPlay() {
         val playUrl = url ?: return
-        // Gate: deny if profile not allowed
         val allowed = withContext(Dispatchers.IO) {
-            val prof = com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(store.currentProfileId.first())
-            if (prof?.type == "adult") true else com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store).isAllowed("live", id)
+            if (profileId <= 0) return@withContext true
+            val prof = com.chris.m3usuite.data.obx.ObxStore
+                .get(ctx)
+                .boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java)
+                .get(profileId)
+            if (prof?.type == "adult" || prof == null) true
+            else com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store).isAllowed("live", id)
         }
         if (!allowed) {
-            android.widget.Toast.makeText(ctx, "Nicht freigegeben", android.widget.Toast.LENGTH_SHORT).show()
+            Toast
+                .makeText(ctx, "Nicht freigegeben", Toast.LENGTH_SHORT)
+                .show()
             return
         }
         val hdrs = buildStreamHeaders()
+        val mimeGuess = com.chris.m3usuite.core.playback.PlayUrlHelper.guessMimeType(playUrl, null)
         PlayerChooser.start(
             context = ctx,
             store = store,
             url = playUrl,
             headers = hdrs,
             startPositionMs = null, // Live hat kein Resume
-            buildInternal = { startMs ->
+            mimeType = mimeGuess,
+            buildInternal = { startMs, resolvedMime ->
                 internalUrl = playUrl
                 internalStartMs = startMs
                 internalUa = hdrs["User-Agent"].orEmpty()
                 internalRef = hdrs["Referer"].orEmpty()
+                internalMime = resolvedMime
                 showInternal = true
             }
         )
     }
 
-    // --- Wenn interner Player aktiv ist, zeigen wir ihn fullscreen und sonst nichts ---
+    // --- Initiales Laden: Title/Logo/URL + erstes EPG ---
+    LaunchedEffect(id) {
+        val sid = decodeObxLiveId(id)
+        if (sid == null) {
+            title = ""; logo = null; url = null
+            epgNow = ""; epgNext = ""; nowStartMs = null; nowEndMs = null
+            return@LaunchedEffect
+        }
+
+        withContext(Dispatchers.IO) {
+            // OBX-Live-Row lesen
+            val liveBox = com.chris.m3usuite.data.obx.ObxStore
+                .get(ctx)
+                .boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
+            val row = liveBox.query(
+                com.chris.m3usuite.data.obx.ObxLive_.streamId.equal(sid.toLong())
+            ).build().findFirst()
+            // Resolve provider + category labels (best-effort)
+            providerLabel = runCatching {
+                com.chris.m3usuite.core.xtream.ProviderLabelStore.get(ctx).labelFor(row?.providerKey)
+            }.getOrNull()
+            categoryName = runCatching {
+                row?.categoryId?.let { cid ->
+                    com.chris.m3usuite.data.obx.ObxStore.get(ctx)
+                        .boxFor(com.chris.m3usuite.data.obx.ObxCategory::class.java)
+                        .query(com.chris.m3usuite.data.obx.ObxCategory_.kind.equal("live").and(com.chris.m3usuite.data.obx.ObxCategory_.categoryId.equal(cid)))
+                        .build().findFirst()?.categoryName
+                }
+            }.getOrNull()
+            hasArchive = (row?.tvArchive ?: 0) > 0
+            internalMime = null
+
+            // Play-URL direkt aus XtreamUrlFactory/OBX ableiten (kein Client-Init)
+            val playUrl: String? = runCatching {
+                row?.let { it.toMediaItem(ctx).url }
+            }.getOrNull()
+
+            // Erstes Now/Next aus REST
+            val nowNext = runCatching {
+                EpgRepository(ctx, store).nowNext(sid, 2)
+            }.getOrElse { emptyList() }
+
+            // Auf UI-State mappen (Main Thread)
+            withContext(Dispatchers.Main) {
+                title = row?.name.orEmpty()
+                logo = row?.logo
+                url = playUrl
+
+                val now = nowNext.getOrNull(0)
+                val nxt = nowNext.getOrNull(1)
+                epgNow = now?.title.orEmpty()
+                epgNext = nxt?.title.orEmpty()
+                nowStartMs = now?.start?.toLongOrNull()?.let { it * 1000 }
+                nowEndMs = now?.end?.toLongOrNull()?.let { it * 1000 }
+            }
+        }
+    }
+
+    // --- Direkter OBX-EPG-Read mit Live-Subscription ---
+    DisposableEffect(id) {
+        val sid = decodeObxLiveId(id)
+        if (sid == null) return@DisposableEffect onDispose { }
+
+        val box = com.chris.m3usuite.data.obx.ObxStore
+            .get(ctx)
+            .boxFor(com.chris.m3usuite.data.obx.ObxEpgNowNext::class.java)
+
+        val query = box.query(
+            com.chris.m3usuite.data.obx.ObxEpgNowNext_.streamId.equal(sid.toLong())
+        ).build()
+
+        // initial
+        query.findFirst()?.let { row ->
+            epgNow = row.nowTitle.orEmpty()
+            epgNext = row.nextTitle.orEmpty()
+            nowStartMs = row.nowStartMs
+            nowEndMs = row.nowEndMs
+        }
+
+        val sub = query.subscribe()
+            .on(io.objectbox.android.AndroidScheduler.mainThread())
+            .observer { results ->
+                val row = results.firstOrNull() ?: return@observer
+                epgNow = row.nowTitle.orEmpty()
+                epgNext = row.nextTitle.orEmpty()
+                nowStartMs = row.nowStartMs
+                nowEndMs = row.nowEndMs
+            }
+
+        onDispose { sub.cancel() }
+    }
+
+    // --- Interner Player Fullscreen ---
     if (showInternal) {
-        // Nutzt euren vorhandenen InternalPlayerScreen aus dem Projekt.
         val hdrs = buildMap<String, String> {
             if (internalUa.isNotBlank()) put("User-Agent", internalUa)
             if (internalRef.isNotBlank()) put("Referer", internalRef)
@@ -239,156 +279,255 @@ fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
         InternalPlayerScreen(
             url = internalUrl.orEmpty(),
             type = "live",
+            mediaId = id,
             startPositionMs = internalStartMs,
             headers = hdrs,
-            onExit = {
-                showInternal = false
-            }
+            onExit = { showInternal = false },
+            originLiveLibrary = true,
+            liveCategoryHint = categoryName
         )
         return
     }
 
-    // Adult check
-    val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
-    var isAdult by remember { mutableStateOf(true) }
-    LaunchedEffect(profileId) {
-        val p = withContext(Dispatchers.IO) { com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(profileId) }
-        isAdult = p?.type != "kid"
-    }
-
-    var showGrantSheet by rememberSaveable { mutableStateOf(false) }
-    var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
-
-    // Local KidSelectSheet removed; using shared component via import
-
-    // --- Normale Live-Detail-Ansicht ---
-    val snackHost = remember { SnackbarHostState() }
-    val listState = rememberLazyListState()
+    // --- UI: Scaffold + Inhalt ---
+    val listState = com.chris.m3usuite.ui.state.rememberRouteListState("liveDetail:${id}")
     HomeChromeScaffold(
         title = "Live",
         onSettings = null,
-        onSearch = null,
+        onSearch = onGlobalSearch,
         onProfiles = null,
-        onRefresh = null,
         listState = listState,
         onLogo = onLogo,
         bottomBar = {}
     ) { pads ->
-    Box(Modifier.fillMaxSize().padding(pads)) {
-        val Accent = if (isAdult) com.chris.m3usuite.ui.theme.DesignTokens.Accent else com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
-        androidx.compose.foundation.layout.Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to MaterialTheme.colorScheme.background, 1f to MaterialTheme.colorScheme.surface)))
-        androidx.compose.foundation.layout.Box(Modifier.matchParentSize().background(Brush.radialGradient(colors = listOf(Accent.copy(alpha = if (isAdult) 0.12f else 0.20f), Color.Transparent), radius = with(LocalDensity.current) { 640.dp.toPx() })))
-        run {
-            val rot = rememberInfiniteTransition(label = "fishRot").animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(animation = tween(5000, easing = LinearEasing)),
-                label = "deg"
+
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(pads)
+        ) {
+            val Accent = if (isAdult)
+                com.chris.m3usuite.ui.theme.DesignTokens.Accent
+            else
+                com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
+
+            // Hintergrund: Verlauf + Fish
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to MaterialTheme.colorScheme.background,
+                            1f to MaterialTheme.colorScheme.surface
+                        )
+                    )
+            )
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                Accent.copy(alpha = if (isAdult) 0.12f else 0.20f),
+                                Color.Transparent
+                            ),
+                            radius = with(LocalDensity.current) { 640.dp.toPx() }
+                        )
+                    )
             )
             com.chris.m3usuite.ui.fx.FishBackground(
                 modifier = Modifier.align(Alignment.Center).size(520.dp),
-                alpha = 0.05f
+                alpha = 0.05f,
+                neutralizeUnderlay = true
             )
-        }
-    com.chris.m3usuite.ui.common.AccentCard(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        accent = Accent
-    ) {
-        Column(Modifier.animateContentSize()) {
-        Text(title, style = MaterialTheme.typography.titleLarge)
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Accent.copy(alpha = 0.35f))
 
-        // LOGO: 1. Klick -> EPG-Overlay anzeigen, 2. Klick (wenn offen) -> Playerwahl/Abspielen
-        com.chris.m3usuite.ui.util.AppAsyncImage(
-            url = logo,
-            contentDescription = null,
-            contentScale = ContentScale.Fit, // Logos nicht beschneiden
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .size(140.dp)
-                .clip(CircleShape)
-                .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
-                .semantics { role = Role.Button }
-                .clickable(enabled = url != null) {
-                    if (showEpg) {
-                        showEpg = false
-                        scope.launch { chooseAndPlay() }
-                    } else {
-                        showEpg = true
-                    }
-                }
-        )
-
-        Spacer(Modifier.height(6.dp))
-        // Sendername unter dem runden Sender-Icon
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(horizontal = 12.dp)
-        )
-
-        Spacer(Modifier.height(8.dp))
-        if (epgNow.isNotBlank() || epgNext.isNotBlank()) {
-            Box(
+            // Karte mit Inhalt
+            com.chris.m3usuite.ui.common.AccentCard(
                 modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.70f))
-                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), CircleShape)
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .fillMaxSize()
+                    .padding(16.dp),
+                accent = Accent
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    if (epgNow.isNotBlank()) {
-                        val meta = if (nowStartMs != null && nowEndMs != null && nowEndMs!! > nowStartMs!!) {
-                            val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                            val range = fmt.format(java.util.Date(nowStartMs!!)) + "–" + fmt.format(java.util.Date(nowEndMs!!))
-                            val rem = ((nowEndMs!! - System.currentTimeMillis()).coerceAtLeast(0L) / 60000L).toInt()
-                            " $range • noch ${rem}m"
-                        } else ""
-                        Text(
-                            text = "Jetzt: $epgNow$meta",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = Color.White,
-                            maxLines = 1,
-                        )
+                Column(Modifier.animateContentSize()) {
+                    Text(title, style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        providerLabel?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary) }
+                        categoryName?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary) }
+                        if (hasArchive) Text("Archiv", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
                     }
-                    if (epgNext.isNotBlank()) {
-                        Text(
-                            text = "Danach: $epgNext",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = Accent.copy(alpha = 0.35f)
+                    )
+
+                    // Logo → 1. Klick: EPG, 2. Klick: Play
+                    com.chris.m3usuite.ui.util.AppAsyncImage(
+                        url = logo,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        crossfade = true,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .size(140.dp)
+                            .clip(CircleShape)
+                            .border(
+                                2.dp,
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                                CircleShape
+                            )
+                            .semantics { role = Role.Button }
+                            .clickable(enabled = url != null) {
+                                if (showEpg) {
+                                    showEpg = false
+                                    scope.launch {
+                                        if (hapticsEnabledState) {
+                                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        }
+                                        chooseAndPlay()
+                                    }
+                                } else {
+                                    showEpg = true
+                                }
+                            }
+                    )
+
+                    Spacer(Modifier.size(6.dp))
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(horizontal = 12.dp)
+                    )
+
+                    // EPG-Badge
+                    Spacer(Modifier.size(8.dp))
+                    val fmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+                    if (epgNow.isNotBlank() || epgNext.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.70f))
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                    CircleShape
+                                )
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                if (epgNow.isNotBlank()) {
+                                    val meta = if (
+                                        nowStartMs != null &&
+                                        nowEndMs != null &&
+                                        nowEndMs!! > nowStartMs!!
+                                    ) {
+                                        val range = fmt.format(Date(nowStartMs!!)) +
+                                                "–" + fmt.format(Date(nowEndMs!!))
+                                        val rem = ((nowEndMs!! - System.currentTimeMillis())
+                                            .coerceAtLeast(0L) / 60000L).toInt()
+                                        " $range • noch ${rem}m"
+                                    } else ""
+                                    Text(
+                                        text = "Jetzt: $epgNow$meta",
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.SemiBold
+                                        ),
+                                        color = Color.White,
+                                        maxLines = 1
+                                    )
+                                }
+                                if (epgNext.isNotBlank()) {
+                                    Text(
+                                        text = "Danach: $epgNext",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = Color.White,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Play + Kid-Actions
+                    Spacer(Modifier.size(12.dp))
+                    val playEnabled by remember(url) { derivedStateOf { url != null } }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        com.chris.m3usuite.ui.common.TvButton(
+                            onClick = {
+                                scope.launch {
+                                    if (hapticsEnabledState) {
+                                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    }
+                                    chooseAndPlay()
+                                }
+                            },
+                            enabled = playEnabled,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Accent,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Abspielen")
+                        }
+
+                        // Direktlink teilen (Xtream)
+                        TextButton(
+                            modifier = Modifier.focusScaleOnTv(),
+                            onClick = {
+                                val link = url
+                                if (link.isNullOrBlank()) {
+                                    Toast.makeText(ctx, "Kein Link verfügbar", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(android.content.Intent.EXTRA_SUBJECT, title.ifBlank { "Live-Link" })
+                                        putExtra(android.content.Intent.EXTRA_TEXT, link)
+                                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    ctx.startActivity(android.content.Intent.createChooser(send, "Direktlink teilen"))
+                                }
+                            },
+                            enabled = playEnabled,
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = Accent
+                            )
+                        ) { Text("Link teilen") }
+
+                        if (isAdult) {
+                            com.chris.m3usuite.ui.common.AppIconButton(
+                                icon = com.chris.m3usuite.ui.common.AppIcon.AddKid,
+                                variant = com.chris.m3usuite.ui.common.IconVariant.Solid,
+                                contentDescription = "Für Kinder freigeben",
+                                onClick = { showGrantSheet = true }
+                            )
+                            com.chris.m3usuite.ui.common.AppIconButton(
+                                icon = com.chris.m3usuite.ui.common.AppIcon.RemoveKid,
+                                variant = com.chris.m3usuite.ui.common.IconVariant.Solid,
+                                contentDescription = "Aus Kinderprofil entfernen",
+                                onClick = { showRevokeSheet = true }
+                            )
+                        }
                     }
                 }
             }
-        }
-        Spacer(Modifier.height(12.dp))
-
-        // Direkter Play-Button -> Playerwahl (intern/extern/fragen)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(
-                modifier = Modifier.focusScaleOnTv(),
-                onClick = { scope.launch { if (hapticsEnabled) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); chooseAndPlay() } },
-                enabled = url != null,
-                colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)
-            ) {
-                Text("Abspielen")
-            }
-            if (isAdult) {
-                com.chris.m3usuite.ui.common.AppIconButton(icon = com.chris.m3usuite.ui.common.AppIcon.AddKid, variant = com.chris.m3usuite.ui.common.IconVariant.Solid, contentDescription = "Für Kinder freigeben", onClick = { showGrantSheet = true })
-                com.chris.m3usuite.ui.common.AppIconButton(icon = com.chris.m3usuite.ui.common.AppIcon.RemoveKid, variant = com.chris.m3usuite.ui.common.IconVariant.Solid, contentDescription = "Aus Kinderprofil entfernen", onClick = { showRevokeSheet = true })
-            }
-        }
         }
     }
 
-    // --- EPG Overlay (Dialog) ---
+    // --- EPG Overlay ---
     if (showEpg) {
+        val Accent = if (isAdult)
+            com.chris.m3usuite.ui.theme.DesignTokens.Accent
+        else
+            com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
+
         AlertDialog(
             onDismissRequest = { showEpg = false },
             title = { Text("EPG") },
@@ -396,13 +535,13 @@ fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
                 Column {
                     if (epgNow.isNotBlank()) Text("Jetzt:  $epgNow")
                     if (epgNext.isNotBlank()) {
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.size(6.dp))
                         Text("Danach: $epgNext")
                     }
                     if (epgNow.isBlank() && epgNext.isBlank()) {
                         Text("Keine EPG-Daten verfügbar.")
                     }
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.size(10.dp))
                     Text(
                         "Tipp: Nochmal auf das Sender-Logo tippen startet den Stream.",
                         style = MaterialTheme.typography.bodySmall
@@ -414,27 +553,66 @@ fun LiveDetailScreen(id: Long, onLogo: (() -> Unit)? = null) {
                     modifier = Modifier.focusScaleOnTv(),
                     onClick = {
                         showEpg = false
-                        scope.launch { chooseAndPlay() }
+                        scope.launch {
+                            if (hapticsEnabledState) {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
+                            chooseAndPlay()
+                        }
                     },
                     enabled = url != null,
-                    colors = ButtonDefaults.textButtonColors(contentColor = Accent)
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Accent
+                    )
                 ) { Text("Jetzt abspielen") }
             },
             dismissButton = {
-                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showEpg = false }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("Schließen") }
+                TextButton(
+                    modifier = Modifier.focusScaleOnTv(),
+                    onClick = { showEpg = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Accent
+                    )
+                ) { Text("Schließen") }
             }
         )
     }
 
-    if (showGrantSheet) KidSelectSheet(onConfirm = { kidIds ->
-        scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.allowBulk(it, "live", listOf(id)) } }
-        scope.launch { snackHost.showSnackbar("Sender freigegeben für ${kidIds.size} Kinder") }
-        showGrantSheet = false
-    }, onDismiss = { showGrantSheet = false })
-    if (showRevokeSheet) KidSelectSheet(onConfirm = { kidIds ->
-        scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.disallowBulk(it, "live", listOf(id)) } }
-        scope.launch { snackHost.showSnackbar("Sender aus ${kidIds.size} Kinderprofil(en) entfernt") }
-        showRevokeSheet = false
-    }, onDismiss = { showRevokeSheet = false })
-}}
+    // --- Kid Whitelist Sheets (mit Toasts) ---
+    if (showGrantSheet) {
+        KidSelectSheet(
+            onConfirm = { kidIds ->
+                scope.launch {
+                    withContext(Dispatchers.IO) {
+                        kidIds.forEach { kidRepo.allowBulk(it, "live", listOf(id)) }
+                    }
+                    Toast.makeText(
+                        ctx,
+                        "Sender freigegeben für ${kidIds.size} Kinder",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                showGrantSheet = false
+            },
+            onDismiss = { showGrantSheet = false }
+        )
+    }
+    if (showRevokeSheet) {
+        KidSelectSheet(
+            onConfirm = { kidIds ->
+                scope.launch {
+                    withContext(Dispatchers.IO) {
+                        kidIds.forEach { kidRepo.disallowBulk(it, "live", listOf(id)) }
+                    }
+                    Toast.makeText(
+                        ctx,
+                        "Sender aus ${kidIds.size} Kinderprofil(en) entfernt",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                showRevokeSheet = false
+            },
+            onDismiss = { showRevokeSheet = false }
+        )
+    }
 }

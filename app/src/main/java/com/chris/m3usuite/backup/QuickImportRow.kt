@@ -2,9 +2,12 @@ package com.chris.m3usuite.backup
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import com.chris.m3usuite.ui.common.TvButton
+import com.chris.m3usuite.ui.common.TvOutlinedButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import androidx.compose.ui.platform.LocalContext
 import com.chris.m3usuite.drive.DriveClient
 import com.chris.m3usuite.drive.DriveDefaults
@@ -23,7 +26,7 @@ fun QuickImportRow() {
             Text("Schnell-Import", style = MaterialTheme.typography.titleMedium)
             if (running) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(enabled = !running, onClick = {
+                TvButton(enabled = !running, onClick = {
                     scope.launch {
                         runCatching {
                             running = true; info = "Suche in Drive…"
@@ -37,10 +40,9 @@ fun QuickImportRow() {
                         running = false
                     }
                 }) { Text("Von Drive importieren") }
-                OutlinedButton(enabled = !running, onClick = { info = "Drive-Import erfordert Anmeldung unter Einstellungen" }) { Text("Hinweis") }
+                TvOutlinedButton(enabled = !running, onClick = { info = "Drive-Import erfordert Anmeldung unter Einstellungen" }) { Text("Hinweis") }
             }
             if (info.isNotBlank()) Text(info, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
-

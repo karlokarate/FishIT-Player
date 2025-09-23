@@ -7,7 +7,7 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 
 /**
- * Speichert pro Route/Key die Scrollposition – damit Rotation nicht nach oben springt.
+ * Speichert pro Route/Key die Scrollposition – damit Rotation/Navigation nicht nach oben springt.
  */
 private val listSaver: Saver<LazyListState, Pair<Int, Int>> =
     Saver(

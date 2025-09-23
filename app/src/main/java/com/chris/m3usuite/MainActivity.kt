@@ -8,6 +8,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,15 +46,12 @@ import com.chris.m3usuite.work.SchedulingGateway
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import android.app.Activity
-import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
 
-    @OptIn(UnstableApi::class)
+    @UnstableApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -94,6 +93,7 @@ class MainActivity : ComponentActivity() {
                 val xtHost by store.xtHost.collectAsStateWithLifecycle(initialValue = "")
                 val xtUser by store.xtUser.collectAsStateWithLifecycle(initialValue = "")
                 val xtPass by store.xtPass.collectAsStateWithLifecycle(initialValue = "")
+                val xtPort by store.xtPort.collectAsStateWithLifecycle(initialValue = 0)
                 // Keep HTTP header snapshot updated globally for OkHttp/Coil, lifecycle-aware
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -106,6 +106,7 @@ class MainActivity : ComponentActivity() {
 
                 // DataStore-Flow beobachten
                 val m3uUrl = store.m3uUrl.collectAsStateWithLifecycle(initialValue = "").value
+                val apiEnabled = store.m3uWorkersEnabled.collectAsStateWithLifecycle(initialValue = true).value
 
                 // Startziel: auch ohne M3U kann die App starten (Einstellungen später setzen)
                 val startDestination = "gate"
@@ -117,7 +118,7 @@ class MainActivity : ComponentActivity() {
                 // Wenn M3U vorhanden aber Xtream noch nicht konfiguriert (z. B. nach App-Reinstall via Backup):
                 // automatisch aus der M3U ableiten und direkt die Worker planen.
                 LaunchedEffect(m3uUrl) {
-                    if (m3uUrl.isNotBlank()) {
+                    if (m3uUrl.isNotBlank() && apiEnabled) {
                         if (!store.hasXtream()) {
                             runCatching {
                                 val cfg = com.chris.m3usuite.core.xtream.XtreamConfig.fromM3uUrl(m3uUrl)
@@ -162,51 +163,21 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
-                        SchedulingGateway.scheduleAll(this@MainActivity)
-                        // Sofortigen Refresh als OneTime-Work einreihen
-                        SchedulingGateway.triggerXtreamRefreshNow(this@MainActivity)
-                        // Zusätzlich: Sofortiges Seeding der Listen (schnell, ohne Details) für direkte UI-Sichtbarkeit
-                        runCatching {
-                            withContext(Dispatchers.IO) {
-                                com.chris.m3usuite.data.repo.XtreamObxRepository(this@MainActivity, store)
-                                    .seedListsQuick(limitPerKind = 200, forceRefreshDiscovery = true)
-                            }
-                        }
-                        // Immediate once
-                        runCatching {
-                            val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                            SchedulingGateway.refreshFavoritesEpgNow(this@MainActivity, aggressive = aggressive)
-                        }
                     }
                 }
 
-                // Xtream-only onboarding (no M3U required): if creds already present, kick Discovery→Fetch immediately
-                LaunchedEffect(Unit) {
-                    val hasXt = withContext(Dispatchers.IO) { store.hasXtream() }
-                    if (hasXt) {
-                        SchedulingGateway.scheduleAll(this@MainActivity)
-                        SchedulingGateway.triggerXtreamRefreshNow(this@MainActivity)
-                        runCatching {
-                            withContext(Dispatchers.IO) {
-                                com.chris.m3usuite.data.repo.XtreamObxRepository(this@MainActivity, store)
-                                    .seedListsQuick(limitPerKind = 200, forceRefreshDiscovery = true)
-                            }
-                        }
+                LaunchedEffect(xtHost, xtUser, xtPass, xtPort) {
+                    if (xtHost.isBlank() || xtUser.isBlank() || xtPass.isBlank()) return@LaunchedEffect
+                    if (!apiEnabled) return@LaunchedEffect
+                    // Start background import so index builds even if the UI recomposes or route changes.
+                    // Immediately ensure full header lists (heads-only delta) for VOD/Series at app start; skip Live to stay light.
+                    withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        runCatching { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store).importDelta(deleteOrphans = false, includeLive = false) }
                     }
-                }
-
-                // Also run onboarding hook whenever Xtream creds get populated later
-                LaunchedEffect(xtHost, xtUser, xtPass) {
-                    if (xtHost.isNotBlank() && xtUser.isNotBlank() && xtPass.isNotBlank()) {
-                        SchedulingGateway.scheduleAll(this@MainActivity)
-                        SchedulingGateway.triggerXtreamRefreshNow(this@MainActivity)
-                        runCatching {
-                            withContext(Dispatchers.IO) {
-                                com.chris.m3usuite.data.repo.XtreamObxRepository(this@MainActivity, store)
-                                    .seedListsQuick(limitPerKind = 200, forceRefreshDiscovery = true)
-                            }
-                        }
-                    }
+                    // Also schedule a background one-shot (heads-only again if needed; Live remains off here)
+                    com.chris.m3usuite.work.XtreamDeltaImportWorker.triggerOnce(ctx, includeLive = false, vodLimit = 0, seriesLimit = 0)
+                    // Schedule Live heads-only to come in later (delayed), so startup stays light
+                    com.chris.m3usuite.work.XtreamDeltaImportWorker.triggerOnceDelayedLive(ctx, delayMinutes = 5)
                 }
 
                 // EPG periodic refresh removed; lazy on-demand prefetch keeps visible/favorites fresh
@@ -215,7 +186,7 @@ class MainActivity : ComponentActivity() {
                     composable("setup") {
                         PlaylistSetupScreen(
                             onDone = {
-                                nav.navigate("library") {
+                                nav.navigate("library?q=&qs=") {
                                     popUpTo("setup") { inclusive = true }
                                 }
                             }
@@ -224,18 +195,29 @@ class MainActivity : ComponentActivity() {
 
                     composable("gate") {
                         ProfileGate(onEnter = {
-                            nav.navigate("library") {
+                            nav.navigate("library?q=&qs=") {
                                 popUpTo("gate") { inclusive = true }
                             }
                         })
                     }
 
-                    composable("library") {
+                    composable(
+                        route = "library?q={q}&qs={qs}",
+                        arguments = listOf(
+                            navArgument("q") { type = NavType.StringType; defaultValue = "" },
+                            navArgument("qs") { type = NavType.StringType; defaultValue = "" }
+                        )
+                    ) { back ->
+                        val q = back.arguments?.getString("q").orEmpty()
+                        val qs = back.arguments?.getString("qs").orEmpty()
+                        val openDlg = qs == "show"
                         StartScreen(
                             navController = nav,
                             openLive   = { id -> nav.navigate("live/$id") },
                             openVod    = { id -> nav.navigate("vod/$id") },
-                            openSeries = { id -> nav.navigate("series/$id") }
+                            openSeries = { id -> nav.navigate("series/$id") },
+                            initialSearch = q.ifBlank { null },
+                            openSearchOnStart = openDlg
                         )
                     }
 
@@ -254,9 +236,9 @@ class MainActivity : ComponentActivity() {
                         LiveDetailScreen(id, onLogo = {
                             val current = nav.currentBackStackEntry?.destination?.route
                             if (current != "library") {
-                                nav.navigate("library") { launchSingleTop = true }
+                                nav.navigate("library?q=&qs=") { launchSingleTop = true }
                             }
-                        })
+                        }, onGlobalSearch = { nav.navigate("library?qs=show") { launchSingleTop = true } })
                     }
 
                     // VOD-Details – mit Lambda für internen Player
@@ -264,17 +246,19 @@ class MainActivity : ComponentActivity() {
                         val id = back.arguments?.getString("id")?.toLongOrNull() ?: return@composable
                         VodDetailScreen(
                             id = id,
-                            openInternal = { url, startMs ->
+                            openInternal = { url, startMs, mime ->
                                 val encoded = Uri.encode(url)
                                 val start   = startMs ?: -1L
-                                nav.navigate("player?url=$encoded&type=vod&mediaId=$id&startMs=$start")
+                                val mimeArg = mime?.let { Uri.encode(it) } ?: ""
+                                nav.navigate("player?url=$encoded&type=vod&mediaId=$id&startMs=$start&mime=$mimeArg")
                             },
                             onLogo = {
                                 val current = nav.currentBackStackEntry?.destination?.route
                                 if (current != "library") {
-                                    nav.navigate("library") { launchSingleTop = true }
+                                    nav.navigate("library?q=&qs=") { launchSingleTop = true }
                                 }
-                            }
+                            },
+                            onGlobalSearch = { nav.navigate("library?qs=show") { launchSingleTop = true } }
                         )
                     }
 
@@ -283,16 +267,17 @@ class MainActivity : ComponentActivity() {
                         val id = back.arguments?.getString("id")?.toLongOrNull() ?: return@composable
                         SeriesDetailScreen(
                             id = id,
-                            // new: pass series composite keys instead of episodeId
-                            openInternal = { playUrl, startMs, seriesId, season, episodeNum ->
+                            openInternal = { playUrl, startMs, seriesId, season, episodeNum, episodeId, mime ->
                                 val encoded = Uri.encode(playUrl)
                                 val start   = startMs ?: -1L
-                                nav.navigate("player?url=$encoded&type=series&seriesId=$seriesId&season=$season&episodeNum=$episodeNum&startMs=$start")
+                                val epId    = episodeId ?: -1
+                                val mimeArg = mime?.let { Uri.encode(it) } ?: ""
+                                nav.navigate("player?url=$encoded&type=series&seriesId=$seriesId&season=$season&episodeNum=$episodeNum&episodeId=$epId&startMs=$start&mime=$mimeArg")
                             },
                             onLogo = {
                                 val current = nav.currentBackStackEntry?.destination?.route
                                 if (current != "library") {
-                                    nav.navigate("library") { launchSingleTop = true }
+                                    nav.navigate("library?q=&qs=") { launchSingleTop = true }
                                 }
                             }
                         )
@@ -300,7 +285,7 @@ class MainActivity : ComponentActivity() {
 
                     // Interner ExoPlayer (Media3)
                     composable(
-                        route = "player?url={url}&type={type}&mediaId={mediaId}&episodeId={episodeId}&seriesId={seriesId}&season={season}&episodeNum={episodeNum}&startMs={startMs}",
+                        route = "player?url={url}&type={type}&mediaId={mediaId}&episodeId={episodeId}&seriesId={seriesId}&season={season}&episodeNum={episodeNum}&startMs={startMs}&mime={mime}&origin={origin}&cat={cat}&prov={prov}",
                         arguments = listOf(
                             navArgument("url")       { type = NavType.StringType },
                             navArgument("type")      { type = NavType.StringType; defaultValue = "vod" },
@@ -309,7 +294,11 @@ class MainActivity : ComponentActivity() {
                             navArgument("seriesId")  { type = NavType.IntType;    defaultValue = -1 },
                             navArgument("season")    { type = NavType.IntType;    defaultValue = -1 },
                             navArgument("episodeNum"){ type = NavType.IntType;    defaultValue = -1 },
-                            navArgument("startMs")   { type = NavType.LongType;   defaultValue = -1L }
+                            navArgument("startMs")   { type = NavType.LongType;   defaultValue = -1L },
+                            navArgument("mime")      { type = NavType.StringType; defaultValue = "" },
+                            navArgument("origin")    { type = NavType.StringType; defaultValue = "" },
+                            navArgument("cat")       { type = NavType.StringType; defaultValue = "" },
+                            navArgument("prov")      { type = NavType.StringType; defaultValue = "" }
                         )
                     ) { back ->
                         val rawUrl   = back.arguments?.getString("url").orEmpty()
@@ -321,6 +310,11 @@ class MainActivity : ComponentActivity() {
                         val season   = back.arguments?.getInt("season")?.takeIf { it >= 0 }
                         val episodeNum = back.arguments?.getInt("episodeNum")?.takeIf { it >= 0 }
                         val startMs  = back.arguments?.getLong("startMs")?.takeIf { it >= 0 }
+                        val rawMime  = back.arguments?.getString("mime").orEmpty()
+                        val mime     = rawMime.takeIf { it.isNotEmpty() }?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
+                        val origin   = back.arguments?.getString("origin").orEmpty()
+                        val cat      = back.arguments?.getString("cat").orEmpty()
+                        val prov     = back.arguments?.getString("prov").orEmpty()
 
                         InternalPlayerScreen(
                             url = url,
@@ -331,7 +325,11 @@ class MainActivity : ComponentActivity() {
                             season = season,
                             episodeNum = episodeNum,
                             startPositionMs = startMs,
-                            onExit = { nav.popBackStack() }
+                            mimeType = mime,
+                            onExit = { nav.popBackStack() },
+                            originLiveLibrary = (origin == "lib"),
+                            liveCategoryHint = cat.ifBlank { null },
+                            liveProviderHint = prov.ifBlank { null }
                         )
                     }
 
@@ -349,7 +347,7 @@ class MainActivity : ComponentActivity() {
                             onBack = {
                                 val current = nav.currentBackStackEntry?.destination?.route
                                 if (current != "library") {
-                                    nav.navigate("library") { launchSingleTop = true }
+                                nav.navigate("library?q=&qs=") { launchSingleTop = true }
                                 }
                             },
                             onOpenProfiles = { nav.navigate("profiles") },
@@ -358,7 +356,8 @@ class MainActivity : ComponentActivity() {
                                     popUpTo("library") { inclusive = false }
                                 }
                             },
-                            onOpenXtreamCfCheck = { nav.navigate("xt_cfcheck") }
+                            onOpenXtreamCfCheck = { nav.navigate("xt_cfcheck") },
+                            onGlobalSearch = { nav.navigate("library?qs=show") { launchSingleTop = true } }
                         )
                     }
 
@@ -377,9 +376,10 @@ class MainActivity : ComponentActivity() {
                             onLogo = {
                                 val current = nav.currentBackStackEntry?.destination?.route
                                 if (current != "library") {
-                                    nav.navigate("library") { launchSingleTop = true }
+                                    nav.navigate("library?q=&qs=") { launchSingleTop = true }
                                 }
-                            }
+                            },
+                            onGlobalSearch = { nav.navigate("library?qs=show") { launchSingleTop = true } }
                         )
                     }
 

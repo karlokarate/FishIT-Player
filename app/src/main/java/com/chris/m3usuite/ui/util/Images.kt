@@ -11,7 +11,11 @@ import coil3.compose.AsyncImage
 import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
 import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import coil3.request.crossfade
+import coil3.request.allowRgb565
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.core.http.RequestHeadersProvider
 
@@ -41,18 +45,14 @@ data class ImageHeaders(
 fun rememberImageHeaders(): ImageHeaders {
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
-    var headers by remember { mutableStateOf(ImageHeaders()) }
-
-    LaunchedEffect(Unit) {
-        // Pull a one-shot snapshot from the RequestHeadersProvider.
-        // We prefer the provider to ensure parity with OkHttp/Media3.
+    // Compute synchronously once to avoid a second image request that can cause flicker.
+    return remember(store) {
         val map = RequestHeadersProvider.defaultHeadersBlocking(store)
         val ua = map["User-Agent"] ?: map["user-agent"] ?: ""
         val ref = map["Referer"] ?: map["referer"] ?: ""
         val extras = map.filterKeys { it.lowercase() !in setOf("user-agent", "referer") }
-        headers = ImageHeaders(ua = ua, referer = ref, extras = extras)
+        ImageHeaders(ua = ua, referer = ref, extras = extras)
     }
-    return headers
 }
 
 /**
@@ -62,17 +62,31 @@ fun buildImageRequest(
     ctx: Context,
     url: Any?,
     crossfade: Boolean = true,
-    headers: ImageHeaders? = null
+    headers: ImageHeaders? = null,
+    widthPx: Int? = null,
+    heightPx: Int? = null,
+    preferRgb565: Boolean = false
 ): ImageRequest {
     val httpHeaders = NetworkHeaders.Builder().apply {
         headers?.asMap()?.forEach { (k, v) -> set(k, v) }
     }.build()
 
-    return ImageRequest.Builder(ctx)
-        .data(url)
+    val sizedUrl: Any? = when (url) {
+        is String -> rewriteTmdbUrlForSize(url, widthPx, heightPx)
+        else -> url
+    }
+    val b = ImageRequest.Builder(ctx)
+        .data(sizedUrl)
         .httpHeaders(httpHeaders)
         .crossfade(crossfade)
-        .build()
+        .allowHardware(true)
+        .apply { if (preferRgb565) allowRgb565(true) }
+
+    if (widthPx != null && heightPx != null && widthPx > 0 && heightPx > 0) {
+        // Prefer explicit pixel size if available; Compose will otherwise supply a resolver.
+        b.size(widthPx, heightPx)
+    }
+    return b.build()
 }
 
 /**
@@ -80,6 +94,92 @@ fun buildImageRequest(
  */
 @Composable
 fun AppAsyncImage(
+    url: Any?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    crossfade: Boolean = false,
+    headers: ImageHeaders = rememberImageHeaders(),
+    contentScale: ContentScale = ContentScale.Crop,
+    alignment: Alignment = Alignment.Center,
+    placeholder: Painter? = null,
+    error: Painter? = null,
+    onLoading: (() -> Unit)? = null,
+    onSuccess: (() -> Unit)? = null,
+    onError: (() -> Unit)? = null,
+    preferRgb565: Boolean = false
+) {
+    val ctx = LocalContext.current
+    // Use Compose's built-in size resolver; avoid rebuilding the request when size changes
+    // to prevent double loads and visible flicker.
+    val request = remember(url, headers, crossfade, preferRgb565) {
+        buildImageRequest(ctx, url, crossfade, headers, null, null, preferRgb565)
+    }
+    AsyncImage(
+        imageLoader = AppImageLoader.get(ctx),
+        model = request,
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale,
+        alignment = alignment,
+        placeholder = placeholder,
+        error = error,
+        onLoading = { onLoading?.invoke() },
+        onSuccess = { onSuccess?.invoke() },
+        onError = { onError?.invoke() }
+    )
+}
+
+@Composable
+fun AppPosterImage(
+    url: Any?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    crossfade: Boolean = false,
+    headers: ImageHeaders = rememberImageHeaders(),
+    contentScale: ContentScale = ContentScale.Crop,
+    alignment: Alignment = Alignment.Center,
+    placeholder: Painter? = null,
+    error: Painter? = null,
+    onLoading: (() -> Unit)? = null,
+    onSuccess: (() -> Unit)? = null,
+    onError: (() -> Unit)? = null
+) {
+    val ctx = LocalContext.current
+    // Try TMDb size fallbacks: w342 → w185 → w154 → original
+    val posterCandidates = remember { listOf("w342", "w185", "w154", "original") }
+    var attempt by remember(url) { mutableStateOf(0) }
+    val sized = remember(url, attempt) {
+        when (url) {
+            is String -> forceTmdbSizeOrOriginal(url, posterCandidates.getOrElse(attempt) { "original" })
+            else -> url
+        }
+    }
+    val request = remember(sized, headers, crossfade) { buildImageRequest(ctx, sized, crossfade, headers, null, null) }
+    AsyncImage(
+        imageLoader = AppImageLoader.get(ctx),
+        model = request,
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale,
+        alignment = alignment,
+        placeholder = placeholder,
+        error = error,
+        onLoading = { onLoading?.invoke() },
+        onSuccess = { onSuccess?.invoke() },
+        onError = {
+            // Try next candidate size if available; only surface error when exhausted
+            val next = attempt + 1
+            if (url is String && next < posterCandidates.size) {
+                attempt = next
+            } else {
+                onError?.invoke()
+            }
+        }
+    )
+}
+
+@Composable
+fun AppHeroImage(
     url: Any?,
     contentDescription: String?,
     modifier: Modifier = Modifier,
@@ -94,10 +194,18 @@ fun AppAsyncImage(
     onError: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
-    val request = remember(url, headers, crossfade) {
-        buildImageRequest(ctx, url, crossfade, headers)
+    // Try TMDb size fallbacks for hero: w780 → w500 → w342 → original
+    val heroCandidates = remember { listOf("w780", "w500", "w342", "original") }
+    var attempt by remember(url) { mutableStateOf(0) }
+    val sized = remember(url, attempt) {
+        when (url) {
+            is String -> forceTmdbSizeOrOriginal(url, heroCandidates.getOrElse(attempt) { "original" })
+            else -> url
+        }
     }
+    val request = remember(sized, headers, crossfade) { buildImageRequest(ctx, sized, crossfade, headers, null, null) }
     AsyncImage(
+        imageLoader = AppImageLoader.get(ctx),
         model = request,
         contentDescription = contentDescription,
         modifier = modifier,
@@ -107,6 +215,58 @@ fun AppAsyncImage(
         error = error,
         onLoading = { onLoading?.invoke() },
         onSuccess = { onSuccess?.invoke() },
-        onError = { onError?.invoke() }
+        onError = {
+            val next = attempt + 1
+            if (url is String && next < heroCandidates.size) {
+                attempt = next
+            } else {
+                onError?.invoke()
+            }
+        }
     )
+}
+
+private fun forceTmdbSize(url: String, sizeLabel: String): String {
+    val m = TMDB_REGEX.matchEntire(url) ?: return url
+    val current = m.groupValues.getOrNull(1) ?: return url
+    val file = m.groupValues.getOrNull(2) ?: return url
+    if (current.equals(sizeLabel, ignoreCase = true)) return url
+    return "https://image.tmdb.org/t/p/$sizeLabel/$file"
+}
+
+private fun forceTmdbSizeOrOriginal(url: String, sizeLabel: String): String {
+    val m = TMDB_REGEX.matchEntire(url) ?: return url
+    val file = m.groupValues.getOrNull(2) ?: return url
+    val lbl = sizeLabel.lowercase()
+    return if (lbl == "original") "https://image.tmdb.org/t/p/original/$file" else forceTmdbSize(url, sizeLabel)
+}
+
+// ---------------------------------------------------------
+// TMDb utilities: rewrite image.tmdb.org URLs to best-fit sizes
+// ---------------------------------------------------------
+
+private fun tmdbSizeForWidth(px: Int): String {
+    // Choose the nearest lower/equal TMDb size bucket for posters/backdrops
+    return when {
+        px <= 154 -> "w154"
+        px <= 185 -> "w185"
+        px <= 342 -> "w342"
+        px <= 500 -> "w500"
+        px <= 780 -> "w780"
+        else -> "w780" // safe upper bound; 'original' is also possible but larger
+    }
+}
+
+private val TMDB_REGEX = Regex("^https?://image\\.tmdb\\.org/t/p/([^/]+)/(.+)$", RegexOption.IGNORE_CASE)
+
+private fun rewriteTmdbUrlForSize(url: String, widthPx: Int?, heightPx: Int?): String {
+    val m = TMDB_REGEX.matchEntire(url) ?: return url
+    val sizeLabel = m.groupValues.getOrNull(1) ?: return url
+    val file = m.groupValues.getOrNull(2) ?: return url
+    val target = (widthPx ?: 0).coerceAtLeast(0)
+    if (target <= 0) return url
+    val desired = tmdbSizeForWidth(target)
+    // If already the same size, keep as-is
+    if (sizeLabel.equals(desired, ignoreCase = true)) return url
+    return "https://image.tmdb.org/t/p/$desired/$file"
 }

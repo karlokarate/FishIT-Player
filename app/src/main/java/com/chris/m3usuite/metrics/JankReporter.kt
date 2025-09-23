@@ -17,7 +17,9 @@ object JankReporter {
         if (isJank) c.janks++
         if (now - c.lastLogMs >= WINDOW_MS) {
             val rate = if (c.frames > 0) 100.0 * c.janks / c.frames else 0.0
-            Log.d("JankStats", "route=$key window=${WINDOW_MS}ms frames=${c.frames} janks=${c.janks} rate=${"%.1f".format(rate)}%")
+            if (com.chris.m3usuite.BuildConfig.DEBUG) {
+                Log.d("JankStats", "route=$key window=${WINDOW_MS}ms frames=${c.frames} janks=${c.janks} rate=${"%.1f".format(rate)}%")
+            }
             // reset sliding window
             c.frames = 0
             c.janks = 0
@@ -25,4 +27,3 @@ object JankReporter {
         }
     }
 }
-

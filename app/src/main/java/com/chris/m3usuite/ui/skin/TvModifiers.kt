@@ -41,8 +41,18 @@ fun Modifier.tvClickable(
     scaleFocused: Float = 1.08f,
     scalePressed: Float = 1.12f,
     elevationFocusedDp: Float = 12f,
+    autoBringIntoView: Boolean = true,
     onClick: () -> Unit
-): Modifier = composed {
+): Modifier = composed(
+    inspectorInfo = {
+        name = "tvClickable"
+        properties["enabled"] = enabled
+        properties["scaleFocused"] = scaleFocused
+        properties["scalePressed"] = scalePressed
+        properties["elevationFocusedDp"] = elevationFocusedDp
+        properties["autoBringIntoView"] = autoBringIntoView
+    }
+) {
     val scope = rememberCoroutineScope()
     val interactionSource = remember { MutableInteractionSource() }
     val bring = remember { BringIntoViewRequester() }
@@ -75,7 +85,7 @@ fun Modifier.tvClickable(
         .bringIntoViewRequester(bring)
         .onFocusChanged { state ->
             val now = state.isFocused || state.hasFocus
-            if (now && !focused) scope.launch { bring.bringIntoView() }
+            if (autoBringIntoView && now && !focused) scope.launch { bring.bringIntoView() }
             focused = now
         }
         .graphicsLayer {
@@ -90,7 +100,7 @@ fun Modifier.tvClickable(
                 focused -> 0.18f
                 else -> 0f
             }
-            if (alpha > 0f) drawRect(color = Color(0xFF00E0FF), alpha = alpha)
+            if (alpha > 0f) drawRect(color = Color.Black, alpha = alpha)
         }
         .clickable(
             enabled = enabled,
@@ -105,7 +115,13 @@ fun Modifier.tvClickable(
 fun Modifier.focusScaleOnTv(
     focusedScale: Float? = null,
     pressedScale: Float? = null
-): Modifier = composed {
+): Modifier = composed(
+    inspectorInfo = {
+        name = "focusScaleOnTv"
+        properties["focusedScale"] = focusedScale
+        properties["pressedScale"] = pressedScale
+    }
+) {
     val ctx = LocalContext.current
     val cfg = LocalConfiguration.current
     val sw = cfg.smallestScreenWidthDp
@@ -144,4 +160,13 @@ fun Modifier.focusScaleOnTv(
     this
         .onFocusChanged { focused = it.isFocused || it.hasFocus }
         .graphicsLayer { scaleX = scale; scaleY = scale }
+        .drawWithContent {
+            drawContent()
+            val alpha = when {
+                pressed -> 0.26f
+                focused -> 0.16f
+                else -> 0f
+            }
+            if (alpha > 0f) drawRect(color = Color.Black, alpha = alpha)
+        }
 }

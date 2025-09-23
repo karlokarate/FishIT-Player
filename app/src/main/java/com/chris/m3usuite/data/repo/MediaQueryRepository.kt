@@ -1,18 +1,32 @@
 package com.chris.m3usuite.data.repo
 
 import android.content.Context
-import com.chris.m3usuite.model.MediaItem
-import com.chris.m3usuite.prefs.SettingsStore
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import androidx.paging.filter
+import com.chris.m3usuite.data.obx.ObxKidCategoryAllow
+import com.chris.m3usuite.data.obx.ObxKidCategoryAllow_
+import com.chris.m3usuite.data.obx.ObxKidContentAllow
+import com.chris.m3usuite.data.obx.ObxKidContentAllow_
+import com.chris.m3usuite.data.obx.ObxKidContentBlock
+import com.chris.m3usuite.data.obx.ObxKidContentBlock_
+import com.chris.m3usuite.data.obx.ObxLive
+import com.chris.m3usuite.data.obx.ObxLive_
+import com.chris.m3usuite.data.obx.ObxProfile
+import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.data.obx.ObxVod
+import com.chris.m3usuite.data.obx.ObxVod_
+import com.chris.m3usuite.data.obx.ObxSeries
+import com.chris.m3usuite.data.obx.ObxSeries_
 import com.chris.m3usuite.data.obx.toMediaItem
+import com.chris.m3usuite.model.MediaItem
+import com.chris.m3usuite.prefs.SettingsStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * Filtered media queries that respect Kid profile allowances when active.
@@ -23,117 +37,141 @@ class MediaQueryRepository(
     private val settings: SettingsStore
 ) {
     private val obxRepo by lazy { XtreamObxRepository(context, settings) }
-    private val box get() = com.chris.m3usuite.data.obx.ObxStore.get(context)
+    private val store get() = ObxStore.get(context)
 
-    private fun isObxId(id: Long): Boolean = id >= 1_000_000_000_000L
     private fun obxKindPrefix(type: String): Long = when (type) {
         "live" -> 1_000_000_000_000L
-        "vod" -> 2_000_000_000_000L
-        else -> 3_000_000_000_000L
-    }
-    private fun decodeStreamIdFromObxId(type: String, id: Long): Int? {
-        val base = obxKindPrefix(type)
-        if (id < base) return null
-        val v = (id - base)
-        return v.toInt()
+        "vod"  -> 2_000_000_000_000L
+        else   -> 3_000_000_000_000L
     }
 
-    private suspend fun isKid(): Boolean = withContext(Dispatchers.IO) {
+    private suspend fun currentKidIdOrNull(): Long? = withContext(Dispatchers.IO) {
         val id = settings.currentProfileId.first()
-        if (id <= 0) return@withContext false
-        val prof = box.boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(id)
-        prof?.type != "adult"
+        if (id <= 0) return@withContext null
+        val prof = store.boxFor(ObxProfile::class.java).get(id)
+        // Alles außer "adult" wird restriktiert (inkl. "guest")
+        if (prof?.type == "adult") null else id
     }
+
+    private suspend fun isKid(): Boolean = currentKidIdOrNull() != null
 
     private suspend fun allowedIdsForType(kidId: Long, type: String): Set<Long> = withContext(Dispatchers.IO) {
-        val b = box.boxFor(com.chris.m3usuite.data.obx.ObxKidContentAllow::class.java)
-        b.query(com.chris.m3usuite.data.obx.ObxKidContentAllow_.kidProfileId.equal(kidId).and(com.chris.m3usuite.data.obx.ObxKidContentAllow_.contentType.equal(type))).build().find().map { it.contentId }.toSet()
+        val b = store.boxFor(ObxKidContentAllow::class.java)
+        b.query(
+            ObxKidContentAllow_.kidProfileId.equal(kidId)
+                .and(ObxKidContentAllow_.contentType.equal(type))
+        ).build().find().mapTo(LinkedHashSet()) { it.contentId }
     }
 
-    private suspend fun allowedIdsByCategories(kidId: Long, type: String): Set<Long> = withContext(Dispatchers.IO) {
-        val catsBox = box.boxFor(com.chris.m3usuite.data.obx.ObxKidCategoryAllow::class.java)
-        val allowedCats = catsBox.query(
-            com.chris.m3usuite.data.obx.ObxKidCategoryAllow_.kidProfileId.equal(kidId)
-                .and(com.chris.m3usuite.data.obx.ObxKidCategoryAllow_.contentType.equal(type))
-        ).build().find().map { it.categoryId }.toSet()
-        if (allowedCats.isEmpty()) return@withContext emptySet()
-        when (type) {
-            "live" -> obxRepo.livePaged(0, Long.MAX_VALUE).filter { it.categoryId in allowedCats }.map { 1_000_000_000_000L + it.streamId }.toSet()
-            "vod" -> obxRepo.vodPaged(0, Long.MAX_VALUE).filter { it.categoryId in allowedCats }.map { 2_000_000_000_000L + it.vodId }.toSet()
-            else -> obxRepo.seriesPaged(0, Long.MAX_VALUE).filter { it.categoryId in allowedCats }.map { 3_000_000_000_000L + it.seriesId }.toSet()
+    /** Effizient: hole zugelassene OBX-IDs über Category‑Filter direkt aus OBX (Property‑Query → wenig RAM). */
+    private suspend fun obxIdsForCategories(type: String, categoryIds: Set<String>): Set<Long> =
+        withContext(Dispatchers.IO) {
+            if (categoryIds.isEmpty()) return@withContext emptySet()
+            when (type) {
+                "live" -> {
+                    val q = store.boxFor(ObxLive::class.java)
+                        .query(ObxLive_.categoryId.oneOf(categoryIds.toTypedArray()))
+                        .build()
+                    val sids = q.property(ObxLive_.streamId).findInts().toList()
+                    sids.mapTo(LinkedHashSet()) { obxKindPrefix("live") + it }
+                }
+                "vod" -> {
+                    val q = store.boxFor(ObxVod::class.java)
+                        .query(ObxVod_.categoryId.oneOf(categoryIds.toTypedArray()))
+                        .build()
+                    val vids = q.property(ObxVod_.vodId).findInts().toList()
+                    vids.mapTo(LinkedHashSet()) { obxKindPrefix("vod") + it }
+                }
+                else -> {
+                    val q = store.boxFor(ObxSeries::class.java)
+                        .query(ObxSeries_.categoryId.oneOf(categoryIds.toTypedArray()))
+                        .build()
+                    val sids = q.property(ObxSeries_.seriesId).findInts().toList()
+                    sids.mapTo(LinkedHashSet()) { obxKindPrefix("series") + it }
+                }
+            }
         }
+
+    private suspend fun allowedIdsByCategories(kidId: Long, type: String): Set<Long> = withContext(Dispatchers.IO) {
+        val catsBox = store.boxFor(ObxKidCategoryAllow::class.java)
+        val allowedCats = catsBox.query(
+            ObxKidCategoryAllow_.kidProfileId.equal(kidId)
+                .and(ObxKidCategoryAllow_.contentType.equal(type))
+        ).build().find().map { it.categoryId }.toSet()
+        obxIdsForCategories(type, allowedCats)
     }
 
     private suspend fun blockedIdsForType(kidId: Long, type: String): Set<Long> = withContext(Dispatchers.IO) {
-        val b = box.boxFor(com.chris.m3usuite.data.obx.ObxKidContentBlock::class.java)
-        b.query(com.chris.m3usuite.data.obx.ObxKidContentBlock_.kidProfileId.equal(kidId).and(com.chris.m3usuite.data.obx.ObxKidContentBlock_.contentType.equal(type))).build().find().map { it.contentId }.toSet()
+        val b = store.boxFor(ObxKidContentBlock::class.java)
+        b.query(
+            ObxKidContentBlock_.kidProfileId.equal(kidId)
+                .and(ObxKidContentBlock_.contentType.equal(type))
+        ).build().find().mapTo(LinkedHashSet()) { it.contentId }
     }
 
     private suspend fun effectiveAllowedIds(kidId: Long, type: String): Set<Long> {
         val byItem = allowedIdsForType(kidId, type)
         val byCats = allowedIdsByCategories(kidId, type)
         val blocks = blockedIdsForType(kidId, type)
-        return (byItem + byCats) - blocks
+        return ((byItem + byCats) - blocks)
     }
 
-    suspend fun listByTypeFiltered(type: String, limit: Int, offset: Int): List<MediaItem> = withContext(Dispatchers.IO) {
-        val items: List<MediaItem> = when (type) {
-            "live" -> obxRepo.livePaged(offset.toLong(), limit.toLong()).map { it.toMediaItem(context) }
-            "vod" -> obxRepo.vodPaged(offset.toLong(), limit.toLong()).map { it.toMediaItem(context) }
-            else -> obxRepo.seriesPaged(offset.toLong(), limit.toLong()).map { it.toMediaItem(context) }
+    suspend fun listByTypeFiltered(type: String, limit: Int, offset: Int): List<MediaItem> =
+        withContext(Dispatchers.IO) {
+            val itemsRaw: List<MediaItem> = when (type) {
+                "live" -> obxRepo.livePaged(offset.toLong(), limit.toLong()).map { it.toMediaItem(context) }
+                "vod"  -> obxRepo.vodPaged(offset.toLong(), limit.toLong()).map { it.toMediaItem(context) }
+                else   -> obxRepo.seriesPaged(offset.toLong(), limit.toLong()).map { it.toMediaItem(context) }
+            }
+            // Inject category labels so downstream filters (Adults) can apply reliably
+            val catLabelById = runCatching { obxRepo.categories(type).associateBy({ it.categoryId }, { it.categoryName }) }
+                .getOrElse { emptyMap() }
+            val items = itemsRaw.map { it.copy(categoryName = catLabelById[it.categoryId]) }
+            val showA = settings.showAdults.first()
+            val base = if (showA) items else items.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+            val kidId = currentKidIdOrNull() ?: return@withContext base
+            val allowed = effectiveAllowedIds(kidId, type)
+            base.filter { it.id in allowed }
         }
-        if (!isKid()) return@withContext items
-        val kidId = settings.currentProfileId.first()
-        val allowed = effectiveAllowedIds(kidId, type)
-        items.filter { mi -> mi.id in allowed }
-    }
 
-    suspend fun byTypeAndCategoryFiltered(type: String, cat: String?): List<MediaItem> = withContext(Dispatchers.IO) {
-        val items: List<MediaItem> = when (type) {
-            "live" -> {
-                val base = if (!cat.isNullOrBlank()) obxRepo.liveByCategoryPaged(cat, 0, Int.MAX_VALUE.toLong()) else obxRepo.livePaged(0, Int.MAX_VALUE.toLong())
-                base.map { it.toMediaItem(context) }
+    suspend fun byTypeAndCategoryFiltered(type: String, cat: String?): List<MediaItem> =
+        withContext(Dispatchers.IO) {
+            val itemsRaw: List<MediaItem> = when (type) {
+                "live" -> {
+                    val base = if (!cat.isNullOrBlank())
+                        obxRepo.liveByCategoryPaged(cat, 0, Long.MAX_VALUE)
+                    else obxRepo.livePaged(0, Long.MAX_VALUE)
+                    base.map { it.toMediaItem(context) }
+                }
+                "vod" -> {
+                    val base = if (!cat.isNullOrBlank())
+                        obxRepo.vodByCategoryPaged(cat, 0, Long.MAX_VALUE)
+                    else obxRepo.vodPaged(0, Long.MAX_VALUE)
+                    base.map { it.toMediaItem(context) }
+                }
+                else -> {
+                    val base = if (!cat.isNullOrBlank())
+                        obxRepo.seriesByCategoryPaged(cat, 0, Long.MAX_VALUE)
+                    else obxRepo.seriesPaged(0, Long.MAX_VALUE)
+                    base.map { it.toMediaItem(context) }
+                }
             }
-            "vod" -> {
-                val base = if (!cat.isNullOrBlank()) obxRepo.vodByCategoryPaged(cat, 0, Int.MAX_VALUE.toLong()) else obxRepo.vodPaged(0, Int.MAX_VALUE.toLong())
-                base.map { it.toMediaItem(context) }
-            }
-            else -> {
-                val base = if (!cat.isNullOrBlank()) obxRepo.seriesByCategoryPaged(cat, 0, Int.MAX_VALUE.toLong()) else obxRepo.seriesPaged(0, Int.MAX_VALUE.toLong())
-                base.map { it.toMediaItem(context) }
-            }
+            val catLabelById = runCatching { obxRepo.categories(type).associateBy({ it.categoryId }, { it.categoryName }) }
+                .getOrElse { emptyMap() }
+            val items = itemsRaw.map { it.copy(categoryName = catLabelById[it.categoryId]) }
+            val showA = settings.showAdults.first()
+            val base = if (showA) items else items.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+            val kidId = currentKidIdOrNull() ?: return@withContext base
+            val allowed = effectiveAllowedIds(kidId, type)
+            base.filter { it.id in allowed }
         }
-        if (!isKid()) return@withContext items
-        val kidId = settings.currentProfileId.first()
-        val allowed = effectiveAllowedIds(kidId, type)
-        items.filter { mi -> mi.id in allowed }
-    }
 
     suspend fun categoriesByTypeFiltered(type: String): List<String?> = withContext(Dispatchers.IO) {
         val cats = obxRepo.categories(type).map { it.categoryName }
-        // Kid-filtering of categories (approximation via allowed items)
-        if (!isKid()) return@withContext cats
+        val kidId = currentKidIdOrNull() ?: return@withContext cats
+        // Näherung über erlaubte Items
         val items = listByTypeFiltered(type, 10_000, 0)
         items.mapNotNull { it.categoryName }.distinct()
-    }
-
-    private fun toFtsQuery(input: String): String {
-        val cleaned = input.trim().lowercase()
-        if (cleaned.isEmpty()) return ""
-        val tokens = cleaned.split(Regex("\\s+")).filter { it.length >= 2 }.map { it + "*" }
-        return if (tokens.isEmpty()) "" else tokens.joinToString(" AND ")
-    }
-
-    suspend fun globalSearchFiltered(query: String, limit: Int, offset: Int): List<MediaItem> = withContext(Dispatchers.IO) {
-        val q = query.trim()
-        val lv = obxRepo.searchLiveByName(q, offset.toLong(), limit.toLong())
-        val vv = obxRepo.searchVodByName(q, offset.toLong(), limit.toLong())
-        val sv = obxRepo.searchSeriesByName(q, offset.toLong(), limit.toLong())
-        val all = (lv.map { it.toMediaItem(context) } + vv.map { it.toMediaItem(context) } + sv.map { it.toMediaItem(context) })
-        if (!isKid()) return@withContext all.take(limit)
-        val kidId = settings.currentProfileId.first()
-        val allowed = (effectiveAllowedIds(kidId, "live") + effectiveAllowedIds(kidId, "vod") + effectiveAllowedIds(kidId, "series"))
-        all.filter { it.id in allowed }.take(limit)
     }
 
     private fun pagerConfig(): PagingConfig = PagingConfig(
@@ -144,34 +182,46 @@ class MediaQueryRepository(
     )
 
     fun pagingByTypeFilteredFlow(type: String, cat: String?): Flow<PagingData<MediaItem>> {
-        val paging = when (type) {
+        val flow = when (type) {
             "live" -> Pager(pagerConfig()) { ObxLivePagingSource(context, settings, cat, null) }.flow
-            "vod" -> Pager(pagerConfig()) { ObxVodPagingSource(context, settings, cat, null) }.flow
-            else -> Pager(pagerConfig()) { ObxSeriesPagingSource(context, settings, cat, null) }.flow
+            "vod"  -> Pager(pagerConfig()) { ObxVodPagingSource(context, settings, cat, null)  }.flow
+            else   -> Pager(pagerConfig()) { ObxSeriesPagingSource(context, settings, cat, null) }.flow
         }
-        return paging.map { data ->
-            if (!isKid()) return@map data
-            val kidId = settings.currentProfileId.first()
-            val allowed = effectiveAllowedIds(kidId, type)
-            data.filter { mi -> mi.id in allowed }
+        return flow.map { data ->
+            val showA = settings.showAdults.first()
+            val kidId = currentKidIdOrNull()
+            if (kidId == null) {
+                if (showA) data else data.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+            } else {
+                val allowed = effectiveAllowedIds(kidId, type)
+                val base = data.filter { it.id in allowed }
+                if (showA) base else base.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+            }
         }
     }
 
-    fun pagingSearchFilteredFlow(query: String): Flow<PagingData<MediaItem>> {
+    fun pagingSearchFilteredFlow(type: String, query: String): Flow<PagingData<MediaItem>> {
         val trimmed = query.trim().takeIf { it.isNotEmpty() }
-        // Use OBX paging sources with query
-        val flow = Pager(pagerConfig()) { ObxVodPagingSource(context, settings, null, trimmed) }.flow
+        val flow = when (type) {
+            "live" -> Pager(pagerConfig()) { ObxLivePagingSource(context, settings, null, trimmed) }.flow
+            "series" -> Pager(pagerConfig()) { ObxSeriesPagingSource(context, settings, null, trimmed) }.flow
+            else -> Pager(pagerConfig()) { ObxVodPagingSource(context, settings, null, trimmed) }.flow
+        }
         return flow.map { data ->
-            if (!isKid()) return@map data
-            val kidId = settings.currentProfileId.first()
-            val allowed = effectiveAllowedIds(kidId, "vod")
-            data.filter { mi -> mi.id in allowed }
+            val showA = settings.showAdults.first()
+            val kidId = currentKidIdOrNull()
+            if (kidId == null) {
+                if (showA) data else data.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+            } else {
+                val allowed = effectiveAllowedIds(kidId, type)
+                val base = data.filter { it.id in allowed }
+                if (showA) base else base.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+            }
         }
     }
 
     suspend fun isAllowed(type: String, id: Long): Boolean = withContext(Dispatchers.IO) {
-        if (!isKid()) return@withContext true
-        val kidId = settings.currentProfileId.first()
+        val kidId = currentKidIdOrNull() ?: return@withContext true
         val allowed = effectiveAllowedIds(kidId, type)
         id in allowed
     }

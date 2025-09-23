@@ -5,10 +5,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import com.chris.m3usuite.ui.common.TvButton
+import com.chris.m3usuite.ui.common.TvOutlinedButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import kotlinx.coroutines.launch
 
 @Composable
@@ -37,14 +40,14 @@ fun BackupRestoreSection() {
         Text("Backup & Restore", style = MaterialTheme.typography.titleMedium)
         if (status.isNotBlank()) LinearProgressIndicator(progress = { (progress / 100f).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = {
+            TvButton(onClick = {
                 scope.launch {
                     val res = mgr.exportAll({ p, s -> progress = p; status = s }, passphrase = null)
                     pendingExport = res
                     createDoc.launch(res.first)
                 }
             }) { Text("Export als Datei") }
-            OutlinedButton(onClick = { openDoc.launch(arrayOf("application/octet-stream", "*/*")) }) { Text("Import aus Datei") }
+            TvOutlinedButton(onClick = { openDoc.launch(arrayOf("application/octet-stream", "*/*")) }) { Text("Import aus Datei") }
         }
     }
 }

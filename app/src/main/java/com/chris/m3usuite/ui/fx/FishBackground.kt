@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -21,10 +21,11 @@ import com.chris.m3usuite.R
 @Composable
 fun FishBackground(
     modifier: Modifier = Modifier,
-    size: Dp = 560.dp,
     alpha: Float = 0.05f,
-    fastSpinMillis: Int = 500,
-    loadingSpinMillis: Int = 1000
+    fastSpinMillis: Int = 2500,
+    loadingSpinMillis: Int = 5000,
+    neutralizeUnderlay: Boolean = false,
+    neutralizeColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.background
 ) {
     // Loading-driven infinite rotation uses an InfiniteTransition for reliability
     val isLoading = FishSpin.isLoading.collectAsStateWithLifecycle(initialValue = false).value
@@ -53,9 +54,17 @@ fun FishBackground(
 
     val angle = (loadingAngle + kick.value) % 360f
 
-    Image(
-        painter = painterResource(id = R.drawable.fisch),
-        contentDescription = null,
-        modifier = modifier.graphicsLayer { this.alpha = alpha; rotationZ = angle }
-    )
+    androidx.compose.foundation.layout.Box(modifier = modifier) {
+        if (neutralizeUnderlay) {
+            androidx.compose.foundation.Canvas(modifier = Modifier.matchParentSize()) {
+                drawRect(color = neutralizeColor)
+            }
+        }
+        Image(
+            painter = painterResource(id = R.drawable.fisch),
+            contentDescription = null,
+            modifier = Modifier.matchParentSize().graphicsLayer { this.alpha = alpha; rotationZ = angle },
+            contentScale = ContentScale.Fit
+        )
+    }
 }

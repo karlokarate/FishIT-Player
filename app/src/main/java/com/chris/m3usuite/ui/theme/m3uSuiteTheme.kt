@@ -1,33 +1,42 @@
 package com.chris.m3usuite.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.material3.Shapes
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 
 
 private val DarkFancy = darkColorScheme(
-    primary = Color(0xFF8AB4FF),
-    onPrimary = Color(0xFF001B3C),
-    secondary = Color(0xFF9BE1FF),
-    background = Color(0xFF0D121A),
-    surface = Color(0xFF111827),
-    onSurface = Color(0xFFE7EEF7)
+    // Accents
+    primary = Color(0xFF2EC27E),        // sattes Grün (nah an App-Accent)
+    onPrimary = Color(0xFF00140A),
+    secondary = Color(0xFF1E8F61),
+    onSecondary = Color(0xFFE7FFF5),
+    tertiary = Color(0xFF1A9E90),
+    onTertiary = Color(0xFFE6FFFB),
+
+    // Moss background & surfaces (leichte Helligkeitsvariation für Gradienten in Screens)
+    background = Color(0xFF0F2418),     // dunkelgrüner, moosiger Grundton
+    onBackground = Color(0xFFEAF5EF),   // hohe Lesbarkeit (nahe Weiß)
+    surface = Color(0xFF15301F),        // leicht heller als Hintergrund
+    onSurface = Color(0xFFEAF5EF),
+    surfaceVariant = Color(0xFF1A3A25), // für Chips/Schimmer/Container
+    onSurfaceVariant = Color(0xFFD7E9E0),
+
+    // Outline (weißer Rahmen mit leichtem Grünstich)
+    outline = Color(0xFFD5F0E2),
+    outlineVariant = Color(0xFFB6DCCD),
+
+    // Error
+    error = Color(0xFFFF6B6B),
+    onError = Color(0xFF1C0000)
 )
 
-private val LightFancy = lightColorScheme(
-    primary = Color(0xFF2154FF),
-    onPrimary = Color.White,
-    secondary = Color(0xFF006D83),
-    background = Color(0xFFF7FAFF),
-    surface = Color(0xFFFFFFFF),
-    onSurface = Color(0xFF0F172A)
-)
+// Light palette removed to enforce consistent dark appearance across devices
 
 private val GlossShapes = Shapes(
     extraSmall = RoundedCornerShape(10.dp),
@@ -39,17 +48,9 @@ private val GlossShapes = Shapes(
 
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
-    val context = LocalContext.current
-    val dark = isSystemInDarkTheme()
-    val colorScheme =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        } else {
-            if (dark) DarkFancy else LightFancy
-        }
-
+    // Force dark appearance globally for consistent look across devices (phone/TV)
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = DarkFancy,
         typography = Typography(),
         shapes = GlossShapes,
         content = content

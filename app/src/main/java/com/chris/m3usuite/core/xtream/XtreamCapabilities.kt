@@ -119,6 +119,27 @@ class ProviderCapabilityStore(
         val str = json.encodeToString(XtreamCapabilities.serializer(), caps.copy(cachedAt = System.currentTimeMillis()))
         prefs.edit { putString(caps.cacheKey, str) }
     }
+
+    fun findByEndpoint(
+        scheme: String,
+        host: String,
+        port: Int,
+        username: String
+    ): XtreamCapabilities? {
+        val normalizedScheme = scheme.lowercase()
+        val directKey = "$normalizedScheme://$host:$port|$username"
+        get(directKey)?.let { return it }
+
+        val prefix = "$normalizedScheme://$host:$port"
+        val suffix = "|$username"
+        val entries = prefs.all
+        return entries.entries.asSequence()
+            .mapNotNull { (key, _) ->
+                val cacheKey = key as? String ?: return@mapNotNull null
+                if (cacheKey.startsWith(prefix) && cacheKey.endsWith(suffix)) get(cacheKey) else null
+            }
+            .firstOrNull()
+    }
 }
 
 // ==========================================================
@@ -486,7 +507,7 @@ class CapabilityDiscoverer(
         aliasCandidates.forEach { alias ->
             enrich(
                 "get_${alias}_streams",
-                ids = listOf("vod_id", "movie_id", "id"),
+                ids = listOf("vod_id", "movie_id", "id", "stream_id"),
                 names = listOf("name", "title"),
                 logos = listOf("poster_path", "cover", "stream_icon", "logo")
             )

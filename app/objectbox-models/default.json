@@ -1,0 +1,1105 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:3605110071179284283",
+      "lastPropertyId": "4:3127655617152900602",
+      "name": "ObxCategory",
+      "properties": [
+        {
+          "id": "1:8192913845464779937",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:2719978957658494048",
+          "name": "kind",
+          "indexId": "1:8876591275329543089",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:2496342297993644278",
+          "name": "categoryId",
+          "indexId": "2:5588764066944102810",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:3127655617152900602",
+          "name": "categoryName",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:5271316705886308794",
+      "lastPropertyId": "10:6178021465050934609",
+      "name": "ObxEpgNowNext",
+      "properties": [
+        {
+          "id": "1:1213695657032599643",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5253169346944642458",
+          "name": "streamId",
+          "indexId": "3:4632700634420156816",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "3:2627531578183365555",
+          "name": "channelId",
+          "indexId": "4:1882403216495564647",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:5980079349749660434",
+          "name": "nowTitle",
+          "type": 9
+        },
+        {
+          "id": "5:6458115477627678020",
+          "name": "nowStartMs",
+          "type": 6
+        },
+        {
+          "id": "6:2048971214585560397",
+          "name": "nowEndMs",
+          "type": 6
+        },
+        {
+          "id": "7:5834034839925677862",
+          "name": "nextTitle",
+          "type": 9
+        },
+        {
+          "id": "8:4220055084185054473",
+          "name": "nextStartMs",
+          "type": 6
+        },
+        {
+          "id": "9:6190117000829295737",
+          "name": "nextEndMs",
+          "type": 6
+        },
+        {
+          "id": "10:6178021465050934609",
+          "name": "updatedAt",
+          "indexId": "5:1847910588633657764",
+          "type": 6,
+          "flags": 8
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:568335640096728123",
+      "lastPropertyId": "12:3082363211771498521",
+      "name": "ObxEpisode",
+      "properties": [
+        {
+          "id": "1:6923085972488675241",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:4248505896573240711",
+          "name": "seriesId",
+          "indexId": "6:4386570550585324729",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "3:5265036929578169845",
+          "name": "season",
+          "indexId": "7:6896999813460616922",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "4:2305521643208233888",
+          "name": "episodeNum",
+          "type": 5
+        },
+        {
+          "id": "5:5075394297609255614",
+          "name": "episodeId",
+          "indexId": "8:4105196036962775293",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "6:3646128071745188720",
+          "name": "title",
+          "type": 9
+        },
+        {
+          "id": "7:3410887967765930257",
+          "name": "durationSecs",
+          "type": 5
+        },
+        {
+          "id": "8:3388113313086850952",
+          "name": "rating",
+          "type": 8
+        },
+        {
+          "id": "9:6784928374920993662",
+          "name": "plot",
+          "type": 9
+        },
+        {
+          "id": "10:2586137660601744613",
+          "name": "airDate",
+          "type": 9
+        },
+        {
+          "id": "11:5944354178931304549",
+          "name": "playExt",
+          "type": 9
+        },
+        {
+          "id": "12:3082363211771498521",
+          "name": "imageUrl",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:4090637333096115779",
+      "lastPropertyId": "4:1935091833092218162",
+      "name": "ObxKidCategoryAllow",
+      "properties": [
+        {
+          "id": "1:6836014438098833836",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8662730646941421528",
+          "name": "kidProfileId",
+          "indexId": "9:3404007542023000282",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "3:1690524006848166906",
+          "name": "contentType",
+          "indexId": "10:7095052623832794228",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:1935091833092218162",
+          "name": "categoryId",
+          "indexId": "11:1314332658633177498",
+          "type": 9,
+          "flags": 2048
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "5:8874405754439588923",
+      "lastPropertyId": "4:8652344508552179371",
+      "name": "ObxKidContentAllow",
+      "properties": [
+        {
+          "id": "1:2301018339133662852",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1162552383724112028",
+          "name": "kidProfileId",
+          "indexId": "12:4787397589794933409",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "3:6871546085053104334",
+          "name": "contentType",
+          "indexId": "13:5866381973085171398",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:8652344508552179371",
+          "name": "contentId",
+          "indexId": "14:8168418969005316859",
+          "type": 6,
+          "flags": 8
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "6:180013493552017763",
+      "lastPropertyId": "4:1793094989052964879",
+      "name": "ObxKidContentBlock",
+      "properties": [
+        {
+          "id": "1:8698440380886513519",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:2534087345448493174",
+          "name": "kidProfileId",
+          "indexId": "15:7592210696339417100",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "3:6844752051710428001",
+          "name": "contentType",
+          "indexId": "16:3616582065981892639",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:1793094989052964879",
+          "name": "contentId",
+          "indexId": "17:6791714227497028820",
+          "type": 6,
+          "flags": 8
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "7:1719256381987496406",
+      "lastPropertyId": "11:2493333451600441559",
+      "name": "ObxLive",
+      "properties": [
+        {
+          "id": "1:9012397900671885442",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6915244955513823390",
+          "name": "streamId",
+          "indexId": "18:1104432008970169390",
+          "type": 5,
+          "flags": 40
+        },
+        {
+          "id": "3:828459471849180950",
+          "name": "nameLower",
+          "indexId": "19:2430543220050275713",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:3235476208203360382",
+          "name": "sortTitleLower",
+          "indexId": "20:7241410824463559577",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "5:5732657109973591402",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "6:3638333804329248952",
+          "name": "logo",
+          "type": 9
+        },
+        {
+          "id": "7:8324480241773880449",
+          "name": "epgChannelId",
+          "type": 9
+        },
+        {
+          "id": "8:2776239513436031203",
+          "name": "tvArchive",
+          "type": 5
+        },
+        {
+          "id": "9:1307181884091424175",
+          "name": "categoryId",
+          "indexId": "21:5651748614673522475",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "10:4044545374101932007",
+          "name": "providerKey",
+          "indexId": "22:8629240177067155446",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "11:2493333451600441559",
+          "name": "genreKey",
+          "indexId": "23:1632488712418030924",
+          "type": 9,
+          "flags": 2048
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "8:8673831342083481194",
+      "lastPropertyId": "6:5183609671581677864",
+      "name": "ObxProfile",
+      "properties": [
+        {
+          "id": "1:6488354003582705674",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1368396525453488590",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "3:3194104455463802130",
+          "name": "type",
+          "indexId": "24:6719847755365168936",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:6560894873164542649",
+          "name": "avatarPath",
+          "type": 9
+        },
+        {
+          "id": "5:6883647306076023964",
+          "name": "createdAt",
+          "type": 6
+        },
+        {
+          "id": "6:5183609671581677864",
+          "name": "updatedAt",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "9:7560250321076059106",
+      "lastPropertyId": "9:8901535241868749825",
+      "name": "ObxProfilePermissions",
+      "properties": [
+        {
+          "id": "1:7427061961002496914",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6728637750801837596",
+          "name": "profileId",
+          "indexId": "25:7142633417088020912",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "3:4594161962870935617",
+          "name": "canOpenSettings",
+          "type": 1
+        },
+        {
+          "id": "4:750912779113159814",
+          "name": "canChangeSources",
+          "type": 1
+        },
+        {
+          "id": "5:1615230313017221815",
+          "name": "canUseExternalPlayer",
+          "type": 1
+        },
+        {
+          "id": "6:5808666565905917881",
+          "name": "canEditFavorites",
+          "type": 1
+        },
+        {
+          "id": "7:4419237095808802016",
+          "name": "canSearch",
+          "type": 1
+        },
+        {
+          "id": "8:8948941031529609518",
+          "name": "canSeeResume",
+          "type": 1
+        },
+        {
+          "id": "9:8901535241868749825",
+          "name": "canEditWhitelist",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "10:6646577625972942302",
+      "lastPropertyId": "8:3156727791564152152",
+      "name": "ObxResumeMark",
+      "properties": [
+        {
+          "id": "1:9068201754471576655",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:4135655981334804336",
+          "name": "type",
+          "indexId": "26:8087336740707562299",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:6259324825538562164",
+          "name": "mediaEncodedId",
+          "indexId": "27:8133428054390389181",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "4:7155419023399009999",
+          "name": "seriesId",
+          "indexId": "28:1005751760796921471",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "5:1406415462716414878",
+          "name": "season",
+          "indexId": "29:6560128003105963968",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "6:3879482172686024982",
+          "name": "episodeNum",
+          "indexId": "30:7790897298281621018",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "7:4921010115290052129",
+          "name": "positionSecs",
+          "type": 5
+        },
+        {
+          "id": "8:3156727791564152152",
+          "name": "updatedAt",
+          "indexId": "31:3539082062497412238",
+          "type": 6,
+          "flags": 8
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "11:1412477582123548043",
+      "lastPropertyId": "5:4294939531691112244",
+      "name": "ObxScreenTimeEntry",
+      "properties": [
+        {
+          "id": "1:6715938712272490644",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5568234899014088557",
+          "name": "kidProfileId",
+          "indexId": "32:9067404359442652577",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "3:8619037769041537291",
+          "name": "dayYyyymmdd",
+          "indexId": "33:2334148333988858801",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:6715318997994002901",
+          "name": "usedMinutes",
+          "type": 5
+        },
+        {
+          "id": "5:4294939531691112244",
+          "name": "limitMinutes",
+          "type": 5
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "12:3085742347252510863",
+      "lastPropertyId": "23:6866916786195203741",
+      "name": "ObxSeries",
+      "properties": [
+        {
+          "id": "1:5507599374922485888",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:627837492791603784",
+          "name": "seriesId",
+          "indexId": "34:5645060795325589918",
+          "type": 5,
+          "flags": 40
+        },
+        {
+          "id": "3:666900094733741747",
+          "name": "nameLower",
+          "indexId": "35:2112187768412167506",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:5380529612792694282",
+          "name": "sortTitleLower",
+          "indexId": "36:2243338460060597371",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "5:2506618084883862310",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "6:2396721163022861122",
+          "name": "imagesJson",
+          "type": 9
+        },
+        {
+          "id": "7:8815982935887942511",
+          "name": "year",
+          "indexId": "37:5649634335738441934",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "8:6076683832042160432",
+          "name": "yearKey",
+          "indexId": "38:3385154202161714149",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "9:2868656740708396686",
+          "name": "rating",
+          "type": 8
+        },
+        {
+          "id": "10:5374800984399821882",
+          "name": "plot",
+          "type": 9
+        },
+        {
+          "id": "11:8650568087347493574",
+          "name": "genre",
+          "type": 9
+        },
+        {
+          "id": "12:1321458461905984483",
+          "name": "director",
+          "type": 9
+        },
+        {
+          "id": "13:558261345797966103",
+          "name": "cast",
+          "type": 9
+        },
+        {
+          "id": "14:2836442695444482705",
+          "name": "imdbId",
+          "type": 9
+        },
+        {
+          "id": "15:1702642065825434271",
+          "name": "tmdbId",
+          "type": 9
+        },
+        {
+          "id": "16:860709873368786066",
+          "name": "trailer",
+          "type": 9
+        },
+        {
+          "id": "17:3055452417922207860",
+          "name": "categoryId",
+          "indexId": "39:7221013943380446376",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "18:2903054165185786838",
+          "name": "providerKey",
+          "indexId": "40:5985344500906648078",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "19:7378360608955577225",
+          "name": "genreKey",
+          "indexId": "41:2785214852974292268",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "20:629487484977852896",
+          "name": "importedAt",
+          "indexId": "42:4698407252572683696",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "21:8216015666847589968",
+          "name": "updatedAt",
+          "indexId": "43:3351945844439394670",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "22:3593050135016998159",
+          "name": "country",
+          "type": 9
+        },
+        {
+          "id": "23:6866916786195203741",
+          "name": "releaseDate",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "13:3463824368552542268",
+      "lastPropertyId": "10:6172907045496861970",
+      "name": "ObxTelegramMessage",
+      "properties": [
+        {
+          "id": "1:5522832110683466095",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:609762715447012619",
+          "name": "chatId",
+          "indexId": "44:1531474130067971180",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "3:7248601705365369947",
+          "name": "messageId",
+          "indexId": "45:2021336426354680160",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "4:5931389594727913579",
+          "name": "fileId",
+          "indexId": "46:5809187042085690503",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "5:1541516595111955282",
+          "name": "fileUniqueId",
+          "indexId": "47:7640222200856290456",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "6:4677177144023014255",
+          "name": "supportsStreaming",
+          "type": 1
+        },
+        {
+          "id": "7:3584393794275851716",
+          "name": "caption",
+          "type": 9
+        },
+        {
+          "id": "8:4631726052337768012",
+          "name": "date",
+          "type": 6
+        },
+        {
+          "id": "9:1395374994901672943",
+          "name": "localPath",
+          "indexId": "48:8016932339362653151",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "10:6172907045496861970",
+          "name": "thumbFileId",
+          "type": 5
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "14:372246585822306358",
+      "lastPropertyId": "26:4939871500839201159",
+      "name": "ObxVod",
+      "properties": [
+        {
+          "id": "1:73264108150280485",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6220490049340897022",
+          "name": "vodId",
+          "indexId": "49:2654897407235758088",
+          "type": 5,
+          "flags": 40
+        },
+        {
+          "id": "3:2807044756227892395",
+          "name": "nameLower",
+          "indexId": "50:9097127050559416456",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:2443614250465781015",
+          "name": "sortTitleLower",
+          "indexId": "51:3035448632743660607",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "5:1612638933178009708",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "6:3398714582006105174",
+          "name": "poster",
+          "type": 9
+        },
+        {
+          "id": "7:2205355131135984100",
+          "name": "imagesJson",
+          "type": 9
+        },
+        {
+          "id": "8:8610318443950160681",
+          "name": "year",
+          "indexId": "52:1414880931223133198",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "9:911517276182921498",
+          "name": "yearKey",
+          "indexId": "53:8703414530974107579",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "10:2896267266998006329",
+          "name": "rating",
+          "type": 8
+        },
+        {
+          "id": "11:2410405989001077931",
+          "name": "plot",
+          "type": 9
+        },
+        {
+          "id": "12:5297761733812843039",
+          "name": "genre",
+          "type": 9
+        },
+        {
+          "id": "13:2207033930055403572",
+          "name": "director",
+          "type": 9
+        },
+        {
+          "id": "14:3174257592099793281",
+          "name": "cast",
+          "type": 9
+        },
+        {
+          "id": "15:6645485811857984211",
+          "name": "country",
+          "type": 9
+        },
+        {
+          "id": "16:4225132183684665897",
+          "name": "releaseDate",
+          "type": 9
+        },
+        {
+          "id": "17:7311048068154082508",
+          "name": "imdbId",
+          "type": 9
+        },
+        {
+          "id": "18:630274305611853768",
+          "name": "tmdbId",
+          "type": 9
+        },
+        {
+          "id": "19:3238214843168035391",
+          "name": "trailer",
+          "type": 9
+        },
+        {
+          "id": "20:693912054005932848",
+          "name": "containerExt",
+          "type": 9
+        },
+        {
+          "id": "21:7034519050032622042",
+          "name": "categoryId",
+          "indexId": "54:658073722689431313",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "22:286446752137052546",
+          "name": "providerKey",
+          "indexId": "55:269400254277116828",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "23:5626184960419446774",
+          "name": "genreKey",
+          "indexId": "56:1495066420834041029",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "24:3289084220246839562",
+          "name": "importedAt",
+          "indexId": "57:3834615042622230960",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "25:7424702970614100217",
+          "name": "updatedAt",
+          "indexId": "58:2361643429493446230",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "26:4939871500839201159",
+          "name": "durationSecs",
+          "type": 5
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "15:4310044070703942147",
+      "lastPropertyId": "4:5743298300919031492",
+      "name": "ObxIndexGenre",
+      "properties": [
+        {
+          "id": "1:2804585215301458889",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1205886090849297125",
+          "name": "kind",
+          "indexId": "59:3243135975802936998",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:5257152756746426133",
+          "name": "key",
+          "indexId": "60:4198139420115224623",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:5743298300919031492",
+          "name": "count",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "16:2340036172859366472",
+      "lastPropertyId": "4:7574775999061756914",
+      "name": "ObxIndexLang",
+      "properties": [
+        {
+          "id": "1:183652735463696044",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6172821595647862561",
+          "name": "kind",
+          "indexId": "61:9159670987018604047",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:3316249862838532600",
+          "name": "key",
+          "indexId": "62:1844984409705628318",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:7574775999061756914",
+          "name": "count",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "17:25388133388189392",
+      "lastPropertyId": "4:7319879229074917107",
+      "name": "ObxIndexProvider",
+      "properties": [
+        {
+          "id": "1:1060125295314813622",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7950421302814536300",
+          "name": "kind",
+          "indexId": "63:6236461894752499014",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:5355521053776595331",
+          "name": "key",
+          "indexId": "64:6854608820688454790",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:7319879229074917107",
+          "name": "count",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "18:2463444933959301999",
+      "lastPropertyId": "4:2655474062331843156",
+      "name": "ObxIndexQuality",
+      "properties": [
+        {
+          "id": "1:665858901592595",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5916239289828576911",
+          "name": "kind",
+          "indexId": "65:1113206441072678820",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:2156860476993388453",
+          "name": "key",
+          "indexId": "66:4922423568226535229",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:2655474062331843156",
+          "name": "count",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "19:5410393420475292600",
+      "lastPropertyId": "4:3375355546433380873",
+      "name": "ObxIndexYear",
+      "properties": [
+        {
+          "id": "1:1577433471866838684",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7638493366551707224",
+          "name": "kind",
+          "indexId": "67:2568696657406252135",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:598656228914861250",
+          "name": "key",
+          "indexId": "68:7296937192854441912",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "4:3375355546433380873",
+          "name": "count",
+          "type": 6
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "19:5410393420475292600",
+  "lastIndexId": "68:7296937192854441912",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}

@@ -2,11 +2,6 @@ package com.chris.m3usuite.work
 
 import android.content.Context
 import androidx.work.*
-import com.chris.m3usuite.data.repo.PlaylistRepository
-import com.chris.m3usuite.prefs.SettingsStore
-import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.first
 
 class XtreamRefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
     override suspend fun doWork(): Result {

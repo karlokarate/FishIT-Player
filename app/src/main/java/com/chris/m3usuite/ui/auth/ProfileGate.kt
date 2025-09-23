@@ -42,6 +42,8 @@ import androidx.compose.ui.layout.ContentScale
 import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.auth.CreateProfileSheet
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 
 @Composable
 fun ProfileGate(
@@ -155,10 +157,22 @@ fun ProfileGate(
         Text("Wer bist du?", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(12.dp))
         // Adult
-        OutlinedCard(Modifier.fillMaxWidth().clickable {
+        val adultFocus = remember { FocusRequester() }
+        LaunchedEffect(Unit) { adultFocus.requestFocus() }
+        OutlinedCard(
+            Modifier
+                .fillMaxWidth()
+                .focusRequester(adultFocus)
+                .tvClickable {
             if (!pinSet) { setPin = true; pin = ""; pin2 = ""; pinError = null; showPin = true }
             else { setPin = false; pin = ""; pinError = null; showPin = true }
-        }) { ListItem(headlineContent = { Text("Ich bin Erwachsen") }, supportingContent = { Text("Mit PIN geschützt") }) }
+        }
+        ) {
+            ListItem(
+                headlineContent = { Text("Ich bin Erwachsener") },
+                supportingContent = { Text("Mit PIN geschützt") }
+            )
+        }
         Spacer(Modifier.height(16.dp))
         Text("Ich bin ein Kind / Gast", style = MaterialTheme.typography.titleMedium)
         // Add tile
@@ -169,7 +183,8 @@ fun ProfileGate(
                     .tvClickable { showCreate = true }
             ) { ListItem(headlineContent = { Text("Neues Profil hinzufügen") }) }
         }
-        LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
+        val listState = com.chris.m3usuite.ui.state.rememberRouteListState("profiles:gate")
+        LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 8.dp)) {
             items(kids, key = { it.id }) { k ->
                 var used by remember(k.id) { mutableStateOf<Int?>(null) }
                 var limit by remember(k.id) { mutableStateOf<Int?>(null) }
@@ -214,7 +229,9 @@ fun ProfileGate(
                                     url = model,
                                     contentDescription = null,
                                     modifier = Modifier.size(40.dp).clip(CircleShape),
-                                    contentScale = ContentScale.Crop
+                                    contentScale = ContentScale.Crop,
+                                    crossfade = true,
+                                    preferRgb565 = true
                                 )
                             } else {
                                 Icon(painter = painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)

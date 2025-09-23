@@ -14,9 +14,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlin.math.min
 
 /** Trims Telegram local cache to user-defined size (GB) by deleting oldest files and nulling DB localPath. */
 class TelegramCacheCleanupWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
+
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val store = SettingsStore(applicationContext)
         val wipeAll = inputData.getBoolean(KEY_WIPE_ALL, false)
@@ -24,50 +26,120 @@ class TelegramCacheCleanupWorker(appContext: Context, params: WorkerParameters) 
         if (!enabled && !wipeAll) return@withContext Result.success()
 
         val base = applicationContext.filesDir
+        val obxStore = ObxStore.get(applicationContext)
+        val msgBox = obxStore.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+
+        fun putChunked(list: List<com.chris.m3usuite.data.obx.ObxTelegramMessage>, chunk: Int = 2000) {
+            var i = 0
+            val n = list.size
+            while (i < n) {
+                val to = min(i + chunk, n)
+                msgBox.put(list.subList(i, to))
+                i = to
+            }
+        }
 
         if (wipeAll) {
-            // Delete all files under filesDir and clear localPath in DB
+            // Delete all files under filesDir and clear localPath in DB (paginated)
             kotlin.runCatching {
                 base.walkTopDown().filter { it.isFile }.forEach { it.delete() }
             }
             kotlin.runCatching {
-                val box = ObxStore.get(applicationContext).boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
-                val all = box.all
-                if (all.isNotEmpty()) {
-                    all.forEach { it.localPath = null }
-                    box.put(all)
+                val q = msgBox.query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.localPath
+                    .startsWith(base.absolutePath)).build()
+                val page = 5000L
+                var off = 0L
+                while (true) {
+                    val batch = q.find(off, page)
+                    if (batch.isEmpty()) break
+                    batch.forEach { it.localPath = null }
+                    putChunked(batch)
+                    off += batch.size
                 }
             }
+            obxStore.closeThreadResources()
             return@withContext Result.success()
         }
-        // Collect all existing local files for trim
-        val messages = kotlin.runCatching { base.walkTopDown().filter { it.isFile }.toList() }.getOrElse { emptyList() }
-        val totalBytes = messages.sumOf { it.length() }
+
+        // Collect all local files for trim
+        val files = runCatching { base.walkTopDown().filter { it.isFile }.toList() }.getOrElse { emptyList() }
+        val totalBytes = files.sumOf { it.length() }
         val limitGb = store.tgCacheLimitGb.first().coerceIn(1, 50)
         val limitBytes = limitGb.toLong() * 1024L * 1024L * 1024L
-        if (totalBytes <= limitBytes) return@withContext Result.success()
+        if (totalBytes <= limitBytes) {
+            // Also ensure DB doesn't reference non-existent files from outside deletions
+            clearDanglingDbPaths(base, msgBox, obxStore)
+            return@withContext Result.success()
+        }
 
-        // Sort by lastModified ascending (oldest first)
-        val toDelete = messages.sortedBy { it.lastModified() }.iterator()
+        // Sort by lastModified ascending (oldest first) and delete until below threshold
+        val toDelete = files.sortedBy { it.lastModified() }.iterator()
         var bytes = totalBytes
-        var deleted = 0
+        val deletedPaths = ArrayList<String>()
         while (bytes > limitBytes && toDelete.hasNext()) {
             val f: File = toDelete.next()
             val sz = f.length()
-            if (kotlin.runCatching { f.delete() }.getOrDefault(false)) {
-                deleted++
+            if (runCatching { f.delete() }.getOrDefault(false)) {
+                deletedPaths.add(f.absolutePath)
                 bytes -= sz
             }
         }
+
+        // Null out localPath for deleted files (only those that truly vanished)
+        if (deletedPaths.isNotEmpty()) {
+            // Fast path: query messages under app files dir and test existence
+            val q = msgBox.query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.localPath
+                .startsWith(base.absolutePath)).build()
+            val page = 5000L
+            var off = 0L
+            while (true) {
+                val batch = q.find(off, page)
+                if (batch.isEmpty()) break
+                val changed = batch.filter { it.localPath?.let { p -> !File(p).exists() } ?: false }
+                if (changed.isNotEmpty()) putChunked(changed)
+                off += batch.size
+            }
+        }
+
+        // Clean up OBX thread-locals
+        obxStore.closeThreadResources()
         Result.success()
+    }
+
+    private fun clearDanglingDbPaths(
+        base: File,
+        msgBox: io.objectbox.Box<com.chris.m3usuite.data.obx.ObxTelegramMessage>,
+        obxStore: io.objectbox.BoxStore
+    ) {
+        val q = msgBox.query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.localPath
+            .startsWith(base.absolutePath)).build()
+        val page = 5000L
+        var off = 0L
+        while (true) {
+            val batch = q.find(off, page)
+            if (batch.isEmpty()) break
+            val changed = batch.filter { it.localPath?.let { p -> !File(p).exists() } ?: false }
+            if (changed.isNotEmpty()) {
+                var i = 0
+                while (i < changed.size) {
+                    val to = kotlin.math.min(i + 2000, changed.size)
+                    msgBox.put(changed.subList(i, to).onEach { it.localPath = null })
+                    i = to
+                }
+            }
+            off += batch.size
+        }
+        obxStore.closeThreadResources()
     }
 
     companion object {
         private const val UNIQUE = "tg_cache_cleanup"
         private const val KEY_WIPE_ALL = "wipe_all"
+
         fun schedule(context: Context) {
             val req = PeriodicWorkRequestBuilder<TelegramCacheCleanupWorker>(1, TimeUnit.DAYS).build()
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(UNIQUE, ExistingPeriodicWorkPolicy.UPDATE, req)
+            WorkManager.getInstance(context)
+                .enqueueUniquePeriodicWork(UNIQUE, ExistingPeriodicWorkPolicy.UPDATE, req)
         }
 
         fun wipeAll(context: Context) {
@@ -75,7 +147,8 @@ class TelegramCacheCleanupWorker(appContext: Context, params: WorkerParameters) 
             val req = androidx.work.OneTimeWorkRequestBuilder<TelegramCacheCleanupWorker>()
                 .setInputData(data)
                 .build()
-            WorkManager.getInstance(context).enqueueUniqueWork("tg_cache_wipe_once", ExistingWorkPolicy.REPLACE, req)
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork("tg_cache_wipe_once", ExistingWorkPolicy.REPLACE, req)
         }
     }
 }

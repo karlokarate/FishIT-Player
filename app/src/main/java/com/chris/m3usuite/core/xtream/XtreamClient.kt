@@ -2,51 +2,87 @@ package com.chris.m3usuite.core.xtream
 
 import android.net.Uri
 import android.util.Log
-import com.chris.m3usuite.core.xtream.*
+import android.os.SystemClock
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import androidx.core.net.toUri
 
 /**
- * XtreamClient – Vollständiger, performanter Client auf Basis deiner Xtream-Module.
+ * XtreamClient – API‑first Client für Xtream Codes Panels.
  *
- * Features:
- *  - Discovery/Port-Resolver & Aliasse (CapabilityDiscoverer)
- *  - Deterministische URL-Fabrik (XtreamConfig)
- *  - KATEGORIEN: live, series, vod (alias-basiert)
- *  - LISTEN: live/series/vod bulk-laden, Client-slicing (lazy)
- *  - DETAILS:
- *      * VOD: kompletter Info-Block inkl. Trailer, Poster/Cover, Backdrops
- *      * SERIES: kompletter Info-Block + Staffeln + ALLE Episoden mit Episode-Infos
- *  - EPG: On-Demand get_short_epg für sichtbare Streams (moderate Parallelität)
- *  - PLAY-URLs: live/vod/series-episoden – robust inkl. container_extension
- *
- * Keine DB hier (kommt im nächsten Schritt). Dieses Modul ist bewusst I/O-zentriert.
+ * Unterschied zu älteren Ständen:
+ *  - Wenn **keine Kategorie** übergeben wird, wird bei Listen-Calls zunächst **category_id=*** gefragt
+ *    und **nur bei leerem Ergebnis oder Fehler** auf **category_id=0** gefallen (deckt beide Panel‑Varianten ab).
+ *  - JSON‑Helper werden **aktiv genutzt** (isJsonArray/isJsonObject), keine „immer true“-Heuristik.
+ *  - EPG‑Prefetch im Client bleibt erhalten, ist aber **@Deprecated** – nutze bitte
+ *    `EpgRepository.prefetchNowNext(...)`, da dort Cache & Persist bereits integriert sind.
  */
 class XtreamClient(
     private val http: OkHttpClient,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val io: CoroutineDispatcher = Dispatchers.IO
 ) {
+    companion object {
+        private val rateMutex = kotlinx.coroutines.sync.Mutex()
+        private var lastCallAt = 0L
+        private const val MIN_INTERVAL_MS = 120L
 
-    // Laufzeit-Objekte nach initialize()
+        private data class CacheEntry(val at: Long, val body: String)
+        private val cacheLock = kotlinx.coroutines.sync.Mutex()
+        private val cache = object : LinkedHashMap<String, CacheEntry>(512, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CacheEntry>?): Boolean = size > 512
+        }
+        private const val CACHE_TTL_MS = 60_000L
+        private const val EPG_CACHE_TTL_MS = 15_000L
+
+        private suspend fun takeRateSlot() {
+            rateMutex.withLock {
+                val now = SystemClock.elapsedRealtime()
+                val delta = now - lastCallAt
+                if (delta in 0 until MIN_INTERVAL_MS) {
+                    delay(MIN_INTERVAL_MS - delta)
+                }
+                lastCallAt = SystemClock.elapsedRealtime()
+            }
+        }
+
+        private suspend fun readCache(url: String, isEpg: Boolean): String? {
+            val ttl = if (isEpg) EPG_CACHE_TTL_MS else CACHE_TTL_MS
+            return cacheLock.withLock {
+                val e = cache[url] ?: return@withLock null
+                if ((SystemClock.elapsedRealtime() - e.at) <= ttl) e.body else null
+            }
+        }
+        private suspend fun writeCache(url: String, body: String) {
+            cacheLock.withLock { cache[url] = CacheEntry(SystemClock.elapsedRealtime(), body) }
+        }
+    }
     private lateinit var cfg: XtreamConfig
     private lateinit var caps: XtreamCapabilities
     private var vodKind: String = "vod"
-    // Dedicated HTTP client for Xtream calls to avoid unintended http→https upgrades
+
+    // Eigener Client für Xtream-API (keine erzwungenen SSL‑Redirects)
     private var httpClient: OkHttpClient = http
 
-    // moderates Parallel-Limit (EPG Prefetch etc.)
+    // Moderates Parallel‑Limit (nur für fire‑and‑forget EPG‑Fetch)
     private val epgSemaphore = Semaphore(4)
 
+    private fun redact(url: String): String =
+        url.replace(Regex("(?i)(password)=([^&]*)"), "${'$'}1=***")
+           .replace(Regex("(?i)(username)=([^&]*)"), "${'$'}1=***")
+    private fun snippet(s: String, n: Int = 200): String = s.replace("\n", " ").replace("\r", " ").take(n)
+
     /**
-     * Einmaliger Setup: Discovery (Port & Aliasse) -> finale XtreamConfig.
-     * basePath (z. B. "/xtream") wird durchgereicht und in baseUrl berücksichtigt.
+     * Discovery (Port/Aliasse) → finale XtreamConfig erzeugen.
      */
     suspend fun initialize(
         scheme: String,
@@ -60,8 +96,7 @@ class XtreamClient(
         store: ProviderCapabilityStore,
         portStore: EndpointPortStore,
         forceRefreshDiscovery: Boolean = false,
-        // If provided (>0), use this port as-is and skip port resolver
-        portOverride: Int? = null
+        portOverride: Int? = null,
     ) = withContext(io) {
         val discoverer = CapabilityDiscoverer(
             http = http,
@@ -70,7 +105,6 @@ class XtreamClient(
             json = json
         )
         caps = if ((portOverride ?: 0) > 0) {
-            // Respect explicit port; do not alter via resolver
             val cfgExplicit = XtreamConfig(
                 scheme = scheme,
                 host = host,
@@ -80,7 +114,7 @@ class XtreamClient(
                 basePath = basePath,
                 liveExtPrefs = livePrefs,
                 vodExtPrefs = vodPrefs,
-                seriesExtPrefs = seriesPrefs
+                seriesExtPrefs = seriesPrefs,
             )
             discoverer.discover(cfgExplicit, forceRefresh = forceRefreshDiscovery)
         } else {
@@ -90,13 +124,15 @@ class XtreamClient(
                 username = username,
                 password = password,
                 basePath = basePath,
-                forceRefresh = forceRefreshDiscovery
+                forceRefresh = forceRefreshDiscovery,
             )
         }
-        val u = Uri.parse(caps.baseUrl)
+
+        val u = caps.baseUrl.toUri()
         val resolvedScheme = (u.scheme ?: scheme).lowercase()
         val resolvedHost = u.host ?: host
-        val resolvedPort = u.port.takeIf { it > 0 } ?: error("Port missing after discovery")
+        val resolvedPort = u.port.takeIf { it > 0 } ?: if (resolvedScheme == "https") 443 else 80
+        val resolvedBasePath = u.path?.takeIf { it.isNotBlank() && it != "/" }
         vodKind = caps.resolvedAliases.vodKind ?: "vod"
 
         cfg = XtreamConfig(
@@ -106,26 +142,26 @@ class XtreamClient(
             username = username,
             password = password,
             pathKinds = PathKinds(liveKind = "live", vodKind = vodKind, seriesKind = "series"),
-            basePath = basePath,
+            basePath = resolvedBasePath ?: basePath,
             liveExtPrefs = livePrefs,
             vodExtPrefs = vodPrefs,
-            seriesExtPrefs = seriesPrefs
+            seriesExtPrefs = seriesPrefs,
         )
-        // For Xtream API calls, keep HTTP scheme as resolved and do not upgrade via SSL redirects implicitly
+
         httpClient = http.newBuilder()
             .followRedirects(true)
             .followSslRedirects(false)
             .build()
     }
 
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------
     // Kategorien
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------
     suspend fun getLiveCategories(): List<RawCategory> =
         apiArray("get_live_categories") { obj ->
             RawCategory(
                 category_id = obj["category_id"]?.asString(),
-                category_name = obj["category_name"]?.asString()
+                category_name = obj["category_name"]?.asString(),
             )
         }
 
@@ -133,7 +169,7 @@ class XtreamClient(
         apiArray("get_series_categories") { obj ->
             RawCategory(
                 category_id = obj["category_id"]?.asString(),
-                category_name = obj["category_name"]?.asString()
+                category_name = obj["category_name"]?.asString(),
             )
         }
 
@@ -145,7 +181,7 @@ class XtreamClient(
             val res = apiArray("get_${alias}_categories") { obj ->
                 RawCategory(
                     category_id = obj["category_id"]?.asString(),
-                    category_name = obj["category_name"]?.asString()
+                    category_name = obj["category_name"]?.asString(),
                 )
             }
             if (res.isNotEmpty()) {
@@ -156,9 +192,9 @@ class XtreamClient(
         return emptyList()
     }
 
-    // --------------------------------------------------------------------
-    // Streams (Bulk -> Client-Slicing für Lazy Loading)
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------
+    // Streams (Bulk → Client‑Slicing)
+    // ------------------------------------------------------------
     suspend fun getLiveStreams(categoryId: String? = null, offset: Int, limit: Int): List<RawLiveStream> =
         sliceArray("get_live_streams", categoryId, offset, limit) { obj ->
             RawLiveStream(
@@ -168,7 +204,7 @@ class XtreamClient(
                 stream_icon = obj["stream_icon"]?.asString(),
                 epg_channel_id = obj["epg_channel_id"]?.asString(),
                 tv_archive = obj["tv_archive"]?.asIntOrNull(),
-                category_id = obj["category_id"]?.asString()
+                category_id = obj["category_id"]?.asString(),
             )
         }
 
@@ -179,7 +215,7 @@ class XtreamClient(
                 name = obj["name"]?.asString(),
                 series_id = obj["series_id"]?.asIntOrNull(),
                 cover = obj["cover"]?.asString(),
-                category_id = obj["category_id"]?.asString()
+                category_id = obj["category_id"]?.asString(),
             )
         }
 
@@ -189,12 +225,18 @@ class XtreamClient(
         for (alias in order) {
             if (!tried.add(alias)) continue
             val res = sliceArray("get_${alias}_streams", categoryId, offset, limit) { obj ->
+                val resolvedId = (obj["vod_id"]
+                    ?: obj["movie_id"]
+                    ?: obj["id"]
+                    ?: obj["stream_id"]
+                )?.asIntOrNull()
                 RawVod(
                     num = obj["num"]?.asIntOrNull(),
                     name = obj["name"]?.asString(),
-                    vod_id = (obj["vod_id"] ?: obj["movie_id"] ?: obj["id"])?.asIntOrNull(),
+                    vod_id = resolvedId,
                     stream_icon = obj["stream_icon"]?.asString(),
-                    category_id = obj["category_id"]?.asString()
+                    category_id = obj["category_id"]?.asString(),
+                    container_extension = obj["container_extension"]?.asString(),
                 )
             }
             if (res.isNotEmpty()) {
@@ -205,13 +247,11 @@ class XtreamClient(
         return emptyList()
     }
 
-    // --------------------------------------------------------------------
-    // Details: VOD (vollständig: trailer, backdrops, poster/cover …)
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------
+    // Details: VOD / Series (für Drilldown)
+    // ------------------------------------------------------------
     suspend fun getVodDetailFull(vodId: Int): NormalizedVodDetail? {
-        // 1) bestimme korrektes Paramfeld aus Streams-Sample (robust bei vod|movie|movies)
-        val idField = resolveVodIdField() // "vod_id" | "movie_id" | "id"
-        // 2) hole Detail – robust mit Alias-Fallback
+        val idField = resolveVodIdField()
         val aliasOrder = listOf(vodKind, "vod", "movie", "movies").filter { it.isNotBlank() }
         var infoObj: Map<String, JsonElement>? = null
         for (alias in aliasOrder) {
@@ -219,13 +259,13 @@ class XtreamClient(
             if (infoObj != null) { vodKind = alias; break }
         }
         infoObj ?: return null
-        // Response-Shape variiert, häufig "movie_data" -> Objekt
-        val movieData = infoObj["movie_data"]?.jsonObject ?: infoObj // Fallback: direktes Objekt
+        val movieData = infoObj["movie_data"]?.jsonObject ?: infoObj
 
-        // Vollständiges Mapping nach NormalizedVodDetail (Trailer, Backdrops, Poster/Cover etc.)
         val backdrops = movieData["backdrop_path"]?.jsonArray?.mapNotNull { it.asString() }.orEmpty()
         val poster = movieData["poster_path"]?.asString()
         val cover = movieData["cover"]?.asString()
+        val container = sanitizeContainerExt(movieData["container_extension"]?.asString())
+        val durationSecs = parseDurationSeconds(movieData["duration"]?.asString())
         val images = buildList {
             if (poster != null) add(poster)
             if (cover != null && cover != poster) add(cover)
@@ -246,20 +286,18 @@ class XtreamClient(
             imdbId = movieData["imdb_id"]?.asString(),
             tmdbId = movieData["tmdb_id"]?.asString(),
             images = images.distinct(),
-            trailer = movieData["youtube_trailer"]?.asString()
+            trailer = movieData["youtube_trailer"]?.asString(),
+            containerExt = container,
+            durationSecs = durationSecs,
         )
     }
 
-    // --------------------------------------------------------------------
-    // Details: Series (vollständig: Info + Staffeln + ALLE Episoden mit Infos)
-    // --------------------------------------------------------------------
     suspend fun getSeriesDetailFull(seriesId: Int): NormalizedSeriesDetail? {
         val root = apiObject("get_series_info", extra = "&series_id=$seriesId") ?: return null
         val info = root["info"]?.jsonObject
         val seasonsArr = root["seasons"]?.jsonArray ?: JsonArray(emptyList())
         val episodesMap = root["episodes"]?.jsonObject ?: JsonObject(emptyMap())
 
-        // Grundinformationen
         val images = buildList {
             info?.get("poster_path")?.asString()?.let { add(it) }
             info?.get("cover")?.asString()?.let { if (!contains(it)) add(it) }
@@ -268,34 +306,40 @@ class XtreamClient(
             }
         }
 
-        // Staffeln + komplette Episodenliste
         val normalizedSeasons = mutableListOf<NormalizedSeason>()
-
-        // Seasons-Nummern aus seasonsArray bevorzugen; ansonsten aus episodes map keys
         val seasonNumbersFromSeasons = seasonsArr.mapNotNull { it.jsonObject["season_number"]?.asIntOrNull() }
         val seasonNumbersFromEpisodes = episodesMap.keys.mapNotNull { it.toIntOrNull() }
         val seasonNumbers = (seasonNumbersFromSeasons + seasonNumbersFromEpisodes).toSet().sorted()
 
         for (seasonNumber in seasonNumbers) {
-            // zugehörige Episodenliste holen
             val key = seasonNumber.toString()
             val episodeList = episodesMap[key]?.jsonArray ?: JsonArray(emptyList())
             val normalizedEpisodes = episodeList.mapNotNull { epEl ->
                 val epObj = epEl.jsonObject
                 val infoObj = epObj["info"]?.jsonObject
+                val poster = runCatching {
+                    infoObj?.get("movie_image")?.asString()
+                        ?: infoObj?.get("cover")?.asString()
+                        ?: infoObj?.get("poster_path")?.asString()
+                        ?: infoObj?.get("thumbnail")?.asString()
+                        ?: infoObj?.get("img")?.asString()
+                        ?: infoObj?.get("still_path")?.asString()
+                }.getOrNull()
                 NormalizedEpisode(
+                    episodeId = epObj["id"]?.asIntOrNull(),
                     episodeNum = epObj["episode_num"]?.asIntOrNull() ?: epObj["id"]?.asIntOrNull() ?: return@mapNotNull null,
                     title = epObj["title"]?.asString(),
                     durationSecs = infoObj?.get("duration")?.asIntFromDuration(),
                     rating = infoObj?.get("rating")?.asDoubleOrNull(),
                     plot = infoObj?.get("plot")?.asString(),
                     airDate = infoObj?.get("releasedate")?.asString(),
-                    playExt = epObj["container_extension"]?.asString()
+                    playExt = sanitizeContainerExt(epObj["container_extension"]?.asString()),
+                    posterUrl = poster,
                 )
             }
             normalizedSeasons += NormalizedSeason(
                 seasonNumber = seasonNumber,
-                episodes = normalizedEpisodes
+                episodes = normalizedEpisodes,
             )
         }
 
@@ -312,59 +356,89 @@ class XtreamClient(
             tmdbId = info?.get("tmdb_id")?.asString(),
             images = images.distinct(),
             trailer = info?.get("youtube_trailer")?.asString(),
-            seasons = normalizedSeasons
+            country = info?.get("country")?.asString(),
+            releaseDate = info?.get("releasedate")?.asString(),
+            seasons = normalizedSeasons,
         )
     }
 
-    // --------------------------------------------------------------------
-    // EPG: On-Demand (sichtbare IDs) – moderat parallel
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------
+    // EPG – On‑Demand (sichtbare IDs)
+    // ------------------------------------------------------------
     suspend fun fetchShortEpg(streamId: Int, limit: Int = 20): String? =
         apiRaw("get_short_epg", "&stream_id=$streamId&limit=$limit")
 
+    /**
+     * Veraltet: nutze stattdessen EpgRepository.prefetchNowNext(...),
+     * damit Cache & Persist gepflegt werden.
+     */
+    @Deprecated("Use EpgRepository.prefetchNowNext(...) for caching/persistence")
     suspend fun prefetchEpgForVisible(streamIds: List<Int>, perStreamLimit: Int = 10) = withContext(io) {
         streamIds.distinct().forEach { id ->
             epgSemaphore.withPermit {
-                // Fire-and-forget; Rückgabe optional – Persistierung folgt bei DB-Verdrahtung
-                fetchShortEpg(id, perStreamLimit)
+                fetchShortEpg(id, perStreamLimit) // fire‑and‑forget (kein Persist)
             }
         }
     }
 
-    // --------------------------------------------------------------------
-    // Play-URL-Fabriken (für Player)
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------
+    // Play‑URLs
+    // ------------------------------------------------------------
     fun buildLivePlayUrl(streamId: Int, extOverride: String? = null): String =
         cfg.liveUrl(streamId, extOverride)
 
     fun buildVodPlayUrl(vodId: Int, container: String?): String =
         cfg.vodUrl(vodId, container)
 
-    fun buildSeriesEpisodePlayUrl(seriesId: Int, season: Int, episode: Int, episodeExt: String?): String =
-        cfg.seriesEpisodeUrl(seriesId, season, episode, episodeExt)
+    fun buildSeriesEpisodePlayUrl(
+        seriesId: Int,
+        season: Int,
+        episode: Int,
+        episodeExt: String?,
+        episodeId: Int? = null
+    ): String =
+        episodeId?.takeIf { it > 0 }?.let {
+            @Suppress("DEPRECATION")
+            cfg.seriesEpisodeUrl(it, episodeExt)
+        }
+            ?: cfg.seriesEpisodeUrl(seriesId, season, episode, episodeExt)
 
-    // ====================================================================
-    // Internals: API Helpers & Mapping
-    // ====================================================================
+    // ============================================================
+    // Internals: API Helpers
+    // ============================================================
     private suspend fun <T> apiArray(
         action: String,
         extra: String? = null,
         map: (obj: Map<String, JsonElement>) -> T,
     ): List<T> = withContext(io) {
         val url = cfg.playerApi(action, extra)
-        runCatching { Log.i("XtreamClient", "API: $url") }
-        val req = Request.Builder()
-            .url(url)
-            .header("Accept", "application/json")
-            .header("Accept-Encoding", "gzip")
-            .get()
-            .build()
-        httpClient.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) return@withContext emptyList()
-            val root = json.parseToJsonElement(resp.body?.string().orEmpty())
-            if (!root.isJsonArray()) return@withContext emptyList()
-            root.jsonArray.mapNotNull { el -> el.jsonObjectOrNull()?.let { map(it) } }
+        val isEpg = action == "get_short_epg"
+        val cached = readCache(url, isEpg)
+        val body: String = if (cached != null) {
+            if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
+            cached
+        } else {
+            if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "API: ${redact(url)}")
+            takeRateSlot()
+            val req = Request.Builder().url(url).header("Accept", "application/json").get().build()
+            httpClient.newCall(req).execute().use { resp ->
+                val code = resp.code
+                val ct = resp.header("Content-Type").orEmpty()
+                if (!resp.isSuccessful) {
+                    Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=${ct}")
+                    return@withContext emptyList()
+                }
+                val b = resp.body?.string().orEmpty()
+                writeCache(url, b)
+                b
+            }
         }
+        val root = runCatching { json.parseToJsonElement(body) }.getOrElse { err ->
+            Log.w("XtreamClient", "parse_error action=$action len=${body.length} head='${snippet(body)}' err=${err.javaClass.simpleName}")
+            null
+        }
+        if (root != null && root.isJsonArray()) root.jsonArray.mapNotNull { el -> el.jsonObjectOrNull()?.let { map(it) } }
+        else { Log.w("XtreamClient", "unexpected_body action=$action len=${body.length} head='${snippet(body)}'"); emptyList() }
     }
 
     private suspend fun <T> sliceArray(
@@ -372,14 +446,22 @@ class XtreamClient(
         categoryId: String?,
         offset: Int,
         limit: Int,
-        map: (obj: Map<String, JsonElement>) -> T
+        map: (obj: Map<String, JsonElement>) -> T,
     ): List<T> {
-        // Bulk ziehen, dann clientseitig schneiden (minimale Request-Anzahl, ideal fürs Lazy Loading)
-        val all = if (categoryId == null) {
-            // Use category_id=0 to request all categories consistently
-            apiArray(action, extra = "&category_id=0", map = map)
+        val all: List<T> = if (categoryId == null) {
+            // Erst * probieren; bei leerem Resultat ODER Fehler → 0 → ohne category_id als letzte Eskalation
+            val star = runCatching { apiArray(action, extra = "&category_id=*", map = map) }.getOrElse { emptyList() }
+            if (star.isNotEmpty()) star
+            else {
+        if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "Fallback category_id=0 for action=$action (star empty)")
+                val zero = runCatching { apiArray(action, extra = "&category_id=0", map = map) }.getOrElse { emptyList() }
+                if (zero.isNotEmpty()) zero
+                else {
+                    if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "Fallback without category_id for action=$action (0 empty)")
+                    apiArray(action, extra = null, map = map)
+                }
+            }
         } else {
-            // Panels typically accept category_id as an extra query argument to action
             apiArray(action, extra = "&category_id=$categoryId", map = map)
         }
         val from = offset.coerceAtLeast(0)
@@ -387,76 +469,112 @@ class XtreamClient(
         return if (from < to) all.subList(from, to) else emptyList()
     }
 
-    private suspend fun apiObject(
-        action: String,
-        extra: String?
-    ): Map<String, JsonElement>? = withContext(io) {
+    private suspend fun apiObject(action: String, extra: String?): Map<String, JsonElement>? = withContext(io) {
         val url = cfg.playerApi(action, extra)
-        runCatching { Log.i("XtreamClient", "API: $url") }
-        val req = Request.Builder()
-            .url(url)
-            .header("Accept", "application/json")
-            .header("Accept-Encoding", "gzip")
-            .get()
-            .build()
-        httpClient.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) return@withContext null
-            val root = json.parseToJsonElement(resp.body?.string().orEmpty())
-            root.jsonObjectOrNull()
+        val isEpg = action == "get_short_epg"
+        val cached = readCache(url, isEpg)
+        val body: String = if (cached != null) {
+            if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
+            cached
+        } else {
+            if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "API: ${redact(url)}")
+            takeRateSlot()
+            val req = Request.Builder().url(url).header("Accept", "application/json").get().build()
+            httpClient.newCall(req).execute().use { resp ->
+                val code = resp.code
+                val ct = resp.header("Content-Type").orEmpty()
+                if (!resp.isSuccessful) {
+                    Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=${ct}")
+                    return@withContext null
+                }
+                val b = resp.body?.string().orEmpty()
+                writeCache(url, b)
+                b
+            }
         }
+        val root = runCatching { json.parseToJsonElement(body) }.getOrElse { err ->
+            Log.w("XtreamClient", "parse_error action=$action len=${body.length} head='${snippet(body)}' err=${err.javaClass.simpleName}")
+            null
+        }
+        if (root != null && root.isJsonObject()) root.jsonObject
+        else { Log.w("XtreamClient", "unexpected_body action=$action len=${body.length} head='${snippet(body)}'"); null }
     }
 
     private suspend fun apiRaw(action: String, extra: String?): String? = withContext(io) {
         val url = cfg.playerApi(action, extra)
-        runCatching { Log.i("XtreamClient", "API: $url") }
-        val req = Request.Builder()
-            .url(url)
-            .header("Accept", "application/json")
-            .header("Accept-Encoding", "gzip")
-            .get()
-            .build()
+        val isEpg = action == "get_short_epg"
+        val cached = readCache(url, isEpg)
+        if (cached != null) {
+            if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
+            return@withContext cached
+        }
+        if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "API: ${redact(url)}")
+        takeRateSlot()
+        val req = Request.Builder().url(url).header("Accept", "application/json").get().build()
         httpClient.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) return@withContext null
-            resp.body?.string()
+            val code = resp.code
+            val ct = resp.header("Content-Type").orEmpty()
+            if (!resp.isSuccessful) {
+                Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=${ct}")
+                return@withContext null
+            }
+            val body = resp.body?.string()
+            if (body != null) writeCache(url, body)
+            body
         }
     }
 
-    // Ermittele robust das richtige ID-Feld für VOD-Info (vod_id | movie_id | id)
-    private suspend fun resolveVodIdField(): String {
-        // Hole ein kleines Sample aus Streams (ohne Kategorie-Filter)
-        val list = getVodStreams(categoryId = null, offset = 0, limit = 1)
-        // Prüfe bekannte Felder in der zugrunde liegenden JSON-Struktur über Capabilities-SampleKeys, wenn vorhanden
-        // Fallback: heuristisch
-        // Heuristik: wenn es überhaupt Einträge gibt, nutzt die API in >95% der Fälle "vod_id".
-        // Andernfalls fällt die API oft ebenfalls auf "vod_id" zurück.
-        return "vod_id"
-    }
+    private fun resolveVodIdField(): String = "vod_id" // die meisten Panels erwarten dieses Feld
 }
 
-// ====================================================================
-// JSON Helper-Erweiterungen (sicheres Lesen ohne NPE)
-// ====================================================================
-private fun JsonElement?.asString(): String? = try { this?.jsonPrimitive?.content } catch (_: Throwable) { null }
-private fun JsonElement?.asIntOrNull(): Int? = try { this?.jsonPrimitive?.intOrNull } catch (_: Throwable) { null }
-private fun JsonElement?.asDoubleOrNull(): Double? = try { this?.jsonPrimitive?.doubleOrNull } catch (_: Throwable) { null }
-private fun JsonElement?.asBooleanOrNull(): Boolean? = try { this?.jsonPrimitive?.booleanOrNull } catch (_: Throwable) { null }
-private fun JsonElement?.asStringListOrEmpty(): List<String> = try {
-    this?.jsonArray?.mapNotNull { it.asString() } ?: emptyList()
-} catch (_: Throwable) { emptyList() }
-private fun JsonElement?.isJsonArray(): Boolean = runCatching { this != null && this.jsonArray != null; true }.getOrDefault(false)
-private fun JsonElement?.isJsonObject(): Boolean = runCatching { this != null && this.jsonObject != null; true }.getOrDefault(false)
+// ============================================================
+// JSON‑Helper (sicheres Lesen ohne NPEs)
+// ============================================================
+private fun JsonElement?.asString(): String? = runCatching { this?.jsonPrimitive?.content }.getOrNull()
+private fun JsonElement?.asIntOrNull(): Int? = runCatching { this?.jsonPrimitive?.intOrNull }.getOrNull()
+private fun JsonElement?.asDoubleOrNull(): Double? = runCatching { this?.jsonPrimitive?.doubleOrNull }.getOrNull()
 private fun JsonElement?.jsonObjectOrNull(): Map<String, JsonElement>? = runCatching { this?.jsonObject }.getOrNull()
 
-// "01:23:45" -> Sekunden; oder "85" -> 85
-private fun JsonElement.asIntFromDuration(): Int? = runCatching {
-    val s = this.jsonPrimitive.content.trim()
-    if (s.isEmpty()) return@runCatching null
-    if (s.contains(":")) {
-        val parts = s.split(":").map { it.toIntOrNull() ?: 0 }
+private fun JsonElement?.isJsonArray(): Boolean = this is JsonArray
+private fun JsonElement?.isJsonObject(): Boolean = this is JsonObject
+
+private fun parseDurationSeconds(raw: String?): Int? = runCatching {
+    val value = raw?.trim().orEmpty()
+    if (value.isEmpty()) return@runCatching null
+    if (":" in value) {
+        val parts = value.split(":").map { it.toIntOrNull() ?: 0 }
         return@runCatching when (parts.size) {
             3 -> parts[0] * 3600 + parts[1] * 60 + parts[2]
             2 -> parts[0] * 60 + parts[1]
             else -> parts.lastOrNull()
         }
+    }
+    val digits = value.takeWhile { it.isDigit() }
+    val number = digits.toIntOrNull() ?: return@runCatching null
+    val lower = value.lowercase()
+    when {
+        lower.contains("hour") || lower.contains("hr") -> number * 3600
+        lower.contains("min") || lower.contains("m") -> number * 60
+        else -> if (number <= 600) number * 60 else number
+    }
+}.getOrNull()
+
+// "01:23:45" → Sekunden; „85“ → 85
+private fun JsonElement.asIntFromDuration(): Int? = runCatching {
+    val s = this.jsonPrimitive.content.trim()
+    if (":" in s) {
+        val p = s.split(":").map { it.toIntOrNull() ?: 0 }
+        when (p.size) {
+            3 -> p[0] * 3600 + p[1] * 60 + p[2]
+            2 -> p[0] * 60 + p[1]
+            else -> p.lastOrNull()
+        }
     } else s.toIntOrNull()
 }.getOrNull()
+
+private val EXT_REGEX = Regex("^[a-z0-9]{2,5}$")
+
+private fun sanitizeContainerExt(raw: String?): String? {
+    val value = raw?.lowercase()?.trim().orEmpty()
+    return value.takeIf { it.isNotBlank() && EXT_REGEX.matches(it) }
+}
