@@ -981,7 +981,7 @@ fun SettingsScreen(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { scope.launch { store.setSeedPrefixesCsv("DE,US,UK,VOD") } }) { Text("Standard: DE/US/UK/VOD") }
+                TextButton(onClick = { scope.launch { store.setSeedPrefixesCsv("DE,US,UK,VOD,FOR") } }) { Text("Standard: DE/US/UK/VOD/FOR") }
                 TextButton(onClick = { scope.launch { store.setSeedPrefixesCsv(availablePrefixes.joinToString(",")) } }) { Text("Alle aktivieren") }
             }
 

@@ -180,7 +180,7 @@ class SettingsStore(private val context: Context) {
     val seedPrefixesCsv: Flow<String> = context.dataStore.data.map { it[Keys.SEED_PREFIXES_GLOBAL_CSV].orEmpty() }
     suspend fun seedPrefixesSet(): Set<String> {
         val csv = seedPrefixesCsv.first().trim()
-        val def = setOf("DE", "US", "UK", "VOD")
+        val def = setOf("DE", "US", "UK", "VOD", "FOR")
         if (csv.isBlank()) return def
         return csv.split(',').mapNotNull { it.trim().uppercase().takeIf { s -> s.isNotBlank() } }.toSet().ifEmpty { def }
     }
