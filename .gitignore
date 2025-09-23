@@ -40,3 +40,13 @@ local.properties
 app/release/
 app/src/main/java/*.tar
 app/src/main/java/*.jsonl
+\n# Ignore reference/test data
+analysis_epg/
+epg_inputs/
+*.m3u
+*.m3u8
+*.zip
+*.tar.gz
+*.pdf
+cookies.txt
+logcat

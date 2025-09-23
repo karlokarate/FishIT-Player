@@ -1,4 +1,0 @@
-0 analysis_epg/live_ids.txt
-0 analysis_epg/vod_ids.txt
-0 analysis_epg/series_ids.txt
-0 total
