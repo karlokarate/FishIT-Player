@@ -741,17 +741,33 @@ fun LibraryScreen(
                 // Live: Kategorien (aus API), keine Provider/Genre-Buckets
                 if (selectedTab == ContentTab.Live && query.text.isBlank() && groupKeys.categories.isNotEmpty()) {
                     val labelById = runCatching { repo.categories("live").associateBy({ it.categoryId }, { it.categoryName }) }.getOrElse { emptyMap() }
+                    fun chipKeyForLiveCategory(label: String): String {
+                        val s = label.lowercase()
+                        return when {
+                            Regex("^\\s*for \\badults\\b").containsMatchIn(s) -> "adult"
+                            Regex("\\bsport|dazn|bundesliga|uefa|magenta|sky sport").containsMatchIn(s) -> "action" // use energetic style
+                            Regex("\\bnews|nachricht|cnn|bbc|al jazeera").containsMatchIn(s) -> "documentary"
+                            Regex("\\bdoku|docu|documentary|history|discovery|nat geo").containsMatchIn(s) -> "documentary"
+                            Regex("\\bkids|kinder|nick|kika|disney channel").containsMatchIn(s) -> "kids"
+                            Regex("\\bmusic|musik|radio").containsMatchIn(s) -> "show"
+                            Regex("\\bcinema|filmreihe|kino").containsMatchIn(s) -> "collection"
+                            else -> "other"
+                        }
+                    }
                     item {
                         Text("Live – Kategorien", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
                     }
                     items(groupKeys.categories, key = { it }) { catId ->
                         val sectionKey = "library:${selectedTabKey}:category:$catId"
                         val label = (labelById[catId] ?: catId).trim()
+                        val chipKey = chipKeyForLiveCategory(label)
                         ExpandableGroupSection(
                             tab = selectedTab,
                             stateKey = sectionKey,
                             refreshSignal = cacheVersion + resumeTick,
                             groupLabel = { label },
+                            chipKey = chipKey,
+                            groupIcon = { com.chris.m3usuite.ui.components.chips.CategoryChip(key = chipKey, label = label) },
                             expandedDefault = true,
                             loadItems = { loadItemsForLiveCategory(catId) },
                             onOpenDetails = onOpen,
