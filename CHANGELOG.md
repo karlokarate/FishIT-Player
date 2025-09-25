@@ -1,9 +1,42 @@
+2025-09-25
+- fix(ui/state): add route-keyed in-memory scroll cache and wrap Start/Library content in SaveableStateHolder so vertical and horizontal list positions persist across deep navigation (details, settings, search, tab hopping). Cache resets on process restart as desired.
+- fix(vod/details): fetch VOD details reliably across panels by trying multiple id field names (`vod_id|movie_id|id|stream_id`) for `get_<alias>_info`. Also allow UI-triggered detail imports (VOD/Series) regardless of the `M3U_WORKERS_ENABLED` gate so plots/posters load when opening detail screens.
+ - Also accept panels that return VOD details under `info` instead of `movie_data`, and read plot from `plot|description|plot_outline|overview` to cover common skins.
+- fix(nav/state): preserve scroll positions when switching between Start (library?q=...) and Library (browse) by enabling Navigation-Compose state saving (`restoreState=true`, `popUpTo(findStartDestination()) { saveState=true }`) and keeping `LazyListState` keyed per route/tab. Start/Library now resume exactly where you left off.
+- ui/settings: collapse individual settings blocks into expandable cards; Xtream credential inputs now sit at the top and stay expanded by default while all other sections start collapsed for faster browsing.
+- ui/chrome: header and bottom navigation buttons now brighten by ~40% on focus for clearer TV highlighting.
+- fix(ui/tv): Header and bottom AppIconButtons share the TV interaction source, so focus halos appear as soon as focus lands (no click needed).
+- player/tv: PiP requests on TV keep the FishIT app in the foreground (no jump to launcher) and toast the fallback; PiP/Subtitles/Resize overlays are now focusable via DPAD in both overlay rows.
+
+2025-09-24
+- ui/home: resize Start screen card heights to roughly 40/40/20 (Series/VOD/Live) so on-demand shelves keep prominence while Live TV stays visible without dominating.
+- ui/library/vod: swap the 2025–2024 rail header for a neon CategoryChip to match curated rows and drop the plain text label.
+- ui/profile: make the kid/guest permissions sheet scrollable so all toggles stay reachable on smaller layouts.
+- fix(kid/whitelist): ensure kid/guest media queries keep pulling data until assigned whitelist items surface so allowed rows actually render.
+- feat(ui/detail): use poster/backdrop as a 50% overlayed screen background, remove secondary image galleries, and render detail posters with full-fit scaling plus keyed caching so entire artwork stays visible across TV and mobile.
+- fix(ui/vod-detail): reinstate the scroll container so plot text and metadata stay reachable, fetch Xtream details when the plot is missing, and surface a fallback badge when no summary exists.
+- polish(ui/library/series): swap the plain “Neu” label for an animated Orbitron chip, drop the grouping toggle + provider header in Series, and restyle the “Neueste zuerst” switch with white typography.
+- fix(ui/cards): stop vertical flicker by disabling auto bring-into-view on horizontal cards and keep rows stable while moving artless items to the back (also applied to ObjectBox paging sources).
+- ui/assets: refresh Fish branding — replace drawable `fisch.png` with `fisch_bg.png`/`fisch_header.png`, simplify `tv_banner.xml`, and point the manifest launcher icon at the new background asset.
+- ui/fx: make `FishBackground` and shimmer placeholders static (no spin), update header/logo assets, and remove `FishSpin` hooks across home chrome.
+- ui/images: size-aware Coil requests now derive slot pixels via `onSizeChanged`, always enable RGB_565, add WxH-aware cache keys, and fall back to the new fish placeholders for posters/heroes.
+- ui/home: remove the start-screen loading overlay, persist LazyRow positions with explicit `stateKey`s, save the search dialog state with `rememberSaveable`, and keep library navigation latched when closing search.
+- ui/components/rows: `MediaRowCore` preloads up to the saved index + 20, rows accept optional `stateKey`s, and TV focus scale drops to 1.06/1.08 for steadier tiles (including reorderable rows).
+- ui/screens: Library expands all provider/genre/year sections inline (Adults umbrella keeps the toggle) and wires `stateKey`s through; VOD/Series detail screens show full plots without toggles; HomeChromeScaffold keeps static chrome padding with the new background.
+
 # 
 # FishIT Player – Changelog
 
 All notable changes to this project are documented here. Keep entries concise and tied to commits/PRs.
 
 2025-09-23
+- fix(ui/start): Search dialog now closes cleanly; closing it clears the `qs=show` flag so navigating back never reopens the sheet unexpectedly.
+- fix(ui/library/vod): "For Adults" umbrella shows again when enabled (expanded state remembered); adult providers stay separate from regular buckets.
+- perf/ui-state: Route-scoped scroll savers now persist via explicit keys so list/grid positions survive navigation like Netflix-style resumes.
+- ui/tv: Shared focus halo via `tvClickable`/`focusScaleOnTv`; `AppIconButton` now wraps `TvIconButton` so header/bottom controls highlight immediately on focus.
+- ui/chrome: FishIT header and bottom panel now render with dark gradients so top/bottom chrome no longer flashes white on light content.
+- nav/settings: Header settings button wires through every screen (hidden where blocked) so jumping into settings works outside Start; Settings screen back button now pops the stack to avoid re-adding library routes.
+- nav/back: Hardware/system back returns to the previous screen as expected after leaving settings by relying on `popBackStack()` instead of synthetic navigation.
 - build(release): Enable R8 minify + resource shrinking; set `debuggable=false` for the release buildType and wire ProGuard with `proguard-android-optimize.txt` and `proguard-rules.pro`.
 - proguard: Strip Android `Log` calls in release via `-assumenosideeffects`. Add keep rules for ObjectBox entities, and suppress warnings for Media3, OkHttp/Okio, and `kotlinx.coroutines.debug`.
 - deps: Verified `kotlinx-coroutines-debug` is not included in release; ensure it remains debug-only if added in the future.
@@ -599,3 +632,4 @@ Status: zu testen durch Nutzer
   - Increase streaming batch size during bootstrap (8000) to cut event frequency (fallback paths).
   - HTTP bootstrap path uses Reader-based parse to avoid per-batch UI/logic overhead.
 - Fix deprecations and warnings (Compose progress overload, Button border, FlowPreview opt-ins, Xtream URL DEPRECATION suppression) without changing core flows.
+- Fix(nav): use route-aware `popUpToStartDestination` helper to skip invalid resource lookups and remove `No package ID` errors when returning to Home.

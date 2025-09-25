@@ -57,6 +57,7 @@ fun CategoryChip(key: String, label: String, modifier: Modifier = Modifier) {
         "anime" -> com.chris.m3usuite.ui.theme.CategoryFonts.MPlusRounded1c
         "bollywood" -> com.chris.m3usuite.ui.theme.CategoryFonts.YatraOne
         "martial_arts", "4k" -> com.chris.m3usuite.ui.theme.CategoryFonts.RussoOne
+        "year_2025_2024" -> com.chris.m3usuite.ui.theme.CategoryFonts.Orbitron
         "show" -> com.chris.m3usuite.ui.theme.CategoryFonts.Oswald
         "new", "recent" -> com.chris.m3usuite.ui.theme.CategoryFonts.Inter
         else -> com.chris.m3usuite.ui.theme.CategoryFonts.Inter
@@ -134,6 +135,8 @@ private val Cyan = Color(0xFF00B8D9)
 private val CyanDark = Color(0xFF071317)
 private val GrayMetLight = Color(0xFFDCDCDC)
 private val GrayMetDark = Color(0xFFA6A6A6)
+private val Midnight = Color(0xFF0B1026)
+private val ElectricIndigo = Color(0xFF312E81)
 
 private val styles: Map<String, ChipStyle> = mapOf(
     // meta
@@ -163,6 +166,7 @@ private val styles: Map<String, ChipStyle> = mapOf(
     // specials
     "4k" to ChipStyle(textColor = Color(0xFFC6FF00), bg = gradient(Color(0xFF212121), Color(0xFF0F0F0F)), borderColor = Color(0x66C6FF00)),
     "collection" to ChipStyle(textColor = Color(0xFFE8EBFF), bg = gradient(Color(0xFF1F2A57), Color(0xFF3F51B5)), borderColor = Color(0x5990A4F4)),
+    "year_2025_2024" to ChipStyle(textColor = Color(0xFF7EE7FF), bg = gradient(Midnight, ElectricIndigo), borderColor = Color(0x407EE7FF), bold = false),
     "other" to ChipStyle(textColor = Color(0xFF2E2E2E), bg = gradient(Color(0xFFE0E0E0), Color(0xFFCFCFCF)), borderColor = Color(0x729E9E9E)),
     // Adults umbrella style
     "adult" to ChipStyle(textColor = Color(0xFFEDE7F6), bg = gradient(Color(0xFF0F0F10), Color(0xFF18121F)), borderColor = Color(0x558E24AA), caution = true)

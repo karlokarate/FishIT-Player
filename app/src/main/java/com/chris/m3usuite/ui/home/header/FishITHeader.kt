@@ -1,38 +1,27 @@
 package com.chris.m3usuite.ui.home.header
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 // removed windowInsetsPadding; using statusBarsPadding()
-import com.chris.m3usuite.ui.common.AppIcon
-import com.chris.m3usuite.ui.common.AppIconButton
-import com.chris.m3usuite.ui.common.IconVariant
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.remember
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.chris.m3usuite.ui.common.AppIcon
+import com.chris.m3usuite.ui.common.AppIconButton
+import com.chris.m3usuite.ui.common.IconVariant
 
 object FishITHeaderHeights {
     val topBar = 56.dp
@@ -40,24 +29,30 @@ object FishITHeaderHeights {
     val total = topBar + spacer
 }
 
+private val HeaderBaseColor = Color(0xFF05080F)
+
 /** Translucent overlay header with app icon + settings gear; alpha controls scrim intensity. */
 @Composable
 fun FishITHeader(
     title: String,
-    onSettings: () -> Unit,
+    onSettings: (() -> Unit)?,
     scrimAlpha: Float, // 0f..1f depending on scroll
     onSearch: (() -> Unit)? = null,
     onProfiles: (() -> Unit)? = null,
     onLogo: (() -> Unit)? = null,
 ) {
+    val scrim = scrimAlpha.coerceIn(0f, 1f)
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .zIndex(1f)
             .background(
                 Brush.verticalGradient(
-                    0f to Color.Black.copy(alpha = (0.85f * scrimAlpha).coerceIn(0f, 0.85f)),
-                    1f to Color.Transparent
+                    colorStops = arrayOf(
+                        0f to HeaderBaseColor,
+                        0.45f to HeaderBaseColor.copy(alpha = (0.78f + scrim * 0.18f).coerceIn(0f, 1f)),
+                        1f to HeaderBaseColor.copy(alpha = 0f)
+                    )
                 )
             )
             .statusBarsPadding()
@@ -70,31 +65,6 @@ fun FishITHeader(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Rotate logo with global fish spin controller
-            val angle = remember { androidx.compose.animation.core.Animatable(0f) }
-            val loading = com.chris.m3usuite.ui.fx.FishSpin.isLoading.collectAsStateWithLifecycle(initialValue = false).value
-            LaunchedEffect(loading) {
-                if (loading) {
-                    while (com.chris.m3usuite.ui.fx.FishSpin.isLoading.value) {
-                        val target = angle.value + 360f
-                        angle.animateTo(
-                            targetValue = target,
-                            animationSpec = androidx.compose.animation.core.tween(1000, easing = androidx.compose.animation.core.LinearEasing)
-                        )
-                    }
-                    angle.snapTo(0f)
-                }
-            }
-            val lifecycleOwner = LocalLifecycleOwner.current
-            LaunchedEffect(lifecycleOwner) {
-                lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                    com.chris.m3usuite.ui.fx.FishSpin.spinTrigger.collect {
-                        angle.stop(); angle.snapTo(0f)
-                        angle.animateTo(360f, androidx.compose.animation.core.tween(500, easing = androidx.compose.animation.core.LinearEasing))
-                        angle.snapTo(0f)
-                    }
-                }
-            }
             val logoModifier = Modifier
                 .padding(vertical = 8.dp)
                 .let { m ->
@@ -105,16 +75,25 @@ fun FishITHeader(
                         ) { onLogo() }
                     } else m
                 }
-                .graphicsLayer { rotationZ = angle.value }
             androidx.compose.foundation.Image(
-                painter = androidx.compose.ui.res.painterResource(com.chris.m3usuite.R.drawable.fisch),
+                painter = androidx.compose.ui.res.painterResource(com.chris.m3usuite.R.drawable.fisch_header),
                 contentDescription = title,
                 modifier = logoModifier
             )
+            val focusOverlay = Color.White.copy(alpha = 0.4f)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (onSearch != null) AppIconButton(icon = AppIcon.Search, contentDescription = "Suche öffnen", onClick = onSearch, size = 28.dp)
-                if (onProfiles != null) AppIconButton(icon = AppIcon.Profile, contentDescription = "Profile", onClick = onProfiles, size = 28.dp)
-                AppIconButton(icon = AppIcon.Settings, variant = IconVariant.Primary, contentDescription = "Einstellungen", onClick = onSettings, size = 28.dp)
+                if (onSearch != null) AppIconButton(icon = AppIcon.Search, contentDescription = "Suche öffnen", onClick = onSearch, size = 28.dp, tvFocusOverlay = focusOverlay)
+                if (onProfiles != null) AppIconButton(icon = AppIcon.Profile, contentDescription = "Profile", onClick = onProfiles, size = 28.dp, tvFocusOverlay = focusOverlay)
+                if (onSettings != null) {
+                    AppIconButton(
+                        icon = AppIcon.Settings,
+                        variant = IconVariant.Primary,
+                        contentDescription = "Einstellungen",
+                        onClick = onSettings,
+                        size = 28.dp,
+                        tvFocusOverlay = focusOverlay
+                    )
+                }
             }
         }
         Spacer(Modifier.height(FishITHeaderHeights.spacer))

@@ -9,6 +9,9 @@
 /.idea/assetWizardSettings.xml
 .DS_Store
 /build
+app/build/
+libtd/build/
+*/build/
 /captures
 .externalNativeBuild
 .cxx
@@ -28,6 +31,8 @@ local.properties
 **/*.ppk
 **/*.p12
 **/*.pfx
+# Ignore embedded third-party repos/sources
+.third_party/
 # Android signing keys
 **/*.jks
 **/*.keystore
@@ -48,5 +53,17 @@ epg_inputs/
 *.zip
 *.tar.gz
 *.pdf
+*.apk
+*.aab
+*.ipynb
 cookies.txt
 logcat
+.wsl-android-sdk/
+.wsl-cmake/
+.wsl-gperf/
+.wsl-gradle/
+.wsl-gradle-tmp/
+.wsl-java-17/
+.wsl-kotlin/
+.wsl-python/
+.wsl-tmp/

@@ -69,7 +69,7 @@ fun HomeChromeScaffold(
         // Top-Header-Overlay
         FishITHeader(
             title = title,
-            onSettings = { onSettings?.invoke() },
+            onSettings = onSettings,
             scrimAlpha = scrimAlpha,
             onSearch = onSearch,
             onProfiles = onProfiles,

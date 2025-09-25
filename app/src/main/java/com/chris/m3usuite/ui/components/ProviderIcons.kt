@@ -54,7 +54,6 @@ fun ProviderIconFor(key: String, label: String, sizeDp: Int = 24) {
             modifier = Modifier.size(sizeDp.dp),
             contentScale = ContentScale.Fit,
             crossfade = false,
-            preferRgb565 = true,
             onError = { failed.value = true }
         )
         if (!failed.value) return

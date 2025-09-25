@@ -79,7 +79,8 @@ private fun decodeObxLiveId(v: Long): Int? =
 fun LiveDetailScreen(
     id: Long,
     onLogo: (() -> Unit)? = null,
-    onGlobalSearch: (() -> Unit)? = null
+    onGlobalSearch: (() -> Unit)? = null,
+    onOpenSettings: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
@@ -293,7 +294,7 @@ fun LiveDetailScreen(
     val listState = com.chris.m3usuite.ui.state.rememberRouteListState("liveDetail:${id}")
     HomeChromeScaffold(
         title = "Live",
-        onSettings = null,
+        onSettings = onOpenSettings,
         onSearch = onGlobalSearch,
         onProfiles = null,
         listState = listState,

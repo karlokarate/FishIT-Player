@@ -3,28 +3,30 @@ package com.chris.m3usuite.ui.common
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.foundation.focusable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.IconButton
+import com.chris.m3usuite.ui.skin.TvFocusColors
+import com.chris.m3usuite.ui.skin.isTvDevice
 
 @Composable
 fun AppIconButton(
@@ -34,18 +36,23 @@ fun AppIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     size: Dp = 28.dp,
-    tvFocusOverlay: Color = Color.White.copy(alpha = 0.08f),
-    tvFocusScale: Float = 1.08f
+    tvFocusOverlay: Color = Color.White.copy(alpha = 0.22f),
+    tvFocusBorder: Color = Color.White.copy(alpha = 0.75f),
+    focusBorderWidth: Dp = 1.5.dp
 ) {
-    var focused by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (focused) tvFocusScale else 1f, label = "focus-scale")
+    val context = LocalContext.current
+    val isTv = remember(context) { isTvDevice(context) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    val focusShape = remember { RoundedCornerShape(14.dp) }
+    val overlayAlpha by animateFloatAsState(
+        targetValue = if (isTv && isFocused) 1f else 0f,
+        label = "tv-icon-focus-alpha"
+    )
 
-    IconButton(
+    TvIconButton(
         onClick = onClick,
         modifier = modifier
-            .focusable()
-            .onFocusChanged { focused = it.isFocused }
-            .graphicsLayer { scaleX = scale; scaleY = scale }
             .semantics { this.contentDescription = contentDescription }
             .onKeyEvent { ev ->
                 val n = ev.nativeKeyEvent
@@ -55,15 +62,20 @@ fun AppIconButton(
                         onClick(); true
                     } else false
                 } else false
-            }
+            },
+        shape = focusShape,
+        interactionSource = interactionSource,
+        focusColors = TvFocusColors.Icon
     ) {
         Box(contentAlignment = Alignment.Center) {
-            if (focused) {
+            if (overlayAlpha > 0f) {
                 Box(
                     Modifier
-                        .matchParentSize()
-                        .background(tvFocusOverlay, RoundedCornerShape(12.dp))
-                        .alpha(1f)
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = overlayAlpha }
+                        .clip(focusShape)
+                        .background(tvFocusOverlay)
+                        .border(width = focusBorderWidth, color = tvFocusBorder, shape = focusShape)
                 )
             }
             Image(

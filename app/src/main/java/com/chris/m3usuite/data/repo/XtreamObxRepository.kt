@@ -581,8 +581,7 @@ class XtreamObxRepository(
      * Upserts ObxSeries and replaces episodes for the given seriesId.
      */
     suspend fun importSeriesDetailOnce(seriesId: Int, clientOverride: XtreamClient? = null): Result<Int> = withContext(Dispatchers.IO) {
-        // Global gate: respect M3U/Xtream workers & API switch
-        if (!settings.m3uWorkersEnabled.first()) return@withContext Result.success(0)
+        // UI-triggered on-demand imports should work regardless of worker scheduling gate.
         val existing: kotlinx.coroutines.CompletableDeferred<Result<Int>>? = synchronized(inflightSeries) { inflightSeries[seriesId] }
         if (existing != null) return@withContext existing.await()
         val client = clientOverride ?: runCatching { newClient() }.getOrElse { return@withContext Result.failure(it) }
@@ -675,8 +674,7 @@ class XtreamObxRepository(
      * Upserts ObxVod with images/plot/genre/year/trailer/containerExt and other fields.
      */
     suspend fun importVodDetailOnce(vodId: Int, clientOverride: XtreamClient? = null): Result<Boolean> = withContext(Dispatchers.IO) {
-        // Global gate: respect M3U/Xtream workers & API switch
-        if (!settings.m3uWorkersEnabled.first()) return@withContext Result.success(false)
+        // UI-triggered on-demand imports should work regardless of worker scheduling gate.
         val existing: kotlinx.coroutines.CompletableDeferred<Result<Boolean>>? = synchronized(inflightVod) { inflightVod[vodId] }
         if (existing != null) return@withContext existing.await()
         val client = clientOverride ?: runCatching { newClient() }.getOrElse { return@withContext Result.failure(it) }

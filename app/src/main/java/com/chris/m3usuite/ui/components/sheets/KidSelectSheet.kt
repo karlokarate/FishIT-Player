@@ -114,7 +114,6 @@ private fun KidRow(
                     modifier = Modifier.size(40.dp),
                     contentScale = ContentScale.Crop,
                     crossfade = true,
-                    preferRgb565 = true
                 )
             }
             Text(name)

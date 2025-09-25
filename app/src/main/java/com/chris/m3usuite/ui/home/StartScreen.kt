@@ -1,17 +1,8 @@
 package com.chris.m3usuite.ui.home
 
 import android.annotation.SuppressLint
-import android.graphics.RenderEffect
-import android.graphics.Shader
-import android.os.Build
 import android.widget.Toast
 import android.net.Uri
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -22,8 +13,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -50,6 +43,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,15 +54,14 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -97,6 +91,7 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.core.playback.PlayUrlHelper
+import com.chris.m3usuite.navigation.popUpToStartDestination
 import com.chris.m3usuite.ui.telemetry.AttachPagingTelemetry
 import com.chris.m3usuite.data.obx.toMediaItem
 
@@ -119,6 +114,8 @@ fun StartScreen(
     val permRepo = remember { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
     val resumeRepo = remember { com.chris.m3usuite.data.repo.ResumeRepository(ctx) }
     val showAdults by store.showAdults.collectAsStateWithLifecycle(initialValue = false)
+    val adultsRegex = remember { Regex("\\bfor adults\\b", RegexOption.IGNORE_CASE) }
+    fun isAdultCategory(name: String?): Boolean = name?.let { adultsRegex.containsMatchIn(it) } == true
 
     val currentProfileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
     var isKid by remember { mutableStateOf(false) }
@@ -176,11 +173,11 @@ fun StartScreen(
                     val mi = row?.toMediaItem(ctx)?.copy(categoryName = catSer[row?.categoryId])
                     if (mi != null) mi else null
                 }.distinctBy { it.id }
-                    .filter { if (showAdults) true else it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                    .filter { if (showAdults) true else !isAdultCategory(it.categoryName) }
                     .filter { isAllowed("series", it.id) }
 
                 val newestItems = obxRepo.seriesPagedNewest(0, 200).map { it.toMediaItem(ctx).copy(categoryName = it.categoryId?.let { k -> catSer[k] }) }
-                    .filter { if (showAdults) true else it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                    .filter { if (showAdults) true else !isAdultCategory(it.categoryName) }
                     .filter { isAllowed("series", it.id) }
 
                 val recentIds = recentItems.map { it.id }.toSet()
@@ -199,11 +196,11 @@ fun StartScreen(
                     val mi = row?.toMediaItem(ctx)?.copy(categoryName = catVod[row?.categoryId])
                     if (mi != null) mi else null
                 }.distinctBy { it.id }
-                    .filter { if (showAdults) true else it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                    .filter { if (showAdults) true else !isAdultCategory(it.categoryName) }
                     .filter { isAllowed("vod", it.id) }
 
                 val newestItems = obxRepo.vodPagedNewest(0, 200).map { it.toMediaItem(ctx).copy(categoryName = it.categoryId?.let { k -> catVod[k] }) }
-                    .filter { if (showAdults) true else it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                    .filter { if (showAdults) true else !isAdultCategory(it.categoryName) }
                     .filter { isAllowed("vod", it.id) }
 
                 val recentIds = recentItems.map { it.id }.toSet()
@@ -243,7 +240,6 @@ fun StartScreen(
                 recomputeMixedRows()
             }
         }
-        com.chris.m3usuite.ui.fx.FishSpin.setLoading(false)
     }
 
     LaunchedEffect(Unit) {
@@ -299,11 +295,26 @@ fun StartScreen(
     val scopeCurrent by rememberUpdatedState(scope)
     // Live picker dialog flag must be defined before first usage below
     var showLivePicker by remember { mutableStateOf(false) }
-    var showSearch by remember { mutableStateOf(openSearchOnStart) }
-    var searchInput by remember { mutableStateOf(initialSearch ?: "") }
+    var showSearch by rememberSaveable("start:showSearch") { mutableStateOf(openSearchOnStart) }
+    var searchInput by rememberSaveable("start:searchInput") { mutableStateOf(initialSearch ?: "") }
 
     LaunchedEffect(initialSearch) {
         if (!initialSearch.isNullOrBlank()) vm.query.value = initialSearch
+    }
+
+    LaunchedEffect(showSearch) {
+        if (!showSearch) {
+            val qs = navController.currentBackStackEntry?.arguments?.getString("qs")
+            if (qs == "show") {
+                val queryValue = vm.query.value
+                val encoded = Uri.encode(queryValue)
+                navController.navigate("library?q=$encoded&qs=") {
+                    launchSingleTop = true
+                    restoreState = true
+                    popUpToStartDestination(navController, saveState = true)
+                }
+            }
+        }
     }
 
     HomeChromeScaffold(
@@ -337,7 +348,11 @@ fun StartScreen(
                         scope.launch { store.setLibraryTabIndex(tab) }
                         val current = navController.currentBackStackEntry?.destination?.route
                         if (current != "browse") {
-                            navController.navigate("browse") { launchSingleTop = true }
+                            navController.navigate("browse") {
+                                launchSingleTop = true
+                                restoreState = true
+                                popUpToStartDestination(navController, saveState = true)
+                            }
                         }
                     }
                 )
@@ -347,109 +362,110 @@ fun StartScreen(
         onLogo = {
             val current = navController.currentBackStackEntry?.destination?.route
             if (current != "library?q={q}&qs={qs}") {
-                navController.navigate("library?q=&qs=") { launchSingleTop = true }
+                navController.navigate("library?q=&qs=") {
+                    launchSingleTop = true
+                    restoreState = true
+                    popUpToStartDestination(navController, saveState = true)
+                }
             }
         }
     ) { pads: PaddingValues ->
-        val loading by com.chris.m3usuite.ui.fx.FishSpin.isLoading.collectAsState(initial = false)
-        if (loading) {
-            Box(Modifier.fillMaxSize()) {
-                Box(Modifier.fillMaxSize().graphicsLayer {
-                    try {
-                        if (Build.VERSION.SDK_INT >= 31) {
-                            renderEffect = RenderEffect
-                                .createBlurEffect(28f, 28f, Shader.TileMode.CLAMP)
-                                .asComposeRenderEffect()
+        val stateHolder = rememberSaveableStateHolder()
+        stateHolder.SaveableStateProvider(key = "start/main") {
+            val Accent = if (isKid) DesignTokens.KidAccent else DesignTokens.Accent
+            val trimmedQuery = debouncedQuery.trim()
+            val encodedQuery = remember(trimmedQuery) { if (trimmedQuery.isEmpty()) "" else Uri.encode(trimmedQuery) }
+            val seriesStateKey = remember(encodedQuery) { if (encodedQuery.isEmpty()) "start:series:mixed" else "start:series:search:$encodedQuery" }
+            val vodStateKey = remember(encodedQuery) { if (encodedQuery.isEmpty()) "start:vod:mixed" else "start:vod:search:$encodedQuery" }
+            val liveFavoritesKey = "start:live:favorites"
+            val liveSearchKey = remember(encodedQuery) { if (encodedQuery.isEmpty()) null else "start:live:search:$encodedQuery" }
+
+            Box(Modifier.fillMaxSize().padding(pads)) {
+                LaunchedEffect(Unit) { com.chris.m3usuite.metrics.RouteTag.set("home") }
+
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                0f to MaterialTheme.colorScheme.background,
+                                1f to MaterialTheme.colorScheme.surface
+                            )
+                        )
+                )
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(Accent.copy(alpha = if (isKid) 0.22f else 0.14f), Color.Transparent),
+                                radius = with(LocalDensity.current) { 680.dp.toPx() }
+                            )
+                        )
+                )
+                com.chris.m3usuite.ui.fx.FishBackground(
+                    modifier = Modifier.align(Alignment.Center).size(560.dp),
+                    alpha = 0.05f,
+                    neutralizeUnderlay = true
+                )
+
+                if (showSearch) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { showSearch = false },
+                        title = { androidx.compose.material3.Text("Globale Suche") },
+                        text = {
+                            androidx.compose.material3.OutlinedTextField(
+                                value = searchInput,
+                                onValueChange = { searchInput = it },
+                                singleLine = true,
+                                label = { androidx.compose.material3.Text("Suchbegriff") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(onClick = {
+                                vm.query.value = searchInput
+                                showSearch = false
+                            }) { androidx.compose.material3.Text("Suchen") }
+                        },
+                        dismissButton = {
+                            androidx.compose.material3.TextButton(onClick = { showSearch = false }) { androidx.compose.material3.Text("Abbrechen") }
                         }
-                    } catch (_: Throwable) {}
-                })
-                val size = 220.dp
-                val infinity = rememberInfiniteTransition(label = "fish-rotate")
-                val angle by infinity.animateFloat(
-                    initialValue = 0f,
-                    targetValue = 360f,
-                    animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
-                    label = "angle"
-                )
-                Image(
-                    painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
-                    contentDescription = null,
-                    modifier = Modifier.align(Alignment.Center).size(size).graphicsLayer { rotationZ = angle }
-                )
-            }
-        }
-
-        val Accent = if (isKid) DesignTokens.KidAccent else DesignTokens.Accent
-
-        Box(Modifier.fillMaxSize().padding(pads)) {
-            LaunchedEffect(Unit) { com.chris.m3usuite.metrics.RouteTag.set("home") }
-
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to MaterialTheme.colorScheme.background,
-                            1f to MaterialTheme.colorScheme.surface
-                        )
                     )
-            )
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(Accent.copy(alpha = if (isKid) 0.22f else 0.14f), Color.Transparent),
-                            radius = with(LocalDensity.current) { 680.dp.toPx() }
-                        )
-                    )
-            )
-            com.chris.m3usuite.ui.fx.FishBackground(
-                modifier = Modifier.align(Alignment.Center).size(560.dp),
-                alpha = 0.05f,
-                neutralizeUnderlay = true
-            )
+                }
 
-            if (showSearch) {
-                androidx.compose.material3.AlertDialog(
-                    onDismissRequest = { showSearch = false },
-                    title = { androidx.compose.material3.Text("Globale Suche") },
-                    text = {
-                        androidx.compose.material3.OutlinedTextField(
-                            value = searchInput,
-                            onValueChange = { searchInput = it },
-                            singleLine = true,
-                            label = { androidx.compose.material3.Text("Suchbegriff") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    },
-                    confirmButton = {
-                        androidx.compose.material3.TextButton(onClick = {
-                            vm.query.value = searchInput
-                            showSearch = false
-                        }) { androidx.compose.material3.Text("Suchen") }
-                    },
-                    dismissButton = {
-                        androidx.compose.material3.TextButton(onClick = { showSearch = false }) { androidx.compose.material3.Text("Abbrechen") }
-                    }
-                )
-            }
-
-            BoxWithConstraints(Modifier.fillMaxSize()) {
+                BoxWithConstraints(Modifier.fillMaxSize()) {
                 val sectionSpacing = 2.dp
                 val titleStyle = MaterialTheme.typography.titleMedium.copy(
                     fontSize = MaterialTheme.typography.titleMedium.fontSize * 1.2f,
                     color = Color.White
                 )
-                // Compute an optional tile-height override for landscape so the three sections fill the space.
+                // Compute an optional tile-height override for landscape so the sections fill the space using the desired ratios.
                 val cfg = LocalConfiguration.current
                 val isLandscape = cfg.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-                // Space available for three sections (already excludes header/bottom pads).
-                val perSection = (maxHeight - sectionSpacing * 2) / 3f
+                val seriesWeight = 0.4f
+                val vodWeight = 0.4f
+                val liveWeight = 0.2f
+                val totalWeight = seriesWeight + vodWeight + liveWeight
+                val availableHeight = (maxHeight - sectionSpacing * 2).coerceAtLeast(0.dp)
+                fun sectionHeight(weight: Float): Dp? = if (isLandscape && totalWeight > 0f) {
+                    (availableHeight * (weight / totalWeight)).coerceAtLeast(0.dp)
+                } else null
+                val seriesSectionHeight = sectionHeight(seriesWeight)
+                val vodSectionHeight = sectionHeight(vodWeight)
+                val liveSectionHeight = sectionHeight(liveWeight)
                 // Reserve a small area for the in-card header and the card's inner padding.
                 val titleReserve = 30.dp
                 val cardInnerVertical = 20.dp
-                val rowArea = (perSection - titleReserve - cardInnerVertical).coerceAtLeast(120.dp)
+                fun rowHeightOverride(weight: Float): Int? {
+                    if (!isLandscape || totalWeight == 0f) return null
+                    val cardHeight = availableHeight * (weight / totalWeight)
+                    val rowArea = (cardHeight - titleReserve - cardInnerVertical).coerceAtLeast(120.dp)
+                    return rowArea.value.toInt()
+                }
+                val desiredSeriesRowInt = rowHeightOverride(seriesWeight)
+                val desiredVodRowInt = rowHeightOverride(vodWeight)
+                val desiredLiveRowInt = rowHeightOverride(liveWeight)
                 // Default row height heuristic (keep in sync with HomeRows.rowItemHeight base values)
                 val isTablet = cfg.smallestScreenWidthDp >= 600
                 val base = when {
@@ -459,225 +475,248 @@ fun StartScreen(
                     else -> 180
                 }
                 val defaultRowDp = (base * 0.88f).dp
-                // In landscape let rows fully grow to fill the card height (minus header/padding)
-                val desiredRowDp = if (isLandscape) rowArea else null
-                val desiredRowInt: Int? = desiredRowDp?.value?.toInt()
                 androidx.compose.foundation.layout.Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(sectionSpacing)
                 ) {
                     // Serien (Paged)
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+                    val seriesSectionModifier = if (seriesSectionHeight != null) {
+                        Modifier
+                            .fillMaxWidth()
+                            .height(seriesSectionHeight)
+                    } else {
+                        Modifier.fillMaxWidth()
+                    }
+                    androidx.compose.foundation.layout.Column(modifier = seriesSectionModifier) {
                         com.chris.m3usuite.ui.common.AccentCard(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)
                                 .fillMaxWidth()
-                                .weight(1f),
+                                .let { base -> if (seriesSectionHeight != null) base.fillMaxHeight() else base },
                             accent = Accent,
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 10.dp)
                         ) {
-                            androidx.compose.material3.Surface(
-                                color = Color.Black.copy(alpha = 0.28f),
-                                contentColor = Color.White,
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
-                            ) {
-                                androidx.compose.material3.Text(
+                            Box(Modifier.fillMaxSize()) {
+                                CompositionLocalProvider(
+                                    LocalRowItemHeightOverride provides desiredSeriesRowInt
+                                ) {
+                                    if (debouncedQuery.isBlank()) {
+                                        com.chris.m3usuite.ui.components.rows.SeriesRow(
+                                            items = seriesMixed,
+                                            stateKey = seriesStateKey,
+                                            newIds = seriesNewIds,
+                                            onOpenDetails = { mi -> openSeries(mi.id) },
+                                            onPlayDirect = { mi ->
+                                                scope.launch {
+                                                    val sid = mi.streamId ?: return@launch
+                                                    val obxEp = withContext(Dispatchers.IO) {
+                                                        val list = obxRepo.episodesForSeries(sid)
+                                                        if (list.isNotEmpty()) list.firstOrNull() else run {
+                                                            obxRepo.importSeriesDetailOnce(sid)
+                                                            obxRepo.episodesForSeries(sid).firstOrNull()
+                                                        }
+                                                    }
+                                                    if (obxEp != null) {
+                                                        openSeries(mi.id)
+                                                    }
+                                                }
+                                            },
+                                            onAssignToKid = { mi ->
+                                                scope.launch {
+                                                    val kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } }
+                                                    withContext(Dispatchers.IO) {
+                                                        val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                                        kids.forEach { repo.allow(it.id, "series", mi.id) }
+                                                    }
+                                                    Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
+                                                }
+                                            },
+                                            showAssign = canEditWhitelist
+                                        )
+                                    } else {
+                                        val seriesFlow = remember(debouncedQuery) {
+                                            mediaRepo.pagingSearchFilteredFlow("series", debouncedQuery)
+                                        }
+                                        val seriesItems = seriesFlow.collectAsLazyPagingItems()
+                                        AttachPagingTelemetry(tag = "home.series", items = seriesItems)
+                                        com.chris.m3usuite.ui.components.rows.SeriesRowPaged(
+                                            items = seriesItems,
+                                            stateKey = seriesStateKey,
+                                            onOpenDetails = { mi -> openSeries(mi.id) },
+                                            onPlayDirect = { mi ->
+                                                scope.launch {
+                                                    val sid = mi.streamId ?: return@launch
+                                                    val obxEp = withContext(Dispatchers.IO) {
+                                                        val list = obxRepo.episodesForSeries(sid)
+                                                        if (list.isNotEmpty()) list.firstOrNull() else run {
+                                                            obxRepo.importSeriesDetailOnce(sid)
+                                                            obxRepo.episodesForSeries(sid).firstOrNull()
+                                                        }
+                                                    }
+                                                    if (obxEp != null) {
+                                                        openSeries(mi.id)
+                                                    }
+                                                }
+                                            },
+                                            onAssignToKid = { mi ->
+                                                scope.launch {
+                                                    val kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } }
+                                                    withContext(Dispatchers.IO) {
+                                                        val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                                        kids.forEach { repo.allow(it.id, "series", mi.id) }
+                                                    }
+                                                    Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
+                                                }
+                                            },
+                                            showAssign = canEditWhitelist
+                                        )
+                                    }
+                                }
+                                Text(
                                     text = "Serien",
                                     style = MaterialTheme.typography.titleSmall,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    color = Color.White,
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                                        .background(Color.Black.copy(alpha = 0.55f), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
                                 )
-                            }
-                            Spacer(Modifier.size(4.dp))
-                            CompositionLocalProvider(
-                                LocalRowItemHeightOverride provides desiredRowInt
-                            ) {
-                            if (debouncedQuery.isBlank()) {
-                                com.chris.m3usuite.ui.components.rows.SeriesRow(
-                                    items = seriesMixed,
-                                    newIds = seriesNewIds,
-                                    onOpenDetails = { mi -> openSeries(mi.id) },
-                                    onPlayDirect = { mi ->
-                                        scope.launch {
-                                            val sid = mi.streamId ?: return@launch
-                                            val obxEp = withContext(Dispatchers.IO) {
-                                                val list = obxRepo.episodesForSeries(sid)
-                                                if (list.isNotEmpty()) list.firstOrNull() else run {
-                                                    obxRepo.importSeriesDetailOnce(sid)
-                                                    obxRepo.episodesForSeries(sid).firstOrNull()
-                                                }
-                                            }
-                                            if (obxEp != null) {
-                                                openSeries(mi.id)
-                                            }
-                                        }
-                                    },
-                                    onAssignToKid = { mi ->
-                                        scope.launch {
-                                            val kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } }
-                                            withContext(Dispatchers.IO) {
-                                                val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
-                                                kids.forEach { repo.allow(it.id, "series", mi.id) }
-                                            }
-                                            Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    showAssign = canEditWhitelist
-                                )
-                            } else {
-                                val seriesFlow = remember(debouncedQuery) {
-                                    mediaRepo.pagingSearchFilteredFlow("series", debouncedQuery)
-                                }
-                                val seriesItems = seriesFlow.collectAsLazyPagingItems()
-                                AttachPagingTelemetry(tag = "home.series", items = seriesItems)
-                                com.chris.m3usuite.ui.components.rows.SeriesRowPaged(
-                                    items = seriesItems,
-                                    onOpenDetails = { mi -> openSeries(mi.id) },
-                                    onPlayDirect = { mi ->
-                                        scope.launch {
-                                            val sid = mi.streamId ?: return@launch
-                                            val obxEp = withContext(Dispatchers.IO) {
-                                                val list = obxRepo.episodesForSeries(sid)
-                                                if (list.isNotEmpty()) list.firstOrNull() else run {
-                                                    obxRepo.importSeriesDetailOnce(sid)
-                                                    obxRepo.episodesForSeries(sid).firstOrNull()
-                                                }
-                                            }
-                                            if (obxEp != null) {
-                                                openSeries(mi.id)
-                                            }
-                                        }
-                                    },
-                                    onAssignToKid = { mi ->
-                                        scope.launch {
-                                            val kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } }
-                                            withContext(Dispatchers.IO) {
-                                                val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
-                                                kids.forEach { repo.allow(it.id, "series", mi.id) }
-                                            }
-                                            Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    showAssign = canEditWhitelist
-                                )
-                            }
-                            }
-                        }
-                    }
+                }
+            }
+        }
+    }
 
                     // Filme (Paged)
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+                    val vodSectionModifier = if (vodSectionHeight != null) {
+                        Modifier
+                            .fillMaxWidth()
+                            .height(vodSectionHeight)
+                    } else {
+                        Modifier.fillMaxWidth()
+                    }
+                    androidx.compose.foundation.layout.Column(modifier = vodSectionModifier) {
                         com.chris.m3usuite.ui.common.AccentCard(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)
                                 .fillMaxWidth()
-                                .weight(1f),
+                                .let { base -> if (vodSectionHeight != null) base.fillMaxHeight() else base },
                             accent = Accent,
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 10.dp)
                         ) {
-                            androidx.compose.material3.Surface(
-                                color = Color.Black.copy(alpha = 0.28f),
-                                contentColor = Color.White,
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
-                            ) {
-                                androidx.compose.material3.Text(
+                            Box(Modifier.fillMaxSize()) {
+                                CompositionLocalProvider(
+                                    LocalRowItemHeightOverride provides desiredVodRowInt
+                                ) {
+                                    if (debouncedQuery.isBlank()) {
+                                        com.chris.m3usuite.ui.components.rows.VodRow(
+                                            items = vodMixed,
+                                            stateKey = vodStateKey,
+                                            newIds = vodNewIds,
+                                            onOpenDetails = { mi -> openVod(mi.id) },
+                                            onPlayDirect = { mi ->
+                                                scope.launch {
+                                                    val req = PlayUrlHelper.forVod(ctx, store, mi) ?: return@launch
+                                                    com.chris.m3usuite.player.PlayerChooser.start(
+                                                        context = ctx,
+                                                        store = store,
+                                                        url = req.url,
+                                                        headers = req.headers,
+                                                        startPositionMs = withContext(Dispatchers.IO) {
+                                                            com.chris.m3usuite.data.repo.ResumeRepository(ctx)
+                                                                .recentVod(1)
+                                                                .firstOrNull { it.mediaId == mi.id }
+                                                                ?.positionSecs?.toLong()?.times(1000)
+                                                        },
+                                                        mimeType = req.mimeType
+                                                    ) { s, resolvedMime ->
+                                                        val encoded = PlayUrlHelper.encodeUrl(req.url)
+                                                        val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                                                        navController.navigate("player?url=$encoded&type=vod&mediaId=${mi.id}&startMs=${s ?: -1}&mime=$mimeArg")
+                                                    }
+                                                }
+                                            },
+                                            onAssignToKid = { mi ->
+                                                scope.launch {
+                                                    withContext(Dispatchers.IO) {
+                                                        val kids = com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" }
+                                                        val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                                        kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                                    }
+                                                    Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
+                                                }
+                                            },
+                                            showAssign = canEditWhitelist
+                                        )
+                                    } else {
+                                        val vodFlow = remember(debouncedQuery) {
+                                            mediaRepo.pagingSearchFilteredFlow("vod", debouncedQuery)
+                                        }
+                                        val vodItems = vodFlow.collectAsLazyPagingItems()
+                                        AttachPagingTelemetry(tag = "home.vod", items = vodItems)
+                                        com.chris.m3usuite.ui.components.rows.VodRowPaged(
+                                            items = vodItems,
+                                            stateKey = vodStateKey,
+                                            onOpenDetails = { mi -> openVod(mi.id) },
+                                            onPlayDirect = { mi ->
+                                                scope.launch {
+                                                    val req = PlayUrlHelper.forVod(ctx, store, mi) ?: return@launch
+                                                    com.chris.m3usuite.player.PlayerChooser.start(
+                                                        context = ctx,
+                                                        store = store,
+                                                        url = req.url,
+                                                        headers = req.headers,
+                                                        startPositionMs = withContext(Dispatchers.IO) {
+                                                            com.chris.m3usuite.data.repo.ResumeRepository(ctx)
+                                                                .recentVod(1)
+                                                                .firstOrNull { it.mediaId == mi.id }
+                                                                ?.positionSecs?.toLong()?.times(1000)
+                                                        },
+                                                        mimeType = req.mimeType
+                                                    ) { s, resolvedMime ->
+                                                        val encoded = PlayUrlHelper.encodeUrl(req.url)
+                                                        val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                                                        navController.navigate("player?url=$encoded&type=vod&mediaId=${mi.id}&startMs=${s ?: -1}&mime=$mimeArg")
+                                                    }
+                                                }
+                                            },
+                                            onAssignToKid = { mi ->
+                                                scope.launch {
+                                                    withContext(Dispatchers.IO) {
+                                                        val kids = com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" }
+                                                        val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                                        kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                                    }
+                                                    Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
+                                                }
+                                            },
+                                            showAssign = canEditWhitelist
+                                        )
+                                    }
+                                }
+                                Text(
                                     text = "Filme",
                                     style = MaterialTheme.typography.titleSmall,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    color = Color.White,
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                                        .background(Color.Black.copy(alpha = 0.55f), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
                                 )
-                            }
-                            Spacer(Modifier.size(4.dp))
-                            CompositionLocalProvider(
-                                LocalRowItemHeightOverride provides desiredRowInt
-                            ) {
-                            if (debouncedQuery.isBlank()) {
-                                com.chris.m3usuite.ui.components.rows.VodRow(
-                                    items = vodMixed,
-                                    newIds = vodNewIds,
-                                    onOpenDetails = { mi -> openVod(mi.id) },
-                                    onPlayDirect = { mi ->
-                                        scope.launch {
-                                            val req = PlayUrlHelper.forVod(ctx, store, mi) ?: return@launch
-                                            com.chris.m3usuite.player.PlayerChooser.start(
-                                                context = ctx,
-                                                store = store,
-                                                url = req.url,
-                                                headers = req.headers,
-                                                startPositionMs = withContext(Dispatchers.IO) {
-                                                    com.chris.m3usuite.data.repo.ResumeRepository(ctx)
-                                                        .recentVod(1)
-                                                        .firstOrNull { it.mediaId == mi.id }
-                                                        ?.positionSecs?.toLong()?.times(1000)
-                                                },
-                                                mimeType = req.mimeType
-                                            ) { s, resolvedMime ->
-                                                val encoded = PlayUrlHelper.encodeUrl(req.url)
-                                                val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                                                navController.navigate("player?url=$encoded&type=vod&mediaId=${mi.id}&startMs=${s ?: -1}&mime=$mimeArg")
-                                            }
-                                        }
-                                    },
-                                    onAssignToKid = { mi ->
-                                        scope.launch {
-                                            withContext(Dispatchers.IO) {
-                                                val kids = com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" }
-                                                val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
-                                                kids.forEach { repo.allow(it.id, "vod", mi.id) }
-                                            }
-                                            Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    showAssign = canEditWhitelist
-                                )
-                            } else {
-                                val vodFlow = remember(debouncedQuery) {
-                                    mediaRepo.pagingSearchFilteredFlow("vod", debouncedQuery)
-                                }
-                                val vodItems = vodFlow.collectAsLazyPagingItems()
-                                AttachPagingTelemetry(tag = "home.vod", items = vodItems)
-                                com.chris.m3usuite.ui.components.rows.VodRowPaged(
-                                    items = vodItems,
-                                    onOpenDetails = { mi -> openVod(mi.id) },
-                                    onPlayDirect = { mi ->
-                                        scope.launch {
-                                            val req = PlayUrlHelper.forVod(ctx, store, mi) ?: return@launch
-                                            com.chris.m3usuite.player.PlayerChooser.start(
-                                                context = ctx,
-                                                store = store,
-                                                url = req.url,
-                                                headers = req.headers,
-                                                startPositionMs = withContext(Dispatchers.IO) {
-                                                    com.chris.m3usuite.data.repo.ResumeRepository(ctx)
-                                                        .recentVod(1)
-                                                        .firstOrNull { it.mediaId == mi.id }
-                                                        ?.positionSecs?.toLong()?.times(1000)
-                                                },
-                                                mimeType = req.mimeType
-                                            ) { s, resolvedMime ->
-                                                val encoded = PlayUrlHelper.encodeUrl(req.url)
-                                                val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                                                navController.navigate("player?url=$encoded&type=vod&mediaId=${mi.id}&startMs=${s ?: -1}&mime=$mimeArg")
-                                            }
-                                        }
-                                    },
-                                    onAssignToKid = { mi ->
-                                        scope.launch {
-                                            withContext(Dispatchers.IO) {
-                                                val kids = com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" }
-                                                val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
-                                                kids.forEach { repo.allow(it.id, "vod", mi.id) }
-                                            }
-                                            Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    showAssign = canEditWhitelist
-                                )
-                            }
                             }
                         }
                     }
 
                     // Live (Favoriten oder globale Suche)
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+                    val liveSectionModifier = if (liveSectionHeight != null) {
+                        Modifier
+                            .fillMaxWidth()
+                            .height(liveSectionHeight)
+                    } else {
+                        Modifier.fillMaxWidth()
+                    }
+                    androidx.compose.foundation.layout.Column(modifier = liveSectionModifier) {
                         val q = debouncedQuery.trim()
                         val showFavorites = q.isBlank()
                         if (showFavorites) {
@@ -685,109 +724,107 @@ fun StartScreen(
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp)
                                     .fillMaxWidth()
-                                    .weight(1f),
+                                    .let { base -> if (liveSectionHeight != null) base.fillMaxHeight() else base },
                                 accent = Accent,
                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                             ) {
-                                // Header row inside card: LiveTV + EPG refresh top-right
-                                androidx.compose.foundation.layout.Row(
-                                    Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    androidx.compose.material3.Surface(
-                                        color = Color.Black.copy(alpha = 0.28f),
-                                        contentColor = Color.White,
-                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+                                Box(Modifier.fillMaxSize()) {
+                                    CompositionLocalProvider(
+                                        LocalRowItemHeightOverride provides desiredLiveRowInt
                                     ) {
-                                        androidx.compose.material3.Text(
-                                            text = "LiveTV",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                        )
-                                    }
-                                    if (favLive.isNotEmpty()) {
-                                        androidx.compose.material3.TextButton(onClick = {
-                                            scope.launch {
-                                                val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                                                com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive)
-                                            }
-                                        }) { androidx.compose.material3.Text("Jetzt EPG aktualisieren") }
-                                    }
-                                }
-                                Spacer(Modifier.size(4.dp))
-                            CompositionLocalProvider(
-                                LocalRowItemHeightOverride provides desiredRowInt
-                            ) {
-                                FadeThrough(key = favLive.size) {
-                                    androidx.compose.foundation.layout.Column {
-                                        val liveFiltered = favLive
-                                        if (!canEditFavorites) {
-                                            com.chris.m3usuite.ui.components.rows.LiveRow(
-                                                items = liveFiltered,
-                                                onOpenDetails = { mi -> openLive(mi.id) },
-                                                onPlayDirect = { mi ->
-                                                    scope.launch {
-                                                        val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
-                                                        com.chris.m3usuite.player.PlayerChooser.start(
-                                                            context = ctx,
-                                                            store = store,
-                                                            url = req.url,
-                                                            headers = req.headers,
-                                                            startPositionMs = null,
-                                                            mimeType = req.mimeType
-                                                        ) { startMs, resolvedMime ->
-                                                            val encoded = PlayUrlHelper.encodeUrl(req.url)
-                                                            val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                                                            navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
-                                                        }
-                                                    }
-                                                },
-                                            )
-                                        } else {
-                                            com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
-                                                items = liveFiltered,
-                                                onOpen = { openLive(it) },
-                                                onPlay = { id ->
-                                                    scope.launch {
-                                                        val mi = favLive.firstOrNull { it.id == id } ?: return@launch
-                                                        val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
-                                                        com.chris.m3usuite.player.PlayerChooser.start(
-                                                            context = ctx,
-                                                            store = store,
-                                                            url = req.url,
-                                                            headers = req.headers,
-                                                            startPositionMs = null,
-                                                            mimeType = req.mimeType
-                                                        ) { startMs, resolvedMime ->
-                                                            val encoded = PlayUrlHelper.encodeUrl(req.url)
-                                                            val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                                                            navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
-                                                        }
-                                                    }
-                                                },
-                                                onAdd = { showLivePicker = true },
-                                                onReorder = { newOrder ->
-                                                    scope.launch {
-                                                        store.setFavoriteLiveIdsCsv(newOrder.joinToString(","))
-                                                        val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                                                        runCatching { com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive) }
-                                                    }
-                                                },
-                                                onRemove = { removeIds ->
-                                                    scope.launch {
-                                                        val current = store.favoriteLiveIdsCsv.first()
-                                                            .split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
-                                                        current.removeAll(removeIds.toSet())
-                                                        store.setFavoriteLiveIdsCsv(current.joinToString(","))
-                                                        val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                                                        runCatching { com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive) }
-                                                    }
+                                        FadeThrough(key = favLive.size) {
+                                            androidx.compose.foundation.layout.Column {
+                                                val liveFiltered = favLive
+                                                if (!canEditFavorites) {
+                                                    com.chris.m3usuite.ui.components.rows.LiveRow(
+                                                        items = liveFiltered,
+                                                        stateKey = liveFavoritesKey,
+                                                        onOpenDetails = { mi -> openLive(mi.id) },
+                                                        onPlayDirect = { mi ->
+                                                            scope.launch {
+                                                                val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
+                                                                com.chris.m3usuite.player.PlayerChooser.start(
+                                                                    context = ctx,
+                                                                    store = store,
+                                                                    url = req.url,
+                                                                    headers = req.headers,
+                                                                    startPositionMs = null,
+                                                                    mimeType = req.mimeType
+                                                                ) { startMs, resolvedMime ->
+                                                                    val encoded = PlayUrlHelper.encodeUrl(req.url)
+                                                                    val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                                                                    navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                                                                }
+                                                            }
+                                                        },
+                                                    )
+                                                } else {
+                                                    com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
+                                                        items = liveFiltered,
+                                                        onOpen = { openLive(it) },
+                                                        onPlay = { id ->
+                                                            scope.launch {
+                                                                val mi = favLive.firstOrNull { it.id == id } ?: return@launch
+                                                                val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
+                                                                com.chris.m3usuite.player.PlayerChooser.start(
+                                                                    context = ctx,
+                                                                    store = store,
+                                                                    url = req.url,
+                                                                    headers = req.headers,
+                                                                    startPositionMs = null,
+                                                                    mimeType = req.mimeType
+                                                                ) { startMs, resolvedMime ->
+                                                                    val encoded = PlayUrlHelper.encodeUrl(req.url)
+                                                                    val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                                                                    navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                                                                }
+                                                            }
+                                                        },
+                                                        onAdd = { showLivePicker = true },
+                                                        onReorder = { newOrder ->
+                                                            scope.launch {
+                                                                store.setFavoriteLiveIdsCsv(newOrder.joinToString(","))
+                                                                val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+                                                                runCatching { com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive) }
+                                                            }
+                                                        },
+                                                        onRemove = { removeIds ->
+                                                            scope.launch {
+                                                                val current = store.favoriteLiveIdsCsv.first()
+                                                                    .split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
+                                                                current.removeAll(removeIds.toSet())
+                                                                store.setFavoriteLiveIdsCsv(current.joinToString(","))
+                                                                val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+                                                                runCatching { com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive) }
+                                                            }
+                                                        },
+                                                        stateKey = liveFavoritesKey
+                                                    )
                                                 }
-                                            )
+                                            }
                                         }
                                     }
-                                }
+                                    Text(
+                                        text = "Live TV",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = Color.White,
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                                            .background(Color.Black.copy(alpha = 0.55f), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                    if (favLive.isNotEmpty()) {
+                                        androidx.compose.material3.TextButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+                                                    com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive)
+                                                }
+                                            },
+                                            modifier = Modifier.align(Alignment.TopEnd).padding(horizontal = 8.dp, vertical = 6.dp)
+                                        ) { androidx.compose.material3.Text("Jetzt EPG aktualisieren") }
+                                    }
                                 }
                             }
                         } else {
@@ -795,50 +832,50 @@ fun StartScreen(
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp)
                                     .fillMaxWidth()
-                                    .weight(1f),
+                                    .let { base -> if (liveSectionHeight != null) base.fillMaxHeight() else base },
                                 accent = Accent,
                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 10.dp)
                             ) {
-                                // Header label only
-                                androidx.compose.material3.Surface(
-                                    color = Color.Black.copy(alpha = 0.28f),
-                                    contentColor = Color.White,
-                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
-                                ) {
-                                    androidx.compose.material3.Text(
-                                        text = "LiveTV",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                    )
-                                }
-                                Spacer(Modifier.size(4.dp))
-                            CompositionLocalProvider(
-                                LocalRowItemHeightOverride provides desiredRowInt
-                            ) {
-                                val liveFlow = remember(q) { mediaRepo.pagingSearchFilteredFlow("live", q) }
-                                val livePaged = liveFlow.collectAsLazyPagingItems()
-                                AttachPagingTelemetry(tag = "home.live.search", items = livePaged)
-                                com.chris.m3usuite.ui.components.rows.LiveRowPaged(
-                                    items = livePaged,
-                                    onOpenDetails = { mi -> openLive(mi.id) },
-                                    onPlayDirect = { mi ->
-                                        scope.launch {
-                                            val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
-                                            com.chris.m3usuite.player.PlayerChooser.start(
-                                                context = ctx,
-                                                store = store,
-                                                url = req.url,
-                                                headers = req.headers,
-                                                startPositionMs = null,
-                                                mimeType = req.mimeType
-                                            ) { startMs, resolvedMime ->
-                                                val encoded = PlayUrlHelper.encodeUrl(req.url)
-                                                val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                                                navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                                Box(Modifier.fillMaxSize()) {
+                                    CompositionLocalProvider(
+                                        LocalRowItemHeightOverride provides desiredLiveRowInt
+                                    ) {
+                                        val liveFlow = remember(q) { mediaRepo.pagingSearchFilteredFlow("live", q) }
+                                        val livePaged = liveFlow.collectAsLazyPagingItems()
+                                        AttachPagingTelemetry(tag = "home.live.search", items = livePaged)
+                                        com.chris.m3usuite.ui.components.rows.LiveRowPaged(
+                                            items = livePaged,
+                                            stateKey = liveSearchKey,
+                                            onOpenDetails = { mi -> openLive(mi.id) },
+                                            onPlayDirect = { mi ->
+                                                scope.launch {
+                                                    val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
+                                                    com.chris.m3usuite.player.PlayerChooser.start(
+                                                        context = ctx,
+                                                        store = store,
+                                                        url = req.url,
+                                                        headers = req.headers,
+                                                        startPositionMs = null,
+                                                        mimeType = req.mimeType
+                                                    ) { startMs, resolvedMime ->
+                                                        val encoded = PlayUrlHelper.encodeUrl(req.url)
+                                                        val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                                                        navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                                                    }
+                                                }
                                             }
-                                        }
+                                        )
                                     }
-                                )
+                                    Text(
+                                        text = "Live TV",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = Color.White,
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                                            .background(Color.Black.copy(alpha = 0.55f), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
                                 }
                             }
                         }
@@ -1008,16 +1045,16 @@ fun ChannelPickTile(
                 drawRect(brush = grad)
             }
     ) {
-        androidx.compose.foundation.layout.Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val sz = 77.dp
-            val url = item.logo ?: item.poster
-            if (url != null) {
-                com.chris.m3usuite.ui.util.AppPosterImage(
+    androidx.compose.foundation.layout.Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val sz = 77.dp
+        val url = item.logo ?: item.poster
+        if (url != null) {
+            com.chris.m3usuite.ui.util.AppPosterImage(
                     url = url,
                     contentDescription = item.name,
                     modifier = Modifier
@@ -1026,15 +1063,15 @@ fun ChannelPickTile(
                     contentScale = ContentScale.Fit,
                     crossfade = false
                 )
-            }
-            Spacer(Modifier.size(12.dp))
-            Text(
-                text = item.name.uppercase(),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                modifier = Modifier.weight(1f)
-            )
         }
+        Spacer(Modifier.size(12.dp))
+        Text(
+            text = item.name.uppercase(),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
+}
 }

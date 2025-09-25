@@ -12,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
@@ -24,11 +23,12 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.metrics.performance.JankStats
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.prefs.Keys
+import com.chris.m3usuite.navigation.popUpToStartDestination
 import com.chris.m3usuite.player.InternalPlayerScreen   // <- korrektes Paket (s. Schritt A)
 import com.chris.m3usuite.ui.screens.LibraryScreen
 import com.chris.m3usuite.ui.home.StartScreen
@@ -72,21 +72,7 @@ class MainActivity : ComponentActivity() {
             AppTheme {
                 val nav = rememberNavController()
 
-                // Kick fish spin on every route change (single fast spin), lifecycle-aware
                 val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-                LaunchedEffect(nav, lifecycleOwner) {
-                    lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                        var last: String? = null
-                        nav.currentBackStackEntryFlow.collect { entry ->
-                            val route = entry.destination.route
-                            if (route != null && route != last) {
-                                com.chris.m3usuite.ui.fx.FishSpin.kickOnce()
-                                last = route
-                            }
-                        }
-                    }
-                }
-
                 val ctx = LocalContext.current
                 val store = remember(ctx) { SettingsStore(ctx) }
                 // React to Xtream creds becoming available at runtime (Settings/Setup)
@@ -110,11 +96,6 @@ class MainActivity : ComponentActivity() {
 
                 // Startziel: auch ohne M3U kann die App starten (Einstellungen später setzen)
                 val startDestination = "gate"
-                // Appstart-Loading nur, wenn Quellen vorhanden sind und Import angestoßen wird
-                LaunchedEffect(m3uUrl) {
-                    if (m3uUrl.isNotBlank()) com.chris.m3usuite.ui.fx.FishSpin.setLoading(true) else com.chris.m3usuite.ui.fx.FishSpin.setLoading(false)
-                }
-
                 // Wenn M3U vorhanden aber Xtream noch nicht konfiguriert (z. B. nach App-Reinstall via Backup):
                 // automatisch aus der M3U ableiten und direkt die Worker planen.
                 LaunchedEffect(m3uUrl) {
@@ -236,9 +217,24 @@ class MainActivity : ComponentActivity() {
                         LiveDetailScreen(id, onLogo = {
                             val current = nav.currentBackStackEntry?.destination?.route
                             if (current != "library") {
-                                nav.navigate("library?q=&qs=") { launchSingleTop = true }
+                                nav.navigate("library?q=&qs=") {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                    popUpToStartDestination(nav, saveState = true)
+                                }
                             }
-                        }, onGlobalSearch = { nav.navigate("library?qs=show") { launchSingleTop = true } })
+                        }, onGlobalSearch = {
+                            nav.navigate("library?qs=show") {
+                                launchSingleTop = true
+                                restoreState = true
+                                popUpToStartDestination(nav, saveState = true)
+                            }
+                        }, onOpenSettings = {
+                            val current = nav.currentBackStackEntry?.destination?.route
+                            if (current != "settings") {
+                                nav.navigate("settings") { launchSingleTop = true }
+                            }
+                        })
                     }
 
                     // VOD-Details – mit Lambda für internen Player
@@ -255,10 +251,26 @@ class MainActivity : ComponentActivity() {
                             onLogo = {
                                 val current = nav.currentBackStackEntry?.destination?.route
                                 if (current != "library") {
-                                    nav.navigate("library?q=&qs=") { launchSingleTop = true }
+                                    nav.navigate("library?q=&qs=") {
+                                        launchSingleTop = true
+                                        restoreState = true
+                                        popUpToStartDestination(nav, saveState = true)
+                                    }
                                 }
                             },
-                            onGlobalSearch = { nav.navigate("library?qs=show") { launchSingleTop = true } }
+                            onGlobalSearch = {
+                                nav.navigate("library?qs=show") {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                    popUpToStartDestination(nav, saveState = true)
+                                }
+                            },
+                            onOpenSettings = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "settings") {
+                                    nav.navigate("settings") { launchSingleTop = true }
+                                }
+                            }
                         )
                     }
 
@@ -277,7 +289,17 @@ class MainActivity : ComponentActivity() {
                             onLogo = {
                                 val current = nav.currentBackStackEntry?.destination?.route
                                 if (current != "library") {
-                                    nav.navigate("library?q=&qs=") { launchSingleTop = true }
+                                    nav.navigate("library?q=&qs=") {
+                                        launchSingleTop = true
+                                        restoreState = true
+                                        popUpToStartDestination(nav, saveState = true)
+                                    }
+                                }
+                            },
+                            onOpenSettings = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "settings") {
+                                    nav.navigate("settings") { launchSingleTop = true }
                                 }
                             }
                         )
@@ -344,12 +366,7 @@ class MainActivity : ComponentActivity() {
                         }
                         SettingsScreen(
                             store = store,
-                            onBack = {
-                                val current = nav.currentBackStackEntry?.destination?.route
-                                if (current != "library") {
-                                nav.navigate("library?q=&qs=") { launchSingleTop = true }
-                                }
-                            },
+                            onBack = { nav.popBackStack() },
                             onOpenProfiles = { nav.navigate("profiles") },
                             onOpenGate = {
                                 nav.navigate("gate") {
@@ -357,7 +374,13 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onOpenXtreamCfCheck = { nav.navigate("xt_cfcheck") },
-                            onGlobalSearch = { nav.navigate("library?qs=show") { launchSingleTop = true } }
+                            onGlobalSearch = {
+                                nav.navigate("library?qs=show") {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                    popUpToStartDestination(nav, saveState = true)
+                                }
+                            }
                         )
                     }
 
@@ -376,10 +399,26 @@ class MainActivity : ComponentActivity() {
                             onLogo = {
                                 val current = nav.currentBackStackEntry?.destination?.route
                                 if (current != "library") {
-                                    nav.navigate("library?q=&qs=") { launchSingleTop = true }
+                                    nav.navigate("library?q=&qs=") {
+                                        launchSingleTop = true
+                                        restoreState = true
+                                        popUpToStartDestination(nav, saveState = true)
+                                    }
                                 }
                             },
-                            onGlobalSearch = { nav.navigate("library?qs=show") { launchSingleTop = true } }
+                            onGlobalSearch = {
+                                nav.navigate("library?qs=show") {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                    popUpToStartDestination(nav, saveState = true)
+                                }
+                            },
+                            onOpenSettings = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "settings") {
+                                    nav.navigate("settings") { launchSingleTop = true }
+                                }
+                            }
                         )
                     }
 

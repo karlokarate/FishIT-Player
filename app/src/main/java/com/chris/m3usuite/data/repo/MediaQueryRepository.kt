@@ -118,20 +118,45 @@ class MediaQueryRepository(
 
     suspend fun listByTypeFiltered(type: String, limit: Int, offset: Int): List<MediaItem> =
         withContext(Dispatchers.IO) {
-            val itemsRaw: List<MediaItem> = when (type) {
-                "live" -> obxRepo.livePaged(offset.toLong(), limit.toLong()).map { it.toMediaItem(context) }
-                "vod"  -> obxRepo.vodPaged(offset.toLong(), limit.toLong()).map { it.toMediaItem(context) }
-                else   -> obxRepo.seriesPaged(offset.toLong(), limit.toLong()).map { it.toMediaItem(context) }
+            if (limit <= 0) return@withContext emptyList()
+            val showAdults = settings.showAdults.first()
+            val catLabelById = runCatching {
+                obxRepo.categories(type).associateBy({ it.categoryId }, { it.categoryName })
+            }.getOrElse { emptyMap() }
+
+            suspend fun loadBatch(pageOffset: Long, pageSize: Long): List<MediaItem> = when (type) {
+                "live" -> obxRepo.livePaged(pageOffset, pageSize).map { it.toMediaItem(context) }
+                "vod" -> obxRepo.vodPaged(pageOffset, pageSize).map { it.toMediaItem(context) }
+                else -> obxRepo.seriesPaged(pageOffset, pageSize).map { it.toMediaItem(context) }
+            }.map { item -> item.copy(categoryName = catLabelById[item.categoryId]) }
+
+            fun applyAdultFilter(items: List<MediaItem>): List<MediaItem> =
+                if (showAdults) items else items.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+
+            val kidId = currentKidIdOrNull()
+            if (kidId == null) {
+                val initial = loadBatch(offset.toLong(), limit.toLong())
+                return@withContext applyAdultFilter(initial)
             }
-            // Inject category labels so downstream filters (Adults) can apply reliably
-            val catLabelById = runCatching { obxRepo.categories(type).associateBy({ it.categoryId }, { it.categoryName }) }
-                .getOrElse { emptyMap() }
-            val items = itemsRaw.map { it.copy(categoryName = catLabelById[it.categoryId]) }
-            val showA = settings.showAdults.first()
-            val base = if (showA) items else items.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
-            val kidId = currentKidIdOrNull() ?: return@withContext base
+
             val allowed = effectiveAllowedIds(kidId, type)
-            base.filter { it.id in allowed }
+            if (allowed.isEmpty()) return@withContext emptyList()
+
+            val required = offset + limit
+            val chunkSize = maxOf(limit, 200)
+            val acc = mutableListOf<MediaItem>()
+            var nextOffset = 0L
+
+            while (acc.size < required) {
+                val batch = loadBatch(nextOffset, chunkSize.toLong())
+                if (batch.isEmpty()) break
+                val filtered = applyAdultFilter(batch).filter { it.id in allowed }
+                if (filtered.isNotEmpty()) acc += filtered
+                if (batch.size < chunkSize) break
+                nextOffset += chunkSize
+            }
+
+            acc.drop(offset).take(limit)
         }
 
     suspend fun byTypeAndCategoryFiltered(type: String, cat: String?): List<MediaItem> =

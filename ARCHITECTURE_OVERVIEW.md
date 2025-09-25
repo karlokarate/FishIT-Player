@@ -135,7 +135,7 @@ app/src/main/java/com/chris/m3usuite
 │   │   │   - VOD: Kategorien zuerst; bei ausgewählter Kategorie horizontale, paginierte Row (Paging3 über ObjectBox)
 │   │   │     mit Material3 Skeleton‑Placeholders (Shimmer/Puls, fisch.png). EPG‑Prefetch für sichtbare Items bleibt aktiv.
 │   │   ├── LiveDetailScreen.kt             # Live-Details, Play/Favorit/Kids-Freigabe (Profil-Lookup toleriert fehlende IDs; kein -1 ObjectBox-Dump)
-│   │   ├── VodDetailScreen.kt              # VOD-Details, Enrichment-Fetch, Resume
+│   │   ├── VodDetailScreen.kt              # VOD-Details, Poster focus + 50% backdrop overlay, Enrichment-Fetch, Resume
 │   │   ├── SeriesDetailScreen.kt           # Serien, Staffel/Episoden-Listing, Resume Next
 │   │   └── SettingsScreen.kt               # UI-, Player-, Filter-, Profile-Settings
 │   ├── skin/                               # TV-Skin (Focus/Scale, Modifiers), Theme
@@ -180,6 +180,7 @@ Routen (aus `MainActivity`):
      - Serien: Gruppierung Provider (normalisiert), Jahr, Genre; Textfilter. Episoden on‑demand.
      - Live: Gruppierung Provider (normalisiert) oder Genre (News/Sport/Kids/Music/Doku); kein Jahr; Textfilter.
    - Expand/Collapse je Kategorie mit persistenter Ordnung (CSV in Settings), Rows laden lazy nach.
+   - Navigation state preservation: Top‑level switches between Start (`library?q=…`) and Library (`browse`) use Navigation‑Compose state saving (`restoreState=true` and `popUpTo(findStartDestination()){ saveState=true }`). Additionally, a lightweight in‑memory scroll cache in `ScrollStateRegistry` ensures list/grid positions persist even if backstack entries are removed by navigation.
 
 4. **Details: `live/{id}`, `vod/{id}`, `series/{id}`**
    - Aktionen: Play (via `PlayerChooser`), Favorisieren, Kids freigeben/sperren.
@@ -268,7 +269,7 @@ Backup/Restore
 
 - HttpClientFactory: Singleton‑OkHttpClient mit persistentem Cookie‑Jar (Disk‑backed) und dynamischer Disk‑HTTP‑Cache‑Größe (ABI/Low‑RAM/Platz): 32‑bit ≈32 MiB (Cap 64 MiB), 64‑bit ≈96 MiB (Cap 128 MiB), mind. 1% frei. Headers via `RequestHeadersProvider` (UA/Referer/Extras) – konsistent für alle HTTP‑Aufrufe.
 - Live‑Preview (HomeRows): ExoPlayer + `DefaultHttpDataSource.Factory` (UA/Referer gesetzt). Preview standardmäßig AUS; Fokus‑EPG hat 120 ms Cooldown. Sichtbare Items für Prefetch (EPG/Details) laufen gedrosselt (`distinctUntilChanged().debounce(100ms)`).
-- Images/Coil (v3): Globaler ImageLoader mit Hardware‑Bitmaps, ~25% RAM‑Cache und dynamischem Disk‑Cache (32‑bit ≈256 MiB, 64‑bit ≈512 MiB; Caps 384/768 MiB; mind. 2% frei). Per‑Request `NetworkHeaders`; kleine Bilder (Avatare/Provider‑Icons) nutzen RGB_565. TMDb‑URLs werden größenbewusst umgeschrieben (`AppPosterImage`/`AppHeroImage`). ContentScale: Logos=Fit, Avatare=Crop, Karten=Crop.
+- Images/Coil (v3): Globaler ImageLoader mit Hardware‑Bitmaps, ~25% RAM‑Cache und dynamischem Disk‑Cache (32‑bit ≈256 MiB, 64‑bit ≈512 MiB; Caps 384/768 MiB; mind. 2% frei). Requests lesen ihre Slot‑Größe via `onSizeChanged`, nutzen RGB_565 global, vergeben WxH‑sensitive Cache‑Keys und überschreiben TMDb‑URLs passend (`AppPosterImage`/`AppHeroImage`). ContentScale: Logos=Fit, Avatare=Crop, Karten=Crop; Standard‑Fallbacks stammen aus den neuen Fish‑Assets.
 - Player (Media3): `DefaultRenderersFactory` (Decoder‑Fallback an, Extensions aus) bevorzugt Hardware‑Decoder. `PlayerView` verwendet `surface_view` (TV performanter). `DefaultLoadControl` konservativ.
 - UI‑State: Scrollpositionen von LazyColumn/LazyRow/LazyVerticalGrid werden pro Route/Gruppe gespeichert und beim Wiederbetreten wiederhergestellt. Zentrale Helper in `ui/state/ScrollStateRegistry.kt` (`rememberRouteListState`, `rememberRouteGridState`).
 - XtreamSeeder / XtreamObxRepository: Kopf-Import (Live/VOD/Series) erstellt Provider-/Genre-/Year-Indizes (`ObxIndex*`) direkt aus den Xtream-Listen.

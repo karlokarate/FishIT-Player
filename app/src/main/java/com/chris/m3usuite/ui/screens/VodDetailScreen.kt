@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.max
 import com.chris.m3usuite.ui.util.buildImageRequest
 import com.chris.m3usuite.ui.util.rememberImageHeaders
+import com.chris.m3usuite.ui.util.AppPosterImage
 import com.chris.m3usuite.data.repo.KidContentRepository
 import com.chris.m3usuite.core.xtream.ProviderLabelStore
 // Room removed
@@ -61,7 +62,6 @@ import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import com.chris.m3usuite.ui.skin.tvClickable
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.layout.aspectRatio
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
@@ -108,6 +108,7 @@ private fun MetaChip(text: String, onClick: (() -> Unit)? = null) {
 private data class VodDetailPayload(
     val title: String,
     val poster: String?,
+    val backdrop: String?,
     val images: List<String>,
     val plot: String?,
     val rating: Double?,
@@ -150,11 +151,7 @@ private suspend fun loadVodDetail(
     }
 
     var row = readRow()
-    val needsImport = row == null || (
-        row.plot.isNullOrBlank() &&
-            row.imagesJson.isNullOrBlank() &&
-            row.poster.isNullOrBlank()
-        )
+    val needsImport = row == null || row.plot.isNullOrBlank()
     if (needsImport) {
         val repo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store)
         runCatching { repo.importVodDetailOnce(obxVid) }
@@ -200,6 +197,9 @@ private suspend fun loadVodDetail(
         }
     }.getOrNull() ?: emptyList()
 
+    val poster = row?.poster?.takeUnless { it.isBlank() } ?: images.firstOrNull()
+    val backdrop = images.firstOrNull { it != poster }
+
     val durationSecs = row?.durationSecs
     val resumeSecs = resumeRepo.recentVod(1)
         .firstOrNull { it.mediaId == itemId }
@@ -234,7 +234,8 @@ private suspend fun loadVodDetail(
 
     return@withContext VodDetailPayload(
         title = displayTitle,
-        poster = row?.poster ?: images.firstOrNull(),
+        poster = poster,
+        backdrop = backdrop,
         images = images,
         plot = row?.plot,
         rating = row?.rating,
@@ -266,7 +267,8 @@ fun VodDetailScreen(
     // optional: interner Player (url, startMs, mime)
     openInternal: ((url: String, startMs: Long?, mimeType: String?) -> Unit)? = null,
     onLogo: (() -> Unit)? = null,
-    onGlobalSearch: (() -> Unit)? = null
+    onGlobalSearch: (() -> Unit)? = null,
+    onOpenSettings: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
@@ -280,7 +282,7 @@ fun VodDetailScreen(
 
     var title by remember { mutableStateOf("") }
     var poster by remember { mutableStateOf<String?>(null) }
-    var images by remember { mutableStateOf<List<String>>(emptyList()) }
+    var backdrop by remember { mutableStateOf<String?>(null) }
     var plot by remember { mutableStateOf<String?>(null) }
     var rating by remember { mutableStateOf<Double?>(null) }
     var year by remember { mutableStateOf<Int?>(null) }
@@ -321,7 +323,7 @@ fun VodDetailScreen(
         if (payload == null) {
             title = ""
             poster = null
-            images = emptyList()
+            backdrop = null
             plot = null
             rating = null
             year = null
@@ -349,7 +351,7 @@ fun VodDetailScreen(
 
         title = payload.title
         poster = payload.poster
-        images = payload.images
+        backdrop = payload.backdrop ?: payload.poster
         plot = payload.plot
         rating = payload.rating
         year = payload.year
@@ -475,7 +477,7 @@ fun VodDetailScreen(
     val listState = com.chris.m3usuite.ui.state.rememberRouteListState("vodDetail:$id")
     HomeChromeScaffold(
         title = "Details",
-        onSettings = null,
+        onSettings = onOpenSettings,
         onSearch = onGlobalSearch,
         onProfiles = null,
         listState = listState,
@@ -484,14 +486,24 @@ fun VodDetailScreen(
     ) { pads ->
     Box(modifier = Modifier.fillMaxSize().padding(pads)) {
         val Accent = com.chris.m3usuite.ui.theme.DesignTokens.Accent
+        val heroUrl = remember(backdrop, poster) { backdrop ?: poster }
+        heroUrl?.let { url ->
+            com.chris.m3usuite.ui.util.AppHeroImage(
+                url = url,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize().graphicsLayer(alpha = 0.5f),
+                crossfade = true
+            )
+        }
         // Background
         Box(
             Modifier
                 .matchParentSize()
                 .background(
                     Brush.verticalGradient(
-                        0f to MaterialTheme.colorScheme.background,
-                        1f to MaterialTheme.colorScheme.surface
+                        0f to MaterialTheme.colorScheme.background.copy(alpha = 0.35f),
+                        1f to MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
                     )
                 )
         )
@@ -515,14 +527,22 @@ fun VodDetailScreen(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             accent = Accent
         ) {
-        Column(Modifier.animateContentSize()) {
-        Box(
-            modifier = Modifier.clickable(enabled = url != null) { play(fromStart = false) }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = listState,
+            contentPadding = PaddingValues(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            com.chris.m3usuite.ui.util.AppHeroImage(
-                url = poster ?: images.firstOrNull(),
+        item {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = url != null) { play(fromStart = false) }
+        ) {
+            com.chris.m3usuite.ui.util.AppPosterImage(
+                url = poster ?: heroUrl,
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(260.dp),
@@ -562,7 +582,8 @@ fun VodDetailScreen(
                 ) { Text(text, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall) }
             }
         }
-
+        }
+        item {
         Column(Modifier.padding(top = 12.dp)) {
             val AccentDyn = if (isAdult) com.chris.m3usuite.ui.theme.DesignTokens.Accent else com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
             val badgeColor = if (!isAdult) AccentDyn.copy(alpha = 0.26f) else AccentDyn.copy(alpha = 0.20f)
@@ -639,7 +660,6 @@ fun VodDetailScreen(
             Spacer(Modifier.height(12.dp))
 
             if (!plot.isNullOrBlank()) {
-                var expanded by remember { mutableStateOf(false) }
                 Surface(
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                     color = badgeColorDarker,
@@ -648,15 +668,27 @@ fun VodDetailScreen(
                 ) {
                     Text(
                         plot!!,
-                        maxLines = if (expanded) Int.MAX_VALUE else 8,
-                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(12.dp)
                             .clickable(enabled = url != null) { play(fromStart = false) }
                     )
                 }
-                TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Weniger anzeigen" else "Mehr anzeigen") }
+            } else {
+                Surface(
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    color = badgeColorDarker.copy(alpha = 0.6f),
+                    contentColor = Color.White,
+                    modifier = Modifier.fillMaxWidth().graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
+                ) {
+                    Text(
+                        "Keine Beschreibung verfügbar",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                    )
+                }
             }
 
             val genreTags = remember(genre) { parseTags(genre) }
@@ -703,25 +735,6 @@ fun VodDetailScreen(
             }
 
             Spacer(Modifier.height(10.dp))
-            // Image gallery (optional)
-            if (images.size > 1) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
-                    items(images.size, key = { i -> images[i] }) { i ->
-                        val img = images[i]
-                        com.chris.m3usuite.ui.util.AppAsyncImage(
-                            url = img,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .height(120.dp)
-                                .aspectRatio(16f / 9f)
-                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp)),
-                            crossfade = true
-                        )
-                    }
-                }
-            }
-
             Spacer(Modifier.height(8.dp))
             // Trailer embedded + expandable
             if (!trailer.isNullOrBlank()) {
@@ -772,6 +785,7 @@ fun VodDetailScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.secondary
             )
+        }
         }
         }
         // Overlay sticky-like floating title badge when scrolled

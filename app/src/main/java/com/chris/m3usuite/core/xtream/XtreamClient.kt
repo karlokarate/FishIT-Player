@@ -251,15 +251,20 @@ class XtreamClient(
     // Details: VOD / Series (für Drilldown)
     // ------------------------------------------------------------
     suspend fun getVodDetailFull(vodId: Int): NormalizedVodDetail? {
-        val idField = resolveVodIdField()
+        // Some panels expect different ID field names for VOD info.
+        // Try common variants in order to maximize compatibility.
         val aliasOrder = listOf(vodKind, "vod", "movie", "movies").filter { it.isNotBlank() }
+        val idFields = listOf("vod_id", "movie_id", "id", "stream_id")
         var infoObj: Map<String, JsonElement>? = null
-        for (alias in aliasOrder) {
-            infoObj = apiObject("get_${alias}_info", extra = "&$idField=$vodId")
-            if (infoObj != null) { vodKind = alias; break }
+        outer@ for (alias in aliasOrder) {
+            for (idField in idFields) {
+                infoObj = apiObject("get_${alias}_info", extra = "&$idField=$vodId")
+                if (infoObj != null) { vodKind = alias; break@outer }
+            }
         }
         infoObj ?: return null
-        val movieData = infoObj["movie_data"]?.jsonObject ?: infoObj
+        // Some panels nest VOD details under "movie_data", others under "info", and a few return flat fields.
+        val movieData = infoObj["movie_data"]?.jsonObject ?: infoObj["info"]?.jsonObject ?: infoObj
 
         val backdrops = movieData["backdrop_path"]?.jsonArray?.mapNotNull { it.asString() }.orEmpty()
         val poster = movieData["poster_path"]?.asString()
@@ -272,12 +277,17 @@ class XtreamClient(
             addAll(backdrops)
         }
 
+        // Plot can live under different keys depending on panel theme
+        val plotText = listOf("plot", "description", "plot_outline", "overview")
+            .firstNotNullOfOrNull { key -> movieData[key]?.asString() }
+            ?.trim()?.takeIf { it.isNotEmpty() }
+
         return NormalizedVodDetail(
             vodId = vodId,
             name = movieData["name"]?.asString().orEmpty(),
             year = movieData["year"]?.asIntOrNull(),
             rating = movieData["rating"]?.asDoubleOrNull(),
-            plot = movieData["plot"]?.asString(),
+            plot = plotText,
             genre = movieData["genre"]?.asString(),
             director = movieData["director"]?.asString(),
             cast = movieData["cast"]?.asString(),

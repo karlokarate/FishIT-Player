@@ -1,33 +1,33 @@
 package com.chris.m3usuite.ui.fx
 
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
 import com.chris.m3usuite.R
-import androidx.compose.ui.platform.LocalDensity
 import kotlin.math.min
 
 @Composable
@@ -63,12 +63,6 @@ fun ShimmerBox(
   ) {
     if (showFish) {
       // Gentle pulse + slow rotation for a pleasant Material3 effect
-      val rot by anim.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(animation = tween(2400, easing = LinearEasing)),
-        label = "fishRot"
-      )
       val pulse by anim.animateFloat(
         initialValue = 0.12f,
         targetValue = 0.30f,
@@ -83,12 +77,12 @@ fun ShimmerBox(
       }
       val resolvedSize = fishSize ?: dynamicDp
       Image(
-        painter = painterResource(id = R.drawable.fisch),
+        painter = painterResource(id = R.drawable.fisch_header),
         contentDescription = null,
         modifier = Modifier
           .align(Alignment.Center)
           .size(resolvedSize)
-          .graphicsLayer { rotationZ = rot; alpha = (fishAlpha * (0.7f + 0.3f * (pulse / 0.30f))).coerceIn(0f, 1f) }
+          .alpha((fishAlpha * (0.7f + 0.3f * (pulse / 0.30f))).coerceIn(0f, 1f))
       )
     }
   }
@@ -125,12 +119,6 @@ fun ShimmerCircle(
       .background(brush)
   ) {
     if (showFish) {
-      val rot by anim.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(animation = tween(1000, easing = LinearEasing)),
-        label = "fishRotCircle"
-      )
       val density = LocalDensity.current
       val dynamicDp = remember(widthPx, heightPx, fishSizeRatio) {
         val px = min(widthPx, heightPx)
@@ -139,12 +127,12 @@ fun ShimmerCircle(
       }
       val resolvedSize = fishSize ?: dynamicDp
       Image(
-        painter = painterResource(id = R.drawable.fisch),
+        painter = painterResource(id = R.drawable.fisch_header),
         contentDescription = null,
         modifier = Modifier
           .align(Alignment.Center)
           .size(resolvedSize)
-          .graphicsLayer { rotationZ = rot; alpha = fishAlpha }
+          .alpha(fishAlpha)
       )
     }
   }

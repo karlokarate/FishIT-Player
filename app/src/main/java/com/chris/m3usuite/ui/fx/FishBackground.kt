@@ -1,69 +1,37 @@
 package com.chris.m3usuite.ui.fx
 
-import androidx.compose.runtime.*
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateFloat
+import androidx.compose.ui.res.painterResource
 import com.chris.m3usuite.R
 
 @Composable
 fun FishBackground(
     modifier: Modifier = Modifier,
     alpha: Float = 0.05f,
-    fastSpinMillis: Int = 2500,
-    loadingSpinMillis: Int = 5000,
     neutralizeUnderlay: Boolean = false,
-    neutralizeColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.background
+    neutralizeColor: Color = MaterialTheme.colorScheme.background
 ) {
-    // Loading-driven infinite rotation uses an InfiniteTransition for reliability
-    val isLoading = FishSpin.isLoading.collectAsStateWithLifecycle(initialValue = false).value
-    val infinite = rememberInfiniteTransition(label = "fishBg")
-    val loadingAngle = if (isLoading) {
-        infinite.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(animation = tween(loadingSpinMillis, easing = LinearEasing)),
-            label = "deg"
-        ).value
-    } else 0f
-
-    // Kick animation overlays one quick spin on top of loading angle
-    val kick = remember { Animatable(0f) }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(lifecycleOwner) {
-        lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-            FishSpin.spinTrigger.collect {
-                kick.stop(); kick.snapTo(0f)
-                kick.animateTo(360f, tween(fastSpinMillis, easing = LinearEasing))
-                kick.snapTo(0f)
-            }
-        }
-    }
-
-    val angle = (loadingAngle + kick.value) % 360f
-
-    androidx.compose.foundation.layout.Box(modifier = modifier) {
+    Box(modifier = modifier) {
         if (neutralizeUnderlay) {
-            androidx.compose.foundation.Canvas(modifier = Modifier.matchParentSize()) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
                 drawRect(color = neutralizeColor)
             }
         }
         Image(
-            painter = painterResource(id = R.drawable.fisch),
+            painter = painterResource(id = R.drawable.fisch_bg),
             contentDescription = null,
-            modifier = Modifier.matchParentSize().graphicsLayer { this.alpha = alpha; rotationZ = angle },
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(alpha = alpha),
             contentScale = ContentScale.Fit
         )
     }

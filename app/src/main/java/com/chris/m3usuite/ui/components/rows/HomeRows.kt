@@ -2,9 +2,9 @@
 package com.chris.m3usuite.ui.components.rows
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 import com.chris.m3usuite.ui.util.AppAsyncImage
 import com.chris.m3usuite.ui.fx.ShimmerBox
+import com.chris.m3usuite.ui.components.common.FocusTitleOverlay
 import com.chris.m3usuite.ui.skin.tvClickable
 // isTvDevice removed (unused)
 import androidx.compose.foundation.layout.Column
@@ -56,7 +57,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.graphics.Color
@@ -78,7 +78,7 @@ import com.chris.m3usuite.data.repo.EpgRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.ui.common.AppIcon
@@ -101,6 +101,9 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.LoadState
 
 val LocalRowItemHeightOverride = compositionLocalOf<Int?> { null }
+private const val POSTER_ASPECT_RATIO = 2f / 3f
+private const val LIVE_TILE_ASPECT_RATIO = 16f / 9f
+private val TILE_SHAPE = RoundedCornerShape(14.dp)
 
 @Composable
 private fun PlayOverlay(visible: Boolean, sizeDp: Int = 56) {
@@ -119,7 +122,7 @@ private fun PlayOverlay(visible: Boolean, sizeDp: Int = 56) {
 }
 
 @Composable
-private fun rowItemHeight(): Int {
+fun rowItemHeight(): Int {
     LocalRowItemHeightOverride.current?.let { return it }
     val cfg = LocalConfiguration.current
     val isLandscape = cfg.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -143,24 +146,39 @@ fun MediaCard(
     showTitle: Boolean = true
 ) {
     val ctx = LocalContext.current
-    val h = rowItemHeight()
+    val tileHeight = rowItemHeight().dp
+    val tileWidth = tileHeight * POSTER_ASPECT_RATIO
+    var focused by remember { mutableStateOf(false) }
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = modifier
-            .height(h.dp)
+            .width(tileWidth)
             .padding(end = 12.dp)
-            .tvClickable { onClick(item) }
+            .onFocusChanged { focused = it.isFocused || it.hasFocus }
+            .tvClickable(brightenContent = false, autoBringIntoView = false) { onClick(item) }
     ) {
         // Prefer poster/logo/backdrop in this order (fallback to any image field in MediaItem)
         val raw = remember(item.poster ?: item.logo ?: item.backdrop) {
             item.poster ?: item.logo ?: item.backdrop
         }
-        AppAsyncImage(
-            url = raw,
-            contentDescription = item.name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.aspectRatio(16f / 9f)
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(tileHeight)
+                .clip(TILE_SHAPE)
+        ) {
+            AppAsyncImage(
+                url = raw,
+                contentDescription = item.name,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+                crossfade = false
+            )
+            com.chris.m3usuite.ui.components.common.FocusTitleOverlay(
+                title = item.name,
+                focused = focused
+            )
+        }
         if (showTitle) {
             Text(
                 text = item.name,
@@ -225,34 +243,38 @@ fun LiveTileCard(
     }
 
     // Load EPG when tile becomes active (focused). Prefetch happens separately for favorites.
-    LaunchedEffect(item.streamId, focused) {
+    LaunchedEffect(item.streamId) {
         val sid = item.streamId ?: return@LaunchedEffect
         if (item.type != "live") return@LaunchedEffect
-        if (!focused) return@LaunchedEffect
-        // Cooldown to avoid rapid focus churn EPG fetches
-        delay(120)
-        if (!focused) return@LaunchedEffect
-        try {
-            val list = epgRepo.nowNext(sid, 2)
-            val first = list.getOrNull(0)
-            val second = list.getOrNull(1)
-            epgNow = first?.title.orEmpty()
-            epgNext = second?.title.orEmpty()
-            val start = first?.start?.toLongOrNull()?.let { it * 1000 }
-            val end = first?.end?.toLongOrNull()?.let { it * 1000 }
-            nowStartMs = start; nowEndMs = end
-            if (start != null && end != null && end > start) {
-                val now = System.currentTimeMillis()
-                val progress = ((now - start).coerceAtLeast(0).toFloat() / (end - start).toFloat()).coerceIn(0f, 1f)
-                epgProgress = progress
-            } else epgProgress = null
-        } catch (_: Throwable) { epgNow = ""; epgNext = "" }
+        snapshotFlow { focused }
+            .distinctUntilChanged()
+            .debounce(120)
+            .filter { it }
+            .collect {
+                runCatching {
+                    val list = epgRepo.nowNext(sid, 2)
+                    val first = list.getOrNull(0)
+                    val second = list.getOrNull(1)
+                    epgNow = first?.title.orEmpty()
+                    epgNext = second?.title.orEmpty()
+                    val start = first?.start?.toLongOrNull()?.let { it * 1000 }
+                    val end = first?.end?.toLongOrNull()?.let { it * 1000 }
+                    nowStartMs = start; nowEndMs = end
+                    epgProgress = if (start != null && end != null && end > start) {
+                        val now = System.currentTimeMillis()
+                        ((now - start).coerceAtLeast(0).toFloat() / (end - start).toFloat()).coerceIn(0f, 1f)
+                    } else null
+                }.onFailure { epgNow = ""; epgNext = "" }
+            }
     }
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
+    val tileHeight = rowItemHeight().dp
+    val tileWidth = tileHeight * LIVE_TILE_ASPECT_RATIO
     Card(
         modifier = Modifier
-            .height(rowItemHeight().dp)
+            .height(tileHeight)
+            .width(tileWidth)
             .padding(end = 6.dp)
             .combinedClickable(
                 onClick = { onOpenDetails(item) },
@@ -279,7 +301,11 @@ fun LiveTileCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
-        Box(Modifier.fillMaxWidth()) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(tileHeight)
+        ) {
             // Explicit insertion indicator lines inside tile bounds
             if (insertionLeft) {
                 Box(
@@ -379,6 +405,7 @@ fun LiveTileCard(
                                 .fillMaxSize()
                                 .clip(CircleShape)
                                 .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape),
+                            crossfade = false,
                             onLoading = { loaded = false },
                             onSuccess = { loaded = true },
                             onError   = { loaded = true }
@@ -500,6 +527,10 @@ fun LiveTileCard(
             }
             // Center play overlay while focused
             PlayOverlay(visible = focused)
+            FocusTitleOverlay(
+                title = item.name,
+                focused = focused
+            )
         }
     }
 }
@@ -527,11 +558,20 @@ fun SeriesTileCard(
     }
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
+    val tileHeight = rowItemHeight().dp
+    val tileWidth = tileHeight * POSTER_ASPECT_RATIO
     Card(
         modifier = Modifier
-            .height(rowItemHeight().dp)
+            .height(tileHeight)
+            .width(tileWidth)
             .padding(end = 6.dp)
-            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onOpenDetails(item) }
+            .tvClickable(
+                scaleFocused = 1.06f,
+                scalePressed = 1.08f,
+                elevationFocusedDp = 18f,
+                brightenContent = false,
+                autoBringIntoView = false
+            ) { onOpenDetails(item) }
             .onFocusChanged { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
@@ -545,23 +585,35 @@ fun SeriesTileCard(
     ) {
         Column(Modifier.fillMaxWidth()) {
             run {
-                var loaded by remember { mutableStateOf(false) }
-                Box(Modifier.fillMaxWidth().weight(1f)) {
-                    if (!loaded) ShimmerBox(
-                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)),
-                        cornerRadius = 0.dp
-                    )
+                var loaded by remember(item.id) { mutableStateOf(false) }
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(tileHeight)
+                        .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
+                ) {
+                    if (!loaded) {
+                        ShimmerBox(modifier = Modifier.fillMaxSize(), cornerRadius = 0.dp)
+                    }
                     AppAsyncImage(
                         url = item.poster ?: item.logo ?: item.backdrop,
                         contentDescription = item.name,
-                        contentScale = ContentScale.Crop,
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier.fillMaxSize(),
+                        crossfade = false,
                         onLoading = { loaded = false },
                         onSuccess = { loaded = true },
                         onError = { loaded = true }
                     )
                     PlayOverlay(visible = focused)
-                    PlayOverlay(visible = focused)
+                    FocusTitleOverlay(
+                        title = item.name,
+                        focused = focused
+                    )
+                    FocusTitleOverlay(
+                        title = item.name,
+                        focused = focused
+                    )
                     // Minimal resume tooltip on focus (series)
                     var resumeSecs by remember(item.streamId) { mutableStateOf<Int?>(null) }
                     var totalSecs by remember(item.streamId) { mutableStateOf<Int?>(null) }
@@ -682,11 +734,20 @@ fun VodTileCard(
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
+    val tileHeight = rowItemHeight().dp
+    val tileWidth = tileHeight * POSTER_ASPECT_RATIO
     Card(
         modifier = Modifier
-            .height(rowItemHeight().dp)
+            .height(tileHeight)
+            .width(tileWidth)
             .padding(end = 6.dp)
-            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onOpenDetails(item) }
+            .tvClickable(
+                scaleFocused = 1.06f,
+                scalePressed = 1.08f,
+                elevationFocusedDp = 18f,
+                brightenContent = false,
+                autoBringIntoView = false
+            ) { onOpenDetails(item) }
             .onFocusChanged { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
@@ -699,17 +760,22 @@ fun VodTileCard(
     ) {
         Column(Modifier.fillMaxWidth()) {
             run {
-                var loaded by remember { mutableStateOf(false) }
-                Box(Modifier.fillMaxWidth().weight(1f)) {
-                    if (!loaded) ShimmerBox(
-                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)),
-                        cornerRadius = 0.dp
-                    )
+                var loaded by remember(item.id) { mutableStateOf(false) }
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(tileHeight)
+                        .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
+                ) {
+                    if (!loaded) {
+                        ShimmerBox(modifier = Modifier.fillMaxSize(), cornerRadius = 0.dp)
+                    }
                     AppAsyncImage(
                         url = item.poster ?: item.logo ?: item.backdrop,
                         contentDescription = item.name,
-                        contentScale = ContentScale.Crop,
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier.fillMaxSize(),
+                        crossfade = false,
                         onLoading = { loaded = false },
                         onSuccess = { loaded = true },
                         onError = { loaded = true }
@@ -824,48 +890,29 @@ fun LiveRow(
     onPlayDirect: (MediaItem) -> Unit,
 ) {
     if (items.isEmpty()) return
-    // Deduplicate by stable id to avoid key collisions
-    val unique = remember(items) { items.distinctBy { it.id } }
-    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
-    val fling = rememberSnapFlingBehavior(state)
-    var count by remember(unique) { mutableStateOf(if (unique.size < 30) unique.size else 30) }
-    // Lazy-load more tiles while scrolling
-    LaunchedEffect(state) {
-        snapshotFlow { state.firstVisibleItemIndex }
-            .collect { idx ->
-                if (idx > count - 20 && count < unique.size) {
-                    count = (count + 50).coerceAtMost(unique.size)
-                }
-            }
-    }
-    // Ultra-fast EPG prefetch for visible window: writes short EPG directly to ObjectBox
     val ctx = LocalContext.current
     val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
-    val xtObx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
-    LaunchedEffect(state, unique) {
-        snapshotFlow { state.layoutInfo.visibleItemsInfo.mapNotNull { it.key as? Long } }
-            .distinctUntilChanged()
-            .debounce(100)
-            .collect { keys ->
-                if (keys.isEmpty()) return@collect
-                // Map currently visible item IDs to streamIds
-                val visibleStreamIds = keys.mapNotNull { id ->
-                    unique.firstOrNull { it.id == id && it.type == "live" }?.streamId
-                }
-                xtObx.prefetchEpgForVisible(visibleStreamIds, perStreamLimit = 2, parallelism = 4)
+    val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
+
+    MediaRowCore(
+        items = items,
+        config = RowConfig(stateKey = stateKey),
+        leading = leading,
+        onPrefetchKeys = { keys ->
+            val sids = keys.mapNotNull { id ->
+                items.firstOrNull { it.id == id && it.type == "live" }?.streamId
             }
-    }
-    LazyRow(
-        state = state,
-        flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
-    ) {
-        if (leading != null) {
-            item("leading") { leading() }
-        }
-        items(unique.take(count), key = { it.id }) { m ->
-            LiveTileCard(item = m, onOpenDetails = onOpenDetails, onPlayDirect = onPlayDirect)
-        }
+            if (sids.isNotEmpty()) {
+                obx.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
+            }
+        },
+        itemKey = { it.id }
+    ) { m ->
+        LiveTileCard(
+            item = m,
+            onOpenDetails = onOpenDetails,
+            onPlayDirect = onPlayDirect
+        )
     }
 }
 
@@ -877,7 +924,13 @@ fun LiveAddTile(onClick: () -> Unit) {
         modifier = Modifier
             .height(rowItemHeight().dp)
             .padding(end = 6.dp)
-            .tvClickable(scaleFocused = 1.12f, scalePressed = 1.16f, elevationFocusedDp = 18f) { onClick() }
+            .tvClickable(
+                scaleFocused = 1.06f,
+                scalePressed = 1.08f,
+                elevationFocusedDp = 18f,
+                brightenContent = false,
+                autoBringIntoView = false
+            ) { onClick() }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
@@ -906,9 +959,10 @@ fun ReorderableLiveRow(
     onPlay: (Long) -> Unit,
     onAdd: () -> Unit,
     onReorder: (List<Long>) -> Unit,
-    onRemove: (List<Long>) -> Unit
+    onRemove: (List<Long>) -> Unit,
+    stateKey: String? = null
 ) {
-    val state = rememberLazyListState()
+    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
     // Ensure stable, unique keys to avoid LazyRow key collisions
     val order = remember(items) { androidx.compose.runtime.mutableStateListOf<Long>().apply { addAll(items.map { it.id }.distinct()) } }
     var draggingId by remember { mutableStateOf<Long?>(null) }
@@ -1020,47 +1074,29 @@ fun SeriesRow(
     showAssign: Boolean = true
 ) {
     if (items.isEmpty()) return
-    // Deduplicate by id to keep keys stable/unique
-    val unique = remember(items) { items.distinctBy { it.id } }
-    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
-    val fling = rememberSnapFlingBehavior(state)
-    var count by remember(unique) { mutableStateOf(if (unique.size < 30) unique.size else 30) }
-    LaunchedEffect(state) {
-        snapshotFlow { state.firstVisibleItemIndex }
-            .collect { idx ->
-                if (idx > count - 20 && count < unique.size) {
-                    count = (count + 50).coerceAtMost(unique.size)
-                }
-            }
-    }
-    // Prefetch Series details for visible tiles (bounded and deduped in repo)
     val ctx = LocalContext.current
     val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
     val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
-    LaunchedEffect(state, unique) {
-        snapshotFlow { state.layoutInfo.visibleItemsInfo.mapNotNull { it.key as? Long } }
-            .distinctUntilChanged()
-            .debounce(100)
-            .collect { keys ->
-                val sids = keys.mapNotNull { id -> if (id in 3_000_000_000_000L until 4_000_000_000_000L) (id - 3_000_000_000_000L).toInt() else null }
-                if (sids.isNotEmpty()) obx.importSeriesDetailsForIds(sids, max = 8)
+
+    MediaRowCore(
+        items = items,
+        config = RowConfig(stateKey = stateKey),
+        onPrefetchKeys = { keys ->
+            val sids = keys.mapNotNull { id ->
+                if (id in 3_000_000_000_000L until 4_000_000_000_000L) (id - 3_000_000_000_000L).toInt() else null
             }
-    }
-    LazyRow(
-        state = state,
-        flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
-    ) {
-        items(unique.take(count), key = { it.id }) { m ->
-            SeriesTileCard(
-                item = m,
-                onOpenDetails = onOpenDetails,
-                onPlayDirect = onPlayDirect,
-                onAssignToKid = onAssignToKid,
-                isNew = showNew || newIds.contains(m.id),
-                showAssign = showAssign
-            )
-        }
+            if (sids.isNotEmpty()) obx.importSeriesDetailsForIds(sids, max = 8)
+        },
+        itemKey = { it.id }
+    ) { m ->
+        SeriesTileCard(
+            item = m,
+            onOpenDetails = onOpenDetails,
+            onPlayDirect = onPlayDirect,
+            onAssignToKid = onAssignToKid,
+            isNew = showNew || newIds.contains(m.id),
+            showAssign = showAssign
+        )
     }
 }
 
@@ -1077,50 +1113,29 @@ fun VodRow(
     showAssign: Boolean = true
 ) {
     if (items.isEmpty()) return
-    // Deduplicate by id to keep keys stable/unique
-    val unique = remember(items) { items.distinctBy { it.id } }
-    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
-    val fling = rememberSnapFlingBehavior(state)
-    var count by remember(unique) { mutableStateOf(if (unique.size < 30) unique.size else 30) }
-    LaunchedEffect(state) {
-        snapshotFlow { state.firstVisibleItemIndex }
-            .collect { idx ->
-                if (idx > count - 20 && count < unique.size) {
-                    count = (count + 50).coerceAtMost(unique.size)
-                }
-            }
-    }
-    // Prefetch VOD details for visible tiles (bounded and deduped in repo)
     val ctx = LocalContext.current
     val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
     val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
-    LaunchedEffect(state, unique) {
-        snapshotFlow { state.layoutInfo.visibleItemsInfo.mapNotNull { it.key as? Long } }
-            .distinctUntilChanged()
-            .debounce(100)
-            .collect { keys ->
-                if (keys.isEmpty()) return@collect
-                val vodIds = keys.mapNotNull { id ->
-                    if (id in 2_000_000_000_000L until 3_000_000_000_000L) (id - 2_000_000_000_000L).toInt() else null
-                }.distinct()
-                if (vodIds.isNotEmpty()) obx.importVodDetailsForIds(vodIds, max = 12)
-            }
-    }
-    LazyRow(
-        state = state,
-        flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
-    ) {
-        items(unique.take(count), key = { it.id }) { m ->
-            VodTileCard(
-                item = m,
-                onOpenDetails = onOpenDetails,
-                onPlayDirect = onPlayDirect,
-                onAssignToKid = onAssignToKid,
-                isNew = showNew || newIds.contains(m.id),
-                showAssign = showAssign
-            )
-        }
+
+    MediaRowCore(
+        items = items,
+        config = RowConfig(stateKey = stateKey),
+        onPrefetchKeys = { keys ->
+            val vodIds = keys.mapNotNull { id ->
+                if (id in 2_000_000_000_000L until 3_000_000_000_000L) (id - 2_000_000_000_000L).toInt() else null
+            }.distinct()
+            if (vodIds.isNotEmpty()) obx.importVodDetailsForIds(vodIds, max = 12)
+        },
+        itemKey = { it.id }
+    ) { m ->
+        VodTileCard(
+            item = m,
+            onOpenDetails = onOpenDetails,
+            onPlayDirect = onPlayDirect,
+            onAssignToKid = onAssignToKid,
+            isNew = showNew || newIds.contains(m.id),
+            showAssign = showAssign
+        )
     }
 }
 
@@ -1134,62 +1149,34 @@ fun VodRowPaged(
     onAssignToKid: (MediaItem) -> Unit,
     showAssign: Boolean = true
 ) {
-    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
-    val fling = rememberSnapFlingBehavior(state)
     val ctx = LocalContext.current
-    val store = remember { SettingsStore(ctx) }
+    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
     val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
-    // Prefetch VOD details for visible tiles in paged row
-    LaunchedEffect(state, items) {
-        snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
-            .distinctUntilChanged()
-            .debounce(100)
-            .collect { indices ->
-                val count = items.itemCount
-                if (count <= 0) return@collect
-                val vodIds = indices
-                    .filter { idx -> idx in 0 until count }
-                    .mapNotNull { idx ->
-                        val media = items.peek(idx)
-                        val id = media?.id ?: return@mapNotNull null
-                        if (id in 2_000_000_000_000L until 3_000_000_000_000L) (id - 2_000_000_000_000L).toInt() else null
-                    }.distinct()
-                if (vodIds.isNotEmpty()) obx.importVodDetailsForIds(vodIds, max = 12)
-            }
-    }
-    LazyRow(
-        state = state,
-        flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
-    ) {
-        val isRefreshing = items.loadState.refresh is LoadState.Loading && items.itemCount == 0
-        if (isRefreshing) {
-            // Show 10 shimmer tiles to mimic row content while first page loads
-            items(10, key = { it }) { _ ->
-                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
-                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
-                }
-            }
+
+    MediaRowCorePaged(
+        items = items,
+        config = RowConfig(stateKey = stateKey),
+        onPrefetchPaged = { indices, lp ->
+            val count = lp.itemCount
+            if (count <= 0) return@MediaRowCorePaged
+            val vodIds = indices
+                .filter { it in 0 until count }
+                .mapNotNull { idx ->
+                    val media = lp.peek(idx)
+                    val id = media?.id ?: return@mapNotNull null
+                    if (id in 2_000_000_000_000L until 3_000_000_000_000L) (id - 2_000_000_000_000L).toInt() else null
+                }.distinct()
+            if (vodIds.isNotEmpty()) obx.importVodDetailsForIds(vodIds, max = 12)
         }
-        items(items.itemCount, key = { idx -> items[idx]?.id ?: idx.toLong() }) { index ->
-            val mi = items[index] ?: return@items
-            VodTileCard(
-                item = mi,
-                onOpenDetails = onOpenDetails,
-                onPlayDirect = onPlayDirect,
-                onAssignToKid = onAssignToKid,
-                isNew = false,
-                showAssign = showAssign
-            )
-        }
-        val isAppending = items.loadState.append is LoadState.Loading
-        if (isAppending) {
-            items(6, key = { it + 100000 }) { _ ->
-                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
-                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
-                }
-            }
-        }
+    ) { _, mi ->
+        VodTileCard(
+            item = mi,
+            onOpenDetails = onOpenDetails,
+            onPlayDirect = onPlayDirect,
+            onAssignToKid = onAssignToKid,
+            isNew = false,
+            showAssign = showAssign
+        )
     }
 }
 
@@ -1201,59 +1188,30 @@ fun LiveRowPaged(
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
 ) {
-    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
-    val fling = rememberSnapFlingBehavior(state)
     val ctx = LocalContext.current
-    val store = remember { SettingsStore(ctx) }
+    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
     val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
 
-    // EPG prefetch for visible items (map indices to items to streamIds)
-    LaunchedEffect(state, items) {
-        snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
-            .distinctUntilChanged()
-            .debounce(100)
-            .collect { indices ->
-                val count = items.itemCount
-                if (count <= 0) return@collect
-                val sids = indices
-                    .filter { idx -> idx in 0 until count }
-                    .mapNotNull { idx ->
-                        val media = items.peek(idx)
-                        media?.takeIf { it.type == "live" }?.streamId
-                    }
-                if (sids.isNotEmpty()) obx.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
-            }
-    }
-
-    LazyRow(
-        state = state,
-        flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
-    ) {
-        val isRefreshing = items.loadState.refresh is LoadState.Loading && items.itemCount == 0
-        if (isRefreshing) {
-            items(10, key = { it }) { _ ->
-                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
-                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
+    MediaRowCorePaged(
+        items = items,
+        config = RowConfig(stateKey = stateKey),
+        onPrefetchPaged = { indices, lp ->
+            val count = lp.itemCount
+            if (count <= 0) return@MediaRowCorePaged
+            val sids = indices
+                .filter { it in 0 until count }
+                .mapNotNull { idx ->
+                    val media = lp.peek(idx)
+                    media?.takeIf { it.type == "live" }?.streamId
                 }
-            }
+            if (sids.isNotEmpty()) obx.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
         }
-        items(items.itemCount, key = { idx -> items[idx]?.id ?: idx.toLong() }) { index ->
-            val mi = items[index] ?: return@items
-            LiveTileCard(
-                item = mi,
-                onOpenDetails = onOpenDetails,
-                onPlayDirect = onPlayDirect
-            )
-        }
-        val isAppending = items.loadState.append is LoadState.Loading
-        if (isAppending) {
-            items(6, key = { it + 200000 }) { _ ->
-                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
-                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
-                }
-            }
-        }
+    ) { _, mi ->
+        LiveTileCard(
+            item = mi,
+            onOpenDetails = onOpenDetails,
+            onPlayDirect = onPlayDirect
+        )
     }
 }
 
@@ -1269,39 +1227,20 @@ fun SeriesRowPaged(
     onAssignToKid: (MediaItem) -> Unit,
     showAssign: Boolean = true
 ) {
-    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
-    val fling = rememberSnapFlingBehavior(state)
-    LazyRow(
-        state = state,
-        flingBehavior = fling,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
-    ) {
-        val isRefreshing = items.loadState.refresh is LoadState.Loading && items.itemCount == 0
-        if (isRefreshing) {
-            items(10, key = { it }) { _ ->
-                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
-                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
-                }
-            }
-        }
-        items(items.itemCount, key = { idx -> items[idx]?.id ?: idx.toLong() }) { index ->
-            val mi = items[index] ?: return@items
-            SeriesTileCard(
-                item = mi,
-                onOpenDetails = onOpenDetails,
-                onPlayDirect = onPlayDirect,
-                onAssignToKid = onAssignToKid,
-                isNew = false,
-                showAssign = showAssign
-            )
-        }
-        val isAppending = items.loadState.append is LoadState.Loading
-        if (isAppending) {
-            items(6, key = { it + 300000 }) { _ ->
-                Column(Modifier.height(rowItemHeight().dp).padding(end = 6.dp)) {
-                    ShimmerBox(modifier = Modifier.aspectRatio(16f / 9f), cornerRadius = 14.dp)
-                }
-            }
-        }
+    // Prefetch optional: Serien-Details bei Paged kann (wenn gewünscht) analog implementiert werden
+
+    MediaRowCorePaged(
+        items = items,
+        config = RowConfig(stateKey = stateKey),
+        onPrefetchPaged = null // optional später ergänzen
+    ) { _, mi ->
+        SeriesTileCard(
+            item = mi,
+            onOpenDetails = onOpenDetails,
+            onPlayDirect = onPlayDirect,
+            onAssignToKid = onAssignToKid,
+            isNew = false,
+            showAssign = showAssign
+        )
     }
 }

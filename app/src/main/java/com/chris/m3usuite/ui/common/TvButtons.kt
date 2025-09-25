@@ -1,14 +1,16 @@
 package com.chris.m3usuite.ui.common
 
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
+import com.chris.m3usuite.ui.skin.TvFocusColors
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
 
 @Composable
@@ -22,11 +24,16 @@ fun TvButton(
     border: BorderStroke? = null,
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
+    focusColors: TvFocusColors = TvFocusColors.Default,
     content: @Composable RowScope.() -> Unit
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.focusScaleOnTv(),
+        modifier = modifier.focusScaleOnTv(
+            shape = shape,
+            focusColors = focusColors,
+            interactionSource = interactionSource
+        ),
         enabled = enabled,
         shape = shape,
         colors = colors,
@@ -47,11 +54,16 @@ fun TvTextButton(
     colors: ButtonColors = ButtonDefaults.textButtonColors(),
     contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
     interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
+    focusColors: TvFocusColors = TvFocusColors.Default,
     content: @Composable RowScope.() -> Unit
 ) {
     TextButton(
         onClick = onClick,
-        modifier = modifier.focusScaleOnTv(),
+        modifier = modifier.focusScaleOnTv(
+            shape = shape,
+            focusColors = focusColors,
+            interactionSource = interactionSource
+        ),
         enabled = enabled,
         shape = shape,
         colors = colors,
@@ -72,11 +84,16 @@ fun TvOutlinedButton(
     border: BorderStroke? = ButtonDefaults.outlinedButtonBorder(enabled),
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
+    focusColors: TvFocusColors = TvFocusColors.Default,
     content: @Composable RowScope.() -> Unit
 ) {
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.focusScaleOnTv(),
+        modifier = modifier.focusScaleOnTv(
+            shape = shape,
+            focusColors = focusColors,
+            interactionSource = interactionSource
+        ),
         enabled = enabled,
         shape = shape,
         colors = colors,
@@ -93,12 +110,18 @@ fun TvIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    shape: Shape = RoundedCornerShape(18.dp),
     interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
+    focusColors: TvFocusColors = TvFocusColors.Default,
     content: @Composable () -> Unit
 ) {
     IconButton(
         onClick = onClick,
-        modifier = modifier.focusScaleOnTv(),
+        modifier = modifier.focusScaleOnTv(
+            shape = shape,
+            focusColors = focusColors,
+            interactionSource = interactionSource
+        ),
         enabled = enabled,
         interactionSource = interactionSource,
         content = content

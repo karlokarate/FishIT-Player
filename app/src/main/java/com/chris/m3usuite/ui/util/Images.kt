@@ -7,6 +7,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import coil3.compose.AsyncImage
 import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
@@ -16,6 +17,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import coil3.request.crossfade
 import coil3.request.allowRgb565
+import com.chris.m3usuite.R
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.core.http.RequestHeadersProvider
 
@@ -65,7 +67,8 @@ fun buildImageRequest(
     headers: ImageHeaders? = null,
     widthPx: Int? = null,
     heightPx: Int? = null,
-    preferRgb565: Boolean = false
+    preferRgb565: Boolean = true,
+    cacheKeySuffix: String? = null
 ): ImageRequest {
     val httpHeaders = NetworkHeaders.Builder().apply {
         headers?.asMap()?.forEach { (k, v) -> set(k, v) }
@@ -80,11 +83,23 @@ fun buildImageRequest(
         .httpHeaders(httpHeaders)
         .crossfade(crossfade)
         .allowHardware(true)
-        .apply { if (preferRgb565) allowRgb565(true) }
+        .allowRgb565(preferRgb565)
 
     if (widthPx != null && heightPx != null && widthPx > 0 && heightPx > 0) {
         // Prefer explicit pixel size if available; Compose will otherwise supply a resolver.
         b.size(widthPx, heightPx)
+    }
+
+    val cacheKey = when (sizedUrl) {
+        is String -> sizedUrl
+        null -> null
+        else -> sizedUrl.toString()
+    }?.let { dataKey ->
+        if (cacheKeySuffix.isNullOrBlank()) dataKey else "$dataKey@$cacheKeySuffix"
+    }
+    if (!cacheKey.isNullOrEmpty()) {
+        b.memoryCacheKey(cacheKey)
+        b.diskCacheKey(cacheKey)
     }
     return b.build()
 }
@@ -105,24 +120,34 @@ fun AppAsyncImage(
     error: Painter? = null,
     onLoading: (() -> Unit)? = null,
     onSuccess: (() -> Unit)? = null,
-    onError: (() -> Unit)? = null,
-    preferRgb565: Boolean = false
+    onError: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
-    // Use Compose's built-in size resolver; avoid rebuilding the request when size changes
-    // to prevent double loads and visible flicker.
-    val request = remember(url, headers, crossfade, preferRgb565) {
-        buildImageRequest(ctx, url, crossfade, headers, null, null, preferRgb565)
+    var measured by remember { mutableStateOf(IntSize.Zero) }
+    val request = remember(url, headers, crossfade, measured) {
+        val suffix = if (measured.width > 0 && measured.height > 0) "${measured.width}x${measured.height}" else null
+        buildImageRequest(
+            ctx = ctx,
+            url = url,
+            crossfade = crossfade,
+            headers = headers,
+            widthPx = measured.width.takeIf { it > 0 },
+            heightPx = measured.height.takeIf { it > 0 },
+            preferRgb565 = true,
+            cacheKeySuffix = suffix
+        )
     }
+    val resolvedPlaceholder = placeholder ?: painterResource(R.drawable.fisch_bg)
+    val resolvedError = error ?: painterResource(R.drawable.fisch_header)
     AsyncImage(
         imageLoader = AppImageLoader.get(ctx),
         model = request,
         contentDescription = contentDescription,
-        modifier = modifier,
+        modifier = modifier.onSizeChanged { newSize -> if (measured != newSize) measured = newSize },
         contentScale = contentScale,
         alignment = alignment,
-        placeholder = placeholder,
-        error = error,
+        placeholder = resolvedPlaceholder,
+        error = resolvedError,
         onLoading = { onLoading?.invoke() },
         onSuccess = { onSuccess?.invoke() },
         onError = { onError?.invoke() }
@@ -154,16 +179,31 @@ fun AppPosterImage(
             else -> url
         }
     }
-    val request = remember(sized, headers, crossfade) { buildImageRequest(ctx, sized, crossfade, headers, null, null) }
+    var measured by remember { mutableStateOf(IntSize.Zero) }
+    val request = remember(sized, headers, crossfade, measured) {
+        val suffix = if (measured.width > 0 && measured.height > 0) "${measured.width}x${measured.height}" else null
+        buildImageRequest(
+            ctx = ctx,
+            url = sized,
+            crossfade = crossfade,
+            headers = headers,
+            widthPx = measured.width.takeIf { it > 0 },
+            heightPx = measured.height.takeIf { it > 0 },
+            preferRgb565 = true,
+            cacheKeySuffix = suffix
+        )
+    }
+    val resolvedPlaceholder = placeholder ?: painterResource(R.drawable.fisch_bg)
+    val resolvedError = error ?: painterResource(R.drawable.fisch_header)
     AsyncImage(
         imageLoader = AppImageLoader.get(ctx),
         model = request,
         contentDescription = contentDescription,
-        modifier = modifier,
+        modifier = modifier.onSizeChanged { measured = it },
         contentScale = contentScale,
         alignment = alignment,
-        placeholder = placeholder,
-        error = error,
+        placeholder = resolvedPlaceholder,
+        error = resolvedError,
         onLoading = { onLoading?.invoke() },
         onSuccess = { onSuccess?.invoke() },
         onError = {
@@ -203,16 +243,31 @@ fun AppHeroImage(
             else -> url
         }
     }
-    val request = remember(sized, headers, crossfade) { buildImageRequest(ctx, sized, crossfade, headers, null, null) }
+    var measured by remember { mutableStateOf(IntSize.Zero) }
+    val request = remember(sized, headers, crossfade, measured) {
+        val suffix = if (measured.width > 0 && measured.height > 0) "${measured.width}x${measured.height}" else null
+        buildImageRequest(
+            ctx = ctx,
+            url = sized,
+            crossfade = crossfade,
+            headers = headers,
+            widthPx = measured.width.takeIf { it > 0 },
+            heightPx = measured.height.takeIf { it > 0 },
+            preferRgb565 = true,
+            cacheKeySuffix = suffix
+        )
+    }
+    val resolvedPlaceholder = placeholder ?: painterResource(R.drawable.fisch_bg)
+    val resolvedError = error ?: painterResource(R.drawable.fisch_header)
     AsyncImage(
         imageLoader = AppImageLoader.get(ctx),
         model = request,
         contentDescription = contentDescription,
-        modifier = modifier,
+        modifier = modifier.onSizeChanged { measured = it },
         contentScale = contentScale,
         alignment = alignment,
-        placeholder = placeholder,
-        error = error,
+        placeholder = resolvedPlaceholder,
+        error = resolvedError,
         onLoading = { onLoading?.invoke() },
         onSuccess = { onSuccess?.invoke() },
         onError = {

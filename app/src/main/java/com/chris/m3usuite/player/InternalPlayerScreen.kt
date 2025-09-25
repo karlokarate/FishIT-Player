@@ -7,9 +7,10 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +61,7 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.skin.isTvDevice
 import android.app.PictureInPictureParams
 import android.util.Rational
 import androidx.lifecycle.Lifecycle
@@ -91,6 +93,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.core.playback.PlayUrlHelper
+import android.widget.Toast
 
 /**
  * Interner Player (Media3) mit:
@@ -123,6 +126,7 @@ fun InternalPlayerScreen(
     val ctx = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
+    val isTv = remember(ctx) { isTvDevice(ctx) }
 
     val obxStore = remember(ctx) { ObxStore.get(ctx) }
     val resumeRepo = remember(ctx) { ResumeRepository(ctx) }
@@ -621,6 +625,20 @@ fun InternalPlayerScreen(
 
     // DPAD quick actions state
     var quickActionsVisible by remember { mutableStateOf(false) }
+    val pipFocusRequester = remember { FocusRequester() }
+    val ccFocusRequester = remember { FocusRequester() }
+    val resizeFocusRequester = remember { FocusRequester() }
+    fun requestPictureInPicture() {
+        val act = ctx as? Activity ?: return
+        if (isTv) {
+            Toast.makeText(ctx, "PiP im TV-Modus deaktiviert – App bleibt geöffnet.", Toast.LENGTH_SHORT).show()
+        } else {
+            val params = PictureInPictureParams.Builder()
+                .setAspectRatio(Rational(16, 9))
+                .build()
+            act.enterPictureInPictureMode(params)
+        }
+    }
     var quickActionsFocusActive by remember { mutableStateOf(false) }
 
     // Phase 6: Subtitle/CC menu (Adult only)
@@ -787,10 +805,15 @@ fun InternalPlayerScreen(
     }
 
     // Auto-hide controls after 3 seconds when visible and no modal open
-    LaunchedEffect(controlsVisible, controlsTick, showCcMenu, showAspectMenu) {
+    LaunchedEffect(controlsVisible, controlsTick, showCcMenu, showAspectMenu, quickActionsVisible, isTv) {
         if (controlsVisible && !showCcMenu && !showAspectMenu) {
+            if (isTv && !quickActionsVisible) {
+                pipFocusRequester.requestFocus()
+            }
             delay(3000)
-            controlsVisible = false
+            if (controlsVisible && !showCcMenu && !showAspectMenu) {
+                controlsVisible = false
+            }
         }
     }
 
@@ -1145,36 +1168,34 @@ fun InternalPlayerScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OverlayIconButton(
-                        iconRes = android.R.drawable.ic_menu_slideshow,
-                        containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
-                        contentColor = Color.White
-                    ) {
-                        (ctx as? Activity)?.let { act ->
-                            val params = PictureInPictureParams.Builder()
-                                .setAspectRatio(Rational(16, 9))
-                                .build()
-                            act.enterPictureInPictureMode(params)
-                        }
+                OverlayIconButton(
+                    modifier = Modifier.focusRequester(pipFocusRequester),
+                    iconRes = android.R.drawable.ic_menu_slideshow,
+                    containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
+                    contentColor = Color.White
+                ) {
+                    requestPictureInPicture()
+                }
+                OverlayIconButton(
+                    modifier = Modifier.focusRequester(ccFocusRequester),
+                    iconRes = android.R.drawable.ic_menu_sort_by_size,
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    contentColor = Color.White
+                ) {
+                    if (!showCcMenu) {
+                        localScale = effectiveScale(); localFg = effectiveFg(); localBg = effectiveBg();
+                        localFgOpacity = effectiveFgOpacity(); localBgOpacity = effectiveBgOpacity();
+                        refreshSubtitleOptions()
                     }
-                    OverlayIconButton(
-                        iconRes = android.R.drawable.ic_menu_sort_by_size,
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                        contentColor = Color.White
-                    ) {
-                        if (!showCcMenu) {
-                            localScale = effectiveScale(); localFg = effectiveFg(); localBg = effectiveBg();
-                            localFgOpacity = effectiveFgOpacity(); localBgOpacity = effectiveBgOpacity();
-                            refreshSubtitleOptions()
-                        }
-                        showCcMenu = true
-                    }
-                    OverlayIconButton(
-                        iconRes = android.R.drawable.ic_menu_crop,
-                        containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
-                        contentColor = Color.White,
-                        onLongClick = { showAspectMenu = true }
-                    ) {
+                    showCcMenu = true
+                }
+                OverlayIconButton(
+                    modifier = Modifier.focusRequester(resizeFocusRequester),
+                    iconRes = android.R.drawable.ic_menu_crop,
+                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
+                    contentColor = Color.White,
+                    onLongClick = { showAspectMenu = true }
+                ) {
                         customScaleEnabled = false
                         cycleResize()
                     }
@@ -1200,12 +1221,7 @@ fun InternalPlayerScreen(
                     containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f),
                     contentColor = Color.White
                 ) {
-                    (ctx as? Activity)?.let { act ->
-                        val params = PictureInPictureParams.Builder()
-                            .setAspectRatio(Rational(16, 9))
-                            .build()
-                        act.enterPictureInPictureMode(params)
-                    }
+                    requestPictureInPicture()
                 }
                 OverlayIconButton(
                     modifier = Modifier.focusRequester(quickCcFocus),
@@ -1432,15 +1448,19 @@ private fun OverlayIconButton(
     onClick: () -> Unit
 ) {
     val shape = MaterialTheme.shapes.large
-    val modifier = if (onLongClick != null) {
-        Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
-    } else Modifier.then(Modifier.clickable(onClick = onClick))
+    val clickableModifier = if (onLongClick != null) {
+        modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+    } else {
+        modifier.clickable(onClick = onClick)
+    }
     ElevatedCard(
         onClick = onClick,
         shape = shape,
         elevation = CardDefaults.elevatedCardElevation(),
         colors = CardDefaults.elevatedCardColors(containerColor = containerColor, contentColor = contentColor),
-        modifier = modifier.focusScaleOnTv()
+        modifier = clickableModifier
+            .focusable()
+            .focusScaleOnTv()
     ) {
         Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(painter = painterResource(iconRes), contentDescription = null, tint = contentColor)

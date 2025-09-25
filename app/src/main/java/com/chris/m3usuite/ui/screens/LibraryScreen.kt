@@ -1,5 +1,13 @@
 package com.chris.m3usuite.ui.screens
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,16 +17,26 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import android.net.Uri
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.chris.m3usuite.navigation.popUpToStartDestination
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.chris.m3usuite.core.xtream.ProviderLabelStore
@@ -28,6 +46,8 @@ import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
+import com.chris.m3usuite.ui.theme.CategoryFonts
+import com.chris.m3usuite.ui.theme.DesignTokens
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -92,6 +112,7 @@ fun LibraryScreen(
         ContentTab.Series -> "series"
     }
     val listState = com.chris.m3usuite.ui.state.rememberRouteListState("library:list:${selectedTab}")
+    var adultsExpanded by rememberSaveable(selectedTab, showAdultsEnabled) { mutableStateOf(showAdultsEnabled) }
 
     // Rechte (Whitelist-Editing)
     var canEditWhitelist by remember { mutableStateOf(true) }
@@ -135,6 +156,25 @@ fun LibraryScreen(
     var recentRow by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var newestRow by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var topYearsRow by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+
+    var liveCategoryLabels by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    LaunchedEffect(selectedTab, groupKeys) {
+        if (selectedTab == ContentTab.Live && groupKeys.categories.isNotEmpty()) {
+            liveCategoryLabels = runCatching {
+                withContext(Dispatchers.IO) {
+                    repo.categories("live")
+                        .mapNotNull { cat ->
+                            val id = cat.categoryId ?: return@mapNotNull null
+                            val label = cat.categoryName?.trim().takeUnless { it.isNullOrEmpty() } ?: id
+                            id to label
+                        }
+                        .toMap()
+                }
+            }.getOrElse { emptyMap() }
+        } else {
+            liveCategoryLabels = emptyMap()
+        }
+    }
 
     // Helpers: adults filter + kid/guest whitelist
     suspend fun withoutAdultsFor(tab: ContentTab, items: List<MediaItem>): List<MediaItem> = withContext(Dispatchers.IO) {
@@ -344,8 +384,14 @@ fun LibraryScreen(
                 newestRow = newest
             }
             val yearsRow = when (selectedTab) {
-                ContentTab.Vod -> withContext(Dispatchers.IO) { repo.vodByYearsNewest(intArrayOf(2025, 2024), 0, 180).map { it.toMediaItem(ctx) } }
-                ContentTab.Series -> withContext(Dispatchers.IO) { repo.seriesByYearsNewest(intArrayOf(2025, 2024), 0, 180).map { it.toMediaItem(ctx) } }
+                ContentTab.Vod -> {
+                    val rows = withContext(Dispatchers.IO) { repo.vodByYearsNewest(intArrayOf(2025, 2024), 0, 180).map { it.toMediaItem(ctx) } }
+                    withoutAdultsFor(ContentTab.Vod, rows.filter { mediaRepo.isAllowed("vod", it.id) })
+                }
+                ContentTab.Series -> {
+                    val rows = withContext(Dispatchers.IO) { repo.seriesByYearsNewest(intArrayOf(2025, 2024), 0, 180).map { it.toMediaItem(ctx) } }
+                    withoutAdultsFor(ContentTab.Series, rows.filter { mediaRepo.isAllowed("series", it.id) })
+                }
                 else -> emptyList()
             }
             if (yearsRow != topYearsRow) {
@@ -565,16 +611,35 @@ fun LibraryScreen(
         }
     }
 
+    val navigateToSettings = remember(navController) {
+        {
+            val current = navController.currentBackStackEntry?.destination?.route
+            if (current != "settings") {
+                navController.navigate("settings") { launchSingleTop = true }
+            }
+        }
+    }
+
     HomeChromeScaffold(
         title = "Bibliothek",
-        onSettings = null,
-        onSearch = { navController.navigate("library?qs=show") { launchSingleTop = true } },
+        onSettings = navigateToSettings,
+        onSearch = {
+            navController.navigate("library?qs=show") {
+                launchSingleTop = true
+                restoreState = true
+                popUpToStartDestination(navController, saveState = true)
+            }
+        },
         onProfiles = null,
         listState = listState,
         onLogo = {
             val current = navController.currentBackStackEntry?.destination?.route
             if (current != "library?q={q}&qs={qs}") {
-                navController.navigate("library?q=&qs=") { launchSingleTop = true }
+                navController.navigate("library?q=&qs=") {
+                    launchSingleTop = true
+                    restoreState = true
+                    popUpToStartDestination(navController, saveState = true)
+                }
             }
         },
         bottomBar = {
@@ -591,6 +656,9 @@ fun LibraryScreen(
             )
         }
     ) { pads ->
+        val stateHolder = rememberSaveableStateHolder()
+        // Save whole screen UI state per tab to survive deep route hops
+        stateHolder.SaveableStateProvider(key = "library/tab/$selectedTabKey") {
         // identische Optik wie Start/Settings: Fish-Background + Paddings
         Box(Modifier.fillMaxSize()) {
             com.chris.m3usuite.ui.fx.FishBackground(
@@ -627,6 +695,7 @@ fun LibraryScreen(
                 item {
                         MediaRowForTab(
                             tab = selectedTab,
+                            stateKey = "library:${selectedTabKey}:search",
                             items = searchResults,
                             onOpenDetails = onOpen,
                             onPlayDirect = onPlay,
@@ -685,7 +754,10 @@ fun LibraryScreen(
                                     com.chris.m3usuite.ui.components.chips.CategoryChip(key = "new", label = labelNew)
                                 }
                             } else {
-                                Text(labelNew, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
+                                SeriesNewChip(
+                                    label = labelNew,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                )
                             }
                         }
                         item {
@@ -714,7 +786,22 @@ fun LibraryScreen(
                     }
                     // Second row: 2025 + 2024 (new to old)
                     if (topYearsRow.isNotEmpty()) {
-                        item { Text("2025–2024", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) }
+                        item {
+                            if (selectedTab == ContentTab.Vod) {
+                                Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                                    com.chris.m3usuite.ui.components.chips.CategoryChip(
+                                        key = "year_2025_2024",
+                                        label = "2025–2024"
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    "2025–2024",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
                         item {
                             when (selectedTab) {
                                 ContentTab.Vod -> com.chris.m3usuite.ui.components.rows.VodRow(
@@ -740,7 +827,7 @@ fun LibraryScreen(
                 }
                 // Live: Kategorien (aus API), keine Provider/Genre-Buckets
                 if (selectedTab == ContentTab.Live && query.text.isBlank() && groupKeys.categories.isNotEmpty()) {
-                    val labelById = runCatching { repo.categories("live").associateBy({ it.categoryId }, { it.categoryName }) }.getOrElse { emptyMap() }
+                    val labelById = liveCategoryLabels
                     fun chipKeyForLiveCategory(label: String): String {
                         val s = label.lowercase()
                         return when {
@@ -778,37 +865,38 @@ fun LibraryScreen(
                     }
                 }
 
-                // Live: Provider-Gruppen und Genres (deaktiviert – wir nutzen Kategorien)
+                val providersAll = groupKeys.providers
+                val adultProviders = providersAll.filter { it.startsWith("adult_") }
 
-                // Anbieter-Gruppierung (alle Tabs)
-                // Top-level switch: Anbieter vs Genres (per tab)
-                if (selectedTab != ContentTab.Vod && selectedTab != ContentTab.Live) {
+                if (selectedTab != ContentTab.Live && (selectedTab == ContentTab.Series || selectedTab == ContentTab.Vod)) {
                     item {
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Gruppierung:")
-                            val isGenre = when (selectedTab) {
-                                ContentTab.Live -> groupByGenreLive
-                                ContentTab.Vod -> groupByGenreVod
-                                ContentTab.Series -> groupByGenreSeries
-                            }
-                            val onToggle: (Boolean) -> Unit = { v ->
-                                scope.launch {
-                                    when (selectedTab) {
-                                        ContentTab.Live -> store.setLibGroupByGenreLive(v)
-                                        ContentTab.Vod -> store.setLibGroupByGenreVod(v)
-                                        ContentTab.Series -> store.setLibGroupByGenreSeries(v)
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            val newest = if (selectedTab == ContentTab.Vod) vodSortNewest else seriesSortNewest
+                            Text(
+                                "Neueste zuerst",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontFamily = CategoryFonts.Cinzel,
+                                    fontWeight = FontWeight.SemiBold,
+                                    letterSpacing = 0.6.sp
+                                ),
+                                color = Color.White
+                            )
+                            androidx.compose.material3.Switch(
+                                checked = newest,
+                                onCheckedChange = { v ->
+                                    scope.launch {
+                                        if (selectedTab == ContentTab.Vod) {
+                                            store.setLibVodSortNewest(v)
+                                        } else {
+                                            store.setLibSeriesSortNewest(v)
+                                        }
+                                        invalidateCaches()
                                     }
                                 }
-                            }
-                            androidx.compose.material3.FilterChip(
-                                selected = !isGenre,
-                                onClick = { onToggle(false) },
-                                label = { Text("Anbieter") }
-                            )
-                            androidx.compose.material3.FilterChip(
-                                selected = isGenre,
-                                onClick = { onToggle(true) },
-                                label = { Text("Genres") }
                             )
                         }
                     }
@@ -860,7 +948,6 @@ fun LibraryScreen(
 
                     // 2) 4K
                     if (groupKeys.genres.contains("4k")) {
-                        item { Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) { com.chris.m3usuite.ui.components.chips.CategoryChip(key = "4k", label = "4K") } }
                         item {
                             ExpandableGroupSection(
                                 tab = selectedTab,
@@ -880,7 +967,6 @@ fun LibraryScreen(
 
                     // 3) Kollektionen
                     if (groupKeys.genres.contains("collection")) {
-                        item { Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) { com.chris.m3usuite.ui.components.chips.CategoryChip(key = "collection", label = "Kollektionen") } }
                         item {
                             ExpandableGroupSection(
                                 tab = selectedTab,
@@ -900,7 +986,6 @@ fun LibraryScreen(
 
                     // 4) Unkategorisiert
                     if (groupKeys.genres.contains("other")) {
-                        item { Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) { com.chris.m3usuite.ui.components.chips.CategoryChip(key = "other", label = "Unkategorisiert") } }
                         item {
                             ExpandableGroupSection(
                                 tab = selectedTab,
@@ -918,34 +1003,17 @@ fun LibraryScreen(
                         }
                     }
 
-                    // 5) Adults at the very bottom if enabled (handled below in dedicated section)
-                    val adultProviders = groupKeys.providers.filter { it.startsWith("adult_") }
-                } else if (selectedTab != ContentTab.Live && !showGenres && groupKeys.providers.isNotEmpty()) {
-                    item {
-                        Text(
-                            when (selectedTab) { ContentTab.Live -> "Live – Anbieter"; ContentTab.Vod -> "Filme – Anbieter"; ContentTab.Series -> "Serien – Anbieter" },
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                        )
-                    }
-                    // Sort-Toggle (nur Vod/Series)
+                    // 5) Adults handled in dedicated section below when enabled
+                } else if (selectedTab != ContentTab.Live && !showGenres && providersAll.isNotEmpty()) {
+                    if (selectedTab == ContentTab.Vod) {
                         item {
-                            Row(Modifier.padding(horizontal = 16.dp)) {
-                                val newest = if (selectedTab == ContentTab.Vod) vodSortNewest else seriesSortNewest
-                                androidx.compose.material3.Text("Neueste zuerst")
-                                androidx.compose.material3.Switch(
-                                    checked = newest,
-                                    onCheckedChange = { v ->
-                                        scope.launch {
-                                            if (selectedTab == ContentTab.Vod) store.setLibVodSortNewest(v) else store.setLibSeriesSortNewest(v)
-                                            invalidateCaches()
-                                        }
-                                    }
-                                )
-                            }
+                            Text(
+                                "Provider",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                            )
                         }
-                    val providersAll = groupKeys.providers
-                    val adultProviders = providersAll.filter { it.startsWith("adult_") }
+                    }
                     val normalProviders = providersAll.filterNot { it.startsWith("adult_") || it.isBlank() }
 
                     // Render non-adult provider groups
@@ -972,38 +1040,37 @@ fun LibraryScreen(
                             showAssign = canEditWhitelist && selectedTab != ContentTab.Live
                         )
                     }
+                }
 
-                    // Adults umbrella (only when enabled and present; VOD only)
-                    if (selectedTab == ContentTab.Vod && showAdultsEnabled && adultProviders.isNotEmpty()) {
-                        var adultsExpanded by rememberSaveable("library:${selectedTabKey}:adults") { mutableStateOf(false) }
-                        item {
-                            Row(
-                                Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                com.chris.m3usuite.ui.components.chips.CategoryChip(key = "adult", label = "FOR ADULTS")
-                                TextButton(onClick = { adultsExpanded = !adultsExpanded }) { Text(if (adultsExpanded) "Weniger" else "Mehr") }
-                            }
+                // Adults umbrella (only when enabled and present; VOD only)
+                if (selectedTab == ContentTab.Vod && showAdultsEnabled && adultProviders.isNotEmpty()) {
+                    item {
+                        Row(
+                            Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            com.chris.m3usuite.ui.components.chips.CategoryChip(key = "adult", label = "FOR ADULTS")
+                            TextButton(onClick = { adultsExpanded = !adultsExpanded }) { Text(if (adultsExpanded) "Weniger" else "Mehr") }
                         }
-                        if (adultsExpanded) {
-                            items(adultProviders, key = { it }) { key ->
-                                val sectionKey = "library:${selectedTabKey}:adults:$key"
-                                val subLabel = key.removePrefix("adult_").replace('_', ' ').replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() }
-                                ExpandableGroupSection(
-                                    tab = selectedTab,
-                                    stateKey = sectionKey,
-                                    refreshSignal = cacheVersion + resumeTick,
-                                    groupLabel = { subLabel },
-                                    chipKey = key,
-                                    expandedDefault = true,
-                                    loadItems = { loadItemsForProvider(selectedTab, key) },
-                                    onOpenDetails = onOpen,
-                                    onPlayDirect = onPlay,
-                                    onAssignToKid = onAssignVod,
-                                    showAssign = canEditWhitelist
-                                )
-                            }
+                    }
+                    if (adultsExpanded) {
+                        items(adultProviders, key = { it }) { key ->
+                            val sectionKey = "library:${selectedTabKey}:adults:$key"
+                            val subLabel = key.removePrefix("adult_").replace('_', ' ').replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() }
+                            ExpandableGroupSection(
+                                tab = selectedTab,
+                                stateKey = sectionKey,
+                                refreshSignal = cacheVersion + resumeTick,
+                                groupLabel = { subLabel },
+                                chipKey = key,
+                                expandedDefault = true,
+                                loadItems = { loadItemsForProvider(selectedTab, key) },
+                                onOpenDetails = onOpen,
+                                onPlayDirect = onPlay,
+                                onAssignToKid = onAssignVod,
+                                showAssign = canEditWhitelist
+                            )
                         }
                     }
                 }
@@ -1080,6 +1147,65 @@ fun LibraryScreen(
                 }
             }
         }
+        }
+    }
+}
+
+@Composable
+private fun SeriesNewChip(label: String, modifier: Modifier = Modifier) {
+    val accent = DesignTokens.Accent
+    val transition = rememberInfiniteTransition(label = "seriesNewPulse")
+    val scale by transition.animateFloat(
+        initialValue = 0.94f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "seriesNewScale"
+    )
+    val glow by transition.animateFloat(
+        initialValue = 0.38f,
+        targetValue = 0.68f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "seriesNewGlow"
+    )
+    Box(
+        modifier = modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(
+                        accent.copy(alpha = 0.72f),
+                        accent.copy(alpha = glow)
+                    )
+                )
+            )
+            .border(
+                width = 1.5.dp,
+                brush = Brush.linearGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.65f),
+                        accent.copy(alpha = 0.9f)
+                    )
+                ),
+                shape = RoundedCornerShape(24.dp)
+            )
+            .padding(horizontal = 18.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontFamily = CategoryFonts.Orbitron,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.1.sp
+            ),
+            color = Color.White
+        )
     }
 }
 
@@ -1087,6 +1213,7 @@ fun LibraryScreen(
  * Generische, wiederverwendbare Sektion mit expand/collapse und Lazy-Loading der Items.
  * Der Row-Typ (Live/Vod/Series) wird über 'tab' bestimmt – dadurch keine doppelten UI-Bausteine.
  */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 private fun ExpandableGroupSection(
     tab: ContentTab,
@@ -1102,16 +1229,14 @@ private fun ExpandableGroupSection(
     onAssignToKid: ((MediaItem) -> Unit)?,
     showAssign: Boolean
 ) {
-    var expanded by rememberSaveable(stateKey) { mutableStateOf(expandedDefault) }
+    // Sections render expanded immediately; parameter kept for API compatibility
     var items by remember(stateKey) { mutableStateOf<List<MediaItem>>(emptyList()) }
 
-    LaunchedEffect(stateKey, refreshSignal, expanded) {
-        if (expanded) {
-            try {
-                items = loadItems()
-            } catch (_: Throwable) {
-                // keep previous list on failure
-            }
+    LaunchedEffect(stateKey, refreshSignal) {
+        try {
+            items = loadItems()
+        } catch (_: Throwable) {
+            // keep previous list on failure
         }
     }
 
@@ -1131,23 +1256,16 @@ private fun ExpandableGroupSection(
                     Text(groupLabel(), style = MaterialTheme.typography.titleSmall)
                 }
             }
-            TextButton(onClick = {
-                expanded = !expanded
-            }) {
-                Text(if (expanded) "Weniger" else "Mehr")
-            }
         }
-        if (expanded) {
-            MediaRowForTab(
-                tab = tab,
-                stateKey = stateKey,
-                items = items,
-                onOpenDetails = onOpenDetails,
-                onPlayDirect = onPlayDirect,
-                onAssignToKid = onAssignToKid,
-                showAssign = showAssign
-            )
-        }
+        MediaRowForTab(
+            tab = tab,
+            stateKey = stateKey,
+            items = items,
+            onOpenDetails = onOpenDetails,
+            onPlayDirect = onPlayDirect,
+            onAssignToKid = onAssignToKid,
+            showAssign = showAssign
+        )
     }
 }
 

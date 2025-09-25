@@ -35,3 +35,14 @@ data class MediaItem(
     // For VOD direct play URL container preference
     val containerExt: String? = null,
 )
+
+/**
+ * Returns true when the media entry has at least one artwork reference that we can render.
+ */
+fun MediaItem.hasArtwork(): Boolean {
+    if (!poster.isNullOrBlank()) return true
+    if (!logo.isNullOrBlank()) return true
+    if (!backdrop.isNullOrBlank()) return true
+    if (images.any { !it.isNullOrBlank() }) return true
+    return false
+}

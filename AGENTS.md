@@ -38,6 +38,7 @@ Codex – Operating Rules (override)
   - Global gate: `M3U_WORKERS_ENABLED` in DataStore controls whether Xtream workers/scheduling and related API paths run. When false, workers early‑exit (no network), app‑start auto‑discovery/seed is skipped, and Settings actions for Xtream diagnostics/import are disabled.
   - One‑shot `ObxKeyBackfillWorker` fills missing `sortTitleLower`/`providerKey`/`genreKey`/`yearKey` for existing OBX rows.
 - UI data flows: Start/Library/Details are ObjectBox-first.
+  - Detail screens render the poster itself (fit scaling) and reuse the poster/backdrop as a 50% overlayed screen background (fallback to poster when no backdrop is stored); auxiliary still galleries are removed to keep focus on the main tile.
   - Library grouped views (Live/VOD/Series) use indexed OBX keys for headers (provider/genre/year) and page per visible row.
   - Start uses paged rows (Series/VOD) and a global paged Live row when no favorites exist; direct-play for Series navigates to details after on-demand OBX import if episodes absent.
 - Cross‑platform builds: Codex uses Linux/WSL for builds/tests via Gradle wrapper while keeping settings compatible with Windows. Ensure no corruption of Windows‑side project files.
@@ -146,7 +147,7 @@ Short bullet summary (current highlights)
 - Backup/Restore present in Setup (Quick Import) and Settings (Quick Import + full section). Drive client optional (shim by default).
 - Player fullscreen with tap-to-show overlay controls; Live favorites reorder fixed/stable.
  - HTTP layer: Singleton OkHttpClient + persistent CookieJar; 50 MiB disk HTTP cache (respects Cache-Control); headers via RequestHeadersProvider snapshot for consistency.
- - Images (Coil 3): Global ImageLoader uses hardware bitmaps, ~25% memory cache, 512 MiB disk cache; requests set pixel size (w×h) automatically for optimal decoding. Crossfade is disabled in large list rows for performance; enabled on detail/hero views and small avatar/icon uses.
+- Images (Coil 3): Global ImageLoader uses hardware bitmaps, ~25% memory cache, 512 MiB disk cache; requests capture slot size via `onSizeChanged`, use RGB_565 globally with WxH-aware cache keys, and fall back to the refreshed fish assets. Crossfade stays off for large list rows (on for detail/hero and small avatar/icon uses).
 - Xtream enrichment: Throttled batches with retry/backoff; not auto-scheduled in scheduleAll.
  - Diagnostics: Settings zeigt OBX-Zähler (Live/VOD/Series) und eine "Import aktualisieren"-Aktion, die `XtreamSeeder` erneut ausführt (optional mit Discovery-Force) und Detailjobs plant. Eine Strict-M3U-Option existiert nicht mehr; explizite Prune-Läufe sind Separate Wartungsjobs.
 
@@ -178,6 +179,8 @@ For the complete module-by-module guide, see `ARCHITECTURE_OVERVIEW.md`.
 ---
 
 Recent
+- Navigation state: Top‑level route switches (`library?q=…` ⇄ `browse`) now use Navigation‑Compose state saving (`restoreState=true`, `popUpTo(findStartDestination()){ saveState=true }`). Combined with route‑scoped `rememberRouteListState(...)`, Start/Library lists restore scroll/focus positions reliably.
+ - Scroll state cache: `rememberRouteListState/rememberRouteGridState` now back list/grid state with a small in‑memory cache keyed per route, so positions persist even if Navigation removes the backstack entry (useful with gate/start routes and query args).
 - Xtream networking: Global per-host pacing (~120 ms minimal interval) and in-memory response cache (60s; EPG 15s) added to `XtreamClient` to prevent bursts and duplicate list calls. `importDelta` is heads-only; detail chunks run separately with strict limits.
 - Xtream delta import: Listen werden weiterhin pro Kategorie (Live/VOD/Series) aggregiert, um Panel-Limits zu umgehen. Orphan-Pruning ist standardmäßig deaktiviert; reguläre Delta-Läufe ergänzen ausschließlich fehlende Felder/Posterdaten.
 - Library rows stability: Horizontal rows (provider/genre/year and top rows) use route-scoped list state so navigating into details and back does not visibly rebuild cards; scroll/focus positions persist.

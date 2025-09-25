@@ -152,7 +152,8 @@ fun SeriesDetailScreen(
     id: Long,
     // optionaler Callback für internen Player (url, startMs, seriesId, season, episodeNum, episodeId)
     openInternal: ((url: String, startMs: Long?, seriesId: Int, season: Int, episodeNum: Int, episodeId: Int?, mimeType: String?) -> Unit)? = null,
-    onLogo: (() -> Unit)? = null
+    onLogo: (() -> Unit)? = null,
+    onOpenSettings: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
@@ -198,6 +199,7 @@ fun SeriesDetailScreen(
     var poster by remember { mutableStateOf<String?>(null) }
     var plot by remember { mutableStateOf<String?>(null) }
     var images by remember { mutableStateOf<List<String>>(emptyList()) }
+    var backdrop by remember { mutableStateOf<String?>(null) }
     var seriesStreamId by remember { mutableStateOf<Int?>(null) }
     var year by remember { mutableStateOf<Int?>(null) }
     var rating by remember { mutableStateOf<Double?>(null) }
@@ -289,6 +291,7 @@ fun SeriesDetailScreen(
                 }.getOrNull()
             } ?: emptyList()
             poster = images.firstOrNull()
+            backdrop = images.firstOrNull { it != poster }
             plot = row?.plot?.takeIf { it.isNotBlank() }
             year = row?.year
             rating = row?.rating
@@ -424,7 +427,7 @@ fun SeriesDetailScreen(
 
     HomeChromeScaffold(
         title = "Serie",
-        onSettings = null,
+        onSettings = onOpenSettings,
         onSearch = onLogo, // will be overridden by MainActivity navigation
         onProfiles = null,
         listState = listState,
@@ -433,6 +436,16 @@ fun SeriesDetailScreen(
     ) { pads ->
         Box(Modifier.fillMaxSize().padding(pads)) {
             val accent = if (!isAdult) DesignTokens.KidAccent else DesignTokens.Accent
+            val heroUrl = remember(backdrop, poster) { backdrop ?: poster }
+            heroUrl?.let { url ->
+                com.chris.m3usuite.ui.util.AppHeroImage(
+                    url = url,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize().graphicsLayer(alpha = 0.5f),
+                    crossfade = true
+                )
+            }
             val badgeColor = if (!isAdult) accent.copy(alpha = 0.26f) else accent.copy(alpha = 0.20f)
             val badgeColorDarker = if (!isAdult) accent.copy(alpha = 0.32f) else accent.copy(alpha = 0.26f)
 
@@ -442,8 +455,8 @@ fun SeriesDetailScreen(
                     .matchParentSize()
                     .background(
                         Brush.verticalGradient(
-                            0f to MaterialTheme.colorScheme.background,
-                            1f to MaterialTheme.colorScheme.surface
+                            0f to MaterialTheme.colorScheme.background.copy(alpha = 0.35f),
+                            1f to MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
                         )
                     )
             )
@@ -498,10 +511,10 @@ fun SeriesDetailScreen(
                                 )
                                 Spacer(Modifier.height(8.dp))
                                 Box(modifier = Modifier.height(220.dp).fillMaxWidth()) {
-                                    com.chris.m3usuite.ui.util.AppHeroImage(
-                                        url = poster,
+                                    com.chris.m3usuite.ui.util.AppPosterImage(
+                                        url = poster ?: heroUrl,
                                         contentDescription = null,
-                                        contentScale = ContentScale.Crop,
+                                        contentScale = ContentScale.Fit,
                                         modifier = Modifier.matchParentSize(),
                                         crossfade = true
                                     )
@@ -536,24 +549,6 @@ fun SeriesDetailScreen(
                                                     )
                                                 }
                                             }
-                                        }
-                                    }
-                                }
-                                // Optional: Bilder-Galerie
-                                if (images.size > 1) {
-                                    Spacer(Modifier.height(8.dp))
-                                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
-                                        items(images.size, key = { i -> images[i] }) { i ->
-                                            val img = images[i]
-                                            AppAsyncImage(
-                                                url = img,
-                                                contentDescription = null,
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier
-                                                    .height(110.dp)
-                                                    .aspectRatio(16f / 9f)
-                                                    .clip(RoundedCornerShape(10.dp))
-                                            )
                                         }
                                     }
                                 }
@@ -616,33 +611,21 @@ fun SeriesDetailScreen(
                             }
                         }
 
-                        // Plot (expand/collapse)
+                        // Plot (always expanded)
                         if (!plot.isNullOrBlank()) {
                             item {
-                                var plotExpanded by remember { mutableStateOf(false) }
-                                val plotAnim by animateFloatAsState(
-                                    if (plotExpanded) 0f else 1f,
-                                    animationSpec = tween(180),
-                                    label = "plotGrad"
-                                )
-                                Column(Modifier.animateContentSize()) {
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = badgeColorDarker,
-                                        contentColor = Color.White,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
-                                    ) {
-                                        Text(
-                                            plot!!,
-                                            maxLines = if (plotExpanded) Int.MAX_VALUE else 8,
-                                            modifier = Modifier.padding(12.dp)
-                                        )
-                                    }
-                                    androidx.compose.material3.TextButton(onClick = { plotExpanded = !plotExpanded }) {
-                                        Text(if (plotExpanded) "Weniger anzeigen" else "Mehr anzeigen")
-                                    }
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = badgeColorDarker,
+                                    contentColor = Color.White,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
+                                ) {
+                                    Text(
+                                        plot!!,
+                                        modifier = Modifier.padding(12.dp)
+                                    )
                                 }
                                 Spacer(Modifier.height(12.dp))
                             }

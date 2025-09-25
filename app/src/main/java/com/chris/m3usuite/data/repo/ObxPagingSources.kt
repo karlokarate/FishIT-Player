@@ -5,6 +5,7 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.chris.m3usuite.data.obx.toMediaItem
 import com.chris.m3usuite.model.MediaItem
+import com.chris.m3usuite.model.hasArtwork
 import com.chris.m3usuite.prefs.SettingsStore
 
 /**
@@ -45,10 +46,12 @@ class ObxVodPagingSource(
             repo.categories("vod").associateBy({ it.categoryId }, { it.categoryName })
         }.getOrElse { emptyMap() }
         val items = itemsRaw.map { it.toMediaItem(context).copy(categoryName = catLabelById[it.categoryId]) }
+        val (withArt, withoutArt) = items.partition { it.hasArtwork() }
+        val ordered = withArt + withoutArt
 
         val nextKey = if (items.size < limit) null else pageIndex + 1
         val prevKey = if (pageIndex == 0) null else pageIndex - 1
-        LoadResult.Page(items, prevKey, nextKey)
+        LoadResult.Page(ordered, prevKey, nextKey)
     } catch (e: Exception) {
         LoadResult.Error(e)
     }
@@ -86,10 +89,12 @@ class ObxLivePagingSource(
             repo.categories("live").associateBy({ it.categoryId }, { it.categoryName })
         }.getOrElse { emptyMap() }
         val items = itemsRaw.map { it.toMediaItem(context).copy(categoryName = catLabelById[it.categoryId]) }
+        val (withArt, withoutArt) = items.partition { it.hasArtwork() }
+        val ordered = withArt + withoutArt
 
         val nextKey = if (items.size < limit) null else page + 1
         val prevKey = if (page == 0) null else page - 1
-        LoadResult.Page(items, prevKey, nextKey)
+        LoadResult.Page(ordered, prevKey, nextKey)
     } catch (e: Exception) {
         LoadResult.Error(e)
     }
@@ -129,10 +134,12 @@ class ObxSeriesPagingSource(
             repo.categories("series").associateBy({ it.categoryId }, { it.categoryName })
         }.getOrElse { emptyMap() }
         val items = itemsRaw.map { it.toMediaItem(context).copy(categoryName = catLabelById[it.categoryId]) }
+        val (withArt, withoutArt) = items.partition { it.hasArtwork() }
+        val ordered = withArt + withoutArt
 
         val nextKey = if (items.size < limit) null else page + 1
         val prevKey = if (page == 0) null else page - 1
-        LoadResult.Page(items, prevKey, nextKey)
+        LoadResult.Page(ordered, prevKey, nextKey)
     } catch (e: Exception) {
         LoadResult.Error(e)
     }

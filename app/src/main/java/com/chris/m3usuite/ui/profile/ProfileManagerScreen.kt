@@ -62,7 +62,12 @@ import androidx.compose.animation.core.animateFloat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null, onGlobalSearch: (() -> Unit)? = null) {
+fun ProfileManagerScreen(
+    onBack: () -> Unit,
+    onLogo: (() -> Unit)? = null,
+    onGlobalSearch: (() -> Unit)? = null,
+    onOpenSettings: (() -> Unit)? = null
+) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val profileRepo = remember { ProfileObxRepository(ctx) }
@@ -87,7 +92,7 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null, onGlo
     val listState = com.chris.m3usuite.ui.state.rememberRouteListState("profiles:manager")
     HomeChromeScaffold(
         title = "Profile",
-        onSettings = null,
+        onSettings = onOpenSettings,
         onSearch = onGlobalSearch,
         onProfiles = null,
         listState = listState,
@@ -157,7 +162,6 @@ fun ProfileManagerScreen(onBack: () -> Unit, onLogo: (() -> Unit)? = null, onGlo
                                             modifier = Modifier.size(48.dp).clip(CircleShape),
                                             contentScale = ContentScale.Crop,
                                             crossfade = true,
-                                            preferRgb565 = true
                                         )
                                     } else {
                                         Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
@@ -531,7 +535,14 @@ private fun PermissionsSheet(profile: ObxProfile, onClose: () -> Unit) {
         }
     }
     ModalBottomSheet(onDismissRequest = onClose) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        val scrollState = rememberScrollState()
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Text("Berechtigungen – ${profile.name}", style = MaterialTheme.typography.titleMedium)
             if (loading) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
