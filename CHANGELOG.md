@@ -1,4 +1,33 @@
 2025-09-25
+- fix(build): resolve Kotlin error "This annotation is not repeatable" by merging duplicate `@file:OptIn` annotations in `app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt`.
+- fix(tv/rows): remove manual item-count gating in row engine (MediaRowCore). Rely on LazyRow virtualization so adjacent DPAD traversal always has a composed neighbor; eliminates “blind” scrolling.
+- fix(tv/live-tile): only intercept DPAD LEFT/RIGHT in LiveTileCard when reordering handlers are provided; otherwise let default focus traversal handle neighbors (prevents double-advance on KeyUp).
+- feat(tv/focus-defaults): when a row gets focus on TV, the left-most tile is requested as the initial focus. As you navigate, the focused tile is auto-centered in the viewport (RowCore & TvFocusRow).
+- fix(ui/state): replace direct rememberSaveable(LazyListState) usages with route-keyed saver (`rememberRouteListState`) to avoid IllegalArgumentException from SaveableStateRegistry.
+- fix(tv/rows): auto bring-into-view on DPAD focus in core row engine (MediaRowCore & MediaRowCorePaged) so tiles highlight/scale on focus without requiring a click.
+- fix(tv/focus): switch custom TV focus helpers to `onFocusEvent`, reorder focusable observers so DPAD navigation lights cards without clicking, and reroute TvFocusRow scroll handling to avoid compose layout crashes.
+- feat(nav/state): add `navigateTopLevel(route)` extension that applies `popUpTo(start){ saveState=true }`, `launchSingleTop=true`, `restoreState=true`. Refactor top-level switches (header/logo/search) to use it.
+- fix(start/search): persist global search dialog state and query with rememberSaveable; persist live picker query/provider via rememberSaveable.
+- fix(inputs/save): make profile creation inputs and profile manager fields saveable (`CreateProfileSheet.name/isKid`, `ProfileManager.newKidName`, per-kid `name`). Persist Telegram chat picker `folder`/`search` and Xtream portal check `portal`/`info`. PIN dialog fields (`old/pin/pin2/error`) are saveable too.
+- fix(tv/start): live picker provider chips now use TvFocusRow + saveable list state.
+- tooling(tv/audit): add tools/audit_tv_focus.sh to scan horizontal containers, manual DPAD handlers, and clickable-without-focusable risks. Run it to locate TV rows for migration.
+- feat(ui/tv): introduce TvFocusRow wrapper (compose.foundation LazyRow + TV focus) in app/src/main/java/com/chris/m3usuite/ui/tv/TvFocusRow.kt. Adds focusGroup() on TV, per-item focusable() and bring-into-view on focus.
+- fix(tv/series): migrate SeriesDetailScreen season strip to TvFocusRow, preserving spacing/padding and saving a LazyListState keyed by seriesStreamId. Resolves DPAD skips (e.g., only seasons 1, 2, 9 reachable).
+- fix(tv/player): migrate category chip row in the live list sheet to TvFocusRow so DPAD navigation and auto scroll work reliably.
+- fix(tv/start): migrate StartScreen provider chip row in live picker to TvFocusRow with saved state; auto bring-into-view on focus.
+- fix(tv/resume): migrate Resume VOD/Series carousels to TvFocusRow and make ResumeCard accept a modifier so items are focusable and scrolled into view on TV.
+- polish(tv/home): add focusGroup() to ReorderableLiveRow container to scope DPAD focus within the row on TV.
+- fix(tv/details): VodDetailScreen poster uses tvClickable; title/plot clicks are focusable for DPAD reachability.
+- fix(tv/live-detail): make channel logo button tvClickable with Circle shape and halo; DPAD focus scales and is reachable.
+- fix(tv/settings): section headers use tvClickable (role=Button) instead of raw clickable for consistent TV focus and halo.
+- chore(tv/dpad): replace onPreviewKeyEvent left/right in LiveTileCard with FocusManager.moveFocus when not reordering; keeps natural DPAD behavior.
+- feat(tv/chrome): add focusGroup() to FishITHeader and FishITBottomPanel containers on TV; header logo uses tvClickable. Bottom panel icon buttons remain TvIconButton‑based with halo/scale.
+- polish(tv/bottom): bottom panel icons use Duotone when inactive and Primary for the selected tab (live/vod/series).
+- fix(tv/rows): add focusGroup() to core row engine (RowCore/LazyRow) on TV and make tvClickable() focusable() so cards can be reached by DPAD and auto bring-into-view stays consistent.
+- feat(ui/home): VOD tiles trigger a light on-demand detail import on focus when plot is missing, so Start rows show summaries sooner. Import is deduped and updates are propagated via OBX change signals.
+- feat(ui/tv/chrome): TV-only chrome state in HomeChromeScaffold. Burger/Menu toggles Expanded mode (header+bottom slide in, focus-trap active, content blurred); Back/Menu collapses. Auto-collapse on content scroll. DPAD UP/DOWN jump between panels. Content padding animates to reclaim space. Non‑TV unchanged.
+- feat(ui/chrome): add `showHeader` to `HomeChromeScaffold` so the top panel can be globally toggled like the bottom bar; content padding reclaims the space when hidden. Use same boolean as `showBottomBar` to collapse both together if desired.
+- fix(ui/home): enforce 40/40/20 section weights on Start (Series/VOD/Live) by applying weights to the direct Column children; robust even with wrapped cards. Portrait keeps 1/1/1. Maintains inner card fill and row height overrides.
 - fix(ui/state): add route-keyed in-memory scroll cache and wrap Start/Library content in SaveableStateHolder so vertical and horizontal list positions persist across deep navigation (details, settings, search, tab hopping). Cache resets on process restart as desired.
 - fix(vod/details): fetch VOD details reliably across panels by trying multiple id field names (`vod_id|movie_id|id|stream_id`) for `get_<alias>_info`. Also allow UI-triggered detail imports (VOD/Series) regardless of the `M3U_WORKERS_ENABLED` gate so plots/posters load when opening detail screens.
  - Also accept panels that return VOD details under `info` instead of `movie_data`, and read plot from `plot|description|plot_outline|overview` to cover common skins.
@@ -6,6 +35,8 @@
 - ui/settings: collapse individual settings blocks into expandable cards; Xtream credential inputs now sit at the top and stay expanded by default while all other sections start collapsed for faster browsing.
 - ui/chrome: header and bottom navigation buttons now brighten by ~40% on focus for clearer TV highlighting.
 - fix(ui/tv): Header and bottom AppIconButtons share the TV interaction source, so focus halos appear as soon as focus lands (no click needed).
+- chore(xtream/import): Central seeding coordinator defers queued delta jobs, blocks workers until seeding finishes, and exposes an "Import läuft…" chrome indicator so users see progress without losing UI control.
+- fix(adults/gate): Filter every `For Adult`/`For Adults`/`adult_*` category across queries, search, start rows, and library when the toggle is off.
 - player/tv: PiP requests on TV keep the FishIT app in the foreground (no jump to launcher) and toast the fallback; PiP/Subtitles/Resize overlays are now focusable via DPAD in both overlay rows.
 
 2025-09-24
@@ -632,4 +663,6 @@ Status: zu testen durch Nutzer
   - Increase streaming batch size during bootstrap (8000) to cut event frequency (fallback paths).
   - HTTP bootstrap path uses Reader-based parse to avoid per-batch UI/logic overhead.
 - Fix deprecations and warnings (Compose progress overload, Button border, FlowPreview opt-ins, Xtream URL DEPRECATION suppression) without changing core flows.
+- Guard icon lookups so missing drawables fall back instead of hitting `painterResource(0)`; removes `Invalid resource ID 0x00000000` spam on cold start.
+- Disable Firebase auto-init when no google-services config is bundled and gate push service usage accordingly, avoiding startup warnings on clean installs.
 - Fix(nav): use route-aware `popUpToStartDestination` helper to skip invalid resource lookups and remove `No package ID` errors when returning to Home.

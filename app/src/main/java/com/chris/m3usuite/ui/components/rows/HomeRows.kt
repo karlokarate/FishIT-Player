@@ -1,4 +1,7 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@file:OptIn(
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+    androidx.compose.ui.ExperimentalComposeUiApi::class
+)
 package com.chris.m3usuite.ui.components.rows
 
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,8 +24,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.graphicsLayer
+import com.chris.m3usuite.ui.compat.focusGroup
 import androidx.compose.ui.viewinterop.AndroidView
 import android.net.Uri
 import androidx.media3.common.MediaItem as ExoMediaItem
@@ -43,9 +50,12 @@ import com.chris.m3usuite.ui.util.AppAsyncImage
 import com.chris.m3usuite.ui.fx.ShimmerBox
 import com.chris.m3usuite.ui.components.common.FocusTitleOverlay
 import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.fx.tvFocusGlow
 // isTvDevice removed (unused)
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.layout.ContentScale
 import com.chris.m3usuite.model.MediaItem
 import androidx.compose.runtime.DisposableEffect
@@ -66,7 +76,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
-import com.chris.m3usuite.ui.fx.tvFocusGlow
 import com.chris.m3usuite.ui.fx.ShimmerCircle
 // use fillMaxSize() for broad Compose compatibility
 import androidx.compose.ui.draw.clip
@@ -79,6 +88,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.FlowPreview
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.ui.common.AppIcon
@@ -154,8 +164,16 @@ fun MediaCard(
         modifier = modifier
             .width(tileWidth)
             .padding(end = 12.dp)
-            .onFocusChanged { focused = it.isFocused || it.hasFocus }
-            .tvClickable(brightenContent = false, autoBringIntoView = false) { onClick(item) }
+            .focusable()
+            .onFocusEvent { focused = it.isFocused || it.hasFocus }
+            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
+            .tvClickable(
+                brightenContent = false,
+                autoBringIntoView = false,
+                scaleFocused = 1f,
+                scalePressed = 1.02f
+            ) { onClick(item) }
+            .tvFocusGlow(focused = focused, shape = TILE_SHAPE)
     ) {
         // Prefer poster/logo/backdrop in this order (fallback to any image field in MediaItem)
         val raw = remember(item.poster ?: item.logo ?: item.backdrop) {
@@ -205,6 +223,7 @@ fun LiveTileCard(
     insertionRight: Boolean = false
 ) {
     val ctx = LocalContext.current
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val headers = rememberImageHeaders()
     val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
     val epgRepo = remember(store) { EpgRepository(ctx, store) }
@@ -243,6 +262,7 @@ fun LiveTileCard(
     }
 
     // Load EPG when tile becomes active (focused). Prefetch happens separately for favorites.
+    @OptIn(FlowPreview::class)
     LaunchedEffect(item.streamId) {
         val sid = item.streamId ?: return@LaunchedEffect
         if (item.type != "live") return@LaunchedEffect
@@ -271,26 +291,38 @@ fun LiveTileCard(
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
     val tileHeight = rowItemHeight().dp
     val tileWidth = tileHeight * LIVE_TILE_ASPECT_RATIO
+    val navKeysMod = if (onMoveLeft != null || onMoveRight != null) {
+        Modifier.onPreviewKeyEvent { ev ->
+            if (ev.type == KeyEventType.KeyUp) {
+                when (ev.key) {
+                    Key.DirectionLeft -> {
+                        onMoveLeft?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Left)
+                        return@onPreviewKeyEvent true
+                    }
+                    Key.DirectionRight -> {
+                        onMoveRight?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right)
+                        return@onPreviewKeyEvent true
+                    }
+                    else -> {}
+                }
+            }
+            false
+        }
+    } else Modifier
+
     Card(
         modifier = Modifier
             .height(tileHeight)
             .width(tileWidth)
             .padding(end = 6.dp)
+            .focusable()
             .combinedClickable(
                 onClick = { onOpenDetails(item) },
                 onLongClick = { onLongPress?.invoke() }
             )
-            .onPreviewKeyEvent { ev ->
-                if (ev.type == KeyEventType.KeyUp) {
-                    when (ev.key) {
-                        Key.DirectionLeft -> { onMoveLeft?.invoke(); return@onPreviewKeyEvent onMoveLeft != null }
-                        Key.DirectionRight -> { onMoveRight?.invoke(); return@onPreviewKeyEvent onMoveRight != null }
-                        else -> {}
-                    }
-                }
-                false
-            }
-            .onFocusChanged { focused = it.isFocused || it.hasFocus }
+            .then(navKeysMod)
+            .onFocusEvent { focused = it.isFocused || it.hasFocus }
+            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
@@ -565,21 +597,24 @@ fun SeriesTileCard(
             .height(tileHeight)
             .width(tileWidth)
             .padding(end = 6.dp)
+            .focusable()
+            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
             .tvClickable(
-                scaleFocused = 1.06f,
-                scalePressed = 1.08f,
+                scaleFocused = 1f,
+                scalePressed = 1.02f,
                 elevationFocusedDp = 18f,
                 brightenContent = false,
                 autoBringIntoView = false
             ) { onOpenDetails(item) }
-            .onFocusChanged { focused = it.isFocused || it.hasFocus }
+            .onFocusEvent { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
                 // subtle top reflection
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
                 drawRect(brush = grad)
-            },
+            }
+            .tvFocusGlow(focused = focused, shape = shape),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
@@ -730,6 +765,8 @@ fun VodTileCard(
     showAssign: Boolean = true
 ) {
     val ctx = LocalContext.current
+    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
+    val obxRepo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
     val headers = rememberImageHeaders()
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(14.dp)
@@ -741,20 +778,23 @@ fun VodTileCard(
             .height(tileHeight)
             .width(tileWidth)
             .padding(end = 6.dp)
+            .focusable()
+            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
             .tvClickable(
-                scaleFocused = 1.06f,
-                scalePressed = 1.08f,
+                scaleFocused = 1f,
+                scalePressed = 1.02f,
                 elevationFocusedDp = 18f,
                 brightenContent = false,
                 autoBringIntoView = false
             ) { onOpenDetails(item) }
-            .onFocusChanged { focused = it.isFocused || it.hasFocus }
+            .onFocusEvent { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
                 drawRect(brush = grad)
-            },
+            }
+            .tvFocusGlow(focused = focused, shape = shape),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
@@ -856,6 +896,16 @@ fun VodTileCard(
             // actions and badges are overlaid inside the image box now
         }
     }
+
+    // On-demand VOD detail import to populate plot when a tile gains focus
+    // Avoid spamming by gating on focus + missing plot + valid streamId.
+    val requested = remember(item.id) { mutableStateOf(false) }
+    LaunchedEffect(focused) {
+        if (focused && !requested.value && (item.plot.isNullOrBlank()) && item.streamId != null) {
+            requested.value = true
+            runCatching { obxRepo.importVodDetailOnce(item.streamId!!) }
+        }
+    }
 }
 
 /** Show last 5 resume items in a horizontal row (no header) */
@@ -867,16 +917,15 @@ fun ResumeRow(
     if (items.isEmpty()) return
     // Ensure no duplicate ids to keep LazyRow keys unique
     val slice = remember(items) { items.distinctBy { it.id }.take(5) }
-    val state = rememberLazyListState()
-    val fling = rememberSnapFlingBehavior(state)
-    LazyRow(
-        state = state,
-        flingBehavior = fling,
+    val state = com.chris.m3usuite.ui.state.rememberRouteListState("home:resume")
+    com.chris.m3usuite.ui.tv.TvFocusRow(
+        items = slice,
+        key = { it.id },
+        listState = state,
+        horizontalArrangement = Arrangement.spacedBy(0.dp),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        items(slice, key = { it.id }) { m ->
-            MediaCard(item = m, onClick = onClick)
-        }
+    ) { _, m, itemMod ->
+        MediaCard(item = m, onClick = onClick, modifier = itemMod)
     }
 }
 
@@ -972,14 +1021,37 @@ fun ReorderableLiveRow(
     var selected by remember { mutableStateOf(setOf<Long>()) }
     val tileLift by animateFloatAsState(if (draggingId != null) 1.05f else 1f, label = "lift")
 
+    val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
+    // Center-on-focus helpers for TV (leading add tile occupies index 0)
+    val pendingScrollIndex = remember { mutableStateOf(-1) }
+    val firstFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val skipFirstCenter = remember { mutableStateOf(true) }
+
+    LaunchedEffect(pendingScrollIndex.value) {
+        val target = pendingScrollIndex.value
+        if (target >= 0) {
+            state.animateScrollToItem(target)
+            val info = state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == target }
+            if (info != null) {
+                val viewportStart = state.layoutInfo.viewportStartOffset
+                val viewportEnd = state.layoutInfo.viewportEndOffset
+                val viewportSize = viewportEnd - viewportStart
+                val desiredOffset = ((viewportSize - info.size) / 2f).toInt().coerceAtLeast(0)
+                state.animateScrollToItem(target, desiredOffset)
+            }
+            pendingScrollIndex.value = -1
+        }
+    }
+
     LazyRow(
+        modifier = if (isTv) Modifier.focusGroup().focusProperties { enter = { firstFocus } } else Modifier,
         state = state,
         flingBehavior = rememberSnapFlingBehavior(state),
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
     ) {
         item("leading") { LiveAddTile(onClick = onAdd) }
-        items(order, key = { it }) { id ->
-            val mi = items.find { it.id == id } ?: return@items
+        itemsIndexed(order, key = { idx, it -> it }) { idx, id ->
+            val mi = items.find { it.id == id } ?: return@itemsIndexed
             val isDragging = draggingId == id
             val dragTranslationX = if (isDragging) dragOffset else 0f
             val trans by animateFloatAsState(dragTranslationX, label = "drag")
@@ -989,6 +1061,20 @@ fun ReorderableLiveRow(
                 Modifier
                     .padding(start = padStart, end = padEnd)
                     .graphicsLayer { translationX = trans; scaleX = if (isDragging) tileLift else 1f; scaleY = if (isDragging) tileLift else 1f; shadowElevation = if (isDragging) 18f else 0f }
+                    .then(
+                        if (isTv)
+                            Modifier.onFocusEvent { st ->
+                                if (st.hasFocus) {
+                                    val absIdx = idx + 1 // account for leading tile
+                                    if (skipFirstCenter.value && absIdx == 1) {
+                                        skipFirstCenter.value = false
+                                    } else {
+                                        pendingScrollIndex.value = absIdx
+                                    }
+                                }
+                            }.then(if (idx == 0) Modifier.focusRequester(firstFocus) else Modifier)
+                        else Modifier
+                    )
                     .pointerInput(id) {
                         // Drag starts only after a long press to keep swipe-scrolling smooth on touch devices
                         detectDragGesturesAfterLongPress(
