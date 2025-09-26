@@ -25,11 +25,15 @@ import kotlinx.coroutines.launch
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun XtreamPortalCheckScreen(onDone: () -> Unit) {
+    LaunchedEffect(Unit) {
+        com.chris.m3usuite.metrics.RouteTag.set("xt_cfcheck")
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree("xt_cfcheck:root")
+    }
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
     val scope = rememberCoroutineScope()
-    var portal by remember { mutableStateOf("") }
-    var info by remember { mutableStateOf("") }
+    var portal by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var info by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         val host = store.xtHost.first()

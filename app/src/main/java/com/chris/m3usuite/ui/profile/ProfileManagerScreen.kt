@@ -25,6 +25,7 @@ import com.chris.m3usuite.ui.theme.DesignTokens
 import com.chris.m3usuite.data.repo.ProfileObxRepository
 import com.chris.m3usuite.data.obx.ObxProfile
 import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.core.util.isAdultCategoryLabel
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.data.obx.ObxKidCategoryAllow_
 import com.chris.m3usuite.data.obx.ObxKidContentAllow_
@@ -68,6 +69,10 @@ fun ProfileManagerScreen(
     onGlobalSearch: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null
 ) {
+    LaunchedEffect(Unit) {
+        com.chris.m3usuite.metrics.RouteTag.set("profiles")
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree("profiles:root")
+    }
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val profileRepo = remember { ProfileObxRepository(ctx) }
@@ -79,8 +84,8 @@ fun ProfileManagerScreen(
     BackHandler(enabled = saving) { /* block back while saving */ }
 
     var kids by remember { mutableStateOf<List<ObxProfile>>(emptyList()) }
-    var newKidName by remember { mutableStateOf("") }
-    var newType by remember { mutableStateOf("kid") } // kid | guest
+    var newKidName by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var newType by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("kid") } // kid | guest
 
     suspend fun load() {
         kids = withContext(Dispatchers.IO) { profileRepo.all().filter { it.type != "adult" } }
@@ -129,7 +134,7 @@ fun ProfileManagerScreen(
 
                 LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                     items(kids, key = { it.id }) { kid ->
-                        var name by remember(kid.id) { mutableStateOf(kid.name) }
+                        var name by androidx.compose.runtime.saveable.rememberSaveable(kid.id) { mutableStateOf(kid.name) }
                         var limit by remember(kid.id) { mutableStateOf(60) }
                         var usedToday by remember(kid.id) { mutableStateOf(0) }
                         var remainingToday by remember(kid.id) { mutableStateOf(0) }
@@ -401,7 +406,10 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
             LaunchedEffect(tab) {
                 val result = withContext(Dispatchers.IO) {
                     val obxRepo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, com.chris.m3usuite.prefs.SettingsStore(ctx))
-                    val cats = obxRepo.categories(type).mapNotNull { it.categoryName }.distinct()
+                    val cats = obxRepo.categories(type)
+                        .mapNotNull { it.categoryName }
+                        .filterNot { label -> isAdultCategoryLabel(label) }
+                        .distinct()
                     val allowBox = obx.boxFor(ObxKidCategoryAllow::class.java)
                     val allowed = allowBox.query(ObxKidCategoryAllow_.kidProfileId.equal(kidId).and(ObxKidCategoryAllow_.contentType.equal(type))).build().find().map { it.categoryId }.toSet()
                     cats to allowed
@@ -414,7 +422,10 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                 TextButton(onClick = {
                     scope.launch(Dispatchers.IO) {
                         val obxRepo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, com.chris.m3usuite.prefs.SettingsStore(ctx))
-                        val catsAll = obxRepo.categories(type).mapNotNull { it.categoryName }.distinct()
+                        val catsAll = obxRepo.categories(type)
+                            .mapNotNull { it.categoryName }
+                            .filterNot { label -> isAdultCategoryLabel(label) }
+                            .distinct()
                         val catBox = obx.boxFor(ObxKidCategoryAllow::class.java)
                         catsAll.forEach { c -> catBox.put(ObxKidCategoryAllow(kidProfileId = kidId, contentType = type, categoryId = c)) }
                         val allowed = catBox.query(ObxKidCategoryAllow_.kidProfileId.equal(kidId).and(ObxKidCategoryAllow_.contentType.equal(type))).build().find().map { it.categoryId }.toSet()

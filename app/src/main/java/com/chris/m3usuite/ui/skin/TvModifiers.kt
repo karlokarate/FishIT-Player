@@ -8,6 +8,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -24,7 +25,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.onFocusEvent
 import android.graphics.RectF
 import android.graphics.Path as AndroidPath
 import androidx.compose.ui.geometry.Offset
@@ -225,15 +226,19 @@ fun Modifier.tvClickable(
 
     this
         .focusRequester(focusReq)
+        .focusable()
         .bringIntoViewRequester(bring)
-        .onFocusChanged { state ->
+        .onFocusEvent { state ->
             val now = state.isFocused || state.hasFocus
             if (autoBringIntoView && now && !focused) scope.launch { bring.bringIntoView() }
             focused = now
         }
         .graphicsLayer {
-            scaleX = scale
-            scaleY = scale
+            // Respect any upstream scale (e.g., focusScaleOnTv) unless we actually need to scale here.
+            if (scale != 1f) {
+                scaleX = scale
+                scaleY = scale
+            }
             shadowElevation = if (focused) elevationFocusedDp.dp.toPx() else 0f
         }
         .drawWithContent {
@@ -304,7 +309,7 @@ fun Modifier.focusScaleOnTv(
     val focusDecoration = rememberTvFocusDecoration(focused, pressed, focusColors)
 
     this
-        .onFocusChanged { focused = it.isFocused || it.hasFocus }
+        .onFocusEvent { focused = it.isFocused || it.hasFocus }
         .graphicsLayer { scaleX = scale; scaleY = scale }
         .drawWithContent {
             drawWithTvFocus(focusDecoration, shape, focusBorderWidthPx, brightenContent) { drawContent() }

@@ -3,6 +3,7 @@
 Deep‑Dive Update: 2025‑09‑23
 - Build, networking, images and playback updated to reflect current code.
 - Lifecycle/Performance: `collectAsStateWithLifecycle` breit eingesetzt; JankStats in MainActivity aktiv.
+  - Global Debug: per Settings schaltbar (Reiter „Import & Diagnose“). Loggt Navigationsschritte (NavController‑Listener), DPAD‑Eingaben (UP/DOWN/LEFT/RIGHT/CENTER/BACK inkl. Player‑Tasten), Tile‑Focus (inkl. OBX‑Titel in Klammern) und OBX‑Key‑Updates (Backfill der sort/provider/genre/year Keys) unter Logcat‑Tag `GlobalDebug`.
 
 Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module, Flows und Verantwortlichkeiten der App. Es ist aus `AGENTS.md` abgeleitet und wird hier als zentrale Architektur‑Referenz gepflegt.
 
@@ -125,6 +126,8 @@ app/src/main/java/com/chris/m3usuite
 ├── ui/
 │   ├── auth/                               # ProfileGate (PIN, Profile wählen), CreateProfileSheet
 │   ├── components/                         # UI-Bausteine (Header, Carousels, Controls)
+│   ├── home/HomeChromeScaffold.kt          # Gemeinsamer Chrome (Header + Bottom) mit TV-Only Chrome-State (Visible/Collapsed/Expanded)
+│   │   - TV: Header/Bottom anfangs sichtbar, auto-collapse bei Content-Scroll; Menu (Burger) toggelt Expanded (Fokus-Trap Header↔Bottom, Content geblurred). Long‑Press DPAD‑LEFT triggert dieselbe Burger‑Funktion (Expand/Collapse). Panels sliden animiert ein/aus; Content-Padding passt sich an.
 │   ├── home/StartScreen.kt                 # „Gate“-Home: Suche, Carousels, Live-Favoriten
 │   │   - Live-Favoriten-Picker nutzt Paging über `MediaQueryRepository.pagingSearchFilteredFlow("live", …)`; Suchtreffer entsprechen der Library-Suche.
 │   │   - Reihen (Serien/Filme) laden lazy per Paging3 über ObjectBox; horizontale Rows mit Skeletons (fisch.png, Shimmer/Puls)
@@ -273,9 +276,11 @@ Backup/Restore
 - Player (Media3): `DefaultRenderersFactory` (Decoder‑Fallback an, Extensions aus) bevorzugt Hardware‑Decoder. `PlayerView` verwendet `surface_view` (TV performanter). `DefaultLoadControl` konservativ.
 - UI‑State: Scrollpositionen von LazyColumn/LazyRow/LazyVerticalGrid werden pro Route/Gruppe gespeichert und beim Wiederbetreten wiederhergestellt. Zentrale Helper in `ui/state/ScrollStateRegistry.kt` (`rememberRouteListState`, `rememberRouteGridState`).
 - XtreamSeeder / XtreamObxRepository: Kopf-Import (Live/VOD/Series) erstellt Provider-/Genre-/Year-Indizes (`ObxIndex*`) direkt aus den Xtream-Listen.
+- XtreamImportCoordinator: trackt `seederInFlight`, kapselt `runSeeding`, reiht `XtreamDeltaImportWorker.triggerOnce*` während Seeds ein und spült sie danach. Worker blockieren via `waitUntilIdle()`; `HomeChromeScaffold` zeigt den Status als dezente "Import läuft…"-Kapsel.
 - Seeding-Whitelist: Globales Prefix-Set (DE/US/UK/VOD als Default) begrenzt die initialen Quick-Seed-Requests auf ausgewählte Regionen; weitere Prefixe können in Settings aktiviert werden.
 - Kategorie-Buckets: `CategoryNormalizer.normalizeBucket(kind, groupTitle, tvgName, url)` bleibt aktiv und wird während des Xtream-Kopfimports angewandt (≤10 stabile Buckets je Kind; Qualitätstoken werden ignoriert).
- - Aggregatindizes: `XtreamSeeder` aktualisiert `ObxIndexProvider/Year/Genre` nach jedem Kopf-Import; UI-Gruppierungen lesen ausschließlich daraus (keine Vollscans).
+- Aggregatindizes: `XtreamSeeder` aktualisiert `ObxIndexProvider/Year/Genre` nach jedem Kopf-Import; UI-Gruppierungen lesen ausschließlich daraus (keine Vollscans).
+- Adults toggle greift global: `showAdults=false` filtert alle Kategorien/Items, deren Id oder Label mit `For Adult`/`adult_` beginnt – für Start, Library, Search und Paging-Flows.
 - EpgRepository: Liefert Now/Next mit Persistenz in ObjectBox `ObxEpgNowNext`, XMLTV‑Fallback bei leeren/fehlenden Xtream‑Antworten und kurzer In‑Memory‑TTL. Integrationen in Live‑Tiles und Live‑Detail. Kein periodischer Worker; Aktualisierung erfolgt on‑demand und beim App‑Start für Favoriten.
 - XtreamDetect: Ableitung von Xtream‑Creds aus `get.php`/Stream‑URLs; `parseStreamId` (unterstützt `<id>.<ext>`, Query `stream_id|stream`, HLS `.../<id>/index.m3u8`). Status: zu testen durch Nutzer.
 - CapabilityDiscoverer: Strenger Port‑Resolver. Ein Port gilt nur dann als „erreichbar“, wenn eine `player_api.php`‑Probe mit HTTP 2xx beantwortet wird und die Antwort parsebares JSON enthält. Probes setzen jetzt explizit `action` (`get_live_streams|get_series|get_vod_streams`) und `category_id=0` (Wildcard), um WAF/Cloudflare 521 zu vermeiden. HTTP‑Kandidaten priorisieren `8080`; `2095` wurde entfernt. Cache‑Treffer werden einmal revalidiert; bei Fehlschlag wird der Cache‑Eintrag verworfen und ein neuer Kandidatenlauf durchgeführt. Falls kein Kandidat gewinnt, greift als letzte Option der schema‑abhängige Standardport (80/443), den die folgenden Action‑Probes validieren. Wenn der Benutzer explizit einen Port angibt, wird der Resolver übersprungen und der Port unverändert verwendet.

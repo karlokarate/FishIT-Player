@@ -37,12 +37,16 @@ import androidx.lifecycle.asFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.chris.m3usuite.navigation.popUpToStartDestination
+import com.chris.m3usuite.navigation.navigateTopLevel
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.chris.m3usuite.core.xtream.ProviderLabelStore
 import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.data.obx.toMediaItem
+import com.chris.m3usuite.core.util.isAdultCategory
+import com.chris.m3usuite.core.util.isAdultProvider
 import com.chris.m3usuite.model.MediaItem
+import com.chris.m3usuite.model.isAdultCategory
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
@@ -79,6 +83,10 @@ fun LibraryScreen(
     openVod: (Long) -> Unit,
     openSeries: (Long) -> Unit
 ) {
+    LaunchedEffect(Unit) {
+        com.chris.m3usuite.metrics.RouteTag.set("browse")
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree("browse:root")
+    }
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
     val repo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
@@ -168,6 +176,7 @@ fun LibraryScreen(
                             val label = cat.categoryName?.trim().takeUnless { it.isNullOrEmpty() } ?: id
                             id to label
                         }
+                        .filterNot { (id, label) -> !showAdultsEnabled && isAdultCategory(id, label) }
                         .toMap()
                 }
             }.getOrElse { emptyMap() }
@@ -182,20 +191,22 @@ fun LibraryScreen(
         if (show) return@withContext items
         val kind = when (tab) { ContentTab.Live -> "live"; ContentTab.Vod -> "vod"; ContentTab.Series -> "series" }
         val labelById = runCatching { repo.categories(kind).associateBy({ it.categoryId }, { it.categoryName }) }.getOrElse { emptyMap() }
-        items.filter { mi ->
-            val name = labelById[mi.categoryId]?.trim().orEmpty()
-            !Regex("\\bfor adults\\b", RegexOption.IGNORE_CASE).containsMatchIn(name)
-        }
+        items
+            .map { mi ->
+                if (mi.categoryName == null && mi.categoryId != null) mi.copy(categoryName = labelById[mi.categoryId]) else mi
+            }
+            .filterNot { it.isAdultCategory() }
     }
 
     // Always exclude Adults, regardless of settings (use for non‑adult rows)
     suspend fun excludeAdultsAlways(tab: ContentTab, items: List<MediaItem>): List<MediaItem> = withContext(Dispatchers.IO) {
         val kind = when (tab) { ContentTab.Live -> "live"; ContentTab.Vod -> "vod"; ContentTab.Series -> "series" }
         val labelById = runCatching { repo.categories(kind).associateBy({ it.categoryId }, { it.categoryName }) }.getOrElse { emptyMap() }
-        items.filter { mi ->
-            val name = labelById[mi.categoryId]?.trim().orEmpty()
-            !Regex("\\bfor adults\\b", RegexOption.IGNORE_CASE).containsMatchIn(name)
-        }
+        items
+            .map { mi ->
+                if (mi.categoryName == null && mi.categoryId != null) mi.copy(categoryName = labelById[mi.categoryId]) else mi
+            }
+            .filterNot { it.isAdultCategory() }
     }
     suspend fun allowedOnly(tab: ContentTab, items: List<MediaItem>): List<MediaItem> = withContext(Dispatchers.IO) {
         val type = when (tab) { ContentTab.Live -> "live"; ContentTab.Vod -> "vod"; ContentTab.Series -> "series" }
@@ -276,6 +287,7 @@ fun LibraryScreen(
                 }
                 val allowed = store.seedPrefixesSet()
                 val liveCats = repo.categories("live")
+                    .filterNot { row -> !showAdultsEnabled && isAdultCategory(row.categoryId, row.categoryName) }
                 val catIds = liveCats
                     .filter { row -> allowed.contains(extractPrefix(row.categoryName)) }
                     .mapNotNull { it.categoryId }
@@ -286,18 +298,28 @@ fun LibraryScreen(
                     categories = catIds
                 )
             }
-            ContentTab.Vod -> GroupKeys(
-                providers = repo.indexProviderKeys("vod"),
-                genres = repo.indexGenreKeys("vod"),
-                years = repo.indexYearKeys("vod"),
-                categories = emptyList()
-            )
-            ContentTab.Series -> GroupKeys(
-                providers = repo.indexProviderKeys("series"),
-                genres = repo.indexGenreKeys("series"),
-                years = repo.indexYearKeys("series"),
-                categories = emptyList()
-            )
+            ContentTab.Vod -> {
+                val showA = store.showAdults.first()
+                val providers = repo.indexProviderKeys("vod").filter { showA || !isAdultProvider(it) }
+                val genres = repo.indexGenreKeys("vod").filter { showA || !isAdultProvider(it) }
+                GroupKeys(
+                    providers = providers,
+                    genres = genres,
+                    years = repo.indexYearKeys("vod"),
+                    categories = emptyList()
+                )
+            }
+            ContentTab.Series -> {
+                val showA = store.showAdults.first()
+                val providers = repo.indexProviderKeys("series").filter { showA || !isAdultProvider(it) }
+                val genres = repo.indexGenreKeys("series").filter { showA || !isAdultProvider(it) }
+                GroupKeys(
+                    providers = providers,
+                    genres = genres,
+                    years = repo.indexYearKeys("series"),
+                    categories = emptyList()
+                )
+            }
         }
     }
 
@@ -623,23 +645,13 @@ fun LibraryScreen(
     HomeChromeScaffold(
         title = "Bibliothek",
         onSettings = navigateToSettings,
-        onSearch = {
-            navController.navigate("library?qs=show") {
-                launchSingleTop = true
-                restoreState = true
-                popUpToStartDestination(navController, saveState = true)
-            }
-        },
+        onSearch = { navController.navigateTopLevel("library?qs=show") },
         onProfiles = null,
         listState = listState,
         onLogo = {
             val current = navController.currentBackStackEntry?.destination?.route
             if (current != "library?q={q}&qs={qs}") {
-                navController.navigate("library?q=&qs=") {
-                    launchSingleTop = true
-                    restoreState = true
-                    popUpToStartDestination(navController, saveState = true)
-                }
+                navController.navigateTopLevel("library?q=&qs=")
             }
         },
         bottomBar = {

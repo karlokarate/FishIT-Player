@@ -13,8 +13,8 @@ fun CreateProfileSheet(
     onDismiss: () -> Unit,
     onCreate: (name: String, isKid: Boolean) -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var isKid by remember { mutableStateOf(false) }
+    var name by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var isKid by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.padding(16.dp)) {
@@ -36,4 +36,3 @@ fun CreateProfileSheet(
         }
     }
 }
-

@@ -1,0 +1,51 @@
+name: Android Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect AGP / JDK
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+          AGP=$(grep -RhoE "com\.android\.tools\.build:gradle[: ]+[\"']([0-9]+\.[0-9]+\.[0-9]+)[\"']" --include="*.gradle*" | sed -E "s/.*['\"]([0-9]+\.[0-9]+\.[0-9]+)['\"].*/\1/" | head -n1 || true)
+          JDK=17; if [[ -n "$AGP" ]]; then MAJOR=${AGP%%.*}; if (( MAJOR < 8 )); then JDK=11; fi; fi
+          echo "jdk=$JDK" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ steps.detect.outputs.jdk }}
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Gradle Build
+        env:
+          HEADER: ${{ secrets.header }}
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+        run: |
+          ./gradlew -S --no-daemon --build-cache assembleDebug testDebugUnitTest

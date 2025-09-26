@@ -95,6 +95,9 @@ import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.onKeyEvent
+import android.os.SystemClock
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.type
@@ -156,15 +159,40 @@ fun MediaCard(
     showTitle: Boolean = true
 ) {
     val ctx = LocalContext.current
+    val chromeToggle by rememberUpdatedState(com.chris.m3usuite.ui.home.LocalChromeToggle.current)
     val tileHeight = rowItemHeight().dp
     val tileWidth = tileHeight * POSTER_ASPECT_RATIO
     var focused by remember { mutableStateOf(false) }
+    var leftDownAt by remember { mutableStateOf<Long?>(null) }
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = modifier
             .width(tileWidth)
             .padding(end = 12.dp)
             .focusable()
+            .onPreviewKeyEvent { ev ->
+                val toggle = chromeToggle
+                if (toggle == null) return@onPreviewKeyEvent false
+                if (ev.key != Key.DirectionLeft) return@onPreviewKeyEvent false
+                if (ev.type == KeyEventType.KeyDown) { leftDownAt = SystemClock.uptimeMillis(); false }
+                else if (ev.type == KeyEventType.KeyUp) {
+                    val start = leftDownAt; leftDownAt = null
+                    if (start != null && SystemClock.uptimeMillis() - start >= 300L) {
+                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT_LONG", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                        toggle(); true
+                    } else false
+                } else false
+            }
+            .onKeyEvent { ev ->
+                val n = ev.nativeKeyEvent
+                if (n.action == android.view.KeyEvent.ACTION_UP) {
+                    val code = n.keyCode
+                    if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
+                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                    }
+                }
+                false
+            }
             .onFocusEvent { focused = it.isFocused || it.hasFocus }
             .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
             .tvClickable(
@@ -175,6 +203,35 @@ fun MediaCard(
             ) { onClick(item) }
             .tvFocusGlow(focused = focused, shape = TILE_SHAPE)
     ) {
+        // Debug: log focused tile + OBX title in parentheses + tree path
+        LaunchedEffect(focused, item.streamId, item.type) {
+            if (focused) {
+                val sid = item.streamId
+                if (sid != null) {
+                    val ctxLocal = ctx
+                    val obxTitle = withContext(Dispatchers.IO) {
+                        runCatching {
+                            val store = com.chris.m3usuite.data.obx.ObxStore.get(ctxLocal)
+                            when (item.type) {
+                                "live" -> store.boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
+                                    .query(com.chris.m3usuite.data.obx.ObxLive_.streamId.equal(sid))
+                                    .build().findFirst()?.name
+                                "vod" -> store.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
+                                    .query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(sid))
+                                    .build().findFirst()?.name
+                                "series" -> store.boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
+                                    .query(com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(sid))
+                                    .build().findFirst()?.name
+                                else -> null
+                            }
+                        }.getOrNull()
+                    }
+                    com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus(item.type, sid.toString(), item.name, obxTitle)
+                    val node = when (item.type) { "live" -> "row:live"; "vod" -> "row:vod"; "series" -> "row:series"; else -> "row:?" }
+                    com.chris.m3usuite.core.debug.GlobalDebug.logTree(node, "tile:$sid")
+                }
+            }
+        }
         // Prefer poster/logo/backdrop in this order (fallback to any image field in MediaItem)
         val raw = remember(item.poster ?: item.logo ?: item.backdrop) {
             item.poster ?: item.logo ?: item.backdrop
@@ -223,6 +280,7 @@ fun LiveTileCard(
     insertionRight: Boolean = false
 ) {
     val ctx = LocalContext.current
+    val chromeToggle by rememberUpdatedState(com.chris.m3usuite.ui.home.LocalChromeToggle.current)
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val headers = rememberImageHeaders()
     val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
@@ -291,22 +349,38 @@ fun LiveTileCard(
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
     val tileHeight = rowItemHeight().dp
     val tileWidth = tileHeight * LIVE_TILE_ASPECT_RATIO
+    var leftDownAtMs by remember { mutableStateOf<Long?>(null) }
     val navKeysMod = if (onMoveLeft != null || onMoveRight != null) {
         Modifier.onPreviewKeyEvent { ev ->
-            if (ev.type == KeyEventType.KeyUp) {
-                when (ev.key) {
-                    Key.DirectionLeft -> {
-                        onMoveLeft?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Left)
-                        return@onPreviewKeyEvent true
-                    }
-                    Key.DirectionRight -> {
-                        onMoveRight?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right)
-                        return@onPreviewKeyEvent true
-                    }
-                    else -> {}
+            when (ev.type) {
+                KeyEventType.KeyDown -> {
+                    if (ev.key == Key.DirectionLeft) leftDownAtMs = SystemClock.uptimeMillis()
+                    false
                 }
+                KeyEventType.KeyUp -> {
+                    when (ev.key) {
+                        Key.DirectionLeft -> {
+                            val start = leftDownAtMs; leftDownAtMs = null
+                            if (start != null && SystemClock.uptimeMillis() - start >= 300L) {
+                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT_LONG", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                                val toggle = chromeToggle
+                                if (toggle != null) { toggle(); return@onPreviewKeyEvent true }
+                            }
+                            com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                            onMoveLeft?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Left)
+                            return@onPreviewKeyEvent true
+                        }
+                        Key.DirectionRight -> {
+                            com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                            onMoveRight?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right)
+                            return@onPreviewKeyEvent true
+                        }
+                        else -> {}
+                    }
+                    false
+                }
+                else -> false
             }
-            false
         }
     } else Modifier
 
@@ -316,6 +390,29 @@ fun LiveTileCard(
             .width(tileWidth)
             .padding(end = 6.dp)
             .focusable()
+            .onPreviewKeyEvent { ev ->
+                val toggle = chromeToggle
+                if (toggle == null) return@onPreviewKeyEvent false
+                if (ev.key != Key.DirectionLeft) return@onPreviewKeyEvent false
+                if (ev.type == KeyEventType.KeyDown) { leftDownAtMs = SystemClock.uptimeMillis(); false }
+                else if (ev.type == KeyEventType.KeyUp) {
+                    val start = leftDownAtMs; leftDownAtMs = null
+                    if (start != null && SystemClock.uptimeMillis() - start >= 300L) {
+                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT_LONG", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                        toggle(); true
+                    } else false
+                } else false
+            }
+            .onKeyEvent { ev ->
+                val n = ev.nativeKeyEvent
+                if (n.action == android.view.KeyEvent.ACTION_UP) {
+                    val code = n.keyCode
+                    if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
+                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                    }
+                }
+                false
+            }
             .combinedClickable(
                 onClick = { onOpenDetails(item) },
                 onLongClick = { onLongPress?.invoke() }
@@ -333,6 +430,25 @@ fun LiveTileCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
+        // Debug: log focused tile + OBX title in parentheses + tree path
+        LaunchedEffect(focused, item.streamId) {
+            if (focused) {
+                val sid = item.streamId
+                if (sid != null) {
+                    val ctxLocal = ctx
+                    val obxTitle = withContext(Dispatchers.IO) {
+                        runCatching {
+                            val store = com.chris.m3usuite.data.obx.ObxStore.get(ctxLocal)
+                            store.boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
+                                .query(com.chris.m3usuite.data.obx.ObxLive_.streamId.equal(sid))
+                                .build().findFirst()?.name
+                        }.getOrNull()
+                    }
+                    com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus("live", sid.toString(), item.name, obxTitle)
+                    com.chris.m3usuite.core.debug.GlobalDebug.logTree("row:live", "tile:$sid")
+                }
+            }
+        }
         Box(
             Modifier
                 .fillMaxWidth()
@@ -577,6 +693,8 @@ fun SeriesTileCard(
     showAssign: Boolean = true
 ) {
     val ctx = LocalContext.current
+    var leftDownAt by remember { mutableStateOf<Long?>(null) }
+    val chromeToggle by rememberUpdatedState(com.chris.m3usuite.ui.home.LocalChromeToggle.current)
     val headers = rememberImageHeaders()
     var seasons by remember(item.streamId) { mutableStateOf<Int?>(null) }
     var focused by remember { mutableStateOf(false) }
@@ -598,6 +716,29 @@ fun SeriesTileCard(
             .width(tileWidth)
             .padding(end = 6.dp)
             .focusable()
+            .onPreviewKeyEvent { ev ->
+                val toggle = chromeToggle
+                if (toggle == null) return@onPreviewKeyEvent false
+                if (ev.key != Key.DirectionLeft) return@onPreviewKeyEvent false
+                if (ev.type == KeyEventType.KeyDown) { leftDownAt = SystemClock.uptimeMillis(); false }
+                else if (ev.type == KeyEventType.KeyUp) {
+                    val start = leftDownAt; leftDownAt = null
+                    if (start != null && SystemClock.uptimeMillis() - start >= 300L) {
+                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT_LONG", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                        toggle(); true
+                    } else false
+                } else false
+            }
+            .onKeyEvent { ev ->
+                val n = ev.nativeKeyEvent
+                if (n.action == android.view.KeyEvent.ACTION_UP) {
+                    val code = n.keyCode
+                    if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
+                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                    }
+                }
+                false
+            }
             .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
             .tvClickable(
                 scaleFocused = 1f,
@@ -618,6 +759,24 @@ fun SeriesTileCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
+        // Debug: log focused tile + OBX title in parentheses
+        LaunchedEffect(focused, item.streamId) {
+            if (focused) {
+                val sid = item.streamId
+                if (sid != null) {
+                    val ctxLocal = ctx
+                    val obxTitle = withContext(Dispatchers.IO) {
+                        runCatching {
+                            val store = com.chris.m3usuite.data.obx.ObxStore.get(ctxLocal)
+                            store.boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
+                                .query(com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(sid))
+                                .build().findFirst()?.name
+                        }.getOrNull()
+                    }
+                    com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus("series", sid.toString(), item.name, obxTitle)
+                }
+            }
+        }
         Column(Modifier.fillMaxWidth()) {
             run {
                 var loaded by remember(item.id) { mutableStateOf(false) }
@@ -1026,6 +1185,8 @@ fun ReorderableLiveRow(
     val pendingScrollIndex = remember { mutableStateOf(-1) }
     val firstFocus = remember { androidx.compose.ui.focus.FocusRequester() }
     val skipFirstCenter = remember { mutableStateOf(true) }
+    val enterEnabled = remember { mutableStateOf(false) }
+    val hasContent = remember(order) { order.isNotEmpty() }
 
     LaunchedEffect(pendingScrollIndex.value) {
         val target = pendingScrollIndex.value
@@ -1042,14 +1203,42 @@ fun ReorderableLiveRow(
             pendingScrollIndex.value = -1
         }
     }
+    // Activate enter once the leading (index 0) or first content (index 1) becomes visible
+    LaunchedEffect(state, isTv, hasContent) {
+        if (!isTv) return@LaunchedEffect
+        kotlinx.coroutines.flow.flow {
+            emit(Unit)
+        }
+        androidx.compose.runtime.snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
+            .collect { indices ->
+                val targetIndex = if (hasContent) 1 else 0
+                if (!enterEnabled.value && indices.contains(targetIndex)) {
+                    enterEnabled.value = true
+                    // Defer one frame to ensure focusRequester is attached
+                    kotlinx.coroutines.delay(16)
+                    runCatching { firstFocus.requestFocus() }
+                }
+            }
+    }
+
+    // Enable focus enter only once a target (leading or first content) is visible
+    val rowModifier = if (isTv) {
+        var m: Modifier = Modifier.focusGroup().focusProperties { }
+        if (enterEnabled.value) m = m.focusProperties { enter = { firstFocus } }
+        m
+    } else Modifier
 
     LazyRow(
-        modifier = if (isTv) Modifier.focusGroup().focusProperties { enter = { firstFocus } } else Modifier,
+        modifier = rowModifier,
         state = state,
         flingBehavior = rememberSnapFlingBehavior(state),
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
     ) {
-        item("leading") { LiveAddTile(onClick = onAdd) }
+        item("leading") {
+            // If there are no content items, attach firstFocus to the leading tile to satisfy enter
+            val leadingMod = if (isTv && !hasContent) Modifier.focusRequester(firstFocus) else Modifier
+            Box(leadingMod) { LiveAddTile(onClick = onAdd) }
+        }
         itemsIndexed(order, key = { idx, it -> it }) { idx, id ->
             val mi = items.find { it.id == id } ?: return@itemsIndexed
             val isDragging = draggingId == id

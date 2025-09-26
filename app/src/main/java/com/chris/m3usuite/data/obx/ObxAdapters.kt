@@ -117,7 +117,9 @@ fun ObxLive.toMediaItem(ctx: Context): MediaItem {
         plot = null,
         url = playUrl, // entscheidend: abspielbar
         extraJson = null,
-        source = "XTREAM"
+        source = "XTREAM",
+        providerKey = this.providerKey,
+        genreKey = this.genreKey
     )
 }
 
@@ -165,7 +167,9 @@ fun ObxVod.toMediaItem(ctx: Context): MediaItem {
         country = this.country,
         releaseDate = this.releaseDate,
         genre = this.genre,
-        containerExt = this.containerExt
+        containerExt = this.containerExt,
+        providerKey = this.providerKey,
+        genreKey = this.genreKey
     )
 }
 
@@ -209,7 +213,9 @@ fun ObxSeries.toMediaItem(ctx: Context): MediaItem {
         cast = this.cast,
         genre = this.genre,
         country = this.country,
-        releaseDate = this.releaseDate
+        releaseDate = this.releaseDate,
+        providerKey = this.providerKey,
+        genreKey = this.genreKey
     )
 }
 

@@ -59,6 +59,7 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.components.sheets.KidSelectSheet
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.skin.tvClickable
 import io.objectbox.android.AndroidScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -82,6 +83,10 @@ fun LiveDetailScreen(
     onGlobalSearch: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null
 ) {
+    LaunchedEffect(id) {
+        com.chris.m3usuite.metrics.RouteTag.set("live:$id")
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree("live:detail", "tile:$id")
+    }
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
     val scope = rememberCoroutineScope()
@@ -378,20 +383,29 @@ fun LiveDetailScreen(
                                 CircleShape
                             )
                             .semantics { role = Role.Button }
-                            .clickable(enabled = url != null) {
-                                if (showEpg) {
-                                    showEpg = false
-                                    scope.launch {
-                                        if (hapticsEnabledState) {
-                                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            .then(
+                                if (url != null)
+                                    Modifier.tvClickable(
+                                        role = Role.Button,
+                                        shape = CircleShape,
+                                        brightenContent = false,
+                                        autoBringIntoView = false
+                                    ) {
+                                        if (showEpg) {
+                                            showEpg = false
+                                            scope.launch {
+                                                if (hapticsEnabledState) {
+                                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                }
+                                                chooseAndPlay()
+                                            }
+                                        } else {
+                                            showEpg = true
                                         }
-                                        chooseAndPlay()
                                     }
-                                } else {
-                                    showEpg = true
-                                }
-                            }
-                    )
+                                else Modifier
+                            )
+                     )
 
                     Spacer(Modifier.size(6.dp))
                     Text(

@@ -117,6 +117,9 @@ class ObxKeyBackfillWorker(appContext: Context, params: WorkerParameters): Corou
                 query = liveQuery,
                 box = liveBox,
                 mutate = { e ->
+                    val beforeSort = e.sortTitleLower
+                    val beforeProv = e.providerKey
+                    val beforeGenre = e.genreKey
                     var changed = false
                     if (e.sortTitleLower.isBlank()) { e.sortTitleLower = sortKey(e.name); changed = true }
                     run {
@@ -125,6 +128,14 @@ class ObxKeyBackfillWorker(appContext: Context, params: WorkerParameters): Corou
                         if (isBadProviderKey(e.providerKey) && newKey != e.providerKey) { e.providerKey = newKey; changed = true }
                     }
                     if (e.genreKey.isNullOrBlank()) { e.genreKey = genreKeyFromCategoryId(e.categoryId); changed = true }
+                    if (changed) {
+                        val ch = linkedMapOf<String, Any?>(
+                            "sortTitleLower" to (if (beforeSort != e.sortTitleLower) "${beforeSort} -> ${e.sortTitleLower}" else null),
+                            "providerKey" to (if (beforeProv != e.providerKey) "${beforeProv} -> ${e.providerKey}" else null),
+                            "genreKey" to (if (beforeGenre != e.genreKey) "${beforeGenre} -> ${e.genreKey}" else null),
+                        ).filterValues { it != null }
+                        if (ch.isNotEmpty()) com.chris.m3usuite.core.debug.GlobalDebug.logObxKey("live", e.streamId.toString(), ch)
+                    }
                     changed
                 }
             )
@@ -137,6 +148,10 @@ class ObxKeyBackfillWorker(appContext: Context, params: WorkerParameters): Corou
                 query = vodQuery,
                 box = vodBox,
                 mutate = { e ->
+                    val beforeSort = e.sortTitleLower
+                    val beforeProv = e.providerKey
+                    val beforeGenre = e.genreKey
+                    val beforeYearKey = e.yearKey
                     var changed = false
                     if (e.sortTitleLower.isBlank()) { e.sortTitleLower = sortKey(e.name); changed = true }
                     run {
@@ -146,6 +161,15 @@ class ObxKeyBackfillWorker(appContext: Context, params: WorkerParameters): Corou
                     }
                     if (e.genreKey.isNullOrBlank()) { e.genreKey = genreKeyFromCategoryId(e.categoryId); changed = true }
                     if (e.yearKey == null) { e.yearKey = yearKeyFrom(e.year, e.name); changed = true }
+                    if (changed) {
+                        val ch = linkedMapOf<String, Any?>(
+                            "sortTitleLower" to (if (beforeSort != e.sortTitleLower) "${beforeSort} -> ${e.sortTitleLower}" else null),
+                            "providerKey" to (if (beforeProv != e.providerKey) "${beforeProv} -> ${e.providerKey}" else null),
+                            "genreKey" to (if (beforeGenre != e.genreKey) "${beforeGenre} -> ${e.genreKey}" else null),
+                            "yearKey" to (if (beforeYearKey != e.yearKey) "${beforeYearKey} -> ${e.yearKey}" else null),
+                        ).filterValues { it != null }
+                        if (ch.isNotEmpty()) com.chris.m3usuite.core.debug.GlobalDebug.logObxKey("vod", e.vodId.toString(), ch)
+                    }
                     changed
                 }
             )
@@ -158,6 +182,10 @@ class ObxKeyBackfillWorker(appContext: Context, params: WorkerParameters): Corou
                 query = seriesQuery,
                 box = seriesBox,
                 mutate = { e ->
+                    val beforeSort = e.sortTitleLower
+                    val beforeProv = e.providerKey
+                    val beforeGenre = e.genreKey
+                    val beforeYearKey = e.yearKey
                     var changed = false
                     if (e.sortTitleLower.isBlank()) { e.sortTitleLower = sortKey(e.name); changed = true }
                     run {
@@ -167,6 +195,15 @@ class ObxKeyBackfillWorker(appContext: Context, params: WorkerParameters): Corou
                     }
                     if (e.genreKey.isNullOrBlank()) { e.genreKey = genreKeyFromCategoryId(e.categoryId); changed = true }
                     if (e.yearKey == null) { e.yearKey = yearKeyFrom(e.year, e.name); changed = true }
+                    if (changed) {
+                        val ch = linkedMapOf<String, Any?>(
+                            "sortTitleLower" to (if (beforeSort != e.sortTitleLower) "${beforeSort} -> ${e.sortTitleLower}" else null),
+                            "providerKey" to (if (beforeProv != e.providerKey) "${beforeProv} -> ${e.providerKey}" else null),
+                            "genreKey" to (if (beforeGenre != e.genreKey) "${beforeGenre} -> ${e.genreKey}" else null),
+                            "yearKey" to (if (beforeYearKey != e.yearKey) "${beforeYearKey} -> ${e.yearKey}" else null),
+                        ).filterValues { it != null }
+                        if (ch.isNotEmpty()) com.chris.m3usuite.core.debug.GlobalDebug.logObxKey("series", e.seriesId.toString(), ch)
+                    }
                     changed
                 }
             )

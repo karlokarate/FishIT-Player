@@ -1,5 +1,4 @@
 package com.chris.m3usuite.ui.fx
-
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -10,9 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import com.chris.m3usuite.R
-
+import com.chris.m3usuite.ui.debug.safePainter
 @Composable
 fun FishBackground(
     modifier: Modifier = Modifier,
@@ -27,7 +25,7 @@ fun FishBackground(
             }
         }
         Image(
-            painter = painterResource(id = R.drawable.fisch_bg),
+            painter = safePainter(id = R.drawable.fisch_bg),
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()

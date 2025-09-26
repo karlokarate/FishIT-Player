@@ -20,8 +20,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,7 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -155,6 +158,10 @@ fun SeriesDetailScreen(
     onLogo: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null
 ) {
+    LaunchedEffect(id) {
+        com.chris.m3usuite.metrics.RouteTag.set("series:$id")
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree("series:detail", "tile:$id")
+    }
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
     val scope = rememberCoroutineScope()
@@ -647,13 +654,19 @@ fun SeriesDetailScreen(
                                     )
                                 }
                                 Spacer(Modifier.height(6.dp))
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(end = 8.dp)
-                                ) {
-                                    items(seasons, key = { it }) { s ->
+                                run {
+                                    // TV-friendly LazyRow: focusGroup at container, focusable items bring into view
+                                    val seasonListState: LazyListState = com.chris.m3usuite.ui.state.rememberRouteListState("series:seasons:${seriesStreamId ?: -1}")
+                                    com.chris.m3usuite.ui.tv.TvFocusRow(
+                                        items = seasons,
+                                        key = { it },
+                                        listState = seasonListState,
+                                        modifier = Modifier,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        contentPadding = PaddingValues(end = 8.dp),
+                                    ) { _, s, itemMod ->
                                         FilterChip(
-                                            modifier = Modifier.graphicsLayer(alpha = DesignTokens.BadgeAlpha),
+                                            modifier = itemMod.graphicsLayer(alpha = DesignTokens.BadgeAlpha),
                                             selected = seasonSel == s,
                                             onClick = { seasonSel = s },
                                             label = { Text("S$s") },
@@ -716,7 +729,8 @@ fun SeriesDetailScreen(
                                                 .fillMaxWidth()
                                                 .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
                                                 .focusScaleOnTv()
-                                                .onFocusChanged { epFocused = it.isFocused || it.hasFocus }
+                                                .focusable()
+                                                .onFocusEvent { epFocused = it.isFocused || it.hasFocus }
                                                 .tvClickable {
                                                     if (resumeSecs != null) playEpisode(e, fromStart = false, resumeSecs = resumeSecs)
                                                     else playEpisode(e, fromStart = true)

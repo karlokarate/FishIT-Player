@@ -2,6 +2,7 @@ package com.chris.m3usuite.ui.common
 
 import android.annotation.SuppressLint
 import android.net.Uri
+import android.util.Log
 import android.view.ViewGroup
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -25,10 +26,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
@@ -41,6 +41,8 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import com.chris.m3usuite.ui.common.AppIcon
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.media3.common.util.UnstableApi
+import com.chris.m3usuite.R
+import com.chris.m3usuite.ui.debug.safePainter
 
 private fun isYoutubeUrl(url: String): Boolean =
     url.contains("youtube.com", ignoreCase = true) || url.contains("youtu.be", ignoreCase = true)
@@ -95,7 +97,14 @@ fun TrailerBox(
                 SimpleVideoBox(url = url, headers = headers)
             }
             IconButton(onClick = { expanded.value = true }, modifier = Modifier.align(Alignment.TopEnd)) {
-                Icon(painter = painterResource(id = AppIcon.PlayCircle.resId()), contentDescription = "Vollbild", tint = Color.White)
+                val requested = AppIcon.PlayCircle.resId()
+                val resolved = if (requested != 0) {
+                    requested
+                } else {
+                    Log.w("TrailerBox", "Missing drawable for AppIcon.PlayCircle – using fallback icon")
+                    R.drawable.ic_play_circle_primary
+                }
+                Icon(painter = safePainter(resolved, label = "TrailerBox"), contentDescription = "Vollbild", tint = Color.White)
             }
         }
     }

@@ -29,6 +29,7 @@ import androidx.navigation.navArgument
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.navigation.popUpToStartDestination
+import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.player.InternalPlayerScreen   // <- korrektes Paket (s. Schritt A)
 import com.chris.m3usuite.ui.screens.LibraryScreen
 import com.chris.m3usuite.ui.home.StartScreen
@@ -71,6 +72,17 @@ class MainActivity : ComponentActivity() {
             M3UTvSkin {
             AppTheme {
                 val nav = rememberNavController()
+                // Global nav debug listener (switchable via Settings)
+                androidx.compose.runtime.DisposableEffect(nav) {
+                    val listener = androidx.navigation.NavController.OnDestinationChangedListener { controller, destination, arguments ->
+                        val from = controller.previousBackStackEntry?.destination?.route
+                            ?: controller.previousBackStackEntry?.destination?.displayName
+                        val to = destination.route ?: destination.displayName
+                        com.chris.m3usuite.core.debug.GlobalDebug.logNavigation(from, to)
+                    }
+                    nav.addOnDestinationChangedListener(listener)
+                    onDispose { nav.removeOnDestinationChangedListener(listener) }
+                }
 
                 val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
                 val ctx = LocalContext.current
@@ -84,6 +96,22 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                         com.chris.m3usuite.core.http.RequestHeadersProvider.collect(store)
+                    }
+                }
+                // Keep TrafficLogger state in sync with Settings (persists across restarts)
+                LaunchedEffect(lifecycleOwner) {
+                    lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                        store.httpLogEnabled.collect { enabled ->
+                            com.chris.m3usuite.core.http.TrafficLogger.setEnabled(enabled)
+                        }
+                    }
+                }
+                // Keep GlobalDebug in sync with Settings
+                LaunchedEffect(lifecycleOwner) {
+                    lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                        store.globalDebugEnabled.collect { on ->
+                            com.chris.m3usuite.core.debug.GlobalDebug.setEnabled(on)
+                        }
                     }
                 }
                 
@@ -217,18 +245,10 @@ class MainActivity : ComponentActivity() {
                         LiveDetailScreen(id, onLogo = {
                             val current = nav.currentBackStackEntry?.destination?.route
                             if (current != "library") {
-                                nav.navigate("library?q=&qs=") {
-                                    launchSingleTop = true
-                                    restoreState = true
-                                    popUpToStartDestination(nav, saveState = true)
-                                }
+                                nav.navigateTopLevel("library?q=&qs=")
                             }
                         }, onGlobalSearch = {
-                            nav.navigate("library?qs=show") {
-                                launchSingleTop = true
-                                restoreState = true
-                                popUpToStartDestination(nav, saveState = true)
-                            }
+                            nav.navigateTopLevel("library?qs=show")
                         }, onOpenSettings = {
                             val current = nav.currentBackStackEntry?.destination?.route
                             if (current != "settings") {
@@ -251,19 +271,11 @@ class MainActivity : ComponentActivity() {
                             onLogo = {
                                 val current = nav.currentBackStackEntry?.destination?.route
                                 if (current != "library") {
-                                    nav.navigate("library?q=&qs=") {
-                                        launchSingleTop = true
-                                        restoreState = true
-                                        popUpToStartDestination(nav, saveState = true)
-                                    }
+                                    nav.navigateTopLevel("library?q=&qs=")
                                 }
                             },
                             onGlobalSearch = {
-                                nav.navigate("library?qs=show") {
-                                    launchSingleTop = true
-                                    restoreState = true
-                                    popUpToStartDestination(nav, saveState = true)
-                                }
+                                nav.navigateTopLevel("library?qs=show")
                             },
                             onOpenSettings = {
                                 val current = nav.currentBackStackEntry?.destination?.route
@@ -289,11 +301,7 @@ class MainActivity : ComponentActivity() {
                             onLogo = {
                                 val current = nav.currentBackStackEntry?.destination?.route
                                 if (current != "library") {
-                                    nav.navigate("library?q=&qs=") {
-                                        launchSingleTop = true
-                                        restoreState = true
-                                        popUpToStartDestination(nav, saveState = true)
-                                    }
+                                    nav.navigateTopLevel("library?q=&qs=")
                                 }
                             },
                             onOpenSettings = {
@@ -375,11 +383,7 @@ class MainActivity : ComponentActivity() {
                             },
                             onOpenXtreamCfCheck = { nav.navigate("xt_cfcheck") },
                             onGlobalSearch = {
-                                nav.navigate("library?qs=show") {
-                                    launchSingleTop = true
-                                    restoreState = true
-                                    popUpToStartDestination(nav, saveState = true)
-                                }
+                                nav.navigateTopLevel("library?qs=show")
                             }
                         )
                     }
@@ -399,19 +403,11 @@ class MainActivity : ComponentActivity() {
                             onLogo = {
                                 val current = nav.currentBackStackEntry?.destination?.route
                                 if (current != "library") {
-                                    nav.navigate("library?q=&qs=") {
-                                        launchSingleTop = true
-                                        restoreState = true
-                                        popUpToStartDestination(nav, saveState = true)
-                                    }
+                                    nav.navigateTopLevel("library?q=&qs=")
                                 }
                             },
                             onGlobalSearch = {
-                                nav.navigate("library?qs=show") {
-                                    launchSingleTop = true
-                                    restoreState = true
-                                    popUpToStartDestination(nav, saveState = true)
-                                }
+                                nav.navigateTopLevel("library?qs=show")
                             },
                             onOpenSettings = {
                                 val current = nav.currentBackStackEntry?.destination?.route

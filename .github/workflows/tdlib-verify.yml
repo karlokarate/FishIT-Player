@@ -1,0 +1,47 @@
+name: TDLib Verify
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect AGP / JDK
+        id: detect
+        shell: bash
+        run: |
+          AGP=$(grep -RhoE "com\.android\.tools\.build:gradle[: ]+[\"']([0-9]+\.[0-9]+\.[0-9]+)[\"']" --include="*.gradle*" | head -n1 || true)
+          JDK=17; if [[ -n "$AGP" ]]; then MAJOR=${AGP%%.*}; if (( MAJOR < 8 )); then JDK=11; fi; fi
+          echo "jdk=$JDK" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ steps.detect.outputs.jdk }}
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install binutils
+        run: sudo apt-get update && sudo apt-get install -y binutils
+
+      - name: Verify TDLib JNI
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          HEADER: ${{ secrets.header }}
+        run: ./gradlew -S --no-daemon --build-cache verifyTdlib

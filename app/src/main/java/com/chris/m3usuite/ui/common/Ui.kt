@@ -17,7 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
@@ -40,8 +40,8 @@ fun FocusableCard(
     Card(
         modifier = modifier
             .scale(scale)
-            .onFocusChanged { focused = it.isFocused }
             .focusable(tv)
+            .onFocusEvent { focused = it.isFocused }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null

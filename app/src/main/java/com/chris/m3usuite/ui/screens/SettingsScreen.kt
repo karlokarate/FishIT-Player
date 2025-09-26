@@ -69,6 +69,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import com.chris.m3usuite.telegram.TdLibReflection
 import com.chris.m3usuite.core.http.HttpClientFactory
+import com.chris.m3usuite.ui.skin.tvClickable
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -102,6 +103,10 @@ fun SettingsScreen(
     onOpenXtreamCfCheck: (() -> Unit)? = null,
     onGlobalSearch: (() -> Unit)? = null
 ) {
+    LaunchedEffect(Unit) {
+        com.chris.m3usuite.metrics.RouteTag.set("settings")
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree("settings:root")
+    }
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
     val isTv = remember { isTvDevice(ctx) }
@@ -207,6 +212,7 @@ fun SettingsScreen(
             .collectLatest { store.set(Keys.XT_OUTPUT, it) }
     }
     val httpLogEnabled by store.httpLogEnabled.collectAsStateWithLifecycle(initialValue = false)
+    val globalDebugEnabled by store.globalDebugEnabled.collectAsStateWithLifecycle(initialValue = false)
     // Import diagnostics
     val lastImportAtMs by store.lastImportAtMs.collectAsStateWithLifecycle(initialValue = 0L)
     val lastSeedLive by store.lastSeedLive.collectAsStateWithLifecycle(initialValue = 0)
@@ -578,73 +584,7 @@ fun SettingsScreen(
             colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
         ) { Text("EPG testen (Debug)") }
         
-        // Debug / Logging
-        Spacer(Modifier.height(16.dp))
-        Text("Debug", style = MaterialTheme.typography.titleSmall)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("HTTP-Traffic-Log speichern (JSONL)", modifier = Modifier.weight(1f))
-            Switch(
-                checked = httpLogEnabled,
-                onCheckedChange = { v ->
-                    scope.launch {
-                        store.setHttpLogEnabled(v)
-                        com.chris.m3usuite.core.http.TrafficLogger.setEnabled(v)
-                    }
-                }
-            )
-        }
-        TextButton(onClick = {
-            val dir = java.io.File(ctxRepo.filesDir, "http-logs")
-            runCatching { dir.listFiles()?.forEach { it.delete() }; dir.delete() }
-            scope.launch { snackHost.toast("HTTP-Logs gelöscht") }
-        }) { Text("HTTP-Logs löschen") }
-        
-        Button(
-            modifier = Modifier.focusScaleOnTv(),
-            onClick = {
-                scope.launch {
-                    val logsDir = java.io.File(ctxRepo.filesDir, "http-logs")
-                    val files = logsDir.listFiles()?.filter { it.isFile }?.sortedBy { it.name } ?: emptyList()
-                    if (files.isEmpty()) {
-                        snackHost.toast("Keine HTTP-Logs vorhanden")
-                        return@launch
-                    }
-                    val exportDir = java.io.File(ctxRepo.cacheDir, "exports").apply { mkdirs() }
-                    val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
-                    val zipFile = java.io.File(exportDir, "http-logs-$stamp.zip")
-                    runCatching {
-                        java.util.zip.ZipOutputStream(java.io.BufferedOutputStream(java.io.FileOutputStream(zipFile))).use { zos ->
-                            val buf = ByteArray(16 * 1024)
-                            for (f in files) {
-                                val entry = java.util.zip.ZipEntry(f.name)
-                                entry.time = f.lastModified()
-                                zos.putNextEntry(entry)
-                                java.io.BufferedInputStream(java.io.FileInputStream(f)).use { ins ->
-                                    while (true) {
-                                        val n = ins.read(buf)
-                                        if (n <= 0) break
-                                        zos.write(buf, 0, n)
-                                    }
-                                }
-                                zos.closeEntry()
-                            }
-                        }
-                    }.onFailure {
-                        snackHost.toast("Export fehlgeschlagen: ${it.message ?: "Unbekannt"}")
-                        return@launch
-                    }
-                    val uri = androidx.core.content.FileProvider.getUriForFile(ctxRepo, ctxRepo.packageName + ".fileprovider", zipFile)
-                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                        type = "application/zip"
-                        putExtra(android.content.Intent.EXTRA_SUBJECT, zipFile.name)
-                        putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    ctxRepo.startActivity(android.content.Intent.createChooser(send, "HTTP-Logs exportieren"))
-                }
-            },
-            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
-        ) { Text("HTTP-Logs exportieren/teilen…") }
+        // (HTTP Debug/Logging switch moved to "Import & Diagnose" section)
         
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val ctxLocal = LocalContext.current
@@ -775,6 +715,86 @@ fun SettingsScreen(
                 expanded = importSectionExpanded,
                 onExpandedChange = { importSectionExpanded = it }
             ) {
+                // Debug / Logging
+                Spacer(Modifier.height(8.dp))
+                Text("Debug & Logging", style = MaterialTheme.typography.titleSmall)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Globales Debugging (Navigation/OBX)", modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = globalDebugEnabled,
+                        onCheckedChange = { v ->
+                            scope.launch {
+                                store.setGlobalDebugEnabled(v)
+                                com.chris.m3usuite.core.debug.GlobalDebug.setEnabled(v)
+                            }
+                        }
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("HTTP-Traffic-Log speichern (JSONL)", modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = httpLogEnabled,
+                        onCheckedChange = { v ->
+                            scope.launch {
+                                store.setHttpLogEnabled(v)
+                                com.chris.m3usuite.core.http.TrafficLogger.setEnabled(v)
+                            }
+                        }
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    TextButton(onClick = {
+                        val dir = java.io.File(ctx.filesDir, "http-logs")
+                        runCatching { dir.listFiles()?.forEach { it.delete() }; dir.delete() }
+                        scope.launch { snackHost.toast("HTTP-Logs gelöscht") }
+                    }) { Text("HTTP-Logs löschen") }
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                val logsDir = java.io.File(ctx.filesDir, "http-logs")
+                                val files = logsDir.listFiles()?.filter { it.isFile }?.sortedBy { it.name } ?: emptyList()
+                                if (files.isEmpty()) {
+                                    snackHost.toast("Keine HTTP-Logs vorhanden")
+                                    return@launch
+                                }
+                                val exportDir = java.io.File(ctx.cacheDir, "exports").apply { mkdirs() }
+                                val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
+                                val zipFile = java.io.File(exportDir, "http-logs-$stamp.zip")
+                                runCatching {
+                                    java.util.zip.ZipOutputStream(java.io.BufferedOutputStream(java.io.FileOutputStream(zipFile))).use { zos ->
+                                        val buf = ByteArray(16 * 1024)
+                                        for (f in files) {
+                                            val entry = java.util.zip.ZipEntry(f.name)
+                                            entry.time = f.lastModified()
+                                            zos.putNextEntry(entry)
+                                            java.io.BufferedInputStream(java.io.FileInputStream(f)).use { ins ->
+                                                while (true) {
+                                                    val n = ins.read(buf)
+                                                    if (n <= 0) break
+                                                    zos.write(buf, 0, n)
+                                                }
+                                            }
+                                            zos.closeEntry()
+                                        }
+                                    }
+                                }.onFailure {
+                                    snackHost.toast("Export fehlgeschlagen: ${it.message ?: "Unbekannt"}")
+                                    return@launch
+                                }
+                                val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".fileprovider", zipFile)
+                                val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "application/zip"
+                                    putExtra(android.content.Intent.EXTRA_SUBJECT, zipFile.name)
+                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                ctx.startActivity(android.content.Intent.createChooser(send, "HTTP-Logs exportieren"))
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
+                    ) { Text("HTTP-Logs exportieren/teilen…") }
+                }
+                Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("M3U/Xtream-Worker aktivieren", modifier = Modifier.weight(1f))
                     Switch(
@@ -1630,8 +1650,8 @@ private fun TelegramChatPickerDialog(
     val chatsMain = remember { mutableStateListOf<Pair<Long, String>>() }
     val chatsArchive = remember { mutableStateListOf<Pair<Long, String>>() }
     var loading by remember { mutableStateOf(true) }
-    var folder by remember { mutableStateOf("main") }
-    var search by remember { mutableStateOf("") }
+    var folder by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("main") }
+    var search by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         loading = true
@@ -1778,7 +1798,13 @@ private fun CollapsibleSection(
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.small)
                     .focusScaleOnTv()
-                    .clickable(role = Role.Button) { onExpandedChange(!expanded) }
+                    .then(
+                        Modifier.tvClickable(
+                            role = Role.Button,
+                            brightenContent = false,
+                            autoBringIntoView = false
+                        ) { onExpandedChange(!expanded) }
+                    )
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1831,9 +1857,9 @@ private enum class PinMode { Set, Change, Clear }
 private fun PinDialogHost(store: SettingsStore, mode: PinMode, onDismissed: () -> Unit) {
     var open by rememberSaveable { mutableStateOf(true) }
     var pin by remember { mutableStateOf("") }
-    var pin2 by remember { mutableStateOf("") }
-    var old by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
+    var pin2 by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var old by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var error by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     if (!open) { onDismissed(); return }
     val dlgColors = OutlinedTextFieldDefaults.colors(

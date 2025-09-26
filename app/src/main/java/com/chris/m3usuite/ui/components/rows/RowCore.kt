@@ -1,11 +1,20 @@
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 package com.chris.m3usuite.ui.components.rows
 
 import androidx.compose.foundation.layout.PaddingValues
+import com.chris.m3usuite.ui.compat.focusGroup
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -63,24 +72,51 @@ fun MediaRowCore(
     val state: LazyListState =
         config.stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
+    val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
+    val pendingScrollIndex = remember { mutableStateOf(-1) }
+    val firstFocus = remember { FocusRequester() }
+    val leadingOffset = if (leading != null) 1 else 0
+    val initRequested = remember { mutableStateOf(false) }
+    val enterEnabled = remember { mutableStateOf(false) }
+    val skipFirstCenter = remember { mutableStateOf(true) }
 
-    val initialPrefetchCount = remember(state, ordered) {
-        val savedIndex = state.firstVisibleItemIndex
-        val extend = savedIndex + config.lazyLoadWindow
-        val desired = maxOf(config.initialWindow, extend + 1)
-        minOf(ordered.size, desired)
+    suspend fun centerOnIndex(absIndex: Int) {
+        // Ensure item is visible at least once
+        state.animateScrollToItem(absIndex)
+        val info = state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == absIndex } ?: return
+        val viewportStart = state.layoutInfo.viewportStartOffset
+        val viewportEnd = state.layoutInfo.viewportEndOffset
+        val viewportSize = viewportEnd - viewportStart
+        val desiredOffset = ((viewportSize - info.size) / 2f).toInt().coerceAtLeast(0)
+        state.animateScrollToItem(absIndex, desiredOffset)
     }
-    var count by remember(ordered, initialPrefetchCount) { mutableStateOf(initialPrefetchCount) }
 
-    // Lazy-load erweitern
-    LaunchedEffect(state, ordered.size) {
-        snapshotFlow { state.firstVisibleItemIndex }
-            .collect { idx ->
-                if (idx > count - config.lazyLoadWindow && count < ordered.size) {
-                    count = (count + config.lazyLoadStep).coerceAtMost(ordered.size)
+    LaunchedEffect(pendingScrollIndex.value) {
+        val target = pendingScrollIndex.value
+        if (target >= 0) {
+            centerOnIndex(target)
+            pendingScrollIndex.value = -1
+        }
+    }
+
+    // Ensure the very first tile takes focus initially on TV once it's visible
+    LaunchedEffect(state, isTv) {
+        if (!isTv) return@LaunchedEffect
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
+            .collect { indices ->
+                if (!initRequested.value && indices.contains(leadingOffset)) {
+                    initRequested.value = true
+                    enterEnabled.value = true
+                    kotlinx.coroutines.delay(16)
+                    runCatching {
+                        com.chris.m3usuite.core.debug.GlobalDebug.logTree("focusReq:RowCore:first")
+                        firstFocus.requestFocus()
+                    }
                 }
             }
     }
+
+    // Rely on LazyRow virtualization; do not gate item count manually to keep DPAD traversal predictable.
 
     // Sichtbare Keys → Prefetch, zentral gedrosselt
     LaunchedEffect(state, ordered, onPrefetchKeys, config.debounceVisibleMs) {
@@ -91,14 +127,34 @@ fun MediaRowCore(
             .collect { keys -> if (keys.isNotEmpty()) onPrefetchKeys(keys) }
     }
 
+    val listModifier = if (isTv) {
+        var m: Modifier = Modifier.focusGroup().focusProperties { }
+        if (enterEnabled.value) m = m.focusProperties { enter = { firstFocus } }
+        m
+    } else Modifier
+
     LazyRow(
+        modifier = listModifier,
         state = state,
         flingBehavior = fling,
         contentPadding = config.contentPadding
     ) {
         if (leading != null) item("leading") { leading() }
-        items(ordered.take(count), key = { itemKey(it) }) { m ->
-            itemContent(m)
+        itemsIndexed(ordered, key = { _, it -> itemKey(it) }) { idx, m ->
+            // Observe descendant focus and center that item. Index in LazyRow accounts for optional leading.
+            val absIdx = idx + leadingOffset
+            val baseMod = if (isTv) Modifier.onFocusEvent { st ->
+                if (st.hasFocus) {
+                    if (skipFirstCenter.value && absIdx == leadingOffset) {
+                        // First focus on left-most tile: don't center yet
+                        skipFirstCenter.value = false
+                    } else {
+                        pendingScrollIndex.value = absIdx
+                    }
+                }
+            } else Modifier
+            val itemMod = if (isTv && idx == 0) baseMod.focusRequester(firstFocus) else baseMod
+            androidx.compose.foundation.layout.Box(itemMod) { itemContent(m) }
         }
     }
 }
@@ -123,6 +179,48 @@ fun MediaRowCorePaged(
     val state: LazyListState =
         config.stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
+    val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
+    val pendingScrollIndex = remember { mutableStateOf(-1) }
+    val firstFocus = remember { FocusRequester() }
+    val leadingOffset = if (leading != null) 1 else 0
+    val initRequested = remember { mutableStateOf(false) }
+    val skipFirstCenter = remember { mutableStateOf(true) }
+    val enterEnabled = remember { mutableStateOf(false) }
+
+    suspend fun centerOnIndex(absIndex: Int) {
+        state.animateScrollToItem(absIndex)
+        val info = state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == absIndex } ?: return
+        val viewportStart = state.layoutInfo.viewportStartOffset
+        val viewportEnd = state.layoutInfo.viewportEndOffset
+        val viewportSize = viewportEnd - viewportStart
+        val desiredOffset = ((viewportSize - info.size) / 2f).toInt().coerceAtLeast(0)
+        state.animateScrollToItem(absIndex, desiredOffset)
+    }
+
+    LaunchedEffect(pendingScrollIndex.value) {
+        val target = pendingScrollIndex.value
+        if (target >= 0) {
+            centerOnIndex(target)
+            pendingScrollIndex.value = -1
+        }
+    }
+
+    // Ensure the very first tile takes focus initially on TV once it's visible
+    LaunchedEffect(state, isTv) {
+        if (!isTv) return@LaunchedEffect
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
+            .collect { indices ->
+                if (!initRequested.value && indices.contains(leadingOffset)) {
+                    initRequested.value = true
+                    enterEnabled.value = true
+                    kotlinx.coroutines.delay(16)
+                    runCatching {
+                        com.chris.m3usuite.core.debug.GlobalDebug.logTree("focusReq:RowCorePaged:first")
+                        firstFocus.requestFocus()
+                    }
+                }
+            }
+    }
 
     // Sichtbare Indizes → Prefetch, zentral gedrosselt
     LaunchedEffect(state, items, onPrefetchPaged, config.debounceVisibleMs) {
@@ -135,7 +233,14 @@ fun MediaRowCorePaged(
             }
     }
 
+    val pagedModifier = if (isTv) {
+        var m: Modifier = Modifier.focusGroup().focusProperties { }
+        if (enterEnabled.value) m = m.focusProperties { enter = { firstFocus } }
+        m
+    } else Modifier
+
     LazyRow(
+        modifier = pagedModifier,
         state = state,
         flingBehavior = fling,
         contentPadding = config.contentPadding
@@ -151,7 +256,19 @@ fun MediaRowCorePaged(
 
         items(items.itemCount, key = { idx -> itemKey(idx) }) { index ->
             val mi = items[index] ?: return@items
-            itemContent(index, mi)
+            val absIdx = index + leadingOffset
+            // Observe descendant focus only; avoid adding extra focus targets.
+            val baseMod = if (isTv) Modifier.onFocusEvent { st ->
+                if (st.hasFocus) {
+                    if (skipFirstCenter.value && absIdx == leadingOffset) {
+                        skipFirstCenter.value = false
+                    } else {
+                        pendingScrollIndex.value = absIdx
+                    }
+                }
+            } else Modifier
+            val itemMod = if (isTv && index == 0) baseMod.focusRequester(firstFocus) else baseMod
+            androidx.compose.foundation.layout.Box(itemMod) { itemContent(index, mi) }
         }
 
         val isAppending = items.loadState.append is LoadState.Loading

@@ -112,6 +112,7 @@ private val Context.dataStore by preferencesDataStore("settings")
 
     // Debug/Logging
     val HTTP_LOG_ENABLED = booleanPreferencesKey("http_log_enabled")
+    val GLOBAL_DEBUG_ENABLED = booleanPreferencesKey("global_debug_enabled")
     // Feature gates
     val ROOM_ENABLED = booleanPreferencesKey("room_enabled")
     // Global gate to allow M3U/Xtream workers & related API calls
@@ -253,6 +254,7 @@ class SettingsStore(private val context: Context) {
 
     // Debug/Logging
     val httpLogEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.HTTP_LOG_ENABLED] ?: false }
+    val globalDebugEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.GLOBAL_DEBUG_ENABLED] ?: false }
 
     // -------- Setzen --------
     suspend fun set(key: Preferences.Key<String>, value: String) {
@@ -504,6 +506,7 @@ class SettingsStore(private val context: Context) {
 
     // Logging
     suspend fun setHttpLogEnabled(value: Boolean) { context.dataStore.edit { it[Keys.HTTP_LOG_ENABLED] = value } }
+    suspend fun setGlobalDebugEnabled(value: Boolean) { context.dataStore.edit { it[Keys.GLOBAL_DEBUG_ENABLED] = value } }
     // Feature gates setters
     suspend fun setRoomEnabled(value: Boolean) { context.dataStore.edit { it[Keys.ROOM_ENABLED] = value } }
     suspend fun setM3uWorkersEnabled(value: Boolean) { context.dataStore.edit { it[Keys.M3U_WORKERS_ENABLED] = value } }

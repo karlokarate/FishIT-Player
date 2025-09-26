@@ -94,6 +94,12 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- Firebase auto-init is optional; remove default provider when no google-services config is shipped -->
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            tools:node="remove" />
+
         <!-- TDLib dedicated process service -->
         <service
             android:name=".telegram.service.TelegramTdlibService"

@@ -1,5 +1,4 @@
 package com.chris.m3usuite.ui.util
-
 import android.content.Context
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -7,7 +6,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.painterResource
 import coil3.compose.AsyncImage
 import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
@@ -20,7 +18,7 @@ import coil3.request.allowRgb565
 import com.chris.m3usuite.R
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.core.http.RequestHeadersProvider
-
+import com.chris.m3usuite.ui.debug.safePainter
 /**
  * Image utilities (Coil3)
  *
@@ -28,7 +26,6 @@ import com.chris.m3usuite.core.http.RequestHeadersProvider
  * - buildImageRequest(...): builds a Coil3 ImageRequest with those headers
  * - AppAsyncImage(...): small wrapper over AsyncImage that always attaches headers
  */
-
 data class ImageHeaders(
     val ua: String = "",
     val referer: String = "",
@@ -42,7 +39,6 @@ data class ImageHeaders(
         return m
     }
 }
-
 @Composable
 fun rememberImageHeaders(): ImageHeaders {
     val ctx = LocalContext.current
@@ -56,7 +52,6 @@ fun rememberImageHeaders(): ImageHeaders {
         ImageHeaders(ua = ua, referer = ref, extras = extras)
     }
 }
-
 /**
  * Build an ImageRequest with network headers and optional crossfade.
  */
@@ -73,7 +68,6 @@ fun buildImageRequest(
     val httpHeaders = NetworkHeaders.Builder().apply {
         headers?.asMap()?.forEach { (k, v) -> set(k, v) }
     }.build()
-
     val sizedUrl: Any? = when (url) {
         is String -> rewriteTmdbUrlForSize(url, widthPx, heightPx)
         else -> url
@@ -84,12 +78,10 @@ fun buildImageRequest(
         .crossfade(crossfade)
         .allowHardware(true)
         .allowRgb565(preferRgb565)
-
     if (widthPx != null && heightPx != null && widthPx > 0 && heightPx > 0) {
         // Prefer explicit pixel size if available; Compose will otherwise supply a resolver.
         b.size(widthPx, heightPx)
     }
-
     val cacheKey = when (sizedUrl) {
         is String -> sizedUrl
         null -> null
@@ -103,7 +95,6 @@ fun buildImageRequest(
     }
     return b.build()
 }
-
 /**
  * Convenience wrapper that always uses our header-aware ImageRequest.
  */
@@ -137,8 +128,8 @@ fun AppAsyncImage(
             cacheKeySuffix = suffix
         )
     }
-    val resolvedPlaceholder = placeholder ?: painterResource(R.drawable.fisch_bg)
-    val resolvedError = error ?: painterResource(R.drawable.fisch_header)
+    val resolvedPlaceholder = placeholder ?: safePainter(R.drawable.fisch_bg, label = "Images/placeholder")
+    val resolvedError = error ?: safePainter(R.drawable.fisch_header, label = "Images/error")
     AsyncImage(
         imageLoader = AppImageLoader.get(ctx),
         model = request,
@@ -153,7 +144,6 @@ fun AppAsyncImage(
         onError = { onError?.invoke() }
     )
 }
-
 @Composable
 fun AppPosterImage(
     url: Any?,
@@ -193,8 +183,8 @@ fun AppPosterImage(
             cacheKeySuffix = suffix
         )
     }
-    val resolvedPlaceholder = placeholder ?: painterResource(R.drawable.fisch_bg)
-    val resolvedError = error ?: painterResource(R.drawable.fisch_header)
+    val resolvedPlaceholder = placeholder ?: safePainter(R.drawable.fisch_bg, label = "Images/placeholder")
+    val resolvedError = error ?: safePainter(R.drawable.fisch_header, label = "Images/error")
     AsyncImage(
         imageLoader = AppImageLoader.get(ctx),
         model = request,
@@ -217,7 +207,6 @@ fun AppPosterImage(
         }
     )
 }
-
 @Composable
 fun AppHeroImage(
     url: Any?,
@@ -257,8 +246,8 @@ fun AppHeroImage(
             cacheKeySuffix = suffix
         )
     }
-    val resolvedPlaceholder = placeholder ?: painterResource(R.drawable.fisch_bg)
-    val resolvedError = error ?: painterResource(R.drawable.fisch_header)
+    val resolvedPlaceholder = placeholder ?: safePainter(R.drawable.fisch_bg, label = "Images/placeholder")
+    val resolvedError = error ?: safePainter(R.drawable.fisch_header, label = "Images/error")
     AsyncImage(
         imageLoader = AppImageLoader.get(ctx),
         model = request,
@@ -280,7 +269,6 @@ fun AppHeroImage(
         }
     )
 }
-
 private fun forceTmdbSize(url: String, sizeLabel: String): String {
     val m = TMDB_REGEX.matchEntire(url) ?: return url
     val current = m.groupValues.getOrNull(1) ?: return url
@@ -288,18 +276,15 @@ private fun forceTmdbSize(url: String, sizeLabel: String): String {
     if (current.equals(sizeLabel, ignoreCase = true)) return url
     return "https://image.tmdb.org/t/p/$sizeLabel/$file"
 }
-
 private fun forceTmdbSizeOrOriginal(url: String, sizeLabel: String): String {
     val m = TMDB_REGEX.matchEntire(url) ?: return url
     val file = m.groupValues.getOrNull(2) ?: return url
     val lbl = sizeLabel.lowercase()
     return if (lbl == "original") "https://image.tmdb.org/t/p/original/$file" else forceTmdbSize(url, sizeLabel)
 }
-
 // ---------------------------------------------------------
 // TMDb utilities: rewrite image.tmdb.org URLs to best-fit sizes
 // ---------------------------------------------------------
-
 private fun tmdbSizeForWidth(px: Int): String {
     // Choose the nearest lower/equal TMDb size bucket for posters/backdrops
     return when {
@@ -311,9 +296,7 @@ private fun tmdbSizeForWidth(px: Int): String {
         else -> "w780" // safe upper bound; 'original' is also possible but larger
     }
 }
-
 private val TMDB_REGEX = Regex("^https?://image\\.tmdb\\.org/t/p/([^/]+)/(.+)$", RegexOption.IGNORE_CASE)
-
 private fun rewriteTmdbUrlForSize(url: String, widthPx: Int?, heightPx: Int?): String {
     val m = TMDB_REGEX.matchEntire(url) ?: return url
     val sizeLabel = m.groupValues.getOrNull(1) ?: return url

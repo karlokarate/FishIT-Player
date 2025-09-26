@@ -20,7 +20,9 @@ import com.chris.m3usuite.data.obx.ObxVod_
 import com.chris.m3usuite.data.obx.ObxSeries
 import com.chris.m3usuite.data.obx.ObxSeries_
 import com.chris.m3usuite.data.obx.toMediaItem
+import com.chris.m3usuite.core.util.isAdultCategoryLabel
 import com.chris.m3usuite.model.MediaItem
+import com.chris.m3usuite.model.isAdultCategory
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -131,7 +133,7 @@ class MediaQueryRepository(
             }.map { item -> item.copy(categoryName = catLabelById[item.categoryId]) }
 
             fun applyAdultFilter(items: List<MediaItem>): List<MediaItem> =
-                if (showAdults) items else items.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                if (showAdults) items else items.filterNot { it.isAdultCategory() }
 
             val kidId = currentKidIdOrNull()
             if (kidId == null) {
@@ -185,14 +187,17 @@ class MediaQueryRepository(
                 .getOrElse { emptyMap() }
             val items = itemsRaw.map { it.copy(categoryName = catLabelById[it.categoryId]) }
             val showA = settings.showAdults.first()
-            val base = if (showA) items else items.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+            val base = if (showA) items else items.filterNot { it.isAdultCategory() }
             val kidId = currentKidIdOrNull() ?: return@withContext base
             val allowed = effectiveAllowedIds(kidId, type)
             base.filter { it.id in allowed }
         }
 
     suspend fun categoriesByTypeFiltered(type: String): List<String?> = withContext(Dispatchers.IO) {
-        val cats = obxRepo.categories(type).map { it.categoryName }
+        val showA = settings.showAdults.first()
+        val cats = obxRepo.categories(type)
+            .map { it.categoryName }
+            .let { if (showA) it else it.filterNot { label -> isAdultCategoryLabel(label) } }
         val kidId = currentKidIdOrNull() ?: return@withContext cats
         // Näherung über erlaubte Items
         val items = listByTypeFiltered(type, 10_000, 0)
@@ -216,11 +221,11 @@ class MediaQueryRepository(
             val showA = settings.showAdults.first()
             val kidId = currentKidIdOrNull()
             if (kidId == null) {
-                if (showA) data else data.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                if (showA) data else data.filter { item -> !item.isAdultCategory() }
             } else {
                 val allowed = effectiveAllowedIds(kidId, type)
                 val base = data.filter { it.id in allowed }
-                if (showA) base else base.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                if (showA) base else base.filter { !it.isAdultCategory() }
             }
         }
     }
@@ -236,11 +241,11 @@ class MediaQueryRepository(
             val showA = settings.showAdults.first()
             val kidId = currentKidIdOrNull()
             if (kidId == null) {
-                if (showA) data else data.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                if (showA) data else data.filter { item -> !item.isAdultCategory() }
             } else {
                 val allowed = effectiveAllowedIds(kidId, type)
                 val base = data.filter { it.id in allowed }
-                if (showA) base else base.filter { it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                if (showA) base else base.filter { item -> !item.isAdultCategory() }
             }
         }
     }

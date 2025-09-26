@@ -1,5 +1,6 @@
 package com.chris.m3usuite.ui.common
 
+import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,11 +21,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.chris.m3usuite.R
+import com.chris.m3usuite.ui.debug.safePainter
 import com.chris.m3usuite.ui.skin.TvFocusColors
 import com.chris.m3usuite.ui.skin.isTvDevice
 
@@ -50,6 +52,17 @@ fun AppIconButton(
         label = "tv-icon-focus-alpha"
     )
 
+    val requestedIcon = icon.resId(variant)
+    val resolvedIcon = if (requestedIcon != 0) {
+        requestedIcon
+    } else {
+        Log.w(
+            "AppIconButton",
+            "Missing drawable for icon=${icon.name} variant=$variant – falling back to ic_all_primary"
+        )
+        R.drawable.ic_all_primary
+    }
+
     TvIconButton(
         onClick = onClick,
         modifier = modifier
@@ -59,6 +72,7 @@ fun AppIconButton(
                 if (n.action == android.view.KeyEvent.ACTION_UP) {
                     val code = n.keyCode
                     if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
+                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER", mapOf("button" to icon.name))
                         onClick(); true
                     } else false
                 } else false
@@ -79,7 +93,7 @@ fun AppIconButton(
                 )
             }
             Image(
-                painter = painterResource(icon.resId(variant)),
+                painter = safePainter(resolvedIcon, label = "AppIconButton/${icon.name}"),
                 contentDescription = contentDescription,
                 modifier = Modifier.size(size)
             )

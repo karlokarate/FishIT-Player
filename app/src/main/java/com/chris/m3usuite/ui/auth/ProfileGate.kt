@@ -1,5 +1,4 @@
 package com.chris.m3usuite.ui.auth
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,10 +31,10 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.chris.m3usuite.ui.debug.safePainter
 import androidx.compose.ui.unit.sp
 import com.chris.m3usuite.data.obx.ObxProfile
 import com.chris.m3usuite.data.obx.ObxStore
@@ -51,19 +50,20 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.security.MessageDigest
-
 @Composable
 fun ProfileGate(
     onEnter: () -> Unit,
 ) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) {
+        com.chris.m3usuite.metrics.RouteTag.set("gate")
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree("gate:root")
+    }
     val store = remember { SettingsStore(ctx) }
     val profileRepo = remember { ProfileObxRepository(ctx) }
     val scope = rememberCoroutineScope()
-
     var adult by remember { mutableStateOf<ObxProfile?>(null) }
     var kids by remember { mutableStateOf<List<ObxProfile>>(emptyList()) }
-
     // PIN UI state (persist across rotation)
     var showPin by rememberSaveable { mutableStateOf(false) }
     var setPin by rememberSaveable { mutableStateOf(false) }
@@ -71,7 +71,6 @@ fun ProfileGate(
     var pin2 by rememberSaveable { mutableStateOf("") }
     var pinError by rememberSaveable { mutableStateOf<String?>(null) }
     val pinSet by store.adultPinSet.collectAsState(initial = false)
-
     LaunchedEffect(Unit) {
         val list = withContext(Dispatchers.IO) { profileRepo.all() }
         adult = list.firstOrNull { it.type == "adult" }
@@ -81,13 +80,11 @@ fun ProfileGate(
         val cur = store.currentProfileId.first()
         if (remember && cur > 0) onEnter()
     }
-
     fun sha256(s: String): String {
         val md = MessageDigest.getInstance("SHA-256")
         val dig = md.digest(s.toByteArray())
         return dig.joinToString("") { b -> "%02x".format(b) }
     }
-
     @Composable
     fun PinDialog(onDismiss: () -> Unit) {
         var stage by rememberSaveable(setPin) { mutableStateOf(if (setPin) 1 else 2) }
@@ -103,7 +100,6 @@ fun ProfileGate(
         val focusers = remember { mutableStateMapOf<String, FocusRequester>() }
         val confirmRequester = remember { FocusRequester() }
         val cancelRequester = remember { FocusRequester() }
-
         LaunchedEffect(Unit) {
             keypadRows.flatten().forEach { key -> focusers.getOrPut(key) { FocusRequester() } }
         }
@@ -111,13 +107,11 @@ fun ProfileGate(
             pinError = null
             focusers["5"]?.requestFocus()
         }
-
         LaunchedEffect(pinError) {
             if (pinError != null) {
                 focusers["5"]?.requestFocus()
             }
         }
-
         val activePinValue = if (setPin && stage == 2) pin2 else pin
         fun updateActivePin(value: String) {
             if (setPin && stage == 2) {
@@ -126,7 +120,6 @@ fun ProfileGate(
                 pin = value
             }
         }
-
         fun confirmAction() {
             if (setPin) {
                 if (stage == 1) {
@@ -188,7 +181,6 @@ fun ProfileGate(
                 }
             }
         }
-
         fun handleKey(key: String) {
             when (key) {
                 "CLR" -> {
@@ -220,7 +212,6 @@ fun ProfileGate(
                 }
             }
         }
-
         AlertDialog(
             onDismissRequest = onDismiss,
             title = null,
@@ -318,9 +309,7 @@ fun ProfileGate(
             }
         )
     }
-
     var showCreate by remember { mutableStateOf(false) }
-
     Box(Modifier.fillMaxSize()) {
         val Accent = DesignTokens.KidAccent
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to MaterialTheme.colorScheme.background, 1f to MaterialTheme.colorScheme.surface)))
@@ -361,7 +350,7 @@ fun ProfileGate(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(com.chris.m3usuite.R.drawable.fisch_header),
+                    painter = safePainter(com.chris.m3usuite.R.drawable.fisch_header),
                     contentDescription = "Erwachsenen-PIN",
                     modifier = Modifier.fillMaxSize(0.7f),
                     contentScale = ContentScale.Fit
@@ -369,7 +358,6 @@ fun ProfileGate(
             }
         }
         Spacer(Modifier.height(16.dp))
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
@@ -390,7 +378,6 @@ fun ProfileGate(
                 Text("+", style = MaterialTheme.typography.displayLarge, color = Color.White)
             }
         }
-
         val listState = com.chris.m3usuite.ui.state.rememberRouteListState("profiles:gate")
         LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 16.dp)) {
             if (kids.isNotEmpty()) {
@@ -416,7 +403,6 @@ fun ProfileGate(
                                     }
                                 }
                             }
-
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier
@@ -448,14 +434,13 @@ fun ProfileGate(
                                     } else {
                                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                             Icon(
-                                                painter = painterResource(android.R.drawable.ic_menu_report_image),
+                                                painter = safePainter(android.R.drawable.ic_menu_report_image),
                                                 contentDescription = k.name,
                                                 tint = MaterialTheme.colorScheme.onSurface
                                             )
                                         }
                                     }
                                 }
-
                                 Spacer(Modifier.height(8.dp))
                                 Text(
                                     text = k.name,
@@ -497,7 +482,6 @@ fun ProfileGate(
         }
         }
     }
-
     if (showPin) PinDialog(onDismiss = { showPin = false })
     if (showCreate) CreateProfileSheet(
         onDismiss = { showCreate = false },

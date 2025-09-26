@@ -123,6 +123,20 @@ fun InternalPlayerScreen(
     liveCategoryHint: String? = null,
     liveProviderHint: String? = null
 ) {
+    LaunchedEffect(type, mediaId, seriesId, episodeId) {
+        com.chris.m3usuite.metrics.RouteTag.set("player")
+        val node = when (type) {
+            "live" -> "player:live"
+            "vod" -> "player:vod"
+            "series" -> "player:series"
+            else -> "player:?"
+        }
+        val idNode = when (type) {
+            "series" -> "tile:${seriesId ?: mediaId}"
+            else -> "tile:${mediaId ?: -1}"
+        }
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree(node, idNode)
+    }
     val ctx = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -850,6 +864,7 @@ fun InternalPlayerScreen(
                             android.view.KeyEvent.KEYCODE_DPAD_CENTER,
                             android.view.KeyEvent.KEYCODE_MEDIA_PLAY,
                             android.view.KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER/PLAY_PAUSE", mapOf("screen" to "player", "type" to type))
                                 if (type == "live") {
                                     // Toggle quick actions; if already focusing a button, let the button handle the click
                                     return@setOnKeyListener if (!quickActionsVisible) {
@@ -866,6 +881,7 @@ fun InternalPlayerScreen(
                             }
                             android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
                             android.view.KeyEvent.KEYCODE_BUTTON_R1 -> {
+                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("FFWD", mapOf("screen" to "player", "type" to type))
                                 if (canSeek) {
                                     val pos = exoPlayer.currentPosition
                                     val dur = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
@@ -876,6 +892,7 @@ fun InternalPlayerScreen(
                             }
                             android.view.KeyEvent.KEYCODE_MEDIA_REWIND,
                             android.view.KeyEvent.KEYCODE_BUTTON_L1 -> {
+                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("REW", mapOf("screen" to "player", "type" to type))
                                 if (canSeek) {
                                     val pos = exoPlayer.currentPosition
                                     exoPlayer.seekTo((pos - 10_000L).coerceAtLeast(0L))
@@ -884,16 +901,19 @@ fun InternalPlayerScreen(
                                 } else false
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("screen" to "player", "type" to type))
                                 if (type == "live") { jumpLive(-1); true }
                                 else if (canSeek) { val pos = exoPlayer.currentPosition; exoPlayer.seekTo((pos - 10_000L).coerceAtLeast(0L)); controlsVisible = true; controlsTick++; true }
                                 else false
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("screen" to "player", "type" to type))
                                 if (type == "live") { jumpLive(+1); true }
                                 else if (canSeek) { val pos = exoPlayer.currentPosition; val dur = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE; exoPlayer.seekTo((pos + 10_000L).coerceAtMost(dur)); controlsVisible = true; controlsTick++; true }
                                 else false
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_UP -> {
+                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("UP", mapOf("screen" to "player", "type" to type))
                                 if (type == "live") {
                                     // Open favorites or global live list overlay
                                     showLiveListSheet = true
@@ -904,6 +924,7 @@ fun InternalPlayerScreen(
                                 }
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("DOWN", mapOf("screen" to "player", "type" to type))
                                 if (type == "live") {
                                     if (quickActionsVisible) {
                                         // Move focus to first quick action button
@@ -917,6 +938,7 @@ fun InternalPlayerScreen(
                                 } else false
                             }
                             android.view.KeyEvent.KEYCODE_BACK -> {
+                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("BACK", mapOf("screen" to "player"))
                                 // Let BackHandler manage; consume to avoid default finish here
                                 true
                             }
@@ -1019,12 +1041,31 @@ fun InternalPlayerScreen(
                         }
                         var selCat by remember { mutableStateOf(liveCategoryHint) }
                         val cats = remember(itemsWithCats) { itemsWithCats.mapNotNull { it.categoryName }.distinct().sorted() }
-                        // Category chips
-                        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            item { androidx.compose.material3.FilterChip(selected = selCat == null, onClick = { selCat = null }, label = { Text("Alle Kategorien") }) }
-                            items(cats.size, key = { i -> cats[i] }) { i ->
-                                val c = cats[i]
-                                androidx.compose.material3.FilterChip(selected = selCat == c, onClick = { selCat = c }, label = { Text(c) })
+                        // Category chips (TV-friendly focus/scroll)
+                        run {
+                            val chipState = com.chris.m3usuite.ui.state.rememberRouteListState("live_list_chip_row")
+                            com.chris.m3usuite.ui.tv.TvFocusRow(
+                                items = listOf<String?>(null) + cats,
+                                key = { it ?: "__all__" },
+                                listState = chipState,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) { idx, v, itemMod ->
+                                if (idx == 0) {
+                                    androidx.compose.material3.FilterChip(
+                                        modifier = itemMod,
+                                        selected = selCat == null,
+                                        onClick = { selCat = null },
+                                        label = { Text("Alle Kategorien") }
+                                    )
+                                } else {
+                                    val c = v!!
+                                    androidx.compose.material3.FilterChip(
+                                        modifier = itemMod,
+                                        selected = selCat == c,
+                                        onClick = { selCat = c },
+                                        label = { Text(c) }
+                                    )
+                                }
                             }
                         }
                         val list = remember(itemsWithCats, selCat) {

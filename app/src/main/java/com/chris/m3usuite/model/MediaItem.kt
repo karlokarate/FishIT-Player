@@ -1,5 +1,8 @@
 package com.chris.m3usuite.model
 
+import com.chris.m3usuite.core.util.isAdultCategory
+import com.chris.m3usuite.core.util.isAdultProvider
+
 data class MediaItem(
     val id: Long = 0L,
     val type: String = "", // live|vod|series
@@ -34,6 +37,8 @@ data class MediaItem(
     val genre: String? = null,
     // For VOD direct play URL container preference
     val containerExt: String? = null,
+    val providerKey: String? = null,
+    val genreKey: String? = null,
 )
 
 /**
@@ -44,5 +49,12 @@ fun MediaItem.hasArtwork(): Boolean {
     if (!logo.isNullOrBlank()) return true
     if (!backdrop.isNullOrBlank()) return true
     if (images.any { !it.isNullOrBlank() }) return true
+    return false
+}
+
+fun MediaItem.isAdultCategory(): Boolean {
+    if (isAdultCategory(categoryId, categoryName)) return true
+    if (isAdultProvider(providerKey)) return true
+    if (isAdultProvider(genreKey)) return true
     return false
 }

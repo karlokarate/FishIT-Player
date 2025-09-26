@@ -13,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -21,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
 import androidx.compose.material3.Text
 import com.chris.m3usuite.ui.util.AppAsyncImage
+import com.chris.m3usuite.ui.debug.safePainter
 import androidx.compose.ui.layout.ContentScale
 
 /**
@@ -38,7 +38,7 @@ fun ProviderIconFor(key: String, label: String, sizeDp: Int = 24) {
     val resId = remember(key) { res.getIdentifier(resName, "drawable", pkg) }
     if (resId != 0) {
         Image(
-            painter = painterResource(resId),
+            painter = safePainter(resId, label = "ProviderIcon/$key"),
             contentDescription = label,
             modifier = Modifier.size(sizeDp.dp)
         )

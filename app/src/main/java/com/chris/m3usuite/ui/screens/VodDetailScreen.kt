@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.res.painterResource
 import android.os.Build
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -70,6 +71,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.derivedStateOf
+import androidx.media3.common.util.UnstableApi
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import com.chris.m3usuite.ui.components.sheets.KidSelectSheet
@@ -132,6 +134,9 @@ private data class VodDetailPayload(
     val mimeType: String?
 )
 
+private fun decodeObxVodId(itemId: Long): Int? =
+    if (itemId in 2_000_000_000_000L until 3_000_000_000_000L) (itemId - 2_000_000_000_000L).toInt() else null
+
 private suspend fun loadVodDetail(
     ctx: Context,
     store: SettingsStore,
@@ -139,9 +144,6 @@ private suspend fun loadVodDetail(
     resumeRepo: ResumeRepository,
     itemId: Long
 ): VodDetailPayload? = withContext(Dispatchers.IO) {
-    fun decodeObxVodId(v: Long): Int? =
-        if (v in 2_000_000_000_000L until 3_000_000_000_000L) (v - 2_000_000_000_000L).toInt() else null
-
     val obxVid = decodeObxVodId(itemId) ?: return@withContext null
 
     suspend fun readRow(): com.chris.m3usuite.data.obx.ObxVod? {
@@ -260,6 +262,7 @@ private suspend fun loadVodDetail(
     )
 }
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun VodDetailScreen(
@@ -270,12 +273,17 @@ fun VodDetailScreen(
     onGlobalSearch: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null
 ) {
+    LaunchedEffect(id) {
+        com.chris.m3usuite.metrics.RouteTag.set("vod:$id")
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree("vod:detail", "tile:$id")
+    }
     val ctx = LocalContext.current
     val headers = rememberImageHeaders()
     val store = remember { SettingsStore(ctx) }
     val scope = rememberCoroutineScope()
     val kidRepo = remember { KidContentRepository(ctx) }
     val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
+    val obxRepo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
     val haptics = LocalHapticFeedback.current
     val hapticsEnabled by store.hapticsEnabled.collectAsStateWithLifecycle(initialValue = false)
     val uriHandler = LocalUriHandler.current
@@ -373,6 +381,38 @@ fun VodDetailScreen(
         contentAllowed = payload.contentAllowed
         mimeType = payload.mimeType
         detailReady = true
+    }
+
+    LaunchedEffect(id) {
+        val obxId = decodeObxVodId(id) ?: return@LaunchedEffect
+        obxRepo.vodChanges().collect {
+        val row = withContext(Dispatchers.IO) {
+            val query = com.chris.m3usuite.data.obx.ObxStore.get(ctx)
+                .boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
+                .query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(obxId.toLong()))
+                .build()
+            try {
+                query.findFirst()
+            } finally {
+                query.close()
+            }
+        } ?: return@collect
+
+            val updatedPlot = row.plot?.takeUnless { it.isNullOrBlank() }
+            if (!updatedPlot.isNullOrBlank() && updatedPlot != plot) {
+                plot = updatedPlot
+            }
+
+            val updatedPoster = row.poster?.takeUnless { it.isBlank() }
+            if (!updatedPoster.isNullOrBlank() && updatedPoster != poster) {
+                poster = updatedPoster
+            }
+
+            val updatedDuration = row.durationSecs
+            if (updatedDuration != null && updatedDuration != duration) {
+                duration = updatedDuration
+            }
+        }
     }
 
     fun setResume(newSecs: Int) = scope.launch {
@@ -537,7 +577,14 @@ fun VodDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = url != null) { play(fromStart = false) }
+                .then(
+                    if (url != null)
+                        Modifier.tvClickable(
+                            brightenContent = false,
+                            autoBringIntoView = false
+                        ) { play(fromStart = false) }
+                    else Modifier
+                )
         ) {
             com.chris.m3usuite.ui.util.AppPosterImage(
                 url = poster ?: heroUrl,
@@ -589,7 +636,15 @@ fun VodDetailScreen(
             val badgeColor = if (!isAdult) AccentDyn.copy(alpha = 0.26f) else AccentDyn.copy(alpha = 0.20f)
             val badgeColorDarker = if (!isAdult) AccentDyn.copy(alpha = 0.32f) else AccentDyn.copy(alpha = 0.26f)
             Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(50), color = badgeColor, contentColor = Color.White, modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)) {
-                Text(text = title, style = MaterialTheme.typography.titleLarge, maxLines = 2, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp).clickable(enabled = url != null) { play(fromStart = false) })
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 2,
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .then(if (url != null) Modifier.focusable(true) else Modifier)
+                        .clickable(enabled = url != null) { play(fromStart = false) }
+                )
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = AccentDyn.copy(alpha = 0.35f))
 
@@ -671,6 +726,7 @@ fun VodDetailScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(12.dp)
+                            .then(if (url != null) Modifier.focusable(true) else Modifier)
                             .clickable(enabled = url != null) { play(fromStart = false) }
                     )
                 }

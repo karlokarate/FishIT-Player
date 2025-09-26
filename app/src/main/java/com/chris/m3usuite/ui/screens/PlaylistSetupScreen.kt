@@ -67,6 +67,10 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
     val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) {
+        com.chris.m3usuite.metrics.RouteTag.set("setup")
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree("setup:root")
+    }
     val focusManager = LocalFocusManager.current
 
     // Deep-Link (VIEW-Intent) als Initialwert

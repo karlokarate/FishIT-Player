@@ -1,5 +1,4 @@
 package com.chris.m3usuite.ui.components
-
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -16,11 +15,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.chris.m3usuite.ui.debug.safePainter
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
-
 /**
  * Einklappbarer Header mit Pfeil. Default in Landscape = eingeklappt (aus Settings).
  */
@@ -38,12 +36,10 @@ fun CollapsibleHeader(
     // Default preference for landscape-only initial behavior
     val defaultCollapsedLand by store.headerCollapsedDefaultInLandscape.collectAsStateWithLifecycle(initialValue = true)
     var collapsed by rememberSaveable { mutableStateOf(persistedCollapsed) }
-
     // Keep local UI state in sync with persisted value
     LaunchedEffect(persistedCollapsed) {
         collapsed = persistedCollapsed
     }
-
     // One-time initial default in landscape if nothing persisted yet
     LaunchedEffect(Unit) {
         if (landscape && !persistedCollapsed && defaultCollapsedLand) {
@@ -51,7 +47,6 @@ fun CollapsibleHeader(
             store.setHeaderCollapsed(true)
         }
     }
-
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             title()
@@ -61,10 +56,9 @@ fun CollapsibleHeader(
                 scope.launch { store.setHeaderCollapsed(collapsed) }
             }) {
                 val icon = if (collapsed) android.R.drawable.arrow_down_float else android.R.drawable.arrow_up_float
-                Icon(painterResource(icon), contentDescription = if (collapsed) "Header anzeigen" else "Header verbergen")
+                Icon(safePainter(icon), contentDescription = if (collapsed) "Header anzeigen" else "Header verbergen")
             }
         }
-
         AnimatedVisibility(
             visible = !collapsed,
             enter = expandVertically(),
@@ -75,7 +69,6 @@ fun CollapsibleHeader(
                 Spacer(Modifier.height(8.dp))
             }
         }
-
         contentBelow(collapsed)
     }
 }

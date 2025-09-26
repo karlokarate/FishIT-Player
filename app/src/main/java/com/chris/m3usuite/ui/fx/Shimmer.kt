@@ -1,5 +1,4 @@
 package com.chris.m3usuite.ui.fx
-
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -24,12 +23,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.chris.m3usuite.ui.debug.safePainter
 import com.chris.m3usuite.R
 import kotlin.math.min
-
 @Composable
 fun ShimmerBox(
   modifier: Modifier = Modifier,
@@ -77,7 +75,7 @@ fun ShimmerBox(
       }
       val resolvedSize = fishSize ?: dynamicDp
       Image(
-        painter = painterResource(id = R.drawable.fisch_header),
+        painter = safePainter(id = R.drawable.fisch_header),
         contentDescription = null,
         modifier = Modifier
           .align(Alignment.Center)
@@ -87,7 +85,6 @@ fun ShimmerBox(
     }
   }
 }
-
 @Composable
 fun ShimmerCircle(
   modifier: Modifier = Modifier,
@@ -127,7 +124,7 @@ fun ShimmerCircle(
       }
       val resolvedSize = fishSize ?: dynamicDp
       Image(
-        painter = painterResource(id = R.drawable.fisch_header),
+        painter = safePainter(id = R.drawable.fisch_header),
         contentDescription = null,
         modifier = Modifier
           .align(Alignment.Center)

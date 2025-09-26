@@ -5,6 +5,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.foundation.focusable
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.fx.tvFocusGlow
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -264,13 +270,17 @@ fun ResumeVodRow(
     // Ensure keys remain unique even if upstream accidentally duplicates
     val state = remember(items) { mutableStateOf(items.distinctBy { it.mediaId }) }
 
-    LazyRow(
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(state.value, key = { it.mediaId }) { v ->
+    run {
+        val listState = com.chris.m3usuite.ui.state.rememberRouteListState("resume:vod")
+        com.chris.m3usuite.ui.tv.TvFocusRow(
+            items = state.value,
+            key = { it.mediaId },
+            listState = listState,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp)
+        ) { _, v, itemMod ->
             ResumeCard(
+                modifier = itemMod,
                 title = v.name,
                 subtitle = "Fortschritt: ${v.positionSecs} s",
                 onPlay = { onPlay(v) },
@@ -295,14 +305,18 @@ fun ResumeEpisodeRow(
     // Ensure keys remain unique even if upstream accidentally duplicates
     val state = remember(items) { mutableStateOf(items.distinctBy { Triple(it.seriesId, it.season, it.episodeNum) }) }
 
-    LazyRow(
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(state.value, key = { "${it.seriesId}:${it.season}:${it.episodeNum}" }) { e ->
+    run {
+        val listState = com.chris.m3usuite.ui.state.rememberRouteListState("resume:series")
+        com.chris.m3usuite.ui.tv.TvFocusRow(
+            items = state.value,
+            key = { "${it.seriesId}:${it.season}:${it.episodeNum}" },
+            listState = listState,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp)
+        ) { _, e, itemMod ->
             val title = "S${e.season}E${e.episodeNum} – ${e.title}"
             ResumeCard(
+                modifier = itemMod,
                 title = title,
                 subtitle = "Fortschritt: ${e.positionSecs} s",
                 onPlay = { onPlay(e) },
@@ -321,6 +335,7 @@ fun ResumeEpisodeRow(
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 private fun ResumeCard(
+    modifier: Modifier = Modifier,
     title: String,
     subtitle: String,
     onPlay: () -> Unit,
@@ -330,8 +345,15 @@ private fun ResumeCard(
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     var hEnabled by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { hEnabled = SettingsStore(ctx).hapticsEnabled.first() }
+    var focused by remember { mutableStateOf(false) }
+    val shape: Shape = RoundedCornerShape(14.dp)
     Card(
         modifier = Modifier
+            .then(modifier)
+            .focusable()
+            .onFocusEvent { focused = it.isFocused || it.hasFocus }
+            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
+            .tvFocusGlow(focused = focused, shape = shape)
             .width(200.dp)
             .height(140.dp)
             .combinedClickable(onClick = onPlay, onLongClick = {

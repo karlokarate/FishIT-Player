@@ -57,6 +57,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
@@ -77,9 +78,11 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.filter
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.data.repo.MediaQueryRepository
 import com.chris.m3usuite.domain.selectors.sortByYearDesc
 import com.chris.m3usuite.model.MediaItem
+import com.chris.m3usuite.model.isAdultCategory
 import com.chris.m3usuite.ui.components.rows.LocalRowItemHeightOverride
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.common.AppIcon
@@ -99,6 +102,8 @@ import kotlinx.coroutines.withContext
 import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.ui.telemetry.AttachPagingTelemetry
 import com.chris.m3usuite.data.obx.toMediaItem
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.fx.tvFocusGlow
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
@@ -176,11 +181,11 @@ fun StartScreen(
                     val mi = row?.toMediaItem(ctx)?.copy(categoryName = catSer[row?.categoryId])
                     if (mi != null) mi else null
                 }.distinctBy { it.id }
-                    .filter { if (showAdults) true else it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                    .filter { item -> showAdults || !item.isAdultCategory() }
                     .filter { isAllowed("series", it.id) }
 
                 val newestItems = obxRepo.seriesPagedNewest(0, 200).map { it.toMediaItem(ctx).copy(categoryName = it.categoryId?.let { k -> catSer[k] }) }
-                    .filter { if (showAdults) true else it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                    .filter { item -> showAdults || !item.isAdultCategory() }
                     .filter { isAllowed("series", it.id) }
 
                 val recentIds = recentItems.map { it.id }.toSet()
@@ -199,11 +204,11 @@ fun StartScreen(
                     val mi = row?.toMediaItem(ctx)?.copy(categoryName = catVod[row?.categoryId])
                     if (mi != null) mi else null
                 }.distinctBy { it.id }
-                    .filter { if (showAdults) true else it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                    .filter { item -> showAdults || !item.isAdultCategory() }
                     .filter { isAllowed("vod", it.id) }
 
                 val newestItems = obxRepo.vodPagedNewest(0, 200).map { it.toMediaItem(ctx).copy(categoryName = it.categoryId?.let { k -> catVod[k] }) }
-                    .filter { if (showAdults) true else it.categoryName?.trim()?.equals("For Adults", ignoreCase = true) != true }
+                    .filter { item -> showAdults || !item.isAdultCategory() }
                     .filter { isAllowed("vod", it.id) }
 
                 val recentIds = recentItems.map { it.id }.toSet()
@@ -274,6 +279,8 @@ fun StartScreen(
     }
 
     LaunchedEffect(Unit) {
+        com.chris.m3usuite.metrics.RouteTag.set("home")
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree("home:root")
         WorkManager.getInstance(ctx)
             .getWorkInfosForUniqueWorkLiveData("xtream_delta_import_once")
             .asFlow()
@@ -299,8 +306,8 @@ fun StartScreen(
     val scopeCurrent by rememberUpdatedState(scope)
     // Live picker dialog flag must be defined before first usage below
     var showLivePicker by remember { mutableStateOf(false) }
-    var showSearch by remember { mutableStateOf(openSearchOnStart) }
-    var searchInput by remember { mutableStateOf(initialSearch ?: "") }
+    var showSearch by androidx.compose.runtime.saveable.rememberSaveable("start:globalSearch:open") { mutableStateOf(openSearchOnStart) }
+    var searchInput by androidx.compose.runtime.saveable.rememberSaveable("start:globalSearch:query") { mutableStateOf(initialSearch ?: "") }
 
     LaunchedEffect(initialSearch) {
         if (!initialSearch.isNullOrBlank()) vm.query.value = initialSearch
@@ -347,7 +354,7 @@ fun StartScreen(
         onLogo = {
             val current = navController.currentBackStackEntry?.destination?.route
             if (current != "library?q={q}&qs={qs}") {
-                navController.navigate("library?q=&qs=") { launchSingleTop = true }
+                navController.navigateTopLevel("library?q=&qs=")
             }
         }
     ) { pads: PaddingValues ->
@@ -372,7 +379,7 @@ fun StartScreen(
                     label = "angle"
                 )
                 Image(
-                    painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch),
+                    painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch_bg),
                     contentDescription = null,
                     modifier = Modifier.align(Alignment.Center).size(size).graphicsLayer { rotationZ = angle }
                 )
@@ -444,6 +451,8 @@ fun StartScreen(
                 // Compute an optional tile-height override for landscape so the three sections fill the space.
                 val cfg = LocalConfiguration.current
                 val isLandscape = cfg.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+                // Section weights: landscape emphasizes Series/VOD equally and keeps Live visible.
+                val sectionWeights = if (isLandscape) Triple(0.4f, 0.4f, 0.2f) else Triple(1f, 1f, 1f)
                 // Space available for three sections (already excludes header/bottom pads).
                 val perSection = (maxHeight - sectionSpacing * 2) / 3f
                 // Reserve a small area for the in-card header and the card's inner padding.
@@ -467,7 +476,7 @@ fun StartScreen(
                     verticalArrangement = Arrangement.spacedBy(sectionSpacing)
                 ) {
                     // Serien (Paged)
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(sectionWeights.first)) {
                         com.chris.m3usuite.ui.common.AccentCard(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)
@@ -565,7 +574,7 @@ fun StartScreen(
                     }
 
                     // Filme (Paged)
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(sectionWeights.second)) {
                         com.chris.m3usuite.ui.common.AccentCard(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)
@@ -677,7 +686,7 @@ fun StartScreen(
                     }
 
                     // Live (Favoriten oder globale Suche)
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(sectionWeights.third)) {
                         val q = debouncedQuery.trim()
                         val showFavorites = q.isBlank()
                         if (showFavorites) {
@@ -851,9 +860,9 @@ fun StartScreen(
     // moved above to ensure it is in scope before usage
     if (showLivePicker && !isKid) {
         val scopePick = rememberCoroutineScope()
-        var query by remember { mutableStateOf("") }
+        var query by androidx.compose.runtime.saveable.rememberSaveable("start:livePicker:query") { mutableStateOf("") }
         var selected by remember { mutableStateOf(favCsv.split(',').mapNotNull { it.toLongOrNull() }.toSet()) }
-        var provider by remember { mutableStateOf<String?>(null) }
+        var provider by androidx.compose.runtime.saveable.rememberSaveable("start:livePicker:provider") { mutableStateOf<String?>(null) }
         val pagingFlow = remember(query, provider) {
             when {
                 query.isNotBlank() -> MediaQueryRepository(ctx, store).pagingSearchFilteredFlow("live", query)
@@ -892,25 +901,31 @@ fun StartScreen(
                         }
                         set.toList().sorted()
                     }
-                    androidx.compose.foundation.lazy.LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp)
-                    ) {
-                        item {
-                            FilterChip(
-                                modifier = Modifier.graphicsLayer(alpha = DesignTokens.BadgeAlpha),
-                                selected = provider == null,
-                                onClick = { provider = null },
-                                label = { Text("Alle") }
-                            )
-                        }
-                        items(providers, key = { it }) { p ->
-                            FilterChip(
-                                modifier = Modifier.graphicsLayer(alpha = DesignTokens.BadgeAlpha),
-                                selected = provider == p,
-                                onClick = { provider = if (provider == p) null else p },
-                                label = { Text(p) }
-                            )
+                    run {
+                        val chipState = com.chris.m3usuite.ui.state.rememberRouteListState("start_live_picker_providers")
+                        com.chris.m3usuite.ui.tv.TvFocusRow(
+                            items = listOf<String?>(null) + providers,
+                            key = { it ?: "__all__" },
+                            listState = chipState,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp)
+                        ) { _, v, itemMod ->
+                            if (v == null) {
+                                FilterChip(
+                                    modifier = itemMod.graphicsLayer(alpha = DesignTokens.BadgeAlpha),
+                                    selected = provider == null,
+                                    onClick = { provider = null },
+                                    label = { Text("Alle") }
+                                )
+                            } else {
+                                val p = v
+                                FilterChip(
+                                    modifier = itemMod.graphicsLayer(alpha = DesignTokens.BadgeAlpha),
+                                    selected = provider == p,
+                                    onClick = { provider = if (provider == p) null else p },
+                                    label = { Text(p) }
+                                )
+                            }
                         }
                     }
                     val gridState = com.chris.m3usuite.ui.state.rememberRouteGridState("start:livePicker")
@@ -986,6 +1001,7 @@ fun ChannelPickTile(
 ) {
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
+    var focused by remember { mutableStateOf(false) }
     androidx.compose.material3.Card(
         onClick = onToggle,
         shape = shape,
@@ -997,6 +1013,8 @@ fun ChannelPickTile(
         ),
         modifier = Modifier
             .focusable(true)
+            .onFocusEvent { focused = it.isFocused || it.hasFocus }
+            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
             .focusProperties { right = focusRight }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
@@ -1007,6 +1025,7 @@ fun ChannelPickTile(
                 )
                 drawRect(brush = grad)
             }
+            .tvFocusGlow(focused = focused, shape = shape)
     ) {
         androidx.compose.foundation.layout.Row(
             modifier = Modifier

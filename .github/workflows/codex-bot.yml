@@ -1,0 +1,65 @@
+name: Codex Bot (fishit-player)
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      comment:
+        description: "Optional: /codex Befehl manuell auslösen"
+        type: string
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  codex:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.comment.body, '/codex ')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+
+      - run: pip install "openai>=1.40.0" unidiff requests
+
+      - name: Run Codex Bot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GH_EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_COMMENT: ${{ inputs.comment }}
+          CODEX_ALLOWLIST: ${{ vars.CODEX_ALLOWLIST }}
+        run: python .github/codex/bot.py
+
+      - name: Build + Unit Tests
+        env:
+          HEADER: ${{ secrets.header }}
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+        run: ./gradlew -S --no-daemon assembleDebug testDebugUnitTest
