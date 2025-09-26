@@ -693,7 +693,8 @@ fun VodDetailScreen(
 
             // Thin progress pill across full width (minus 5% margins)
             if ((duration ?: 0) > 0 && (resumeSecs ?: 0) > 0) {
-                BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 6.dp))
+                {
                     val total = duration ?: 0
                     val prog = (resumeSecs ?: 0).toFloat() / total.toFloat()
                     val clamped = prog.coerceIn(0f, 1f)

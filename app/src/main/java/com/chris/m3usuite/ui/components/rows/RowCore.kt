@@ -75,6 +75,8 @@ fun MediaRowCore(
     val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
     val pendingScrollIndex = remember { mutableStateOf(-1) }
     val firstFocus = remember { FocusRequester() }
+    // Ensure the first item's FocusRequester is actually attached before arming enter
+    val firstAttached = remember { mutableStateOf(false) }
     val leadingOffset = if (leading != null) 1 else 0
     val initRequested = remember { mutableStateOf(false) }
     val enterEnabled = remember { mutableStateOf(false) }
@@ -100,18 +102,21 @@ fun MediaRowCore(
     }
 
     // Ensure the very first tile takes focus initially on TV once it's visible
-    LaunchedEffect(state, isTv) {
+    LaunchedEffect(state, isTv, firstAttached.value) {
         if (!isTv) return@LaunchedEffect
         snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
             .collect { indices ->
-                if (!initRequested.value && indices.contains(leadingOffset)) {
+                if (!initRequested.value && firstAttached.value && indices.contains(leadingOffset)) {
                     initRequested.value = true
-                    enterEnabled.value = true
+                    // request focus first
                     kotlinx.coroutines.delay(16)
                     runCatching {
                         com.chris.m3usuite.core.debug.GlobalDebug.logTree("focusReq:RowCore:first")
                         firstFocus.requestFocus()
                     }
+                    // then arm enter
+                    enterEnabled.value = true
+                    com.chris.m3usuite.core.debug.GlobalDebug.logTree("enter:Set:RowCore")
                 }
             }
     }
@@ -154,6 +159,9 @@ fun MediaRowCore(
                 }
             } else Modifier
             val itemMod = if (isTv && idx == 0) baseMod.focusRequester(firstFocus) else baseMod
+            if (isTv && idx == 0) {
+                androidx.compose.runtime.SideEffect { firstAttached.value = true }
+            }
             androidx.compose.foundation.layout.Box(itemMod) { itemContent(m) }
         }
     }
@@ -182,6 +190,8 @@ fun MediaRowCorePaged(
     val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
     val pendingScrollIndex = remember { mutableStateOf(-1) }
     val firstFocus = remember { FocusRequester() }
+    // Ensure the first item's FocusRequester is attached before enabling custom enter
+    val firstAttached = remember { mutableStateOf(false) }
     val leadingOffset = if (leading != null) 1 else 0
     val initRequested = remember { mutableStateOf(false) }
     val skipFirstCenter = remember { mutableStateOf(true) }
@@ -206,18 +216,21 @@ fun MediaRowCorePaged(
     }
 
     // Ensure the very first tile takes focus initially on TV once it's visible
-    LaunchedEffect(state, isTv) {
+    LaunchedEffect(state, isTv, firstAttached.value) {
         if (!isTv) return@LaunchedEffect
         snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
             .collect { indices ->
-                if (!initRequested.value && indices.contains(leadingOffset)) {
+                if (!initRequested.value && firstAttached.value && indices.contains(leadingOffset)) {
                     initRequested.value = true
-                    enterEnabled.value = true
+                    // request focus first
                     kotlinx.coroutines.delay(16)
                     runCatching {
                         com.chris.m3usuite.core.debug.GlobalDebug.logTree("focusReq:RowCorePaged:first")
                         firstFocus.requestFocus()
                     }
+                    // then arm enter
+                    enterEnabled.value = true
+                    com.chris.m3usuite.core.debug.GlobalDebug.logTree("enter:Set:RowCorePaged")
                 }
             }
     }
@@ -268,6 +281,9 @@ fun MediaRowCorePaged(
                 }
             } else Modifier
             val itemMod = if (isTv && index == 0) baseMod.focusRequester(firstFocus) else baseMod
+            if (isTv && index == 0) {
+                androidx.compose.runtime.SideEffect { firstAttached.value = true }
+            }
             androidx.compose.foundation.layout.Box(itemMod) { itemContent(index, mi) }
         }
 

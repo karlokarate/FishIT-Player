@@ -759,7 +759,7 @@ fun SeriesTileCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
-        // Debug: log focused tile + OBX title in parentheses
+        // Debug: log focused tile + OBX title in parentheses + tree path
         LaunchedEffect(focused, item.streamId) {
             if (focused) {
                 val sid = item.streamId
@@ -774,6 +774,7 @@ fun SeriesTileCard(
                         }.getOrNull()
                     }
                     com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus("series", sid.toString(), item.name, obxTitle)
+                    com.chris.m3usuite.core.debug.GlobalDebug.logTree("row:series", "tile:$sid")
                 }
             }
         }
@@ -958,6 +959,25 @@ fun VodTileCard(
         shape = shape
     ) {
         Column(Modifier.fillMaxWidth()) {
+            // Debug: log focused tile + OBX title in parentheses + tree path (was missing for VOD)
+            LaunchedEffect(focused, item.streamId) {
+                if (focused) {
+                    val sid = item.streamId
+                    if (sid != null) {
+                        val ctxLocal = ctx
+                        val obxTitle = withContext(Dispatchers.IO) {
+                            runCatching {
+                                val store = com.chris.m3usuite.data.obx.ObxStore.get(ctxLocal)
+                                store.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
+                                    .query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(sid))
+                                    .build().findFirst()?.name
+                            }.getOrNull()
+                        }
+                        com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus("vod", sid.toString(), item.name, obxTitle)
+                        com.chris.m3usuite.core.debug.GlobalDebug.logTree("row:vod", "tile:$sid")
+                    }
+                }
+            }
             run {
                 var loaded by remember(item.id) { mutableStateOf(false) }
                 Box(
@@ -1184,6 +1204,8 @@ fun ReorderableLiveRow(
     // Center-on-focus helpers for TV (leading add tile occupies index 0)
     val pendingScrollIndex = remember { mutableStateOf(-1) }
     val firstFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    // Track when the focusRequester is actually attached to a composed child
+    val firstAttached = remember { mutableStateOf(false) }
     val skipFirstCenter = remember { mutableStateOf(true) }
     val enterEnabled = remember { mutableStateOf(false) }
     val hasContent = remember(order) { order.isNotEmpty() }
@@ -1204,19 +1226,17 @@ fun ReorderableLiveRow(
         }
     }
     // Activate enter once the leading (index 0) or first content (index 1) becomes visible
-    LaunchedEffect(state, isTv, hasContent) {
+    LaunchedEffect(state, isTv, hasContent, firstAttached.value) {
         if (!isTv) return@LaunchedEffect
-        kotlinx.coroutines.flow.flow {
-            emit(Unit)
-        }
         androidx.compose.runtime.snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
             .collect { indices ->
                 val targetIndex = if (hasContent) 1 else 0
-                if (!enterEnabled.value && indices.contains(targetIndex)) {
-                    enterEnabled.value = true
+                if (!enterEnabled.value && firstAttached.value && indices.contains(targetIndex)) {
                     // Defer one frame to ensure focusRequester is attached
                     kotlinx.coroutines.delay(16)
                     runCatching { firstFocus.requestFocus() }
+                    enterEnabled.value = true
+                    com.chris.m3usuite.core.debug.GlobalDebug.logTree("enter:Set:HomeRows")
                 }
             }
     }
@@ -1237,7 +1257,12 @@ fun ReorderableLiveRow(
         item("leading") {
             // If there are no content items, attach firstFocus to the leading tile to satisfy enter
             val leadingMod = if (isTv && !hasContent) Modifier.focusRequester(firstFocus) else Modifier
-            Box(leadingMod) { LiveAddTile(onClick = onAdd) }
+            Box(leadingMod) {
+                if (isTv && !hasContent) {
+                    androidx.compose.runtime.SideEffect { firstAttached.value = true }
+                }
+                LiveAddTile(onClick = onAdd)
+            }
         }
         itemsIndexed(order, key = { idx, it -> it }) { idx, id ->
             val mi = items.find { it.id == id } ?: return@itemsIndexed
@@ -1297,6 +1322,9 @@ fun ReorderableLiveRow(
                         )
                     }
             ) {
+                if (isTv && idx == 0) {
+                    androidx.compose.runtime.SideEffect { firstAttached.value = true }
+                }
                 LiveTileCard(
                     item = mi,
                     onOpenDetails = { if (draggingId == null) onOpen(mi.id) },

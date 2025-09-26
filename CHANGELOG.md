@@ -1,4 +1,6 @@
 2025-09-25
+- fix(tv/focus-enter): guard custom enter focus with an explicit firstAttached flag in RowCore, RowCorePaged, and ReorderableLiveRow. Only enable `focusProperties { enter = { firstFocus } }` after the first item's FocusRequester is attached and visible. Prevents `IllegalStateException: FocusRequester is not initialized` on DPAD DOWN from header/home.
+- chore(debug/tile-focus): add missing tile-focus logs for VOD tiles (VodTileCard) and add tree-path logging for Series tiles. Now all tiles log `focus:<type> id=<id> <title>` plus a `tree:` hint when focused.
 - fix(build): resolve Kotlin error "This annotation is not repeatable" by merging duplicate `@file:OptIn` annotations in `app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt`.
 - fix(tv/rows): remove manual item-count gating in row engine (MediaRowCore). Rely on LazyRow virtualization so adjacent DPAD traversal always has a composed neighbor; eliminates “blind” scrolling.
 - fix(tv/live-tile): only intercept DPAD LEFT/RIGHT in LiveTileCard when reordering handlers are provided; otherwise let default focus traversal handle neighbors (prevents double-advance on KeyUp).
