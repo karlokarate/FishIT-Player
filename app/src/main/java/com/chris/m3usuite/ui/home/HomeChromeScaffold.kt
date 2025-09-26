@@ -44,6 +44,9 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -108,6 +111,15 @@ fun HomeChromeScaffold(
 
     val seedingInFlight by XtreamImportCoordinator.seederInFlight.collectAsStateWithLifecycle(initialValue = false)
 
+    // Focus manager to push focus back into content after collapsing chrome via BACK
+    val focusManager: FocusManager = LocalFocusManager.current
+
+    fun focusContentFromChrome(direction: FocusDirection) {
+        // Try a few steps to escape chrome and land in content (middle row will accept focus via RowCore firstFocus)
+        repeat(4) { focusManager.moveFocus(direction) }
+        com.chris.m3usuite.core.debug.GlobalDebug.logTree("focusReq:Chrome:content")
+    }
+
     // App-Chrome-Höhen
     val topBarHeight: Dp = FishITHeaderHeights.total
     val bottomBarHeight: Dp = FishITBottomHeights.bar
@@ -158,19 +170,37 @@ fun HomeChromeScaffold(
                         true
                     }
                     Key.Escape, Key.Back -> {
-                        // Log BACK on both down/up; collapse when expanded
+                        // Treat ESC/BACK as chrome-collapse first on TV to avoid closing content/player
                         com.chris.m3usuite.core.debug.GlobalDebug.logDpad("BACK")
                         if (isDown) {
-                            if (tvChromeMode.value == ChromeMode.Expanded) { tvChromeMode.value = ChromeMode.Collapsed; true } else false
+                            if (tvChromeMode.value != ChromeMode.Collapsed) {
+                                tvChromeMode.value = ChromeMode.Collapsed
+                                // After collapsing, nudge focus back into the main content area
+                                runCatching {
+                                    val moved = focusManager.moveFocus(FocusDirection.Down)
+                                    if (!moved) focusManager.moveFocus(FocusDirection.Up)
+                                    com.chris.m3usuite.core.debug.GlobalDebug.logTree("focusReq:Chrome:content")
+                                }
+                                true
+                            } else false
                         } else false
                     }
                     Key.DirectionDown -> {
                         com.chris.m3usuite.core.debug.GlobalDebug.logDpad("DOWN")
-                        if (tvChromeMode.value == ChromeMode.Expanded) { pendingBottomFocus = true; true } else false
+                        if (tvChromeMode.value == ChromeMode.Expanded) {
+                            // Collapse chrome and push focus into content
+                            tvChromeMode.value = ChromeMode.Collapsed
+                            focusContentFromChrome(FocusDirection.Down)
+                            true
+                        } else false
                     }
                     Key.DirectionUp -> {
                         com.chris.m3usuite.core.debug.GlobalDebug.logDpad("UP")
-                        if (tvChromeMode.value == ChromeMode.Expanded) { pendingHeaderFocus = true; true } else false
+                        if (tvChromeMode.value == ChromeMode.Expanded) {
+                            tvChromeMode.value = ChromeMode.Collapsed
+                            focusContentFromChrome(FocusDirection.Up)
+                            true
+                        } else false
                     }
                     Key.DirectionLeft -> {
                         if (isDown) { leftPressStartMs.value = SystemClock.uptimeMillis(); false }

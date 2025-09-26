@@ -127,7 +127,7 @@ private fun PlayOverlay(visible: Boolean, sizeDp: Int = 56) {
                 icon = AppIcon.PlayCircle,
                 contentDescription = "Abspielen",
                 onClick = {},
-                modifier = Modifier.align(Alignment.Center).alpha(a),
+                modifier = Modifier.align(Alignment.Center).alpha(a).focusProperties { canFocus = false },
                 size = sizeDp.dp
             )
         }
@@ -170,6 +170,14 @@ fun MediaCard(
             .width(tileWidth)
             .padding(end = 12.dp)
             .focusable()
+            // Log left/right key ups for generic tiles to diagnose DPAD skipping
+            .onPreviewKeyEvent { ev ->
+                if (ev.type == KeyEventType.KeyUp && (ev.key == Key.DirectionLeft || ev.key == Key.DirectionRight)) {
+                    val dir = if (ev.key == Key.DirectionLeft) "LEFT" else "RIGHT"
+                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad(dir, mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                }
+                false
+            }
             .onPreviewKeyEvent { ev ->
                 val toggle = chromeToggle
                 if (toggle == null) return@onPreviewKeyEvent false
@@ -194,14 +202,24 @@ fun MediaCard(
                 false
             }
             .onFocusEvent { focused = it.isFocused || it.hasFocus }
-            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
+            .focusScaleOnTv(
+                focusedScale = 1.40f,
+                pressedScale = 1.40f,
+                focusColors = com.chris.m3usuite.ui.skin.TvFocusColors(
+                    focusFill = Color.White.copy(alpha = 0.28f),
+                    focusBorder = Color.White.copy(alpha = 0.92f),
+                    pressedFill = Color.White.copy(alpha = 0.32f),
+                    pressedBorder = Color.White.copy(alpha = 1.0f)
+                ),
+                focusBorderWidth = 2.5.dp
+            )
             .tvClickable(
                 brightenContent = false,
                 autoBringIntoView = false,
                 scaleFocused = 1f,
-                scalePressed = 1.02f
+                scalePressed = 1f
             ) { onClick(item) }
-            .tvFocusGlow(focused = focused, shape = TILE_SHAPE)
+            .tvFocusGlow(focused = focused, shape = TILE_SHAPE, ringWidth = 5.dp)
     ) {
         // Debug: log focused tile + OBX title in parentheses + tree path
         LaunchedEffect(focused, item.streamId, item.type) {
@@ -419,14 +437,24 @@ fun LiveTileCard(
             )
             .then(navKeysMod)
             .onFocusEvent { focused = it.isFocused || it.hasFocus }
-            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
+            .focusScaleOnTv(
+                focusedScale = 1.40f,
+                pressedScale = 1.40f,
+                focusColors = com.chris.m3usuite.ui.skin.TvFocusColors(
+                    focusFill = Color.White.copy(alpha = 0.28f),
+                    focusBorder = Color.White.copy(alpha = 0.92f),
+                    pressedFill = Color.White.copy(alpha = 0.32f),
+                    pressedBorder = Color.White.copy(alpha = 1.0f)
+                ),
+                focusBorderWidth = 2.5.dp
+            )
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = 0.12f), 1f to Color.Transparent)
                 drawRect(brush = grad)
             }
-            .tvFocusGlow(focused = focused, shape = shape),
+            .tvFocusGlow(focused = focused, shape = shape, ringWidth = 5.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
@@ -636,8 +664,8 @@ fun LiveTileCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
-                    AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onOpenDetails(item) }, size = 24.dp)
+                    AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
+                    AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onOpenDetails(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
                 }
                 // Sendername im Rahmen mit dunklem BG (70% Opacity), weiße Schrift, bis 2 Zeilen
                 Box(
@@ -739,10 +767,20 @@ fun SeriesTileCard(
                 }
                 false
             }
-            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
+            .focusScaleOnTv(
+                focusedScale = 1.40f,
+                pressedScale = 1.40f,
+                focusColors = com.chris.m3usuite.ui.skin.TvFocusColors(
+                    focusFill = Color.White.copy(alpha = 0.28f),
+                    focusBorder = Color.White.copy(alpha = 0.92f),
+                    pressedFill = Color.White.copy(alpha = 0.32f),
+                    pressedBorder = Color.White.copy(alpha = 1.0f)
+                ),
+                focusBorderWidth = 2.5.dp
+            )
             .tvClickable(
                 scaleFocused = 1f,
-                scalePressed = 1.02f,
+                scalePressed = 1f,
                 elevationFocusedDp = 18f,
                 brightenContent = false,
                 autoBringIntoView = false
@@ -755,7 +793,7 @@ fun SeriesTileCard(
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
                 drawRect(brush = grad)
             }
-            .tvFocusGlow(focused = focused, shape = shape),
+            .tvFocusGlow(focused = focused, shape = shape, ringWidth = 5.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
@@ -871,9 +909,9 @@ fun SeriesTileCard(
                         Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 8.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
+                        AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
                         if (showAssign) {
-                            AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
+                            AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
                         }
                     }
                     // Overlay: NEW badge (top-left)
@@ -939,13 +977,23 @@ fun VodTileCard(
             .width(tileWidth)
             .padding(end = 6.dp)
             .focusable()
-            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
+            .focusScaleOnTv(
+                focusedScale = 1.40f,
+                pressedScale = 1.40f,
+                focusColors = com.chris.m3usuite.ui.skin.TvFocusColors(
+                    focusFill = Color.White.copy(alpha = 0.28f),
+                    focusBorder = Color.White.copy(alpha = 0.92f),
+                    pressedFill = Color.White.copy(alpha = 0.32f),
+                    pressedBorder = Color.White.copy(alpha = 1.0f)
+                ),
+                focusBorderWidth = 2.5.dp
+            )
             .tvClickable(
                 scaleFocused = 1f,
-                scalePressed = 1.02f,
+                scalePressed = 1f,
                 elevationFocusedDp = 18f,
                 brightenContent = false,
-                autoBringIntoView = false
+                autoBringIntoView = true
             ) { onOpenDetails(item) }
             .onFocusEvent { focused = it.isFocused || it.hasFocus }
             .border(1.dp, borderBrush, shape)
@@ -954,7 +1002,7 @@ fun VodTileCard(
                 val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
                 drawRect(brush = grad)
             }
-            .tvFocusGlow(focused = focused, shape = shape),
+            .tvFocusGlow(focused = focused, shape = shape, ringWidth = 5.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
@@ -1044,9 +1092,9 @@ fun VodTileCard(
                         Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 8.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp)
+                        AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
                         if (showAssign) {
-                            AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp)
+                            AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
                         }
                     }
                 }
@@ -1242,11 +1290,7 @@ fun ReorderableLiveRow(
     }
 
     // Enable focus enter only once a target (leading or first content) is visible
-    val rowModifier = if (isTv) {
-        var m: Modifier = Modifier.focusGroup().focusProperties { }
-        if (enterEnabled.value) m = m.focusProperties { enter = { firstFocus } }
-        m
-    } else Modifier
+    val rowModifier = if (isTv) Modifier.focusGroup() else Modifier
 
     LazyRow(
         modifier = rowModifier,

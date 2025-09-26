@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 
 
@@ -233,6 +234,7 @@ fun Modifier.tvClickable(
             if (autoBringIntoView && now && !focused) scope.launch { bring.bringIntoView() }
             focused = now
         }
+        .zIndex(if (focused || pressed) 2f else 0f)
         .graphicsLayer {
             // Respect any upstream scale (e.g., focusScaleOnTv) unless we actually need to scale here.
             if (scale != 1f) {
@@ -240,6 +242,7 @@ fun Modifier.tvClickable(
                 scaleY = scale
             }
             shadowElevation = if (focused) elevationFocusedDp.dp.toPx() else 0f
+            clip = false
         }
         .drawWithContent {
             drawWithTvFocus(focusDecoration, shape, borderWidthPx, brightenContent) { drawContent() }
@@ -310,7 +313,8 @@ fun Modifier.focusScaleOnTv(
 
     this
         .onFocusEvent { focused = it.isFocused || it.hasFocus }
-        .graphicsLayer { scaleX = scale; scaleY = scale }
+        .zIndex(if (focused || pressed) 2f else 0f)
+        .graphicsLayer { scaleX = scale; scaleY = scale; clip = false }
         .drawWithContent {
             drawWithTvFocus(focusDecoration, shape, focusBorderWidthPx, brightenContent) { drawContent() }
         }

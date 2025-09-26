@@ -17,6 +17,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.key
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.LoadState
@@ -25,9 +30,12 @@ import com.chris.m3usuite.model.hasArtwork
 import com.chris.m3usuite.ui.fx.ShimmerBox
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
+import com.chris.m3usuite.ui.tv.centerItemSafely
 
 /**
  * Zentrale Konfiguration der Row-Engine.
@@ -64,6 +72,7 @@ fun MediaRowCore(
     itemContent: @Composable (MediaItem) -> Unit
 ) {
     if (items.isEmpty()) return
+    val ctx = LocalContext.current
     val distinct = remember(items) { items.distinctBy { itemKey(it) } }
     val ordered = remember(distinct) {
         val (withArt, withoutArt) = distinct.partition { it.hasArtwork() }
@@ -74,6 +83,7 @@ fun MediaRowCore(
     val fling = rememberSnapFlingBehavior(state)
     val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
     val pendingScrollIndex = remember { mutableStateOf(-1) }
+    val latestFocusIdx = remember { mutableStateOf<Int?>(null) }
     val firstFocus = remember { FocusRequester() }
     // Ensure the first item's FocusRequester is actually attached before arming enter
     val firstAttached = remember { mutableStateOf(false) }
@@ -82,16 +92,7 @@ fun MediaRowCore(
     val enterEnabled = remember { mutableStateOf(false) }
     val skipFirstCenter = remember { mutableStateOf(true) }
 
-    suspend fun centerOnIndex(absIndex: Int) {
-        // Ensure item is visible at least once
-        state.animateScrollToItem(absIndex)
-        val info = state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == absIndex } ?: return
-        val viewportStart = state.layoutInfo.viewportStartOffset
-        val viewportEnd = state.layoutInfo.viewportEndOffset
-        val viewportSize = viewportEnd - viewportStart
-        val desiredOffset = ((viewportSize - info.size) / 2f).toInt().coerceAtLeast(0)
-        state.animateScrollToItem(absIndex, desiredOffset)
-    }
+    suspend fun centerOnIndex(absIndex: Int) { state.centerItemSafely(absIndex) }
 
     LaunchedEffect(pendingScrollIndex.value) {
         val target = pendingScrollIndex.value
@@ -121,6 +122,23 @@ fun MediaRowCore(
             }
     }
 
+    // Debug: log scroll start/stop to correlate with DPAD and centering; flush last focus request on stop
+    LaunchedEffect(state) {
+        snapshotFlow { state.isScrollInProgress }
+            .distinctUntilChanged()
+            .collect { moving ->
+                runCatching {
+                    com.chris.m3usuite.core.debug.GlobalDebug.logTree(if (moving) "row:scroll:start" else "row:scroll:stop")
+                }
+                if (!moving) {
+                    latestFocusIdx.value?.let { idx ->
+                        latestFocusIdx.value = null
+                        pendingScrollIndex.value = idx
+                    }
+                }
+            }
+    }
+
     // Rely on LazyRow virtualization; do not gate item count manually to keep DPAD traversal predictable.
 
     // Sichtbare Keys → Prefetch, zentral gedrosselt
@@ -132,14 +150,19 @@ fun MediaRowCore(
             .collect { keys -> if (keys.isNotEmpty()) onPrefetchKeys(keys) }
     }
 
-    val listModifier = if (isTv) {
-        var m: Modifier = Modifier.focusGroup().focusProperties { }
-        if (enterEnabled.value) m = m.focusProperties { enter = { firstFocus } }
-        m
-    } else Modifier
+    val listModifier = if (isTv) Modifier.focusGroup() else Modifier
 
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     LazyRow(
-        modifier = listModifier,
+        modifier = listModifier.onPreviewKeyEvent { ev ->
+            if (ev.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) {
+                when (ev.key) {
+                    androidx.compose.ui.input.key.Key.DirectionUp -> { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Up); true }
+                    androidx.compose.ui.input.key.Key.DirectionDown -> { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down); true }
+                    else -> false
+                }
+            } else false
+        },
         state = state,
         flingBehavior = fling,
         contentPadding = config.contentPadding
@@ -148,19 +171,52 @@ fun MediaRowCore(
         itemsIndexed(ordered, key = { _, it -> itemKey(it) }) { idx, m ->
             // Observe descendant focus and center that item. Index in LazyRow accounts for optional leading.
             val absIdx = idx + leadingOffset
+            var focused by remember { mutableStateOf(false) }
             val baseMod = if (isTv) Modifier.onFocusEvent { st ->
+                focused = st.isFocused || st.hasFocus
                 if (st.hasFocus) {
                     if (skipFirstCenter.value && absIdx == leadingOffset) {
                         // First focus on left-most tile: don't center yet
                         skipFirstCenter.value = false
                     } else {
-                        pendingScrollIndex.value = absIdx
+                        if (state.isScrollInProgress) latestFocusIdx.value = absIdx else pendingScrollIndex.value = absIdx
                     }
+                    runCatching { com.chris.m3usuite.core.debug.GlobalDebug.logTree("row:focusIdx", "idx:$absIdx") }
                 }
             } else Modifier
             val itemMod = if (isTv && idx == 0) baseMod.focusRequester(firstFocus) else baseMod
             if (isTv && idx == 0) {
                 androidx.compose.runtime.SideEffect { firstAttached.value = true }
+            }
+            // When a tile gains focus, emit a concise GlobalDebug focus log with OBX title (if available)
+            if (isTv) {
+                LaunchedEffect(focused, m.streamId, m.type, absIdx) {
+                    if (focused) {
+                        val sid = m.streamId
+                        if (sid != null) {
+                            val obxTitle = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                runCatching {
+                                    val store = com.chris.m3usuite.data.obx.ObxStore.get(ctx)
+                                    when (m.type) {
+                                        "live" -> store.boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
+                                            .query(com.chris.m3usuite.data.obx.ObxLive_.streamId.equal(sid))
+                                            .build().findFirst()?.name
+                                        "vod" -> store.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
+                                            .query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(sid))
+                                            .build().findFirst()?.name
+                                        "series" -> store.boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
+                                            .query(com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(sid))
+                                            .build().findFirst()?.name
+                                        else -> null
+                                    }
+                                }.getOrNull()
+                            }
+                            com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus(m.type, sid.toString(), m.name, obxTitle)
+                            val node = when (m.type) { "live" -> "row:live"; "vod" -> "row:vod"; "series" -> "row:series"; else -> "row:?" }
+                            com.chris.m3usuite.core.debug.GlobalDebug.logTree(node, "tile:$sid")
+                        }
+                    }
+                }
             }
             androidx.compose.foundation.layout.Box(itemMod) { itemContent(m) }
         }
@@ -184,11 +240,13 @@ fun MediaRowCorePaged(
     itemKey: (index: Int) -> Long = { idx -> items[idx]?.id ?: idx.toLong() },
     itemContent: @Composable (index: Int, MediaItem) -> Unit
 ) {
+    val ctx = LocalContext.current
     val state: LazyListState =
         config.stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
     val fling = rememberSnapFlingBehavior(state)
     val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
     val pendingScrollIndex = remember { mutableStateOf(-1) }
+    val latestFocusIdx = remember { mutableStateOf<Int?>(null) }
     val firstFocus = remember { FocusRequester() }
     // Ensure the first item's FocusRequester is attached before enabling custom enter
     val firstAttached = remember { mutableStateOf(false) }
@@ -197,15 +255,7 @@ fun MediaRowCorePaged(
     val skipFirstCenter = remember { mutableStateOf(true) }
     val enterEnabled = remember { mutableStateOf(false) }
 
-    suspend fun centerOnIndex(absIndex: Int) {
-        state.animateScrollToItem(absIndex)
-        val info = state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == absIndex } ?: return
-        val viewportStart = state.layoutInfo.viewportStartOffset
-        val viewportEnd = state.layoutInfo.viewportEndOffset
-        val viewportSize = viewportEnd - viewportStart
-        val desiredOffset = ((viewportSize - info.size) / 2f).toInt().coerceAtLeast(0)
-        state.animateScrollToItem(absIndex, desiredOffset)
-    }
+    suspend fun centerOnIndex(absIndex: Int) { state.centerItemSafely(absIndex) }
 
     LaunchedEffect(pendingScrollIndex.value) {
         val target = pendingScrollIndex.value
@@ -235,6 +285,23 @@ fun MediaRowCorePaged(
             }
     }
 
+    // Debug: log scroll start/stop (paged rows)
+    LaunchedEffect(state) {
+        snapshotFlow { state.isScrollInProgress }
+            .distinctUntilChanged()
+            .collect { moving ->
+                runCatching {
+                    com.chris.m3usuite.core.debug.GlobalDebug.logTree(if (moving) "row:scroll:start" else "row:scroll:stop")
+                }
+                if (!moving) {
+                    latestFocusIdx.value?.let { idx ->
+                        latestFocusIdx.value = null
+                        pendingScrollIndex.value = idx
+                    }
+                }
+            }
+    }
+
     // Sichtbare Indizes → Prefetch, zentral gedrosselt
     LaunchedEffect(state, items, onPrefetchPaged, config.debounceVisibleMs) {
         if (onPrefetchPaged == null) return@LaunchedEffect
@@ -246,14 +313,19 @@ fun MediaRowCorePaged(
             }
     }
 
-    val pagedModifier = if (isTv) {
-        var m: Modifier = Modifier.focusGroup().focusProperties { }
-        if (enterEnabled.value) m = m.focusProperties { enter = { firstFocus } }
-        m
-    } else Modifier
+    val pagedModifier = if (isTv) Modifier.focusGroup() else Modifier
 
+    val focusManager2 = androidx.compose.ui.platform.LocalFocusManager.current
     LazyRow(
-        modifier = pagedModifier,
+        modifier = pagedModifier.onPreviewKeyEvent { ev ->
+            if (ev.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) {
+                when (ev.key) {
+                    androidx.compose.ui.input.key.Key.DirectionUp -> { focusManager2.moveFocus(androidx.compose.ui.focus.FocusDirection.Up); true }
+                    androidx.compose.ui.input.key.Key.DirectionDown -> { focusManager2.moveFocus(androidx.compose.ui.focus.FocusDirection.Down); true }
+                    else -> false
+                }
+            } else false
+        },
         state = state,
         flingBehavior = fling,
         contentPadding = config.contentPadding
@@ -271,18 +343,51 @@ fun MediaRowCorePaged(
             val mi = items[index] ?: return@items
             val absIdx = index + leadingOffset
             // Observe descendant focus only; avoid adding extra focus targets.
+            var focused by remember { mutableStateOf(false) }
             val baseMod = if (isTv) Modifier.onFocusEvent { st ->
+                focused = st.isFocused || st.hasFocus
                 if (st.hasFocus) {
                     if (skipFirstCenter.value && absIdx == leadingOffset) {
                         skipFirstCenter.value = false
                     } else {
-                        pendingScrollIndex.value = absIdx
+                        if (state.isScrollInProgress) latestFocusIdx.value = absIdx else pendingScrollIndex.value = absIdx
                     }
+                    runCatching { com.chris.m3usuite.core.debug.GlobalDebug.logTree("row:focusIdx", "idx:$absIdx") }
                 }
             } else Modifier
             val itemMod = if (isTv && index == 0) baseMod.focusRequester(firstFocus) else baseMod
             if (isTv && index == 0) {
                 androidx.compose.runtime.SideEffect { firstAttached.value = true }
+            }
+            // Focus log for paged rows as well
+            if (isTv) {
+                LaunchedEffect(focused, mi.streamId, mi.type, absIdx) {
+                    if (focused) {
+                        val sid = mi.streamId
+                        if (sid != null) {
+                            val obxTitle = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                runCatching {
+                                    val store = com.chris.m3usuite.data.obx.ObxStore.get(ctx)
+                                    when (mi.type) {
+                                        "live" -> store.boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
+                                            .query(com.chris.m3usuite.data.obx.ObxLive_.streamId.equal(sid))
+                                            .build().findFirst()?.name
+                                        "vod" -> store.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
+                                            .query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(sid))
+                                            .build().findFirst()?.name
+                                        "series" -> store.boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
+                                            .query(com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(sid))
+                                            .build().findFirst()?.name
+                                        else -> null
+                                    }
+                                }.getOrNull()
+                            }
+                            com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus(mi.type, sid.toString(), mi.name, obxTitle)
+                            val node = when (mi.type) { "live" -> "row:live"; "vod" -> "row:vod"; "series" -> "row:series"; else -> "row:?" }
+                            com.chris.m3usuite.core.debug.GlobalDebug.logTree(node, "tile:$sid")
+                        }
+                    }
+                }
             }
             androidx.compose.foundation.layout.Box(itemMod) { itemContent(index, mi) }
         }

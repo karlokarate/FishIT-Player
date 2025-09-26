@@ -29,6 +29,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
 import com.chris.m3usuite.player.ExternalPlayer
 import com.chris.m3usuite.data.obx.ObxStore
@@ -352,8 +353,18 @@ private fun ResumeCard(
             .then(modifier)
             .focusable()
             .onFocusEvent { focused = it.isFocused || it.hasFocus }
-            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
-            .tvFocusGlow(focused = focused, shape = shape)
+            .focusScaleOnTv(
+                focusedScale = 1.40f,
+                pressedScale = 1.40f,
+                focusColors = com.chris.m3usuite.ui.skin.TvFocusColors(
+                    focusFill = Color.White.copy(alpha = 0.28f),
+                    focusBorder = Color.White.copy(alpha = 0.92f),
+                    pressedFill = Color.White.copy(alpha = 0.32f),
+                    pressedBorder = Color.White.copy(alpha = 1.0f)
+                ),
+                focusBorderWidth = 2.5.dp
+            )
+            .tvFocusGlow(focused = focused, shape = shape, ringWidth = 5.dp)
             .width(200.dp)
             .height(140.dp)
             .combinedClickable(onClick = onPlay, onLongClick = {

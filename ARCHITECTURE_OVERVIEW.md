@@ -3,7 +3,7 @@
 Deep‑Dive Update: 2025‑09‑23
 - Build, networking, images and playback updated to reflect current code.
 - Lifecycle/Performance: `collectAsStateWithLifecycle` breit eingesetzt; JankStats in MainActivity aktiv.
-  - Global Debug: per Settings schaltbar (Reiter „Import & Diagnose“). Loggt Navigationsschritte (NavController‑Listener), DPAD‑Eingaben (UP/DOWN/LEFT/RIGHT/CENTER/BACK inkl. Player‑Tasten), Tile‑Focus (inkl. OBX‑Titel in Klammern) und OBX‑Key‑Updates (Backfill der sort/provider/genre/year Keys) unter Logcat‑Tag `GlobalDebug`.
+  - Global Debug: per Settings schaltbar (Reiter „Import & Diagnose“). Loggt Navigationsschritte (NavController‑Listener), DPAD‑Eingaben (UP/DOWN/LEFT/RIGHT/CENTER/BACK inkl. Player‑Tasten), Tile‑Focus (inkl. OBX‑Titel in Klammern) und OBX‑Key‑Updates (Backfill der sort/provider/genre/year Keys) unter Logcat‑Tag `GlobalDebug`. Die Kern‑Row‑Engines (MediaRowCore/Paged) emittieren Tile‑Focus für alle Kacheln.
 
 Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module, Flows und Verantwortlichkeiten der App. Es ist aus `AGENTS.md` abgeleitet und wird hier als zentrale Architektur‑Referenz gepflegt.
 
@@ -126,7 +126,7 @@ app/src/main/java/com/chris/m3usuite
 ├── ui/
 │   ├── auth/                               # ProfileGate (PIN, Profile wählen), CreateProfileSheet
 │   ├── components/                         # UI-Bausteine (Header, Carousels, Controls)
-│   ├── home/HomeChromeScaffold.kt          # Gemeinsamer Chrome (Header + Bottom) mit TV-Only Chrome-State (Visible/Collapsed/Expanded)
+│   ├── home/HomeChromeScaffold.kt          # Gemeinsamer Chrome (Header + Bottom) mit TV-Only Chrome-State (Visible/Collapsed/Expanded); ESC/BACK kollabiert Chrome zuerst (TV), bevor Back weitergereicht wird
 │   │   - TV: Header/Bottom anfangs sichtbar, auto-collapse bei Content-Scroll; Menu (Burger) toggelt Expanded (Fokus-Trap Header↔Bottom, Content geblurred). Long‑Press DPAD‑LEFT triggert dieselbe Burger‑Funktion (Expand/Collapse). Panels sliden animiert ein/aus; Content-Padding passt sich an.
 │   ├── home/StartScreen.kt                 # „Gate“-Home: Suche, Carousels, Live-Favoriten
 │   │   - Live-Favoriten-Picker nutzt Paging über `MediaQueryRepository.pagingSearchFilteredFlow("live", …)`; Suchtreffer entsprechen der Library-Suche.

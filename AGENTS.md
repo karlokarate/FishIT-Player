@@ -181,6 +181,11 @@ For the complete module-by-module guide, see `ARCHITECTURE_OVERVIEW.md`.
 ---
 
 Recent
+- TV chrome BACK: On TV, ESC/BACK first collapses HomeChrome (from Expanded or Visible) and consumes the event. This prevents closing the player or leaving the screen when the chrome is showing; pressing BACK twice still exits as expected.
+- Tile focus logging: Core row engines (MediaRowCore/MediaRowCorePaged) now emit detailed `focus:<type> id=<id> <ui title> (<OBX title>)` logs on focus, plus a `tree:` hint. Makes it visible in logcat which concrete tile currently has focus across Start/Library/Details rows.
+- TV rows centering: Single-step centering when the target tile is already visible (RowCore, RowCorePaged, TvFocusRow), eliminating left→right jitter. While the row is scrolling, focus requests are debounced; the last requested index is applied once scrolling stops. Prevents skipped tiles on fast DPAD.
+- TV rows scroll helper: Introduced `ui/tv/TvRowScroll.kt` and refactored RowCore and TvFocusRow to use one centering implementation. Row tiles no longer invoke per-tile auto bring-into-view, avoiding conflicting scrolls. DPAD LEFT/RIGHT now navigates reliably; focused tiles are always visible.
+- Stronger tile focus: VOD/Series/Live row tiles and Resume carousel use a +40% focused scale and a thicker focus halo for clear visual focus until navigation moves on.
 - Navigation state: Top‑level route switches (`library?q=…` ⇄ `browse`) now use Navigation‑Compose state saving (`restoreState=true`, `popUpTo(findStartDestination()){ saveState=true }`). Combined with route‑scoped `rememberRouteListState(...)`, Start/Library lists restore scroll/focus positions reliably.
 - Use `NavHostController.navigateTopLevel(route)` for top-level switches. It wraps `popUpTo(start){ saveState=true }`, `launchSingleTop=true`, and `restoreState=true` to preserve state across Home/Library/Search hops. Return from detail via `popBackStack()` only.
 - Inputs/state: Prefer `rememberSaveable` for screen-visible input state (queries, text fields, toggles) and `rememberRouteListState(...)`/`rememberSaveableStateHolder()` for lists/expandables. Keys must be stable (e.g., item.id or route). Avoid saving heavy/ephemeral player state.
