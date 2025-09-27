@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -51,7 +52,7 @@ fun CollapsibleHeader(
         Row(verticalAlignment = Alignment.CenterVertically) {
             title()
             Spacer(Modifier.weight(1f))
-            IconButton(onClick = {
+            IconButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                 collapsed = !collapsed
                 scope.launch { store.setHeaderCollapsed(collapsed) }
             }) {

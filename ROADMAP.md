@@ -16,6 +16,8 @@ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
 - Kein `onPreviewKeyEvent` (außer echte Sonderfälle).
 - Audit‑Skript erzwingt die Regeln (`tools/audit_tv_focus.sh`).
 
+Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
+
 - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
 - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
 - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).

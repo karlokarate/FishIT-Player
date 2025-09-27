@@ -1271,6 +1271,7 @@ fun ReorderableLiveRow(
             val trans by animateFloatAsState(dragTranslationX, label = "drag")
             val padStart = if (targetKey == id && !insertAfter) 10.dp else 0.dp
             val padEnd = if (targetKey == id && insertAfter) 10.dp else 0.dp
+            val setRow = com.chris.m3usuite.ui.home.LocalChromeRowFocusSetter.current
             Box(
                 Modifier
                     .padding(start = padStart, end = padEnd)
@@ -1279,6 +1280,7 @@ fun ReorderableLiveRow(
                         if (isTv)
                             Modifier.onFocusEvent { st ->
                                 if (st.hasFocus) {
+                                    stateKey?.let { key -> setRow(key) }
                                     val absIdx = idx + 1 // account for leading tile
                                     if (skipFirstCenter.value && absIdx == 1) {
                                         skipFirstCenter.value = false

@@ -431,13 +431,13 @@ fun StartScreen(
                         )
                     },
                     confirmButton = {
-                        androidx.compose.material3.TextButton(onClick = {
+                        androidx.compose.material3.TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                             vm.query.value = searchInput
                             showSearch = false
                         }) { androidx.compose.material3.Text("Suchen") }
                     },
                     dismissButton = {
-                        androidx.compose.material3.TextButton(onClick = { showSearch = false }) { androidx.compose.material3.Text("Abbrechen") }
+                        androidx.compose.material3.TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showSearch = false }) { androidx.compose.material3.Text("Abbrechen") }
                     }
                 )
             }
@@ -716,7 +716,7 @@ fun StartScreen(
                                         )
                                     }
                                     if (favLive.isNotEmpty()) {
-                                        androidx.compose.material3.TextButton(onClick = {
+                                        androidx.compose.material3.TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                                             scope.launch {
                                                 val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
                                                 com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive)

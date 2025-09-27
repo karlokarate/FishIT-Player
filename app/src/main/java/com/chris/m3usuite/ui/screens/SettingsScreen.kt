@@ -289,7 +289,7 @@ fun SettingsScreen(
             colors = tfColors
         )
         if (isTv && canChangeSources) {
-            TextButton(onClick = { showEditM3u = true }) { Text("Bearbeiten…") }
+            TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showEditM3u = true }) { Text("Bearbeiten…") }
         }
         OutlinedTextField(
             value = epgLocal,
@@ -304,7 +304,7 @@ fun SettingsScreen(
             colors = tfColors
         )
         if (isTv && canChangeSources) {
-            TextButton(onClick = { showEditEpg = true }) { Text("Bearbeiten…") }
+            TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showEditEpg = true }) { Text("Bearbeiten…") }
         }
         
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -328,7 +328,7 @@ fun SettingsScreen(
                     .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditUa = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
-            if (isTv) { TextButton(onClick = { showEditUa = true }) { Text("Bearbeiten…") } }
+            if (isTv) { TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showEditUa = true }) { Text("Bearbeiten…") } }
         }
         if (BuildConfig.SHOW_HEADER_UI) {
             OutlinedTextField(
@@ -342,7 +342,7 @@ fun SettingsScreen(
                     .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditRef = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
-            if (isTv) { TextButton(onClick = { showEditRef = true }) { Text("Bearbeiten…") } }
+            if (isTv) { TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showEditRef = true }) { Text("Bearbeiten…") } }
         }
         
         // Xtream (optional)
@@ -401,11 +401,12 @@ fun SettingsScreen(
         if (xtConfigured) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
+                    modifier = Modifier.focusScaleOnTv(),
                     onClick = { onOpenXtreamCfCheck?.invoke() },
                     enabled = m3uWorkersEnabled,
                     colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
                 ) { Text("Portal checken (WebView)") }
-                TextButton(onClick = { onOpenXtreamCfCheck?.invoke() }, enabled = m3uWorkersEnabled) { Text("Cloudflare lösen (WebView)") }
+                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { onOpenXtreamCfCheck?.invoke() }, enabled = m3uWorkersEnabled) { Text("Cloudflare lösen (WebView)") }
             }
         }
         
@@ -422,7 +423,7 @@ fun SettingsScreen(
                 colors = tfColors
             )
             val ctxLocal = LocalContext.current
-            TextButton(onClick = {
+            TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                 scope.launch {
                     val m3uNow = store.m3uUrl.first()
                     val cfg = com.chris.m3usuite.core.xtream.XtreamConfig.fromM3uUrl(m3uNow)
@@ -433,7 +434,7 @@ fun SettingsScreen(
                 }
             }) { Text("Aus M3U ableiten") }
         
-            TextButton(onClick = {
+            TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                 scope.launch {
                     val hostNow = store.xtHost.first(); val portNow = store.xtPort.first(); val userNow = store.xtUser.first(); val passNow = store.xtPass.first()
                     if (hostNow.isBlank() || userNow.isBlank() || passNow.isBlank()) { snackHost.toast("Xtream unvollständig."); return@launch }
@@ -457,7 +458,7 @@ fun SettingsScreen(
                 }
             }, enabled = m3uWorkersEnabled) { Text("Xtream testen") }
         
-            TextButton(onClick = {
+            TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                 scope.launch {
                     val hostNow = store.xtHost.first(); val portNow = store.xtPort.first(); val userNow = store.xtUser.first(); val passNow = store.xtPass.first()
                     if (hostNow.isBlank() || userNow.isBlank() || passNow.isBlank()) { snackHost.toast("Xtream unvollständig."); return@launch }
@@ -487,7 +488,7 @@ fun SettingsScreen(
                 }
             }, enabled = m3uWorkersEnabled) { Text("Capabilities") }
         
-            TextButton(onClick = {
+            TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                 scope.launch {
                     val tag = TAG_EPG_TEST
                     try {
@@ -550,6 +551,7 @@ fun SettingsScreen(
         // EPG test (Repo, mit XMLTV‑Fallback)
         val ctxRepo = LocalContext.current
         Button(
+            modifier = Modifier.focusScaleOnTv(),
             onClick = {
                 scope.launch {
                     val tag = TAG_EPG_TEST
@@ -743,12 +745,13 @@ fun SettingsScreen(
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(onClick = {
+                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                         val dir = java.io.File(ctx.filesDir, "http-logs")
                         runCatching { dir.listFiles()?.forEach { it.delete() }; dir.delete() }
                         scope.launch { snackHost.toast("HTTP-Logs gelöscht") }
                     }) { Text("HTTP-Logs löschen") }
                     Button(
+                        modifier = Modifier.focusScaleOnTv(),
                         onClick = {
                             scope.launch {
                                 val logsDir = java.io.File(ctx.filesDir, "http-logs")
@@ -1378,8 +1381,9 @@ fun SettingsScreen(
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val ctxLocal = LocalContext.current
-                    Button(
-                        onClick = {
+            Button(
+                modifier = Modifier.focusScaleOnTv(),
+                onClick = {
                             scope.launch {
                                 val dir = java.io.File(ctxLocal.cacheDir, "exports").apply { mkdirs() }
                                 val file = java.io.File(dir, "playlist.m3u")

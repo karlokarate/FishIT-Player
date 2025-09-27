@@ -831,6 +831,7 @@ fun SeriesDetailScreen(
 
                                                 // Aktion: Direktlink teilen (Xtream)
                                                 androidx.compose.material3.TextButton(
+                                                    modifier = Modifier.focusScaleOnTv(),
                                                     onClick = {
                                                         val link = e.buildPlayUrl(ctx)
                                                         if (link.isNullOrBlank()) {

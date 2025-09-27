@@ -1063,7 +1063,7 @@ fun LibraryScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             com.chris.m3usuite.ui.components.chips.CategoryChip(key = "adult", label = "FOR ADULTS")
-                            TextButton(onClick = { adultsExpanded = !adultsExpanded }) { Text(if (adultsExpanded) "Weniger" else "Mehr") }
+                            TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { adultsExpanded = !adultsExpanded }) { Text(if (adultsExpanded) "Weniger" else "Mehr") }
                         }
                     }
                     if (adultsExpanded) {

@@ -113,7 +113,7 @@ fun ProfileManagerScreen(
                 alpha = 0.06f
             )
             Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(onClick = onBack) { Text("Zurück") }
+                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = onBack) { Text("Zurück") }
                 OutlinedTextField(value = newKidName, onValueChange = { newKidName = it }, label = { Text("Neues Profil (Name)") })
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Typ:")
@@ -207,11 +207,11 @@ fun ProfileManagerScreen(
                                 }
                                 // Permissions editor (Admin)
                                 var showPerms by remember { mutableStateOf(false) }
-                                TextButton(onClick = { showPerms = true }) { Text("Berechtigungen") }
+                                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showPerms = true }) { Text("Berechtigungen") }
                                 if (showPerms) PermissionsSheet(profile = kid, onClose = { showPerms = false })
                                 // Whitelist management (categories + item exceptions)
                                 var showManage by remember { mutableStateOf(false) }
-                                TextButton(onClick = { showManage = true }) { Text("Freigaben verwalten") }
+                                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showManage = true }) { Text("Freigaben verwalten") }
                                 if (showManage) {
                                     ManageWhitelistSheet(kid.id, onClose = { showManage = false })
                                 }
@@ -247,7 +247,7 @@ fun ProfileManagerScreen(
                                             color = MaterialTheme.colorScheme.secondary,
                                             modifier = Modifier.weight(1f)
                                         )
-                                        TextButton(onClick = {
+                                        TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                                             scope.launch {
                                                 screenRepo.resetToday(kid.id)
                                                 usedToday = 0
@@ -258,7 +258,7 @@ fun ProfileManagerScreen(
                                 }
                                 // Typ wechseln (Kind ↔ Gast)
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    TextButton(onClick = {
+                                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                                         scope.launch(Dispatchers.IO) {
                                             val now = System.currentTimeMillis()
                                             val newType = if (kid.type == "guest") "kid" else "guest"
@@ -341,7 +341,7 @@ fun ProfileManagerScreen(
 
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                                     Text("Freigaben (${live.size + vod.size + series.size})", style = MaterialTheme.typography.titleMedium)
-                                    TextButton(onClick = { scope.launch { if (!expanded) loadWhitelist(); expanded = !expanded } }) { Text(if (expanded) "Schließen" else "Anzeigen") }
+                                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { scope.launch { if (!expanded) loadWhitelist(); expanded = !expanded } }) { Text(if (expanded) "Schließen" else "Anzeigen") }
                                 }
                                 if (expanded) {
                                     if (loading) {
@@ -352,7 +352,7 @@ fun ProfileManagerScreen(
                                             live.forEach { mi ->
                                                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                     Text(mi.name, modifier = Modifier.weight(1f))
-                                                    TextButton(onClick = { scope.launch { kidRepo.disallow(kid.id, "live", mi.id); loadWhitelist() } }) { Text("Entfernen") }
+                                                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { scope.launch { kidRepo.disallow(kid.id, "live", mi.id); loadWhitelist() } }) { Text("Entfernen") }
                                                 }
                                             }
                                         }
@@ -361,7 +361,7 @@ fun ProfileManagerScreen(
                                             vod.forEach { mi ->
                                                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                     Text(mi.name, modifier = Modifier.weight(1f))
-                                                    TextButton(onClick = { scope.launch { kidRepo.disallow(kid.id, "vod", mi.id); loadWhitelist() } }) { Text("Entfernen") }
+                                                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { scope.launch { kidRepo.disallow(kid.id, "vod", mi.id); loadWhitelist() } }) { Text("Entfernen") }
                                                 }
                                             }
                                         }
@@ -370,7 +370,7 @@ fun ProfileManagerScreen(
                                             series.forEach { mi ->
                                                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                     Text(mi.name, modifier = Modifier.weight(1f))
-                                                    TextButton(onClick = { scope.launch { kidRepo.disallow(kid.id, "series", mi.id); loadWhitelist() } }) { Text("Entfernen") }
+                                                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { scope.launch { kidRepo.disallow(kid.id, "series", mi.id); loadWhitelist() } }) { Text("Entfernen") }
                                                 }
                                             }
                                         }
@@ -440,7 +440,7 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
             }
             // Quick actions for current tab (after state init)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = {
+                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                     scope.launch(Dispatchers.IO) {
                         val obxRepo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, com.chris.m3usuite.prefs.SettingsStore(ctx))
                         val catsAll = obxRepo.categories(type)
@@ -453,7 +453,7 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                         withContext(Dispatchers.Main) { allowedCats = allowed }
                     }
                 }) { Text("Alle Kategorien erlauben") }
-                TextButton(onClick = {
+                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                     scope.launch(Dispatchers.IO) {
                         val catBox = obx.boxFor(ObxKidCategoryAllow::class.java)
                         catBox.remove(catBox.query(ObxKidCategoryAllow_.kidProfileId.equal(kidId).and(ObxKidCategoryAllow_.contentType.equal(type))).build().find())
@@ -534,7 +534,7 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                 }
                 item {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = onClose) { Text("Schließen") }
+                        TextButton(modifier = Modifier.focusScaleOnTv(), onClick = onClose) { Text("Schließen") }
                     }
                 }
             }
@@ -602,9 +602,9 @@ private fun PermissionsSheet(profile: ObxProfile, onClose: () -> Unit) {
 
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onClose) { Text("Abbrechen") }
+                    TextButton(modifier = Modifier.focusScaleOnTv(), onClick = onClose) { Text("Abbrechen") }
                     Spacer(Modifier.width(8.dp))
-                    Button(onClick = {
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                         scope.launch(Dispatchers.IO) {
                             val box = obx.boxFor(ObxProfilePermissions::class.java)
                             val existing = box.query(com.chris.m3usuite.data.obx.ObxProfilePermissions_.profileId.equal(profile.id)).build().findFirst()

@@ -22,6 +22,9 @@
 - refactor(tv/clickable): restliche Roh‑clickable in TV‑sichtbaren Zeilen umgestellt auf `tvClickable` (Player‑Listensheet Rows, Settings‑Edit‑Zeilen). Audit erweitert, um auch `clickable { ... }` (Trailing‑Lambda‑Form) zu erkennen.
 - feat(tv/chrome): `RowCore`/`RowCorePaged` melden nun den Row‑Fokus via `LocalChromeRowFocusSetter` (per `config.stateKey`), sodass der Header sauber einklappt, auch wenn die Row nicht `TvFocusRow` nutzt.
 
+- polish(tv/focus): alle TV‑sichtbaren Material‑Buttons (Button/TextButton/IconButton) mit `focusScaleOnTv()` versehen (Player‑Overlays, Start‑Dialoge, Settings‑Bearbeiten/Actions, Profile‑Manager, TrailerBox, CollapsibleHeader, Resume‑Karten‑Action‑Icons). Einheitliche visuelle Hervorhebung auf Fokus.
+  - audit: Erweiterung um Advisory‑Check für Buttons ohne `focusScaleOnTv` (informativ; CI schlägt nicht fehl). CI installiert `ripgrep`, um Audit stabil auszuführen.
+
 2025-09-25
 - fix(tv/focus-enter): guard custom enter focus with an explicit firstAttached flag in RowCore, RowCorePaged, and ReorderableLiveRow. Only enable `focusProperties { enter = { firstFocus } }` after the first item's FocusRequester is attached and visible. Prevents `IllegalStateException: FocusRequester is not initialized` on DPAD DOWN from header/home.
 - chore(debug/tile-focus): add missing tile-focus logs for VOD tiles (VodTileCard) and add tree-path logging for Series tiles. Now all tiles log `focus:<type> id=<id> <title>` plus a `tree:` hint when focused.

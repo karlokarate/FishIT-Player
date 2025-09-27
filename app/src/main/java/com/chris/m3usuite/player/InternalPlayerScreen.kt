@@ -1106,7 +1106,7 @@ fun InternalPlayerScreen(
                         }
                     }
                     Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { showLiveListSheet = false }) { Text("Schließen") }
+                        Button(modifier = Modifier.focusScaleOnTv(), onClick = { showLiveListSheet = false }) { Text("Schließen") }
                     }
                 }
             }
@@ -1300,7 +1300,7 @@ fun InternalPlayerScreen(
                         title = { Text("Limit erreicht") },
                         text = { Text("Das Screen-Time-Limit für heute ist aufgebraucht.") },
                         confirmButton = {
-                            TextButton(onClick = { finishAndRelease() }) { Text("OK") }
+                            TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { finishAndRelease() }) { Text("OK") }
                         }
                     )
         }
@@ -1314,7 +1314,7 @@ fun InternalPlayerScreen(
                             Spacer(Modifier.padding(4.dp))
                             audioOptions.forEach { opt ->
                                 val selected = selectedAudio == opt
-                                Button(onClick = {
+                                Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                                     selectedAudio = opt
                                     val builder = exoPlayer.trackSelectionParameters.buildUpon()
                                     builder.clearOverridesOfType(C.TRACK_TYPE_AUDIO)
@@ -1338,7 +1338,7 @@ fun InternalPlayerScreen(
                             // Track selection
                             subOptions.forEach { opt ->
                                 val selected = selectedSub == opt
-                                Button(onClick = {
+                                Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                                     selectedSub = opt
                                     val builder = exoPlayer.trackSelectionParameters.buildUpon()
                                     if (opt.groupIndex == null) {
@@ -1372,22 +1372,22 @@ fun InternalPlayerScreen(
                             // Quick presets
                             Text("Presets")
                             Row { 
-                                Button(onClick = { localScale = 0.05f }) { Text("Klein") }
+                                Button(modifier = Modifier.focusScaleOnTv(), onClick = { localScale = 0.05f }) { Text("Klein") }
                                 Spacer(Modifier.padding(4.dp))
-                                Button(onClick = { localScale = 0.06f }) { Text("Standard") }
+                                Button(modifier = Modifier.focusScaleOnTv(), onClick = { localScale = 0.06f }) { Text("Standard") }
                                 Spacer(Modifier.padding(4.dp))
-                                Button(onClick = { localScale = 0.08f }) { Text("Groß") }
+                                Button(modifier = Modifier.focusScaleOnTv(), onClick = { localScale = 0.08f }) { Text("Groß") }
                             }
                             Spacer(Modifier.padding(4.dp))
-                            Row { Button(onClick = { localFg = 0xFFFFFFFF.toInt(); localBg = 0x66000000 }) { Text("Hell auf dunkel") }; Spacer(Modifier.padding(4.dp)); Button(onClick = { localFg = 0xFF000000.toInt(); localBg = 0x66FFFFFF }) { Text("Dunkel auf hell") } }
+                            Row { Button(modifier = Modifier.focusScaleOnTv(), onClick = { localFg = 0xFFFFFFFF.toInt(); localBg = 0x66000000 }) { Text("Hell auf dunkel") }; Spacer(Modifier.padding(4.dp)); Button(modifier = Modifier.focusScaleOnTv(), onClick = { localFg = 0xFF000000.toInt(); localBg = 0x66FFFFFF }) { Text("Dunkel auf hell") } }
                             Spacer(Modifier.padding(4.dp))
-                            Row { Button(onClick = { localBg = 0x66000000 }) { Text("BG Schwarz") }; Spacer(Modifier.padding(4.dp)); Button(onClick = { localBg = 0x66FFFFFF }) { Text("BG Weiß") } }
+                            Row { Button(modifier = Modifier.focusScaleOnTv(), onClick = { localBg = 0x66000000 }) { Text("BG Schwarz") }; Spacer(Modifier.padding(4.dp)); Button(modifier = Modifier.focusScaleOnTv(), onClick = { localBg = 0x66FFFFFF }) { Text("BG Weiß") } }
 
                             Spacer(Modifier.padding(8.dp))
                             Row {
-                                Button(onClick = { showCcMenu = false }) { Text("Schließen") }
+                                Button(modifier = Modifier.focusScaleOnTv(), onClick = { showCcMenu = false }) { Text("Schließen") }
                                 Spacer(Modifier.padding(8.dp))
-                                Button(onClick = {
+                                Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                                     // Persist as default
                                     localScale?.let { scope.launch { store.setFloat(com.chris.m3usuite.prefs.Keys.SUB_SCALE, it) } }
                                     localFg?.let { scope.launch { store.setInt(com.chris.m3usuite.prefs.Keys.SUB_FG, it) } }
@@ -1406,9 +1406,9 @@ fun InternalPlayerScreen(
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Bildformat", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT; customScaleEnabled = false }) { Text("Original") }
-                            Button(onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM; customScaleEnabled = false }) { Text("Vollbild") }
-                            Button(onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL; customScaleEnabled = false }) { Text("Stretch") }
+                            Button(modifier = Modifier.focusScaleOnTv(), onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT; customScaleEnabled = false }) { Text("Original") }
+                            Button(modifier = Modifier.focusScaleOnTv(), onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM; customScaleEnabled = false }) { Text("Vollbild") }
+                            Button(modifier = Modifier.focusScaleOnTv(), onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL; customScaleEnabled = false }) { Text("Stretch") }
                         }
                         Spacer(Modifier.padding(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1424,11 +1424,11 @@ fun InternalPlayerScreen(
                             Text("Vertikal: ${String.format("%.2f", customScaleY)}x")
                             Slider(value = customScaleY, onValueChange = { customScaleY = it }, valueRange = 0.5f..2.0f, steps = 10)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = { customScaleX = 1f; customScaleY = 1f }) { Text("Reset") }
+                                Button(modifier = Modifier.focusScaleOnTv(), onClick = { customScaleX = 1f; customScaleY = 1f }) { Text("Reset") }
                             }
                         }
                         Row(Modifier.padding(top = 8.dp)) {
-                            Button(onClick = { showAspectMenu = false }) { Text("Schließen") }
+                            Button(modifier = Modifier.focusScaleOnTv(), onClick = { showAspectMenu = false }) { Text("Schließen") }
                         }
                     }
                 }

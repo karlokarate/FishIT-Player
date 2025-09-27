@@ -96,7 +96,7 @@ fun TrailerBox(
             } else {
                 SimpleVideoBox(url = url, headers = headers)
             }
-            IconButton(onClick = { expanded.value = true }, modifier = Modifier.align(Alignment.TopEnd)) {
+            IconButton(onClick = { expanded.value = true }, modifier = Modifier.align(Alignment.TopEnd).focusScaleOnTv()) {
                 val requested = AppIcon.PlayCircle.resId()
                 val resolved = if (requested != 0) {
                     requested

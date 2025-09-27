@@ -168,7 +168,7 @@ fun ResumeSectionAuto(
                 ) {
                     Text("Wie abspielen?", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
-                    Button(onClick = {
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                         val encoded = Uri.encode(chooserItem!!.url!!)
                         val start = chooserItem!!.positionSecs.toLong() * 1000L
                         val mime = PlayUrlHelper.guessMimeType(chooserItem!!.url, chooserItem!!.containerExt)
@@ -177,7 +177,7 @@ fun ResumeSectionAuto(
                         chooserItem = null
                     }) { Text("Intern") }
                     Spacer(Modifier.height(4.dp))
-                    Button(onClick = {
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                         scope.launch {
                             val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
                             ExternalPlayer.open(ctx, chooserItem!!.url!!, headers = headers)
@@ -201,7 +201,7 @@ fun ResumeSectionAuto(
                     val playUrl = ep.url
                     val mime = PlayUrlHelper.guessMimeType(playUrl, ep.containerExt)
                     val mimeArg = mime?.let { Uri.encode(it) } ?: ""
-                    Button(onClick = {
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                         if (playUrl != null) {
                             val encoded = Uri.encode(playUrl)
                             val epId = ep.episodeId?.takeIf { it > 0 } ?: -1
@@ -212,7 +212,7 @@ fun ResumeSectionAuto(
                         chooserEpisode = null
                     }, enabled = playUrl != null) { Text("Intern") }
                     Spacer(Modifier.height(4.dp))
-                    Button(onClick = {
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                         scope.launch {
                             if (playUrl != null && !playUrl.startsWith("tg://")) {
                                 val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeaders(store)
@@ -394,8 +394,8 @@ private fun ResumeCard(
             }
             // Tipp: Klick = Abspielen, Long-Press = Entfernen
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onPlay) { Icon(Icons.Filled.PlayArrow, contentDescription = "Abspielen") }
-                IconButton(onClick = onClear) { Icon(Icons.Filled.Clear, contentDescription = "Entfernen") }
+                IconButton(onClick = onPlay, modifier = Modifier.focusScaleOnTv()) { Icon(Icons.Filled.PlayArrow, contentDescription = "Abspielen") }
+                IconButton(onClick = onClear, modifier = Modifier.focusScaleOnTv()) { Icon(Icons.Filled.Clear, contentDescription = "Entfernen") }
             }
         }
     }
