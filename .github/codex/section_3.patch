@@ -1,0 +1,13 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 7c2c8cf..74a12ec 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,5 +1,8 @@
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
++- docs(agents): fix truncated sentence in Recent and correct short summary to ObjectBox (Room removed from flows).
++- chore(repo): add `.kotlin/.gitignore` to ignore local Kotlin daemon error logs that were accidentally committed earlier.
++
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
+ 
+ - feat(ui/state): finalisiere Fokus‑Gedächtnis. `ScrollStateRegistry` speichert jetzt `RowFocus(index)` pro Key inkl. `readRowFocus`/`writeRowFocus` und `rememberRowFocus(key)`. List/Grid‑Remember‑Funktionen nach `ui/state/RememberHelpers.kt` extrahiert; beide lesen/schreiben zentrale Registry.

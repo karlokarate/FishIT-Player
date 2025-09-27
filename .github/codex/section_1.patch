@@ -1,0 +1,8 @@
+diff --git a/.kotlin/.gitignore b/.kotlin/.gitignore
+new file mode 100644
+index 0000000..d5ba9a2
+--- /dev/null
++++ b/.kotlin/.gitignore
+@@ -0,0 +1,2 @@
++*
++!.gitignore
