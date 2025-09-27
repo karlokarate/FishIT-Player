@@ -20,6 +20,7 @@ Erwartete Umgebungsvariablen (werden im Workflow gesetzt):
 Slash-Command-Syntax (Beispiele):
 /codex -m gpt-5 --reason high Refactor X, füge Tests hinzu
 /codex --paths app/src,core/ui Fix Fokusnavigation in Staffeln
+/codex --verify Korrigiere Fehler und führe anschließend Unit-Tests aus
 """
 
 import json
@@ -134,22 +135,18 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
     """
     from openai import OpenAI
 
-    # Robust base_url-Handling: nur setzen, wenn NICHT leer und mit http(s) beginnt
+    # Robust base_url-Handling
     raw_base = os.environ.get("OPENAI_BASE_URL", "").strip()
     if raw_base and not raw_base.startswith(("http://", "https://")):
-        # Falls jemand nur "api.openai.com/v1" setzt → sicherstellen, dass ein Protokoll vorhanden ist
         raw_base = "https://" + raw_base
     if raw_base and not raw_base.endswith("/v1"):
-        # Die meisten Gateways erwarten /v1 – wenn nicht vorhanden, hinzufügen
         raw_base = raw_base.rstrip("/") + "/v1"
 
     if raw_base:
         client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=raw_base)
     else:
-        # Kein base_url explizit übergeben ⇒ SDK nutzt die offizielle Default-URL
         client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-    # Reasoning effort (high|medium|low); default high
     effort = os.environ.get("OPENAI_REASONING_EFFORT", "high").lower()
     if effort not in ("high", "medium", "low"):
         effort = "high"
@@ -167,7 +164,6 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
         )
         txt = getattr(resp, "output_text", None)
         if not txt:
-            # Attempt to navigate structure if SDK returns segments
             out = getattr(resp, "output", None)
             if out and len(out) and getattr(out[0], "content", None):
                 c0 = out[0].content
@@ -176,7 +172,6 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
         if txt:
             return txt.strip()
     except Exception as e:
-        # Fallback to Chat Completions
         try:
             cc = client.chat.completions.create(
                 model=model,
@@ -196,7 +191,6 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
 # ------------------------ Core Logic ------------------------
 
 def main():
-    # 1) Read & validate command
     comment = read_comment()
     if not comment:
         print("No comment body found.")
@@ -211,7 +205,7 @@ def main():
         comment_reply(f"⛔ Sorry @{actor}, du bist nicht berechtigt, den Codex-Bot auszuführen.")
         sys.exit(1)
 
-    # 2) Parse flags: -m/--model, --paths, --reason
+    # Flags
     m_model = re.search(r"(?:^|\s)(?:-m|--model)\s+([A-Za-z0-9._\-]+)", comment)
     model = m_model.group(1).strip() if m_model else (os.environ.get("OPENAI_MODEL_DEFAULT") or "gpt-5")
 
@@ -222,19 +216,22 @@ def main():
     m_paths = re.search(r"(?:^|\s)--paths\s+([^\n]+)", comment)
     path_filter = [p.strip() for p in (m_paths.group(1) if m_paths else "").split(",") if p.strip()]
 
-    # instruction = content after '/codex' minus flags
+    do_verify = bool(re.search(r"(?:^|\s)--verify\b", comment))
+
+    # Instruction bereinigen
     instruction = re.sub(r"^.*?/codex", "", comment, flags=re.S).strip()
     instruction = re.sub(r"(?:^|\s)(?:-m|--model)\s+[A-Za-z0-9._\-]+", "", instruction)
     instruction = re.sub(r"(?:^|\s)--reason\s+(?:high|medium|low)\b", "", instruction, flags=re.I)
-    instruction = re.sub(r"(?:^|\s)--paths\s+[^\n]+", "", instruction).strip()
+    instruction = re.sub(r"(?:^|\s)--paths\s+[^\n]+", "", instruction)
+    instruction = re.sub(r"(?:^|\s)--verify\b", "", instruction)
+    instruction = instruction.strip()
     if not instruction:
-        comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex -m gpt-5 --reason high Tests für PlayerService hinzufügen …`")
+        comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex -m gpt-5 --reason high --verify Tests für PlayerService hinzufügen …`")
         sys.exit(1)
 
-    # 3) Build lightweight repo context
+    # Repo context
     files = sh("git ls-files").splitlines()
     if path_filter:
-        # filter by simple globs (bash [[ pattern ]])
         keep = []
         for f in files:
             for g in path_filter:
@@ -248,7 +245,6 @@ def main():
                     pass
         files = keep
 
-    # prioritize code files
     code_ext = (".kt", ".kts", ".java", ".xml", ".gradle", ".gradle.kts", ".md",
                 ".yml", ".yaml", ".properties", ".pro", ".conf", ".sh")
     prio = [f for f in files if f.endswith(code_ext)]
@@ -269,7 +265,6 @@ def main():
     if len(context) > 220_000:
         context = context[:220_000]
 
-    # 4) Prepare prompts
     SYSTEM = (
         "You are an expert code-change generator for Android/Kotlin projects (Gradle, Jetpack Compose, "
         "Unit + Instrumented tests). Return ONLY one git-compatible unified diff (no explanations). "
@@ -290,14 +285,12 @@ Output requirements:
 - Do NOT include binary blobs; use code stubs/placeholders where needed.
 """
 
-    # 5) Call OpenAI
     try:
         patch_text = openai_generate_diff(model, SYSTEM, USER)
     except Exception as e:
         comment_reply(f"❌ OpenAI-Fehler:\n```\n{e}\n```")
         raise
 
-    # unwrap code fence if present
     m = re.search(r"```(?:diff)?\s*(.*?)```", patch_text, re.S)
     if m:
         patch_text = m.group(1).strip()
@@ -306,7 +299,6 @@ Output requirements:
         comment_reply(f"⚠️ Konnte keinen gültigen Diff erkennen. Antwort war:\n```\n{patch_text[:1400]}\n```")
         sys.exit(1)
 
-    # 6) Validate & apply patch on new branch
     try:
         PatchSet.from_string(patch_text)
     except Exception as e:
@@ -327,7 +319,6 @@ Output requirements:
         comment_reply(f"❌ Patch-Apply fehlgeschlagen:\n```\n{e}\n```")
         raise
 
-    # 7) Commit, push, open PR
     sh("git add -A")
     sh("git commit -m 'codex: apply requested changes'")
     sh("git push --set-upstream origin HEAD")
@@ -342,14 +333,25 @@ Output requirements:
         "body": f"Automatisch erstellt aus Kommentar von @{actor}:\n\n> {instruction}\n\nPatch generiert via OpenAI ({model})."
     })
 
-    # 8) Persist outputs for downstream steps
     with open(".github/codex/.last_branch", "w", encoding="utf-8") as f:
         f.write(branch)
     with open(".github/codex/.last_pr", "w", encoding="utf-8") as f:
         f.write(str(pr["number"]))
 
-    # 9) Confirm back
     comment_reply(f"✅ PR erstellt: #{pr['number']} — {pr['html_url']}\n\nBranch: `{branch}`")
+
+    # Optional verification step
+    if do_verify:
+        try:
+            out = sh("./gradlew -S --no-daemon testDebugUnitTest", check=False)
+            if out.strip():
+                snippet = out[-1800:]
+            else:
+                snippet = "(no output)"
+            comment_reply(f"🧪 Gradle Tests für `{branch}` ausgeführt:\n```\n{snippet}\n```")
+        except Exception as e:
+            comment_reply(f"❌ Gradle Testlauf fehlgeschlagen:\n```\n{e}\n```")
+
     print("done")
 
 
