@@ -3,7 +3,7 @@
 
 """
 Codex Bot: Erzeugt AI-Patches (Unified Diff), validiert gegen Repo-Tree,
-mapped fehlende Pfade intelligent, wendet Patch robust an (3-way/--reject),
+mapped fehlende Pfade intelligent, wendet Patch robust an (3-way / per-Sektion / --reject),
 pusht Branch, erstellt PR. Postet vorab einen kompakten Verzeichnisbaum
 und speichert die volle Dateiliste unter .github/codex/tree.txt.
 
@@ -271,9 +271,9 @@ def parse_patch_sections(patch_text: str):
         body = patch_text[start:end]
         oldp, newp = m.group(1), m.group(2)
         is_add = bool(re.search(r"(?m)^--- /dev/null\s*$", body))
-        is_del = bool(re.search(r"(?m)^\+\+\+ /dev/null\s*$", body))
+        is_del = bool(research := re.search(r"(?m)^\+\+\+ /dev/null\s*$", body))
         is_rename = bool(re.search(r"(?m)^rename (from|to) ", body) or re.search(r"(?m)^similarity index ", body))
-        sections.append({"old": oldp, "new": newp, "body": body, "is_add": is_add, "is_del": is_del, "is_rename": is_rename})
+        sections.append({"old": oldp, "new": newp, "body": body, "is_add": is_add, "is_del": bool(research), "is_rename": is_rename})
     return sections
 
 
@@ -331,6 +331,80 @@ def try_remap_patch(patch_text: str, repo_files):
     return "".join(new_sections), remapped, unresolved
 
 
+# ------------------------ Robust Section-wise Apply ------------------------
+
+def try_apply_sections(patch_file: str, original_text: str) -> None:
+    """Apply each diff section independently to avoid whole-patch failure on missing files."""
+    sections = parse_patch_sections(original_text)
+    if not sections:
+        # Fallback: try as single file
+        sh(f"git apply -p0 --whitespace=fix {shlex.quote(patch_file)}")
+        return
+
+    applied, rejected, skipped = [], [], []
+
+    for idx, sec in enumerate(sections, 1):
+        tmp = f".github/codex/section_{idx}.patch"
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(sec["body"])
+
+        # 1) 3-way check/apply
+        ok3 = subprocess.run(f"git apply --check -3 -p0 {shlex.quote(tmp)}",
+                             shell=True, text=True, capture_output=True)
+        if ok3.returncode == 0:
+            sh(f"git apply -3 -p0 --whitespace=fix {shlex.quote(tmp)}")
+            applied.append(sec["new"])
+            continue
+
+        # 2) normal check/apply
+        ok = subprocess.run(f"git apply --check -p0 {shlex.quote(tmp)}",
+                            shell=True, text=True, capture_output=True)
+        if ok.returncode == 0:
+            sh(f"git apply -p0 --whitespace=fix {shlex.quote(tmp)}")
+            applied.append(sec["new"])
+            continue
+
+        # 3) sanitize line endings & retry 3-way/normal
+        with open(tmp, "r", encoding="utf-8", errors="replace") as src:
+            data = src.read().replace("\r\n", "\n").replace("\r", "\n")
+        with open(tmp, "w", encoding="utf-8") as dst:
+            dst.write(data)
+
+        ok3b = subprocess.run(f"git apply --check -3 -p0 {shlex.quote(tmp)}",
+                              shell=True, text=True, capture_output=True)
+        if ok3b.returncode == 0:
+            sh(f"git apply -3 -p0 --whitespace=fix {shlex.quote(tmp)}")
+            applied.append(sec["new"])
+            continue
+
+        ok2 = subprocess.run(f"git apply --check -p0 {shlex.quote(tmp)}",
+                             shell=True, text=True, capture_output=True)
+        if ok2.returncode == 0:
+            sh(f"git apply -p0 --whitespace=fix {shlex.quote(tmp)}")
+            applied.append(sec["new"])
+            continue
+
+        # 4) Letzter Versuch: --reject (Sektion darf scheitern, sollte Run nicht beenden)
+        try:
+            sh(f"git apply -p0 --reject --whitespace=fix {shlex.quote(tmp)}")
+            rejected.append(sec["new"])
+        except Exception:
+            skipped.append(sec["new"])
+
+    # Status zurückmelden
+    if applied:
+        comment_reply("✅ Angewandte Sektionen:\n" + "\n".join(f"- {p}" for p in applied))
+    if rejected:
+        rej = sh("git ls-files -o --exclude-standard | grep -E '\\.rej$' || true", check=False)
+        comment_reply("⚠️ Mit .rej angewandte Sektionen:\n" + "\n".join(f"- {p}" for p in rejected) +
+                      ("\n\nErzeugte .rej Dateien:\n```\n" + rej[:1800] + "\n```" if rej.strip() else ""))
+    if skipped:
+        comment_reply("⏭️ Übersprungene Sektionen (Datei/Umfeld fehlt):\n" + "\n".join(f"- {p}" for p in skipped))
+
+    if not applied and not rejected:
+        raise RuntimeError("Kein Teil des Patches konnte angewendet werden.")
+
+
 # ------------------------ Core Logic ------------------------
 
 def main():
@@ -355,6 +429,7 @@ def main():
     request_tree_only = bool(re.search(r"nur\s+(repo-)?tree|nur\s+verzeichnisbaum", comment, re.I))
     do_verify = bool(re.search(r"(?:^|\s)--verify\b", comment))
 
+    # Instruction säubern
     instruction = re.sub(r"^.*?/codex", "", comment, flags=re.S).strip()
     for pat in [
         r"(?:^|\s)(?:-m|--model)\s+[A-Za-z0-9._\-]+",
@@ -435,7 +510,7 @@ Output requirements:
     except Exception as e:
         comment_reply(f"❌ OpenAI-Fehler:\n```\n{e}\n```"); raise
 
-    # ---------- Sanitize + Remap ----------
+    # ---------- Sanitize ----------
     patch_text = sanitize_patch_text(patch_text)
     if "diff --git " not in patch_text:
         comment_reply(f"⚠️ Kein gültiger Diff erkannt. Antwort war:\n```\n{patch_text[:1400]}\n```")
@@ -445,8 +520,10 @@ Output requirements:
     try:
         PatchSet.from_string(patch_text)
     except Exception as e:
-        comment_reply(f"ℹ️ Hinweis: Unidiff-Parser warnte: `{type(e).__name__}: {e}` – versuche den Patch trotzdem (3-way/--reject).")
+        comment_reply(f"ℹ️ Hinweis: Unidiff-Parser warnte: `{type(e).__name__}: {e}` – "
+                      f"versuche Patch trotzdem (3-way / per-Sektion / --reject).")
 
+    # ---------- Remap ----------
     remapped_patch, remaps, unresolved = try_remap_patch(patch_text, repo_files)
     if remaps:
         bullets = "\n".join([f"- `{src}` → `{dst}`" for src, dst in remaps])
@@ -455,51 +532,28 @@ Output requirements:
         bullets = "\n".join([f"- {p}" for p in unresolved])
         comment_reply("⚠️ Nicht zuordenbare Sektionen (ausgelassen):\n" + bullets)
 
+    # ---------- Patch-Datei ablegen ----------
     os.makedirs(".github/codex", exist_ok=True)
     with open(".github/codex/codex.patch", "w", encoding="utf-8") as f:
         f.write(remapped_patch)
 
-    # ---------- Branch, Apply (3-way/normal/reject), Commit, PR ----------
+    # ---------- Branch, Apply per Sektion, Commit, PR ----------
     branch = f"codex/{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{actor}"
     sh("git config user.name 'codex-bot'"); sh("git config user.email 'actions@users.noreply.github.com'")
     sh(f"git checkout -b {branch}"); sh("chmod +x ./gradlew", check=False)
 
-    def try_apply(patch_file: str):
-        # 1) 3-way versuchen
-        ok3 = subprocess.run(f"git apply --check -3 -p0 {shlex.quote(patch_file)}",
-                             shell=True, text=True, capture_output=True)
-        if ok3.returncode == 0:
-            sh(f"git apply -3 -p0 --whitespace=fix {shlex.quote(patch_file)}"); return
-        # 2) normal
-        ok = subprocess.run(f"git apply --check -p0 {shlex.quote(patch_file)}",
-                            shell=True, text=True, capture_output=True)
-        if ok.returncode == 0:
-            sh(f"git apply -p0 --whitespace=fix {shlex.quote(patch_file)}"); return
-        # 3) sanitize erneut und retry 3-way/normal
-        sanitized = ".github/codex/codex_sanitized.patch"
-        with open(patch_file, "r", encoding="utf-8", errors="replace") as src:
-            data = src.read().replace("\r\n", "\n").replace("\r", "\n")
-        with open(sanitized, "w", encoding="utf-8") as dst:
-            dst.write(data)
-        ok3b = subprocess.run(f"git apply --check -3 -p0 {shlex.quote(sanitized)}",
-                              shell=True, text=True, capture_output=True)
-        if ok3b.returncode == 0:
-            sh(f"git apply -3 -p0 --whitespace=fix {shlex.quote(sanitized)}"); return
-        ok2 = subprocess.run(f"git apply --check -p0 {shlex.quote(sanitized)}",
-                             shell=True, text=True, capture_output=True)
-        if ok2.returncode == 0:
-            sh(f"git apply -p0 --whitespace=fix {shlex.quote(sanitized)}"); return
-        # 4) Letzter Versuch: --reject
-        sh(f"git apply -p0 --reject --whitespace=fix {shlex.quote(sanitized)}")
-        rej = sh("git ls-files -o --exclude-standard | grep -E '\\.rej$' || true", check=False)
-        if rej.strip():
-            comment_reply("⚠️ Einige Hunks konnten nicht automatisch angewendet werden ('.rej' erstellt):\n```\n"
-                          + rej[:1800] + "\n```")
-
     try:
-        try_apply(".github/codex/codex.patch")
+        with open(".github/codex/codex.patch", "r", encoding="utf-8", errors="replace") as _pf:
+            whole_text = _pf.read()
+        try_apply_sections(".github/codex/codex.patch", whole_text)
     except Exception as e:
         comment_reply(f"❌ Patch-Apply fehlgeschlagen:\n```\n{e}\n```"); raise
+
+    # Nur committen, wenn Änderungen vorliegen
+    status = sh("git status --porcelain")
+    if not status.strip():
+        comment_reply("ℹ️ Keine Änderungen nach Patch-Anwendung gefunden (alle Sektionen übersprungen?).")
+        print("nothing to commit"); sys.exit(0)
 
     sh("git add -A"); sh("git commit -m 'codex: apply requested changes'"); sh("git push --set-upstream origin HEAD")
 
