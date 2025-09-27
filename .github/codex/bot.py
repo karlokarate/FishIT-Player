@@ -2,16 +2,18 @@
 # -*- coding: utf-8 -*-
 
 """
-Codex Bot: Erzeugt AI-Patches (Unified Diff), validiert gegen Repo-Tree,
-mapped fehlende Pfade intelligent, wendet Patch robust an (3-way / per-Sektion / --reject),
-pusht Branch, erstellt PR. Postet vorab einen kompakten Verzeichnisbaum
-und speichert die volle Dateiliste unter .github/codex/tree.txt.
+Codex Bot: Erzeugt AI-Patches (Unified Diff) unter Nutzung deiner Repo-Doku (AGENTS.md, ARCHITECTURE_OVERVIEW.md,
+ROADMAP.md, CHANGELOG.md …), baut relevanzbasierten Code-Kontext, wendet Patches ROBUST an (3-way / per Sektion / --reject),
+pusht Branch, erstellt PR, labelt optional und kann im SPEC-FIRST-ModUS erst eine Änderungs-Spezifikation liefern.
 
 Slash-Command-Beispiele:
-  /codex -m gpt-5 --reason high Refactor X, füge Tests hinzu
-  /codex --paths app/src,core/ui Fix Fokusnavigation in Staffeln
-  /codex --verify Korrigiere Fehler und führe anschließend Unit-Tests aus
-  /codex --paths . nur Repo-Tree posten, keinen Patch anwenden.
+  /codex -m gpt-5 --reason high Fix Fokusnavigation in Staffeln, schreibe UI-Tests
+  /codex --paths app/src,core/ui Refactor MediaSession State Machine
+  /codex --verify Erzeuge Unit-Tests für PlayerService (Errors/Buffering)
+  /codex --dry Nur Patch erzeugen und als Kommentar anhängen (kein Apply)
+  /codex --spec Schreibe erst eine Spezifikation (Design-Diff/Tasks), kein Code
+  /codex --apply Spezifikation ist freigegeben → jetzt Code-Diff erzeugen & anwenden
+  /codex --paths . Nur Repo-Tree posten (kein Patch)
 """
 
 import json
@@ -27,6 +29,23 @@ from datetime import datetime
 
 import requests
 from unidiff import PatchSet
+
+
+# ------------------------ Konfiguration ------------------------
+
+DOC_CANDIDATES = [
+    "AGENTS.md", "ARCHITECTURE_OVERVIEW.md", "ROADMAP.md", "CHANGELOG.md",
+    "CONTRIBUTING.md", "CODE_OF_CONDUCT.md"
+]
+
+# Prompt-Budgets (ca. chars; grob ~ 4 chars ≈ 1 Token)
+MAX_DOC_CHARS     = 24000
+MAX_CONTEXT_CHARS = 220000
+MAX_USER_CHARS    = 4000
+
+# Safeguards
+FORBIDDEN_PATHS = [".github/workflows/"]           # nur mit --allow-ci ändern
+MAX_PATCH_LINES = 3000                             # zu große Patches blocken, außer --force
 
 
 # ------------------------ Shell / Git / HTTP Utils ------------------------
@@ -162,6 +181,59 @@ def post_repo_tree_comment(compact_tree: str):
     )
 
 
+# ------------------------ Prompt-Budget & Doku ------------------------
+
+def trim_to_chars(s: str, limit: int) -> str:
+    if s is None:
+        return ""
+    if len(s) <= limit:
+        return s
+    return s[:limit]
+
+
+def load_docs(max_chars: int = MAX_DOC_CHARS) -> str:
+    blobs, remain = [], max_chars
+    for name in DOC_CANDIDATES:
+        if os.path.exists(name) and remain > 0:
+            try:
+                txt = Path(name).read_text(encoding="utf-8", errors="replace")
+                cut = txt[:min(len(txt), remain)]
+                blobs.append(f"\n--- {name} ---\n{cut}")
+                remain -= len(cut)
+            except Exception:
+                pass
+    return "".join(blobs)
+
+
+# ------------------------ Relevanzbasierter Code-Kontext ------------------------
+
+def top_relevant_files(instruction: str, all_files: list[str], k: int = 80):
+    """Einfache Keyword-Relevanz: Wörter aus Instruction in Pfad + Datei-Header."""
+    words = [w.lower() for w in re.findall(r"[A-Za-z_][A-Za-z0-9_]+", instruction) if len(w) >= 3]
+    if not words:
+        return all_files[:k]
+
+    scores = []
+    for f in all_files:
+        score = 0
+        path_l = f.lower()
+        for w in words:
+            if w in path_l:
+                score += 2
+        try:
+            head = sh(f"sed -n '1,140p' {shlex.quote(f)} | tr '\\t' ' '", check=False).lower()
+            for w in words:
+                if w in head:
+                    score += 1
+        except Exception:
+            pass
+        scores.append((score, f))
+
+    scores.sort(key=lambda x: x[0], reverse=True)
+    res = [f for s, f in scores if s > 0][:k]
+    return res or all_files[:k]
+
+
 # ------------------------ OpenAI ------------------------
 
 def _compute_base_url() -> str:
@@ -175,7 +247,8 @@ def _compute_base_url() -> str:
     return raw
 
 
-def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> str:
+def openai_generate(model: str, system_prompt: str, user_prompt: str, want_spec: bool = False) -> str:
+    """Responses API bevorzugt; Fallback Chat Completions. Kein temperature-Param (Reasoning-Modelle)."""
     from openai import OpenAI
 
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=_compute_base_url())
@@ -193,46 +266,32 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
                 last_err = e
                 msg = str(e)
                 if "429" in msg or "insufficient_quota" in msg or "Connection error" in msg:
-                    time.sleep(base_sleep * (2 ** i))
-                    continue
+                    time.sleep(base_sleep * (2 ** i)); continue
                 raise
         raise last_err
 
-    def _responses_call():
+    def _responses():
         resp = client.responses.create(
             model=model,
-            input=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            input=[{"role": "system", "content": system_prompt},
+                   {"role": "user",   "content": user_prompt}],
             reasoning={"effort": effort},
         )
-        txt = getattr(resp, "output_text", None)
-        if not txt:
-            out = getattr(resp, "output", None)
-            if out and len(out) and getattr(out[0], "content", None):
-                c0 = out[0].content
-                if c0 and len(c0) and hasattr(c0[0], "text"):
-                    txt = c0[0].text
-        if txt:
-            return txt.strip()
-        raise RuntimeError("OpenAI Responses returned no text.")
+        return getattr(resp, "output_text", "") or ""
 
-    def _chat_call():
+    def _chat():
         cc = client.chat.completions.create(
             model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            messages=[{"role": "system", "content": system_prompt},
+                      {"role": "user",   "content": user_prompt}],
         )
-        return cc.choices[0].message.content.strip()
+        return cc.choices[0].message.content or ""
 
     try:
-        return _try(_responses_call)
+        return _try(_responses)
     except Exception as e:
         try:
-            return _try(_chat_call)
+            return _try(_chat)
         except Exception as ee:
             raise RuntimeError(f"OpenAI call failed: {e}\nFallback also failed: {ee}")
 
@@ -271,9 +330,9 @@ def parse_patch_sections(patch_text: str):
         body = patch_text[start:end]
         oldp, newp = m.group(1), m.group(2)
         is_add = bool(re.search(r"(?m)^--- /dev/null\s*$", body))
-        is_del = bool(research := re.search(r"(?m)^\+\+\+ /dev/null\s*$", body))
+        is_del = bool(re.search(r"(?m)^\+\+\+ /dev/null\s*$", body))
         is_rename = bool(re.search(r"(?m)^rename (from|to) ", body) or re.search(r"(?m)^similarity index ", body))
-        sections.append({"old": oldp, "new": newp, "body": body, "is_add": is_add, "is_del": bool(research), "is_rename": is_rename})
+        sections.append({"old": oldp, "new": newp, "body": body, "is_add": is_add, "is_del": is_del, "is_rename": is_rename})
     return sections
 
 
@@ -284,7 +343,7 @@ def best_match_path(target_path: str, repo_files):
 
     candidates = [p for p in repo_norm if os.path.basename(p) == tbase]
     if candidates:
-        # bevorzugt längeren Suffix-Match / kürzeren Pfad
+        # Bevorzuge längeren Suffix-Match / höheren Ähnlichkeits-Score
         tparts = target.split("/")
         def score(p):
             parts = p.split("/")
@@ -333,13 +392,13 @@ def try_remap_patch(patch_text: str, repo_files):
 
 # ------------------------ Robust Section-wise Apply ------------------------
 
-def try_apply_sections(patch_file: str, original_text: str) -> None:
+def try_apply_sections(patch_file: str, original_text: str) -> tuple[list[str], list[str], list[str]]:
     """Apply each diff section independently to avoid whole-patch failure on missing files."""
     sections = parse_patch_sections(original_text)
     if not sections:
         # Fallback: try as single file
         sh(f"git apply -p0 --whitespace=fix {shlex.quote(patch_file)}")
-        return
+        return (["<whole>"], [], [])
 
     applied, rejected, skipped = [], [], []
 
@@ -391,18 +450,7 @@ def try_apply_sections(patch_file: str, original_text: str) -> None:
         except Exception:
             skipped.append(sec["new"])
 
-    # Status zurückmelden
-    if applied:
-        comment_reply("✅ Angewandte Sektionen:\n" + "\n".join(f"- {p}" for p in applied))
-    if rejected:
-        rej = sh("git ls-files -o --exclude-standard | grep -E '\\.rej$' || true", check=False)
-        comment_reply("⚠️ Mit .rej angewandte Sektionen:\n" + "\n".join(f"- {p}" for p in rejected) +
-                      ("\n\nErzeugte .rej Dateien:\n```\n" + rej[:1800] + "\n```" if rej.strip() else ""))
-    if skipped:
-        comment_reply("⏭️ Übersprungene Sektionen (Datei/Umfeld fehlt):\n" + "\n".join(f"- {p}" for p in skipped))
-
-    if not applied and not rejected:
-        raise RuntimeError("Kein Teil des Patches konnte angewendet werden.")
+    return applied, rejected, skipped
 
 
 # ------------------------ Core Logic ------------------------
@@ -416,18 +464,21 @@ def main():
     if not is_allowed(actor):
         comment_reply(f"⛔ Sorry @{actor}, du bist nicht berechtigt."); sys.exit(1)
 
+    # Flags
     m_model = re.search(r"(?:^|\s)(?:-m|--model)\s+([A-Za-z0-9._\-]+)", comment)
     model = m_model.group(1).strip() if m_model else (os.environ.get("OPENAI_MODEL_DEFAULT") or "gpt-5")
-
     m_reason = re.search(r"(?:^|\s)--reason\s+(high|medium|low)\b", comment, re.I)
     if m_reason:
         os.environ["OPENAI_REASONING_EFFORT"] = m_reason.group(1).lower()
-
     m_paths = re.search(r"(?:^|\s)--paths\s+([^\n]+)", comment)
     path_filter = [p.strip() for p in (m_paths.group(1) if m_paths else "").split(",") if p.strip()]
-
     request_tree_only = bool(re.search(r"nur\s+(repo-)?tree|nur\s+verzeichnisbaum", comment, re.I))
     do_verify = bool(re.search(r"(?:^|\s)--verify\b", comment))
+    dry_run   = bool(re.search(r"(?:^|\s)--dry\b", comment))
+    allow_ci  = bool(re.search(r"(?:^|\s)--allow-ci\b", comment))
+    want_spec = bool(re.search(r"(?:^|\s)--spec\b", comment))
+    want_apply= bool(re.search(r"(?:^|\s)--apply\b", comment))
+    force_big = bool(re.search(r"(?:^|\s)--force\b", comment))
 
     # Instruction säubern
     instruction = re.sub(r"^.*?/codex", "", comment, flags=re.S).strip()
@@ -436,9 +487,14 @@ def main():
         r"(?:^|\s)--reason\s+(?:high|medium|low)\b",
         r"(?:^|\s)--paths\s+[^\n]+",
         r"(?:^|\s)--verify\b",
+        r"(?:^|\s)--dry\b",
+        r"(?:^|\s)--allow-ci\b",
+        r"(?:^|\s)--spec\b",
+        r"(?:^|\s)--apply\b",
+        r"(?:^|\s)--force\b",
     ]:
         instruction = re.sub(pat, "", instruction, flags=re.I)
-    instruction = instruction.strip()
+    instruction = trim_to_chars(instruction.strip(), MAX_USER_CHARS)
     if not instruction and not request_tree_only:
         comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex --paths app/src Tests für PlayerService hinzufügen`")
         sys.exit(1)
@@ -449,11 +505,11 @@ def main():
     if request_tree_only:
         print("Tree-only request handled."); sys.exit(0)
 
-    # ---------- Kontext ----------
-    files = [str(p).replace("\\", "/") for p in repo_files]
+    # ---------- Code-Kontext (relevanzbasiert) ----------
+    all_paths = [str(p).replace("\\", "/") for p in repo_files]
     if path_filter:
         keep = []
-        for f in files:
+        for f in all_paths:
             for g in path_filter:
                 try:
                     ok = subprocess.run(f"bash -lc '[[ {shlex.quote(f)} == {shlex.quote(g)} ]]'",
@@ -462,51 +518,75 @@ def main():
                         keep.append(f); break
                 except Exception:
                     pass
-        files = keep or files
+        all_paths = keep or all_paths
 
-    code_ext = (".kt", ".kts", ".java", ".xml", ".gradle", ".gradle.kts",
-                ".md", ".yml", ".yaml", ".properties", ".pro", ".conf", ".sh")
-    prio = [f for f in files if f.endswith(code_ext)]
-    files = (prio + [f for f in files if f not in prio])[:400]
+    focused_files = top_relevant_files(instruction, all_paths, k=80)
 
     preview_parts = []
-    for f in files:
+    for f in focused_files:
         try:
             head = sh(f"sed -n '1,160p' {shlex.quote(f)} | sed 's/\\t/    /g' || true", check=False)
             if head.strip():
                 preview_parts.append(f"\n--- file: {f} ---\n{head}")
         except Exception:
             pass
-    context = "".join(preview_parts)
-    if len(context) > 200_000:
-        context = context[:200_000]
+    context = trim_to_chars("".join(preview_parts), MAX_CONTEXT_CHARS)
 
-    SYSTEM = (
-        "You are an expert code-change generator for Android/Kotlin (Gradle, Jetpack Compose, Unit + Instrumented tests). "
-        "Return ONLY one git-compatible unified diff (no explanations). Keep changes minimal and consistent so Gradle build/test passes. "
-        "Include edits to build/test files as needed. All file paths are repo-root relative. "
-        "Use ONLY files and paths that exist in the provided repo tree."
-    )
+    # ---------- Doku laden ----------
+    docs = trim_to_chars(load_docs(MAX_DOC_CHARS), MAX_DOC_CHARS)
 
-    USER = f"""Repository tree (compact, depth≤4):
+    # ---------- SPEC-FIRST Modus ----------
+    if want_spec and not want_apply:
+        SYSTEM = (
+            "You are a senior Android/Kotlin architect. Write a crisp change SPECIFICATION only (no code), "
+            "including: goals, affected modules/files, risks, test plan, and a bullet list of concrete edits. "
+            "Keep it executable by a code-change agent in a next step."
+        )
+        USER = f"""Repository documents (trimmed):
+{docs or '(no docs found)'}
+Repository tree (compact, depth≤4):
 {compact_tree}
-
-Repository context (truncated file heads):
+Focused file heads (top relevance):
 {context}
-
 Task from @{actor}:
 {instruction}
+Output: Markdown SPEC only. No code. No diff.
+"""
+        spec = openai_generate(model, SYSTEM, USER, want_spec=True).strip()
+        spec = trim_to_chars(spec, 48000)
+        if not spec:
+            comment_reply("⚠️ Konnte keine Spezifikation generieren.")
+            sys.exit(1)
+        comment_reply(f"📝 **Spezifikation (Review-Phase)**\n\n{spec}")
+        print("spec-only done")
+        sys.exit(0)
 
+    # ---------- Code-Diff Modus ----------
+    SYSTEM = (
+        "You are an expert Android/Kotlin code-change generator (Gradle, Jetpack Compose, Unit/Instrumented tests). "
+        "Use the repository documents (agents/architecture/roadmap/changelog) as authoritative guidance. "
+        "Return ONLY one git-compatible unified diff (no explanations). Keep changes minimal; include build/test edits if required. "
+        "All paths must be repo-root relative and must exist in the provided repo tree."
+    )
+
+    USER = f"""Repository documents (trimmed):
+{docs or '(no docs found)'}
+Repository tree (compact, depth≤4):
+{compact_tree}
+Focused file heads (top relevance):
+{context}
+Task from @{actor}:
+{instruction}
 Output requirements:
-- Return exactly ONE unified diff starting with lines like: diff --git a/... b/...
-- Ensure it applies at repo root using: git apply -p0
+- Return exactly ONE unified diff starting with: diff --git a/... b/...
+- It must apply at repo root using: git apply -p0
 - Include new files with proper headers (e.g. 'new file mode 100644')
-- Do NOT include binary blobs; use code stubs/placeholders where needed.
+- Avoid forbidden paths unless explicitly allowed: {', '.join(FORBIDDEN_PATHS)}
 """
 
     # ---------- OpenAI ----------
     try:
-        patch_text = openai_generate_diff(model, SYSTEM, USER)
+        patch_text = openai_generate(model, SYSTEM, USER)
     except Exception as e:
         comment_reply(f"❌ OpenAI-Fehler:\n```\n{e}\n```"); raise
 
@@ -516,7 +596,13 @@ Output requirements:
         comment_reply(f"⚠️ Kein gültiger Diff erkannt. Antwort war:\n```\n{patch_text[:1400]}\n```")
         sys.exit(1)
 
-    # Parser nur informativ nutzen
+    # Safeguard: große Patches
+    if not force_big:
+        if patch_text.count("\n") > MAX_PATCH_LINES:
+            comment_reply(f"⛔ Patch zu groß (> {MAX_PATCH_LINES} Zeilen). Bitte Aufgabe eingrenzen oder `--force` setzen.")
+            sys.exit(1)
+
+    # Parser nur informativ
     try:
         PatchSet.from_string(patch_text)
     except Exception as e:
@@ -524,7 +610,7 @@ Output requirements:
                       f"versuche Patch trotzdem (3-way / per-Sektion / --reject).")
 
     # ---------- Remap ----------
-    remapped_patch, remaps, unresolved = try_remap_patch(patch_text, repo_files)
+    remapped_patch, remaps, unresolved = try_remap_patch(patch_text, [Path(p) for p in all_paths])
     if remaps:
         bullets = "\n".join([f"- `{src}` → `{dst}`" for src, dst in remaps])
         comment_reply(f"🧭 Pfad-Remap angewandt (fehlende → existierende Dateien):\n{bullets}")
@@ -532,10 +618,30 @@ Output requirements:
         bullets = "\n".join([f"- {p}" for p in unresolved])
         comment_reply("⚠️ Nicht zuordenbare Sektionen (ausgelassen):\n" + bullets)
 
-    # ---------- Patch-Datei ablegen ----------
+    # Forbidden-Path-Filter (außer --allow-ci)
+    if not allow_ci:
+        sec = parse_patch_sections(remapped_patch)
+        kept = []
+        dropped = []
+        for s in sec:
+            if any(s["new"].startswith(fp) or s["old"].startswith(fp) for fp in FORBIDDEN_PATHS):
+                dropped.append(s["new"])
+            else:
+                kept.append(s["body"])
+        if dropped:
+            comment_reply("🚫 Sektionen in geschützten Pfaden verworfen (nutze `--allow-ci`, wenn beabsichtigt):\n" +
+                          "\n".join(f"- {d}" for d in dropped))
+        remapped_patch = "".join(kept) if kept else remapped_patch
+
     os.makedirs(".github/codex", exist_ok=True)
     with open(".github/codex/codex.patch", "w", encoding="utf-8") as f:
         f.write(remapped_patch)
+
+    # ---------- Dry Run ----------
+    if dry_run:
+        snippet = remapped_patch[:1800]
+        comment_reply("🧪 **Dry-Run** – Patch nicht angewendet. Ausschnitt:\n```diff\n" + snippet + "\n```")
+        print("dry-run done"); sys.exit(0)
 
     # ---------- Branch, Apply per Sektion, Commit, PR ----------
     branch = f"codex/{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{actor}"
@@ -545,11 +651,10 @@ Output requirements:
     try:
         with open(".github/codex/codex.patch", "r", encoding="utf-8", errors="replace") as _pf:
             whole_text = _pf.read()
-        try_apply_sections(".github/codex/codex.patch", whole_text)
+        applied, rejected, skipped = try_apply_sections(".github/codex/codex.patch", whole_text)
     except Exception as e:
         comment_reply(f"❌ Patch-Apply fehlgeschlagen:\n```\n{e}\n```"); raise
 
-    # Nur committen, wenn Änderungen vorliegen
     status = sh("git status --porcelain")
     if not status.strip():
         comment_reply("ℹ️ Keine Änderungen nach Patch-Anwendung gefunden (alle Sektionen übersprungen?).")
@@ -559,21 +664,42 @@ Output requirements:
 
     repo = os.environ["GITHUB_REPOSITORY"]
     default_branch = gh_api("GET", f"/repos/{repo}").get("default_branch", "main")
+
+    body = (
+        f"Automatisch erstellt aus Kommentar von @{actor}:\n\n> {instruction}\n\n"
+        f"Doku berücksichtigt: {', '.join([n for n in DOC_CANDIDATES if os.path.exists(n)]) or '–'}\n"
+        f"Angewandt: {len(applied)}, .rej: {len(rejected)}, übersprungen: {len(skipped)}\n"
+        f"_Repo-Tree gespeichert unter `.github/codex/tree.txt`._"
+    )
     pr = gh_api("POST", f"/repos/{repo}/pulls", {
         "title": f"codex changes: {instruction[:60]}",
         "head": branch,
         "base": default_branch,
-        "body": (
-            f"Automatisch erstellt aus Kommentar von @{actor}:\n\n> {instruction}\n\n"
-            f"Patch generiert via OpenAI ({model}).\n\n"
-            f"_Repo-Tree gespeichert unter `.github/codex/tree.txt`._"
-        )
+        "body": body
     })
 
-    with open(".github/codex/.last_branch", "w", encoding="utf-8") as f:
-        f.write(branch)
-    with open(".github/codex/.last_pr", "w", encoding="utf-8") as f:
-        f.write(str(pr['number']))
+    # Label & Reviewer (best effort)
+    pr_num = pr.get("number")
+    try:
+        gh_api("POST", f"/repos/{repo}/issues/{pr_num}/labels", {"labels": ["codex", "ci:generated"]})
+    except Exception:
+        pass
+    try:
+        owners = []
+        for path in [".github/CODEOWNERS", "CODEOWNERS"]:
+            if os.path.exists(path):
+                txt = Path(path).read_text(encoding="utf-8", errors="replace")
+                for line in txt.splitlines():
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    parts = line.split()
+                    owners += [p.lstrip("@") for p in parts[1:] if p.startswith("@")]
+        owners = list(dict.fromkeys(owners))[:5]
+        if owners:
+            gh_api("POST", f"/repos/{repo}/pulls/{pr_num}/requested_reviewers", {"reviewers": owners})
+    except Exception:
+        pass
 
     comment_reply(f"✅ PR erstellt: #{pr['number']} — {pr['html_url']}")
 
