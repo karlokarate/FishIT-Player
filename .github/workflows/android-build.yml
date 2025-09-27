@@ -42,6 +42,13 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
+      # --- FIX: ensure gradlew is executable and not CRLF ---
+      - name: Fix gradlew permissions
+        run: |
+          chmod +x ./gradlew
+          sed -i 's/\r$//' gradlew
+      # -------------------------------------------------------
+
       - name: Gradle Build
         env:
           HEADER: ${{ secrets.header }}
