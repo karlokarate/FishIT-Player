@@ -138,6 +138,24 @@ def is_allowed(actor: str) -> bool:
 
 # ------------------------ OpenAI ------------------------
 
+def _compute_base_url() -> str:
+    """
+    Liefert eine garantiert gültige Base-URL:
+    - Wenn OPENAI_BASE_URL leer/nicht gesetzt: https://api.openai.com/v1
+    - Wenn ohne Protokoll: https:// voranstellen
+    - Wenn ohne /v1: anhängen
+    """
+    raw = os.environ.get("OPENAI_BASE_URL", "")
+    raw = (raw or "").strip()
+    if not raw:
+        return "https://api.openai.com/v1"
+    if not raw.startswith(("http://", "https://")):
+        raw = "https://" + raw
+    if not re.search(r"/v\d+/?$", raw):
+        raw = raw.rstrip("/") + "/v1"
+    return raw
+
+
 def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> str:
     """
     Prefer OpenAI Responses API; fallback to Chat Completions for compatibility.
@@ -145,18 +163,9 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
     """
     from openai import OpenAI
 
-    # Robust base_url-Handling: nur setzen, wenn NICHT leer und mit http(s) beginnt; i. d. R. /v1 anhängen
-    raw_base = os.environ.get("OPENAI_BASE_URL", "").strip()
-    if raw_base and not raw_base.startswith(("http://", "https://")):
-        raw_base = "https://" + raw_base
-    if raw_base and not raw_base.endswith("/v1"):
-        raw_base = raw_base.rstrip("/") + "/v1"
-
-    if raw_base:
-        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=raw_base)
-    else:
-        # Kein base_url explizit übergeben ⇒ SDK nutzt die offizielle Default-URL
-        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    # WICHTIG: Base-URL IMMER EXPLIZIT setzen, um leere Env-Werte zu übersteuern.
+    base_url = _compute_base_url()
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=base_url)
 
     # Reasoning effort (high|medium|low); default high
     effort = os.environ.get("OPENAI_REASONING_EFFORT", "high").lower()
