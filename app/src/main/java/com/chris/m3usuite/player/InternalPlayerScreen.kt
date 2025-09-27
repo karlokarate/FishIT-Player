@@ -1043,26 +1043,33 @@ fun InternalPlayerScreen(
                         val cats = remember(itemsWithCats) { itemsWithCats.mapNotNull { it.categoryName }.distinct().sorted() }
                         // Category chips (TV-friendly focus/scroll)
                         run {
-                            val chipState = com.chris.m3usuite.ui.state.rememberRouteListState("live_list_chip_row")
                             com.chris.m3usuite.ui.tv.TvFocusRow(
-                                items = listOf<String?>(null) + cats,
-                                key = { it ?: "__all__" },
-                                listState = chipState,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) { idx, v, itemMod ->
+                                stateKey = "live_list_chip_row",
+                                itemSpacing = 8.dp,
+                                itemCount = cats.size + 1,
+                                itemKey = { idx -> if (idx == 0) "__all__" else cats[idx - 1] }
+                            ) { idx ->
                                 if (idx == 0) {
                                     androidx.compose.material3.FilterChip(
-                                        modifier = itemMod,
+                                        modifier = com.chris.m3usuite.ui.skin.run {
+                                            Modifier
+                                                .tvClickable { selCat = null }
+                                                .tvFocusableItem("live_list_chip_row", idx)
+                                        },
                                         selected = selCat == null,
-                                        onClick = { selCat = null },
+                                        onClick = {},
                                         label = { Text("Alle Kategorien") }
                                     )
                                 } else {
-                                    val c = v!!
+                                    val c = cats[idx - 1]
                                     androidx.compose.material3.FilterChip(
-                                        modifier = itemMod,
+                                        modifier = com.chris.m3usuite.ui.skin.run {
+                                            Modifier
+                                                .tvClickable { selCat = c }
+                                                .tvFocusableItem("live_list_chip_row", idx)
+                                        },
                                         selected = selCat == c,
-                                        onClick = { selCat = c },
+                                        onClick = {},
                                         label = { Text(c) }
                                     )
                                 }

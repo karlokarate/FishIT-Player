@@ -170,27 +170,7 @@ fun MediaCard(
             .width(tileWidth)
             .padding(end = 12.dp)
             .focusable()
-            // Log left/right key ups for generic tiles to diagnose DPAD skipping
-            .onPreviewKeyEvent { ev ->
-                if (ev.type == KeyEventType.KeyUp && (ev.key == Key.DirectionLeft || ev.key == Key.DirectionRight)) {
-                    val dir = if (ev.key == Key.DirectionLeft) "LEFT" else "RIGHT"
-                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad(dir, mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
-                }
-                false
-            }
-            .onPreviewKeyEvent { ev ->
-                val toggle = chromeToggle
-                if (toggle == null) return@onPreviewKeyEvent false
-                if (ev.key != Key.DirectionLeft) return@onPreviewKeyEvent false
-                if (ev.type == KeyEventType.KeyDown) { leftDownAt = SystemClock.uptimeMillis(); false }
-                else if (ev.type == KeyEventType.KeyUp) {
-                    val start = leftDownAt; leftDownAt = null
-                    if (start != null && SystemClock.uptimeMillis() - start >= 300L) {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT_LONG", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
-                        toggle(); true
-                    } else false
-                } else false
-            }
+            // No manual DPAD interception; rely on focus traversal and global chrome handler
             .onKeyEvent { ev ->
                 val n = ev.nativeKeyEvent
                 if (n.action == android.view.KeyEvent.ACTION_UP) {
@@ -408,19 +388,7 @@ fun LiveTileCard(
             .width(tileWidth)
             .padding(end = 6.dp)
             .focusable()
-            .onPreviewKeyEvent { ev ->
-                val toggle = chromeToggle
-                if (toggle == null) return@onPreviewKeyEvent false
-                if (ev.key != Key.DirectionLeft) return@onPreviewKeyEvent false
-                if (ev.type == KeyEventType.KeyDown) { leftDownAtMs = SystemClock.uptimeMillis(); false }
-                else if (ev.type == KeyEventType.KeyUp) {
-                    val start = leftDownAtMs; leftDownAtMs = null
-                    if (start != null && SystemClock.uptimeMillis() - start >= 300L) {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT_LONG", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
-                        toggle(); true
-                    } else false
-                } else false
-            }
+            // No per-tile DPAD interception; reorder handler handles left/right when active
             .onKeyEvent { ev ->
                 val n = ev.nativeKeyEvent
                 if (n.action == android.view.KeyEvent.ACTION_UP) {
@@ -744,19 +712,7 @@ fun SeriesTileCard(
             .width(tileWidth)
             .padding(end = 6.dp)
             .focusable()
-            .onPreviewKeyEvent { ev ->
-                val toggle = chromeToggle
-                if (toggle == null) return@onPreviewKeyEvent false
-                if (ev.key != Key.DirectionLeft) return@onPreviewKeyEvent false
-                if (ev.type == KeyEventType.KeyDown) { leftDownAt = SystemClock.uptimeMillis(); false }
-                else if (ev.type == KeyEventType.KeyUp) {
-                    val start = leftDownAt; leftDownAt = null
-                    if (start != null && SystemClock.uptimeMillis() - start >= 300L) {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT_LONG", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
-                        toggle(); true
-                    } else false
-                } else false
-            }
+            // No per-tile DPAD interception; rely on focus traversal and global chrome handler
             .onKeyEvent { ev ->
                 val n = ev.nativeKeyEvent
                 if (n.action == android.view.KeyEvent.ACTION_UP) {

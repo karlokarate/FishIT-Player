@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -171,8 +172,10 @@ private fun ContentDrawScope.drawOutlineCompat(
 }
 
 /**
- * TV-friendly clickable with focus halo + scale + auto bring-into-view. Use on cards/rows.
+ * TV-friendly clickable with focus halo + scale + auto bring-into-view on TV.
+ * On phones/tablets, behaves like a plain clickable.
  */
+@Composable
 fun Modifier.tvClickable(
     enabled: Boolean = true,
     role: Role? = Role.Button,
@@ -194,7 +197,8 @@ fun Modifier.tvClickable(
         properties["elevationFocusedDp"] = elevationFocusedDp
         properties["autoBringIntoView"] = autoBringIntoView
     }
-) {
+    ) {
+    val isTv = rememberIsTvUi()
     val scope = rememberCoroutineScope()
     val interactionSource = remember { MutableInteractionSource() }
     val bring = remember { BringIntoViewRequester() }
@@ -213,11 +217,13 @@ fun Modifier.tvClickable(
         }
     }
 
-    val targetScale = when {
-        pressed -> scalePressed
-        focused -> scaleFocused
-        else -> 1f
-    }
+    val targetScale = if (isTv) {
+        when {
+            pressed -> scalePressed
+            focused -> scaleFocused
+            else -> 1f
+        }
+    } else 1f
     val scale by animateFloatAsState(
         targetValue = targetScale,
         animationSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioMediumBouncy),
@@ -225,35 +231,39 @@ fun Modifier.tvClickable(
     )
     val focusDecoration = rememberTvFocusDecoration(focused, pressed, focusColors)
 
-    this
-        .focusRequester(focusReq)
-        .focusable()
-        .bringIntoViewRequester(bring)
-        .onFocusEvent { state ->
-            val now = state.isFocused || state.hasFocus
-            if (autoBringIntoView && now && !focused) scope.launch { bring.bringIntoView() }
-            focused = now
-        }
-        .zIndex(if (focused || pressed) 2f else 0f)
-        .graphicsLayer {
-            // Respect any upstream scale (e.g., focusScaleOnTv) unless we actually need to scale here.
-            if (scale != 1f) {
-                scaleX = scale
-                scaleY = scale
+    var out = this
+    if (isTv) {
+        out = out
+            .focusRequester(focusReq)
+            .focusable(enabled)
+            .semantics { if (role != null) this.role = role }
+            .bringIntoViewRequester(bring)
+            .onFocusEvent { state ->
+                val now = state.isFocused || state.hasFocus
+                if (autoBringIntoView && now && !focused) scope.launch { bring.bringIntoView() }
+                focused = now
             }
-            shadowElevation = if (focused) elevationFocusedDp.dp.toPx() else 0f
-            clip = false
-        }
-        .drawWithContent {
-            drawWithTvFocus(focusDecoration, shape, borderWidthPx, brightenContent) { drawContent() }
-        }
-        .clickable(
-            enabled = enabled,
-            role = role,
-            interactionSource = interactionSource,
-            indication = null,
-            onClick = onClick
-        )
+            .zIndex(if (focused || pressed) 2f else 0f)
+            .graphicsLayer {
+                if (scale != 1f) {
+                    scaleX = scale
+                    scaleY = scale
+                }
+                shadowElevation = if (focused) elevationFocusedDp.dp.toPx() else 0f
+                clip = false
+            }
+            .drawWithContent {
+                drawWithTvFocus(focusDecoration, shape, borderWidthPx, brightenContent) { drawContent() }
+            }
+    }
+    out.clickable(
+        enabled = enabled,
+        // semantics already sets role on TV; keep null here to avoid duplicate announcements
+        role = null,
+        interactionSource = interactionSource,
+        indication = null,
+        onClick = onClick
+    )
 }
 
 /** Add only the scale/halo (no click). Use on Buttons etc. */
@@ -317,5 +327,45 @@ fun Modifier.focusScaleOnTv(
         .graphicsLayer { scaleX = scale; scaleY = scale; clip = false }
         .drawWithContent {
             drawWithTvFocus(focusDecoration, shape, focusBorderWidthPx, brightenContent) { drawContent() }
+        }
+}
+
+@Composable
+private fun rememberIsTvUi(): Boolean {
+    val ctx = LocalContext.current
+    return remember(ctx) { isTvDevice(ctx) }
+}
+
+/**
+ * Mark an item focusable on TV and persist its focused index per row key.
+ * Optionally auto-bring the item into view when it receives focus.
+ */
+@Composable
+fun Modifier.tvFocusableItem(
+    stateKey: String,
+    index: Int,
+    autoBringIntoView: Boolean = true,
+    onFocused: () -> Unit = {}
+): Modifier = composed(
+    inspectorInfo = {
+        name = "tvFocusableItem"
+        properties["stateKey"] = stateKey
+        properties["index"] = index
+        properties["autoBringIntoView"] = autoBringIntoView
+    }
+) {
+    val isTv = rememberIsTvUi()
+    val scope = rememberCoroutineScope()
+    val requester = remember { BringIntoViewRequester() }
+
+    this
+        .then(if (isTv) Modifier.focusable() else Modifier)
+        .bringIntoViewRequester(requester)
+        .onFocusEvent { ev ->
+            if (ev.isFocused) {
+                com.chris.m3usuite.ui.state.writeRowFocus(stateKey, index)
+                onFocused()
+                if (isTv && autoBringIntoView) scope.launch { requester.bringIntoView() }
+            }
         }
 }

@@ -902,27 +902,32 @@ fun StartScreen(
                         set.toList().sorted()
                     }
                     run {
-                        val chipState = com.chris.m3usuite.ui.state.rememberRouteListState("start_live_picker_providers")
                         com.chris.m3usuite.ui.tv.TvFocusRow(
-                            items = listOf<String?>(null) + providers,
-                            key = { it ?: "__all__" },
-                            listState = chipState,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(horizontal = 4.dp)
-                        ) { _, v, itemMod ->
-                            if (v == null) {
+                            stateKey = "start_live_picker_providers",
+                            contentPadding = PaddingValues(horizontal = 4.dp),
+                            itemSpacing = 8.dp,
+                            itemCount = providers.size + 1,
+                            itemKey = { idx -> if (idx == 0) "__all__" else providers[idx - 1] }
+                        ) { idx ->
+                            if (idx == 0) {
                                 FilterChip(
-                                    modifier = itemMod.graphicsLayer(alpha = DesignTokens.BadgeAlpha),
+                                    modifier = Modifier
+                                        .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
+                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable { provider = null } })
+                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvFocusableItem("start_live_picker_providers", idx) }),
                                     selected = provider == null,
-                                    onClick = { provider = null },
+                                    onClick = {},
                                     label = { Text("Alle") }
                                 )
                             } else {
-                                val p = v
+                                val p = providers[idx - 1]
                                 FilterChip(
-                                    modifier = itemMod.graphicsLayer(alpha = DesignTokens.BadgeAlpha),
+                                    modifier = Modifier
+                                        .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
+                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable { provider = if (provider == p) null else p } })
+                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvFocusableItem("start_live_picker_providers", idx) }),
                                     selected = provider == p,
-                                    onClick = { provider = if (provider == p) null else p },
+                                    onClick = {},
                                     label = { Text(p) }
                                 )
                             }

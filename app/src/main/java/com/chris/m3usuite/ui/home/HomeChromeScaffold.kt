@@ -70,6 +70,10 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.delay
 
+// Rows notify current focused row to drive chrome behavior
+val LocalChromeRowFocusSetter: androidx.compose.runtime.ProvidableCompositionLocal<(String?) -> Unit> = compositionLocalOf { {}
+}
+
 // TV chrome mode (file-private)
 private enum class ChromeMode { Visible, Collapsed, Expanded }
 
@@ -104,6 +108,7 @@ fun HomeChromeScaffold(
 
     // Chrome state: Visible (default), Collapsed (hidden), Expanded (focus trap + blur)
     val tvChromeMode = rememberSaveable { mutableStateOf(if (isTv) ChromeMode.Visible else ChromeMode.Visible) }
+    var focusedRowKey by remember { mutableStateOf<String?>(null) }
     // System-Insets (compute via density to avoid extension import issues)
     val density = LocalDensity.current
     val statusPad = with(density) { WindowInsets.statusBars.getTop(this).toDp() }
@@ -200,6 +205,16 @@ fun HomeChromeScaffold(
                             tvChromeMode.value = ChromeMode.Collapsed
                             focusContentFromChrome(FocusDirection.Up)
                             true
+                        } else if (tvChromeMode.value == ChromeMode.Collapsed) {
+                            // Expand if we are at the very top and the first item of the focused top row is selected
+                            val atTop = listState.firstVisibleItemIndex == 0
+                            val rowKey = focusedRowKey
+                            val rowIdx = rowKey?.let { com.chris.m3usuite.ui.state.readRowFocus(it).index }
+                            if (atTop && rowIdx == 0) {
+                                tvChromeMode.value = ChromeMode.Expanded
+                                pendingHeaderFocus = true
+                                true
+                            } else false
                         } else false
                     }
                     Key.DirectionLeft -> {
@@ -285,7 +300,11 @@ fun HomeChromeScaffold(
             }
         } else Modifier
         androidx.compose.runtime.CompositionLocalProvider(
-            LocalChromeToggle provides ({ tvChromeMode.value = if (tvChromeMode.value == ChromeMode.Expanded) ChromeMode.Collapsed else ChromeMode.Expanded })
+            LocalChromeToggle provides ({ tvChromeMode.value = if (tvChromeMode.value == ChromeMode.Expanded) ChromeMode.Collapsed else ChromeMode.Expanded }),
+            LocalChromeRowFocusSetter provides { key: String? ->
+                focusedRowKey = key
+                if (isTv && key != null) tvChromeMode.value = ChromeMode.Collapsed
+            }
         ) {
             Box(Modifier.fillMaxSize().then(blurModifier)) {
                 content(pads)
@@ -302,14 +321,18 @@ fun HomeChromeScaffold(
                 LocalHeaderFirstFocus provides (if (isTv && tvChromeMode.value == ChromeMode.Expanded) headerFocus else null),
                 LocalChromeOnAction provides (if (isTv) ({ tvChromeMode.value = ChromeMode.Collapsed }) else null)
             ) {
-                FishITHeader(
-                    title = title,
-                    onSettings = onSettings,
-                    scrimAlpha = scrimAlpha,
-                    onSearch = onSearch,
-                    onProfiles = onProfiles,
-                    onLogo = onLogo
-                )
+                Box(Modifier.onFocusEvent { st ->
+                    if (isTv && (st.isFocused || st.hasFocus)) tvChromeMode.value = ChromeMode.Expanded
+                }) {
+                    FishITHeader(
+                        title = title,
+                        onSettings = onSettings,
+                        scrimAlpha = scrimAlpha,
+                        onSearch = onSearch,
+                        onProfiles = onProfiles,
+                        onLogo = onLogo
+                    )
+                }
             }
         }
 

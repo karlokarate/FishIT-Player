@@ -1,3 +1,18 @@
+2025-09-27
+- docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
+
+- feat(ui/state): finalisiere Fokus‑Gedächtnis. `ScrollStateRegistry` speichert jetzt `RowFocus(index)` pro Key inkl. `readRowFocus`/`writeRowFocus` und `rememberRowFocus(key)`. List/Grid‑Remember‑Funktionen nach `ui/state/RememberHelpers.kt` extrahiert; beide lesen/schreiben zentrale Registry.
+
+- feat(ui/skin): `tvClickable` macht auf TV Elemente focusable + semantics(Role.Button), zeichnet Halo/Scale und bringt sie bei Fokus in Sicht; auf Phone/Tablet bleibt es ein normales clickable ohne Effekte. Neu: `tvFocusableItem(stateKey, index, ...)` markiert Items als fokusierbar, schreibt den Index in die zentrale Registry und bringt sie optional in Sicht.
+
+- feat(ui/tv): neue vereinfachte `TvFocusRow(stateKey, itemCount, ...)` die `rememberRouteListState` + `rememberRowFocus` nutzt und pro Item `tvFocusableItem(...)` setzt. Migration begonnen: Provider‑Chips im Start‑Picker und Kategorie‑Chips im Player‑Sheet auf TvFocusRow + tvClickable/tvFocusableItem umgestellt.
+
+- feat(tv/chrome): vereinheitlichte Auto‑Collapse/Expand‑Trigger im `HomeChromeScaffold`. Collapse sobald Fokus im Content (Rows melden `focusedRowKey` via LocalChromeRowFocusSetter) oder bei vertikalem Scroll. Expand beim DPAD‑UP auf dem ersten Item der obersten Row oder wenn der Header Fokus erhält. Inhaltspadding ist animiert mit dem Chrome‑State.
+
+- chore(tv/dpad): repo‑weit manuelle DPAD‑Abgriffe entfernt, wo keine Sonderfälle. `RowCore` und `RowCorePaged` geben UP/DOWN nicht mehr per `onPreviewKeyEvent` vor; Standard‑Traversal übernimmt. In `HomeRows`: DPAD‑LEFT‑Long‑Press pro Tile entfernt (global in Chrome), reine Debug‑KeyUp‑Logs entfernt. Reorder‑Pfad behält gerichteten LEFT/RIGHT‑Abgriff in `LiveTileCard` bei (nur aktiv, wenn Reorder‑Handler übergeben).
+
+- tooling(tv/audit): `tools/audit_tv_focus.sh` erweitert. Scannt horizontale Container (roh‑LazyRow etc.), listet Roh‑`clickable(` (tvClickable bevorzugen), und prüft Screens auf `onPreviewKeyEvent`/DPAD‑Nutzung. CI‑Modus via `tools/audit_tv_focus.sh ci` erzeugt einen Report (`tools/audit_tv_focus_report.txt`) und schlägt bei Findings fehl.
+
 2025-09-25
 - fix(tv/focus-enter): guard custom enter focus with an explicit firstAttached flag in RowCore, RowCorePaged, and ReorderableLiveRow. Only enable `focusProperties { enter = { firstFocus } }` after the first item's FocusRequester is attached and visible. Prevents `IllegalStateException: FocusRequester is not initialized` on DPAD DOWN from header/home.
 - chore(debug/tile-focus): add missing tile-focus logs for VOD tiles (VodTileCard) and add tree-path logging for Series tiles. Now all tiles log `focus:<type> id=<id> <title>` plus a `tree:` hint when focused.

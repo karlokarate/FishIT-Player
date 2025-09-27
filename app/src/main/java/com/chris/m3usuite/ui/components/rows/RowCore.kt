@@ -17,11 +17,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.key.key
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.LoadState
@@ -151,18 +146,8 @@ fun MediaRowCore(
     }
 
     val listModifier = if (isTv) Modifier.focusGroup() else Modifier
-
-    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     LazyRow(
-        modifier = listModifier.onPreviewKeyEvent { ev ->
-            if (ev.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) {
-                when (ev.key) {
-                    androidx.compose.ui.input.key.Key.DirectionUp -> { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Up); true }
-                    androidx.compose.ui.input.key.Key.DirectionDown -> { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down); true }
-                    else -> false
-                }
-            } else false
-        },
+        modifier = listModifier,
         state = state,
         flingBehavior = fling,
         contentPadding = config.contentPadding
@@ -314,18 +299,8 @@ fun MediaRowCorePaged(
     }
 
     val pagedModifier = if (isTv) Modifier.focusGroup() else Modifier
-
-    val focusManager2 = androidx.compose.ui.platform.LocalFocusManager.current
     LazyRow(
-        modifier = pagedModifier.onPreviewKeyEvent { ev ->
-            if (ev.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) {
-                when (ev.key) {
-                    androidx.compose.ui.input.key.Key.DirectionUp -> { focusManager2.moveFocus(androidx.compose.ui.focus.FocusDirection.Up); true }
-                    androidx.compose.ui.input.key.Key.DirectionDown -> { focusManager2.moveFocus(androidx.compose.ui.focus.FocusDirection.Down); true }
-                    else -> false
-                }
-            } else false
-        },
+        modifier = pagedModifier,
         state = state,
         flingBehavior = fling,
         contentPadding = config.contentPadding

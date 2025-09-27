@@ -8,6 +8,14 @@ Hinweis
 
 ## Kurzfristig (2–4 Wochen)
 
+PRIO‑1: TV Fokus/DPAD Vereinheitlichung
+- Alles Horizontale → `TvFocusRow` (inkl. Chips/Carousels).
+- Alles Interaktive → `tvClickable`/`tvFocusableItem` (No‑Op auf Phone).
+- Zentrale Registry für Scroll+Fokus je Route/Row (`ScrollStateRegistry`).
+- Chrome: einheitliche Auto‑Collapse/Expand‑Trigger im `HomeChromeScaffold`.
+- Kein `onPreviewKeyEvent` (außer echte Sonderfälle).
+- Audit‑Skript erzwingt die Regeln (`tools/audit_tv_focus.sh`).
+
 - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
 - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
 - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).

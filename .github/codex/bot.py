@@ -6,15 +6,20 @@ Codex Bot: Erzeugt AI-Patches (Unified Diff), wendet sie an, pusht Branch, erste
 Kompatibel mit den Workflows in .github/workflows/codex-bot.yml
 
 Erwartete Umgebungsvariablen (werden im Workflow gesetzt):
-- OPENAI_API_KEY            : OpenAI API Key (Secret)
-- OPENAI_BASE_URL           : optional, falls Proxy/Enterprise
-- OPENAI_MODEL_DEFAULT      : z. B. "gpt-5" (Var)
-- GITHUB_TOKEN              : GitHub Actions Token (Secret)
-- GITHUB_REPOSITORY         : owner/repo
-- GITHUB_EVENT_PATH         : Pfad zur GitHub-Event-JSON
-- GH_EVENT_NAME             : event name (issue_comment, pull_request_review_comment, workflow_dispatch)
-- DISPATCH_COMMENT          : (nur workflow_dispatch) Kommentartext mit /codex …
-- CODEX_ALLOWLIST           : optionale Kommaliste erlaubter Handles (Var)
+- OPENAI_API_KEY             : OpenAI API Key (Secret)
+- OPENAI_BASE_URL            : optional, falls Proxy/Enterprise
+- OPENAI_MODEL_DEFAULT       : z. B. "gpt-5" (Var)
+- OPENAI_REASONING_EFFORT    : "high" | "medium" | "low" (Var; default "high")
+- GITHUB_TOKEN               : GitHub Actions Token (Secret)
+- GITHUB_REPOSITORY          : owner/repo
+- GITHUB_EVENT_PATH          : Pfad zur GitHub-Event-JSON
+- GH_EVENT_NAME              : event name (issue_comment, pull_request_review_comment, workflow_dispatch)
+- DISPATCH_COMMENT           : (nur workflow_dispatch) Kommentartext mit /codex …
+- CODEX_ALLOWLIST            : optionale Kommaliste erlaubter Handles (Var)
+
+Slash-Command-Syntax (Beispiele):
+/codex -m gpt-5 --reason high Refactor X, füge Tests hinzu
+/codex --paths app/src,core/ui Fix Fokusnavigation in Staffeln
 """
 
 import json
@@ -56,8 +61,6 @@ def gh_api(method: str, path: str, payload=None):
 
 def comment_reply(body: str):
     """Post a comment back to the originating Issue/PR (if available)."""
-    evname = os.environ.get("GH_EVENT_NAME", "")
-    # For issue_comment or pull_request_review_comment
     try:
         event = json.load(open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8"))
     except Exception:
@@ -68,11 +71,10 @@ def comment_reply(body: str):
     if "issue" in event and "number" in event["issue"]:
         issue_number = event["issue"]["number"]
     elif "pull_request" in event and "number" in event["pull_request"]:
-        # Rare case for review_comment events
         issue_number = event["pull_request"]["number"]
 
     if issue_number is None:
-        # workflow_dispatch: no simple thread to reply into
+        # workflow_dispatch: kein Thread zum Antworten
         return
 
     gh_api("POST", f"/repos/{repo}/issues/{issue_number}/comments", {"body": body})
@@ -135,6 +137,11 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
     base_url = os.environ.get("OPENAI_BASE_URL") or None
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=base_url)
 
+    # Reasoning effort (high|medium|low); default high
+    effort = os.environ.get("OPENAI_REASONING_EFFORT", "high").lower()
+    if effort not in ("high", "medium", "low"):
+        effort = "high"
+
     # Try Responses API first
     try:
         resp = client.responses.create(
@@ -144,6 +151,7 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0.2,
+            reasoning={"effort": effort},
         )
         txt = getattr(resp, "output_text", None)
         if not txt:
@@ -191,9 +199,13 @@ def main():
         comment_reply(f"⛔ Sorry @{actor}, du bist nicht berechtigt, den Codex-Bot auszuführen.")
         sys.exit(1)
 
-    # 2) Parse flags: -m/--model and --paths
+    # 2) Parse flags: -m/--model, --paths, --reason
     m_model = re.search(r"(?:^|\s)(?:-m|--model)\s+([A-Za-z0-9._\-]+)", comment)
     model = m_model.group(1).strip() if m_model else (os.environ.get("OPENAI_MODEL_DEFAULT") or "gpt-5")
+
+    m_reason = re.search(r"(?:^|\s)--reason\s+(high|medium|low)\b", comment, re.I)
+    if m_reason:
+        os.environ["OPENAI_REASONING_EFFORT"] = m_reason.group(1).lower()
 
     m_paths = re.search(r"(?:^|\s)--paths\s+([^\n]+)", comment)
     path_filter = [p.strip() for p in (m_paths.group(1) if m_paths else "").split(",") if p.strip()]
@@ -201,9 +213,10 @@ def main():
     # instruction = content after '/codex' minus flags
     instruction = re.sub(r"^.*?/codex", "", comment, flags=re.S).strip()
     instruction = re.sub(r"(?:^|\s)(?:-m|--model)\s+[A-Za-z0-9._\-]+", "", instruction)
+    instruction = re.sub(r"(?:^|\s)--reason\s+(?:high|medium|low)\b", "", instruction, flags=re.I)
     instruction = re.sub(r"(?:^|\s)--paths\s+[^\n]+", "", instruction).strip()
     if not instruction:
-        comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex -m gpt-5 Tests für PlayerService hinzufügen …`")
+        comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex -m gpt-5 --reason high Tests für PlayerService hinzufügen …`")
         sys.exit(1)
 
     # 3) Build lightweight repo context
