@@ -7,7 +7,7 @@ Kompatibel mit den Workflows in .github/workflows/codex-bot.yml
 
 Erwartete Umgebungsvariablen (werden im Workflow gesetzt):
 - OPENAI_API_KEY             : OpenAI API Key (Secret)
-- OPENAI_BASE_URL            : optional, falls Proxy/Enterprise
+- OPENAI_BASE_URL            : optional, falls Proxy/Enterprise (muss mit https:// beginnen)
 - OPENAI_MODEL_DEFAULT       : z. B. "gpt-5" (Var)
 - OPENAI_REASONING_EFFORT    : "high" | "medium" | "low" (Var; default "high")
 - GITHUB_TOKEN               : GitHub Actions Token (Secret)
@@ -134,8 +134,20 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
     """
     from openai import OpenAI
 
-    base_url = os.environ.get("OPENAI_BASE_URL") or None
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=base_url)
+    # Robust base_url-Handling: nur setzen, wenn NICHT leer und mit http(s) beginnt
+    raw_base = os.environ.get("OPENAI_BASE_URL", "").strip()
+    if raw_base and not raw_base.startswith(("http://", "https://")):
+        # Falls jemand nur "api.openai.com/v1" setzt → sicherstellen, dass ein Protokoll vorhanden ist
+        raw_base = "https://" + raw_base
+    if raw_base and not raw_base.endswith("/v1"):
+        # Die meisten Gateways erwarten /v1 – wenn nicht vorhanden, hinzufügen
+        raw_base = raw_base.rstrip("/") + "/v1"
+
+    if raw_base:
+        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=raw_base)
+    else:
+        # Kein base_url explizit übergeben ⇒ SDK nutzt die offizielle Default-URL
+        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
     # Reasoning effort (high|medium|low); default high
     effort = os.environ.get("OPENAI_REASONING_EFFORT", "high").lower()
