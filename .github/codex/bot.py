@@ -13,7 +13,7 @@ Erwartete Umgebungsvariablen (werden im Workflow gesetzt):
 - GITHUB_TOKEN               : GitHub Actions Token (Secret)
 - GITHUB_REPOSITORY          : owner/repo
 - GITHUB_EVENT_PATH          : Pfad zur GitHub-Event-JSON
-- GH_EVENT_NAME              : event name (issue_comment, pull_request_review_comment, workflow_dispatch)
+- GH_EVENT_NAME              : event name (issue_comment, issues, pull_request_review_comment, workflow_dispatch)
 - DISPATCH_COMMENT           : (nur workflow_dispatch) Kommentartext mit /codex …
 - CODEX_ALLOWLIST            : optionale Kommaliste erlaubter Handles (Var)
 
@@ -82,7 +82,7 @@ def comment_reply(body: str):
 
 
 def read_comment() -> str:
-    """Extract the comment body that triggered the workflow."""
+    """Extract the user instruction that triggered the workflow."""
     evname = os.environ.get("GH_EVENT_NAME", "")
     if evname == "workflow_dispatch":
         return os.environ.get("DISPATCH_COMMENT", "").strip()
@@ -92,8 +92,18 @@ def read_comment() -> str:
     except Exception:
         return ""
 
-    if "comment" in event and "body" in event["comment"]:
+    # 1) Issue comment
+    if evname == "issue_comment" and "comment" in event and "body" in event["comment"]:
         return (event["comment"]["body"] or "").strip()
+
+    # 2) PR review comment
+    if evname == "pull_request_review_comment" and "comment" in event and "body" in event["comment"]:
+        return (event["comment"]["body"] or "").strip()
+
+    # 3) Issues event -> Body des Issues
+    if evname == "issues" and "issue" in event and "body" in event["issue"]:
+        return (event["issue"]["body"] or "").strip()
+
     return ""
 
 
@@ -135,7 +145,7 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
     """
     from openai import OpenAI
 
-    # Robust base_url-Handling
+    # Robust base_url-Handling: nur setzen, wenn NICHT leer und mit http(s) beginnt; i. d. R. /v1 anhängen
     raw_base = os.environ.get("OPENAI_BASE_URL", "").strip()
     if raw_base and not raw_base.startswith(("http://", "https://")):
         raw_base = "https://" + raw_base
@@ -145,8 +155,10 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
     if raw_base:
         client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=raw_base)
     else:
+        # Kein base_url explizit übergeben ⇒ SDK nutzt die offizielle Default-URL
         client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
+    # Reasoning effort (high|medium|low); default high
     effort = os.environ.get("OPENAI_REASONING_EFFORT", "high").lower()
     if effort not in ("high", "medium", "low"):
         effort = "high"
@@ -164,6 +176,7 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
         )
         txt = getattr(resp, "output_text", None)
         if not txt:
+            # Attempt to navigate structure if SDK returns segments
             out = getattr(resp, "output", None)
             if out and len(out) and getattr(out[0], "content", None):
                 c0 = out[0].content
@@ -172,6 +185,7 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
         if txt:
             return txt.strip()
     except Exception as e:
+        # Fallback to Chat Completions
         try:
             cc = client.chat.completions.create(
                 model=model,
@@ -191,6 +205,7 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
 # ------------------------ Core Logic ------------------------
 
 def main():
+    # 1) Read & validate command
     comment = read_comment()
     if not comment:
         print("No comment body found.")
@@ -205,7 +220,7 @@ def main():
         comment_reply(f"⛔ Sorry @{actor}, du bist nicht berechtigt, den Codex-Bot auszuführen.")
         sys.exit(1)
 
-    # Flags
+    # 2) Parse flags: -m/--model, --paths, --reason, --verify
     m_model = re.search(r"(?:^|\s)(?:-m|--model)\s+([A-Za-z0-9._\-]+)", comment)
     model = m_model.group(1).strip() if m_model else (os.environ.get("OPENAI_MODEL_DEFAULT") or "gpt-5")
 
@@ -218,7 +233,7 @@ def main():
 
     do_verify = bool(re.search(r"(?:^|\s)--verify\b", comment))
 
-    # Instruction bereinigen
+    # instruction = content after '/codex' minus flags
     instruction = re.sub(r"^.*?/codex", "", comment, flags=re.S).strip()
     instruction = re.sub(r"(?:^|\s)(?:-m|--model)\s+[A-Za-z0-9._\-]+", "", instruction)
     instruction = re.sub(r"(?:^|\s)--reason\s+(?:high|medium|low)\b", "", instruction, flags=re.I)
@@ -229,15 +244,18 @@ def main():
         comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex -m gpt-5 --reason high --verify Tests für PlayerService hinzufügen …`")
         sys.exit(1)
 
-    # Repo context
+    # 3) Build lightweight repo context
     files = sh("git ls-files").splitlines()
     if path_filter:
+        # filter by simple globs (bash [[ pattern ]])
         keep = []
         for f in files:
             for g in path_filter:
                 try:
-                    ok = subprocess.run(f"bash -lc '[[ {shlex.quote(f)} == {shlex.quote(g)} ]]'",
-                                        shell=True, text=True)
+                    ok = subprocess.run(
+                        f"bash -lc '[[ {shlex.quote(f)} == {shlex.quote(g)} ]]'",
+                        shell=True, text=True
+                    )
                     if ok.returncode == 0:
                         keep.append(f)
                         break
@@ -245,6 +263,7 @@ def main():
                     pass
         files = keep
 
+    # prioritize code files
     code_ext = (".kt", ".kts", ".java", ".xml", ".gradle", ".gradle.kts", ".md",
                 ".yml", ".yaml", ".properties", ".pro", ".conf", ".sh")
     prio = [f for f in files if f.endswith(code_ext)]
@@ -265,6 +284,7 @@ def main():
     if len(context) > 220_000:
         context = context[:220_000]
 
+    # 4) Prepare prompts
     SYSTEM = (
         "You are an expert code-change generator for Android/Kotlin projects (Gradle, Jetpack Compose, "
         "Unit + Instrumented tests). Return ONLY one git-compatible unified diff (no explanations). "
@@ -285,12 +305,14 @@ Output requirements:
 - Do NOT include binary blobs; use code stubs/placeholders where needed.
 """
 
+    # 5) Call OpenAI
     try:
         patch_text = openai_generate_diff(model, SYSTEM, USER)
     except Exception as e:
         comment_reply(f"❌ OpenAI-Fehler:\n```\n{e}\n```")
         raise
 
+    # unwrap code fence if present
     m = re.search(r"```(?:diff)?\s*(.*?)```", patch_text, re.S)
     if m:
         patch_text = m.group(1).strip()
@@ -299,6 +321,7 @@ Output requirements:
         comment_reply(f"⚠️ Konnte keinen gültigen Diff erkennen. Antwort war:\n```\n{patch_text[:1400]}\n```")
         sys.exit(1)
 
+    # 6) Validate & apply patch on new branch
     try:
         PatchSet.from_string(patch_text)
     except Exception as e:
@@ -319,6 +342,7 @@ Output requirements:
         comment_reply(f"❌ Patch-Apply fehlgeschlagen:\n```\n{e}\n```")
         raise
 
+    # 7) Commit, push, open PR
     sh("git add -A")
     sh("git commit -m 'codex: apply requested changes'")
     sh("git push --set-upstream origin HEAD")
@@ -340,14 +364,16 @@ Output requirements:
 
     comment_reply(f"✅ PR erstellt: #{pr['number']} — {pr['html_url']}\n\nBranch: `{branch}`")
 
-    # Optional verification step
+    # Optional verification step (quick unit test gate on the PR branch)
     if do_verify:
         try:
+            # Safety: ensure gradlew is executable
+            try:
+                sh("chmod +x ./gradlew", check=False)
+            except Exception:
+                pass
             out = sh("./gradlew -S --no-daemon testDebugUnitTest", check=False)
-            if out.strip():
-                snippet = out[-1800:]
-            else:
-                snippet = "(no output)"
+            snippet = out[-1800:] if out else "(no output)"
             comment_reply(f"🧪 Gradle Tests für `{branch}` ausgeführt:\n```\n{snippet}\n```")
         except Exception as e:
             comment_reply(f"❌ Gradle Testlauf fehlgeschlagen:\n```\n{e}\n```")
