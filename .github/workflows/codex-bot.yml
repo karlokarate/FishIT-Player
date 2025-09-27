@@ -35,6 +35,7 @@ jobs:
           cache: gradle
 
       - uses: android-actions/setup-android@v3
+
       - uses: gradle/actions/setup-gradle@v3
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
@@ -56,6 +57,13 @@ jobs:
           DISPATCH_COMMENT: ${{ inputs.comment }}
           CODEX_ALLOWLIST: ${{ vars.CODEX_ALLOWLIST }}
         run: python .github/codex/bot.py
+
+      # --- FIX: ensure gradlew is executable and not CRLF ---
+      - name: Fix gradlew permissions
+        run: |
+          chmod +x ./gradlew
+          sed -i 's/\r$//' gradlew
+      # -------------------------------------------------------
 
       - name: Build + Unit Tests
         env:
