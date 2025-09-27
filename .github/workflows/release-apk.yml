@@ -30,24 +30,43 @@ jobs:
           cache: gradle
 
       - uses: android-actions/setup-android@v3
+
       - uses: gradle/actions/setup-gradle@v3
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
+      # Ensure gradlew is runnable on Linux runners (and not CRLF)
+      - name: Fix gradlew permissions
+        run: |
+          chmod +x ./gradlew
+          sed -i 's/\r$//' gradlew
+
+      # Decode keystore & write signing props if secrets are present
       - name: Prepare signing
         if: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+          ANDROID_SIGNING_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}
         run: |
-          echo "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 -d > $HOME/keystore.jks
-          mkdir -p ~/.gradle
+          echo "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 -d > "$HOME/keystore.jks"
+          mkdir -p "$HOME/.gradle"
           {
             echo "MYAPP_UPLOAD_STORE_FILE=$HOME/keystore.jks"
             echo "MYAPP_UPLOAD_KEY_ALIAS=$ANDROID_SIGNING_KEY_ALIAS"
             echo "MYAPP_UPLOAD_STORE_PASSWORD=$ANDROID_SIGNING_KEYSTORE_PASSWORD"
             echo "MYAPP_UPLOAD_KEY_PASSWORD=$ANDROID_SIGNING_KEY_PASSWORD"
-          } >> ~/.gradle/gradle.properties
+          } >> "$HOME/.gradle/gradle.properties"
 
-      - name: Build Release
-        run: ./gradlew -S --no-daemon bundleRelease assembleRelease
+      - name: Build Release (APK + AAB)
+        shell: bash
+        run: |
+          ARGS=()
+          # Pass version overrides when triggered via workflow_dispatch
+          if [[ -n "${{ inputs.versionName }}" ]]; then ARGS+=("-PversionName=${{ inputs.versionName }}"); fi
+          if [[ -n "${{ inputs.versionCode }}" ]]; then ARGS+=("-PversionCode=${{ inputs.versionCode }}"); fi
+          ./gradlew -S --no-daemon --build-cache bundleRelease assembleRelease "${ARGS[@]}"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -57,9 +76,10 @@ jobs:
             **/build/outputs/bundle/release/*.aab
             **/build/outputs/mapping/release/mapping.txt
 
-      - name: Create Release
+      - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
-        env: { GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "${GITHUB_REF#refs/tags/}" \
             **/build/outputs/apk/release/*.apk \
