@@ -2,25 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-Codex Bot: Erzeugt AI-Patches (Unified Diff), wendet sie an, pusht Branch, erstellt PR.
-Kompatibel mit den Workflows in .github/workflows/codex-bot.yml
-
-Erwartete Umgebungsvariablen (werden im Workflow gesetzt):
-- OPENAI_API_KEY             : OpenAI API Key (Secret)
-- OPENAI_BASE_URL            : optional, falls Proxy/Enterprise (muss mit https:// beginnen)
-- OPENAI_MODEL_DEFAULT       : z. B. "gpt-5" (Var)
-- OPENAI_REASONING_EFFORT    : "high" | "medium" | "low" (Var; default "high")
-- GITHUB_TOKEN               : GitHub Actions Token (Secret)
-- GITHUB_REPOSITORY          : owner/repo
-- GITHUB_EVENT_PATH          : Pfad zur GitHub-Event-JSON
-- GH_EVENT_NAME              : event name (issue_comment, issues, pull_request_review_comment, workflow_dispatch)
-- DISPATCH_COMMENT           : (nur workflow_dispatch) Kommentartext mit /codex …
-- CODEX_ALLOWLIST            : optionale Kommaliste erlaubter Handles (Var)
-
-Slash-Command-Syntax (Beispiele):
-/codex -m gpt-5 --reason high Refactor X, füge Tests hinzu
-/codex --paths app/src,core/ui Fix Fokusnavigation in Staffeln
-/codex --verify Korrigiere Fehler und führe anschließend Unit-Tests aus
+Codex Bot: Erzeugt AI-Patches (Unified Diff), validiert gegen Repo-Tree,
+mapped fehlende Pfade intelligent, wendet Patch an, pusht Branch, erstellt PR.
+Postet vorab einen kompakten Verzeichnisbaum und speichert die volle Liste.
 """
 
 import json
@@ -30,20 +14,21 @@ import shlex
 import subprocess
 import sys
 import time
+import difflib
+from pathlib import Path
 from datetime import datetime
 
 import requests
 from unidiff import PatchSet
 
 
-# ------------------------ Utilities ------------------------
+# ------------------------ Shell / Git / HTTP Utils ------------------------
 
 def sh(cmd: str, check: bool = True) -> str:
     res = subprocess.run(cmd, shell=True, text=True, capture_output=True)
     if check and res.returncode != 0:
         raise RuntimeError(f"cmd failed: {cmd}\nSTDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}")
     return res.stdout.strip()
-
 
 def gh_api(method: str, path: str, payload=None):
     url = f"https://api.github.com{path}"
@@ -54,10 +39,7 @@ def gh_api(method: str, path: str, payload=None):
     resp = requests.request(method, url, headers=headers, json=payload)
     if resp.status_code >= 300:
         raise RuntimeError(f"GitHub API {method} {path} failed: {resp.status_code} {resp.text}")
-    if resp.text:
-        return resp.json()
-    return {}
-
+    return resp.json() if resp.text else {}
 
 def comment_reply(body: str):
     try:
@@ -73,7 +55,6 @@ def comment_reply(body: str):
     if issue_number is None:
         return
     gh_api("POST", f"/repos/{repo}/issues/{issue_number}/comments", {"body": body})
-
 
 def read_comment() -> str:
     evname = os.environ.get("GH_EVENT_NAME", "")
@@ -91,7 +72,6 @@ def read_comment() -> str:
         return (event["issue"]["body"] or "").strip()
     return ""
 
-
 def actor_handle() -> str:
     evname = os.environ.get("GH_EVENT_NAME", "")
     if evname == "workflow_dispatch":
@@ -103,7 +83,6 @@ def actor_handle() -> str:
     except Exception:
         return ""
 
-
 def is_allowed(actor: str) -> bool:
     allowlist = os.environ.get("CODEX_ALLOWLIST", "").strip()
     if allowlist:
@@ -114,6 +93,70 @@ def is_allowed(actor: str) -> bool:
         return perms.get("permission") in ("write", "maintain", "admin")
     except Exception:
         return False
+
+
+# ------------------------ Repo Index / Tree ------------------------
+
+IGNORES = {
+    ".git", ".gradle", ".idea", "build", "app/build", "gradle/build",
+    ".github/codex/codex.patch", ".github/codex/tree.txt"
+}
+
+def _is_ignored(path: Path) -> bool:
+    p = str(path).replace("\\", "/")
+    if any(part.startswith(".git") for part in p.split("/")):
+        return True
+    if any(p == ig or p.startswith(ig + "/") for ig in IGNORES):
+        return True
+    return False
+
+def build_repo_index():
+    """Return (files_list, tree_str_compact, tree_str_full)."""
+    # nur getrackte Dateien (schnell & robust)
+    try:
+        files = [Path(p) for p in sh("git ls-files").splitlines() if p.strip()]
+    except Exception:
+        # Fallback: vollständiger Walk (sollte nicht nötig sein)
+        files = [p for p in Path(".").rglob("*") if p.is_file()]
+    files = [p for p in files if not _is_ignored(p)]
+
+    # Vollständige Liste als Text
+    full_list = "\n".join(sorted(str(p).replace("\\", "/") for p in files))
+
+    # Kompakter Tree (Tiefe 4)
+    def compress(path_strs, max_depth=4):
+        # Kürzt tiefe Pfade: /a/b/c/d/e → /a/b/c/d/…
+        out = []
+        for s in sorted(path_strs):
+            parts = s.split("/")
+            if len(parts) > max_depth:
+                out.append("/".join(parts[:max_depth]) + "/…")
+            else:
+                out.append(s)
+        # Entferne Duplikat-Zeilen nach Kompression
+        dedup = []
+        last = None
+        for line in out:
+            if line != last:
+                dedup.append(line)
+                last = line
+        return "\n".join(dedup)
+
+    compact = compress((str(p).replace("\\", "/") for p in files), max_depth=4)
+
+    # Speichere volle Liste als Artefakt-Datei
+    os.makedirs(".github/codex", exist_ok=True)
+    with open(".github/codex/tree.txt", "w", encoding="utf-8") as f:
+        f.write(full_list)
+
+    return files, compact, full_list
+
+def post_repo_tree_comment(compact_tree: str):
+    comment_reply(
+        "📁 **Repo-Verzeichnisbaum (kompakt, Tiefe ≤ 4)**\n"
+        "```\n" + compact_tree[:6000] + "\n```\n"
+        "Vollständige Liste wurde nach `.github/codex/tree.txt` geschrieben."
+    )
 
 
 # ------------------------ OpenAI ------------------------
@@ -128,12 +171,10 @@ def _compute_base_url() -> str:
         raw = raw.rstrip("/") + "/v1"
     return raw
 
-
 def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> str:
     from openai import OpenAI
 
-    base_url = _compute_base_url()
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=base_url)
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=_compute_base_url())
 
     effort = os.environ.get("OPENAI_REASONING_EFFORT", "high").lower()
     if effort not in ("high", "medium", "low"):
@@ -158,7 +199,7 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
             model=model,
             input=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
             reasoning={"effort": effort},
         )
@@ -178,7 +219,7 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
             model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
         )
         return cc.choices[0].message.content.strip()
@@ -190,6 +231,106 @@ def openai_generate_diff(model: str, system_prompt: str, user_prompt: str) -> st
             return _try(_chat_call)
         except Exception as ee:
             raise RuntimeError(f"OpenAI call failed: {e}\nFallback also failed: {ee}")
+
+
+# ------------------------ Patch Preflight / Path Remap ------------------------
+
+def parse_patch_sections(patch_text: str):
+    """Split unified diff into per-file sections with metadata."""
+    sections = []
+    for m in re.finditer(r"^diff --git a/(\S+)\s+b/(\S+)\s*$", patch_text, re.M):
+        start = m.start()
+        # next 'diff --git' or end
+        next_m = re.search(r"^diff --git ", patch_text[m.end():], re.M)
+        end = m.end() + (next_m.start() if next_m else len(patch_text) - m.end())
+        body = patch_text[start:end]
+
+        oldp, newp = m.group(1), m.group(2)
+        is_add = bool(re.search(r"(?m)^--- /dev/null\s*$"))
+        is_del = bool(re.search(r"(?m)^\+\+\+ /dev/null\s*$"))
+        is_rename = bool(re.search(r"(?m)^rename (from|to) ", body) or re.search(r"(?m)^similarity index ", body))
+        sections.append({
+            "old": oldp, "new": newp, "body": body,
+            "is_add": is_add, "is_del": is_del, "is_rename": is_rename
+        })
+    return sections
+
+def best_match_path(target_path: str, repo_files):
+    """Find best existing file path for a target (by basename + suffix similarity)."""
+    target = target_path.replace("\\", "/")
+    tbase = os.path.basename(target)
+    candidates = [str(p).replace("\\", "/") for p in repo_files if os.path.basename(str(p)) == tbase]
+    if not candidates:
+        # fuzzy on entire path
+        scored = sorted(
+            ((difflib.SequenceMatcher(a=target, b=str(p)).ratio(), str(p)) for p in repo_files),
+            reverse=True
+        )
+        return scored[0][1] if scored and scored[0][0] >= 0.6 else None
+
+    tparts = target.split("/")
+    def suffix_score(p):
+        parts = p.split("/")
+        # count equal suffix segments
+        suf = 0
+        for a, b in zip(reversed(tparts), reversed(parts)):
+            if a == b:
+                suf += 1
+            else:
+                break
+        ratio = difflib.SequenceMatcher(a="/".join(tparts[-4:]), b="/".join(parts[-4:])).ratio()
+        # Prefer longer suffix match, then ratio, then shorter path
+        return (suf, ratio, -len(parts))
+    return sorted(candidates, key=suffix_score, reverse=True)[0]
+
+def rewrite_section_paths(section: str, new_path: str):
+    """Rewrite a single file-section to use 'new_path' for both a/ and b/ (modify-in-place)."""
+    # Header
+    section = re.sub(r"^(diff --git a/)\S+(\s+b/)\S+",
+                     rf"\1{new_path}\2{new_path}",
+                     section, count=1, flags=re.M)
+    # File markers
+    section = re.sub(r"(?m)^(--- )a/\S+$", rf"\1a/{new_path}", section)
+    section = re.sub(r"(?m)^(\+\+\+ )b/\S+$", rf"\1b/{new_path}", section)
+    return section
+
+def try_remap_patch(patch_text: str, repo_files):
+    """Return (new_patch_text, remapped_list, unresolved_list)."""
+    sections = parse_patch_sections(patch_text)
+    if not sections:
+        return patch_text, [], []
+
+    remapped = []
+    unresolved = []
+    new_sections = []
+
+    for s in sections:
+        newp = s["new"]
+        body = s["body"]
+        # Additions and renames lassen wir unverändert (oder separat behandeln)
+        if s["is_add"] or s["is_rename"]:
+            new_sections.append(body)
+            continue
+        # Ziel existiert?
+        if os.path.exists(newp):
+            new_sections.append(body)
+            continue
+        # Versuch: beste Übereinstimmung im Repo
+        cand = best_match_path(newp, repo_files)
+        if cand:
+            new_body = rewrite_section_paths(body, cand)
+            new_sections.append(new_body)
+            remapped.append((newp, cand))
+        else:
+            # Sektion weglassen, aber reporten
+            unresolved.append(newp)
+            # nicht anhängen → Patch-Apply soll nicht daran scheitern
+
+    # Baue neuen Patch zusammen
+    # Achtung: Originaltext kann evtl. Header/Trailer außerhalb Sektionen enthalten – hier sind die
+    # Sektionen schon vollständig (inkl. Headers), also einfach konkatenieren:
+    new_text = "".join(new_sections)
+    return new_text, remapped, unresolved
 
 
 # ------------------------ Core Logic ------------------------
@@ -205,6 +346,7 @@ def main():
         comment_reply(f"⛔ Sorry @{actor}, du bist nicht berechtigt.")
         sys.exit(1)
 
+    # Flags
     m_model = re.search(r"(?:^|\s)(?:-m|--model)\s+([A-Za-z0-9._\-]+)", comment)
     model = m_model.group(1).strip() if m_model else (os.environ.get("OPENAI_MODEL_DEFAULT") or "gpt-5")
 
@@ -215,33 +357,49 @@ def main():
     m_paths = re.search(r"(?:^|\s)--paths\s+([^\n]+)", comment)
     path_filter = [p.strip() for p in (m_paths.group(1) if m_paths else "").split(",") if p.strip()]
 
+    request_tree_only = bool(re.search(r"nur\s+(repo-)?tree|nur\s+verzeichnisbaum", comment, re.I))
+
     do_verify = bool(re.search(r"(?:^|\s)--verify\b", comment))
 
+    # Instruction bereinigen
     instruction = re.sub(r"^.*?/codex", "", comment, flags=re.S).strip()
     instruction = re.sub(r"(?:^|\s)(?:-m|--model)\s+[A-Za-z0-9._\-]+", "", instruction)
     instruction = re.sub(r"(?:^|\s)--reason\s+(?:high|medium|low)\b", "", instruction, flags=re.I)
     instruction = re.sub(r"(?:^|\s)--paths\s+[^\n]+", "", instruction)
     instruction = re.sub(r"(?:^|\s)--verify\b", "", instruction)
     instruction = instruction.strip()
-    if not instruction:
-        comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex --verify Tests hinzufügen …`")
+    if not instruction and not request_tree_only:
+        comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex --paths app/src Tests für PlayerService hinzufügen`")
         sys.exit(1)
 
-    files = sh("git ls-files").splitlines()
+    # ---------------- Repo-Index + Tree ----------------
+    repo_files, compact_tree, _full = build_repo_index()
+    post_repo_tree_comment(compact_tree)
+
+    # Optional: Nur Tree gewünscht
+    if request_tree_only:
+        print("Tree-only request handled.")
+        sys.exit(0)
+
+    # ---------------- Kontext aufbauen ----------------
+    files = [str(p).replace("\\", "/") for p in repo_files]
     if path_filter:
+        # simple glob-match pro Pattern via bash [[ ]]
         keep = []
         for f in files:
             for g in path_filter:
                 try:
-                    ok = subprocess.run(f"bash -lc '[[ {shlex.quote(f)} == {shlex.quote(g)} ]]'",
-                                        shell=True, text=True)
+                    ok = subprocess.run(
+                        f"bash -lc '[[ {shlex.quote(f)} == {shlex.quote(g)} ]]'",
+                        shell=True, text=True
+                    )
                     if ok.returncode == 0:
-                        keep.append(f)
-                        break
+                        keep.append(f); break
                 except Exception:
                     pass
-        files = keep
+        files = keep or files
 
+    # priorisiere Code-Dateien
     code_ext = (".kt", ".kts", ".java", ".xml", ".gradle", ".gradle.kts",
                 ".md", ".yml", ".yaml", ".properties", ".pro", ".conf", ".sh")
     prio = [f for f in files if f.endswith(code_ext)]
@@ -249,22 +407,29 @@ def main():
 
     preview_parts = []
     for f in files:
-        if f.startswith(".git/"):
-            continue
         try:
+            # max 160 Zeilen pro Datei
             head = sh(f"sed -n '1,160p' {shlex.quote(f)} | sed 's/\\t/    /g' || true", check=False)
             if head.strip():
                 preview_parts.append(f"\n--- file: {f} ---\n{head}")
         except Exception:
             pass
     context = "".join(preview_parts)
-    if len(context) > 220_000:
-        context = context[:220_000]
+    if len(context) > 200_000:
+        context = context[:200_000]
 
-    SYSTEM = ("You are an expert code-change generator for Android/Kotlin projects. "
-              "Return ONLY one git-compatible unified diff (no explanations).")
+    # --------------- Prompts ----------------
+    SYSTEM = (
+        "You are an expert code-change generator for Android/Kotlin (Gradle, Jetpack Compose, "
+        "Unit + Instrumented tests). Return ONLY one git-compatible unified diff (no explanations). "
+        "Keep changes minimal and consistent so Gradle build/test passes. Include edits to build/test files as needed. "
+        "All file paths are repo-root relative. Use ONLY files and paths that exist in the provided repo tree."
+    )
 
-    USER = f"""Repository context (truncated):
+    USER = f"""Repository tree (compact, depth≤4):
+{compact_tree}
+
+Repository context (truncated file heads):
 {context}
 
 Task from @{actor}:
@@ -272,39 +437,74 @@ Task from @{actor}:
 
 Output requirements:
 - Return exactly ONE unified diff starting with lines like: diff --git a/... b/...
+- Ensure it applies at repo root using: git apply -p0
+- Include new files with proper headers (e.g. 'new file mode 100644')
+- Do NOT include binary blobs; use code stubs/placeholders where needed.
 """
 
+    # --------------- OpenAI ---------------
     try:
         patch_text = openai_generate_diff(model, SYSTEM, USER)
     except Exception as e:
         comment_reply(f"❌ OpenAI-Fehler:\n```\n{e}\n```")
         raise
 
+    # Codefence entfernen
     m = re.search(r"```(?:diff)?\s*(.*?)```", patch_text, re.S)
     if m:
         patch_text = m.group(1).strip()
     if "diff --git " not in patch_text:
-        comment_reply(f"⚠️ Kein gültiger Diff:\n```\n{patch_text[:1400]}\n```")
+        comment_reply(f"⚠️ Kein gültiger Diff erkannt. Antwort war:\n```\n{patch_text[:1400]}\n```")
         sys.exit(1)
 
+    # --------------- Patch validieren & ggf. remappen ---------------
     try:
         PatchSet.from_string(patch_text)
     except Exception as e:
-        comment_reply(f"⚠️ Diff-Parse-Fehler:\n```\n{str(e)}\n```")
+        comment_reply(f"⚠️ Diff ließ sich nicht parsen:\n```\n{str(e)}\n```")
         raise
+
+    # Remap fehlender Pfade auf beste Matches; nicht-zuordenbare Sektionen werden weggelassen
+    remapped_patch, remaps, unresolved = try_remap_patch(patch_text, repo_files)
+
+    # Bericht
+    if remaps:
+        bullets = "\n".join([f"- `{src}` → `{dst}`" for src, dst in remaps])
+        comment_reply(f"🧭 Pfad-Remap angewandt (fehlende → existierende Dateien):\n{bullets}")
+    if unresolved:
+        bullets = "\n".join([f"- {p}" for p in unresolved])
+        comment_reply(
+            "⚠️ Einige Diff-Sektionen konnten keinem existierenden Pfad zugeordnet werden und wurden "
+            "übersprungen. Bitte `--paths` einschränken oder Aufgabe präziser formulieren.\n"
+            "Nicht zuordenbar:\n" + bullets
+        )
 
     os.makedirs(".github/codex", exist_ok=True)
     with open(".github/codex/codex.patch", "w", encoding="utf-8") as f:
-        f.write(patch_text)
+        f.write(remapped_patch)
 
+    # --------------- Branch, Apply, Commit, PR ---------------
     branch = f"codex/{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{actor}"
     try:
         sh("git config user.name 'codex-bot'")
         sh("git config user.email 'actions@users.noreply.github.com'")
         sh(f"git checkout -b {branch}")
-        sh("git apply -p0 --whitespace=fix .github/codex/codex.patch")
+        # Sicherheitsnetz für gradlew
+        sh("chmod +x ./gradlew", check=False)
+
+        # Erst normal versuchen
+        try:
+            sh("git apply -p0 --whitespace=fix .github/codex/codex.patch")
+        except Exception as e1:
+            # Dann mit --reject, damit wenigstens anwendbare Hunks durchgehen
+            sh("git apply -p0 --reject --whitespace=fix .github/codex/codex.patch")
+            rej = sh("git ls-files -o --exclude-standard | grep -E '\\.rej$' || true", check=False)
+            if rej.strip():
+                comment_reply("⚠️ Einige Hunks konnten nicht automatisch angewendet werden ('.rej' erstellt):\n```\n"
+                              + rej[:1800] + "\n```")
+
     except Exception as e:
-        comment_reply(f"❌ Patch Apply fehlgeschlagen:\n```\n{e}\n```")
+        comment_reply(f"❌ Patch-Apply fehlgeschlagen:\n```\n{e}\n```")
         raise
 
     sh("git add -A")
@@ -313,12 +513,13 @@ Output requirements:
 
     repo = os.environ["GITHUB_REPOSITORY"]
     default_branch = gh_api("GET", f"/repos/{repo}").get("default_branch", "main")
-
     pr = gh_api("POST", f"/repos/{repo}/pulls", {
         "title": f"codex changes: {instruction[:60]}",
         "head": branch,
         "base": default_branch,
-        "body": f"Automatisch erstellt aus Kommentar von @{actor}:\n\n> {instruction}\n\nPatch generiert via OpenAI ({model})."
+        "body": f"Automatisch erstellt aus Kommentar von @{actor}:\n\n> {instruction}\n\n"
+                f"Patch generiert via OpenAI ({model}).\n\n"
+                f"_Repo-Tree gespeichert unter `.github/codex/tree.txt`._"
     })
 
     with open(".github/codex/.last_branch", "w", encoding="utf-8") as f:
@@ -328,9 +529,9 @@ Output requirements:
 
     comment_reply(f"✅ PR erstellt: #{pr['number']} — {pr['html_url']}")
 
+    # Optional schneller Test
     if do_verify:
         try:
-            sh("chmod +x ./gradlew", check=False)
             out = sh("./gradlew -S --no-daemon testDebugUnitTest", check=False)
             snippet = out[-1800:] if out else "(no output)"
             comment_reply(f"🧪 Tests für `{branch}`:\n```\n{snippet}\n```")
