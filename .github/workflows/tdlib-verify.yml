@@ -22,7 +22,7 @@ jobs:
         id: detect
         shell: bash
         run: |
-          AGP=$(grep -RhoE "com\.android\.tools\.build:gradle[: ]+[\"']([0-9]+\.[0-9]+\.[0-9]+)[\"']" --include="*.gradle*" | head -n1 || true)
+          AGP=$(grep -RhoE "com\.android\.tools\.build:gradle[: ]+[\"']([0-9]+\.[0-9]+\.[0-9]+)[\"']" --include="*.gradle*" | sed -E "s/.*['\"]([0-9]+\.[0-9]+\.[0-9]+)['\"].*/\1/" | head -n1 || true)
           JDK=17; if [[ -n "$AGP" ]]; then MAJOR=${AGP%%.*}; if (( MAJOR < 8 )); then JDK=11; fi; fi
           echo "jdk=$JDK" >> "$GITHUB_OUTPUT"
 
@@ -38,6 +38,12 @@ jobs:
 
       - name: Install binutils
         run: sudo apt-get update && sudo apt-get install -y binutils
+
+      # Ensure gradlew is runnable and not CRLF
+      - name: Fix gradlew permissions
+        run: |
+          chmod +x ./gradlew
+          sed -i 's/\r$//' gradlew
 
       - name: Verify TDLib JNI
         env:
