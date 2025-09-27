@@ -1100,15 +1100,15 @@ fun ResumeRow(
     if (items.isEmpty()) return
     // Ensure no duplicate ids to keep LazyRow keys unique
     val slice = remember(items) { items.distinctBy { it.id }.take(5) }
-    val state = com.chris.m3usuite.ui.state.rememberRouteListState("home:resume")
     com.chris.m3usuite.ui.tv.TvFocusRow(
-        items = slice,
-        key = { it.id },
-        listState = state,
-        horizontalArrangement = Arrangement.spacedBy(0.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-    ) { _, m, itemMod ->
-        MediaCard(item = m, onClick = onClick, modifier = itemMod)
+        stateKey = "home:resume",
+        itemSpacing = 0.dp,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        itemCount = slice.size,
+        itemKey = { idx -> slice[idx].id }
+    ) { idx ->
+        val m = slice[idx]
+        MediaCard(item = m, onClick = onClick)
     }
 }
 

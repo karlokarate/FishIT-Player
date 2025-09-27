@@ -26,6 +26,16 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
+      - name: Install ripgrep (rg)
+        run: |
+          if ! command -v rg >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ripgrep
+          fi
+
+      - name: TV Focus/DPAD Audit
+        run: bash tools/audit_tv_focus.sh ci
+
       - name: Build + Unit Tests
         env:
           HEADER: ${{ secrets.header }}

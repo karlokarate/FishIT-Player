@@ -285,7 +285,7 @@ fun SettingsScreen(
             readOnly = isTv,
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (isTv && canChangeSources) Modifier.clickable { showEditM3u = true } else Modifier),
+                .then(if (isTv && canChangeSources) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditM3u = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
             colors = tfColors
         )
         if (isTv && canChangeSources) {
@@ -300,7 +300,7 @@ fun SettingsScreen(
             readOnly = isTv,
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (isTv && canChangeSources) Modifier.clickable { showEditEpg = true } else Modifier),
+                .then(if (isTv && canChangeSources) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditEpg = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
             colors = tfColors
         )
         if (isTv && canChangeSources) {
@@ -325,7 +325,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(if (isTv) Modifier.clickable { showEditUa = true } else Modifier),
+                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditUa = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
             if (isTv) { TextButton(onClick = { showEditUa = true }) { Text("Bearbeiten…") } }
@@ -339,7 +339,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(if (isTv) Modifier.clickable { showEditRef = true } else Modifier),
+                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditRef = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
             if (isTv) { TextButton(onClick = { showEditRef = true }) { Text("Bearbeiten…") } }
@@ -356,7 +356,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .weight(1f)
-                    .then(if (isTv) Modifier.clickable { showEditHost = true } else Modifier),
+                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditHost = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
             OutlinedTextField(
@@ -367,7 +367,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .width(120.dp)
-                    .then(if (isTv) Modifier.clickable { showEditPort = true } else Modifier),
+                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditPort = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
         }
@@ -380,7 +380,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .weight(1f)
-                    .then(if (isTv) Modifier.clickable { showEditUser = true } else Modifier),
+                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditUser = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
             OutlinedTextField(
@@ -392,7 +392,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .weight(1f)
-                    .then(if (isTv) Modifier.clickable { showEditPass = true } else Modifier),
+                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditPass = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
         }
@@ -418,7 +418,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .width(200.dp)
-                    .then(if (isTv) Modifier.clickable { showEditOut = true } else Modifier),
+                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditOut = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
             val ctxLocal = LocalContext.current
@@ -1052,6 +1052,10 @@ fun SettingsScreen(
                     availablePrefixes.forEach { pfx ->
                         val checked = pfx in currentSet
                         FilterChip(
+                            modifier = com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = {
+                                val next = if (checked) currentSet - pfx else currentSet + pfx
+                                scope.launch { store.setSeedPrefixesCsv(next.joinToString(",")) }
+                            }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) },
                             selected = checked,
                             onClick = {
                                 val next = if (checked) currentSet - pfx else currentSet + pfx

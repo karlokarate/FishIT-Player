@@ -655,18 +655,17 @@ fun SeriesDetailScreen(
                                 }
                                 Spacer(Modifier.height(6.dp))
                                 run {
-                                    // TV-friendly LazyRow: focusGroup at container, focusable items bring into view
-                                    val seasonListState: LazyListState = com.chris.m3usuite.ui.state.rememberRouteListState("series:seasons:${seriesStreamId ?: -1}")
                                     com.chris.m3usuite.ui.tv.TvFocusRow(
-                                        items = seasons,
-                                        key = { it },
-                                        listState = seasonListState,
-                                        modifier = Modifier,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        stateKey = "series:seasons:${seriesStreamId ?: -1}",
+                                        itemSpacing = 8.dp,
                                         contentPadding = PaddingValues(end = 8.dp),
-                                    ) { _, s, itemMod ->
+                                        itemCount = seasons.size,
+                                        itemKey = { idx -> seasons[idx] }
+                                    ) { idx ->
+                                        val s = seasons[idx]
                                         FilterChip(
-                                            modifier = itemMod.graphicsLayer(alpha = DesignTokens.BadgeAlpha),
+                                            modifier = Modifier.graphicsLayer(alpha = DesignTokens.BadgeAlpha)
+                                                .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable { seasonSel = s } }),
                                             selected = seasonSel == s,
                                             onClick = { seasonSel = s },
                                             label = { Text("S$s") },

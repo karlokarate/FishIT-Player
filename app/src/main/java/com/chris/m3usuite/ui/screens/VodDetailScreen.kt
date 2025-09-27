@@ -635,17 +635,17 @@ fun VodDetailScreen(
             val AccentDyn = if (isAdult) com.chris.m3usuite.ui.theme.DesignTokens.Accent else com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
             val badgeColor = if (!isAdult) AccentDyn.copy(alpha = 0.26f) else AccentDyn.copy(alpha = 0.20f)
             val badgeColorDarker = if (!isAdult) AccentDyn.copy(alpha = 0.32f) else AccentDyn.copy(alpha = 0.26f)
-            Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(50), color = badgeColor, contentColor = Color.White, modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 2,
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                        .then(if (url != null) Modifier.focusable(true) else Modifier)
-                        .clickable(enabled = url != null) { play(fromStart = false) }
-                )
-            }
+                Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(50), color = badgeColor, contentColor = Color.White, modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        maxLines = 2,
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .then(if (url != null) Modifier.focusable(true) else Modifier)
+                            .then(if (url != null) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { play(fromStart = false) }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier)
+                    )
+                }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = AccentDyn.copy(alpha = 0.35f))
 
             Spacer(Modifier.height(8.dp))
@@ -728,7 +728,7 @@ fun VodDetailScreen(
                             .fillMaxWidth()
                             .padding(12.dp)
                             .then(if (url != null) Modifier.focusable(true) else Modifier)
-                            .clickable(enabled = url != null) { play(fromStart = false) }
+                            .then(if (url != null) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { play(fromStart = false) }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier)
                     )
                 }
             } else {

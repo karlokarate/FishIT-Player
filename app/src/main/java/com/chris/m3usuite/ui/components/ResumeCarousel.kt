@@ -272,16 +272,15 @@ fun ResumeVodRow(
     val state = remember(items) { mutableStateOf(items.distinctBy { it.mediaId }) }
 
     run {
-        val listState = com.chris.m3usuite.ui.state.rememberRouteListState("resume:vod")
         com.chris.m3usuite.ui.tv.TvFocusRow(
-            items = state.value,
-            key = { it.mediaId },
-            listState = listState,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp)
-        ) { _, v, itemMod ->
+            stateKey = "resume:vod",
+            itemSpacing = 12.dp,
+            contentPadding = PaddingValues(horizontal = 12.dp),
+            itemCount = state.value.size,
+            itemKey = { idx -> state.value[idx].mediaId }
+        ) { idx ->
+            val v = state.value[idx]
             ResumeCard(
-                modifier = itemMod,
                 title = v.name,
                 subtitle = "Fortschritt: ${v.positionSecs} s",
                 onPlay = { onPlay(v) },
@@ -307,17 +306,16 @@ fun ResumeEpisodeRow(
     val state = remember(items) { mutableStateOf(items.distinctBy { Triple(it.seriesId, it.season, it.episodeNum) }) }
 
     run {
-        val listState = com.chris.m3usuite.ui.state.rememberRouteListState("resume:series")
         com.chris.m3usuite.ui.tv.TvFocusRow(
-            items = state.value,
-            key = { "${it.seriesId}:${it.season}:${it.episodeNum}" },
-            listState = listState,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp)
-        ) { _, e, itemMod ->
+            stateKey = "resume:series",
+            itemSpacing = 12.dp,
+            contentPadding = PaddingValues(horizontal = 12.dp),
+            itemCount = state.value.size,
+            itemKey = { idx -> "${state.value[idx].seriesId}:${state.value[idx].season}:${state.value[idx].episodeNum}" }
+        ) { idx ->
+            val e = state.value[idx]
             val title = "S${e.season}E${e.episodeNum} – ${e.title}"
             ResumeCard(
-                modifier = itemMod,
                 title = title,
                 subtitle = "Fortschritt: ${e.positionSecs} s",
                 onPlay = { onPlay(e) },

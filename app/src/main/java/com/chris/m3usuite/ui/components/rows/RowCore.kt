@@ -157,9 +157,11 @@ fun MediaRowCore(
             // Observe descendant focus and center that item. Index in LazyRow accounts for optional leading.
             val absIdx = idx + leadingOffset
             var focused by remember { mutableStateOf(false) }
+            val setRow = com.chris.m3usuite.ui.home.LocalChromeRowFocusSetter.current
             val baseMod = if (isTv) Modifier.onFocusEvent { st ->
                 focused = st.isFocused || st.hasFocus
                 if (st.hasFocus) {
+                    config.stateKey?.let { key -> setRow(key) }
                     if (skipFirstCenter.value && absIdx == leadingOffset) {
                         // First focus on left-most tile: don't center yet
                         skipFirstCenter.value = false
@@ -319,9 +321,11 @@ fun MediaRowCorePaged(
             val absIdx = index + leadingOffset
             // Observe descendant focus only; avoid adding extra focus targets.
             var focused by remember { mutableStateOf(false) }
+            val setRow = com.chris.m3usuite.ui.home.LocalChromeRowFocusSetter.current
             val baseMod = if (isTv) Modifier.onFocusEvent { st ->
                 focused = st.isFocused || st.hasFocus
                 if (st.hasFocus) {
+                    config.stateKey?.let { key -> setRow(key) }
                     if (skipFirstCenter.value && absIdx == leadingOffset) {
                         skipFirstCenter.value = false
                     } else {

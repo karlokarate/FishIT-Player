@@ -117,8 +117,22 @@ fun ProfileManagerScreen(
                 OutlinedTextField(value = newKidName, onValueChange = { newKidName = it }, label = { Text("Neues Profil (Name)") })
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Typ:")
-                    FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = newType == "kid", onClick = { newType = "kid" }, label = { Text("Kind") })
-                    FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = newType == "guest", onClick = { newType = "guest" }, label = { Text("Gast") })
+                    FilterChip(
+                        modifier = Modifier
+                            .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
+                            .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { newType = "kid" }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
+                        selected = newType == "kid",
+                        onClick = { newType = "kid" },
+                        label = { Text("Kind") }
+                    )
+                    FilterChip(
+                        modifier = Modifier
+                            .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
+                            .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { newType = "guest" }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
+                        selected = newType == "guest",
+                        onClick = { newType = "guest" },
+                        label = { Text("Gast") }
+                    )
                 }
                 Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                     scope.launch(Dispatchers.IO) {
@@ -396,7 +410,14 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 titles.forEachIndexed { i, t ->
-                    FilterChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), selected = tab == i, onClick = { tab = i }, label = { Text(t) })
+                    FilterChip(
+                        modifier = Modifier
+                            .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
+                            .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { tab = i }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
+                        selected = tab == i,
+                        onClick = { tab = i },
+                        label = { Text(t) }
+                    )
                 }
             }
             val type = types[tab]
@@ -450,7 +471,13 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                     val allowed = cat in allowedCats
                     Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
                         Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                            AssistChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), onClick = { expanded = if (expanded == cat) null else cat }, label = { Text(cat) })
+                            AssistChip(
+                                modifier = Modifier
+                                    .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
+                                    .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { expanded = if (expanded == cat) null else cat }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
+                                onClick = { expanded = if (expanded == cat) null else cat },
+                                label = { Text(cat) }
+                            )
                             Switch(checked = allowed, onCheckedChange = { v ->
                                 scope.launch(Dispatchers.IO) {
                                     val catBox = obx.boxFor(ObxKidCategoryAllow::class.java)

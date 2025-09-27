@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Context.UI_MODE_SERVICE
 import android.content.res.Configuration
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.clickable
+import com.chris.m3usuite.ui.skin.tvClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -42,10 +42,12 @@ fun FocusableCard(
             .scale(scale)
             .focusable(tv)
             .onFocusEvent { focused = it.isFocused }
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { onClick() }
+            .tvClickable(
+                scaleFocused = 1f,
+                scalePressed = 1f,
+                brightenContent = false,
+                onClick = onClick
+            )
             .fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

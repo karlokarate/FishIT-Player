@@ -913,10 +913,9 @@ fun StartScreen(
                                 FilterChip(
                                     modifier = Modifier
                                         .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
-                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable { provider = null } })
-                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvFocusableItem("start_live_picker_providers", idx) }),
+                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable { provider = null } }),
                                     selected = provider == null,
-                                    onClick = {},
+                                    onClick = { provider = null },
                                     label = { Text("Alle") }
                                 )
                             } else {
@@ -924,10 +923,9 @@ fun StartScreen(
                                 FilterChip(
                                     modifier = Modifier
                                         .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
-                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable { provider = if (provider == p) null else p } })
-                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvFocusableItem("start_live_picker_providers", idx) }),
+                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable { provider = if (provider == p) null else p } }),
                                     selected = provider == p,
-                                    onClick = {},
+                                    onClick = { provider = if (provider == p) null else p },
                                     label = { Text(p) }
                                 )
                             }

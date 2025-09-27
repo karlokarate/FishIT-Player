@@ -7,11 +7,20 @@
 
 - feat(ui/tv): neue vereinfachte `TvFocusRow(stateKey, itemCount, ...)` die `rememberRouteListState` + `rememberRowFocus` nutzt und pro Item `tvFocusableItem(...)` setzt. Migration begonnen: Provider‑Chips im Start‑Picker und Kategorie‑Chips im Player‑Sheet auf TvFocusRow + tvClickable/tvFocusableItem umgestellt.
 
+- refactor(tv/migration): weitere Leisten auf `TvFocusRow(stateKey, …)` migriert: Resume‑Carousels (VOD/Series), Start‑Home Resume‑Row, SeriesDetail Season‑Strip. Interaktive Chips/Labels nutzen `tvClickable` (No‑Op auf Phone).
+
+- refactor(settings/profile): Chip‑Leisten in Settings (Seeding‑Regionen) und Profile (Typ‑Auswahl, Tabs, Whitelist‑Kategorie‑Expander) mit `tvClickable` versehen; DPAD‑Fokus/Skins TV‑konform. Titel/Plot‑Clickables in VOD‑Details auf `tvClickable` umgestellt. Falls Leisten horizontal werden, können sie mit `TvFocusRow(stateKey, …)` eingehängt werden.
+  - Fix: Vermeide leere `onClick={}` auf `FilterChip`/`AssistChip` bei zusätzlichem `tvClickable` am Modifier. Die Chip‑`onClick` spiegelt jetzt die gleiche Aktion wie `tvClickable`, um Semantik‑Konflikte/Ereignis‑Konsum zu verhindern.
+
 - feat(tv/chrome): vereinheitlichte Auto‑Collapse/Expand‑Trigger im `HomeChromeScaffold`. Collapse sobald Fokus im Content (Rows melden `focusedRowKey` via LocalChromeRowFocusSetter) oder bei vertikalem Scroll. Expand beim DPAD‑UP auf dem ersten Item der obersten Row oder wenn der Header Fokus erhält. Inhaltspadding ist animiert mit dem Chrome‑State.
 
 - chore(tv/dpad): repo‑weit manuelle DPAD‑Abgriffe entfernt, wo keine Sonderfälle. `RowCore` und `RowCorePaged` geben UP/DOWN nicht mehr per `onPreviewKeyEvent` vor; Standard‑Traversal übernimmt. In `HomeRows`: DPAD‑LEFT‑Long‑Press pro Tile entfernt (global in Chrome), reine Debug‑KeyUp‑Logs entfernt. Reorder‑Pfad behält gerichteten LEFT/RIGHT‑Abgriff in `LiveTileCard` bei (nur aktiv, wenn Reorder‑Handler übergeben).
 
 - tooling(tv/audit): `tools/audit_tv_focus.sh` erweitert. Scannt horizontale Container (roh‑LazyRow etc.), listet Roh‑`clickable(` (tvClickable bevorzugen), und prüft Screens auf `onPreviewKeyEvent`/DPAD‑Nutzung. CI‑Modus via `tools/audit_tv_focus.sh ci` erzeugt einen Report (`tools/audit_tv_focus_report.txt`) und schlägt bei Findings fehl.
+- CI: Audit in `.github/workflows/ci.yml` integriert (Step „TV Focus/DPAD Audit“).
+
+- refactor(tv/clickable): restliche Roh‑clickable in TV‑sichtbaren Zeilen umgestellt auf `tvClickable` (Player‑Listensheet Rows, Settings‑Edit‑Zeilen). Audit erweitert, um auch `clickable { ... }` (Trailing‑Lambda‑Form) zu erkennen.
+- feat(tv/chrome): `RowCore`/`RowCorePaged` melden nun den Row‑Fokus via `LocalChromeRowFocusSetter` (per `config.stateKey`), sodass der Header sauber einklappt, auch wenn die Row nicht `TvFocusRow` nutzt.
 
 2025-09-25
 - fix(tv/focus-enter): guard custom enter focus with an explicit firstAttached flag in RowCore, RowCorePaged, and ReorderableLiveRow. Only enable `focusProperties { enter = { firstFocus } }` after the first item's FocusRequester is attached and visible. Prevents `IllegalStateException: FocusRequester is not initialized` on DPAD DOWN from header/home.

@@ -1052,24 +1052,20 @@ fun InternalPlayerScreen(
                                 if (idx == 0) {
                                     androidx.compose.material3.FilterChip(
                                         modifier = com.chris.m3usuite.ui.skin.run {
-                                            Modifier
-                                                .tvClickable { selCat = null }
-                                                .tvFocusableItem("live_list_chip_row", idx)
+                                            Modifier.tvClickable { selCat = null }
                                         },
                                         selected = selCat == null,
-                                        onClick = {},
+                                        onClick = { selCat = null },
                                         label = { Text("Alle Kategorien") }
                                     )
                                 } else {
                                     val c = cats[idx - 1]
                                     androidx.compose.material3.FilterChip(
                                         modifier = com.chris.m3usuite.ui.skin.run {
-                                            Modifier
-                                                .tvClickable { selCat = c }
-                                                .tvFocusableItem("live_list_chip_row", idx)
+                                            Modifier.tvClickable { selCat = c }
                                         },
                                         selected = selCat == c,
-                                        onClick = {},
+                                        onClick = { selCat = c },
                                         label = { Text(c) }
                                     )
                                 }
@@ -1084,7 +1080,7 @@ fun InternalPlayerScreen(
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
-                                        .clickable { showLiveListSheet = false; switchToLive(mi) }
+                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showLiveListSheet = false; switchToLive(mi) }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) })
                                         .padding(horizontal = 8.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -1100,7 +1096,7 @@ fun InternalPlayerScreen(
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
-                                        .clickable { showLiveListSheet = false; switchToLive(mi) }
+                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showLiveListSheet = false; switchToLive(mi) }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) })
                                         .padding(horizontal = 8.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -1499,10 +1495,9 @@ private fun OverlayIconButton(
     val clickableModifier = if (onLongClick != null) {
         modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
     } else {
-        modifier.clickable(onClick = onClick)
+        modifier.then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = onClick) })
     }
     ElevatedCard(
-        onClick = onClick,
         shape = shape,
         elevation = CardDefaults.elevatedCardElevation(),
         colors = CardDefaults.elevatedCardColors(containerColor = containerColor, contentColor = contentColor),
