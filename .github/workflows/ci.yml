@@ -22,6 +22,7 @@ jobs:
           cache: gradle
 
       - uses: android-actions/setup-android@v3
+
       - uses: gradle/actions/setup-gradle@v3
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
@@ -35,6 +36,13 @@ jobs:
 
       - name: TV Focus/DPAD Audit
         run: bash tools/audit_tv_focus.sh ci
+
+      # --- FIX: ensure gradlew is executable and not CRLF ---
+      - name: Fix gradlew permissions
+        run: |
+          chmod +x ./gradlew
+          sed -i 's/\r$//' gradlew
+      # -------------------------------------------------------
 
       - name: Build + Unit Tests
         env:
