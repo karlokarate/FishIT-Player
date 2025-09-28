@@ -1,0 +1,12 @@
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 4168899..09fd869 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -21,6 +21,8 @@ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
+ Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
+ 
+ - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
++- CI/Policy: Builds laufen nur noch auf Anforderung (workflow_dispatch) oder automatisch bei Code‑Änderungen, die einen Android‑Build rechtfertigen (`app/**`, `libtd/**`, Gradle). Issue‑Events triggern keine Builds mehr; PR‑Validierung führt lediglich den Audit aus.
+ - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
+ - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).
+ - Coil3 Netzwerk: Explizite OkHttp‑Factory prüfen/integrieren, falls stabil verfügbar (sonst bei per‑Request NetworkHeaders bleiben). `respectCacheHeaders(true)` evaluieren.

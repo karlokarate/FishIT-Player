@@ -1,0 +1,17 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index c915180..45a0e1e 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -142,6 +142,12 @@ Quick Build & Test
+ - JDK 17; Gradle wrapper
+ - Commands: `./gradlew --version`, `./gradlew build`, `./gradlew test`
+ - Optional: `./gradlew lint ktlintFormat detekt`
++
++CI/Workflows (policy)
++- No automatic builds on issue events. Builds only run:
++  - on explicit request (workflow_dispatch), or
++  - automatically for PRs that change Android/Kotlin/Gradle code (`app/**`, `libtd/**`, Gradle files).
++- PR validation runs a lightweight audit only (no build) and uploads the report as an artifact.
+ 
+ WSL/Linux Build & Test
+ - Android SDK (WSL): Setze `ANDROID_SDK_ROOT` auf den Repo‑lokalen SDK‑Pfad: `<repo>/.wsl-android-sdk`. Keine Windows‑`local.properties` committen; in WSL/CI per Env‑Vars arbeiten.

@@ -1,0 +1,41 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index c915180..45a0e1e 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -142,6 +142,12 @@ Quick Build & Test
+ - JDK 17; Gradle wrapper
+ - Commands: `./gradlew --version`, `./gradlew build`, `./gradlew test`
+ - Optional: `./gradlew lint ktlintFormat detekt`
++
++CI/Workflows (policy)
++- No automatic builds on issue events. Builds only run:
++  - on explicit request (workflow_dispatch), or
++  - automatically for PRs that change Android/Kotlin/Gradle code (`app/**`, `libtd/**`, Gradle files).
++- PR validation runs a lightweight audit only (no build) and uploads the report as an artifact.
+ 
+ WSL/Linux Build & Test
+ - Android SDK (WSL): Setze `ANDROID_SDK_ROOT` auf den Repo‑lokalen SDK‑Pfad: `<repo>/.wsl-android-sdk`. Keine Windows‑`local.properties` committen; in WSL/CI per Env‑Vars arbeiten.
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 97e263e..89f1960 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,8 @@
++2025-09-28
++- ci(policy): disable automatic builds on issue events. Add PR Validate workflow that runs only audits (no build). Add Android Build workflow that triggers only on manual request or when PRs touch Android/Kotlin/Gradle code paths (`app/**`, `libtd/**`, Gradle files). This keeps CI quiet for doc/issue traffic and builds only when useful.
++- docs(ci): AGENTS.md updated with CI policy summary (builds on request or relevant code changes; PR validate without build).
++
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 4168899..09fd869 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -21,6 +21,8 @@ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
+ Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
+ 
+ - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
++- CI/Policy: Builds laufen nur noch auf Anforderung (workflow_dispatch) oder automatisch bei Code‑Änderungen, die einen Android‑Build rechtfertigen (`app/**`, `libtd/**`, Gradle). Issue‑Events triggern keine Builds mehr; PR‑Validierung führt lediglich den Audit aus.
+ - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
+ - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).
+ - Coil3 Netzwerk: Explizite OkHttp‑Factory prüfen/integrieren, falls stabil verfügbar (sonst bei per‑Request NetworkHeaders bleiben). `respectCacheHeaders(true)` evaluieren.
