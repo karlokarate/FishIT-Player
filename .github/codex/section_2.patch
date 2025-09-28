@@ -1,0 +1,11 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 30466d5..e743a48 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,9 @@
++2025-09-28
++- build(tdlib): make v7a build reliable. Build static BoringSSL for both ABIs (arm64-v8a, armeabi-v7a) and link into libtdjni.so; strip unneeded symbols. Copy Client.java and TdApi.java from TDLib example/java into :libtd while keeping local Log.java. Default TDLib tag aligned with docs to v1.8.0; override via --ref|TD_TAG|TD_COMMIT. Outputs: libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so and arm64-v8a variant.
++
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
