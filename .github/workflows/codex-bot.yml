@@ -1,4 +1,4 @@
-name: Codex Bot (fishit-player, on-demand)
+name: Codex Bot (on-demand)
 
 on:
   workflow_dispatch:
@@ -8,23 +8,24 @@ on:
         type: string
         required: false
       gradle_args:
-        description: 'Optional: Gradle-Args manuell (z. B. "assembleDebug testDebugUnitTest")'
+        description: 'Optional: Gradle-Args (z. B. "assembleDebug testDebugUnitTest")'
         type: string
         required: false
   issue_comment:
-    types: [created]
+    types: [created, edited]
   issues:
     types: [opened, edited]
   pull_request_review_comment:
-    types: [created]
+    types: [created, edited]
 
 permissions:
   contents: write
   pull-requests: write
   issues: write
 
+# stabil, unabhängig von ref (Kommentare haben teils keinen ref)
 concurrency:
-  group: codex-${{ github.ref }}-${{ github.event_name }}
+  group: codex-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -43,59 +44,51 @@ jobs:
           set -euo pipefail
           ev="${{ github.event_name }}"
           body=""
-          author_assoc=""
           issue_no=""
 
           if [[ "$ev" == "workflow_dispatch" ]]; then
             body="${{ inputs.comment || '' }}"
-            author_assoc="OWNER"
           elif [[ "$ev" == "issue_comment" ]]; then
             body="${{ github.event.comment.body || '' }}"
-            author_assoc="${{ github.event.comment.author_association || '' }}"
             issue_no="${{ github.event.issue.number }}"
           elif [[ "$ev" == "pull_request_review_comment" ]]; then
             body="${{ github.event.comment.body || '' }}"
-            author_assoc="${{ github.event.comment.author_association || '' }}"
             issue_no="${{ github.event.pull_request.number }}"
           elif [[ "$ev" == "issues" ]]; then
             body="${{ github.event.issue.body || '' }}"
-            author_assoc="${{ github.event.issue.author_association || '' }}"
             issue_no="${{ github.event.issue.number }}"
           fi
 
+          # Default flags
           run_codex=false
           do_gradle=false
           args=""
 
-          # Nur Owner/Member/Collaborator dürfen Befehle triggern
-          case "$author_assoc" in
-            OWNER|MEMBER|COLLABORATOR) ;;
-            *) if [[ "$ev" != "workflow_dispatch" ]]; then echo "Not allowed: $author_assoc"; fi ;;
-          esac
-
-          # Läuft nur, wenn /codex im Text vorkommt (oder Dispatch mit Kommentar)
-          if echo "$body" | grep -qiE '^[[:space:]]*/codex'; then
+          # Tolerant: /codex irgendwo im Text (case-insensitive)
+          if echo "$body" | grep -qi "/codex"; then
             run_codex=true
           fi
+          # Dispatch ohne Kommentar → kein codex
+          # Dispatch mit Kommentar → codex
           if [[ "$ev" == "workflow_dispatch" && -n "${{ inputs.comment }}" ]]; then
             run_codex=true
           fi
 
-          # Gradle-Routing via Kommentar
-          if echo "$body" | grep -qiE '^[[:space:]]*/codex[[:space:]]+build([[:space:]]|$)'; then
+          # Routing für Gradle
+          if echo "$body" | grep -qiE '/codex[[:space:]]+build([[:space:]]|$)'; then
             do_gradle=true; args="assembleDebug"
           fi
-          if echo "$body" | grep -qiE '^[[:space:]]*/codex[[:space:]]+test([[:space:]]|$)'; then
+          if echo "$body" | grep -qiE '/codex[[:space:]]+test([[:space:]]|$)'; then
             do_gradle=true; args="testDebugUnitTest"
           fi
-          if echo "$body" | grep -qiE '^[[:space:]]*/codex[[:space:]]+verify-?tdlib([[:space:]]|$)'; then
+          if echo "$body" | grep -qiE '/codex[[:space:]]+verify-?tdlib([[:space:]]|$)'; then
             do_gradle=true; args="verifyTdlib"
           fi
-          if echo "$body" | grep -qiE '^[[:space:]]*/codex[[:space:]]+gradle[[:space:]]+'; then
+          if echo "$body" | grep -qiE '/codex[[:space:]]+gradle[[:space:]]+'; then
             do_gradle=true
-            args="$(printf '%s\n' "$body" | sed -n 's#^[[:space:]]*/codex[[:space:]]\+gradle[[:space:]]\+##Ip' | head -n1)"
+            args="$(printf '%s\n' "$body" | sed -n 's#.*\/codex[[:space:]]\+gradle[[:space:]]\+##Ip' | head -n1)"
           fi
-          # --verify Flag irgendwo im /codex-Text → Tests
+          # Flag --verify irgendwo → Tests
           if $run_codex && echo "$body" | grep -qi -- ' --verify'; then
             do_gradle=true
             if [[ -z "$args" ]]; then args="testDebugUnitTest"; fi
@@ -111,10 +104,18 @@ jobs:
           echo "gradle_args=$args"      >> "$GITHUB_OUTPUT"
           echo "issue_no=$issue_no"     >> "$GITHUB_OUTPUT"
 
+      - name: Debug gate
+        run: |
+          echo "event=${{ github.event_name }}"
+          echo "run_codex=${{ steps.gate.outputs.run_codex }}"
+          echo "do_gradle=${{ steps.gate.outputs.do_gradle }}"
+          echo "gradle_args=${{ steps.gate.outputs.gradle_args }}"
+          echo "issue_no=${{ steps.gate.outputs.issue_no }}"
+
   ack:
     name: Ack in Thread
     needs: gate
-    if: ${{ github.event_name != 'workflow_dispatch' && needs.gate.outputs.run_codex == 'true' }}
+    if: ${{ needs.gate.outputs.run_codex == 'true' && github.event_name != 'workflow_dispatch' && needs.gate.outputs.issue_no != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: peter-evans/create-or-update-comment@v4
@@ -138,7 +139,8 @@ jobs:
           fetch-depth: 0
 
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
 
       - name: Install Python deps
         run: |
@@ -164,14 +166,15 @@ jobs:
         run: python .github/codex/bot.py
 
   gradle:
-    name: Gradle (on-demand)
-    needs: [gate, codex]
+    name: Gradle (on-demand: ${{ needs.gate.outputs.gradle_args }})
+    needs: gate
     if: ${{ needs.gate.outputs.do_gradle == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
+        # fetch-depth 0 optional für Versionierung/patch
           fetch-depth: 0
 
       - name: Detect AGP / JDK
@@ -200,7 +203,7 @@ jobs:
           chmod +x ./gradlew || true
           if [[ -f gradlew ]]; then sed -i 's/\r$//' gradlew || true; fi
 
-      - name: Run Gradle (${ { needs.gate.outputs.gradle_args } })
+      - name: Run Gradle
         id: run
         env:
           HEADER: ${{ secrets.header }}
@@ -233,10 +236,3 @@ jobs:
             🧪 **Gradle ausgeführt**: `${{ needs.gate.outputs.gradle_args }}`
             Status: **${{ job.status }}**
             Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-            <details><summary>Log (Tail)</summary>
-
-            ```
-            $ tail -n 400 gradle.log
-            ```
-            </details>
