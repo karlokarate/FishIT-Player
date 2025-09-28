@@ -1,0 +1,138 @@
+diff --git a/docs/TELEGRAM_AUTH_ANALYSIS.md b/docs/TELEGRAM_AUTH_ANALYSIS.md
+new file mode 100644
+index 0000000..7ad1a3e
+--- /dev/null
++++ b/docs/TELEGRAM_AUTH_ANALYSIS.md
+@@ -0,0 +1,157 @@
++# Telegram Login/Auth – Code Audit (2025‑09‑28)
++
++Scope
++- Review end‑to‑end Telegram authentication: Settings → Repository/Client → Service (separate process) → TDLib (reflection) → DataSources.
++- Identify risks/regressions; propose minimal, targeted fixes. No code changes in this PR.
++
++Architecture recap (as implemented)
++- Feature gate: DataStore `tg_enabled` controls DataSources and most runtime paths. Service exists independent of the flag but only starts TDLib upon `CMD_START`.
++- Service process: `.telegram.service.TelegramTdlibService` runs in `:tdlib`. IPC via `Messenger`. Clients queue outbound commands until `bindService` connects. Auth state/events are broadcast to all registered clients.
++- Reflection: `TdLibReflection` abstracts Java bindings (`org.drinkless.tdlib` primary; `org.drinkless.td.libcore.telegram` fallback) and defers JNI loading until truly used.
++- Secrets: `BuildConfig.TG_API_ID`/`TG_API_HASH` injected via ENV/properties (no secrets in repo).
++- Indexing: Service listens to TDLib updates (UpdateNewMessage/UpdateMessageContent/UpdateFile) and persists minimal metadata to ObjectBox (`ObxTelegramMessage`), updating `localPath` on file progress.
++- Playback: `TelegramTdlibDataSource` attempts progressive download/seek via TDLib if gated + authenticated; falls back to `TelegramRoutingDataSource` (localPath routing) and finally to provided HTTP fallback.
++
++Key flows
++1) Settings screen binds the service opportunistically via `TelegramAuthRepository.bindService()`; actual TDLib start happens on `start(apiId, apiHash)`.
++2) `TelegramServiceClient`:
++   - Binds (`BIND_AUTO_CREATE`), queues commands until `onServiceConnected`, then flushes them in order.
++   - Forwards `REPLY_AUTH_STATE`, `REPLY_ERROR`, and QR links to Kotlin Flows.
++3) `TelegramTdlibService`:
++   - On `CMD_START`, registers the client (`replyTo`) and initializes TDLib (`TdLibReflection.createClient`), sets listeners, and starts auth parameter flow.
++   - On `UpdateAuthorizationState`, maps to lightweight `AuthState` and for UNAUTHENTICATED sends `SetTdlibParameters`, for WAIT_ENCRYPTION_KEY sends DB key via `TelegramKeyStore`.
++   - Surfaces `TdApi.Error` via `REPLY_ERROR` and triggers QR login when appropriate (code 406 + UPDATE_APP_TO_LOGIN).
++4) DataSources:
++   - `TelegramTdlibDataSource` gates on `tg_enabled` + TDLib availability + auth; notifies the user once on fallback.
++   - `TelegramRoutingDataSource` resolves `tg://message?chatId=&messageId=` via ObjectBox `localPath`, optionally kicking off a TDLib download if authenticated and a `fileId` is known.
++
++What looks solid
++- Separate process service with small IPC surface; command queue avoids early race conditions.
++- Error surfacing: TDLib errors are propagated to UI (`REPLY_ERROR`) and logged.
++- Security: DB encryption key stored via Android Keystore (AES‑GCM) with random 32‑byte payload.
++- Fallback paths in DataSources are robust; runtime checks avoid hard TDLib dependency.
++- Secrets handling is correct (BuildConfig injection with precedence chain).
++
++Findings and small risks
++1) TdlibParameters source in service during UNAUTHENTICATED
++   - File: app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt
++   - In the `UpdateAuthorizationState` handler, for `AuthState.UNAUTHENTICATED` the service builds `TdlibParameters` using `BuildConfig.TG_API_ID/TG_API_HASH` (hardcoded to BuildConfig).
++   - Impact: If `CMD_START` was invoked with non‑BuildConfig keys (e.g., dynamic override for testing), they will be ignored during this phase and may break auth.
++   - Risk severity: Low in typical deployments (BuildConfig keys are primary), but correctness suggests using the runtime keys from `CMD_START`.
++   - Proposed fix: Store the last `apiId/apiHash` from `CMD_START` in service fields and use them when building parameters in the UNAUTHENTICATED branch.
++
++2) Initial auth state on bind
++   - Files:
++     - app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt
++     - app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt
++   - Current behavior: `bindService()` wires flows but does not request the current auth state; `REPLY_AUTH_STATE` will only arrive after `start()` or on a state change.
++   - UX: Settings may show `UNKNOWN` until the user triggers `start()` or a state change occurs.
++   - Proposed fix: Have `TelegramServiceClient` issue `CMD_GET_AUTH` right after `onServiceConnected` (or in `bind()`), so UI receives the current state immediately.
++
++3) Client registration timing for broadcasts
++   - File: app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt
++   - The service only persists clients (`clients.add(replyTo)`) on `CMD_START`. If a client sends other commands first, it won't be in the broadcast set.
++   - Practical risk is mitigated because commands are queued and `start()` is expected early. Still, it’s easy to harden:
++   - Proposed fix: Add the caller to `clients` for any IPC message that includes `replyTo`, or introduce a dedicated `CMD_REGISTER` no‑op to register replyTo on bind.
++
++4) AuthState mapping for email flows
++   - File: app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt
++   - `verifyBindings()` probes `AuthorizationStateWaitEmailAddress`/`WaitEmailCode`, but `mapAuthorizationState` does not currently map these to an `AuthState`.
++   - Proposed fix (Phase‑2): Extend mapping with `WAIT_EMAIL_ADDRESS`/`WAIT_EMAIL_CODE` variants (or fold into a generic `WAIT_FOR_CODE` with an email hint).
++
++5) Service gating vs. `tg_enabled`
++   - The service can bind even when `tg_enabled` is false; it only starts TDLib on `CMD_START`.
++   - This is acceptable (minimal footprint). If desired, repositories can avoid binding the service until the user enables Telegram, but current behavior is safe.
++
++6) Test scaffold
++   - File: app/src/androidTest/java/com/chris/m3usuite/TelegramSmokeTest.kt
++   - The smoke test is annotated `@Ignore`, so it does not run. It references `TelegramTdlibDataSource.Factory` where the intended factory is likely `TelegramRoutingDataSource.Factory`. Because it’s androidTest and ignored, it won't impact CI, but the class reference is off.
++   - Proposed action: When enabling the test, switch routing factory to `TelegramRoutingDataSource.Factory` and retain `@Ignore` until an emulator is wired in CI.
++
++End‑to‑end auth flow (intended)
++1) Settings toggles Telegram on (`tg_enabled=true`) and provides valid `TG_API_ID/HASH` at build time.
++2) Repository binds service on `ON_START`; user hits Connect → `start(apiId, apiHash)`.
++3) Service initializes TDLib, sets parameters, and flows through `WAIT_FOR_NUMBER → WAIT_FOR_CODE → READY` with QR or phone+code.
++4) Repository mirrors `authState` and surfaces QR link or input prompts to UI.
++5) DataSources use TDLib for `tg://message` playback once `AUTHENTICATED`; otherwise route via local files/HTTP fallback with user notification.
++
++Recommended minimal fixes (non‑breaking, low risk)
++1) Service parameters: Persist runtime TG keys from `CMD_START` and use them in the UNAUTHENTICATED parameter‑set branch.
++   - Rationale: Aligns with the explicit API of `start(apiId, apiHash)`; preserves correctness for testing/overrides.
++2) Initial auth reply: Issue `CMD_GET_AUTH` on service bind (client‑side) to emit the current auth state immediately.
++   - Rationale: Improves Settings UX; reduces UNKNOWN periods without affecting runtime behavior.
++3) Client registration: Add callers to `clients` for any IPC message with `replyTo` (or add `CMD_REGISTER` on bind).
++   - Rationale: Hardens event delivery in less common command sequences.
++4) Map e‑mail states: Extend `mapAuthorizationState` to recognize `AuthorizationStateWaitEmailAddress/Code`.
++   - Rationale: Phase‑2 completeness for broader login flows.
++
++Optional polish
++- Consider a light `tg_enabled` check in `TelegramAuthRepository.bindService()` to skip binding when disabled (not required, current behavior is safe).
++- Log a one‑time warning if `available()` is false but `tg_enabled` is true to assist setup diagnostics.
++
++Security posture
++- DB encryption key: Random 32‑byte key wrapped with Android Keystore AES‑GCM and stored in SharedPreferences. On failure, an ephemeral key is used (non‑persistent).
++- Secrets: `TG_API_ID/HASH` via build‑time injection; no plaintext in repo/apk. Precedence: ENV → root properties → `-P` Gradle props → default.
++- Data paths: `TelegramCacheCleanupWorker` trims app‑private files and nulls stale `localPath` entries in ObjectBox; supports a wipe‑all path.
++
++Compatibility and process isolation
++- Service lives in `:tdlib` process. Any `TdLibReflection.updateListener` set in the app process does not conflict with the service’s listener.
++- DataSources are app‑process only and use reflection to create a separate client instance via the shared Java bindings; no cross‑process JNI clashes observed in the current design.
++
++Suggested test plan (incremental)
++1) Unit (mocked reflection):
++   - Map `UpdateAuthorizationState` → `AuthState` for each relevant TDLib class name.
++   - Ensure `TelegramServiceClient` emits one auth state upon bind when `CMD_GET_AUTH` is auto‑sent.
++2) Instrumented (emulator/manual):
++   - Bind service with `tg_enabled=false` → verify no TDLib start; enable then start → verify state sequence.
++   - QR flow: Inject a simulated `TdApi.Error` with UPDATE_APP_TO_LOGIN → verify QR request path and UI event.
++   - DataSource fallback: With `tg_enabled=true` but unauthenticated, open `tg://` → verify fallback and single notifier toast.
++3) Integration (manual with real TDLib keys):
++   - Full phone+code+password path; content playback via `TelegramTdlibDataSource` with seek and progressive growth in RAF.
++
++References (files reviewed)
++- app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt
++- app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt
++- app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt
++- app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt
++- app/src/main/java/com/chris/m3usuite/telegram/TelegramTdlibDataSource.kt
++- app/src/main/java/com/chris/m3usuite/telegram/TelegramDataSource.kt (Routing)
++- app/src/main/java/com/chris/m3usuite/telegram/TelegramKeyStore.kt
++- app/src/main/java/com/chris/m3usuite/telegram/push/FirebasePushService.kt
++- app/src/main/AndroidManifest.xml (service, process)
++- ARCHITECTURE_OVERVIEW.md (Telegram Service section)
++- AGENTS.md (TDLib packaging, gating, process model)
++
++Summary
++The Telegram login/auth scaffolding is well‑structured: a dedicated process service, a minimal IPC client with queuing, robust fallbacks in DataSources, and secure key handling. The identified items are small correctness/UX improvements that can be addressed with minimal, localized patches:
++- Use runtime TG keys when setting `TdlibParameters` after UNAUTHENTICATED.
++- Emit initial auth state on service bind.
++- Make client registration more permissive to cover atypical command sequences.
++- Extend AuthState mapping for e‑mail flows in Phase‑2.
++
++No code is changed in this PR; this document serves as the audit report and actionable patch plan.
