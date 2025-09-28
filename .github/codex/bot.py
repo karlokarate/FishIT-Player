@@ -295,7 +295,6 @@ def sanitize_patch_text(raw: str) -> str:
     raw = raw.replace("\r\n", "\n").replace("\r", "\n")
     if not raw.endswith("\n"):
         raw += "\n"
-    # ensure starts at a diff header
     lines = raw.split("\n")
     if not lines or not lines[0].startswith("diff --git "):
         for idx, ln in enumerate(lines):
@@ -370,7 +369,6 @@ def try_remap_patch(patch_text: str, repo_files):
 # ------------------------ Robust Section-wise Apply ------------------------
 
 def try_apply_sections(patch_file: str, original_text: str) -> tuple[list[str], list[str], list[str]]:
-    """Apply each diff section independently to avoid whole-patch failure on missing files."""
     sections = parse_patch_sections(original_text)
     if not sections:
         sh(f"git apply -p0 --whitespace=fix {shlex.quote(patch_file)}")
@@ -447,7 +445,6 @@ def main():
     force_big = bool(re.search(r"(?:^|\s)--force\b", comment))
     do_verify = bool(re.search(r"(?:^|\s)--verify\b", comment))
 
-    # Instruction säubern
     instruction = re.sub(r"^.*?/codex", "", comment, flags=re.S).strip()
     for pat in [
         r"(?:^|\s)(?:-m|--model)\s+[A-Za-z0-9._\-]+",
@@ -466,13 +463,11 @@ def main():
         comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex --paths app/src Tests für PlayerService hinzufügen`")
         sys.exit(1)
 
-    # ---------- Repo-Index + Tree ----------
     repo_files, compact_tree, _ = build_repo_index()
     post_repo_tree_comment(compact_tree)
     if request_tree_only:
         print("Tree-only request handled."); sys.exit(0)
 
-    # ---------- Code-Kontext (relevanzbasiert) ----------
     all_paths = [str(p).replace("\\", "/") for p in repo_files]
     if path_filter:
         keep = []
@@ -499,10 +494,8 @@ def main():
             pass
     context = trim_to_chars("".join(preview_parts), MAX_CONTEXT_CHARS)
 
-    # ---------- Doku laden ----------
     docs = trim_to_chars(load_docs(MAX_DOC_CHARS), MAX_DOC_CHARS)
 
-    # ---------- SPEC-FIRST ----------
     if want_spec and not want_apply:
         SYSTEM = (
             "You are a senior Android/Kotlin architect. Write a crisp change SPECIFICATION only (no code), "
@@ -528,7 +521,6 @@ Output: Markdown SPEC only. No code. No diff.
         print("spec-only done")
         sys.exit(0)
 
-    # ---------- Code-Diff ----------
     SYSTEM = (
         "You are an expert Android/Kotlin code-change generator (Gradle, Jetpack Compose, Unit/Instrumented tests). "
         "Use the repository documents (agents/architecture/roadmap/changelog) as authoritative guidance. "
@@ -659,9 +651,8 @@ Output requirements:
 
     comment_reply(f"✅ PR erstellt: #{pr['number']} — {pr['html_url']}")
     if do_verify:
-        comment_reply("🧪 `--verify` erkannt – die **CI startet Tests nur auf Anforderung**. "
-                      "Dieser Workflow routet an den Gradle-Job, der `testDebugUnitTest` ausführt und Ergebnisse hier kommentiert.")
-
+        comment_reply("🧪 `--verify` erkannt – **Tests laufen nur auf Anforderung**. "
+                      "Starte sie z. B. mit `/codex test` oder `/codex gradle testDebugUnitTest`.")
     print("done")
 
 if __name__ == "__main__":
