@@ -1,41 +1,55 @@
 diff --git a/AGENTS.md b/AGENTS.md
-index c915180..45a0e1e 100644
+index 6a4002e..a3d3ec4 100644
 --- a/AGENTS.md
 +++ b/AGENTS.md
-@@ -142,6 +142,12 @@ Quick Build & Test
- - JDK 17; Gradle wrapper
- - Commands: `./gradlew --version`, `./gradlew build`, `./gradlew test`
- - Optional: `./gradlew lint ktlintFormat detekt`
-+
-+CI/Workflows (policy)
-+- No automatic builds on issue events. Builds only run:
-+  - on explicit request (workflow_dispatch), or
-+  - automatically for PRs that change Android/Kotlin/Gradle code (`app/**`, `libtd/**`, Gradle files).
-+- PR validation runs a lightweight audit only (no build) and uploads the report as an artifact.
+@@ -26,12 +26,12 @@ Codex – Operating Rules (override)
+ - Single source of truth: `AGENTS.md` is the canonical source for workflow, architecture, and dependencies. All other documents (including `ARCHITECTURE_OVERVIEW.md`, `ROADMAP.md`, `CHANGELOG.md`) are derived/synced from here. In case of discrepancies, `AGENTS.md` prevails.
+ - Full context gathering: For a complete overview, Codex also reads ROADMAP.md, CHANGELOG.md, ARCHITECTURE_OVERVIEW.md, and the latest commits/PRs to understand the current state before making changes.
+ - Auto documentation upkeep: Immediately after patches, Codex updates the full documentation set (AGENTS.md, ROADMAP.md, CHANGELOG.md, ARCHITECTURE_OVERVIEW.md) and pushes to `master`. If the environment blocks direct writes or pushes, Codex prepares diffs and requests the smallest possible approval to finalize.
+  - Deep dependency awareness: When patching, Codex reads all relevant modules in appropriately sized batches and considers all dependent modules. `ARCHITECTURE_OVERVIEW.md` is maintained as a detailed, human‑friendly derivative; if it disagrees with this file, this file wins.
+ - Xtream single source: The folder `app/src/main/java/com/chris/m3usuite/core/xtream` is the canonical source for Xtream handling (detect, config, capabilities, client, models). Other usages must adapt to these APIs.
+-- ObjectBox primary store: ObjectBox is the primary local store for content (categories, live, vod, series, episodes, epg_now_next). Telegram metadata is now stored in ObjectBox as well (`ObxTelegramMessage`). Room has been removed from app flows.
++- ObjectBox primary store: ObjectBox is the primary local store for content (categories, live, vod, series, episodes, epg_now_next). Telegram metadata is stored in ObjectBox as well (`ObxTelegramMessage`). Room remains only for EPG Now/Next caching; other app flows no longer depend on Room.
+ - OBX ID bridging: OBX‑backed lists encode stable IDs into `MediaItem.id` for navigation: live=`1e12+streamId`, vod=`2e12+vodId`, series=`3e12+seriesId`. Detail screens resolve these IDs to OBX and build play URLs via `XtreamClient`. Legacy Room IDs remain supported where present (favorites/resume) during the transition.
+ - ObjectBox search: Search uses indexed `nameLower` fields and category-name matches with page-aware merging (no full in-memory merges). Avoid Room paging in Library. Prefer OBX queries.
+-- EPG fast path: Short EPG is fetched on-demand for visible live items and written to ObjectBox. Screens subscribe to `ObxEpgNowNext` (event-based). Room persistence has been removed.
++- EPG: Now/Next dual-persist with ObjectBox (UI reads `ObxEpgNowNext`) and a lightweight Room cache for panels that benefit from short-lived persistence; XMLTV remains a fallback. No periodic worker; on-demand prefetch for visible tiles and favorites at app start.
+ - Xtream-first seeding: `XtreamSeeder` importiert die Kopf-Listen (Live/VOD/Series) sofort, sobald Xtream-Zugangsdaten vorhanden sind. Setup akzeptiert Xtream-Formulare oder `get.php`-Links und nutzt Letztere nur zur Credential-Ableitung; eine M3U-Parsing-Pipeline existiert nicht mehr.
+ - Lazy loading: Nach dem Kopf-Import werden Details/Poster weiterhin bedarfsgesteuert über Detail-Screens und `XtreamDetailsWorker` nachgeladen. Periodische Hintergrundjobs bleiben deaktiviert, damit Portale nicht unnötig belastet werden.
+ - Refresh: Die Settings-Aktion "Import aktualisieren" triggert `XtreamSeeder` (optional mit Discovery-Force) und plant Detail-Updates. Es gibt keinen strikten M3U-Rebuild und keinen Prune-Schalter mehr; Delta-Pfade löschen keine Einträge.
+@@ -88,7 +88,7 @@ Where to find the full overview
+ - The canonical, continuously updated source is `AGENTS.md` (this file).
+ - `ARCHITECTURE_OVERVIEW.md` is a detailed, human‑friendly derivative of this file. If discrepancies occur, this file prevails. Keep `ARCHITECTURE_OVERVIEW.md` updated whenever new modules/features are added.
  
- WSL/Linux Build & Test
- - Android SDK (WSL): Setze `ANDROID_SDK_ROOT` auf den Repo‑lokalen SDK‑Pfad: `<repo>/.wsl-android-sdk`. Keine Windows‑`local.properties` committen; in WSL/CI per Env‑Vars arbeiten.
+ Short bullet summary (current highlights)
+-- Single-module app (`app`) with Compose UI, Room DB/DAOs, WorkManager, DataStore, Media3 player, OkHttp/Coil.
++- Single-module app (`app`) with Compose UI, ObjectBox (primary) + Room (EPG cache), WorkManager, DataStore, Media3 player, OkHttp/Coil.
+   - Telegram integration (opt‑in, alpha → phase‑2 in progress): Login (Phone→Code→Passwort) mit auto DB‑Key‑Check; Settings‑Block mit Ordner/Chat‑Picker und separaten Quellen für Film/Serien‑Sync; Sync‑Worker mappt Nachrichten auf VOD (`MediaItem.source=TG`) oder Serie (Episode.tg*; SxxExx‑Heuristik). Player streamt `tg://message?...` via Telegram‑DataSource (Seek, progressive Download). Packaging über `:libtd` (arm64). Phase‑2: QR‑Login (done), dedicated TDLib service process (done), foreground switching on downloads/auth (done), lifecycle/network hooks (done), FCM push hooks (prepped), event‑driven indexing (basis done), LTO (next).
+     - Event‑driven indexing (Basis): TDLib‑Service lauscht auf `UpdateNewMessage`/`UpdateMessageContent`/`UpdateFile` und persistiert Minimal‑Metadaten in `telegram_messages` inkl. `localPath`‑Updates per `fileId`. Backfill via `TelegramSyncWorker` bleibt erhalten.
+   - Index/Cache: `telegram_messages` wird beim Sync befüllt (fileId/uniqueId, caption, supportsStreaming, date, thumbFileId); `localPath` wird durch DataSources aktualisiert. Minimaler Sync‑Fortschritt in Settings; täglicher Cache‑Trim (GB‑Limit) via `TelegramCacheCleanupWorker`. FCM Push integriert (Token‑Registrierung + `processPushNotification`), Service startet lazy bei Push.
+@@ -106,7 +106,7 @@ Short bullet summary (current highlights)
+ - TV buttons: Use `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton` (in `ui/common/TvButtons.kt`) to get focus glow + bounce by default. Avoid raw Material3 buttons in TV paths.
+ - TV Lazy migration: Do not use `androidx.tv.foundation.TvLazyRow` (deprecated). Use `LazyRow` from compose.foundation with TV focus APIs: `focusGroup()` on the container and `focusable()` + bring-into-view on item focus. A reusable wrapper `com.chris.m3usuite.ui.tv.TvFocusRow` is available and should be used for horizontal TV rows (chips, carousels, overlays). Remove manual DPAD index arithmetic; prefer `moveFocus(...)` when needed.
+ - TV live controls: DPAD Select toggles a bottom‑right quick‑actions popup (PiP, Subtitle/Audio, Format). Popup stays until Select again or Back. When open, DPAD_DOWN focuses the first button; LEFT/RIGHT navigate; Select activates; Back saves CC settings (if open) and closes the popup.
+ 
+ For the complete module-by-module guide, see `ARCHITECTURE_OVERVIEW.md`.
+ 
+ ---
+ 
+ Recent
+ - TV chrome BACK: On TV, ESC/BACK first collapses HomeChrome (from Expanded or Visible) and consumes the event. This prevents closing the player or leaving the screen when the chrome is showing; pressing BACK twice still exits as expected.
+ - Tile focus logging: Core row engines (MediaRowCore/MediaRowCorePaged) now emit detailed `focus:<type> id=<id> <ui title> (<OBX title>)` logs on focus, plus a `tree:` hint. Makes it visible in logcat which concrete tile currently has focus across Start/Library/Details rows.
+-- TV rows centering: Single-step centering when the target tile is already visible (RowCore, RowCorePaged, TvFocusRow), eliminating left→right jitter. While the row
++- TV rows centering: Single-step centering when the target tile is already visible (RowCore, RowCorePaged, TvFocusRow), eliminating left→right jitter.
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 97e263e..89f1960 100644
+index 08bd14f..a1d56de 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -1,3 +1,8 @@
+@@ -1,3 +1,7 @@
 +2025-09-28
-+- ci(policy): disable automatic builds on issue events. Add PR Validate workflow that runs only audits (no build). Add Android Build workflow that triggers only on manual request or when PRs touch Android/Kotlin/Gradle code paths (`app/**`, `libtd/**`, Gradle files). This keeps CI quiet for doc/issue traffic and builds only when useful.
-+- docs(ci): AGENTS.md updated with CI policy summary (builds on request or relevant code changes; PR validate without build).
++- docs(agents): sync with current architecture — clarify ObjectBox primary + Room used only for EPG caching; update EPG bullet to dual-persist (OBX+Room) with XMLTV fallback; fix truncated line in “Recent”. Keeps Xtream-first seeding model.
++
 +
  2025-09-27
  - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
  - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
-diff --git a/ROADMAP.md b/ROADMAP.md
-index 4168899..09fd869 100644
---- a/ROADMAP.md
-+++ b/ROADMAP.md
-@@ -21,6 +21,8 @@ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
- Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
- 
- - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
-+- CI/Policy: Builds laufen nur noch auf Anforderung (workflow_dispatch) oder automatisch bei Code‑Änderungen, die einen Android‑Build rechtfertigen (`app/**`, `libtd/**`, Gradle). Issue‑Events triggern keine Builds mehr; PR‑Validierung führt lediglich den Audit aus.
- - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
- - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).
- - Coil3 Netzwerk: Explizite OkHttp‑Factory prüfen/integrieren, falls stabil verfügbar (sonst bei per‑Request NetworkHeaders bleiben). `respectCacheHeaders(true)` evaluieren.
