@@ -1,9 +1,7 @@
-name: TDLib Verify
+name: TDLib Verify (manual)
 
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -11,11 +9,10 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
+          lfs: true
           fetch-depth: 0
 
       - name: Detect AGP / JDK
@@ -26,24 +23,22 @@ jobs:
           JDK=17; if [[ -n "$AGP" ]]; then MAJOR=${AGP%%.*}; if (( MAJOR < 8 )); then JDK=11; fi; fi
           echo "jdk=$JDK" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ steps.detect.outputs.jdk }}
           cache: gradle
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
 
-      - name: Install binutils
-        run: sudo apt-get update && sudo apt-get install -y binutils
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
-      # Ensure gradlew is runnable and not CRLF
       - name: Fix gradlew permissions
         run: |
           chmod +x ./gradlew
-          sed -i 's/\r$//' gradlew
+          sed -i 's/\r$//' gradlew || true
 
       - name: Verify TDLib JNI
         env:
