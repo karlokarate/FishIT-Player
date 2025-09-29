@@ -88,6 +88,7 @@ jobs:
             do_gradle=true
             args="$(printf '%s\n' "$body" | sed -n 's#.*\/codex[[:space:]]\+gradle[[:space:]]\+##Ip' | head -n1)"
           fi
+    
           # Flag --verify irgendwo → Tests
           if $run_codex && echo "$body" | grep -qi -- ' --verify'; then
             do_gradle=true
