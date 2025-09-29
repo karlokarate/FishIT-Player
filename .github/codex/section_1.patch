@@ -1,12 +1,15 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt b/app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt
-index d0b9a2a..4ab2a3b 100644
---- a/app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt
-+++ b/app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt
-@@ -62,7 +62,8 @@ import kotlinx.coroutines.delay
- // Rows notify current focused row to drive chrome behavior
--val LocalChromeRowFocusSetter: androidx.compose.runtime.ProvidableCompositionLocal<(String?) -> Unit> = compositionLocalOf { {}
-+val LocalChromeRowFocusSetter: androidx.compose.runtime.ProvidableCompositionLocal<(String?) -> Unit> =
-+    compositionLocalOf<(String?) -> Unit> { _: String? -> }
- 
- // TV chrome mode (file-private)
- private enum class ChromeMode { Visible, Collapsed, Expanded }
+diff --git a/AGENTS.md b/AGENTS.md
+index 5c2f5c8..a7f1b9c 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -79,10 +79,11 @@ Short bullet summary (current highlights)
+ - TDLib packaging: `:libtd` bundles JNI `libtdjni.so` for `arm64-v8a` (primary). A `armeabi-v7a` slice can be built on demand via the build script. Native JNI is auto‑loaded via a static initializer in `org.drinkless.tdlib.Client`.
+ - TDLib secrets sourcing: `TG_API_ID`/`TG_API_HASH` are injected at build time without committing secrets.
+-   - Precedence: ENV vars (`TG_API_ID`, `TG_API_HASH`) → root `/.tg.secrets.properties` (not tracked) → `-P` Gradle props → default 0/empty.
+-   - To test locally: either set env vars for the Gradle run, or create a root‑level file `.tg.secrets.properties` with `TG_API_ID=...` and `TG_API_HASH=...`.
++   - Precedence: ENV vars (`TG_API_ID`, `TG_API_HASH`) → root `/.tg.secrets.properties` (not tracked) → root `/.env.local` (optional, not tracked) → `-P` Gradle props → default 0/empty.
++   - To test locally: either set env vars for the Gradle run, or create a root‑level file `.tg.secrets.properties` or `.env.local` with `TG_API_ID=...` and `TG_API_HASH=...`.
++   - A boolean `BuildConfig.TG_SECRETS_PRESENT` indicates whether both values were provided (non‑zero/non‑empty).
+  - Default UA (secret): HTTP `User-Agent` is injected as `BuildConfig.DEFAULT_UA`.
+    - Precedence: ENV var `HEADER` → root `/.ua.secrets.properties` (not tracked) → `-P HEADER` → empty.
+    - Neither the repo nor the compiled APK contain the literal UA; app fallbacks read `DEFAULT_UA`.

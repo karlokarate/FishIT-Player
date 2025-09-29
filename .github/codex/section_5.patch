@@ -1,48 +1,73 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt b/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt
-index 7b61b74..98f1012 100644
---- a/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt
-+++ b/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt
-@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
- import androidx.compose.runtime.Composable
- import androidx.compose.runtime.DisposableEffect
- import androidx.compose.runtime.MutableState
-+import androidx.compose.runtime.LaunchedEffect
- import androidx.compose.runtime.mutableStateOf
- import androidx.compose.runtime.remember
- import androidx.compose.ui.Alignment
-@@ -41,6 +42,7 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
- import androidx.media3.ui.PlayerView
- import androidx.media3.datasource.DefaultHttpDataSource
- import com.chris.m3usuite.ui.common.AppIcon
-+import com.chris.m3usuite.player.CodecRenderersFactory
- import androidx.compose.foundation.shape.RoundedCornerShape
- import androidx.media3.common.util.UnstableApi
- import com.chris.m3usuite.R
-@@ -122,6 +124,8 @@ private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
-     val context = LocalContext.current
-     val player = remember {
-         // Media3 official pattern: Build a player once per composition, release in DisposableEffect
-+        // Opportunistically prepare runtime codecs for trailer playback as well.
-+        CodecRenderersFactory // keep class initialized
-         val trackSelector = DefaultTrackSelector(context)
-         val httpFactory = DefaultHttpDataSource.Factory()
-             .setAllowCrossProtocolRedirects(true)
-@@ -131,9 +135,8 @@ private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
-         if (headers.isNotEmpty()) httpFactory.setDefaultRequestProperties(headers)
-         val mediaSourceFactory = DefaultMediaSourceFactory(context).setDataSourceFactory(httpFactory)
-         val renderers = DefaultRenderersFactory(context)
--            .setEnableDecoderFallback(true)
--            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
-+        val rf = CodecRenderersFactory.forContext(context)
-         ExoPlayer.Builder(context)
--            .setRenderersFactory(renderers)
-+            .setRenderersFactory(rf)
-             .setTrackSelector(trackSelector)
-             .setMediaSourceFactory(mediaSourceFactory)
-             .build()
-@@ -146,3 +149,4 @@ private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
-         player.prepare()
-         onDispose { player.release() }
-     }
+diff --git a/app/src/main/java/com/chris/m3usuite/telegram/auth/TelegramAuthReducer.kt b/app/src/main/java/com/chris/m3usuite/telegram/auth/TelegramAuthReducer.kt
+new file mode 100644
+index 0000000..0e12a9e
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/telegram/auth/TelegramAuthReducer.kt
+@@ -0,0 +1,73 @@
++package com.chris.m3usuite.telegram.auth
++
++/**
++ * Pure Kotlin state machine to drive the Telegram login UX in Settings.
++ * External engine (TDLib) calls onCodeSent/on2FARequired/onAuthorized/fail to advance.
++ * UI triggers submitPhone/submitCode/submitPassword/cancel.
++ */
++class TelegramAuthReducer {
++
++    var state: TelegramAuthState = TelegramAuthState.Idle
++        private set
++
++    private var pendingPhone: String? = null
++
++    fun start(): TelegramAuthState {
++        return set(TelegramAuthState.EnterPhone())
++    }
++
++    fun submitPhone(phone: String): TelegramAuthState {
++        pendingPhone = phone
++        return set(TelegramAuthState.Loading)
++    }
++
++    fun onCodeSent(via: TelegramAuthState.CodeVia): TelegramAuthState {
++        val phone = pendingPhone.orEmpty()
++        return set(TelegramAuthState.CodeRequired(phone, via))
++    }
++
++    fun submitCode(code: String): TelegramAuthState {
++        // Actual verification happens externally; we move to loading and await a signal.
++        return set(TelegramAuthState.Loading)
++    }
++
++    fun on2FARequired(hint: String?): TelegramAuthState {
++        return set(TelegramAuthState.PasswordRequired(hint))
++    }
++
++    fun submitPassword(password: String): TelegramAuthState {
++        // Actual verification happens externally; we move to loading and await a signal.
++        return set(TelegramAuthState.Loading)
++    }
++
++    fun onAuthorized(userId: Long, name: String?, avatarSmall: String?): TelegramAuthState {
++        // Reset ephemeral inputs, keep state authorized
++        pendingPhone = null
++        return set(TelegramAuthState.Authorized(userId, name, avatarSmall))
++    }
++
++    fun fail(message: String, canRetry: Boolean = true): TelegramAuthState {
++        return set(TelegramAuthState.Error(message, canRetry))
++    }
++
++    fun cancel(): TelegramAuthState {
++        pendingPhone = null
++        return set(TelegramAuthState.Cancelled)
++    }
++
++    fun reset(): TelegramAuthState {
++        pendingPhone = null
++        return set(TelegramAuthState.Idle)
++    }
++
++    private fun set(s: TelegramAuthState): TelegramAuthState {
++        state = s
++        return s
++    }
 +}
-\ No newline at end of file

@@ -1,12 +1,35 @@
-diff --git a/ROADMAP.md b/ROADMAP.md
-index 7c7a81a..cba6851 100644
---- a/ROADMAP.md
-+++ b/ROADMAP.md
-@@ -3,6 +3,7 @@
- Hinweis
- - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
- - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
-+- Maintenance 2025‑09‑29: Mergekonflikte aus Branch #38 bereinigt (Build‑Fix).
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 9cda3a2..9a2db9a 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -25,17 +25,22 @@ android {
+         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
  
- ---
+         // Telegram API credentials (secure lookup, non-committed):
+-        // Precedence: ENV → .tg.secrets.properties (root, untracked) → project -P props → default
++        // Precedence: ENV → .tg.secrets.properties (root, untracked) → .env.local (root, untracked) → project -P props → default
+         val secretsFile = File(rootDir, ".tg.secrets.properties")
+-        val secrets = Properties().apply {
+-            if (secretsFile.exists()) secretsFile.inputStream().use { load(it) }
+-        }
++        val dotenvFile = File(rootDir, ".env.local")
++        val secrets = Properties().apply { if (secretsFile.exists()) secretsFile.inputStream().use { load(it) } }
++        val dotenv = Properties().apply { if (dotenvFile.exists()) dotenvFile.inputStream().use { load(it) } }
+         fun prop(name: String): String? =
+             System.getenv(name)
+-                ?: (secrets.getProperty(name))
++                ?: secrets.getProperty(name)
++                ?: dotenv.getProperty(name)
+                 ?: (project.findProperty(name)?.toString())
  
+         val tgApiIdValue = prop("TG_API_ID")?.toIntOrNull() ?: 0
+         val tgApiHashValue = prop("TG_API_HASH") ?: ""
++        val tgSecretsPresent = tgApiIdValue != 0 && tgApiHashValue.isNotBlank()
+ 
+         buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
+         buildConfigField("String", "TG_API_HASH", "\"${tgApiHashValue}\"")
++        // Helper flag for runtime validation (Settings UX)
++        buildConfigField("boolean", "TG_SECRETS_PRESENT", tgSecretsPresent.toString())
+ 
+         // Default HTTP User-Agent (secret-injected, non-committed):
+         // Precedence: ENV HEADER → /.ua.secrets.properties HEADER → -P HEADER → default empty

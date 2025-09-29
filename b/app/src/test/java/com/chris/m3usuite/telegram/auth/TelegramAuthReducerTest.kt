@@ -1,0 +1,46 @@
+package com.chris.m3usuite.telegram.auth
+
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class TelegramAuthReducerTest {
+
+    @Test
+    fun happyPath_with2FA() {
+        val r = TelegramAuthReducer()
+        assertEquals(TelegramAuthState.EnterPhone(), r.start())
+        assertEquals(TelegramAuthState.Loading, r.submitPhone("+491234567"))
+        assertEquals(
+            TelegramAuthState.CodeRequired("+491234567", TelegramAuthState.CodeVia.Sms),
+            r.onCodeSent(TelegramAuthState.CodeVia.Sms)
+        )
+        assertEquals(TelegramAuthState.Loading, r.submitCode("12345"))
+        assertEquals(TelegramAuthState.PasswordRequired(hint = "Email PW"), r.on2FARequired("Email PW"))
+        assertEquals(TelegramAuthState.Loading, r.submitPassword("secret"))
+        val authorized = r.onAuthorized(42L, "Alice", "file://avatar_small.jpg")
+        assertEquals(TelegramAuthState.Authorized(42L, "Alice", "file://avatar_small.jpg"), authorized)
+    }
+
+    @Test
+    fun error_and_retry() {
+        val r = TelegramAuthReducer()
+        r.start()
+        r.submitPhone("+1")
+        r.onCodeSent(TelegramAuthState.CodeVia.Sms)
+        r.submitCode("00000")
+        assertEquals(
+            TelegramAuthState.Error("Invalid code", true),
+            r.fail("Invalid code", canRetry = true)
+        )
+        // Retry flow
+        assertEquals(TelegramAuthState.EnterPhone(), r.start())
+    }
+
+    @Test
+    fun cancel_flow() {
+        val r = TelegramAuthReducer()
+        r.start()
+        r.submitPhone("+1")
+        assertEquals(TelegramAuthState.Cancelled, r.cancel())
+        assertEquals(TelegramAuthState.Idle, r.reset())
+    }
