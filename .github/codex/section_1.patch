@@ -1,17 +1,12 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 6de6789..1c87302 100644
+index 618a3b5..2717c23 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -1,3 +1,12 @@
+@@ -1,3 +1,7 @@
 +2025-09-29
-+- feat(player/codecs): add a runtime FFmpeg codec loader for the internal Media3 player (arm64). On demand, the app downloads the Media3 FFmpeg extension AAR from Maven Central, extracts libffmpeg.so and classes, and augments the player with FfmpegAudioRenderer as a fallback. This resolves missing audio on files using AC3/E-AC3/DTS, while keeping hardware decode preferred. Codecs are cached under app-internal storage and reused permanently. Trailer playback also benefits from the same factory. Background preparation starts on app launch.
-+  - Notes:
-+    - Only arm64-v8a is targeted. Other ABIs are ignored.
-+    - External networking honors OkHttp defaults; failures gracefully fall back to the baseline player.
-+    - No manifest changes are required; dynamic loading is isolated to internal storage.
-+  - Internals:
-+    - CodecManager handles download/extract/system-load and DexClassLoader wiring.
-+    - CodecRenderersFactory wraps DefaultRenderersFactory and appends FfmpegAudioRenderer via reflection when available.
++- fix(tv/profile-gate): Make DPAD focus visible on the Profile selection screen and PIN keypad. PIN keys (0–9, CLR, DEL) and confirm/cancel now use TvButton with focus halo/scale and proper FocusRequesters (initial focus on “5”). Reuses global tv focus utilities (no new styles).
++- docs(roadmap): Note focus fix for ProfileGate and PIN keypad under short-term QA.
++
  2025-09-27
  - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
  - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
