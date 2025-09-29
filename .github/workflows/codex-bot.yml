@@ -1,8 +1,8 @@
 name: Codex Bot (on-demand)
 
 on:
-    issue_comment:
-        types: [created]
+  issue_comment:
+    types: [created, edited]
   workflow_dispatch:
     inputs:
       comment:
@@ -10,11 +10,9 @@ on:
         type: string
         required: false
       gradle_args:
-        description: 'Optional: Gradle-Args (z. B. "assembleDebug testDebugUnitTest")'
+        description: 'Optional: Gradle-Args (z. B. "assembleDebug testDebugUnitTest")'
         type: string
         required: false
-  issue_comment:
-    types: [created, edited]
   issues:
     types: [opened, edited]
   pull_request_review_comment:
