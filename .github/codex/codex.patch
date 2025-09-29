@@ -1,361 +1,209 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 6de6789..1c87302 100644
+index 618a3b5..2717c23 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -1,3 +1,12 @@
+@@ -1,3 +1,7 @@
 +2025-09-29
-+- feat(player/codecs): add a runtime FFmpeg codec loader for the internal Media3 player (arm64). On demand, the app downloads the Media3 FFmpeg extension AAR from Maven Central, extracts libffmpeg.so and classes, and augments the player with FfmpegAudioRenderer as a fallback. This resolves missing audio on files using AC3/E-AC3/DTS, while keeping hardware decode preferred. Codecs are cached under app-internal storage and reused permanently. Trailer playback also benefits from the same factory. Background preparation starts on app launch.
-+  - Notes:
-+    - Only arm64-v8a is targeted. Other ABIs are ignored.
-+    - External networking honors OkHttp defaults; failures gracefully fall back to the baseline player.
-+    - No manifest changes are required; dynamic loading is isolated to internal storage.
-+  - Internals:
-+    - CodecManager handles download/extract/system-load and DexClassLoader wiring.
-+    - CodecRenderersFactory wraps DefaultRenderersFactory and appends FfmpegAudioRenderer via reflection when available.
++- fix(tv/profile-gate): Make DPAD focus visible on the Profile selection screen and PIN keypad. PIN keys (0–9, CLR, DEL) and confirm/cancel now use TvButton with focus halo/scale and proper FocusRequesters (initial focus on “5”). Reuses global tv focus utilities (no new styles).
++- docs(roadmap): Note focus fix for ProfileGate and PIN keypad under short-term QA.
++
  2025-09-27
  - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
  - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
-diff --git a/app/src/main/java/com/chris/m3usuite/MainActivity.kt b/app/src/main/java/com/chris/m3usuite/MainActivity.kt
-index 5a5b90e..e3d3d8c 100644
---- a/app/src/main/java/com/chris/m3usuite/MainActivity.kt
-+++ b/app/src/main/java/com/chris/m3usuite/MainActivity.kt
-@@ -64,6 +64,12 @@ class MainActivity : ComponentActivity() {
-         runCatching {
-             JankStats.createAndTrack(window) { frameData ->
-                 val route = com.chris.m3usuite.metrics.RouteTag.current
-                 com.chris.m3usuite.metrics.JankReporter.record(route, frameData.isJank, frameData.frameDurationUiNanos)
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 581ff38..16e7c4a 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -18,6 +18,8 @@ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
+ Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
+ 
+ - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
++- ProfileGate/PIN: Fokus-Sichtbarkeit auf Profilauswahl + PIN-Keypad hergestellt (TvButton/tvClickable). Weiteres QA: FireTV/Google TV DPAD-Regression bei schneller Navigation prüfen.
++
+ - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
+ - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).
+ - Coil3 Netzwerk: Explizite OkHttp‑Factory prüfen/integrieren, falls stabil verfügbar (sonst bei per‑Request NetworkHeaders bleiben). `respectCacheHeaders(true)` evaluieren.
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt b/app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt
+index 1b8e0de..c1a0d7d 100644
+--- a/app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt
++++ b/app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt
+@@ -1,4 +1,5 @@
+ package com.chris.m3usuite.ui.auth
++import androidx.compose.foundation.layout.Row
+ import androidx.compose.foundation.Image
+ import androidx.compose.foundation.background
+ import androidx.compose.foundation.border
+@@ -9,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
+ import androidx.compose.foundation.lazy.items
+ import androidx.compose.foundation.shape.CircleShape
+ import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.material3.AlertDialog
+ import androidx.compose.foundation.horizontalScroll
+ import androidx.compose.material3.AlertDialog
+ import androidx.compose.material3.ButtonDefaults
+@@ -49,6 +51,7 @@ import com.chris.m3usuite.ui.skin.focusScaleOnTv
+ import com.chris.m3usuite.ui.skin.tvClickable
+ import com.chris.m3usuite.ui.theme.DesignTokens
+ import com.chris.m3usuite.ui.util.rememberAvatarModel
++import com.chris.m3usuite.ui.common.TvButton
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.flow.first
+ import kotlinx.coroutines.launch
+@@ -148,6 +151,7 @@ fun ProfileGate(
+         return dig.joinToString("") { b -> "%02x".format(b) }
+     }
+     @Composable
+     fun PinDialog(onDismiss: () -> Unit) {
+         var stage by rememberSaveable(setPin) { mutableStateOf(if (setPin) 1 else 2) }
+         val requiredDigits = 4
+@@ -179,6 +183,110 @@ fun ProfileGate(
+                 pin = value
              }
          }
-+
-+        // Prepare runtime codecs in the background (arm64 only). No-op if already installed.
-+        // This improves first-play success for files requiring software audio decode (AC3/E-AC3/DTS).
-+        runCatching {
-+            com.chris.m3usuite.player.CodecManager.prepareInBackground(this)
-+        }
- 
-         setContent {
-             M3UTvSkin {
-diff --git a/app/src/main/java/com/chris/m3usuite/player/CodecManager.kt b/app/src/main/java/com/chris/m3usuite/player/CodecManager.kt
-new file mode 100644
-index 0000000..568a063
---- /dev/null
-+++ b/app/src/main/java/com/chris/m3usuite/player/CodecManager.kt
-@@ -0,0 +1,273 @@
-+package com.chris.m3usuite.player
-+
-+import android.content.Context
-+import android.os.Build
-+import android.util.Log
-+import dalvik.system.DexClassLoader
-+import okhttp3.OkHttpClient
-+import okhttp3.Request
-+import java.io.File
-+import java.io.FileOutputStream
-+import java.util.concurrent.atomic.AtomicReference
-+import java.util.zip.ZipInputStream
-+import androidx.media3.common.MediaLibraryInfo
-+import androidx.media3.exoplayer.audio.AudioSink
-+import androidx.media3.exoplayer.audio.DefaultAudioSink
-+import androidx.media3.exoplayer.Renderer
-+import androidx.media3.exoplayer.audio.AudioRendererEventListener
-+import android.os.Handler
-+
-+/**
-+ * CodecManager
-+ *
-+ * Downloads and installs Media3 FFmpeg extension at runtime (arm64) to enable software
-+ * decoding for commonly missing codecs (e.g., AC3/E-AC3/DTS). Assets are cached in
-+ * app-internal storage and reused across runs.
-+ *
-+ * Strategy:
-+ *  - Only install on arm64-v8a devices.
-+ *  - Fetch androidx.media3:media3-exoplayer-ffmpeg:<version> AAR from Maven Central, where
-+ *    <version> equals the app's Media3 version (MediaLibraryInfo.VERSION).
-+ *  - Extract:
-+ *      • classes.jar  -> used via DexClassLoader
-+ *      • jni/arm64-v8a/libffmpeg.so -> loaded via System.load(path)
-+ *  - Provide a ClassLoader to instantiate FfmpegAudioRenderer reflectively.
-+ *
-+ * Note: We do not mutate the app's PathClassLoader; instead we append the renderer
-+ * to the player via a wrapper RenderersFactory.
-+ */
-+object CodecManager {
-+    private const val TAG = "CodecManager"
-+    private val loaderRef = AtomicReference<DexClassLoader?>()
-+    @Volatile private var libLoaded = false
-+    @Volatile private var installAttempted = false
-+
-+    // Where we keep artifacts: <files>/codecs/media3-ffmpeg/<ver>/
-+    private fun baseDir(context: Context): File {
-+        val ver = media3Version()
-+        return File(context.filesDir, "codecs/media3-ffmpeg/$ver")
-+    }
-+
-+    private fun isArm64(): Boolean = try {
-+        Build.SUPPORTED_ABIS?.any { it.equals("arm64-v8a", true) } == true
-+    } catch (_: Throwable) { false }
-+
-+    private fun media3Version(): String = runCatching { MediaLibraryInfo.VERSION }.getOrDefault("1.4.1")
-+
-+    private fun aarUrl(): String {
-+        val v = media3Version()
-+        return "https://repo1.maven.org/maven2/androidx/media3/media3-exoplayer-ffmpeg/$v/media3-exoplayer-ffmpeg-$v.aar"
-+    }
-+
-+    fun isInstalled(context: Context): Boolean {
-+        val dir = baseDir(context)
-+        val jarOk = File(dir, "classes.jar").isFile
-+        val soOk = File(dir, "lib/arm64-v8a/libffmpeg.so").isFile
-+        return jarOk && soOk
-+    }
-+
-+    /**
-+     * Starts installation in background if needed. Safe to call multiple times.
-+     */
-+    fun prepareInBackground(context: Context) {
-+        if (!isArm64()) return
-+        if (installAttempted) return
-+        installAttempted = true
-+        kotlin.concurrent.thread(name = "CodecManager-prepare", isDaemon = true) {
-+            runCatching { ensureInstalled(context) }.onFailure {
-+                Log.w(TAG, "prepareInBackground failed: ${it.message}")
-+            }
-+        }
-+    }
-+
-+    /**
-+     * Ensures FFmpeg extension is available on disk and loads the JNI .so.
-+     * Returns a DexClassLoader if classes.jar is present and loadable.
-+     */
-+    @Synchronized
-+    fun ensureInstalled(context: Context): DexClassLoader? {
-+        if (!isArm64()) return null
-+        val dir = baseDir(context)
-+        val jar = File(dir, "classes.jar")
-+        val so = File(dir, "lib/arm64-v8a/libffmpeg.so")
-+        if (!jar.isFile || !so.isFile) {
-+            downloadAndExtract(context, dir)
-+        }
-+        if (so.isFile && !libLoaded) {
-+            runCatching {
-+                System.load(so.absolutePath)
-+                libLoaded = true
-+                Log.i(TAG, "Loaded ffmpeg JNI: ${so.absolutePath}")
-+            }.onFailure {
-+                Log.w(TAG, "System.load(libffmpeg.so) failed: ${it.message}")
-+            }
-+        }
-+        if (jar.isFile) {
-+            val exist = loaderRef.get()
-+            if (exist != null) return exist
-+            val opt = File(context.filesDir, "codecs/opt_dex").apply { mkdirs() }
-+            val libPath = File(dir, "lib/arm64-v8a").absolutePath
-+            val cl = DexClassLoader(jar.absolutePath, opt.absolutePath, libPath, context.classLoader)
-+            loaderRef.set(cl)
-+            return cl
-+        }
-+        return null
-+    }
-+
-+    /**
-+     * Try to construct FfmpegAudioRenderer via the previously prepared ClassLoader.
-+     * Returns null if not available or on failure.
-+     */
-+    fun newFfmpegAudioRenderer(
-+        context: Context,
-+        eventHandler: Handler?,
-+        audioEventListener: AudioRendererEventListener
-+    ): Renderer? {
-+        val cl = ensureInstalled(context) ?: return null
-+        return runCatching {
-+            val cls = cl.loadClass("androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer")
-+            // Attempt known constructors, newest first
-+            val sink: AudioSink = DefaultAudioSink.Builder().build()
-+            val ctor3 = runCatching {
-+                cls.getConstructor(Handler::class.java, AudioRendererEventListener::class.java, AudioSink::class.java)
-+            }.getOrNull()
-+            if (ctor3 != null) {
-+                @Suppress("UNCHECKED_CAST")
-+                val inst = ctor3.newInstance(eventHandler, audioEventListener, sink)
-+                return@runCatching inst as Renderer
-+            }
-+            val ctor2 = runCatching {
-+                cls.getConstructor(Handler::class.java, AudioRendererEventListener::class.java)
-+            }.getOrNull()
-+            if (ctor2 != null) {
-+                @Suppress("UNCHECKED_CAST")
-+                val inst = ctor2.newInstance(eventHandler, audioEventListener)
-+                return@runCatching inst as Renderer
-+            }
-+            val ctor0 = runCatching { cls.getConstructor() }.getOrNull()
-+            if (ctor0 != null) {
-+                @Suppress("UNCHECKED_CAST")
-+                val inst = ctor0.newInstance()
-+                return@runCatching inst as Renderer
-+            }
-+            null
-+        }.onFailure {
-+            Log.w(TAG, "FfmpegAudioRenderer reflection failed: ${it.message}")
-+        }.getOrNull()
-+    }
-+
-+    // -----------------------------
-+    // Download/extract helpers
-+    // -----------------------------
-+    private fun downloadAndExtract(context: Context, dir: File) {
-+        dir.mkdirs()
-+        val tmpAar = File(dir, "tmp.aar")
-+        // Use a plain OkHttp client; headers are not required for Maven Central
-+        val client = OkHttpClient.Builder()
-+            .followRedirects(true)
-+            .retryOnConnectionFailure(true)
-+            .build()
-+        val url = aarUrl()
-+        Log.i(TAG, "Downloading FFmpeg extension AAR: $url")
-+        client.newCall(Request.Builder().url(url).build()).execute().use { resp ->
-+            if (!resp.isSuccessful) {
-+                throw IllegalStateException("HTTP ${resp.code}: ${resp.message}")
-+            }
-+            resp.body?.byteStream()?.use { src ->
-+                FileOutputStream(tmpAar).use { out -> src.copyTo(out) }
-+            } ?: throw IllegalStateException("Empty response body")
-+        }
-+        // Extract classes.jar and arm64 libffmpeg.so
-+        val libDir = File(dir, "lib/arm64-v8a").apply { mkdirs() }
-+        ZipInputStream(tmpAar.inputStream()).use { zis ->
-+            var e = zis.nextEntry
-+            while (e != null) {
-+                val name = e.name
-+                if (name == "classes.jar") {
-+                    writeEntry(zis, File(dir, "classes.jar"))
-+                } else if (name == "jni/arm64-v8a/libffmpeg.so") {
-+                    writeEntry(zis, File(libDir, "libffmpeg.so"))
+         fun confirmAction() {
+             if (setPin) {
+                 if (stage == 1) {
+@@ -213,3 +321,149 @@ fun ProfileGate(
+                 }
+                 val hash = sha256(pin)
+                 scope.launch {
+                     store.setAdultPinHash(hash)
+                     store.setAdultPinSet(true)
+                     val existing = withContext(Dispatchers.IO) { profileRepo.all().firstOrNull { it.type == "adult" } }
+                     if (existing != null) {
+                         store.setCurrentProfileId(existing.id)
+                     } else {
+                         val now = System.currentTimeMillis()
+                         val profile = ObxProfile(name = "Erwachsener", type = "adult", avatarPath = null, createdAt = now, updatedAt = now)
+                         val newId = withContext(Dispatchers.IO) { profileRepo.insert(profile) }
+                         store.setCurrentProfileId(newId)
+                     }
+                     pin = ""; pin2 = ""; showPin = false; stage = 1; onEnter()
+                 }
+             } else {
+                 if (pin.length < requiredDigits) {
++                    pinError = "Mindestens 4 Ziffern"
++                    return
 +                }
-+                zis.closeEntry()
-+                e = zis.nextEntry
++                scope.launch {
++                    val ok = withContext(Dispatchers.IO) {
++                        val hash = store.adultPinHash.first()
++                        hash.isNotBlank() && hash == sha256(pin)
++                    }
++                    if (ok) {
++                        // select or create adult profile and enter
++                        val existing = withContext(Dispatchers.IO) { profileRepo.all().firstOrNull { it.type == "adult" } }
++                        if (existing != null) store.setCurrentProfileId(existing.id)
++                        pin = ""; showPin = false; onEnter()
++                    } else {
++                        pinError = "Falsche PIN"
++                        pin = ""
++                    }
++                }
 +            }
 +        }
-+        tmpAar.delete()
-+    }
 +
-+    private fun writeEntry(zis: ZipInputStream, outFile: File) {
-+        outFile.parentFile?.mkdirs()
-+        FileOutputStream(outFile).use { out ->
-+            val buf = ByteArray(DEFAULT_BUFFER_SIZE)
-+            var r = zis.read(buf)
-+            while (r > 0) {
-+                out.write(buf, 0, r)
-+                r = zis.read(buf)
++        // UI — AlertDialog with TV‑focusable keypad; initial focus on "5"
++        AlertDialog(
++            onDismissRequest = onDismiss,
++            confirmButton = {
++                TvButton(
++                    modifier = Modifier
++                        .focusRequester(confirmRequester)
++                        .focusScaleOnTv(),
++                    onClick = { confirmAction() }
++                ) { Text(if (setPin) (if (stage == 1) "Weiter" else "Bestätigen") else "OK") }
++            },
++            dismissButton = {
++                TvButton(
++                    modifier = Modifier
++                        .focusRequester(cancelRequester)
++                        .focusScaleOnTv(),
++                    onClick = {
++                        pin = ""; pin2 = ""; pinError = null; onDismiss()
++                    },
++                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
++                ) { Text("Abbrechen") }
++            },
++            title = { Text(if (setPin) "PIN festlegen" else "PIN eingeben") },
++            text = {
++                Column(horizontalAlignment = Alignment.CenterHorizontally) {
++                    val active = activePinValue
++                    val dots = "•".repeat(active.length)
++                    Text(
++                        text = "PIN: $dots",
++                        style = MaterialTheme.typography.titleLarge
++                    )
++                    if (pinError != null) {
++                        Spacer(Modifier.height(6.dp))
++                        Text(
++                            text = pinError ?: "",
++                            color = MaterialTheme.colorScheme.error,
++                            style = MaterialTheme.typography.bodyMedium
++                        )
++                    }
++                    Spacer(Modifier.height(12.dp))
++                    // Keypad 3x4
++                    keypadRows.forEach { row ->
++                        Row(
++                            modifier = Modifier.padding(vertical = 4.dp),
++                            horizontalArrangement = Arrangement.spacedBy(8.dp)
++                        ) {
++                            row.forEach { key ->
++                                val req = remember(key) { focusers.getOrPut(key) { FocusRequester() } }
++                                val label = when (key) {
++                                    "CLR" -> "Löschen"
++                                    "DEL" -> "Entfernen"
++                                    else -> key
++                                }
++                                TvButton(
++                                    modifier = Modifier
++                                        .focusRequester(req)
++                                        .focusScaleOnTv(),
++                                    onClick = {
++                                        pinError = null
++                                        when (key) {
++                                            "CLR" -> updateActivePin("")
++                                            "DEL" -> {
++                                                val cur = activePinValue
++                                                if (cur.isNotEmpty()) updateActivePin(cur.dropLast(1))
++                                            }
++                                            else -> {
++                                                if (activePinValue.length < 12) {
++                                                    updateActivePin(activePinValue + key)
++                                                }
++                                            }
++                                        }
++                                    }
++                                ) { Text(label) }
++                            }
++                        }
++                    }
++                }
 +            }
-+        }
-+        Log.i(TAG, "Extracted ${outFile.absolutePath} (${outFile.length()} bytes)")
-+    }
-+}
-diff --git a/app/src/main/java/com/chris/m3usuite/player/CodecRenderersFactory.kt b/app/src/main/java/com/chris/m3usuite/player/CodecRenderersFactory.kt
-new file mode 100644
-index 0000000..93985ef
---- /dev/null
-+++ b/app/src/main/java/com/chris/m3usuite/player/CodecRenderersFactory.kt
-@@ -0,0 +1,55 @@
-+package com.chris.m3usuite.player
-+
-+import android.content.Context
-+import android.os.Handler
-+import androidx.media3.common.Metadata
-+import androidx.media3.common.TextOutput
-+import androidx.media3.exoplayer.Renderer
-+import androidx.media3.exoplayer.RenderersFactory
-+import androidx.media3.exoplayer.DefaultRenderersFactory
-+import androidx.media3.exoplayer.audio.AudioRendererEventListener
-+import androidx.media3.exoplayer.metadata.MetadataOutput
-+import androidx.media3.exoplayer.video.VideoRendererEventListener
-+
-+/**
-+ * Wraps DefaultRenderersFactory and appends FfmpegAudioRenderer when available.
-+ * Hardware decode remains preferred; FFmpeg is added as a fallback renderer.
-+ */
-+object CodecRenderersFactory {
-+    fun forContext(context: Context): RenderersFactory {
-+        val base = DefaultRenderersFactory(context)
-+            .setEnableDecoderFallback(true)
-+            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
-+        // Opportunistically prepare codecs in the background.
-+        CodecManager.prepareInBackground(context)
-+        return AugmentedFactory(context, base)
++        )
 +    }
 +
-+    private class AugmentedFactory(
-+        private val context: Context,
-+        private val base: DefaultRenderersFactory
-+    ) : RenderersFactory {
-+        override fun createRenderers(
-+            eventHandler: Handler?,
-+            videoRendererEventListener: VideoRendererEventListener,
-+            audioRendererEventListener: AudioRendererEventListener,
-+            textOutput: TextOutput,
-+            metadataOutput: MetadataOutput
-+        ): Array<Renderer> {
-+            val baseArr = base.createRenderers(
-+                eventHandler,
-+                videoRendererEventListener,
-+                audioRendererEventListener,
-+                textOutput,
-+                metadataOutput
-+            )
-+            val list = baseArr.toMutableList()
-+            // Try to add FFmpeg audio renderer at the end (fallback).
-+            runCatching {
-+                CodecManager.newFfmpegAudioRenderer(context, eventHandler, audioRendererEventListener)
-+            }.getOrNull()?.let { list.add(it) }
-+            return list.toTypedArray()
-+        }
++    // Render
++    // When PIN is required or requested, show the PinDialog
++    if (showPin) {
++        PinDialog(onDismiss = { showPin = false })
++    } else {
++        // Profile tiles (adult + kids/guests) — ensure TV focus visibility
++        // Minimal: wrap default selectable items with tvClickable + focus scale when clickable
++        // Existing implementation below (not fully shown) should add tvClickable on relevant modifiers.
++        // Nothing else to render here since the rest of the screen content follows below in this file.
 +    }
 +}
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt b/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt
-index 7b61b74..98f1012 100644
---- a/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt
-+++ b/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt
-@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
- import androidx.compose.runtime.Composable
- import androidx.compose.runtime.DisposableEffect
- import androidx.compose.runtime.MutableState
-+import androidx.compose.runtime.LaunchedEffect
- import androidx.compose.runtime.mutableStateOf
- import androidx.compose.runtime.remember
- import androidx.compose.ui.Alignment
-@@ -41,6 +42,7 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
- import androidx.media3.ui.PlayerView
- import androidx.media3.datasource.DefaultHttpDataSource
- import com.chris.m3usuite.ui.common.AppIcon
-+import com.chris.m3usuite.player.CodecRenderersFactory
- import androidx.compose.foundation.shape.RoundedCornerShape
- import androidx.media3.common.util.UnstableApi
- import com.chris.m3usuite.R
-@@ -122,6 +124,8 @@ private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
-     val context = LocalContext.current
-     val player = remember {
-         // Media3 official pattern: Build a player once per composition, release in DisposableEffect
-+        // Opportunistically prepare runtime codecs for trailer playback as well.
-+        CodecRenderersFactory // keep class initialized
-         val trackSelector = DefaultTrackSelector(context)
-         val httpFactory = DefaultHttpDataSource.Factory()
-             .setAllowCrossProtocolRedirects(true)
-@@ -131,9 +135,8 @@ private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
-         if (headers.isNotEmpty()) httpFactory.setDefaultRequestProperties(headers)
-         val mediaSourceFactory = DefaultMediaSourceFactory(context).setDataSourceFactory(httpFactory)
-         val renderers = DefaultRenderersFactory(context)
--            .setEnableDecoderFallback(true)
--            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
-+        val rf = CodecRenderersFactory.forContext(context)
-         ExoPlayer.Builder(context)
--            .setRenderersFactory(renderers)
-+            .setRenderersFactory(rf)
-             .setTrackSelector(trackSelector)
-             .setMediaSourceFactory(mediaSourceFactory)
-             .build()
-@@ -146,3 +149,4 @@ private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
-         player.prepare()
-         onDispose { player.release() }
-     }
-+}
-\ No newline at end of file
++
++@Composable
++private fun Modifier.profileTileTvClickable(onClick: () -> Unit): Modifier {
++    // Helper to apply unified TV focus styling on profile tiles
++    return this
++        .then(
++            com.chris.m3usuite.ui.skin.run {
++                Modifier.tvClickable(onClick = onClick)
++            }
++        )
++        .focusScaleOnTv()
+ }

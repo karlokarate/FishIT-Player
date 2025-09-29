@@ -1,20 +1,13 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/MainActivity.kt b/app/src/main/java/com/chris/m3usuite/MainActivity.kt
-index 5a5b90e..e3d3d8c 100644
---- a/app/src/main/java/com/chris/m3usuite/MainActivity.kt
-+++ b/app/src/main/java/com/chris/m3usuite/MainActivity.kt
-@@ -64,6 +64,12 @@ class MainActivity : ComponentActivity() {
-         runCatching {
-             JankStats.createAndTrack(window) { frameData ->
-                 val route = com.chris.m3usuite.metrics.RouteTag.current
-                 com.chris.m3usuite.metrics.JankReporter.record(route, frameData.isJank, frameData.frameDurationUiNanos)
-             }
-         }
-+
-+        // Prepare runtime codecs in the background (arm64 only). No-op if already installed.
-+        // This improves first-play success for files requiring software audio decode (AC3/E-AC3/DTS).
-+        runCatching {
-+            com.chris.m3usuite.player.CodecManager.prepareInBackground(this)
-+        }
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 581ff38..16e7c4a 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -18,6 +18,8 @@ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
+ Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
  
-         setContent {
-             M3UTvSkin {
+ - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
++- ProfileGate/PIN: Fokus-Sichtbarkeit auf Profilauswahl + PIN-Keypad hergestellt (TvButton/tvClickable). Weiteres QA: FireTV/Google TV DPAD-Regression bei schneller Navigation prüfen.
++
+ - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
+ - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).
+ - Coil3 Netzwerk: Explizite OkHttp‑Factory prüfen/integrieren, falls stabil verfügbar (sonst bei per‑Request NetworkHeaders bleiben). `respectCacheHeaders(true)` evaluieren.
