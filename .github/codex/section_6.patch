@@ -1,39 +1,28 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt b/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt
-index 6076021..1c3c5b1 100644
---- a/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt
-+++ b/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt
-@@ -6,6 +6,7 @@ import android.os.Build
- import android.os.StatFs
- import com.chris.m3usuite.prefs.SettingsStore
- import okhttp3.Cache
-+import com.chris.m3usuite.core.perf.DeviceTuning
- import okhttp3.OkHttpClient
- import java.io.File
- import java.util.concurrent.TimeUnit
-@@ -77,12 +78,20 @@ private fun computeHttpCacheSizeBytes(context: Context, cacheDir: File): Long {
-     val MB = 1024L * 1024L
-     val is64 = try { Build.SUPPORTED_64_BIT_ABIS.isNotEmpty() } catch (_: Throwable) { false }
-     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-     val isLowRam = am?.isLowRamDevice == true
- 
--    val baseMiB = if (is64) 96 else 32
--    val lowMiB = if (is64) 64 else 24
--    val capMiB = if (is64) 128 else 64
-+    // Fire TV Stick (v7a) gets even smaller caches to reduce pressure on 32-bit RAM/storage
-+    val fireTv32 = DeviceTuning.isFireTv32Bit()
-+    val baseMiB = when {
-+        fireTv32 -> 16
-+        is64 -> 96
-+        else -> 32
+diff --git a/app/src/v7a/java/org/drinkless/tdlib/Log.java b/app/src/v7a/java/org/drinkless/tdlib/Log.java
+new file mode 100644
+index 0000000..3f4da8d
+--- /dev/null
++++ b/app/src/v7a/java/org/drinkless/tdlib/Log.java
+@@ -0,0 +1,22 @@
++package org.drinkless.tdlib;
++
++/**
++ * Stub Log for armeabi-v7a flavor.
++ * Provides the LogMessageHandler interface and no-op setters.
++ */
++public final class Log {
++    private Log() {
 +    }
-+    val lowMiB = when {
-+        fireTv32 -> 8
-+        is64 -> 64
-+        else -> 24
++
++    public interface LogMessageHandler {
++        void onLogMessage(int verbosityLevel, String message);
 +    }
-+    val capMiB = if (fireTv32) 32 else if (is64) 128 else 64
-     val chosenBase = if (isLowRam) lowMiB else baseMiB
- 
-     // 1% of available space on the cache filesystem
-     val stat = runCatching { StatFs(cacheDir.absolutePath) }.getOrNull()
-     val availBytes = stat?.availableBytes ?: 0L
++
++    public static void setVerbosityLevel(int newVerbosityLevel) {
++        // no-op
++    }
++
++    public static void setLogMessageHandler(int maxVerbosityLevel, LogMessageHandler handler) {
++        // no-op
++    }
++}

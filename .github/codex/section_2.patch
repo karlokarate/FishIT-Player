@@ -1,18 +1,15 @@
-diff --git a/ARCHITECTURE_OVERVIEW.md b/ARCHITECTURE_OVERVIEW.md
-index 4e8efee..83b4a54 100644
---- a/ARCHITECTURE_OVERVIEW.md
-+++ b/ARCHITECTURE_OVERVIEW.md
-@@ -33,6 +33,13 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
- - Cache: `TelegramCacheCleanupWorker` trimmt lokale TD‑Dateien täglich auf `TG_CACHE_LIMIT_GB` (GB) – best‑effort Datei‑System‑Trim.
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 524d0f3..6b490c6 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -1,6 +1,10 @@
+ # Roadmap
  
- 
-+Fire TV Stick (v7a, Amazon AFT*) Performance Tuning
-+- Ziel: Sehr flüssige Bedienung auf 32‑bit Fire TV Sticks.
-+- HTTP Cache reduziert (Basis ~16 MiB, Low‑RAM ~8 MiB, Deckel ~32 MiB).
-+- Xtream Short‑EPG Parallelität halbiert (2 statt 4).
-+- Hintergrundjobs werden während der Wiedergabe pausiert (Worker frühzeitig exit/retry bzw. SchedulingGateway cancel/resume); automatische Wiederaufnahme, wenn der Stream beendet wurde.
-+- Gating via leichtgewichtigem SharedPreferences‑Flag; nur v7a betroffen.
+ ## Near-term
++- Build packaging
++  - DONE: Dual-APK by ABI flavors (arm64 with TDLib, v7a without TDLib; stubs and keep rules in place)
++  - Verify CI tasks for assembleArm64Release / assembleV7aRelease if needed
 +
- ## 1) Build, Run & Tests
- 
- - JDK 17, Build via Gradle Wrapper
+ - Telegram integration
+   - Phase‑2: LTO for TDLib build, event-driven indexing refinements, size trims
+   - FCM push routing (finalize), auto start of TDLib service on push

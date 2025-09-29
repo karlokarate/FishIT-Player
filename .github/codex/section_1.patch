@@ -1,18 +1,24 @@
-diff --git a/AGENTS.md b/AGENTS.md
-index 8d8e5ce..1a83928 100644
---- a/AGENTS.md
-+++ b/AGENTS.md
-@@ -150,6 +150,14 @@ Git Push Policy (SSH, codex‑wsl)
- - TDLib pinning: TDLib (JNI + Java bindings) is pinned to a specific upstream tag for reproducibility. The build script `scripts/tdlib-build-arm64.sh` checks out the tag and copies `TdApi.java`/`Client.java` from TDLib’s `example/java` into `libtd/src/main/java/org/drinkless/tdlib/`. Default pin: `v1.8.0` (the latest upstream tag as of now; override via env `TD_TAG`/`TD_COMMIT` or CLI `--ref <tag|commit>`). `Log.java` stays local to match JNI signatures.
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 3e1a914..1c0f6f1 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,17 @@
+ # Changelog
  
-+Fire TV Stick (v7a) tuning
-+- 32‑bit Fire TV (Amazon AFT*, brand=Amazon) receives conservative resource tuning:
-+  - HTTP cache shrunk (base≈16 MiB, low‑RAM≈8 MiB, cap≈32 MiB) to reduce pressure on limited storage/RAM.
-+  - Xtream EPG concurrency reduced (2 instead of 4) to avoid CPU/RAM spikes.
-+  - Background work is paused while video playback is active: Xtream delta/details, Telegram cache trims, and other safe jobs early‑exit or are canceled. SchedulingGateway resumes them automatically when playback ends. This keeps CPU/network/head‑of‑line blocking away from the player.
-+- Global playback gate is persisted in a small perf SharedPreferences and toggled by the internal player enter/exit lifecycle.
-+- Non‑v7a/64‑bit devices remain unchanged.
++2025-09-29
++- Build: Introduced ABI product flavors for reliable dual release APKs
++  - Flavor dimension "arch" with flavors:
++    - arm64 (arm64-v8a): ships TDLib via :libtd, TG_TDLIB_ENABLED=true
++    - v7a (armeabi-v7a): no TDLib, Telegram disabled with stubs, TG_TDLIB_ENABLED=false
++  - Per-flavor dependency wiring: arm64Implementation(project(":libtd"))
++  - v7a flavor compiles against TdApi sources but uses stub Client/Log without System.loadLibrary
++  - Disabled ABI splits to avoid conflicts with flavor-based ABI selection
++  - Lint no longer aborts builds; META-INF packaging excludes retained
++  - Proguard: keep org.drinkless.tdlib classes to prevent R8 stripping on arm64
++  - Build commands:
++    - ./gradlew :app:assembleArm64Release → arm64 APK with TDLib
++    - ./gradlew :app:assembleV7aRelease   → v7a APK without TDLib
 +
- Where to find the full overview
- - The canonical, continuously updated source is `AGENTS.md` (this file).
- - `ARCHITECTURE_OVERVIEW.md` is a detailed, human‑friendly derivative of this file. If discrepancies occur, this file prevails. Keep `ARCHITECTURE_OVERVIEW.md` updated whenever new modules/features are added.
+ 2025-09-25
+ - TV chrome BACK: On TV, ESC/BACK first collapses HomeChrome (from Expanded or Visible) and consumes the event. Prevents closing the player or leaving the screen while chrome is visible.
+ - Tile focus logging: Core row engines now emit detailed focus logs on focus, plus a tree hint. Makes it visible in logcat which concrete tile currently has focus across Start/Library/Details rows.
