@@ -1,60 +1,12 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/player/CodecRenderersFactory.kt b/app/src/main/java/com/chris/m3usuite/player/CodecRenderersFactory.kt
-new file mode 100644
-index 0000000..93985ef
---- /dev/null
-+++ b/app/src/main/java/com/chris/m3usuite/player/CodecRenderersFactory.kt
-@@ -0,0 +1,55 @@
-+package com.chris.m3usuite.player
-+
-+import android.content.Context
-+import android.os.Handler
-+import androidx.media3.common.Metadata
-+import androidx.media3.common.TextOutput
-+import androidx.media3.exoplayer.Renderer
-+import androidx.media3.exoplayer.RenderersFactory
-+import androidx.media3.exoplayer.DefaultRenderersFactory
-+import androidx.media3.exoplayer.audio.AudioRendererEventListener
-+import androidx.media3.exoplayer.metadata.MetadataOutput
-+import androidx.media3.exoplayer.video.VideoRendererEventListener
-+
-+/**
-+ * Wraps DefaultRenderersFactory and appends FfmpegAudioRenderer when available.
-+ * Hardware decode remains preferred; FFmpeg is added as a fallback renderer.
-+ */
-+object CodecRenderersFactory {
-+    fun forContext(context: Context): RenderersFactory {
-+        val base = DefaultRenderersFactory(context)
-+            .setEnableDecoderFallback(true)
-+            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
-+        // Opportunistically prepare codecs in the background.
-+        CodecManager.prepareInBackground(context)
-+        return AugmentedFactory(context, base)
-+    }
-+
-+    private class AugmentedFactory(
-+        private val context: Context,
-+        private val base: DefaultRenderersFactory
-+    ) : RenderersFactory {
-+        override fun createRenderers(
-+            eventHandler: Handler?,
-+            videoRendererEventListener: VideoRendererEventListener,
-+            audioRendererEventListener: AudioRendererEventListener,
-+            textOutput: TextOutput,
-+            metadataOutput: MetadataOutput
-+        ): Array<Renderer> {
-+            val baseArr = base.createRenderers(
-+                eventHandler,
-+                videoRendererEventListener,
-+                audioRendererEventListener,
-+                textOutput,
-+                metadataOutput
-+            )
-+            val list = baseArr.toMutableList()
-+            // Try to add FFmpeg audio renderer at the end (fallback).
-+            runCatching {
-+                CodecManager.newFfmpegAudioRenderer(context, eventHandler, audioRendererEventListener)
-+            }.getOrNull()?.let { list.add(it) }
-+            return list.toTypedArray()
-+        }
-+    }
-+}
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 7c7a81a..cba6851 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -3,6 +3,7 @@
+ Hinweis
+ - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+ - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
++- Maintenance 2025‑09‑29: Mergekonflikte aus Branch #38 bereinigt (Build‑Fix).
+ 
+ ---
+ 
