@@ -1,4 +1,4 @@
-name: Codex Bot (on-demand)
+name: Codex Bot (on-demand
 
 on:
   issue_comment:
