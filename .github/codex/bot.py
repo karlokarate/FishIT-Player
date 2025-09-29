@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
+""
 Codex Bot: Erzeugt AI-Patches (Unified Diff) unter Nutzung deiner Repo-Doku (AGENTS.md, ARCHITECTURE_OVERVIEW.md,
 ROADMAP.md, CHANGELOG.md …), baut relevanzbasierten Code-Kontext, wendet Patches ROBUST an (3-way / per Sektion / --reject),
 pusht Branch, erstellt PR, labelt optional und kann im SPEC-FIRST-Modus erst eine Änderungs-Spezifikation liefern.
