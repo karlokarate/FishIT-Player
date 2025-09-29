@@ -1,390 +1,113 @@
-diff --git a/scripts/tdlib-build-arm64.sh b/scripts/tdlib-build-arm64.sh
-index 6c6c2b8..d4e7b2a 100755
---- a/scripts/tdlib-build-arm64.sh
-+++ b/scripts/tdlib-build-arm64.sh
-@@ -1,272 +1,420 @@
- #!/usr/bin/env bash
- set -euo pipefail
- 
--# Build TDLib (JNI) for Android arm64-v8a and copy libtdjni.so into :libtd.
--# Focus: smallest possible .so without breaking TDLib functionality used in-app.
--# Techniques: LTO, MinSizeRel, section GC/ICF, static BoringSSL, aggressive strip.
--# Prereqs: git, cmake (>=3.18), Ninja (optional), Android NDK r23+.
--# Env: ANDROID_NDK_HOME or ANDROID_NDK_ROOT must be set (NDK r23+).
--
--REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
--# Simple args: --only-arm64 | --only-v7a | --skip-v7a | --ref <tag-or-commit>
--BUILD_ARM64=1
--BUILD_V7A=1
--TD_REF_ARG=""
--while [[ $# -gt 0 ]]; do
--  case "$1" in
--    --only-arm64) BUILD_V7A=0 ;;
--    --only-v7a) BUILD_ARM64=0 ;;
--    --skip-v7a|--no-v7a) BUILD_V7A=0 ;;
--    --ref|--tag|--commit)
--      shift
--      TD_REF_ARG="${1:-}"
--      ;;
--    *)
--      echo "Unknown argument: $1" >&2 ;;
--  esac
--  shift || true
--done
--# Prefer repo-local toolchains if present
--export PATH="$REPO_DIR/.wsl-cmake/bin:$REPO_DIR/.wsl-ninja/bin:$REPO_DIR/.wsl-gperf/usr/bin:$REPO_DIR/.wsl-gperf/bin:$PATH"
--OUT_DIR64="$REPO_DIR/libtd/src/main/jniLibs/arm64-v8a"
--OUT_DIR32="$REPO_DIR/libtd/src/main/jniLibs/armeabi-v7a"
--TD_DIR="$REPO_DIR/.third_party/td"
--# Pin to a specific TDLib tag/branch/commit for reproducibility.
--# Default: latest validated stable for this project.
--TD_DEFAULT_TAG="v1.8.29"
--# Priority: CLI --ref > TD_TAG env > TD_COMMIT env > default
--TD_PIN_REF="${TD_REF_ARG:-${TD_TAG:-${TD_COMMIT:-$TD_DEFAULT_TAG}}}"
--
--# BoringSSL (static) config
--BORING_DIR="$REPO_DIR/.third_party/boringssl"
--BORING_BUILD_DIR="$BORING_DIR/build-android-arm64"
--
--NDK="${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}"
--if [[ -z "$NDK" ]]; then
--  echo "ERROR: ANDROID_NDK_HOME or ANDROID_NDK_ROOT must be set (NDK r23+)." >&2
--  exit 1
--fi
--
--mkdir -p "$REPO_DIR/.third_party"
--if [[ ! -d "$TD_DIR/.git" ]]; then
--  echo "Cloning TDLib…"
--  git clone --depth 1 https://github.com/tdlib/td.git "$TD_DIR"
--fi
--
--# Ensure tags are available for selection
--(cd "$TD_DIR" && git fetch --tags --force --prune origin >/dev/null 2>&1 || true)
--
--# Try to checkout the requested pin; if missing, fallback to latest v* tag
--if [[ -n "$TD_PIN_REF" ]]; then
--  echo "Checking out TDLib ref: $TD_PIN_REF (or latest v* tag as fallback)…"
--  if (cd "$TD_DIR" && git fetch --depth 1 origin "$TD_PIN_REF" >/dev/null 2>&1); then
--    (cd "$TD_DIR" && git checkout --detach FETCH_HEAD)
--  else
--    echo "Ref $TD_PIN_REF not found upstream; using latest v* tag…" >&2
--    LATEST_TAG=$(cd "$TD_DIR" && git ls-remote --tags --refs origin 'v*' | awk -F/ '{print $3}' | sort -V | tail -1)
--    if [[ -z "$LATEST_TAG" ]]; then
--      echo "ERROR: Could not determine latest TDLib tag." >&2
--      exit 7
--    fi
--    echo "Resolved latest TDLib tag: $LATEST_TAG"
--    (cd "$TD_DIR" && git fetch --depth 1 origin "refs/tags/$LATEST_TAG" && git checkout --detach FETCH_HEAD)
--  fi
--else
--  echo "TD_PIN_REF empty; selecting latest v* tag…"
--  LATEST_TAG=$(cd "$TD_DIR" && git ls-remote --tags --refs origin 'v*' | awk -F/ '{print $3}' | sort -V | tail -1)
--  if [[ -z "$LATEST_TAG" ]]; then
--    echo "ERROR: Could not determine latest TDLib tag." >&2
--    exit 7
--  fi
--  echo "Resolved latest TDLib tag: $LATEST_TAG"
--  (cd "$TD_DIR" && git fetch --depth 1 origin "refs/tags/$LATEST_TAG" && git checkout --detach FETCH_HEAD)
--fi
--
--# Fetch BoringSSL (shallow)
--if [[ ! -d "$BORING_DIR/.git" ]]; then
--  echo "Cloning BoringSSL…"
--  git clone --depth 1 https://boringssl.googlesource.com/boringssl "$BORING_DIR"
--fi
--
--if (( BUILD_ARM64 == 1 )); then
--  # Build BoringSSL static libs for arm64-v8a (PIC)
--  mkdir -p "$BORING_BUILD_DIR"
--  cd "$BORING_BUILD_DIR"
--  GEN=""
--  if command -v ninja >/dev/null 2>&1; then GEN="-G Ninja"; fi
--  echo "Configuring BoringSSL (arm64-v8a, MinSizeRel, IPO)…"
--  cmake \
--    -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
--    -DANDROID_ABI=arm64-v8a \
--    -DANDROID_PLATFORM=android-24 \
--    -DCMAKE_BUILD_TYPE=MinSizeRel \
--    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
--    -DCMAKE_C_FLAGS_MINSIZEREL="-Os -ffunction-sections -fdata-sections" \
--    -DCMAKE_CXX_FLAGS_MINSIZEREL="-Os -ffunction-sections -fdata-sections" \
--    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
--    $GEN \
--    "$BORING_DIR"
--
--  echo "Building BoringSSL (ssl, crypto)…"
--  cmake --build . --target ssl crypto -j$(nproc || sysctl -n hw.ncpu || echo 4)
--
--  # Resolve produced static libs and include dir
--  SSL_A="$BORING_BUILD_DIR/ssl/libssl.a"
--  CRYPTO_A="$BORING_BUILD_DIR/crypto/libcrypto.a"
--  if [[ ! -f "$SSL_A" ]]; then
--    if [[ -f "$BORING_BUILD_DIR/libssl.a" ]]; then SSL_A="$BORING_BUILD_DIR/libssl.a"; fi
--  fi
--  if [[ ! -f "$CRYPTO_A" ]]; then
--    if [[ -f "$BORING_BUILD_DIR/libcrypto.a" ]]; then CRYPTO_A="$BORING_BUILD_DIR/libcrypto.a"; fi
--  fi
--  if [[ ! -f "$SSL_A" || ! -f "$CRYPTO_A" ]]; then
--    echo "ERROR: BoringSSL static libraries not found (ssl: $SSL_A, crypto: $CRYPTO_A)." >&2
--    exit 3
--  fi
--  BORING_INCLUDE="$BORING_DIR/include"
--  if [[ ! -d "$BORING_INCLUDE" ]]; then
--    echo "ERROR: BoringSSL include directory not found: $BORING_INCLUDE" >&2
--    exit 4
--  fi
--fi
--
--# 1) Generate TDLib source files for cross-compilation (host build)
--NATIVE_BUILD_DIR="$TD_DIR/build-native-gen"
--mkdir -p "$NATIVE_BUILD_DIR"
--cd "$NATIVE_BUILD_DIR"
--echo "Preparing TDLib generated sources (host)…"
--cmake -DCMAKE_BUILD_TYPE=Release -DTD_GENERATE_SOURCE_FILES=ON -DTD_ENABLE_JNI=ON "$TD_DIR"
--cmake --build . --target prepare_cross_compiling -j$(nproc || sysctl -n hw.ncpu || echo 4)
--
--# Ensure TdApi.java is generated into example/java for binding sync
--if rg -n "add_custom_target\(td_generate_java_api" "$TD_DIR/example/java/CMakeLists.txt" >/dev/null 2>&1; then
--  echo "Generating Java API (TdApi.java) …"
--  cmake --build . --target td_generate_java_api -j$(nproc || sysctl -n hw.ncpu || echo 4) || true
--fi
--
--# Patch gperf-generated sources for C++17 (remove obsolete 'register' specifier)
--if [[ -d "$TD_DIR/tdutils/generate/auto" ]]; then
--  echo "Patching gperf-generated files for C++17 compatibility…"
--  sed -i -E 's/\bregister\s+//g' "$TD_DIR/tdutils/generate/auto/mime_type_to_extension.gperf" || true
--  sed -i -E 's/\bregister\s+//g' "$TD_DIR/tdutils/generate/auto/extension_to_mime_type.gperf" || true
--  sed -i -E 's/\bregister\s+//g' "$TD_DIR/tdutils/generate/auto/mime_type_to_extension.cpp" || true
--  sed -i -E 's/\bregister\s+//g' "$TD_DIR/tdutils/generate/auto/extension_to_mime_type.cpp" || true
--fi
--
--# 2) Build Android JNI with static BoringSSL
--JNI_BUILD_DIR="$TD_DIR/build-android-arm64-jni"
--EXAMPLE_DIR="$TD_DIR/example/android"
--USE_WRAPPER=0
--if [[ ! -d "$EXAMPLE_DIR" ]]; then
-+#
-+# Build TDLib (JNI) for Android arm64-v8a and armeabi-v7a and copy libtdjni.so into :libtd.
-+# Focus: smallest possible .so without breaking TDLib functionality used in-app.
-+# Techniques: LTO/IPO, MinSizeRel, section GC/ICF, static BoringSSL, strip.
-+# Prereqs: git, cmake (>=3.18), Ninja (optional), Android NDK r23+.
-+# Env: ANDROID_NDK_HOME or ANDROID_NDK_ROOT must be set (NDK r23+).
-+#
+diff --git a/app/src/main/java/com/chris/m3usuite/player/SeekPressAnalyzer.kt b/app/src/main/java/com/chris/m3usuite/player/SeekPressAnalyzer.kt
+new file mode 100644
+index 0000000..b9b1b3d
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/player/SeekPressAnalyzer.kt
+@@ -0,0 +1,131 @@
++package com.chris.m3usuite.player
 +
-+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-+export PATH="$REPO_DIR/.wsl-cmake/bin:$REPO_DIR/.wsl-ninja/bin:$REPO_DIR/.wsl-gperf/usr/bin:$REPO_DIR/.wsl-gperf/bin:$PATH"
++import android.os.SystemClock
 +
-+OUT_DIR64="$REPO_DIR/libtd/src/main/jniLibs/arm64-v8a"
-+OUT_DIR32="$REPO_DIR/libtd/src/main/jniLibs/armeabi-v7a"
-+TD_DIR="$REPO_DIR/.third_party/td"
-+BORING_DIR="$REPO_DIR/.third_party/boringssl"
++/**
++ * SeekPressAnalyzer implements a simple press multiplier for DPAD-based seeking.
++ *
++ * Rules
++ * - Single-press: step = singleMs (default 30s)
++ * - Double-press (<= doubleWindowMs since previous press): step = doubleMs (default 2m)
++ * - Triple-press (<= tripleWindowMs total since first press): step = tripleMs (default 10m)
++ * - Long-press auto-repeat should use the current step (single/double/triple) until the sequence resets.
++ *
++ * Sequence resets when the time since the last press exceeds [tripleWindowMs] (new sequence starts).
++ * We don't retroactively correct previously applied steps; instead, we escalate the step-size for
++ * subsequent repeats/presses within the time windows.
++ */
++data class SeekPressConfig(
++    val singleMs: Long = 30_000L,
++    val doubleMs: Long = 120_000L,
++    val tripleMs: Long = 600_000L,
++    val doubleWindowMs: Long = 350L,
++    val tripleWindowMs: Long = 500L
++)
 +
-+# Pin to a specific TDLib tag/branch/commit for reproducibility.
-+# Default: latest validated stable for this project.
-+TD_DEFAULT_TAG="v1.8.29"
-+# Priority: CLI --ref > TD_TAG env > TD_COMMIT env > default
-+TD_REF_ARG=""
-+BUILD_ARM64=1
-+BUILD_V7A=1
++class SeekPressAnalyzer(
++    private val cfg: SeekPressConfig = SeekPressConfig()
++) {
++    private var firstAt: Long = 0L
++    private var lastAt: Long = 0L
++    private var count: Int = 0
++    private var currentStepMs: Long = cfg.singleMs
 +
-+while [[ $# -gt 0 ]]; do
-+  case "$1" in
-+    --only-arm64) BUILD_ARM64=1; BUILD_V7A=0 ;;
-+    --only-v7a)   BUILD_ARM64=0; BUILD_V7A=1 ;;
-+    --skip-v7a|--no-v7a) BUILD_V7A=0 ;;
-+    --ref|--tag|--commit) shift; TD_REF_ARG="${1:-}";;
-+    *) echo "Unknown argument: $1" >&2 ;;
-+  esac
-+  shift || true
-+done
-+TD_PIN_REF="${TD_REF_ARG:-${TD_TAG:-${TD_COMMIT:-$TD_DEFAULT_TAG}}}"
++    /**
++     * Records a press at [nowMs] and returns the step to apply for this press.
++     * Escalates current step (single→double→triple) based on timing.
++     */
++    @Synchronized
++    fun recordPress(nowMs: Long = SystemClock.elapsedRealtime()): Long {
++        if (count == 0 || nowMs - lastAt > cfg.tripleWindowMs) {
++            // New sequence
++            firstAt = nowMs
++            lastAt = nowMs
++            count = 1
++            currentStepMs = cfg.singleMs
++            return currentStepMs
++        }
++        // Still within an active sequence
++        return when (count) {
++            1 -> {
++                if (nowMs - lastAt <= cfg.doubleWindowMs) {
++                    // Double press detected
++                    count = 2
++                    lastAt = nowMs
++                    currentStepMs = cfg.doubleMs
++                    currentStepMs
++                } else {
++                    // Not within double window → start a new sequence
++                    firstAt = nowMs
++                    lastAt = nowMs
++                    count = 1
++                    currentStepMs = cfg.singleMs
++                    currentStepMs
++                }
++            }
++            2 -> {
++                // Third press qualifies as triple when total window from first press fits
++                if (nowMs - firstAt <= cfg.tripleWindowMs) {
++                    count = 3
++                    lastAt = nowMs
++                    currentStepMs = cfg.tripleMs
++                    currentStepMs
++                } else {
++                    // Too late → new sequence
++                    firstAt = nowMs
++                    lastAt = nowMs
++                    count = 1
++                    currentStepMs = cfg.singleMs
++                    currentStepMs
++                }
++            }
++            else -> {
++                // Already triple or more → keep using current step in this burst
++                lastAt = nowMs
++                currentStepMs
++            }
++        }
++    }
 +
-+log() { printf "[tdlib-build] %s\n" "$*"; }
-+fail() { printf "[tdlib-build][ERROR] %s\n" "$*" >&2; exit 1; }
++    /**
++     * Returns the step to use for auto-repeat while the key is held.
++     * Callers should reset the sequence when releasing the key or when timing out.
++     */
++    @Synchronized
++    fun repeatStepMs(): Long = currentStepMs
 +
-+NDK="${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}"
-+[[ -n "$NDK" && -d "$NDK" ]] || fail "ANDROID_NDK_HOME or ANDROID_NDK_ROOT must be set (NDK r23+)."
-+
-+mkdir -p "$REPO_DIR/.third_party"
-+
-+if [[ ! -d "$TD_DIR/.git" ]]; then
-+  log "Cloning TDLib…"
-+  git clone --depth 1 https://github.com/tdlib/td.git "$TD_DIR"
-+fi
-+(cd "$TD_DIR" && git fetch --tags --force --prune origin >/dev/null 2>&1 || true)
-+
-+if [[ -n "$TD_PIN_REF" ]]; then
-+  log "Checking out TDLib ref: $TD_PIN_REF (or latest v* tag as fallback)…"
-+  if (cd "$TD_DIR" && git fetch --depth 1 origin "$TD_PIN_REF" >/dev/null 2>&1); then
-+    (cd "$TD_DIR" && git checkout --detach FETCH_HEAD)
-+  else
-+    log "Ref $TD_PIN_REF not found upstream; falling back to latest v* tag"
-+    LATEST_TAG=$(cd "$TD_DIR" && git ls-remote --tags --refs origin 'v*' | awk -F/ '{print $3}' | sort -V | tail -1)
-+    [[ -n "$LATEST_TAG" ]] || fail "Could not determine latest TDLib tag."
-+    (cd "$TD_DIR" && git fetch --depth 1 origin "refs/tags/$LATEST_TAG" && git checkout --detach FETCH_HEAD)
-+  fi
-+else
-+  LATEST_TAG=$(cd "$TD_DIR" && git ls-remote --tags --refs origin 'v*' | awk -F/ '{print $3}' | sort -V | tail -1)
-+  [[ -n "$LATEST_TAG" ]] || fail "Could not determine latest TDLib tag."
-+  log "Selecting latest TDLib tag: $LATEST_TAG"
-+  (cd "$TD_DIR" && git fetch --depth 1 origin "refs/tags/$LATEST_TAG" && git checkout --detach FETCH_HEAD)
-+fi
-+
-+# Shallow clone BoringSSL
-+if [[ ! -d "$BORING_DIR/.git" ]]; then
-+  log "Cloning BoringSSL…"
-+  git clone --depth 1 https://boringssl.googlesource.com/boringssl "$BORING_DIR"
-+fi
-+
-+# Generate TDLib source files for cross-compilation (host build)
-+NATIVE_BUILD_DIR="$TD_DIR/build-native-gen"
-+mkdir -p "$NATIVE_BUILD_DIR"
-+cd "$NATIVE_BUILD_DIR"
-+log "Preparing TDLib generated sources (host)…"
-+cmake -DCMAKE_BUILD_TYPE=Release -DTD_GENERATE_SOURCE_FILES=ON -DTD_ENABLE_JNI=ON "$TD_DIR"
-+cmake --build . --target prepare_cross_compiling -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
-+
-+# Try generating Java API (TdApi.java) if target exists
-+if rg -n "add_custom_target\(td_generate_java_api" "$TD_DIR/example/java/CMakeLists.txt" >/dev/null 2>&1; then
-+  log "Generating Java API (TdApi.java)…"
-+  cmake --build . --target td_generate_java_api -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)" || true
-+fi
-+
-+# Patch gperf-generated sources for C++17 (remove obsolete 'register' specifier)
-+if [[ -d "$TD_DIR/tdutils/generate/auto" ]]; then
-+  log "Patching gperf-generated files for C++17 compatibility…"
-+  sed -i -E 's/\bregister\s+//g' "$TD_DIR/tdutils/generate/auto/mime_type_to_extension.gperf" || true
-+  sed -i -E 's/\bregister\s+//g' "$TD_DIR/tdutils/generate/auto/extension_to_mime_type.gperf" || true
-+  sed -i -E 's/\bregister\s+//g' "$TD_DIR/tdutils/generate/auto/mime_type_to_extension.cpp" || true
-+  sed -i -E 's/\bregister\s+//g' "$TD_DIR/tdutils/generate/auto/extension_to_mime_type.cpp" || true
-+fi
-+
-+GEN=""
-+if command -v ninja >/dev/null 2>&1; then GEN="-G Ninja"; fi
-+
-+build_boringssl_for_abi() {
-+  local abi="$1"
-+  local api="$2"
-+  local out="$3"
-+  mkdir -p "$out"
-+  cd "$out"
-+  log "Configuring BoringSSL ($abi)…"
-+  cmake \
-+    -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
-+    -DANDROID_ABI="$abi" \
-+    -DANDROID_PLATFORM="android-$api" \
-+    -DCMAKE_BUILD_TYPE=MinSizeRel \
-+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
-+    -DCMAKE_C_FLAGS_MINSIZEREL="-Os -ffunction-sections -fdata-sections" \
-+    -DCMAKE_CXX_FLAGS_MINSIZEREL="-Os -ffunction-sections -fdata-sections" \
-+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-+    $GEN \
-+    "$BORING_DIR"
-+  log "Building BoringSSL (ssl, crypto) for $abi…"
-+  cmake --build . --target ssl crypto -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
++    /**
++     * Resets the current burst (e.g., after timeout, PLAY/OK, or key up).
++     */
++    @Synchronized
++    fun reset() {
++        firstAt = 0L
++        lastAt = 0L
++        count = 0
++        currentStepMs = cfg.singleMs
++    }
 +}
-+
-+boring_lib_paths() {
-+  local out="$1"
-+  local ssl_a="$out/ssl/libssl.a"
-+  local crypto_a="$out/crypto/libcrypto.a"
-+  [[ -f "$ssl_a" ]] || ssl_a="$out/libssl.a"
-+  [[ -f "$crypto_a" ]] || crypto_a="$out/libcrypto.a"
-+  [[ -f "$ssl_a" && -f "$crypto_a" ]] || return 1
-+  echo "$ssl_a|$crypto_a"
-+}
-+
-+build_tdlib_for_abi() {
-+  local abi="$1"
-+  local api="$2"
-+  local boring_out="$3"
-+  local out_dir="$4"
-+  local build_dir="$TD_DIR/build-android-$abi-jni"
-+  mkdir -p "$build_dir"
-+  cd "$build_dir"
-+  local pair; pair="$(boring_lib_paths "$boring_out")" || fail "BoringSSL libs not found for $abi"
-+  local ssl_a="${pair%%|*}"
-+  local crypto_a="${pair##*|}"
-+  local include_dir="$BORING_DIR/include"
-+
-+  log "Configuring TDLib JNI ($abi)…"
-+  cmake \
-+    -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
-+    -DANDROID_ABI="$abi" \
-+    -DANDROID_PLATFORM="android-$api" \
-+    -DCMAKE_BUILD_TYPE=MinSizeRel \
-+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
-+    -DCMAKE_C_FLAGS_MINSIZEREL="-Os -ffunction-sections -fdata-sections" \
-+    -DCMAKE_CXX_FLAGS_MINSIZEREL="-Os -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti" \
-+    -DCMAKE_EXE_LINKER_FLAGS_MINSIZEREL="-Wl,--gc-sections -Wl,--icf=safe" \
-+    -DCMAKE_SHARED_LINKER_FLAGS_MINSIZEREL="-Wl,--gc-sections -Wl,--icf=safe" \
-+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-+    -DCMAKE_CXX_STANDARD=17 \
-+    -DTD_ENABLE_JNI=ON \
-+    -DOPENSSL_FOUND=ON \
-+    -DOPENSSL_INCLUDE_DIR="$include_dir" \
-+    -DOPENSSL_SSL_LIBRARY="$ssl_a" \
-+    -DOPENSSL_CRYPTO_LIBRARY="$crypto_a" \
-+    -DOPENSSL_LIBRARIES="$ssl_a;$crypto_a" \
-+    $GEN \
-+    "$TD_DIR"
-+
-+  log "Building tdjni for $abi…"
-+  cmake --build . --target tdjni -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
-+
-+  # Locate the built library
-+  local so_path
-+  so_path="$(rg -n '' -uuu -g '!**/.git/**' -g '!**/CMakeFiles/**' -g '!**/*.o' -g '!**/*.a' -g '!**/*.lo' -g '!**/*.la' -g '!**/*.jar' -g '!**/*.aar' -S --files-with-matches "$build_dir" 2>/dev/null | sed -n '1,1p' >/dev/null; true)"
-+  # Fallback: search for libtdjni.so
-+  so_path="$(find "$build_dir" -type f -name 'libtdjni.so' | head -n1 || true)"
-+  [[ -f "$so_path" ]] || fail "libtdjni.so not found for $abi"
-+  mkdir -p "$out_dir"
-+  cp -f "$so_path" "$out_dir/libtdjni.so"
-+  log "Copied $abi libtdjni.so -> $out_dir"
-+}
-+
-+# Build BoringSSL and TDLib per ABI
-+if (( BUILD_ARM64 == 1 )); then
-+  BORING_OUT64="$BORING_DIR/build-android-arm64"
-+  build_boringssl_for_abi "arm64-v8a" 24 "$BORING_OUT64"
-+fi
-+if (( BUILD_V7A == 1 )); then
-+  BORING_OUT32="$BORING_DIR/build-android-armeabi-v7a"
-+  build_boringssl_for_abi "armeabi-v7a" 21 "$BORING_OUT32"
-+fi
-+
-+if (( BUILD_ARM64 == 1 )); then
-+  build_tdlib_for_abi "arm64-v8a" 24 "$BORING_OUT64" "$OUT_DIR64"
-+fi
-+if (( BUILD_V7A == 1 )); then
-+  build_tdlib_for_abi "armeabi-v7a" 21 "$BORING_OUT32" "$OUT_DIR32"
-+fi
-+
-+# Sync Java bindings: copy TdApi.java and Client.java from upstream
-+copy_java_binding() {
-+  local src="$1"
-+  local dest="$2"
-+  if [[ -f "$src" ]]; then
-+    mkdir -p "$(dirname "$dest")"
-+    cp -f "$src" "$dest"
-+  else
-+    log "Warning: Java binding not found at $src"
-+  fi
-+}
-+JAVA_UPSTREAM_DIR_A="$TD_DIR/example/java/org/drinkless/tdlib"
-+JAVA_UPSTREAM_DIR_B="$TD_DIR/example/java/src/main/java/org/drinkless/tdlib"
-+JAVA_SRC_DIR=""
-+if [[ -d "$JAVA_UPSTREAM_DIR_A" ]]; then JAVA_SRC_DIR="$JAVA_UPSTREAM_DIR_A"; fi
-+if [[ -z "$JAVA_SRC_DIR" && -d "$JAVA_UPSTREAM_DIR_B" ]]; then JAVA_SRC_DIR="$JAVA_UPSTREAM_DIR_B"; fi
-+
-+if [[ -n "$JAVA_SRC_DIR" ]]; then
-+  copy_java_binding "$JAVA_SRC_DIR/TdApi.java" "$REPO_DIR/libtd/src/main/java/org/drinkless/tdlib/TdApi.java"
-+  copy_java_binding "$JAVA_SRC_DIR/Client.java" "$REPO_DIR/libtd/src/main/java/org/drinkless/tdlib/Client.java"
-+else
-+  log "Warning: Upstream Java sources not found; skipping TdApi.java/Client.java sync"
- fi
-+
-+log "Done. Built libraries:"
-+[[ -f "$OUT_DIR64/libtdjni.so" ]] && printf "  - arm64-v8a: %s bytes\n" "$(stat -c%s "$OUT_DIR64/libtdjni.so" 2>/dev/null || wc -c < "$OUT_DIR64/libtdjni.so")"
-+[[ -f "$OUT_DIR32/libtdjni.so" ]] && printf "  - armeabi-v7a: %s bytes\n" "$(stat -c%s "$OUT_DIR32/libtdjni.so" 2>/dev/null || wc -c < "$OUT_DIR32/libtdjni.so")"
-+log "You can now run './gradlew clean build'."

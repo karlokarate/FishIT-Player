@@ -1,13 +1,73 @@
-diff --git a/CHANGELOG.md b/CHANGELOG.md
-index f7c4230..e21b9e2 100644
---- a/CHANGELOG.md
-+++ b/CHANGELOG.md
-@@ -1,3 +1,8 @@
-+2025-09-29
-+- fix(scripts/tdlib): overhaul tdlib build script to reliably build both ABIs (arm64-v8a and armeabi-v7a) with static BoringSSL. Generates host sources, links OpenSSL statically, copies libtdjni.so into libtd jniLibs per ABI, and syncs TdApi.java/Client.java from upstream. Verified by verify-tdlib-readelf.sh (no dynamic OpenSSL deps). This fixes missing/broken v7a outputs.
+diff --git a/app/src/test/java/com/chris/m3usuite/player/SeekPressAnalyzerTest.kt b/app/src/test/java/com/chris/m3usuite/player/SeekPressAnalyzerTest.kt
+new file mode 100644
+index 0000000..bb5f567
+--- /dev/null
++++ b/app/src/test/java/com/chris/m3usuite/player/SeekPressAnalyzerTest.kt
+@@ -0,0 +1,85 @@
++package com.chris.m3usuite.player
 +
-+ 
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
 +
- 2025-09-27
- - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
- - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
++class SeekPressAnalyzerTest {
++
++    @Test
++    fun singlePress_defaultsTo30s() {
++        val a = SeekPressAnalyzer()
++        val step = a.recordPress(nowMs = 0L)
++        assertEquals(30_000L, step)
++        // Auto-repeat uses same step
++        assertEquals(30_000L, a.repeatStepMs())
++    }
++
++    @Test
++    fun doublePress_withinWindow_escalatesTo2m() {
++        val a = SeekPressAnalyzer()
++        // First
++        assertEquals(30_000L, a.recordPress(nowMs = 0L))
++        // Second within 300ms (<=350)
++        val step2 = a.recordPress(nowMs = 300L)
++        assertEquals(120_000L, step2)
++        // Auto-repeat uses 2m
++        assertEquals(120_000L, a.repeatStepMs())
++    }
++
++    @Test
++    fun triplePress_withinTotalWindow_escalatesTo10m() {
++        val a = SeekPressAnalyzer()
++        // First at 0ms
++        assertEquals(30_000L, a.recordPress(nowMs = 0L))
++        // Second at 300ms
++        assertEquals(120_000L, a.recordPress(nowMs = 300L))
++        // Third at 480ms total -> within 500ms triple window
++        val step3 = a.recordPress(nowMs = 480L)
++        assertEquals(600_000L, step3)
++        // Auto-repeat stays 10m
++        assertEquals(600_000L, a.repeatStepMs())
++    }
++
++    @Test
++    fun outsideWindows_resetsSequence() {
++        val a = SeekPressAnalyzer()
++        // First
++        assertEquals(30_000L, a.recordPress(nowMs = 0L))
++        // Second after 600ms (>350) → new sequence, single again
++        assertEquals(30_000L, a.recordPress(nowMs = 600L))
++        // Third after additional 600ms (>500 since last first) → still single
++        assertEquals(30_000L, a.recordPress(nowMs = 1200L))
++    }
++
++    @Test
++    fun reset_restoresSingleStep() {
++        val a = SeekPressAnalyzer()
++        // Escalate to triple
++        a.recordPress(nowMs = 0L)
++        a.recordPress(nowMs = 300L)
++        a.recordPress(nowMs = 480L)
++        assertEquals(600_000L, a.repeatStepMs())
++        a.reset()
++        assertEquals(30_000L, a.repeatStepMs())
++        assertEquals(30_000L, a.recordPress(nowMs = 2000L))
++    }
++}

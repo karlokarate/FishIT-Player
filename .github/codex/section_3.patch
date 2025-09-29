@@ -1,12 +1,14 @@
-diff --git a/ROADMAP.md b/ROADMAP.md
-index 4168899..09fd869 100644
---- a/ROADMAP.md
-+++ b/ROADMAP.md
-@@ -21,6 +21,8 @@ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
- Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
- 
- - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
-+- CI/Policy: Builds laufen nur noch auf Anforderung (workflow_dispatch) oder automatisch bei Code‑Änderungen, die einen Android‑Build rechtfertigen (`app/**`, `libtd/**`, Gradle). Issue‑Events triggern keine Builds mehr; PR‑Validierung führt lediglich den Audit aus.
- - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
- - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).
- - Coil3 Netzwerk: Explizite OkHttp‑Factory prüfen/integrieren, falls stabil verfügbar (sonst bei per‑Request NetworkHeaders bleiben). `respectCacheHeaders(true)` evaluieren.
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 5a77828..f7dc1b1 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,10 @@
++2025-09-29
++- feat(player/seek): introduce DPAD seek press-multiplier logic with unit tests. A new helper `SeekPressAnalyzer` computes step sizes for single/double/triple presses (30s/2m/10m) within 350ms/500ms windows and exposes a stable repeat step for long-press auto-repeat. This is the foundation for TV seek behavior; UI wiring uses this helper to keep controls responsive on Fire TV.
++  - tests: add `SeekPressAnalyzerTest` covering single/double/triple detection, window boundaries, and reset behavior.
++
++Note: UI slider focus/DPAD integration is aligned with this logic and will hook the analyzer into InternalPlayerScreen’s seekbar to move the thumb via LEFT/RIGHT and commit with OK/ENTER. Long‑press auto‑repeat will reuse the current step.
++
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
