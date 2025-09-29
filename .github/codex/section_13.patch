@@ -1,0 +1,25 @@
+diff --git a/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt b/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt
+index 3d42b2f..fa5eb0b 100644
+--- a/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt
++++ b/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt
+@@ -1,5 +1,6 @@
+ package com.chris.m3usuite.work
+ 
++import com.chris.m3usuite.core.perf.DeviceTuning
+ import android.content.Context
+ import androidx.work.ExistingWorkPolicy
+ import androidx.work.OneTimeWorkRequest
+@@ -23,7 +24,12 @@ object SchedulingGateway {
+     fun scheduleAll(ctx: Context) {
+         // Intentionally do NOT schedule Xtream delta periodic.
+         // Delta/import is only run on explicit user action.
+-        cancelXtreamWork(ctx)
++        cancelXtreamWork(ctx)
++        // On v7a/Fire TV we keep background minimal even outside playback
++        if (DeviceTuning.isFireTv32Bit()) {
++            // Telegram cleanup is still scheduled, but will self-throttle during playback.
++            ObxKeyBackfillWorker.scheduleOnce(ctx) // one-shot only
++        }
+         // EPG periodic refresh removed; lazy on-demand prefetch handles freshness
+         scheduleScreenTimeReset(ctx)
+         TelegramCacheCleanupWorker.schedule(ctx)

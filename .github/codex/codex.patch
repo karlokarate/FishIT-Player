@@ -1,308 +1,516 @@
 diff --git a/AGENTS.md b/AGENTS.md
-index 6b4094c..f2d9f0e 100644
+index 8d8e5ce..1a83928 100644
 --- a/AGENTS.md
 +++ b/AGENTS.md
-@@ -155,11 +155,16 @@ Short bullet summary (current highlights)
-     - Event‑driven indexing (Basis): TDLib‑Service lauscht auf `UpdateNewMessage`/`UpdateMessageContent`/`UpdateFile` und persistiert Minimal‑Metadaten in `telegram_messages` inkl. `localPath`‑Updates per `fileId`. Backfill via `TelegramSyncWorker` bleibt erhalten.
-   - Index/Cache: `telegram_messages` wird beim Sync befüllt (fileId/uniqueId, caption, supportsStreaming, date, thumbFileId); `localPath` wird durch DataSources aktualisiert. Minimaler Sync‑Fortschritt in Settings; täglicher Cache‑Trim (GB‑Limit) via `TelegramCacheCleanupWorker`. FCM Push integriert (Token‑Registrierung + `processPushNotification`), Service startet lazy bei Push.
- - TDLib packaging: `:libtd` bundles JNI `libtdjni.so` for `arm64-v8a` (primary). A `armeabi-v7a` slice can be built on demand via the build script. Native JNI is auto‑loaded via a static initializer in `org.drinkless.tdlib.Client`.
-+  - App build flavors (arch): We ship two APKs via `arch` product flavors.
-+    - arm64 (arm64-v8a): real TDLib included via `:libtd` with JNI; BuildConfig.TG_TDLIB_ENABLED=true.
-+    - v7a (armeabi-v7a): TDLib disabled; `:libtd` uses a flavor‑specific Java stub `Client` (no `System.loadLibrary`), no JNI packaged; BuildConfig.TG_TDLIB_ENABLED=false.
-+  - Build commands: `./gradlew :app:assembleArm64Release` and `./gradlew :app:assembleV7aRelease`.
-+  - ProGuard: keep `org.drinkless.tdlib.**` in app to avoid stripping TDLib classes on arm64.
- - TDLib secrets sourcing: `TG_API_ID`/`TG_API_HASH` are injected at build time without committing secrets.
-    - Precedence: ENV vars (`TG_API_ID`, `TG_API_HASH`) → root `/.tg.secrets.properties` (not tracked) → `-P` Gradle props → default 0/empty.
-    - To test locally: either set env vars for the Gradle run, or create a root‑level file `.tg.secrets.properties` with `TG_API_ID=...` and `TG_API_HASH=...`.
-  - Default UA (secret): HTTP `User-Agent` is injected as `BuildConfig.DEFAULT_UA`.
-    - Precedence: ENV var `HEADER` → root `/.ua.secrets.properties` (not tracked) → `-P HEADER` → empty.
-    - Neither the repo nor the compiled APK contain the literal UA; app fallbacks read `DEFAULT_UA`.
- - TDLib native packaging: Primary ABI (arm64‑v8a) with static BoringSSL linking for a self‑contained JNI lib; optional `armeabi‑v7a` output for legacy devices.
-   - arm64: `scripts/tdlib-build-arm64.sh [--only-arm64|--ref <tag>]` builds `libtdjni.so` for `arm64-v8a` to `libtd/src/main/jniLibs/arm64-v8a/` and syncs Java bindings.
-   - v7a (optional): `scripts/tdlib-build-arm64.sh --only-v7a` builds `libtdjni.so` for `armeabi-v7a` to `libtd/src/main/jniLibs/armeabi-v7a/`.
-   - One‑shot rebuild helper: `scripts/tdlib-rebuild-latest.sh` cleans old artifacts, sets envs (repo‑local), auto‑detects latest upstream tag (or use `--ref`), builds both ABIs, syncs Java, and verifies the outputs.
-   - Size hygiene: Stripping enabled; Phase‑2 adds LTO/GC‑sections/strip‑unneeded to further reduce size.
+@@ -150,6 +150,14 @@ Git Push Policy (SSH, codex‑wsl)
+ - TDLib pinning: TDLib (JNI + Java bindings) is pinned to a specific upstream tag for reproducibility. The build script `scripts/tdlib-build-arm64.sh` checks out the tag and copies `TdApi.java`/`Client.java` from TDLib’s `example/java` into `libtd/src/main/java/org/drinkless/tdlib/`. Default pin: `v1.8.0` (the latest upstream tag as of now; override via env `TD_TAG`/`TD_COMMIT` or CLI `--ref <tag|commit>`). `Log.java` stays local to match JNI signatures.
+ 
++Fire TV Stick (v7a) tuning
++- 32‑bit Fire TV (Amazon AFT*, brand=Amazon) receives conservative resource tuning:
++  - HTTP cache shrunk (base≈16 MiB, low‑RAM≈8 MiB, cap≈32 MiB) to reduce pressure on limited storage/RAM.
++  - Xtream EPG concurrency reduced (2 instead of 4) to avoid CPU/RAM spikes.
++  - Background work is paused while video playback is active: Xtream delta/details, Telegram cache trims, and other safe jobs early‑exit or are canceled. SchedulingGateway resumes them automatically when playback ends. This keeps CPU/network/head‑of‑line blocking away from the player.
++- Global playback gate is persisted in a small perf SharedPreferences and toggled by the internal player enter/exit lifecycle.
++- Non‑v7a/64‑bit devices remain unchanged.
++
+ Where to find the full overview
+ - The canonical, continuously updated source is `AGENTS.md` (this file).
+ - `ARCHITECTURE_OVERVIEW.md` is a detailed, human‑friendly derivative of this file. If discrepancies occur, this file prevails. Keep `ARCHITECTURE_OVERVIEW.md` updated whenever new modules/features are added.
 diff --git a/ARCHITECTURE_OVERVIEW.md b/ARCHITECTURE_OVERVIEW.md
-index 6a27f9d..fe73c3e 100644
+index 4e8efee..83b4a54 100644
 --- a/ARCHITECTURE_OVERVIEW.md
 +++ b/ARCHITECTURE_OVERVIEW.md
-@@ -85,6 +85,14 @@ TDLib (JNI + Java bindings) is bundled in `:libtd` and loaded via `org.drinkless
+@@ -33,6 +33,13 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
+ - Cache: `TelegramCacheCleanupWorker` trimmt lokale TD‑Dateien täglich auf `TG_CACHE_LIMIT_GB` (GB) – best‑effort Datei‑System‑Trim.
  
- Packaging and ABIs
- - Primary ABI: arm64-v8a. Optional: armeabi-v7a.
-+- App flavors (arch):
-+  - arm64: ships JNI `libtdjni.so` and the real `Client` from `:libtd`. Telegram enabled (BuildConfig.TG_TDLIB_ENABLED=true).
-+  - v7a: ships Java‑only stub `Client` from `:libtd` v7a flavor (no native load), no JNI in APK. Telegram disabled (BuildConfig.TG_TDLIB_ENABLED=false).
-+- Build commands:
-+  - `./gradlew :app:assembleArm64Release`
-+  - `./gradlew :app:assembleV7aRelease`
-+- Lint is non-fatal for CI convenience; META‑INF duplicates are excluded globally; ProGuard keeps `org.drinkless.tdlib.**` in release to avoid stripping TDLib on arm64.
+ 
++Fire TV Stick (v7a, Amazon AFT*) Performance Tuning
++- Ziel: Sehr flüssige Bedienung auf 32‑bit Fire TV Sticks.
++- HTTP Cache reduziert (Basis ~16 MiB, Low‑RAM ~8 MiB, Deckel ~32 MiB).
++- Xtream Short‑EPG Parallelität halbiert (2 statt 4).
++- Hintergrundjobs werden während der Wiedergabe pausiert (Worker frühzeitig exit/retry bzw. SchedulingGateway cancel/resume); automatische Wiederaufnahme, wenn der Stream beendet wurde.
++- Gating via leichtgewichtigem SharedPreferences‑Flag; nur v7a betroffen.
 +
+ ## 1) Build, Run & Tests
  
- Secrets
- - Telegram API credentials are injected at build time via ENV / root properties file:
+ - JDK 17, Build via Gradle Wrapper
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 8816d5f..e26f2ef 100644
+index 895e120..f7ea5f6 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -1,5 +1,19 @@
- # Changelog
- 
-+## 2025-09-29
-+Build: Dual-APK arch flavors for TDLib
-+- Added flavorDimension "arch" with flavors:
-+  - arm64 (arm64-v8a): real TDLib from :libtd; BuildConfig.TG_TDLIB_ENABLED=true
-+  - v7a (armeabi-v7a): Java-only TDLib stub (no System.loadLibrary, no JNI); BuildConfig.TG_TDLIB_ENABLED=false
-+- Disabled ABI splits; rely on flavor-based `ndk.abiFilters`
-+- Lint no longer aborts builds
-+- ProGuard: keep `org.drinkless.tdlib.**`
-+- Library module `:libtd` mirrors `arch` flavors and supplies a v7a-specific `Client` stub to avoid native loading
-+- Commands:
-+  - `./gradlew :app:assembleArm64Release`
-+  - `./gradlew :app:assembleV7aRelease`
-+- Fixes potential crashes on v7a due to missing `libtdjni.so` by providing a safe stub
+@@ -1,3 +1,15 @@
++2025-09-29
++- perf(v7a/firetv): introduce targeted 32-bit Fire TV Stick tuning.
++  - http/cache: shrink OkHttp disk cache on v7a/Amazon AFT devices (base≈16 MiB, low‑RAM≈8 MiB, cap≈32 MiB).
++  - xtream/epg: cut short-EPG concurrency to 2 on v7a to reduce CPU/RAM spikes while keeping tiles fresh.
++  - workers: pause heavy/safe background work while playback is active on v7a. Telegram cache cleanup, Xtream delta/details early‑exit or retry; automatic resume when playback ends.
++  - player/gate: InternalPlayerScreen toggles a lightweight global playback gate (persisted), and SchedulingGateway cancels/resumes safe background work on enter/exit for v7a.
++  - epg/fallback: when playing on v7a, prefer stale OBX/XMLTV for Now/Next instead of live Xtream calls.
++  - goal: butter‑smooth UX on Fire TV Stick (32‑bit) without impacting 64‑bit devices.
 +
- ## 2025-09-18
- TV chrome BACK handling
- - On TV, Back collapses the Home chrome first before navigating away or exiting.
++- docs: AGENTS.md/ARCHITECTURE_OVERVIEW.md updated with v7a tuning notes.
++
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
 diff --git a/ROADMAP.md b/ROADMAP.md
-index 98fe2d1..96571c2 100644
+index 0a37be1..416c6fb 100644
 --- a/ROADMAP.md
 +++ b/ROADMAP.md
-@@ -6,6 +6,13 @@ Conventions
- - Keep near-/mid-term actionable items only; move completed to CHANGELOG.md immediately after patches.
- - Architecture/agents details live in AGENTS.md (single source of truth).
+@@ -9,6 +9,9 @@ Hinweis
  
-+Done (moved to CHANGELOG)
-+- Dual APK build for Telegram/TDLib
-+  - arch flavors arm64/v7a with proper ndk.abiFilters
-+  - v7a ships a Java stub to disable native TDLib and prevent System.loadLibrary
-+  - Lint non-fatal; META-INF excludes; ProGuard keep rules
-+  - assembleArm64Release / assembleV7aRelease tasks produce release APKs
+ ---
+ 
++- Fire TV Stick (v7a) tuning: Implemented. HTTP cache downsize, EPG concurrency halved, and worker pause/resume during playback. Monitoring user feedback for further tweaks; 64‑bit devices remain unchanged.
 +
- Near-term
- - TV focus audit: keep `tools/audit_tv_focus.sh` green; fix regressions in TvFocusRow usages and tvClickable semantics
- - ObjectBox key backfill: ensure worker completes on upgrades and after seeding
-diff --git a/app/build.gradle.kts b/app/build.gradle.kts
-index 2f7d5a0..8873148 100644
---- a/app/build.gradle.kts
-+++ b/app/build.gradle.kts
-@@ -8,6 +8,7 @@ plugins {
-     id("org.jetbrains.kotlin.plugin.serialization")
-     id("org.jetbrains.kotlin.plugin.compose")
-     id("io.objectbox") version "3.7.1"
-+    // lint configured to be non-fatal below
-     // id("com.google.gms.google-services") // enable if google-services.json is configured
- }
+ ## Kurzfristig (2–4 Wochen)
  
-@@ -59,6 +60,24 @@ android {
-         val showHeaderUi = (project.findProperty("SHOW_HEADER_UI")?.toString()?.toBooleanStrictOrNull()) ?: false
-         buildConfigField("boolean", "SHOW_HEADER_UI", showHeaderUi.toString())
-     }
-+
-+    // Build flavors for architecture-specific packaging
-+    flavorDimensions += "arch"
-+    productFlavors {
-+        create("arm64") {
-+            dimension = "arch"
-+            ndk {
-+                abiFilters += setOf("arm64-v8a")
-+            }
-+            buildConfigField("boolean", "TG_TDLIB_ENABLED", "true")
-+        }
-+        create("v7a") {
-+            dimension = "arch"
-+            ndk {
-+                abiFilters += setOf("armeabi-v7a")
-+            }
-+            buildConfigField("boolean", "TG_TDLIB_ENABLED", "false")
-+        }
-+    }
- 
-     compileOptions {
-         sourceCompatibility = JavaVersion.VERSION_17
-@@ -84,14 +103,14 @@ android {
-     }
-     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
- 
--    // Generate split APKs per ABI (32-bit and 64-bit)
-+    // Disable legacy ABI splits; flavors (arch) define ABI-specific outputs
-     splits {
-         abi {
--            isEnable = true
--            reset()
--            include("armeabi-v7a", "arm64-v8a")
--            // Only per-ABI APKs (no universal)
--            isUniversalApk = false
-+            isEnable = false
-+            // reset()
-+            // include("armeabi-v7a", "arm64-v8a")
-+            // Only per-ABI APKs (no universal) — handled by flavors now
-+            // isUniversalApk = false
-         }
-     }
- 
-@@ -121,6 +140,11 @@ android {
-     testOptions {
-         unitTests.isIncludeAndroidResources = true
-     }
-+
-+    // Do not fail build on lint (CI/dev convenience; we still run lint reports)
-+    lint {
-+        abortOnError = false
-+    }
- }
- 
- // Exclude reference sources from Kotlin/Java compilation tasks to avoid receiver ambiguities in sourceSets DSL
-@@ -143,6 +167,10 @@ dependencies {
-     val compose = "1.7.6" // aktuellstes Compose (Feb 2025)
- 
-     // Core + Compose
-+    // Note: :libtd is added as a regular dependency (variant-aware). With the arch flavor,
-+    // app:arm64 will consume libtd:arm64 (real JNI), app:v7a will consume libtd:v7a (Java stub).
-+    // If an unconditional dependency on :libtd already exists, variant matching will route to
-+    // the correct flavor; no duplication necessary.
-     implementation("androidx.core:core-ktx:1.15.0")
-     implementation("androidx.activity:activity-compose:1.10.0")
-diff --git a/libtd/build.gradle.kts b/libtd/build.gradle.kts
-index 3d7c4f8..f0fe6a5 100644
---- a/libtd/build.gradle.kts
-+++ b/libtd/build.gradle.kts
-@@ -1,8 +1,35 @@
- plugins {
-     id("com.android.library")
-     id("org.jetbrains.kotlin.android")
- }
- 
- android {
-+    namespace = "org.drinkless.tdlib"
-+
-+    compileSdk = 35
-+
-+    defaultConfig {
-+        minSdk = 21
-+        targetSdk = 35
-+        consumerProguardFiles("consumer-rules.pro")
-+    }
-+
-+    compileOptions {
-+        sourceCompatibility = JavaVersion.VERSION_17
-+        targetCompatibility = JavaVersion.VERSION_17
-+    }
-+    kotlinOptions {
-+        jvmTarget = "17"
-+    }
-+
-+    // Align with app: provide matching arch flavors, so variant-aware dependency works.
-+    flavorDimensions += "arch"
-+    productFlavors {
-+        create("arm64") {
-+            dimension = "arch"
-+        }
-+        create("v7a") {
-+            dimension = "arch"
-+        }
-+    }
- }
- 
- dependencies {
-diff --git a/libtd/src/v7a/java/org/drinkless/tdlib/Client.java b/libtd/src/v7a/java/org/drinkless/tdlib/Client.java
+ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
+diff --git a/app/src/main/java/com/chris/m3usuite/core/perf/DeviceTuning.kt b/app/src/main/java/com/chris/m3usuite/core/perf/DeviceTuning.kt
 new file mode 100644
-index 0000000..f929237
+index 0000000..db1ded5
 --- /dev/null
-+++ b/libtd/src/v7a/java/org/drinkless/tdlib/Client.java
-@@ -0,0 +1,84 @@
-+package org.drinkless.tdlib;
++++ b/app/src/main/java/com/chris/m3usuite/core/perf/DeviceTuning.kt
+@@ -0,0 +1,78 @@
++package com.chris.m3usuite.core.perf
++
++import android.content.Context
++import android.os.Build
++import java.util.concurrent.atomic.AtomicBoolean
 +
 +/**
-+ * Lightweight Java stub for armeabi-v7a builds to avoid native loading.
-+ * This class mirrors the public surface needed by app code but performs no TDLib operations.
++ * Lightweight device/perf helpers for 32-bit Fire TV (v7a) tuning.
 + *
-+ * Note:
-+ * - No System.loadLibrary call here.
-+ * - Methods are no-ops or return null.
-+ * - BuildConfig.TG_TDLIB_ENABLED in the app is set to false for v7a, so app code should gate usage.
++ * - Detects v7a ABI and Fire TV (Amazon AFT*)
++ * - Provides a tiny persisted playback gate to pause background work while streaming
 + */
-+@SuppressWarnings({"unused"})
-+public final class Client {
++object DeviceTuning {
++    private const val PREFS = "perf_config"
++    private const val KEY_PLAYBACK_ACTIVE = "playback_active"
++    private val memPlayback = AtomicBoolean(false)
 +
-+    public interface ResultHandler {
-+        void onResult(TdApi.Object object);
-+    }
-+
-+    public interface ErrorHandler {
-+        void onError(int errorCode, String errorMessage);
-+    }
-+
-+    public interface ExceptionHandler {
-+        void onException(Throwable e);
-+    }
-+
-+    private final ResultHandler updatesHandler;
-+    private final ErrorHandler errorHandler;
-+    private final ExceptionHandler exceptionHandler;
-+
-+    private Client(ResultHandler updatesHandler,
-+                   ErrorHandler errorHandler,
-+                   ExceptionHandler exceptionHandler) {
-+        this.updatesHandler = updatesHandler;
-+        this.errorHandler = errorHandler;
-+        this.exceptionHandler = exceptionHandler;
-+    }
-+
-+    /**
-+     * Creates a stub client that never connects to TDLib.
-+     */
-+    public static Client create(ResultHandler updatesHandler,
-+                                ErrorHandler errorHandler,
-+                                ExceptionHandler exceptionHandler) {
-+        return new Client(updatesHandler, errorHandler, exceptionHandler);
-+    }
-+
-+    /**
-+     * No-op send. Immediately returns without invoking native code.
-+     */
-+    public void send(TdApi.Function query, ResultHandler resultHandler) {
-+        // Best-effort: signal "not supported" via error handler if present.
-+        if (errorHandler != null) {
-+            errorHandler.onError(-1, "TDLib is disabled for v7a build (stub).");
-+        }
-+        // Also callback result handler with null to avoid hangs in simple flows.
-+        if (resultHandler != null) {
-+            resultHandler.onResult(null);
++    fun isV7aAbi(): Boolean {
++        return try {
++            // If there are no 64-bit ABIs, treat as 32-bit
++            Build.SUPPORTED_64_BIT_ABIS.isEmpty()
++        } catch (_: Throwable) {
++            // Fallback: common 32-bit ABI markers
++            val abi = Build.CPU_ABI?.lowercase().orEmpty()
++            abi.contains("armeabi") && !abi.contains("arm64")
 +        }
 +    }
 +
-+    /**
-+     * No-op execute. Always returns null.
-+     */
-+    public static TdApi.Object execute(TdApi.Function query) {
-+        return null;
++    fun isFireTv(): Boolean {
++        val brand = (Build.BRAND ?: Build.MANUFACTURER ?: "").lowercase()
++        val product = (Build.PRODUCT ?: "").uppercase()
++        return brand.contains("amazon") || product.startsWith("AFT")
 +    }
 +
-+    /**
-+     * No-op update handler setter.
-+     */
-+    public void setUpdatesHandler(ResultHandler updatesHandler, int delayMs) {
-+        // ignore
++    fun isFireTv32Bit(): Boolean = isV7aAbi() && isFireTv()
++
++    fun setPlaybackActive(context: Context, active: Boolean) {
++        memPlayback.set(active)
++        runCatching {
++            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
++            prefs.edit().putBoolean(KEY_PLAYBACK_ACTIVE, active).apply()
++        }
 +    }
 +
-+    /**
-+     * No-op destroy.
-+     */
-+    public void destroy() {
-+        // ignore
++    fun isPlaybackActive(context: Context): Boolean {
++        if (memPlayback.get()) return true
++        return runCatching {
++            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
++                .getBoolean(KEY_PLAYBACK_ACTIVE, false)
++        }.getOrDefault(false)
 +    }
-+
-+    // No static initializer; critical to avoid System.loadLibrary on v7a
 +}
-diff --git a/libtd/src/v7a/java/org/drinkless/tdlib/package-info.java b/libtd/src/v7a/java/org/drinkless/tdlib/package-info.java
-new file mode 100644
-index 0000000..2c78d3c
---- /dev/null
-+++ b/libtd/src/v7a/java/org/drinkless/tdlib/package-info.java
-@@ -0,0 +1,4 @@
-+@javax.annotation.ParametersAreNonnullByDefault
-+package org.drinkless.tdlib;
+diff --git a/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt b/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt
+index 6076021..1c3c5b1 100644
+--- a/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt
++++ b/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt
+@@ -6,6 +6,7 @@ import android.os.Build
+ import android.os.StatFs
+ import com.chris.m3usuite.prefs.SettingsStore
+ import okhttp3.Cache
++import com.chris.m3usuite.core.perf.DeviceTuning
+ import okhttp3.OkHttpClient
+ import java.io.File
+ import java.util.concurrent.TimeUnit
+@@ -77,12 +78,20 @@ private fun computeHttpCacheSizeBytes(context: Context, cacheDir: File): Long {
+     val MB = 1024L * 1024L
+     val is64 = try { Build.SUPPORTED_64_BIT_ABIS.isNotEmpty() } catch (_: Throwable) { false }
+     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+     val isLowRam = am?.isLowRamDevice == true
+ 
+-    val baseMiB = if (is64) 96 else 32
+-    val lowMiB = if (is64) 64 else 24
+-    val capMiB = if (is64) 128 else 64
++    // Fire TV Stick (v7a) gets even smaller caches to reduce pressure on 32-bit RAM/storage
++    val fireTv32 = DeviceTuning.isFireTv32Bit()
++    val baseMiB = when {
++        fireTv32 -> 16
++        is64 -> 96
++        else -> 32
++    }
++    val lowMiB = when {
++        fireTv32 -> 8
++        is64 -> 64
++        else -> 24
++    }
++    val capMiB = if (fireTv32) 32 else if (is64) 128 else 64
+     val chosenBase = if (isLowRam) lowMiB else baseMiB
+ 
+     // 1% of available space on the cache filesystem
+     val stat = runCatching { StatFs(cacheDir.absolutePath) }.getOrNull()
+     val availBytes = stat?.availableBytes ?: 0L
+diff --git a/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt b/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt
+index 7bd31d0..7f82d7a 100644
+--- a/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt
++++ b/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt
+@@ -16,6 +16,7 @@ import okhttp3.OkHttpClient
+ import okhttp3.Request
+ import androidx.core.net.toUri
+ 
++import com.chris.m3usuite.core.perf.DeviceTuning
+ /**
+  * XtreamClient – API‑first Client für Xtream Codes Panels.
+  *
+@@ -114,7 +115,7 @@ class XtreamClient(
+     // Eigener Client für Xtream-API (keine erzwungenen SSL‑Redirects)
+     private var httpClient: OkHttpClient = http
+ 
+-    // Moderates Parallel‑Limit (nur für fire‑and‑forget EPG‑Fetch)
+-    private val epgSemaphore = Semaphore(4)
++    // Moderates Parallel‑Limit (halbiert auf v7a/Fire TV)
++    private val epgSemaphore = Semaphore(if (DeviceTuning.isV7aAbi()) 2 else 4)
+ 
+     private fun redact(url: String): String =
+         url.replace(Regex("(?i)(password)=([^&]*)"), "${'$'}1=***")
+diff --git a/app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt b/app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt
+index 0c0a8aa..8b6d0a5 100644
+--- a/app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt
++++ b/app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt
+@@ -75,6 +75,7 @@ import kotlinx.coroutines.runBlocking
+ import kotlinx.coroutines.withContext
+ import com.chris.m3usuite.core.playback.PlayUrlHelper
+ import android.widget.Toast
++import com.chris.m3usuite.core.perf.DeviceTuning
+ 
+ /**
+  * Interner Player (Media3) mit:
+@@ -108,6 +109,22 @@ fun InternalPlayerScreen(
+     val mediaRepo = remember(ctx) { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
+     val screenTimeRepo = remember(ctx) { ScreenTimeRepository(ctx) }
+     val epgRepo = remember(ctx) { com.chris.m3usuite.data.repo.EpgRepository(ctx, store) }
 +
-+import javax.annotation.ParametersAreNonnullByDefault;
++    // v7a/Fire TV: pause background work while playing; resume when exiting player
++    LaunchedEffect(Unit) {
++        if (DeviceTuning.isV7aAbi()) {
++            DeviceTuning.setPlaybackActive(ctx, true)
++            // Cancel safe background work to keep CPU/IO free for playback
++            com.chris.m3usuite.work.SchedulingGateway.cancelSafeBackgroundWork(ctx)
++        }
++    }
++    DisposableEffect(Unit) {
++        onDispose {
++            if (DeviceTuning.isV7aAbi()) {
++                DeviceTuning.setPlaybackActive(ctx, false)
++                com.chris.m3usuite.work.SchedulingGateway.resumeSafeBackgroundWork(ctx)
++            }
++        }
++    }
+ 
+     // Settings (Untertitel)
+     val subScale by store.subtitleScale.collectAsStateWithLifecycle(initialValue = 0.06f)
+diff --git a/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt b/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
+index 3c5cf69..a6b9368 100644
+--- a/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
++++ b/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
+@@ -12,6 +12,7 @@ import androidx.work.WorkerParameters
+ import com.chris.m3usuite.data.obx.ObxStore
+ import com.chris.m3usuite.prefs.SettingsStore
+ import kotlinx.coroutines.Dispatchers
++import com.chris.m3usuite.core.perf.DeviceTuning
+ import kotlinx.coroutines.flow.first
+ import kotlinx.coroutines.withContext
+ import java.io.File
+@@ -24,6 +25,12 @@ class TelegramCacheCleanupWorker(appContext: Context, params: WorkerParameters)
+ 
+     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+         val store = SettingsStore(applicationContext)
++        // v7a/Fire TV: avoid heavy IO while streaming; retry later
++        if (DeviceTuning.isV7aAbi() && DeviceTuning.isPlaybackActive(applicationContext)) {
++            // For periodic work, success would skip until next period; retry asks WM to run again soon.
++            return@withContext Result.retry()
++        }
++
+         val wipeAll = inputData.getBoolean(KEY_WIPE_ALL, false)
+         val enabled = store.tgEnabled.first()
+         if (!enabled && !wipeAll) return@withContext Result.success()
+diff --git a/app/src/main/java/com/chris/m3usuite/work/XtreamDeltaImportWorker.kt b/app/src/main/java/com/chris/m3usuite/work/XtreamDeltaImportWorker.kt
+index fde3e72..d7c603c 100644
+--- a/app/src/main/java/com/chris/m3usuite/work/XtreamDeltaImportWorker.kt
++++ b/app/src/main/java/com/chris/m3usuite/work/XtreamDeltaImportWorker.kt
+@@ -22,6 +22,7 @@ import com.chris.m3usuite.data.obx.ObxStore
+ import com.chris.m3usuite.core.xtream.XtreamImportCoordinator
+ import com.chris.m3usuite.core.xtream.XtreamSeeder
+ import kotlinx.coroutines.flow.first
++import com.chris.m3usuite.core.perf.DeviceTuning
+ 
+ class XtreamDeltaImportWorker(appContext: Context, params: WorkerParameters): CoroutineWorker(appContext, params) {
+     override suspend fun doWork(): Result {
+@@ -30,6 +31,10 @@ class XtreamDeltaImportWorker(appContext: Context, params: WorkerParameters): Co
+         val hasXt = store.hasXtream()
+         if (!hasXt) return Result.success()
+         // Global gate: if disabled, do not perform any API calls
++        // v7a/Fire TV: pause heavy work while playback is active
++        if (DeviceTuning.isV7aAbi() && DeviceTuning.isPlaybackActive(ctx)) {
++            return Result.retry()
++        }
+         if (!store.m3uWorkersEnabled.first()) return Result.success()
+         XtreamImportCoordinator.waitUntilIdle()
+         return try {
+diff --git a/app/src/main/java/com/chris/m3usuite/work/XtreamDetailsWorker.kt b/app/src/main/java/com/chris/m3usuite/work/XtreamDetailsWorker.kt
+index 4a5cc01..5897d0f 100644
+--- a/app/src/main/java/com/chris/m3usuite/work/XtreamDetailsWorker.kt
++++ b/app/src/main/java/com/chris/m3usuite/work/XtreamDetailsWorker.kt
+@@ -16,6 +16,7 @@ import com.chris.m3usuite.data.repo.XtreamObxRepository
+ import com.chris.m3usuite.prefs.SettingsStore
+ import kotlinx.coroutines.flow.first
+ import java.util.concurrent.TimeUnit
++import com.chris.m3usuite.core.perf.DeviceTuning
+ 
+ /**
+  * Runs the heavier detail import after heads-only indexing was completed.
+@@ -26,6 +27,10 @@ class XtreamDetailsWorker(appContext: Context, params: WorkerParameters): Corout
+         val store = SettingsStore(ctx)
+         if (!store.hasXtream()) return Result.success()
+         // Global gate: if disabled, do not perform any API calls
++        // v7a/Fire TV: avoid heavy detail imports during playback; retry later
++        if (DeviceTuning.isV7aAbi() && DeviceTuning.isPlaybackActive(ctx)) {
++            return Result.retry()
++        }
+         if (!store.m3uWorkersEnabled.first()) return Result.success()
+         return try {
+             val repo = XtreamObxRepository(ctx, store)
+diff --git a/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt b/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
+index 51703a2..6564a4d 100644
+--- a/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
++++ b/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
+@@ -29,6 +29,7 @@ import kotlinx.serialization.json.jsonObject
+ import kotlinx.serialization.json.jsonPrimitive
+ import kotlinx.serialization.json.contentOrNull
+ 
++import com.chris.m3usuite.core.perf.DeviceTuning
+ /**
+  * Lightweight EPG helper with short TTL cache per streamId.
+  * Focus: Now/Next (get_short_epg) performance and reliability.
+@@ -114,6 +115,21 @@ class EpgRepository(
+             row?.epgChannelId
+         }
+ 
++        // v7a/Fire TV: When actively playing, avoid network EPG calls. Prefer minimal fallback.
++        if (DeviceTuning.isV7aAbi() && DeviceTuning.isPlaybackActive(context)) {
++            if (!chanId.isNullOrBlank()) {
++                val fb = fallbackXmlTvFor(chanId)
++                if (fb.isNotEmpty()) {
++                    lock.withLock { cache[streamId] = Cache(SystemClock.elapsedRealtime(), fb); trimIfNeeded() }
++                    return@withContext fb.take(limit)
++                }
++            }
++            // Mark empty to prevent repeated work within a short window
++            lock.withLock { emptyCache[streamId] = SystemClock.elapsedRealtime(); trimIfNeeded() }
++            return@withContext emptyList()
++        }
++
+         // Global gate: if disabled, avoid any network/API and try stale OBX only
+         if (!settings.m3uWorkersEnabled.first()) {
+             if (!chanId.isNullOrBlank()) {
+diff --git a/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt b/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt
+index 3d42b2f..fa5eb0b 100644
+--- a/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt
++++ b/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt
+@@ -1,5 +1,6 @@
+ package com.chris.m3usuite.work
+ 
++import com.chris.m3usuite.core.perf.DeviceTuning
+ import android.content.Context
+ import androidx.work.ExistingWorkPolicy
+ import androidx.work.OneTimeWorkRequest
+@@ -23,7 +24,12 @@ object SchedulingGateway {
+     fun scheduleAll(ctx: Context) {
+         // Intentionally do NOT schedule Xtream delta periodic.
+         // Delta/import is only run on explicit user action.
+-        cancelXtreamWork(ctx)
++        cancelXtreamWork(ctx)
++        // On v7a/Fire TV we keep background minimal even outside playback
++        if (DeviceTuning.isFireTv32Bit()) {
++            // Telegram cleanup is still scheduled, but will self-throttle during playback.
++            ObxKeyBackfillWorker.scheduleOnce(ctx) // one-shot only
++        }
+         // EPG periodic refresh removed; lazy on-demand prefetch handles freshness
+         scheduleScreenTimeReset(ctx)
+         TelegramCacheCleanupWorker.schedule(ctx)
+diff --git a/app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt b/app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt
+index 4c8a86f..8fe0ea1 100644
+--- a/app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt
++++ b/app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt
+@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.withContext
+ import java.util.concurrent.TimeUnit
+ import kotlin.math.min
++import com.chris.m3usuite.core.perf.DeviceTuning
+ 
+ class ObxKeyBackfillWorker(appContext: Context, params: WorkerParameters): CoroutineWorker(appContext, params) {
+ 
+@@ -21,6 +22,12 @@ class ObxKeyBackfillWorker(appContext: Context, params: WorkerParameters): Corou
+         try {
+             val boxStore = ObxStore.get(applicationContext)
+             val liveBox = boxStore.boxFor(ObxLive::class.java)
++            // v7a/Fire TV: avoid running heavy paged backfills during active playback; retry later
++            if (DeviceTuning.isV7aAbi() && DeviceTuning.isPlaybackActive(applicationContext)) {
++                return@withContext Result.retry()
++            }
++
++            val liveBox = boxStore.boxFor(ObxLive::class.java)
+             val vodBox = boxStore.boxFor(ObxVod::class.java)
+             val seriesBox = boxStore.boxFor(ObxSeries::class.java)
+ 
+diff --git a/app/src/main/java/com/chris/m3usuite/work/TelegramSyncWorker.kt b/app/src/main/java/com/chris/m3usuite/work/TelegramSyncWorker.kt
+index 0f9f7b4..d14f0f1 100644
+--- a/app/src/main/java/com/chris/m3usuite/work/TelegramSyncWorker.kt
++++ b/app/src/main/java/com/chris/m3usuite/work/TelegramSyncWorker.kt
+@@ -8,6 +8,7 @@ import androidx.work.WorkManager
+ import androidx.work.WorkerParameters
+ import androidx.work.workDataOf
+ import com.chris.m3usuite.prefs.SettingsStore
++import com.chris.m3usuite.core.perf.DeviceTuning
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.flow.first
+ import kotlinx.coroutines.withContext
+@@ -21,6 +22,9 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
+         return@withContext runCatching {
+             val mode = inputData.getString(KEY_MODE) ?: MODE_VOD
+             val settings = SettingsStore(applicationContext)
++            if (DeviceTuning.isV7aAbi() && DeviceTuning.isPlaybackActive(applicationContext)) {
++                return@runCatching Result.retry()
++            }
+             val enabled = settings.tgEnabled.first()
+             if (!enabled) return@runCatching Result.success()
+ 
+diff --git a/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt b/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
+index 8aa4fd8..22a8f53 100644
+--- a/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
++++ b/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
+@@ -8,6 +8,7 @@ import com.chris.m3usuite.data.repo.PermissionRepository
+ /**
+  * Zentrale Wahl "Immer fragen | Intern | Extern".
+  * Die drei Detail-Screens (Vod/Series/Live) rufen nur noch diese Funktion auf.
++ * v7a/Fire TV: player gating handled in InternalPlayerScreen
+  */
+ object PlayerChooser {
+ 
+diff --git a/app/src/main/java/com/chris/m3usuite/data/repo/ResumeRepository.kt b/app/src/main/java/com/chris/m3usuite/data/repo/ResumeRepository.kt
+index 5e0e2a4..c8d8a23 100644
+--- a/app/src/main/java/com/chris/m3usuite/data/repo/ResumeRepository.kt
++++ b/app/src/main/java/com/chris/m3usuite/data/repo/ResumeRepository.kt
+@@ -1,3 +1,4 @@
++// no-op: file reserved for future v7a specific resume optimizations
+ package com.chris.m3usuite.data.repo
+diff --git a/app/src/main/java/com/chris/m3usuite/work/ScreenTimeResetWorker.kt b/app/src/main/java/com/chris/m3usuite/work/ScreenTimeResetWorker.kt
+index 9b5d2c1..d5d8a7a 100644
+--- a/app/src/main/java/com/chris/m3usuite/work/ScreenTimeResetWorker.kt
++++ b/app/src/main/java/com/chris/m3usuite/work/ScreenTimeResetWorker.kt
+@@ -1,3 +1,4 @@
++// unchanged
+ package com.chris.m3usuite.work
+diff --git a/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt b/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
+index 6564a4d..e3c0298 100644
+--- a/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
++++ b/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
+@@ -1,6 +1,7 @@
+ package com.chris.m3usuite.data.repo
+ 
+ import android.content.Context
++import com.chris.m3usuite.core.perf.DeviceTuning
+ import android.os.SystemClock
+ import android.util.Log
+ import com.chris.m3usuite.core.epg.XmlTv
+diff --git a/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt b/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt
+index d0ac161..e60d0f6 100644
+--- a/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt
++++ b/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt
+@@ -1,5 +1,6 @@
+ package com.chris.m3usuite.core.xtream
+ 
++import com.chris.m3usuite.core.perf.DeviceTuning
+ import android.content.Context
+ import android.net.Uri
+ import kotlinx.coroutines.async
+@@ -170,7 +171,7 @@ data class PortResolverConfig(
+     // Prefer 8080; drop 2095 to avoid Cloudflare/WAF traps
+     val httpCandidates: List<Int> = listOf(80, 8080, 8000, 8880, 2052, 2082, 2086),
+     val httpsCandidates: List<Int> = listOf(443, 8443, 2053, 2083, 2087, 2096),
+-    val parallelism: Int = 4
++    val parallelism: Int = if (DeviceTuning.isV7aAbi()) 2 else 4
+ )
+diff --git a/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt b/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
+index a6b9368..3c2dc5b 100644
+--- a/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
++++ b/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
+@@ -1,4 +1,5 @@
+ package com.chris.m3usuite.work
++import com.chris.m3usuite.core.perf.DeviceTuning
+ 
+ import android.content.Context
+ import androidx.work.CoroutineWorker
+@@ -12,7 +13,6 @@ import com.chris.m3usuite.data.obx.ObxStore
+ import com.chris.m3usuite.prefs.SettingsStore
+ import kotlinx.coroutines.Dispatchers
+ import com.chris.m3usuite.core.perf.DeviceTuning
+-import kotlinx.coroutines.flow.first
+ import kotlinx.coroutines.withContext
+ import java.io.File
+ import java.util.concurrent.TimeUnit
+@@ -22,7 +22,6 @@ class TelegramCacheCleanupWorker(appContext: Context, params: WorkerParameters)
+ 
+     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+         val store = SettingsStore(applicationContext)
+-        // v7a/Fire TV: avoid heavy IO while streaming; retry later
+         if (DeviceTuning.isV7aAbi() && DeviceTuning.isPlaybackActive(applicationContext)) {
+             // For periodic work, success would skip until next period; retry asks WM to run again soon.
+             return@withContext Result.retry()
+diff --git a/app/src/main/java/com/chris/m3usuite/MainActivity.kt b/app/src/main/java/com/chris/m3usuite/MainActivity.kt
+index 61f1e2f..893df78 100644
+--- a/app/src/main/java/com/chris/m3usuite/MainActivity.kt
++++ b/app/src/main/java/com/chris/m3usuite/MainActivity.kt
+@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
+ import androidx.navigation.compose.composable
+ import androidx.navigation.navArgument
+ import com.chris.m3usuite.prefs.SettingsStore
++import com.chris.m3usuite.core.perf.DeviceTuning
+ import com.chris.m3usuite.prefs.Keys
+ import com.chris.m3usuite.navigation.popUpToStartDestination
+ import com.chris.m3usuite.navigation.navigateTopLevel
+@@ -69,6 +70,12 @@ class MainActivity : ComponentActivity() {
+                 val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                 val ctx = LocalContext.current
+                 val store = remember(ctx) { SettingsStore(ctx) }
++                // Ensure playback gate is reset on cold start (in case of a crash/force-stop during playback)
++                LaunchedEffect(Unit) {
++                    if (DeviceTuning.isV7aAbi()) {
++                        DeviceTuning.setPlaybackActive(ctx, false)
++                    }
++                }
+                 // React to Xtream creds becoming available at runtime (Settings/Setup)
+                 val xtHost by store.xtHost.collectAsStateWithLifecycle(initialValue = "")
+                 val xtUser by store.xtUser.collectAsStateWithLifecycle(initialValue = "")
+@@ -147,7 +154,7 @@ class MainActivity : ComponentActivity() {
+                                         val portStore = com.chris.m3usuite.core.xtream.EndpointPortStore(this@MainActivity)
+                                         val discoverer = com.chris.m3usuite.core.xtream.CapabilityDiscoverer(http, capStore, portStore)
+                                         val caps = discoverer.discoverAuto(scheme, host, user, pass, null, forceRefresh = false)
+-                                        val bu = android.net.Uri.parse(caps.baseUrl)
++                                        val bu = android.net.Uri.parse(caps.baseUrl)
+                                         val rs = (bu.scheme ?: scheme).lowercase()
+                                         val rh = bu.host ?: host
+                                         val rp = bu.port

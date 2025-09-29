@@ -1,0 +1,34 @@
+diff --git a/app/src/main/java/com/chris/m3usuite/MainActivity.kt b/app/src/main/java/com/chris/m3usuite/MainActivity.kt
+index 61f1e2f..893df78 100644
+--- a/app/src/main/java/com/chris/m3usuite/MainActivity.kt
++++ b/app/src/main/java/com/chris/m3usuite/MainActivity.kt
+@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
+ import androidx.navigation.compose.composable
+ import androidx.navigation.navArgument
+ import com.chris.m3usuite.prefs.SettingsStore
++import com.chris.m3usuite.core.perf.DeviceTuning
+ import com.chris.m3usuite.prefs.Keys
+ import com.chris.m3usuite.navigation.popUpToStartDestination
+ import com.chris.m3usuite.navigation.navigateTopLevel
+@@ -69,6 +70,12 @@ class MainActivity : ComponentActivity() {
+                 val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                 val ctx = LocalContext.current
+                 val store = remember(ctx) { SettingsStore(ctx) }
++                // Ensure playback gate is reset on cold start (in case of a crash/force-stop during playback)
++                LaunchedEffect(Unit) {
++                    if (DeviceTuning.isV7aAbi()) {
++                        DeviceTuning.setPlaybackActive(ctx, false)
++                    }
++                }
+                 // React to Xtream creds becoming available at runtime (Settings/Setup)
+                 val xtHost by store.xtHost.collectAsStateWithLifecycle(initialValue = "")
+                 val xtUser by store.xtUser.collectAsStateWithLifecycle(initialValue = "")
+@@ -147,7 +154,7 @@ class MainActivity : ComponentActivity() {
+                                         val portStore = com.chris.m3usuite.core.xtream.EndpointPortStore(this@MainActivity)
+                                         val discoverer = com.chris.m3usuite.core.xtream.CapabilityDiscoverer(http, capStore, portStore)
+                                         val caps = discoverer.discoverAuto(scheme, host, user, pass, null, forceRefresh = false)
+-                                        val bu = android.net.Uri.parse(caps.baseUrl)
++                                        val bu = android.net.Uri.parse(caps.baseUrl)
+                                         val rs = (bu.scheme ?: scheme).lowercase()
+                                         val rh = bu.host ?: host
+                                         val rp = bu.port

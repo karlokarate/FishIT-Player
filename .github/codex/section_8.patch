@@ -1,10 +1,36 @@
-diff --git a/libtd/src/v7a/java/org/drinkless/tdlib/package-info.java b/libtd/src/v7a/java/org/drinkless/tdlib/package-info.java
-new file mode 100644
-index 0000000..2c78d3c
---- /dev/null
-+++ b/libtd/src/v7a/java/org/drinkless/tdlib/package-info.java
-@@ -0,0 +1,4 @@
-+@javax.annotation.ParametersAreNonnullByDefault
-+package org.drinkless.tdlib;
+diff --git a/app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt b/app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt
+index 0c0a8aa..8b6d0a5 100644
+--- a/app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt
++++ b/app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt
+@@ -75,6 +75,7 @@ import kotlinx.coroutines.runBlocking
+ import kotlinx.coroutines.withContext
+ import com.chris.m3usuite.core.playback.PlayUrlHelper
+ import android.widget.Toast
++import com.chris.m3usuite.core.perf.DeviceTuning
+ 
+ /**
+  * Interner Player (Media3) mit:
+@@ -108,6 +109,22 @@ fun InternalPlayerScreen(
+     val mediaRepo = remember(ctx) { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
+     val screenTimeRepo = remember(ctx) { ScreenTimeRepository(ctx) }
+     val epgRepo = remember(ctx) { com.chris.m3usuite.data.repo.EpgRepository(ctx, store) }
 +
-+import javax.annotation.ParametersAreNonnullByDefault;
++    // v7a/Fire TV: pause background work while playing; resume when exiting player
++    LaunchedEffect(Unit) {
++        if (DeviceTuning.isV7aAbi()) {
++            DeviceTuning.setPlaybackActive(ctx, true)
++            // Cancel safe background work to keep CPU/IO free for playback
++            com.chris.m3usuite.work.SchedulingGateway.cancelSafeBackgroundWork(ctx)
++        }
++    }
++    DisposableEffect(Unit) {
++        onDispose {
++            if (DeviceTuning.isV7aAbi()) {
++                DeviceTuning.setPlaybackActive(ctx, false)
++                com.chris.m3usuite.work.SchedulingGateway.resumeSafeBackgroundWork(ctx)
++            }
++        }
++    }
+ 
+     // Settings (Untertitel)
+     val subScale by store.subtitleScale.collectAsStateWithLifecycle(initialValue = 0.06f)

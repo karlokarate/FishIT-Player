@@ -1,19 +1,18 @@
 diff --git a/ARCHITECTURE_OVERVIEW.md b/ARCHITECTURE_OVERVIEW.md
-index 6a27f9d..fe73c3e 100644
+index 4e8efee..83b4a54 100644
 --- a/ARCHITECTURE_OVERVIEW.md
 +++ b/ARCHITECTURE_OVERVIEW.md
-@@ -85,6 +85,14 @@ TDLib (JNI + Java bindings) is bundled in `:libtd` and loaded via `org.drinkless
+@@ -33,6 +33,13 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
+ - Cache: `TelegramCacheCleanupWorker` trimmt lokale TD‑Dateien täglich auf `TG_CACHE_LIMIT_GB` (GB) – best‑effort Datei‑System‑Trim.
  
- Packaging and ABIs
- - Primary ABI: arm64-v8a. Optional: armeabi-v7a.
-+- App flavors (arch):
-+  - arm64: ships JNI `libtdjni.so` and the real `Client` from `:libtd`. Telegram enabled (BuildConfig.TG_TDLIB_ENABLED=true).
-+  - v7a: ships Java‑only stub `Client` from `:libtd` v7a flavor (no native load), no JNI in APK. Telegram disabled (BuildConfig.TG_TDLIB_ENABLED=false).
-+- Build commands:
-+  - `./gradlew :app:assembleArm64Release`
-+  - `./gradlew :app:assembleV7aRelease`
-+- Lint is non-fatal for CI convenience; META‑INF duplicates are excluded globally; ProGuard keeps `org.drinkless.tdlib.**` in release to avoid stripping TDLib on arm64.
+ 
++Fire TV Stick (v7a, Amazon AFT*) Performance Tuning
++- Ziel: Sehr flüssige Bedienung auf 32‑bit Fire TV Sticks.
++- HTTP Cache reduziert (Basis ~16 MiB, Low‑RAM ~8 MiB, Deckel ~32 MiB).
++- Xtream Short‑EPG Parallelität halbiert (2 statt 4).
++- Hintergrundjobs werden während der Wiedergabe pausiert (Worker frühzeitig exit/retry bzw. SchedulingGateway cancel/resume); automatische Wiederaufnahme, wenn der Stream beendet wurde.
++- Gating via leichtgewichtigem SharedPreferences‑Flag; nur v7a betroffen.
 +
+ ## 1) Build, Run & Tests
  
- Secrets
- - Telegram API credentials are injected at build time via ENV / root properties file:
+ - JDK 17, Build via Gradle Wrapper

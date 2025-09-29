@@ -1,0 +1,26 @@
+diff --git a/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt b/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
+index a6b9368..3c2dc5b 100644
+--- a/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
++++ b/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
+@@ -1,4 +1,5 @@
+ package com.chris.m3usuite.work
++import com.chris.m3usuite.core.perf.DeviceTuning
+ 
+ import android.content.Context
+ import androidx.work.CoroutineWorker
+@@ -12,7 +13,6 @@ import com.chris.m3usuite.data.obx.ObxStore
+ import com.chris.m3usuite.prefs.SettingsStore
+ import kotlinx.coroutines.Dispatchers
+ import com.chris.m3usuite.core.perf.DeviceTuning
+-import kotlinx.coroutines.flow.first
+ import kotlinx.coroutines.withContext
+ import java.io.File
+ import java.util.concurrent.TimeUnit
+@@ -22,7 +22,6 @@ class TelegramCacheCleanupWorker(appContext: Context, params: WorkerParameters)
+ 
+     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+         val store = SettingsStore(applicationContext)
+-        // v7a/Fire TV: avoid heavy IO while streaming; retry later
+         if (DeviceTuning.isV7aAbi() && DeviceTuning.isPlaybackActive(applicationContext)) {
+             // For periodic work, success would skip until next period; retry asks WM to run again soon.
+             return@withContext Result.retry()

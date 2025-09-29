@@ -1,42 +1,39 @@
-diff --git a/libtd/build.gradle.kts b/libtd/build.gradle.kts
-index 3d7c4f8..f0fe6a5 100644
---- a/libtd/build.gradle.kts
-+++ b/libtd/build.gradle.kts
-@@ -1,8 +1,35 @@
- plugins {
-     id("com.android.library")
-     id("org.jetbrains.kotlin.android")
- }
+diff --git a/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt b/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt
+index 6076021..1c3c5b1 100644
+--- a/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt
++++ b/app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt
+@@ -6,6 +6,7 @@ import android.os.Build
+ import android.os.StatFs
+ import com.chris.m3usuite.prefs.SettingsStore
+ import okhttp3.Cache
++import com.chris.m3usuite.core.perf.DeviceTuning
+ import okhttp3.OkHttpClient
+ import java.io.File
+ import java.util.concurrent.TimeUnit
+@@ -77,12 +78,20 @@ private fun computeHttpCacheSizeBytes(context: Context, cacheDir: File): Long {
+     val MB = 1024L * 1024L
+     val is64 = try { Build.SUPPORTED_64_BIT_ABIS.isNotEmpty() } catch (_: Throwable) { false }
+     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+     val isLowRam = am?.isLowRamDevice == true
  
- android {
-+    namespace = "org.drinkless.tdlib"
-+
-+    compileSdk = 35
-+
-+    defaultConfig {
-+        minSdk = 21
-+        targetSdk = 35
-+        consumerProguardFiles("consumer-rules.pro")
+-    val baseMiB = if (is64) 96 else 32
+-    val lowMiB = if (is64) 64 else 24
+-    val capMiB = if (is64) 128 else 64
++    // Fire TV Stick (v7a) gets even smaller caches to reduce pressure on 32-bit RAM/storage
++    val fireTv32 = DeviceTuning.isFireTv32Bit()
++    val baseMiB = when {
++        fireTv32 -> 16
++        is64 -> 96
++        else -> 32
 +    }
-+
-+    compileOptions {
-+        sourceCompatibility = JavaVersion.VERSION_17
-+        targetCompatibility = JavaVersion.VERSION_17
++    val lowMiB = when {
++        fireTv32 -> 8
++        is64 -> 64
++        else -> 24
 +    }
-+    kotlinOptions {
-+        jvmTarget = "17"
-+    }
-+
-+    // Align with app: provide matching arch flavors, so variant-aware dependency works.
-+    flavorDimensions += "arch"
-+    productFlavors {
-+        create("arm64") {
-+            dimension = "arch"
-+        }
-+        create("v7a") {
-+            dimension = "arch"
-+        }
-+    }
- }
++    val capMiB = if (fireTv32) 32 else if (is64) 128 else 64
+     val chosenBase = if (isLowRam) lowMiB else baseMiB
  
- dependencies {
+     // 1% of available space on the cache filesystem
+     val stat = runCatching { StatFs(cacheDir.absolutePath) }.getOrNull()
+     val availBytes = stat?.availableBytes ?: 0L
