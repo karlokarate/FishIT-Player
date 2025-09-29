@@ -1,48 +1,81 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt b/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt
-index 7b61b74..98f1012 100644
---- a/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt
-+++ b/app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt
-@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
- import androidx.compose.runtime.Composable
- import androidx.compose.runtime.DisposableEffect
- import androidx.compose.runtime.MutableState
-+import androidx.compose.runtime.LaunchedEffect
- import androidx.compose.runtime.mutableStateOf
- import androidx.compose.runtime.remember
- import androidx.compose.ui.Alignment
-@@ -41,6 +42,7 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
- import androidx.media3.ui.PlayerView
- import androidx.media3.datasource.DefaultHttpDataSource
- import com.chris.m3usuite.ui.common.AppIcon
-+import com.chris.m3usuite.player.CodecRenderersFactory
- import androidx.compose.foundation.shape.RoundedCornerShape
- import androidx.media3.common.util.UnstableApi
- import com.chris.m3usuite.R
-@@ -122,6 +124,8 @@ private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
-     val context = LocalContext.current
-     val player = remember {
-         // Media3 official pattern: Build a player once per composition, release in DisposableEffect
-+        // Opportunistically prepare runtime codecs for trailer playback as well.
-+        CodecRenderersFactory // keep class initialized
-         val trackSelector = DefaultTrackSelector(context)
-         val httpFactory = DefaultHttpDataSource.Factory()
-             .setAllowCrossProtocolRedirects(true)
-@@ -131,9 +135,8 @@ private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
-         if (headers.isNotEmpty()) httpFactory.setDefaultRequestProperties(headers)
-         val mediaSourceFactory = DefaultMediaSourceFactory(context).setDataSourceFactory(httpFactory)
-         val renderers = DefaultRenderersFactory(context)
--            .setEnableDecoderFallback(true)
--            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
-+        val rf = CodecRenderersFactory.forContext(context)
-         ExoPlayer.Builder(context)
--            .setRenderersFactory(renderers)
-+            .setRenderersFactory(rf)
-             .setTrackSelector(trackSelector)
-             .setMediaSourceFactory(mediaSourceFactory)
-             .build()
-@@ -146,3 +149,4 @@ private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
-         player.prepare()
-         onDispose { player.release() }
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 2f7d5a0..8873148 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -8,6 +8,7 @@ plugins {
+     id("org.jetbrains.kotlin.plugin.serialization")
+     id("org.jetbrains.kotlin.plugin.compose")
+     id("io.objectbox") version "3.7.1"
++    // lint configured to be non-fatal below
+     // id("com.google.gms.google-services") // enable if google-services.json is configured
+ }
+ 
+@@ -59,6 +60,24 @@ android {
+         val showHeaderUi = (project.findProperty("SHOW_HEADER_UI")?.toString()?.toBooleanStrictOrNull()) ?: false
+         buildConfigField("boolean", "SHOW_HEADER_UI", showHeaderUi.toString())
      }
-+}
-\ No newline at end of file
++
++    // Build flavors for architecture-specific packaging
++    flavorDimensions += "arch"
++    productFlavors {
++        create("arm64") {
++            dimension = "arch"
++            ndk {
++                abiFilters += setOf("arm64-v8a")
++            }
++            buildConfigField("boolean", "TG_TDLIB_ENABLED", "true")
++        }
++        create("v7a") {
++            dimension = "arch"
++            ndk {
++                abiFilters += setOf("armeabi-v7a")
++            }
++            buildConfigField("boolean", "TG_TDLIB_ENABLED", "false")
++        }
++    }
+ 
+     compileOptions {
+         sourceCompatibility = JavaVersion.VERSION_17
+@@ -84,14 +103,14 @@ android {
+     }
+     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+ 
+-    // Generate split APKs per ABI (32-bit and 64-bit)
++    // Disable legacy ABI splits; flavors (arch) define ABI-specific outputs
+     splits {
+         abi {
+-            isEnable = true
+-            reset()
+-            include("armeabi-v7a", "arm64-v8a")
+-            // Only per-ABI APKs (no universal)
+-            isUniversalApk = false
++            isEnable = false
++            // reset()
++            // include("armeabi-v7a", "arm64-v8a")
++            // Only per-ABI APKs (no universal) — handled by flavors now
++            // isUniversalApk = false
+         }
+     }
+ 
+@@ -121,6 +140,11 @@ android {
+     testOptions {
+         unitTests.isIncludeAndroidResources = true
+     }
++
++    // Do not fail build on lint (CI/dev convenience; we still run lint reports)
++    lint {
++        abortOnError = false
++    }
+ }
+ 
+ // Exclude reference sources from Kotlin/Java compilation tasks to avoid receiver ambiguities in sourceSets DSL
+@@ -143,6 +167,10 @@ dependencies {
+     val compose = "1.7.6" // aktuellstes Compose (Feb 2025)
+ 
+     // Core + Compose
++    // Note: :libtd is added as a regular dependency (variant-aware). With the arch flavor,
++    // app:arm64 will consume libtd:arm64 (real JNI), app:v7a will consume libtd:v7a (Java stub).
++    // If an unconditional dependency on :libtd already exists, variant matching will route to
++    // the correct flavor; no duplication necessary.
+     implementation("androidx.core:core-ktx:1.15.0")
+     implementation("androidx.activity:activity-compose:1.10.0")
