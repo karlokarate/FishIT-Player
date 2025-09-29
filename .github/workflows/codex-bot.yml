@@ -23,7 +23,6 @@ permissions:
   pull-requests: write
   issues: write
 
-# stabil, unabhängig von ref (Kommentare haben teils keinen ref)
 concurrency:
   group: codex-${{ github.run_id }}
   cancel-in-progress: true
@@ -59,22 +58,18 @@ jobs:
             issue_no="${{ github.event.issue.number }}"
           fi
 
-          # Default flags
           run_codex=false
           do_gradle=false
           args=""
 
-          # Tolerant: /codex irgendwo im Text (case-insensitive)
           if echo "$body" | grep -qi "/codex"; then
             run_codex=true
           fi
-          # Dispatch ohne Kommentar → kein codex
-          # Dispatch mit Kommentar → codex
+
           if [[ "$ev" == "workflow_dispatch" && -n "${{ inputs.comment }}" ]]; then
             run_codex=true
           fi
 
-          # Routing für Gradle
           if echo "$body" | grep -qiE '/codex[[:space:]]+build([[:space:]]|$)'; then
             do_gradle=true; args="assembleDebug"
           fi
@@ -88,14 +83,12 @@ jobs:
             do_gradle=true
             args="$(printf '%s\n' "$body" | sed -n 's#.*\/codex[[:space:]]\+gradle[[:space:]]\+##Ip' | head -n1)"
           fi
-    
-          # Flag --verify irgendwo → Tests
+
           if $run_codex && echo "$body" | grep -qi -- ' --verify'; then
             do_gradle=true
             if [[ -z "$args" ]]; then args="testDebugUnitTest"; fi
           fi
 
-          # Manuelle Gradle-Args per dispatch
           if [[ "$ev" == "workflow_dispatch" && -n "${{ inputs.gradle_args }}" ]]; then
             do_gradle=true; args="${{ inputs.gradle_args }}"
           fi
@@ -175,7 +168,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-        # fetch-depth 0 optional für Versionierung/patch
           fetch-depth: 0
 
       - name: Detect AGP / JDK
