@@ -1,13 +1,63 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt b/app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt
-index 3dbc4b0..2c5bf4e 100644
---- a/app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt
-+++ b/app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt
-@@ -78,7 +78,7 @@ object ExternalPlayer {
-         }
-     }
+diff --git a/ARCHITECTURE_OVERVIEW.md b/ARCHITECTURE_OVERVIEW.md
+index a60e42e..9cef1a9 100644
+--- a/ARCHITECTURE_OVERVIEW.md
++++ b/ARCHITECTURE_OVERVIEW.md
+@@ -24,7 +24,7 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
+ >
+ > - Android (Kotlin), Jetpack Compose, Navigation‑Compose  
+ > - DataStore Preferences, WorkManager  
+-> - OkHttp (HTTP), Coil 3 (Bilder), Media3/ExoPlayer (Video)  
++> - OkHttp (HTTP), Coil 3 (Bilder), Media3/ExoPlayer (Video)
+ > - Persistenz: ObjectBox (OBX) als Primär‑Store  
+ > - Module: `app` (Haupt‑App) + `libtd` (TDLib JNI/Java)
  
--    private fun guessMime(url: String): String = when {
-+    internal fun guessMime(url: String): String = when {
-         url.endsWith(".m3u8", true) -> "application/vnd.apple.mpegurl"
-         url.endsWith(".mpd", true) -> "application/dash+xml"
-         url.endsWith(".mp4", true) -> "video/mp4"
+@@ -81,12 +81,12 @@ Telegram Gating
+ ├── core/
+ │   ├── http/HttpClient.kt                  # OkHttp mit UA/Referer/Extra-Headern aus SettingsStore
+ │   ├── m3u/M3UExporter.kt                  # Exportiert ObjectBox-Kataloge als M3U (Backup/Sharing)
+ │   └── xtream/                             # Xtream Codes REST-Client, Seeder & Models
+ │       ├── XtreamClient.kt                 # canonical client (Discovery + Listen + Details + EPG + Play-URLs)
+ │       ├── XtreamConfig.kt                 # Konfiguration + Ableitung aus Xtream/M3U-URL (get.php)
+ │       ├── XtreamSeeder.kt                 # Kopf-Import (Live/VOD/Series) + Discovery-Koordination
+ │       └── XtreamModels.kt
+         
+         Xtream Client Notes
+         - Discovery→Fetch: On first run, the app forces discovery and immediately fires the six reference list calls (live/vod/series: categories + streams).
+         - Wildcard category: when no category is selected, requests include `&category_id=0`; if both wildcard and `0` return empty, the client retries once without the parameter to satisfy stricter panels.
+         - VOD alias: client uses the discovered alias (`vod|movie|movies`) for categories/streams and falls back in a defined order.
+         - VOD IDs: client falls back to `stream_id` when `vod_id`/`movie_id` are missing, so ObjectBox imports succeed on panels that only expose stream IDs.
+         - Series episodes: prefer Xtream `episode_id` when building play URLs; fall back to season/episode numbers for legacy panels.
+         - Trailers: normalize bare YouTube IDs to full URLs before playback so ExoPlayer receives a valid URI.
+         - Direct URLs: `XtreamUrlFactory` consults the capability cache (vodKind/basePath) before emitting play URLs so direct playback matches the resolved server alias.
+         - Telemetry: every `player_api.php?action=...` URL is logged at info level to aid debugging traffic sequences.
+         - WAF-friendly probes: discovery pings include explicit `action` and `category_id=0` so Cloudflare/WAF returns JSON instead of 521.
+ ├── data/
+-│   ├── db/                                 # Room: Entities, DAOs, Database
+-│   │   ├── AppDatabase.kt                  # Versionierung, Migrations, Seeding (Adult Profile)
+-│   │   └── Entities.kt                     # MediaItem, MediaItemFts (FTS4), Episode, Category, Profile, KidContent,
+-│   │                                       # ResumeMark, ScreenTimeEntry, Views + DAOs
++│   ├── db/                                 # Room (legacy): Entities, DAOs, Database – retained for compatibility; core flows use ObjectBox
++│   │   ├── AppDatabase.kt                  # Versionierung, Migrations (legacy), Seeding (Adult Profile)
++│   │   └── Entities.kt                     # MediaItem(+FTS4 legacy), Episode, Category, Profile, KidContent, ResumeMark, ScreenTimeEntry, Views + DAOs (legacy)
+ │   └── repo/                               # Repositories (IO/Business-Logik)
+ │       ├── XtreamObxRepository.kt          # Xtream Lists/Details → ObjectBox (Heads, Delta, Details)
+-│       ├── EpgRepository.kt                # Now/Next: persistenter Room‑Cache (epg_now_next) + XMLTV‑Fallback
+-│       ├── MediaQueryRepository.kt         # Gefilterte Queries (Kids-Whitelist), Suche (FTS)
++│       ├── EpgRepository.kt                # Now/Next: persistenter OBX‑Cache (ObxEpgNowNext) + XMLTV‑Fallback
++│       ├── MediaQueryRepository.kt         # Gefilterte Queries (Kids-Whitelist), Suche (OBX 'nameLower' Indizes)
+ │       ├── ProfileRepository.kt            # Profile & aktuelles Profil (Adult/Kid), PIN/Remember
+ │       ├── KidContentRepository.kt         # Whitelist-Verwaltung (allow/disallow/bulk)
+ │       ├── ResumeRepository.kt             # Wiedergabe-Fortschritt (vod/episode)
+ │       └── ScreenTimeRepository.kt         # Tages-Limits, Verbrauch, Reset
+ ├── player/
+@@ -120,7 +120,7 @@ Telegram Gating
+     ├── ObxKeyBackfillWorker.kt             # One‑shot Key‑Backfill (sort/provider/genre/year)
+     ├── (removed)                           # EPG periodic worker removed; OBX prefetch on-demand
+     ├── SchedulingGateway.kt                # Zentrales Unique-Work Scheduling (KEEP/REPLACE)
+     ├── ScreenTimeResetWorker.kt            # täglicher Reset der ScreenTime
+     └── BootCompletedReceiver.kt            # Re-Scheduling nach Boot
+ ```
+ 
+ ---
+ 
+ ## 3) Screens & Navigations‑Flow

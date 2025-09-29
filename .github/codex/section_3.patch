@@ -1,24 +1,16 @@
-diff --git a/app/src/test/java/com/chris/m3usuite/player/ExternalPlayerTest.kt b/app/src/test/java/com/chris/m3usuite/player/ExternalPlayerTest.kt
-new file mode 100644
-index 0000000..582b2f4
---- /dev/null
-+++ b/app/src/test/java/com/chris/m3usuite/player/ExternalPlayerTest.kt
-@@ -0,0 +1,19 @@
-+package com.chris.m3usuite.player
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 403b36e..d0e58f4 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,11 @@
++2025-09-29
++- docs(agents): resolve internal contradictions
++  - clarify ObjectBox as primary store; Room removed from primary flows (legacy tables/IDs may persist during transition)
++  - EPG is OBX-only (short EPG) with XMLTV fallback; no periodic worker
++  - update TDLib default pin to v1.8.29 to match build scripts
++  - fix truncated sentence in “Recent” section
++- docs(architecture): mark Room as legacy, update EPG repository and search notes to OBX-first
 +
-+import org.junit.Assert.assertEquals
-+import org.junit.Test
-+
-+class ExternalPlayerTest {
-+
-+    @Test
-+    fun guessMime_basicMappings() {
-+        assertEquals("application/vnd.apple.mpegurl", ExternalPlayer.guessMime("http://example.com/a.m3u8"))
-+        assertEquals("application/dash+xml", ExternalPlayer.guessMime("https://example.com/manifest.mpd"))
-+        assertEquals("video/mp4", ExternalPlayer.guessMime("file:///sdcard/video.mp4"))
-+        assertEquals("video/x-matroska", ExternalPlayer.guessMime("/storage/emulated/0/Movies/movie.mkv"))
-+        assertEquals("video/MP2T", ExternalPlayer.guessMime("http://example.com/live.ts"))
-+        // default
-+        assertEquals("video/*", ExternalPlayer.guessMime("http://example.com/unknown.xyz"))
-+    }
-+}
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
