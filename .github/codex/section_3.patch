@@ -1,12 +1,216 @@
-diff --git a/ROADMAP.md b/ROADMAP.md
-index 4168899..09fd869 100644
---- a/ROADMAP.md
-+++ b/ROADMAP.md
-@@ -21,6 +21,8 @@ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
- Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
- 
- - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
-+- CI/Policy: Builds laufen nur noch auf Anforderung (workflow_dispatch) oder automatisch bei Code‑Änderungen, die einen Android‑Build rechtfertigen (`app/**`, `libtd/**`, Gradle). Issue‑Events triggern keine Builds mehr; PR‑Validierung führt lediglich den Audit aus.
- - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
- - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).
- - Coil3 Netzwerk: Explizite OkHttp‑Factory prüfen/integrieren, falls stabil verfügbar (sonst bei per‑Request NetworkHeaders bleiben). `respectCacheHeaders(true)` evaluieren.
+diff --git a/app/src/main/java/com/chris/m3usuite/player/CodecManager.kt b/app/src/main/java/com/chris/m3usuite/player/CodecManager.kt
+new file mode 100644
+index 0000000..568a063
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/player/CodecManager.kt
+@@ -0,0 +1,273 @@
++package com.chris.m3usuite.player
++
++import android.content.Context
++import android.os.Build
++import android.util.Log
++import dalvik.system.DexClassLoader
++import okhttp3.OkHttpClient
++import okhttp3.Request
++import java.io.File
++import java.io.FileOutputStream
++import java.util.concurrent.atomic.AtomicReference
++import java.util.zip.ZipInputStream
++import androidx.media3.common.MediaLibraryInfo
++import androidx.media3.exoplayer.audio.AudioSink
++import androidx.media3.exoplayer.audio.DefaultAudioSink
++import androidx.media3.exoplayer.Renderer
++import androidx.media3.exoplayer.audio.AudioRendererEventListener
++import android.os.Handler
++
++/**
++ * CodecManager
++ *
++ * Downloads and installs Media3 FFmpeg extension at runtime (arm64) to enable software
++ * decoding for commonly missing codecs (e.g., AC3/E-AC3/DTS). Assets are cached in
++ * app-internal storage and reused across runs.
++ *
++ * Strategy:
++ *  - Only install on arm64-v8a devices.
++ *  - Fetch androidx.media3:media3-exoplayer-ffmpeg:<version> AAR from Maven Central, where
++ *    <version> equals the app's Media3 version (MediaLibraryInfo.VERSION).
++ *  - Extract:
++ *      • classes.jar  -> used via DexClassLoader
++ *      • jni/arm64-v8a/libffmpeg.so -> loaded via System.load(path)
++ *  - Provide a ClassLoader to instantiate FfmpegAudioRenderer reflectively.
++ *
++ * Note: We do not mutate the app's PathClassLoader; instead we append the renderer
++ * to the player via a wrapper RenderersFactory.
++ */
++object CodecManager {
++    private const val TAG = "CodecManager"
++    private val loaderRef = AtomicReference<DexClassLoader?>()
++    @Volatile private var libLoaded = false
++    @Volatile private var installAttempted = false
++
++    // Where we keep artifacts: <files>/codecs/media3-ffmpeg/<ver>/
++    private fun baseDir(context: Context): File {
++        val ver = media3Version()
++        return File(context.filesDir, "codecs/media3-ffmpeg/$ver")
++    }
++
++    private fun isArm64(): Boolean = try {
++        Build.SUPPORTED_ABIS?.any { it.equals("arm64-v8a", true) } == true
++    } catch (_: Throwable) { false }
++
++    private fun media3Version(): String = runCatching { MediaLibraryInfo.VERSION }.getOrDefault("1.4.1")
++
++    private fun aarUrl(): String {
++        val v = media3Version()
++        return "https://repo1.maven.org/maven2/androidx/media3/media3-exoplayer-ffmpeg/$v/media3-exoplayer-ffmpeg-$v.aar"
++    }
++
++    fun isInstalled(context: Context): Boolean {
++        val dir = baseDir(context)
++        val jarOk = File(dir, "classes.jar").isFile
++        val soOk = File(dir, "lib/arm64-v8a/libffmpeg.so").isFile
++        return jarOk && soOk
++    }
++
++    /**
++     * Starts installation in background if needed. Safe to call multiple times.
++     */
++    fun prepareInBackground(context: Context) {
++        if (!isArm64()) return
++        if (installAttempted) return
++        installAttempted = true
++        kotlin.concurrent.thread(name = "CodecManager-prepare", isDaemon = true) {
++            runCatching { ensureInstalled(context) }.onFailure {
++                Log.w(TAG, "prepareInBackground failed: ${it.message}")
++            }
++        }
++    }
++
++    /**
++     * Ensures FFmpeg extension is available on disk and loads the JNI .so.
++     * Returns a DexClassLoader if classes.jar is present and loadable.
++     */
++    @Synchronized
++    fun ensureInstalled(context: Context): DexClassLoader? {
++        if (!isArm64()) return null
++        val dir = baseDir(context)
++        val jar = File(dir, "classes.jar")
++        val so = File(dir, "lib/arm64-v8a/libffmpeg.so")
++        if (!jar.isFile || !so.isFile) {
++            downloadAndExtract(context, dir)
++        }
++        if (so.isFile && !libLoaded) {
++            runCatching {
++                System.load(so.absolutePath)
++                libLoaded = true
++                Log.i(TAG, "Loaded ffmpeg JNI: ${so.absolutePath}")
++            }.onFailure {
++                Log.w(TAG, "System.load(libffmpeg.so) failed: ${it.message}")
++            }
++        }
++        if (jar.isFile) {
++            val exist = loaderRef.get()
++            if (exist != null) return exist
++            val opt = File(context.filesDir, "codecs/opt_dex").apply { mkdirs() }
++            val libPath = File(dir, "lib/arm64-v8a").absolutePath
++            val cl = DexClassLoader(jar.absolutePath, opt.absolutePath, libPath, context.classLoader)
++            loaderRef.set(cl)
++            return cl
++        }
++        return null
++    }
++
++    /**
++     * Try to construct FfmpegAudioRenderer via the previously prepared ClassLoader.
++     * Returns null if not available or on failure.
++     */
++    fun newFfmpegAudioRenderer(
++        context: Context,
++        eventHandler: Handler?,
++        audioEventListener: AudioRendererEventListener
++    ): Renderer? {
++        val cl = ensureInstalled(context) ?: return null
++        return runCatching {
++            val cls = cl.loadClass("androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer")
++            // Attempt known constructors, newest first
++            val sink: AudioSink = DefaultAudioSink.Builder().build()
++            val ctor3 = runCatching {
++                cls.getConstructor(Handler::class.java, AudioRendererEventListener::class.java, AudioSink::class.java)
++            }.getOrNull()
++            if (ctor3 != null) {
++                @Suppress("UNCHECKED_CAST")
++                val inst = ctor3.newInstance(eventHandler, audioEventListener, sink)
++                return@runCatching inst as Renderer
++            }
++            val ctor2 = runCatching {
++                cls.getConstructor(Handler::class.java, AudioRendererEventListener::class.java)
++            }.getOrNull()
++            if (ctor2 != null) {
++                @Suppress("UNCHECKED_CAST")
++                val inst = ctor2.newInstance(eventHandler, audioEventListener)
++                return@runCatching inst as Renderer
++            }
++            val ctor0 = runCatching { cls.getConstructor() }.getOrNull()
++            if (ctor0 != null) {
++                @Suppress("UNCHECKED_CAST")
++                val inst = ctor0.newInstance()
++                return@runCatching inst as Renderer
++            }
++            null
++        }.onFailure {
++            Log.w(TAG, "FfmpegAudioRenderer reflection failed: ${it.message}")
++        }.getOrNull()
++    }
++
++    // -----------------------------
++    // Download/extract helpers
++    // -----------------------------
++    private fun downloadAndExtract(context: Context, dir: File) {
++        dir.mkdirs()
++        val tmpAar = File(dir, "tmp.aar")
++        // Use a plain OkHttp client; headers are not required for Maven Central
++        val client = OkHttpClient.Builder()
++            .followRedirects(true)
++            .retryOnConnectionFailure(true)
++            .build()
++        val url = aarUrl()
++        Log.i(TAG, "Downloading FFmpeg extension AAR: $url")
++        client.newCall(Request.Builder().url(url).build()).execute().use { resp ->
++            if (!resp.isSuccessful) {
++                throw IllegalStateException("HTTP ${resp.code}: ${resp.message}")
++            }
++            resp.body?.byteStream()?.use { src ->
++                FileOutputStream(tmpAar).use { out -> src.copyTo(out) }
++            } ?: throw IllegalStateException("Empty response body")
++        }
++        // Extract classes.jar and arm64 libffmpeg.so
++        val libDir = File(dir, "lib/arm64-v8a").apply { mkdirs() }
++        ZipInputStream(tmpAar.inputStream()).use { zis ->
++            var e = zis.nextEntry
++            while (e != null) {
++                val name = e.name
++                if (name == "classes.jar") {
++                    writeEntry(zis, File(dir, "classes.jar"))
++                } else if (name == "jni/arm64-v8a/libffmpeg.so") {
++                    writeEntry(zis, File(libDir, "libffmpeg.so"))
++                }
++                zis.closeEntry()
++                e = zis.nextEntry
++            }
++        }
++        tmpAar.delete()
++    }
++
++    private fun writeEntry(zis: ZipInputStream, outFile: File) {
++        outFile.parentFile?.mkdirs()
++        FileOutputStream(outFile).use { out ->
++            val buf = ByteArray(DEFAULT_BUFFER_SIZE)
++            var r = zis.read(buf)
++            while (r > 0) {
++                out.write(buf, 0, r)
++                r = zis.read(buf)
++            }
++        }
++        Log.i(TAG, "Extracted ${outFile.absolutePath} (${outFile.length()} bytes)")
++    }
++}
