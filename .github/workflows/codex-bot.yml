@@ -1,7 +1,12 @@
-name: Codex Bot (on-demand
+# force redeploy – aktiviert alle Trigger
+name: Codex Bot (on-demand)
 
 on:
   issue_comment:
+    types: [created, edited]
+  issues:
+    types: [opened, edited]
+  pull_request_review_comment:
     types: [created, edited]
   workflow_dispatch:
     inputs:
@@ -13,10 +18,6 @@ on:
         description: 'Optional: Gradle-Args (z. B. "assembleDebug testDebugUnitTest")'
         type: string
         required: false
-  issues:
-    types: [opened, edited]
-  pull_request_review_comment:
-    types: [created, edited]
 
 permissions:
   contents: write
@@ -56,20 +57,30 @@ jobs:
           elif [[ "$ev" == "issues" ]]; then
             body="${{ github.event.issue.body || '' }}"
             issue_no="${{ github.event.issue.number }}"
+
+            # Speziell: nur bei "opened" und gültigem /codex triggern
+            action=$(jq -r .action "$GITHUB_EVENT_PATH")
+            if [[ "$action" == "opened" ]] && echo "$body" | grep -qi "/codex"; then
+              run_codex=true
+            fi
           fi
 
-          run_codex=false
+          # Default Flags
+          run_codex=${run_codex:-false}
           do_gradle=false
           args=""
 
+          # Fallback: alle anderen erkennen /codex im Body
           if echo "$body" | grep -qi "/codex"; then
             run_codex=true
           fi
 
+          # Manuell über dispatch
           if [[ "$ev" == "workflow_dispatch" && -n "${{ inputs.comment }}" ]]; then
             run_codex=true
           fi
 
+          # Gradle-Steuerung
           if echo "$body" | grep -qiE '/codex[[:space:]]+build([[:space:]]|$)'; then
             do_gradle=true; args="assembleDebug"
           fi
@@ -158,74 +169,3 @@ jobs:
           DISPATCH_COMMENT: ${{ inputs.comment }}
           CODEX_ALLOWLIST: ${{ vars.CODEX_ALLOWLIST }}
         run: python .github/codex/bot.py
-
-  gradle:
-    name: Gradle (on-demand: ${{ needs.gate.outputs.gradle_args }})
-    needs: gate
-    if: ${{ needs.gate.outputs.do_gradle == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-          fetch-depth: 0
-
-      - name: Detect AGP / JDK
-        id: detect
-        shell: bash
-        run: |
-          set -euo pipefail
-          AGP=$(grep -RhoE "com\.android\.tools\.build:gradle[: ]+[\"']([0-9]+\.[0-9]+\.[0-9]+)[\"']" --include="*.gradle*" | sed -E "s/.*['\"]([0-9]+\.[0-9]+\.[0-9]+)['\"].*/\1/" | head -n1 || true)
-          JDK=17; if [[ -n "$AGP" ]]; then MAJOR=${AGP%%.*}; if (( MAJOR < 8 )); then JDK=11; fi; fi
-          echo "jdk=$JDK" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ steps.detect.outputs.jdk }}
-          cache: gradle
-
-      - uses: android-actions/setup-android@v3
-
-      - uses: gradle/actions/setup-gradle@v3
-        with:
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
-
-      - name: Fix gradlew permissions
-        run: |
-          chmod +x ./gradlew || true
-          if [[ -f gradlew ]]; then sed -i 's/\r$//' gradlew || true; fi
-
-      - name: Run Gradle
-        id: run
-        env:
-          HEADER: ${{ secrets.header }}
-          TG_API_ID: ${{ secrets.TG_API_ID }}
-          TG_API_HASH: ${{ secrets.TG_API_HASH }}
-        shell: bash
-        run: |
-          set -o pipefail
-          echo "Args: ${{ needs.gate.outputs.gradle_args }}"
-          ./gradlew -S --no-daemon --build-cache ${{ needs.gate.outputs.gradle_args }} 2>&1 | tee gradle.log
-
-      - name: Upload artifacts (if assemble/bundle)
-        if: contains(needs.gate.outputs.gradle_args, 'assemble') || contains(needs.gate.outputs.gradle_args, 'bundle')
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: |
-            **/build/outputs/apk/**/**/*.apk
-            **/build/outputs/bundle/**/**/*.aab
-            **/build/outputs/mapping/**/mapping.txt
-          if-no-files-found: ignore
-
-      - name: Post result to thread
-        if: ${{ github.event_name != 'workflow_dispatch' && needs.gate.outputs.issue_no != '' }}
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ needs.gate.outputs.issue_no }}
-          body: |
-            🧪 **Gradle ausgeführt**: `${{ needs.gate.outputs.gradle_args }}`
-            Status: **${{ job.status }}**
-            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
