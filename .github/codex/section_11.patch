@@ -1,0 +1,23 @@
+diff --git a/app/src/main/java/com/chris/m3usuite/work/XtreamDetailsWorker.kt b/app/src/main/java/com/chris/m3usuite/work/XtreamDetailsWorker.kt
+index 4a5cc01..5897d0f 100644
+--- a/app/src/main/java/com/chris/m3usuite/work/XtreamDetailsWorker.kt
++++ b/app/src/main/java/com/chris/m3usuite/work/XtreamDetailsWorker.kt
+@@ -16,6 +16,7 @@ import com.chris.m3usuite.data.repo.XtreamObxRepository
+ import com.chris.m3usuite.prefs.SettingsStore
+ import kotlinx.coroutines.flow.first
+ import java.util.concurrent.TimeUnit
++import com.chris.m3usuite.core.perf.DeviceTuning
+ 
+ /**
+  * Runs the heavier detail import after heads-only indexing was completed.
+@@ -26,6 +27,10 @@ class XtreamDetailsWorker(appContext: Context, params: WorkerParameters): Corout
+         val store = SettingsStore(ctx)
+         if (!store.hasXtream()) return Result.success()
+         // Global gate: if disabled, do not perform any API calls
++        // v7a/Fire TV: avoid heavy detail imports during playback; retry later
++        if (DeviceTuning.isV7aAbi() && DeviceTuning.isPlaybackActive(ctx)) {
++            return Result.retry()
++        }
+         if (!store.m3uWorkersEnabled.first()) return Result.success()
+         return try {
+             val repo = XtreamObxRepository(ctx, store)

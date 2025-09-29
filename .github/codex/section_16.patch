@@ -1,0 +1,12 @@
+diff --git a/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt b/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
+index 8aa4fd8..22a8f53 100644
+--- a/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
++++ b/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
+@@ -8,6 +8,7 @@ import com.chris.m3usuite.data.repo.PermissionRepository
+ /**
+  * Zentrale Wahl "Immer fragen | Intern | Extern".
+  * Die drei Detail-Screens (Vod/Series/Live) rufen nur noch diese Funktion auf.
++ * v7a/Fire TV: player gating handled in InternalPlayerScreen
+  */
+ object PlayerChooser {
+ 

@@ -1,0 +1,12 @@
+diff --git a/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt b/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
+index 6564a4d..e3c0298 100644
+--- a/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
++++ b/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
+@@ -1,6 +1,7 @@
+ package com.chris.m3usuite.data.repo
+ 
+ import android.content.Context
++import com.chris.m3usuite.core.perf.DeviceTuning
+ import android.os.SystemClock
+ import android.util.Log
+ import com.chris.m3usuite.core.epg.XmlTv

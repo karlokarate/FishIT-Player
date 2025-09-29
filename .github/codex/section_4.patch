@@ -1,18 +1,13 @@
 diff --git a/ROADMAP.md b/ROADMAP.md
-index 98fe2d1..96571c2 100644
+index 0a37be1..416c6fb 100644
 --- a/ROADMAP.md
 +++ b/ROADMAP.md
-@@ -6,6 +6,13 @@ Conventions
- - Keep near-/mid-term actionable items only; move completed to CHANGELOG.md immediately after patches.
- - Architecture/agents details live in AGENTS.md (single source of truth).
+@@ -9,6 +9,9 @@ Hinweis
  
-+Done (moved to CHANGELOG)
-+- Dual APK build for Telegram/TDLib
-+  - arch flavors arm64/v7a with proper ndk.abiFilters
-+  - v7a ships a Java stub to disable native TDLib and prevent System.loadLibrary
-+  - Lint non-fatal; META-INF excludes; ProGuard keep rules
-+  - assembleArm64Release / assembleV7aRelease tasks produce release APKs
+ ---
+ 
++- Fire TV Stick (v7a) tuning: Implemented. HTTP cache downsize, EPG concurrency halved, and worker pause/resume during playback. Monitoring user feedback for further tweaks; 64‑bit devices remain unchanged.
 +
- Near-term
- - TV focus audit: keep `tools/audit_tv_focus.sh` green; fix regressions in TvFocusRow usages and tvClickable semantics
- - ObjectBox key backfill: ensure worker completes on upgrades and after seeding
+ ## Kurzfristig (2–4 Wochen)
+ 
+ PRIO‑1: TV Fokus/DPAD Vereinheitlichung

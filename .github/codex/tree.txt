@@ -372,6 +372,8 @@ app/src/main/res/values/themes.xml
 app/src/main/res/xml/backup_rules.xml
 app/src/main/res/xml/data_extraction_rules.xml
 app/src/main/res/xml/file_paths.xml
+b/libtd/src/v7a/java/org/drinkless/tdlib/Client.java
+b/libtd/src/v7a/java/org/drinkless/tdlib/package-info.java
 build.gradle.kts
 gradle.properties
 gradle/libs.versions.toml

@@ -1,24 +1,18 @@
 diff --git a/AGENTS.md b/AGENTS.md
-index 6b4094c..f2d9f0e 100644
+index 8d8e5ce..1a83928 100644
 --- a/AGENTS.md
 +++ b/AGENTS.md
-@@ -155,11 +155,16 @@ Short bullet summary (current highlights)
-     - Event‑driven indexing (Basis): TDLib‑Service lauscht auf `UpdateNewMessage`/`UpdateMessageContent`/`UpdateFile` und persistiert Minimal‑Metadaten in `telegram_messages` inkl. `localPath`‑Updates per `fileId`. Backfill via `TelegramSyncWorker` bleibt erhalten.
-   - Index/Cache: `telegram_messages` wird beim Sync befüllt (fileId/uniqueId, caption, supportsStreaming, date, thumbFileId); `localPath` wird durch DataSources aktualisiert. Minimaler Sync‑Fortschritt in Settings; täglicher Cache‑Trim (GB‑Limit) via `TelegramCacheCleanupWorker`. FCM Push integriert (Token‑Registrierung + `processPushNotification`), Service startet lazy bei Push.
- - TDLib packaging: `:libtd` bundles JNI `libtdjni.so` for `arm64-v8a` (primary). A `armeabi-v7a` slice can be built on demand via the build script. Native JNI is auto‑loaded via a static initializer in `org.drinkless.tdlib.Client`.
-+  - App build flavors (arch): We ship two APKs via `arch` product flavors.
-+    - arm64 (arm64-v8a): real TDLib included via `:libtd` with JNI; BuildConfig.TG_TDLIB_ENABLED=true.
-+    - v7a (armeabi-v7a): TDLib disabled; `:libtd` uses a flavor‑specific Java stub `Client` (no `System.loadLibrary`), no JNI packaged; BuildConfig.TG_TDLIB_ENABLED=false.
-+  - Build commands: `./gradlew :app:assembleArm64Release` and `./gradlew :app:assembleV7aRelease`.
-+  - ProGuard: keep `org.drinkless.tdlib.**` in app to avoid stripping TDLib classes on arm64.
- - TDLib secrets sourcing: `TG_API_ID`/`TG_API_HASH` are injected at build time without committing secrets.
-    - Precedence: ENV vars (`TG_API_ID`, `TG_API_HASH`) → root `/.tg.secrets.properties` (not tracked) → `-P` Gradle props → default 0/empty.
-    - To test locally: either set env vars for the Gradle run, or create a root‑level file `.tg.secrets.properties` with `TG_API_ID=...` and `TG_API_HASH=...`.
-  - Default UA (secret): HTTP `User-Agent` is injected as `BuildConfig.DEFAULT_UA`.
-    - Precedence: ENV var `HEADER` → root `/.ua.secrets.properties` (not tracked) → `-P HEADER` → empty.
-    - Neither the repo nor the compiled APK contain the literal UA; app fallbacks read `DEFAULT_UA`.
- - TDLib native packaging: Primary ABI (arm64‑v8a) with static BoringSSL linking for a self‑contained JNI lib; optional `armeabi‑v7a` output for legacy devices.
-   - arm64: `scripts/tdlib-build-arm64.sh [--only-arm64|--ref <tag>]` builds `libtdjni.so` for `arm64-v8a` to `libtd/src/main/jniLibs/arm64-v8a/` and syncs Java bindings.
-   - v7a (optional): `scripts/tdlib-build-arm64.sh --only-v7a` builds `libtdjni.so` for `armeabi-v7a` to `libtd/src/main/jniLibs/armeabi-v7a/`.
-   - One‑shot rebuild helper: `scripts/tdlib-rebuild-latest.sh` cleans old artifacts, sets envs (repo‑local), auto‑detects latest upstream tag (or use `--ref`), builds both ABIs, syncs Java, and verifies the outputs.
-   - Size hygiene: Stripping enabled; Phase‑2 adds LTO/GC‑sections/strip‑unneeded to further reduce size.
+@@ -150,6 +150,14 @@ Git Push Policy (SSH, codex‑wsl)
+ - TDLib pinning: TDLib (JNI + Java bindings) is pinned to a specific upstream tag for reproducibility. The build script `scripts/tdlib-build-arm64.sh` checks out the tag and copies `TdApi.java`/`Client.java` from TDLib’s `example/java` into `libtd/src/main/java/org/drinkless/tdlib/`. Default pin: `v1.8.0` (the latest upstream tag as of now; override via env `TD_TAG`/`TD_COMMIT` or CLI `--ref <tag|commit>`). `Log.java` stays local to match JNI signatures.
+ 
++Fire TV Stick (v7a) tuning
++- 32‑bit Fire TV (Amazon AFT*, brand=Amazon) receives conservative resource tuning:
++  - HTTP cache shrunk (base≈16 MiB, low‑RAM≈8 MiB, cap≈32 MiB) to reduce pressure on limited storage/RAM.
++  - Xtream EPG concurrency reduced (2 instead of 4) to avoid CPU/RAM spikes.
++  - Background work is paused while video playback is active: Xtream delta/details, Telegram cache trims, and other safe jobs early‑exit or are canceled. SchedulingGateway resumes them automatically when playback ends. This keeps CPU/network/head‑of‑line blocking away from the player.
++- Global playback gate is persisted in a small perf SharedPreferences and toggled by the internal player enter/exit lifecycle.
++- Non‑v7a/64‑bit devices remain unchanged.
++
+ Where to find the full overview
+ - The canonical, continuously updated source is `AGENTS.md` (this file).
+ - `ARCHITECTURE_OVERVIEW.md` is a detailed, human‑friendly derivative of this file. If discrepancies occur, this file prevails. Keep `ARCHITECTURE_OVERVIEW.md` updated whenever new modules/features are added.

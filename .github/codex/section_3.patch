@@ -1,24 +1,19 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 8816d5f..e26f2ef 100644
+index 895e120..f7ea5f6 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -1,5 +1,19 @@
- # Changelog
- 
-+## 2025-09-29
-+Build: Dual-APK arch flavors for TDLib
-+- Added flavorDimension "arch" with flavors:
-+  - arm64 (arm64-v8a): real TDLib from :libtd; BuildConfig.TG_TDLIB_ENABLED=true
-+  - v7a (armeabi-v7a): Java-only TDLib stub (no System.loadLibrary, no JNI); BuildConfig.TG_TDLIB_ENABLED=false
-+- Disabled ABI splits; rely on flavor-based `ndk.abiFilters`
-+- Lint no longer aborts builds
-+- ProGuard: keep `org.drinkless.tdlib.**`
-+- Library module `:libtd` mirrors `arch` flavors and supplies a v7a-specific `Client` stub to avoid native loading
-+- Commands:
-+  - `./gradlew :app:assembleArm64Release`
-+  - `./gradlew :app:assembleV7aRelease`
-+- Fixes potential crashes on v7a due to missing `libtdjni.so` by providing a safe stub
+@@ -1,3 +1,15 @@
++2025-09-29
++- perf(v7a/firetv): introduce targeted 32-bit Fire TV Stick tuning.
++  - http/cache: shrink OkHttp disk cache on v7a/Amazon AFT devices (base≈16 MiB, low‑RAM≈8 MiB, cap≈32 MiB).
++  - xtream/epg: cut short-EPG concurrency to 2 on v7a to reduce CPU/RAM spikes while keeping tiles fresh.
++  - workers: pause heavy/safe background work while playback is active on v7a. Telegram cache cleanup, Xtream delta/details early‑exit or retry; automatic resume when playback ends.
++  - player/gate: InternalPlayerScreen toggles a lightweight global playback gate (persisted), and SchedulingGateway cancels/resumes safe background work on enter/exit for v7a.
++  - epg/fallback: when playing on v7a, prefer stale OBX/XMLTV for Now/Next instead of live Xtream calls.
++  - goal: butter‑smooth UX on Fire TV Stick (32‑bit) without impacting 64‑bit devices.
 +
- ## 2025-09-18
- TV chrome BACK handling
- - On TV, Back collapses the Home chrome first before navigating away or exiting.
++- docs: AGENTS.md/ARCHITECTURE_OVERVIEW.md updated with v7a tuning notes.
++
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
