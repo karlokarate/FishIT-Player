@@ -1,0 +1,3 @@
+openai>=1.43.0
+unidiff>=0.7.5
+requests>=2.31.0
