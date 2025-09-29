@@ -1,12 +1,12 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt b/app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt
-index d0b9a2a..4ab2a3b 100644
---- a/app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt
-+++ b/app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt
-@@ -62,7 +62,8 @@ import kotlinx.coroutines.delay
- // Rows notify current focused row to drive chrome behavior
--val LocalChromeRowFocusSetter: androidx.compose.runtime.ProvidableCompositionLocal<(String?) -> Unit> = compositionLocalOf { {}
-+val LocalChromeRowFocusSetter: androidx.compose.runtime.ProvidableCompositionLocal<(String?) -> Unit> =
-+    compositionLocalOf<(String?) -> Unit> { _: String? -> }
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt b/app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt
+index 27f0ac1..9ef4b24 100644
+--- a/app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt
++++ b/app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt
+@@ -1,9 +1,8 @@
+ package com.chris.m3usuite.ui.components
  
- // TV chrome mode (file-private)
- private enum class ChromeMode { Visible, Collapsed, Expanded }
+ import android.net.Uri
+ import androidx.compose.foundation.layout.*
+ import androidx.compose.foundation.lazy.LazyRow
+ import androidx.compose.foundation.lazy.items
+-import androidx

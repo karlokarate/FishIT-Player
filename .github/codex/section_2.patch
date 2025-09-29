@@ -1,11 +1,13 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/core/xtream/ProviderLabelStore.kt b/app/src/main/java/com/chris/m3usuite/core/xtream/ProviderLabelStore.kt
-index f5f3a7b..2b1a1a1 100644
---- a/app/src/main/java/com/chris/m3usuite/core/xtream/ProviderLabelStore.kt
-+++ b/app/src/main/java/com/chris/m3usuite/core/xtream/ProviderLabelStore.kt
-@@ -58,5 +58,5 @@ class ProviderLabelStore private constructor(ctx: Context) {
-             } else {
-                 sb.append(ch)
--                inWs = fals
-+                inWs = false
-             }
+diff --git a/app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt b/app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt
+index 3dbc4b0..2c5bf4e 100644
+--- a/app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt
++++ b/app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt
+@@ -78,7 +78,7 @@ object ExternalPlayer {
          }
+     }
+ 
+-    private fun guessMime(url: String): String = when {
++    internal fun guessMime(url: String): String = when {
+         url.endsWith(".m3u8", true) -> "application/vnd.apple.mpegurl"
+         url.endsWith(".mpd", true) -> "application/dash+xml"
+         url.endsWith(".mp4", true) -> "video/mp4"
