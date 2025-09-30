@@ -1,142 +1,84 @@
-name: Codex Bot (robust)
+name: Codex Bot
 
 on:
+  # Reagiert auf neue/editiere Issues (z. B. /codex … im Body)
   issues:
     types: [opened, edited]
+  # Reagiert auf neue Issue-Kommentare (z. B. /codex … als Kommentar)
   issue_comment:
-    types: [created, edited]
+    types: [created]
+  # Optional: PR-Review-Kommentare erlauben
   pull_request_review_comment:
-    types: [created, edited]
+    types: [created]
+  # Manueller Start mit optionalem Kommentartext (Simuliert ein Event)
   workflow_dispatch:
     inputs:
       comment:
-        description: "Optional: /codex Befehl manuell auslösen"
-        type: string
+        description: "/codex … Befehl (optional)"
         required: false
-      gradle_args:
-        description: "Optional: Gradle-Args (z. B. assembleDebug)"
-        type: string
-        required: false
+        default: ""
 
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-  actions: write   # <— nötig für /actions/workflows/.../dispatches
+  contents: write          # für Branch/Commit
+  pull-requests: write     # für PRs + Auto-Merge-Versuche
+  actions: write           # für workflow_dispatch aus dem Bot heraus (falls verwendet)
 
 concurrency:
-  group: codex-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: true
+  group: codex-bot-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  codex:
-    # Triggert bei /codex überall (Kommentar, Issue-Body, Review-Kommentar) ODER manuell
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/codex')) ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '/codex')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '/codex'))
+  run-codex-bot:
+    name: Run Codex Bot
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
     steps:
-      - name: Checkout
+      - name: Checkout (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true
 
-      - name: Setup Python
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          if [[ -f .github/codex/requirements.txt ]]; then
-            pip install -r .github/codex/requirements.txt
-          else
-            pip install "openai>=1.43.0" "unidiff>=0.7.5" "requests>=2.31.0"
+          pip install --upgrade openai unidiff requests
+
+      - name: Show triggering info
+        run: |
+          echo "github.event_name = ${{ github.event_name }}"
+          echo "workflow_dispatch input.comment = ${{ inputs.comment }}"
+          echo "actor = ${{ github.actor }}"
+          echo "ref = ${{ github.ref }}"
+          echo "sha = ${{ github.sha }}"
+
+      - name: Set env for bot
+        run: |
+          # wenn workflow_dispatch → simulierten Kommentar in DISPATCH_COMMENT legen
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "DISPATCH_COMMENT=${{ inputs.comment }}" >> $GITHUB_ENV
           fi
+          # GH_EVENT_NAME für den Bot explizit setzen (der Bot liest GH_EVENT_NAME)
+          echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
+        shell: bash
 
       - name: Run Codex Bot
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
-          OPENAI_REASONING_EFFORT: ${{ vars.OPENAI_REASONING_EFFORT }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}   # optional; leer lassen falls nicht genutzt
+          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT || 'gpt-5' }}
+          OPENAI_REASONING_EFFORT: ${{ vars.OPENAI_REASONING_EFFORT || 'high' }}
+
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GITHUB_EVENT_NAME: ${{ github.event_name }}  # <— explizit, falls benötigt
-          GH_EVENT_NAME: ${{ github.event_name }}       # <— bleibt als Fallback
-          DISPATCH_COMMENT: ${{ inputs.comment }}
-          CODEX_ALLOWLIST: ${{ vars.CODEX_ALLOWLIST }}
-        run: python .github/codex/bot.py
-
-  gradle:
-    name: Gradle Build/Test (optional)
-    needs: codex
-    if: >
-      (github.event_name == 'issue_comment' && (
-        contains(github.event.comment.body, '/codex build') ||
-        contains(github.event.comment.body, '/codex test') ||
-        contains(github.event.comment.body, '/codex verify') ||
-        contains(github.event.comment.body, '/codex gradle')
-      )) ||
-      (github.event_name == 'issues' && (
-        contains(github.event.issue.body, '/codex build') ||
-        contains(github.event.issue.body, '/codex test') ||
-        contains(github.event.issue.body, '/codex verify') ||
-        contains(github.event.issue.body, '/codex gradle')
-      )) ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.gradle_args != '')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Install jq (for parsing event body)
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Run Gradle
-        env:
-          HEADER: ${{ secrets.header }}
-          TG_API_ID: ${{ secrets.TG_API_ID }}
-          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          # GH_EVENT_NAME kommt aus $GITHUB_ENV (oben gesetzt)
+          DISPATCH_COMMENT: ${{ env.DISPATCH_COMMENT }}
+          CODEX_ALLOWLIST: ${{ vars.CODEX_ALLOWLIST }}      # optional: "userA,userB"
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.gradle_args }}" ]]; then
-            ./gradlew -S --no-daemon --build-cache ${{ github.event.inputs.gradle_args }}
-          else
-            body="$(jq -r '.comment.body // .issue.body' $GITHUB_EVENT_PATH)"
-            if echo "$body" | grep -qi '/codex build'; then
-              ./gradlew -S --no-daemon --build-cache assembleDebug
-            elif echo "$body" | grep -qi '/codex test'; then
-              ./gradlew -S --no-daemon --build-cache testDebugUnitTest
-            elif echo "$body" | grep -qi '/codex verify'; then
-              ./gradlew -S --no-daemon --build-cache verifyTdlib
-            elif echo "$body" | grep -qi '/codex gradle'; then
-              args=$(echo "$body" | sed -n 's#.*\/codex[[:space:]]\+gradle[[:space:]]\+##Ip' | head -n1)
-              ./gradlew -S --no-daemon --build-cache $args
-            fi
-          fi
+          python .github/codex/bot.py
