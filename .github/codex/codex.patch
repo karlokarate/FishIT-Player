@@ -1,37 +1,328 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt b/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
-index 1508a6f..13e3ea4 100644
---- a/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
-+++ b/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
-@@ -56,7 +56,7 @@ fun CategoryChip(key: String, label: String, modifier: Modifier = Modifier) {
-         "sci_fi" -> com.chris.m3usuite.ui.theme.CategoryFonts.Orbitron
-         "classic", "collection" -> com.chris.m3usuite.ui.theme.CategoryFonts.Cinzel
-         "western" -> com.chris.m3usuite.ui.theme.CategoryFonts.Rye
--        "christmas" -> com.chris.m3usuite.ui.theme.CategoryFonts.MountainsOfChristmas
-+        "christmas" -> com.chris.m3usuite.ui.theme.CategoryFonts.Inter
-         "romance" -> com.chris.m3usuite.ui.theme.CategoryFonts.Parisienne
-         "kids", "family" -> com.chris.m3usuite.ui.theme.CategoryFonts.Fredoka
-         "drama" -> com.chris.m3usuite.ui.theme.CategoryFonts.PlayfairDisplay
+diff --git a/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt b/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt
+new file mode 100644
+index 0000000..38ccc19
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt
+@@ -0,0 +1,190 @@
++package com.chris.m3usuite.playback
++
++import android.app.Activity
++import android.content.Context
++import com.chris.m3usuite.player.ExternalPlayer
++import com.chris.m3usuite.prefs.SettingsStore
++import kotlinx.coroutines.flow.first
++
++/**
++ * Central launcher facade. Decides internal vs external, wires headers/start position,
++ * and provides a single entry point for Live/VOD/Series playback.
++ *
++ * Internals:
++ * - Resolver: Default decides Internal/External based on Settings + Permissions ("ask" supported).
++ * - Resume: Reads missing startPosition from ResumeRepository for VOD/Series (best-effort).
++ * - Telemetry: lightweight Log lines (can be upgraded later).
++ *
++ * Internal player start is delegated to the provided [internalPlayer] callback so screens can:
++ *  - push a nav route, or
++ *  - toggle an inline InternalPlayerScreen
++ */
++class PlayerLauncher(
++    private val context: Context,
++    private val store: SettingsStore,
++    private val internalPlayer: (request: PlayRequest, startMs: Long?, mimeType: String?) -> Unit,
++    private val resolver: PlayerResolver = DefaultPlayerResolver(context, store, internalPlayer),
++    private val resumeStore: ResumeStore = DefaultResumeStore(context)
++){
++    /**
++     * Launch playback for the given request.
++     * - Fills missing startPositionMs via ResumeStore (VOD/Series only).
++     * - Delegates to resolver for Internal/External.
++     */
++    suspend fun launch(request: PlayRequest): PlayerResult {
++        val filledStart = request.startPositionMs ?: when (request.type) {
++            MediaType.VOD -> resumeStore.read(request.mediaId)
++            MediaType.SERIES -> resumeStore.read(request.mediaId)
++            MediaType.LIVE -> null
++        }
++        val filled = request.copy(startPositionMs = filledStart)
++        android.util.Log.d("PlayerLauncher", "launch type=${filled.type} id=${filled.mediaId} start=${filled.startPositionMs} urlScheme=${filled.url.substringBefore(':', "")}")
++        return resolver.launch(filled)
++    }
++}
++
++/**
++ * Compose helper. Provide a screen-local launcher with your internal-player start behavior.
++ */
++@androidx.compose.runtime.Composable
++fun rememberPlayerLauncher(
++    internalPlayer: (request: PlayRequest, startMs: Long?, mimeType: String?) -> Unit
++): PlayerLauncher {
++    val ctx = androidx.compose.ui.platform.LocalContext.current
++    val store = androidx.compose.runtime.remember(ctx) { SettingsStore(ctx) }
++    return androidx.compose.runtime.remember(ctx, internalPlayer) {
++        PlayerLauncher(ctx, store, internalPlayer)
++    }
++}
++
++// -------------------------
++// Models / Contracts
++// -------------------------
++
++enum class MediaType { VOD, SERIES, LIVE }
++
++data class DrmInfo(
++    val scheme: String,
++    val licenseUrl: String,
++    val requestHeaders: Map<String, String> = emptyMap()
++)
++
++data class PlayRequest(
++    val type: MediaType,
++    val mediaId: String,                 // e.g. "vod:2000000000001" or "series:123:2:5" or "live:1000000000001"
++    val title: String?,
++    val url: String,
++    val headers: Map<String, String> = emptyMap(),
++    val drm: DrmInfo? = null,
++    val startPositionMs: Long? = null,
++    val autoplay: Boolean = true,
++    val audioLang: String? = null,
++    val subtitleLang: String? = null,
++    val mimeType: String? = null
++)
++
++sealed interface PlayerResult {
++    data class Completed(val durationMs: Long) : PlayerResult
++    data class Stopped(val positionMs: Long) : PlayerResult
++    data class Error(val message: String, val cause: Throwable? = null) : PlayerResult
++}
++
++interface PlayerResolver {
++    suspend fun launch(request: PlayRequest): PlayerResult
++}
++
++interface ResumeStore {
++    suspend fun read(mediaId: String): Long?
++    suspend fun write(mediaId: String, positionMs: Long)
++    suspend fun clear(mediaId: String)
++}
++
++// -------------------------
++// Default Implementations
++// -------------------------
++
++private class DefaultPlayerResolver(
++    private val context: Context,
++    private val store: SettingsStore,
++    private val internalPlayer: (request: PlayRequest, startMs: Long?, mimeType: String?) -> Unit
++) : PlayerResolver {
++
++    override suspend fun launch(request: PlayRequest): PlayerResult {
++        // Enforce internal for Telegram
++        if (request.url.startsWith("tg://", ignoreCase = true)) {
++            internalPlayer(request, request.startPositionMs, request.mimeType)
++            return PlayerResult.Stopped(request.startPositionMs ?: 0L)
++        }
++        // Permission gating: Kids/Guests may be blocked from external players
++        val perms = com.chris.m3usuite.data.repo.PermissionRepository(context, store).current()
++        val disallowExternal = !perms.canUseExternalPlayer
++        val mode = store.playerMode.first()
++
++        val useInternal = disallowExternal || mode == "internal"
++        val useExternal = !disallowExternal && mode == "external"
++        val preferAsk = !disallowExternal && mode !in listOf("internal", "external")
++
++        if (useInternal) {
++            internalPlayer(request, request.startPositionMs, request.mimeType)
++            return PlayerResult.Stopped(request.startPositionMs ?: 0L)
++        }
++        if (useExternal) {
++            val pkg = store.preferredPlayerPkg.first().ifBlank { null }
++            ExternalPlayer.open(
++                context = context,
++                url = request.url,
++                headers = request.headers,
++                preferredPkg = pkg,
++                startPositionMs = request.startPositionMs
++            )
++            return PlayerResult.Stopped(request.startPositionMs ?: 0L)
++        }
++        if (preferAsk) {
++            val wantInternal = askInternalOrExternal(context)
++            if (wantInternal) {
++                internalPlayer(request, request.startPositionMs, request.mimeType)
++                return PlayerResult.Stopped(request.startPositionMs ?: 0L)
++            } else {
++                val pkg = store.preferredPlayerPkg.first().ifBlank { null }
++                ExternalPlayer.open(
++                    context = context,
++                    url = request.url,
++                    headers = request.headers,
++                    preferredPkg = pkg,
++                    startPositionMs = request.startPositionMs
++                )
++                return PlayerResult.Stopped(request.startPositionMs ?: 0L)
++            }
++        }
++        // Fallback
++        internalPlayer(request, request.startPositionMs, request.mimeType)
++        return PlayerResult.Stopped(request.startPositionMs ?: 0L)
++    }
++
++    private suspend fun askInternalOrExternal(context: Context): Boolean {
++        // true -> internal, false -> external
++        return kotlinx.coroutines.suspendCancellableCoroutine { cont ->
++            val act = findActivity(context)
++            if (act == null) {
++                cont.resumeWith(Result.success(true))
++                return@suspendCancellableCoroutine
++            }
++            act.runOnUiThread {
++                val dlg = android.app.AlertDialog.Builder(act)
++                    .setTitle("Wie abspielen?")
++                    .setItems(arrayOf("Intern", "Extern")) { d, which ->
++                        if (cont.isActive) cont.resumeWith(Result.success(which == 0))
++                        d.dismiss()
++                    }
++                    .setOnCancelListener { if (cont.isActive) cont.resumeWith(Result.success(true)) }
++                    .create()
++                cont.invokeOnCancellation { runCatching { dlg.dismiss() } }
++                dlg.show()
++            }
++        }
++    }
++
++    private tailrec fun findActivity(ctx: Context?): Activity? = when (ctx) {
++        is Activity -> ctx
++        is android.content.ContextWrapper -> findActivity(ctx.baseContext)
++        else -> null
++    }
++}
++
++private class DefaultResumeStore(
++    private val context: Context
++) : ResumeStore {
++    private val repo by lazy { com.chris.m3usuite.data.repo.ResumeRepository(context) }
++    override suspend fun read(mediaId: String): Long? {
++        return when {
++            mediaId.startsWith("vod:") -> {
++                val id = mediaId.removePrefix("vod:").toLongOrNull() ?: return null
++                repo.getVodResume(id)?.toLong()?.times(1000)
++            }
++            mediaId.startsWith("series:") -> {
++                // series:<seriesId>:<season>:<episodeNum>
++                val parts = mediaId.split(':')
++                if (parts.size == 4) {
++                    val sid = parts[1].toIntOrNull() ?: return null
++                    val season = parts[2].toIntOrNull() ?: return null
++                    val ep = parts[3].toIntOrNull() ?: return null
++                    repo.getSeriesResume(sid, season, ep)?.toLong()?.times(1000)
++                } else null
++            }
++            else -> null
++        }
++    }
++    override suspend fun write(mediaId: String, positionMs: Long) { /* handled by InternalPlayer */ }
++    override suspend fun clear(mediaId: String) { /* handled by InternalPlayer */ }
++}
+diff --git a/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt b/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
+index 3ce1aeb..b4c1ffb 100644
+--- a/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
++++ b/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
+@@ -1,9 +1,15 @@
+ package com.chris.m3usuite.player
+ 
+ import android.content.Context
+ import kotlinx.coroutines.flow.first
+ import com.chris.m3usuite.prefs.SettingsStore
+ import com.chris.m3usuite.data.repo.PermissionRepository
++import com.chris.m3usuite.playback.MediaType
++import com.chris.m3usuite.playback.PlayRequest
++import com.chris.m3usuite.playback.PlayerLauncher
+ 
+ /**
+  * Zentrale Wahl "Immer fragen | Intern | Extern".
+  * Die drei Detail-Screens (Vod/Series/Live) rufen nur noch diese Funktion auf.
+  */
+@@ -21,6 +27,23 @@ object PlayerChooser {
+         startPositionMs: Long? = null,
+         mimeType: String? = null,
+         buildInternal: (startPositionMs: Long?, mimeType: String?) -> Unit
+     ) {
++        // v1: route via centralized PlayerLauncher (feature gated; default ON)
++        if (store.playerLauncherV1.first()) {
++            val type = when {
++                url.startsWith("tg://", ignoreCase = true) -> MediaType.VOD // forced internal; type doesn't matter
++                url.contains("/live/") -> MediaType.LIVE
++                url.contains("/movie/") || url.contains("/vod/") -> MediaType.VOD
++                else -> MediaType.VOD
++            }
++            val req = PlayRequest(
++                type = type,
++                mediaId = when (type) { MediaType.LIVE -> "live:-1"; MediaType.VOD -> "vod:-1"; MediaType.SERIES -> "series:-1:0:0" },
++                title = null,
++                url = url,
++                headers = headers,
++                startPositionMs = startPositionMs,
++                mimeType = mimeType
++            )
++            PlayerLauncher(context, store) { _, s, m -> buildInternal(s, m) }.launch(req)
++            return
++        }
+         // Force internal for Telegram scheme
+         if (url.startsWith("tg://", ignoreCase = true)) {
+             buildInternal(startPositionMs, mimeType)
+             return
+diff --git a/app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt b/app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt
+index d6f3d89..8dc0fc4 100644
+--- a/app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt
++++ b/app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt
+@@ -35,6 +35,8 @@ private val Context.dataStore by preferencesDataStore("settings")
+  * Zentraler Settings-Store der App.
+  * Erweiterungen: Player-Modus (ask/internal/external) + Subtitle-Stil + Landscape-Header-Default.
+  */
+     object Keys {
++    // Feature flags
++    val PLAYER_LAUNCHER_V1 = booleanPreferencesKey("feature_player_launcher_v1")
+     // Basis / Netzwerk
+     val M3U_URL = stringPreferencesKey("m3u_url")
+     val EPG_URL = stringPreferencesKey("epg_url")
+     val USER_AGENT = stringPreferencesKey("user_agent")
+@@ -173,6 +175,7 @@ class SettingsStore(private val context: Context) {
+ 
+     // -------- Flows (reaktiv) --------
+     val m3uUrl: Flow<String> = context.dataStore.data.map { it[Keys.M3U_URL].orEmpty() }
++    val playerLauncherV1: Flow<Boolean> = context.dataStore.data.map { it[Keys.PLAYER_LAUNCHER_V1] ?: true }
+     val epgUrl: Flow<String> = context.dataStore.data.map { it[Keys.EPG_URL].orEmpty() }
+     val userAgent: Flow<String> = context.dataStore.data.map { it[Keys.USER_AGENT] ?: "IBOPlayer/1.4 (Android)" }
+     val referer: Flow<String> = context.dataStore.data.map { it[Keys.REFERER].orEmpty() }
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 8a3a8a8..2e59f8a 100644
+index a82a6a5..7c3aef0 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -1,3 +1,7 @@
+@@ -1,3 +1,10 @@
 +2025-09-30
-+- fix(ui/fonts): map "christmas" category to Inter fallback instead of MountainsOfChristmas to avoid loading the corrupted TTF placeholder. Keeps UI stable until a valid Mountains Of Christmas font is added.
-+
++- feat(playback): introduce centralized PlayerLauncher (playback/*) with PlayRequest/PlayerResult/Resolver/ResumeStore.
++  - Default resolver decides internal/external (incl. "ask") and forwards headers/start position. Telegram URLs forced internal.
++  - Compose helper rememberPlayerLauncher(...) provided for screens that inline the InternalPlayerScreen.
++  - Feature flag Keys.PLAYER_LAUNCHER_V1 (default ON). PlayerChooser now delegates to PlayerLauncher when enabled to keep call‑sites working; no functional changes.
++  - Telemetry stubs: lightweight log lines around launch; to be expanded with analytics later.
 +
  2025-09-27
  - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
  - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
 diff --git a/ROADMAP.md b/ROADMAP.md
-index 5adf9ab..08db2f9 100644
+index f3e2eff..6fe02a3 100644
 --- a/ROADMAP.md
 +++ b/ROADMAP.md
-@@ -16,7 +16,7 @@ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
- Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
+@@ -13,6 +13,10 @@ Hinweis
  
- - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
--- Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
-+- Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks. Update: "christmas" nutzt vorerst Inter als Fallback, bis ein gültiges Mountains Of Christmas TTF eingebunden ist.
- - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).
- - Coil3 Netzwerk: Explizite OkHttp‑Factory prüfen/integrieren, falls stabil verfü
+ ---
+ 
++Playback Core
++- Schritt 9: PlayerLauncher v1 – zentraler Startpfad für intern/extern inkl. Resume‑Hook und Telemetrie‑Basis.
++  Status: v1 eingeführt (hinter Feature‑Flag, Default ON). Call‑Sites bleiben funktional via PlayerChooser‑Delegation; direkte Migration der Screens folgt.
++
+ ## Kurzfristig (2–4 Wochen)
+ 
+ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
+- Alles Horizontale → `TvFocusRow` (inkl. Chips/Carousels).
++ Alles Horizontale → `TvFocusRow` (inkl. Chips/Carousels).
