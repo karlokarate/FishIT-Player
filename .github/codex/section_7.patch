@@ -1,13 +1,56 @@
-diff --git a/ROADMAP.md b/ROADMAP.md
-index b3776d7..1b1aaf7 100644
---- a/ROADMAP.md
-+++ b/ROADMAP.md
-@@ -10,6 +10,8 @@ Hinweis
- 
- ---
- 
-+Update 2025‑09‑30: Route‑basierter State‑Restore erweitert – Filter/Chip‑Zustände werden pro Route persistiert (Helpers in RememberHelpers). Library‑Suche nutzt die neuen Saver.
+diff --git a/docs/meta_chips.md b/docs/meta_chips.md
+new file mode 100644
+index 0000000..bc40036
+--- /dev/null
++++ b/docs/meta_chips.md
+@@ -0,0 +1,49 @@
++# Meta Chips (V1)
 +
- ## Kurzfristig (2–4 Wochen)
- 
- PRIO‑1: TV Fokus/DPAD Vereinheitlichung
++Ziel: Einheitliche, wiederverwendbare Meta-/Chip-Komponenten zur kompakten Darstellung von Medien-Metadaten (Jahr, Dauer, Qualität, Audio/Sprachen, Genres).
++
++Paket
++- com.chris.m3usuite.ui.meta
++  - MediaMeta.kt – Datamodell (MediaMeta, VideoInfo, AudioInfo)
++  - MetaFormatters.kt – Formatter (quality/duration/audio/year)
++  - MetaMappers.kt – Quellmodell → MediaMeta Helper
++  - MetaChips.kt – Compose-Renderer (FlowRow + AssistChip)
++
++Feature-Flag
++- BuildConfig.FEATURE_META_CHIPS_V1 (default true)
++- Deaktiviert den Renderer global ohne Aufrufer ändern zu müssen.
++
++Formatter
++- Qualität: 4K/1440p/1080p/HD (+ " HDR" Suffix bei HDR)
++- Dauer: "${min} min"
++- Audio: "DE/EN 5.1", "DE 2.0", "EN" (Sprachkürzel normalisiert)
++- Jahr: "2025"
++
++Mapper
++- MetaMappers.fromBasics(year, durationSecs, genresRaw, video?, audio?)
++- MetaMappers.fromMediaItem(MediaItem, extraGenres)
++
++UI
++@Composable
++fun MetaChips(meta: MediaMeta, compact: Boolean = false, modifier: Modifier = Modifier)
++- disabled AssistChips → nicht fokussierbar auf TV (reine Info-Badges)
++- Wrap via FlowRow, konsistente Abstände
++- A11y: contentDescription "Meta <Label>"
++
++Integration (Step‑1)
++- Foundation implementiert (dieser Patch). Folge-Patch integriert in VodDetailScreen/SeriesDetailScreen/LiveDetailScreen Header.
++
++Tests
++- app/src/test/.../MetaFormattersTest.kt deckt Kern‑Formatter ab.
++
++Beispiele
++val meta = MetaMappers.fromBasics(
++  year = 2024,
++  durationSecs = 5400,
++  genresRaw = "Action, Thriller",
++  video = VideoInfo(height = 2160, hdr = true),
++  audio = AudioInfo(channels = "5.1", languages = listOf("de","en"))
++)
++MetaChips(meta, compact = false)
++
++Hinweise
++- Chips sind rein informativ; Interaktionen (Filter) sind nicht Teil von V1.

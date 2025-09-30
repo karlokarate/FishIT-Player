@@ -1,11 +1,52 @@
-diff --git a/ARCHITECTURE_OVERVIEW.md b/ARCHITECTURE_OVERVIEW.md
-index ffe2ebc..2f9951a 100644
---- a/ARCHITECTURE_OVERVIEW.md
-+++ b/ARCHITECTURE_OVERVIEW.md
-@@ -127,7 +127,7 @@ Push (FCM)
- │   ├── skin/                               # TV-Skin (Focus/Scale, Modifiers), Theme
--│   ├── state/ScrollStateRegistry.kt        # Scroll-Positions pro Row/Grid
-+│   ├── state/ScrollStateRegistry.kt        # Scroll- & Fokus-Positionen pro Row/Grid + Route-Filter-Saver
- │   ├── theme/                              # Farben, Typo, Theme
- │   └── util/Images.kt, AvatarModel.kt      # Coil-ImageRequests mit Headers aus Settings
- └── work/
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt
+new file mode 100644
+index 0000000..5038c04
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt
+@@ -0,0 +1,45 @@
++package com.chris.m3usuite.ui.meta
++
++import com.chris.m3usuite.model.MediaItem
++
++/**
++ * Lightweight, source-agnostic mappers to MediaMeta.
++ * These avoid touching network or heavy repos and derive only display-level metadata.
++ */
++object MetaMappers {
++
++    /**
++     * Generic builder when only year/duration/genre are known.
++     */
++    fun fromBasics(
++        year: Int? = null,
++        durationSecs: Int? = null,
++        genresRaw: String? = null,
++        video: VideoInfo? = null,
++        audio: AudioInfo? = null
++    ): MediaMeta {
++        val mins = secondsToMinutesOrNull(durationSecs)
++        val genres = parseGenres(genresRaw)
++        return MediaMeta(
++            year = year,
++            durationMinutes = mins,
++            video = video,
++            audio = audio,
++            genres = genres
++        )
++    }
++
++    /**
++     * Map a generic MediaItem (OBX-backed) to a MediaMeta.
++     * Genres are not carried on MediaItem; callers can augment via [extraGenres].
++     */
++    fun fromMediaItem(item: MediaItem, extraGenres: List<String> = emptyList()): MediaMeta {
++        val mins = secondsToMinutesOrNull(item.durationSecs)
++        return MediaMeta(
++            year = item.year,
++            durationMinutes = mins,
++            video = null,
++            audio = null,
++            genres = extraGenres
++        )
++    }
++}

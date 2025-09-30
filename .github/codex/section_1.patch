@@ -1,12 +1,19 @@
-diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 0c9cba6..a1f4f88 100644
---- a/CHANGELOG.md
-+++ b/CHANGELOG.md
-@@ -1,3 +1,7 @@
-+2025-09-30
-+- fix(ui/fonts): avoid loading the corrupted MountainsOfChristmas TTF by mapping the "christmas" category chip to a safe fallback (Inter). Keep using a system/default font until a valid TTF is added.
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 0a4a7e1..f0c61d9 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -1,3 +1,4 @@
++@file:Suppress("UnstableApiUsage")
+ plugins {
+     id("com.android.application")
+     id("org.jetbrains.kotlin.android")
+@@ -19,6 +20,9 @@ android {
+         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+         vectorDrawables.useSupportLibrary = true
+ 
++        // Feature Flags
++        buildConfigField("boolean", "FEATURE_META_CHIPS_V1", "true")
 +
-+
- 2025-09-27
- - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
- - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
+         // TDLib/Secrets and UA injected elsewhere in this script (see existing fields)
+     }
+ 

@@ -1,25 +1,17 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt b/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
-index 3c5cf69..a6b9368 100644
---- a/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
-+++ b/app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt
-@@ -12,6 +12,7 @@ import androidx.work.WorkerParameters
- import com.chris.m3usuite.data.obx.ObxStore
- import com.chris.m3usuite.prefs.SettingsStore
- import kotlinx.coroutines.Dispatchers
-+import com.chris.m3usuite.core.perf.DeviceTuning
- import kotlinx.coroutines.flow.first
- import kotlinx.coroutines.withContext
- import java.io.File
-@@ -24,6 +25,12 @@ class TelegramCacheCleanupWorker(appContext: Context, params: WorkerParameters)
- 
-     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-         val store = SettingsStore(applicationContext)
-+        // v7a/Fire TV: avoid heavy IO while streaming; retry later
-+        if (DeviceTuning.isV7aAbi() && DeviceTuning.isPlaybackActive(applicationContext)) {
-+            // For periodic work, success would skip until next period; retry asks WM to run again soon.
-+            return@withContext Result.retry()
-+        }
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 4d07a7a..4d3d8d0 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -12,6 +12,12 @@ Hinweis
+ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
+ - Alles Horizontale → `TvFocusRow` (inkl. Chips/Carousels).
+ - Alles Interaktive → `tvClickable`/`tvFocusableItem` (No‑Op auf Phone).
++- Meta‑Chips V1 (DetailScaffold – Epic „UI Unification / DetailScaffold + TV-Fokus + Cards”)
++  - Zentralisierte Meta‑Renderer (MediaMeta + MetaChips) inkl. Formatter/Mappers.
++  - Feature‑Flag: `FEATURE_META_CHIPS_V1` (BuildConfig).
++  - Schritt‑2: Integration in VodDetailScreen/SeriesDetailScreen/LiveDetailScreen Header (ersetzt lokale Badges).
++  - Tests für Formatter/Mapper (Qualität/Audio/Dauer).
 +
-         val wipeAll = inputData.getBoolean(KEY_WIPE_ALL, false)
-         val enabled = store.tgEnabled.first()
-         if (!enabled && !wipeAll) return@withContext Result.success()
+ - Zentrale Registry für Scroll+Fokus je Route/Row (`ScrollStateRegistry`).
+ - Chrome: einheitliche Auto‑Collapse/Expand‑Trigger im `HomeChromeScaffold`.
+ - Kein `onPreviewKeyEvent` (außer echte Sonderfälle).
