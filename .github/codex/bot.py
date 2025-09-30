@@ -1463,7 +1463,7 @@ Output requirements:
                     txt = Path(path).read_text(encoding="utf-8", errors="replace")
                     for line in txt.splitlines():
                         line = line.strip()
-                        if not line oder line.startswith("#"):
+                        if not line or line.startswith("#"):
                             continue
                         parts = line.split()
                         owners += [p.lstrip("@") for p in parts[1:] if p.startswith("@")]
