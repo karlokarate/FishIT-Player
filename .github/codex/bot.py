@@ -2,32 +2,67 @@
 # -*- coding: utf-8 -*-
 
 """
-Codex Bot: Erzeugt AI-Patches (Unified Diff) unter Nutzung deiner Repo-Doku (AGENTS.md, ARCHITECTURE_OVERVIEW.md,
-ROADMAP.md, CHANGELOG.md …), baut relevanzbasierten Code-Kontext, wendet Patches ROBUST an (3-way / per Sektion / --reject),
-pusht Branch, erstellt PR, labelt optional und kann im SPEC-FIRST-Modus erst eine Änderungs-Spezifikation liefern.
+Codex Bot – Build+Fix Edition (+ Shortcuts)
 
-Slash-Command-Beispiele:
-  /codex -m gpt-5 --reason high Fix Fokusnavigation in Staffeln, schreibe UI-Tests
-  /codex --paths app/src,core/ui Refactor MediaSession State Machine
-  /codex --verify Erzeuge Unit-Tests für PlayerService (Errors/Buffering)
-  /codex --dry Nur Patch erzeugen und als Kommentar anhängen (kein Apply)
-  /codex --spec Schreibe erst eine Spezifikation (Design-Diff/Tasks), kein Code
-  /codex --apply Spezifikation ist freigegeben → jetzt Code-Diff erzeugen & anwenden
-  /codex --paths . Nur Repo-Tree posten (kein Patch)
+Fähigkeiten:
+- Liest Issue-/Kommentar-Events und interpretiert natürliche /codex-Aufträge.
+- Unterstützt 20 Major-Kurzbefehle (siehe unten), z. B. `--wire`, `--buildrelease`, `--gif`, `--migrate-kotlin`.
+- Kann Workflows per workflow_dispatch starten (z.B. release-apk.yml).
+- Wartet bis Abschluss, lädt Logs (ZIP), extrahiert Fehler/Warnungen.
+- Erzeugt aus Logs & Repo-Kontext Patches (OpenAI), wendet sie robust an (3-way/sectionwise), pusht Branch, erstellt PR.
+- Iteriert: Re-Dispatch Build → erneut Logs → erneut Patch …, bis Build "success" ist oder max_attempts erreicht.
+- Kommentiert alle Schritte im ursprünglichen Issue.
+
+Erwartete Umgebungsvariablen (von der GitHub Action gesetzt):
+- OPENAI_API_KEY
+- OPENAI_BASE_URL (optional; wird zu https://…/v1 normalisiert)
+- OPENAI_MODEL_DEFAULT (z. B. "gpt-5")
+- OPENAI_REASONING_EFFORT ("high" | "medium" | "low")
+- GITHUB_TOKEN
+- GITHUB_REPOSITORY (owner/repo)
+- GITHUB_EVENT_PATH
+- GH_EVENT_NAME (issues, issue_comment, pull_request_review_comment, workflow_dispatch)
+- DISPATCH_COMMENT (nur bei workflow_dispatch)
+- CODEX_ALLOWLIST (optional, CSV handles; ansonsten check Collaborator-Permissions)
+
+Kurzbefehle (Auszug, vollständige Liste siehe Ende der Datei):
+  --wire <modul|pfad>        : Prüft/fixt Verdrahtung (Imports, Gradle-abhäng., DI, Aufrufe) + Tests
+  --wire-all                 : Wie --wire, aber für alle Module
+  --tests [pfad]             : Generiert Unit-Tests
+  --tests-ui [screens]       : Generiert UI-Tests (Compose/DPAD)
+  --tests-int [scope]        : Generiert Integrations-Tests
+  --buildrelease [abis]      : Startet Release-Build (arm64, v7a, universal…) + Auto-Fix-Loop
+  --builddebug [abis]        : Startet Debug-Build + Auto-Fix-Loop
+  --gif [screens]            : Fügt UI-Preview-Workflow/Skripte hinzu (ffmpeg/adb), erzeugt GIF-Artefakte
+  --depsync                  : Dependencies konsolidieren/aktualisieren, Konflikte beheben
+  --gradleopt                : Build-Zeiten optimieren (Caching, KSP, R8)
+  --lintfix                  : Lint/detekt/ktlint einführen & Top-Findings beheben
+  --strict                   : Warnings-as-errors, Lint fatal → Fixes
+  --graph                    : Modul-Dependency-Graph erzeugen (GraphViz/DOT) + Doku
+  --migrate-kotlin [pfad]    : Java → Kotlin Migration (idiomatisch) + Tests
+  --integrate [module]       : Zusammenspiel/Vertrags-Checks zwischen Modulen + Fixes
+  --autofix                  : Statische Analyse hochdrehen & Befunde automatisch fixen
+  --doctor                   : Health-Checks (StrictMode, LeakCanary, Threading) + Patches
+  --tdlib-ignore             : Setzt Build-Input ignore_missing_tdlib_v7a=true
+  --bump-sdk [34|35…]        : compileSdk/targetSdk bumpen + Kompat-Anpassungen
+  --telemetry                : Einheitliches Logging/Tracing/Crash-Reports integrieren
 """
 
+from __future__ import annotations
+
+import io
 import json
 import os
+import random
 import re
 import shlex
 import subprocess
 import sys
 import time
-import difflib
-import math
-import random
-from pathlib import Path
+import zipfile
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 import requests
 from unidiff import PatchSet
@@ -48,6 +83,15 @@ MAX_USER_CHARS    = 4000
 FORBIDDEN_PATHS = [".github/workflows/"]           # nur mit --allow-ci ändern
 MAX_PATCH_LINES = 3000                             # zu große Patches blocken, außer --force
 
+# Build/Dispatch defaults
+DEFAULT_WORKFLOW_FILE = "release-apk.yml"          # unter .github/workflows/
+DEFAULT_MAX_ATTEMPTS  = 4
+DEFAULT_WAIT_TIMEOUTS = (30, 1800)  # (no-wait, wait) Sekunden
+
+# Log-Erkennung
+WARN_PAT = re.compile(r"\b(warning|warn|w:)\b", re.I)
+ERR_PAT  = re.compile(r"\b(error|fail(ed)?|e:)\b", re.I)
+
 # ------------------------ Shell / Git / HTTP Utils ------------------------
 
 def sh(cmd: str, check: bool = True) -> str:
@@ -64,8 +108,18 @@ def gh_api(method: str, path: str, payload=None):
     }
     resp = requests.request(method, url, headers=headers, json=payload)
     if resp.status_code >= 300:
-        raise RuntimeError(f"GitHub API {method} {path} failed: {resp.status_code} {resp.text}")
-    return resp.json() if resp.text else {}
+        raise RuntimeError(f"GitHub API {method} {path} failed: {resp.status_code} {resp.text[:4000]}")
+    return resp.json() if (resp.text and resp.headers.get("content-type","").startswith("application/json")) else {}
+
+def gh_api_raw(method: str, url: str, allow_redirects=True):
+    headers = {
+        "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+        "Accept": "application/vnd.github+json"
+    }
+    resp = requests.request(method, url, headers=headers, allow_redirects=allow_redirects, stream=True)
+    if resp.status_code >= 300 and resp.status_code not in (301, 302):
+        raise RuntimeError(f"GitHub RAW {method} {url} failed: {resp.status_code} {resp.text[:300]}")
+    return resp
 
 def comment_reply(body: str):
     try:
@@ -119,6 +173,9 @@ def is_allowed(actor: str) -> bool:
         return perms.get("permission") in ("write", "maintain", "admin")
     except Exception:
         return False
+
+def _now_iso():
+    return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 # ------------------------ Repo Index / Tree ------------------------
 
@@ -258,7 +315,6 @@ class MinuteRateLimiter:
 
     def wait_for(self, tokens_needed: int):
         self._maybe_reset()
-        # wenn kein Budget gesetzt, einfach durch
         if self.tpm_budget <= 0 and self.rpm_budget <= 0:
             return
         while True:
@@ -267,7 +323,6 @@ class MinuteRateLimiter:
             ok_calls = (self.rpm_budget <= 0) or (self.calls_made + 1 <= self.rpm_budget)
             if ok_tokens and ok_calls:
                 break
-            # bis zum Ende des Fensters schlafen
             sleep_s = max(0.01, 60.0 - (time.time() - self.window_start))
             time.sleep(min(sleep_s, 60.0))
 
@@ -276,33 +331,28 @@ class MinuteRateLimiter:
         self.tokens_used += max(0, tokens_used)
         self.calls_made += 1
 
-# globale RateLimiter-Instanz (ein Job → eine Instanz)
 _RATE_LIMITER = MinuteRateLimiter(
-    tpm_budget=_env_int("OPENAI_TPM_BUDGET", 400000),  # konservativ
+    tpm_budget=_env_int("OPENAI_TPM_BUDGET", 400000),
     rpm_budget=_env_int("OPENAI_RPM_BUDGET", 300)
 )
 
 def _estimate_tokens_from_text(*parts: str) -> int:
-    # Grobe Schätzung: 1 Token ~ 4 Zeichen. Plus kleiner Overhead.
     total_chars = sum(len(p or "") for p in parts)
     return int(total_chars / 4) + 256
 
-def openai_generate(model: str, system_prompt: str, user_prompt: str, want_spec: bool = False) -> str:
+def openai_generate(model: str, system_prompt: str, user_prompt: str) -> str:
     """Responses API bevorzugt; Fallback Chat Completions. Mit Rate-Limit/Retry."""
     from openai import OpenAI
-
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=_compute_base_url())
 
     effort = os.environ.get("OPENAI_REASONING_EFFORT", "high").lower()
     if effort not in ("high", "medium", "low"):
         effort = "high"
 
-    # Retry/Backoff-Parameter aus ENV konfigurierbar
     MAX_RETRIES = _env_int("OPENAI_MAX_RETRIES", 8)
     BASE_SLEEP  = float(os.environ.get("OPENAI_BASE_SLEEP", "1.5"))
     MAX_SLEEP   = float(os.environ.get("OPENAI_MAX_SLEEP", "60"))
 
-    # Tokenbedarf schätzen und Budget abwarten
     est_in_tokens = _estimate_tokens_from_text(system_prompt, user_prompt)
     _RATE_LIMITER.wait_for(est_in_tokens)
 
@@ -322,17 +372,13 @@ def openai_generate(model: str, system_prompt: str, user_prompt: str, want_spec:
                 last_err = e
                 msg = str(e)
                 if _is_retryable_error(msg):
-                    # Exponential Backoff + Jitter
                     sleep_s = min(MAX_SLEEP, BASE_SLEEP * (2 ** i)) + random.uniform(0, 0.4)
-                    # Kurzer Hinweis ins Log, aber nicht in Kommentar spammen
                     print(f"[codex-bot] OpenAI transient error, retry {i+1}/{MAX_RETRIES} after {sleep_s:.1f}s: {msg[:160]}")
                     time.sleep(sleep_s)
                     continue
-                # Nicht-retryable Fehler weiterwerfen
                 raise
         raise last_err
 
-    # Responses API
     def _responses():
         resp = client.responses.create(
             model=model,
@@ -340,11 +386,8 @@ def openai_generate(model: str, system_prompt: str, user_prompt: str, want_spec:
                    {"role": "user",   "content": user_prompt}],
             reasoning={"effort": effort},
         )
-        # Output-Text sichern
         text = getattr(resp, "output_text", "") or ""
-        # Usage robust lesen
         try:
-            # Einige SDKs liefern usage als dict mit input/output/total
             usage = getattr(resp, "usage", None)
             if usage and isinstance(usage, dict):
                 total = usage.get("total_tokens") or (usage.get("input_tokens", 0) + usage.get("output_tokens", 0))
@@ -355,7 +398,6 @@ def openai_generate(model: str, system_prompt: str, user_prompt: str, want_spec:
         _RATE_LIMITER.book(total)
         return text
 
-    # Chat Completions Fallback
     def _chat():
         cc = client.chat.completions.create(
             model=model,
@@ -437,11 +479,16 @@ def best_match_path(target_path: str, repo_files):
             for a, b in zip(reversed(tparts), reversed(parts)):
                 if a == b: suf += 1
                 else: break
-            ratio = difflib.SequenceMatcher(a="/".join(tparts[-4:]), b="/".join(parts[-4:])).ratio()
+            import difflib as _df
+            ratio = _df.SequenceMatcher(
+                a="/".join(tparts[-4:]),
+                b="/".join(parts[-4:])
+            ).ratio()
             return (suf, ratio, -len(parts))
         return sorted(candidates, key=score, reverse=True)[0]
 
-    scored = sorted(((difflib.SequenceMatcher(a=target, b=p).ratio(), p) for p in repo_norm), reverse=True)
+    import difflib as _df
+    scored = sorted(((_df.SequenceMatcher(a=target, b=p).ratio(), p) for p in repo_norm), reverse=True)
     return scored[0][1] if scored and scored[0][0] >= 0.6 else None
 
 def rewrite_section_paths(section: str, new_path: str):
@@ -524,6 +571,480 @@ def try_apply_sections(patch_file: str, original_text: str) -> tuple[list[str], 
 
     return applied, rejected, skipped
 
+# ------------------------ Workflow Dispatch & Log Reporting ------------------------
+
+def get_default_branch(repo_full: str) -> str:
+    return gh_api("GET", f"/repos/{repo_full}").get("default_branch", "main")
+
+def dispatch_workflow(repo_full: str, workflow_file: str, ref_branch: str, inputs: dict | None) -> str:
+    """Trigger workflow_dispatch. Returns dispatch timestamp (utc iso) used for run correlation."""
+    path = f"/repos/{repo_full}/actions/workflows/{workflow_file}/dispatches"
+    payload = {"ref": ref_branch}
+    if inputs:
+        payload["inputs"] = inputs
+    gh_api("POST", path, payload)
+    return _now_iso()
+
+def find_latest_run(repo_full: str, workflow_file: str, branch: str, since_iso: str, timeout_s=900) -> dict:
+    """Poll die Workflow-Runs, bis ein Run nach since_iso auftaucht; warte auf Completion."""
+    base = f"/repos/{repo_full}/actions/workflows/{workflow_file}/runs"
+    started = time.time()
+    while True:
+        runs = gh_api("GET", f"{base}?event=workflow_dispatch&branch={branch}")
+        items = runs.get("workflow_runs", []) or []
+        cand = items[0] if items else {}
+        if cand and cand.get("created_at") >= since_iso:
+            run_id = cand.get("id")
+            while True:
+                run = gh_api("GET", f"/repos/{repo_full}/actions/runs/{run_id}")
+                if run.get("status") == "completed":
+                    return run
+                if time.time() - started > timeout_s:
+                    return run  # timeout
+                time.sleep(5)
+        if time.time() - started > timeout_s:
+            return {}
+        time.sleep(3)
+
+def download_and_parse_logs(repo_full: str, run_id: int) -> dict:
+    """Download logs ZIP für einen Run, liefere {errors: [...], warnings: [...], files, lines}."""
+    resp = gh_api_raw("GET", f"https://api.github.com/repos/{repo_full}/actions/runs/{run_id}/logs", allow_redirects=False)
+    loc = resp.headers.get("Location")
+    if not loc:
+        if resp.status_code == 200:
+            data = resp.content
+        else:
+            return {"errors": ["No logs location from GitHub"], "warnings": [], "files": 0, "lines": 0}
+    else:
+        z = gh_api_raw("GET", loc)
+        data = z.content
+    errors, warnings = [], []
+    files = lines = 0
+    with zipfile.ZipFile(io.BytesIO(data)) as zf:
+        for name in zf.namelist():
+            if not name.lower().endswith(".txt"):
+                continue
+            files += 1
+            try:
+                content = zf.read(name).decode("utf-8", errors="replace").splitlines()
+            except Exception:
+                continue
+            for ln in content:
+                lines += 1
+                if ERR_PAT.search(ln):
+                    errors.append(ln.strip())
+                elif WARN_PAT.search(ln):
+                    warnings.append(ln.strip())
+    def _dedup_trim(ar, cap):
+        seen, out = set(), []
+        for x in ar:
+            key = x.strip()
+            if key not in seen:
+                seen.add(key); out.append(key)
+            if len(out) >= cap:
+                break
+        return out
+    return {
+        "errors": _dedup_trim(errors, 300),
+        "warnings": _dedup_trim(warnings, 600),
+        "files": files,
+        "lines": lines
+    }
+
+def summarize_run_and_comment(run: dict, logs: dict | None, want_comment: bool, header: str = ""):
+    status = run.get("status")
+    conclusion = run.get("conclusion")
+    html_url = run.get("html_url")
+    head_branch = run.get("head_branch")
+    dur = None
+    try:
+        st = datetime.fromisoformat(run.get("run_started_at").replace("Z","+00:00"))
+        en = datetime.fromisoformat(run.get("updated_at").replace("Z","+00:00"))
+        dur = f"{int((en-st).total_seconds())}s"
+    except Exception:
+        pass
+    body = ""
+    if header:
+        body += header + "\n\n"
+    body += f"🧪 **Build (`workflow_dispatch`)** → branch `{head_branch}` → **{status}/{conclusion or '—'}** in {dur or '—'}\n\n"
+    body += f"Run: {html_url}\n\n"
+    if logs:
+        body += f"**Logs** (parsed {logs['files']} files / {logs['lines']} lines)\n"
+        body += f"- Errors: {len(logs['errors'])}\n- Warnings: {len(logs['warnings'])}\n\n"
+        if logs["errors"]:
+            body += "### Errors (Top, deduped)\n```\n" + "\n".join(logs["errors"][:120]) + "\n```\n"
+        if logs["warnings"]:
+            body += "### Warnings (Top, deduped)\n```\n" + "\n".join(logs["warnings"][:160]) + "\n```\n"
+    if want_comment:
+        comment_reply(body)
+
+# ------------------------ Shortcuts Parsing ------------------------
+
+def _clean_arg(s: str) -> str:
+    return (s or "").strip().strip("*`'\"").strip()
+
+def _parse_abis(arg: str) -> str:
+    txt = (arg or "").lower()
+    tokens = re.findall(r"[a-z0-9\-]+", txt)
+    out = []
+    def _add(x):
+        if x not in out:
+            out.append(x)
+    for t in tokens:
+        if t in ("arm64", "arm64-v8a", "v8a"):
+            _add("arm64-v8a")
+        elif t in ("v7a", "armeabi-v7a", "armeabi"):
+            _add("armeabi-v7a")
+        elif t in ("universal", "fat", "both"):
+            _add("universal")
+    return ",".join(out) if out else ""
+
+def parse_shortcuts(comment_text: str) -> dict:
+    """Erkennt 20 Major-Kurzbefehle und liefert Steuer-Flags + zusammengesetzte Instruktionen."""
+    t = comment_text or ""
+    res = {
+        "trigger_build": False,
+        "build_fix_loop": False,
+        "build_inputs": {},
+        "set_workflow": None,
+        "directives": [],
+        "allow_ci": False,
+        "force": False,
+    }
+
+    # 1) --wire <module|path>
+    m = re.search(r"--wire\s+([^\n]+)", t, re.I)
+    if m:
+        target = _clean_arg(m.group(1))
+        res["directives"].append(
+            f"Prüfe und repariere die komplette Verdrahtung des Moduls/Pfads `{target}`: "
+            f"Gradle-Dependencies (api/implementation), Imports, Package/visibility, DI/Wiring, "
+            f"call graph (alle aufgerufenen Funktionen existieren & Signaturen passen), Ressourcen/IDs. "
+            f"Füge Integrations- und Unit-Tests hinzu. Minimal-invasive Patches, aber build-fähig."
+        )
+
+    # 2) --wire-all
+    if re.search(r"--wire-all\b", t, re.I):
+        res["directives"].append(
+            "Führe eine modulweite Verdrahtungsprüfung für ALLE Module durch (Dependencies, DI, Imports, "
+            "öffentliche API/Oberflächen) und behebe die wichtigsten Befunde. Füge Smoke-Tests hinzu."
+        )
+
+    # 3) --tests [path]
+    m = re.search(r"--tests(?:\s+([^\n]+))?", t, re.I)
+    if m:
+        scope = _clean_arg(m.group(1) or "app,core")
+        res["directives"].append(
+            f"Erzeuge und integriere Unit-Tests für `{scope}` (Edge Cases, Fehlerpfade, Contracts). "
+            f"Gradle test deps aktualisieren (junit, mockk/turbine)."
+        )
+
+    # 4) --tests-ui [screens]
+    m = re.search(r"--tests-ui(?:\s+([^\n]+))?", t, re.I)
+    if m:
+        screens = _clean_arg(m.group(1) or "Home,Library,Player")
+        res["directives"].append(
+            f"Schreibe Compose UI-Tests (auch TV/DPAD) für `{screens}`. Stabil (idling), keine flakey Wartezeiten."
+        )
+
+    # 5) --tests-int [scope]
+    m = re.search(r"--tests-int(?:\s+([^\n]+))?", t, re.I)
+    if m:
+        scope = _clean_arg(m.group(1) or "core↔data↔ui")
+        res["directives"].append(
+            f"Schreibe Integrations-Tests für `{scope}` (Fake Repos, In-Memory DB, deterministische Scheduler)."
+        )
+
+    # 6) --buildrelease [abis]
+    m = re.search(r"--buildrelease(?:\s+([^\n]+))?", t, re.I)
+    if m:
+        abis = _parse_abis(m.group(1) or "")
+        res["trigger_build"] = True
+        res["build_fix_loop"] = True
+        res["build_inputs"].update({"build_type": "release"})
+        if abis:
+            res["build_inputs"]["abis"] = abis
+
+    # 7) --builddebug [abis]
+    m = re.search(r"--builddebug(?:\s+([^\n]+))?", t, re.I)
+    if m:
+        abis = _parse_abis(m.group(1) or "")
+        res["trigger_build"] = True
+        res["build_fix_loop"] = True
+        res["build_inputs"].update({"build_type": "debug"})
+        if abis:
+            res["build_inputs"]["abis"] = abis
+
+    # 8) --gif [screens]
+    m = re.search(r"--gif(?:\s+([^\n]+))?", t, re.I)
+    if m:
+        screens = _clean_arg(m.group(1) or "Home,Library,Player")
+        res["allow_ci"] = True  # darf Workflow anlegen/anpassen
+        res["directives"].append(
+            f"Füge ein Skript `tools/record_ui.sh` (adb screenrecord + ffmpeg→GIF) und Workflow "
+            f"`.github/workflows/ui-preview.yml` hinzu. Erzeuge Aufnahmen für `{screens}` und speichere GIFs in artifacts."
+        )
+        # optional: auch laufen lassen könnte ein separater Kommentar sein
+
+    # 9) --depsync
+    if re.search(r"--depsync\b", t, re.I):
+        res["directives"].append(
+            "Synchronisiere Dependencies/Plugins (Gradle/AGP/Kotlin/Libraries), fix Versionskonflikte (BOMs), "
+            "aktualisiere Repositories, ersetze veraltete Artefakte. Erhalte Funktionalität."
+        )
+
+    # 10) --gradleopt
+    if re.search(r"--gradleopt\b", t, re.I):
+        res["directives"].append(
+            "Optimiere Gradle-Buildzeiten: Build-Cache, Konfiguration on demand, KSP statt KAPT, R8/Proguard Setup, "
+            "Parallelisierung. Miss Top-10 Tasks und dokumentiere Verbesserungen."
+        )
+
+    # 11) --lintfix
+    if re.search(r"--lintfix\b", t, re.I):
+        res["directives"].append(
+            "Führe Lint/detekt/ktlint ein (Gradle Tasks, Baselines). Behebe die wichtigsten 20 Findings automatisch."
+        )
+
+    # 12) --strict
+    if re.search(r"--strict\b", t, re.I):
+        res["directives"].append(
+            "Aktiviere Compiler warnings-as-errors, strikte Lint-Profile (fatal ausgewählte Checks) "
+            "und behebe relevante Warnungen, sodass der Build weiterläuft."
+        )
+
+    # 13) --graph
+    if re.search(r"--graph\b", t, re.I):
+        res["directives"].append(
+            "Erzeuge einen Modul-Dependency-Graphen (GraphViz .dot + .svg) und lege ihn unter docs/architecture/ ab. "
+            "Füge Gradle-Task/Skript zum Aktualisieren hinzu."
+        )
+
+    # 14) --migrate-kotlin [path]
+    m = re.search(r"--migrate-kotlin(?:\s+([^\n]+))?", t, re.I)
+    if m:
+        target = _clean_arg(m.group(1) or "app/src/main/java")
+        res["directives"].append(
+            f"Wandle `{target}` idiomatisch von Java nach Kotlin um (Nullability, data/ sealed, extensions), "
+            f"passe build an (kotlinOptions, stdlib), ergänze Unit-Tests."
+        )
+
+    # 15) --integrate [modules]
+    m = re.search(r"--integrate(?:\s+([^\n]+))?", t, re.I)
+    if m:
+        mods = _clean_arg(m.group(1) or "core,data,ui")
+        res["directives"].append(
+            f"Prüfe das Zusammenspiel der Module `{mods}`: API-Verträge, Exceptions, Threading, Ressourcen-IDs. "
+            f"Fixe Diskrepanzen, füge Integrations-Checks hinzu."
+        )
+
+    # 16) --autofix
+    if re.search(r"--autofix\b", t, re.I):
+        res["directives"].append(
+            "Führe erweiterte statische Analyse durch (detekt/ktlint/Lint streng) und behebe automatisch "
+            "die wichtigsten gefundenen Probleme (Nullability, Dead Code, API-Missbrauch)."
+        )
+
+    # 17) --doctor
+    if re.search(r"--doctor\b", t, re.I):
+        res["directives"].append(
+            "Richte Health-Checks ein: StrictMode, LeakCanary (Debug), ANR/Crash-Probes. "
+            "Füge README-Hinweise und optionale CI-Reports hinzu."
+        )
+
+    # 18) --tdlib-ignore
+    if re.search(r"--tdlib-ignore\b", t, re.I):
+        res["build_inputs"]["ignore_missing_tdlib_v7a"] = "true"
+
+    # 19) --bump-sdk [34|35|…]
+    m = re.search(r"--bump-sdk(?:\s+(\d+))?", t, re.I)
+    if m:
+        api = _clean_arg(m.group(1) or "")
+        res["directives"].append(
+            f"Erhöhe compileSdk/targetSdk{(' auf ' + api) if api else ''}; passe Bibliotheken & Manifeste an, "
+            f"fixe Inkompatibilitäten (Permissions/Exported/Foreground)."
+        )
+
+    # 20) --telemetry
+    if re.search(r"--telemetry\b", t, re.I):
+        res["directives"].append(
+            "Integriere konsistentes Telemetry/Logging (z. B. Timber), strukturierte Logs, "
+            "und (optional) Crash/Analytics, konfigurierbar pro Build-Type."
+        )
+
+    return res
+
+# ------------------------ Build-Fix Loop ------------------------
+
+def infer_build_request_from_text(text: str) -> dict:
+    """Erkennt aus natürlichem Text die Build-Anforderung."""
+    t = (text or "").lower()
+    want_release = "release" in t or "relase" in t
+    abis = []
+    if any(x in t for x in ["arm64", "arm64-v8a", "v8a"]):
+        abis.append("arm64-v8a")
+    if any(x in t for x in ["v7a", "armeabi-v7a", "armeabi"]):
+        abis.append("armeabi-v7a")
+    if "universal" in t or "fat" in t or "both" in t:
+        abis.append("universal")
+    abis = list(dict.fromkeys(abis)) or ["arm64-v8a", "armeabi-v7a"]  # default
+    return {
+        "build_type": "release" if want_release else "debug",
+        "abis": ",".join(abis),
+        "ignore_missing_tdlib_v7a": "false"
+    }
+
+def generate_fix_patch(model: str, docs: str, compact_tree: str, context: str,
+                       instruction: str, logs: dict) -> str:
+    SYSTEM = (
+        "You are an expert Android/Kotlin/Gradle engineer. "
+        "Create a SINGLE git unified diff to FIX the build based on the provided build logs. "
+        "Minimal changes, but complete. Include Gradle, dependencies, Kotlin options, Android SDK versions, "
+        "resource fixes or code fixes as needed. The diff must apply at repo root with 'git apply -p0'. "
+        "Do not include explanations. Only one diff."
+    )
+    errors_txt = "\n".join(logs.get("errors", [])[:180])
+    warnings_txt = "\n".join(logs.get("warnings", [])[:160])
+    USER = f"""Repository documents (trimmed):
+{docs or '(no docs found)'}
+Repository tree (compact, depth≤4):
+{compact_tree}
+Focused file heads (top relevance):
+{context}
+Task:
+{instruction}
+
+Build logs (errors top):
+{errors_txt}
+
+Build logs (warnings top):
+{warnings_txt}
+
+Output requirements:
+- Return exactly ONE unified diff starting with: diff --git a/... b/...
+- It must apply at repo root using: git apply -p0
+- Include new files with proper headers (e.g. 'new file mode 100644')
+- Avoid forbidden paths unless explicitly allowed: {', '.join(FORBIDDEN_PATHS)}
+"""
+    return openai_generate(model, SYSTEM, USER)
+
+def run_build_once_and_maybe_fix(repo: str, default_branch: str, workflow_file: str,
+                                 inputs: dict, model: str, instruction: str,
+                                 docs: str, compact_tree: str, context: str,
+                                 allow_ci_changes: bool, force: bool,
+                                 attempt_idx: int, max_attempts: int) -> tuple[bool, dict]:
+    """Dispatch Build; wenn failed → Logs ziehen, Patch generieren & anwenden; PR pushen; return (success, last_run)."""
+    t0 = dispatch_workflow(repo, workflow_file, default_branch, inputs)
+    comment_reply(f"🚀 Versuch {attempt_idx}/{max_attempts}: Workflow **{workflow_file}** gestartet "
+                  f"mit Inputs `{json.dumps(inputs)}`.")
+    run = find_latest_run(repo, workflow_file, default_branch, t0, timeout_s=DEFAULT_WAIT_TIMEOUTS[1])
+    if not run:
+        comment_reply("⚠️ Konnte den gestarteten Run nicht finden. Prüfe Actions manuell.")
+        return False, {}
+    logs = download_and_parse_logs(repo, run.get("id"))
+    summarize_run_and_comment(run, logs, want_comment=True)
+    if run.get("conclusion") == "success":
+        return True, run
+
+    # Build fehlgeschlagen → Patch generieren
+    repo_files, _, _ = build_repo_index()
+    all_paths = [str(p).replace("\\", "/") for p in repo_files]
+    focused_files = top_relevant_files(instruction, all_paths, k=80)
+
+    preview_parts = []
+    for f in focused_files:
+        try:
+            head = sh(f"sed -n '1,160p' {shlex.quote(f)} | sed 's/\\t/    /g' || true", check=False)
+            if head.strip():
+                preview_parts.append(f"\n--- file: {f} ---\n{head}")
+        except Exception:
+            pass
+    sub_context = trim_to_chars("".join(preview_parts), MAX_CONTEXT_CHARS)
+
+    patch_text = generate_fix_patch(model, docs, compact_tree, sub_context, instruction, logs)
+    patch_text = sanitize_patch_text(patch_text)
+    if "diff --git " not in patch_text:
+        comment_reply(f"⚠️ Kein gültiger Diff aus Logs generiert. Antwort war:\n```\n{patch_text[:1200]}\n```")
+        return False, run
+    if not force and patch_text.count("\n") > MAX_PATCH_LINES:
+        comment_reply(f"⛔ Generierter Patch zu groß (> {MAX_PATCH_LINES} Zeilen). Breche ab.")
+        return False, run
+
+    try:
+        PatchSet.from_string(patch_text)
+    except Exception as e:
+        comment_reply(f"ℹ️ Unidiff-Warnung: `{type(e).__name__}: {e}` – versuche Patch trotzdem.")
+
+    remapped_patch, remaps, unresolved = try_remap_patch(patch_text, [Path(p) for p in all_paths])
+    if remaps:
+        bullets = "\n".join([f"- `{src}` → `{dst}`" for src, dst in remaps])
+        comment_reply(f"🧭 Pfad-Remap angewandt:\n{bullets}")
+    if unresolved:
+        bullets = "\n".join([f"- {p}" for p in unresolved])
+        comment_reply("⚠️ Nicht zuordenbare Sektionen (ausgelassen):\n" + bullets)
+
+    if not allow_ci_changes:
+        sec = parse_patch_sections(remapped_patch)
+        kept, dropped = [], []
+        for s in sec:
+            if any(s["new"].startswith(fp) or s["old"].startswith(fp) for fp in FORBIDDEN_PATHS):
+                dropped.append(s["new"])
+            else:
+                kept.append(s["body"])
+        if dropped:
+            comment_reply("🚫 Sektionen in geschützten Pfaden verworfen (nutze `--allow-ci`, wenn beabsichtigt):\n" +
+                          "\n".join(f"- {d}" for d in dropped))
+        remapped_patch = "".join(kept) if kept else remapped_patch
+
+    os.makedirs(".github/codex", exist_ok=True)
+    with open(".github/codex/codex.patch", "w", encoding="utf-8") as f:
+        f.write(remapped_patch)
+
+    # Apply + PR
+    branch = f"codex/buildfix-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{actor_handle() or 'actor'}"
+    sh("git config user.name 'codex-bot'"); sh("git config user.email 'actions@users.noreply.github.com'")
+    sh(f"git checkout -b {branch}"); sh("chmod +x ./gradlew", check=False)
+
+    try:
+        with open(".github/codex/codex.patch", "r", encoding="utf-8", errors="replace") as _pf:
+            whole_text = _pf.read()
+        applied, rejected, skipped = try_apply_sections(".github/codex/codex.patch", whole_text)
+    except Exception as e:
+        comment_reply(f"❌ Patch-Apply fehlgeschlagen:\n```\n{e}\n```")
+        return False, run
+
+    status = sh("git status --porcelain")
+    if not status.strip():
+        comment_reply("ℹ️ Keine Änderungen nach Patch-Anwendung gefunden (alle Sektionen übersprungen?).")
+        return False, run
+
+    sh("git add -A")
+    sh("git commit -m 'codex: fix build (auto)'")
+    sh("git push --set-upstream origin HEAD")
+
+    default_branch = get_default_branch(repo)
+    body = (
+        f"Automatisch erstellt aus Build-Fix-Versuch {attempt_idx}.\n\n"
+        f"Doku berücksichtigt: {', '.join([n for n in DOC_CANDIDATES if os.path.exists(n)]) or '–'}\n"
+        f"Angewandt: {len(applied)}, .rej: {len(rejected)}, übersprungen: {len(skipped)}\n"
+    )
+    pr = gh_api("POST", f"/repos/{repo}/pulls", {
+        "title": f"codex: build fix attempt {attempt_idx}",
+        "head": branch,
+        "base": default_branch,
+        "body": body
+    })
+    pr_num = pr.get("number")
+    try:
+        gh_api("POST", f"/repos/{repo}/issues/{pr_num}/labels", {"labels": ["codex", "build-fix"]})
+    except Exception:
+        pass
+
+    comment_reply(f"🔧 PR erstellt (Versuch {attempt_idx}): #{pr['number']} – {pr['html_url']}\n"
+                  f"Starte Build erneut …")
+
+    return False, run
+
 # ------------------------ Core Logic ------------------------
 
 def main():
@@ -535,59 +1056,122 @@ def main():
     if not is_allowed(actor):
         comment_reply(f"⛔ Sorry @{actor}, du bist nicht berechtigt."); sys.exit(1)
 
+    # Flags (explizit)
     m_model  = re.search(r"(?:^|\s)(?:-m|--model)\s+([A-Za-z0-9._\-]+)", comment)
     model    = m_model.group(1).strip() if m_model else (os.environ.get("OPENAI_MODEL_DEFAULT") or "gpt-5")
     m_reason = re.search(r"(?:^|\s)--reason\s+(high|medium|low)\b", comment, re.I)
     if m_reason:
         os.environ["OPENAI_REASONING_EFFORT"] = m_reason.group(1).lower()
-    m_paths  = re.search(r"(?:^|\s)--paths\s+([^\n]+)", comment)
-    path_filter = [p.strip() for p in (m_paths.group(1) if m_paths else "").split(",") if p.strip()]
-
-    request_tree_only = bool(re.search(r"nur\s+(repo-)?tree|nur\s+verzeichnisbaum", comment, re.I))
-    dry_run   = bool(re.search(r"(?:^|\s)--dry\b", comment))
     allow_ci  = bool(re.search(r"(?:^|\s)--allow-ci\b", comment))
-    want_spec = bool(re.search(r"(?:^|\s)--spec\b", comment))
-    want_apply= bool(re.search(r"(?:^|\s)--apply\b", comment))
     force_big = bool(re.search(r"(?:^|\s)--force\b", comment))
-    do_verify = bool(re.search(r"(?:^|\s)--verify\b", comment))
+    # Optionale explizite Workflow/Inputs
+    m_workflow = re.search(r"(?:^|\s)--workflow\s+([^\s]+)", comment)
+    workflow_file_flag = m_workflow.group(1).strip() if m_workflow else ""
+    m_inputs = re.search(r"(?:^|\s)--inputs\s+(\{.*?\}|'.*?'|\".*?\")", comment, re.S)
+    inputs_raw = (m_inputs.group(1).strip() if m_inputs else "")
 
-    instruction = re.sub(r"^.*?/codex", "", comment, flags=re.S).strip()
+    # Shortcuts interpretieren
+    sc = parse_shortcuts(comment)
+    allow_ci = allow_ci or sc["allow_ci"]
+    force_big = force_big or sc["force"]
+    if sc["set_workflow"]:
+        workflow_file_flag = sc["set_workflow"]
+
+    # Instruction (nach Entfernen Flag-Texte – wir lassen Kurzbefehle bewusst im Text; Instruktionen kommen aus sc)
+    instruction_raw = re.sub(r"^.*?/codex", "", comment, flags=re.S).strip()
     for pat in [
         r"(?:^|\s)(?:-m|--model)\s+[A-Za-z0-9._\-]+",
         r"(?:^|\s)--reason\s+(?:high|medium|low)\b",
-        r"(?:^|\s)--paths\s+[^\n]+",
-        r"(?:^|\s)--verify\b",
-        r"(?:^|\s)--dry\b",
         r"(?:^|\s)--allow-ci\b",
-        r"(?:^|\s)--spec\b",
-        r"(?:^|\s)--apply\b",
         r"(?:^|\s)--force\b",
+        r"(?:^|\s)--workflow\s+[^\s]+",
+        r"(?:^|\s)--inputs\s+(\{.*?\}|'.*?'|\".*?\")",
     ]:
-        instruction = re.sub(pat, "", instruction, flags=re.I)
-    instruction = trim_to_chars(instruction.strip(), MAX_USER_CHARS)
-    if not instruction and not request_tree_only:
-        comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex --paths app/src Tests für PlayerService hinzufügen`")
-        sys.exit(1)
+        instruction_raw = re.sub(pat, "", instruction_raw, flags=re.I)
+    # Baue die finalen Kurzbefehls-Instruktionen vor die freie Instruktion
+    instruction = "\n".join(sc["directives"] + ([instruction_raw.strip()] if instruction_raw.strip() else []))
+    instruction = trim_to_chars(instruction, MAX_USER_CHARS)
 
     repo_files, compact_tree, _ = build_repo_index()
     post_repo_tree_comment(compact_tree)
-    if request_tree_only:
-        print("Tree-only request handled."); sys.exit(0)
+
+    # --- Build-Pfad? (natürlich oder per Shortcut/Flag) ---
+    natural_text = (comment or "").lower()
+    natural_build = any(k in natural_text for k in [
+        "release build", "release-build", "apk", "aab", "baue", "build", "erstelle", "rebuild"
+    ])
+    is_build_request = natural_build or bool(workflow_file_flag) or sc["trigger_build"]
+
+    if is_build_request:
+        repo_full = os.environ.get("GITHUB_REPOSITORY")
+        default_branch = get_default_branch(repo_full)
+        # Workflow-File
+        workflow_file = (workflow_file_flag or DEFAULT_WORKFLOW_FILE)
+        if not (workflow_file.endswith(".yml") or workflow_file.endswith(".yaml")):
+            workflow_file += ".yml"
+
+        # Inputs bestimmen
+        if inputs_raw:
+            try:
+                j = inputs_raw
+                if (j.startswith("'") and j.endswith("'")) or (j.startswith('"') and j.endswith('"')):
+                    j = j[1:-1]
+                inputs = json.loads(j) if j.strip() else None
+            except Exception as e:
+                comment_reply(f"⚠️ `--inputs` ist kein gültiges JSON: `{e}`. Nutze heuristische Erkennung.")
+                inputs = None
+        else:
+            inputs = infer_build_request_from_text(natural_text)
+
+        # Shortcuts-Inputs überschreiben standard
+        inputs = inputs or {}
+        inputs.update(sc["build_inputs"])
+
+        # Kontext für Fixer
+        docs = trim_to_chars(load_docs(MAX_DOC_CHARS), MAX_DOC_CHARS)
+        all_paths = [str(p).replace("\\", "/") for p in repo_files]
+        focused_files = top_relevant_files(instruction or "android build", all_paths, k=80)
+        preview_parts = []
+        for f in focused_files:
+            try:
+                head = sh(f"sed -n '1,160p' {shlex.quote(f)} | sed 's/\\t/    /g' || true", check=False)
+                if head.strip():
+                    preview_parts.append(f"\n--- file: {f} ---\n{head}")
+            except Exception:
+                pass
+        context = trim_to_chars("".join(preview_parts), MAX_CONTEXT_CHARS)
+
+        # Iterativer Loop (immer, wenn Shortcut Build nutzt; sonst 1 Versuch via DEFAULT_MAX_ATTEMPTS)
+        max_attempts = DEFAULT_MAX_ATTEMPTS if (sc["build_fix_loop"] or natural_build or workflow_file_flag) else 1
+        for attempt in range(1, max_attempts + 1):
+            success, _ = run_build_once_and_maybe_fix(
+                repo=repo_full,
+                default_branch=default_branch,
+                workflow_file=workflow_file,
+                inputs=inputs or {},
+                model=model,
+                instruction=instruction or "Fixiere Buildfehler und baue Release-APKs für angegebene ABIs.",
+                docs=docs,
+                compact_tree=compact_tree,
+                context=context,
+                allow_ci_changes=allow_ci,
+                force=force_big,
+                attempt_idx=attempt,
+                max_attempts=max_attempts
+            )
+            if success:
+                comment_reply(f"✅ Build erfolgreich (Versuch {attempt}).")
+                sys.exit(0)
+        comment_reply("❌ Build weiterhin fehlerhaft nach maximalen Reparaturversuchen.")
+        sys.exit(1)
+
+    # --- Fallback: Klassischer Patch/PR-Flow (ohne Build) ---
+
+    if not instruction:
+        comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex --wire app:player` oder `/codex --buildrelease arm64,v7a,universal`")
+        sys.exit(1)
 
     all_paths = [str(p).replace("\\", "/") for p in repo_files]
-    if path_filter:
-        keep = []
-        for f in all_paths:
-            for g in path_filter:
-                try:
-                    ok = subprocess.run(f"bash -lc '[[ {shlex.quote(f)} == {shlex.quote(g)} ]]'",
-                                        shell=True, text=True, capture_output=True)
-                    if ok.returncode == 0:
-                        keep.append(f); break
-                except Exception:
-                    pass
-        all_paths = keep or all_paths
-
     focused_files = top_relevant_files(instruction, all_paths, k=80)
 
     preview_parts = []
@@ -599,33 +1183,7 @@ def main():
         except Exception:
             pass
     context = trim_to_chars("".join(preview_parts), MAX_CONTEXT_CHARS)
-
     docs = trim_to_chars(load_docs(MAX_DOC_CHARS), MAX_DOC_CHARS)
-
-    if want_spec and not want_apply:
-        SYSTEM = (
-            "You are a senior Android/Kotlin architect. Write a crisp change SPECIFICATION only (no code), "
-            "including: goals, affected modules/files, risks, test plan, and a bullet list of concrete edits. "
-            "Keep it executable by a code-change agent in a next step."
-        )
-        USER = f"""Repository documents (trimmed):
-{docs or '(no docs found)'}
-Repository tree (compact, depth≤4):
-{compact_tree}
-Focused file heads (top relevance):
-{context}
-Task from @{actor_handle()}:
-{instruction}
-Output: Markdown SPEC only. No code. No diff.
-"""
-        spec = openai_generate(model, SYSTEM, USER, want_spec=True).strip()
-        spec = trim_to_chars(spec, 48000)
-        if not spec:
-            comment_reply("⚠️ Konnte keine Spezifikation generieren.")
-            sys.exit(1)
-        comment_reply(f"📝 **Spezifikation (Review-Phase)**\n\n{spec}")
-        print("spec-only done")
-        sys.exit(0)
 
     SYSTEM = (
         "You are an expert Android/Kotlin code-change generator (Gradle, Jetpack Compose, Unit/Instrumented tests). "
@@ -647,7 +1205,6 @@ Output requirements:
 - Include new files with proper headers (e.g. 'new file mode 100644')
 - Avoid forbidden paths unless explicitly allowed: {', '.join(FORBIDDEN_PATHS)}
 """
-
     try:
         patch_text = openai_generate(model, SYSTEM, USER)
     except Exception as e:
@@ -658,10 +1215,9 @@ Output requirements:
         comment_reply(f"⚠️ Kein gültiger Diff erkannt. Antwort war:\n```\n{patch_text[:1400]}\n```")
         sys.exit(1)
 
-    if not bool(re.search(r"(?:^|\s)--force\b", comment)):
-        if patch_text.count("\n") > MAX_PATCH_LINES:
-            comment_reply(f"⛔ Patch zu groß (> {MAX_PATCH_LINES} Zeilen). Bitte Aufgabe eingrenzen oder `--force` setzen.")
-            sys.exit(1)
+    if not force_big and patch_text.count("\n") > MAX_PATCH_LINES:
+        comment_reply(f"⛔ Patch zu groß (> {MAX_PATCH_LINES} Zeilen). Bitte Aufgabe eingrenzen oder `--force` setzen.")
+        sys.exit(1)
 
     try:
         PatchSet.from_string(patch_text)
@@ -677,27 +1233,19 @@ Output requirements:
         bullets = "\n".join([f"- {p}" for p in unresolved])
         comment_reply("⚠️ Nicht zuordenbare Sektionen (ausgelassen):\n" + bullets)
 
+    sec = parse_patch_sections(remapped_patch)
+    kept = []
     if not allow_ci:
-        sec = parse_patch_sections(remapped_patch)
-        kept, dropped = [], []
         for s in sec:
             if any(s["new"].startswith(fp) or s["old"].startswith(fp) for fp in FORBIDDEN_PATHS):
-                dropped.append(s["new"])
-            else:
-                kept.append(s["body"])
-        if dropped:
-            comment_reply("🚫 Sektionen in geschützten Pfaden verworfen (nutze `--allow-ci`, wenn beabsichtigt):\n" +
-                          "\n".join(f"- {d}" for d in dropped))
-        remapped_patch = "".join(kept) if kept else remapped_patch
+                continue
+            kept.append(s["body"])
+        if kept:
+            remapped_patch = "".join(kept)
 
     os.makedirs(".github/codex", exist_ok=True)
     with open(".github/codex/codex.patch", "w", encoding="utf-8") as f:
         f.write(remapped_patch)
-
-    if dry_run:
-        snippet = remapped_patch[:1800]
-        comment_reply("🧪 **Dry-Run** – Patch nicht angewendet. Ausschnitt:\n```diff\n" + snippet + "\n```")
-        print("dry-run done"); sys.exit(0)
 
     branch = f"codex/{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{actor_handle() or 'actor'}"
     sh("git config user.name 'codex-bot'"); sh("git config user.email 'actions@users.noreply.github.com'")
@@ -715,15 +1263,16 @@ Output requirements:
         comment_reply("ℹ️ Keine Änderungen nach Patch-Anwendung gefunden (alle Sektionen übersprungen?).")
         print("nothing to commit"); sys.exit(0)
 
-    sh("git add -A"); sh("git commit -m 'codex: apply requested changes'"); sh("git push --set-upstream origin HEAD")
+    sh("git add -A")
+    sh("git commit -m 'codex: apply requested changes'")
+    sh("git push --set-upstream origin HEAD")
 
     repo = os.environ["GITHUB_REPOSITORY"]
-    default_branch = gh_api("GET", f"/repos/{repo}").get("default_branch", "main")
+    default_branch = get_default_branch(repo)
 
     body = (
         f"Automatisch erstellt aus Kommentar von @{actor_handle()}:\n\n> {instruction}\n\n"
         f"Doku berücksichtigt: {', '.join([n for n in DOC_CANDIDATES if os.path.exists(n)]) or '–'}\n"
-        f"Angewandt: {len(applied)}, .rej: {len(rejected)}, übersprungen: {len(skipped)}\n"
         f"_Repo-Tree gespeichert unter `.github/codex/tree.txt`._"
     )
     pr = gh_api("POST", f"/repos/{repo}/pulls", {
@@ -756,9 +1305,6 @@ Output requirements:
         pass
 
     comment_reply(f"✅ PR erstellt: #{pr['number']} — {pr['html_url']}")
-    if do_verify:
-        comment_reply("🧪 `--verify` erkannt – **Tests laufen nur auf Anforderung**. "
-                      "Starte sie z. B. mit `/codex test` oder `/codex gradle testDebugUnitTest`.")
     print("done")
 
 if __name__ == "__main__":
