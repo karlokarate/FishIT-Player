@@ -1,33 +1,14 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt b/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
-index 51703a2..6564a4d 100644
---- a/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
-+++ b/app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt
-@@ -29,6 +29,7 @@ import kotlinx.serialization.json.jsonObject
- import kotlinx.serialization.json.jsonPrimitive
- import kotlinx.serialization.json.contentOrNull
- 
-+import com.chris.m3usuite.core.perf.DeviceTuning
- /**
-  * Lightweight EPG helper with short TTL cache per streamId.
-  * Focus: Now/Next (get_short_epg) performance and reliability.
-@@ -114,6 +115,21 @@ class EpgRepository(
-             row?.epgChannelId
-         }
- 
-+        // v7a/Fire TV: When actively playing, avoid network EPG calls. Prefer minimal fallback.
-+        if (DeviceTuning.isV7aAbi() && DeviceTuning.isPlaybackActive(context)) {
-+            if (!chanId.isNullOrBlank()) {
-+                val fb = fallbackXmlTvFor(chanId)
-+                if (fb.isNotEmpty()) {
-+                    lock.withLock { cache[streamId] = Cache(SystemClock.elapsedRealtime(), fb); trimIfNeeded() }
-+                    return@withContext fb.take(limit)
-+                }
-+            }
-+            // Mark empty to prevent repeated work within a short window
-+            lock.withLock { emptyCache[streamId] = SystemClock.elapsedRealtime(); trimIfNeeded() }
-+            return@withContext emptyList()
-+        }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 2d4af53..ee7b1f7 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,10 @@
++2025-09-30
++- feat(ui/forms): introduce TV Form Kit v1 with DPAD‑friendly controls (`ui/forms`: TvFormSection, TvTextFieldRow, TvSwitchRow, TvSliderRow, TvSelectRow, TvButtonRow, Validation). Feature‑flagged via `BuildConfig.FEATURE_TV_FORMS_V1`.
++- feat(setup/tv): migrate PlaylistSetupScreen to use the TV Form Kit on TV devices when the feature flag is enabled. Keeps legacy UI as fallback on phones/tablets or when the flag is off.
++- docs: add short notes on the TV Form Kit to AGENTS.md and ARCHITECTURE_OVERVIEW.md.
++- build: add BuildConfig flag `FEATURE_TV_FORMS_V1` (default true) for screen‑wise activation.
 +
-         // Global gate: if disabled, avoid any network/API and try stale OBX only
-         if (!settings.m3uWorkersEnabled.first()) {
-             if (!chanId.isNullOrBlank()) {
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.

@@ -1,13 +1,43 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt b/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
-index 16a7792..cc0e614 100644
---- a/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
-+++ b/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
-@@ -49,7 +49,7 @@ fun CategoryChip(key: String, label: String, modifier: Modifier = Modifier) {
-         "sci_fi" -> com.chris.m3usuite.ui.theme.CategoryFonts.Orbitron
-         "classic", "collection" -> com.chris.m3usuite.ui.theme.CategoryFonts.Cinzel
-         "western" -> com.chris.m3usuite.ui.theme.CategoryFonts.Rye
--        "christmas" -> com.chris.m3usuite.ui.theme.CategoryFonts.MountainsOfChristmas
-+        "christmas" -> com.chris.m3usuite.ui.theme.CategoryFonts.PlayfairDisplay
-         "romance" -> com.chris.m3usuite.ui.theme.CategoryFonts.Parisienne
-         "kids", "family" -> com.chris.m3usuite.ui.theme.CategoryFonts.Fredoka
-         "drama" -> com.chris.m3usuite.ui.theme.CategoryFonts.PlayfairDisplay
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/forms/TvButtonRow.kt b/app/src/main/java/com/chris/m3usuite/ui/forms/TvButtonRow.kt
+new file mode 100644
+index 0000000..f0e36fb
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/forms/TvButtonRow.kt
+@@ -0,0 +1,46 @@
++package com.chris.m3usuite.ui.forms
++
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import com.chris.m3usuite.ui.common.TvButton
++import com.chris.m3usuite.ui.common.TvTextButton
++import com.chris.m3usuite.ui.skin.focusScaleOnTv
++
++@Composable
++fun TvButtonRow(
++    primaryText: String,
++    onPrimary: () -> Unit,
++    secondaryText: String? = null,
++    onSecondary: (() -> Unit)? = null,
++    enabled: Boolean = true
++){
++    Row(
++        modifier = Modifier.fillMaxWidth(),
++        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
++        verticalAlignment = Alignment.CenterVertically
++    ) {
++        if (secondaryText != null && onSecondary != null) {
++            TvTextButton(onClick = onSecondary, modifier = Modifier.focusScaleOnTv()) {
++                Text(secondaryText)
++            }
++        }
++        TvButton(onClick = onPrimary, enabled = enabled, modifier = Modifier.focusScaleOnTv()) {
++            Text(primaryText)
++        }
++    }
++}
