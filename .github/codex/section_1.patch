@@ -1,24 +1,72 @@
-diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 3e1a914..1c0f6f1 100644
---- a/CHANGELOG.md
-+++ b/CHANGELOG.md
-@@ -1,3 +1,17 @@
- # Changelog
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/auth/CreateProfileSheet.kt b/app/src/main/java/com/chris/m3usuite/ui/auth/CreateProfileSheet.kt
+index c8d0b23..7e4a6e6 100644
+--- a/app/src/main/java/com/chris/m3usuite/ui/auth/CreateProfileSheet.kt
++++ b/app/src/main/java/com/chris/m3usuite/ui/auth/CreateProfileSheet.kt
+@@ -1,33 +1,58 @@
+ package com.chris.m3usuite.ui.auth
  
-+2025-09-29
-+- Build: Introduced ABI product flavors for reliable dual release APKs
-+  - Flavor dimension "arch" with flavors:
-+    - arm64 (arm64-v8a): ships TDLib via :libtd, TG_TDLIB_ENABLED=true
-+    - v7a (armeabi-v7a): no TDLib, Telegram disabled with stubs, TG_TDLIB_ENABLED=false
-+  - Per-flavor dependency wiring: arm64Implementation(project(":libtd"))
-+  - v7a flavor compiles against TdApi sources but uses stub Client/Log without System.loadLibrary
-+  - Disabled ABI splits to avoid conflicts with flavor-based ABI selection
-+  - Lint no longer aborts builds; META-INF packaging excludes retained
-+  - Proguard: keep org.drinkless.tdlib classes to prevent R8 stripping on arm64
-+  - Build commands:
-+    - ./gradlew :app:assembleArm64Release → arm64 APK with TDLib
-+    - ./gradlew :app:assembleV7aRelease   → v7a APK without TDLib
-+
- 2025-09-25
- - TV chrome BACK: On TV, ESC/BACK first collapses HomeChrome (from Expanded or Visible) and consumes the event. Prevents closing the player or leaving the screen while chrome is visible.
- - Tile focus logging: Core row engines now emit detailed focus logs on focus, plus a tree hint. Makes it visible in logcat which concrete tile currently has focus across Start/Library/Details rows.
+ import androidx.compose.material3.*
+ import androidx.compose.runtime.*
+ import androidx.compose.ui.Modifier
+ import androidx.compose.foundation.layout.*
+ import androidx.compose.ui.unit.dp
+ import com.chris.m3usuite.ui.skin.focusScaleOnTv
+ 
+ @OptIn(ExperimentalMaterial3Api::class)
+ @Composable
+ fun CreateProfileSheet(
+     onDismiss: () -> Unit,
+     onCreate: (name: String, isKid: Boolean) -> Unit,
+ ) {
+     var name by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+     var isKid by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+ 
+-    ModalBottomSheet(onDismissRequest = onDismiss) {
+-        Column(Modifier.padding(16.dp)) {
++    ModalBottomSheet(onDismissRequest = onDismiss) {
++        Column(Modifier.padding(16.dp)) {
+             Text("Profil anlegen", style = MaterialTheme.typography.titleLarge)
+             Spacer(Modifier.height(12.dp))
+-            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
++            OutlinedTextField(
++                value = name,
++                onValueChange = { name = it },
++                label = { Text("Name") },
++                singleLine = true,
++                modifier = Modifier.fillMaxWidth()
++            )
+             Spacer(Modifier.height(12.dp))
+-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+-                Checkbox(checked = isKid, onCheckedChange = { isKid = it })
+-                Spacer(Modifier.width(8.dp))
+-                Text("Kinderp
++            Row(
++                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
++                modifier = Modifier.fillMaxWidth()
++            ) {
++                Checkbox(checked = isKid, onCheckedChange = { isKid = it })
++                Spacer(Modifier.width(8.dp))
++                Text("Kinderprofil")
++            }
++            Spacer(Modifier.height(20.dp))
++            Row(
++                horizontalArrangement = Arrangement.spacedBy(12.dp),
++                modifier = Modifier.fillMaxWidth()
++            ) {
++                OutlinedButton(
++                    onClick = onDismiss,
++                    modifier = Modifier
++                        .weight(1f)
++                        .focusScaleOnTv()
++                ) { Text("Abbrechen") }
++                Button(
++                    onClick = { if (name.isNotBlank()) { onCreate(name.trim(), isKid) } },
++                    enabled = name.isNotBlank(),
++                    modifier = Modifier
++                        .weight(1f)
++                        .focusScaleOnTv()
++                ) { Text("Erstellen") }
++            }
+         }
+     }
+ }
