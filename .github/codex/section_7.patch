@@ -1,23 +1,136 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt b/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt
-index 7bd31d0..7f82d7a 100644
---- a/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt
-+++ b/app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt
-@@ -16,6 +16,7 @@ import okhttp3.OkHttpClient
- import okhttp3.Request
- import androidx.core.net.toUri
- 
-+import com.chris.m3usuite.core.perf.DeviceTuning
- /**
-  * XtreamClient – API‑first Client für Xtream Codes Panels.
-  *
-@@ -114,7 +115,7 @@ class XtreamClient(
-     // Eigener Client für Xtream-API (keine erzwungenen SSL‑Redirects)
-     private var httpClient: OkHttpClient = http
- 
--    // Moderates Parallel‑Limit (nur für fire‑and‑forget EPG‑Fetch)
--    private val epgSemaphore = Semaphore(4)
-+    // Moderates Parallel‑Limit (halbiert auf v7a/Fire TV)
-+    private val epgSemaphore = Semaphore(if (DeviceTuning.isV7aAbi()) 2 else 4)
- 
-     private fun redact(url: String): String =
-         url.replace(Regex("(?i)(password)=([^&]*)"), "${'$'}1=***")
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/state/UiState.kt b/app/src/main/java/com/chris/m3usuite/ui/state/UiState.kt
+new file mode 100644
+index 0000000..33a8453
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/state/UiState.kt
+@@ -0,0 +1,150 @@
++package com.chris.m3usuite.ui.state
++
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.padding
++import androidx.compose.material3.Button
++import androidx.compose.material3.CircularProgressIndicator
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.Surface
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.platform.testTag
++import androidx.compose.ui.text.style.TextAlign
++import androidx.compose.ui.unit.dp
++import com.chris.m3usuite.ui.skin.focusScaleOnTv
++
++/**
++ * Simple UiState sealed type to standardize loading/empty/error handling.
++ */
++sealed class UiState<out T> {
++    object Loading : UiState<Nothing>()
++    object Empty : UiState<Nothing>()
++    data class Error(val message: String? = null, val throwable: Throwable? = null) : UiState<Nothing>()
++    data class Success<T>(val data: T) : UiState<T>()
++}
++
++/**
++ * Heuristics: create UiState from a nullable list.
++ */
++fun <T> uiStateFromList(data: List<T>?, loading: Boolean, error: Throwable?): UiState<List<T>> =
++    when {
++        loading -> UiState.Loading
++        error != null -> UiState.Error(error.message, error)
++        data == null -> UiState.Empty
++        data.isEmpty() -> UiState.Empty
++        else -> UiState.Success(data)
++    }
++
++@Composable
++fun LoadingStateView(
++    title: String = "Laden …",
++    modifier: Modifier = Modifier
++) {
++    Box(modifier = modifier.fillMaxSize().testTag("Status-Loading")) {
++        Column(
++            modifier = Modifier.align(Alignment.Center),
++            verticalArrangement = Arrangement.spacedBy(12.dp),
++            horizontalAlignment = Alignment.CenterHorizontally
++        ) {
++            CircularProgressIndicator()
++            Text(text = title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground)
++        }
++    }
++}
++
++@Composable
++fun EmptyStateView(
++    title: String = "Keine Inhalte",
++    subtitle: String? = null,
++    modifier: Modifier = Modifier
++) {
++    Box(modifier = modifier.fillMaxSize().testTag("Status-Empty")) {
++        Column(
++            modifier = Modifier.align(Alignment.Center),
++            verticalArrangement = Arrangement.spacedBy(6.dp),
++            horizontalAlignment = Alignment.CenterHorizontally
++        ) {
++            Text(text = title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
++            if (!subtitle.isNullOrBlank()) {
++                Text(
++                    text = subtitle,
++                    style = MaterialTheme.typography.bodyMedium,
++                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
++                    textAlign = TextAlign.Center,
++                    modifier = Modifier.padding(horizontal = 24.dp)
++                )
++            }
++        }
++    }
++}
++
++@Composable
++fun ErrorStateView(
++    message: String? = "Fehler beim Laden",
++    onRetry: (() -> Unit)? = null,
++    modifier: Modifier = Modifier
++) {
++    Box(modifier = modifier.fillMaxSize().testTag("Status-Error")) {
++        Column(
++            modifier = Modifier.align(Alignment.Center),
++            verticalArrangement = Arrangement.spacedBy(10.dp),
++            horizontalAlignment = Alignment.CenterHorizontally
++        ) {
++            Text(
++                text = message ?: "Fehler",
++                style = MaterialTheme.typography.titleMedium,
++                color = MaterialTheme.colorScheme.error
++            )
++            if (onRetry != null) {
++                Button(onClick = onRetry, modifier = Modifier.focusScaleOnTv()) {
++                    Text("Erneut versuchen")
++                }
++            }
++        }
++    }
++}
++
++/**
++ * Convenience wrapper: renders a state view or the success content.
++ */
++@Composable
++fun <T> StatusBox(
++    state: UiState<T>,
++    modifier: Modifier = Modifier,
++    onRetry: (() -> Unit)? = null,
++    success: @Composable (T) -> Unit
++) {
++    Surface(modifier = modifier) {
++        when (state) {
++            is UiState.Loading -> LoadingStateView()
++            is UiState.Empty -> EmptyStateView()
++            is UiState.Error -> ErrorStateView(message = state.message, onRetry = onRetry)
++            is UiState.Success -> success(state.data)
++        }
++    }
++}

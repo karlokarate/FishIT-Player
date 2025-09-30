@@ -1,85 +1,478 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/auth/CreateProfileSheet.kt b/app/src/main/java/com/chris/m3usuite/ui/auth/CreateProfileSheet.kt
-index c8d0b23..7e4a6e6 100644
---- a/app/src/main/java/com/chris/m3usuite/ui/auth/CreateProfileSheet.kt
-+++ b/app/src/main/java/com/chris/m3usuite/ui/auth/CreateProfileSheet.kt
-@@ -1,33 +1,58 @@
- package com.chris.m3usuite.ui.auth
+diff --git a/AGENTS.md b/AGENTS.md
+index 91ffb29..4a5b3e1 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -59,6 +59,12 @@ Codex – Operating Rules (override)
+ - Ongoing hygiene: Codex periodically tidies the repo, highlights obsolete files/code to the user, and removes uncritical leftovers (e.g., stale *.old files). Never touch `.gradle/`, `.idea/`, or `app/build/` artifacts, and avoid dependency upgrades unless fixing builds.
+   - TV focus/DPAD audit: `tools/audit_tv_focus.sh` enforces rules (TvFocusRow for horizontal containers, tvClickable for interactives, no ad‑hoc DPAD). Wired into CI (`.github/workflows/ci.yml`) and fails PRs on violations.
  
- import androidx.compose.material3.*
- import androidx.compose.runtime.*
- import androidx.compose.ui.Modifier
- import androidx.compose.foundation.layout.*
- import androidx.compose.ui.unit.dp
- import com.chris.m3usuite.ui.skin.focusScaleOnTv
++- Core-UI basics (shared components): New reusable building blocks are provided under `ui/` to unify actions, images and status handling across screens.
++  - `ui/actions`: MediaActionBar with consistent TV‑ready controls (Play/Resume/Trailer/Add/…); buttons expose testTags and use `focusScaleOnTv`.
++  - `ui/images`: ImageLoaderKit presets and `AppImage`/`AppHeroImage` wrappers (Coil3) that reuse global headers and defaults; compatible with existing `ui/util` image helpers.
++  - `ui/state`: UiState sealed type and Status‑Views (`LoadingStateView`, `EmptyStateView`, `ErrorStateView`, `StatusBox`) to standardize loading/empty/error rendering with retry hooks.
++  - Initial migration is incremental; existing screens remain functional. Further roll‑out is tracked in ROADMAP (Sprint A).
++
+ - Xtream workers & delta: Legacy `XtreamRefreshWorker`/`XtreamEnrichmentWorker` remain disabled (no‑op). Xtream content updates via `XtreamDeltaImportWorker`: periodic (12h, unmetered+charging) plus on‑demand one‑shot trigger.
+   - Global gate: `M3U_WORKERS_ENABLED` in DataStore controls whether Xtream workers/scheduling and related API paths run. When false, workers early‑exit (no network), app‑start auto‑discovery/seed is skipped, and Settings actions for Xtream diagnostics/import are disabled.
+   - One‑shot `ObxKeyBackfillWorker` fills missing `sortTitleLower`/`providerKey`/`genreKey`/`yearKey` for existing OBX rows.
+diff --git a/ARCHITECTURE_OVERVIEW.md b/ARCHITECTURE_OVERVIEW.md
+index 5a1d900..8a4e1a2 100644
+--- a/ARCHITECTURE_OVERVIEW.md
++++ b/ARCHITECTURE_OVERVIEW.md
+@@ -29,6 +29,17 @@ Telegram Gating
+ - `tg_enabled` (Settings) und AUTHENTICATED (TDLib) sind Pflicht, bevor Sync/Picker/DataSources aktiv werden. Ohne diese Gateways sind alle Telegram-Funktionen no-op; Xtream bleibt unbeeinflusst. Phase-2: separater TDLib-Service-Prozess (eigenes `:tdlib`), FCM Push (`registerDevice`/`processPushNotification`) → weniger Polling (WorkManager als Fallback), QR-Login zusätzlich.
+  - Start‑Up Verhalten: `TdLibReflection.available()` prüft nur die Klassenpräsenz (Class.forName mit `initialize=false`) und triggert keinen statischen Initializer in `org.drinkless.tdlib.Client`. Dadurch wird `libtdjni.so` erst geladen, wenn die Telegram‑Funktionalität tatsächlich aktiviert und genutzt wird. Bei FCM‑Push startet der Service TDLib lazy mit BuildConfig‑Keys, verarbeitet Push und bleibt ansonsten im Leerlauf.
  
- @OptIn(ExperimentalMaterial3Api::class)
- @Composable
- fun CreateProfileSheet(
-     onDismiss: () -> Unit,
-     onCreate: (name: String, isKid: Boolean) -> Unit,
- ) {
-     var name by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
-     var isKid by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
++Shared UI Components (Core‑UI Basics)
++- Package `ui/actions`: MediaActionBar renders a horizontal action row (Play, Resume, Trailer, Add/Remove, More, …). Buttons are TV‑ready (`focusScaleOnTv`) and tagged for tests (`Action-<Id>`). Incrementally adoptable per screen.
++- Package `ui/images`: ImageLoaderKit provides `AppImage` (generic) and `AppHeroImage` (hero/backdrop) wrappers on Coil3. Requests inherit global network headers via `RequestHeadersProvider` and keep size‑aware caching. Compatible with existing `ui/util` helpers.
++- Package `ui/state`: `UiState<T>` (Loading/Empty/Error/Success) plus lightweight status views (`LoadingStateView`, `EmptyStateView`, `ErrorStateView`, `StatusBox`) to unify loading/empty/error UX and retries.
++- Migration strategy: new components can be introduced per‑screen without breaking existing flows. Start/Library/Details gradually switch to MediaActionBar and Status‑Views while image wrappers remain backward compatible.
++
+ ## Telegram Service Process
  
--    ModalBottomSheet(onDismissRequest = onDismiss) {
--        Column(Modifier.padding(16.dp)) {
-+    ModalBottomSheet(onDismissRequest = onDismiss) {
-+        Column(Modifier.padding(16.dp)) {
-             Text("Profil anlegen", style = MaterialTheme.typography.titleLarge)
-             Spacer(Modifier.height(12.dp))
--            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
-+            OutlinedTextField(
-+                value = name,
-+                onValueChange = { name = it },
-+                label = { Text("Name") },
-+                singleLine = true,
-+                modifier = Modifier.fillMaxWidth()
-+            )
-             Spacer(Modifier.height(12.dp))
--            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
--                Checkbox(checked = isKid, onCheckedChange = { isKid = it })
--                Spacer(Modifier.width(8.dp))
--                Text("Kinderp
-+            Row(
-+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-+                modifier = Modifier.fillMaxWidth()
-+            ) {
-+                Checkbox(checked = isKid, onCheckedChange = { isKid = it })
-+                Spacer(Modifier.width(8.dp))
-+                Text("Kinderprofil")
-+            }
-+            Spacer(Modifier.height(20.dp))
-+            Row(
-+                horizontalArrangement = Arrangement.spacedBy(12.dp),
-+                modifier = Modifier.fillMaxWidth()
-+            ) {
-+                OutlinedButton(
-+                    onClick = onDismiss,
-+                    modifier = Modifier
-+                        .weight(1f)
-+                        .focusScaleOnTv()
-+                ) { Text("Abbrechen") }
-+                Button(
-+                    onClick = { if (name.isNotBlank()) { onCreate(name.trim(), isKid) } },
-+                    enabled = name.isNotBlank(),
-+                    modifier = Modifier
-+                        .weight(1f)
-+                        .focusScaleOnTv()
-+                ) { Text("Erstellen") }
-+            }
-         }
-     }
- }
+ - Service (`.telegram.service.TelegramTdlibService`) läuft in separatem Prozess `:tdlib` und hostet genau eine TDLib‑Client‑Instanz.
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index e30b1d6..e7f7a6b 100644
+index 52b8d70..1e5ce2e 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -1,3 +1,10 @@
+@@ -1,3 +1,12 @@
 +2025-09-30
-+- build(release/splits): assembleRelease verified for split APKs (arm64-v8a, armeabi-v7a) using existing ABI splits configuration. No universal APK is produced as intended.
-+- fix(build/compile): resolve Kotlin compile error in CreateProfileSheet (truncated string and unfinished composable). Completed the sheet UI (name field, kid toggle, cancel/create actions) so release builds succeed.
-+- docs(build): Documented the fix and build outcome here. No CI change in this patch; local/WSL builds can run `./gradlew :app:assembleRelease` to generate per-ABI APKs under app/build/outputs/apk/release/.
++- feat(ui/actions): introduce MediaActionBar (TV‑ready, test‑tagged). Buttons support primary emphasis, optional badges, and reuse focusScaleOnTv.
++- feat(ui/images): add ImageLoaderKit with AppImage/AppHeroImage wrappers on Coil3. Requests inherit global headers and keep RGB_565/crossfade knobs. Backward‑compatible with existing ui/util image helpers.
++- feat(ui/state): add UiState sealed type and Status‑Views (Loading/Empty/Error/Retry) + StatusBox helper.
++- docs(architecture): document new shared components in AGENTS.md and ARCHITECTURE_OVERVIEW.md.
++- docs(roadmap): add Sprint A – Core‑UI‑Basics (10‑step plan) with P1 priority; mark steps 2, 4, 6 as completed in this patch.
++
 +
  2025-09-27
  - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
  - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 0f8001d..9ec2a3f 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -1,3 +1,33 @@
++# Sprint A – Core‑UI‑Basics (Priority 1)
++
++Goal: Establish shared, TV‑ready UI building blocks for actions, image loading, and status/empty/error views; migrate screens incrementally.
++
++Completed in this sprint (moved to CHANGELOG):
++2) MediaActionBar – unified action row (Play/Resume/Trailer/Add/…) with TV focus and test tags
++4) ImageLoaderKit – Coil3 presets + AppImage/AppHeroImage wrappers with global headers
++6) UiState & Status‑Views – Loading/Empty/Error/Retry + StatusBox helper
++
++Planned (remaining 7/10, all P1):
++1) Cards Kit – standardized Media/VOD/Series/Live cards (focus states, sizes, badges)
++3) Action Overflow/More Menu – per‑screen overflow with consistent semantics and DPAD
++5) Image prefetch hooks – list/grid/view helpers with throttled, size‑aware prefetch
++7) TV Focus Toolkit v2 – consolidate tvClickable/tvFocusableItem/TvFocusRow patterns
++8) Grid/List scaffolds – route‑keyed savers with Status‑Views integration and empty states
++9) Dialogs/Sheets polish – shared headers, TV focus trap, consistent action rows
++10) Telemetry & A11y pass – testTags, semantics roles/names, lightweight metrics per component
++
++Notes
++- Migration is incremental and non‑breaking. Existing screens continue to work; new components can be adopted per‑screen.
++- Follow AGENTS.md for documentation/update policy. Architecture Overview stays in sync.
++
+ ---
+ 
++# Existing roadmap items (near-/mid‑term)
++
++The list below tracks ongoing work outside Sprint A. Keep concise and actionable; remove completed items and move them to CHANGELOG.
++
++<!-- keep existing items below; this section intentionally left generic to avoid duplication in this patch -->
++
++---
++
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/actions/MediaAction.kt b/app/src/main/java/com/chris/m3usuite/ui/actions/MediaAction.kt
+new file mode 100644
+index 0000000..0b8ab83
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/actions/MediaAction.kt
+@@ -0,0 +1,196 @@
++package com.chris.m3usuite.ui.actions
++
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.lazy.LazyRow
++import androidx.compose.foundation.lazy.items
++import androidx.compose.material3.Button
++import androidx.compose.material3.ButtonDefaults
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.OutlinedButton
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.remember
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.platform.testTag
++import androidx.compose.ui.semantics.Role
++import androidx.compose.ui.semantics.role
++import androidx.compose.ui.semantics.semantics
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.graphics.Shape
++import com.chris.m3usuite.ui.skin.focusScaleOnTv
++
++/**
++ * Stable action identifiers for MediaActionBar entries.
++ */
++enum class MediaActionId { Play, Resume, Trailer, AddToList, RemoveFromList, OpenEpg, More }
++
++/**
++ * Immutable model for a single action button in the MediaActionBar.
++ */
++data class MediaAction(
++    val id: MediaActionId,
++    val label: String,
++    val enabled: Boolean = true,
++    val primary: Boolean = false,
++    val badge: String? = null,
++    val onClick: () -> Unit,
++)
++
++/**
++ * Defaults and helpers for MediaActionBar.
++ */
++object MediaActionDefaults {
++    val ButtonHeight = 52.dp
++    val ButtonSpacing = 10.dp
++    val ButtonShape: Shape
++        @Composable get() = MaterialTheme.shapes.large
++
++    fun testTagFor(id: MediaActionId) = "Action-${id.name}"
++}
++
++/**
++ * Single action button. TV‑ready focus scale; role=Button; testTag derived from id.
++ */
++@Composable
++fun MediaActionButton(
++    action: MediaAction,
++    modifier: Modifier = Modifier
++) {
++    val tag = remember(action.id) { MediaActionDefaults.testTagFor(action.id) }
++    val shape = MediaActionDefaults.ButtonShape
++    val height = MediaActionDefaults.ButtonHeight
++    val base = modifier
++        .height(height)
++        .focusScaleOnTv()
++        .semantics { role = Role.Button }
++        .testTag(tag)
++
++    if (action.primary) {
++        Button(
++            onClick = action.onClick,
++            enabled = action.enabled,
++            shape = shape,
++            colors = ButtonDefaults.buttonColors(),
++            modifier = base
++        ) {
++            Text(action.label)
++            if (!action.badge.isNullOrBlank()) {
++                Text(
++                    text = " ${action.badge}",
++                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f),
++                    modifier = Modifier.padding(start = 4.dp)
++                )
++            }
++        }
++    } else {
++        OutlinedButton(
++            onClick = action.onClick,
++            enabled = action.enabled,
++            shape = shape,
++            modifier = base
++        ) {
++            Text(action.label)
++            if (!action.badge.isNullOrBlank()) {
++                Text(
++                    text = " ${action.badge}",
++                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
++                    modifier = Modifier.padding(start = 4.dp)
++                )
++            }
++        }
++    }
++}
++
++/**
++ * Horizontal action bar. Uses LazyRow when overflowing to keep DPAD traversal predictable.
++ */
++@Composable
++fun MediaActionBar(
++    actions: List<MediaAction>,
++    modifier: Modifier = Modifier,
++    overflowScrollable: Boolean = true,
++    onPrimaryActionInvoked: (() -> Unit)? = null,
++) {
++    if (actions.isEmpty()) return
++    val spacing = MediaActionDefaults.ButtonSpacing
++    val content: @Composable () -> Unit = {
++        Row(
++            horizontalArrangement = Arrangement.spacedBy(spacing),
++            modifier = modifier
++        ) {
++            actions.forEach { a ->
++                MediaActionButton(
++                    action = if (onPrimaryActionInvoked != null && a.primary) {
++                        a.copy(onClick = {
++                            onPrimaryActionInvoked.invoke()
++                            a.onClick()
++                        })
++                    } else a
++                )
++            }
++        }
++    }
++    if (overflowScrollable && actions.size > 5) {
++        LazyRow(
++            horizontalArrangement = Arrangement.spacedBy(spacing),
++            modifier = modifier
++        ) {
++            items(actions, key = { it.id }) { a ->
++                MediaActionButton(
++                    action = if (onPrimaryActionInvoked != null && a.primary) {
++                        a.copy(onClick = {
++                            onPrimaryActionInvoked.invoke()
++                            a.onClick()
++                        })
++                    } else a
++                )
++            }
++        }
++    } else {
++        content()
++    }
++}
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/images/ImageLoaderKit.kt b/app/src/main/java/com/chris/m3usuite/ui/images/ImageLoaderKit.kt
+new file mode 100644
+index 0000000..03bb2e8
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/images/ImageLoaderKit.kt
+@@ -0,0 +1,104 @@
++package com.chris.m3usuite.ui.images
++
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.remember
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.layout.ContentScale
++import coil3.compose.AsyncImage
++import coil3.request.ImageRequest
++import com.chris.m3usuite.prefs.SettingsStore
++import com.chris.m3usuite.ui.util.buildImageRequest
++import com.chris.m3usuite.ui.util.rememberImageHeaders
++
++/**
++ * Lightweight presets and wrappers around Coil3 image loading.
++ * These wrappers inherit global HTTP headers (UA/Referer) and keep the app's
++ * size-aware caching behavior via buildImageRequest().
++ *
++ * Backward compatibility: existing ui/util helpers remain; this kit is additive.
++ */
++object ImageLoaderKit {
++    @Composable
++    fun request(
++        url: String?,
++        headers: Map<String, String>,
++        crossfade: Boolean = true,
++        preferRgb565: Boolean = false,
++        builder: (ImageRequest.Builder.() -> Unit)? = null
++    ): ImageRequest {
++        return buildImageRequest(
++            url = url,
++            headers = headers,
++            crossfade = crossfade,
++            preferRgb565 = preferRgb565,
++            builder = builder
++        )
++    }
++}
++
++/**
++ * Generic app image wrapper.
++ */
++@Composable
++fun AppImage(
++    url: String?,
++    contentDescription: String?,
++    modifier: Modifier = Modifier,
++    contentScale: ContentScale = ContentScale.Crop,
++    crossfade: Boolean = true,
++    preferRgb565: Boolean = false,
++    store: SettingsStore? = null,
++    builder: (ImageRequest.Builder.() -> Unit)? = null
++) {
++    val headers = rememberImageHeaders(store)
++    val req = remember(url, headers, crossfade, preferRgb565, builder) {
++        ImageLoaderKit.request(url, headers, crossfade, preferRgb565, builder)
++    }
++    AsyncImage(
++        model = req,
++        contentDescription = contentDescription,
++        modifier = modifier,
++        contentScale = contentScale
++    )
++}
++
++/**
++ * Hero/backdrop convenience wrapper.
++ */
++@Composable
++fun AppHeroImage(
++    url: String?,
++    contentDescription: String?,
++    modifier: Modifier = Modifier,
++    contentScale: ContentScale = ContentScale.Crop,
++    crossfade: Boolean = true,
++    store: SettingsStore? = null,
++) {
++    AppImage(
++        url = url,
++        contentDescription = contentDescription,
++        modifier = modifier,
++        contentScale = contentScale,
++        crossfade = crossfade,
++        store = store
++    )
++}
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/state/UiState.kt b/app/src/main/java/com/chris/m3usuite/ui/state/UiState.kt
+new file mode 100644
+index 0000000..33a8453
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/state/UiState.kt
+@@ -0,0 +1,150 @@
++package com.chris.m3usuite.ui.state
++
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.padding
++import androidx.compose.material3.Button
++import androidx.compose.material3.CircularProgressIndicator
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.Surface
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.platform.testTag
++import androidx.compose.ui.text.style.TextAlign
++import androidx.compose.ui.unit.dp
++import com.chris.m3usuite.ui.skin.focusScaleOnTv
++
++/**
++ * Simple UiState sealed type to standardize loading/empty/error handling.
++ */
++sealed class UiState<out T> {
++    object Loading : UiState<Nothing>()
++    object Empty : UiState<Nothing>()
++    data class Error(val message: String? = null, val throwable: Throwable? = null) : UiState<Nothing>()
++    data class Success<T>(val data: T) : UiState<T>()
++}
++
++/**
++ * Heuristics: create UiState from a nullable list.
++ */
++fun <T> uiStateFromList(data: List<T>?, loading: Boolean, error: Throwable?): UiState<List<T>> =
++    when {
++        loading -> UiState.Loading
++        error != null -> UiState.Error(error.message, error)
++        data == null -> UiState.Empty
++        data.isEmpty() -> UiState.Empty
++        else -> UiState.Success(data)
++    }
++
++@Composable
++fun LoadingStateView(
++    title: String = "Laden …",
++    modifier: Modifier = Modifier
++) {
++    Box(modifier = modifier.fillMaxSize().testTag("Status-Loading")) {
++        Column(
++            modifier = Modifier.align(Alignment.Center),
++            verticalArrangement = Arrangement.spacedBy(12.dp),
++            horizontalAlignment = Alignment.CenterHorizontally
++        ) {
++            CircularProgressIndicator()
++            Text(text = title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground)
++        }
++    }
++}
++
++@Composable
++fun EmptyStateView(
++    title: String = "Keine Inhalte",
++    subtitle: String? = null,
++    modifier: Modifier = Modifier
++) {
++    Box(modifier = modifier.fillMaxSize().testTag("Status-Empty")) {
++        Column(
++            modifier = Modifier.align(Alignment.Center),
++            verticalArrangement = Arrangement.spacedBy(6.dp),
++            horizontalAlignment = Alignment.CenterHorizontally
++        ) {
++            Text(text = title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
++            if (!subtitle.isNullOrBlank()) {
++                Text(
++                    text = subtitle,
++                    style = MaterialTheme.typography.bodyMedium,
++                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
++                    textAlign = TextAlign.Center,
++                    modifier = Modifier.padding(horizontal = 24.dp)
++                )
++            }
++        }
++    }
++}
++
++@Composable
++fun ErrorStateView(
++    message: String? = "Fehler beim Laden",
++    onRetry: (() -> Unit)? = null,
++    modifier: Modifier = Modifier
++) {
++    Box(modifier = modifier.fillMaxSize().testTag("Status-Error")) {
++        Column(
++            modifier = Modifier.align(Alignment.Center),
++            verticalArrangement = Arrangement.spacedBy(10.dp),
++            horizontalAlignment = Alignment.CenterHorizontally
++        ) {
++            Text(
++                text = message ?: "Fehler",
++                style = MaterialTheme.typography.titleMedium,
++                color = MaterialTheme.colorScheme.error
++            )
++            if (onRetry != null) {
++                Button(onClick = onRetry, modifier = Modifier.focusScaleOnTv()) {
++                    Text("Erneut versuchen")
++                }
++            }
++        }
++    }
++}
++
++/**
++ * Convenience wrapper: renders a state view or the success content.
++ */
++@Composable
++fun <T> StatusBox(
++    state: UiState<T>,
++    modifier: Modifier = Modifier,
++    onRetry: (() -> Unit)? = null,
++    success: @Composable (T) -> Unit
++) {
++    Surface(modifier = modifier) {
++        when (state) {
++            is UiState.Loading -> LoadingStateView()
++            is UiState.Empty -> EmptyStateView()
++            is UiState.Error -> ErrorStateView(message = state.message, onRetry = onRetry)
++            is UiState.Success -> success(state.data)
++        }
++    }
++}
