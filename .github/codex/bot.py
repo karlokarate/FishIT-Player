@@ -64,10 +64,6 @@ ERR_PAT  = re.compile(r"\b(error|fail(ed)?|e:)\b", re.I)
 
 # ------------------------ Logging & Errors (Shell-first) ------------------------
 
-def _event_name() -> str:
-    """Prefer native GITHUB_EVENT_NAME; allow GH_EVENT_NAME override for local tests."""
-    return os.environ.get("GITHUB_EVENT_NAME") or os.environ.get("GH_EVENT_NAME", "")
-
 def _is_ci() -> bool:
     return os.environ.get("GITHUB_ACTIONS") == "true"
 
@@ -230,6 +226,316 @@ def comment_reply(body: str):
     except Exception as e:
         log_warn(f"Issue-Kommentar fehlgeschlagen: {type(e).__name__}: {e}")
 
+def read_comment() -> str:
+    evname = os.environ.get("GH_EVENT_NAME", "")
+    if evname == "workflow_dispatch":
+        return os.environ.get("DISPATCH_COMMENT", "").strip()
+    try:
+        event = json.load(open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8"))
+    except Exception as e:
+        log_error("GITHUB_EVENT_PATH konnte nicht gelesen werden",
+                  details=f"path={os.environ.get('GITHUB_EVENT_PATH')}\n{type(e).__name__}: {e}",
+                  hint="Wird das Script als Action-Step mit events (issues/issue_comment) ausgeführt?")
+        return ""
+    if evname == "issue_comment" and "comment" in event and "body" in event["comment"]:
+        return (event["comment"]["body"] or "").strip()
+    if evname == "pull_request_review_comment" and "comment" in event and "body" in event["comment"]:
+        return (event["comment"]["body"] or "").strip()
+    if evname == "issues" and "issue" in event and "body" in event["issue"]:
+        return (event["issue"]["body"] or "").strip()
+    return ""
+
+def actor_handle() -> str:
+    evname = os.environ.get("GH_EVENT_NAME", "")
+    if evname == "workflow_dispatch":
+        repo = os.environ.get("GITHUB_REPOSITORY", "")
+        return repo.split("/")[0] if "/" in repo else repo
+    try:
+        event = json.load(open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8"))
+        return event.get("sender", {}).get("login", "")
+    except Exception:
+        return ""
+
+def is_allowed(actor: str) -> bool:
+    allowlist = os.environ.get("CODEX_ALLOWLIST", "").strip()
+    if allowlist:
+        return actor in [a.strip() for a in allowlist.split(",") if a.strip()]
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    try:
+        perms = gh_api("GET", f"/repos/{repo}/collaborators/{actor}/permission")
+        return perms.get("permission") in ("write", "maintain", "admin")
+    except Exception as e:
+        log_warn(f"Konnte Collaborator-Permission nicht abfragen: {type(e).__name__}: {e}")
+        return False
+
+def _now_iso():
+    return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+# ------------------------ Repo Index / Tree ------------------------
+
+IGNORES = {
+    ".git", ".gradle", ".idea", "build", "app/build", "gradle/build",
+    ".github/codex/codex.patch", ".github/codex/tree.txt"
+}
+
+def _is_ignored(path: Path) -> bool:
+    p = str(path).replace("\\", "/")
+    if any(part.startswith(".git") for part in p.split("/")):
+        return True
+    if any(p == ig or p.startswith(ig + "/") for ig in IGNORES):
+        return True
+    return False
+
+def build_repo_index():
+    """Return (files_list[pathlib.Path], tree_str_compact, tree_str_full)."""
+    try:
+        files = [Path(p) for p in sh("git ls-files").splitlines() if p.strip()]
+    except Exception:
+        files = [p for p in Path(".").rglob("*") if p.is_file()]
+    files = [p for p in files if not _is_ignored(p)]
+
+    full_list = "\n".join(sorted(str(p).replace("\\", "/") for p in files))
+
+    def compress(path_strs: Iterable[str], max_depth=4):
+        out = []
+        for s in sorted(path_strs):
+            parts = s.split("/")
+            out.append("/".join(parts[:max_depth]) + ("/…" if len(parts) > max_depth else ""))
+        dedup, last = [], None
+        for line in out:
+            if line != last:
+                dedup.append(line); last = line
+        return "\n".join(dedup)
+
+    compact = compress((str(p).replace("\\", "/") for p in files), max_depth=4)
+
+    os.makedirs(".github/codex", exist_ok=True)
+    with open(".github/codex/tree.txt", "w", encoding="utf-8") as f:
+        f.write(full_list)
+
+    return files, compact, full_list
+
+def post_repo_tree_comment(compact_tree: str):
+    comment_reply(
+        "📁 **Repo-Verzeichnisbaum (kompakt, Tiefe ≤ 4)**\n"
+        "```\n" + compact_tree[:6000] + "\n```\n"
+        "Vollständige Liste wurde nach `.github/codex/tree.txt` geschrieben."
+    )
+
+# ------------------------ Prompt-Budget & Doku ------------------------
+
+def trim_to_chars(s: str, limit: int) -> str:
+    if s is None:
+        return ""
+    if len(s) <= limit:
+        return s
+    return s[:limit]
+
+def load_docs(max_chars: int = MAX_DOC_CHARS) -> str:
+    blobs, remain = [], max_chars
+    for name in DOC_CANDIDATES:
+        if os.path.exists(name) and remain > 0:
+            try:
+                txt = Path(name).read_text(encoding="utf-8", errors="replace")
+                cut = txt[:min(len(txt), remain)]
+                blobs.append(f"\n--- {name} ---\n{cut}")
+                remain -= len(cut)
+            except Exception as e:
+                log_warn(f"Doku konnte nicht gelesen werden: {name}: {type(e).__name__}")
+    return "".join(blobs)
+
+# ------------------------ Relevanzbasierter Code-Kontext ------------------------
+
+def top_relevant_files(instruction: str, all_files: list[str], k: int = 80):
+    """Einfache Keyword-Relevanz: Wörter aus Instruction in Pfad + Datei-Header."""
+    words = [w.lower() for w in re.findall(r"[A-Za-z_][A-Za-z0-9_]+", instruction) if len(w) >= 3]
+    if not words:
+        return all_files[:k]
+
+    scores = []
+    for f in all_files:
+        score = 0
+        path_l = f.lower()
+        for w in words:
+            if w in path_l:
+                score += 2
+        try:
+            head = sh(f"sed -n '1,140p' {shlex.quote(f)} | tr '\\t' ' '", check=False).lower()
+            for w in words:
+                if w in head:
+                    score += 1
+        except Exception:
+            pass
+        scores.append((score, f))
+
+    scores.sort(key=lambda x: x[0], reverse=True)
+    res = [f for s, f in scores if s > 0][:k]
+    return res or all_files[:k]
+
+# ------------------------ OpenAI Rate-Limit & Robust Calls ------------------------
+
+def _compute_base_url() -> str:
+    raw = os.environ.get("OPENAI_BASE_URL", "").strip()
+    if not raw:
+        return "https://api.openai.com/v1"
+    if not raw.startswith(("http://", "https://")):
+        raw = "https://" + raw
+    if not re.search(r"/v\d+/?$", raw):
+        raw = raw.rstrip("/") + "/v1"
+    return raw
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, str(default)))
+    except Exception:
+        return default
+
+class MinuteRateLimiter:
+    """Sehr einfache TPM/RPM-Drosselung (Fenster = 60s)."""
+    def __init__(self, tpm_budget: int, rpm_budget: int):
+        self.tpm_budget = max(0, tpm_budget)
+        self.rpm_budget = max(0, rpm_budget)
+        self.tokens_used = 0
+        self.calls_made = 0
+        self.window_start = time.time()
+
+    def _maybe_reset(self):
+        now = time.time()
+        if now - self.window_start >= 60.0:
+            self.tokens_used = 0
+            self.calls_made = 0
+            self.window_start = now
+
+    def wait_for(self, tokens_needed: int):
+        self._maybe_reset()
+        if self.tpm_budget <= 0 and self.rpm_budget <= 0:
+            return
+        while True:
+            self._maybe_reset()
+            ok_tokens = (self.tpm_budget <= 0) or (self.tokens_used + tokens_needed <= self.tpm_budget)
+            ok_calls = (self.rpm_budget <= 0) or (self.calls_made + 1 <= self.rpm_budget)
+            if ok_tokens and ok_calls:
+                break
+            sleep_s = max(0.01, 60.0 - (time.time() - self.window_start))
+            time.sleep(min(sleep_s, 60.0))
+
+    def book(self, tokens_used: int):
+        self._maybe_reset()
+        self.tokens_used += max(0, tokens_used)
+        self.calls_made += 1
+
+_RATE_LIMITER = MinuteRateLimiter(
+    tpm_budget=_env_int("OPENAI_TPM_BUDGET", 400000),
+    rpm_budget=_env_int("OPENAI_RPM_BUDGET", 300)
+)
+
+def _estimate_tokens_from_text(*parts: str) -> int:
+    total_chars = sum(len(p or "") for p in parts)
+    return int(total_chars / 4) + 256
+
+def openai_generate(model: str, system_prompt: str, user_prompt: str) -> str:
+    """Responses API bevorzugt; Fallback Chat Completions. Mit Rate-Limit/Retry + Shell-Fehlerausgabe."""
+    try:
+        from openai import OpenAI
+    except Exception as e:
+        die("OpenAI SDK nicht installiert",
+            details=f"{type(e).__name__}: {e}",
+            hint="Füge `pip install openai>=1.40.0` in deinen Action-Setup-Schritt ein.")
+
+    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY",""), base_url=_compute_base_url())
+    if not os.environ.get("OPENAI_API_KEY"):
+        log_warn("OPENAI_API_KEY ist nicht gesetzt – Generierung könnte fehlschlagen.")
+
+    effort = os.environ.get("OPENAI_REASONING_EFFORT", "high").lower()
+    if effort not in ("high", "medium", "low"):
+        effort = "high"
+
+    MAX_RETRIES = _env_int("OPENAI_MAX_RETRIES", 8)
+    BASE_SLEEP  = float(os.environ.get("OPENAI_BASE_SLEEP", "1.5"))
+    MAX_SLEEP   = float(os.environ.get("OPENAI_MAX_SLEEP", "60"))
+
+    est_in_tokens = _estimate_tokens_from_text(system_prompt, user_prompt)
+    _RATE_LIMITER.wait_for(est_in_tokens)
+
+    def _is_retryable_error(e_msg: str) -> bool:
+        m = e_msg.lower()
+        return any(k in m for k in [
+            "rate", "429", "insufficient_quota", "quota", "temporar", "overloaded",
+            "timeout", "timed out", "connection", "gateway", "server", "502", "503", "504"
+        ])
+
+    def _try_call(fn):
+        last_err = None
+        for i in range(MAX_RETRIES):
+            try:
+                return fn()
+            except Exception as e:
+                last_err = e
+                msg = str(e)
+                if _is_retryable_error(msg):
+                    sleep_s = min(MAX_SLEEP, BASE_SLEEP * (2 ** i)) + random.uniform(0, 0.4)
+                    log_warn(f"OpenAI transient error, retry {i+1}/{MAX_RETRIES} after {sleep_s:.1f}s: {msg[:160]}")
+                    time.sleep(sleep_s); continue
+                log_error("OpenAI call failed (non-retryable)", details=traceback.format_exc())
+                raise
+        # Exhausted retries
+        log_error("OpenAI call failed after retries", details=str(last_err))
+        raise last_err
+
+    def _responses():
+        resp = client.responses.create(
+            model=model,
+            input=[{"role": "system", "content": system_prompt},
+                   {"role": "user",   "content": user_prompt}],
+            reasoning={"effort": effort},
+        )
+        text = getattr(resp, "output_text", "") or ""
+        try:
+            usage = getattr(resp, "usage", None)
+            if usage and isinstance(usage, dict):
+                total = usage.get("total_tokens") or (usage.get("input_tokens", 0) + usage.get("output_tokens", 0))
+            else:
+                total = est_in_tokens + _estimate_tokens_from_text(text)
+        except Exception:
+            total = est_in_tokens + _estimate_tokens_from_text(text)
+        _RATE_LIMITER.book(total)
+        return text
+
+    def _chat():
+        cc = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "system", "content": system_prompt},
+                      {"role": "user",   "content": user_prompt}],
+        )
+        text = cc.choices[0].message.content or ""
+        try:
+            usage = getattr(cc, "usage", None)
+            if usage:
+                total = getattr(usage, "total_tokens", None)
+                if total is None and isinstance(usage, dict):
+                    total = usage.get("total_tokens") or (usage.get("prompt_tokens", 0) + usage.get("completion_tokens", 0))
+            else:
+                total = None
+            if not total:
+                total = est_in_tokens + _estimate_tokens_from_text(text)
+        except Exception:
+            total = est_in_tokens + _estimate_tokens_from_text(text)
+        _RATE_LIMITER.book(total)
+        return text
+
+    try:
+        return _try_call(_responses)
+    except Exception as e:
+        try:
+            return _try_call(_chat)
+        except Exception as ee:
+            # Parallel auch ins Issue kommentieren
+            comment_reply(f"❌ OpenAI-Fehler:\n```\n{ee}\n```")
+            die("OpenAI-Aufruf endgültig fehlgeschlagen",
+                details=f"{type(ee).__name__}: {ee}",
+                hint="API-Key/Quota/Region prüfen; ggf. OPENAI_BASE_URL oder Modellnamen anpassen.")
+            raise  # unreachable
+
 # ------------------------ Diff Sanitize / Parse / Remap ------------------------
 
 def sanitize_patch_text(raw: str) -> str:
@@ -320,88 +626,6 @@ def try_remap_patch(patch_text: str, repo_files):
             unresolved.append(newp)
 
     return "".join(new_sections), remapped, unresolved
-
-# ------------------------ Fallback: Snippet → gültiger Unified-Diff ------------------------
-
-def _extract_code_block(raw: str) -> tuple[str, str]:
-    """Liefert (code, lang) aus ```lang ...``` oder erkennt erste Zeile als Sprache."""
-    if not raw:
-        return "", ""
-    m = re.search(r"```([A-Za-z0-9.+_-]*)\s*([\s\S]*?)```", raw)
-    if m:
-        return m.group(2), (m.group(1) or "").lower().strip()
-    lines = (raw or "").strip().splitlines()
-    if not lines:
-        return "", ""
-    first = lines[0].strip().lower()
-    if first in ("kotlin", "java", "groovy", "gradle", "gradle.kts", "kts", "xml", "json", "md"):
-        return "\n".join(lines[1:]), first
-    return raw.strip(), ""
-
-def _strip_quasi_diff_markers(code: str) -> str:
-    """Entfernt führende '+'/'-' in Snippet-Zeilen (behält Inhalt). '-' Zeilen werden standardmäßig verworfen."""
-    out = []
-    for ln in (code or "").splitlines():
-        if ln.startswith("+++ ") or ln.startswith("--- "):
-            # Header aus echten Diffs ignorieren
-            continue
-        if ln.startswith("+"):
-            out.append(ln[1:])
-        elif ln.startswith("-"):
-            # Entferne 'Entfernen'-Zeilen im reinen Snippet-Kontext
-            continue
-        else:
-            out.append(ln)
-    text = "\n".join(out).rstrip("\n") + "\n"
-    return text
-
-def _slugify(s: str) -> str:
-    s = re.sub(r"\s+", "-", s.strip())
-    s = re.sub(r"[^A-Za-z0-9._-]", "-", s)
-    return s.strip("-")[:40] or "snippet"
-
-def _ext_for_lang(lang: str) -> str:
-    m = {
-        "kotlin": "kt", "kt": "kt",
-        "java": "java",
-        "groovy": "gradle",
-        "gradle": "gradle", "gradle.kts": "kts", "kts": "kts",
-        "xml": "xml", "json": "json", "md": "md",
-    }
-    return m.get((lang or "").lower(), "txt")
-
-def _make_add_file_diff(path: str, content: str) -> str:
-    content = content if content.endswith("\n") else content + "\n"
-    lines = content.splitlines()
-    plus_block = "\n".join("+" + ln for ln in lines)
-    n = len(lines)
-    return (
-        f"diff --git a/{path} b/{path}\n"
-        f"new file mode 100644\n"
-        f"index 0000000..1111111\n"
-        f"--- /dev/null\n"
-        f"+++ b/{path}\n"
-        f"@@ -0,0 +{n} @@\n"
-        f"{plus_block}\n"
-    )
-
-def coerce_snippet_to_diff(raw: str) -> tuple[str, str]:
-    """
-    Versucht aus einer Nicht-Diff-Antwort einen gültigen Unified-Diff zu bauen.
-    Gibt (diff_text, target_path) zurück oder ("", "") bei Fehlschlag.
-    """
-    code, lang = _extract_code_block(raw or "")
-    code = (code or "").strip("\n")
-    if not code:
-        return "", ""
-    clean = _strip_quasi_diff_markers(code)
-    # Dateiname aus erster nicht-leerer Codezeile ableiten
-    first_line = next((ln for ln in clean.splitlines() if ln.strip()), "snippet")
-    slug = _slugify(first_line)
-    ext = _ext_for_lang(lang)
-    target = f".github/codex/generated/{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{slug}.{ext}"
-    diff = _make_add_file_diff(target, clean)
-    return diff, target
 
 # ------------------------ Robust Section-wise Apply ------------------------
 
@@ -771,9 +995,6 @@ def parse_shortcuts(comment_text: str) -> dict:
 
 # ------------------------ Build-Fix Loop ------------------------
 
-def _now_iso():
-    return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-
 def infer_build_request_from_text(text: str) -> dict:
     """Erkennt aus natürlichem Text die Build-Anforderung."""
     t = (text or "").lower()
@@ -791,129 +1012,6 @@ def infer_build_request_from_text(text: str) -> dict:
         "abis": ",".join(abis),
         "ignore_missing_tdlib_v7a": "false"
     }
-
-def openai_generate(model: str, system_prompt: str, user_prompt: str) -> str:
-    """Responses API bevorzugt; Fallback Chat Completions. Mit Rate-Limit/Retry + Shell-Fehlerausgabe."""
-    try:
-        from openai import OpenAI
-    except Exception as e:
-        die("OpenAI SDK nicht installiert",
-            details=f"{type(e).__name__}: {e}",
-            hint="Füge `pip install openai>=1.40.0` in deinen Action-Setup-Schritt ein.")
-
-    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY",""), base_url=_compute_base_url())
-    if not os.environ.get("OPENAI_API_KEY"):
-        log_warn("OPENAI_API_KEY ist nicht gesetzt – Generierung könnte fehlschlagen.")
-
-    effort = os.environ.get("OPENAI_REASONING_EFFORT", "high").lower()
-    if effort not in ("high", "medium", "low"):
-        effort = "high"
-
-    MAX_RETRIES = _env_int("OPENAI_MAX_RETRIES", 8)
-    BASE_SLEEP  = float(os.environ.get("OPENAI_BASE_SLEEP", "1.5"))
-    MAX_SLEEP   = float(os.environ.get("OPENAI_MAX_SLEEP", "60"))
-
-    est_in_tokens = _estimate_tokens_from_text(system_prompt, user_prompt)
-    _RATE_LIMITER.wait_for(est_in_tokens)
-
-    def _is_retryable_error(e_msg: str) -> bool:
-        m = e_msg.lower()
-        return any(k in m for k in [
-            "rate", "429", "insufficient_quota", "quota", "temporar", "overloaded",
-            "timeout", "timed out", "connection", "gateway", "server", "502", "503", "504"
-        ])
-
-    def _try_call(fn):
-        last_err = None
-        for i in range(MAX_RETRIES):
-            try:
-                return fn()
-            except Exception as e:
-                last_err = e
-                msg = str(e)
-                if _is_retryable_error(msg):
-                    sleep_s = min(MAX_SLEEP, BASE_SLEEP * (2 ** i)) + random.uniform(0, 0.4)
-                    log_warn(f"OpenAI transient error, retry {i+1}/{MAX_RETRIES} after {sleep_s:.1f}s: {msg[:160]}")
-                    time.sleep(sleep_s); continue
-                log_error("OpenAI call failed (non-retryable)", details=traceback.format_exc())
-                raise
-        log_error("OpenAI call failed after retries", details=str(last_err))
-        raise last_err
-
-    def _responses():
-        resp = client.responses.create(
-            model=model,
-            input=[{"role": "system", "content": system_prompt},
-                   {"role": "user",   "content": user_prompt}],
-            reasoning={"effort": effort},
-        )
-        text = getattr(resp, "output_text", "") or ""
-        try:
-            usage = getattr(resp, "usage", None)
-            if usage and isinstance(usage, dict):
-                total = usage.get("total_tokens") or (usage.get("input_tokens", 0) + usage.get("output_tokens", 0))
-            else:
-                total = est_in_tokens + _estimate_tokens_from_text(text)
-        except Exception:
-            total = est_in_tokens + _estimate_tokens_from_text(text)
-        _RATE_LIMITER.book(total)
-        return text
-
-    def _chat():
-        cc = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "system", "content": system_prompt},
-                      {"role": "user",   "content": user_prompt}],
-        )
-        text = cc.choices[0].message.content or ""
-        try:
-            usage = getattr(cc, "usage", None)
-            if usage:
-                total = getattr(usage, "total_tokens", None)
-                if total is None and isinstance(usage, dict):
-                    total = usage.get("total_tokens") or (usage.get("prompt_tokens", 0) + usage.get("completion_tokens", 0))
-            else:
-                total = None
-            if not total:
-                total = est_in_tokens + _estimate_tokens_from_text(text)
-        except Exception:
-            total = est_in_tokens + _estimate_tokens_from_text(text)
-        _RATE_LIMITER.book(total)
-        return text
-
-    try:
-        return _try_call(_responses)
-    except Exception:
-        try:
-            return _try_call(_chat)
-        except Exception as ee:
-            comment_reply(f"❌ OpenAI-Fehler:\n```\n{ee}\n```")
-            die("OpenAI-Aufruf endgültig fehlgeschlagen",
-                details=f"{type(ee).__name__}: {ee}",
-                hint="API-Key/Quota/Region prüfen; ggf. OPENAI_BASE_URL oder Modellnamen anpassen.")
-            raise  # unreachable
-
-def _compute_base_url() -> str:
-    raw = os.environ.get("OPENAI_BASE_URL", "").strip()
-    if not raw:
-        return "https://api.openai.com/v1"
-    if not raw.startswith(("http://", "https://")):
-        raw = "https://" + raw
-    if not re.search(r"/v\d+/?$", raw):
-        raw = raw.rstrip("/") + "/v1"
-    return raw
-
-def _env_int(name: str, default: int) -> int:
-    try:
-        return int(os.environ.get(name, str(default)))
-    except Exception:
-        return default
-
-def _estimate_tokens_from_text(*parts: str) -> int:
-    total_chars = sum(len(p or "") for p in parts)
-    return int(total_chars / 4) + 256
-
-# ------------------------ Patch-Generator ------------------------
 
 def generate_fix_patch(model: str, docs: str, compact_tree: str, context: str,
                        instruction: str, logs: dict) -> str:
@@ -948,8 +1046,6 @@ Output requirements:
 - Avoid forbidden paths unless explicitly allowed: {', '.join(FORBIDDEN_PATHS)}
 """
     return openai_generate(model, SYSTEM, USER)
-
-# ------------------------ Build once & maybe fix ------------------------
 
 def run_build_once_and_maybe_fix(repo: str, default_branch: str, workflow_file: str,
                                  inputs: dict, model: str, instruction: str,
@@ -987,22 +1083,13 @@ def run_build_once_and_maybe_fix(repo: str, default_branch: str, workflow_file: 
     patch_text = generate_fix_patch(model, docs, compact_tree, sub_context, instruction, logs)
     patch_text = sanitize_patch_text(patch_text)
     if "diff --git " not in patch_text:
-        # NEU: Fallback – Nicht-Diff in validen Diff verpacken
-        fallback_diff, target = coerce_snippet_to_diff(patch_text)
-        if fallback_diff and "diff --git " in fallback_diff:
-            comment_reply(f"ℹ️ Modell lieferte keinen Unified-Diff. Fallback angewandt → Datei erzeugt: `{target}`.")
-            log_warn(f"Kein Diff vom Modell – Fallback erstellt: {target}")
-            patch_text = fallback_diff
-        else:
-            comment_reply(f"⚠️ Kein gültiger Diff aus Logs generiert. Antwort war:\n```\n{patch_text[:1200]}\n```")
-            log_error("Generierter Patch war ungültig", details=patch_text[:2000])
-            return False, run
-
-    line_count = patch_text.count("\n")
-    if not force and line_count > MAX_PATCH_LINES:
+        comment_reply(f"⚠️ Kein gültiger Diff aus Logs generiert. Antwort war:\n```\n{patch_text[:1200]}\n```")
+        log_error("Generierter Patch war ungültig", details=patch_text[:2000])
+        return False, run
+    if not force and patch_text.count("\n") > MAX_PATCH_LINES:
         comment_reply(f"⛔ Generierter Patch zu groß (> {MAX_PATCH_LINES} Zeilen). Breche ab.")
-        log_error("Patch zu groß",
-                  details=f"Zeilen: {line_count}, Limit: {MAX_PATCH_LINES}",
+        line_count = patch_text.count("\n")
+        log_error("Patch zu groß", details=f"Zeilen: {line_count}, Limit: {MAX_PATCH_LINES}",
                   hint="Aufgabe eingrenzen oder --force setzen.")
         return False, run
 
@@ -1092,8 +1179,7 @@ def run_build_once_and_maybe_fix(repo: str, default_branch: str, workflow_file: 
 # ------------------------ Core Logic ------------------------
 
 def _env_summary():
-    keys = ["GITHUB_REPOSITORY","GITHUB_EVENT_PATH","GITHUB_EVENT_NAME","GH_EVENT_NAME",
-            "OPENAI_MODEL_DEFAULT",
+    keys = ["GITHUB_REPOSITORY","GITHUB_EVENT_PATH","GH_EVENT_NAME","OPENAI_MODEL_DEFAULT",
             "OPENAI_REASONING_EFFORT","OPENAI_BASE_URL","OPENAI_API_KEY","GITHUB_TOKEN"]
     rows = []
     for k in keys:
@@ -1105,48 +1191,6 @@ def _env_summary():
     md = "### Environment-Check\n" + "\n".join(rows) + "\n"
     _write_step_summary(md)
     log_info("Environment geprüft:\n" + "\n".join(rows))
-
-def read_comment() -> str:
-    evname = _event_name()
-    if evname == "workflow_dispatch":
-        return os.environ.get("DISPATCH_COMMENT", "").strip()
-    try:
-        event = json.load(open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8"))
-    except Exception as e:
-        log_error("GITHUB_EVENT_PATH konnte nicht gelesen werden",
-                  details=f"path={os.environ.get('GITHUB_EVENT_PATH')}\n{type(e).__name__}: {e}",
-                  hint="Wird das Script als Action-Step mit events (issues/issue_comment) ausgeführt?")
-        return ""
-    if evname == "issue_comment" and "comment" in event and "body" in event["comment"]:
-        return (event["comment"]["body"] or "").strip()
-    if evname == "pull_request_review_comment" and "comment" in event and "body" in event["comment"]:
-        return (event["comment"]["body"] or "").strip()
-    if evname == "issues" and "issue" in event and "body" in event["issue"]:
-        return (event["issue"]["body"] or "").strip()
-    return ""
-
-def actor_handle() -> str:
-    evname = _event_name()
-    if evname == "workflow_dispatch":
-        repo = os.environ.get("GITHUB_REPOSITORY", "")
-        return repo.split("/")[0] if "/" in repo else repo
-    try:
-        event = json.load(open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8"))
-        return event.get("sender", {}).get("login", "")
-    except Exception:
-        return ""
-
-def is_allowed(actor: str) -> bool:
-    allowlist = os.environ.get("CODEX_ALLOWLIST", "").strip()
-    if allowlist:
-        return actor in [a.strip() for a in allowlist.split(",") if a.strip()]
-    repo = os.environ.get("GITHUB_REPOSITORY", "")
-    try:
-        perms = gh_api("GET", f"/repos/{repo}/collaborators/{actor}/permission")
-        return perms.get("permission") in ("write", "maintain", "admin")
-    except Exception as e:
-        log_warn(f"Konnte Collaborator-Permission nicht abfragen: {type(e).__name__}: {e}")
-        return False
 
 def main():
     with step("Environment prüfen"):
@@ -1329,21 +1373,14 @@ Output requirements:
 
         patch_text = sanitize_patch_text(patch_text)
         if "diff --git " not in patch_text:
-            # NEU: Fallback – Code/Snippet in gültigen Diff verwandeln
-            fallback_diff, target = coerce_snippet_to_diff(patch_text)
-            if fallback_diff and "diff --git " in fallback_diff:
-                comment_reply(f"ℹ️ Modell lieferte keinen Unified-Diff. Fallback angewandt → Datei erzeugt: `{target}`.")
-                log_warn(f"Kein Diff vom Modell – Fallback erstellt: {target}")
-                patch_text = fallback_diff
-            else:
-                comment_reply(f"⚠️ Kein gültiger Diff erkannt. Antwort war:\n```\n{patch_text[:1400]}\n```")
-                die("Ungültiger Diff aus OpenAI", details=patch_text[:2000],
-                    hint="Bitte Aufgabe eingrenzen oder erneut probieren (SPEC-first mit --spec erwägen).")
+            comment_reply(f"⚠️ Kein gültiger Diff erkannt. Antwort war:\n```\n{patch_text[:1400]}\n```")
+            die("Ungültiger Diff aus OpenAI", details=patch_text[:2000],
+                hint="Bitte Aufgabe eingrenzen oder erneut probieren (SPEC-first mit --spec erwägen).")
 
-        line_count2 = patch_text.count("\n")
-        if not force_big and line_count2 > MAX_PATCH_LINES:
+        if not force_big and patch_text.count("\n") > MAX_PATCH_LINES:
+            line_count = patch_text.count("\n")
             die("Patch zu groß",
-                details=f"Zeilen: {line_count2}, Limit: {MAX_PATCH_LINES}",
+                details=f"Zeilen: {line_count}, Limit: {MAX_PATCH_LINES}",
                 hint="Aufgabe eingrenzen oder `--force` setzen.")
 
         try:
@@ -1443,9 +1480,11 @@ Output requirements:
 if __name__ == "__main__":
     try:
         main()
-    except SystemExit:
+    except SystemExit as se:
+        # sys.exit() wurde bereits benutzt → nichts weiter
         raise
-    except Exception:
+    except Exception as e:
+        # Letzte Rettung: fatale, nicht abgefangene Exception sichtbar machen
         tb = traceback.format_exc()
         die("Unerwarteter Fehler im Codex-Bot", details=tb,
             hint="Siehe Trace oben. Häufige Ursachen: fehlende Rechte, Netzwerkprobleme, ungültige Workflow-ID/Datei.")
