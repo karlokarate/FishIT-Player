@@ -1,15 +1,13 @@
-diff --git a/ROADMAP.md b/ROADMAP.md
-index 524d0f3..6b490c6 100644
---- a/ROADMAP.md
-+++ b/ROADMAP.md
-@@ -1,6 +1,10 @@
- # Roadmap
- 
- ## Near-term
-+- Build packaging
-+  - DONE: Dual-APK by ABI flavors (arm64 with TDLib, v7a without TDLib; stubs and keep rules in place)
-+  - Verify CI tasks for assembleArm64Release / assembleV7aRelease if needed
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index e30b1d6..e7f7a6b 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,10 @@
++2025-09-30
++- build(release/splits): assembleRelease verified for split APKs (arm64-v8a, armeabi-v7a) using existing ABI splits configuration. No universal APK is produced as intended.
++- fix(build/compile): resolve Kotlin compile error in CreateProfileSheet (truncated string and unfinished composable). Completed the sheet UI (name field, kid toggle, cancel/create actions) so release builds succeed.
++- docs(build): Documented the fix and build outcome here. No CI change in this patch; local/WSL builds can run `./gradlew :app:assembleRelease` to generate per-ABI APKs under app/build/outputs/apk/release/.
 +
- - Telegram integration
-   - Phase‑2: LTO for TDLib build, event-driven indexing refinements, size trims
-   - FCM push routing (finalize), auto start of TDLib service on push
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
