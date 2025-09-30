@@ -76,8 +76,8 @@ class ObxVodPagingSource(
         }
 
         val pageItems = collected.take(pageSize)
-        val (withArt, withoutArt) = pageItems.partition { it.hasArtwork() }
-        val ordered = withArt + withoutArt
+        // Temporarily disable artwork-first reordering: keep original page order
+        val ordered = pageItems
         val prevKey = if (pageIndex == 0) null else pageIndex - 1
         val nextKey = if (reachedEnd || nextOffset == baseOffset.toLong()) null else (nextOffset / pageSize.toLong()).toInt()
         LoadResult.Page(ordered, prevKey, nextKey)
@@ -146,8 +146,7 @@ class ObxLivePagingSource(
         }
 
         val pageItems = collected.take(pageSize)
-        val (withArt, withoutArt) = pageItems.partition { it.hasArtwork() }
-        val ordered = withArt + withoutArt
+        val ordered = pageItems
         val prevKey = if (page == 0) null else page - 1
         val nextKey = if (reachedEnd || nextOffset == baseOffset.toLong()) null else (nextOffset / pageSize.toLong()).toInt()
         LoadResult.Page(ordered, prevKey, nextKey)
@@ -218,8 +217,7 @@ class ObxSeriesPagingSource(
         }
 
         val pageItems = collected.take(pageSize)
-        val (withArt, withoutArt) = pageItems.partition { it.hasArtwork() }
-        val ordered = withArt + withoutArt
+        val ordered = pageItems
         val prevKey = if (page == 0) null else page - 1
         val nextKey = if (reachedEnd || nextOffset == baseOffset.toLong()) null else (nextOffset / pageSize.toLong()).toInt()
         LoadResult.Page(ordered, prevKey, nextKey)

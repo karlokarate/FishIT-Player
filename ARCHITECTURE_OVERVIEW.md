@@ -3,7 +3,8 @@
 Deep‑Dive Update: 2025‑09‑23
 - Build, networking, images and playback updated to reflect current code.
 - Lifecycle/Performance: `collectAsStateWithLifecycle` breit eingesetzt; JankStats in MainActivity aktiv.
-  - Global Debug: per Settings schaltbar (Reiter „Import & Diagnose“). Loggt Navigationsschritte (NavController‑Listener), DPAD‑Eingaben (UP/DOWN/LEFT/RIGHT/CENTER/BACK inkl. Player‑Tasten), Tile‑Focus (inkl. OBX‑Titel in Klammern) und OBX‑Key‑Updates (Backfill der sort/provider/genre/year Keys) unter Logcat‑Tag `GlobalDebug`. Die Kern‑Row‑Engines (MediaRowCore/Paged) emittieren Tile‑Focus für alle Kacheln.
+- Global Debug: per Settings schaltbar (Reiter „Import & Diagnose“). Loggt Navigationsschritte (NavController‑Listener), DPAD‑Eingaben (UP/DOWN/LEFT/RIGHT/CENTER/BACK inkl. Player‑Tasten), Tile‑Focus (inkl. OBX‑Titel in Klammern) und OBX‑Key‑Updates (Backfill der sort/provider/genre/year Keys) unter Logcat‑Tag `GlobalDebug`. Die Kern‑Row‑Engines (MediaRowCore/Paged) emittieren Tile‑Focus für alle Kacheln.
+ - Global Debug erweitert: Zusätzlich loggen alle fokussierbaren Widgets (Buttons, Chips, Clickables) `focus:widget component=<type> module=<route> tag=<hint>`, auch direkt beim Start bei der ersten Fokusübernahme.
 
 Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module, Flows und Verantwortlichkeiten der App. Es ist aus `AGENTS.md` abgeleitet und wird hier als zentrale Architektur‑Referenz gepflegt.
 
@@ -132,6 +133,7 @@ app/src/main/java/com/chris/m3usuite
 │   │   - Live-Favoriten-Picker nutzt Paging über `MediaQueryRepository.pagingSearchFilteredFlow("live", …)`; Suchtreffer entsprechen der Library-Suche.
 │   │   - Reihen (Serien/Filme) laden lazy per Paging3 über ObjectBox; horizontale Rows mit Skeletons (fisch.png, Shimmer/Puls)
 │   │   - Live: Favoriten-Row bleibt; ohne Favoriten globale paged Live-Row mit EPG-Prefetch
+│   │   - TV initialer Fokus: Auf Start ist ausschließlich die Serien-Row initial focus‑eligible; VOD/Live unterdrücken initiale Fokus‑Anforderungen. Der Fokus landet deterministisch auf der ersten Kachel der obersten Karte (Serie).
 │   ├── screens/                            # Setup/Library/Details/Settings
 │   │   ├── PlaylistSetupScreen.kt          # Erststart: Xtream-Creds ableiten/speichern & `XtreamSeeder` anstoßen
 │   │   ├── LibraryScreen.kt                # Durchsuchen (Filter, Raster/Listen)
@@ -422,3 +424,15 @@ Querschnitt
 - HTTP/Headers: `RequestHeadersProvider` flächendeckend sichern (Internal/External/Preview/Coil); Extra‑Header JSON konsistent mergen.
 - DB‑Filter: Optional DAO‑seitige Pfade für Kid‑Whitelist bei sehr großen Katalogen (statt rein in‑memory).
 - Tests: Unit‑Tests für Backup‑Roundtrip, EPG‑TTL/LRU, SchedulingGateway‑Policies ergänzen.
+
+## Performance
+
+- Baseline Profiles: `assets/dexopt/baseline.prof/.profm` shipped for both ABIs.
+- TV low-spec runtime profile
+  - Detection: UiMode=Television or `android.software.leanback`/Fire TV features.
+  - Focus visuals: reduced scale (~1.03) and no elevation shadow to reduce GPU cost.
+  - Paging: smaller windows on TV (`pageSize=16`, `prefetchDistance=1`, `initialLoad=32`).
+  - HTTP: OkHttp dispatcher throttled on TV (`maxRequests=16`, `maxRequestsPerHost=4`).
+  - Coil: crossfades disabled on TV; RGB_565 + measured sizing retained.
+- Playback-aware background work
+  - While the internal player is active, Xtream workers are paused (`m3u_workers_enabled=false`) and in-flight unique works canceled; the flag is restored on exit if previously enabled.

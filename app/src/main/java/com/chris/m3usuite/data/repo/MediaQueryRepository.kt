@@ -204,12 +204,24 @@ class MediaQueryRepository(
         items.mapNotNull { it.categoryName }.distinct()
     }
 
-    private fun pagerConfig(): PagingConfig = PagingConfig(
-        pageSize = 60,
-        prefetchDistance = 2,
-        initialLoadSize = 120,
-        enablePlaceholders = false
-    )
+    private fun pagerConfig(): PagingConfig {
+        val tvLow = com.chris.m3usuite.core.device.DeviceProfile.isTvLowSpec(context)
+        return if (tvLow) {
+            PagingConfig(
+                pageSize = 16,
+                prefetchDistance = 1,
+                initialLoadSize = 32,
+                enablePlaceholders = false
+            )
+        } else {
+            PagingConfig(
+                pageSize = 60,
+                prefetchDistance = 2,
+                initialLoadSize = 120,
+                enablePlaceholders = false
+            )
+        }
+    }
 
     fun pagingByTypeFilteredFlow(type: String, cat: String?): Flow<PagingData<MediaItem>> {
         val flow = when (type) {

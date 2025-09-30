@@ -75,7 +75,8 @@ fun buildImageRequest(
     val b = ImageRequest.Builder(ctx)
         .data(sizedUrl)
         .httpHeaders(httpHeaders)
-        .crossfade(crossfade)
+        // TV low-spec: avoid crossfade to reduce GPU work
+        .crossfade(if (com.chris.m3usuite.core.device.DeviceProfile.isTvLowSpec(ctx)) false else crossfade)
         .allowHardware(true)
         .allowRgb565(preferRgb565)
     if (widthPx != null && heightPx != null && widthPx > 0 && heightPx > 0) {

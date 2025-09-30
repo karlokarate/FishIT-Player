@@ -4,6 +4,9 @@
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
 - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
+- Maintenance 2025‑09‑28: Build‑Blocking Lücken geschlossen (Nav‑Extension, TV‑Focus‑Compat, TvRowScroll, safePainter, Adults‑Filter, XtreamImportCoordinator). Kein neues Feature; Roadmap unverändert.
+- Maintenance 2025‑09‑28 (TV Focus): Start-Home Serien/VOD/Live Reihen repariert – initialer Fokus greift wieder, Tiles skalieren sofort und DPAD‑LEFT expandiert HomeChrome nur am linken Rand.
+- Maintenance 2025‑09‑29 (TV Low-Spec): Laufzeitprofil für TV hinzugefügt (reduzierte Fokus‑Effekte, kleinere Paging‑Fenster, OkHttp Drosselung, Coil ohne Crossfade). Während der Wiedergabe werden Xtream‑Seeding‑Worker pausiert und danach wieder aktiviert (wenn zuvor aktiv).
 
 ---
 

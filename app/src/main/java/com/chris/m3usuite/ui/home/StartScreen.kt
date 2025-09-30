@@ -503,6 +503,7 @@ fun StartScreen(
                             if (debouncedQuery.isBlank()) {
                                 com.chris.m3usuite.ui.components.rows.SeriesRow(
                                     items = seriesMixed,
+                                    stateKey = "start_series",
                                     newIds = seriesNewIds,
                                     onOpenDetails = { mi -> openSeries(mi.id) },
                                     onPlayDirect = { mi ->
@@ -530,7 +531,8 @@ fun StartScreen(
                                             Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                         }
                                     },
-                                    showAssign = canEditWhitelist
+                                    showAssign = canEditWhitelist,
+                                    edgeLeftExpandChrome = true
                                 )
                             } else {
                                 val seriesFlow = remember(debouncedQuery) {
@@ -540,6 +542,7 @@ fun StartScreen(
                                 AttachPagingTelemetry(tag = "home.series", items = seriesItems)
                                 com.chris.m3usuite.ui.components.rows.SeriesRowPaged(
                                     items = seriesItems,
+                                    stateKey = "start_series_search",
                                     onOpenDetails = { mi -> openSeries(mi.id) },
                                     onPlayDirect = { mi ->
                                         scope.launch {
@@ -566,7 +569,8 @@ fun StartScreen(
                                             Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                         }
                                     },
-                                    showAssign = canEditWhitelist
+                                    showAssign = canEditWhitelist,
+                                    edgeLeftExpandChrome = true
                                 )
                             }
                             }
@@ -601,6 +605,7 @@ fun StartScreen(
                             if (debouncedQuery.isBlank()) {
                                 com.chris.m3usuite.ui.components.rows.VodRow(
                                     items = vodMixed,
+                                    stateKey = "start_vod",
                                     newIds = vodNewIds,
                                     onOpenDetails = { mi -> openVod(mi.id) },
                                     onPlayDirect = { mi ->
@@ -635,7 +640,9 @@ fun StartScreen(
                                             Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                         }
                                     },
-                                    showAssign = canEditWhitelist
+                                    showAssign = canEditWhitelist,
+                                    initialFocusEligible = false,
+                                    edgeLeftExpandChrome = true
                                 )
                             } else {
                                 val vodFlow = remember(debouncedQuery) {
@@ -645,6 +652,7 @@ fun StartScreen(
                                 AttachPagingTelemetry(tag = "home.vod", items = vodItems)
                                 com.chris.m3usuite.ui.components.rows.VodRowPaged(
                                     items = vodItems,
+                                    stateKey = "start_vod_search",
                                     onOpenDetails = { mi -> openVod(mi.id) },
                                     onPlayDirect = { mi ->
                                         scope.launch {
@@ -678,7 +686,8 @@ fun StartScreen(
                                             Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                         }
                                     },
-                                    showAssign = canEditWhitelist
+                                    showAssign = canEditWhitelist,
+                                    edgeLeftExpandChrome = true
                                 )
                             }
                             }
@@ -734,6 +743,7 @@ fun StartScreen(
                                         if (!canEditFavorites) {
                                             com.chris.m3usuite.ui.components.rows.LiveRow(
                                                 items = liveFiltered,
+                                                stateKey = "start_live_favorites",
                                                 onOpenDetails = { mi -> openLive(mi.id) },
                                                 onPlayDirect = { mi ->
                                                     scope.launch {
@@ -752,6 +762,8 @@ fun StartScreen(
                                                         }
                                                     }
                                                 },
+                                                initialFocusEligible = false,
+                                                edgeLeftExpandChrome = true
                                             )
                                         } else {
                                             com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
@@ -792,7 +804,10 @@ fun StartScreen(
                                                         val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
                                                         runCatching { com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive) }
                                                     }
-                                                }
+                                                },
+                                                stateKey = "start_live_reorder",
+                                                initialFocusEligible = false,
+                                                edgeLeftExpandChrome = true
                                             )
                                         }
                                     }
@@ -829,6 +844,7 @@ fun StartScreen(
                                 AttachPagingTelemetry(tag = "home.live.search", items = livePaged)
                                 com.chris.m3usuite.ui.components.rows.LiveRowPaged(
                                     items = livePaged,
+                                    stateKey = "start_live_search",
                                     onOpenDetails = { mi -> openLive(mi.id) },
                                     onPlayDirect = { mi ->
                                         scope.launch {
@@ -846,7 +862,8 @@ fun StartScreen(
                                                 navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
                                             }
                                         }
-                                    }
+                                    },
+                                    edgeLeftExpandChrome = true
                                 )
                                 }
                             }

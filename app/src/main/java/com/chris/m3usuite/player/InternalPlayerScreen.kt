@@ -149,6 +149,29 @@ fun InternalPlayerScreen(
     val screenTimeRepo = remember(ctx) { ScreenTimeRepository(ctx) }
     val epgRepo = remember(ctx) { com.chris.m3usuite.data.repo.EpgRepository(ctx, store) }
 
+    // Pause seeding workers during playback; restore afterwards if they were enabled
+    DisposableEffect(Unit) {
+        var originallyEnabled: Boolean? = null
+        // Snapshot + pause + cancel in-flight Xtream work
+        runBlocking {
+            try {
+                originallyEnabled = store.m3uWorkersEnabled.first()
+                if (originallyEnabled == true) {
+                    store.setM3uWorkersEnabled(false)
+                }
+            } catch (_: Throwable) {}
+        }
+        // Best-effort: cancel active Xtream jobs so they don't compete during playback
+        runCatching { com.chris.m3usuite.work.SchedulingGateway.cancelXtreamWork(ctx) }
+        onDispose {
+            // Restore only if we paused it here (keep user-chosen OFF intact)
+            val shouldRestore = (originallyEnabled == true)
+            if (shouldRestore) {
+                runCatching { scope.launch { store.setM3uWorkersEnabled(true) } }
+            }
+        }
+    }
+
     // Settings (Untertitel)
     val subScale by store.subtitleScale.collectAsStateWithLifecycle(initialValue = 0.06f)
     val subFg by store.subtitleFg.collectAsStateWithLifecycle(initialValue = 0xF2FFFFFF.toInt())
@@ -1510,4 +1533,3 @@ private fun OverlayIconButton(
         }
     }
 }
-    
