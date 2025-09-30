@@ -2,50 +2,18 @@
 # -*- coding: utf-8 -*-
 
 """
-Codex Bot – Build+Fix Edition (+ Shortcuts)
+Codex Bot – Build+Fix Edition (+ Shortcuts)  —  Shell-Error-First
 
-Fähigkeiten:
-- Liest Issue-/Kommentar-Events und interpretiert natürliche /codex-Aufträge.
-- Unterstützt 20 Major-Kurzbefehle (siehe unten), z. B. `--wire`, `--buildrelease`, `--gif`, `--migrate-kotlin`.
-- Kann Workflows per workflow_dispatch starten (z.B. release-apk.yml).
-- Wartet bis Abschluss, lädt Logs (ZIP), extrahiert Fehler/Warnungen.
-- Erzeugt aus Logs & Repo-Kontext Patches (OpenAI), wendet sie robust an (3-way/sectionwise), pusht Branch, erstellt PR.
-- Iteriert: Re-Dispatch Build → erneut Logs → erneut Patch …, bis Build "success" ist oder max_attempts erreicht.
-- Kommentiert alle Schritte im ursprünglichen Issue.
+Neu:
+- Ausführliche Shell-Fehlermeldungen (GitHub Actions annotations ::error/::warning/::notice)
+- Gruppierung der Logs (::group:: / ::endgroup::), Step-Dauer
+- Einheitliche die()/exit_with_error() + Step-Summary in GITHUB_STEP_SUMMARY
+- sh()/gh_api() geben bei Fehlern Befehl/Pfad/Status/STDOUT/STDERR/Antwort-Snippets aus + Fix-Hinweise
 
-Erwartete Umgebungsvariablen (von der GitHub Action gesetzt):
-- OPENAI_API_KEY
-- OPENAI_BASE_URL (optional; wird zu https://…/v1 normalisiert)
-- OPENAI_MODEL_DEFAULT (z. B. "gpt-5")
-- OPENAI_REASONING_EFFORT ("high" | "medium" | "low")
-- GITHUB_TOKEN
-- GITHUB_REPOSITORY (owner/repo)
-- GITHUB_EVENT_PATH
-- GH_EVENT_NAME (issues, issue_comment, pull_request_review_comment, workflow_dispatch)
-- DISPATCH_COMMENT (nur bei workflow_dispatch)
-- CODEX_ALLOWLIST (optional, CSV handles; ansonsten check Collaborator-Permissions)
-
-Kurzbefehle (Auszug, vollständige Liste siehe Ende der Datei):
-  --wire <modul|pfad>        : Prüft/fixt Verdrahtung (Imports, Gradle-abhäng., DI, Aufrufe) + Tests
-  --wire-all                 : Wie --wire, aber für alle Module
-  --tests [pfad]             : Generiert Unit-Tests
-  --tests-ui [screens]       : Generiert UI-Tests (Compose/DPAD)
-  --tests-int [scope]        : Generiert Integrations-Tests
-  --buildrelease [abis]      : Startet Release-Build (arm64, v7a, universal…) + Auto-Fix-Loop
-  --builddebug [abis]        : Startet Debug-Build + Auto-Fix-Loop
-  --gif [screens]            : Fügt UI-Preview-Workflow/Skripte hinzu (ffmpeg/adb), erzeugt GIF-Artefakte
-  --depsync                  : Dependencies konsolidieren/aktualisieren, Konflikte beheben
-  --gradleopt                : Build-Zeiten optimieren (Caching, KSP, R8)
-  --lintfix                  : Lint/detekt/ktlint einführen & Top-Findings beheben
-  --strict                   : Warnings-as-errors, Lint fatal → Fixes
-  --graph                    : Modul-Dependency-Graph erzeugen (GraphViz/DOT) + Doku
-  --migrate-kotlin [pfad]    : Java → Kotlin Migration (idiomatisch) + Tests
-  --integrate [module]       : Zusammenspiel/Vertrags-Checks zwischen Modulen + Fixes
-  --autofix                  : Statische Analyse hochdrehen & Befunde automatisch fixen
-  --doctor                   : Health-Checks (StrictMode, LeakCanary, Threading) + Patches
-  --tdlib-ignore             : Setzt Build-Input ignore_missing_tdlib_v7a=true
-  --bump-sdk [34|35…]        : compileSdk/targetSdk bumpen + Kompat-Anpassungen
-  --telemetry                : Einheitliches Logging/Tracing/Crash-Reports integrieren
+Bestehendes:
+- /codex-Aufträge aus Issues/Kommentaren
+- 20+ Shortcuts (wire, tests, buildrelease, gif, depsync, gradleopt, lintfix, strict, graph, migrate-kotlin, integrate, autofix, doctor, tdlib-ignore, bump-sdk, telemetry)
+- Build-Dispatch + Auto-Fix-Loop (Logs analysieren -> Patch -> PR -> Rebuild) bis success oder Max-Versuche
 """
 
 from __future__ import annotations
@@ -60,9 +28,11 @@ import subprocess
 import sys
 import time
 import zipfile
+import traceback
+import textwrap
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import requests
 from unidiff import PatchSet
@@ -92,39 +62,155 @@ DEFAULT_WAIT_TIMEOUTS = (30, 1800)  # (no-wait, wait) Sekunden
 WARN_PAT = re.compile(r"\b(warning|warn|w:)\b", re.I)
 ERR_PAT  = re.compile(r"\b(error|fail(ed)?|e:)\b", re.I)
 
+# ------------------------ Logging & Errors (Shell-first) ------------------------
+
+def _is_ci() -> bool:
+    return os.environ.get("GITHUB_ACTIONS") == "true"
+
+def _write_step_summary(md: str) -> None:
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    try:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(md.rstrip() + "\n")
+    except Exception:
+        pass
+
+def _redact(s: str) -> str:
+    if not s:
+        return s
+    for key in ["OPENAI_API_KEY", "GITHUB_TOKEN"]:
+        v = os.environ.get(key)
+        if v and isinstance(s, str):
+            s = s.replace(v, "***")
+    return s
+
+def log_group(title: str) -> None:
+    print(f"::group::{title}")
+
+def log_end_group() -> None:
+    print("::endgroup::")
+
+def log_info(msg: str) -> None:
+    print(f"::notice::{msg}")
+
+def log_warn(msg: str) -> None:
+    print(f"::warning::{msg}")
+
+def log_error(title: str, details: str = "", hint: str = "") -> None:
+    lines = [title]
+    if details:
+        lines.append("")
+        lines.append(_redact(details))
+    if hint:
+        lines.append("")
+        lines.append(f"HINT: {hint}")
+    text = "\n".join(lines)
+    sys.stderr.write(f"::error::{text}\n")
+
+def die(title: str, details: str = "", hint: str = "", exit_code: int = 1) -> None:
+    """Print rich error to shell (and to GITHUB_STEP_SUMMARY), then exit."""
+    log_error(title, details, hint)
+    _write_step_summary(f"### ❌ {title}\n\n"
+                        + (f"```\n{_redact(details)}\n```\n\n" if details else "")
+                        + (f"**Hint:** {hint}\n" if hint else ""))
+    sys.exit(exit_code)
+
+from contextlib import contextmanager
+@contextmanager
+def step(title: str):
+    """Group logs; on error, print rich diagnostics."""
+    t0 = time.time()
+    log_group(title)
+    try:
+        yield
+        dt = int(time.time() - t0)
+        log_info(f"{title} — OK in {dt}s")
+    except Exception as e:
+        dt = int(time.time() - t0)
+        tb = traceback.format_exc()
+        log_error(f"{title} — FAILED after {dt}s", details=tb)
+        raise
+    finally:
+        log_end_group()
+
 # ------------------------ Shell / Git / HTTP Utils ------------------------
 
 def sh(cmd: str, check: bool = True) -> str:
+    """Run shell command; on failure print full diagnostics to shell."""
     res = subprocess.run(cmd, shell=True, text=True, capture_output=True)
     if check and res.returncode != 0:
-        raise RuntimeError(f"cmd failed: {cmd}\nSTDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}")
-    return res.stdout.strip()
+        stdout = (res.stdout or "").strip()
+        stderr = (res.stderr or "").strip()
+        details = textwrap.dedent(f"""
+            Command: {cmd}
+            Exit code: {res.returncode}
+            --- STDOUT (truncated) ---
+            {stdout[:4000]}
+            --- STDERR (truncated) ---
+            {stderr[:4000]}
+        """).strip()
+        log_error("Shell command failed", details=details,
+                  hint="Prüfe den Befehl und Umgebung (Pfade, Rechte, Tooling). "
+                       "Bei Git-Fehlern: existiert Branch/Remote? Bei Gradle: stimmt Pfad/Task?")
+        raise RuntimeError(f"cmd failed: {cmd}\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}")
+    return (res.stdout or "").strip()
 
 def gh_api(method: str, path: str, payload=None):
     url = f"https://api.github.com{path}"
     headers = {
-        "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+        "Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN','')}",
         "Accept": "application/vnd.github+json"
     }
-    resp = requests.request(method, url, headers=headers, json=payload)
+    try:
+        resp = requests.request(method, url, headers=headers, json=payload, timeout=30)
+    except Exception as e:
+        log_error("GitHub API request failed (network)",
+                  details=f"{method} {url}\n{type(e).__name__}: {e}",
+                  hint="Ist die Runner-Network-Connectivity ok? DNS/Firewall prüfen.")
+        raise
     if resp.status_code >= 300:
-        raise RuntimeError(f"GitHub API {method} {path} failed: {resp.status_code} {resp.text[:4000]}")
-    return resp.json() if (resp.text and resp.headers.get("content-type","").startswith("application/json")) else {}
+        snippet = (resp.text or "")[:4000]
+        details = textwrap.dedent(f"""
+            {method} {path}
+            Status: {resp.status_code}
+            Payload: {_redact(json.dumps(payload, ensure_ascii=False)[:2000]) if payload else '—'}
+            Response (truncated):
+            {snippet}
+        """).strip()
+        hint = "Repo-Token-Permissions prüfen (Settings → Actions → Workflow permissions → Read and write). "\
+               "Stimmt der API-Pfad (Workflow-Datei/ID, Branch, Rechte)?"
+        log_error("GitHub API returned an error", details=details, hint=hint)
+        raise RuntimeError(f"GitHub API {method} {path} failed: {resp.status_code} {snippet}")
+    if resp.text and resp.headers.get("content-type","").startswith("application/json"):
+        return resp.json()
+    return {}
 
 def gh_api_raw(method: str, url: str, allow_redirects=True):
     headers = {
-        "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+        "Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN','')}",
         "Accept": "application/vnd.github+json"
     }
-    resp = requests.request(method, url, headers=headers, allow_redirects=allow_redirects, stream=True)
+    try:
+        resp = requests.request(method, url, headers=headers,
+                                allow_redirects=allow_redirects, stream=True, timeout=60)
+    except Exception as e:
+        log_error("GitHub RAW request failed (network)",
+                  details=f"{method} {url}\n{type(e).__name__}: {e}")
+        raise
     if resp.status_code >= 300 and resp.status_code not in (301, 302):
-        raise RuntimeError(f"GitHub RAW {method} {url} failed: {resp.status_code} {resp.text[:300]}")
+        snippet = (resp.text or "")[:500]
+        log_error("GitHub RAW returned an error",
+                  details=f"{method} {url}\nStatus: {resp.status_code}\n{snippet}")
+        raise RuntimeError(f"GitHub RAW {method} {url} failed: {resp.status_code} {snippet}")
     return resp
 
 def comment_reply(body: str):
     try:
         event = json.load(open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8"))
-    except Exception:
+    except Exception as e:
+        log_warn(f"Issue-Kommentar konnte Event nicht lesen: {type(e).__name__}: {e}")
         return
     repo = os.environ.get("GITHUB_REPOSITORY", "")
     issue_number = None
@@ -133,8 +219,12 @@ def comment_reply(body: str):
     elif "pull_request" in event and "number" in event["pull_request"]:
         issue_number = event["pull_request"]["number"]
     if issue_number is None:
+        log_warn("Kein Issue/PR zum Kommentieren gefunden.")
         return
-    gh_api("POST", f"/repos/{repo}/issues/{issue_number}/comments", {"body": body})
+    try:
+        gh_api("POST", f"/repos/{repo}/issues/{issue_number}/comments", {"body": body})
+    except Exception as e:
+        log_warn(f"Issue-Kommentar fehlgeschlagen: {type(e).__name__}: {e}")
 
 def read_comment() -> str:
     evname = os.environ.get("GH_EVENT_NAME", "")
@@ -142,7 +232,10 @@ def read_comment() -> str:
         return os.environ.get("DISPATCH_COMMENT", "").strip()
     try:
         event = json.load(open(os.environ["GITHUB_EVENT_PATH"], "r", encoding="utf-8"))
-    except Exception:
+    except Exception as e:
+        log_error("GITHUB_EVENT_PATH konnte nicht gelesen werden",
+                  details=f"path={os.environ.get('GITHUB_EVENT_PATH')}\n{type(e).__name__}: {e}",
+                  hint="Wird das Script als Action-Step mit events (issues/issue_comment) ausgeführt?")
         return ""
     if evname == "issue_comment" and "comment" in event and "body" in event["comment"]:
         return (event["comment"]["body"] or "").strip()
@@ -171,7 +264,8 @@ def is_allowed(actor: str) -> bool:
     try:
         perms = gh_api("GET", f"/repos/{repo}/collaborators/{actor}/permission")
         return perms.get("permission") in ("write", "maintain", "admin")
-    except Exception:
+    except Exception as e:
+        log_warn(f"Konnte Collaborator-Permission nicht abfragen: {type(e).__name__}: {e}")
         return False
 
 def _now_iso():
@@ -202,12 +296,11 @@ def build_repo_index():
 
     full_list = "\n".join(sorted(str(p).replace("\\", "/") for p in files))
 
-    def compress(path_strs, max_depth=4):
+    def compress(path_strs: Iterable[str], max_depth=4):
         out = []
         for s in sorted(path_strs):
             parts = s.split("/")
             out.append("/".join(parts[:max_depth]) + ("/…" if len(parts) > max_depth else ""))
-        # dedup
         dedup, last = [], None
         for line in out:
             if line != last:
@@ -247,8 +340,8 @@ def load_docs(max_chars: int = MAX_DOC_CHARS) -> str:
                 cut = txt[:min(len(txt), remain)]
                 blobs.append(f"\n--- {name} ---\n{cut}")
                 remain -= len(cut)
-            except Exception:
-                pass
+            except Exception as e:
+                log_warn(f"Doku konnte nicht gelesen werden: {name}: {type(e).__name__}")
     return "".join(blobs)
 
 # ------------------------ Relevanzbasierter Code-Kontext ------------------------
@@ -341,9 +434,17 @@ def _estimate_tokens_from_text(*parts: str) -> int:
     return int(total_chars / 4) + 256
 
 def openai_generate(model: str, system_prompt: str, user_prompt: str) -> str:
-    """Responses API bevorzugt; Fallback Chat Completions. Mit Rate-Limit/Retry."""
-    from openai import OpenAI
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=_compute_base_url())
+    """Responses API bevorzugt; Fallback Chat Completions. Mit Rate-Limit/Retry + Shell-Fehlerausgabe."""
+    try:
+        from openai import OpenAI
+    except Exception as e:
+        die("OpenAI SDK nicht installiert",
+            details=f"{type(e).__name__}: {e}",
+            hint="Füge `pip install openai>=1.40.0` in deinen Action-Setup-Schritt ein.")
+
+    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY",""), base_url=_compute_base_url())
+    if not os.environ.get("OPENAI_API_KEY"):
+        log_warn("OPENAI_API_KEY ist nicht gesetzt – Generierung könnte fehlschlagen.")
 
     effort = os.environ.get("OPENAI_REASONING_EFFORT", "high").lower()
     if effort not in ("high", "medium", "low"):
@@ -373,10 +474,12 @@ def openai_generate(model: str, system_prompt: str, user_prompt: str) -> str:
                 msg = str(e)
                 if _is_retryable_error(msg):
                     sleep_s = min(MAX_SLEEP, BASE_SLEEP * (2 ** i)) + random.uniform(0, 0.4)
-                    print(f"[codex-bot] OpenAI transient error, retry {i+1}/{MAX_RETRIES} after {sleep_s:.1f}s: {msg[:160]}")
-                    time.sleep(sleep_s)
-                    continue
+                    log_warn(f"OpenAI transient error, retry {i+1}/{MAX_RETRIES} after {sleep_s:.1f}s: {msg[:160]}")
+                    time.sleep(sleep_s); continue
+                log_error("OpenAI call failed (non-retryable)", details=traceback.format_exc())
                 raise
+        # Exhausted retries
+        log_error("OpenAI call failed after retries", details=str(last_err))
         raise last_err
 
     def _responses():
@@ -426,7 +529,12 @@ def openai_generate(model: str, system_prompt: str, user_prompt: str) -> str:
         try:
             return _try_call(_chat)
         except Exception as ee:
-            raise RuntimeError(f"OpenAI call failed: {e}\nFallback also failed: {ee}")
+            # Parallel auch ins Issue kommentieren
+            comment_reply(f"❌ OpenAI-Fehler:\n```\n{ee}\n```")
+            die("OpenAI-Aufruf endgültig fehlgeschlagen",
+                details=f"{type(ee).__name__}: {ee}",
+                hint="API-Key/Quota/Region prüfen; ggf. OPENAI_BASE_URL oder Modellnamen anpassen.")
+            raise  # unreachable
 
 # ------------------------ Diff Sanitize / Parse / Remap ------------------------
 
@@ -583,27 +691,39 @@ def dispatch_workflow(repo_full: str, workflow_file: str, ref_branch: str, input
     if inputs:
         payload["inputs"] = inputs
     gh_api("POST", path, payload)
+    log_info(f"Workflow dispatch gesendet: {workflow_file} @ {ref_branch} (inputs={_redact(json.dumps(inputs) if inputs else '—')})")
     return _now_iso()
 
 def find_latest_run(repo_full: str, workflow_file: str, branch: str, since_iso: str, timeout_s=900) -> dict:
     """Poll die Workflow-Runs, bis ein Run nach since_iso auftaucht; warte auf Completion."""
     base = f"/repos/{repo_full}/actions/workflows/{workflow_file}/runs"
     started = time.time()
+    first_seen = None
     while True:
-        runs = gh_api("GET", f"{base}?event=workflow_dispatch&branch={branch}")
+        try:
+            runs = gh_api("GET", f"{base}?event=workflow_dispatch&branch={branch}")
+        except Exception:
+            # gh_api hat bereits in die Shell geloggt
+            return {}
         items = runs.get("workflow_runs", []) or []
         cand = items[0] if items else {}
-        if cand and cand.get("created_at") >= since_iso:
+        if cand and cand.get("created_at") and cand.get("created_at") >= since_iso:
             run_id = cand.get("id")
+            if not first_seen:
+                first_seen = cand.get("html_url")
+                log_info(f"Run erkannt: {first_seen} — warte auf Abschluss …")
             while True:
                 run = gh_api("GET", f"/repos/{repo_full}/actions/runs/{run_id}")
                 if run.get("status") == "completed":
                     return run
                 if time.time() - started > timeout_s:
-                    return run  # timeout
+                    log_warn(f"Wartezeit überschritten ({timeout_s}s) — gebe aktuellen Status zurück.")
+                    return run
                 time.sleep(5)
         if time.time() - started > timeout_s:
-            return {}
+            die("Kein Workflow-Run gefunden (Timeout)",
+                details=f"Workflow: {workflow_file}\nBranch: {branch}\nSeit: {since_iso}\nURL-Base: {base}",
+                hint="Stimmt Workflow-Dateiname/ID? Ist on: workflow_dispatch gesetzt? Ist der Branch korrekt?")
         time.sleep(3)
 
 def download_and_parse_logs(repo_full: str, run_id: int) -> dict:
@@ -614,6 +734,7 @@ def download_and_parse_logs(repo_full: str, run_id: int) -> dict:
         if resp.status_code == 200:
             data = resp.content
         else:
+            log_warn("Keine Logs-Location im Header – möglicherweise zu früh oder fehlende Berechtigung.")
             return {"errors": ["No logs location from GitHub"], "warnings": [], "files": 0, "lines": 0}
     else:
         z = gh_api_raw("GET", loc)
@@ -627,7 +748,8 @@ def download_and_parse_logs(repo_full: str, run_id: int) -> dict:
             files += 1
             try:
                 content = zf.read(name).decode("utf-8", errors="replace").splitlines()
-            except Exception:
+            except Exception as e:
+                log_warn(f"Logdatei konnte nicht gelesen werden ({name}): {type(e).__name__}")
                 continue
             for ln in content:
                 lines += 1
@@ -677,6 +799,8 @@ def summarize_run_and_comment(run: dict, logs: dict | None, want_comment: bool, 
             body += "### Warnings (Top, deduped)\n```\n" + "\n".join(logs["warnings"][:160]) + "\n```\n"
     if want_comment:
         comment_reply(body)
+    # Auch in die Shell eine kompakte Zusammenfassung
+    log_info(f"Build-Result: {status}/{conclusion or '—'} — {html_url}")
 
 # ------------------------ Shortcuts Parsing ------------------------
 
@@ -700,7 +824,7 @@ def _parse_abis(arg: str) -> str:
     return ",".join(out) if out else ""
 
 def parse_shortcuts(comment_text: str) -> dict:
-    """Erkennt 20 Major-Kurzbefehle und liefert Steuer-Flags + zusammengesetzte Instruktionen."""
+    """Erkennt Major-Kurzbefehle und liefert Steuer-Flags + zusammengesetzte Instruktionen."""
     t = comment_text or ""
     res = {
         "trigger_build": False,
@@ -779,18 +903,17 @@ def parse_shortcuts(comment_text: str) -> dict:
     m = re.search(r"--gif(?:\s+([^\n]+))?", t, re.I)
     if m:
         screens = _clean_arg(m.group(1) or "Home,Library,Player")
-        res["allow_ci"] = True  # darf Workflow anlegen/anpassen
+        res["allow_ci"] = True
         res["directives"].append(
             f"Füge ein Skript `tools/record_ui.sh` (adb screenrecord + ffmpeg→GIF) und Workflow "
             f"`.github/workflows/ui-preview.yml` hinzu. Erzeuge Aufnahmen für `{screens}` und speichere GIFs in artifacts."
         )
-        # optional: auch laufen lassen könnte ein separater Kommentar sein
 
     # 9) --depsync
     if re.search(r"--depsync\b", t, re.I):
         res["directives"].append(
-            "Synchronisiere Dependencies/Plugins (Gradle/AGP/Kotlin/Libraries), fix Versionskonflikte (BOMs), "
-            "aktualisiere Repositories, ersetze veraltete Artefakte. Erhalte Funktionalität."
+            "Synchronisiere Dependencies/Plugins (Gradle/AGP/Kotlin/Libraries), fixe Versionskonflikte (BOMs), "
+            "aktualisiere Repositories, ersetze veraltete Artefakte."
         )
 
     # 10) --gradleopt
@@ -810,7 +933,7 @@ def parse_shortcuts(comment_text: str) -> dict:
     if re.search(r"--strict\b", t, re.I):
         res["directives"].append(
             "Aktiviere Compiler warnings-as-errors, strikte Lint-Profile (fatal ausgewählte Checks) "
-            "und behebe relevante Warnungen, sodass der Build weiterläuft."
+            "und behebe relevante Warnungen."
         )
 
     # 13) --graph
@@ -825,8 +948,8 @@ def parse_shortcuts(comment_text: str) -> dict:
     if m:
         target = _clean_arg(m.group(1) or "app/src/main/java")
         res["directives"].append(
-            f"Wandle `{target}` idiomatisch von Java nach Kotlin um (Nullability, data/ sealed, extensions), "
-            f"passe build an (kotlinOptions, stdlib), ergänze Unit-Tests."
+            f"Wandle `{target}` idiomatisch von Java nach Kotlin um (Nullability, data/sealed, extensions), "
+            f"passe Build an (kotlinOptions, stdlib), ergänze Unit-Tests."
         )
 
     # 15) --integrate [modules]
@@ -841,15 +964,13 @@ def parse_shortcuts(comment_text: str) -> dict:
     # 16) --autofix
     if re.search(r"--autofix\b", t, re.I):
         res["directives"].append(
-            "Führe erweiterte statische Analyse durch (detekt/ktlint/Lint streng) und behebe automatisch "
-            "die wichtigsten gefundenen Probleme (Nullability, Dead Code, API-Missbrauch)."
+            "Erweiterte statische Analyse (detekt/ktlint/Lint streng) und auto-Fixes für häufige Probleme."
         )
 
     # 17) --doctor
     if re.search(r"--doctor\b", t, re.I):
         res["directives"].append(
-            "Richte Health-Checks ein: StrictMode, LeakCanary (Debug), ANR/Crash-Probes. "
-            "Füge README-Hinweise und optionale CI-Reports hinzu."
+            "Richte Health-Checks ein: StrictMode, LeakCanary (Debug), ANR/Crash-Probes. README/CI ergänzen."
         )
 
     # 18) --tdlib-ignore
@@ -861,15 +982,13 @@ def parse_shortcuts(comment_text: str) -> dict:
     if m:
         api = _clean_arg(m.group(1) or "")
         res["directives"].append(
-            f"Erhöhe compileSdk/targetSdk{(' auf ' + api) if api else ''}; passe Bibliotheken & Manifeste an, "
-            f"fixe Inkompatibilitäten (Permissions/Exported/Foreground)."
+            f"Erhöhe compileSdk/targetSdk{(' auf ' + api) if api else ''}; passe Bibliotheken & Manifeste an."
         )
 
     # 20) --telemetry
     if re.search(r"--telemetry\b", t, re.I):
         res["directives"].append(
-            "Integriere konsistentes Telemetry/Logging (z. B. Timber), strukturierte Logs, "
-            "und (optional) Crash/Analytics, konfigurierbar pro Build-Type."
+            "Integriere konsistentes Telemetry/Logging (z. B. Timber), strukturierte Logs, Crash/Analytics (optional)."
         )
 
     return res
@@ -965,23 +1084,29 @@ def run_build_once_and_maybe_fix(repo: str, default_branch: str, workflow_file: 
     patch_text = sanitize_patch_text(patch_text)
     if "diff --git " not in patch_text:
         comment_reply(f"⚠️ Kein gültiger Diff aus Logs generiert. Antwort war:\n```\n{patch_text[:1200]}\n```")
+        log_error("Generierter Patch war ungültig", details=patch_text[:2000])
         return False, run
     if not force and patch_text.count("\n") > MAX_PATCH_LINES:
         comment_reply(f"⛔ Generierter Patch zu groß (> {MAX_PATCH_LINES} Zeilen). Breche ab.")
+        log_error("Patch zu groß", details=f"Zeilen: {patch_text.count('\\n')}, Limit: {MAX_PATCH_LINES}",
+                  hint="Aufgabe eingrenzen oder --force setzen.")
         return False, run
 
     try:
         PatchSet.from_string(patch_text)
     except Exception as e:
         comment_reply(f"ℹ️ Unidiff-Warnung: `{type(e).__name__}: {e}` – versuche Patch trotzdem.")
+        log_warn(f"Unidiff-Parser Warnung: {type(e).__name__}: {e}")
 
     remapped_patch, remaps, unresolved = try_remap_patch(patch_text, [Path(p) for p in all_paths])
     if remaps:
         bullets = "\n".join([f"- `{src}` → `{dst}`" for src, dst in remaps])
         comment_reply(f"🧭 Pfad-Remap angewandt:\n{bullets}")
+        log_info("Pfad-Remap angewandt:\n" + bullets)
     if unresolved:
         bullets = "\n".join([f"- {p}" for p in unresolved])
         comment_reply("⚠️ Nicht zuordenbare Sektionen (ausgelassen):\n" + bullets)
+        log_warn("Nicht zuordenbare Sektionen:\n" + bullets)
 
     if not allow_ci_changes:
         sec = parse_patch_sections(remapped_patch)
@@ -992,8 +1117,9 @@ def run_build_once_and_maybe_fix(repo: str, default_branch: str, workflow_file: 
             else:
                 kept.append(s["body"])
         if dropped:
-            comment_reply("🚫 Sektionen in geschützten Pfaden verworfen (nutze `--allow-ci`, wenn beabsichtigt):\n" +
-                          "\n".join(f"- {d}" for d in dropped))
+            msg = "🚫 Sektionen in geschützten Pfaden verworfen:\n" + "\n".join(f"- {d}" for d in dropped)
+            comment_reply(msg)
+            log_warn(msg)
         remapped_patch = "".join(kept) if kept else remapped_patch
 
     os.makedirs(".github/codex", exist_ok=True)
@@ -1011,11 +1137,14 @@ def run_build_once_and_maybe_fix(repo: str, default_branch: str, workflow_file: 
         applied, rejected, skipped = try_apply_sections(".github/codex/codex.patch", whole_text)
     except Exception as e:
         comment_reply(f"❌ Patch-Apply fehlgeschlagen:\n```\n{e}\n```")
+        log_error("Patch-Apply fehlgeschlagen", details=traceback.format_exc(),
+                  hint="Ggf. 3-way Merge-Konflikte manuell prüfen; Pfade stimmen?")
         return False, run
 
     status = sh("git status --porcelain")
     if not status.strip():
         comment_reply("ℹ️ Keine Änderungen nach Patch-Anwendung gefunden (alle Sektionen übersprungen?).")
+        log_warn("Keine Änderungen nach Patch-Anwendung (möglicherweise alles verworfen oder --allow-ci nötig).")
         return False, run
 
     sh("git add -A")
@@ -1037,63 +1166,89 @@ def run_build_once_and_maybe_fix(repo: str, default_branch: str, workflow_file: 
     pr_num = pr.get("number")
     try:
         gh_api("POST", f"/repos/{repo}/issues/{pr_num}/labels", {"labels": ["codex", "build-fix"]})
-    except Exception:
-        pass
+    except Exception as e:
+        log_warn(f"Labels setzen fehlgeschlagen: {type(e).__name__}: {e}")
 
     comment_reply(f"🔧 PR erstellt (Versuch {attempt_idx}): #{pr['number']} – {pr['html_url']}\n"
                   f"Starte Build erneut …")
+    log_info(f"PR erstellt: #{pr['number']} – {pr['html_url']}")
 
     return False, run
 
 # ------------------------ Core Logic ------------------------
 
+def _env_summary():
+    keys = ["GITHUB_REPOSITORY","GITHUB_EVENT_PATH","GH_EVENT_NAME","OPENAI_MODEL_DEFAULT",
+            "OPENAI_REASONING_EFFORT","OPENAI_BASE_URL","OPENAI_API_KEY","GITHUB_TOKEN"]
+    rows = []
+    for k in keys:
+        v = os.environ.get(k)
+        shown = "set" if (v and k not in ("OPENAI_API_KEY","GITHUB_TOKEN")) else ("set" if v else "missing")
+        if k in ("OPENAI_API_KEY","GITHUB_TOKEN") and v:
+            shown = "set (hidden)"
+        rows.append(f"- {k}: {shown}")
+    md = "### Environment-Check\n" + "\n".join(rows) + "\n"
+    _write_step_summary(md)
+    log_info("Environment geprüft:\n" + "\n".join(rows))
+
 def main():
-    comment = read_comment()
-    if not comment or "/codex" not in comment:
-        print("No codex command found."); sys.exit(0)
+    with step("Environment prüfen"):
+        _env_summary()
+        if not os.environ.get("GITHUB_TOKEN"):
+            die("GITHUB_TOKEN fehlt",
+                hint="Setze im Workflow: permissions: contents: write, pull-requests: write, actions: write")
 
-    actor = actor_handle() or "unknown"
-    if not is_allowed(actor):
-        comment_reply(f"⛔ Sorry @{actor}, du bist nicht berechtigt."); sys.exit(1)
+    with step("Kommentar lesen & Berechtigungen prüfen"):
+        comment = read_comment()
+        if not comment or "/codex" not in comment:
+            log_info("Kein /codex Auftrag im Event – nichts zu tun.")
+            sys.exit(0)
 
-    # Flags (explizit)
-    m_model  = re.search(r"(?:^|\s)(?:-m|--model)\s+([A-Za-z0-9._\-]+)", comment)
-    model    = m_model.group(1).strip() if m_model else (os.environ.get("OPENAI_MODEL_DEFAULT") or "gpt-5")
-    m_reason = re.search(r"(?:^|\s)--reason\s+(high|medium|low)\b", comment, re.I)
-    if m_reason:
-        os.environ["OPENAI_REASONING_EFFORT"] = m_reason.group(1).lower()
-    allow_ci  = bool(re.search(r"(?:^|\s)--allow-ci\b", comment))
-    force_big = bool(re.search(r"(?:^|\s)--force\b", comment))
-    # Optionale explizite Workflow/Inputs
-    m_workflow = re.search(r"(?:^|\s)--workflow\s+([^\s]+)", comment)
-    workflow_file_flag = m_workflow.group(1).strip() if m_workflow else ""
-    m_inputs = re.search(r"(?:^|\s)--inputs\s+(\{.*?\}|'.*?'|\".*?\")", comment, re.S)
-    inputs_raw = (m_inputs.group(1).strip() if m_inputs else "")
+        actor = actor_handle() or "unknown"
+        if not is_allowed(actor):
+            comment_reply(f"⛔ Sorry @{actor}, du bist nicht berechtigt.")
+            die("Berechtigung fehlt",
+                details=f"Actor: {actor}",
+                hint="Füge den Benutzer zu CODEX_ALLOWLIST hinzu oder gib Repo-Schreibrechte.")
 
-    # Shortcuts interpretieren
-    sc = parse_shortcuts(comment)
-    allow_ci = allow_ci or sc["allow_ci"]
-    force_big = force_big or sc["force"]
-    if sc["set_workflow"]:
-        workflow_file_flag = sc["set_workflow"]
+        # Flags (explizit)
+        m_model  = re.search(r"(?:^|\s)(?:-m|--model)\s+([A-Za-z0-9._\-]+)", comment)
+        model    = m_model.group(1).strip() if m_model else (os.environ.get("OPENAI_MODEL_DEFAULT") or "gpt-5")
+        m_reason = re.search(r"(?:^|\s)--reason\s+(high|medium|low)\b", comment, re.I)
+        if m_reason:
+            os.environ["OPENAI_REASONING_EFFORT"] = m_reason.group(1).lower()
+        allow_ci  = bool(re.search(r"(?:^|\s)--allow-ci\b", comment))
+        force_big = bool(re.search(r"(?:^|\s)--force\b", comment))
+        # Optionale explizite Workflow/Inputs
+        m_workflow = re.search(r"(?:^|\s)--workflow\s+([^\s]+)", comment)
+        workflow_file_flag = m_workflow.group(1).strip() if m_workflow else ""
+        m_inputs = re.search(r"(?:^|\s)--inputs\s+(\{.*?\}|'.*?'|\".*?\")", comment, re.S)
+        inputs_raw = (m_inputs.group(1).strip() if m_inputs else "")
 
-    # Instruction (nach Entfernen Flag-Texte – wir lassen Kurzbefehle bewusst im Text; Instruktionen kommen aus sc)
-    instruction_raw = re.sub(r"^.*?/codex", "", comment, flags=re.S).strip()
-    for pat in [
-        r"(?:^|\s)(?:-m|--model)\s+[A-Za-z0-9._\-]+",
-        r"(?:^|\s)--reason\s+(?:high|medium|low)\b",
-        r"(?:^|\s)--allow-ci\b",
-        r"(?:^|\s)--force\b",
-        r"(?:^|\s)--workflow\s+[^\s]+",
-        r"(?:^|\s)--inputs\s+(\{.*?\}|'.*?'|\".*?\")",
-    ]:
-        instruction_raw = re.sub(pat, "", instruction_raw, flags=re.I)
-    # Baue die finalen Kurzbefehls-Instruktionen vor die freie Instruktion
-    instruction = "\n".join(sc["directives"] + ([instruction_raw.strip()] if instruction_raw.strip() else []))
-    instruction = trim_to_chars(instruction, MAX_USER_CHARS)
+        # Shortcuts interpretieren
+        sc = parse_shortcuts(comment)
+        allow_ci = allow_ci or sc["allow_ci"]
+        force_big = force_big or sc["force"]
+        if sc["set_workflow"]:
+            workflow_file_flag = sc["set_workflow"]
 
-    repo_files, compact_tree, _ = build_repo_index()
-    post_repo_tree_comment(compact_tree)
+        # Instruction (nach Entfernen Flag-Texte – wir lassen Kurzbefehle im Text; Instruktionen aus sc)
+        instruction_raw = re.sub(r"^.*?/codex", "", comment, flags=re.S).strip()
+        for pat in [
+            r"(?:^|\s)(?:-m|--model)\s+[A-Za-z0-9._\-]+",
+            r"(?:^|\s)--reason\s+(?:high|medium|low)\b",
+            r"(?:^|\s)--allow-ci\b",
+            r"(?:^|\s)--force\b",
+            r"(?:^|\s)--workflow\s+[^\s]+",
+            r"(?:^|\s)--inputs\s+(\{.*?\}|'.*?'|\".*?\")",
+        ]:
+            instruction_raw = re.sub(pat, "", instruction_raw, flags=re.I)
+        instruction = "\n".join(sc["directives"] + ([instruction_raw.strip()] if instruction_raw.strip() else []))
+        instruction = trim_to_chars(instruction, MAX_USER_CHARS)
+
+    with step("Repo-Index erstellen"):
+        repo_files, compact_tree, _ = build_repo_index()
+        post_repo_tree_comment(compact_tree)
 
     # --- Build-Pfad? (natürlich oder per Shortcut/Flag) ---
     natural_text = (comment or "").lower()
@@ -1103,34 +1258,80 @@ def main():
     is_build_request = natural_build or bool(workflow_file_flag) or sc["trigger_build"]
 
     if is_build_request:
-        repo_full = os.environ.get("GITHUB_REPOSITORY")
-        default_branch = get_default_branch(repo_full)
-        # Workflow-File
-        workflow_file = (workflow_file_flag or DEFAULT_WORKFLOW_FILE)
-        if not (workflow_file.endswith(".yml") or workflow_file.endswith(".yaml")):
-            workflow_file += ".yml"
+        with step("Build/Dispatch vorbereiten"):
+            repo_full = os.environ.get("GITHUB_REPOSITORY")
+            default_branch = get_default_branch(repo_full)
+            # Workflow-File (als Dateiname/ID erwartet)
+            workflow_file = (workflow_file_flag or DEFAULT_WORKFLOW_FILE)
+            if not (workflow_file.endswith(".yml") or workflow_file.endswith(".yaml") or workflow_file.isdigit()):
+                workflow_file += ".yml"
 
-        # Inputs bestimmen
-        if inputs_raw:
-            try:
-                j = inputs_raw
-                if (j.startswith("'") and j.endswith("'")) or (j.startswith('"') and j.endswith('"')):
-                    j = j[1:-1]
-                inputs = json.loads(j) if j.strip() else None
-            except Exception as e:
-                comment_reply(f"⚠️ `--inputs` ist kein gültiges JSON: `{e}`. Nutze heuristische Erkennung.")
-                inputs = None
-        else:
-            inputs = infer_build_request_from_text(natural_text)
+            # Inputs bestimmen
+            if inputs_raw:
+                try:
+                    j = inputs_raw
+                    if (j.startswith("'") and j.endswith("'")) or (j.startswith('"') and j.endswith('"')):
+                        j = j[1:-1]
+                    inputs = json.loads(j) if j.strip() else None
+                except Exception as e:
+                    comment_reply(f"⚠️ `--inputs` ist kein gültiges JSON: `{e}`. Nutze heuristische Erkennung.")
+                    log_warn(f"--inputs JSON parse error: {type(e).__name__}: {e}")
+                    inputs = None
+            else:
+                inputs = infer_build_request_from_text(natural_text)
+            inputs = inputs or {}
+            inputs.update(sc["build_inputs"])
 
-        # Shortcuts-Inputs überschreiben standard
-        inputs = inputs or {}
-        inputs.update(sc["build_inputs"])
+            # Kontext für Fixer
+            docs = trim_to_chars(load_docs(MAX_DOC_CHARS), MAX_DOC_CHARS)
+            all_paths = [str(p).replace("\\", "/") for p in repo_files]
+            focused_files = top_relevant_files(instruction or "android build", all_paths, k=80)
+            preview_parts = []
+            for f in focused_files:
+                try:
+                    head = sh(f"sed -n '1,160p' {shlex.quote(f)} | sed 's/\\t/    /g' || true", check=False)
+                    if head.strip():
+                        preview_parts.append(f"\n--- file: {f} ---\n{head}")
+                except Exception:
+                    pass
+            context = trim_to_chars("".join(preview_parts), MAX_CONTEXT_CHARS)
 
-        # Kontext für Fixer
-        docs = trim_to_chars(load_docs(MAX_DOC_CHARS), MAX_DOC_CHARS)
+        with step("Build/Dispatch & Auto-Fix-Loop"):
+            max_attempts = DEFAULT_MAX_ATTEMPTS if (sc["build_fix_loop"] or natural_build or workflow_file_flag) else 1
+            for attempt in range(1, max_attempts + 1):
+                success, _ = run_build_once_and_maybe_fix(
+                    repo=repo_full,
+                    default_branch=default_branch,
+                    workflow_file=workflow_file,
+                    inputs=inputs or {},
+                    model=model,
+                    instruction=instruction or "Fixiere Buildfehler und baue Release-APKs für angegebene ABIs.",
+                    docs=docs,
+                    compact_tree=compact_tree,
+                    context=context,
+                    allow_ci_changes=allow_ci,
+                    force=force_big,
+                    attempt_idx=attempt,
+                    max_attempts=max_attempts
+                )
+                if success:
+                    comment_reply(f"✅ Build erfolgreich (Versuch {attempt}).")
+                    log_info(f"Build erfolgreich in Versuch {attempt}.")
+                    sys.exit(0)
+            comment_reply("❌ Build weiterhin fehlerhaft nach maximalen Reparaturversuchen.")
+            die("Build weiterhin fehlerhaft",
+                hint="Siehe oben stehende Fehler/Warnungen im Log und im Issue-Kommentar (zusammengefasst).")
+
+    # --- Fallback: Klassischer Patch/PR-Flow (ohne Build) ---
+
+    with step("Patch/PR-Flow"):
+        if not instruction:
+            comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex --wire app:player` oder `/codex --buildrelease arm64,v7a,universal`")
+            die("Keine Aufgabe erkannt",
+                hint="Füge nach /codex eine Anweisung oder einen Shortcut hinzu.")
         all_paths = [str(p).replace("\\", "/") for p in repo_files]
-        focused_files = top_relevant_files(instruction or "android build", all_paths, k=80)
+        focused_files = top_relevant_files(instruction, all_paths, k=80)
+
         preview_parts = []
         for f in focused_files:
             try:
@@ -1140,58 +1341,15 @@ def main():
             except Exception:
                 pass
         context = trim_to_chars("".join(preview_parts), MAX_CONTEXT_CHARS)
+        docs = trim_to_chars(load_docs(MAX_DOC_CHARS), MAX_DOC_CHARS)
 
-        # Iterativer Loop (immer, wenn Shortcut Build nutzt; sonst 1 Versuch via DEFAULT_MAX_ATTEMPTS)
-        max_attempts = DEFAULT_MAX_ATTEMPTS if (sc["build_fix_loop"] or natural_build or workflow_file_flag) else 1
-        for attempt in range(1, max_attempts + 1):
-            success, _ = run_build_once_and_maybe_fix(
-                repo=repo_full,
-                default_branch=default_branch,
-                workflow_file=workflow_file,
-                inputs=inputs or {},
-                model=model,
-                instruction=instruction or "Fixiere Buildfehler und baue Release-APKs für angegebene ABIs.",
-                docs=docs,
-                compact_tree=compact_tree,
-                context=context,
-                allow_ci_changes=allow_ci,
-                force=force_big,
-                attempt_idx=attempt,
-                max_attempts=max_attempts
-            )
-            if success:
-                comment_reply(f"✅ Build erfolgreich (Versuch {attempt}).")
-                sys.exit(0)
-        comment_reply("❌ Build weiterhin fehlerhaft nach maximalen Reparaturversuchen.")
-        sys.exit(1)
-
-    # --- Fallback: Klassischer Patch/PR-Flow (ohne Build) ---
-
-    if not instruction:
-        comment_reply("⚠️ Bitte gib eine Aufgabe an, z. B. `/codex --wire app:player` oder `/codex --buildrelease arm64,v7a,universal`")
-        sys.exit(1)
-
-    all_paths = [str(p).replace("\\", "/") for p in repo_files]
-    focused_files = top_relevant_files(instruction, all_paths, k=80)
-
-    preview_parts = []
-    for f in focused_files:
-        try:
-            head = sh(f"sed -n '1,160p' {shlex.quote(f)} | sed 's/\\t/    /g' || true", check=False)
-            if head.strip():
-                preview_parts.append(f"\n--- file: {f} ---\n{head}")
-        except Exception:
-            pass
-    context = trim_to_chars("".join(preview_parts), MAX_CONTEXT_CHARS)
-    docs = trim_to_chars(load_docs(MAX_DOC_CHARS), MAX_DOC_CHARS)
-
-    SYSTEM = (
-        "You are an expert Android/Kotlin code-change generator (Gradle, Jetpack Compose, Unit/Instrumented tests). "
-        "Use the repository documents (agents/architecture/roadmap/changelog) as authoritative guidance. "
-        "Return ONLY one git-compatible unified diff (no explanations). Keep changes minimal; include build/test edits if required. "
-        "All paths must be repo-root relative and must exist in the provided repo tree."
-    )
-    USER = f"""Repository documents (trimmed):
+        SYSTEM = (
+            "You are an expert Android/Kotlin code-change generator (Gradle, Jetpack Compose, Unit/Instrumented tests). "
+            "Use the repository documents (agents/architecture/roadmap/changelog) as authoritative guidance. "
+            "Return ONLY one git-compatible unified diff (no explanations). Keep changes minimal; include build/test edits if required. "
+            "All paths must be repo-root relative and must exist in the provided repo tree."
+        )
+        USER = f"""Repository documents (trimmed):
 {docs or '(no docs found)'}
 Repository tree (compact, depth≤4):
 {compact_tree}
@@ -1205,107 +1363,126 @@ Output requirements:
 - Include new files with proper headers (e.g. 'new file mode 100644')
 - Avoid forbidden paths unless explicitly allowed: {', '.join(FORBIDDEN_PATHS)}
 """
-    try:
-        patch_text = openai_generate(model, SYSTEM, USER)
-    except Exception as e:
-        comment_reply(f"❌ OpenAI-Fehler:\n```\n{e}\n```"); raise
+        try:
+            patch_text = openai_generate(model, SYSTEM, USER)
+        except Exception as e:
+            comment_reply(f"❌ OpenAI-Fehler:\n```\n{e}\n```")
+            die("Patch-Generierung fehlgeschlagen", details=traceback.format_exc())
+            return
 
-    patch_text = sanitize_patch_text(patch_text)
-    if "diff --git " not in patch_text:
-        comment_reply(f"⚠️ Kein gültiger Diff erkannt. Antwort war:\n```\n{patch_text[:1400]}\n```")
-        sys.exit(1)
+        patch_text = sanitize_patch_text(patch_text)
+        if "diff --git " not in patch_text:
+            comment_reply(f"⚠️ Kein gültiger Diff erkannt. Antwort war:\n```\n{patch_text[:1400]}\n```")
+            die("Ungültiger Diff aus OpenAI", details=patch_text[:2000],
+                hint="Bitte Aufgabe eingrenzen oder erneut probieren (SPEC-first mit --spec erwägen).")
 
-    if not force_big and patch_text.count("\n") > MAX_PATCH_LINES:
-        comment_reply(f"⛔ Patch zu groß (> {MAX_PATCH_LINES} Zeilen). Bitte Aufgabe eingrenzen oder `--force` setzen.")
-        sys.exit(1)
+        if not force_big and patch_text.count("\n") > MAX_PATCH_LINES:
+            die("Patch zu groß",
+                details=f"Zeilen: {patch_text.count('\\n')}, Limit: {MAX_PATCH_LINES}",
+                hint="Aufgabe eingrenzen oder `--force` setzen.")
 
-    try:
-        PatchSet.from_string(patch_text)
-    except Exception as e:
-        comment_reply(f"ℹ️ Hinweis: Unidiff-Parser warnte: `{type(e).__name__}: {e}` – "
-                      f"versuche Patch trotzdem (3-way / per-Sektion / --reject).")
+        try:
+            PatchSet.from_string(patch_text)
+        except Exception as e:
+            comment_reply(f"ℹ️ Hinweis: Unidiff-Parser warnte: `{type(e).__name__}: {e}` – versuche Patch trotzdem (3-way / per-Sektion / --reject).")
+            log_warn(f"Unidiff-Parser warnte: {type(e).__name__}: {e}")
 
-    remapped_patch, remaps, unresolved = try_remap_patch(patch_text, [Path(p) for p in all_paths])
-    if remaps:
-        bullets = "\n".join([f"- `{src}` → `{dst}`" for src, dst in remaps])
-        comment_reply(f"🧭 Pfad-Remap angewandt (fehlende → existierende Dateien):\n{bullets}")
-    if unresolved:
-        bullets = "\n".join([f"- {p}" for p in unresolved])
-        comment_reply("⚠️ Nicht zuordenbare Sektionen (ausgelassen):\n" + bullets)
+        remapped_patch, remaps, unresolved = try_remap_patch(patch_text, [Path(p) for p in all_paths])
+        if remaps:
+            bullets = "\n".join([f"- `{src}` → `{dst}`" for src, dst in remaps])
+            comment_reply(f"🧭 Pfad-Remap angewandt (fehlende → existierende Dateien):\n{bullets}")
+            log_info("Pfad-Remap angewandt:\n" + bullets)
+        if unresolved:
+            bullets = "\n".join([f"- {p}" for p in unresolved])
+            comment_reply("⚠️ Nicht zuordenbare Sektionen (ausgelassen):\n" + bullets)
+            log_warn("Nicht zuordenbare Sektionen:\n" + bullets)
 
-    sec = parse_patch_sections(remapped_patch)
-    kept = []
-    if not allow_ci:
-        for s in sec:
-            if any(s["new"].startswith(fp) or s["old"].startswith(fp) for fp in FORBIDDEN_PATHS):
-                continue
-            kept.append(s["body"])
-        if kept:
-            remapped_patch = "".join(kept)
+        sec = parse_patch_sections(remapped_patch)
+        kept = []
+        if not allow_ci:
+            for s in sec:
+                if any(s["new"].startswith(fp) or s["old"].startswith(fp) for fp in FORBIDDEN_PATHS):
+                    continue
+                kept.append(s["body"])
+            if kept:
+                remapped_patch = "".join(kept)
 
-    os.makedirs(".github/codex", exist_ok=True)
-    with open(".github/codex/codex.patch", "w", encoding="utf-8") as f:
-        f.write(remapped_patch)
+        os.makedirs(".github/codex", exist_ok=True)
+        with open(".github/codex/codex.patch", "w", encoding="utf-8") as f:
+            f.write(remapped_patch)
 
-    branch = f"codex/{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{actor_handle() or 'actor'}"
-    sh("git config user.name 'codex-bot'"); sh("git config user.email 'actions@users.noreply.github.com'")
-    sh(f"git checkout -b {branch}"); sh("chmod +x ./gradlew", check=False)
+        branch = f"codex/{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{actor_handle() or 'actor'}"
+        sh("git config user.name 'codex-bot'"); sh("git config user.email 'actions@users.noreply.github.com'")
+        sh(f"git checkout -b {branch}"); sh("chmod +x ./gradlew", check=False)
 
-    try:
-        with open(".github/codex/codex.patch", "r", encoding="utf-8", errors="replace") as _pf:
-            whole_text = _pf.read()
-        applied, rejected, skipped = try_apply_sections(".github/codex/codex.patch", whole_text)
-    except Exception as e:
-        comment_reply(f"❌ Patch-Apply fehlgeschlagen:\n```\n{e}\n```"); raise
+        try:
+            with open(".github/codex/codex.patch", "r", encoding="utf-8", errors="replace") as _pf:
+                whole_text = _pf.read()
+            applied, rejected, skipped = try_apply_sections(".github/codex/codex.patch", whole_text)
+        except Exception as e:
+            comment_reply(f"❌ Patch-Apply fehlgeschlagen:\n```\n{e}\n```")
+            die("Patch-Apply fehlgeschlagen", details=traceback.format_exc(),
+                hint="Evtl. Merge-Konflikt oder Pfadproblem. Prüfe die betroffenen Dateien.")
 
-    status = sh("git status --porcelain")
-    if not status.strip():
-        comment_reply("ℹ️ Keine Änderungen nach Patch-Anwendung gefunden (alle Sektionen übersprungen?).")
-        print("nothing to commit"); sys.exit(0)
+        status = sh("git status --porcelain")
+        if not status.strip():
+            comment_reply("ℹ️ Keine Änderungen nach Patch-Anwendung gefunden (alle Sektionen übersprungen?).")
+            log_warn("Keine Änderungen nach Patch-Anwendung – beende ohne Commit.")
+            sys.exit(0)
 
-    sh("git add -A")
-    sh("git commit -m 'codex: apply requested changes'")
-    sh("git push --set-upstream origin HEAD")
+        sh("git add -A")
+        sh("git commit -m 'codex: apply requested changes'")
+        sh("git push --set-upstream origin HEAD")
 
-    repo = os.environ["GITHUB_REPOSITORY"]
-    default_branch = get_default_branch(repo)
+        repo = os.environ["GITHUB_REPOSITORY"]
+        default_branch = get_default_branch(repo)
 
-    body = (
-        f"Automatisch erstellt aus Kommentar von @{actor_handle()}:\n\n> {instruction}\n\n"
-        f"Doku berücksichtigt: {', '.join([n for n in DOC_CANDIDATES if os.path.exists(n)]) or '–'}\n"
-        f"_Repo-Tree gespeichert unter `.github/codex/tree.txt`._"
-    )
-    pr = gh_api("POST", f"/repos/{repo}/pulls", {
-        "title": f"codex changes: {instruction[:60]}",
-        "head": branch,
-        "base": default_branch,
-        "body": body
-    })
+        body = (
+            f"Automatisch erstellt aus Kommentar von @{actor_handle()}:\n\n> {instruction}\n\n"
+            f"Doku berücksichtigt: {', '.join([n for n in DOC_CANDIDATES if os.path.exists(n)]) or '–'}\n"
+            f"_Repo-Tree gespeichert unter `.github/codex/tree.txt`._"
+        )
+        pr = gh_api("POST", f"/repos/{repo}/pulls", {
+            "title": f"codex changes: {instruction[:60]}",
+            "head": branch,
+            "base": default_branch,
+            "body": body
+        })
 
-    pr_num = pr.get("number")
-    try:
-        gh_api("POST", f"/repos/{repo}/issues/{pr_num}/labels", {"labels": ["codex", "ci:generated"]})
-    except Exception:
-        pass
-    try:
-        owners = []
-        for path in [".github/CODEOWNERS", "CODEOWNERS"]:
-            if os.path.exists(path):
-                txt = Path(path).read_text(encoding="utf-8", errors="replace")
-                for line in txt.splitlines():
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    parts = line.split()
-                    owners += [p.lstrip("@") for p in parts[1:] if p.startswith("@")]
-        owners = list(dict.fromkeys(owners))[:5]
-        if owners:
-            gh_api("POST", f"/repos/{repo}/pulls/{pr_num}/requested_reviewers", {"reviewers": owners})
-    except Exception:
-        pass
+        pr_num = pr.get("number")
+        try:
+            gh_api("POST", f"/repos/{repo}/issues/{pr_num}/labels", {"labels": ["codex", "ci:generated"]})
+        except Exception as e:
+            log_warn(f"Labels setzen fehlgeschlagen: {type(e).__name__}: {e}")
+        try:
+            owners = []
+            for path in [".github/CODEOWNERS", "CODEOWNERS"]:
+                if os.path.exists(path):
+                    txt = Path(path).read_text(encoding="utf-8", errors="replace")
+                    for line in txt.splitlines():
+                        line = line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        parts = line.split()
+                        owners += [p.lstrip("@") for p in parts[1:] if p.startswith("@")]
+            owners = list(dict.fromkeys(owners))[:5]
+            if owners:
+                gh_api("POST", f"/repos/{repo}/pulls/{pr_num}/requested_reviewers", {"reviewers": owners})
+        except Exception as e:
+            log_warn(f"Reviewer anfragen fehlgeschlagen: {type(e).__name__}: {e}")
 
-    comment_reply(f"✅ PR erstellt: #{pr['number']} — {pr['html_url']}")
-    print("done")
+        comment_reply(f"✅ PR erstellt: #{pr['number']} — {pr['html_url']}")
+        log_info(f"PR erstellt: #{pr['number']} — {pr['html_url']}")
+        print("done")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit as se:
+        # sys.exit() wurde bereits benutzt → nichts weiter
+        raise
+    except Exception as e:
+        # Letzte Rettung: fatale, nicht abgefangene Exception sichtbar machen
+        tb = traceback.format_exc()
+        die("Unerwarteter Fehler im Codex-Bot", details=tb,
+            hint="Siehe Trace oben. Häufige Ursachen: fehlende Rechte, Netzwerkprobleme, ungültige Workflow-ID/Datei.")
