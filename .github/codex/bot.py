@@ -127,7 +127,7 @@ def step(title: str):
         yield
         dt = int(time.time() - t0)
         log_info(f"{title} — OK in {dt}s")
-    except Exception as e:
+    except Exception:
         dt = int(time.time() - t0)
         tb = traceback.format_exc()
         log_error(f"{title} — FAILED after {dt}s", details=tb)
@@ -525,7 +525,7 @@ def openai_generate(model: str, system_prompt: str, user_prompt: str) -> str:
 
     try:
         return _try_call(_responses)
-    except Exception as e:
+    except Exception:
         try:
             return _try_call(_chat)
         except Exception as ee:
@@ -1480,7 +1480,7 @@ Output requirements:
 if __name__ == "__main__":
     try:
         main()
-    except SystemExit as se:
+    except SystemExit:
         raise
     except Exception as e:
         tb = traceback.format_exc()
