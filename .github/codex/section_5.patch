@@ -1,161 +1,237 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/actions/MediaAction.kt b/app/src/main/java/com/chris/m3usuite/ui/actions/MediaAction.kt
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/detail/DetailScaffold.kt b/app/src/main/java/com/chris/m3usuite/ui/detail/DetailScaffold.kt
 new file mode 100644
-index 0000000..0b8ab83
+index 0000000..3fac6f8
 --- /dev/null
-+++ b/app/src/main/java/com/chris/m3usuite/ui/actions/MediaAction.kt
-@@ -0,0 +1,196 @@
-+package com.chris.m3usuite.ui.actions
++++ b/app/src/main/java/com/chris/m3usuite/ui/detail/DetailScaffold.kt
+@@ -0,0 +1,262 @@
++package com.chris.m3usuite.ui.detail
 +
++import androidx.compose.foundation.background
 +import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.ColumnScope
 +import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.Spacer
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
 +import androidx.compose.foundation.layout.height
 +import androidx.compose.foundation.layout.padding
-+import androidx.compose.foundation.lazy.LazyRow
-+import androidx.compose.foundation.lazy.items
-+import androidx.compose.material3.Button
-+import androidx.compose.material3.ButtonDefaults
++import androidx.compose.foundation.layout.size
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.material3.AssistChip
++import androidx.compose.material3.ExperimentalMaterial3Api
 +import androidx.compose.material3.MaterialTheme
-+import androidx.compose.material3.OutlinedButton
 +import androidx.compose.material3.Text
 +import androidx.compose.runtime.Composable
 +import androidx.compose.runtime.remember
++import androidx.compose.ui.Alignment
 +import androidx.compose.ui.Modifier
-+import androidx.compose.ui.platform.testTag
-+import androidx.compose.ui.semantics.Role
-+import androidx.compose.ui.semantics.role
-+import androidx.compose.ui.semantics.semantics
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.graphics.Brush
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.layout.ContentScale
++import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.text.style.TextOverflow
 +import androidx.compose.ui.unit.dp
-+import androidx.compose.ui.graphics.Shape
++import com.chris.m3usuite.ui.common.AppIcon
++import com.chris.m3usuite.ui.common.AppIconButton
++import com.chris.m3usuite.ui.compat.focusGroup
++import com.chris.m3usuite.ui.skin.isTvDevice
++import com.chris.m3usuite.ui.skin.tvClickable
 +import com.chris.m3usuite.ui.skin.focusScaleOnTv
++import com.chris.m3usuite.ui.util.AppAsyncImage
 +
-+/**
-+ * Stable action identifiers for MediaActionBar entries.
-+ */
-+enum class MediaActionId { Play, Resume, Trailer, AddToList, RemoveFromList, OpenEpg, More }
-+
-+/**
-+ * Immutable model for a single action button in the MediaActionBar.
-+ */
-+data class MediaAction(
-+    val id: MediaActionId,
-+    val label: String,
-+    val enabled: Boolean = true,
-+    val primary: Boolean = false,
-+    val badge: String? = null,
-+    val onClick: () -> Unit,
++@androidx.compose.runtime.Stable
++data class DetailMeta(
++    val year: String? = null,
++    val duration: String? = null,   // "98 min" / "S01E03 – 44 min"
++    val quality: String? = null,    // "HD/4K"
++    val audio: String? = null,      // "DE 5.1"
++    val tags: List<String> = emptyList()
 +)
 +
 +/**
-+ * Defaults and helpers for MediaActionBar.
++ * Lightweight media action model for DetailScaffold. Uses AppIcon to integrate with AppIconButton.
 + */
-+object MediaActionDefaults {
-+    val ButtonHeight = 52.dp
-+    val ButtonSpacing = 10.dp
-+    val ButtonShape: Shape
-+        @Composable get() = MaterialTheme.shapes.large
-+
-+    fun testTagFor(id: MediaActionId) = "Action-${id.name}"
-+}
++data class MediaAction(
++    val icon: AppIcon,
++    val contentDescription: String,
++    val onClick: () -> Unit
++)
 +
 +/**
-+ * Single action button. TV‑ready focus scale; role=Button; testTag derived from id.
++ * Shared detail scaffold with hero backdrop, scrim, and a header (poster, title, meta, actions).
++ * Slots:
++ *  - headerExtras: rendered below the header (e.g., chips)
++ *  - content: main body (e.g., seasons/episodes, EPG, similar)
 + */
 +@Composable
-+fun MediaActionButton(
-+    action: MediaAction,
++fun DetailScaffold(
++    title: String,
++    subtitle: String? = null,
++    heroUrl: String?,
++    posterUrl: String?,
++    actions: List<MediaAction>,
++    meta: DetailMeta? = null,
++    modifier: Modifier = Modifier,
++    onBack: (() -> Unit)? = null,
++    headerExtras: @Composable ColumnScope.() -> Unit = {},
++    content: @Composable ColumnScope.() -> Unit
++) {
++    val shape = RoundedCornerShape(14.dp)
++    Box(modifier = modifier.fillMaxSize()) {
++        // Background hero
++        if (!heroUrl.isNullOrBlank()) {
++            AppAsyncImage(
++                url = heroUrl,
++                contentDescription = null,
++                modifier = Modifier.matchParentSize(),
++                contentScale = ContentScale.Crop
++            )
++        }
++        // Scrim
++        Box(
++            Modifier
++                .matchParentSize()
++                .background(
++                    Brush.verticalGradient(
++                        colorStops = arrayOf(
++                            0f to Color.Black.copy(alpha = 0.55f),
++                            0.6f to Color.Black.copy(alpha = 0.85f),
++                            1f to Color.Black.copy(alpha = 0.92f)
++                        )
++                    )
++                )
++        )
++
++        // Foreground content
++        val isTv = remember(LocalContext.current) { isTvDevice(LocalContext.current) }
++        Column(
++            modifier = Modifier
++                .fillMaxSize()
++                .verticalScroll(rememberScrollState())
++                .padding(horizontal = 16.dp, vertical = 12.dp)
++        ) {
++            DetailHeader(
++                title = title,
++                subtitle = subtitle,
++                posterUrl = posterUrl,
++                actions = actions,
++                meta = meta,
++                onBack = onBack,
++                modifier = if (isTv) Modifier.focusGroup() else Modifier
++            )
++            headerExtras()
++            Spacer(Modifier.height(8.dp))
++            content()
++            Spacer(Modifier.height(48.dp))
++        }
++    }
++}
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun DetailHeader(
++    title: String,
++    subtitle: String?,
++    posterUrl: String?,
++    actions: List<MediaAction>,
++    meta: DetailMeta?,
++    onBack: (() -> Unit)?,
 +    modifier: Modifier = Modifier
 +) {
-+    val tag = remember(action.id) { MediaActionDefaults.testTagFor(action.id) }
-+    val shape = MediaActionDefaults.ButtonShape
-+    val height = MediaActionDefaults.ButtonHeight
-+    val base = modifier
-+        .height(height)
-+        .focusScaleOnTv()
-+        .semantics { role = Role.Button }
-+        .testTag(tag)
-+
-+    if (action.primary) {
-+        Button(
-+            onClick = action.onClick,
-+            enabled = action.enabled,
-+            shape = shape,
-+            colors = ButtonDefaults.buttonColors(),
-+            modifier = base
++    Row(
++        modifier = modifier
++            .fillMaxWidth(),
++        verticalAlignment = Alignment.CenterVertically,
++        horizontalArrangement = Arrangement.spacedBy(16.dp)
++    ) {
++        // Poster
++        Box(
++            Modifier
++                .size(width = 160.dp, height = 240.dp)
++                .clip(RoundedCornerShape(14.dp))
++                .then(if (onBack != null) Modifier.tvClickable(onClick = onBack) else Modifier)
++                .focusScaleOnTv()
 +        ) {
-+            Text(action.label)
-+            if (!action.badge.isNullOrBlank()) {
-+                Text(
-+                    text = " ${action.badge}",
-+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f),
-+                    modifier = Modifier.padding(start = 4.dp)
++            if (!posterUrl.isNullOrBlank()) {
++                AppAsyncImage(
++                    url = posterUrl,
++                    contentDescription = title,
++                    contentScale = ContentScale.Crop,
++                    modifier = Modifier.matchParentSize()
++                )
++            } else {
++                Box(
++                    Modifier
++                        .matchParentSize()
++                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f))
 +                )
 +            }
 +        }
-+    } else {
-+        OutlinedButton(
-+            onClick = action.onClick,
-+            enabled = action.enabled,
-+            shape = shape,
-+            modifier = base
++        Column(
++            modifier = Modifier.weight(1f),
++            verticalArrangement = Arrangement.spacedBy(8.dp)
 +        ) {
-+            Text(action.label)
-+            if (!action.badge.isNullOrBlank()) {
++            Text(
++                text = title,
++                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
++                maxLines = 2,
++                overflow = TextOverflow.Ellipsis,
++                color = Color.White
++            )
++            if (!subtitle.isNullOrBlank()) {
 +                Text(
-+                    text = " ${action.badge}",
-+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-+                    modifier = Modifier.padding(start = 4.dp)
++                    text = subtitle,
++                    style = MaterialTheme.typography.titleMedium,
++                    maxLines = 2,
++                    overflow = TextOverflow.Ellipsis,
++                    color = Color.White.copy(alpha = 0.85f)
 +                )
++            }
++            if (meta != null) {
++                DetailMetaRow(meta = meta)
++            }
++            // Actions
++            Row(
++                horizontalArrangement = Arrangement.spacedBy(10.dp),
++                verticalAlignment = Alignment.CenterVertically
++            ) {
++                actions.forEach { a ->
++                    AppIconButton(
++                        icon = a.icon,
++                        contentDescription = a.contentDescription,
++                        onClick = a.onClick,
++                        size = 28.dp
++                    )
++                }
 +            }
 +        }
 +    }
 +}
 +
-+/**
-+ * Horizontal action bar. Uses LazyRow when overflowing to keep DPAD traversal predictable.
-+ */
++@OptIn(ExperimentalMaterial3Api::class)
 +@Composable
-+fun MediaActionBar(
-+    actions: List<MediaAction>,
-+    modifier: Modifier = Modifier,
-+    overflowScrollable: Boolean = true,
-+    onPrimaryActionInvoked: (() -> Unit)? = null,
-+) {
-+    if (actions.isEmpty()) return
-+    val spacing = MediaActionDefaults.ButtonSpacing
-+    val content: @Composable () -> Unit = {
-+        Row(
-+            horizontalArrangement = Arrangement.spacedBy(spacing),
-+            modifier = modifier
-+        ) {
-+            actions.forEach { a ->
-+                MediaActionButton(
-+                    action = if (onPrimaryActionInvoked != null && a.primary) {
-+                        a.copy(onClick = {
-+                            onPrimaryActionInvoked.invoke()
-+                            a.onClick()
-+                        })
-+                    } else a
-+                )
-+            }
-+        }
++fun DetailMetaRow(meta: DetailMeta, modifier: Modifier = Modifier) {
++    val chips = buildList {
++        meta.year?.let { add(it) }
++        meta.duration?.let { add(it) }
++        meta.quality?.let { add(it) }
++        meta.audio?.let { add(it) }
++        addAll(meta.tags)
 +    }
-+    if (overflowScrollable && actions.size > 5) {
-+        LazyRow(
-+            horizontalArrangement = Arrangement.spacedBy(spacing),
-+            modifier = modifier
-+        ) {
-+            items(actions, key = { it.id }) { a ->
-+                MediaActionButton(
-+                    action = if (onPrimaryActionInvoked != null && a.primary) {
-+                        a.copy(onClick = {
-+                            onPrimaryActionInvoked.invoke()
-+                            a.onClick()
-+                        })
-+                    } else a
-+                )
-+            }
++    if (chips.isEmpty()) return
++    Row(
++        modifier = modifier,
++        horizontalArrangement = Arrangement.spacedBy(8.dp),
++        verticalAlignment = Alignment.CenterVertically
++    ) {
++        chips.take(6).forEach { t ->
++            AssistChip(onClick = {}, enabled = false, label = { Text(t) })
 +        }
-+    } else {
-+        content()
 +    }
 +}

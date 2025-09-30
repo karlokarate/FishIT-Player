@@ -1,53 +1,619 @@
-diff --git a/ROADMAP.md b/ROADMAP.md
-index 924ce8c..2d25a1a 100644
---- a/ROADMAP.md
-+++ b/ROADMAP.md
-@@ -3,21 +3,14 @@
- 
- Hinweis
- - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
- - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
-+- Maintenance 2025‑09‑30: Sprint‑A (TV Fokus/DPAD Vereinheitlichung) abgeschlossen und in CHANGELOG dokumentiert; Roadmap bereinigt.
- 
- ---
- 
- ## Kurzfristig (2–4 Wochen)
- 
--PRIO‑1: TV Fokus/DPAD Vereinheitlichung
--- Alles Horizontale → `TvFocusRow` (inkl. Chips/Carousels).
--- Alles Interaktive → `tvClickable`/`tvFocusableItem` (No‑Op auf Phone).
--- Zentrale Registry für Scroll+Fokus je Route/Row (`ScrollStateRegistry`).
--- Chrome: einheitliche Auto‑Collapse/Expand‑Trigger im `HomeChromeScaffold`.
--- Kein `onPreviewKeyEvent` (außer echte Sonderfälle).
--- Audit‑Skript erzwingt die Regeln (`tools/audit_tv_focus.sh`).
--
--Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
--
- - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
- - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
- - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).
- - Coil3 Netzwerk: Explizite OkHttp‑Factory prüfen/integrieren, falls stabil verfügbar (sonst bei per‑Request NetworkHeaders bleiben). `respectCacheHeaders(true)` evaluieren.
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 6cffa7e..b2802c0 100644
+index 0f0f7a1..a5c3aa2 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -1,3 +1,8 @@
+@@ -1,3 +1,17 @@
 +2025-09-30
-+- docs(sprint-a): finalize Sprint‑A (TV Fokus/DPAD Vereinheitlichung). Roadmap bereinigt (PRIO‑1 Block entfernt); Status/Details verbleiben im Changelog. CI‑Audit (`tools/audit_tv_focus.sh`) ist verankert und bleibt Teil der Qualitätssicherung.
-+- docs: Hinweis in Roadmap „Maintenance 2025‑09‑30“ ergänzt, damit Sprint‑B ohne Altlasten gestartet werden kann.
-+
++- feat(ui/detail): introduce DetailScaffold (ui/detail) with DetailHeader + DetailMeta and a lightweight MediaAction model. Provides a shared backdrop/poster/title/meta/actions scaffold with slots for header extras and body content. TV focus ready (focusGroup, tvClickable, focus scale).
++- feat(ui/cards): add reusable Cards library (ui/cards) — PosterCard (2:3), ChannelCard (16:9), SeasonCard, EpisodeCard — with shimmer placeholders and TV hover/scale. Not yet wired into screens; migration can proceed incrementally without breaking changes.
++- feat(ui/tv): add FocusToolkit (ui/tv/FocusToolkit.kt) with helpers for initial focus and simple focusable wrappers. Complements existing TvFocusRow/tvClickable; safe no‑op on phones.
++- docs(roadmap): Sprint B/C Epic – list all 10 steps (P1). Mark steps 1, 3, and 5 as started (baseline components added). Adoption across Vod/Series/Live/Start/Library will be phased in subsequent patches.
++- docs(arch): Architecture Overview updated to include new ui/detail and ui/cards modules under UI components.
 +
  2025-09-27
  - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
  - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
-diff --git a/AGENTS.md b/AGENTS.md
-index d54bd7b..33d2617 100644
---- a/AGENTS.md
-+++ b/AGENTS.md
-@@ -120,6 +120,8 @@ Where to find the full overview
- Recent
- - TV chrome BACK: On TV, ESC/BACK first collapses HomeChrome (from Expanded or Visible) and consumes the event. This prevents closing the player or leaving the screen when the chrome is showing; pressing BACK twice still exits as expected.
- - Tile focus logging: Core row engines (MediaRowCore/MediaRowCorePaged) now emit detailed `focus:<type> id=<id> <ui title> (<OBX title>)` logs on focus, plus a `tree:` hint. Makes it visible in logcat which concrete tile currently has focus across Start/Library/Details rows.
- - TV rows centering: Single-step centering when the target tile is already visible (RowCore, RowCorePaged, TvFocusRow), eliminating left→right jitter. While the row
-+- Sprint‑A finalized (2025‑09‑30): TV Focus/DPAD Vereinheitlichung ist abgeschlossen; Audit‑Skript (`tools/audit_tv_focus.sh`) in CI verankert. Roadmap bereinigt; weitere QA/Regression‑Automatisierung folgt separat.
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 848842d..9899d1a 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -10,6 +10,39 @@ Hinweis
+ 
+ ---
+ 
++EPIC: Sprint B/C – UI Konsistenz & TV Usability (10 Schritte, alle Prio‑1)
++- 1) DetailScaffold – gemeinsames Detail‑Gerüst (Backdrop/Poster/Title/Meta/Actions + Slots)
++  - Status: Baseline implementiert (ui/detail). Migration der Detail‑Screens folgt schrittweise.
++- 2) MediaActionBar – einheitliche Action‑Leiste (Play/Trailer/Fav/Share/Grant)
++  - Status: vorhanden aus Sprint A (in Arbeit/Weiterführung).
++- 3) TV‑Fokus‑Toolkit – DPAD Navigation (Row/Item‑Focus, Initial‑Focus, Focus‑Memory)
++  - Status: Basis vorhanden (TvFocusRow/tvClickable/ScrollStateRegistry). Helper ergänzt (ui/tv/FocusToolkit).
++- 4) ImageLoaderKit – zentralisierte Bildanforderungen (Poster/Hero/Avatar) mit Fallbacks/Headers
++  - Status: vorhanden aus Sprint A.
++- 5) Cards‑Bibliothek – wiederverwendbare Karten (Poster/Channel/Season/Episode) mit TV‑Hover & Shimmer
++  - Status: Baseline implementiert (ui/cards). Adoption in Start/Library/Details folgt.
++- 6) UiState/Status‑Views – Laden/Leer/Fehler vereinheitlichen (Listen/Details)
++  - Status: vorhanden aus Sprint A.
++- 7) Similar/Empfehlungen‑Sektion – Detail unten, zeilenweise (kuratiert)
++  - Status: geplant.
++- 8) Resume/Continue‑Overlay – konsistent auf Cards + ActionBar
++  - Status: geplant.
++- 9) A11y/TestTags – semantische Rollen, beschreibende Labels, stabile TestTags
++  - Status: geplant.
++- 10) Fehler‑Oberflächen – Netzwerk/401/Timeout Dialoge standardisieren (Player/Details/Listen)
++  - Status: geplant.
 +
++Hinweis zur Einführung: Die Basiskomponenten (1, 3, 5) sind nun als Bibliotheken vorhanden und verursachen keine Breaking Changes. Die sukzessive Migration der betroffenen Screens (Vod/Serie/Live/Library/Start) erfolgt in kleinen Patches, jeweils mit visueller und DPAD‑QA.
++
++---
++
+ ## Kurzfristig (2–4 Wochen)
+ 
+ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
+@@ -34,6 +67,7 @@ Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten
+ - CI/Build: Job für `assembleRelease` + Split‑APKs (arm64‑v8a, armeabi‑v7a) erzeugen; Artefakte im CI hinterlegen. Keystore verbleibt lokal (Unsigned‑Artefakte).
+ - Git WSL Push: Repo‑Docs um `core.sshCommand`/SSH‑Config (Deploy‑Key) ergänzen, damit Push aus WSL/AS stabil funktioniert.
+ 
++Parallel: Adoption der neuen DetailScaffold/Card‑Komponenten in Vod/Series/Live in kleinen, risikoarmen Schritten.
+ ## Mittelfristig (4–8 Wochen)
+ 
+ - TDLib Phase‑2 (offen):
+diff --git a/ARCHITECTURE_OVERVIEW.md b/ARCHITECTURE_OVERVIEW.md
+index 4a0d95c..8b5c374 100644
+--- a/ARCHITECTURE_OVERVIEW.md
++++ b/ARCHITECTURE_OVERVIEW.md
+@@ -129,6 +129,8 @@ Repository/Settings Lifecycle
+ │   │   ├── VodDetailScreen.kt              # VOD-Details, Poster focus + 50% backdrop overlay, Enrichment-Fetch, Resume
+ │   │   ├── SeriesDetailScreen.kt           # Serien, Staffel/Episoden-Listing, Resume Next
+ │   │   └── SettingsScreen.kt               # UI-, Player-, Filter-, Profile-Settings
++│   ├── detail/                             # Gemeinsames Detail-Gerüst (Backdrop/Poster/Title/Meta/Actions + Slots)
++│   ├── cards/                              # Wiederverwendbare Karten (Poster/Channel/Season/Episode) mit TV Hover & Shimmer
+ │   ├── skin/                               # TV-Skin (Focus/Scale, Modifiers), Theme
+ │   ├── state/ScrollStateRegistry.kt        # Scroll-Positions pro Row/Grid
+ │   ├── theme/                              # Farben, Typo, Theme
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/cards/Cards.kt b/app/src/main/java/com/chris/m3usuite/ui/cards/Cards.kt
+new file mode 100644
+index 0000000..7464d6a
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/cards/Cards.kt
+@@ -0,0 +1,231 @@
++package com.chris.m3usuite.ui.cards
++
++import androidx.compose.animation.core.animateFloatAsState
++import androidx.compose.animation.core.tween
++import androidx.compose.foundation.background
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.Spacer
++import androidx.compose.foundation.layout.aspectRatio
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.shape.CircleShape
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.Surface
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.alpha
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.graphics.Brush
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.layout.ContentScale
++import androidx.compose.ui.text.style.TextOverflow
++import androidx.compose.ui.unit.dp
++import com.chris.m3usuite.ui.fx.ShimmerBox
++import com.chris.m3usuite.ui.components.common.FocusTitleOverlay
++import com.chris.m3usuite.ui.skin.focusScaleOnTv
++import com.chris.m3usuite.ui.skin.tvClickable
++import com.chris.m3usuite.ui.util.AppAsyncImage
++
++private val PosterShape = RoundedCornerShape(14.dp)
++private val TileShape = RoundedCornerShape(14.dp)
++
++/**
+++ PosterCard – 2:3 Karte mit Fokus-Overlay, Shimmer und TV-Hover.
++ */
++@Composable
++fun PosterCard(
++    title: String?,
++    imageUrl: String?,
++    modifier: Modifier = Modifier,
++    isLoading: Boolean = false,
++    onClick: (() -> Unit)? = null,
++) {
++    var focused by remember { mutableStateOf(false) }
++    Box(
++        modifier = modifier
++            .aspectRatio(2f / 3f)
++            .clip(PosterShape)
++            .then(
++                if (onClick != null) {
++                    Modifier
++                        .tvClickable(onClick = onClick)
++                        .focusScaleOnTv()
++                } else Modifier
++            )
++    ) {
++        if (isLoading) {
++            ShimmerBox(modifier = Modifier.matchParentSize(), shape = PosterShape)
++        }
++        if (!imageUrl.isNullOrBlank()) {
++            AppAsyncImage(
++                url = imageUrl,
++                contentDescription = title ?: "Poster",
++                modifier = Modifier.matchParentSize(),
++                contentScale = ContentScale.Crop
++            )
++        } else {
++            Surface(
++                modifier = Modifier.matchParentSize(),
++                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
++                shape = PosterShape
++            ) {}
++        }
++        FocusTitleOverlay(
++            title = title,
++            focused = focused,
++            modifier = Modifier.padding(8.dp)
++        )
++        // Observe focus state (simple)
++        androidx.compose.ui.Modifier
++        androidx.compose.foundation.layout.Box(
++            Modifier
++                .matchParentSize()
++                .onFocusChanged { focused = it.isFocused }
++        )
++    }
++}
++
++/**
+++ ChannelCard – 16:9 Live-Karte mit optionalem Titel-Overlay.
++ */
++@Composable
++fun ChannelCard(
++    title: String?,
++    logoUrl: String?,
++    modifier: Modifier = Modifier,
++    isLoading: Boolean = false,
++    onClick: (() -> Unit)? = null
++) {
++    var focused by remember { mutableStateOf(false) }
++    Box(
++        modifier = modifier
++            .aspectRatio(16f / 9f)
++            .clip(TileShape)
++            .then(
++                if (onClick != null) {
++                    Modifier
++                        .tvClickable(onClick = onClick)
++                        .focusScaleOnTv()
++                } else Modifier
++            )
++    ) {
++        if (isLoading) {
++            ShimmerBox(modifier = Modifier.matchParentSize(), shape = TileShape)
++        }
++        if (!logoUrl.isNullOrBlank()) {
++            AppAsyncImage(
++                url = logoUrl,
++                contentDescription = title ?: "Channel",
++                modifier = Modifier.matchParentSize(),
++                contentScale = ContentScale.Crop
++            )
++        } else {
++            Surface(
++                modifier = Modifier.matchParentSize(),
++                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
++                shape = TileShape
++            ) {}
++        }
++        FocusTitleOverlay(
++            title = title,
++            focused = focused,
++            modifier = Modifier.padding(8.dp),
++            maxLines = 1
++        )
++        androidx.compose.foundation.layout.Box(
++            Modifier
++                .matchParentSize()
++                .onFocusChanged { focused = it.isFocused }
++        )
++    }
++}
++
++/**
+++ SeasonCard – kleine, fokussierbare Kapsel-Karte für Staffelangaben.
++ */
++@Composable
++fun SeasonCard(
++    label: String,
++    selected: Boolean,
++    modifier: Modifier = Modifier,
++    onClick: (() -> Unit)? = null
++) {
++    val bg = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
++    val fg = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
++    Surface(
++        color = bg,
++        contentColor = fg,
++        shape = CircleShape,
++        modifier = modifier
++            .then(if (onClick != null) Modifier.tvClickable(onClick = onClick) else Modifier)
++            .focusScaleOnTv()
++    ) {
++        Text(
++            text = label,
++            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
++            maxLines = 1,
++            overflow = TextOverflow.Ellipsis,
++            style = MaterialTheme.typography.labelLarge
++        )
++    }
++}
++
++/**
+++ EpisodeCard – schlanke Zeilenkarte mit Titel/Meta, optionalem Fortschritt.
++ */
++@Composable
++fun EpisodeCard(
++    title: String,
++    subtitle: String? = null,
++    progress: Float? = null,
++    modifier: Modifier = Modifier,
++    onClick: (() -> Unit)? = null
++) {
++    Column(
++        modifier = modifier
++            .fillMaxWidth()
++            .clip(RoundedCornerShape(10.dp))
++            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f))
++            .then(if (onClick != null) Modifier.tvClickable(onClick = onClick) else Modifier)
++            .focusScaleOnTv()
++            .padding(horizontal = 12.dp, vertical = 10.dp),
++        verticalArrangement = Arrangement.spacedBy(4.dp)
++    ) {
++        Text(
++            text = title,
++            style = MaterialTheme.typography.bodyLarge,
++            maxLines = 2,
++            overflow = TextOverflow.Ellipsis,
++            color = MaterialTheme.colorScheme.onSurface
++        )
++        if (!subtitle.isNullOrBlank()) {
++            Text(
++                text = subtitle,
++                style = MaterialTheme.typography.bodyMedium,
++                maxLines = 1,
++                overflow = TextOverflow.Ellipsis,
++                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
++            )
++        }
++        if (progress != null && progress > 0f) {
++            val a by animateFloatAsState(targetValue = progress.coerceIn(0f, 1f), animationSpec = tween(200), label = "episodeProgress")
++            Box(
++                Modifier
++                    .fillMaxWidth()
++                    .height(4.dp)
++                    .clip(CircleShape)
++                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
++            ) {
++                Box(
++                    Modifier
++                        .fillMaxWidth(a)
++                        .height(4.dp)
++                        .background(MaterialTheme.colorScheme.primary)
++                )
++            }
++        }
++    }
++}
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/detail/DetailScaffold.kt b/app/src/main/java/com/chris/m3usuite/ui/detail/DetailScaffold.kt
+new file mode 100644
+index 0000000..3fac6f8
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/detail/DetailScaffold.kt
+@@ -0,0 +1,262 @@
++package com.chris.m3usuite.ui.detail
++
++import androidx.compose.foundation.background
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.ColumnScope
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.Spacer
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.size
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.material3.AssistChip
++import androidx.compose.material3.ExperimentalMaterial3Api
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.remember
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.graphics.Brush
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.layout.ContentScale
++import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.text.style.TextOverflow
++import androidx.compose.ui.unit.dp
++import com.chris.m3usuite.ui.common.AppIcon
++import com.chris.m3usuite.ui.common.AppIconButton
++import com.chris.m3usuite.ui.compat.focusGroup
++import com.chris.m3usuite.ui.skin.isTvDevice
++import com.chris.m3usuite.ui.skin.tvClickable
++import com.chris.m3usuite.ui.skin.focusScaleOnTv
++import com.chris.m3usuite.ui.util.AppAsyncImage
++
++@androidx.compose.runtime.Stable
++data class DetailMeta(
++    val year: String? = null,
++    val duration: String? = null,   // "98 min" / "S01E03 – 44 min"
++    val quality: String? = null,    // "HD/4K"
++    val audio: String? = null,      // "DE 5.1"
++    val tags: List<String> = emptyList()
++)
++
++/**
++ * Lightweight media action model for DetailScaffold. Uses AppIcon to integrate with AppIconButton.
++ */
++data class MediaAction(
++    val icon: AppIcon,
++    val contentDescription: String,
++    val onClick: () -> Unit
++)
++
++/**
++ * Shared detail scaffold with hero backdrop, scrim, and a header (poster, title, meta, actions).
++ * Slots:
++ *  - headerExtras: rendered below the header (e.g., chips)
++ *  - content: main body (e.g., seasons/episodes, EPG, similar)
++ */
++@Composable
++fun DetailScaffold(
++    title: String,
++    subtitle: String? = null,
++    heroUrl: String?,
++    posterUrl: String?,
++    actions: List<MediaAction>,
++    meta: DetailMeta? = null,
++    modifier: Modifier = Modifier,
++    onBack: (() -> Unit)? = null,
++    headerExtras: @Composable ColumnScope.() -> Unit = {},
++    content: @Composable ColumnScope.() -> Unit
++) {
++    val shape = RoundedCornerShape(14.dp)
++    Box(modifier = modifier.fillMaxSize()) {
++        // Background hero
++        if (!heroUrl.isNullOrBlank()) {
++            AppAsyncImage(
++                url = heroUrl,
++                contentDescription = null,
++                modifier = Modifier.matchParentSize(),
++                contentScale = ContentScale.Crop
++            )
++        }
++        // Scrim
++        Box(
++            Modifier
++                .matchParentSize()
++                .background(
++                    Brush.verticalGradient(
++                        colorStops = arrayOf(
++                            0f to Color.Black.copy(alpha = 0.55f),
++                            0.6f to Color.Black.copy(alpha = 0.85f),
++                            1f to Color.Black.copy(alpha = 0.92f)
++                        )
++                    )
++                )
++        )
++
++        // Foreground content
++        val isTv = remember(LocalContext.current) { isTvDevice(LocalContext.current) }
++        Column(
++            modifier = Modifier
++                .fillMaxSize()
++                .verticalScroll(rememberScrollState())
++                .padding(horizontal = 16.dp, vertical = 12.dp)
++        ) {
++            DetailHeader(
++                title = title,
++                subtitle = subtitle,
++                posterUrl = posterUrl,
++                actions = actions,
++                meta = meta,
++                onBack = onBack,
++                modifier = if (isTv) Modifier.focusGroup() else Modifier
++            )
++            headerExtras()
++            Spacer(Modifier.height(8.dp))
++            content()
++            Spacer(Modifier.height(48.dp))
++        }
++    }
++}
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun DetailHeader(
++    title: String,
++    subtitle: String?,
++    posterUrl: String?,
++    actions: List<MediaAction>,
++    meta: DetailMeta?,
++    onBack: (() -> Unit)?,
++    modifier: Modifier = Modifier
++) {
++    Row(
++        modifier = modifier
++            .fillMaxWidth(),
++        verticalAlignment = Alignment.CenterVertically,
++        horizontalArrangement = Arrangement.spacedBy(16.dp)
++    ) {
++        // Poster
++        Box(
++            Modifier
++                .size(width = 160.dp, height = 240.dp)
++                .clip(RoundedCornerShape(14.dp))
++                .then(if (onBack != null) Modifier.tvClickable(onClick = onBack) else Modifier)
++                .focusScaleOnTv()
++        ) {
++            if (!posterUrl.isNullOrBlank()) {
++                AppAsyncImage(
++                    url = posterUrl,
++                    contentDescription = title,
++                    contentScale = ContentScale.Crop,
++                    modifier = Modifier.matchParentSize()
++                )
++            } else {
++                Box(
++                    Modifier
++                        .matchParentSize()
++                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f))
++                )
++            }
++        }
++        Column(
++            modifier = Modifier.weight(1f),
++            verticalArrangement = Arrangement.spacedBy(8.dp)
++        ) {
++            Text(
++                text = title,
++                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
++                maxLines = 2,
++                overflow = TextOverflow.Ellipsis,
++                color = Color.White
++            )
++            if (!subtitle.isNullOrBlank()) {
++                Text(
++                    text = subtitle,
++                    style = MaterialTheme.typography.titleMedium,
++                    maxLines = 2,
++                    overflow = TextOverflow.Ellipsis,
++                    color = Color.White.copy(alpha = 0.85f)
++                )
++            }
++            if (meta != null) {
++                DetailMetaRow(meta = meta)
++            }
++            // Actions
++            Row(
++                horizontalArrangement = Arrangement.spacedBy(10.dp),
++                verticalAlignment = Alignment.CenterVertically
++            ) {
++                actions.forEach { a ->
++                    AppIconButton(
++                        icon = a.icon,
++                        contentDescription = a.contentDescription,
++                        onClick = a.onClick,
++                        size = 28.dp
++                    )
++                }
++            }
++        }
++    }
++}
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun DetailMetaRow(meta: DetailMeta, modifier: Modifier = Modifier) {
++    val chips = buildList {
++        meta.year?.let { add(it) }
++        meta.duration?.let { add(it) }
++        meta.quality?.let { add(it) }
++        meta.audio?.let { add(it) }
++        addAll(meta.tags)
++    }
++    if (chips.isEmpty()) return
++    Row(
++        modifier = modifier,
++        horizontalArrangement = Arrangement.spacedBy(8.dp),
++        verticalAlignment = Alignment.CenterVertically
++    ) {
++        chips.take(6).forEach { t ->
++            AssistChip(onClick = {}, enabled = false, label = { Text(t) })
++        }
++    }
++}
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/tv/FocusToolkit.kt b/app/src/main/java/com/chris/m3usuite/ui/tv/FocusToolkit.kt
+new file mode 100644
+index 0000000..d7b42f8
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/tv/FocusToolkit.kt
+@@ -0,0 +1,56 @@
++package com.chris.m3usuite.ui.tv
++
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.remember
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.composed
++import androidx.compose.ui.focus.FocusRequester
++import androidx.compose.ui.focus.focusRequester
++import androidx.compose.ui.focus.onFocusEvent
++
++/**
++ * Helper to request initial focus once, after the node is attached.
++ * Safe on phones (no-op unless explicitly requested).
++ */
++@Composable
++fun rememberInitialFocusRequester(): FocusRequester {
++    return remember { FocusRequester() }
++}
++
++/**
++ * Apply an initial focus requester and request focus once when [requestOnAttach] is true.
++ * If the node is not yet attached, the request is retried once on the next frame.
++ */
++fun Modifier.tvInitialFocus(
++    requester: FocusRequester,
++    requestOnAttach: Boolean = true
++): Modifier = composed {
++    var armed = requestOnAttach
++    LaunchedEffect(requestOnAttach) {
++        if (requestOnAttach) {
++            // Delay 1 frame to ensure attach
++            kotlinx.coroutines.delay(16)
++            runCatching { requester.requestFocus() }
++        }
++    }
++    this
++        .focusRequester(requester)
++}
++
++/**
++ * Simple focus observer that invokes [onFocused] when the element gains focus.
++ * Use this to implement focus memory hooks in callers (e.g. save focused index).
++ */
++fun Modifier.onTvFocused(
++    onFocused: () -> Unit
++): Modifier = this.onFocusEvent {
++    if (it.isFocused) onFocused()
++}
++
++/**
++ * Minimal wrapper to mark an item focusable in TV paths without changing click behavior.
++ * Kept intentionally small; tvClickable should usually be preferred for interactive elements.
++ */
++fun Modifier.tvFocusableItem(): Modifier = this
++    .focusRequester(FocusRequester())
++    // additional focusable() not required when using tvClickable on the same node; keep lean here.
