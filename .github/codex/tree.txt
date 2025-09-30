@@ -372,6 +372,7 @@ app/src/main/res/values/themes.xml
 app/src/main/res/xml/backup_rules.xml
 app/src/main/res/xml/data_extraction_rules.xml
 app/src/main/res/xml/file_paths.xml
+b/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt
 b/app/src/main/java/com/chris/m3usuite/ui/cards/Cards.kt
 b/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt
 b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt
