@@ -424,11 +424,11 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Global back handling: pop if possible, otherwise move task to back
+                // Global back handling: pop if possible; otherwise consume (never close app via BACK)
                 BackHandler {
                     val popped = nav.popBackStack()
                     if (!popped) {
-                        (ctx as? Activity)?.moveTaskToBack(false)
+                        // Do nothing – consume BACK at root. Home button remains the only way to leave the app.
                     }
                 }
             }

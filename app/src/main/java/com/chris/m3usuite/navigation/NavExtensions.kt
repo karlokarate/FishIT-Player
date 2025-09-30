@@ -22,3 +22,16 @@ fun NavOptionsBuilder.popUpToStartDestination(
         }
     }
 }
+
+/**
+ * Top-level navigation helper that preserves state across tabs/routes and avoids
+ * building deep back stacks. It pops up to the graph start destination while saving
+ * state, launches singleTop, and restores previous state if available.
+ */
+fun NavHostController.navigateTopLevel(route: String) {
+    navigate(route) {
+        launchSingleTop = true
+        restoreState = true
+        popUpToStartDestination(this@navigateTopLevel, saveState = true)
+    }
+}

@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asComposeRenderEffect
@@ -79,6 +80,8 @@ private enum class ChromeMode { Visible, Collapsed, Expanded }
 
 // Global toggle provider to allow deep children (e.g., tiles) to trigger burger behavior
 val LocalChromeToggle: androidx.compose.runtime.ProvidableCompositionLocal<(() -> Unit)?> = compositionLocalOf { null }
+// Explicit expand action for chrome (TV only usage)
+val LocalChromeExpand: androidx.compose.runtime.ProvidableCompositionLocal<(() -> Unit)?> = compositionLocalOf { null }
 
 @Composable
 fun HomeChromeScaffold(
@@ -107,7 +110,8 @@ fun HomeChromeScaffold(
     }
 
     // Chrome state: Visible (default), Collapsed (hidden), Expanded (focus trap + blur)
-    val tvChromeMode = rememberSaveable { mutableStateOf(if (isTv) ChromeMode.Visible else ChromeMode.Visible) }
+    // On TV, start collapsed to keep focus in content rows; header/bottom remain visible on phones
+    val tvChromeMode = rememberSaveable { mutableStateOf(if (isTv) ChromeMode.Collapsed else ChromeMode.Visible) }
     var focusedRowKey by remember { mutableStateOf<String?>(null) }
     // System-Insets (compute via density to avoid extension import issues)
     val density = LocalDensity.current
@@ -158,8 +162,6 @@ fun HomeChromeScaffold(
     val bottomFocus = remember { FocusRequester() }
     var pendingHeaderFocus by remember { mutableStateOf(false) }
     var pendingBottomFocus by remember { mutableStateOf(false) }
-    // Track LEFT key hold duration for global long-press detection
-    val leftPressStartMs = remember { mutableStateOf<Long?>(null) }
 
     Box(
         Modifier
@@ -176,9 +178,10 @@ fun HomeChromeScaffold(
                     }
                     Key.Escape, Key.Back -> {
                         // Treat ESC/BACK as chrome-collapse first on TV to avoid closing content/player
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("BACK")
-                        if (isDown) {
-                            if (tvChromeMode.value != ChromeMode.Collapsed) {
+                        if (isUp) com.chris.m3usuite.core.debug.GlobalDebug.logDpad("BACK")
+                        val expanded = tvChromeMode.value != ChromeMode.Collapsed
+                        if (expanded) {
+                            if (isDown) {
                                 tvChromeMode.value = ChromeMode.Collapsed
                                 // After collapsing, nudge focus back into the main content area
                                 runCatching {
@@ -186,12 +189,13 @@ fun HomeChromeScaffold(
                                     if (!moved) focusManager.moveFocus(FocusDirection.Up)
                                     com.chris.m3usuite.core.debug.GlobalDebug.logTree("focusReq:Chrome:content")
                                 }
-                                true
-                            } else false
+                            }
+                            // Consume both DOWN and UP when collapsing chrome to prevent app/back navigation
+                            true
                         } else false
                     }
                     Key.DirectionDown -> {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("DOWN")
+                        if (isUp) com.chris.m3usuite.core.debug.GlobalDebug.logDpad("DOWN")
                         if (tvChromeMode.value == ChromeMode.Expanded) {
                             // Collapse chrome and push focus into content
                             tvChromeMode.value = ChromeMode.Collapsed
@@ -200,7 +204,7 @@ fun HomeChromeScaffold(
                         } else false
                     }
                     Key.DirectionUp -> {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("UP")
+                        if (isUp) com.chris.m3usuite.core.debug.GlobalDebug.logDpad("UP")
                         if (tvChromeMode.value == ChromeMode.Expanded) {
                             tvChromeMode.value = ChromeMode.Collapsed
                             focusContentFromChrome(FocusDirection.Up)
@@ -217,21 +221,8 @@ fun HomeChromeScaffold(
                             } else false
                         } else false
                     }
-                    Key.DirectionLeft -> {
-                        if (isDown) { leftPressStartMs.value = SystemClock.uptimeMillis(); false }
-                        else if (isUp) {
-                            val start = leftPressStartMs.value; leftPressStartMs.value = null
-                            val held = if (start != null) SystemClock.uptimeMillis() - start else 0L
-                            if (held >= 300L) {
-                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT_LONG")
-                                tvChromeMode.value = if (tvChromeMode.value == ChromeMode.Expanded) ChromeMode.Collapsed else ChromeMode.Expanded
-                                true
-                            } else {
-                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT"); false
-                            }
-                        } else false
-                    }
-                    Key.DirectionRight -> { com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT"); false }
+                    Key.DirectionLeft -> { if (isUp) com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT"); false }
+                    Key.DirectionRight -> { if (isUp) com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT"); false }
                     else -> false
                 }
         }
@@ -301,6 +292,7 @@ fun HomeChromeScaffold(
         } else Modifier
         androidx.compose.runtime.CompositionLocalProvider(
             LocalChromeToggle provides ({ tvChromeMode.value = if (tvChromeMode.value == ChromeMode.Expanded) ChromeMode.Collapsed else ChromeMode.Expanded }),
+            LocalChromeExpand provides (if (isTv) ({ tvChromeMode.value = ChromeMode.Expanded }) else null),
             LocalChromeRowFocusSetter provides { key: String? ->
                 focusedRowKey = key
                 if (isTv && key != null) tvChromeMode.value = ChromeMode.Collapsed
@@ -322,7 +314,10 @@ fun HomeChromeScaffold(
                 LocalChromeOnAction provides (if (isTv) ({ tvChromeMode.value = ChromeMode.Collapsed }) else null)
             ) {
                 Box(Modifier.onFocusEvent { st ->
-                    if (isTv && (st.isFocused || st.hasFocus)) tvChromeMode.value = ChromeMode.Expanded
+                    if (isTv && (st.isFocused || st.hasFocus)) {
+                        // Do not auto-expand on incidental focus; only expand via Menu/DPAD Up
+                        com.chris.m3usuite.core.debug.GlobalDebug.logTree("focus:header")
+                    }
                 }) {
                     FishITHeader(
                         title = title,
@@ -349,7 +344,8 @@ fun HomeChromeScaffold(
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .padding(WindowInsets.navigationBars.asPaddingValues()),
+                        .padding(WindowInsets.navigationBars.asPaddingValues())
+                        .onFocusEvent { st -> if (isTv && (st.isFocused || st.hasFocus)) com.chris.m3usuite.core.debug.GlobalDebug.logTree("focus:bottom") },
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     bottomBar?.invoke()

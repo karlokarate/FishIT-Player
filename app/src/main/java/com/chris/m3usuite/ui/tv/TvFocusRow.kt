@@ -27,6 +27,13 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -176,18 +183,12 @@ fun TvFocusRow(
         horizontalArrangement = Arrangement.spacedBy(itemSpacing)
     ) {
         items(count = itemCount, key = itemKey) { idx ->
-            Box(
-                Modifier
-                    .then(
-                        com.chris.m3usuite.ui.skin.run {
-                            // tvFocusableItem lives in skin package
-                            val setRow = com.chris.m3usuite.ui.home.LocalChromeRowFocusSetter.current
-                            Modifier.tvFocusableItem(stateKey, idx, onFocused = { setRow(stateKey) })
-                        }
-                    )
-            ) {
-                itemContent(idx)
+            val base = com.chris.m3usuite.ui.skin.run {
+                val setRow = com.chris.m3usuite.ui.home.LocalChromeRowFocusSetter.current
+                Modifier.tvFocusableItem(stateKey, idx, onFocused = { setRow(stateKey) })
             }
+            val visual = if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvFocusFrame() } else Modifier
+            Box(base.then(visual)) { itemContent(idx) }
         }
     }
 }

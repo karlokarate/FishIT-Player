@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -187,6 +188,8 @@ fun Modifier.tvClickable(
     focusColors: TvFocusColors = TvFocusColors.Default,
     focusBorderWidth: Dp = 1.5.dp,
     brightenContent: Boolean = true,
+    debugTag: String? = null,
+    focusRequester: FocusRequester? = null,
     onClick: () -> Unit
 ): Modifier = composed(
     inspectorInfo = {
@@ -199,10 +202,14 @@ fun Modifier.tvClickable(
     }
     ) {
     val isTv = rememberIsTvUi()
+    val isTvLow = if (isTv) {
+        val ctxLocal = LocalContext.current
+        remember(ctxLocal) { com.chris.m3usuite.core.device.DeviceProfile.isTvLowSpec(ctxLocal) }
+    } else false
     val scope = rememberCoroutineScope()
     val interactionSource = remember { MutableInteractionSource() }
     val bring = remember { BringIntoViewRequester() }
-    val focusReq = remember { FocusRequester() }
+    val focusReq = focusRequester ?: remember { FocusRequester() }
     val density = LocalDensity.current
     val borderWidthPx = remember(density, focusBorderWidth) { with(density) { focusBorderWidth.toPx() } }
     var focused by remember { mutableStateOf(false) }
@@ -219,8 +226,8 @@ fun Modifier.tvClickable(
 
     val targetScale = if (isTv) {
         when {
-            pressed -> scalePressed
-            focused -> scaleFocused
+            pressed -> if (isTvLow) 1.01f else scalePressed
+            focused -> if (isTvLow) 1.03f else scaleFocused
             else -> 1f
         }
     } else 1f
@@ -240,8 +247,13 @@ fun Modifier.tvClickable(
             .bringIntoViewRequester(bring)
             .onFocusEvent { state ->
                 val now = state.isFocused || state.hasFocus
-                if (autoBringIntoView && now && !focused) scope.launch { bring.bringIntoView() }
+                // Temporarily disable auto bring-into-view
                 focused = now
+                if (now) {
+                    val module = com.chris.m3usuite.metrics.RouteTag.current
+                    val comp = role?.toString() ?: "Clickable"
+                    com.chris.m3usuite.core.debug.GlobalDebug.logFocusWidget(component = comp, module = module, tag = debugTag ?: "tvClickable")
+                }
             }
             .zIndex(if (focused || pressed) 2f else 0f)
             .graphicsLayer {
@@ -249,7 +261,8 @@ fun Modifier.tvClickable(
                     scaleX = scale
                     scaleY = scale
                 }
-                shadowElevation = if (focused) elevationFocusedDp.dp.toPx() else 0f
+                // TV low-spec: drop shadow elevation entirely
+                shadowElevation = if (!isTvLow && focused) elevationFocusedDp.dp.toPx() else 0f
                 clip = false
             }
             .drawWithContent {
@@ -274,7 +287,8 @@ fun Modifier.focusScaleOnTv(
     focusColors: TvFocusColors = TvFocusColors.Default,
     focusBorderWidth: Dp = 1.5.dp,
     interactionSource: MutableInteractionSource? = null,
-    brightenContent: Boolean = true
+    brightenContent: Boolean = true,
+    debugTag: String? = null
 ): Modifier = composed(
     inspectorInfo = {
         name = "focusScaleOnTv"
@@ -288,12 +302,15 @@ fun Modifier.focusScaleOnTv(
     val sw = cfg.smallestScreenWidthDp
     val isTablet = sw >= 600
     val isTv = isTvDevice(ctx)
+    val isTvLow = com.chris.m3usuite.core.device.DeviceProfile.isTvLowSpec(ctx)
     val effFocused = focusedScale ?: when {
+        isTv && isTvLow -> 1.03f
         isTv -> 1.08f
         isTablet -> 1.04f
         else -> 1.03f
     }
     val effPressed = pressedScale ?: when {
+        isTv && isTvLow -> 0.995f
         isTv -> 0.98f
         else -> 0.99f
     }
@@ -322,7 +339,14 @@ fun Modifier.focusScaleOnTv(
     val focusDecoration = rememberTvFocusDecoration(focused, pressed, focusColors)
 
     this
-        .onFocusEvent { focused = it.isFocused || it.hasFocus }
+        .onFocusEvent {
+            val now = it.isFocused || it.hasFocus
+            focused = now
+            if (now) {
+                val module = com.chris.m3usuite.metrics.RouteTag.current
+                com.chris.m3usuite.core.debug.GlobalDebug.logFocusWidget(component = "Button", module = module, tag = debugTag ?: "focusScaleOnTv")
+            }
+        }
         .zIndex(if (focused || pressed) 2f else 0f)
         .graphicsLayer { scaleX = scale; scaleY = scale; clip = false }
         .drawWithContent {
@@ -345,7 +369,8 @@ fun Modifier.tvFocusableItem(
     stateKey: String,
     index: Int,
     autoBringIntoView: Boolean = true,
-    onFocused: () -> Unit = {}
+    onFocused: () -> Unit = {},
+    debugTag: String? = null
 ): Modifier = composed(
     inspectorInfo = {
         name = "tvFocusableItem"
@@ -365,7 +390,64 @@ fun Modifier.tvFocusableItem(
             if (ev.isFocused) {
                 com.chris.m3usuite.ui.state.writeRowFocus(stateKey, index)
                 onFocused()
-                if (isTv && autoBringIntoView) scope.launch { requester.bringIntoView() }
+                // Temporarily disable auto bring-into-view
+                val module = com.chris.m3usuite.metrics.RouteTag.current
+                com.chris.m3usuite.core.debug.GlobalDebug.logFocusWidget(component = "Item", module = module, tag = debugTag ?: "$stateKey#$index")
             }
         }
+}
+
+/**
+ * Draw focus visuals (scale + halo) on a stable wrapper regardless of inner content.
+ * This reacts to descendant focus (hasFocus) so visuals persist even if the child swaps.
+ */
+fun Modifier.tvFocusFrame(
+    focusedScale: Float = 1.40f,
+    pressedScale: Float = 1.40f,
+    shape: Shape = RoundedCornerShape(18.dp),
+    focusColors: TvFocusColors = TvFocusColors(
+        focusFill = Color.White.copy(alpha = 0.28f),
+        focusBorder = Color.White.copy(alpha = 0.92f),
+        pressedFill = Color.White.copy(alpha = 0.32f),
+        pressedBorder = Color.White.copy(alpha = 1.0f)
+    ),
+    focusBorderWidth: Dp = 2.5.dp,
+    brightenContent: Boolean = false
+): Modifier = composed(
+    inspectorInfo = {
+        name = "tvFocusFrame"
+        properties["focusedScale"] = focusedScale
+    }
+) {
+    val isTv = rememberIsTvUi()
+    if (!isTv) return@composed this
+
+    var focused by remember { mutableStateOf(false) }
+    var pressed by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    val borderWidthPx = remember(density, focusBorderWidth) { with(density) { focusBorderWidth.toPx() } }
+    val scale by animateFloatAsState(
+        targetValue = when {
+            pressed -> pressedScale
+            focused -> focusedScale
+            else -> 1f
+        },
+        animationSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "tvFocusFrameScale"
+    )
+    val deco = rememberTvFocusDecoration(focused, pressed, focusColors)
+
+    this
+        .onFocusEvent { st ->
+            // React to descendant focus as well so visuals persist
+            val now = st.isFocused || st.hasFocus
+            focused = now
+            if (now) {
+                val module = com.chris.m3usuite.metrics.RouteTag.current
+                com.chris.m3usuite.core.debug.GlobalDebug.logFocusWidget(component = "Frame", module = module, tag = "tvFocusFrame")
+            }
+        }
+        // Uniform scaling; does not affect layout size (draw-time only)
+        .graphicsLayer { if (scale != 1f) { scaleX = scale; scaleY = scale }; clip = false }
+        .drawWithContent { drawWithTvFocus(deco, shape, borderWidthPx, brightenContent) { drawContent() } }
 }

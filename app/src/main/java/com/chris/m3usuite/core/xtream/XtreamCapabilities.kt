@@ -242,6 +242,25 @@ class CapabilityDiscoverer(
      * ermittelt Aliasse/Shapes/ID-Felder und persistiert das Ergebnis.
      */
     suspend fun discover(cfg: XtreamConfig, forceRefresh: Boolean = false): XtreamCapabilities = coroutineScope {
+        // Guard against invalid config (e.g., empty host during boot). Avoid crashing okhttp HttpUrl.Builder.
+        if (cfg.host.isBlank()) {
+            val baseRoot = cfg.portalBase + (cfg.basePath?.let { bp ->
+                val n = bp.trim().let { if (it.startsWith("/")) it else "/$it" }.removeSuffix("/")
+                if (n.isNotEmpty() && n != "/") n else ""
+            } ?: "")
+            val cacheKey = "$baseRoot|${cfg.username}"
+            // Try cache first; otherwise return minimal capabilities without network
+            store.get(cacheKey) ?: return@coroutineScope XtreamCapabilities(
+                cacheKey = cacheKey,
+                baseUrl = baseRoot,
+                username = cfg.username,
+                resolvedAliases = ResolvedAliases(vodKind = null, vodCandidates = emptyList()),
+                actions = emptyMap(),
+                schemaHints = emptyMap(),
+                extras = ExtrasCapability(),
+                cachedAt = System.currentTimeMillis()
+            )
+        }
         // baseRoot inkl. basePath bauen (für eindeutigen CacheKey und baseUrl)
         val baseRoot = buildString {
             append(cfg.portalBase)

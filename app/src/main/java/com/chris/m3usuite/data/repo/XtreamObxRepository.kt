@@ -62,7 +62,7 @@ class XtreamObxRepository(
         if (!settings.m3uWorkersEnabled.first()) return@withContext 0
         val target = ids.distinct().take(max)
         if (target.isEmpty()) return@withContext 0
-        val client = newClient()
+        val client = runCatching { newClient() }.getOrElse { return@withContext 0 }
         val store = ObxStore.get(context)
         val vodBox = store.boxFor<ObxVod>()
         val sem = Semaphore(4)
@@ -88,7 +88,7 @@ class XtreamObxRepository(
         if (!settings.m3uWorkersEnabled.first()) return@withContext 0
         val target = ids.distinct().take(max)
         if (target.isEmpty()) return@withContext 0
-        val client = newClient()
+        val client = runCatching { newClient() }.getOrElse { return@withContext 0 }
         val store = ObxStore.get(context)
         val seriesBox = store.boxFor<ObxSeries>()
         val epBox = store.boxFor<ObxEpisode>()

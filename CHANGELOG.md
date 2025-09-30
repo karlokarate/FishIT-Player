@@ -1,3 +1,32 @@
+2025-09-28
+- fix(tv/rows): Consume DPAD on KeyDown in RowCore (list+paged) to prevent double traversal that skipped one tile per press.
+- fix(tv/start): Ensure first tile is focusable and receives the initial FocusRequester so visual focus (scale/halo) is visible immediately at startup.
+- fix(tv/rows): Remove duplicate declaration of currentFocusIdx and add it to paged rows to restore focus index tracking and edge-left chrome behavior.
+- fix(tv/chrome): Default Home chrome to Collapsed on TV so header/buttons don’t steal focus on start or after returning from details; rows re-collapse chrome on focus updates.
+- fix(tv/rows): Focus visuals drawn by tvFocusFrame scale horizontally only (scaleX), keeping vertical size stable to avoid jumpy vertical movement when switching rows on Library/VOD.
+- fix(icon): Restore adaptive launcher icon using fish assets. Foreground uses `drawable/fisch_header.png` centered; background uses `drawable/fisch_bg.png` centered. Applies to phone and TV (no stretch, proper masking).
+- chore(icon): Apply standard safe insets for adaptive foreground (18dp on all sides) via `ic_launcher_foreground_inset.xml`, optimized for common device masks (round/squircle) to avoid cropping.
+- fix(tv/home): Start series/VOD/Live rows now register focus state keys so the first tile auto-focuses again and DPAD LEFT only expands Home chrome when truly at the edge.
+- fix(tv/rows): MediaRowCore re-queues minimal scrolls and persists focus after LazyRow momentum settles, preventing skipped tiles and stale focus indices during DPAD navigation.
+- fix(tv/tiles): Ensure `tvClickable` can share a caller-supplied `FocusRequester` so the initial tile scales/halo-highlights immediately after startup instead of waiting for the first manual DPAD move.
+- fix(tv/rows): Track the currently focused index alongside pending writes so DPAD LEFT no longer expands HomeChrome while the cursor sits mid-row (e.g. after returning from details).
+- fix(tv/chrome): Remove DPAD LEFT long-press to toggle HomeChrome. Long-press LEFT now has no global effect; Menu/Burger remains the only toggle. Start rows handle LEFT-at-edge by expanding chrome explicitly.
+- chore(rows): Temporarily disable artwork-first reordering. Lists and paging sources no longer push tiles without images to the right; incoming order is preserved.
+- fix(tv/home): deterministic initial focus on Start — only the topmost Series row is allowed to request the initial focus on TV; other rows (VOD/Live) suppress their first-focus request on Start. Adds `RowConfig.initialFocusEligible` and wires StartScreen to set VOD/Live=false, Series=true.
+- feat(debug/focus): GlobalDebug now logs the initially focused tile at screen start (no interaction required). Row engines announce the expected first focused tile right after requesting initial focus; Home chrome logs header/bottom focus as well.
+- fix(tv/rows): Prevent over-scrolling on DPAD focus moves. `centerItemSafely` no longer re-centers items that are already fully visible; it performs a minimal scroll only when the focused item is clipped. Avoids jumping several tiles so the focused tile stays on screen.
+- fix(tv/favorites): Reorderable favorites row intercepts DPAD LEFT/RIGHT only when selection mode is active (after long-press). Without selection, LEFT/RIGHT now navigate focus normally, preventing the impression of “LEFT moved to the right tile”.
+- fix(navigation): add `navigateTopLevel` extension and use `popUpToStartDestination(saveState=true)` to preserve state for top-level route switches.
+- fix(tv/compat): add `ui/compat/FocusCompat.focusGroup()` shim to satisfy `focusGroup()` usages across rows and header.
+- feat(tv/rows): add `ui/tv/TvRowScroll.centerItemSafely()` and wire it where referenced by `RowCore`/`TvFocusRow`.
+- feat(ui/debug): add `ui/debug/safePainter()` to avoid drawable crashes and remove Icon overload ambiguity.
+- feat(adults): add `core/util/Adults.kt` with `isAdultCategory`, `isAdultCategoryLabel`, and `isAdultProvider` helpers; align Library/Repository filters.
+- feat(xtream): add `core/xtream/XtreamImportCoordinator` with `seederInFlight`, `runSeeding`, `enqueueWork`, and `waitUntilIdle()`; integrate with `XtreamSeeder` and `XtreamDeltaImportWorker`.
+- fix(compose): import `semantics.role` in `TvModifiers.kt`; add missing `onFocusEvent` import in `HomeChromeScaffold.kt`.
+- fix(compose scope): add `ui/skin/PackageScope.run { }` as a `@Composable` scope to enable `Modifier.tvClickable(...)` inside modifier chains.
+- fix(compose scope): resolve `tvClickable`/`focusScaleOnTv`/`tvFocusableItem` lookups by delegating via alias imports inside `SkinScope`.
+- fix(debug/log): add `GlobalDebug.logObxKey(kind, id, change: Map<...>)` overload and adapt worker calls.
+
 2025-09-27
 - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
 - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
@@ -712,3 +741,10 @@ Status: zu testen durch Nutzer
 2025-09-26
 - fix(tv/rows/scroll): centralize bring-into-view and centering in new helper `ui/tv/TvRowScroll.kt` and use it from RowCore and TvFocusRow. Prevents jitter and ensures focused tiles are fully visible.
 - fix(tv/rows/left-nav): avoid conflicting per-tile autoBringIntoView in horizontal rows (set `autoBringIntoView=false` on row tiles). Restores reliable DPAD LEFT navigation and stops hidden-but-focused tiles.
+2025-09-29
+- feat(tv/low-spec): Add DeviceProfile with TV heuristics and enable TV low-spec tuning.
+  - tvClickable/focusScaleOnTv: reduce focus scale (1.03), drop shadowElevation on TV to cut GPU cost.
+  - Paging: use smaller pages on TV (pageSize=16, prefetchDistance=1, initialLoad=32) for smoother focus scroll.
+  - Coil: disable crossfade on TV to avoid overdraw; keep RGB_565 and measured sizing.
+  - OkHttp: throttle dispatcher on TV (maxRequests=16, perHost=4) to curb IO contention.
+- feat(player): Pause Xtream seeding while playing. When internal player is active, `m3u_workers_enabled` is forced OFF (remembering previous state), in-flight Xtream jobs are canceled, and the flag is restored on exit.

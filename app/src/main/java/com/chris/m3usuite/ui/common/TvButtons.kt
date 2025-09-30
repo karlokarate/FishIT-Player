@@ -32,7 +32,8 @@ fun TvButton(
         modifier = modifier.focusScaleOnTv(
             shape = shape,
             focusColors = focusColors,
-            interactionSource = interactionSource
+            interactionSource = interactionSource,
+            debugTag = "TvButton"
         ),
         enabled = enabled,
         shape = shape,
@@ -62,7 +63,8 @@ fun TvTextButton(
         modifier = modifier.focusScaleOnTv(
             shape = shape,
             focusColors = focusColors,
-            interactionSource = interactionSource
+            interactionSource = interactionSource,
+            debugTag = "TvTextButton"
         ),
         enabled = enabled,
         shape = shape,
@@ -92,7 +94,8 @@ fun TvOutlinedButton(
         modifier = modifier.focusScaleOnTv(
             shape = shape,
             focusColors = focusColors,
-            interactionSource = interactionSource
+            interactionSource = interactionSource,
+            debugTag = "TvOutlinedButton"
         ),
         enabled = enabled,
         shape = shape,
@@ -120,7 +123,8 @@ fun TvIconButton(
         modifier = modifier.focusScaleOnTv(
             shape = shape,
             focusColors = focusColors,
-            interactionSource = interactionSource
+            interactionSource = interactionSource,
+            debugTag = "TvIconButton"
         ),
         enabled = enabled,
         interactionSource = interactionSource,

@@ -56,6 +56,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
 
 private enum class ContentTab { Live, Vod, Series }
 
@@ -744,7 +745,9 @@ fun LibraryScreen(
                                     onOpenDetails = onOpen,
                                     onPlayDirect = onPlay,
                                     onAssignToKid = onAssignVod,
-                                    showAssign = canEditWhitelist
+                                    showAssign = canEditWhitelist,
+                                    initialFocusEligible = true,
+                                    edgeLeftExpandChrome = true
                                 )
                                 ContentTab.Series -> com.chris.m3usuite.ui.components.rows.SeriesRow(
                                     items = recentRow,
@@ -752,7 +755,9 @@ fun LibraryScreen(
                                     onOpenDetails = onOpen,
                                     onPlayDirect = onPlay,
                                     onAssignToKid = onAssignSeries,
-                                    showAssign = canEditWhitelist
+                                    showAssign = canEditWhitelist,
+                                    initialFocusEligible = true,
+                                    edgeLeftExpandChrome = true
                                 )
                                 else -> {}
                             }
@@ -781,7 +786,9 @@ fun LibraryScreen(
                                     onPlayDirect = onPlay,
                                     onAssignToKid = onAssignVod,
                                     showNew = true,
-                                    showAssign = canEditWhitelist
+                                    showAssign = canEditWhitelist,
+                                    initialFocusEligible = recentRow.isEmpty(),
+                                    edgeLeftExpandChrome = true
                                 )
                                 ContentTab.Series -> com.chris.m3usuite.ui.components.rows.SeriesRow(
                                     items = newestRow,
@@ -790,7 +797,9 @@ fun LibraryScreen(
                                     onPlayDirect = onPlay,
                                     onAssignToKid = onAssignSeries,
                                     showNew = true,
-                                    showAssign = canEditWhitelist
+                                    showAssign = canEditWhitelist,
+                                    initialFocusEligible = recentRow.isEmpty(),
+                                    edgeLeftExpandChrome = true
                                 )
                                 else -> {}
                             }
@@ -822,7 +831,9 @@ fun LibraryScreen(
                                     onOpenDetails = onOpen,
                                     onPlayDirect = onPlay,
                                     onAssignToKid = onAssignVod,
-                                    showAssign = canEditWhitelist
+                                    showAssign = canEditWhitelist,
+                                    initialFocusEligible = recentRow.isEmpty() && newestRow.isEmpty(),
+                                    edgeLeftExpandChrome = true
                                 )
                                 ContentTab.Series -> com.chris.m3usuite.ui.components.rows.SeriesRow(
                                     items = topYearsRow,
@@ -830,7 +841,9 @@ fun LibraryScreen(
                                     onOpenDetails = onOpen,
                                     onPlayDirect = onPlay,
                                     onAssignToKid = onAssignSeries,
-                                    showAssign = canEditWhitelist
+                                    showAssign = canEditWhitelist,
+                                    initialFocusEligible = recentRow.isEmpty() && newestRow.isEmpty(),
+                                    edgeLeftExpandChrome = true
                                 )
                                 else -> {}
                             }
@@ -1276,7 +1289,8 @@ private fun ExpandableGroupSection(
             onOpenDetails = onOpenDetails,
             onPlayDirect = onPlayDirect,
             onAssignToKid = onAssignToKid,
-            showAssign = showAssign
+            showAssign = showAssign,
+            rowInitialFocusEligible = false
         )
     }
 }
@@ -1291,7 +1305,8 @@ private fun MediaRowForTab(
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
     onAssignToKid: ((MediaItem) -> Unit)?,
-    showAssign: Boolean
+    showAssign: Boolean,
+    rowInitialFocusEligible: Boolean = false
 ) {
     when (tab) {
         ContentTab.Live -> {
@@ -1309,7 +1324,9 @@ private fun MediaRowForTab(
                 onOpenDetails = { m -> onOpenDetails(m) },
                 onPlayDirect = { m -> onPlayDirect(m) },
                 onAssignToKid = { m -> onAssignToKid?.invoke(m) },
-                showAssign = showAssign
+                showAssign = showAssign,
+                initialFocusEligible = rowInitialFocusEligible,
+                edgeLeftExpandChrome = true
             )
         }
         ContentTab.Series -> {
@@ -1319,7 +1336,9 @@ private fun MediaRowForTab(
                 onOpenDetails = { m -> onOpenDetails(m) },
                 onPlayDirect = { m -> onPlayDirect(m) },
                 onAssignToKid = { m -> onAssignToKid?.invoke(m) },
-                showAssign = showAssign
+                showAssign = showAssign,
+                initialFocusEligible = rowInitialFocusEligible,
+                edgeLeftExpandChrome = true
             )
         }
     }

@@ -9,6 +9,8 @@ import okhttp3.Cache
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.concurrent.TimeUnit
+import okhttp3.Dispatcher
+import com.chris.m3usuite.core.device.DeviceProfile
 
 /**
  * HttpClientFactory – ohne zusätzliche Abhängigkeiten.
@@ -34,7 +36,7 @@ object HttpClientFactory {
         val cacheDir = File(context.cacheDir, "http_cache").apply { mkdirs() }
         val httpCache = Cache(cacheDir, computeHttpCacheSizeBytes(context, cacheDir))
 
-        val built = OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .cookieJar(jar)
             .cache(httpCache)
             .connectTimeout(120, TimeUnit.SECONDS)
@@ -71,7 +73,17 @@ object HttpClientFactory {
                 TrafficLogger.tryLog(appContext = context, request = outReq, response = res, startedNs = start)
                 res
             }
-            .build()
+
+        // TV low-spec: throttle OkHttp concurrency for smoother UI
+        if (DeviceProfile.isTvLowSpec(context)) {
+            val disp = Dispatcher().apply {
+                maxRequests = 16
+                maxRequestsPerHost = 4
+            }
+            builder.dispatcher(disp)
+        }
+
+        val built = builder.build()
 
         client = built
         return built

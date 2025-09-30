@@ -159,6 +159,7 @@ fun MediaCard(
     showTitle: Boolean = true
 ) {
     val ctx = LocalContext.current
+    val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
     val chromeToggle by rememberUpdatedState(com.chris.m3usuite.ui.home.LocalChromeToggle.current)
     val tileHeight = rowItemHeight().dp
     val tileWidth = tileHeight * POSTER_ASPECT_RATIO
@@ -169,7 +170,6 @@ fun MediaCard(
         modifier = modifier
             .width(tileWidth)
             .padding(end = 12.dp)
-            .focusable()
             // No manual DPAD interception; rely on focus traversal and global chrome handler
             .onKeyEvent { ev ->
                 val n = ev.nativeKeyEvent
@@ -181,25 +181,29 @@ fun MediaCard(
                 }
                 false
             }
-            .onFocusEvent { focused = it.isFocused || it.hasFocus }
-            .focusScaleOnTv(
-                focusedScale = 1.40f,
-                pressedScale = 1.40f,
-                focusColors = com.chris.m3usuite.ui.skin.TvFocusColors(
-                    focusFill = Color.White.copy(alpha = 0.28f),
-                    focusBorder = Color.White.copy(alpha = 0.92f),
-                    pressedFill = Color.White.copy(alpha = 0.32f),
-                    pressedBorder = Color.White.copy(alpha = 1.0f)
-                ),
-                focusBorderWidth = 2.5.dp
-            )
             .tvClickable(
                 brightenContent = false,
                 autoBringIntoView = false,
+                // visuals come from row-level tvFocusFrame wrapper
                 scaleFocused = 1f,
-                scalePressed = 1f
+                scalePressed = 1f,
+                focusRequester = selfReq,
+                focusColors = com.chris.m3usuite.ui.skin.TvFocusColors(
+                    focusFill = Color.Transparent,
+                    focusBorder = Color.Transparent,
+                    pressedFill = Color.Transparent,
+                    pressedBorder = Color.Transparent
+                ),
+                focusBorderWidth = 0.dp
             ) { onClick(item) }
-            .tvFocusGlow(focused = focused, shape = TILE_SHAPE, ringWidth = 5.dp)
+            .onFocusEvent {
+                val nowHas = it.isFocused || it.hasFocus
+                focused = nowHas
+                if (!it.isFocused && it.hasFocus && com.chris.m3usuite.metrics.RouteTag.current == "home") {
+                    runCatching { selfReq.requestFocus() }
+                }
+            }
+            // Dedicated glow not needed; tvClickable draws halo/border on TV
     ) {
         // Debug: log focused tile + OBX title in parentheses + tree path
         LaunchedEffect(focused, item.streamId, item.type) {
@@ -278,6 +282,7 @@ fun LiveTileCard(
     insertionRight: Boolean = false
 ) {
     val ctx = LocalContext.current
+    val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
     val chromeToggle by rememberUpdatedState(com.chris.m3usuite.ui.home.LocalChromeToggle.current)
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val headers = rememberImageHeaders()
@@ -347,35 +352,19 @@ fun LiveTileCard(
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
     val tileHeight = rowItemHeight().dp
     val tileWidth = tileHeight * LIVE_TILE_ASPECT_RATIO
-    var leftDownAtMs by remember { mutableStateOf<Long?>(null) }
     val navKeysMod = if (onMoveLeft != null || onMoveRight != null) {
         Modifier.onPreviewKeyEvent { ev ->
-            when (ev.type) {
-                KeyEventType.KeyDown -> {
-                    if (ev.key == Key.DirectionLeft) leftDownAtMs = SystemClock.uptimeMillis()
-                    false
+            if (ev.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
+            when (ev.key) {
+                Key.DirectionLeft -> {
+                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                    onMoveLeft?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Left)
+                    true
                 }
-                KeyEventType.KeyUp -> {
-                    when (ev.key) {
-                        Key.DirectionLeft -> {
-                            val start = leftDownAtMs; leftDownAtMs = null
-                            if (start != null && SystemClock.uptimeMillis() - start >= 300L) {
-                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT_LONG", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
-                                val toggle = chromeToggle
-                                if (toggle != null) { toggle(); return@onPreviewKeyEvent true }
-                            }
-                            com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
-                            onMoveLeft?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Left)
-                            return@onPreviewKeyEvent true
-                        }
-                        Key.DirectionRight -> {
-                            com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
-                            onMoveRight?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right)
-                            return@onPreviewKeyEvent true
-                        }
-                        else -> {}
-                    }
-                    false
+                Key.DirectionRight -> {
+                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                    onMoveRight?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right)
+                    true
                 }
                 else -> false
             }
@@ -404,7 +393,13 @@ fun LiveTileCard(
                 onLongClick = { onLongPress?.invoke() }
             )
             .then(navKeysMod)
-            .onFocusEvent { focused = it.isFocused || it.hasFocus }
+            .onFocusEvent {
+                val nowHas = it.isFocused || it.hasFocus
+                focused = nowHas
+                if (!it.isFocused && it.hasFocus && com.chris.m3usuite.metrics.RouteTag.current == "home") {
+                    runCatching { selfReq.requestFocus() }
+                }
+            }
             .focusScaleOnTv(
                 focusedScale = 1.40f,
                 pressedScale = 1.40f,
@@ -689,6 +684,7 @@ fun SeriesTileCard(
     showAssign: Boolean = true
 ) {
     val ctx = LocalContext.current
+    val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
     var leftDownAt by remember { mutableStateOf<Long?>(null) }
     val chromeToggle by rememberUpdatedState(com.chris.m3usuite.ui.home.LocalChromeToggle.current)
     val headers = rememberImageHeaders()
@@ -711,7 +707,6 @@ fun SeriesTileCard(
             .height(tileHeight)
             .width(tileWidth)
             .padding(end = 6.dp)
-            .focusable()
             // No per-tile DPAD interception; rely on focus traversal and global chrome handler
             .onKeyEvent { ev ->
                 val n = ev.nativeKeyEvent
@@ -723,6 +718,14 @@ fun SeriesTileCard(
                 }
                 false
             }
+            .tvClickable(
+                scaleFocused = 1f,
+                scalePressed = 1f,
+                elevationFocusedDp = 18f,
+                brightenContent = false,
+                autoBringIntoView = false,
+                focusRequester = selfReq
+            ) { onOpenDetails(item) }
             .focusScaleOnTv(
                 focusedScale = 1.40f,
                 pressedScale = 1.40f,
@@ -734,14 +737,13 @@ fun SeriesTileCard(
                 ),
                 focusBorderWidth = 2.5.dp
             )
-            .tvClickable(
-                scaleFocused = 1f,
-                scalePressed = 1f,
-                elevationFocusedDp = 18f,
-                brightenContent = false,
-                autoBringIntoView = false
-            ) { onOpenDetails(item) }
-            .onFocusEvent { focused = it.isFocused || it.hasFocus }
+            .onFocusEvent {
+                val nowHas = it.isFocused || it.hasFocus
+                focused = nowHas
+                if (!it.isFocused && it.hasFocus && com.chris.m3usuite.metrics.RouteTag.current == "home") {
+                    runCatching { selfReq.requestFocus() }
+                }
+            }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
@@ -919,6 +921,7 @@ fun VodTileCard(
     showAssign: Boolean = true
 ) {
     val ctx = LocalContext.current
+    val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
     val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
     val obxRepo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
     val headers = rememberImageHeaders()
@@ -932,7 +935,14 @@ fun VodTileCard(
             .height(tileHeight)
             .width(tileWidth)
             .padding(end = 6.dp)
-            .focusable()
+            .tvClickable(
+                scaleFocused = 1f,
+                scalePressed = 1f,
+                elevationFocusedDp = 18f,
+                brightenContent = false,
+                autoBringIntoView = false,
+                focusRequester = selfReq
+            ) { onOpenDetails(item) }
             .focusScaleOnTv(
                 focusedScale = 1.40f,
                 pressedScale = 1.40f,
@@ -944,14 +954,13 @@ fun VodTileCard(
                 ),
                 focusBorderWidth = 2.5.dp
             )
-            .tvClickable(
-                scaleFocused = 1f,
-                scalePressed = 1f,
-                elevationFocusedDp = 18f,
-                brightenContent = false,
-                autoBringIntoView = true
-            ) { onOpenDetails(item) }
-            .onFocusEvent { focused = it.isFocused || it.hasFocus }
+            .onFocusEvent {
+                val nowHas = it.isFocused || it.hasFocus
+                focused = nowHas
+                if (!it.isFocused && it.hasFocus && com.chris.m3usuite.metrics.RouteTag.current == "home") {
+                    runCatching { selfReq.requestFocus() }
+                }
+            }
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
@@ -1120,6 +1129,8 @@ fun LiveRow(
     leading: (@Composable (() -> Unit))? = null,
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
+    initialFocusEligible: Boolean = true,
+    edgeLeftExpandChrome: Boolean = false,
 ) {
     if (items.isEmpty()) return
     val ctx = LocalContext.current
@@ -1128,7 +1139,7 @@ fun LiveRow(
 
     MediaRowCore(
         items = items,
-        config = RowConfig(stateKey = stateKey),
+        config = RowConfig(stateKey = stateKey, debugKey = stateKey, initialFocusEligible = initialFocusEligible, edgeLeftExpandChrome = edgeLeftExpandChrome),
         leading = leading,
         onPrefetchKeys = { keys ->
             val sids = keys.mapNotNull { id ->
@@ -1192,7 +1203,9 @@ fun ReorderableLiveRow(
     onAdd: () -> Unit,
     onReorder: (List<Long>) -> Unit,
     onRemove: (List<Long>) -> Unit,
-    stateKey: String? = null
+    stateKey: String? = null,
+    initialFocusEligible: Boolean = true,
+    edgeLeftExpandChrome: Boolean = false
 ) {
     val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
     // Ensure stable, unique keys to avoid LazyRow key collisions
@@ -1214,24 +1227,10 @@ fun ReorderableLiveRow(
     val enterEnabled = remember { mutableStateOf(false) }
     val hasContent = remember(order) { order.isNotEmpty() }
 
-    LaunchedEffect(pendingScrollIndex.value) {
-        val target = pendingScrollIndex.value
-        if (target >= 0) {
-            state.animateScrollToItem(target)
-            val info = state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == target }
-            if (info != null) {
-                val viewportStart = state.layoutInfo.viewportStartOffset
-                val viewportEnd = state.layoutInfo.viewportEndOffset
-                val viewportSize = viewportEnd - viewportStart
-                val desiredOffset = ((viewportSize - info.size) / 2f).toInt().coerceAtLeast(0)
-                state.animateScrollToItem(target, desiredOffset)
-            }
-            pendingScrollIndex.value = -1
-        }
-    }
+    LaunchedEffect(pendingScrollIndex.value) { pendingScrollIndex.value = -1 }
     // Activate enter once the leading (index 0) or first content (index 1) becomes visible
-    LaunchedEffect(state, isTv, hasContent, firstAttached.value) {
-        if (!isTv) return@LaunchedEffect
+    LaunchedEffect(state, isTv, hasContent, firstAttached.value, initialFocusEligible) {
+        if (!isTv || !initialFocusEligible) return@LaunchedEffect
         androidx.compose.runtime.snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
             .collect { indices ->
                 val targetIndex = if (hasContent) 1 else 0
@@ -1247,9 +1246,19 @@ fun ReorderableLiveRow(
 
     // Enable focus enter only once a target (leading or first content) is visible
     val rowModifier = if (isTv) Modifier.focusGroup() else Modifier
+    val chromeExpand = com.chris.m3usuite.ui.home.LocalChromeExpand.current
 
     LazyRow(
-        modifier = rowModifier,
+        modifier = rowModifier.then(
+            if (isTv && edgeLeftExpandChrome) Modifier.onPreviewKeyEvent { ev ->
+                if (ev.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
+                if (ev.key == Key.DirectionLeft) {
+                    val firstIdx = state.layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
+                    if (firstIdx <= 0) { chromeExpand?.invoke(); return@onPreviewKeyEvent true }
+                }
+                false
+            } else Modifier
+        ),
         state = state,
         flingBehavior = rememberSnapFlingBehavior(state),
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
@@ -1333,14 +1342,19 @@ fun ReorderableLiveRow(
                     onPlayDirect = { if (draggingId == null) onPlay(mi.id) },
                     selected = id in selected,
                     onLongPress = { selected = if (id in selected) selected - id else selected + id },
-                    onMoveLeft = {
-                        val idx = order.indexOf(id)
-                        if (idx > 0) { order.removeAt(idx); order.add(idx - 1, id); onReorder(order.toList()) }
-                    },
-                    onMoveRight = {
-                        val idx = order.indexOf(id)
-                        if (idx != -1 && idx < order.lastIndex) { order.removeAt(idx); order.add(idx + 1, id); onReorder(order.toList()) }
-                    },
+                    // Only intercept DPAD LEFT/RIGHT for reordering when selection mode is active
+                    onMoveLeft = if (selected.isNotEmpty()) {
+                        {
+                            val idx = order.indexOf(id)
+                            if (idx > 0) { order.removeAt(idx); order.add(idx - 1, id); onReorder(order.toList()) }
+                        }
+                    } else null,
+                    onMoveRight = if (selected.isNotEmpty()) {
+                        {
+                            val idx = order.indexOf(id)
+                            if (idx != -1 && idx < order.lastIndex) { order.removeAt(idx); order.add(idx + 1, id); onReorder(order.toList()) }
+                        }
+                    } else null,
                     insertionLeft = (targetKey == id && !insertAfter),
                     insertionRight = (targetKey == id && insertAfter)
                 )
@@ -1376,7 +1390,9 @@ fun SeriesRow(
     onAssignToKid: (MediaItem) -> Unit,
     newIds: Set<Long> = emptySet(),
     showNew: Boolean = false,
-    showAssign: Boolean = true
+    showAssign: Boolean = true,
+    initialFocusEligible: Boolean = true,
+    edgeLeftExpandChrome: Boolean = false
 ) {
     if (items.isEmpty()) return
     val ctx = LocalContext.current
@@ -1385,7 +1401,7 @@ fun SeriesRow(
 
     MediaRowCore(
         items = items,
-        config = RowConfig(stateKey = stateKey),
+        config = RowConfig(stateKey = stateKey, debugKey = stateKey, initialFocusEligible = initialFocusEligible, edgeLeftExpandChrome = edgeLeftExpandChrome),
         onPrefetchKeys = { keys ->
             val sids = keys.mapNotNull { id ->
                 if (id in 3_000_000_000_000L until 4_000_000_000_000L) (id - 3_000_000_000_000L).toInt() else null
@@ -1415,7 +1431,9 @@ fun VodRow(
     onAssignToKid: (MediaItem) -> Unit,
     newIds: Set<Long> = emptySet(),
     showNew: Boolean = false,
-    showAssign: Boolean = true
+    showAssign: Boolean = true,
+    initialFocusEligible: Boolean = true,
+    edgeLeftExpandChrome: Boolean = false
 ) {
     if (items.isEmpty()) return
     val ctx = LocalContext.current
@@ -1424,7 +1442,7 @@ fun VodRow(
 
     MediaRowCore(
         items = items,
-        config = RowConfig(stateKey = stateKey),
+        config = RowConfig(stateKey = stateKey, debugKey = stateKey, initialFocusEligible = initialFocusEligible, edgeLeftExpandChrome = edgeLeftExpandChrome),
         onPrefetchKeys = { keys ->
             val vodIds = keys.mapNotNull { id ->
                 if (id in 2_000_000_000_000L until 3_000_000_000_000L) (id - 2_000_000_000_000L).toInt() else null
@@ -1452,7 +1470,8 @@ fun VodRowPaged(
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
     onAssignToKid: (MediaItem) -> Unit,
-    showAssign: Boolean = true
+    showAssign: Boolean = true,
+    edgeLeftExpandChrome: Boolean = false
 ) {
     val ctx = LocalContext.current
     val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
@@ -1460,7 +1479,7 @@ fun VodRowPaged(
 
     MediaRowCorePaged(
         items = items,
-        config = RowConfig(stateKey = stateKey),
+        config = RowConfig(stateKey = stateKey, debugKey = stateKey, edgeLeftExpandChrome = edgeLeftExpandChrome),
         onPrefetchPaged = { indices, lp ->
             val count = lp.itemCount
             if (count <= 0) return@MediaRowCorePaged
@@ -1492,6 +1511,7 @@ fun LiveRowPaged(
     stateKey: String? = null,
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
+    edgeLeftExpandChrome: Boolean = false
 ) {
     val ctx = LocalContext.current
     val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
@@ -1499,7 +1519,7 @@ fun LiveRowPaged(
 
     MediaRowCorePaged(
         items = items,
-        config = RowConfig(stateKey = stateKey),
+        config = RowConfig(stateKey = stateKey, debugKey = stateKey, edgeLeftExpandChrome = edgeLeftExpandChrome),
         onPrefetchPaged = { indices, lp ->
             val count = lp.itemCount
             if (count <= 0) return@MediaRowCorePaged
@@ -1530,13 +1550,14 @@ fun SeriesRowPaged(
     onOpenDetails: (MediaItem) -> Unit,
     onPlayDirect: (MediaItem) -> Unit,
     onAssignToKid: (MediaItem) -> Unit,
-    showAssign: Boolean = true
+    showAssign: Boolean = true,
+    edgeLeftExpandChrome: Boolean = false
 ) {
     // Prefetch optional: Serien-Details bei Paged kann (wenn gewünscht) analog implementiert werden
 
     MediaRowCorePaged(
         items = items,
-        config = RowConfig(stateKey = stateKey),
+        config = RowConfig(stateKey = stateKey, debugKey = stateKey, edgeLeftExpandChrome = edgeLeftExpandChrome),
         onPrefetchPaged = null // optional später ergänzen
     ) { _, mi ->
         SeriesTileCard(
