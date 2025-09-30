@@ -1,14 +1,59 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt b/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt
-index 0f8b71a..48cb8a6 100644
---- a/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt
-+++ b/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt
-@@ -114,7 +114,8 @@ fun LibraryScreen(
-     }
- 
-     // Suche
--    var query by remember { mutableStateOf(TextFieldValue("")) }
-+    var query by com.chris.m3usuite.ui.state.rememberRouteTextFieldValue(
-+        routeKey = "library:$selectedTabKey:search", default = "")
- 
-     // Suchtreffer (nur für aktiven Tab)
-     var searchResults by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/meta/MetaChips.kt b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaChips.kt
+new file mode 100644
+index 0000000..d0fbd0c
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaChips.kt
+@@ -0,0 +1,75 @@
++package com.chris.m3usuite.ui.meta
++
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.FlowRow
++import androidx.compose.foundation.layout.ExperimentalLayoutApi
++import androidx.compose.material3.AssistChip
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.remember
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.semantics.contentDescription
++import androidx.compose.ui.semantics.semantics
++import androidx.compose.ui.unit.dp
++import com.chris.m3usuite.BuildConfig
++
++@OptIn(ExperimentalLayoutApi::class)
++@Composable
++fun MetaChips(
++    meta: MediaMeta,
++    compact: Boolean = false,
++    modifier: Modifier = Modifier
++): Unit {
++    if (!BuildConfig.FEATURE_META_CHIPS_V1) return
++
++    val items = remember(meta, compact) {
++        buildList {
++            MetaFormatters.year(meta.year)?.let(::add)
++            MetaFormatters.duration(meta.durationMinutes)?.let(::add)
++            MetaFormatters.quality(meta.video)?.let(::add)
++            MetaFormatters.audio(meta.audio)?.let(::add)
++            val maxGenres = if (compact) 2 else 4
++            addAll(meta.genres.take(maxGenres))
++        }.filter { it.isNotBlank() }
++    }
++    if (items.isEmpty()) return
++
++    FlowRow(
++        horizontalArrangement = Arrangement.spacedBy(8.dp),
++        verticalArrangement = Arrangement.spacedBy(8.dp),
++        modifier = modifier
++    ) {
++        for (label in items) {
++            AssistChip(
++                onClick = {},
++                enabled = false, // disabled → nicht fokussierbar auf TV, reine Info-Badges
++                label = { Text(label) },
++                modifier = Modifier.semantics {
++                    contentDescription = "Meta $label"
++                }
++            )
++        }
++    }
++}

@@ -1,25 +1,380 @@
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 0a4a7e1..f0c61d9 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -1,3 +1,4 @@
++@file:Suppress("UnstableApiUsage")
+ plugins {
+     id("com.android.application")
+     id("org.jetbrains.kotlin.android")
+@@ -19,6 +20,9 @@ android {
+         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+         vectorDrawables.useSupportLibrary = true
+ 
++        // Feature Flags
++        buildConfigField("boolean", "FEATURE_META_CHIPS_V1", "true")
++
+         // TDLib/Secrets and UA injected elsewhere in this script (see existing fields)
+     }
+ 
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt b/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt
+new file mode 100644
+index 0000000..5971526
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt
+@@ -0,0 +1,38 @@
++package com.chris.m3usuite.ui.meta
++
++import androidx.compose.runtime.Stable
++
++@Stable
++data class MediaMeta(
++    val year: Int? = null,
++    val durationMinutes: Int? = null,
++    val video: VideoInfo? = null,
++    val audio: AudioInfo? = null,
++    val genres: List<String> = emptyList()
++)
++
++@Stable
++data class VideoInfo(
++    val width: Int? = null,
++    val height: Int? = null,
++    val hdr: Boolean = false,
++    val fps: Int? = null
++)
++
++@Stable
++data class AudioInfo(
++    val channels: String? = null,            // "2.0", "5.1", "7.1" …
++    val languages: List<String> = emptyList() // ISO codes or names ("de","en","german",…)
++)
++
++internal fun secondsToMinutesOrNull(secs: Int?): Int? {
++    if (secs == null) return null
++    if (secs <= 0) return null
++    return (secs / 60).coerceAtLeast(1)
++}
++
++internal fun parseGenres(raw: String?): List<String> =
++    raw?.split(',', ';', '|', '/', '•')
++        ?.map { it.trim() }
++        ?.filter { it.isNotEmpty() }
++        ?.distinct()
++        ?: emptyList()
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/meta/MetaChips.kt b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaChips.kt
+new file mode 100644
+index 0000000..d0fbd0c
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaChips.kt
+@@ -0,0 +1,75 @@
++package com.chris.m3usuite.ui.meta
++
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.FlowRow
++import androidx.compose.foundation.layout.ExperimentalLayoutApi
++import androidx.compose.material3.AssistChip
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.remember
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.semantics.contentDescription
++import androidx.compose.ui.semantics.semantics
++import androidx.compose.ui.unit.dp
++import com.chris.m3usuite.BuildConfig
++
++@OptIn(ExperimentalLayoutApi::class)
++@Composable
++fun MetaChips(
++    meta: MediaMeta,
++    compact: Boolean = false,
++    modifier: Modifier = Modifier
++): Unit {
++    if (!BuildConfig.FEATURE_META_CHIPS_V1) return
++
++    val items = remember(meta, compact) {
++        buildList {
++            MetaFormatters.year(meta.year)?.let(::add)
++            MetaFormatters.duration(meta.durationMinutes)?.let(::add)
++            MetaFormatters.quality(meta.video)?.let(::add)
++            MetaFormatters.audio(meta.audio)?.let(::add)
++            val maxGenres = if (compact) 2 else 4
++            addAll(meta.genres.take(maxGenres))
++        }.filter { it.isNotBlank() }
++    }
++    if (items.isEmpty()) return
++
++    FlowRow(
++        horizontalArrangement = Arrangement.spacedBy(8.dp),
++        verticalArrangement = Arrangement.spacedBy(8.dp),
++        modifier = modifier
++    ) {
++        for (label in items) {
++            AssistChip(
++                onClick = {},
++                enabled = false, // disabled → nicht fokussierbar auf TV, reine Info-Badges
++                label = { Text(label) },
++                modifier = Modifier.semantics {
++                    contentDescription = "Meta $label"
++                }
++            )
++        }
++    }
++}
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/meta/MetaFormatters.kt b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaFormatters.kt
+new file mode 100644
+index 0000000..a86d6cf
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaFormatters.kt
+@@ -0,0 +1,92 @@
++package com.chris.m3usuite.ui.meta
++
++object MetaFormatters {
++
++    fun quality(v: VideoInfo?): String? {
++        v ?: return null
++        val h = v.height
++        val w = v.width
++        val base = when {
++            h != null && h >= 2160 -> "4K"
++            h != null && h >= 1440 -> "1440p"
++            h != null && h >= 1080 -> "1080p"
++            h != null && h >= 720 -> "HD"
++            h != null && h > 0 -> "${h}p"
++            w != null && w >= 3840 -> "4K"
++            w != null && w >= 1920 -> "1080p"
++            w != null && w >= 1280 -> "HD"
++            else -> null
++        } ?: return null
++        val hdrMark = if (v.hdr) " HDR" else ""
++        return base + hdrMark
++    }
++
++    fun duration(minutes: Int?): String? = minutes?.takeIf { it > 0 }?.let { "$it min" }
++
++    fun audio(a: AudioInfo?): String? {
++        a ?: return null
++        val langs = a.languages.mapNotNull { it.trim().takeIf { s -> s.isNotEmpty() } }
++            .map(::normalizeLang)
++            .distinct()
++        val langPart = when {
++            langs.isEmpty() -> null
++            langs.size == 1 -> langs.first()
++            else -> "${langs[0]}/${langs[1]}"
++        }
++        val ch = a.channels?.trim()?.takeIf { it.isNotEmpty() }
++        return when {
++            langPart != null && ch != null -> "$langPart $ch"
++            langPart != null -> langPart
++            ch != null -> ch
++            else -> null
++        }
++    }
++
++    fun year(y: Int?): String? = y?.takeIf { it > 0 }?.toString()
++
++    private fun normalizeLang(s: String): String {
++        val t = s.lowercase()
++        return when (t) {
++            "de", "ger", "deu", "german", "deutsch" -> "DE"
++            "en", "eng", "english" -> "EN"
++            "fr", "fre", "fra", "french", "français" -> "FR"
++            "it", "ita", "italian", "italiano" -> "IT"
++            "es", "spa", "spanish", "español" -> "ES"
++            "ru", "rus", "russian" -> "RU"
++            "tr", "tur", "turkish", "türkçe" -> "TR"
++            "ar", "ara", "arabic", "العربية" -> "AR"
++            else -> t.take(2).uppercase()
++        }
++    }
++}
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt
+new file mode 100644
+index 0000000..5038c04
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt
+@@ -0,0 +1,45 @@
++package com.chris.m3usuite.ui.meta
++
++import com.chris.m3usuite.model.MediaItem
++
++/**
++ * Lightweight, source-agnostic mappers to MediaMeta.
++ * These avoid touching network or heavy repos and derive only display-level metadata.
++ */
++object MetaMappers {
++
++    /**
++     * Generic builder when only year/duration/genre are known.
++     */
++    fun fromBasics(
++        year: Int? = null,
++        durationSecs: Int? = null,
++        genresRaw: String? = null,
++        video: VideoInfo? = null,
++        audio: AudioInfo? = null
++    ): MediaMeta {
++        val mins = secondsToMinutesOrNull(durationSecs)
++        val genres = parseGenres(genresRaw)
++        return MediaMeta(
++            year = year,
++            durationMinutes = mins,
++            video = video,
++            audio = audio,
++            genres = genres
++        )
++    }
++
++    /**
++     * Map a generic MediaItem (OBX-backed) to a MediaMeta.
++     * Genres are not carried on MediaItem; callers can augment via [extraGenres].
++     */
++    fun fromMediaItem(item: MediaItem, extraGenres: List<String> = emptyList()): MediaMeta {
++        val mins = secondsToMinutesOrNull(item.durationSecs)
++        return MediaMeta(
++            year = item.year,
++            durationMinutes = mins,
++            video = null,
++            audio = null,
++            genres = extraGenres
++        )
++    }
++}
+diff --git a/app/src/test/java/com/chris/m3usuite/ui/meta/MetaFormattersTest.kt b/app/src/test/java/com/chris/m3usuite/ui/meta/MetaFormattersTest.kt
+new file mode 100644
+index 0000000..0540341
+--- /dev/null
++++ b/app/src/test/java/com/chris/m3usuite/ui/meta/MetaFormattersTest.kt
+@@ -0,0 +1,45 @@
++package com.chris.m3usuite.ui.meta
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertNull
++import org.junit.Test
++
++class MetaFormattersTest {
++
++    @Test
++    fun quality_formats_from_height_and_hdr() {
++        assertEquals("4K", MetaFormatters.quality(VideoInfo(height = 2160)))
++        assertEquals("1080p HDR", MetaFormatters.quality(VideoInfo(height = 1080, hdr = true)))
++        assertEquals("HD", MetaFormatters.quality(VideoInfo(height = 720)))
++        assertEquals("1440p", MetaFormatters.quality(VideoInfo(height = 1440)))
++        assertNull(MetaFormatters.quality(null))
++    }
++
++    @Test
++    fun duration_formats_minutes() {
++        assertEquals("90 min", MetaFormatters.duration(90))
++        assertNull(MetaFormatters.duration(null))
++        assertNull(MetaFormatters.duration(0))
++    }
++
++    @Test
++    fun audio_formats_languages_and_channels() {
++        assertEquals("DE/EN 5.1", MetaFormatters.audio(AudioInfo(channels = "5.1", languages = listOf("de", "en"))))
++        assertEquals("EN", MetaFormatters.audio(AudioInfo(channels = null, languages = listOf("english"))))
++        assertEquals("2.0", MetaFormatters.audio(AudioInfo(channels = "2.0", languages = emptyList())))
++        assertNull(MetaFormatters.audio(null))
++    }
++
++    @Test
++    fun year_formats_as_string() {
++        assertEquals("2024", MetaFormatters.year(2024))
++        assertNull(MetaFormatters.year(null))
++        assertNull(MetaFormatters.year(0))
++    }
++
++    @Test
++    fun parse_genres_splits_and_dedups() {
++        val g = parseGenres("Action, Drama | Action / Sci‑Fi")
++        assertEquals(listOf("Action", "Drama", "Sci‑Fi"), g)
++    }
++}
+diff --git a/docs/meta_chips.md b/docs/meta_chips.md
+new file mode 100644
+index 0000000..bc40036
+--- /dev/null
++++ b/docs/meta_chips.md
+@@ -0,0 +1,49 @@
++# Meta Chips (V1)
++
++Ziel: Einheitliche, wiederverwendbare Meta-/Chip-Komponenten zur kompakten Darstellung von Medien-Metadaten (Jahr, Dauer, Qualität, Audio/Sprachen, Genres).
++
++Paket
++- com.chris.m3usuite.ui.meta
++  - MediaMeta.kt – Datamodell (MediaMeta, VideoInfo, AudioInfo)
++  - MetaFormatters.kt – Formatter (quality/duration/audio/year)
++  - MetaMappers.kt – Quellmodell → MediaMeta Helper
++  - MetaChips.kt – Compose-Renderer (FlowRow + AssistChip)
++
++Feature-Flag
++- BuildConfig.FEATURE_META_CHIPS_V1 (default true)
++- Deaktiviert den Renderer global ohne Aufrufer ändern zu müssen.
++
++Formatter
++- Qualität: 4K/1440p/1080p/HD (+ " HDR" Suffix bei HDR)
++- Dauer: "${min} min"
++- Audio: "DE/EN 5.1", "DE 2.0", "EN" (Sprachkürzel normalisiert)
++- Jahr: "2025"
++
++Mapper
++- MetaMappers.fromBasics(year, durationSecs, genresRaw, video?, audio?)
++- MetaMappers.fromMediaItem(MediaItem, extraGenres)
++
++UI
++@Composable
++fun MetaChips(meta: MediaMeta, compact: Boolean = false, modifier: Modifier = Modifier)
++- disabled AssistChips → nicht fokussierbar auf TV (reine Info-Badges)
++- Wrap via FlowRow, konsistente Abstände
++- A11y: contentDescription "Meta <Label>"
++
++Integration (Step‑1)
++- Foundation implementiert (dieser Patch). Folge-Patch integriert in VodDetailScreen/SeriesDetailScreen/LiveDetailScreen Header.
++
++Tests
++- app/src/test/.../MetaFormattersTest.kt deckt Kern‑Formatter ab.
++
++Beispiele
++val meta = MetaMappers.fromBasics(
++  year = 2024,
++  durationSecs = 5400,
++  genresRaw = "Action, Thriller",
++  video = VideoInfo(height = 2160, hdr = true),
++  audio = AudioInfo(channels = "5.1", languages = listOf("de","en"))
++)
++MetaChips(meta, compact = false)
++
++Hinweise
++- Chips sind rein informativ; Interaktionen (Filter) sind nicht Teil von V1.
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 0c9cba6..a1f4f88 100644
+index 6d7c99c..0c3f1a1 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -1,3 +1,7 @@
+@@ -1,3 +1,9 @@
 +2025-09-30
-+- fix(ui/fonts): avoid loading the corrupted MountainsOfChristmas TTF by mapping the "christmas" category chip to a safe fallback (Inter). Keep using a system/default font until a valid TTF is added.
++- feat(ui/meta): add unified Meta Chips foundation (MediaMeta model, formatters, mappers, and Compose renderer). Gated via BuildConfig.FEATURE_META_CHIPS_V1 (default true). Next step wires MetaChips into VOD/Series/Live detail headers.
++- test(ui/meta): unit tests for MetaFormatters (quality/duration/audio/year) and genre parsing.
++- docs(meta): add docs/meta_chips.md with usage and design notes.
 +
 +
  2025-09-27
  - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
  - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt b/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
-index 2c4b97e..8f72595 100644
---- a/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
-+++ b/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
-@@ -49,7 +49,7 @@ fun CategoryChip(key: String, label: String, modifier: Modifier = Modifier) {
-         "sci_fi" -> com.chris.m3usuite.ui.theme.CategoryFonts.Orbitron
-         "classic", "collection" -> com.chris.m3usuite.ui.theme.CategoryFonts.Cinzel
-         "western" -> com.chris.m3usuite.ui.theme.CategoryFonts.Rye
--        "christmas" -> com.chris.m3usuite.ui.theme.CategoryFonts.MountainsOfChristmas
-+        "christmas" -> com.chris.m3usuite.ui.theme.CategoryFonts.Inter
-         "romance" -> com.chris.m3usuite.ui.theme.CategoryFonts.Parisienne
-         "kids", "family" -> com.chris.m3usuite.ui.theme.CategoryFonts.Fredoka
-         "drama" -> com.chris.m3usuite.ui.theme.CategoryFonts.PlayfairDisplay
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 4d07a7a..4d3d8d0 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -12,6 +12,12 @@ Hinweis
+ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
+ - Alles Horizontale → `TvFocusRow` (inkl. Chips/Carousels).
+ - Alles Interaktive → `tvClickable`/`tvFocusableItem` (No‑Op auf Phone).
++- Meta‑Chips V1 (DetailScaffold – Epic „UI Unification / DetailScaffold + TV-Fokus + Cards”)
++  - Zentralisierte Meta‑Renderer (MediaMeta + MetaChips) inkl. Formatter/Mappers.
++  - Feature‑Flag: `FEATURE_META_CHIPS_V1` (BuildConfig).
++  - Schritt‑2: Integration in VodDetailScreen/SeriesDetailScreen/LiveDetailScreen Header (ersetzt lokale Badges).
++  - Tests für Formatter/Mapper (Qualität/Audio/Dauer).
++
+ - Zentrale Registry für Scroll+Fokus je Route/Row (`ScrollStateRegistry`).
+ - Chrome: einheitliche Auto‑Collapse/Expand‑Trigger im `HomeChromeScaffold`.
+ - Kein `onPreviewKeyEvent` (außer echte Sonderfälle).

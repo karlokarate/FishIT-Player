@@ -1,0 +1,49 @@
+# Meta Chips (V1)
+
+Ziel: Einheitliche, wiederverwendbare Meta-/Chip-Komponenten zur kompakten Darstellung von Medien-Metadaten (Jahr, Dauer, Qualität, Audio/Sprachen, Genres).
+
+Paket
+- com.chris.m3usuite.ui.meta
+  - MediaMeta.kt – Datamodell (MediaMeta, VideoInfo, AudioInfo)
+  - MetaFormatters.kt – Formatter (quality/duration/audio/year)
+  - MetaMappers.kt – Quellmodell → MediaMeta Helper
+  - MetaChips.kt – Compose-Renderer (FlowRow + AssistChip)
+
+Feature-Flag
+- BuildConfig.FEATURE_META_CHIPS_V1 (default true)
+- Deaktiviert den Renderer global ohne Aufrufer ändern zu müssen.
+
+Formatter
+- Qualität: 4K/1440p/1080p/HD (+ " HDR" Suffix bei HDR)
+- Dauer: "${min} min"
+- Audio: "DE/EN 5.1", "DE 2.0", "EN" (Sprachkürzel normalisiert)
+- Jahr: "2025"
+
+Mapper
+- MetaMappers.fromBasics(year, durationSecs, genresRaw, video?, audio?)
+- MetaMappers.fromMediaItem(MediaItem, extraGenres)
+
+UI
+@Composable
+fun MetaChips(meta: MediaMeta, compact: Boolean = false, modifier: Modifier = Modifier)
+- disabled AssistChips → nicht fokussierbar auf TV (reine Info-Badges)
+- Wrap via FlowRow, konsistente Abstände
+- A11y: contentDescription "Meta <Label>"
+
+Integration (Step‑1)
+- Foundation implementiert (dieser Patch). Folge-Patch integriert in VodDetailScreen/SeriesDetailScreen/LiveDetailScreen Header.
+
+Tests
+- app/src/test/.../MetaFormattersTest.kt deckt Kern‑Formatter ab.
+
+Beispiele
+val meta = MetaMappers.fromBasics(
+  year = 2024,
+  durationSecs = 5400,
+  genresRaw = "Action, Thriller",
+  video = VideoInfo(height = 2160, hdr = true),
+  audio = AudioInfo(channels = "5.1", languages = listOf("de","en"))
+)
+MetaChips(meta, compact = false)
+
+Hinweise
