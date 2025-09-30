@@ -1,52 +1,12 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt b/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt
-index 20a6fc5..5dc62fb 100644
---- a/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt
-+++ b/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt
-@@ -1,10 +1,12 @@
- package com.chris.m3usuite.ui.state
- 
- import androidx.compose.runtime.Composable
- import androidx.compose.runtime.LaunchedEffect
-+import androidx.compose.runtime.MutableState
- import androidx.compose.runtime.MutableState
- import androidx.compose.runtime.mutableStateOf
- import androidx.compose.runtime.saveable.Saver
- import androidx.compose.runtime.saveable.rememberSaveable
- import kotlinx.coroutines.flow.collectLatest
- import androidx.compose.runtime.snapshotFlow
-@@ -22,6 +24,11 @@ internal object ScrollStateRegistry {
-     // Scroll caches (LazyList/LazyGrid)
-     val list: MutableMap<String, Pair<Int, Int>> = mutableMapOf()
-     val grid: MutableMap<String, Pair<Int, Int>> = mutableMapOf()
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 0c9cba6..a1f4f88 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,7 @@
++2025-09-30
++- fix(ui/fonts): avoid loading the corrupted MountainsOfChristmas TTF by mapping the "christmas" category chip to a safe fallback (Inter). Keep using a system/default font until a valid TTF is added.
 +
-+    // Route-scoped lightweight filter/cache state (simple types)
-+    val filterString: MutableMap<String, String> = mutableMapOf()
-+    val filterInt: MutableMap<String, Int> = mutableMapOf()
-+    val filterBoolean: MutableMap<String, Boolean> = mutableMapOf()
- 
-     // Focus cache per row/key
-     private val focus: MutableMap<String, RowFocus> = mutableMapOf()
- 
-@@ -30,6 +37,21 @@ internal object ScrollStateRegistry {
-     fun writeRowFocus(key: String, index: Int) {
-         focus[key] = RowFocus(index)
-     }
 +
-+    // --- Filter helpers (typed) ---
-+    fun readFilterString(key: String, default: String = ""): String =
-+        filterString[key] ?: default
-+    fun writeFilterString(key: String, value: String) {
-+        filterString[key] = value
-+    }
-+    fun readFilterInt(key: String, default: Int = 0): Int =
-+        filterInt[key] ?: default
-+    fun writeFilterInt(key: String, value: Int) {
-+        filterInt[key] = value
-+    }
-+    fun readFilterBoolean(key: String, default: Boolean = false): Boolean =
-+        filterBoolean[key] ?: default
-+    fun writeFilterBoolean(key: String, value: Boolean) { filterBoolean[key] = value }
- }
- 
- fun readRowFocus(key: String): RowFocus = ScrollStateRegistry.readRowFocus(key)
- 
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
