@@ -1,45 +1,222 @@
-diff --git a/app/build.gradle.kts b/app/build.gradle.kts
-index 9831d2a..47d3f2c 100644
---- a/app/build.gradle.kts
-+++ b/app/build.gradle.kts
-@@ -128,14 +128,14 @@ android {
-     }
-     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt b/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt
+index 20a6fc5..5dc62fb 100644
+--- a/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt
++++ b/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt
+@@ -1,10 +1,12 @@
+ package com.chris.m3usuite.ui.state
  
--    // >>> Angepasst: Split-APKs pro ABI + Universal-APK
-+    // >>> Angepasst: Split-APKs pro ABI (Universal-APK deaktiviert)
-     splits {
-         abi {
-             isEnable = true
-             reset()
-             include("armeabi-v7a", "arm64-v8a")
--            // Zusätzlich zur je-ABI APK eine Universal-APK erzeugen
--            isUniversalApk = true
-+            // Keine Universal-APK, nur per-ABI (siehe Architektur-Docs)
-+            isUniversalApk = false
-         }
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.MutableState
+ import androidx.compose.runtime.MutableState
+ import androidx.compose.runtime.mutableStateOf
+ import androidx.compose.runtime.saveable.Saver
+ import androidx.compose.runtime.saveable.rememberSaveable
+ import kotlinx.coroutines.flow.collectLatest
+ import androidx.compose.runtime.snapshotFlow
+@@ -22,6 +24,11 @@ internal object ScrollStateRegistry {
+     // Scroll caches (LazyList/LazyGrid)
+     val list: MutableMap<String, Pair<Int, Int>> = mutableMapOf()
+     val grid: MutableMap<String, Pair<Int, Int>> = mutableMapOf()
++
++    // Route-scoped lightweight filter/cache state (simple types)
++    val filterString: MutableMap<String, String> = mutableMapOf()
++    val filterInt: MutableMap<String, Int> = mutableMapOf()
++    val filterBoolean: MutableMap<String, Boolean> = mutableMapOf()
+ 
+     // Focus cache per row/key
+     private val focus: MutableMap<String, RowFocus> = mutableMapOf()
+ 
+@@ -30,6 +37,21 @@ internal object ScrollStateRegistry {
+     fun writeRowFocus(key: String, index: Int) {
+         focus[key] = RowFocus(index)
+     }
++
++    // --- Filter helpers (typed) ---
++    fun readFilterString(key: String, default: String = ""): String =
++        filterString[key] ?: default
++    fun writeFilterString(key: String, value: String) {
++        filterString[key] = value
++    }
++    fun readFilterInt(key: String, default: Int = 0): Int =
++        filterInt[key] ?: default
++    fun writeFilterInt(key: String, value: Int) {
++        filterInt[key] = value
++    }
++    fun readFilterBoolean(key: String, default: Boolean = false): Boolean =
++        filterBoolean[key] ?: default
++    fun writeFilterBoolean(key: String, value: Boolean) { filterBoolean[key] = value }
+ }
+ 
+ fun readRowFocus(key: String): RowFocus = ScrollStateRegistry.readRowFocus(key)
+ 
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/state/RememberHelpers.kt b/app/src/main/java/com/chris/m3usuite/ui/state/RememberHelpers.kt
+index 8f1ad82..2a01172 100644
+--- a/app/src/main/java/com/chris/m3usuite/ui/state/RememberHelpers.kt
++++ b/app/src/main/java/com/chris/m3usuite/ui/state/RememberHelpers.kt
+@@ -1,14 +1,20 @@
+ package com.chris.m3usuite.ui.state
+ 
+ import androidx.compose.foundation.lazy.LazyListState
+ import androidx.compose.foundation.lazy.grid.LazyGridState
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.MutableState
+ import androidx.compose.runtime.saveable.Saver
+ import androidx.compose.runtime.saveable.rememberSaveable
+ import androidx.compose.runtime.snapshotFlow
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.ui.text.input.TextFieldValue
+ import kotlinx.coroutines.flow.collectLatest
+ 
+ /**
+  * RememberHelpers – Composable helpers that read/write ScrollStateRegistry for scroll positions.
+  */
+@@ -38,3 +44,63 @@ fun rememberRouteGridState(routeKey: String): LazyGridState {
+     }
+     return state
+ }
++
++// -------- Route-based Filter/Chip helpers (typed) -----------------------------
++
++private val stringStateSaver: Saver<MutableState<String>, String> = Saver(
++    save = { it.value },
++    restore = { v -> mutableStateOf(v) }
++)
++private val intStateSaver: Saver<MutableState<Int>, Int> = Saver(
++    save = { it.value },
++    restore = { v -> mutableStateOf(v) }
++)
++private val booleanStateSaver: Saver<MutableState<Boolean>, Boolean> = Saver(
++    save = { it.value },
++    restore = { v -> mutableStateOf(v) }
++)
++// Wrap TextFieldValue.Saver for MutableState
++@Suppress("UNCHECKED_CAST")
++private val textFieldValueStateSaver: Saver<MutableState<TextFieldValue>, Any> = Saver(
++    save = { state -> TextFieldValue.Saver.save(state.value) ?: "" },
++    restore = { any ->
++        val restored = TextFieldValue.Saver.restore(any) ?: TextFieldValue("")
++        mutableStateOf(restored)
++    }
++)
++
++@Composable
++fun rememberRouteFilterString(routeKey: String, default: String = ""): MutableState<String> {
++    val initial = ScrollStateRegistry.readFilterString(routeKey, default)
++    val state = rememberSaveable(key = "filter:$routeKey", saver = stringStateSaver) {
++        mutableStateOf(initial)
++    }
++    LaunchedEffect(routeKey, state.value) {
++        ScrollStateRegistry.writeFilterString(routeKey, state.value)
++    }
++    return state
++}
++
++@Composable
++fun rememberRouteFilterInt(routeKey: String, default: Int = 0): MutableState<Int> {
++    val initial = ScrollStateRegistry.readFilterInt(routeKey, default)
++    val state = rememberSaveable(key = "filter:$routeKey", saver = intStateSaver) {
++        mutableStateOf(initial)
++    }
++    LaunchedEffect(routeKey, state.value) {
++        ScrollStateRegistry.writeFilterInt(routeKey, state.value)
++    }
++    return state
++}
++
++@Composable
++fun rememberRouteFilterBoolean(routeKey: String, default: Boolean = false): MutableState<Boolean> {
++    val initial = ScrollStateRegistry.readFilterBoolean(routeKey, default)
++    val state = rememberSaveable(key = "filter:$routeKey", saver = booleanStateSaver) {
++        mutableStateOf(initial)
++    }
++    LaunchedEffect(routeKey, state.value) {
++        ScrollStateRegistry.writeFilterBoolean(routeKey, state.value)
++    }
++    return state
++}
++
++@Composable
++fun rememberRouteTextFieldValue(routeKey: String, default: String = ""): MutableState<TextFieldValue> {
++    val initialText = ScrollStateRegistry.readFilterString(routeKey, default)
++    val state = rememberSaveable(key = "filter:$routeKey", saver = textFieldValueStateSaver) {
++        mutableStateOf(TextFieldValue(initialText))
++    }
++    LaunchedEffect(routeKey, state.value.text) {
++        ScrollStateRegistry.writeFilterString(routeKey, state.value.text)
++    }
++    return state
++}
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt b/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt
+index 0f8b71a..48cb8a6 100644
+--- a/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt
++++ b/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt
+@@ -114,7 +114,8 @@ fun LibraryScreen(
      }
  
+     // Suche
+-    var query by remember { mutableStateOf(TextFieldValue("")) }
++    var query by com.chris.m3usuite.ui.state.rememberRouteTextFieldValue(
++        routeKey = "library:$selectedTabKey:search", default = "")
+ 
+     // Suchtreffer (nur für aktiven Tab)
+     var searchResults by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+diff --git a/AGENTS.md b/AGENTS.md
+index 31c87be..637e7d2 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -78,7 +78,8 @@ Sandbox/WSL – Agent Execution Rules (Best Effort)
+   - Start uses paged rows (Series/VOD) and a global paged Live row when no favorites exist; direct-play for Series navigates to details after on-demand OBX import if episodes absent.
+ - Cross‑platform builds: Codex uses Linux/WSL for builds/tests via Gradle wrapper while keeping settings compatible with Windows. Ensure no corruption of Windows‑side project files.
+  - WSL build files: Projektstamm enthält Linux‑spezifische Ordner für Build/Tests: `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`. Optional: `.wsl-cmake` (portable CMake), `.wsl-gperf` (portable gperf). Codex verwendet diese Ordner unter WSL; Windows‑seitige Einstellungen bleiben kompatibel.
+ - Tooling upgrades: If Codex needs additional tools or configuration to work better, it informs the user and, where possible, sets them up itself; otherwise it provides clear, copy‑pastable step‑by‑step commands for the user to establish the optimal environment.
+ - TDLib pinning: TDLib (JNI + Java bindings) is pinned to a specific upstream tag for reproducibility. The build script `scripts/tdlib-build-arm64.sh` checks out the tag and copies `TdApi.java`/`Client.java` from TDLib’s `example/java` into `libtd/src/main/java/org/drinkless/tdlib/`. Default pin: `v1.8.0` (the latest upstream tag as of now; override via env `TD_TAG`/`TD_COMMIT` or CLI `--ref <tag|commit>`). `Log.java` stays local to match JNI signatures.
+@@ -126,7 +127,8 @@ Git Push Policy (SSH, codex‑wsl)
+ - Unified UI polish: Accent tokens (adult/kid), carded sections (`AccentCard`), gradient + glow background with blurred app icon; kid profiles use a vibrant palette.
+ - TV buttons: Use `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton` (in `ui/common/TvButtons.kt`) to get focus glow + bounce by default. Avoid raw Material3 buttons in TV paths.
+ - TV Lazy migration: Do not use `androidx.tv.foundation.TvLazyRow` (deprecated). Use `LazyRow` from compose.foundation with TV focus APIs: `focusGroup()` on the container and `focusable()` + bring-into-view on item focus. A reusable wrapper `com.chris.m3usuite.ui.tv.TvFocusRow` is available and should be used for horizontal TV rows (chips, carousels, overlays). Remove manual DPAD index arithmetic; prefer `moveFocus(...)` when needed.
+ - TV live controls: DPAD Select toggles a bottom‑right quick‑actions popup (PiP, Subtitle/Audio, Format). Popup stays until Select again or Back. When open, DPAD_DOWN focuses the first button; LEFT/RIGHT navigate; Select activates; Back saves CC settings (if open) and closes the popup.
+-- Persistent UI state: All major lists/grids use a route‑scoped state saver so screens and rows restore their scroll/focus position when navigating away and back (Start, Library groups/rows, Details, Settings, Live/VOD/Series). Helpers: `rememberRouteListState(key)`, `rememberRouteGridState(key)` in `ui/state/ScrollStateRegistry.kt`.
++- Persistent UI state: All major lists/grids use a route‑scoped state saver so screens and rows restore their scroll/focus position when navigating away and back (Start, Library groups/rows, Details, Settings, Live/VOD/Series). Helpers: `rememberRouteListState(key)`, `rememberRouteGridState(key)`, `rememberRowFocus(key)`.
++- Route‑filters (chips/search): Lightweight helpers persist filter/chip states per route across back/rotation. Helpers: `rememberRouteFilterString/Int/Boolean`, `rememberRouteTextFieldValue` in `ui/state/RememberHelpers.kt`.
+ - Dev UX: Compose Live Literals are compiled for debug variants (Gradle config). Use Android Studio Live Edit to tweak literals (`dp`/colors/strings) without redeploy.
+ - Kid/Guest profiles: per‑profile permissions (Settings/Quellen, External Player, Favorites, Search, Resume, Whitelist).
+ - Kid filtering: Effective allow = item allows ∪ category allows − item blocks; category‑level whitelist + per‑item exceptions via admin UI.
+diff --git a/ARCHITECTURE_OVERVIEW.md b/ARCHITECTURE_OVERVIEW.md
+index ffe2ebc..2f9951a 100644
+--- a/ARCHITECTURE_OVERVIEW.md
++++ b/ARCHITECTURE_OVERVIEW.md
+@@ -127,7 +127,7 @@ Push (FCM)
+ │   ├── skin/                               # TV-Skin (Focus/Scale, Modifiers), Theme
+-│   ├── state/ScrollStateRegistry.kt        # Scroll-Positions pro Row/Grid
++│   ├── state/ScrollStateRegistry.kt        # Scroll- & Fokus-Positionen pro Row/Grid + Route-Filter-Saver
+ │   ├── theme/                              # Farben, Typo, Theme
+ │   └── util/Images.kt, AvatarModel.kt      # Coil-ImageRequests mit Headers aus Settings
+ └── work/
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index c86b005..df44a50 100644
+index 0dc56c3..fd1c3d8 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -1,3 +1,7 @@
+@@ -1,3 +1,10 @@
 +2025-09-30
-+- fix(build/splits): disable Universal APK (`isUniversalApk=false`) to match architecture docs. Release produces per‑ABI APKs (arm64‑v8a, armeabi‑v7a) only.
-+- chore(docs): note maintenance in roadmap (no functional impact).
++- feat(ui/state): route-based filter savers added. New helpers in RememberHelpers: rememberRouteFilterString/Int/Boolean and rememberRouteTextFieldValue. Values persist per-route across back navigation and rotation and are mirrored into a central in-memory registry.
++- refactor(library/search): LibraryScreen search field now uses rememberRouteTextFieldValue("library:<tab>:search") so queries persist across tab switches and after activity recreation.
++- docs(state): AGENTS/Architecture updated to mention route-filter savers alongside scroll/focus helpers.
 +
  2025-09-27
  - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
  - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
 diff --git a/ROADMAP.md b/ROADMAP.md
-index 5508c2e..253acb3 100644
+index b3776d7..1b1aaf7 100644
 --- a/ROADMAP.md
 +++ b/ROADMAP.md
-@@ -4,6 +4,7 @@ Hinweis
- - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
- - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
-+- Maintenance 2025‑09‑30: Universal‑APK wieder deaktiviert (nur per‑ABI APKs); kein Roadmap‑Impact.
+@@ -10,6 +10,8 @@ Hinweis
  
  ---
  
++Update 2025‑09‑30: Route‑basierter State‑Restore erweitert – Filter/Chip‑Zustände werden pro Route persistiert (Helpers in RememberHelpers). Library‑Suche nutzt die neuen Saver.
++
+ ## Kurzfristig (2–4 Wochen)
+ 
+ PRIO‑1: TV Fokus/DPAD Vereinheitlichung

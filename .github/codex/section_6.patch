@@ -1,63 +1,13 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/tv/FocusToolkit.kt b/app/src/main/java/com/chris/m3usuite/ui/tv/FocusToolkit.kt
-new file mode 100644
-index 0000000..d7b42f8
---- /dev/null
-+++ b/app/src/main/java/com/chris/m3usuite/ui/tv/FocusToolkit.kt
-@@ -0,0 +1,56 @@
-+package com.chris.m3usuite.ui.tv
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 0dc56c3..fd1c3d8 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,10 @@
++2025-09-30
++- feat(ui/state): route-based filter savers added. New helpers in RememberHelpers: rememberRouteFilterString/Int/Boolean and rememberRouteTextFieldValue. Values persist per-route across back navigation and rotation and are mirrored into a central in-memory registry.
++- refactor(library/search): LibraryScreen search field now uses rememberRouteTextFieldValue("library:<tab>:search") so queries persist across tab switches and after activity recreation.
++- docs(state): AGENTS/Architecture updated to mention route-filter savers alongside scroll/focus helpers.
 +
-+import androidx.compose.runtime.Composable
-+import androidx.compose.runtime.LaunchedEffect
-+import androidx.compose.runtime.remember
-+import androidx.compose.ui.Modifier
-+import androidx.compose.ui.composed
-+import androidx.compose.ui.focus.FocusRequester
-+import androidx.compose.ui.focus.focusRequester
-+import androidx.compose.ui.focus.onFocusEvent
-+
-+/**
-+ * Helper to request initial focus once, after the node is attached.
-+ * Safe on phones (no-op unless explicitly requested).
-+ */
-+@Composable
-+fun rememberInitialFocusRequester(): FocusRequester {
-+    return remember { FocusRequester() }
-+}
-+
-+/**
-+ * Apply an initial focus requester and request focus once when [requestOnAttach] is true.
-+ * If the node is not yet attached, the request is retried once on the next frame.
-+ */
-+fun Modifier.tvInitialFocus(
-+    requester: FocusRequester,
-+    requestOnAttach: Boolean = true
-+): Modifier = composed {
-+    var armed = requestOnAttach
-+    LaunchedEffect(requestOnAttach) {
-+        if (requestOnAttach) {
-+            // Delay 1 frame to ensure attach
-+            kotlinx.coroutines.delay(16)
-+            runCatching { requester.requestFocus() }
-+        }
-+    }
-+    this
-+        .focusRequester(requester)
-+}
-+
-+/**
-+ * Simple focus observer that invokes [onFocused] when the element gains focus.
-+ * Use this to implement focus memory hooks in callers (e.g. save focused index).
-+ */
-+fun Modifier.onTvFocused(
-+    onFocused: () -> Unit
-+): Modifier = this.onFocusEvent {
-+    if (it.isFocused) onFocused()
-+}
-+
-+/**
-+ * Minimal wrapper to mark an item focusable in TV paths without changing click behavior.
-+ * Kept intentionally small; tvClickable should usually be preferred for interactive elements.
-+ */
-+fun Modifier.tvFocusableItem(): Modifier = this
-+    .focusRequester(FocusRequester())
-+    // additional focusable() not required when using tvClickable on the same node; keep lean here.
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.

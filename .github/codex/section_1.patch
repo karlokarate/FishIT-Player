@@ -1,22 +1,52 @@
-diff --git a/app/build.gradle.kts b/app/build.gradle.kts
-index 9831d2a..47d3f2c 100644
---- a/app/build.gradle.kts
-+++ b/app/build.gradle.kts
-@@ -128,14 +128,14 @@ android {
-     }
-     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt b/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt
+index 20a6fc5..5dc62fb 100644
+--- a/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt
++++ b/app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt
+@@ -1,10 +1,12 @@
+ package com.chris.m3usuite.ui.state
  
--    // >>> Angepasst: Split-APKs pro ABI + Universal-APK
-+    // >>> Angepasst: Split-APKs pro ABI (Universal-APK deaktiviert)
-     splits {
-         abi {
-             isEnable = true
-             reset()
-             include("armeabi-v7a", "arm64-v8a")
--            // Zusätzlich zur je-ABI APK eine Universal-APK erzeugen
--            isUniversalApk = true
-+            // Keine Universal-APK, nur per-ABI (siehe Architektur-Docs)
-+            isUniversalApk = false
-         }
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.MutableState
+ import androidx.compose.runtime.MutableState
+ import androidx.compose.runtime.mutableStateOf
+ import androidx.compose.runtime.saveable.Saver
+ import androidx.compose.runtime.saveable.rememberSaveable
+ import kotlinx.coroutines.flow.collectLatest
+ import androidx.compose.runtime.snapshotFlow
+@@ -22,6 +24,11 @@ internal object ScrollStateRegistry {
+     // Scroll caches (LazyList/LazyGrid)
+     val list: MutableMap<String, Pair<Int, Int>> = mutableMapOf()
+     val grid: MutableMap<String, Pair<Int, Int>> = mutableMapOf()
++
++    // Route-scoped lightweight filter/cache state (simple types)
++    val filterString: MutableMap<String, String> = mutableMapOf()
++    val filterInt: MutableMap<String, Int> = mutableMapOf()
++    val filterBoolean: MutableMap<String, Boolean> = mutableMapOf()
+ 
+     // Focus cache per row/key
+     private val focus: MutableMap<String, RowFocus> = mutableMapOf()
+ 
+@@ -30,6 +37,21 @@ internal object ScrollStateRegistry {
+     fun writeRowFocus(key: String, index: Int) {
+         focus[key] = RowFocus(index)
      }
++
++    // --- Filter helpers (typed) ---
++    fun readFilterString(key: String, default: String = ""): String =
++        filterString[key] ?: default
++    fun writeFilterString(key: String, value: String) {
++        filterString[key] = value
++    }
++    fun readFilterInt(key: String, default: Int = 0): Int =
++        filterInt[key] ?: default
++    fun writeFilterInt(key: String, value: Int) {
++        filterInt[key] = value
++    }
++    fun readFilterBoolean(key: String, default: Boolean = false): Boolean =
++        filterBoolean[key] ?: default
++    fun writeFilterBoolean(key: String, value: Boolean) { filterBoolean[key] = value }
+ }
+ 
+ fun readRowFocus(key: String): RowFocus = ScrollStateRegistry.readRowFocus(key)
  

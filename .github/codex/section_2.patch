@@ -1,12 +1,98 @@
-diff --git a/CHANGELOG.md b/CHANGELOG.md
-index c86b005..df44a50 100644
---- a/CHANGELOG.md
-+++ b/CHANGELOG.md
-@@ -1,3 +1,7 @@
-+2025-09-30
-+- fix(build/splits): disable Universal APK (`isUniversalApk=false`) to match architecture docs. Release produces per‑ABI APKs (arm64‑v8a, armeabi‑v7a) only.
-+- chore(docs): note maintenance in roadmap (no functional impact).
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/state/RememberHelpers.kt b/app/src/main/java/com/chris/m3usuite/ui/state/RememberHelpers.kt
+index 8f1ad82..2a01172 100644
+--- a/app/src/main/java/com/chris/m3usuite/ui/state/RememberHelpers.kt
++++ b/app/src/main/java/com/chris/m3usuite/ui/state/RememberHelpers.kt
+@@ -1,14 +1,20 @@
+ package com.chris.m3usuite.ui.state
+ 
+ import androidx.compose.foundation.lazy.LazyListState
+ import androidx.compose.foundation.lazy.grid.LazyGridState
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.MutableState
+ import androidx.compose.runtime.saveable.Saver
+ import androidx.compose.runtime.saveable.rememberSaveable
+ import androidx.compose.runtime.snapshotFlow
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.ui.text.input.TextFieldValue
+ import kotlinx.coroutines.flow.collectLatest
+ 
+ /**
+  * RememberHelpers – Composable helpers that read/write ScrollStateRegistry for scroll positions.
+  */
+@@ -38,3 +44,63 @@ fun rememberRouteGridState(routeKey: String): LazyGridState {
+     }
+     return state
+ }
 +
- 2025-09-27
- - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
- - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
++// -------- Route-based Filter/Chip helpers (typed) -----------------------------
++
++private val stringStateSaver: Saver<MutableState<String>, String> = Saver(
++    save = { it.value },
++    restore = { v -> mutableStateOf(v) }
++)
++private val intStateSaver: Saver<MutableState<Int>, Int> = Saver(
++    save = { it.value },
++    restore = { v -> mutableStateOf(v) }
++)
++private val booleanStateSaver: Saver<MutableState<Boolean>, Boolean> = Saver(
++    save = { it.value },
++    restore = { v -> mutableStateOf(v) }
++)
++// Wrap TextFieldValue.Saver for MutableState
++@Suppress("UNCHECKED_CAST")
++private val textFieldValueStateSaver: Saver<MutableState<TextFieldValue>, Any> = Saver(
++    save = { state -> TextFieldValue.Saver.save(state.value) ?: "" },
++    restore = { any ->
++        val restored = TextFieldValue.Saver.restore(any) ?: TextFieldValue("")
++        mutableStateOf(restored)
++    }
++)
++
++@Composable
++fun rememberRouteFilterString(routeKey: String, default: String = ""): MutableState<String> {
++    val initial = ScrollStateRegistry.readFilterString(routeKey, default)
++    val state = rememberSaveable(key = "filter:$routeKey", saver = stringStateSaver) {
++        mutableStateOf(initial)
++    }
++    LaunchedEffect(routeKey, state.value) {
++        ScrollStateRegistry.writeFilterString(routeKey, state.value)
++    }
++    return state
++}
++
++@Composable
++fun rememberRouteFilterInt(routeKey: String, default: Int = 0): MutableState<Int> {
++    val initial = ScrollStateRegistry.readFilterInt(routeKey, default)
++    val state = rememberSaveable(key = "filter:$routeKey", saver = intStateSaver) {
++        mutableStateOf(initial)
++    }
++    LaunchedEffect(routeKey, state.value) {
++        ScrollStateRegistry.writeFilterInt(routeKey, state.value)
++    }
++    return state
++}
++
++@Composable
++fun rememberRouteFilterBoolean(routeKey: String, default: Boolean = false): MutableState<Boolean> {
++    val initial = ScrollStateRegistry.readFilterBoolean(routeKey, default)
++    val state = rememberSaveable(key = "filter:$routeKey", saver = booleanStateSaver) {
++        mutableStateOf(initial)
++    }
++    LaunchedEffect(routeKey, state.value) {
++        ScrollStateRegistry.writeFilterBoolean(routeKey, state.value)
++    }
++    return state
++}
++
++@Composable
++fun rememberRouteTextFieldValue(routeKey: String, default: String = ""): MutableState<TextFieldValue> {
++    val initialText = ScrollStateRegistry.readFilterString(routeKey, default)
++    val state = rememberSaveable(key = "filter:$routeKey", saver = textFieldValueStateSaver) {
++        mutableStateOf(TextFieldValue(initialText))
++    }
++    LaunchedEffect(routeKey, state.value.text) {
++        ScrollStateRegistry.writeFilterString(routeKey, state.value.text)
++    }
++    return state
++}
