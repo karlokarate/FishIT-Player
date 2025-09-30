@@ -22,6 +22,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: write   # <— nötig für /actions/workflows/.../dispatches
 
 concurrency:
   group: codex-${{ github.ref }}-${{ github.event_name }}
@@ -36,6 +37,7 @@ jobs:
       (github.event_name == 'issues' && contains(github.event.issue.body, '/codex')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '/codex'))
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,7 +68,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GH_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}  # <— explizit, falls benötigt
+          GH_EVENT_NAME: ${{ github.event_name }}       # <— bleibt als Fallback
           DISPATCH_COMMENT: ${{ inputs.comment }}
           CODEX_ALLOWLIST: ${{ vars.CODEX_ALLOWLIST }}
         run: python .github/codex/bot.py
@@ -112,6 +115,9 @@ jobs:
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
+
+      - name: Install jq (for parsing event body)
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Run Gradle
         env:
