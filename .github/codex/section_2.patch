@@ -1,45 +1,12 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt b/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt
-new file mode 100644
-index 0000000..5971526
---- /dev/null
-+++ b/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt
-@@ -0,0 +1,38 @@
-+package com.chris.m3usuite.ui.meta
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 8a3a8a8..2e59f8a 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,7 @@
++2025-09-30
++- fix(ui/fonts): map "christmas" category to Inter fallback instead of MountainsOfChristmas to avoid loading the corrupted TTF placeholder. Keeps UI stable until a valid Mountains Of Christmas font is added.
 +
-+import androidx.compose.runtime.Stable
 +
-+@Stable
-+data class MediaMeta(
-+    val year: Int? = null,
-+    val durationMinutes: Int? = null,
-+    val video: VideoInfo? = null,
-+    val audio: AudioInfo? = null,
-+    val genres: List<String> = emptyList()
-+)
-+
-+@Stable
-+data class VideoInfo(
-+    val width: Int? = null,
-+    val height: Int? = null,
-+    val hdr: Boolean = false,
-+    val fps: Int? = null
-+)
-+
-+@Stable
-+data class AudioInfo(
-+    val channels: String? = null,            // "2.0", "5.1", "7.1" …
-+    val languages: List<String> = emptyList() // ISO codes or names ("de","en","german",…)
-+)
-+
-+internal fun secondsToMinutesOrNull(secs: Int?): Int? {
-+    if (secs == null) return null
-+    if (secs <= 0) return null
-+    return (secs / 60).coerceAtLeast(1)
-+}
-+
-+internal fun parseGenres(raw: String?): List<String> =
-+    raw?.split(',', ';', '|', '/', '•')
-+        ?.map { it.trim() }
-+        ?.filter { it.isNotEmpty() }
-+        ?.distinct()
-+        ?: emptyList()
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.

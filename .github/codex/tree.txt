@@ -373,8 +373,12 @@ app/src/main/res/xml/backup_rules.xml
 app/src/main/res/xml/data_extraction_rules.xml
 app/src/main/res/xml/file_paths.xml
 b/app/src/main/java/com/chris/m3usuite/ui/cards/Cards.kt
+b/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt
+b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt
 b/app/src/main/java/com/chris/m3usuite/ui/tv/FocusToolkit.kt
+b/app/src/test/java/com/chris/m3usuite/ui/meta/MetaFormattersTest.kt
 b/app/src/v7a/java/org/drinkless/tdlib/Log.java
+b/docs/meta_chips.md
 b/libtd/src/v7a/java/org/drinkless/tdlib/Client.java
 b/libtd/src/v7a/java/org/drinkless/tdlib/package-info.java
 build.gradle.kts
