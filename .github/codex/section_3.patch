@@ -1,13 +1,11 @@
-diff --git a/ARCHITECTURE_OVERVIEW.md b/ARCHITECTURE_OVERVIEW.md
-index 4a0d95c..8b5c374 100644
---- a/ARCHITECTURE_OVERVIEW.md
-+++ b/ARCHITECTURE_OVERVIEW.md
-@@ -129,6 +129,8 @@ Repository/Settings Lifecycle
- │   │   ├── VodDetailScreen.kt              # VOD-Details, Poster focus + 50% backdrop overlay, Enrichment-Fetch, Resume
- │   │   ├── SeriesDetailScreen.kt           # Serien, Staffel/Episoden-Listing, Resume Next
- │   │   └── SettingsScreen.kt               # UI-, Player-, Filter-, Profile-Settings
-+│   ├── detail/                             # Gemeinsames Detail-Gerüst (Backdrop/Poster/Title/Meta/Actions + Slots)
-+│   ├── cards/                              # Wiederverwendbare Karten (Poster/Channel/Season/Episode) mit TV Hover & Shimmer
- │   ├── skin/                               # TV-Skin (Focus/Scale, Modifiers), Theme
- │   ├── state/ScrollStateRegistry.kt        # Scroll-Positions pro Row/Grid
- │   ├── theme/                              # Farben, Typo, Theme
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 5508c2e..253acb3 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -4,6 +4,7 @@ Hinweis
+ - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+ - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
++- Maintenance 2025‑09‑30: Universal‑APK wieder deaktiviert (nur per‑ABI APKs); kein Roadmap‑Impact.
+ 
+ ---
+ 
