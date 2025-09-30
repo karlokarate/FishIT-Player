@@ -1,14 +1,12 @@
-diff --git a/app/build.gradle.kts b/app/build.gradle.kts
-index 7ad2c45..7bdc4a7 100644
---- a/app/build.gradle.kts
-+++ b/app/build.gradle.kts
-@@ -67,6 +67,9 @@ android {
-         vectorDrawables {
-             useSupportLibrary = true
-         }
-+        // TV Form Kit feature flag (v1). Screen-wise activation; fallback to legacy controls when false.
-+        // Toggle via -P or buildTypes if needed.
-+        buildConfigField("boolean", "FEATURE_TV_FORMS_V1", "true")
-     }
- 
-     buildTypes {
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 1f445b2..4aec84a 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,8 @@
++2025-09-30
++- ci(release): add Release Build Test workflow. On PRs and manual runs it assembles the release (split‑APKs), captures full Gradle logs, extracts all Errors/Warnings into a markdown report, uploads logs as an artifact, posts the report as a PR comment, and adds a job summary. SDK setup prefers API 35 with fallback to 34. Gradle cache enabled.
++
++
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
