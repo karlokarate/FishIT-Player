@@ -1,48 +1,13 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt b/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
-index 3ce1aeb..b4c1ffb 100644
---- a/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
-+++ b/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
-@@ -1,9 +1,15 @@
- package com.chris.m3usuite.player
- 
- import android.content.Context
- import kotlinx.coroutines.flow.first
- import com.chris.m3usuite.prefs.SettingsStore
- import com.chris.m3usuite.data.repo.PermissionRepository
-+import com.chris.m3usuite.playback.MediaType
-+import com.chris.m3usuite.playback.PlayRequest
-+import com.chris.m3usuite.playback.PlayerLauncher
- 
- /**
-  * Zentrale Wahl "Immer fragen | Intern | Extern".
-  * Die drei Detail-Screens (Vod/Series/Live) rufen nur noch diese Funktion auf.
-  */
-@@ -21,6 +27,23 @@ object PlayerChooser {
-         startPositionMs: Long? = null,
-         mimeType: String? = null,
-         buildInternal: (startPositionMs: Long?, mimeType: String?) -> Unit
-     ) {
-+        // v1: route via centralized PlayerLauncher (feature gated; default ON)
-+        if (store.playerLauncherV1.first()) {
-+            val type = when {
-+                url.startsWith("tg://", ignoreCase = true) -> MediaType.VOD // forced internal; type doesn't matter
-+                url.contains("/live/") -> MediaType.LIVE
-+                url.contains("/movie/") || url.contains("/vod/") -> MediaType.VOD
-+                else -> MediaType.VOD
-+            }
-+            val req = PlayRequest(
-+                type = type,
-+                mediaId = when (type) { MediaType.LIVE -> "live:-1"; MediaType.VOD -> "vod:-1"; MediaType.SERIES -> "series:-1:0:0" },
-+                title = null,
-+                url = url,
-+                headers = headers,
-+                startPositionMs = startPositionMs,
-+                mimeType = mimeType
-+            )
-+            PlayerLauncher(context, store) { _, s, m -> buildInternal(s, m) }.launch(req)
-+            return
-+        }
-         // Force internal for Telegram scheme
-         if (url.startsWith("tg://", ignoreCase = true)) {
-             buildInternal(startPositionMs, mimeType)
-             return
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt b/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
+index 16a7792..cc0e614 100644
+--- a/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
++++ b/app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt
+@@ -49,7 +49,7 @@ fun CategoryChip(key: String, label: String, modifier: Modifier = Modifier) {
+         "sci_fi" -> com.chris.m3usuite.ui.theme.CategoryFonts.Orbitron
+         "classic", "collection" -> com.chris.m3usuite.ui.theme.CategoryFonts.Cinzel
+         "western" -> com.chris.m3usuite.ui.theme.CategoryFonts.Rye
+-        "christmas" -> com.chris.m3usuite.ui.theme.CategoryFonts.MountainsOfChristmas
++        "christmas" -> com.chris.m3usuite.ui.theme.CategoryFonts.PlayfairDisplay
+         "romance" -> com.chris.m3usuite.ui.theme.CategoryFonts.Parisienne
+         "kids", "family" -> com.chris.m3usuite.ui.theme.CategoryFonts.Fredoka
+         "drama" -> com.chris.m3usuite.ui.theme.CategoryFonts.PlayfairDisplay

@@ -1,23 +1,176 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt b/app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt
-index d6f3d89..8dc0fc4 100644
---- a/app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt
-+++ b/app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt
-@@ -35,6 +35,8 @@ private val Context.dataStore by preferencesDataStore("settings")
-  * Zentraler Settings-Store der App.
-  * Erweiterungen: Player-Modus (ask/internal/external) + Subtitle-Stil + Landscape-Header-Default.
-  */
-     object Keys {
-+    // Feature flags
-+    val PLAYER_LAUNCHER_V1 = booleanPreferencesKey("feature_player_launcher_v1")
-     // Basis / Netzwerk
-     val M3U_URL = stringPreferencesKey("m3u_url")
-     val EPG_URL = stringPreferencesKey("epg_url")
-     val USER_AGENT = stringPreferencesKey("user_agent")
-@@ -173,6 +175,7 @@ class SettingsStore(private val context: Context) {
- 
-     // -------- Flows (reaktiv) --------
-     val m3uUrl: Flow<String> = context.dataStore.data.map { it[Keys.M3U_URL].orEmpty() }
-+    val playerLauncherV1: Flow<Boolean> = context.dataStore.data.map { it[Keys.PLAYER_LAUNCHER_V1] ?: true }
-     val epgUrl: Flow<String> = context.dataStore.data.map { it[Keys.EPG_URL].orEmpty() }
-     val userAgent: Flow<String> = context.dataStore.data.map { it[Keys.USER_AGENT] ?: "IBOPlayer/1.4 (Android)" }
-     val referer: Flow<String> = context.dataStore.data.map { it[Keys.REFERER].orEmpty() }
+diff --git a/app/src/main/res/font/mountainsofchristmas_regular.ttf b/app/src/main/res/font/mountainsofchristmas_regular.ttf
+deleted file mode 100644
+index 3b63e6a..0000000
+--- a/app/src/main/res/font/mountainsofchristmas_regular.ttf
++++ /dev/null
+@@ -1,200 +0,0 @@
+-<!DOCTYPE html>
+-<html
+-  lang="en"
+-  
+-  data-color-mode="auto" data-light-theme="light" data-dark-theme="dark"
+-  data-a11y-animated-images="system" data-a11y-link-underlines="true"
+-  
+-  >
+-
+-
+-
+-
+-  <head>
+-    <meta charset="utf-8">
+-  <link rel="dns-prefetch" href="https://github.githubassets.com">
+-  <link rel="dns-prefetch" href="https://avatars.githubusercontent.com">
+-  <link rel="dns-prefetch" href="https://github-cloud.s3.amazonaws.com">
+-  <link rel="dns-prefetch" href="https://user-images.githubusercontent.com/">
+-  <link rel="preconnect" href="https://github.githubassets.com" crossorigin>
+-  <link rel="preconnect" href="https://avatars.githubusercontent.com">
+-
+-      <link crossorigin="anonymous" rel="preload" as="script" href="https://github.githubassets.com/assets/global-banner-disable-bd97b48d5503.js" />
+-
+-  <link rel="preload" href="https://github.githubassets.com/assets/mona-sans-14595085164a.woff2" as="font" type="font/woff2" crossorigin>
+-
+-
+-  <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/light-6448649c7147.css" /><link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/light_high_contrast-42fc7e3b06b7.css" /><link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/dark-d17b946fc2c5.css" /><link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/dark_high_contrast-1b924088c83a.css" /><link data-color-theme="light" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light-6448649c7147.css" /><link data-color-theme="light_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_high_contrast-42fc7e3b06b7.css" /><link data-color-theme="light_colorblind" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_colorblind-44cfaf0c8f7b.css" /><link data-color-theme="light_colorblind_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_colorblind_high_contrast-979217efd93e.css" /><link data-color-theme="light_tritanopia" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_tritanopia-4d5383026bfa.css" /><link data-color-theme="dark" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark-d17b946fc2c5.css" /><link data-color-theme="dark_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_high_contrast-1b924088c83a.css" /><link data-color-theme="dark_colorblind" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_colorblind-654786382462.css" /><link data-color-theme="dark_colorblind_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_colorblind_high_contrast-ecca008c6f6e.css" /><link data-color-theme="dark_tritanopia" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_tritanopia-fff376053989.css" /><link data-color-theme="dark_tritanopia_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_tritanopia_high_contrast-49adf52571e5.css" /><link data-color-theme="dark_dimmed" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_dimmed-66d97c13c98a.css" /><link data-color-theme="dark_dimmed_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_dimmed_high_contrast-c58f1d0432b9.css" />
+-
+-  <style type="text/css">
+-    :root {
+-      --tab-size-preference: 4;
+-    }
+-
+-    pre, code {
+-      tab-size: var(--tab-size-preference);
+-    }
+-  </style>
+-
+-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-primitives-dc7ca6859caf.css" />
+-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-f96b923db733.css" />
+-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/global-2744ca59d025.css" />
+-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/github-efdc4f8b5091.css" />
+-  <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/repository-5d735668c600.css" />
+-
+-  
+-
+-  <script type="application/json" id="client-env">{"locale":"en","featureFlags":["alternate_user_config_repo","api_insights_show_missing_data_banner","attestations_filtering","attestations_sorting","billing_fixed_amount_metered_configured_discounts","billing_show_top_100_users_usage_table","client_version_header","codespaces_prebuild_region_target_update","contact_requests_implicit_opt_in","contact_sales_locale_utm_medium","contentful_lp_enterprise","contentful_lp_footnotes","copilot_agent_prefetch_tasks","copilot_agent_task_caching","copilot_agent_tasks_btn_code_nav","copilot_agent_tasks_btn_code_view","copilot_agent_tasks_btn_code_view_lines","copilot_agent_tasks_btn_file_reference","copilot_api_agentic_issue_marshal_yaml","copilot_api_draft_issue_code_search","copilot_chat_attach_multiple_images","copilot_chat_file_redirect","copilot_chat_group_notifications","copilot_chat_reduce_quota_checks","copilot_chat_search_bar_redirect","copilot_chat_selection_attachments","copilot_chat_vision_in_claude","copilot_chat_vision_skip_thread_create","copilot_coding_agent_diff_stats","copilot_custom_copilots_feature_preview","copilot_disable_generated_commit_description","copilot_duplicate_thread","copilot_features_raycast_logo","copilot_free_to_paid_telem","copilot_ftp_hyperspace_upgrade_prompt","copilot_ftp_settings_upgrade","copilot_ftp_upgrade_to_pro_from_models","copilot_ftp_your_copilot_settings","copilot_global_overlay_v2","copilot_immersive_agent_branch_selection","copilot_immersive_structured_model_picker","copilot_loops_share_button","copilot_no_floating_button","copilot_read_shared_conversation","copilot_show_copilot_sub_issues_button_on_issues_page","copilot_spark_allow_empty_commit","copilot_spark_progressive_error_handling","copilot_spark_single_user_iteration","copilot_spark_use_billing_headers","copilot_spark_write_iteration_history_to_git","copilot_stable_conversation_view","copilot_workbench_agent_seed_tool","copilot_workbench_cache","copilot_workbench_connection_reload_banner","copilot_workbench_preview_analytics","copilot_workbench_ratelimit_fallback","copilot_workbench_refresh_on_wsod","copilot_workbench_synthetic_generation","dashboard_public_preview","direct_to_salesforce","dotcom_chat_client_side_skills","failbot_report_error_react_apps_on_page","ghost_pilot_confidence_truncation_25","ghost_pilot_confidence_truncation_40","global_nav_reductive_user_menu","global_search_multi_orgs","hpc_improve_dom_insertion_observer","hyperspace_diff_view","inp_reduced_threshold","insert_before_patch","issue_fields_report_usage","issues_react_blur_item_picker_on_close","issues_react_bots_timeline_pagination","issues_react_prohibit_title_fallback","issues_react_remove_placeholders","issues_sticky_sidebar","lifecycle_label_name_updates","link_contact_sales_swp_marketo","marketing_pages_search_explore_provider","mcp_registry_install","memex_mwl_filter_field_delimiter","migrate_toasts_to_banners_web_notifications","new_traffic_page_banner","override_pulse_legacy_url","primer_react_segmented_control_tooltip","primer_react_unified_portal_root","record_sso_banner_metrics","releases_update_ref_selector","remove_child_patch","repos_insights_remove_new_url","sample_network_conn_type","scheduled_reminders_updated_limits","show_edit_on_default_option","site_homepage_contentful","site_msbuild_webgl_hero","spark_commit_on_default_branch","spark_show_data_access_on_publish","spark_sync_repository_after_iteration","viewscreen_sandbox","webp_support","workbench_default_sonnet4","workbench_store_readonly"],"copilotApiOverrideUrl":"https://api.githubcopilot.com"}</script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/high-contrast-cookie-f3788027bd8d.js"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/wp-runtime-314b116b3f70.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_oddbird_popover-polyfill_dist_popover-fn_js-468bf7cab607.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_stacktrace-parser_dist_stack-trace-parser_esm_js-node_modules_github_bro-2f4e04-280c10ec004d.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_arianotify-polyfill_ariaNotify-polyfill_js-node_modules_github_mi-c8eeba-690858154b11.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/environment-e36acb721009.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_relative-time-element_dist_index_js-c98257dc79a7.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_selector-observer_dist_index_esm_js-7e4d99c9171d.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_auto-complete-element_dist_index_js-node_modules_github_catalyst_-0d7d60-9ac2b374b638.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_text-expander-element_dist_index_js-754f5b5e9e7e.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_filter-input-element_dist_index_js-node_modules_github_remote-inp-b5f1d7-fd008e5636c7.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_markdown-toolbar-element_dist_index_js-d41270eb61be.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_file-attachment-element_dist_index_js-node_modules_primer_view-co-c63e9a-b1f4633cac7f.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/github-elements-e1b8d79d7efc.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/element-registry-0d3ad88220f7.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_mini-throttle_dist_index_js-node_modules_github_hydro-analytics-c-2a6094-2f3b5bfd7e3b.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_braintree_browser-detection_dist_browser-detection_js-node_modules_githu-bb80ec-4e90f1d1076c.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_lit-html_lit-html_js-06c8637a6071.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_morphdom_dist_morphdom-esm_js-node_modules_swc_helpers_esm__define_property_js-5c587dccb470.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_turbo_dist_turbo_es2017-esm_js-8eb9b2209bcd.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_remote-form_dist_index_js-node_modules_delegated-events_dist_inde-893f9f-cd5d89ebdb50.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_quote-selection_dist_index_js-node_modules_github_session-resume_-590a09-91fdc8802bfa.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/packages_document-metadata_document-metadata_ts-packages_failbot_failbot_ts-b8e9eefcce78.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/packages_updatable-content_updatable-content_ts-a743e72edcf2.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_behaviors_ajax-error_ts-app_assets_modules_github_behaviors_details-6493f1-5af0195d8874.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_behaviors_task-list_ts-app_assets_modules_github_throttled-input_ts-047775-82bfe789bb2f.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_behaviors_commenting_edit_ts-app_assets_modules_github_behaviors_ht-83c235-6bc7a8849328.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/behaviors-2146aa3dcd3f.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_delegated-events_dist_index_js-node_modules_github_catalyst_lib_index_js-ef6d0f-641e2ed302b3.js" defer="defer"></script>
+-<script crossorigin="anonymous" type="application/javascript" src="https://github.githubassets.com/assets/notifications-global-f5c28dea1388.js" defer="defer"></script>
+-  
+-
+-  <title>Page not found · GitHub · GitHub</title>
+-
+-
+-
+-  <meta name="route-pattern" content="/:user_id/:repository/raw/*name(/*path)" data-turbo-transient>
+-  <meta name="route-controller" content="blob" data-turbo-transient>
+-  <meta name="route-action" content="raw" data-turbo-transient>
+-  <meta name="fetch-nonce" content="v2:7dd43de4-8176-a77d-cf2c-43d09a1f6eba">
+-
+-    
+-  <meta name="current-catalog-service-hash" content="f3abb0cc802f3d7b95fc8762b94bdcb13bf39634c40c357301c4aa1d67a256fb">
+-
+-
+-  <meta name="request-id" content="228E:1005EA:343BB9C:2D73A53:68D11AEB" data-turbo-transient="true" /><meta name="html-safe-nonce" content="87da58eb8042f0b231ffe536477d7b46a1d34be1a0b591373bd2c339aa830df3" data-turbo-transient="true" /><meta name="visitor-payload" content="eyJyZWZlcnJlciI6bnVsbCwicmVxdWVzdF9pZCI6IjIyOEU6MTAwNUVBOjM0M0JCOUM6MkQ3M0E1Mzo2OEQxMUFFQiIsInZpc2l0b3JfaWQiOiIzNzg0NDUyNTg1NzE0NDI0NTU1IiwicmVnaW9uX2VkZ2UiOiJmcmEiLCJyZWdpb25fcmVuZGVyIjoiaWFkIn0=" data-turbo-transient="true" /><meta name="visitor-hmac" content="4ae43a8b318e7ef76cca2f5c7e4d18e55097c2d618278291bd7ac0f5bfb59fa2" data-turbo-transient="true" />
+-
+-
+-    <meta name="hovercard-subject-tag" content="repository:30675533" data-turbo-transient>
+-
+-
+-  <meta name="github-keyboard-shortcuts" content="copilot" data-turbo-transient="true" />
+-  
+-
+-  <meta name="selected-link" value="/google/fonts/raw/main/ofl/mountainsofchristmas/MountainsofChristmas-Regular.ttf" data-turbo-transient>
+-  <link rel="assets" href="https://github.com/">
+-
+-    <meta name="google-site-verification" content="Apib7-x98H0j5cPqHWwSMm6dNU4GmODRoqxLiDzdx9I">
+-
+-<meta name="octolytics-url" content="https://collector.github.com/github/collect" />
+-
+-  
+-
+-  
+-
+-
+-
+-    <meta name="user-login" content="">
+-
+-  
+-
+-    <meta name="viewport" content="width=device-width">
+-
+-    
+-
+-      <meta name="description" content="GitHub is where people build software. More than 150 million people use GitHub to discover, fork, and contribute to over 420 million projects.">
+-
+-      <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="GitHub">
+-
+-    <link rel="fluid-icon" href="https://github.com/fluidicon.png" title="GitHub">
+-    <meta property="fb:app_id" content="1401488693436528">
+-    <meta name="apple-itunes-app" content="app-id=1477376905, app-argument=https://github.com/google/fonts/raw/main/ofl/mountainsofchristmas/MountainsofChristmas-Regular.ttf" />
+-
+-      <meta property="og:url" content="https://github.com">
+-  <meta property="og:site_name" content="GitHub">
+-  <meta property="og:title" content="Build software better, together">
+-  <meta property="og:description" content="GitHub is where people build software. More than 150 million people use GitHub to discover, fork, and contribute to over 420 million projects.">
+-  <meta property="og:image" content="https://github.githubassets.com/assets/github-logo-55c5b9a1fe52.png">
+-  <meta property="og:image:type" content="image/png">
+-  <meta property="og:image:width" content="1200">
+-  <meta property="og:image:height" content="1200">
+-  <meta property="og:image" content="https://github.githubassets.com/assets/github-mark-57519b92ca4e.png">
+-  <meta property="og:image:type" content="image/png">
+-  <meta property="og:image:width" content="1200">
+-  <meta property="og:image:height" content="620">
+-  <meta property="og:image" content="https://github.githubassets.com/assets/github-octocat-13c86b8b336d.png">
+-  <meta property="og:image:type" content="image/png">
+-  <meta property="og:image:width" content="1200">
+-  <meta property="og:image:height" content="620">
+-
+-  <meta property="twitter:site" content="github">
+-  <meta property="twitter:site:id" content="13334762">
+-  <meta property="twitter:creator" content="github">
+-  <meta property="twitter:creator:id" content="13334762">
+-  <meta property="twitter:card" content="summary_large_image">
+-  <meta property="twitter:image:src" content="https://github.githubassets.com/assets/github-logo-55c5b9a1fe52.png">
+-  <meta property="twitter:site" content="@github">
+-  <meta property="twitter:site:id" content="13334762">
+-  <meta property="twitter:creator" content="@github">
+-  <meta property="twitter:creator:id" content="13334762">
+-
+-  
+-
+-  
+-
+-
+-
+-  </head>
+-
+-  <body class="logged-out env-production page-responsive page-blob">
+-
+-  </body>
+-</html>
