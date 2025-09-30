@@ -11,6 +11,24 @@ plugins {
     // id("com.google.gms.google-services") // enable if google-services.json is configured
 }
 
+/**
+ * Optional: Keystore-Pfade/Secrets aus Gradle-Properties oder ENV lesen.
+ * Der Workflow schreibt diese als MYAPP_* in ~/.gradle/gradle.properties.
+ */
+val keystorePath: String? =
+    (project.findProperty("MYAPP_UPLOAD_STORE_FILE") as String?)
+        ?: System.getenv("MYAPP_UPLOAD_STORE_FILE")
+val keystoreStorePassword: String? =
+    (project.findProperty("MYAPP_UPLOAD_STORE_PASSWORD") as String?)
+        ?: System.getenv("MYAPP_UPLOAD_STORE_PASSWORD")
+val keystoreKeyAlias: String? =
+    (project.findProperty("MYAPP_UPLOAD_KEY_ALIAS") as String?)
+        ?: System.getenv("MYAPP_UPLOAD_KEY_ALIAS")
+val keystoreKeyPassword: String? =
+    (project.findProperty("MYAPP_UPLOAD_KEY_PASSWORD") as String?)
+        ?: System.getenv("MYAPP_UPLOAD_KEY_PASSWORD")
+val hasKeystore = !keystorePath.isNullOrBlank()
+
 android {
     namespace = "com.chris.m3usuite"
     compileSdk = 35
@@ -57,6 +75,10 @@ android {
         // Toggle visibility of header (User-Agent) editing UI
         val showHeaderUi = (project.findProperty("SHOW_HEADER_UI")?.toString()?.toBooleanStrictOrNull()) ?: false
         buildConfigField("boolean", "SHOW_HEADER_UI", showHeaderUi.toString())
+
+        // >>> Neu: Versionen aus -P übernehmen (vom Workflow gesetzt), falls vorhanden
+        (project.findProperty("versionCode") as String?)?.toIntOrNull()?.let { versionCode = it }
+        (project.findProperty("versionName") as String?)?.let { versionName = it }
     }
 
     compileOptions {
@@ -64,6 +86,20 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+
+    /**
+     * >>> Neu: Signing-Config "release" aus MYAPP_* (nur wenn Keystore vorhanden)
+     */
+    signingConfigs {
+        create("release") {
+            if (hasKeystore) {
+                storeFile = file(keystorePath!!)
+                storePassword = keystoreStorePassword
+                keyAlias = keystoreKeyAlias
+                keyPassword = keystoreKeyPassword
+            }
+        }
+    }
 
     buildTypes {
         release {
@@ -76,9 +112,19 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+
+            // >>> Neu: Nur signieren, wenn ein Keystore tatsächlich konfiguriert ist.
+            if (hasKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                // Falls kein Keystore vorhanden: unsigniert bauen (APK/AAB werden trotzdem erzeugt)
+                println("⚠️  Release wird UNSIGNIERT gebaut (kein Keystore in MYAPP_* gefunden).")
+            }
         }
-        debug { isMinifyEnabled = false }
+        debug {
+            isMinifyEnabled = false
+            // debug bleibt wie gehabt
+        }
     }
 
     buildFeatures {
@@ -87,14 +133,14 @@ android {
     }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
 
-    // Generate split APKs per ABI (32-bit and 64-bit)
+    // >>> Angepasst: Split-APKs pro ABI + Universal-APK
     splits {
         abi {
             isEnable = true
             reset()
             include("armeabi-v7a", "arm64-v8a")
-            // Only per-ABI APKs (no universal)
-            isUniversalApk = false
+            // Zusätzlich zur je-ABI APK eine Universal-APK erzeugen
+            isUniversalApk = true
         }
     }
 
@@ -192,12 +238,9 @@ dependencies {
     implementation("androidx.paging:paging-runtime-ktx:3.3.2")
     implementation("androidx.paging:paging-compose:3.3.2")
 
-    // Coil (Bilder)
-    // Coil 3
+    // Coil (Bilder) – Coil 3 + OkHttp Backend
     implementation("io.coil-kt.coil3:coil:3.0.0")
     implementation("io.coil-kt.coil3:coil-compose:3.0.0")
-
-    // 🔧 WICHTIG: Netzwerk-Backend für HTTP(S)-Bilder
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.0")
     implementation("io.coil-kt.coil3:coil-network-core:3.0.0")
 
