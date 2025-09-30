@@ -1,67 +1,15 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/ui/meta/MetaFormatters.kt b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaFormatters.kt
-new file mode 100644
-index 0000000..a86d6cf
---- /dev/null
-+++ b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaFormatters.kt
-@@ -0,0 +1,92 @@
-+package com.chris.m3usuite.ui.meta
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index a82a6a5..7c3aef0 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,10 @@
++2025-09-30
++- feat(playback): introduce centralized PlayerLauncher (playback/*) with PlayRequest/PlayerResult/Resolver/ResumeStore.
++  - Default resolver decides internal/external (incl. "ask") and forwards headers/start position. Telegram URLs forced internal.
++  - Compose helper rememberPlayerLauncher(...) provided for screens that inline the InternalPlayerScreen.
++  - Feature flag Keys.PLAYER_LAUNCHER_V1 (default ON). PlayerChooser now delegates to PlayerLauncher when enabled to keep call‑sites working; no functional changes.
++  - Telemetry stubs: lightweight log lines around launch; to be expanded with analytics later.
 +
-+object MetaFormatters {
-+
-+    fun quality(v: VideoInfo?): String? {
-+        v ?: return null
-+        val h = v.height
-+        val w = v.width
-+        val base = when {
-+            h != null && h >= 2160 -> "4K"
-+            h != null && h >= 1440 -> "1440p"
-+            h != null && h >= 1080 -> "1080p"
-+            h != null && h >= 720 -> "HD"
-+            h != null && h > 0 -> "${h}p"
-+            w != null && w >= 3840 -> "4K"
-+            w != null && w >= 1920 -> "1080p"
-+            w != null && w >= 1280 -> "HD"
-+            else -> null
-+        } ?: return null
-+        val hdrMark = if (v.hdr) " HDR" else ""
-+        return base + hdrMark
-+    }
-+
-+    fun duration(minutes: Int?): String? = minutes?.takeIf { it > 0 }?.let { "$it min" }
-+
-+    fun audio(a: AudioInfo?): String? {
-+        a ?: return null
-+        val langs = a.languages.mapNotNull { it.trim().takeIf { s -> s.isNotEmpty() } }
-+            .map(::normalizeLang)
-+            .distinct()
-+        val langPart = when {
-+            langs.isEmpty() -> null
-+            langs.size == 1 -> langs.first()
-+            else -> "${langs[0]}/${langs[1]}"
-+        }
-+        val ch = a.channels?.trim()?.takeIf { it.isNotEmpty() }
-+        return when {
-+            langPart != null && ch != null -> "$langPart $ch"
-+            langPart != null -> langPart
-+            ch != null -> ch
-+            else -> null
-+        }
-+    }
-+
-+    fun year(y: Int?): String? = y?.takeIf { it > 0 }?.toString()
-+
-+    private fun normalizeLang(s: String): String {
-+        val t = s.lowercase()
-+        return when (t) {
-+            "de", "ger", "deu", "german", "deutsch" -> "DE"
-+            "en", "eng", "english" -> "EN"
-+            "fr", "fre", "fra", "french", "français" -> "FR"
-+            "it", "ita", "italian", "italiano" -> "IT"
-+            "es", "spa", "spanish", "español" -> "ES"
-+            "ru", "rus", "russian" -> "RU"
-+            "tr", "tur", "turkish", "türkçe" -> "TR"
-+            "ar", "ara", "arabic", "العربية" -> "AR"
-+            else -> t.take(2).uppercase()
-+        }
-+    }
-+}
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.

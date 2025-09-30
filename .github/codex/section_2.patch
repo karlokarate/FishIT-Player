@@ -1,12 +1,48 @@
-diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 8a3a8a8..2e59f8a 100644
---- a/CHANGELOG.md
-+++ b/CHANGELOG.md
-@@ -1,3 +1,7 @@
-+2025-09-30
-+- fix(ui/fonts): map "christmas" category to Inter fallback instead of MountainsOfChristmas to avoid loading the corrupted TTF placeholder. Keeps UI stable until a valid Mountains Of Christmas font is added.
-+
-+
- 2025-09-27
- - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
- - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
+diff --git a/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt b/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
+index 3ce1aeb..b4c1ffb 100644
+--- a/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
++++ b/app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt
+@@ -1,9 +1,15 @@
+ package com.chris.m3usuite.player
+ 
+ import android.content.Context
+ import kotlinx.coroutines.flow.first
+ import com.chris.m3usuite.prefs.SettingsStore
+ import com.chris.m3usuite.data.repo.PermissionRepository
++import com.chris.m3usuite.playback.MediaType
++import com.chris.m3usuite.playback.PlayRequest
++import com.chris.m3usuite.playback.PlayerLauncher
+ 
+ /**
+  * Zentrale Wahl "Immer fragen | Intern | Extern".
+  * Die drei Detail-Screens (Vod/Series/Live) rufen nur noch diese Funktion auf.
+  */
+@@ -21,6 +27,23 @@ object PlayerChooser {
+         startPositionMs: Long? = null,
+         mimeType: String? = null,
+         buildInternal: (startPositionMs: Long?, mimeType: String?) -> Unit
+     ) {
++        // v1: route via centralized PlayerLauncher (feature gated; default ON)
++        if (store.playerLauncherV1.first()) {
++            val type = when {
++                url.startsWith("tg://", ignoreCase = true) -> MediaType.VOD // forced internal; type doesn't matter
++                url.contains("/live/") -> MediaType.LIVE
++                url.contains("/movie/") || url.contains("/vod/") -> MediaType.VOD
++                else -> MediaType.VOD
++            }
++            val req = PlayRequest(
++                type = type,
++                mediaId = when (type) { MediaType.LIVE -> "live:-1"; MediaType.VOD -> "vod:-1"; MediaType.SERIES -> "series:-1:0:0" },
++                title = null,
++                url = url,
++                headers = headers,
++                startPositionMs = startPositionMs,
++                mimeType = mimeType
++            )
++            PlayerLauncher(context, store) { _, s, m -> buildInternal(s, m) }.launch(req)
++            return
++        }
+         // Force internal for Telegram scheme
+         if (url.startsWith("tg://", ignoreCase = true)) {
+             buildInternal(startPositionMs, mimeType)
+             return
