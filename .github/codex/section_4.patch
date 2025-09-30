@@ -1,15 +1,40 @@
-diff --git a/app/proguard-rules.pro b/app/proguard-rules.pro
-index 76fbe1b..90bc48f 100644
---- a/app/proguard-rules.pro
-+++ b/app/proguard-rules.pro
-@@ -46,3 +46,11 @@
- #-keep class com.google.android.exoplayer2.ext.ffmpeg.** { *; }
- #-dontwarn com.google.android.exoplayer2.ext.ffmpeg.**
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 0f8001d..9ec2a3f 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -1,3 +1,33 @@
++# Sprint A – Core‑UI‑Basics (Priority 1)
++
++Goal: Establish shared, TV‑ready UI building blocks for actions, image loading, and status/empty/error views; migrate screens incrementally.
++
++Completed in this sprint (moved to CHANGELOG):
++2) MediaActionBar – unified action row (Play/Resume/Trailer/Add/…) with TV focus and test tags
++4) ImageLoaderKit – Coil3 presets + AppImage/AppHeroImage wrappers with global headers
++6) UiState & Status‑Views – Loading/Empty/Error/Retry + StatusBox helper
++
++Planned (remaining 7/10, all P1):
++1) Cards Kit – standardized Media/VOD/Series/Live cards (focus states, sizes, badges)
++3) Action Overflow/More Menu – per‑screen overflow with consistent semantics and DPAD
++5) Image prefetch hooks – list/grid/view helpers with throttled, size‑aware prefetch
++7) TV Focus Toolkit v2 – consolidate tvClickable/tvFocusableItem/TvFocusRow patterns
++8) Grid/List scaffolds – route‑keyed savers with Status‑Views integration and empty states
++9) Dialogs/Sheets polish – shared headers, TV focus trap, consistent action rows
++10) Telemetry & A11y pass – testTags, semantics roles/names, lightweight metrics per component
++
++Notes
++- Migration is incremental and non‑breaking. Existing screens continue to work; new components can be adopted per‑screen.
++- Follow AGENTS.md for documentation/update policy. Architecture Overview stays in sync.
++
+ ---
  
-+# TDLib (arm64 flavor): keep Java bindings to prevent stripping when used via JNI/callbacks
-+-keep class org.drinkless.tdlib.** { *; }
-+-dontwarn org.drinkless.tdlib.**
++# Existing roadmap items (near-/mid‑term)
 +
-+# Keep generated BuildConfig flags referenced in flavor-dependent code paths
-+-keep class com.chris.m3usuite.BuildConfig { *; }
++The list below tracks ongoing work outside Sprint A. Keep concise and actionable; remove completed items and move them to CHANGELOG.
 +
++<!-- keep existing items below; this section intentionally left generic to avoid duplication in this patch -->
++
++---
++
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.

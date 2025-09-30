@@ -1,28 +1,91 @@
-diff --git a/app/src/v7a/java/org/drinkless/tdlib/Log.java b/app/src/v7a/java/org/drinkless/tdlib/Log.java
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/images/ImageLoaderKit.kt b/app/src/main/java/com/chris/m3usuite/ui/images/ImageLoaderKit.kt
 new file mode 100644
-index 0000000..3f4da8d
+index 0000000..03bb2e8
 --- /dev/null
-+++ b/app/src/v7a/java/org/drinkless/tdlib/Log.java
-@@ -0,0 +1,22 @@
-+package org.drinkless.tdlib;
++++ b/app/src/main/java/com/chris/m3usuite/ui/images/ImageLoaderKit.kt
+@@ -0,0 +1,104 @@
++package com.chris.m3usuite.ui.images
++
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.remember
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.layout.ContentScale
++import coil3.compose.AsyncImage
++import coil3.request.ImageRequest
++import com.chris.m3usuite.prefs.SettingsStore
++import com.chris.m3usuite.ui.util.buildImageRequest
++import com.chris.m3usuite.ui.util.rememberImageHeaders
 +
 +/**
-+ * Stub Log for armeabi-v7a flavor.
-+ * Provides the LogMessageHandler interface and no-op setters.
++ * Lightweight presets and wrappers around Coil3 image loading.
++ * These wrappers inherit global HTTP headers (UA/Referer) and keep the app's
++ * size-aware caching behavior via buildImageRequest().
++ *
++ * Backward compatibility: existing ui/util helpers remain; this kit is additive.
 + */
-+public final class Log {
-+    private Log() {
++object ImageLoaderKit {
++    @Composable
++    fun request(
++        url: String?,
++        headers: Map<String, String>,
++        crossfade: Boolean = true,
++        preferRgb565: Boolean = false,
++        builder: (ImageRequest.Builder.() -> Unit)? = null
++    ): ImageRequest {
++        return buildImageRequest(
++            url = url,
++            headers = headers,
++            crossfade = crossfade,
++            preferRgb565 = preferRgb565,
++            builder = builder
++        )
 +    }
++}
 +
-+    public interface LogMessageHandler {
-+        void onLogMessage(int verbosityLevel, String message);
++/**
++ * Generic app image wrapper.
++ */
++@Composable
++fun AppImage(
++    url: String?,
++    contentDescription: String?,
++    modifier: Modifier = Modifier,
++    contentScale: ContentScale = ContentScale.Crop,
++    crossfade: Boolean = true,
++    preferRgb565: Boolean = false,
++    store: SettingsStore? = null,
++    builder: (ImageRequest.Builder.() -> Unit)? = null
++) {
++    val headers = rememberImageHeaders(store)
++    val req = remember(url, headers, crossfade, preferRgb565, builder) {
++        ImageLoaderKit.request(url, headers, crossfade, preferRgb565, builder)
 +    }
++    AsyncImage(
++        model = req,
++        contentDescription = contentDescription,
++        modifier = modifier,
++        contentScale = contentScale
++    )
++}
 +
-+    public static void setVerbosityLevel(int newVerbosityLevel) {
-+        // no-op
-+    }
-+
-+    public static void setLogMessageHandler(int maxVerbosityLevel, LogMessageHandler handler) {
-+        // no-op
-+    }
++/**
++ * Hero/backdrop convenience wrapper.
++ */
++@Composable
++fun AppHeroImage(
++    url: String?,
++    contentDescription: String?,
++    modifier: Modifier = Modifier,
++    contentScale: ContentScale = ContentScale.Crop,
++    crossfade: Boolean = true,
++    store: SettingsStore? = null,
++) {
++    AppImage(
++        url = url,
++        contentDescription = contentDescription,
++        modifier = modifier,
++        contentScale = contentScale,
++        crossfade = crossfade,
++        store = store
++    )
 +}
