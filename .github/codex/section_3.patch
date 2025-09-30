@@ -1,11 +1,13 @@
-diff --git a/AGENTS.md b/AGENTS.md
-index d54bd7b..33d2617 100644
---- a/AGENTS.md
-+++ b/AGENTS.md
-@@ -120,6 +120,8 @@ Where to find the full overview
- Recent
- - TV chrome BACK: On TV, ESC/BACK first collapses HomeChrome (from Expanded or Visible) and consumes the event. This prevents closing the player or leaving the screen when the chrome is showing; pressing BACK twice still exits as expected.
- - Tile focus logging: Core row engines (MediaRowCore/MediaRowCorePaged) now emit detailed `focus:<type> id=<id> <ui title> (<OBX title>)` logs on focus, plus a `tree:` hint. Makes it visible in logcat which concrete tile currently has focus across Start/Library/Details rows.
- - TV rows centering: Single-step centering when the target tile is already visible (RowCore, RowCorePaged, TvFocusRow), eliminating left→right jitter. While the row
-+- Sprint‑A finalized (2025‑09‑30): TV Focus/DPAD Vereinheitlichung ist abgeschlossen; Audit‑Skript (`tools/audit_tv_focus.sh`) in CI verankert. Roadmap bereinigt; weitere QA/Regression‑Automatisierung folgt separat.
-+
+diff --git a/ARCHITECTURE_OVERVIEW.md b/ARCHITECTURE_OVERVIEW.md
+index 4a0d95c..8b5c374 100644
+--- a/ARCHITECTURE_OVERVIEW.md
++++ b/ARCHITECTURE_OVERVIEW.md
+@@ -129,6 +129,8 @@ Repository/Settings Lifecycle
+ │   │   ├── VodDetailScreen.kt              # VOD-Details, Poster focus + 50% backdrop overlay, Enrichment-Fetch, Resume
+ │   │   ├── SeriesDetailScreen.kt           # Serien, Staffel/Episoden-Listing, Resume Next
+ │   │   └── SettingsScreen.kt               # UI-, Player-, Filter-, Profile-Settings
++│   ├── detail/                             # Gemeinsames Detail-Gerüst (Backdrop/Poster/Title/Meta/Actions + Slots)
++│   ├── cards/                              # Wiederverwendbare Karten (Poster/Channel/Season/Episode) mit TV Hover & Shimmer
+ │   ├── skin/                               # TV-Skin (Focus/Scale, Modifiers), Theme
+ │   ├── state/ScrollStateRegistry.kt        # Scroll-Positions pro Row/Grid
+ │   ├── theme/                              # Farben, Typo, Theme
