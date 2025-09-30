@@ -24,6 +24,8 @@ import subprocess
 import sys
 import time
 import difflib
+import math
+import random
 from pathlib import Path
 from datetime import datetime
 
@@ -220,7 +222,7 @@ def top_relevant_files(instruction: str, all_files: list[str], k: int = 80):
     res = [f for s, f in scores if s > 0][:k]
     return res or all_files[:k]
 
-# ------------------------ OpenAI ------------------------
+# ------------------------ OpenAI Rate-Limit & Robust Calls ------------------------
 
 def _compute_base_url() -> str:
     raw = os.environ.get("OPENAI_BASE_URL", "").strip()
@@ -232,8 +234,61 @@ def _compute_base_url() -> str:
         raw = raw.rstrip("/") + "/v1"
     return raw
 
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, str(default)))
+    except Exception:
+        return default
+
+class MinuteRateLimiter:
+    """Sehr einfache TPM/RPM-Drosselung (Fenster = 60s)."""
+    def __init__(self, tpm_budget: int, rpm_budget: int):
+        self.tpm_budget = max(0, tpm_budget)
+        self.rpm_budget = max(0, rpm_budget)
+        self.tokens_used = 0
+        self.calls_made = 0
+        self.window_start = time.time()
+
+    def _maybe_reset(self):
+        now = time.time()
+        if now - self.window_start >= 60.0:
+            self.tokens_used = 0
+            self.calls_made = 0
+            self.window_start = now
+
+    def wait_for(self, tokens_needed: int):
+        self._maybe_reset()
+        # wenn kein Budget gesetzt, einfach durch
+        if self.tpm_budget <= 0 and self.rpm_budget <= 0:
+            return
+        while True:
+            self._maybe_reset()
+            ok_tokens = (self.tpm_budget <= 0) or (self.tokens_used + tokens_needed <= self.tpm_budget)
+            ok_calls = (self.rpm_budget <= 0) or (self.calls_made + 1 <= self.rpm_budget)
+            if ok_tokens and ok_calls:
+                break
+            # bis zum Ende des Fensters schlafen
+            sleep_s = max(0.01, 60.0 - (time.time() - self.window_start))
+            time.sleep(min(sleep_s, 60.0))
+
+    def book(self, tokens_used: int):
+        self._maybe_reset()
+        self.tokens_used += max(0, tokens_used)
+        self.calls_made += 1
+
+# globale RateLimiter-Instanz (ein Job → eine Instanz)
+_RATE_LIMITER = MinuteRateLimiter(
+    tpm_budget=_env_int("OPENAI_TPM_BUDGET", 400000),  # konservativ
+    rpm_budget=_env_int("OPENAI_RPM_BUDGET", 300)
+)
+
+def _estimate_tokens_from_text(*parts: str) -> int:
+    # Grobe Schätzung: 1 Token ~ 4 Zeichen. Plus kleiner Overhead.
+    total_chars = sum(len(p or "") for p in parts)
+    return int(total_chars / 4) + 256
+
 def openai_generate(model: str, system_prompt: str, user_prompt: str, want_spec: bool = False) -> str:
-    """Responses API bevorzugt; Fallback Chat Completions. Kein temperature-Param (Reasoning-Modelle)."""
+    """Responses API bevorzugt; Fallback Chat Completions. Mit Rate-Limit/Retry."""
     from openai import OpenAI
 
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=_compute_base_url())
@@ -242,19 +297,42 @@ def openai_generate(model: str, system_prompt: str, user_prompt: str, want_spec:
     if effort not in ("high", "medium", "low"):
         effort = "high"
 
-    def _try(fn, tries=3, base_sleep=2.0):
+    # Retry/Backoff-Parameter aus ENV konfigurierbar
+    MAX_RETRIES = _env_int("OPENAI_MAX_RETRIES", 8)
+    BASE_SLEEP  = float(os.environ.get("OPENAI_BASE_SLEEP", "1.5"))
+    MAX_SLEEP   = float(os.environ.get("OPENAI_MAX_SLEEP", "60"))
+
+    # Tokenbedarf schätzen und Budget abwarten
+    est_in_tokens = _estimate_tokens_from_text(system_prompt, user_prompt)
+    _RATE_LIMITER.wait_for(est_in_tokens)
+
+    def _is_retryable_error(e_msg: str) -> bool:
+        m = e_msg.lower()
+        return any(k in m for k in [
+            "rate", "429", "insufficient_quota", "quota", "temporar", "overloaded",
+            "timeout", "timed out", "connection", "gateway", "server", "502", "503", "504"
+        ])
+
+    def _try_call(fn):
         last_err = None
-        for i in range(tries):
+        for i in range(MAX_RETRIES):
             try:
                 return fn()
             except Exception as e:
                 last_err = e
                 msg = str(e)
-                if "429" in msg or "insufficient_quota" in msg or "Connection error" in msg:
-                    time.sleep(base_sleep * (2 ** i)); continue
+                if _is_retryable_error(msg):
+                    # Exponential Backoff + Jitter
+                    sleep_s = min(MAX_SLEEP, BASE_SLEEP * (2 ** i)) + random.uniform(0, 0.4)
+                    # Kurzer Hinweis ins Log, aber nicht in Kommentar spammen
+                    print(f"[codex-bot] OpenAI transient error, retry {i+1}/{MAX_RETRIES} after {sleep_s:.1f}s: {msg[:160]}")
+                    time.sleep(sleep_s)
+                    continue
+                # Nicht-retryable Fehler weiterwerfen
                 raise
         raise last_err
 
+    # Responses API
     def _responses():
         resp = client.responses.create(
             model=model,
@@ -262,21 +340,49 @@ def openai_generate(model: str, system_prompt: str, user_prompt: str, want_spec:
                    {"role": "user",   "content": user_prompt}],
             reasoning={"effort": effort},
         )
-        return getattr(resp, "output_text", "") or ""
+        # Output-Text sichern
+        text = getattr(resp, "output_text", "") or ""
+        # Usage robust lesen
+        try:
+            # Einige SDKs liefern usage als dict mit input/output/total
+            usage = getattr(resp, "usage", None)
+            if usage and isinstance(usage, dict):
+                total = usage.get("total_tokens") or (usage.get("input_tokens", 0) + usage.get("output_tokens", 0))
+            else:
+                total = est_in_tokens + _estimate_tokens_from_text(text)
+        except Exception:
+            total = est_in_tokens + _estimate_tokens_from_text(text)
+        _RATE_LIMITER.book(total)
+        return text
 
+    # Chat Completions Fallback
     def _chat():
         cc = client.chat.completions.create(
             model=model,
             messages=[{"role": "system", "content": system_prompt},
                       {"role": "user",   "content": user_prompt}],
         )
-        return cc.choices[0].message.content or ""
+        text = cc.choices[0].message.content or ""
+        try:
+            usage = getattr(cc, "usage", None)
+            if usage:
+                total = getattr(usage, "total_tokens", None)
+                if total is None and isinstance(usage, dict):
+                    total = usage.get("total_tokens") or (usage.get("prompt_tokens", 0) + usage.get("completion_tokens", 0))
+            else:
+                total = None
+            if not total:
+                total = est_in_tokens + _estimate_tokens_from_text(text)
+        except Exception:
+            total = est_in_tokens + _estimate_tokens_from_text(text)
+        _RATE_LIMITER.book(total)
+        return text
 
     try:
-        return _try(_responses)
+        return _try_call(_responses)
     except Exception as e:
         try:
-            return _try(_chat)
+            return _try_call(_chat)
         except Exception as ee:
             raise RuntimeError(f"OpenAI call failed: {e}\nFallback also failed: {ee}")
 
@@ -652,7 +758,7 @@ Output requirements:
     comment_reply(f"✅ PR erstellt: #{pr['number']} — {pr['html_url']}")
     if do_verify:
         comment_reply("🧪 `--verify` erkannt – **Tests laufen nur auf Anforderung**. "
-                      "Starte sie z. B. mit `/codex test` oder `/codex gradle testDebugUnitTest`.")
+                      "Starte sie z. B. mit `/codex test` oder `/codex gradle testDebugUnitTest`.")
     print("done")
 
 if __name__ == "__main__":
