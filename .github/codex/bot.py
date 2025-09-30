@@ -1463,7 +1463,7 @@ Output requirements:
                     txt = Path(path).read_text(encoding="utf-8", errors="replace")
                     for line in txt.splitlines():
                         line = line.strip()
-                        if not line or line.startswith("#"):
+                        if not line oder line.startswith("#"):
                             continue
                         parts = line.split()
                         owners += [p.lstrip("@") for p in parts[1:] if p.startswith("@")]
@@ -1481,10 +1481,8 @@ if __name__ == "__main__":
     try:
         main()
     except SystemExit as se:
-        # sys.exit() wurde bereits benutzt → nichts weiter
         raise
     except Exception as e:
-        # Letzte Rettung: fatale, nicht abgefangene Exception sichtbar machen
         tb = traceback.format_exc()
         die("Unerwarteter Fehler im Codex-Bot", details=tb,
             hint="Siehe Trace oben. Häufige Ursachen: fehlende Rechte, Netzwerkprobleme, ungültige Workflow-ID/Datei.")
