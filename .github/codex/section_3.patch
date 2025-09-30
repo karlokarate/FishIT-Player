@@ -1,11 +1,14 @@
-diff --git a/ROADMAP.md b/ROADMAP.md
-index 5508c2e..253acb3 100644
---- a/ROADMAP.md
-+++ b/ROADMAP.md
-@@ -4,6 +4,7 @@ Hinweis
- - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
- - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
-+- Maintenance 2025‑09‑30: Universal‑APK wieder deaktiviert (nur per‑ABI APKs); kein Roadmap‑Impact.
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt b/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt
+index 0f8b71a..48cb8a6 100644
+--- a/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt
++++ b/app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt
+@@ -114,7 +114,8 @@ fun LibraryScreen(
+     }
  
- ---
+     // Suche
+-    var query by remember { mutableStateOf(TextFieldValue("")) }
++    var query by com.chris.m3usuite.ui.state.rememberRouteTextFieldValue(
++        routeKey = "library:$selectedTabKey:search", default = "")
  
+     // Suchtreffer (nur für aktiven Tab)
+     var searchResults by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
