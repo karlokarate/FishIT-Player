@@ -1,14 +1,42 @@
-diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 6d7c99c..0c3f1a1 100644
---- a/CHANGELOG.md
-+++ b/CHANGELOG.md
-@@ -1,3 +1,9 @@
-+2025-09-30
-+- feat(ui/meta): add unified Meta Chips foundation (MediaMeta model, formatters, mappers, and Compose renderer). Gated via BuildConfig.FEATURE_META_CHIPS_V1 (default true). Next step wires MetaChips into VOD/Series/Live detail headers.
-+- test(ui/meta): unit tests for MetaFormatters (quality/duration/audio/year) and genre parsing.
-+- docs(meta): add docs/meta_chips.md with usage and design notes.
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/forms/Validation.kt b/app/src/main/java/com/chris/m3usuite/ui/forms/Validation.kt
+new file mode 100644
+index 0000000..5b0212b
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/forms/Validation.kt
+@@ -0,0 +1,37 @@
++package com.chris.m3usuite.ui.forms
 +
++import androidx.compose.foundation.layout.PaddingValues
++import androidx.compose.foundation.layout.padding
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
 +
- 2025-09-27
- - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
- - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
++sealed interface ValidationState {
++    data object Ok : ValidationState
++    data class Error(val message: String) : ValidationState
++}
++
++typealias Validator<T> = (T) -> ValidationState
++
++@Composable
++fun ValidationHint(
++    helperText: String? = null,
++    errorText: String? = null,
++    padding: PaddingValues = PaddingValues(horizontal = 8.dp)
++) {
++    val err = errorText
++    if (!err.isNullOrBlank()) {
++        Text(
++            err,
++            style = MaterialTheme.typography.bodySmall,
++            color = MaterialTheme.colorScheme.error,
++            modifier = Modifier.padding(padding)
++        )
++    } else if (!helperText.isNullOrBlank()) {
++        Text(helperText, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(padding))
++    }
++}
++

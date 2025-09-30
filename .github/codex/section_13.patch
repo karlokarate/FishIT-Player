@@ -1,25 +1,22 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt b/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt
-index 3d42b2f..fa5eb0b 100644
---- a/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt
-+++ b/app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt
-@@ -1,5 +1,6 @@
- package com.chris.m3usuite.work
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 3b2b6bf..6b22117 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -1,3 +1,16 @@
+ # Roadmap
  
-+import com.chris.m3usuite.core.perf.DeviceTuning
- import android.content.Context
- import androidx.work.ExistingWorkPolicy
- import androidx.work.OneTimeWorkRequest
-@@ -23,7 +24,12 @@ object SchedulingGateway {
-     fun scheduleAll(ctx: Context) {
-         // Intentionally do NOT schedule Xtream delta periodic.
-         // Delta/import is only run on explicit user action.
--        cancelXtreamWork(ctx)
-+        cancelXtreamWork(ctx)
-+        // On v7a/Fire TV we keep background minimal even outside playback
-+        if (DeviceTuning.isFireTv32Bit()) {
-+            // Telegram cleanup is still scheduled, but will self-throttle during playback.
-+            ObxKeyBackfillWorker.scheduleOnce(ctx) // one-shot only
-+        }
-         // EPG periodic refresh removed; lazy on-demand prefetch handles freshness
-         scheduleScreenTimeReset(ctx)
-         TelegramCacheCleanupWorker.schedule(ctx)
++- Priority‑1 (TV UX)
++  - TV Focus/DPAD (ongoing): migrate horizontal containers to TvFocusRow; ensure tvClickable for interactives; audit in CI.
++  - TV Form Kit (v1) — DONE (initial):
++    - ui/forms: TvFormSection, TvTextFieldRow, TvSwitchRow, TvSliderRow, TvSelectRow, TvButtonRow, ValidationHint.
++    - Feature flag BuildConfig.FEATURE_TV_FORMS_V1 (screen‑wise activation).
++    - First integration: PlaylistSetupScreen on TV devices.
++  - TV Form Kit (v2)
++    - Select dialog (option grid), slider long‑press acceleration, numeric picker overlay.
++    - Migrate core Settings options (player choice, cache sizes).
++    - Apply to XtreamPortalCheck (status/controls).
++
++- Near‑term
++  - Continue migrating Settings sections to the Form Kit; add validators and async checks where useful.
++  - Keep AGENTS/Architecture docs in sync after each migration step.
+ 

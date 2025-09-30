@@ -1,15 +1,87 @@
-diff --git a/CHANGELOG.md b/CHANGELOG.md
-index a82a6a5..7c3aef0 100644
---- a/CHANGELOG.md
-+++ b/CHANGELOG.md
-@@ -1,3 +1,10 @@
-+2025-09-30
-+- feat(playback): introduce centralized PlayerLauncher (playback/*) with PlayRequest/PlayerResult/Resolver/ResumeStore.
-+  - Default resolver decides internal/external (incl. "ask") and forwards headers/start position. Telegram URLs forced internal.
-+  - Compose helper rememberPlayerLauncher(...) provided for screens that inline the InternalPlayerScreen.
-+  - Feature flag Keys.PLAYER_LAUNCHER_V1 (default ON). PlayerChooser now delegates to PlayerLauncher when enabled to keep call‑sites working; no functional changes.
-+  - Telemetry stubs: lightweight log lines around launch; to be expanded with analytics later.
+diff --git a/app/src/main/java/com/chris/m3usuite/ui/forms/TvSelectRow.kt b/app/src/main/java/com/chris/m3usuite/ui/forms/TvSelectRow.kt
+new file mode 100644
+index 0000000..8a622e6
+--- /dev/null
++++ b/app/src/main/java/com/chris/m3usuite/ui/forms/TvSelectRow.kt
+@@ -0,0 +1,98 @@
++package com.chris.m3usuite.ui.forms
 +
- 2025-09-27
- - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
- - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.padding
++import androidx.compose.material3.Icon
++import androidx.compose.material3.IconButton
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.Text
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.ChevronLeft
++import androidx.compose.material.icons.filled.ChevronRight
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.remember
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.input.key.Key
++import androidx.compose.ui.input.key.onPreviewKeyEvent
++import androidx.compose.ui.input.key.key
++import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.unit.dp
++import com.chris.m3usuite.ui.skin.focusScaleOnTv
++import com.chris.m3usuite.ui.skin.tvClickable
++
++@Composable
++fun <T> TvSelectRow(
++    label: String,
++    options: List<T>,
++    selected: T?,
++    onSelected: (T) -> Unit,
++    optionLabel: (T) -> String,
++    helperText: String? = null,
++    errorText: String? = null,
++    modifier: Modifier = Modifier
++) {
++    val ctx = LocalContext.current
++    val currentIndex = remember(selected, options) {
++        options.indexOfFirst { it == selected }.coerceAtLeast(0)
++    }
++    fun selectIndex(idx: Int) {
++        if (options.isEmpty()) return
++        val i = idx.coerceIn(0, options.lastIndex)
++        onSelected(options[i])
++    }
++    Row(
++        modifier = modifier
++            .fillMaxWidth()
++            .padding(horizontal = 8.dp)
++            .tvClickable(onClick = { /* noop: DPAD LEFT/RIGHT change options, OK ignored */ })
++            .onPreviewKeyEvent { ev ->
++                when (ev.key) {
++                    Key.DirectionLeft -> { selectIndex(currentIndex - 1); true }
++                    Key.DirectionRight -> { selectIndex(currentIndex + 1); true }
++                    else -> false
++                }
++            },
++        horizontalArrangement = Arrangement.SpaceBetween,
++        verticalAlignment = Alignment.CenterVertically
++    ) {
++        Text(label, style = MaterialTheme.typography.bodyLarge)
++        Row(
++            horizontalArrangement = Arrangement.spacedBy(4.dp),
++            verticalAlignment = Alignment.CenterVertically
++        ) {
++            IconButton(onClick = { selectIndex(currentIndex - 1) }, modifier = Modifier.focusScaleOnTv()) {
++                Icon(Icons.Filled.ChevronLeft, contentDescription = "Zurück")
++            }
++            val sel = selected ?: options.getOrNull(0)
++            Text(
++                sel?.let(optionLabel) ?: "—",
++                style = MaterialTheme.typography.bodyLarge,
++                color = if (errorText != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
++            )
++            IconButton(onClick = { selectIndex(currentIndex + 1) }, modifier = Modifier.focusScaleOnTv()) {
++                Icon(Icons.Filled.ChevronRight, contentDescription = "Weiter")
++            }
++        }
++    }
++    ValidationHint(helperText = helperText, errorText = errorText)
++}
