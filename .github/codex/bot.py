@@ -64,6 +64,10 @@ ERR_PAT  = re.compile(r"\b(error|fail(ed)?|e:)\b", re.I)
 
 # ------------------------ Logging & Errors (Shell-first) ------------------------
 
+def _event_name() -> str:
+    """Prefer native GITHUB_EVENT_NAME; allow GH_EVENT_NAME override for local tests."""
+    return os.environ.get("GITHUB_EVENT_NAME") or os.environ.get("GH_EVENT_NAME", "")
+
 def _is_ci() -> bool:
     return os.environ.get("GITHUB_ACTIONS") == "true"
 
@@ -227,7 +231,7 @@ def comment_reply(body: str):
         log_warn(f"Issue-Kommentar fehlgeschlagen: {type(e).__name__}: {e}")
 
 def read_comment() -> str:
-    evname = os.environ.get("GH_EVENT_NAME", "")
+    evname = _event_name()
     if evname == "workflow_dispatch":
         return os.environ.get("DISPATCH_COMMENT", "").strip()
     try:
@@ -246,7 +250,7 @@ def read_comment() -> str:
     return ""
 
 def actor_handle() -> str:
-    evname = os.environ.get("GH_EVENT_NAME", "")
+    evname = _event_name()
     if evname == "workflow_dispatch":
         repo = os.environ.get("GITHUB_REPOSITORY", "")
         return repo.split("/")[0] if "/" in repo else repo
@@ -1086,9 +1090,11 @@ def run_build_once_and_maybe_fix(repo: str, default_branch: str, workflow_file: 
         comment_reply(f"⚠️ Kein gültiger Diff aus Logs generiert. Antwort war:\n```\n{patch_text[:1200]}\n```")
         log_error("Generierter Patch war ungültig", details=patch_text[:2000])
         return False, run
-    if not force and patch_text.count("\n") > MAX_PATCH_LINES:
+    line_count = patch_text.count("\n")
+    if not force and line_count > MAX_PATCH_LINES:
         comment_reply(f"⛔ Generierter Patch zu groß (> {MAX_PATCH_LINES} Zeilen). Breche ab.")
-        log_error("Patch zu groß", details=f"Zeilen: {patch_text.count('\\n')}, Limit: {MAX_PATCH_LINES}",
+        log_error("Patch zu groß",
+                  details=f"Zeilen: {line_count}, Limit: {MAX_PATCH_LINES}",
                   hint="Aufgabe eingrenzen oder --force setzen.")
         return False, run
 
@@ -1178,7 +1184,8 @@ def run_build_once_and_maybe_fix(repo: str, default_branch: str, workflow_file: 
 # ------------------------ Core Logic ------------------------
 
 def _env_summary():
-    keys = ["GITHUB_REPOSITORY","GITHUB_EVENT_PATH","GH_EVENT_NAME","OPENAI_MODEL_DEFAULT",
+    keys = ["GITHUB_REPOSITORY","GITHUB_EVENT_PATH","GITHUB_EVENT_NAME","GH_EVENT_NAME",
+            "OPENAI_MODEL_DEFAULT",
             "OPENAI_REASONING_EFFORT","OPENAI_BASE_URL","OPENAI_API_KEY","GITHUB_TOKEN"]
     rows = []
     for k in keys:
@@ -1376,9 +1383,10 @@ Output requirements:
             die("Ungültiger Diff aus OpenAI", details=patch_text[:2000],
                 hint="Bitte Aufgabe eingrenzen oder erneut probieren (SPEC-first mit --spec erwägen).")
 
-        if not force_big and patch_text.count("\n") > MAX_PATCH_LINES:
+        line_count2 = patch_text.count("\n")
+        if not force_big and line_count2 > MAX_PATCH_LINES:
             die("Patch zu groß",
-                details=f"Zeilen: {patch_text.count('\\n')}, Limit: {MAX_PATCH_LINES}",
+                details=f"Zeilen: {line_count2}, Limit: {MAX_PATCH_LINES}",
                 hint="Aufgabe eingrenzen oder `--force` setzen.")
 
         try:
