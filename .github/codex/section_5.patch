@@ -1,58 +1,74 @@
-diff --git a/app/src/main/java/com/chris/m3usuite/core/perf/DeviceTuning.kt b/app/src/main/java/com/chris/m3usuite/core/perf/DeviceTuning.kt
+diff --git a/app/src/v7a/java/org/drinkless/tdlib/Client.java b/app/src/v7a/java/org/drinkless/tdlib/Client.java
 new file mode 100644
-index 0000000..db1ded5
+index 0000000..c1148e3
 --- /dev/null
-+++ b/app/src/main/java/com/chris/m3usuite/core/perf/DeviceTuning.kt
-@@ -0,0 +1,78 @@
-+package com.chris.m3usuite.core.perf
-+
-+import android.content.Context
-+import android.os.Build
-+import java.util.concurrent.atomic.AtomicBoolean
++++ b/app/src/v7a/java/org/drinkless/tdlib/Client.java
+@@ -0,0 +1,79 @@
++package org.drinkless.tdlib;
 +
 +/**
-+ * Lightweight device/perf helpers for 32-bit Fire TV (v7a) tuning.
-+ *
-+ * - Detects v7a ABI and Fire TV (Amazon AFT*)
-+ * - Provides a tiny persisted playback gate to pause background work while streaming
++ * Stub Client for armeabi-v7a flavor.
++ * No native library loading; all operations are no-op and return TDLib-disabled errors.
 + */
-+object DeviceTuning {
-+    private const val PREFS = "perf_config"
-+    private const val KEY_PLAYBACK_ACTIVE = "playback_active"
-+    private val memPlayback = AtomicBoolean(false)
++public final class Client {
++    public interface ResultHandler {
++        void onResult(TdApi.Object object);
++    }
 +
-+    fun isV7aAbi(): Boolean {
-+        return try {
-+            // If there are no 64-bit ABIs, treat as 32-bit
-+            Build.SUPPORTED_64_BIT_ABIS.isEmpty()
-+        } catch (_: Throwable) {
-+            // Fallback: common 32-bit ABI markers
-+            val abi = Build.CPU_ABI?.lowercase().orEmpty()
-+            abi.contains("armeabi") && !abi.contains("arm64")
++    // Not part of all upstream versions, but present here for compatibility with possible usages.
++    public interface ErrorHandler {
++        void onError(int errorCode, String errorMessage);
++    }
++
++    public interface ExceptionHandler {
++        void onException(Throwable e);
++    }
++
++    private final ResultHandler updateHandler;
++    private final ExceptionHandler exceptionHandler;
++
++    private Client(ResultHandler updateHandler, ExceptionHandler exceptionHandler) {
++        this.updateHandler = updateHandler;
++        this.exceptionHandler = exceptionHandler;
++    }
++
++    public static Client create(ResultHandler updateHandler, ExceptionHandler exceptionHandler) {
++        return new Client(updateHandler, exceptionHandler);
++    }
++
++    // Overload variant used by some integrations
++    public static Client create(ResultHandler updateHandler, ResultHandler defaultHandler, ExceptionHandler exceptionHandler) {
++        return new Client(updateHandler, exceptionHandler);
++    }
++
++    public static TdApi.Object execute(TdApi.Function function) {
++        return new TdApi.Error(501, "TDLib is disabled for armeabi-v7a build", "");
++    }
++
++    public static void setLogVerbosityLevel(int newVerbosityLevel) {
++        // no-op
++    }
++
++    public static void setLogMessageHandler(int maxVerbosityLevel, Log.LogMessageHandler handler) {
++        // no-op
++    }
++
++    public void send(TdApi.Function function, ResultHandler resultHandler) {
++        if (resultHandler != null) {
++            resultHandler.onResult(new TdApi.Error(501, "TDLib is disabled for armeabi-v7a build", ""));
 +        }
 +    }
 +
-+    fun isFireTv(): Boolean {
-+        val brand = (Build.BRAND ?: Build.MANUFACTURER ?: "").lowercase()
-+        val product = (Build.PRODUCT ?: "").uppercase()
-+        return brand.contains("amazon") || product.startsWith("AFT")
++    // Overload variant with explicit exception handler
++    public void send(TdApi.Function function, ResultHandler resultHandler, ExceptionHandler exceptionHandler) {
++        send(function, resultHandler);
 +    }
 +
-+    fun isFireTv32Bit(): Boolean = isV7aAbi() && isFireTv()
-+
-+    fun setPlaybackActive(context: Context, active: Boolean) {
-+        memPlayback.set(active)
-+        runCatching {
-+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-+            prefs.edit().putBoolean(KEY_PLAYBACK_ACTIVE, active).apply()
-+        }
++    public void destroy() {
++        // no-op
 +    }
 +
-+    fun isPlaybackActive(context: Context): Boolean {
-+        if (memPlayback.get()) return true
-+        return runCatching {
-+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-+                .getBoolean(KEY_PLAYBACK_ACTIVE, false)
-+        }.getOrDefault(false)
++    public void close() {
++        // no-op
 +    }
 +}

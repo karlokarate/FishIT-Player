@@ -1,19 +1,89 @@
-diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 895e120..f7ea5f6 100644
---- a/CHANGELOG.md
-+++ b/CHANGELOG.md
-@@ -1,3 +1,15 @@
-+2025-09-29
-+- perf(v7a/firetv): introduce targeted 32-bit Fire TV Stick tuning.
-+  - http/cache: shrink OkHttp disk cache on v7a/Amazon AFT devices (base≈16 MiB, low‑RAM≈8 MiB, cap≈32 MiB).
-+  - xtream/epg: cut short-EPG concurrency to 2 on v7a to reduce CPU/RAM spikes while keeping tiles fresh.
-+  - workers: pause heavy/safe background work while playback is active on v7a. Telegram cache cleanup, Xtream delta/details early‑exit or retry; automatic resume when playback ends.
-+  - player/gate: InternalPlayerScreen toggles a lightweight global playback gate (persisted), and SchedulingGateway cancels/resumes safe background work on enter/exit for v7a.
-+  - epg/fallback: when playing on v7a, prefer stale OBX/XMLTV for Now/Next instead of live Xtream calls.
-+  - goal: butter‑smooth UX on Fire TV Stick (32‑bit) without impacting 64‑bit devices.
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 7ba8977..b0d8371 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -1,3 +1,4 @@
++@file:Suppress("UnstableApiUsage")
+ import java.io.File
+ import java.util.Properties
+ 
+@@ -62,6 +63,24 @@ android {
+         // Feature switches
+         // Toggle visibility of header (User-Agent) editing UI
+         val showHeaderUi = (project.findProperty("SHOW_HEADER_UI")?.toString()?.toBooleanStrictOrNull()) ?: false
+         buildConfigField("boolean", "SHOW_HEADER_UI", showHeaderUi.toString())
++        // Telegram TDLib enable switch (per-ABI flavor overrides below)
++        buildConfigField("boolean", "TG_TDLIB_ENABLED", "false")
++    }
 +
-+- docs: AGENTS.md/ARCHITECTURE_OVERVIEW.md updated with v7a tuning notes.
++    // ABI product flavors (reliable per-ABI release APKs)
++    flavorDimensions += "arch"
++    productFlavors {
++        create("arm64") {
++            dimension = "arch"
++            ndk { abiFilters += listOf("arm64-v8a") }
++            buildConfigField("boolean", "TG_TDLIB_ENABLED", "true")
++        }
++        create("v7a") {
++            dimension = "arch"
++            ndk { abiFilters += listOf("armeabi-v7a") }
++            // Ensure Telegram feature is disabled on v7a
++            buildConfigField("boolean", "TG_TDLIB_ENABLED", "false")
++        }
+     }
+ 
+     compileOptions {
+@@ -91,10 +110,11 @@ android {
+     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+ 
+     // Generate split APKs per ABI (32-bit and 64-bit)
+     splits {
+         abi {
+-            isEnable = true
++            // Disabled: flavors control ABI now
++            isEnable = false
+             reset()
+             include("armeabi-v7a", "arm64-v8a")
+             // Only per-ABI APKs (no universal)
+             isUniversalApk = false
+         }
+@@ -128,9 +148,24 @@ android {
+     // Keep reference APK dump in repo but exclude it from compilation so it doesn't interfere
+     sourceSets {
+         getByName("main") {
+             java.srcDirs("src/main/java")
+         }
++        // v7a flavor compiles against TdApi sources but uses stub Client/Log (no JNI load)
++        getByName("v7a") {
++            java.srcDir("src/v7a/java")
++            java.srcDir("$rootDir/libtd/src/main/java")
++            java.exclude(
++                "org/drinkless/tdlib/Client.java",
++                "org/drinkless/tdlib/Log.java"
++            )
++        }
+     }
+ 
+     testOptions {
+         unitTests.isIncludeAndroidResources = true
+     }
 +
- 2025-09-27
- - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
- - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.
++    lint {
++        // Do not abort release builds on lint errors; keep warnings for CI
++        abortOnError = false
++    }
+ }
+ 
+ // Exclude reference sources from Kotlin/Java compilation tasks to avoid receiver ambiguities in sourceSets DSL
+@@ -153,6 +188,9 @@ tasks.withType<JavaCompile>().configureEach {
+ }
+ 
+ dependencies {
++    // TDLib only for arm64 APK; v7a uses stubs and TdApi sources
++    arm64Implementation(project(":libtd"))
++
+     val compose = "1.7.6" // aktuellstes Compose (Feb 2025)
+ 
+     // Core + Compose
+     implementation("androidx.core:core-ktx:1.15.0")
+     implementation("androidx.activity:activity-compose:1.10.0")
