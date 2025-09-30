@@ -1,17 +1,13 @@
-diff --git a/ARCHITECTURE_OVERVIEW.md b/ARCHITECTURE_OVERVIEW.md
-index 5a1d900..8a4e1a2 100644
---- a/ARCHITECTURE_OVERVIEW.md
-+++ b/ARCHITECTURE_OVERVIEW.md
-@@ -29,6 +29,17 @@ Telegram Gating
- - `tg_enabled` (Settings) und AUTHENTICATED (TDLib) sind Pflicht, bevor Sync/Picker/DataSources aktiv werden. Ohne diese Gateways sind alle Telegram-Funktionen no-op; Xtream bleibt unbeeinflusst. Phase-2: separater TDLib-Service-Prozess (eigenes `:tdlib`), FCM Push (`registerDevice`/`processPushNotification`) → weniger Polling (WorkManager als Fallback), QR-Login zusätzlich.
-  - Start‑Up Verhalten: `TdLibReflection.available()` prüft nur die Klassenpräsenz (Class.forName mit `initialize=false`) und triggert keinen statischen Initializer in `org.drinkless.tdlib.Client`. Dadurch wird `libtdjni.so` erst geladen, wenn die Telegram‑Funktionalität tatsächlich aktiviert und genutzt wird. Bei FCM‑Push startet der Service TDLib lazy mit BuildConfig‑Keys, verarbeitet Push und bleibt ansonsten im Leerlauf.
- 
-+Shared UI Components (Core‑UI Basics)
-+- Package `ui/actions`: MediaActionBar renders a horizontal action row (Play, Resume, Trailer, Add/Remove, More, …). Buttons are TV‑ready (`focusScaleOnTv`) and tagged for tests (`Action-<Id>`). Incrementally adoptable per screen.
-+- Package `ui/images`: ImageLoaderKit provides `AppImage` (generic) and `AppHeroImage` (hero/backdrop) wrappers on Coil3. Requests inherit global network headers via `RequestHeadersProvider` and keep size‑aware caching. Compatible with existing `ui/util` helpers.
-+- Package `ui/state`: `UiState<T>` (Loading/Empty/Error/Success) plus lightweight status views (`LoadingStateView`, `EmptyStateView`, `ErrorStateView`, `StatusBox`) to unify loading/empty/error UX and retries.
-+- Migration strategy: new components can be introduced per‑screen without breaking existing flows. Start/Library/Details gradually switch to MediaActionBar and Status‑Views while image wrappers remain backward compatible.
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 6cffa7e..b2802c0 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,3 +1,8 @@
++2025-09-30
++- docs(sprint-a): finalize Sprint‑A (TV Fokus/DPAD Vereinheitlichung). Roadmap bereinigt (PRIO‑1 Block entfernt); Status/Details verbleiben im Changelog. CI‑Audit (`tools/audit_tv_focus.sh`) ist verankert und bleibt Teil der Qualitätssicherung.
++- docs: Hinweis in Roadmap „Maintenance 2025‑09‑30“ ergänzt, damit Sprint‑B ohne Altlasten gestartet werden kann.
 +
- ## Telegram Service Process
- 
- - Service (`.telegram.service.TelegramTdlibService`) läuft in separatem Prozess `:tdlib` und hostet genau eine TDLib‑Client‑Instanz.
++
+ 2025-09-27
+ - fix(manifest/icon): set application icon to `@mipmap/ic_launcher` and add `android:roundIcon` (`@mipmap/ic_launcher_round`) instead of the missing `@drawable/fisch_bg`. Launcher already uses adaptive mipmaps; this aligns the manifest with actual assets.
+ - docs(roadmap): Priorität‑1 Tasks für TV Fokus/DPAD vereinheitlicht: alle horizontalen Container → TvFocusRow (inkl. Chips/Carousels), alle interaktiven Elemente → tvClickable/tvFocusableItem (No‑Op auf Phone), zentrale Scroll+Fokus‑Registry (ScrollStateRegistry), einheitliche Auto‑Collapse/Expand‑Trigger im HomeChromeScaffold, kein onPreviewKeyEvent außer echten Sonderfällen, Audit‑Skript erzwingt Regeln.

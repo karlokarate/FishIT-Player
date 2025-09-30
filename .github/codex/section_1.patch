@@ -1,17 +1,29 @@
-diff --git a/AGENTS.md b/AGENTS.md
-index 91ffb29..4a5b3e1 100644
---- a/AGENTS.md
-+++ b/AGENTS.md
-@@ -59,6 +59,12 @@ Codex – Operating Rules (override)
- - Ongoing hygiene: Codex periodically tidies the repo, highlights obsolete files/code to the user, and removes uncritical leftovers (e.g., stale *.old files). Never touch `.gradle/`, `.idea/`, or `app/build/` artifacts, and avoid dependency upgrades unless fixing builds.
-   - TV focus/DPAD audit: `tools/audit_tv_focus.sh` enforces rules (TvFocusRow for horizontal containers, tvClickable for interactives, no ad‑hoc DPAD). Wired into CI (`.github/workflows/ci.yml`) and fails PRs on violations.
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 924ce8c..2d25a1a 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -3,21 +3,14 @@
  
-+- Core-UI basics (shared components): New reusable building blocks are provided under `ui/` to unify actions, images and status handling across screens.
-+  - `ui/actions`: MediaActionBar with consistent TV‑ready controls (Play/Resume/Trailer/Add/…); buttons expose testTags and use `focusScaleOnTv`.
-+  - `ui/images`: ImageLoaderKit presets and `AppImage`/`AppHeroImage` wrappers (Coil3) that reuse global headers and defaults; compatible with existing `ui/util` image helpers.
-+  - `ui/state`: UiState sealed type and Status‑Views (`LoadingStateView`, `EmptyStateView`, `ErrorStateView`, `StatusBox`) to standardize loading/empty/error rendering with retry hooks.
-+  - Initial migration is incremental; existing screens remain functional. Further roll‑out is tracked in ROADMAP (Sprint A).
-+
- - Xtream workers & delta: Legacy `XtreamRefreshWorker`/`XtreamEnrichmentWorker` remain disabled (no‑op). Xtream content updates via `XtreamDeltaImportWorker`: periodic (12h, unmetered+charging) plus on‑demand one‑shot trigger.
-   - Global gate: `M3U_WORKERS_ENABLED` in DataStore controls whether Xtream workers/scheduling and related API paths run. When false, workers early‑exit (no network), app‑start auto‑discovery/seed is skipped, and Settings actions for Xtream diagnostics/import are disabled.
-   - One‑shot `ObxKeyBackfillWorker` fills missing `sortTitleLower`/`providerKey`/`genreKey`/`yearKey` for existing OBX rows.
+ Hinweis
+ - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+ - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
++- Maintenance 2025‑09‑30: Sprint‑A (TV Fokus/DPAD Vereinheitlichung) abgeschlossen und in CHANGELOG dokumentiert; Roadmap bereinigt.
+ 
+ ---
+ 
+ ## Kurzfristig (2–4 Wochen)
+ 
+-PRIO‑1: TV Fokus/DPAD Vereinheitlichung
+-- Alles Horizontale → `TvFocusRow` (inkl. Chips/Carousels).
+-- Alles Interaktive → `tvClickable`/`tvFocusableItem` (No‑Op auf Phone).
+-- Zentrale Registry für Scroll+Fokus je Route/Row (`ScrollStateRegistry`).
+-- Chrome: einheitliche Auto‑Collapse/Expand‑Trigger im `HomeChromeScaffold`.
+-- Kein `onPreviewKeyEvent` (außer echte Sonderfälle).
+-- Audit‑Skript erzwingt die Regeln (`tools/audit_tv_focus.sh`).
+-
+-Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
+-
+ - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
+ - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
+ - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).
+ - Coil3 Netzwerk: Explizite OkHttp‑Factory prüfen/integrieren, falls stabil verfügbar (sonst bei per‑Request NetworkHeaders bleiben). `respectCacheHeaders(true)` evaluieren.
