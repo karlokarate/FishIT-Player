@@ -5,39 +5,39 @@
 Bot 3 – Fehlerdoktor / Triage
 
 Reagiert auf:
-- Issue Labels: contextmap-error, solver-error
-- Workflow-Run failures: workflow_run (conclusion == failure)
+- Issue labels: contextmap-error (Bot 1) und solver-error (Bot 2)
+- workflow_run: completed mit conclusion=failure (alle fehlgeschlagenen Workflows)
 
 Aufgaben:
-- komplette Logs (ZIP) herunterladen
-- Fehler extrahieren (Fehlermeldungen, Gradle/AGP/SDK/Deps, Python-Tracebacks, git apply, API-Fehler)
-- mit GPT-5 (Reasoning: high) eine Analyse erstellen:
+- Alle Job-Logs (ZIP) des Runs laden und analysieren.
+- GPT-5 (Reasoning: high) erzeugt eine Diagnose:
   - Zusammenfassung
-  - vermutete Ursache
-  - konkrete Schritte (für User)
-  - Checklisten (ToDo-Boxen)
-  - falls Ursache unklar: Vorschläge, wie Bot 1/2 zu ändern sind, um Fehler lokalisierbar zu machen
-- Kommentar ins Issue: Marker '### bot3-analysis' (wird aktualisiert)
-- Labels setzen: 'bot3-analysis' + 'triage-needed'
+  - vermutete Ursache(n) mit kurzen Log-Belegen
+  - konkrete Schritte zur Behebung
+  - Checkliste (ToDos)
+  - falls Ursache unklar: Vorschläge, wie Bot 1/2 anzupassen sind, um den Fehler lokalisierbar zu machen
+- Zusätzlich: Gradle/AGP/Android-spezifische Heuristiken extrahieren und konkrete Text-Lösungen beilegen.
+- Kommentar ins Issue (Marker "### bot3-analysis" – existierende Analyse wird aktualisiert).
+- Labels setzen: "bot3-analysis", "triage-needed".
 
-ENV (Secrets/Vars):
-  OPENAI_API_KEY
-  OPENAI_MODEL_DEFAULT  (z. B. gpt-5)
+ENV:
+  OPENAI_API_KEY (Secret)
+  OPENAI_MODEL_DEFAULT (z. B. gpt-5)
   OPENAI_REASONING_EFFORT (high)
   OPENAI_BASE_URL (optional)
   GITHUB_TOKEN
   GITHUB_REPOSITORY
   GITHUB_EVENT_PATH
-  GH_EVENT_NAME or GITHUB_EVENT_NAME
+  GH_EVENT_NAME | GITHUB_EVENT_NAME
 """
 
 from __future__ import annotations
-import os, re, io, json, sys, time, zipfile, textwrap, traceback
+import os, re, io, json, sys, time, zipfile, traceback
 from pathlib import Path
 from typing import Optional, List, Dict, Tuple
 import requests
 
-# ---------------- GitHub helpers ----------------
+# ---------------- GitHub Helpers ----------------
 
 def repo() -> str:
     return os.environ["GITHUB_REPOSITORY"]
@@ -54,7 +54,7 @@ def gh_api(method: str, path: str, payload: dict | None = None) -> dict:
                "Accept": "application/vnd.github+json"}
     r = requests.request(method, url, headers=headers, json=payload, timeout=60)
     if r.status_code >= 300:
-        raise RuntimeError(f"GitHub API {method} {path} failed: {r.status_code} {r.text[:600]}")
+        raise RuntimeError(f"GitHub API {method} {path} failed: {r.status_code} {r.text[:800]}")
     try:
         return r.json()
     except Exception:
@@ -65,7 +65,7 @@ def gh_api_raw(method: str, url: str, allow_redirects=True):
                "Accept": "application/vnd.github+json"}
     r = requests.request(method, url, headers=headers, allow_redirects=allow_redirects, stream=True, timeout=60)
     if r.status_code >= 300 and r.status_code not in (301,302):
-        raise RuntimeError(f"GitHub RAW {method} {url} failed: {r.status_code} {r.text[:600]}")
+        raise RuntimeError(f"GitHub RAW {method} {url} failed: {r.status_code} {r.text[:800]}")
     return r
 
 def issue_number_from_label_event() -> Optional[int]:
@@ -95,56 +95,9 @@ def add_labels(num: int, labels: List[str]):
 def default_branch() -> str:
     return gh_api("GET", f"/repos/{repo()}").get("default_branch","main")
 
-# ---------------- Mapping: Workflow-Run → Issue ----------------
-
-def find_issue_for_workflow_run() -> Optional[int]:
-    """Robust: 1) Marker in Logs (issue:#123 / ISSUE_NUMBER=123), 2) PR Body (#123), 3) jüngstes Issue mit passenden Labels."""
-    ev = event()
-    run = ev.get("workflow_run") or {}
-    # 1) Pull Requests am Run
-    prs = run.get("pull_requests") or []
-    pr_num = None
-    if prs:
-        pr_num = prs[0].get("number")
-    # 1a) Versuche Inputs/Name zu parsen (nicht immer verfügbar)
-    # → nicht überall zuverlässig, daher direkt Logs nach Marker durchsuchen
-    try:
-        # Logs-URL → ZIP
-        logs_url = (gh_api_raw("GET", (run.get("logs_url") or ""), allow_redirects=False).headers.get("Location")
-                    if run.get("logs_url") else None)
-        data = gh_api_raw("GET", logs_url) .content if logs_url else None
-        if data:
-            with zipfile.ZipFile(io.BytesIO(data)) as zf:
-                for name in zf.namelist():
-                    if not name.lower().endswith(".txt"): continue
-                    txt = zf.read(name).decode("utf-8", errors="replace")
-                    m = re.search(r"(?:ISSUE_NUMBER\s*=\s*|issue:#)(\d+)", txt)
-                    if m:
-                        return int(m.group(1))
-    except Exception:
-        pass
-
-    # 2) PR Body → '#123'
-    if pr_num:
-        pr = gh_api("GET", f"/repos/{repo()}/pulls/{pr_num}")
-        body = (pr.get("body") or "") + "\n" + (pr.get("title") or "")
-        m = re.search(r"#(\d+)", body)
-        if m: return int(m.group(1))
-
-    # 3) Heuristik: jüngstes Issue mit relevanten Labels
-    issues = gh_api("GET", f"/repos/{repo()}/issues?state=open&per_page=20")
-    cand = [i for i in issues if any(l.get("name") in ("contextmap-ready","contextmap-error","solver-error") for l in i.get("labels",[]))]
-    if cand:
-        cand.sort(key=lambda x: x.get("updated_at",""), reverse=True)
-        return cand[0].get("number")
-    return None
-
-# ---------------- Logs sammeln ----------------
+# ---------------- Mapping: workflow_run → Issue ----------------
 
 def collect_run_logs(run: dict) -> Tuple[str, Dict[str,int]]:
-    """
-    lädt ZIP mit allen Logs; gibt großen Text-Blob zurück + einfache Metriken
-    """
     logs_url = run.get("logs_url","")
     if not logs_url:
         return ("", {})
@@ -164,25 +117,53 @@ def collect_run_logs(run: dict) -> Tuple[str, Dict[str,int]]:
                 continue
     return ("".join(big), stats)
 
+def find_issue_for_workflow_run() -> Optional[int]:
+    """
+    Robuste Heuristik:
+    1) Logs nach Markern: ISSUE_NUMBER=123 oder issue:#123
+    2) PR-Body/Titel nach #123
+    3) jüngstes offenes Issue mit contextmap-ready|contextmap-error|solver-error
+    """
+    ev = event()
+    run = ev.get("workflow_run") or {}
+    # 1) Marker in Logs
+    try:
+        blob, _ = collect_run_logs(run)
+        if blob:
+            m = re.search(r"(?:ISSUE_NUMBER\s*=\s*|issue:#)(\d+)", blob)
+            if m:
+                return int(m.group(1))
+    except Exception:
+        pass
+    # 2) PR-Referenz
+    prs = run.get("pull_requests") or []
+    if prs:
+        pr = gh_api("GET", f"/repos/{repo()}/pulls/{prs[0].get('number')}")
+        body = (pr.get("body") or "") + "\n" + (pr.get("title") or "")
+        m = re.search(r"#(\d+)", body)
+        if m: return int(m.group(1))
+    # 3) jüngstes relevantes Issue
+    issues = gh_api("GET", f"/repos/{repo()}/issues?state=open&per_page=20")
+    cand = [i for i in issues if any(l.get("name") in ("contextmap-ready","contextmap-error","solver-error") for l in i.get("labels",[]))]
+    if cand:
+        cand.sort(key=lambda x: x.get("updated_at",""), reverse=True)
+        return cand[0].get("number")
+    return None
+
 def fetch_latest_failed_run_for_issue(num: int) -> Optional[dict]:
-    """
-    Heuristik: finde den jüngsten fehlgeschlagenen Run auf dem Repository,
-    der (über PR-Body, Log-Marker oder Aktualität) dem Issue zuordenbar ist.
-    """
-    # schnelle Suche: letzte 20 workflow runs (completed)
     runs = gh_api("GET", f"/repos/{repo()}/actions/runs?status=completed&per_page=20")
     items = runs.get("workflow_runs", []) or runs.get("runs", []) or []
-    # pick first failure
     for r in items:
         if r.get("conclusion") == "failure":
-            # Versuch: PR->Issue
+            # PR → Issue
             prs = r.get("pull_requests") or []
             if prs:
                 pr = gh_api("GET", f"/repos/{repo()}/pulls/{prs[0].get('number')}")
-                m = re.search(r"#(\d+)", (pr.get("body") or "") + "\n" + (pr.get("title") or ""))
+                body = (pr.get("body") or "") + "\n" + (pr.get("title") or "")
+                m = re.search(r"#(\d+)", body)
                 if m and int(m.group(1)) == num:
                     return r
-            # Logs nach Marker durchsuchen
+            # Logs → Marker
             try:
                 blob, _ = collect_run_logs(r)
                 if re.search(fr"(?:ISSUE_NUMBER\s*=\s*|issue:#){num}\b", blob):
@@ -191,9 +172,105 @@ def fetch_latest_failed_run_for_issue(num: int) -> Optional[dict]:
                 pass
     return None
 
+# ---------------- Gradle/AGP Heuristiken ----------------
+
+def gradle_heuristics(log_blob: str) -> Dict[str, List[str]]:
+    """
+    Erkennung häufiger Gradle/Android-Fehler und konkrete Vorschläge.
+    Rückgabe: {"causes":[...], "actions":[...], "snippets":[...]}
+    """
+    causes, actions, snippets = [], [], []
+
+    def add(c=None, a=None, s=None):
+        if c: causes.append(c)
+        if a: actions.append(a)
+        if s: snippets.append(s)
+
+    # Compile/Target/Min SDK / Namespace
+    if re.search(r"AndroidManifest\.xml.*package.*is not specified|Namespace not specified", log_blob, re.I):
+        add("Fehlende Namespace/Package-Angabe (Manifest/Gradle).",
+            "In module build.gradle(.kts) `namespace = \"com.example\"` setzen oder im Manifest `package` definieren.",
+            "android {\n    namespace = \"com.chris.m3usuite\"\n}")
+    if re.search(r"uses-sdk:minSdkVersion [0-9]+ cannot be smaller than version [0-9]+|minSdkVersion .* is greater than device SDK", log_blob, re.I):
+        add("minSdk passt nicht (zu klein/groß).",
+            "minSdk in build.gradle(.kts) auf kompatiblen Wert setzen; Abhängigkeiten prüfen.",
+            "defaultConfig { minSdk = 21 }")
+    if re.search(r"compileSdkVersion \d+.* not found|failed to find Build Tools|failed to find target", log_blob, re.I):
+        add("compileSdk/Build-Tools fehlen im Runner.",
+            "Im Workflow vor dem Build Android SDK/Build-Tools installieren (z. B. API 35; Fallback 34).",
+            "echo \"y\" | sdkmanager \"platforms;android-35\" \"build-tools;35.0.0\"")
+
+    # Dependency resolution
+    if re.search(r"Could not resolve .*|Failed to transform .*|Could not find .* in repositories", log_blob, re.I):
+        add("Dependency-Resolution fehlgeschlagen.",
+            "Repos-Reihenfolge (google, mavenCentral) prüfen; Versionen/BOM abstimmen; ggf. --refresh-dependencies.",
+            "repositories { google(); mavenCentral() }")
+    if re.search(r"Duplicate class .* found in modules", log_blob, re.I):
+        add("Duplicate class – doppelte Abhängigkeiten.",
+            "Konflikte über Ausschlüsse oder BOM lösen; nur eine Implementierung behalten.",
+            "implementation(platform(\"androidx.compose:compose-bom:2024.xx\"))\nconfigurations.all { exclude(group=\"org.jetbrains\", module=\"annotations\") }")
+
+    # Kotlin/Java/AGP
+    if re.search(r"Kotlin version .* is not compatible|The Kotlin Gradle plugin was loaded multiple times", log_blob, re.I):
+        add("Kotlin/Plugin Version inkompatibel.",
+            "Gradle Plugin + Kotlin Version harmonisieren (AGP Matrix beachten).",
+            "plugins { id(\"org.jetbrains.kotlin.android\") version \"<passende-version>\" }")
+    if re.search(r"Unsupported class file major version|invalid target release", log_blob, re.I):
+        add("JDK-Target inkompatibel.",
+            "JAVA_HOME/JDK-Version und kotlinOptions.jvmTarget/javac release angleichen (z. B. 17).",
+            "kotlinOptions { jvmTarget = \"17\" }")
+
+    # KAPT/KSP
+    if re.search(r"KAPT error|error: \[kapt\]", log_blob, re.I):
+        add("KAPT Fehler.",
+            "Annotation Processor Pfade/Versionen prüfen; ggf. auf KSP migrieren.",
+            "plugins { id(\"com.google.devtools.ksp\") }\nksp { arg(\"room.incremental\", \"true\") }")
+    if re.search(r"Symbol processing|KSP", log_blob, re.I) and re.search(r"error:", log_blob):
+        add("KSP Fehler.",
+            "KSP Ausgaben/Args prüfen; inkompatible Processor-Versionen anpassen.",
+            None)
+
+    # R8/Proguard
+    if re.search(r"R8: Program type already present|Missing class .* referenced from method", log_blob, re.I):
+        add("R8/Proguard Fehler.",
+            "Keep-Regeln ergänzen und/oder Abhängigkeiten bereinigen; 'program type already present' durch Deduplizieren lösen.",
+            "-keep class com.yourlib.** { *; }")
+
+    # Ressourcen/AAPT
+    if re.search(r"A failure occurred while executing com.android.build.gradle.internal.res", log_blob):
+        add("Ressourcenfehler (AAPT).",
+            "Ressourcennamen/duplikate prüfen; nicht-ASCII/ungültige Dateinamen; vectorDrawables/eigene Attrs checken.",
+            None)
+
+    # Signing/Keystore
+    if re.search(r"Keystore was tampered with|Invalid keystore format|Failed to read key", log_blob, re.I):
+        add("Signing/Keystore Problem.",
+            "release-keystore prüfen (Passwort/Alias/Stufe); debug-Builds ohne Release-Signatur bauen.",
+            None)
+
+    # Speicher
+    if re.search(r"OutOfMemoryError|Java heap space", log_blob, re.I):
+        add("OutOfMemory beim Build.",
+            "Gradle-Heap erhöhen (org.gradle.jvmargs), parallele Worker reduzieren.",
+            "org.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx2g")
+
+    # Manifest Merger
+    if re.search(r"Manifest merger failed", log_blob, re.I):
+        add("Manifest-Merger Fehler.",
+            "Konflikte auflösen: <application> / <provider> / <queries>; tools:node verwenden.",
+            "tools:node=\"merge|remove|replace\"")
+
+    # aapt2 spezifisch
+    if re.search(r"aapt2.*error", log_blob, re.I):
+        add("aapt2 Fehler.",
+            "Ressourcen-Pfade/fehlerhafte XML prüfen; aapt2-Fehlermeldung genau lesen und Datei anpassen.",
+            None)
+
+    return {"causes": causes, "actions": actions, "snippets": snippets}
+
 # ---------------- OpenAI Analyse ----------------
 
-def analyze_with_openai(log_blob: str, context_hint: str) -> str:
+def analyze_with_openai(log_blob: str, context_hint: str, heuristics: Dict[str, List[str]]) -> str:
     from openai import OpenAI
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key: raise RuntimeError("OPENAI_API_KEY not set")
@@ -201,41 +278,50 @@ def analyze_with_openai(log_blob: str, context_hint: str) -> str:
     model = os.environ.get("OPENAI_MODEL_DEFAULT","gpt-5")
     effort = "high"
 
+    # Heuristik-Text für zusätzlichen Kontext
+    heur_txt = ""
+    if heuristics and (heuristics.get("causes") or heuristics.get("actions")):
+        hc = "\n".join(f"- {c}" for c in heuristics.get("causes",[])[:10]) or "(keine)"
+        ha = "\n".join(f"- {a}" for a in heuristics.get("actions",[])[:10]) or "(keine)"
+        hs = "\n".join(f"```text\n{s}\n```" for s in heuristics.get("snippets",[])[:5]) or ""
+        heur_txt = f"\n\n[Lokale Gradle-Heuristik]\nUrsachen:\n{hc}\n\nSofortmaßnahmen:\n{ha}\n\nBeispiele:\n{hs}\n"
+
     SYSTEM = (
         "You are a senior CI/build failure triage assistant. "
         "Given full workflow logs, write a concise, actionable incident analysis in German. "
-        "Be specific, cite exact log snippets (short) and line anchors if possible."
+        "Be specific, cite short log snippets (<= 2 lines) where helpful."
     )
     USER = f"""Kontext-Hinweis:
-{context_hint or '(kein zusätzlicher Kontext)'}
+{context_hint or '(kein zusätzlicher Kontext)'}{heur_txt}
 
-Vollständige Logs (gekürzt nur wenn nötig, aber analysiere alle Stellen):
-{log_blob[:250000]}  # (Begrenzung um Request-Größen zu vermeiden)
+Vollständige Logs (ausgewählte Ausschnitte; analysiere den gesamten Text):
+{log_blob[:250000]}
 
 Erzeuge Markdown mit diesem Aufbau:
 
 ### bot3-analysis
 **Zusammenfassung**
-- ein Satz
+- genau ein Satz mit dem Hauptproblem
 
 **Vermutete Ursache(n)**
-- kurze Punkte mit Belegen (Zeilen oder kurze Snippets)
+- kurze Punkte mit knappen Log-Belegen (Zeile/Dateiname, wenn erkennbar)
 
 **Konkrete Schritte zur Behebung**
 - Schritt 1 …
 - Schritt 2 …
+- Schritt 3 …
 
 **Checkliste**
-- [ ] Schritt 1 verifiziert
+- [ ] Schritt 1 durchgeführt
 - [ ] Schritt 2 verifiziert
+- [ ] Schritt 3 ohne neue Fehler
 
 **Falls Ursache unklar**
-- so änderst du Bot 1/2 (Logging, Marker, Inputs), damit der Fehler eindeutig lokalisierbar wird
+- Konkrete Änderungen an Bot 1/2 vorschlagen (zusätzliche Logs/Marker/Inputs), um die genaue Fehlerquelle beim nächsten Lauf zu isolieren
 
 **Gradle/Build-spezifisch (falls zutreffend)**
-- AGP/Gradle/SDK/Deps Diagnose + exakte Maßnahmen
-
-Halte es präzise und umsetzbar."""
+- Diagnose zu AGP/Gradle/SDK/Dependencies inkl. spezifischer Maßnahmen
+"""
     resp = client.responses.create(
         model=model,
         input=[{"role":"system","content":SYSTEM},{"role":"user","content":USER}],
@@ -246,42 +332,39 @@ Halte es präzise und umsetzbar."""
 # ---------------- Hauptlogik ----------------
 
 def main():
-    # 1) Fall A: Label-Trigger (issues:labeled)
+    # A) Label-Trigger
     if evname() == "issues":
         num = issue_number_from_label_event()
         if not num:
-            print("::error::no issue"); sys.exit(1)
+            print("::error::No issue number"); sys.exit(1)
         labels = [l.get("name") for l in (event().get("issue") or {}).get("labels",[])]
         if not any(x in ("contextmap-error","solver-error") for x in labels):
-            print("::notice::label not relevant"); sys.exit(0)
+            print("::notice::Label not relevant"); sys.exit(0)
 
         run = fetch_latest_failed_run_for_issue(num)
-        log_blob = ""
+        blob = ""
         if run:
             blob, stats = collect_run_logs(run)
-            log_blob = blob
-        analysis = analyze_with_openai(log_blob or "(Keine Logs greifbar – bitte Build erneut ausführen.)",
-                                       context_hint="Label-Trigger vom Issue (contextmap-error / solver-error).")
+        heur = gradle_heuristics(blob or "")
+        analysis = analyze_with_openai(blob or "(Keine Logs greifbar – bitte Build erneut ausführen.)",
+                                       context_hint="Label-Trigger vom Issue (contextmap-error / solver-error).",
+                                       heuristics=heur)
         upsert_analysis_comment(num, analysis)
-        # Labels setzen
         add_labels(num, ["bot3-analysis","triage-needed"])
         print("::notice::bot3-analysis posted (label trigger)")
         return
 
-    # 2) Fall B: workflow_run failure
+    # B) workflow_run failure
     if evname() == "workflow_run":
-        ev = event()
-        wr = ev.get("workflow_run") or {}
+        wr = (event().get("workflow_run") or {})
         if wr.get("conclusion") != "failure":
             print("::notice::workflow_run not failure; skip"); return
-
-        # Issue zuordnen
         num = find_issue_for_workflow_run()
         if not num:
             print("::error::could not map workflow run to an issue"); sys.exit(1)
-
         blob, stats = collect_run_logs(wr)
-        analysis = analyze_with_openai(blob, context_hint=f"Workflow '{wr.get('name')}' failed on branch '{wr.get('head_branch')}'.")
+        heur = gradle_heuristics(blob or "")
+        analysis = analyze_with_openai(blob, context_hint=f"Workflow '{wr.get('name')}' failed on '{wr.get('head_branch')}'.", heuristics=heur)
         upsert_analysis_comment(num, analysis)
         add_labels(num, ["bot3-analysis","triage-needed"])
         print("::notice::bot3-analysis posted (workflow_run)")
@@ -295,7 +378,6 @@ if __name__ == "__main__":
     except SystemExit:
         raise
     except Exception as e:
-        # letztes Netz – ohne Issue kontext nur Log
         print("::error::Bot3 unexpected failure:", e)
         print(traceback.format_exc())
         sys.exit(1)
