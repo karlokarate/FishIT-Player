@@ -43,7 +43,7 @@ jobs:
 
       - name: Run Solver Bot (high)
         env:
-          OPENAI_API_KEY: ${{ secrets.OPEN_API_KEY }}          # mapping
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}          # mapping
           OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}  # gpt-5
           OPENAI_REASONING_EFFORT: high
 
