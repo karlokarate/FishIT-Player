@@ -67,3 +67,7 @@ logcat
 .wsl-kotlin/
 .wsl-python/
 .wsl-tmp/
+# Codex solver temps
+.github/codex/_solver_sec_*.patch
+.github/codex/_solver_all.patch
+*.rej
