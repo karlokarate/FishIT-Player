@@ -4,10 +4,10 @@
 """
 Bot 2 – Solver (Code-Umsetzung)
 
-Startbedingungen (zwingend):
+Startbedingungen:
 - Issue hat Label `contextmap-ready`
-- Es existiert ein Kommentar, der mit "### contextmap-ready" beginnt (von Bot 1)
-- Trigger via issues:labeled oder workflow_dispatch (beide möglich)
+- Ein Kommentar existiert, der mit "### contextmap-ready" beginnt (von Bot 1)
+- Trigger via issues:labeled (Label gesetzt) oder workflow_dispatch
 
 Vorgehen:
 - ContextMap einlesen, "(potentiell) betroffene Module" parsen (nur existierende Pfade)
@@ -15,16 +15,19 @@ Vorgehen:
 - GPT-5 (high) erzeugt EINEN Unified-Diff (zentralisieren wo sinnvoll; Stelle verifizieren)
 - Patch robust anwenden (sanitize, 3-way, .rej Fallback)
 - Branch pushen, PR gegen default branch erstellen
-- Build-Workflow dispatchen und Ergebnis abwarten:
-  - success  → Label `solver-done`, `contextmap-ready` entfernen
-  - failure  → Label `solver-error` (→ Bot 3 reagiert später)
+- Build-Workflow dispatchen (PR-Branch) und Ergebnis abwarten:
+  - success  → Label `solver-done` (und `contextmap-ready` entfernen)
+  - failure  → Label `solver-error` (→ Bot 3 reagiert im Anschluss)
 
-Erforderliche ENV:
-  OPENAI_API_KEY            (Secret)
-  OPENAI_MODEL_DEFAULT      (z. B. gpt-5)
-  OPENAI_REASONING_EFFORT   (high)
-  OPENAI_BASE_URL           (optional)
-  GITHUB_TOKEN, GITHUB_REPOSITORY, GITHUB_EVENT_PATH
+ENV:
+  OPENAI_API_KEY
+  OPENAI_MODEL_DEFAULT (gpt-5)
+  OPENAI_REASONING_EFFORT (high)
+  OPENAI_BASE_URL (optional)
+  GITHUB_TOKEN
+  GITHUB_REPOSITORY
+  GITHUB_EVENT_PATH
+  SOLVER_BUILD_WORKFLOW (optional, default release-apk.yml)
 
 Python-Deps: openai, requests, unidiff
 """
@@ -89,7 +92,8 @@ def add_label(num: int, label: str):
 def remove_label(num: int, label: str):
     try:
         requests.delete(f"https://api.github.com/repos/{repo()}/issues/{num}/labels/{label}",
-                        headers={"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}","Accept":"application/vnd.github+json"},
+                        headers={"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                                 "Accept": "application/vnd.github+json"},
                         timeout=30)
     except Exception:
         pass
@@ -122,7 +126,7 @@ def fetch_contextmap_comment(num: int) -> Optional[str]:
 def parse_affected_modules(contextmap_md: str, all_files: List[str]) -> List[str]:
     """
     extrahiert Liste aus Abschnitt '#### (potentiell) betroffene Module'
-    nur existierende Pfade (Dateien/Ordner) dürfen zurückkommen
+    nur existierende Pfade (Dateien/Ordner) werden akzeptiert
     """
     m = re.search(r"####\s*\(potentiell\)\s*betroffene\s*Module\s*(.*?)\n####", contextmap_md, re.S | re.I)
     if not m:
@@ -138,7 +142,6 @@ def parse_affected_modules(contextmap_md: str, all_files: List[str]) -> List[str
         if it in sset:
             existing.add(it)
         else:
-            # Verzeichnis vorhanden?
             if any(f.startswith(it.rstrip("/") + "/") for f in sset):
                 existing.add(it.rstrip("/"))
     return sorted(existing)
@@ -147,34 +150,31 @@ def expand_dependencies(seed_paths: List[str], all_files: List[str], max_extra: 
     """
     Rekursive Erweiterung:
       - Module: build.gradle(.kts), AndroidManifest.xml ergänzen
-      - Imports: einfache Heuristik über Paket-Imports 'com.chris.m3usuite'
+      - Import-Heuristik (com.chris.m3usuite) → zusammenhängende Module
     """
     sset = set(all_files)
     out: Set[str] = set(seed_paths)
-
-    # Gradle/Manifest je Modul hinzufügen
+    # Gradle/Manifest je Modul
     for p in list(out):
-        gradle = (p.rstrip("/") + "/build.gradle", p.rstrip("/") + "/build.gradle.kts")
-        for g in gradle:
-            if g in sset: out.add(g)
-        manifest = p.rstrip("/") + "/src/main/AndroidManifest.xml"
-        if manifest in sset: out.add(manifest)
-
-    # Grober Import-Scan
+        g1 = p.rstrip("/") + "/build.gradle"
+        g2 = p.rstrip("/") + "/build.gradle.kts"
+        m1 = p.rstrip("/") + "/src/main/AndroidManifest.xml"
+        if g1 in sset: out.add(g1)
+        if g2 in sset: out.add(g2)
+        if m1 in sset: out.add(m1)
+    # Import-Scan
     pkg_root = "com.chris.m3usuite"
-    extra = set()
-    kt_java = [f for f in all_files if f.endswith(".kt") or f.endswith(".java")]
-    for cf in kt_java:
+    extra=set()
+    for f in [x for x in all_files if x.endswith(".kt") or x.endswith(".java")]:
         try:
-            txt = Path(cf).read_text(encoding="utf-8", errors="ignore")
+            txt = Path(f).read_text(encoding="utf-8", errors="ignore")
         except Exception:
             continue
         if "import " in txt and pkg_root in txt:
-            root = cf.split("/")[0]
+            root = f.split("/")[0]
             if root not in out and any(x.startswith(root+"/") or x==root for x in sset):
                 extra.add(root)
                 if len(extra) >= max_extra: break
-
     out.update(extra)
     return sorted(out)
 
@@ -196,9 +196,6 @@ def sanitize_patch(raw: str) -> str:
     return raw
 
 def apply_patch_unidiff(patch_text: str) -> Tuple[List[str], List[str], List[str]]:
-    """
-    Section-weise Apply mit 3-way Fallback; erzeugt .rej bei Bedarf.
-    """
     sections=[]
     for m in re.finditer(r"^diff --git a/(\S+)\s+b/(\S+)\s*$", patch_text, re.M):
         start=m.start()
@@ -214,23 +211,19 @@ def apply_patch_unidiff(patch_text: str) -> Tuple[List[str], List[str], List[str
     for idx, body in enumerate(sections,1):
         tmp=f".github/codex/_solver_sec_{idx}.patch"
         Path(tmp).write_text(body, encoding="utf-8")
-        ok3=subprocess.run(f"git apply --check -3 -p0 {tmp}", shell=True, text=True, capture_output=True)
-        if ok3.returncode==0:
+        if subprocess.run(f"git apply --check -3 -p0 {tmp}", shell=True, text=True, capture_output=True).returncode==0:
             subprocess.run(f"git apply -3 -p0 --whitespace=fix {tmp}", shell=True, check=True, text=True)
             applied.append(f"section_{idx}"); continue
-        ok=subprocess.run(f"git apply --check -p0 {tmp}", shell=True, text=True, capture_output=True)
-        if ok.returncode==0:
+        if subprocess.run(f"git apply --check -p0 {tmp}", shell=True, text=True, capture_output=True).returncode==0:
             subprocess.run(f"git apply -p0 --whitespace=fix {tmp}", shell=True, check=True, text=True)
             applied.append(f"section_{idx}"); continue
-        # normalize & retry
+        # Normalize & retry
         data = Path(tmp).read_text(encoding="utf-8", errors="replace").replace("\r\n","\n").replace("\r","\n")
         Path(tmp).write_text(data, encoding="utf-8")
-        ok3b=subprocess.run(f"git apply --check -3 -p0 {tmp}", shell=True, text=True, capture_output=True)
-        if ok3b.returncode==0:
+        if subprocess.run(f"git apply --check -3 -p0 {tmp}", shell=True, text=True, capture_output=True).returncode==0:
             subprocess.run(f"git apply -3 -p0 --whitespace=fix {tmp}", shell=True, check=True, text=True)
             applied.append(f"section_{idx}"); continue
-        ok2=subprocess.run(f"git apply --check -p0 {tmp}", shell=True, text=True, capture_output=True)
-        if ok2.returncode==0:
+        if subprocess.run(f"git apply --check -p0 {tmp}", shell=True, text=True, capture_output=True).returncode==0:
             subprocess.run(f"git apply -p0 --whitespace=fix {tmp}", shell=True, check=True, text=True)
             applied.append(f"section_{idx}"); continue
         try:
@@ -252,13 +245,12 @@ def openai_diff(contextmap: str, docs: str, target_paths: List[str]) -> str:
     SYSTEM = (
         "You are an expert Android/Kotlin/Gradle engineer. "
         "Generate ONE unified diff that applies at repo root (git apply -p0). "
-        "Prefer centralized fixes when possible; verify correct location; refactor helpers/modules if helpful; "
-        "avoid broad edits unless necessary."
+        "Prefer centralized fixes where possible; verify correct location; refactor helpers/modules to ease future maintenance."
     )
-    USER = f"""ContextMap (from Bot1):
+    USER = f"""ContextMap:
 {contextmap}
 
-Docs (AGENTS → ARCHITECTURE_OVERVIEW → ROADMAP → CHANGELOG):
+Docs:
 {docs or '(no docs present)'}
 
 Target files/modules (primary and recursively inferred):
@@ -311,15 +303,15 @@ def main():
     if not num:
         print("::error::No issue number in event"); sys.exit(1)
 
-    # Startbedingungen
     labels = get_labels(num)
     if "contextmap-ready" not in labels:
         print("::notice::No 'contextmap-ready' label; skipping"); sys.exit(0)
+
     cm = fetch_contextmap_comment(num)
     if not cm or not cm.strip().startswith("### contextmap-ready"):
         print("::notice::No contextmap comment; skipping"); sys.exit(0)
 
-    # Doku laden
+    # Docs laden
     docs=[]
     for name in ["AGENTS.md","ARCHITECTURE_OVERVIEW.md","ROADMAP.md","CHANGELOG.md"]:
         if Path(name).exists():
@@ -337,7 +329,7 @@ def main():
 
     targets = expand_dependencies(seeds, all_files, max_extra=80)
 
-    # Arbeitsbranch vorbereiten
+    # Branch vorbereiten
     base = default_branch()
     branch = f"codex/solve-{int(time.time())}"
     sh("git config user.name 'codex-bot'"); sh("git config user.email 'actions@users.noreply.github.com'")
@@ -358,7 +350,7 @@ def main():
         post_comment(num, f"❌ Solver: Kein gültiger Diff\n```\n{patch[:1200]}\n```")
         sys.exit(1)
 
-    # Optional: Unidiff-Validierung (Warnung ignorieren, nicht fatal)
+    # Optional: Unidiff-Validierung
     try:
         PatchSet.from_string(patch)
     except Exception as e:
@@ -387,15 +379,15 @@ def main():
         "title": "codex: solver changes",
         "head": branch,
         "base": base,
-        "body": "Automatisch erzeugte Änderungen basierend auf der ContextMap."
+        "body": f"Automatisch erzeugte Änderungen basierend auf der ContextMap. (issue #{num})"
     })
     pr_num = pr.get("number"); pr_url = pr.get("html_url")
     post_comment(num, f"🔧 PR erstellt: #{pr_num} — {pr_url}")
 
-    # Build anstoßen (auf dem Head-Branch testen)
+    # Build anstoßen: auf PR-Branch bauen + Issue-Nummer mittgeben (für Bot 3)
     wf = os.environ.get("SOLVER_BUILD_WORKFLOW", "release-apk.yml")
     try:
-        since = dispatch_build(wf, branch, {"build_type":"debug"})
+        since = dispatch_build(wf, branch, {"build_type":"debug", "issue": str(num)})
         run = wait_build_result(wf, branch, since, timeout_s=1800)
         concl = (run or {}).get("conclusion","")
         if concl == "success":
