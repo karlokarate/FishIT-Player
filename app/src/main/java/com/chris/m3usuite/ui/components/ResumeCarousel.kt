@@ -31,6 +31,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
+import androidx.compose.ui.res.stringResource
+import com.chris.m3usuite.ui.actions.MediaAction
+import com.chris.m3usuite.ui.actions.MediaActionBar
+import com.chris.m3usuite.ui.actions.MediaActionId
 import com.chris.m3usuite.player.ExternalPlayer
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.ResumeRepository
@@ -154,6 +158,57 @@ fun ResumeSectionAuto(
     }
 
     val scope = rememberCoroutineScope()
+    val launcher = com.chris.m3usuite.playback.rememberPlaybackLauncher(onOpenInternal = { pr ->
+        val encoded = Uri.encode(pr.url)
+        val mimeArg = pr.mimeType?.let { Uri.encode(it) } ?: ""
+        val mid = chooserItem?.mediaId ?: -1
+        val type = pr.type
+        val start = pr.startPositionMs ?: -1
+        navController.navigate("player?url=$encoded&type=$type&mediaId=$mid&startMs=$start&mime=$mimeArg")
+        chooserItem = null
+        chooserEpisode = null
+    }, onResult = { req, res ->
+        scope.launch(Dispatchers.IO) {
+            when (req.type) {
+                "vod" -> when (res) {
+                    is com.chris.m3usuite.playback.PlayerResult.Completed -> {
+                        val id = req.mediaId ?: -1
+                        if (id > 0) {
+                            com.chris.m3usuite.core.telemetry.Telemetry.event("resume.clear", mapOf("type" to "vod", "mediaId" to id))
+                            runCatching { resumeRepo.clearVod(id) }
+                        }
+                    }
+                    is com.chris.m3usuite.playback.PlayerResult.Stopped -> {
+                        val id = req.mediaId ?: -1
+                        if (id > 0) {
+                            val pos = ((res.positionMs / 1000).toInt()).coerceAtLeast(0)
+                            com.chris.m3usuite.core.telemetry.Telemetry.event("resume.set", mapOf("type" to "vod", "mediaId" to id, "positionSecs" to pos))
+                            runCatching { resumeRepo.setVodResume(id, pos) }
+                        }
+                    }
+                    else -> Unit
+                }
+                "series" -> when (res) {
+                    is com.chris.m3usuite.playback.PlayerResult.Completed -> if (req.seriesId != null && req.season != null && req.episodeNum != null) {
+                        com.chris.m3usuite.core.telemetry.Telemetry.event(
+                            "resume.clear",
+                            mapOf("type" to "series", "seriesId" to req.seriesId, "season" to req.season, "episode" to req.episodeNum)
+                        )
+                        runCatching { resumeRepo.clearSeriesResume(req.seriesId, req.season, req.episodeNum) }
+                    }
+                    is com.chris.m3usuite.playback.PlayerResult.Stopped -> if (req.seriesId != null && req.season != null && req.episodeNum != null) {
+                        val pos = ((res.positionMs / 1000).toInt()).coerceAtLeast(0)
+                        com.chris.m3usuite.core.telemetry.Telemetry.event(
+                            "resume.set",
+                            mapOf("type" to "series", "seriesId" to req.seriesId, "season" to req.season, "episode" to req.episodeNum, "positionSecs" to pos)
+                        )
+                        runCatching { resumeRepo.setSeriesResume(req.seriesId, req.season, req.episodeNum, pos) }
+                    }
+                    else -> Unit
+                }
+            }
+        }
+    })
     // rows keep simple; haptics handled inside ResumeCard per onLongClick
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -169,12 +224,21 @@ fun ResumeSectionAuto(
                     Text("Wie abspielen?", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
                     Button(modifier = Modifier.focusScaleOnTv(), onClick = {
-                        val encoded = Uri.encode(chooserItem!!.url!!)
+                        val url = chooserItem!!.url ?: return@Button
                         val start = chooserItem!!.positionSecs.toLong() * 1000L
-                        val mime = PlayUrlHelper.guessMimeType(chooserItem!!.url, chooserItem!!.containerExt)
-                        val mimeArg = mime?.let { Uri.encode(it) } ?: ""
-                        navController.navigate("player?url=$encoded&type=vod&mediaId=${chooserItem!!.mediaId}&startMs=$start&mime=$mimeArg")
-                        chooserItem = null
+                        val mime = PlayUrlHelper.guessMimeType(url, chooserItem!!.containerExt)
+                        scope.launch {
+                            launcher.launch(
+                                com.chris.m3usuite.playback.PlayRequest(
+                                    type = "vod",
+                                    mediaId = chooserItem!!.mediaId,
+                                    url = url,
+                                    headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store),
+                                    startPositionMs = start,
+                                    mimeType = mime
+                                )
+                            )
+                        }
                     }) { Text("Intern") }
                     Spacer(Modifier.height(4.dp))
                     Button(modifier = Modifier.focusScaleOnTv(), onClick = {
@@ -199,17 +263,24 @@ fun ResumeSectionAuto(
                     Spacer(Modifier.height(8.dp))
                     val start = ep.positionSecs.toLong() * 1000L
                     val playUrl = ep.url
-                    val mime = PlayUrlHelper.guessMimeType(playUrl, ep.containerExt)
-                    val mimeArg = mime?.let { Uri.encode(it) } ?: ""
                     Button(modifier = Modifier.focusScaleOnTv(), onClick = {
                         if (playUrl != null) {
-                            val encoded = Uri.encode(playUrl)
-                            val epId = ep.episodeId?.takeIf { it > 0 } ?: -1
-                            navController.navigate(
-                                "player?url=$encoded&type=series&mediaId=-1&seriesId=${ep.seriesId}&season=${ep.season}&episodeNum=${ep.episodeNum}&episodeId=$epId&startMs=$start&mime=$mimeArg"
+                            scope.launch {
+                            launcher.launch(
+                                com.chris.m3usuite.playback.PlayRequest(
+                                    type = "series",
+                                    mediaId = null,
+                                    url = playUrl,
+                                    headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store),
+                                    startPositionMs = start,
+                                    seriesId = ep.seriesId,
+                                    season = ep.season,
+                                    episodeNum = ep.episodeNum,
+                                    episodeId = ep.episodeId
+                                )
                             )
+                            }
                         }
-                        chooserEpisode = null
                     }, enabled = playUrl != null) { Text("Intern") }
                     Spacer(Modifier.height(4.dp))
                     Button(modifier = Modifier.focusScaleOnTv(), onClick = {
@@ -392,10 +463,28 @@ private fun ResumeCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            // Tipp: Klick = Abspielen, Long-Press = Entfernen
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onPlay, modifier = Modifier.focusScaleOnTv()) { Icon(Icons.Filled.PlayArrow, contentDescription = "Abspielen") }
-                IconButton(onClick = onClear, modifier = Modifier.focusScaleOnTv()) { Icon(Icons.Filled.Clear, contentDescription = "Entfernen") }
+            // Actions: Play + Remove; optionally Share if URL present (handled by parent callbacks)
+            if (com.chris.m3usuite.BuildConfig.MEDIA_ACTIONBAR_V1) {
+                val actions = listOf(
+                    MediaAction(
+                        id = MediaActionId.Play,
+                        label = stringResource(com.chris.m3usuite.R.string.action_play),
+                        primary = true,
+                        onClick = onPlay
+                    ),
+                    MediaAction(
+                        id = MediaActionId.RemoveFromList,
+                        label = stringResource(com.chris.m3usuite.R.string.action_remove_from_list),
+                        onClick = onClear
+                    )
+                )
+                MediaActionBar(actions = actions)
+            } else {
+                // Tipp: Klick = Abspielen, Long-Press = Entfernen
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onPlay, modifier = Modifier.focusScaleOnTv()) { Icon(Icons.Filled.PlayArrow, contentDescription = "Abspielen") }
+                    IconButton(onClick = onClear, modifier = Modifier.focusScaleOnTv()) { Icon(Icons.Filled.Clear, contentDescription = "Entfernen") }
+                }
             }
         }
     }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -138,6 +139,21 @@ fun StartScreen(
         }
     }
 
+    // Centralized playback launcher (v1): opens internal player via nav when chosen
+    val playbackLauncher = if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1)
+        com.chris.m3usuite.playback.rememberPlaybackLauncher(
+            onOpenInternal = { pr ->
+                val encoded = com.chris.m3usuite.core.playback.PlayUrlHelper.encodeUrl(pr.url)
+                val mimeArg = pr.mimeType?.let { android.net.Uri.encode(it) } ?: ""
+                when (pr.type) {
+                    "vod" -> navController.navigate("player?url=$encoded&type=vod&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
+                    "live" -> navController.navigate("player?url=$encoded&type=live&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
+                    "series" -> navController.navigate("player?url=$encoded&type=series&seriesId=${pr.seriesId ?: -1}&season=${pr.season ?: -1}&episodeNum=${pr.episodeNum ?: -1}&episodeId=${pr.episodeId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
+                }
+            }
+        )
+    else null
+
     var canEditFavorites by remember { mutableStateOf(true) }
     var canEditWhitelist by remember { mutableStateOf(true) }
     LaunchedEffect(currentProfileId) {
@@ -153,6 +169,7 @@ fun StartScreen(
     var seriesMixed by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var seriesNewIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var vodMixed by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+    var homeUiState by remember { mutableStateOf<com.chris.m3usuite.ui.state.UiState<Unit>>(com.chris.m3usuite.ui.state.UiState.Loading) }
     var vodNewIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 
     val vm: StartViewModel = viewModel()
@@ -216,6 +233,11 @@ fun StartScreen(
                 vodMixed = recentItems + newestExcl
                 vodNewIds = newestExcl.map { it.id }.toSet()
             }
+            if (com.chris.m3usuite.BuildConfig.UI_STATE_V1 && debouncedQuery.isBlank()) {
+                homeUiState = if (seriesMixed.isNotEmpty() || vodMixed.isNotEmpty() || tv.isNotEmpty())
+                    com.chris.m3usuite.ui.state.UiState.Success(Unit)
+                else com.chris.m3usuite.ui.state.UiState.Empty
+            }
         }
     }
 
@@ -229,6 +251,7 @@ fun StartScreen(
     }
 
     LaunchedEffect(isKid, showAdults) {
+        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) homeUiState = com.chris.m3usuite.ui.state.UiState.Loading
         reloadFromObx()
         recomputeMixedRows()
         val isEmpty = series.isEmpty() && movies.isEmpty() && tv.isEmpty()
@@ -299,6 +322,11 @@ fun StartScreen(
         val translated = rawIds.filter { it >= 1_000_000_000_000L }
         val map = allAllowed.associateBy { it.id }
         favLive = translated.mapNotNull { map[it] }.distinctBy { it.id }
+        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1 && debouncedQuery.isBlank()) {
+            homeUiState = if (seriesMixed.isNotEmpty() || vodMixed.isNotEmpty() || tv.isNotEmpty() || favLive.isNotEmpty())
+                com.chris.m3usuite.ui.state.UiState.Success(Unit)
+            else com.chris.m3usuite.ui.state.UiState.Empty
+        }
     }
 
     val listState = com.chris.m3usuite.ui.state.rememberRouteListState("start:main")
@@ -359,6 +387,39 @@ fun StartScreen(
         }
     ) { pads: PaddingValues ->
         val loading by com.chris.m3usuite.ui.fx.FishSpin.isLoading.collectAsState(initial = false)
+        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1 && debouncedQuery.isBlank()) {
+            when (val s = homeUiState) {
+                is com.chris.m3usuite.ui.state.UiState.Loading -> { com.chris.m3usuite.ui.state.LoadingState(); return@HomeChromeScaffold }
+                is com.chris.m3usuite.ui.state.UiState.Empty -> { com.chris.m3usuite.ui.state.EmptyState(); return@HomeChromeScaffold }
+                is com.chris.m3usuite.ui.state.UiState.Error -> { com.chris.m3usuite.ui.state.ErrorState(s.message, s.retry); return@HomeChromeScaffold }
+                is com.chris.m3usuite.ui.state.UiState.Success -> { /* render content */ }
+            }
+        }
+
+        // Search mode gating using combined paging flows (series/vod/live)
+        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1 && debouncedQuery.isNotBlank()) {
+            val seriesFlowG = remember(debouncedQuery) { mediaRepo.pagingSearchFilteredFlow("series", debouncedQuery) }
+            val vodFlowG = remember(debouncedQuery) { mediaRepo.pagingSearchFilteredFlow("vod", debouncedQuery) }
+            val liveFlowG = remember(debouncedQuery) { mediaRepo.pagingSearchFilteredFlow("live", debouncedQuery) }
+            val seriesItemsG = seriesFlowG.collectAsLazyPagingItems()
+            val vodItemsG = vodFlowG.collectAsLazyPagingItems()
+            val liveItemsG = liveFlowG.collectAsLazyPagingItems()
+            val countFlow = remember(seriesItemsG, vodItemsG, liveItemsG) {
+                com.chris.m3usuite.ui.state.combinedPagingCountFlow(seriesItemsG, vodItemsG, liveItemsG)
+            }
+            val searchUi by com.chris.m3usuite.ui.state.collectAsUiState(countFlow) { total -> total == 0 }
+            when (val s = searchUi) {
+                is com.chris.m3usuite.ui.state.UiState.Loading -> { com.chris.m3usuite.ui.state.LoadingState(); return@HomeChromeScaffold }
+                is com.chris.m3usuite.ui.state.UiState.Empty -> { com.chris.m3usuite.ui.state.EmptyState(); return@HomeChromeScaffold }
+                is com.chris.m3usuite.ui.state.UiState.Error -> {
+                    com.chris.m3usuite.ui.state.ErrorState(text = s.message, onRetry = {
+                        seriesItemsG.retry(); vodItemsG.retry(); liveItemsG.retry()
+                    })
+                    return@HomeChromeScaffold
+                }
+                is com.chris.m3usuite.ui.state.UiState.Success -> { /* proceed */ }
+            }
+        }
         if (loading) {
             Box(Modifier.fillMaxSize()) {
                 Box(Modifier.fillMaxSize().graphicsLayer {
@@ -611,22 +672,35 @@ fun StartScreen(
                                     onPlayDirect = { mi ->
                                         scope.launch {
                                             val req = PlayUrlHelper.forVod(ctx, store, mi) ?: return@launch
-                                            com.chris.m3usuite.player.PlayerChooser.start(
-                                                context = ctx,
-                                                store = store,
-                                                url = req.url,
-                                                headers = req.headers,
-                                                startPositionMs = withContext(Dispatchers.IO) {
-                                                    com.chris.m3usuite.data.repo.ResumeRepository(ctx)
-                                                        .recentVod(1)
-                                                        .firstOrNull { it.mediaId == mi.id }
-                                                        ?.positionSecs?.toLong()?.times(1000)
-                                                },
-                                                mimeType = req.mimeType
-                                            ) { s, resolvedMime ->
-                                                val encoded = PlayUrlHelper.encodeUrl(req.url)
-                                                val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                                                navController.navigate("player?url=$encoded&type=vod&mediaId=${mi.id}&startMs=${s ?: -1}&mime=$mimeArg")
+                                            if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                                                playbackLauncher.launch(
+                                                    com.chris.m3usuite.playback.PlayRequest(
+                                                        type = "vod",
+                                                        mediaId = mi.id,
+                                                        url = req.url,
+                                                        headers = req.headers,
+                                                        mimeType = req.mimeType,
+                                                        title = mi.name
+                                                    )
+                                                )
+                                            } else {
+                                                com.chris.m3usuite.player.PlayerChooser.start(
+                                                    context = ctx,
+                                                    store = store,
+                                                    url = req.url,
+                                                    headers = req.headers,
+                                                    startPositionMs = withContext(Dispatchers.IO) {
+                                                        com.chris.m3usuite.data.repo.ResumeRepository(ctx)
+                                                            .recentVod(1)
+                                                            .firstOrNull { it.mediaId == mi.id }
+                                                            ?.positionSecs?.toLong()?.times(1000)
+                                                    },
+                                                    mimeType = req.mimeType
+                                                ) { s, resolvedMime ->
+                                                    val encoded = PlayUrlHelper.encodeUrl(req.url)
+                                                    val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                                                    navController.navigate("player?url=$encoded&type=vod&mediaId=${mi.id}&startMs=${s ?: -1}&mime=$mimeArg")
+                                                }
                                             }
                                         }
                                     },
@@ -657,22 +731,35 @@ fun StartScreen(
                                     onPlayDirect = { mi ->
                                         scope.launch {
                                             val req = PlayUrlHelper.forVod(ctx, store, mi) ?: return@launch
-                                            com.chris.m3usuite.player.PlayerChooser.start(
-                                                context = ctx,
-                                                store = store,
-                                                url = req.url,
-                                                headers = req.headers,
-                                                startPositionMs = withContext(Dispatchers.IO) {
-                                                    com.chris.m3usuite.data.repo.ResumeRepository(ctx)
-                                                        .recentVod(1)
-                                                        .firstOrNull { it.mediaId == mi.id }
-                                                        ?.positionSecs?.toLong()?.times(1000)
-                                                },
-                                                mimeType = req.mimeType
-                                            ) { s, resolvedMime ->
-                                                val encoded = PlayUrlHelper.encodeUrl(req.url)
-                                                val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                                                navController.navigate("player?url=$encoded&type=vod&mediaId=${mi.id}&startMs=${s ?: -1}&mime=$mimeArg")
+                                            if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                                                playbackLauncher.launch(
+                                                    com.chris.m3usuite.playback.PlayRequest(
+                                                        type = "vod",
+                                                        mediaId = mi.id,
+                                                        url = req.url,
+                                                        headers = req.headers,
+                                                        mimeType = req.mimeType,
+                                                        title = mi.name
+                                                    )
+                                                )
+                                            } else {
+                                                com.chris.m3usuite.player.PlayerChooser.start(
+                                                    context = ctx,
+                                                    store = store,
+                                                    url = req.url,
+                                                    headers = req.headers,
+                                                    startPositionMs = withContext(Dispatchers.IO) {
+                                                        com.chris.m3usuite.data.repo.ResumeRepository(ctx)
+                                                            .recentVod(1)
+                                                            .firstOrNull { it.mediaId == mi.id }
+                                                            ?.positionSecs?.toLong()?.times(1000)
+                                                    },
+                                                    mimeType = req.mimeType
+                                                ) { s, resolvedMime ->
+                                                    val encoded = PlayUrlHelper.encodeUrl(req.url)
+                                                    val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                                                    navController.navigate("player?url=$encoded&type=vod&mediaId=${mi.id}&startMs=${s ?: -1}&mime=$mimeArg")
+                                                }
                                             }
                                         }
                                     },
@@ -689,6 +776,70 @@ fun StartScreen(
                                     showAssign = canEditWhitelist,
                                     edgeLeftExpandChrome = true
                                 )
+
+                                // Telegram aggregated results under Filme when searching
+                                val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
+                                if (tgEnabled) {
+                                    val tgRepo = remember { com.chris.m3usuite.data.repo.TelegramContentRepository(ctx, store) }
+                                    var tgResults by remember(debouncedQuery) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
+                                    LaunchedEffect(debouncedQuery) {
+                                        tgResults = withContext(Dispatchers.IO) { tgRepo.searchAllChats(debouncedQuery, limit = 60) }
+                                    }
+                                    if (tgResults.isNotEmpty()) {
+                                        Spacer(Modifier.height(8.dp))
+                                        androidx.compose.material3.Surface(
+                                            color = Color.Black.copy(alpha = 0.28f),
+                                            contentColor = Color.White,
+                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+                                        ) {
+                                            androidx.compose.material3.Text(
+                                                text = "Telegram",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                        Spacer(Modifier.size(4.dp))
+                                        val stateKey = "start_tg_search"
+                                        val rowState = com.chris.m3usuite.ui.state.rememberRouteListState(stateKey)
+                                        androidx.compose.foundation.lazy.LazyRow(
+                                            state = rowState,
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            items(tgResults, key = { it.tgMessageId ?: it.id }) { mi ->
+                                                com.chris.m3usuite.ui.cards.PosterCardTagged(
+                                                    title = mi.name,
+                                                    imageUrl = mi.poster,
+                                                    onClick = {
+                                                        val tgUrl = "tg://message?chatId=${mi.tgChatId}&messageId=${mi.tgMessageId}"
+                                                        val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store)
+                                                        scope.launch {
+                                                            if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                                                                playbackLauncher.launch(
+                                                                    com.chris.m3usuite.playback.PlayRequest(
+                                                                        type = mi.type,
+                                                                        mediaId = mi.id,
+                                                                        url = tgUrl,
+                                                                        headers = headers,
+                                                                        title = mi.name
+                                                                    )
+                                                                )
+                                                            } else {
+                                                                com.chris.m3usuite.player.PlayerChooser.start(
+                                                                    context = ctx,
+                                                                    store = store,
+                                                                    url = tgUrl,
+                                                                    headers = headers,
+                                                                    startPositionMs = null,
+                                                                    mimeType = null
+                                                                ) { _, _ -> }
+                                                            }
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             }
                         }
@@ -748,17 +899,30 @@ fun StartScreen(
                                                 onPlayDirect = { mi ->
                                                     scope.launch {
                                                         val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
-                                                        com.chris.m3usuite.player.PlayerChooser.start(
-                                                            context = ctx,
-                                                            store = store,
-                                                            url = req.url,
-                                                            headers = req.headers,
-                                                            startPositionMs = null,
-                                                            mimeType = req.mimeType
-                                                        ) { startMs, resolvedMime ->
-                                                            val encoded = PlayUrlHelper.encodeUrl(req.url)
-                                                            val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                                                            navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                                                        if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                                                            playbackLauncher.launch(
+                                                                com.chris.m3usuite.playback.PlayRequest(
+                                                                    type = "live",
+                                                                    mediaId = mi.id,
+                                                                    url = req.url,
+                                                                    headers = req.headers,
+                                                                    mimeType = req.mimeType,
+                                                                    title = mi.name
+                                                                )
+                                                            )
+                                                        } else {
+                                                            com.chris.m3usuite.player.PlayerChooser.start(
+                                                                context = ctx,
+                                                                store = store,
+                                                                url = req.url,
+                                                                headers = req.headers,
+                                                                startPositionMs = null,
+                                                                mimeType = req.mimeType
+                                                            ) { startMs, resolvedMime ->
+                                                                val encoded = PlayUrlHelper.encodeUrl(req.url)
+                                                                val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                                                                navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                                                            }
                                                         }
                                                     }
                                                 },
@@ -773,17 +937,30 @@ fun StartScreen(
                                                     scope.launch {
                                                         val mi = favLive.firstOrNull { it.id == id } ?: return@launch
                                                         val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
-                                                        com.chris.m3usuite.player.PlayerChooser.start(
-                                                            context = ctx,
-                                                            store = store,
-                                                            url = req.url,
-                                                            headers = req.headers,
-                                                            startPositionMs = null,
-                                                            mimeType = req.mimeType
-                                                        ) { startMs, resolvedMime ->
-                                                            val encoded = PlayUrlHelper.encodeUrl(req.url)
-                                                            val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                                                            navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                                                        if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                                                            playbackLauncher.launch(
+                                                                com.chris.m3usuite.playback.PlayRequest(
+                                                                    type = "live",
+                                                                    mediaId = mi.id,
+                                                                    url = req.url,
+                                                                    headers = req.headers,
+                                                                    mimeType = req.mimeType,
+                                                                    title = mi.name
+                                                                )
+                                                            )
+                                                        } else {
+                                                            com.chris.m3usuite.player.PlayerChooser.start(
+                                                                context = ctx,
+                                                                store = store,
+                                                                url = req.url,
+                                                                headers = req.headers,
+                                                                startPositionMs = null,
+                                                                mimeType = req.mimeType
+                                                            ) { startMs, resolvedMime ->
+                                                                val encoded = PlayUrlHelper.encodeUrl(req.url)
+                                                                val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                                                                navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                                                            }
                                                         }
                                                     }
                                                 },
@@ -849,17 +1026,30 @@ fun StartScreen(
                                     onPlayDirect = { mi ->
                                         scope.launch {
                                             val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
-                                            com.chris.m3usuite.player.PlayerChooser.start(
-                                                context = ctx,
-                                                store = store,
-                                                url = req.url,
-                                                headers = req.headers,
-                                                startPositionMs = null,
-                                                mimeType = req.mimeType
-                                            ) { startMs, resolvedMime ->
-                                                val encoded = PlayUrlHelper.encodeUrl(req.url)
-                                                val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                                                navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                                            if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                                                playbackLauncher.launch(
+                                                    com.chris.m3usuite.playback.PlayRequest(
+                                                        type = "live",
+                                                        mediaId = mi.id,
+                                                        url = req.url,
+                                                        headers = req.headers,
+                                                        mimeType = req.mimeType,
+                                                        title = mi.name
+                                                    )
+                                                )
+                                            } else {
+                                                com.chris.m3usuite.player.PlayerChooser.start(
+                                                    context = ctx,
+                                                    store = store,
+                                                    url = req.url,
+                                                    headers = req.headers,
+                                                    startPositionMs = null,
+                                                    mimeType = req.mimeType
+                                                ) { startMs, resolvedMime ->
+                                                    val encoded = PlayUrlHelper.encodeUrl(req.url)
+                                                    val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                                                    navController.navigate("player?url=$encoded&type=live&mediaId=${mi.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                                                }
                                             }
                                         }
                                     },

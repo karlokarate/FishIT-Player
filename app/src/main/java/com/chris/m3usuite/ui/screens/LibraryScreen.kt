@@ -57,6 +57,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import androidx.paging.compose.collectAsLazyPagingItems
+import com.chris.m3usuite.ui.compat.focusGroup
 
 private enum class ContentTab { Live, Vod, Series }
 
@@ -91,6 +93,7 @@ fun LibraryScreen(
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
     val repo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
+    val tgRepo = remember { com.chris.m3usuite.data.repo.TelegramContentRepository(ctx, store) }
     val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
     val resumeRepo = remember { com.chris.m3usuite.data.repo.ResumeRepository(ctx) }
     val permRepo = remember { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
@@ -112,6 +115,24 @@ fun LibraryScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(obs) }
     }
     val wm = remember { WorkManager.getInstance(ctx) }
+
+    // Centralized playback launcher for Library; opens internal player via nav and marks origin=lib for live
+    val playbackLauncher = if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1)
+        com.chris.m3usuite.playback.rememberPlaybackLauncher(
+            onOpenInternal = { pr ->
+                val encoded = com.chris.m3usuite.core.playback.PlayUrlHelper.encodeUrl(pr.url)
+                val mimeArg = pr.mimeType?.let { android.net.Uri.encode(it) } ?: ""
+                when (pr.type) {
+                    "live" -> navController.navigate("player?url=$encoded&type=live&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg&origin=lib")
+                    "vod" -> navController.navigate("player?url=$encoded&type=vod&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
+                    "series" -> navController.navigate("player?url=$encoded&type=series&seriesId=${pr.seriesId ?: -1}&season=${pr.season ?: -1}&episodeNum=${pr.episodeNum ?: -1}&episodeId=${pr.episodeId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
+                }
+            }
+        )
+    else null
+
+    // UiState for library content (combined): Loading until first load; Empty when no groups/rows; Success otherwise
+    var uiState by remember { mutableStateOf<com.chris.m3usuite.ui.state.UiState<Unit>>(com.chris.m3usuite.ui.state.UiState.Loading) }
 
     // Tab-Auswahl synchron zur Start-Optik (BottomPanel)
     val selectedTab = rememberSelectedTab(store)
@@ -344,6 +365,75 @@ fun LibraryScreen(
         }
     }
 
+    // --- Telegram Rows (extra, per chat) ---
+    @Composable
+    fun TelegramSection(tab: ContentTab) {
+        val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
+        if (!tgEnabled) return
+        val chats by remember(tab) {
+            mutableStateOf(emptyList<Long>())
+        }
+        val scopeLocal = rememberCoroutineScope()
+        var chatIds by remember { mutableStateOf<List<Long>>(emptyList()) }
+        LaunchedEffect(tab) {
+            chatIds = if (tab == ContentTab.Vod) tgRepo.selectedChatsVod() else tgRepo.selectedChatsSeries()
+        }
+        if (chatIds.isEmpty()) return
+
+        val titleStyle = MaterialTheme.typography.titleMedium.copy(color = Color.White)
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            chatIds.forEach { chatId ->
+                var items by remember(chatId, tab, resumeTick) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
+                LaunchedEffect(chatId, tab, resumeTick) {
+                    items = if (tab == ContentTab.Vod) tgRepo.recentVodByChat(chatId, 60, 0)
+                    else tgRepo.recentSeriesByChat(chatId, 60, 0)
+                }
+                if (items.isEmpty()) return@forEach
+                // Resolve chat title best-effort
+                var chatTitle by remember(chatId) { mutableStateOf("Telegram ${chatId}") }
+                LaunchedEffect(chatId) {
+                    val flow = kotlinx.coroutines.flow.MutableStateFlow(com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
+                    val client = runCatching { com.chris.m3usuite.telegram.TdLibReflection.getOrCreateClient(ctx, flow) }.getOrNull()
+                    val obj = client?.let { com.chris.m3usuite.telegram.TdLibReflection.buildGetChat(chatId) }
+                        ?.let { com.chris.m3usuite.telegram.TdLibReflection.sendForResult(client!!, it, 800) }
+                    chatTitle = obj?.let { com.chris.m3usuite.telegram.TdLibReflection.extractChatTitle(it) } ?: chatTitle
+                }
+                Text("Telegram – ${chatTitle}", style = titleStyle)
+                val stateKey = "lib:tg:${tab}:${chatId}"
+                val rowState = com.chris.m3usuite.ui.state.rememberRouteListState(stateKey)
+                androidx.compose.foundation.lazy.LazyRow(
+                    state = rowState,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth().focusGroup()
+                ) {
+                    items(items, key = { it.tgMessageId ?: it.id }) { mi ->
+                        com.chris.m3usuite.ui.cards.PosterCardTagged(
+                            title = mi.name,
+                            imageUrl = mi.poster,
+                            onClick = {
+                                // Telegram playback: use tg:// url
+                                val tgUrl = "tg://message?chatId=${mi.tgChatId}&messageId=${mi.tgMessageId}"
+                                val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store)
+                                scope.launch {
+                                    com.chris.m3usuite.player.PlayerChooser.start(
+                                        context = ctx,
+                                        store = store,
+                                        url = tgUrl,
+                                        headers = headers,
+                                        startPositionMs = null,
+                                        mimeType = null
+                                    ) { _, _ -> }
+                                }
+                            },
+                            modifier = Modifier
+                        )
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+            }
+        }
+    }
+
     suspend fun loadItemsForGenre(tab: ContentTab, key: String): List<MediaItem> = withContext(Dispatchers.IO) {
         genreCache[key] ?: run {
             val itemsRaw = when (tab) {
@@ -384,6 +474,7 @@ fun LibraryScreen(
     // (Re)Load bei Tab- oder Suchwechsel
     // Also re-run when the screen comes back into focus (resumeTick)
     LaunchedEffect(selectedTab, query.text, resumeTick) {
+        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) uiState = com.chris.m3usuite.ui.state.UiState.Loading
         val isBlank = query.text.isBlank()
         val tabChanged = selectedTab != lastTab
         val searchModeChanged = isBlank != lastIsSearchBlank
@@ -419,6 +510,12 @@ fun LibraryScreen(
             }
             if (yearsRow != topYearsRow) {
                 topYearsRow = yearsRow
+            }
+
+            if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
+                val hasGroups = groupKeys.providers.isNotEmpty() || groupKeys.genres.isNotEmpty() || groupKeys.years.isNotEmpty() || groupKeys.categories.isNotEmpty()
+                val hasRows = recentRow.isNotEmpty() || newestRow.isNotEmpty() || topYearsRow.isNotEmpty()
+                uiState = if (hasGroups || hasRows) com.chris.m3usuite.ui.state.UiState.Success(Unit) else com.chris.m3usuite.ui.state.UiState.Empty
             }
         } else {
             if (groupKeys != GroupKeys()) {
@@ -566,18 +663,31 @@ fun LibraryScreen(
                         onOpen(media)
                         return@launch
                     }
-                    PlayerChooser.start(
-                        context = ctx,
-                        store = store,
-                        url = req.url,
-                        headers = req.headers,
-                        startPositionMs = null,
-                        mimeType = req.mimeType
-                    ) { startMs, resolvedMime ->
-                        val encoded = PlayUrlHelper.encodeUrl(req.url)
-                        val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                        // Mark origin as Live Library for global switching & list overlay (not favorites)
-                        navController.navigate("player?url=$encoded&type=live&mediaId=${media.id}&startMs=${startMs ?: -1}&mime=$mimeArg&origin=lib")
+                    if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                        playbackLauncher.launch(
+                            com.chris.m3usuite.playback.PlayRequest(
+                                type = "live",
+                                mediaId = media.id,
+                                url = req.url,
+                                headers = req.headers,
+                                mimeType = req.mimeType,
+                                title = media.name
+                            )
+                        )
+                    } else {
+                        PlayerChooser.start(
+                            context = ctx,
+                            store = store,
+                            url = req.url,
+                            headers = req.headers,
+                            startPositionMs = null,
+                            mimeType = req.mimeType
+                        ) { startMs, resolvedMime ->
+                            val encoded = PlayUrlHelper.encodeUrl(req.url)
+                            val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                            // Mark origin as Live Library for global switching & list overlay (not favorites)
+                            navController.navigate("player?url=$encoded&type=live&mediaId=${media.id}&startMs=${startMs ?: -1}&mime=$mimeArg&origin=lib")
+                        }
                     }
                 }
             }
@@ -588,23 +698,36 @@ fun LibraryScreen(
                         onOpen(media)
                         return@launch
                     }
-                    val resumeMs = withContext(Dispatchers.IO) {
-                        com.chris.m3usuite.data.repo.ResumeRepository(ctx)
-                            .recentVod(1)
-                            .firstOrNull { it.mediaId == media.id }
-                            ?.positionSecs?.toLong()?.times(1000)
-                    }
-                    PlayerChooser.start(
-                        context = ctx,
-                        store = store,
-                        url = req.url,
-                        headers = req.headers,
-                        startPositionMs = resumeMs,
-                        mimeType = req.mimeType
-                    ) { startMs, resolvedMime ->
-                        val encoded = PlayUrlHelper.encodeUrl(req.url)
-                        val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                        navController.navigate("player?url=$encoded&type=vod&mediaId=${media.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                    if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                        playbackLauncher.launch(
+                            com.chris.m3usuite.playback.PlayRequest(
+                                type = "vod",
+                                mediaId = media.id,
+                                url = req.url,
+                                headers = req.headers,
+                                mimeType = req.mimeType,
+                                title = media.name
+                            )
+                        )
+                    } else {
+                        val resumeMs = withContext(Dispatchers.IO) {
+                            com.chris.m3usuite.data.repo.ResumeRepository(ctx)
+                                .recentVod(1)
+                                .firstOrNull { it.mediaId == media.id }
+                                ?.positionSecs?.toLong()?.times(1000)
+                        }
+                        PlayerChooser.start(
+                            context = ctx,
+                            store = store,
+                            url = req.url,
+                            headers = req.headers,
+                            startPositionMs = resumeMs,
+                            mimeType = req.mimeType
+                        ) { startMs, resolvedMime ->
+                            val encoded = PlayUrlHelper.encodeUrl(req.url)
+                            val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
+                            navController.navigate("player?url=$encoded&type=vod&mediaId=${media.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
+                        }
                     }
                 }
             }
@@ -669,6 +792,15 @@ fun LibraryScreen(
             )
         }
     ) { pads ->
+        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
+            when (val s = uiState) {
+                is com.chris.m3usuite.ui.state.UiState.Loading -> { com.chris.m3usuite.ui.state.LoadingState(); return@HomeChromeScaffold }
+                is com.chris.m3usuite.ui.state.UiState.Empty -> { com.chris.m3usuite.ui.state.EmptyState(); return@HomeChromeScaffold }
+                is com.chris.m3usuite.ui.state.UiState.Error -> { com.chris.m3usuite.ui.state.ErrorState(s.message, s.retry); return@HomeChromeScaffold }
+                is com.chris.m3usuite.ui.state.UiState.Success -> { /* render content */ }
+            }
+        }
+
         val stateHolder = rememberSaveableStateHolder()
         // Save whole screen UI state per tab to survive deep route hops
         stateHolder.SaveableStateProvider(key = "library/tab/$selectedTabKey") {
@@ -692,8 +824,8 @@ fun LibraryScreen(
         ) {
             // Globale Suche per Header – lokales Suchfeld entfernt
 
-            // Suchergebnisse (ein Row pro aktivem Tab)
-            if (false) {
+            // Suchergebnisse (ein Row pro aktivem Tab) – Paging + UiState gate
+            if (query.text.isNotBlank()) {
                 item {
                     Text(
                         when (selectedTab) {
@@ -705,7 +837,63 @@ fun LibraryScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
                 }
-                item {
+
+                if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
+                    item {
+                        val flow = remember(selectedTab, query.text) {
+                            val kind = when (selectedTab) { ContentTab.Live -> "live"; ContentTab.Vod -> "vod"; ContentTab.Series -> "series" }
+                            mediaRepo.pagingSearchFilteredFlow(kind, query.text)
+                        }
+                        val itemsPaged = flow.collectAsLazyPagingItems()
+                        val countFlow = remember(itemsPaged) { com.chris.m3usuite.ui.state.combinedPagingCountFlow(itemsPaged) }
+                        val searchUi by com.chris.m3usuite.ui.state.collectAsUiState(countFlow) { total -> total == 0 }
+                        when (val s = searchUi) {
+                            is com.chris.m3usuite.ui.state.UiState.Loading -> {
+                                com.chris.m3usuite.ui.state.LoadingState(Modifier.padding(24.dp))
+                            }
+                            is com.chris.m3usuite.ui.state.UiState.Empty -> {
+                                com.chris.m3usuite.ui.state.EmptyState(modifier = Modifier.padding(24.dp))
+                            }
+                            is com.chris.m3usuite.ui.state.UiState.Error -> {
+                                com.chris.m3usuite.ui.state.ErrorState(text = s.message, onRetry = { itemsPaged.retry() })
+                            }
+                            is com.chris.m3usuite.ui.state.UiState.Success -> {
+                                when (selectedTab) {
+                                    ContentTab.Live ->
+                                        com.chris.m3usuite.ui.components.rows.LiveRowPaged(
+                                            items = itemsPaged,
+                                            stateKey = "library:${selectedTabKey}:search",
+                                            onOpenDetails = { mi -> onOpen(mi) },
+                                            onPlayDirect = { mi -> onPlay(mi) },
+                                            edgeLeftExpandChrome = true
+                                        )
+                                    ContentTab.Vod ->
+                                        com.chris.m3usuite.ui.components.rows.VodRowPaged(
+                                            items = itemsPaged,
+                                            stateKey = "library:${selectedTabKey}:search",
+                                            onOpenDetails = { mi -> onOpen(mi) },
+                                            onPlayDirect = { mi -> onPlay(mi) },
+                                            onAssignToKid = { m -> if (canEditWhitelist) onAssignVod(m) },
+                                            showAssign = canEditWhitelist,
+                                            edgeLeftExpandChrome = true
+                                        )
+                                    ContentTab.Series ->
+                                        com.chris.m3usuite.ui.components.rows.SeriesRowPaged(
+                                            items = itemsPaged,
+                                            stateKey = "library:${selectedTabKey}:search",
+                                            onOpenDetails = { mi -> onOpen(mi) },
+                                            onPlayDirect = { mi -> onPlay(mi) },
+                                            onAssignToKid = { m -> if (canEditWhitelist) onAssignSeries(m) },
+                                            showAssign = canEditWhitelist,
+                                            edgeLeftExpandChrome = true
+                                        )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Legacy (non-paging) fallback
+                    item {
                         MediaRowForTab(
                             tab = selectedTab,
                             stateKey = "library:${selectedTabKey}:search",
@@ -721,6 +909,7 @@ fun LibraryScreen(
                         )
                     }
                 }
+            }
 
             // Gruppenansichten (nur wenn keine Suche aktiv)
             if (query.text.isBlank()) {
@@ -1168,6 +1357,13 @@ fun LibraryScreen(
                             },
                             showAssign = canEditWhitelist && selectedTab != ContentTab.Live
                         )
+                    }
+                }
+
+                // Telegram extra rows (per selected chat), only on VOD/Series tabs and only outside search
+                if (query.text.isBlank() && (selectedTab == ContentTab.Vod || selectedTab == ContentTab.Series)) {
+                    item {
+                        TelegramSection(selectedTab)
                     }
                 }
             }

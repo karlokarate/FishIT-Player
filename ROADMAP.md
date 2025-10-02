@@ -7,6 +7,10 @@ Hinweis
 - Maintenance 2025‑09‑28: Build‑Blocking Lücken geschlossen (Nav‑Extension, TV‑Focus‑Compat, TvRowScroll, safePainter, Adults‑Filter, XtreamImportCoordinator). Kein neues Feature; Roadmap unverändert.
 - Maintenance 2025‑09‑28 (TV Focus): Start-Home Serien/VOD/Live Reihen repariert – initialer Fokus greift wieder, Tiles skalieren sofort und DPAD‑LEFT expandiert HomeChrome nur am linken Rand.
 - Maintenance 2025‑09‑29 (TV Low-Spec): Laufzeitprofil für TV hinzugefügt (reduzierte Fokus‑Effekte, kleinere Paging‑Fenster, OkHttp Drosselung, Coil ohne Crossfade). Während der Wiedergabe werden Xtream‑Seeding‑Worker pausiert und danach wieder aktiviert (wenn zuvor aktiv).
+- Maintenance 2025‑09‑30: LiveDetailScreen Buildfix – Klammerfehler behoben, EPG/Kid-Dialogs in den Screenkörper verlagert. Kein Roadmap‑Impact.
+ - Maintenance 2025‑09‑30: Start/Library Playback-Migration – Verbleibende Direktaufrufe von PlayerChooser auf PlaybackLauncher (Flag `PLAYBACK_LAUNCHER_V1`) umgestellt; VOD „Ähnliche Inhalte“ und Live „Mehr aus Kategorie“ öffnen nun Details des gewählten Elements (Lambdas an Screens ergänzt und in MainActivity verdrahtet).
+- Maintenance 2025‑10‑01: Telegram – Settings zeigen nun Chat‑Namen für ausgewählte Film/Serien‑Sync‑Quellen; Backfill‑Worker `TelegramSyncWorker` liest jüngste Nachrichten aus selektierten Chats und indiziert Minimal‑Metadaten (ObxTelegramMessage).
+ - Maintenance 2025‑10‑01: Telegram – Zusätzliche Rows in Library (VOD/Series) je ausgewähltem Chat, mit on‑demand Thumbnails und blauem „T“-Badge. Globale Suche auf Start bindet Telegram als zusätzliche Row ein. Player nutzt für tg:// geringe RAM‑Buffer, IO (TDLib) cached.
 
 ---
 
@@ -22,6 +26,12 @@ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
 
 Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
 
+- PRIO‑1: TV‑Form‑Kit (Settings/Setup)
+  - v1 mit DPAD‑optimierten Rows (Switch/Slider/TextField/Select/Button) unter `ui.forms` bereitgestellt.
+  - Validierungs‑Hints, konsistenter Fokus (scale + halo), Dialog‑Eingabe für Textfelder auf TV.
+  - Proof‑of‑Concept Migration: `PlaylistSetupScreen` (gated via `BuildConfig.TV_FORMS_V1`, default ON).
+  - Nächste Schritte: `SettingsScreen` Kernoptionen (Player‑Wahl, Cache‑Größe) und `XtreamPortalCheckScreen` (Status/Retry, Eingaben) migrieren.
+
 - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
 - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
 - Media3 Pufferung: `DefaultLoadControl` pro Typ prüfen und moderate Puffer für VOD/Live definieren (kein aggressives Prebuffering; TV‑Stabilität bevorzugen).
@@ -30,6 +40,20 @@ Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten 
 - Seeding‑Whitelist (Regions): Settings‑Multi‑Select fertigstellen/validieren (Default DE/US/UK/VOD); Quick‑Seed nur für erlaubte Prefixe ausführen.
 - CI/Build: Job für `assembleRelease` + Split‑APKs (arm64‑v8a, armeabi‑v7a) erzeugen; Artefakte im CI hinterlegen. Keystore verbleibt lokal (Unsigned‑Artefakte).
 - Git WSL Push: Repo‑Docs um `core.sshCommand`/SSH‑Config (Deploy‑Key) ergänzen, damit Push aus WSL/AS stabil funktioniert.
+
+- PRIO‑1: MediaActionBar (UI Unification)
+  - Zentrales Action‑Modell (`ui.actions`) + `MediaActionBar` eingeführt.
+  - Migration v1: `VodDetail`, `SeriesDetail`, `LiveDetail` unter Flag `BuildConfig.MEDIA_ACTIONBAR_V1` (default ON).
+  - Reihenfolge vereinheitlicht: Resume? → Play → Trailer? → Add/Remove (Live) → OpenEPG? → Share?; Telemetrie‑Hooks vorhanden.
+  - Serien: pro‑Episode wird eine MediaActionBar angezeigt (Resume? → Play → Share).
+
+- PRIO‑1: DetailScaffold (Header + MetaChips)
+  - `ui.detail/*` eingeführt (Header/Scrim/MetaChips/Scaffold) mit Flag `BuildConfig.DETAIL_SCAFFOLD_V1` (default ON).
+  - Migration v1: VOD + Serie + Live nutzen `DetailHeader` für den Kopfbereich (legacy Header bei Flag=OFF).
+
+- PRIO‑1: UiState Layer
+  - `UiState` + `StatusViews` + `collectAsUiState` eingeführt; Flag `BuildConfig.UI_STATE_V1` (default ON).
+  - Migration v1: Detail‑Screens (VOD/Serie/Live) nutzen das Status‑Gate (Loading/Empty/Error/Success). Start nutzt kombinierten Paging‑Collector im Suchmodus; Library‑Suche reaktiviert (Paging + UiState).
 
 ## Mittelfristig (4–8 Wochen)
 
@@ -45,3 +69,9 @@ Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten 
 ---
 
 Abgeschlossen → siehe `CHANGELOG.md`.
+- PRIO‑1: Cards‑Bibliothek
+   - `ui.cards` mit `PosterCard`/`ChannelCard`/`SeasonCard`/`EpisodeRow`, Flag `BuildConfig.CARDS_V1` (default ON).
+   - Einsatz: Start/Library Rows via `HomeRows` Delegation; Serien‑Episoden nutzen `EpisodeRow`.
+ - PRIO‑1: PlaybackLauncher (Unification)
+   - `playback/` mit `PlayRequest`/`PlayerResult` und `rememberPlaybackLauncher`; Flag `BuildConfig.PLAYBACK_LAUNCHER_V1` (default ON).
+   - V1 Migration: VOD/Serie/Live Detail + ResumeCarousel rufen Playback über Launcher (intern/extern via PlayerChooser, Resume-Lesen vor Start).

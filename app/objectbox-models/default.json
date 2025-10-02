@@ -699,7 +699,7 @@
     },
     {
       "id": "13:3463824368552542268",
-      "lastPropertyId": "10:6172907045496861970",
+      "lastPropertyId": "17:3189046179779480195",
       "name": "ObxTelegramMessage",
       "properties": [
         {
@@ -762,6 +762,47 @@
           "id": "10:6172907045496861970",
           "name": "thumbFileId",
           "type": 5
+        },
+        {
+          "id": "11:7381390126599387814",
+          "name": "captionLower",
+          "indexId": "69:6951374168528844298",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "12:9026930386691803737",
+          "name": "durationSecs",
+          "type": 5
+        },
+        {
+          "id": "13:5159810249064085975",
+          "name": "mimeType",
+          "type": 9
+        },
+        {
+          "id": "14:6667681230154938291",
+          "name": "sizeBytes",
+          "indexId": "70:1681933299754898369",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "15:7390053063312823067",
+          "name": "width",
+          "type": 5
+        },
+        {
+          "id": "16:793516668364825067",
+          "name": "height",
+          "type": 5
+        },
+        {
+          "id": "17:3189046179779480195",
+          "name": "language",
+          "indexId": "71:8954140444506037585",
+          "type": 9,
+          "flags": 2048
         }
       ],
       "relations": []
@@ -1092,7 +1133,7 @@
     }
   ],
   "lastEntityId": "19:5410393420475292600",
-  "lastIndexId": "68:7296937192854441912",
+  "lastIndexId": "71:8954140444506037585",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

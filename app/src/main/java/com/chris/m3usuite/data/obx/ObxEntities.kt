@@ -191,9 +191,17 @@ data class ObxTelegramMessage(
     @Index var fileUniqueId: String? = null,
     var supportsStreaming: Boolean? = null,
     var caption: String? = null,
+    @Index var captionLower: String? = null,
     var date: Long? = null,
     @Index var localPath: String? = null,
     var thumbFileId: Int? = null,
+    // Enriched metadata (best-effort via TDLib):
+    var durationSecs: Int? = null,
+    var mimeType: String? = null,
+    @Index var sizeBytes: Long? = null,
+    var width: Int? = null,
+    var height: Int? = null,
+    @Index var language: String? = null,
 )
 
 // --- Aggregated index tables (persisted once per import; no full scans required) ---

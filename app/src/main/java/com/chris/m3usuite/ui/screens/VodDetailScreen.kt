@@ -41,6 +41,10 @@ import coil3.compose.AsyncImage
 import com.chris.m3usuite.data.repo.ResumeRepository
 // XtreamRepository not needed for OBX-only flow
 import com.chris.m3usuite.player.PlayerChooser
+import com.chris.m3usuite.ui.actions.MediaAction
+import com.chris.m3usuite.ui.actions.MediaActionBar
+import com.chris.m3usuite.ui.actions.MediaActionId
+import com.chris.m3usuite.core.telemetry.Telemetry
 import com.chris.m3usuite.player.InternalPlayerScreen
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.launch
@@ -73,6 +77,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.derivedStateOf
 import androidx.media3.common.util.UnstableApi
 import kotlinx.serialization.json.jsonArray
+import androidx.compose.ui.res.stringResource
 import kotlinx.serialization.json.jsonPrimitive
 import com.chris.m3usuite.ui.components.sheets.KidSelectSheet
 import com.chris.m3usuite.data.obx.toMediaItem
@@ -269,6 +274,7 @@ fun VodDetailScreen(
     id: Long,
     // optional: interner Player (url, startMs, mime)
     openInternal: ((url: String, startMs: Long?, mimeType: String?) -> Unit)? = null,
+    openVod: ((Long) -> Unit)? = null,
     onLogo: (() -> Unit)? = null,
     onGlobalSearch: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null
@@ -316,6 +322,7 @@ fun VodDetailScreen(
     var isAdult by remember { mutableStateOf(true) }
     var contentAllowed by remember { mutableStateOf(true) }
     var detailReady by remember { mutableStateOf(false) }
+    var uiState by remember { mutableStateOf<com.chris.m3usuite.ui.state.UiState<Unit>>(com.chris.m3usuite.ui.state.UiState.Loading) }
 
     // --- Interner Player Zustand (Fullscreen) ---
     var showInternal by rememberSaveable { mutableStateOf(false) }
@@ -324,9 +331,50 @@ fun VodDetailScreen(
     var internalUa by rememberSaveable { mutableStateOf("") }
     var internalRef by rememberSaveable { mutableStateOf("") }
     var internalMime by rememberSaveable { mutableStateOf<String?>(null) }
+    val playbackLauncher = if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1)
+        com.chris.m3usuite.playback.rememberPlaybackLauncher(
+            onOpenInternal = { pr ->
+            if (openInternal != null) {
+                openInternal(pr.url, pr.startPositionMs, pr.mimeType)
+            } else {
+                internalUrl = pr.url
+                internalStartMs = pr.startPositionMs
+                internalUa = pr.headers["User-Agent"].orEmpty()
+                internalRef = pr.headers["Referer"].orEmpty()
+                internalMime = pr.mimeType
+                showInternal = true
+            }
+        },
+            onResult = { _, res ->
+                scope.launch(Dispatchers.IO) {
+                    when (res) {
+                        is com.chris.m3usuite.playback.PlayerResult.Completed -> {
+                            com.chris.m3usuite.core.telemetry.Telemetry.event(
+                                "resume.clear",
+                                mapOf("type" to "vod", "mediaId" to id)
+                            )
+                            runCatching { resumeRepo.clearVod(id) }
+                        }
+                        is com.chris.m3usuite.playback.PlayerResult.Stopped -> {
+                            val pos = ((res.positionMs / 1000).toInt()).coerceAtLeast(0)
+                            com.chris.m3usuite.core.telemetry.Telemetry.event(
+                                "resume.set",
+                                mapOf("type" to "vod", "mediaId" to id, "positionSecs" to pos)
+                            )
+                            runCatching { resumeRepo.setVodResume(id, pos) }
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+        ) else null
+    // Similar by provider
+    var similar by remember { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
+    var similarTitle by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(id, profileId) {
         detailReady = false
+        uiState = com.chris.m3usuite.ui.state.UiState.Loading
         val payload = loadVodDetail(ctx, store, mediaRepo, resumeRepo, id)
         if (payload == null) {
             title = ""
@@ -354,6 +402,7 @@ fun VodDetailScreen(
             contentAllowed = true
             internalMime = null
             detailReady = true
+            uiState = com.chris.m3usuite.ui.state.UiState.Empty
             return@LaunchedEffect
         }
 
@@ -381,6 +430,7 @@ fun VodDetailScreen(
         contentAllowed = payload.contentAllowed
         mimeType = payload.mimeType
         detailReady = true
+        uiState = com.chris.m3usuite.ui.state.UiState.Success(Unit)
     }
 
     LaunchedEffect(id) {
@@ -415,6 +465,28 @@ fun VodDetailScreen(
         }
     }
 
+    // Load provider-based similar after details are set
+    LaunchedEffect(id, detailReady) {
+        if (!detailReady || !com.chris.m3usuite.BuildConfig.CARDS_V1) return@LaunchedEffect
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val obxId = decodeObxVodId(id) ?: return@runCatching
+                val box = com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
+                val row = box.query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(obxId.toLong())).build().findFirst()
+                val key = row?.providerKey
+                if (!key.isNullOrBlank()) {
+                    val list = obxRepo.vodByProviderKeyNewest(key, 0, 36).map { it.toMediaItem(ctx) }.filter { it.id != id }
+                    similar = list
+                    val label = com.chris.m3usuite.core.xtream.ProviderLabelStore.get(ctx).labelFor(key)
+                    similarTitle = label?.let { "Mehr von $it" } ?: "Ähnliche Inhalte"
+                } else {
+                    similar = emptyList()
+                    similarTitle = null
+                }
+            }.onFailure { similar = emptyList(); similarTitle = null }
+        }
+    }
+
     fun setResume(newSecs: Int) = scope.launch {
         val pos = max(0, newSecs)
         resumeSecs = pos
@@ -444,10 +516,15 @@ fun VodDetailScreen(
         return
     }
 
-    if (!detailReady) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+    if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
+        when (val s = uiState) {
+            is com.chris.m3usuite.ui.state.UiState.Loading -> { com.chris.m3usuite.ui.state.LoadingState(); return }
+            is com.chris.m3usuite.ui.state.UiState.Empty -> { com.chris.m3usuite.ui.state.EmptyState(); return }
+            is com.chris.m3usuite.ui.state.UiState.Error -> { com.chris.m3usuite.ui.state.ErrorState(s.message, s.retry); return }
+            is com.chris.m3usuite.ui.state.UiState.Success -> { /* render content */ }
         }
+    } else if (!detailReady) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         return
     }
 
@@ -459,9 +536,34 @@ fun VodDetailScreen(
                 android.widget.Toast.makeText(ctx, "Nicht freigegeben", android.widget.Toast.LENGTH_SHORT).show()
                 return@launch
             }
-            // Build request via PlayUrlHelper for consistent routing (matches tile behavior)
+            // Unified launcher path
+            if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                val pr = withContext(Dispatchers.IO) {
+                    val obx = com.chris.m3usuite.data.obx.ObxStore.get(ctx)
+                    val vodId = ((id - 2_000_000_000_000L).toInt()).coerceAtLeast(0)
+                    val row = obx.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
+                        .query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(vodId.toLong()))
+                        .build().findFirst()
+                    val media = row?.toMediaItem(ctx)
+                    val built = if (media != null) com.chris.m3usuite.core.playback.PlayUrlHelper.forVod(ctx, store, media)
+                        else url?.let { u -> com.chris.m3usuite.core.playback.PlayUrlHelper.PlayRequest(u, com.chris.m3usuite.core.playback.PlayUrlHelper.defaultHeaders(store), mimeType) }
+                    built?.let { b ->
+                        com.chris.m3usuite.playback.PlayRequest(
+                            type = "vod",
+                            mediaId = id,
+                            url = b.url,
+                            headers = b.headers,
+                            startPositionMs = startMs,
+                            mimeType = b.mimeType,
+                            title = title
+                        )
+                    }
+                }
+                if (pr != null) playbackLauncher.launch(pr)
+                return@launch
+            }
+            // Legacy path
             val req = withContext(Dispatchers.IO) {
-                // Try OBX→MediaItem; fall back to current URL if needed
                 val obx = com.chris.m3usuite.data.obx.ObxStore.get(ctx)
                 val vodId = ((id - 2_000_000_000_000L).toInt()).coerceAtLeast(0)
                 val row = obx.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
@@ -470,8 +572,7 @@ fun VodDetailScreen(
                 val media = row?.toMediaItem(ctx)
                 if (media != null) com.chris.m3usuite.core.playback.PlayUrlHelper.forVod(ctx, store, media)
                 else url?.let { u -> com.chris.m3usuite.core.playback.PlayUrlHelper.PlayRequest(u, com.chris.m3usuite.core.playback.PlayUrlHelper.defaultHeaders(store), mimeType) }
-            }
-            if (req == null) return@launch
+            } ?: return@launch
             PlayerChooser.start(
                 context = ctx,
                 store = store,
@@ -573,28 +674,97 @@ fun VodDetailScreen(
             contentPadding = PaddingValues(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-        item {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(
-                    if (url != null)
-                        Modifier.tvClickable(
-                            brightenContent = false,
-                            autoBringIntoView = false
-                        ) { play(fromStart = false) }
-                    else Modifier
+        if (com.chris.m3usuite.BuildConfig.DETAIL_SCAFFOLD_V1) {
+            item {
+                val actions = buildList<MediaAction> {
+                    val canPlay = url != null && contentAllowed
+                    val resumeLabel = resumeSecs?.let { fmt(it) }
+                    if (resumeLabel != null && canPlay) add(
+                        MediaAction(
+                            id = MediaActionId.Resume,
+                            label = stringResource(com.chris.m3usuite.R.string.action_resume),
+                            badge = resumeLabel,
+                            onClick = { play(false) }
+                        )
+                    )
+                    add(
+                        MediaAction(
+                            id = MediaActionId.Play,
+                            label = stringResource(com.chris.m3usuite.R.string.action_play),
+                            primary = true,
+                            enabled = canPlay,
+                            onClick = { if (resumeSecs != null) play(false) else play(true) }
+                        )
+                    )
+                    val tr = normalizeTrailerUrl(trailer)
+                    if (!tr.isNullOrBlank()) add(
+                        MediaAction(
+                            id = MediaActionId.Trailer,
+                            label = stringResource(com.chris.m3usuite.R.string.action_trailer),
+                            onClick = { runCatching { uriHandler.openUri(tr) } }
+                        )
+                    )
+                    if (!url.isNullOrBlank()) add(
+                        MediaAction(
+                            id = MediaActionId.Share,
+                            label = stringResource(com.chris.m3usuite.R.string.action_share),
+                            onClick = {
+                                val link = url
+                                if (link.isNullOrBlank()) {
+                                    android.widget.Toast.makeText(ctx, com.chris.m3usuite.R.string.no_link_available, android.widget.Toast.LENGTH_SHORT).show()
+                                } else {
+                                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(android.content.Intent.EXTRA_SUBJECT, title.ifBlank { "VOD-Link" })
+                                        putExtra(android.content.Intent.EXTRA_TEXT, link)
+                                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    ctx.startActivity(android.content.Intent.createChooser(send, ctx.getString(com.chris.m3usuite.R.string.action_share)))
+                                }
+                            }
+                        )
+                    )
+                }
+                val meta = com.chris.m3usuite.ui.detail.DetailMeta(
+                    year = year,
+                    durationSecs = duration,
+                    videoQuality = containerExtLabel,
+                    genres = parseTags(genre),
+                    provider = providerLabel,
+                    category = categoryLabel
                 )
-        ) {
-            com.chris.m3usuite.ui.util.AppPosterImage(
-                url = poster ?: heroUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
+                com.chris.m3usuite.ui.detail.DetailHeader(
+                    title = title,
+                    subtitle = null,
+                    heroUrl = heroUrl,
+                    posterUrl = poster ?: heroUrl,
+                    actions = actions,
+                    meta = meta
+                )
+            }
+        }
+        if (!com.chris.m3usuite.BuildConfig.DETAIL_SCAFFOLD_V1) item {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(260.dp),
-                crossfade = true
-            )
+                    .then(
+                        if (url != null)
+                            Modifier.tvClickable(
+                                brightenContent = false,
+                                autoBringIntoView = false
+                            ) { play(fromStart = false) }
+                        else Modifier
+                    )
+            ) {
+                com.chris.m3usuite.ui.util.AppPosterImage(
+                    url = poster ?: heroUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(260.dp),
+                    crossfade = true
+                )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -630,8 +800,8 @@ fun VodDetailScreen(
             }
         }
         }
-        item {
-        Column(Modifier.padding(top = 12.dp)) {
+        if (!com.chris.m3usuite.BuildConfig.DETAIL_SCAFFOLD_V1) item {
+            Column(Modifier.padding(top = 12.dp)) {
             val AccentDyn = if (isAdult) com.chris.m3usuite.ui.theme.DesignTokens.Accent else com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
             val badgeColor = if (!isAdult) AccentDyn.copy(alpha = 0.26f) else AccentDyn.copy(alpha = 0.20f)
             val badgeColorDarker = if (!isAdult) AccentDyn.copy(alpha = 0.32f) else AccentDyn.copy(alpha = 0.26f)
@@ -660,35 +830,98 @@ fun VodDetailScreen(
             }
 
             Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val label = if (resumeSecs != null) "Fortsetzen ab ${fmt(resumeSecs!!)}" else "Abspielen"
-                AssistChip(
-                    modifier = Modifier.focusScaleOnTv().graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
-                    onClick = { if (resumeSecs != null) play(false) else play(true) },
-                    label = { Text(label) },
-                    colors = AssistChipDefaults.assistChipColors(containerColor = AccentDyn.copy(alpha = 0.22f))
-                )
-
-                // Direktlink teilen (Xtream)
-                AssistChip(
-                    modifier = Modifier.focusScaleOnTv().graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
-                    onClick = {
-                        val link = url
-                        if (link.isNullOrBlank()) {
-                            android.widget.Toast.makeText(ctx, "Kein Link verfügbar", android.widget.Toast.LENGTH_SHORT).show()
-                        } else {
-                            val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(android.content.Intent.EXTRA_SUBJECT, title.ifBlank { "VOD-Link" })
-                                putExtra(android.content.Intent.EXTRA_TEXT, link)
-                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (com.chris.m3usuite.BuildConfig.MEDIA_ACTIONBAR_V1) {
+                val actions = buildList<MediaAction> {
+                    val canPlay = url != null && contentAllowed
+                    val resumeLabel = resumeSecs?.let { fmt(it) }
+                    if (resumeLabel != null && canPlay) add(
+                        MediaAction(
+                            id = MediaActionId.Resume,
+                            label = stringResource(com.chris.m3usuite.R.string.action_resume),
+                            badge = resumeLabel,
+                            primary = false,
+                            onClick = {
+                                Telemetry.event("ui_action_resume", mapOf("route" to com.chris.m3usuite.metrics.RouteTag.current))
+                                play(false)
                             }
-                            ctx.startActivity(android.content.Intent.createChooser(send, "Direktlink teilen"))
-                        }
-                    },
-                    label = { Text("Link teilen") },
-                    colors = AssistChipDefaults.assistChipColors(containerColor = AccentDyn.copy(alpha = 0.14f))
-                )
+                        )
+                    )
+                    add(
+                        MediaAction(
+                            id = MediaActionId.Play,
+                            label = stringResource(com.chris.m3usuite.R.string.action_play),
+                            primary = true,
+                            enabled = canPlay,
+                            onClick = {
+                                Telemetry.event("ui_action_play", mapOf("route" to com.chris.m3usuite.metrics.RouteTag.current))
+                                if (resumeSecs != null) play(false) else play(true)
+                            }
+                        )
+                    )
+                    val tr = normalizeTrailerUrl(trailer)
+                    if (!tr.isNullOrBlank()) add(
+                        MediaAction(
+                            id = MediaActionId.Trailer,
+                            label = stringResource(com.chris.m3usuite.R.string.action_trailer),
+                            onClick = {
+                                Telemetry.event("ui_action_trailer", mapOf("route" to com.chris.m3usuite.metrics.RouteTag.current))
+                                // Open externally for now; embedded box exists further below
+                                runCatching { uriHandler.openUri(tr) }
+                            }
+                        )
+                    )
+                    if (!url.isNullOrBlank()) add(
+                        MediaAction(
+                            id = MediaActionId.Share,
+                            label = stringResource(com.chris.m3usuite.R.string.action_share),
+                            onClick = {
+                                Telemetry.event("ui_action_share", mapOf("route" to com.chris.m3usuite.metrics.RouteTag.current))
+                                val link = url
+                                if (link.isNullOrBlank()) {
+                                    android.widget.Toast.makeText(ctx, com.chris.m3usuite.R.string.no_link_available, android.widget.Toast.LENGTH_SHORT).show()
+                                } else {
+                                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(android.content.Intent.EXTRA_SUBJECT, title.ifBlank { "VOD-Link" })
+                                        putExtra(android.content.Intent.EXTRA_TEXT, link)
+                                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    ctx.startActivity(android.content.Intent.createChooser(send, ctx.getString(com.chris.m3usuite.R.string.action_share)))
+                                }
+                            }
+                        )
+                    )
+                }
+                MediaActionBar(actions = actions)
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val label = if (resumeSecs != null) "Fortsetzen ab ${fmt(resumeSecs!!)}" else "Abspielen"
+                    AssistChip(
+                        modifier = Modifier.focusScaleOnTv().graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
+                        onClick = { if (resumeSecs != null) play(false) else play(true) },
+                        label = { Text(label) },
+                        colors = AssistChipDefaults.assistChipColors(containerColor = AccentDyn.copy(alpha = 0.22f))
+                    )
+                    AssistChip(
+                        modifier = Modifier.focusScaleOnTv().graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
+                        onClick = {
+                            val link = url
+                            if (link.isNullOrBlank()) {
+                                android.widget.Toast.makeText(ctx, "Kein Link verfügbar", android.widget.Toast.LENGTH_SHORT).show()
+                            } else {
+                                val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(android.content.Intent.EXTRA_SUBJECT, title.ifBlank { "VOD-Link" })
+                                    putExtra(android.content.Intent.EXTRA_TEXT, link)
+                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                ctx.startActivity(android.content.Intent.createChooser(send, "Direktlink teilen"))
+                            }
+                        },
+                        label = { Text("Link teilen") },
+                        colors = AssistChipDefaults.assistChipColors(containerColor = AccentDyn.copy(alpha = 0.14f))
+                    )
+                }
             }
 
             // Thin progress pill across full width (minus 5% margins)
@@ -746,6 +979,22 @@ fun VodDetailScreen(
                             .padding(12.dp)
                     )
                 }
+            }
+
+            if (com.chris.m3usuite.BuildConfig.CARDS_V1 && similar.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                Text(similarTitle ?: "Ähnliche Inhalte", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(6.dp))
+                com.chris.m3usuite.ui.components.rows.VodRow(
+                    items = similar,
+                    stateKey = "vodDetail:similar:${id}",
+                    onOpenDetails = { mi -> openVod?.invoke(mi.id) },
+                    onPlayDirect = { _ -> },
+                    onAssignToKid = { _ -> },
+                    showAssign = false,
+                    initialFocusEligible = false,
+                    edgeLeftExpandChrome = false
+                )
             }
 
             val genreTags = remember(genre) { parseTags(genre) }

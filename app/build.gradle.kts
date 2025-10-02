@@ -76,6 +76,48 @@ android {
         val showHeaderUi = (project.findProperty("SHOW_HEADER_UI")?.toString()?.toBooleanStrictOrNull()) ?: false
         buildConfigField("boolean", "SHOW_HEADER_UI", showHeaderUi.toString())
 
+        // TV Forms v1 rollout flag
+        // Precedence: -P feature.tv_forms_v1 | -P TV_FORMS_V1 | default true
+        val tvFormsV1 = (project.findProperty("feature.tv_forms_v1")?.toString()?.toBooleanStrictOrNull())
+            ?: (project.findProperty("TV_FORMS_V1")?.toString()?.toBooleanStrictOrNull())
+            ?: true
+        buildConfigField("boolean", "TV_FORMS_V1", tvFormsV1.toString())
+
+        // Media ActionBar v1 rollout flag
+        // Precedence: -P feature.media_actionbar_v1 | -P MEDIA_ACTIONBAR_V1 | default true
+        val mediaActionsV1 = (project.findProperty("feature.media_actionbar_v1")?.toString()?.toBooleanStrictOrNull())
+            ?: (project.findProperty("MEDIA_ACTIONBAR_V1")?.toString()?.toBooleanStrictOrNull())
+            ?: true
+        buildConfigField("boolean", "MEDIA_ACTIONBAR_V1", mediaActionsV1.toString())
+
+        // Detail Scaffold v1 rollout flag
+        // Precedence: -P feature.detail_scaffold_v1 | -P DETAIL_SCAFFOLD_V1 | default true
+        val detailScaffoldV1 = (project.findProperty("feature.detail_scaffold_v1")?.toString()?.toBooleanStrictOrNull())
+            ?: (project.findProperty("DETAIL_SCAFFOLD_V1")?.toString()?.toBooleanStrictOrNull())
+            ?: true
+        buildConfigField("boolean", "DETAIL_SCAFFOLD_V1", detailScaffoldV1.toString())
+
+        // UiState v1 rollout flag
+        // Precedence: -P feature.ui_state_v1 | -P UI_STATE_V1 | default true
+        val uiStateV1 = (project.findProperty("feature.ui_state_v1")?.toString()?.toBooleanStrictOrNull())
+            ?: (project.findProperty("UI_STATE_V1")?.toString()?.toBooleanStrictOrNull())
+            ?: true
+        buildConfigField("boolean", "UI_STATE_V1", uiStateV1.toString())
+
+        // Cards v1 rollout flag
+        // Precedence: -P feature.cards_v1 | -P CARDS_V1 | default true
+        val cardsV1 = (project.findProperty("feature.cards_v1")?.toString()?.toBooleanStrictOrNull())
+            ?: (project.findProperty("CARDS_V1")?.toString()?.toBooleanStrictOrNull())
+            ?: true
+        buildConfigField("boolean", "CARDS_V1", cardsV1.toString())
+
+        // Playback launcher v1 rollout flag
+        // Precedence: -P feature.playback_launcher_v1 | -P PLAYBACK_LAUNCHER_V1 | default true
+        val playbackLauncherV1 = (project.findProperty("feature.playback_launcher_v1")?.toString()?.toBooleanStrictOrNull())
+            ?: (project.findProperty("PLAYBACK_LAUNCHER_V1")?.toString()?.toBooleanStrictOrNull())
+            ?: true
+        buildConfigField("boolean", "PLAYBACK_LAUNCHER_V1", playbackLauncherV1.toString())
+
         // >>> Neu: Versionen aus -P übernehmen (vom Workflow gesetzt), falls vorhanden
         (project.findProperty("versionCode") as String?)?.toIntOrNull()?.let { versionCode = it }
         (project.findProperty("versionName") as String?)?.let { versionName = it }
@@ -198,8 +240,8 @@ tasks.withType<JavaCompile>().configureEach {
     exclude("**/com/chris/m3usuite/reference/**")
 }
 
-dependencies {
-    val compose = "1.7.6" // aktuellstes Compose (Feb 2025)
+    dependencies {
+        val compose = "1.7.6" // aktuellstes Compose (Feb 2025)
 
     // Core + Compose
     implementation("androidx.core:core-ktx:1.15.0")
@@ -212,6 +254,9 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:$compose")
     implementation("androidx.compose.ui:ui-tooling-preview:$compose")
     debugImplementation("androidx.compose.ui:ui-tooling:$compose")
+    // Compose UI testing
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$compose")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:$compose")
 
     // Material (für XML-Themes)
     implementation("com.google.android.material:material:1.12.0")

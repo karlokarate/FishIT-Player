@@ -24,6 +24,13 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
  - ObjectBox: Telegram messages are stored in `ObxTelegramMessage` (chatId/messageId/fileId/uniqueId/supportsStreaming/caption/date/localPath/thumbFileId). Repository/DataSources update OBX directly.
 - Login (Alpha): Reflection‑Bridge `telegram/TdLibReflection.kt` + `TelegramAuthRepository` (kein direkter TDLib‑Compile‑Dep). Settings: Button „Telegram verbinden“ (Telefon → Code → Passwort), auto DB‑Key‑Check, Status‑Debug.
 - Playback DataSource: `TelegramRoutingDataSource` für Media3 routet `tg://message?chatId=&messageId=` auf lokale Pfade und triggert bei Bedarf `DownloadFile(fileId)`; `localPath` wird persistiert.
+- Settings: Film/Serien Sync zeigt Chat‑Picker (Hauptordner/Archiv) und zeigt die gewählten Chats mit Namen an (wenn AUTHENTICATED).
+- Sync: `TelegramSyncWorker` (manueller Backfill) liest jüngste Nachrichten aus den ausgewählten Chats (VOD/Series) und indiziert Minimal‑Metadaten in `ObxTelegramMessage` (chat/message/file/unique/supportsStreaming/caption/date/localPath/thumb). Mapping auf VOD/Serien‑Modelle folgt heuristisch in Phase‑2.
+- Mapping/Heuristik: SxxExx‑Parser ordnet Nachrichten Episoden (Serie) vs. Filme (VOD) zu; Serien/Filme werden als `MediaItem` mit `source="TG"` projiziert (Titel aus Caption). Thumbnails werden on‑demand via TDLib `GetFile` geladen und als `file://` angezeigt (kein Prefetch).
+ - Heuristik erweitert: erkennt Bereiche (z. B. S01E01‑03, 1x02‑05) und Sprach‑Tags ([DE]/[EN]/…).
+ - Metadaten: via TDLib werden zusätzliche Felder persistiert (`durationSecs`, `mimeType`, `sizeBytes`, `width`/`height`, `language`). `MediaItem` übernimmt `durationSecs`/`plot` sowie `containerExt` (aus `mimeType`).
+ - UI: Library zeigt Telegram‑Rows (VOD/Series) pro ausgewähltem Chat, mit blauem „T“‑Badge am Poster. Start‑Suche rendert eine zusätzliche „Telegram“‑Row. Keine M3U‑Pfadgenerierung; Play startet `tg://message?chatId=…&messageId=…` über `TelegramTdlibDataSource`.
+ - Playback: Für `tg://` nutzt der Player reduzierte RAM‑Puffer (`LoadControl`), während der Download über TDLib (IO) fortschreitet.
 - Streaming DataSource: `TelegramTdlibDataSource` (gated via `tg_enabled` + AUTH) lädt/streamt Dateien progressiv (Seek) via TDLib; persistiert `localPath`; Fallback auf Routing/HTTP.
 - Build: `TG_API_ID`/`TG_API_HASH` als BuildConfig via sichere Lookup‑Kette (ohne Secrets im Repo). Reihenfolge: ENV → `/.tg.secrets.properties` (root, untracked) → `-P` Gradle‑Props → Default 0/leer. Packaging: TDLib (arm64‑v8a), ProGuard‑Keep für `org.drinkless.td.libcore.telegram.**`. Die JNI‑Lib `libtdjni.so` wird durch einen statischen Initializer in `org.drinkless.tdlib.Client` automatisch geladen.
 - Packaging: `:libtd` Android‑Library mit `jniLibs` (`arm64-v8a/libtdjni.so`). App hängt an `:libtd`, sodass TDLib zur Laufzeit vorhanden ist; BuildConfig `TG_API_ID`/`TG_API_HASH` kommen aus `gradle.properties`.
@@ -127,6 +134,7 @@ app/src/main/java/com/chris/m3usuite
 ├── ui/
 │   ├── auth/                               # ProfileGate (PIN, Profile wählen), CreateProfileSheet
 │   ├── components/                         # UI-Bausteine (Header, Carousels, Controls)
+│   ├── forms/                              # TV-Form-Kit (v1): TvFormSection/Switch/Slider/TextField/Select/Button + Validation
 │   ├── home/HomeChromeScaffold.kt          # Gemeinsamer Chrome (Header + Bottom) mit TV-Only Chrome-State (Visible/Collapsed/Expanded); ESC/BACK kollabiert Chrome zuerst (TV), bevor Back weitergereicht wird
 │   │   - TV: Header/Bottom anfangs sichtbar, auto-collapse bei Content-Scroll; Menu (Burger) toggelt Expanded (Fokus-Trap Header↔Bottom, Content geblurred). Long‑Press DPAD‑LEFT triggert dieselbe Burger‑Funktion (Expand/Collapse). Panels sliden animiert ein/aus; Content-Padding passt sich an.
 │   ├── home/StartScreen.kt                 # „Gate“-Home: Suche, Carousels, Live-Favoriten

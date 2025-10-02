@@ -281,6 +281,16 @@ fun LiveTileCard(
     insertionLeft: Boolean = false,
     insertionRight: Boolean = false
 ) {
+    if (com.chris.m3usuite.BuildConfig.CARDS_V1) {
+        val nowNext: String? = null
+        com.chris.m3usuite.ui.cards.ChannelCard(
+            name = item.name,
+            logoUrl = item.logo ?: item.poster,
+            nowNext = nowNext,
+            onClick = { onPlayDirect(item) }
+        )
+        return
+    }
     val ctx = LocalContext.current
     val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
     val chromeToggle by rememberUpdatedState(com.chris.m3usuite.ui.home.LocalChromeToggle.current)
@@ -683,6 +693,14 @@ fun SeriesTileCard(
     isNew: Boolean = false,
     showAssign: Boolean = true
 ) {
+    if (com.chris.m3usuite.BuildConfig.CARDS_V1) {
+        com.chris.m3usuite.ui.cards.PosterCard(
+            title = item.name,
+            imageUrl = item.poster ?: item.backdrop,
+            onClick = { onOpenDetails(item) }
+        )
+        return
+    }
     val ctx = LocalContext.current
     val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
     var leftDownAt by remember { mutableStateOf<Long?>(null) }
@@ -920,6 +938,14 @@ fun VodTileCard(
     isNew: Boolean = false,
     showAssign: Boolean = true
 ) {
+    if (com.chris.m3usuite.BuildConfig.CARDS_V1) {
+        com.chris.m3usuite.ui.cards.PosterCard(
+            title = item.name,
+            imageUrl = item.poster ?: item.backdrop,
+            onClick = { onOpenDetails(item) }
+        )
+        return
+    }
     val ctx = LocalContext.current
     val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
     val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }

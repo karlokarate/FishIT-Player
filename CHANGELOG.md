@@ -1,3 +1,19 @@
+2025-10-01
+- feat(telegram/settings): Show chat names for selected Film/Series sync sources (resolves titles via TDLib when authenticated).
+- feat(telegram/sync): Implement TelegramSyncWorker backfill. Fetches recent messages from selected chats (VOD/Series) and indexes minimal metadata to ObjectBox (ObxTelegramMessage), enabling tg:// playback and local-path updates.
+- feat(telegram/ui): Add Telegram rows on Library VOD/Series tabs (one row per selected chat, tiles tagged with blue "T"). Start screen global search now includes Telegram results as an extra row.
+- feat(telegram/playback): Tune ExoPlayer LoadControl for Telegram (tg://) for low RAM buffers and rely on TDLib on-disk caching during playback.
+  - TV (v7a): small 16 KiB allocator segments, ~2–6 MiB target buffer; aggressive allocator.trim() on pause/idle/end; cancel TDLib download on player close to free IO early.
+- feat(telegram/metadata): Expanded SxxExx parser (ranges S01E01-03, 1x02-05, language tags [DE]/[EN]/…). Extract and persist additional metadata via TDLib: `durationSecs`, `mimeType`, `sizeBytes`, `width`/`height`, `language`. MediaItems carry `durationSecs`, `plot` and inferred `containerExt`.
+
+2025-09-30
+- fix(live/detail): Kotlin parse error from stray brace in `LiveDetailScreen` — moved EPG/Kid dialogs inside composable and balanced braces.
+- chore(start,library): Migrate remaining direct PlayerChooser calls to PlaybackLauncher (flag `PLAYBACK_LAUNCHER_V1`); internal playback opens via nav in `onOpenInternal`.
+- feat(details): Wire onOpenDetails for VOD “Ähnliche Inhalte” and Live “Mehr aus Kategorie” (new lambdas `openVod`/`openLive`, wired in `MainActivity`).
+- fix(compose): Build fixes — opt-in FlowRow in `DetailHeader`, use `fillMaxSize` in `HeroScrim`, import `KeyboardOptions` from foundation.text, pass named `onRetry` to `ErrorState`, remove stale `MediaItem.subtitle`.
+ - fix(theme): Re-apply global dark theme via `AppTheme` using a single dark color scheme (no dynamic light variants).
+ - fix(tv/chrome): DPAD LEFT expands HomeChrome when the focused row is at the very left or when no content is focused/available; also preserved row-level edge-left expand behavior.
+
 2025-09-28
 - fix(tv/rows): Consume DPAD on KeyDown in RowCore (list+paged) to prevent double traversal that skipped one tile per press.
 - fix(tv/start): Ensure first tile is focusable and receives the initial FocusRequester so visual focus (scale/halo) is visible immediately at startup.
@@ -748,3 +764,23 @@ Status: zu testen durch Nutzer
   - Coil: disable crossfade on TV to avoid overdraw; keep RGB_565 and measured sizing.
   - OkHttp: throttle dispatcher on TV (maxRequests=16, perHost=4) to curb IO contention.
 - feat(player): Pause Xtream seeding while playing. When internal player is active, `m3u_workers_enabled` is forced OFF (remembering previous state), in-flight Xtream jobs are canceled, and the flag is restored on exit.
+2025-09-30
+- feat(tv/forms): Add TV Form Kit v1 under `ui.forms` with DPAD‑optimized rows: `TvFormSection`, `TvSwitchRow`, `TvSliderRow`, `TvTextFieldRow`, `TvSelectRow`, `TvButtonRow`, and `Validation` helpers. Consistent focus visuals and inline validation hints; text fields use dialog input on TV to avoid keyboard traps.
+- feat(setup): Migrate `PlaylistSetupScreen` to use the TV Form Kit when `BuildConfig.TV_FORMS_V1` is ON (default). Legacy controls remain as fallback when the flag is OFF.
+- docs(tv/forms): Add `docs/tv_forms.md` with layout/behavior guidelines and usage examples.
+2025-09-30
+- feat(ui/actions): Introduce centralized MediaAction model + MediaActionBar under `ui.actions` with DPAD‑friendly buttons and test tags. Telemetry hooks (`ui_action_*`) added.
+- feat(details): Migrate detail screens to MediaActionBar when `BuildConfig.MEDIA_ACTIONBAR_V1` is ON (default):
+  - VodDetail: Resume + Play + Trailer + Share
+  - LiveDetail: Play + OpenEPG + Share (+ Add/Remove favorites when permitted)
+  - SeriesDetail: Play (first episode) + Trailer; per‑episode rows now render a MediaActionBar (Resume? → Play → Share)
+- feat(detail/scaffold): Add `ui/detail` with `DetailHeader`, `MetaChips`, `HeroScrim`, `DetailScaffold` and flag `BuildConfig.DETAIL_SCAFFOLD_V1` (default ON). Migrate VOD + Series + Live headers to `DetailHeader` under the flag.
+- docs(actions): Add `docs/media_actions.md` with API/usage/order guidelines.
+- feat(ui/state): Introduce UiState layer (`UiState`, `StatusViews`, `collectAsUiState`) gated by `BuildConfig.UI_STATE_V1` (default ON). Detail screens (VOD/Series/Live) now render a single state (Loading/Empty/Error/Success) with early-return gates; legacy spinners remain as fallback when flag is OFF.
+- feat(library/search): Reintroduce Library search rows using Paging with `collectAsUiState` gating; renders Loading/Empty/Error/Success and supports retry. Start search now gates via a combined paging count across Series/VOD/Live.
+- feat(ui/cards): Add unified Cards library (`ui/cards/*`) and flag `BuildConfig.CARDS_V1` (default ON). `HomeRows` delegates to `PosterCard`/`ChannelCard` under the flag; `SeriesDetail` uses `EpisodeRow` for per‑episode items.
+- feat(playback): Add centralized PlaybackLauncher (`playback/*`) with `PlayRequest`/`PlayerResult` and flag `BuildConfig.PLAYBACK_LAUNCHER_V1` (default ON). Migrate VOD/Series/Live detail actions and Resume carousel to use the launcher when enabled.
+2025-09-30
+- fix(live/detail): Resolve Kotlin parse error “Expecting a top level declaration” by moving EPG/Kid sheet dialogs inside `LiveDetailScreen` body and correcting brace balance. Prevents premature function closure and restores release build.
+- chore(start,library): Migrate remaining direct PlayerChooser starts to centralized PlaybackLauncher (flagged via PLAYBACK_LAUNCHER_V1). Start and Library now route internal playback via the nav `player` route through the launcher’s `onOpenInternal` hook for consistent resume/telemetry.
+- feat(vod/live detail): Wire missing onOpenDetails handlers. VOD “Similar” now opens the selected VOD detail; Live “Mehr aus Kategorie” opens the selected channel’s detail (new `openVod`/`openLive` lambdas on detail screens, passed from MainActivity).

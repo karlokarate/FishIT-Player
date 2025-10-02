@@ -79,6 +79,11 @@ import com.chris.m3usuite.ui.util.AppAsyncImage
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material3.AssistChip
 import kotlinx.coroutines.Dispatchers
+import com.chris.m3usuite.ui.actions.MediaAction
+import com.chris.m3usuite.ui.actions.MediaActionBar
+import com.chris.m3usuite.ui.actions.MediaActionId
+import com.chris.m3usuite.core.telemetry.Telemetry
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -166,6 +171,7 @@ fun SeriesDetailScreen(
     val store = remember { SettingsStore(ctx) }
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val resumeRepo = remember { com.chris.m3usuite.data.repo.ResumeRepository(ctx) }
     val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
 
     // Profiltyp (Adult/Kid)
@@ -236,6 +242,7 @@ fun SeriesDetailScreen(
     var internalMime by remember { mutableStateOf<String?>(null) }
     var nextHintEpisodeId by remember { mutableStateOf<Int?>(null) }
     var nextHintText by remember { mutableStateOf<String?>(null) }
+    var uiState by remember { mutableStateOf<com.chris.m3usuite.ui.state.UiState<Unit>>(com.chris.m3usuite.ui.state.UiState.Loading) }
     var resumeRefreshKey by remember { mutableStateOf(0) }
 
     // Abgeleitete Episodenliste der aktuellen Season (lokales Filtern)
@@ -249,6 +256,7 @@ fun SeriesDetailScreen(
     // Daten laden (Serie + Episoden EINMAL)
     LaunchedEffect(id) {
         detailReady = false
+        uiState = com.chris.m3usuite.ui.state.UiState.Loading
         internalMime = null
         try {
         fun decodeObxSeriesId(v: Long): Int? =
@@ -343,6 +351,8 @@ fun SeriesDetailScreen(
         seasonSel = seasons.firstOrNull()
         } finally {
             detailReady = true
+            // If we end up here without exceptions, consider it success; empty episodes still render below
+            uiState = com.chris.m3usuite.ui.state.UiState.Success(Unit)
         }
     }
 
@@ -363,10 +373,15 @@ fun SeriesDetailScreen(
         return
     }
 
-    if (!detailReady) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+    if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
+        when (val s = uiState) {
+            is com.chris.m3usuite.ui.state.UiState.Loading -> { com.chris.m3usuite.ui.state.LoadingState(); return }
+            is com.chris.m3usuite.ui.state.UiState.Empty -> { com.chris.m3usuite.ui.state.EmptyState(); return }
+            is com.chris.m3usuite.ui.state.UiState.Error -> { com.chris.m3usuite.ui.state.ErrorState(s.message, s.retry); return }
+            is com.chris.m3usuite.ui.state.UiState.Success -> { /* render content */ }
         }
+    } else if (!detailReady) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         return
     }
 
@@ -378,6 +393,48 @@ fun SeriesDetailScreen(
             resumeRefreshKey++
         }
     }
+
+    val seriesLauncher = if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1)
+        com.chris.m3usuite.playback.rememberPlaybackLauncher(
+            onOpenInternal = { pr ->
+                if (openInternal != null) {
+                    openInternal(pr.url, pr.startPositionMs, seriesStreamId ?: 0, pr.season ?: 0, pr.episodeNum ?: 0, pr.episodeId, pr.mimeType)
+                } else {
+                    internalUrl = pr.url
+                    internalEpisodeId = pr.episodeId
+                    internalStartMs = pr.startPositionMs
+                    internalUa = pr.headers["User-Agent"].orEmpty()
+                    internalRef = pr.headers["Referer"].orEmpty()
+                    internalMime = pr.mimeType
+                    showInternal = true
+                }
+            },
+            onResult = { req, res ->
+                scope.launch(Dispatchers.IO) {
+                    val sid = req.seriesId
+                    val s = req.season
+                    val eNum = req.episodeNum
+                    when (res) {
+                        is com.chris.m3usuite.playback.PlayerResult.Completed -> if (sid != null && s != null && eNum != null) {
+                            com.chris.m3usuite.core.telemetry.Telemetry.event(
+                                "resume.clear",
+                                mapOf("type" to "series", "seriesId" to sid, "season" to s, "episode" to eNum)
+                            )
+                            runCatching { resumeRepo.clearSeriesResume(sid, s, eNum) }
+                        }
+                        is com.chris.m3usuite.playback.PlayerResult.Stopped -> if (sid != null && s != null && eNum != null) {
+                            val pos = ((res.positionMs / 1000).toInt()).coerceAtLeast(0)
+                            com.chris.m3usuite.core.telemetry.Telemetry.event(
+                                "resume.set",
+                                mapOf("type" to "series", "seriesId" to sid, "season" to s, "episode" to eNum, "positionSecs" to pos)
+                            )
+                            runCatching { resumeRepo.setSeriesResume(sid, s, eNum, pos) }
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+        ) else null
 
     fun playEpisode(e: Episode, fromStart: Boolean = false, resumeSecs: Int? = null) {
         scope.launch {
@@ -407,24 +464,42 @@ fun SeriesDetailScreen(
             val playableUrl = urlToPlay
             val resolvedMime = com.chris.m3usuite.core.playback.PlayUrlHelper.guessMimeType(playableUrl, e.containerExt)
 
-            PlayerChooser.start(
-                context = ctx,
-                store = store,
-                url = playableUrl,
-                headers = headers,
-                startPositionMs = startMs,
-                mimeType = resolvedMime
-            ) { s, mime ->
-                if (openInternal != null) {
-                    openInternal(playableUrl, s, seriesStreamId ?: 0, e.season, e.episodeNum, e.episodeId.takeIf { it > 0 }, mime)
-                } else {
-                    internalUrl = playableUrl
-                    internalEpisodeId = e.episodeId.takeIf { it > 0 }
-                    internalStartMs = s
-                    internalUa = headers["User-Agent"].orEmpty()
-                    internalRef = headers["Referer"].orEmpty()
-                    internalMime = mime
-                    showInternal = true
+            if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && seriesLauncher != null) {
+                seriesLauncher.launch(
+                    com.chris.m3usuite.playback.PlayRequest(
+                        type = "series",
+                        mediaId = id,
+                        url = playableUrl,
+                        headers = headers,
+                        startPositionMs = startMs,
+                        mimeType = resolvedMime,
+                        title = title,
+                        seriesId = seriesStreamId,
+                        season = e.season,
+                        episodeNum = e.episodeNum,
+                        episodeId = e.episodeId.takeIf { it > 0 }
+                    )
+                )
+            } else {
+                PlayerChooser.start(
+                    context = ctx,
+                    store = store,
+                    url = playableUrl,
+                    headers = headers,
+                    startPositionMs = startMs,
+                    mimeType = resolvedMime
+                ) { s, mime ->
+                    if (openInternal != null) {
+                        openInternal(playableUrl, s, seriesStreamId ?: 0, e.season, e.episodeNum, e.episodeId.takeIf { it > 0 }, mime)
+                    } else {
+                        internalUrl = playableUrl
+                        internalEpisodeId = e.episodeId.takeIf { it > 0 }
+                        internalStartMs = s
+                        internalUa = headers["User-Agent"].orEmpty()
+                        internalRef = headers["Referer"].orEmpty()
+                        internalMime = mime
+                        showInternal = true
+                    }
                 }
             }
         }
@@ -497,7 +572,47 @@ fun SeriesDetailScreen(
                         contentPadding = PaddingValues(bottom = 16.dp)
                     ) {
                         // Header (Titel, Poster, Kid‑Freigabe)
-                        item {
+                        if (com.chris.m3usuite.BuildConfig.DETAIL_SCAFFOLD_V1) {
+                            item {
+                                val firstEp = episodes.firstOrNull()
+                                val actions = buildList<com.chris.m3usuite.ui.actions.MediaAction> {
+                                    if (firstEp != null) add(
+                                        com.chris.m3usuite.ui.actions.MediaAction(
+                                            id = com.chris.m3usuite.ui.actions.MediaActionId.Play,
+                                            label = androidx.compose.ui.res.stringResource(com.chris.m3usuite.R.string.action_play),
+                                            primary = true,
+                                            onClick = { playEpisode(firstEp, fromStart = true) }
+                                        )
+                                    )
+                                    val tr = normalizeTrailerUrl(trailer)
+                                    if (!tr.isNullOrBlank()) add(
+                                        com.chris.m3usuite.ui.actions.MediaAction(
+                                            id = com.chris.m3usuite.ui.actions.MediaActionId.Trailer,
+                                            label = androidx.compose.ui.res.stringResource(com.chris.m3usuite.R.string.action_trailer),
+                                            onClick = { runCatching { uriHandler.openUri(tr) } }
+                                        )
+                                    )
+                                }
+                                val meta = com.chris.m3usuite.ui.detail.DetailMeta(
+                                    year = year,
+                                    genres = parseTags(genre),
+                                    provider = providerLabel,
+                                    category = categoryLabel
+                                )
+                                com.chris.m3usuite.ui.detail.DetailHeader(
+                                    title = title,
+                                    subtitle = null,
+                                    heroUrl = backdrop ?: poster,
+                                    posterUrl = poster ?: backdrop,
+                                    actions = actions,
+                                    meta = meta,
+                                    headerExtras = {
+                                        // Season chips may still be rendered below in content; keep header compact here
+                                    }
+                                )
+                            }
+                        }
+                        if (!com.chris.m3usuite.BuildConfig.DETAIL_SCAFFOLD_V1) item {
                             Column(Modifier.fillMaxWidth()) {
                                 val cleanTitle = remember(title, year) { cleanSeriesName(title, year) }
                                 Surface(
@@ -534,6 +649,36 @@ fun SeriesDetailScreen(
                                         ) { Text("Trailer", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall) }
                                     }
                                 }
+                                // Unified action bar (Play / Trailer)
+                                if (com.chris.m3usuite.BuildConfig.MEDIA_ACTIONBAR_V1) {
+                                    val actions = buildList<MediaAction> {
+                                        val firstEp = episodes.firstOrNull()
+                                        if (firstEp != null) add(
+                                            MediaAction(
+                                                id = MediaActionId.Play,
+                                                label = stringResource(com.chris.m3usuite.R.string.action_play),
+                                                primary = true,
+                                                onClick = {
+                                                    Telemetry.event("ui_action_play", mapOf("route" to com.chris.m3usuite.metrics.RouteTag.current))
+                                                    playEpisode(firstEp, fromStart = true)
+                                                }
+                                            )
+                                        )
+                                        val tr = normalizeTrailerUrl(trailer)
+                                        if (!tr.isNullOrBlank()) add(
+                                            MediaAction(
+                                                id = MediaActionId.Trailer,
+                                                label = stringResource(com.chris.m3usuite.R.string.action_trailer),
+                                                onClick = {
+                                                    Telemetry.event("ui_action_trailer", mapOf("route" to com.chris.m3usuite.metrics.RouteTag.current))
+                                                    runCatching { uriHandler.openUri(tr) }
+                                                }
+                                            )
+                                        )
+                                    }
+                                    MediaActionBar(actions = actions, modifier = Modifier.padding(vertical = 6.dp))
+                                }
+
                                 // Trailer embedded + expandable
                                 if (!trailer.isNullOrBlank()) {
                                     Spacer(Modifier.height(8.dp))
@@ -811,50 +956,143 @@ fun SeriesDetailScreen(
                                                 }
 
                                                 // Zentrum: SxxEyy + Titel
-                                                Row(
-                                                    modifier = Modifier.weight(1f),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.Center
-                                                ) {
-                                                    Text(
-                                                        "S%02dE%02d".format(e.season, e.episodeNum),
-                                                        color = accent,
-                                                        fontWeight = FontWeight.Bold
+                                                if (com.chris.m3usuite.BuildConfig.CARDS_V1) {
+                                                    com.chris.m3usuite.ui.cards.EpisodeRow(
+                                                        title = "S%02dE%02d – %s".format(e.season, e.episodeNum, epName),
+                                                        subtitle = e.airDate,
+                                                        imageUrl = e.poster,
+                                                        onClick = {
+                                                            if (resumeSecs != null) playEpisode(e, fromStart = false, resumeSecs = resumeSecs)
+                                                            else playEpisode(e, fromStart = true)
+                                                        }
                                                     )
-                                                    Spacer(Modifier.size(8.dp))
-                                                    Text(
-                                                        epName,
-                                                        maxLines = 1,
-                                                        overflow = TextOverflow.Ellipsis
-                                                    )
+                                                } else {
+                                                    Row(
+                                                        modifier = Modifier.weight(1f),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.Center
+                                                    ) {
+                                                        Text(
+                                                            "S%02dE%02d".format(e.season, e.episodeNum),
+                                                            color = accent,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                        Spacer(Modifier.size(8.dp))
+                                                        Text(
+                                                            epName,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                    }
                                                 }
 
-                                                // Aktion: Direktlink teilen (Xtream)
-                                                androidx.compose.material3.TextButton(
-                                                    modifier = Modifier.focusScaleOnTv(),
-                                                    onClick = {
-                                                        val link = e.buildPlayUrl(ctx)
-                                                        if (link.isNullOrBlank()) {
-                                                            android.widget.Toast.makeText(ctx, "Kein Link verfügbar", android.widget.Toast.LENGTH_SHORT).show()
-                                                        } else {
-                                                            val subj = run {
-                                                                val base = if (title.isBlank()) "Serie" else title
-                                                                val sStr = java.lang.String.format(java.util.Locale.US, "%02d", e.season)
-                                                                val eStr = java.lang.String.format(java.util.Locale.US, "%02d", e.episodeNum)
-                                                                "$base – S${sStr}E${eStr}"
+                                                // Actions (per episode): Resume? → Play → Share
+                                                if (com.chris.m3usuite.BuildConfig.MEDIA_ACTIONBAR_V1) {
+                                                    val actions = buildList<com.chris.m3usuite.ui.actions.MediaAction> {
+                                                        val canPlay = true
+                                                        val r = resumeSecs
+                                                        if (r != null && r > 0) add(
+                                                            com.chris.m3usuite.ui.actions.MediaAction(
+                                                                id = com.chris.m3usuite.ui.actions.MediaActionId.Resume,
+                                                                label = androidx.compose.ui.res.stringResource(com.chris.m3usuite.R.string.action_resume),
+                                                                badge = fmt(r),
+                                                                onClick = {
+                                                                    com.chris.m3usuite.core.telemetry.Telemetry.event(
+                                                                        "ui_action_resume",
+                                                                        mapOf(
+                                                                            "route" to com.chris.m3usuite.metrics.RouteTag.current,
+                                                                            "season" to e.season,
+                                                                            "episode" to e.episodeNum
+                                                                        )
+                                                                    )
+                                                                    playEpisode(e, fromStart = false, resumeSecs = r)
+                                                                }
+                                                            )
+                                                        )
+                                                        add(
+                                                            com.chris.m3usuite.ui.actions.MediaAction(
+                                                                id = com.chris.m3usuite.ui.actions.MediaActionId.Play,
+                                                                label = androidx.compose.ui.res.stringResource(com.chris.m3usuite.R.string.action_play),
+                                                                primary = true,
+                                                                enabled = canPlay,
+                                                                onClick = {
+                                                                    com.chris.m3usuite.core.telemetry.Telemetry.event(
+                                                                        "ui_action_play",
+                                                                        mapOf(
+                                                                            "route" to com.chris.m3usuite.metrics.RouteTag.current,
+                                                                            "season" to e.season,
+                                                                            "episode" to e.episodeNum
+                                                                        )
+                                                                    )
+                                                                    if (resumeSecs != null) playEpisode(e, fromStart = false, resumeSecs = resumeSecs)
+                                                                    else playEpisode(e, fromStart = true)
+                                                                }
+                                                            )
+                                                        )
+                                                        add(
+                                                            com.chris.m3usuite.ui.actions.MediaAction(
+                                                                id = com.chris.m3usuite.ui.actions.MediaActionId.Share,
+                                                                label = androidx.compose.ui.res.stringResource(com.chris.m3usuite.R.string.action_share),
+                                                                onClick = {
+                                                                    val link = e.buildPlayUrl(ctx)
+                                                                    com.chris.m3usuite.core.telemetry.Telemetry.event(
+                                                                        "ui_action_share",
+                                                                        mapOf(
+                                                                            "route" to com.chris.m3usuite.metrics.RouteTag.current,
+                                                                            "season" to e.season,
+                                                                            "episode" to e.episodeNum,
+                                                                            "hasLink" to (link?.isNotBlank() == true)
+                                                                        )
+                                                                    )
+                                                                    if (link.isNullOrBlank()) {
+                                                                        android.widget.Toast.makeText(ctx, com.chris.m3usuite.R.string.no_link_available, android.widget.Toast.LENGTH_SHORT).show()
+                                                                    } else {
+                                                                        val subj = run {
+                                                                            val base = if (title.isBlank()) "Serie" else title
+                                                                            val sStr = java.lang.String.format(java.util.Locale.US, "%02d", e.season)
+                                                                            val eStr = java.lang.String.format(java.util.Locale.US, "%02d", e.episodeNum)
+                                                                            "$base – S${sStr}E${eStr}"
+                                                                        }
+                                                                        val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                                                            type = "text/plain"
+                                                                            putExtra(android.content.Intent.EXTRA_SUBJECT, subj)
+                                                                            putExtra(android.content.Intent.EXTRA_TEXT, link)
+                                                                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                                        }
+                                                                        ctx.startActivity(android.content.Intent.createChooser(send, ctx.getString(com.chris.m3usuite.R.string.action_share)))
+                                                                    }
+                                                                }
+                                                            )
+                                                        )
+                                                    }
+                                                    com.chris.m3usuite.ui.actions.MediaActionBar(actions = actions)
+                                                } else {
+                                                    androidx.compose.material3.TextButton(
+                                                        modifier = Modifier.focusScaleOnTv(),
+                                                        onClick = {
+                                                            val link = e.buildPlayUrl(ctx)
+                                                            if (link.isNullOrBlank()) {
+                                                                android.widget.Toast.makeText(ctx, "Kein Link verfügbar", android.widget.Toast.LENGTH_SHORT).show()
+                                                            } else {
+                                                                val subj = run {
+                                                                    val base = if (title.isBlank()) "Serie" else title
+                                                                    val sStr = java.lang.String.format(java.util.Locale.US, "%02d", e.season)
+                                                                    val eStr = java.lang.String.format(java.util.Locale.US, "%02d", e.episodeNum)
+                                                                    "$base – S${sStr}E${eStr}"
+                                                                }
+                                                                val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                                                    type = "text/plain"
+                                                                    putExtra(android.content.Intent.EXTRA_SUBJECT, subj)
+                                                                    putExtra(android.content.Intent.EXTRA_TEXT, link)
+                                                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                                }
+                                                                ctx.startActivity(android.content.Intent.createChooser(send, "Direktlink teilen"))
                                                             }
-                                                            val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                                                type = "text/plain"
-                                                                putExtra(android.content.Intent.EXTRA_SUBJECT, subj)
-                                                                putExtra(android.content.Intent.EXTRA_TEXT, link)
-                                                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                            }
-                                                            ctx.startActivity(android.content.Intent.createChooser(send, "Direktlink teilen"))
-                                                        }
-                                                    },
-                                                    enabled = true,
-                                                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = accent)
-                                                ) { androidx.compose.material3.Text("Link teilen") }
+                                                        },
+                                                        enabled = true,
+                                                        colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = accent)
+                                                    ) { androidx.compose.material3.Text("Link teilen") }
+                                                }
                                             }
 
                                             val episodeMeta = buildList {

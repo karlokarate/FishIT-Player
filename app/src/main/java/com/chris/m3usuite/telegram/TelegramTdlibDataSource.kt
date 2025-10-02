@@ -181,6 +181,14 @@ class TelegramTdlibDataSource(
         delegate = null
         runCatching { raf?.close() }
         raf = null
+        // Cancel further TDLib downloads for this file to free IO/memory (best-effort)
+        if (fileId > 0 && !completed && TdLibReflection.available()) {
+            runCatching {
+                val client = TdLibReflection.getOrCreateClient(context, kotlinx.coroutines.flow.MutableStateFlow(AuthState.UNKNOWN))
+                val cancel = TdLibReflection.buildCancelDownloadFile(fileId, /* onlyIfPending = */ false)
+                if (client != null && cancel != null) TdLibReflection.sendForResult(client, cancel, 100)
+            }
+        }
         opened = false
     }
 

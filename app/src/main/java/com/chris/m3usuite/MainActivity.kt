@@ -247,6 +247,8 @@ class MainActivity : ComponentActivity() {
                             if (current != "library") {
                                 nav.navigateTopLevel("library?q=&qs=")
                             }
+                        }, openLive = { target ->
+                            nav.navigate("live/$target")
                         }, onGlobalSearch = {
                             nav.navigateTopLevel("library?qs=show")
                         }, onOpenSettings = {
@@ -268,6 +270,7 @@ class MainActivity : ComponentActivity() {
                                 val mimeArg = mime?.let { Uri.encode(it) } ?: ""
                                 nav.navigate("player?url=$encoded&type=vod&mediaId=$id&startMs=$start&mime=$mimeArg")
                             },
+                            openVod = { target -> nav.navigate("vod/$target") },
                             onLogo = {
                                 val current = nav.currentBackStackEntry?.destination?.route
                                 if (current != "library") {

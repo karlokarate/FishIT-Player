@@ -55,6 +55,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -217,6 +218,13 @@ fun InternalPlayerScreen(
         }
         baseFactory
     }
+    // Detect telegram early and prepare a low-RAM allocator (shared with player listeners below)
+    val isTelegramContent = remember(url) { url.startsWith("tg://", ignoreCase = true) }
+    val is32BitDevice = remember { try { android.os.Build.SUPPORTED_64_BIT_ABIS.isEmpty() } catch (_: Throwable) { true } }
+    val allocator = remember(isTelegramContent, is32BitDevice) {
+        androidx.media3.exoplayer.upstream.DefaultAllocator(/* trimOnReset = */ true, /* segmentSize = */ if (isTelegramContent || is32BitDevice) 16 * 1024 else 64 * 1024)
+    }
+
     val dataSourceFactory = remember(httpFactory, ctx) {
         val base = DefaultDataSource.Factory(ctx, httpFactory)
         // Prefer TDLib streaming; fallback routing handles local-file cases
@@ -229,12 +237,30 @@ fun InternalPlayerScreen(
             .setEnableDecoderFallback(true)
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
 
+        val loadControl = if (isTelegramContent) {
+            // Keep RAM small; rely on TDLib on-disk caching while downloading
+            DefaultLoadControl.Builder()
+                .setAllocator(allocator)
+                .setBufferDurationsMs(
+                    /* minBufferMs = */ 2_000,
+                    /* maxBufferMs = */ 5_000,
+                    /* bufferForPlaybackMs = */ 1_000,
+                    /* bufferForPlaybackAfterRebufferMs = */ 2_000
+                )
+                .setTargetBufferBytes(2 * 1024 * 1024) // ~2 MiB target buffer
+                .setBackBuffer(0, false)
+                .build()
+        } else DefaultLoadControl.Builder()
+            .setAllocator(allocator)
+            .setTargetBufferBytes(6 * 1024 * 1024) // small target to avoid large pools on low-RAM devices
+            .build()
+
         ExoPlayer.Builder(ctx)
             .setRenderersFactory(renderers)
             .setMediaSourceFactory(
                 androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
             )
-            .setLoadControl(DefaultLoadControl())
+            .setLoadControl(loadControl)
             .build()
             .apply {
                 android.util.Log.d("ExoSetup", "setMediaItem url=${url}")
@@ -306,6 +332,8 @@ fun InternalPlayerScreen(
                     if (act?.isInPictureInPictureMode != true) {
                         exoPlayer.playWhenReady = false
                     }
+                    // Free up pooled buffer segments when pausing (TV v7a)
+                    try { allocator.trim() } catch (_: Throwable) {}
                 }
                 Lifecycle.Event.ON_RESUME -> exoPlayer.playWhenReady = true
                 Lifecycle.Event.ON_DESTROY -> {
@@ -533,6 +561,22 @@ fun InternalPlayerScreen(
                 }
             } catch (_: Throwable) { null }
         } ?: when (type) { "live" -> "Live"; "series" -> "Serie"; else -> "Film" }
+    }
+
+    // Aggressively trim allocator on state changes / pauses (TV v7a low-RAM safety)
+    DisposableEffect(exoPlayer) {
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_IDLE || playbackState == Player.STATE_ENDED || !exoPlayer.playWhenReady) {
+                    try { allocator.trim() } catch (_: Throwable) {}
+                }
+            }
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (!isPlaying) { try { allocator.trim() } catch (_: Throwable) {} }
+            }
+        }
+        exoPlayer.addListener(listener)
+        onDispose { exoPlayer.removeListener(listener) }
     }
 
     suspend fun refreshEpgOverlayForLive(id: Long?) {
@@ -859,6 +903,15 @@ fun InternalPlayerScreen(
     Box(Modifier.fillMaxSize()) {
         // Live list sheet state must be declared before key handlers
         var showLiveListSheet by remember { mutableStateOf(false) }
+        // Seek preview overlay state
+        var seekPreviewVisible by remember { mutableStateOf(false) }
+        var seekPreviewTargetMs by remember { mutableStateOf<Long?>(null) }
+        var seekPreviewBaseMs by remember { mutableStateOf(0L) }
+        val seekPreviewAlpha by androidx.compose.animation.core.animateFloatAsState(
+            targetValue = if (seekPreviewVisible) 1f else 0f,
+            animationSpec = androidx.compose.animation.core.tween(180),
+            label = "seekPreviewAlpha"
+        )
 
         AndroidView(
             modifier = Modifier
@@ -879,7 +932,53 @@ fun InternalPlayerScreen(
                     view.isFocusable = true
                     view.isFocusableInTouchMode = true
                     view.requestFocus()
+                    // Accelerated seek on long-press LEFT/RIGHT and media FF/REW keys
+                    var seekRepeatJob: kotlinx.coroutines.Job? = null
+                    var seekDir: Int = 0
+                    fun startSeek(dir: Int) {
+                        if (!canSeek) return
+                        seekDir = dir
+                        seekRepeatJob?.cancel()
+                        seekRepeatJob = scope.launch {
+                            var step = 10_000L
+                            var target = exoPlayer.currentPosition
+                            seekPreviewBaseMs = target
+                            seekPreviewVisible = true
+                            val max = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
+                            val min = 0L
+                            var tick = 0
+                            while (isActive) {
+                                target = (target + dir * step).coerceIn(min, max)
+                                exoPlayer.seekTo(target)
+                                seekPreviewTargetMs = target
+                                controlsVisible = true; controlsTick++
+                                tick++
+                                // accelerate step every few ticks up to 60s
+                                if (tick % 5 == 0 && step < 60_000L) step += 10_000L
+                                delay(180)
+                            }
+                        }
+                    }
+                    fun stopSeek() {
+                        seekRepeatJob?.cancel(); seekRepeatJob = null; seekDir = 0
+                        // fade out preview shortly after release
+                        scope.launch {
+                            delay(420)
+                            seekPreviewVisible = false
+                            seekPreviewTargetMs = null
+                        }
+                    }
+
                     view.setOnKeyListener { _, keyCode, event ->
+                        if (event.action == android.view.KeyEvent.ACTION_UP) {
+                            when (keyCode) {
+                                android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_MEDIA_REWIND, android.view.KeyEvent.KEYCODE_BUTTON_L1,
+                                android.view.KeyEvent.KEYCODE_DPAD_RIGHT, android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, android.view.KeyEvent.KEYCODE_BUTTON_R1 -> {
+                                    stopSeek(); return@setOnKeyListener true
+                                }
+                            }
+                            return@setOnKeyListener false
+                        }
                         if (event.action != android.view.KeyEvent.ACTION_DOWN) return@setOnKeyListener false
                         when (keyCode) {
                             android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
@@ -905,34 +1004,23 @@ fun InternalPlayerScreen(
                             android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
                             android.view.KeyEvent.KEYCODE_BUTTON_R1 -> {
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("FFWD", mapOf("screen" to "player", "type" to type))
-                                if (canSeek) {
-                                    val pos = exoPlayer.currentPosition
-                                    val dur = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
-                                    exoPlayer.seekTo((pos + 10_000L).coerceAtMost(dur))
-                                    controlsVisible = true; controlsTick++
-                                    true
-                                } else false
+                                if (canSeek) { startSeek(+1); true } else false
                             }
                             android.view.KeyEvent.KEYCODE_MEDIA_REWIND,
                             android.view.KeyEvent.KEYCODE_BUTTON_L1 -> {
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("REW", mapOf("screen" to "player", "type" to type))
-                                if (canSeek) {
-                                    val pos = exoPlayer.currentPosition
-                                    exoPlayer.seekTo((pos - 10_000L).coerceAtLeast(0L))
-                                    controlsVisible = true; controlsTick++
-                                    true
-                                } else false
+                                if (canSeek) { startSeek(-1); true } else false
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("screen" to "player", "type" to type))
                                 if (type == "live") { jumpLive(-1); true }
-                                else if (canSeek) { val pos = exoPlayer.currentPosition; exoPlayer.seekTo((pos - 10_000L).coerceAtLeast(0L)); controlsVisible = true; controlsTick++; true }
+                                else if (canSeek) { startSeek(-1); true }
                                 else false
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("screen" to "player", "type" to type))
                                 if (type == "live") { jumpLive(+1); true }
-                                else if (canSeek) { val pos = exoPlayer.currentPosition; val dur = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE; exoPlayer.seekTo((pos + 10_000L).coerceAtMost(dur)); controlsVisible = true; controlsTick++; true }
+                                else if (canSeek) { startSeek(+1); true }
                                 else false
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_UP -> {
@@ -988,6 +1076,53 @@ fun InternalPlayerScreen(
                 }
             }
         )
+
+        // Seek preview overlay (shows absolute position and delta while seeking)
+        if (seekPreviewAlpha > 0f && type != "live") {
+            val tgt = seekPreviewTargetMs ?: 0L
+            val base = seekPreviewBaseMs
+            val delta = tgt - base
+            fun fmt(ms: Long): String {
+                val total = (ms / 1000).toInt()
+                val h = total / 3600
+                val m = (total % 3600) / 60
+                val s = total % 60
+                return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%02d:%02d".format(m, s)
+            }
+            val deltaStr = when {
+                delta > 0 -> "+${delta / 1000}s"
+                delta < 0 -> "-${(-delta) / 1000}s"
+                else -> "0s"
+            }
+            androidx.compose.material3.Surface(
+                color = Color.Black.copy(alpha = 0.65f),
+                contentColor = Color.White,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .graphicsLayer { alpha = seekPreviewAlpha }
+            ) {
+                Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Tiny progress arc
+                    val prog = run {
+                        val dur = exoPlayer.duration.takeIf { it > 0 } ?: 0L
+                        if (dur > 0) (tgt.toFloat() / dur.toFloat()).coerceIn(0f, 1f) else 0f
+                    }
+                    androidx.compose.foundation.Canvas(Modifier.size(18.dp)) {
+                        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f)
+                        drawArc(
+                            color = Color.White.copy(alpha = 0.8f),
+                            startAngle = -90f,
+                            sweepAngle = 360f * prog,
+                            useCenter = false,
+                            style = stroke
+                        )
+                    }
+                    androidx.compose.material3.Text(text = fmt(tgt), style = MaterialTheme.typography.titleMedium)
+                    androidx.compose.material3.Text(text = deltaStr, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
 
         // Touch: tap toggles controls; swipe left/right switches live channel; swipe up/down opens list/EPG
         Box(

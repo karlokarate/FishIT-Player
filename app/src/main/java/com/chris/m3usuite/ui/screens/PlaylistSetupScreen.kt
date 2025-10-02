@@ -191,121 +191,309 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
                 QuickImportRow()
                 Spacer(Modifier.height(8.dp))
 
-                // Mode selector
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    FilterChip(selected = mode == SetupMode.M3U, onClick = { mode = SetupMode.M3U }, label = { Text("M3U Link") })
-                    FilterChip(selected = mode == SetupMode.XTREAM, onClick = { mode = SetupMode.XTREAM }, label = { Text("Xtream Login") })
-                }
-                Spacer(Modifier.height(8.dp))
-
-                if (mode == SetupMode.M3U) {
-                    OutlinedTextField(
-                        value = m3u, onValueChange = { m3u = it },
-                        label = { Text("M3U / Xtream get.php Link") },
-                        supportingText = { AnimatedVisibility(visible = m3u.text.isNotBlank() && !isM3uOk) { Text("Bitte gültige http/https URL eingeben") } },
-                        isError = m3u.text.isNotBlank() && !isM3uOk,
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, capitalization = KeyboardCapitalization.None, keyboardType = KeyboardType.Uri)
-                    )
-                    OutlinedTextField(
-                        value = epg, onValueChange = { epg = it },
-                        label = { Text("EPG XMLTV URL (optional)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Uri)
-                    )
-                } else {
-                    OutlinedTextField(
-                        value = xtHost,
-                        onValueChange = { v ->
-                            xtHost = v
-                            val (hostNoScheme, httpsSuggested, explicitPort) = sanitizeHost(v.text)
-                            // Auto‑Anpassung bei Paste kompletter URL
-                            if (httpsSuggested != xtHttps) xtHttps = httpsSuggested
-                            if (explicitPort != null && xtPort.text != explicitPort.toString()) xtPort = TextFieldValue(explicitPort.toString())
-                            if (hostNoScheme != v.text) xtHost = TextFieldValue(hostNoScheme)
-                        },
-                        label = { Text("Xtream Host (ohne Schema)") },
-                        supportingText = {
-                            AnimatedVisibility(visible = xtHost.text.isNotBlank() && !isXtHostValid) {
-                                Text("Nur Hostname oder Host:Port (ohne http/https)")
-                            }
-                        },
-                        isError = xtHost.text.isNotBlank() && !isXtHostValid,
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Uri)
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = xtPort, onValueChange = { nv ->
-                                val onlyDigits = nv.text.filter { it.isDigit() }.take(5)
-                                xtPort = nv.copy(text = onlyDigits)
-                            },
-                            label = { Text("Port (1–65535)") },
-                            supportingText = {
-                                AnimatedVisibility(visible = xtPort.text.isNotBlank() && !isXtPortValid) {
-                                    Text(if (xtHttps) "HTTPS nutzt i. d. R. 443" else "HTTP nutzt i. d. R. 80")
-                                }
-                            },
-                            isError = xtPort.text.isNotBlank() && !isXtPortValid,
-                            modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Number)
+                if (BuildConfig.TV_FORMS_V1) {
+                    // TV Form Kit v1
+                    com.chris.m3usuite.ui.forms.TvFormSection(title = "Modus") {
+                        com.chris.m3usuite.ui.forms.TvSelectRow(
+                            label = "Eingabe",
+                            options = listOf(SetupMode.M3U, SetupMode.XTREAM),
+                            selected = mode,
+                            onSelected = { mode = it },
+                            optionLabel = { if (it == SetupMode.M3U) "M3U Link" else "Xtream Login" }
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Checkbox(checked = xtHttps, onCheckedChange = { v ->
-                                xtHttps = v
-                                // Auto‑Switch gängiger Ports beim Togglen
-                                val p = xtPort.text.toIntOrNull()
-                                if (p == null || (v && p == 80)) xtPort = TextFieldValue("443")
-                                else if (!v && p == 443) xtPort = TextFieldValue("80")
-                            })
-                            Text("HTTPS")
+                    }
+                    Spacer(Modifier.height(6.dp))
+
+                    if (mode == SetupMode.M3U) {
+                        com.chris.m3usuite.ui.forms.TvFormSection(title = "M3U Quelle") {
+                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                                label = "M3U / Xtream get.php Link",
+                                value = m3u.text,
+                                onValueChange = { m3u = TextFieldValue(it) },
+                                placeholder = "https://…",
+                                errorText = if (m3u.text.isNotBlank() && !isM3uOk) "Bitte gültige http/https URL eingeben" else null,
+                                keyboard = com.chris.m3usuite.ui.forms.TvKeyboard.Uri
+                            )
+                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                                label = "EPG XMLTV URL (optional)",
+                                value = epg.text,
+                                onValueChange = { epg = TextFieldValue(it) },
+                                placeholder = "https://…",
+                                keyboard = com.chris.m3usuite.ui.forms.TvKeyboard.Uri
+                            )
+                        }
+                    } else {
+                        com.chris.m3usuite.ui.forms.TvFormSection(title = "Xtream Zugang") {
+                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                                label = "Xtream Host (ohne Schema)",
+                                value = xtHost.text,
+                                onValueChange = { raw ->
+                                    val (hostNoScheme, httpsSuggested, explicitPort) = sanitizeHost(raw)
+                                    if (httpsSuggested != xtHttps) xtHttps = httpsSuggested
+                                    if (explicitPort != null && xtPort.text != explicitPort.toString()) xtPort = TextFieldValue(explicitPort.toString())
+                                    xtHost = TextFieldValue(hostNoScheme)
+                                },
+                                helperText = "Nur Hostname oder Host:Port (ohne http/https)",
+                                errorText = if (xtHost.text.isNotBlank() && !isXtHostValid) "Ungültig: nur Hostname oder Host:Port" else null,
+                                keyboard = com.chris.m3usuite.ui.forms.TvKeyboard.Uri
+                            )
+                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                                label = "Port (1–65535)",
+                                value = xtPort.text,
+                                onValueChange = { nv -> xtPort = TextFieldValue(nv.filter { it.isDigit() }.take(5)) },
+                                helperText = if (xtHttps) "HTTPS nutzt i. d. R. 443" else "HTTP nutzt i. d. R. 80",
+                                errorText = if (xtPort.text.isNotBlank() && !isXtPortValid) "Ungültiger Port" else null,
+                                keyboard = com.chris.m3usuite.ui.forms.TvKeyboard.Number
+                            )
+                            com.chris.m3usuite.ui.forms.TvSwitchRow(
+                                label = "HTTPS",
+                                checked = xtHttps,
+                                onCheckedChange = { v ->
+                                    xtHttps = v
+                                    val p = xtPort.text.toIntOrNull()
+                                    if (p == null || (v && p == 80)) xtPort = TextFieldValue("443") else if (!v && p == 443) xtPort = TextFieldValue("80")
+                                }
+                            )
+                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                                label = "Benutzername",
+                                value = xtUser.text,
+                                onValueChange = { xtUser = TextFieldValue(it) }
+                            )
+                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                                label = "Passwort",
+                                value = xtPass.text,
+                                onValueChange = { xtPass = TextFieldValue(it) },
+                                keyboard = com.chris.m3usuite.ui.forms.TvKeyboard.Password
+                            )
+                            com.chris.m3usuite.ui.forms.TvSelectRow(
+                                label = "Output",
+                                options = listOf("ts", "m3u8", "mp4"),
+                                selected = normalizeOutput(xtOut.text),
+                                onSelected = { xtOut = TextFieldValue(it) },
+                                optionLabel = { it },
+                                errorText = if (xtOut.text.isNotBlank() && !isXtOutValid) "Gültig: ts, m3u8 oder mp4" else null
+                            )
                         }
                     }
-                    OutlinedTextField(
-                        value = xtUser, onValueChange = { xtUser = it },
-                        label = { Text("Benutzername") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                    )
-                    OutlinedTextField(
-                        value = xtPass, onValueChange = { xtPass = it },
-                        label = { Text("Passwort") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Password)
-                    )
-                    OutlinedTextField(
-                        value = xtOut, onValueChange = { xtOut = it.copy(text = normalizeOutput(it.text)) },
-                        label = { Text("Output (ts|m3u8|mp4)") },
-                        supportingText = { AnimatedVisibility(visible = xtOut.text.isNotBlank() && !isXtOutValid) { Text("Gültig: ts, m3u8 oder mp4") } },
-                        isError = xtOut.text.isNotBlank() && !isXtOutValid,
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Text)
-                    )
-                }
 
-                if (BuildConfig.SHOW_HEADER_UI) {
-                    OutlinedTextField(
-                        value = ua, onValueChange = { ua = it },
-                        label = { Text("User-Agent") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                    )
-                    OutlinedTextField(
-                        value = ref, onValueChange = { ref = it },
-                        label = { Text("Referer (optional)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Uri)
-                    )
-                }
+                    if (BuildConfig.SHOW_HEADER_UI) {
+                        com.chris.m3usuite.ui.forms.TvFormSection(title = "HTTP Header (optional)") {
+                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                                label = "User-Agent",
+                                value = ua.text,
+                                onValueChange = { ua = TextFieldValue(it) }
+                            )
+                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                                label = "Referer (optional)",
+                                value = ref.text,
+                                onValueChange = { ref = TextFieldValue(it) }
+                            )
+                        }
+                    }
 
-                Spacer(Modifier.height(8.dp))
-                if (inlineMsg.isNotBlank()) {
-                    Text(inlineMsg, color = colorScheme.secondary)
                     Spacer(Modifier.height(8.dp))
+                    if (inlineMsg.isNotBlank()) {
+                        Text(inlineMsg, color = colorScheme.secondary)
+                        Spacer(Modifier.height(8.dp))
+                    }
+                } else {
+                    // Legacy (pre-forms) UI
+                    // Mode selector
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        FilterChip(selected = mode == SetupMode.M3U, onClick = { mode = SetupMode.M3U }, label = { Text("M3U Link") })
+                        FilterChip(selected = mode == SetupMode.XTREAM, onClick = { mode = SetupMode.XTREAM }, label = { Text("Xtream Login") })
+                    }
+                    Spacer(Modifier.height(8.dp))
+
+                    if (mode == SetupMode.M3U) {
+                        OutlinedTextField(
+                            value = m3u, onValueChange = { m3u = it },
+                            label = { Text("M3U / Xtream get.php Link") },
+                            supportingText = { AnimatedVisibility(visible = m3u.text.isNotBlank() && !isM3uOk) { Text("Bitte gültige http/https URL eingeben") } },
+                            isError = m3u.text.isNotBlank() && !isM3uOk,
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, capitalization = KeyboardCapitalization.None, keyboardType = KeyboardType.Uri)
+                        )
+                        OutlinedTextField(
+                            value = epg, onValueChange = { epg = it },
+                            label = { Text("EPG XMLTV URL (optional)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Uri)
+                        )
+                    } else {
+                        OutlinedTextField(
+                            value = xtHost,
+                            onValueChange = { v ->
+                                xtHost = v
+                                val (hostNoScheme, httpsSuggested, explicitPort) = sanitizeHost(v.text)
+                                if (httpsSuggested != xtHttps) xtHttps = httpsSuggested
+                                if (explicitPort != null && xtPort.text != explicitPort.toString()) xtPort = TextFieldValue(explicitPort.toString())
+                                if (hostNoScheme != v.text) xtHost = TextFieldValue(hostNoScheme)
+                            },
+                            label = { Text("Xtream Host (ohne Schema)") },
+                            supportingText = {
+                                AnimatedVisibility(visible = xtHost.text.isNotBlank() && !isXtHostValid) { Text("Nur Hostname oder Host:Port (ohne http/https)") }
+                            },
+                            isError = xtHost.text.isNotBlank() && !isXtHostValid,
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Uri)
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = xtPort, onValueChange = { nv ->
+                                    val onlyDigits = nv.text.filter { it.isDigit() }.take(5)
+                                    xtPort = nv.copy(text = onlyDigits)
+                                },
+                                label = { Text("Port (1–65535)") },
+                                supportingText = {
+                                    AnimatedVisibility(visible = xtPort.text.isNotBlank() && !isXtPortValid) { Text(if (xtHttps) "HTTPS nutzt i. d. R. 443" else "HTTP nutzt i. d. R. 80") }
+                                },
+                                isError = xtPort.text.isNotBlank() && !isXtPortValid,
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Number)
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Checkbox(checked = xtHttps, onCheckedChange = { v ->
+                                    xtHttps = v
+                                    val p = xtPort.text.toIntOrNull()
+                                    if (p == null || (v && p == 80)) xtPort = TextFieldValue("443")
+                                    else if (!v && p == 443) xtPort = TextFieldValue("80")
+                                })
+                                Text("HTTPS")
+                            }
+                        }
+                        OutlinedTextField(
+                            value = xtUser, onValueChange = { xtUser = it },
+                            label = { Text("Benutzername") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                        )
+                        OutlinedTextField(
+                            value = xtPass, onValueChange = { xtPass = it },
+                            label = { Text("Passwort") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Password)
+                        )
+                        OutlinedTextField(
+                            value = xtOut, onValueChange = { xtOut = it.copy(text = normalizeOutput(it.text)) },
+                            label = { Text("Output (ts|m3u8|mp4)") },
+                            supportingText = { AnimatedVisibility(visible = xtOut.text.isNotBlank() && !isXtOutValid) { Text("Gültig: ts, m3u8 oder mp4") } },
+                            isError = xtOut.text.isNotBlank() && !isXtOutValid,
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Text)
+                        )
+                    }
+
+                    if (BuildConfig.SHOW_HEADER_UI) {
+                        OutlinedTextField(
+                            value = ua, onValueChange = { ua = it },
+                            label = { Text("User-Agent") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                        )
+                        OutlinedTextField(
+                            value = ref, onValueChange = { ref = it },
+                            label = { Text("Referer (optional)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Uri)
+                        )
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+                    if (inlineMsg.isNotBlank()) {
+                        Text(inlineMsg, color = colorScheme.secondary)
+                        Spacer(Modifier.height(8.dp))
+                    }
                 }
 
-    TvButton(
+    if (BuildConfig.TV_FORMS_V1) {
+        com.chris.m3usuite.ui.forms.TvButtonRow(
+            primaryText = if (busy) "Bitte warten…" else "Speichern & Importieren",
+            onPrimary = {
+                focusManager.clearFocus(force = true)
+                scope.launch {
+                            busy = true
+                            inlineMsg = "Import läuft…"
+                            val seedResult: Result<Triple<Int, Int, Int>>? = when (mode) {
+                                SetupMode.M3U -> {
+                                    val m3uUrl = m3u.text.trim()
+                                    val epgUrl = epg.text.trim()
+                                    val uaStr  = ua.text.trim()
+                                    val refStr = ref.text.trim()
+                                    try {
+                                        store.setSources(m3uUrl, epgUrl, uaStr, refStr)
+                                    } catch (t: Throwable) {
+                                        inlineMsg = "Speichern fehlgeschlagen: ${t.message.orEmpty()}"
+                                        busy = false
+                                        return@launch
+                                    }
+                                    XtreamSeeder.ensureSeeded(
+                                        context = ctx,
+                                        store = store,
+                                        reason = "setup:m3u",
+                                        force = true,
+                                        forceDiscovery = false
+                                    )
+                                }
+                                SetupMode.XTREAM -> {
+                                    val (hostNoScheme, httpsFromHost, explicitPort) = sanitizeHost(xtHost.text)
+                                    val scheme = if (xtHttps || httpsFromHost) "https" else "http"
+                                    val user = xtUser.text.trim()
+                                    val pass = xtPass.text.trim()
+                                    val out  = normalizeOutput(xtOut.text)
+                                    val port = explicitPort ?: (xtPort.text.trim().toIntOrNull() ?: if (scheme == "https") 443 else 80)
+                                    val portal = "$scheme://$hostNoScheme:$port"
+                                    val m3uUrl = "$portal/get.php?username=$user&password=$pass&output=$out"
+                                    val epgUrl = "$portal/xmltv.php?username=$user&password=$pass"
+                                    try {
+                                        store.setSources(m3uUrl, epgUrl, ua.text.trim(), ref.text.trim())
+                                        store.setXtHost(hostNoScheme)
+                                        store.setXtPort(port)
+                                        store.setXtUser(user)
+                                        store.setXtPass(pass)
+                                        store.setXtOutput(out)
+                                        store.setXtPortVerified(false)
+                                    } catch (t: Throwable) {
+                                        inlineMsg = "Speichern fehlgeschlagen: ${t.message.orEmpty()}"
+                                        busy = false
+                                        return@launch
+                                    }
+                                    XtreamSeeder.ensureSeeded(
+                                        context = ctx,
+                                        store = store,
+                                        reason = "setup:xtream",
+                                        force = true,
+                                        forceDiscovery = true
+                                    )
+                                }
+                            }
+                            busy = false
+                            when {
+                                seedResult == null -> {
+                                    inlineMsg = "Daten bereits vorhanden"
+                                    snackbar.showSnackbar(inlineMsg)
+                                    onDone()
+                                }
+                                seedResult.isSuccess -> {
+                                    val (live, vod, series) = seedResult.getOrNull() ?: Triple(0, 0, 0)
+                                    inlineMsg = "Import abgeschlossen: Live=$live · VOD=$vod · Serien=$series"
+                                    SchedulingGateway.scheduleAll(ctx)
+                                    snackbar.showSnackbar(inlineMsg)
+                                    onDone()
+                                }
+                                else -> {
+                                    val msg = seedResult.exceptionOrNull()?.message.orEmpty()
+                                    inlineMsg = "Import fehlgeschlagen: $msg"
+                                    snackbar.showSnackbar(inlineMsg)
+                                }
+                            }
+                        }
+            },
+            enabled = canSubmit,
+            busy = busy
+        )
+    } else com.chris.m3usuite.ui.common.TvButton(
         enabled = canSubmit,
         onClick = {
             focusManager.clearFocus(force = true)

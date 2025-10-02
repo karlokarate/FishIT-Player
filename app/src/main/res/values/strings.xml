@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">FishIT Player</string>
+    <!-- Media actions -->
+    <string name="action_play">Abspielen</string>
+    <string name="action_resume">Fortsetzen</string>
+    <string name="action_trailer">Trailer</string>
+    <string name="action_add_to_list">Zur Liste hinzufügen</string>
+    <string name="action_remove_from_list">Aus Liste entfernen</string>
+    <string name="action_open_epg">EPG öffnen</string>
+    <string name="action_share">Link teilen</string>
+    <string name="no_link_available">Kein Link verfügbar</string>
+    <string name="empty_default">Keine Inhalte verfügbar</string>
+    <string name="action_retry">Erneut versuchen</string>
 </resources>

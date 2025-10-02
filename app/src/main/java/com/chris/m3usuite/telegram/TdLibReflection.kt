@@ -461,6 +461,9 @@ object TdLibReflection {
         // DownloadFile(int fileId, int priority, int offset, int limit, boolean synchronous)
         new("TdApi\$DownloadFile", arrayOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!), arrayOf(fileId, priority, offset, limit, synchronous))
     } catch (_: Throwable) { null }
+    fun buildCancelDownloadFile(fileId: Int, onlyIfPending: Boolean): Any? = try {
+        new("TdApi\$CancelDownloadFile", arrayOf(Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!), arrayOf(fileId, onlyIfPending))
+    } catch (_: Throwable) { null }
 
     data class FileInfo(val fileId: Int, val localPath: String?, val downloadingActive: Boolean, val downloadingCompleted: Boolean, val downloadedSize: Long, val expectedSize: Long)
 
@@ -533,6 +536,70 @@ object TdLibReflection {
             val v = runCatching { f.get(contentObj) }.getOrNull()
             val id = tryFileId(v)
             if (id != null) return id
+        }
+        return null
+    }
+
+    /** Extract best-effort duration in seconds from nested content (video/audio/document). */
+    fun extractDurationSecs(contentObj: Any?): Int? {
+        if (contentObj == null) return null
+        // direct field
+        runCatching { contentObj.javaClass.getDeclaredField("duration").apply { isAccessible = true }.getInt(contentObj) }
+            .onSuccess { return it }
+        // try nested fields likely to carry media (video/audio/document)
+        contentObj.javaClass.declaredFields.forEach { f ->
+            f.isAccessible = true
+            val v = runCatching { f.get(contentObj) }.getOrNull() ?: return@forEach
+            val dur = runCatching { v.javaClass.getDeclaredField("duration").apply { isAccessible = true }.getInt(v) }.getOrNull()
+            if (dur != null) return dur
+        }
+        return null
+    }
+
+    /** Extract mimeType from nested content; fallback to fileName extension guesses. */
+    fun extractMimeType(contentObj: Any?): String? {
+        if (contentObj == null) return null
+        // Try common mimeType fields
+        runCatching { contentObj.javaClass.getDeclaredField("mimeType").apply { isAccessible = true }.get(contentObj) as? String }
+            .onSuccess { if (!it.isNullOrBlank()) return it }
+        // Nested
+        contentObj.javaClass.declaredFields.forEach { f ->
+            f.isAccessible = true
+            val v = runCatching { f.get(contentObj) }.getOrNull() ?: return@forEach
+            val mt = runCatching { v.javaClass.getDeclaredField("mimeType").apply { isAccessible = true }.get(v) as? String }.getOrNull()
+            if (!mt.isNullOrBlank()) return mt
+        }
+        // Guess from filename
+        val name = extractFileName(contentObj)
+        if (!name.isNullOrBlank()) {
+            val ext = name.substringAfterLast('.', "").lowercase()
+            when (ext) {
+                "mp4" -> return "video/mp4"
+                "mkv" -> return "video/x-matroska"
+                "avi" -> return "video/x-msvideo"
+                "mov" -> return "video/quicktime"
+                "mp3" -> return "audio/mpeg"
+                "m4a" -> return "audio/mp4"
+            }
+        }
+        return null
+    }
+
+    /** Extract width/height from nested video content if present. */
+    fun extractVideoDimensions(contentObj: Any?): Pair<Int, Int>? {
+        if (contentObj == null) return null
+        fun dims(obj: Any?): Pair<Int, Int>? {
+            if (obj == null) return null
+            val w = runCatching { obj.javaClass.getDeclaredField("width").apply { isAccessible = true }.getInt(obj) }.getOrNull()
+            val h = runCatching { obj.javaClass.getDeclaredField("height").apply { isAccessible = true }.getInt(obj) }.getOrNull()
+            return if (w != null && h != null && w > 0 && h > 0) Pair(w, h) else null
+        }
+        dims(contentObj)?.let { return it }
+        contentObj.javaClass.declaredFields.forEach { f ->
+            f.isAccessible = true
+            val v = runCatching { f.get(contentObj) }.getOrNull()
+            val d = dims(v)
+            if (d != null) return d
         }
         return null
     }

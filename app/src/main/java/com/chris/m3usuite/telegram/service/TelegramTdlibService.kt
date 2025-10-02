@@ -197,6 +197,10 @@ class TelegramTdlibService : Service() {
                 // fabricate a temporary message-like container to use helper
                 TdLibReflection.extractFileName(content) ?: "Telegram $messageId"
             }.getOrNull()
+            val duration = TdLibReflection.extractDurationSecs(content)
+            val mime = TdLibReflection.extractMimeType(content)
+            val dims = TdLibReflection.extractVideoDimensions(content)
+            val parsed = com.chris.m3usuite.telegram.TelegramHeuristics.parse(caption)
             val date = System.currentTimeMillis() / 1000
             val thumbFileId = TdLibReflection.extractThumbFileId(content)
             scope.launch(Dispatchers.IO) {
@@ -211,9 +215,16 @@ class TelegramTdlibService : Service() {
                     row.fileUniqueId = unique
                     row.supportsStreaming = supports
                     row.caption = caption
+                    row.captionLower = caption?.lowercase()
                     row.date = date
                     row.localPath = info.localPath
                     row.thumbFileId = thumbFileId
+                    row.durationSecs = duration
+                    row.mimeType = mime
+                    row.sizeBytes = info.expectedSize.takeIf { it > 0 }
+                    row.width = dims?.first
+                    row.height = dims?.second
+                    row.language = parsed.language
                     box.put(row)
                 }
             }

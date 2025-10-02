@@ -221,7 +221,22 @@ fun HomeChromeScaffold(
                             } else false
                         } else false
                     }
-                    Key.DirectionLeft -> { if (isUp) com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT"); false }
+                    Key.DirectionLeft -> {
+                        if (isUp) com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT")
+                        if (isTv) {
+                            // Expand chrome when: current row focus is at the very left (index 0),
+                            // or when there is no focused row/content yet (empty screen/loading)
+                            val rowKey = focusedRowKey
+                            val rowIdx = rowKey?.let { com.chris.m3usuite.ui.state.readRowFocus(it).index }
+                            val noContent = rowKey == null
+                            if (noContent || (rowIdx != null && rowIdx <= 0)) {
+                                tvChromeMode.value = ChromeMode.Expanded
+                                pendingHeaderFocus = true
+                                return@onPreviewKeyEvent true
+                            }
+                        }
+                        false
+                    }
                     Key.DirectionRight -> { if (isUp) com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT"); false }
                     else -> false
                 }

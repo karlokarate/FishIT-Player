@@ -1330,10 +1330,20 @@ fun SettingsScreen(
                         Text("Quellen:", style = MaterialTheme.typography.labelLarge)
                     }
                     if (tgVodSel.isNotBlank()) {
-                        Text("• Filme: $tgVodSel", style = MaterialTheme.typography.bodySmall, color = Color.White)
+                        val vodNamesState = remember(tgVodSel) { mutableStateOf<String?>(null) }
+                        LaunchedEffect(tgVodSel) {
+                            vodNamesState.value = resolveChatNamesCsv(tgVodSel, ctx2)
+                        }
+                        val label = vodNamesState.value?.takeIf { it.isNotBlank() } ?: tgVodSel
+                        Text("• Filme: $label", style = MaterialTheme.typography.bodySmall, color = Color.White)
                     }
                     if (tgSeriesSel.isNotBlank()) {
-                        Text("• Serien: $tgSeriesSel", style = MaterialTheme.typography.bodySmall, color = Color.White)
+                        val seriesNamesState = remember(tgSeriesSel) { mutableStateOf<String?>(null) }
+                        LaunchedEffect(tgSeriesSel) {
+                            seriesNamesState.value = resolveChatNamesCsv(tgSeriesSel, ctx2)
+                        }
+                        val label = seriesNamesState.value?.takeIf { it.isNotBlank() } ?: tgSeriesSel
+                        Text("• Serien: $label", style = MaterialTheme.typography.bodySmall, color = Color.White)
                     }
                 
                     val wm = remember { androidx.work.WorkManager.getInstance(ctx2) }
@@ -1747,6 +1757,28 @@ private fun TelegramChatPickerDialog(
 }
 
 // --- External Player Picker UI ---
+// Context-based resolver (actual implementation)
+private suspend fun resolveChatNamesCsv(csv: String, context: android.content.Context): String {
+    return try {
+        val ids = csv.split(',').mapNotNull { it.trim().toLongOrNull() }
+        if (ids.isEmpty()) return csv
+        val flow = kotlinx.coroutines.flow.MutableStateFlow(com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
+        val client = com.chris.m3usuite.telegram.TdLibReflection.getOrCreateClient(context, flow) ?: return csv
+        val authObj = com.chris.m3usuite.telegram.TdLibReflection.buildGetAuthorizationState()
+            ?.let { com.chris.m3usuite.telegram.TdLibReflection.sendForResult(client, it, 1000) }
+        val auth = com.chris.m3usuite.telegram.TdLibReflection.mapAuthorizationState(authObj)
+        if (auth != com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED) return csv
+        val names = mutableListOf<String>()
+        for (id in ids) {
+            val q = com.chris.m3usuite.telegram.TdLibReflection.buildGetChat(id)
+            val obj = q?.let { com.chris.m3usuite.telegram.TdLibReflection.sendForResult(client, it, 1500) }
+            val title = obj?.let { com.chris.m3usuite.telegram.TdLibReflection.extractChatTitle(it) } ?: id.toString()
+            names += title
+        }
+        names.joinToString(", ")
+    } catch (_: Throwable) { csv }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ExternalPlayerPickerButton(onPick: (String) -> Unit) {
