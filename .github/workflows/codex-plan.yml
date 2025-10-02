@@ -20,15 +20,11 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (full history)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
 
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
 
       - name: Install minimal deps
         run: |
@@ -37,17 +33,15 @@ jobs:
 
       - name: Prepare env for workflow_dispatch
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: |
-          echo "DISPATCH_COMMENT=${{ inputs.comment }}" >> $GITHUB_ENV
+        run: echo "DISPATCH_COMMENT=${{ inputs.comment }}" >> $GITHUB_ENV
 
-      - name: Export GH_EVENT_NAME (for bot)
+      - name: Export GH_EVENT_NAME
         run: echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
 
       - name: Run ContextMap Bot (low)
         env:
-          # Map dein Secret -> erwarteter Name
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}   # gpt-5
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}               # <— direkt
+          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}      # gpt-5
           OPENAI_REASONING_EFFORT: low
 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
