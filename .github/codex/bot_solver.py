@@ -35,12 +35,11 @@ Python-Deps: openai, requests, unidiff
 from __future__ import annotations
 import os
 import re
-import io
 import json
 import time
-import zipfile
 import subprocess
 import sys
+import glob
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Set
 
@@ -364,6 +363,14 @@ def main():
         post_comment(num, f"❌ Solver: Patch-Apply fehlgeschlagen\n```\n{e}\n```")
         sys.exit(1)
 
+    # --- Cleanup temporärer Patchdateien (damit sie nicht mit-committet werden)
+    for f in glob.glob(".github/codex/_solver_sec_*.patch"):
+        try: os.remove(f)
+        except: pass
+    if os.path.exists(".github/codex/_solver_all.patch"):
+        try: os.remove(".github/codex/_solver_all.patch")
+        except: pass
+
     status = sh("git status --porcelain")
     if not status.strip():
         add_label(num, "solver-error")
@@ -384,7 +391,7 @@ def main():
     pr_num = pr.get("number"); pr_url = pr.get("html_url")
     post_comment(num, f"🔧 PR erstellt: #{pr_num} — {pr_url}")
 
-    # Build anstoßen: auf PR-Branch bauen + Issue-Nummer mittgeben (für Bot 3)
+    # Build anstoßen: auf PR-Branch bauen + Issue-Nummer mitgeben (für Bot 3)
     wf = os.environ.get("SOLVER_BUILD_WORKFLOW", "release-apk.yml")
     try:
         since = dispatch_build(wf, branch, {"build_type":"debug", "issue": str(num)})
