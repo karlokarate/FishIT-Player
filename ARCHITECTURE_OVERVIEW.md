@@ -12,6 +12,10 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 >
 > - Android (Kotlin), Jetpack Compose, Navigation‑Compose  
 > - DataStore Preferences, WorkManager  
+> - Manifest/Queries: Package‑visibility for Telegram app is declared to support Android 11+ detection and tg:// deep‑links (org.telegram.messenger, .web, .beta + VIEW intent for scheme tg).
+> - TelegramApp helper centralizes tg://login deep‑link opening with package preference and clipboard fallback.
+>
+>
 > - OkHttp (HTTP), Coil 3 (Bilder), Media3/ExoPlayer (Video)  
 > - Persistenz: ObjectBox (OBX) als Primär‑Store  
 > - Module: `app` (Haupt‑App) + `libtd` (TDLib JNI/Java)
@@ -26,6 +30,9 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 - Playback DataSource: `TelegramRoutingDataSource` für Media3 routet `tg://message?chatId=&messageId=` auf lokale Pfade und triggert bei Bedarf `DownloadFile(fileId)`; `localPath` wird persistiert.
 - Settings: Film/Serien Sync zeigt Chat‑Picker (Hauptordner/Archiv) und zeigt die gewählten Chats mit Namen an (wenn AUTHENTICATED).
 - Sync: `TelegramSyncWorker` (manueller Backfill) ruft pro ausgewähltem Chat `CMD_PULL_CHAT_HISTORY` im Service auf. Der Service nutzt `getChatHistory` (limit=200) und `indexMessageContent(..)` für `ObxTelegramMessage`. Mapping auf VOD/Serien‑Modelle folgt heuristisch in Phase‑2.
+- Package visibility: Manifest includes <queries> for Telegram packages + tg:// VIEW intent so the app can reliably detect the Telegram app and open login deep‑links automatically on the same device (Android 11+ package visibility).
+- Deep‑link helper: `telegram/TelegramApp.kt` provides `isInstalled(...)`, `openDeepLink(...)`, and `openDeepLinkWithFallback(...)` to unify tg://login handling and improve one‑click flows.
+
 - Scheduling: Nach erfolgreichem Sync ruft der Worker `SchedulingGateway.onTelegramSyncCompleted(ctx, refreshHome)` auf. Standardmäßig werden `TelegramCacheCleanupWorker.schedule(...)` und `ObxKeyBackfillWorker.scheduleOnce(...)` getriggert; optional (z. B. Settings CTA) kann `scheduleAll()` erneut ausgeführt werden, damit HomeChrome sofort aktualisiert.
 - Mapping/Heuristik: SxxExx‑Parser ordnet Nachrichten Episoden (Serie) vs. Filme (VOD) zu; Serien/Filme werden als `MediaItem` mit `source="TG"` projiziert (Titel aus Caption). Thumbnails werden on‑demand via TDLib `GetFile` geladen und als `file://` angezeigt (kein Prefetch).
  - Heuristik erweitert: erkennt Bereiche (z. B. S01E01‑03, 1x02‑05) und Sprach‑Tags ([DE]/[EN]/…).
