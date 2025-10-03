@@ -47,6 +47,7 @@ from typing import List, Tuple, Optional, Dict, Set
 
 import requests
 from unidiff import PatchSet
+from unidiff.errors import UnidiffParseError
 
 # ---------------- GitHub / Shell Utils ----------------
 
@@ -315,6 +316,43 @@ def wait_build_result(workflow_ident: str, ref_branch: str, since_iso: str, time
         if time.time()-t0>timeout_s: return {}
         time.sleep(3)
 
+# ---------------- Fallbacks bei Unidiff-Warnungen ----------------
+
+def whole_patch_fallback(patch_text: str) -> Tuple[bool, str]:
+    """Versuche den gesamten Patch in robusten Modi zu applizieren."""
+    tmp = ".github/codex/_solver_all.patch"
+    Path(tmp).write_text(patch_text, encoding="utf-8")
+    tries = [
+        f"git apply -3 -p0 --whitespace=fix {tmp}",
+        f"git apply -p0 --whitespace=fix {tmp}",
+        f"git apply -p0 --reject --ignore-whitespace --whitespace=fix {tmp}",
+    ]
+    last_err = ""
+    for cmd in tries:
+        pr = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+        if pr.returncode == 0:
+            return True, cmd
+        last_err = (pr.stderr or pr.stdout or "")[:800]
+    return False, last_err
+
+def summarize_rejects(num: int):
+    """Wenn .rej Dateien existieren, kurze Liste + Ausschnitte ins Issue kommentieren."""
+    rej_files = glob.glob("**/*.rej", recursive=True)
+    if not rej_files:
+        return
+    preview = []
+    for rf in rej_files[:10]:
+        try:
+            txt = Path(rf).read_text(encoding="utf-8", errors="replace")
+            preview.append(f"\n--- {rf} ---\n" + txt[:500])
+        except Exception:
+            preview.append(f"- {rf}")
+    body = ("⚠️ Solver: Einige Hunks wurden als `.rej` abgelegt (manuelle Nacharbeit nötig):\n"
+            + "\n".join(f"- {r}" for r in rej_files[:50]))
+    if preview:
+        body += "\n\n```diff\n" + "".join(preview) + "\n```"
+    post_comment(num, body)
+
 # ---------------- Main ----------------
 
 def main():
@@ -369,21 +407,43 @@ def main():
         post_comment(num, f"❌ Solver: Kein gültiger Diff\n```\n{patch[:1200]}\n```")
         sys.exit(1)
 
-    # Optional: Unidiff-Validierung
+    # Unidiff-Validierung + Fallback-Flag
+    parse_warn = False
     try:
         PatchSet.from_string(patch)
+    except UnidiffParseError as e:
+        parse_warn = True
+        post_comment(num, f"ℹ️ Solver: Unidiff parser warning: `{type(e).__name__}: {e}` – erweitere Fallbacks.")
     except Exception as e:
-        post_comment(num, f"ℹ️ Solver: Unidiff parser warning: `{type(e).__name__}: {e}` – versuche Apply trotzdem.")
+        parse_warn = True
+        post_comment(num, f"ℹ️ Solver: Unidiff parser warning (generisch): `{type(e).__name__}: {e}` – erweitere Fallbacks.")
 
-    # Patch anwenden
-    try:
-        applied, rejected, skipped = apply_patch_unidiff(patch)
-    except Exception as e:
-        add_label(num, "solver-error")
-        post_comment(num, f"❌ Solver: Patch-Apply fehlgeschlagen\n```\n{e}\n```")
-        sys.exit(1)
+    # Apply
+    applied = rejected = skipped = []
+    if parse_warn:
+        ok, info = whole_patch_fallback(patch)
+        if ok:
+            post_comment(num, f"✅ Solver: Patch via Whole-Apply erfolgreich (`{info}`)")
+        else:
+            post_comment(num, f"❌ Solver: Whole-Apply Fallback scheiterte.\n```\n{info}\n```")
+            # danach klassisch section-wise versuchen
+            try:
+                applied, rejected, skipped = apply_patch_unidiff(patch)
+            except Exception as e:
+                add_label(num, "solver-error")
+                post_comment(num, f"❌ Solver: Patch-Apply fehlgeschlagen\n```\n{e}\n```")
+                summarize_rejects(num)
+                sys.exit(1)
+    else:
+        try:
+            applied, rejected, skipped = apply_patch_unidiff(patch)
+        except Exception as e:
+            add_label(num, "solver-error")
+            post_comment(num, f"❌ Solver: Patch-Apply fehlgeschlagen\n```\n{e}\n```")
+            summarize_rejects(num)
+            sys.exit(1)
 
-    # Cleanup temporärer Patchdateien (nicht committen)
+    # Cleanup temporärer Patchdateien
     for f in glob.glob(".github/codex/_solver_sec_*.patch"):
         try: os.remove(f)
         except: pass
@@ -395,6 +455,7 @@ def main():
     if not status.strip():
         add_label(num, "solver-error")
         post_comment(num, "❌ Solver: Keine Änderungen im Working Tree nach Apply.")
+        summarize_rejects(num)
         sys.exit(1)
 
     # Commit + Push + PR
