@@ -27,6 +27,8 @@ ENV:
   GITHUB_TOKEN
   GITHUB_REPOSITORY
   GITHUB_EVENT_PATH
+  GH_EVENT_NAME
+  ISSUE_NUMBER (optional; via workflow_dispatch)
   SOLVER_BUILD_WORKFLOW (optional, default release-apk.yml)
 
 Python-Deps: openai, requests, unidiff
@@ -74,8 +76,26 @@ def gh_api_raw(method: str, url: str, allow_redirects=True):
         raise RuntimeError(f"GitHub RAW {method} {url} failed: {r.status_code} {r.text[:500]}")
     return r
 
-def issue_number() -> int:
-    return (event().get("issue") or {}).get("number")
+def issue_number() -> Optional[int]:
+    """
+    Issue-Nummer ermitteln:
+    1) klassisch: aus issues-Event
+    2) workflow_dispatch: inputs.issue
+    3) ENV ISSUE_NUMBER (vom Workflow gesetzt)
+    """
+    ev = event()
+    if "issue" in ev:
+        n = (ev.get("issue") or {}).get("number")
+        if n: return int(n)
+    inputs = ev.get("inputs") or {}
+    if inputs.get("issue"):
+        try: return int(inputs["issue"])
+        except: pass
+    env_issue = os.environ.get("ISSUE_NUMBER")
+    if env_issue:
+        try: return int(env_issue)
+        except: pass
+    return None
 
 def list_issue_comments(num: int) -> List[dict]:
     res = gh_api("GET", f"/repos/{repo()}/issues/{num}/comments")
@@ -300,7 +320,7 @@ def wait_build_result(workflow_ident: str, ref_branch: str, since_iso: str, time
 def main():
     num = issue_number()
     if not num:
-        print("::error::No issue number in event"); sys.exit(1)
+        print("::error::No issue number in event or inputs"); sys.exit(1)
 
     labels = get_labels(num)
     if "contextmap-ready" not in labels:
@@ -363,7 +383,7 @@ def main():
         post_comment(num, f"❌ Solver: Patch-Apply fehlgeschlagen\n```\n{e}\n```")
         sys.exit(1)
 
-    # --- Cleanup temporärer Patchdateien (damit sie nicht mit-committet werden)
+    # Cleanup temporärer Patchdateien (nicht committen)
     for f in glob.glob(".github/codex/_solver_sec_*.patch"):
         try: os.remove(f)
         except: pass
