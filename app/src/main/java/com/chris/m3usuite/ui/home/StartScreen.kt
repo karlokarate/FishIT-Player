@@ -50,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -105,6 +106,10 @@ import com.chris.m3usuite.ui.telemetry.AttachPagingTelemetry
 import com.chris.m3usuite.data.obx.toMediaItem
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import com.chris.m3usuite.ui.fx.tvFocusGlow
+import com.chris.m3usuite.data.repo.TelegramContentRepository
+import com.chris.m3usuite.telegram.service.TelegramServiceClient
+import com.chris.m3usuite.ui.components.rows.TelegramRow
+import com.chris.m3usuite.core.http.RequestHeadersProvider
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
@@ -153,6 +158,53 @@ fun StartScreen(
             }
         )
     else null
+
+    val telegramRepo = remember { TelegramContentRepository(ctx, store) }
+    val telegramService = remember { TelegramServiceClient(ctx) }
+    DisposableEffect(Unit) {
+        telegramService.bind()
+        telegramService.getAuth()
+        onDispose { telegramService.unbind() }
+    }
+    val telegramHeaders = remember { RequestHeadersProvider.defaultHeadersBlocking(store) }
+    val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
+    val tgVodSelection by store.tgSelectedVodChatsCsv.collectAsStateWithLifecycle(initialValue = "")
+    val tgSeriesSelection by store.tgSelectedSeriesChatsCsv.collectAsStateWithLifecycle(initialValue = "")
+    val playTelegram: (com.chris.m3usuite.model.MediaItem) -> Unit = remember(playbackLauncher, telegramHeaders) {
+        { item ->
+            scope.launch {
+                val chatId = item.tgChatId ?: return@launch
+                val messageId = item.tgMessageId ?: return@launch
+                val tgUrl = "tg://message?chatId=$chatId&messageId=$messageId"
+                if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                    playbackLauncher.launch(
+                        com.chris.m3usuite.playback.PlayRequest(
+                            type = item.type.ifBlank { "vod" },
+                            mediaId = item.id,
+                            url = tgUrl,
+                            headers = telegramHeaders,
+                            title = item.name
+                        )
+                    )
+                } else {
+                    com.chris.m3usuite.player.PlayerChooser.start(
+                        context = ctx,
+                        store = store,
+                        url = tgUrl,
+                        headers = telegramHeaders,
+                        startPositionMs = null,
+                        mimeType = null
+                    ) { _, _ -> }
+                }
+            }
+        }
+    }
+    val telegramVodChats = remember(tgVodSelection) {
+        tgVodSelection.split(',').mapNotNull { it.trim().toLongOrNull() }.distinct()
+    }
+    val telegramSeriesChats = remember(tgSeriesSelection) {
+        tgSeriesSelection.split(',').mapNotNull { it.trim().toLongOrNull() }.distinct()
+    }
 
     var canEditFavorites by remember { mutableStateOf(true) }
     var canEditWhitelist by remember { mutableStateOf(true) }
@@ -341,6 +393,7 @@ fun StartScreen(
         if (!initialSearch.isNullOrBlank()) vm.query.value = initialSearch
     }
 
+    val preferSettingsFocus = remember(homeUiState) { homeUiState is com.chris.m3usuite.ui.state.UiState.Empty }
     HomeChromeScaffold(
         title = "FishIT Player",
         onSearch = { showSearch = true },
@@ -384,8 +437,21 @@ fun StartScreen(
             if (current != "library?q={q}&qs={qs}") {
                 navController.navigateTopLevel("library?q=&qs=")
             }
-        }
+        },
+        preferSettingsFirstFocus = preferSettingsFocus
     ) { pads: PaddingValues ->
+        // TV-only: if Start is empty, auto-expand chrome once and focus Settings for immediate access.
+        val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
+        val expandChrome = com.chris.m3usuite.ui.home.LocalChromeExpand.current
+        var didAutoOpenChrome by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+        LaunchedEffect(homeUiState, isTv) {
+            if (isTv && homeUiState is com.chris.m3usuite.ui.state.UiState.Empty && !didAutoOpenChrome) {
+                // Defer a frame to ensure scaffold locals are available
+                kotlinx.coroutines.delay(16)
+                runCatching { expandChrome?.invoke() }
+                didAutoOpenChrome = true
+            }
+        }
         val loading by com.chris.m3usuite.ui.fx.FishSpin.isLoading.collectAsState(initial = false)
         if (com.chris.m3usuite.BuildConfig.UI_STATE_V1 && debouncedQuery.isBlank()) {
             when (val s = homeUiState) {
@@ -595,6 +661,45 @@ fun StartScreen(
                                     showAssign = canEditWhitelist,
                                     edgeLeftExpandChrome = true
                                 )
+
+                                if (tgEnabled) {
+                                    telegramSeriesChats.forEach { chatId ->
+                                        var items by remember(chatId, tgSeriesSelection) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
+                                        LaunchedEffect(chatId, tgEnabled, tgSeriesSelection) {
+                                            items = if (tgEnabled) telegramRepo.recentSeriesByChat(chatId, 60, 0) else emptyList()
+                                        }
+                                        if (items.isEmpty()) return@forEach
+
+                                        var chatTitle by remember(chatId) { mutableStateOf("Telegram $chatId") }
+                                        LaunchedEffect(chatId, tgEnabled, tgSeriesSelection) {
+                                            if (tgEnabled) {
+                                                val resolved = runCatching { telegramService.resolveChatTitles(longArrayOf(chatId)) }.getOrNull()
+                                                resolved?.firstOrNull()?.second?.let { chatTitle = it }
+                                            }
+                                        }
+
+                                        Spacer(Modifier.height(12.dp))
+                                        androidx.compose.material3.Surface(
+                                            color = Color.Black.copy(alpha = 0.28f),
+                                            contentColor = Color.White,
+                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+                                        ) {
+                                            androidx.compose.material3.Text(
+                                                text = "Telegram – $chatTitle",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                        Spacer(Modifier.size(4.dp))
+                                        TelegramRow(
+                                            items = items,
+                                            stateKey = "start:tg:series:$chatId",
+                                            onPlay = playTelegram,
+                                            initialFocusEligible = false,
+                                            edgeLeftExpandChrome = true
+                                        )
+                                    }
+                                }
                             } else {
                                 val seriesFlow = remember(debouncedQuery) {
                                     mediaRepo.pagingSearchFilteredFlow("series", debouncedQuery)
@@ -718,6 +823,45 @@ fun StartScreen(
                                     initialFocusEligible = false,
                                     edgeLeftExpandChrome = true
                                 )
+
+                                if (tgEnabled) {
+                                    telegramVodChats.forEach { chatId ->
+                                        var items by remember(chatId, tgVodSelection) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
+                                        LaunchedEffect(chatId, tgEnabled, tgVodSelection) {
+                                            items = if (tgEnabled) telegramRepo.recentVodByChat(chatId, 60, 0) else emptyList()
+                                        }
+                                        if (items.isEmpty()) return@forEach
+
+                                        var chatTitle by remember(chatId) { mutableStateOf("Telegram $chatId") }
+                                        LaunchedEffect(chatId, tgEnabled, tgVodSelection) {
+                                            if (tgEnabled) {
+                                                val resolved = runCatching { telegramService.resolveChatTitles(longArrayOf(chatId)) }.getOrNull()
+                                                resolved?.firstOrNull()?.second?.let { chatTitle = it }
+                                            }
+                                        }
+
+                                        Spacer(Modifier.height(12.dp))
+                                        androidx.compose.material3.Surface(
+                                            color = Color.Black.copy(alpha = 0.28f),
+                                            contentColor = Color.White,
+                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+                                        ) {
+                                            androidx.compose.material3.Text(
+                                                text = "Telegram – $chatTitle",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                        Spacer(Modifier.size(4.dp))
+                                        TelegramRow(
+                                            items = items,
+                                            stateKey = "start:tg:vod:$chatId",
+                                            onPlay = playTelegram,
+                                            initialFocusEligible = false,
+                                            edgeLeftExpandChrome = true
+                                        )
+                                    }
+                                }
                             } else {
                                 val vodFlow = remember(debouncedQuery) {
                                     mediaRepo.pagingSearchFilteredFlow("vod", debouncedQuery)
@@ -778,12 +922,10 @@ fun StartScreen(
                                 )
 
                                 // Telegram aggregated results under Filme when searching
-                                val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
                                 if (tgEnabled) {
-                                    val tgRepo = remember { com.chris.m3usuite.data.repo.TelegramContentRepository(ctx, store) }
                                     var tgResults by remember(debouncedQuery) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
                                     LaunchedEffect(debouncedQuery) {
-                                        tgResults = withContext(Dispatchers.IO) { tgRepo.searchAllChats(debouncedQuery, limit = 60) }
+                                        tgResults = withContext(Dispatchers.IO) { telegramRepo.searchAllChats(debouncedQuery, limit = 60) }
                                     }
                                     if (tgResults.isNotEmpty()) {
                                         Spacer(Modifier.height(8.dp))

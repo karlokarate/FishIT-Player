@@ -145,6 +145,15 @@ data class NormalizedVodDetail(
     val trailer: String? = null,
     val containerExt: String? = null,
     val durationSecs: Int? = null,
+    // Optional extra fields commonly present in VOD info blocks
+    val audio: String? = null,
+    val video: String? = null,
+    val bitrate: String? = null,
+    val mpaaRating: String? = null,
+    val age: String? = null,
+    val tmdbUrl: String? = null,
+    val oName: String? = null,
+    val coverBig: String? = null,
 )
 
 @Serializable

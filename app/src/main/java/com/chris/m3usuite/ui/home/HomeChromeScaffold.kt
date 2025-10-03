@@ -100,6 +100,11 @@ fun HomeChromeScaffold(
     bottomBar: (@Composable () -> Unit)? = {
         FishITBottomPanel(selected = "all", onSelect = {})
     },
+    // TV-only: when true, the header attaches initial focus to the Settings button if available.
+    // Useful on first start when no content exists to allow users to reach settings immediately.
+    preferSettingsFirstFocus: Boolean = false,
+    // TV-only: allow DPAD LEFT to expand chrome (default true). Detail screens can disable this.
+    enableDpadLeftChrome: Boolean = true,
     content: @Composable (PaddingValues) -> Unit
 ) {
     // TV device detection
@@ -223,7 +228,7 @@ fun HomeChromeScaffold(
                     }
                     Key.DirectionLeft -> {
                         if (isUp) com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT")
-                        if (isTv) {
+                        if (isTv && enableDpadLeftChrome) {
                             // Expand chrome when: current row focus is at the very left (index 0),
                             // or when there is no focused row/content yet (empty screen/loading)
                             val rowKey = focusedRowKey
@@ -326,7 +331,8 @@ fun HomeChromeScaffold(
         ) {
             CompositionLocalProvider(
                 LocalHeaderFirstFocus provides (if (isTv && tvChromeMode.value == ChromeMode.Expanded) headerFocus else null),
-                LocalChromeOnAction provides (if (isTv) ({ tvChromeMode.value = ChromeMode.Collapsed }) else null)
+                LocalChromeOnAction provides (if (isTv) ({ tvChromeMode.value = ChromeMode.Collapsed }) else null),
+                com.chris.m3usuite.ui.home.header.LocalPreferSettingsFirstFocus provides (if (isTv) preferSettingsFirstFocus else false)
             ) {
                 Box(Modifier.onFocusEvent { st ->
                     if (isTv && (st.isFocused || st.hasFocus)) {

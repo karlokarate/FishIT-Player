@@ -99,8 +99,16 @@ object SchedulingGateway {
         WorkManager.getInstance(ctx).enqueueUniqueWork(uniqueName, policy, req)
     }
 
-    fun scheduleTelegramSync(ctx: Context, mode: String) {
-        TelegramSyncWorker.enqueue(ctx, mode)
+    fun scheduleTelegramSync(ctx: Context, mode: String, refreshHome: Boolean = false) {
+        TelegramSyncWorker.enqueue(ctx, mode, refreshHome)
+    }
+
+    fun onTelegramSyncCompleted(ctx: Context, refreshHomeChrome: Boolean) {
+        runCatching { TelegramCacheCleanupWorker.schedule(ctx) }
+        runCatching { ObxKeyBackfillWorker.scheduleOnce(ctx) }
+        if (refreshHomeChrome) {
+            scheduleAll(ctx)
+        }
     }
 
     suspend fun refreshFavoritesEpgNow(ctx: Context, aggressive: Boolean = false): Boolean {

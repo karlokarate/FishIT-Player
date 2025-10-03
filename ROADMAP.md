@@ -5,12 +5,19 @@ Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
 - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
 - Maintenance 2025‑09‑28: Build‑Blocking Lücken geschlossen (Nav‑Extension, TV‑Focus‑Compat, TvRowScroll, safePainter, Adults‑Filter, XtreamImportCoordinator). Kein neues Feature; Roadmap unverändert.
-- Maintenance 2025‑09‑28 (TV Focus): Start-Home Serien/VOD/Live Reihen repariert – initialer Fokus greift wieder, Tiles skalieren sofort und DPAD‑LEFT expandiert HomeChrome nur am linken Rand.
+- Maintenance 2025-09-28 (TV Focus): Start-Home Serien/VOD/Live Reihen repariert – initialer Fokus greift wieder, Tiles skalieren sofort und DPAD‑LEFT expandiert HomeChrome nur am linken Rand.
+- Maintenance 2025-10-03: Detailseiten neu auf stabilem Scaffold (HomeChromeScaffold → Box → Card + LazyColumn). VOD: OBX-first + Xtream-On-Demand, Plot/Facts als Karten, ein Scroll-Container, sichere Play/Resume-Actions. Bruchfeste Klammerstruktur; Build-Fehler behoben.
+ - Maintenance 2025-10-03: DetailMask eingeführt (`ui.detail.DetailPage`/`DetailBackdrop`/`DetailSections`) – einheitlicher Aufbau für alle Details (Hero/Gradients/AccentCard/Header/Sections). VOD nutzt bereits die Maske; Series/Live Migration als nächstes.
+  
+Completed (moved to Changelog)
+- Detail screens: full-screen hero background (TV/portrait/landscape) and removal of FishBackground overlay.
+- Details centralization: unify VOD/Series/Live via `ui/detail` (DetailHeader+MetaChips+HeaderExtras+DetailFacts), legacy paths removed; on-demand metadata load only; DPAD‑LEFT→Chrome disabled in details; BACK re-enabled.
 - Maintenance 2025‑09‑29 (TV Low-Spec): Laufzeitprofil für TV hinzugefügt (reduzierte Fokus‑Effekte, kleinere Paging‑Fenster, OkHttp Drosselung, Coil ohne Crossfade). Während der Wiedergabe werden Xtream‑Seeding‑Worker pausiert und danach wieder aktiviert (wenn zuvor aktiv).
 - Maintenance 2025‑09‑30: LiveDetailScreen Buildfix – Klammerfehler behoben, EPG/Kid-Dialogs in den Screenkörper verlagert. Kein Roadmap‑Impact.
  - Maintenance 2025‑09‑30: Start/Library Playback-Migration – Verbleibende Direktaufrufe von PlayerChooser auf PlaybackLauncher (Flag `PLAYBACK_LAUNCHER_V1`) umgestellt; VOD „Ähnliche Inhalte“ und Live „Mehr aus Kategorie“ öffnen nun Details des gewählten Elements (Lambdas an Screens ergänzt und in MainActivity verdrahtet).
 - Maintenance 2025‑10‑01: Telegram – Settings zeigen nun Chat‑Namen für ausgewählte Film/Serien‑Sync‑Quellen; Backfill‑Worker `TelegramSyncWorker` liest jüngste Nachrichten aus selektierten Chats und indiziert Minimal‑Metadaten (ObxTelegramMessage).
- - Maintenance 2025‑10‑01: Telegram – Zusätzliche Rows in Library (VOD/Series) je ausgewähltem Chat, mit on‑demand Thumbnails und blauem „T“-Badge. Globale Suche auf Start bindet Telegram als zusätzliche Row ein. Player nutzt für tg:// geringe RAM‑Buffer, IO (TDLib) cached.
+- Maintenance 2025‑10‑01: Telegram – Zusätzliche Rows in Library (VOD/Series) je ausgewähltem Chat, mit on‑demand Thumbnails und blauem „T“-Badge. Globale Suche auf Start bindet Telegram als zusätzliche Row ein. Player nutzt für tg:// geringe RAM‑Buffer, IO (TDLib) cached.
+- Maintenance 2025‑10‑02: Telegram – Service stellt Chat-IPC (`listChats`, `resolveChatTitles`, `pullChatHistory`) bereit; Settings-Dialog + Sync-Worker hängen sich an denselben TDLib-Kontext, sodass die Auth-Session erhalten bleibt und kein zweiter Reflection-Client nötig ist. Login-Dialog erkennt die lokale Telegram-App, setzt `PhoneNumberAuthenticationSettings` (`is_current_phone_number`, Tokens) und öffnet den QR-Link automatisch für Single-Device-Anmeldungen.
 
 ---
 
@@ -49,7 +56,7 @@ Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten 
 
 - PRIO‑1: DetailScaffold (Header + MetaChips)
   - `ui.detail/*` eingeführt (Header/Scrim/MetaChips/Scaffold) mit Flag `BuildConfig.DETAIL_SCAFFOLD_V1` (default ON).
-  - Migration v1: VOD + Serie + Live nutzen `DetailHeader` für den Kopfbereich (legacy Header bei Flag=OFF).
+  - Migration abgeschlossen: VOD + Serie + Live nutzen `DetailHeader` und zentrale Extras/Facts; legacy Header ausgebaut.
 
 - PRIO‑1: UiState Layer
   - `UiState` + `StatusViews` + `collectAsUiState` eingeführt; Flag `BuildConfig.UI_STATE_V1` (default ON).

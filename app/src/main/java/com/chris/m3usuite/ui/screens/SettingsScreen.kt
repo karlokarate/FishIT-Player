@@ -1306,10 +1306,22 @@ fun SettingsScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
                         ) { Text("Serien Sync") }
                         if (tgVodSel.isNotBlank()) {
-                            TextButton(onClick = { com.chris.m3usuite.work.SchedulingGateway.scheduleTelegramSync(ctx2, com.chris.m3usuite.work.TelegramSyncWorker.MODE_VOD) }) { Text("Filme synchronisieren") }
+                            TextButton(onClick = {
+                                com.chris.m3usuite.work.SchedulingGateway.scheduleTelegramSync(
+                                    ctx2,
+                                    com.chris.m3usuite.work.TelegramSyncWorker.MODE_VOD,
+                                    refreshHome = true
+                                )
+                            }) { Text("Filme synchronisieren") }
                         }
                         if (tgSeriesSel.isNotBlank()) {
-                            TextButton(onClick = { com.chris.m3usuite.work.SchedulingGateway.scheduleTelegramSync(ctx2, com.chris.m3usuite.work.TelegramSyncWorker.MODE_SERIES) }) { Text("Serien synchronisieren") }
+                            TextButton(onClick = {
+                                com.chris.m3usuite.work.SchedulingGateway.scheduleTelegramSync(
+                                    ctx2,
+                                    com.chris.m3usuite.work.TelegramSyncWorker.MODE_SERIES,
+                                    refreshHome = true
+                                )
+                            }) { Text("Serien synchronisieren") }
                         }
                         if (showVodPicker) TelegramChatPickerDialog(onDismiss = { showVodPicker = false }, onSelect = { chatId ->
                             val cur = tgVodSel.split(',').filter { it.isNotBlank() }.toMutableSet()
@@ -1495,6 +1507,7 @@ private fun generateQrBitmap(text: String, width: Int, height: Int): Bitmap? {
 
 @Composable
 private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.data.repo.TelegramAuthRepository) {
+    val ctx = LocalContext.current
     val state by repo.authState.collectAsStateWithLifecycle(initialValue = com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
     var phone by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
@@ -1502,6 +1515,9 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
     var busy by remember { mutableStateOf(false) }
     var didCheckDbKey by remember { mutableStateOf(false) }
     var qrLink by remember { mutableStateOf<String?>(null) }
+    val hasTelegramApp = remember { isTelegramInstalled(ctx) }
+    var useCurrentDevice by remember { mutableStateOf(hasTelegramApp) }
+    var autoLaunched by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         repo.qrLinks.collect { link -> qrLink = link }
     }
@@ -1531,6 +1547,22 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
         }
     }
 
+    LaunchedEffect(state, qrLink) {
+        if (state == com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_OTHER_DEVICE) {
+            val link = qrLink
+            if (!link.isNullOrBlank() && hasTelegramApp && !autoLaunched) {
+                autoLaunched = true
+                kotlin.runCatching {
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(link))
+                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    ctx.startActivity(intent)
+                }
+            }
+        } else {
+            autoLaunched = false
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
@@ -1549,6 +1581,14 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
                         Text("Gib deine Telefonnummer im internationalen Format ein (z. B. +491701234567)", style = MaterialTheme.typography.bodySmall)
                         Spacer(Modifier.height(6.dp))
                         Text("Oder melde dich per QR an: In der Telegram‑App auf deinem Smartphone zu Einstellungen → Geräte → Gerät verbinden gehen.", style = MaterialTheme.typography.bodySmall)
+                        if (hasTelegramApp) {
+                            Spacer(Modifier.height(6.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Switch(checked = useCurrentDevice, onCheckedChange = { useCurrentDevice = it })
+                                Spacer(Modifier.width(8.dp))
+                                Text("Code direkt auf diesem Gerät bestätigen (Telegram-App installiert)", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
                     }
                     com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -1603,6 +1643,10 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
                                 }) { Text("In Telegram öffnen") }
                                 TextButton(onClick = { repo.requestQrLogin() }) { Text("Neu laden") }
                             }
+                            if (hasTelegramApp) {
+                                Spacer(Modifier.height(4.dp))
+                                Text("Telegram ist auf diesem Gerät installiert – sobald du oben auf \"In Telegram öffnen\" tippst (oder der Dialog automatisch erscheint), kannst du die Anmeldung ohne zweites Gerät bestätigen.", style = MaterialTheme.typography.bodySmall)
+                            }
                         } else {
                             Text("Öffne Telegram auf deinem Smartphone → Einstellungen → Geräte → QR‑Code scannen.", style = MaterialTheme.typography.bodySmall)
                             Spacer(Modifier.height(6.dp))
@@ -1624,7 +1668,7 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
             when (state) {
                 com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_NUMBER, com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNAUTHENTICATED -> {
                     TextButton(onClick = {
-                        if (repo.start() && phone.isNotBlank()) { busy = true; repo.sendPhoneNumber(phone) }
+                        if (repo.start() && phone.isNotBlank()) { busy = true; repo.sendPhoneNumber(phone, useCurrentDevice) }
                     }) { Text("Weiter") }
                 }
                 com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE -> {
@@ -1670,47 +1714,46 @@ private fun TelegramChatPickerDialog(
     var loading by remember { mutableStateOf(true) }
     var folder by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("main") }
     var search by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    val svc = remember { com.chris.m3usuite.telegram.service.TelegramServiceClient(ctx) }
+    DisposableEffect(Unit) {
+        svc.bind()
+        onDispose { svc.unbind() }
+    }
 
     LaunchedEffect(Unit) {
-        loading = true
-        val flow = kotlinx.coroutines.flow.MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
-        val client = runCatching { TdLibReflection.getOrCreateClient(ctx, flow) }.getOrNull()
-        authState.value = flow.value
-        if (client != null) {
-            val authObj = TdLibReflection.buildGetAuthorizationState()?.let { TdLibReflection.sendForResult(client, it, 1000) }
-            val st = TdLibReflection.mapAuthorizationState(authObj)
-            authState.value = st
-            if (st != TdLibReflection.AuthState.AUTHENTICATED) {
-                loading = false
-                return@LaunchedEffect
-            }
-            fun load(listObj: Any?, target: MutableList<Pair<Long, String>>) {
-                if (listObj == null) return
-                val get = TdLibReflection.buildGetChats(listObj, 200) ?: return
-                val res = TdLibReflection.sendForResult(client, get) ?: return
-                val ids = TdLibReflection.extractChatsIds(res) ?: longArrayOf()
-                for (id in ids) {
-                    val q = TdLibReflection.buildGetChat(id) ?: continue
-                    val chatObj = TdLibReflection.sendForResult(client, q)
-                    val title = chatObj?.let { TdLibReflection.extractChatTitle(it) } ?: id.toString()
-                    target.add(id to title)
-                }
-            }
-            load(TdLibReflection.buildChatListMain(), chatsMain)
-            load(TdLibReflection.buildChatListArchive(), chatsArchive)
+        svc.getAuth()
+        svc.authStates().collect { st ->
+            runCatching { TdLibReflection.AuthState.valueOf(st) }
+                .getOrNull()
+                ?.let { authState.value = it }
         }
-        loading = false
+    }
+
+    LaunchedEffect(authState.value) {
+        if (authState.value == TdLibReflection.AuthState.AUTHENTICATED) {
+            loading = true
+            val main = runCatching { svc.listChats("main", 200) }.getOrDefault(emptyList())
+            val archive = runCatching { svc.listChats("archive", 200) }.getOrDefault(emptyList())
+            chatsMain.clear(); chatsMain.addAll(main)
+            chatsArchive.clear(); chatsArchive.addAll(archive)
+            loading = false
+        } else {
+            loading = false
+        }
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
-            Text("Telegram – Ordner auswählen", style = MaterialTheme.typography.titleMedium)
+            Text("Telegram – Chat-Liste", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             if (authState.value != TdLibReflection.AuthState.AUTHENTICATED) {
                 Text("Bitte zuerst Telegram verbinden.", style = MaterialTheme.typography.bodySmall, color = Color.White)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { onRequestLogin() }, colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.Accent, contentColor = Color.Black)) { Text("Jetzt verbinden") }
+                    Button(
+                        onClick = { onRequestLogin() },
+                        colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.Accent, contentColor = Color.Black)
+                    ) { Text("Jetzt verbinden") }
                     TextButton(onClick = onDismiss) { Text("Schließen") }
                 }
             } else {
@@ -1756,26 +1799,49 @@ private fun TelegramChatPickerDialog(
     }
 }
 
+private fun isTelegramInstalled(context: android.content.Context): Boolean {
+    val pm = context.packageManager
+    val packages = listOf(
+        "org.telegram.messenger",
+        "org.telegram.messenger.web",
+        "org.telegram.messenger.beta",
+        "org.telegram.plus"
+    )
+    return packages.any { pkg ->
+        runCatching {
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                pm.getPackageInfo(pkg, android.content.pm.PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getPackageInfo(pkg, 0)
+            }
+        }.isSuccess
+    }
+}
+
 // --- External Player Picker UI ---
 // Context-based resolver (actual implementation)
 private suspend fun resolveChatNamesCsv(csv: String, context: android.content.Context): String {
     return try {
         val ids = csv.split(',').mapNotNull { it.trim().toLongOrNull() }
         if (ids.isEmpty()) return csv
-        val flow = kotlinx.coroutines.flow.MutableStateFlow(com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
-        val client = com.chris.m3usuite.telegram.TdLibReflection.getOrCreateClient(context, flow) ?: return csv
-        val authObj = com.chris.m3usuite.telegram.TdLibReflection.buildGetAuthorizationState()
-            ?.let { com.chris.m3usuite.telegram.TdLibReflection.sendForResult(client, it, 1000) }
-        val auth = com.chris.m3usuite.telegram.TdLibReflection.mapAuthorizationState(authObj)
-        if (auth != com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED) return csv
-        val names = mutableListOf<String>()
-        for (id in ids) {
-            val q = com.chris.m3usuite.telegram.TdLibReflection.buildGetChat(id)
-            val obj = q?.let { com.chris.m3usuite.telegram.TdLibReflection.sendForResult(client, it, 1500) }
-            val title = obj?.let { com.chris.m3usuite.telegram.TdLibReflection.extractChatTitle(it) } ?: id.toString()
-            names += title
+        val svc = com.chris.m3usuite.telegram.service.TelegramServiceClient(context)
+        try {
+            svc.bind()
+            val store = com.chris.m3usuite.prefs.SettingsStore(context)
+            val apiId = store.tgApiId.first().takeIf { it > 0 } ?: BuildConfig.TG_API_ID
+            val apiHash = store.tgApiHash.first().ifBlank { BuildConfig.TG_API_HASH }
+            if (apiId > 0 && apiHash.isNotBlank()) {
+                svc.start(apiId, apiHash)
+                svc.getAuth()
+            }
+            val titles = svc.resolveChatTitles(ids.toLongArray())
+            titles.takeIf { it.isNotEmpty() }
+                ?.joinToString(", ") { it.second }
+                ?: csv
+        } finally {
+            svc.unbind()
         }
-        names.joinToString(", ")
     } catch (_: Throwable) { csv }
 }
 

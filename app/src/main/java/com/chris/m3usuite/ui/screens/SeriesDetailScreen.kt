@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -84,6 +86,8 @@ import com.chris.m3usuite.ui.actions.MediaActionBar
 import com.chris.m3usuite.ui.actions.MediaActionId
 import com.chris.m3usuite.core.telemetry.Telemetry
 import androidx.compose.ui.res.stringResource
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -213,6 +217,7 @@ fun SeriesDetailScreen(
     var plot by remember { mutableStateOf<String?>(null) }
     var images by remember { mutableStateOf<List<String>>(emptyList()) }
     var backdrop by remember { mutableStateOf<String?>(null) }
+    var cover by remember { mutableStateOf<String?>(null) }
     var seriesStreamId by remember { mutableStateOf<Int?>(null) }
     var year by remember { mutableStateOf<Int?>(null) }
     var rating by remember { mutableStateOf<Double?>(null) }
@@ -286,16 +291,7 @@ fun SeriesDetailScreen(
                 row = box.query(
                     com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(obxSid.toLong())
                 ).build().findFirst()
-                // Vorauslad: Nachbar‑Serien nach ProviderKey (bis 50)
-                runCatching {
-                    val key = row?.providerKey
-                    val ids: List<Int> = if (!key.isNullOrBlank()) {
-                        repo.seriesByProviderKeyNewest(key, 0, 60).map { it.seriesId }
-                    } else {
-                        repo.seriesPagedNewest(0, 60).map { it.seriesId }
-                    }
-                    repo.importSeriesDetailsForIds(ids, max = 50)
-                }
+                // Kein globaler Prefetch: Metadaten werden ausschließlich on-demand für die aktuelle Kachel geladen
             }
 
             title = row?.name.orEmpty()
@@ -305,8 +301,14 @@ fun SeriesDetailScreen(
                     (0 until arr.length()).mapNotNull { idx -> arr.optString(idx, null) }
                 }.getOrNull()
             } ?: emptyList()
-            poster = images.firstOrNull()
-            backdrop = images.firstOrNull { it != poster }
+            run {
+                val posterCand = images.getOrNull(0)
+                val coverCand = images.getOrNull(1)?.takeUnless { it == posterCand }
+                val backdropCand = images.drop(if (coverCand != null) 2 else 1).firstOrNull { it != posterCand && it != coverCand }
+                poster = posterCand
+                cover = coverCand
+                backdrop = backdropCand
+            }
             plot = row?.plot?.takeIf { it.isNotBlank() }
             year = row?.year
             rating = row?.rating
@@ -316,6 +318,8 @@ fun SeriesDetailScreen(
             country = row?.country
             releaseDate = row?.releaseDate
             trailer = normalizeTrailerUrl(row?.trailer)
+            imdbId = row?.imdbId
+            tmdbId = row?.tmdbId
             providerLabel = row?.providerKey?.takeIf { it.isNotBlank() }?.let { key ->
                 ProviderLabelStore.get(ctx).labelFor(key) ?: key
             }
@@ -371,6 +375,20 @@ fun SeriesDetailScreen(
             onExit = { showInternal = false }
         )
         return
+    }
+
+    // Back button: allow exit from details
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+    DisposableEffect(backDispatcher) {
+        if (backDispatcher == null) return@DisposableEffect onDispose { }
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                remove()
+                backDispatcher.onBackPressed()
+            }
+        }
+        backDispatcher.addCallback(callback)
+        onDispose { callback.remove() }
     }
 
     if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
@@ -514,56 +532,307 @@ fun SeriesDetailScreen(
         onProfiles = null,
         listState = listState,
         onLogo = onLogo,
-        bottomBar = {}
+        bottomBar = {},
+        enableDpadLeftChrome = false
     ) { pads ->
-        Box(Modifier.fillMaxSize().padding(pads)) {
+        // New unified detail mask (behind flag). Fallback below keeps legacy path.
+        if (com.chris.m3usuite.BuildConfig.DETAIL_SCAFFOLD_V1) {
+            com.chris.m3usuite.ui.detail.SeriesDetailMask(
+                isAdult = isAdult,
+                pads = pads,
+                listState = listState,
+                store = store,
+                backdrop = backdrop,
+                poster = poster,
+                cover = cover,
+                title = title,
+                plot = plot,
+                year = year,
+                rating = rating,
+                genre = genre,
+                providerLabel = providerLabel,
+                categoryLabel = categoryLabel,
+                country = country,
+                releaseDate = releaseDate,
+                imdbId = imdbId,
+                tmdbId = tmdbId,
+                trailer = trailer,
+                seriesStreamId = seriesStreamId,
+                seasons = seasons,
+                seasonSel = seasonSel,
+                onSelectSeason = { s -> seasonSel = s },
+                episodes = episodes,
+                resumeLookup = { e -> com.chris.m3usuite.data.repo.ResumeRepository(ctx).getSeriesResume(seriesStreamId ?: -1, e.season, e.episodeNum) },
+                onPlayEpisode = { e, fromStart, resumeSecs -> playEpisode(e, fromStart, resumeSecs) },
+                onOpenLink = { link -> runCatching { uriHandler.openUri(link) } }
+            )
+            return@HomeChromeScaffold
+        }
+        if (false && com.chris.m3usuite.BuildConfig.DETAIL_SCAFFOLD_V1) {
+            val heroUrl = remember(backdrop, poster) { backdrop ?: poster }
+            val firstEp = episodes.firstOrNull()
+            val lblPlay = stringResource(com.chris.m3usuite.R.string.action_play)
+            val lblTrailer = stringResource(com.chris.m3usuite.R.string.action_trailer)
+            val actions = remember(firstEp, trailer, lblPlay, lblTrailer, uriHandler) {
+                buildList<com.chris.m3usuite.ui.actions.MediaAction> {
+                    if (firstEp != null) add(
+                        com.chris.m3usuite.ui.actions.MediaAction(
+                            id = com.chris.m3usuite.ui.actions.MediaActionId.Play,
+                            label = lblPlay,
+                            primary = true,
+                            onClick = { playEpisode(firstEp, fromStart = true) }
+                        )
+                    )
+                    val tr = normalizeTrailerUrl(trailer)
+                    if (!tr.isNullOrBlank()) add(
+                        com.chris.m3usuite.ui.actions.MediaAction(
+                            id = com.chris.m3usuite.ui.actions.MediaActionId.Trailer,
+                            label = lblTrailer,
+                            onClick = { runCatching { uriHandler.openUri(tr) } }
+                        )
+                    )
+                }
+            }
+            val meta = com.chris.m3usuite.ui.detail.DetailMeta(
+                year = year,
+                genres = parseTags(genre),
+                provider = providerLabel,
+                category = categoryLabel
+            )
+            com.chris.m3usuite.ui.detail.DetailPage(
+                isAdult = isAdult,
+                pads = pads,
+                listState = listState,
+                title = title,
+                heroUrl = heroUrl,
+                posterUrl = cover ?: poster ?: heroUrl,
+                actions = actions,
+                meta = meta,
+                headerExtras = { com.chris.m3usuite.ui.detail.DetailHeaderExtras() },
+                showHeaderMetaChips = true,
+                resumeText = null,
+                plot = plot,
+                year = year,
+                durationSecs = null,
+                containerExt = null,
+                rating = rating,
+                mpaaRating = null,
+                age = null,
+                provider = providerLabel,
+                category = categoryLabel,
+                genres = parseTags(genre),
+                countries = parseTags(country).ifEmpty { country?.let { listOf(it) } ?: emptyList() },
+                director = director,
+                cast = cast,
+                releaseDate = releaseDate,
+                imdbId = imdbId,
+                tmdbId = tmdbId,
+                tmdbUrl = null,
+                audio = null,
+                video = null,
+                bitrate = null,
+                onOpenLink = { link -> runCatching { uriHandler.openUri(link) } },
+                trailerUrl = null,
+                trailerHeaders = null,
+                extraItems = {
+                    // Staffeln – reines Umschalten (lokales Filtern)
+                    if (seasons.isNotEmpty()) {
+                        item {
+                            val accent = if (!isAdult) DesignTokens.KidAccent else DesignTokens.Accent
+                            val badgeColor = if (!isAdult) accent.copy(alpha = 0.26f) else accent.copy(alpha = 0.20f)
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = badgeColor,
+                                contentColor = Color.White,
+                                modifier = Modifier.graphicsLayer(alpha = DesignTokens.BadgeAlpha)
+                            ) {
+                                Text(
+                                    "Staffeln",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                )
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            com.chris.m3usuite.ui.tv.TvFocusRow(
+                                stateKey = "series:seasons:${seriesStreamId ?: -1}",
+                                itemSpacing = 8.dp,
+                                contentPadding = PaddingValues(end = 8.dp),
+                                itemCount = seasons.size,
+                                itemKey = { idx -> seasons[idx] }
+                            ) { idx ->
+                                val s = seasons[idx]
+                                FilterChip(
+                                    modifier = Modifier.graphicsLayer(alpha = DesignTokens.BadgeAlpha)
+                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable { seasonSel = s } }),
+                                    selected = seasonSel == s,
+                                    onClick = { seasonSel = s },
+                                    label = { Text("S$s") },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = badgeColor,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                            }
+                            Spacer(Modifier.height(8.dp))
+                        }
+                    }
+
+                    // Episodenliste der aktuellen Season
+                    itemsIndexed(
+                        items = episodes,
+                        key = { index, item -> "${item.seriesStreamId}-${item.season}-${item.episodeNum}" }
+                    ) { index, e ->
+                        val compositeKey = "${e.seriesStreamId}-${e.season}-${e.episodeNum}"
+                        var resumeSecs by remember(compositeKey, resumeRefreshKey) { mutableStateOf<Int?>(null) }
+
+                        // Resume (OBX)
+                        LaunchedEffect(compositeKey, resumeRefreshKey) {
+                            resumeSecs = withContext(Dispatchers.IO) {
+                                val sid = seriesStreamId
+                                if (sid != null) com.chris.m3usuite.data.repo.ResumeRepository(ctx)
+                                    .getSeriesResume(sid, e.season, e.episodeNum)
+                                else null
+                            }
+                        }
+
+                        BoxWithConstraints(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                            val seriesClean = remember(title, year) { cleanSeriesName(title, year) }
+                            val epName = remember(e.title, seriesClean) { cleanEpisodeTitle(e.title, seriesClean) }
+                            val thumbSize = 48.dp
+                            val shape = RoundedCornerShape(28.dp)
+                            var epFocused by remember { mutableStateOf(false) }
+
+                            Box(Modifier.fillMaxWidth()) {
+                                // Chip Container
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .then(
+                                            if (epFocused)
+                                                Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape)
+                                            else Modifier
+                                        )
+                                        .clip(shape)
+                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f))
+                                        .then(com.chris.m3usuite.ui.skin.run {
+                                            Modifier.tvClickable {
+                                                if (resumeSecs != null) playEpisode(e, fromStart = false, resumeSecs = resumeSecs)
+                                                else playEpisode(e, fromStart = true)
+                                            }
+                                        })
+                                        .onFocusEvent { ev -> epFocused = ev.isFocused }
+                                ) {
+                                    Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        // Thumb
+                                        Surface(shape = RoundedCornerShape(12.dp), color = Color.White.copy(alpha = 0.06f)) {
+                                            Box(Modifier.size(thumbSize)) {
+                                                var loaded by remember { mutableStateOf(false) }
+                                                val alpha by animateFloatAsState(
+                                                    if (loaded) 1f else 0f,
+                                                    animationSpec = tween(260),
+                                                    label = "thumbFade"
+                                                )
+                                                if (!loaded)
+                                                    com.chris.m3usuite.ui.fx.ShimmerBox(
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        cornerRadius = 12.dp
+                                                    )
+                                                AppAsyncImage(
+                                                    url = e.poster,
+                                                    contentDescription = null,
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha },
+                                                    crossfade = false,
+                                                    onLoading = { loaded = false },
+                                                    onSuccess = { loaded = true },
+                                                    onError = { loaded = true }
+                                                )
+                                                // Duration overlay
+                                                if ((e.durationSecs ?: 0) > 0) {
+                                                    val secs = e.durationSecs ?: 0
+                                                    val h = secs / 3600
+                                                    val m = (secs % 3600) / 60
+                                                    val text = if (h > 0) String.format("%dh %02dm", h, m) else String.format("%dm", m)
+                                                    androidx.compose.material3.Surface(
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        color = Color.Black.copy(alpha = 0.55f),
+                                                        contentColor = Color.White,
+                                                        modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)
+                                                    ) { Text(text, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)) }
+                                                }
+                                            }
+                                        }
+                                        // Title + info
+                                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            val titleLine = buildString {
+                                                append("S"); append(e.season); append("E"); append(e.episodeNum)
+                                                if (!epName.isNullOrBlank()) { append(" · "); append(epName) }
+                                            }
+                                            Text(titleLine, style = MaterialTheme.typography.titleSmall)
+                                            val sub = e.plot?.takeIf { it.isNotBlank() } ?: e.title ?: ""
+                                            if (sub.isNotBlank()) Text(sub, maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        // Actions entfernt: Gesamtes Feld ist fokussierbar und klickbar (spielt ab)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+            return@HomeChromeScaffold
+        }
+
+        // Header auto-expand on TV removed (details must remain visible)
+        // Root without padding so hero covers entire screen
+        Box(Modifier.fillMaxSize()) {
             val accent = if (!isAdult) DesignTokens.KidAccent else DesignTokens.Accent
             val heroUrl = remember(backdrop, poster) { backdrop ?: poster }
+            // Layer 1: full-screen hero image (crop to fill; center-aligned)
             heroUrl?.let { url ->
                 com.chris.m3usuite.ui.util.AppHeroImage(
                     url = url,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.matchParentSize().graphicsLayer(alpha = 0.5f),
+                    modifier = Modifier.fillMaxSize().graphicsLayer(alpha = com.chris.m3usuite.ui.detail.HERO_SCRIM_IMAGE_ALPHA),
                     crossfade = true
                 )
             }
             val badgeColor = if (!isAdult) accent.copy(alpha = 0.26f) else accent.copy(alpha = 0.20f)
             val badgeColorDarker = if (!isAdult) accent.copy(alpha = 0.32f) else accent.copy(alpha = 0.26f)
 
-            // Hintergrund
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to MaterialTheme.colorScheme.background.copy(alpha = 0.35f),
-                            1f to MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
+            // Foreground content area with scaffold paddings
+            Box(Modifier.fillMaxSize().padding(pads)) {
+                // Hintergrundlesbarkeit innerhalb des gepaddeten Inhalts
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                0f to MaterialTheme.colorScheme.background.copy(alpha = 0.35f),
+                                1f to MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
+                            )
                         )
-                    )
-            )
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                accent.copy(alpha = if (!isAdult) 0.20f else 0.12f),
-                                Color.Transparent
-                            ),
-                            radius = with(LocalDensity.current) { 680.dp.toPx() }
+                )
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    accent.copy(alpha = if (!isAdult) 0.20f else 0.12f),
+                                    Color.Transparent
+                                ),
+                                radius = with(LocalDensity.current) { 680.dp.toPx() }
+                            )
                         )
-                    )
-            )
-            com.chris.m3usuite.ui.fx.FishBackground(
-                modifier = Modifier.align(Alignment.Center).size(560.dp),
-                alpha = 0.05f,
-                neutralizeUnderlay = true
-            )
-            com.chris.m3usuite.ui.common.AccentCard(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                accent = accent
-            ) {
+                )
+                // Removed FishBackground per request
+                com.chris.m3usuite.ui.common.AccentCard(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    accent = accent
+                ) {
                 val ftKey = remember(seasonSel, episodes.size) { (seasonSel ?: -1) to episodes.size }
                 FadeThrough(key = ftKey) {
                     LazyColumn(
@@ -572,7 +841,7 @@ fun SeriesDetailScreen(
                         contentPadding = PaddingValues(bottom = 16.dp)
                     ) {
                         // Header (Titel, Poster, Kid‑Freigabe)
-                        if (com.chris.m3usuite.BuildConfig.DETAIL_SCAFFOLD_V1) {
+                        if (true) {
                             item {
                                 val firstEp = episodes.firstOrNull()
                                 val actions = buildList<com.chris.m3usuite.ui.actions.MediaAction> {
@@ -603,16 +872,15 @@ fun SeriesDetailScreen(
                                     title = title,
                                     subtitle = null,
                                     heroUrl = backdrop ?: poster,
-                                    posterUrl = poster ?: backdrop,
+                                    posterUrl = cover ?: poster ?: backdrop,
                                     actions = actions,
                                     meta = meta,
-                                    headerExtras = {
-                                        // Season chips may still be rendered below in content; keep header compact here
-                                    }
+                                    showHeroScrim = false,
+                                    headerExtras = { com.chris.m3usuite.ui.detail.DetailHeaderExtras() }
                                 )
                             }
                         }
-                        if (!com.chris.m3usuite.BuildConfig.DETAIL_SCAFFOLD_V1) item {
+                        if (false && !com.chris.m3usuite.BuildConfig.DETAIL_SCAFFOLD_V1) item {
                             Column(Modifier.fillMaxWidth()) {
                                 val cleanTitle = remember(title, year) { cleanSeriesName(title, year) }
                                 Surface(
@@ -781,6 +1049,34 @@ fun SeriesDetailScreen(
                                 }
                                 Spacer(Modifier.height(12.dp))
                             }
+                        }
+
+                        // Global Facts (zentral)
+                        item {
+                            com.chris.m3usuite.ui.detail.DetailFacts(
+                                modifier = Modifier.fillMaxWidth(),
+                                year = year,
+                                durationSecs = null, // Serie: Episode-Laufzeit separat
+                                containerExt = null,
+                                rating = rating,
+                                mpaaRating = null,
+                                age = null,
+                                provider = providerLabel,
+                                category = categoryLabel,
+                                genres = parseTags(genre),
+                                countries = parseTags(country).ifEmpty { country?.let { listOf(it) } ?: emptyList() },
+                                director = director,
+                                cast = cast,
+                                releaseDate = releaseDate,
+                                imdbId = imdbId,
+                                tmdbId = tmdbId,
+                                tmdbUrl = null,
+                                audio = null,
+                                video = null,
+                                bitrate = null,
+                                onOpenLink = { link -> runCatching { uriHandler.openUri(link) } }
+                            )
+                            Spacer(Modifier.height(8.dp))
                         }
 
                         // Staffeln – reines Umschalten (lokales Filtern)
@@ -1223,22 +1519,27 @@ fun SeriesDetailScreen(
                     }
                 }
             }
-
-            // Kid-Freigabe-Dialoge
-            if (showGrantSheet) KidSelectSheet(
-                onConfirm = { kidIds ->
-                    scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.allowBulk(it, "series", listOf(id)) } }
-                    showGrantSheet = false
-                },
-                onDismiss = { showGrantSheet = false }
-            )
-            if (showRevokeSheet) KidSelectSheet(
-                onConfirm = { kidIds ->
-                    scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.disallowBulk(it, "series", listOf(id)) } }
-                    showRevokeSheet = false
-                },
-                onDismiss = { showRevokeSheet = false }
-            )
         }
     }
-}}
+    }
+    }
+
+    if (showGrantSheet) {
+        KidSelectSheet(
+            onConfirm = { kidIds ->
+                scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.allowBulk(it, "series", listOf(id)) } }
+                showGrantSheet = false
+            },
+            onDismiss = { showGrantSheet = false }
+        )
+    }
+    if (showRevokeSheet) {
+        KidSelectSheet(
+            onConfirm = { kidIds ->
+                scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.disallowBulk(it, "series", listOf(id)) } }
+                showRevokeSheet = false
+            },
+            onDismiss = { showRevokeSheet = false }
+        )
+    }
+}

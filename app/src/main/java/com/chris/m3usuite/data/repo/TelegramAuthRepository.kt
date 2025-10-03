@@ -103,10 +103,13 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
         return true
     }
 
-    fun sendPhoneNumber(phone: String) {
-        if (useService) { svc?.sendPhone(phone); return }
+    fun sendPhoneNumber(phone: String, isCurrentDevice: Boolean) {
+        if (useService) {
+            svc?.sendPhone(phone, isCurrentDevice)
+            return
+        }
         val c = client ?: return
-        TdLibReflection.sendSetPhoneNumber(c, phone)
+        TdLibReflection.sendSetPhoneNumber(c, phone, TdLibReflection.PhoneAuthSettings(isCurrentPhoneNumber = isCurrentDevice))
     }
 
     fun sendCode(code: String) {

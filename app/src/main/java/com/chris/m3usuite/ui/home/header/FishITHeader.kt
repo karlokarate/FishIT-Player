@@ -44,6 +44,9 @@ private val HeaderBaseColor = Color(0xFF05080F)
 
 // CompositionLocals provided by the Scaffold
 val LocalHeaderFirstFocus: androidx.compose.runtime.ProvidableCompositionLocal<FocusRequester?> = compositionLocalOf { null }
+// When true, the header will attach the initial FocusRequester to the Settings button if available,
+// even if Search/Profile actions are present. Defaults to false.
+val LocalPreferSettingsFirstFocus: androidx.compose.runtime.ProvidableCompositionLocal<Boolean> = compositionLocalOf { false }
 val LocalChromeOnAction: androidx.compose.runtime.ProvidableCompositionLocal<(() -> Unit)?> = compositionLocalOf { null }
 
 /** Translucent overlay header with app icon + settings gear; alpha controls scrim intensity. */
@@ -58,11 +61,15 @@ fun FishITHeader(
 ) {
     val firstFocus = LocalHeaderFirstFocus.current
     val onChromeAction = LocalChromeOnAction.current
+    val preferSettingsFirst = LocalPreferSettingsFirstFocus.current
     val scrim = scrimAlpha.coerceIn(0f, 1f)
-    val attachToSearch = firstFocus != null && onSearch != null
-    val attachToProfiles = firstFocus != null && !attachToSearch && onProfiles != null
-    val attachToSettings = firstFocus != null && !attachToSearch && !attachToProfiles && onSettings != null
-    val attachToLogo = firstFocus != null && !attachToSearch && !attachToProfiles && !attachToSettings && onLogo != null
+    // Decide which header action receives the initial FocusRequester.
+    // Normally: Search -> Profiles -> Settings -> Logo
+    // If preferSettingsFirst is true: Settings -> Search -> Profiles -> Logo
+    val attachToSettings = firstFocus != null && onSettings != null && preferSettingsFirst
+    val attachToSearch = firstFocus != null && onSearch != null && !attachToSettings
+    val attachToProfiles = firstFocus != null && onProfiles != null && !attachToSettings && !attachToSearch
+    val attachToLogo = firstFocus != null && onLogo != null && !attachToSettings && !attachToSearch && !attachToProfiles
     Column(
         modifier = Modifier
             .fillMaxWidth()

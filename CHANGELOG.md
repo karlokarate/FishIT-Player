@@ -1,3 +1,20 @@
+2025-10-03
+- refactor(details/vod): Rebuilt VOD detail screen on a stable scaffold (HomeChromeScaffold → Box background → Card + LazyColumn sections). OBX-first load with on-demand Xtream enrichment; simplified Facts/Plot sections; safe Play/Resume actions; removed brittle overlays causing brace/parse issues. This restores full metadata rendering with a single scroll container.
+- feat(details/mask): Introduced unified DetailPage + DetailBackdrop + DetailSections modules. They enforce a single, shared layout (full-screen hero + gradients + AccentCard + DetailHeader + sections). VOD now uses this mask; Series/Live will migrate next for 1:1 parity.
+- fix(details/vod): Build failure “Expecting '}'” in `VodDetailScreen.kt` fixed by removing an extra closing brace at the end of the composable; file now parses and kapt/compile proceed.
+- fix(details/back): Replace recursive BackHandler usage on VOD/Series detail screens with safe dispatcher callbacks so BACK/ESC exits without crashing; scoped `fmt` helpers locally to resolve Compose visibility errors.
+- fix(details/vod): VOD detail now uses focusable cards (plot + info) that expand/collapse on DPAD, surfaces the complete Xtream metadata (Bewertung, Release, Laufzeit, Format, MPAA/Age, Provider/Kategorie, Genres/Länder, Cast, Audio/Video/Bitrate, IMDb/TMDb Links), keeps kid actions/progress inline, ensures hero backdrops differ vom Poster, und loggt die gerenderten Abschnitte via GlobalDebug.
+
+2025-10-02
+- feat(telegram/service): Expose TDLib chat IPC (`CMD_LIST_CHATS`, `CMD_RESOLVE_CHAT_TITLES`, `CMD_PULL_CHAT_HISTORY`) so UI/Worker reuse the authenticated service client instead of spawning reflection clients.
+- fix(telegram/settings): Chat picker binds `TelegramServiceClient`, streams auth state, loads main/archive chats via the service, and resolves stored chat IDs through the same IPC (no more "Bitte zuerst verbinden" after login).
+- chore(telegram/sync): Rewire `TelegramSyncWorker` to start the service with stored API keys and trigger `pullChatHistory` per selected chat (ObjectBox indexing stays inside the service).
+- chore(telegram/sched): Added `SchedulingGateway.onTelegramSyncCompleted()` so post-sync tasks (cache cleanup, OBX key backfill, optional full refresh) run automatically; Settings now pass `refreshHome=true` when a sync is triggered.
+- feat(telegram/ui): Introduced `TelegramRow`/`TelegramTileCard` (blue “T” badge) and wired Start + Library to render per-chat Telegram rows with the central row engine; row state keys integrate with `rememberRouteListState` for focus persistence.
+- feat(telegram/cache): Service now consumes `loadChats` + chat updates to keep a local chat cache, resolves list ordering via `chatPosition.order`, and falls back to `getChats` only when the cache is cold.
+- feat(telegram/auth): Phone number submits use `PhoneNumberAuthenticationSettings` with optional authentication tokens and `isCurrentPhoneNumber`, enabling same-device confirmation when Telegram is installed.
+- ux(telegram/login): Login dialog detects the Telegram app, adds a toggle for “Code auf diesem Gerät bestätigen”, and auto-opens the deep link when QR login is requested, avoiding the second-device hop.
+
 2025-10-01
 - feat(telegram/settings): Show chat names for selected Film/Series sync sources (resolves titles via TDLib when authenticated).
 - feat(telegram/sync): Implement TelegramSyncWorker backfill. Fetches recent messages from selected chats (VOD/Series) and indexes minimal metadata to ObjectBox (ObxTelegramMessage), enabling tg:// playback and local-path updates.
@@ -784,3 +801,26 @@ Status: zu testen durch Nutzer
 - fix(live/detail): Resolve Kotlin parse error “Expecting a top level declaration” by moving EPG/Kid sheet dialogs inside `LiveDetailScreen` body and correcting brace balance. Prevents premature function closure and restores release build.
 - chore(start,library): Migrate remaining direct PlayerChooser starts to centralized PlaybackLauncher (flagged via PLAYBACK_LAUNCHER_V1). Start and Library now route internal playback via the nav `player` route through the launcher’s `onOpenInternal` hook for consistent resume/telemetry.
 - feat(vod/live detail): Wire missing onOpenDetails handlers. VOD “Similar” now opens the selected VOD detail; Live “Mehr aus Kategorie” opens the selected channel’s detail (new `openVod`/`openLive` lambdas on detail screens, passed from MainActivity).
+2025-10-02
+- fix(tv/start): Auto-expand HomeChrome on first start when Start is empty (no rows) and auto-focus the Settings button in the top-right FishIT header on TV. Ensures immediate access to Settings after PIN without content. DPAD LEFT now also expands HomeChrome from the empty screen to escape the white screen.
+ - ui(detail): VOD and Series hero background now fills the entire screen (outside scaffold padding) with ContentScale.Crop. TV/landscape zooms to cover width; portrait covers screen while preserving aspect ratio. Removed FishBackground overlay layer from both detail screens.
+ - ui(detail/header): Removed the top HeroScrim band inside DetailHeader for VOD and Series. The full-screen hero now uses the same shared alpha as the former scrim (`HERO_SCRIM_IMAGE_ALPHA = 0.5`). `DetailHeader` gains `showHeroScrim` (default true); Live keeps scrim, VOD/Series disable it.
+ - fix(vod/detail): Align VOD detail import + rendering with Series.
+   - Trigger detail import when plot OR imagesJson is missing (previously only plot), so backdrops get fetched reliably.
+   - Observe imagesJson changes and recompute backdrop at runtime.
+   - Remove placeholder plot text; only render plot when non-blank (same as Series).
+ - feat(detail/centralization): Unified detail rendering across VOD/Series/Live via `ui/detail`.
+   - Add `DetailHeaderExtras` (MPAA/Age/compact Audio/Video chips) and `DetailFacts` (Jahr, Laufzeit, Container/Qualität, ★Rating, Provider/Kategorie, Genres, Länder, Regie/Cast, Release, IMDB/TMDB‑IDs+Link, Audio/Video/Bitrate).
+   - Remove/deactivate legacy header paths. Start/Home rows no longer prefetch details; details load metadata on-demand only.
+   - Disable DPAD‑LEFT→HomeChrome in details (`enableDpadLeftChrome=false`); re-enable BACK via Compose BackHandler on VOD/Series.
+ - feat(xtream/normalize): VOD info block prioritized over `movie_data` with robust synonyms.
+   - Poster: `movie_image|poster_path|cover|cover_big`; Backdrops: `backdrop_path` (array/string)
+   - Plot: `plot|description|plot_outline|overview`; Trailer: `youtube_trailer|trailer|trailer_url|youtube|yt_trailer`
+   - Genre/Release: `genre|genres`, `releasedate|releaseDate`; Technik: `audio|video|bitrate`; IDs: `tmdb_id|tmdb_url`, `o_name|cover_big`
+ - ui(detail/tmdb): Poster/Cover/Backdrop selection follows TMDb order for VOD and Series.
+   - images = [poster, cover?, backdrops...]; header poster uses cover if present (fallback poster).
+   - full-screen hero/backdrop uses first backdrop (fallback poster).
+ - feat(detail/metadata): Rich on-demand metadata on VOD/Series detail screens.
+   - Load metadata only when a detail is opened; removed neighbor/global prefetch from Start/Home rows and details.
+   - VOD shows extra fields (MPAA/Age, Audio/Video/Bitrate, TMDb link) as chips/sections; plot rendered only when non-blank.
+   - Trailer field robust via synonyms for both VOD/Series (youtube_trailer/trailer/trailer_url/youtube/yt_trailer).

@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,13 +53,13 @@ import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import com.chris.m3usuite.ui.theme.CategoryFonts
 import com.chris.m3usuite.ui.theme.DesignTokens
+import com.chris.m3usuite.ui.components.rows.TelegramRow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.chris.m3usuite.ui.compat.focusGroup
 
 private enum class ContentTab { Live, Vod, Series }
 
@@ -94,6 +95,8 @@ fun LibraryScreen(
     val store = remember { SettingsStore(ctx) }
     val repo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
     val tgRepo = remember { com.chris.m3usuite.data.repo.TelegramContentRepository(ctx, store) }
+    val tgVodSelection by store.tgSelectedVodChatsCsv.collectAsStateWithLifecycle(initialValue = "")
+    val tgSeriesSelection by store.tgSelectedSeriesChatsCsv.collectAsStateWithLifecycle(initialValue = "")
     val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
     val resumeRepo = remember { com.chris.m3usuite.data.repo.ResumeRepository(ctx) }
     val permRepo = remember { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
@@ -370,65 +373,69 @@ fun LibraryScreen(
     fun TelegramSection(tab: ContentTab) {
         val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
         if (!tgEnabled) return
-        val chats by remember(tab) {
-            mutableStateOf(emptyList<Long>())
-        }
-        val scopeLocal = rememberCoroutineScope()
-        var chatIds by remember { mutableStateOf<List<Long>>(emptyList()) }
-        LaunchedEffect(tab) {
-            chatIds = if (tab == ContentTab.Vod) tgRepo.selectedChatsVod() else tgRepo.selectedChatsSeries()
+        val chatIds = remember(tab, tgEnabled, tgVodSelection, tgSeriesSelection) {
+            if (!tgEnabled) emptyList()
+            else {
+                val source = if (tab == ContentTab.Vod) tgVodSelection else tgSeriesSelection
+                source.split(',').mapNotNull { it.trim().toLongOrNull() }.distinct()
+            }
         }
         if (chatIds.isEmpty()) return
 
+        val service = remember { com.chris.m3usuite.telegram.service.TelegramServiceClient(ctx) }
+        DisposableEffect(tgEnabled) {
+            if (tgEnabled) {
+                service.bind()
+                service.getAuth()
+                onDispose { service.unbind() }
+            } else {
+                service.unbind()
+                onDispose { }
+            }
+        }
+
         val titleStyle = MaterialTheme.typography.titleMedium.copy(color = Color.White)
+        val headers = remember { com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store) }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            chatIds.forEach { chatId ->
-                var items by remember(chatId, tab, resumeTick) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
-                LaunchedEffect(chatId, tab, resumeTick) {
-                    items = if (tab == ContentTab.Vod) tgRepo.recentVodByChat(chatId, 60, 0)
-                    else tgRepo.recentSeriesByChat(chatId, 60, 0)
+            chatIds.forEachIndexed { index, chatId ->
+                var items by remember(chatId, tab, resumeTick, tgEnabled) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
+                LaunchedEffect(chatId, tab, resumeTick, tgEnabled) {
+                    items = if (tgEnabled) {
+                        if (tab == ContentTab.Vod) tgRepo.recentVodByChat(chatId, 60, 0)
+                        else tgRepo.recentSeriesByChat(chatId, 60, 0)
+                    } else emptyList()
                 }
-                if (items.isEmpty()) return@forEach
-                // Resolve chat title best-effort
+                if (items.isEmpty()) return@forEachIndexed
+
                 var chatTitle by remember(chatId) { mutableStateOf("Telegram ${chatId}") }
-                LaunchedEffect(chatId) {
-                    val flow = kotlinx.coroutines.flow.MutableStateFlow(com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
-                    val client = runCatching { com.chris.m3usuite.telegram.TdLibReflection.getOrCreateClient(ctx, flow) }.getOrNull()
-                    val obj = client?.let { com.chris.m3usuite.telegram.TdLibReflection.buildGetChat(chatId) }
-                        ?.let { com.chris.m3usuite.telegram.TdLibReflection.sendForResult(client!!, it, 800) }
-                    chatTitle = obj?.let { com.chris.m3usuite.telegram.TdLibReflection.extractChatTitle(it) } ?: chatTitle
-                }
-                Text("Telegram – ${chatTitle}", style = titleStyle)
-                val stateKey = "lib:tg:${tab}:${chatId}"
-                val rowState = com.chris.m3usuite.ui.state.rememberRouteListState(stateKey)
-                androidx.compose.foundation.lazy.LazyRow(
-                    state = rowState,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxWidth().focusGroup()
-                ) {
-                    items(items, key = { it.tgMessageId ?: it.id }) { mi ->
-                        com.chris.m3usuite.ui.cards.PosterCardTagged(
-                            title = mi.name,
-                            imageUrl = mi.poster,
-                            onClick = {
-                                // Telegram playback: use tg:// url
-                                val tgUrl = "tg://message?chatId=${mi.tgChatId}&messageId=${mi.tgMessageId}"
-                                val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store)
-                                scope.launch {
-                                    com.chris.m3usuite.player.PlayerChooser.start(
-                                        context = ctx,
-                                        store = store,
-                                        url = tgUrl,
-                                        headers = headers,
-                                        startPositionMs = null,
-                                        mimeType = null
-                                    ) { _, _ -> }
-                                }
-                            },
-                            modifier = Modifier
-                        )
+                LaunchedEffect(chatId, tgEnabled) {
+                    if (tgEnabled) {
+                        val resolved = runCatching { service.resolveChatTitles(longArrayOf(chatId)) }.getOrNull()
+                        resolved?.firstOrNull()?.second?.let { chatTitle = it }
                     }
                 }
+
+                Text("Telegram – ${chatTitle}", style = titleStyle)
+                val stateKey = "lib:tg:${tab.name.lowercase(Locale.getDefault())}:$chatId"
+                TelegramRow(
+                    items = items,
+                    stateKey = stateKey,
+                    onPlay = { mi ->
+                        val tgUrl = "tg://message?chatId=${mi.tgChatId}&messageId=${mi.tgMessageId}"
+                        scope.launch {
+                            com.chris.m3usuite.player.PlayerChooser.start(
+                                context = ctx,
+                                store = store,
+                                url = tgUrl,
+                                headers = headers,
+                                startPositionMs = null,
+                                mimeType = null
+                            ) { _, _ -> }
+                        }
+                    },
+                    initialFocusEligible = index == 0,
+                    edgeLeftExpandChrome = false
+                )
                 Spacer(Modifier.height(10.dp))
             }
         }

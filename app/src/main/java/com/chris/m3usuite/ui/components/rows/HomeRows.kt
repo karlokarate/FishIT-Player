@@ -84,6 +84,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.data.repo.EpgRepository
+import com.chris.m3usuite.ui.cards.PosterCardTagged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -1428,12 +1429,7 @@ fun SeriesRow(
     MediaRowCore(
         items = items,
         config = RowConfig(stateKey = stateKey, debugKey = stateKey, initialFocusEligible = initialFocusEligible, edgeLeftExpandChrome = edgeLeftExpandChrome),
-        onPrefetchKeys = { keys ->
-            val sids = keys.mapNotNull { id ->
-                if (id in 3_000_000_000_000L until 4_000_000_000_000L) (id - 3_000_000_000_000L).toInt() else null
-            }
-            if (sids.isNotEmpty()) obx.importSeriesDetailsForIds(sids, max = 8)
-        },
+        onPrefetchKeys = { _ -> },
         itemKey = { it.id }
     ) { m ->
         SeriesTileCard(
@@ -1469,12 +1465,7 @@ fun VodRow(
     MediaRowCore(
         items = items,
         config = RowConfig(stateKey = stateKey, debugKey = stateKey, initialFocusEligible = initialFocusEligible, edgeLeftExpandChrome = edgeLeftExpandChrome),
-        onPrefetchKeys = { keys ->
-            val vodIds = keys.mapNotNull { id ->
-                if (id in 2_000_000_000_000L until 3_000_000_000_000L) (id - 2_000_000_000_000L).toInt() else null
-            }.distinct()
-            if (vodIds.isNotEmpty()) obx.importVodDetailsForIds(vodIds, max = 12)
-        },
+        onPrefetchKeys = { _ -> },
         itemKey = { it.id }
     ) { m ->
         VodTileCard(
@@ -1506,18 +1497,7 @@ fun VodRowPaged(
     MediaRowCorePaged(
         items = items,
         config = RowConfig(stateKey = stateKey, debugKey = stateKey, edgeLeftExpandChrome = edgeLeftExpandChrome),
-        onPrefetchPaged = { indices, lp ->
-            val count = lp.itemCount
-            if (count <= 0) return@MediaRowCorePaged
-            val vodIds = indices
-                .filter { it in 0 until count }
-                .mapNotNull { idx ->
-                    val media = lp.peek(idx)
-                    val id = media?.id ?: return@mapNotNull null
-                    if (id in 2_000_000_000_000L until 3_000_000_000_000L) (id - 2_000_000_000_000L).toInt() else null
-                }.distinct()
-            if (vodIds.isNotEmpty()) obx.importVodDetailsForIds(vodIds, max = 12)
-        }
+        onPrefetchPaged = { _, _ -> }
     ) { _, mi ->
         VodTileCard(
             item = mi,
@@ -1595,4 +1575,67 @@ fun SeriesRowPaged(
             showAssign = showAssign
         )
     }
+}
+
+@Composable
+fun TelegramRow(
+    items: List<MediaItem>,
+    stateKey: String? = null,
+    onPlay: (MediaItem) -> Unit,
+    initialFocusEligible: Boolean = true,
+    edgeLeftExpandChrome: Boolean = false
+) {
+    if (items.isEmpty()) return
+    MediaRowCore(
+        items = items,
+        config = RowConfig(
+            stateKey = stateKey,
+            debugKey = stateKey,
+            initialFocusEligible = initialFocusEligible,
+            edgeLeftExpandChrome = edgeLeftExpandChrome
+        ),
+        itemKey = { it.id }
+    ) { item ->
+        TelegramTileCard(item = item, onPlay = onPlay)
+    }
+}
+
+@Composable
+fun TelegramRowPaged(
+    items: LazyPagingItems<MediaItem>,
+    stateKey: String? = null,
+    onPlay: (MediaItem) -> Unit,
+    edgeLeftExpandChrome: Boolean = false
+) {
+    MediaRowCorePaged(
+        items = items,
+        config = RowConfig(stateKey = stateKey, debugKey = stateKey, edgeLeftExpandChrome = edgeLeftExpandChrome),
+        onPrefetchPaged = null
+    ) { _, item ->
+        TelegramTileCard(item = item, onPlay = onPlay)
+    }
+}
+
+@Composable
+private fun TelegramTileCard(
+    item: MediaItem,
+    onPlay: (MediaItem) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (com.chris.m3usuite.BuildConfig.CARDS_V1) {
+        PosterCardTagged(
+            title = item.name,
+            imageUrl = item.poster ?: item.backdrop,
+            onClick = { onPlay(item) },
+            modifier = modifier.padding(end = 12.dp)
+        )
+        return
+    }
+    VodTileCard(
+        item = item,
+        onOpenDetails = { onPlay(item) },
+        onPlayDirect = onPlay,
+        onAssignToKid = {},
+        showAssign = false
+    )
 }

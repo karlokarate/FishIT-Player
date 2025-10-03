@@ -354,7 +354,8 @@ fun LiveDetailScreen(
         onProfiles = null,
         listState = listState,
         onLogo = onLogo,
-        bottomBar = {}
+        bottomBar = {},
+        enableDpadLeftChrome = false
     ) { pads ->
 
         Box(
@@ -515,19 +516,7 @@ fun LiveDetailScreen(
                             meta = meta
                         )
                     }
-                    if (!com.chris.m3usuite.BuildConfig.DETAIL_SCAFFOLD_V1) {
-                        Text(title, style = MaterialTheme.typography.titleLarge)
-                        Spacer(Modifier.height(6.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            providerLabel?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary) }
-                            categoryName?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary) }
-                            if (hasArchive) Text("Archiv", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
-                        }
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 8.dp),
-                            color = Accent.copy(alpha = 0.35f)
-                        )
-                    }
+                    
                     Spacer(Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         providerLabel?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary) }

@@ -15,6 +15,7 @@ import kotlinx.serialization.json.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import androidx.core.net.toUri
+import com.chris.m3usuite.core.debug.GlobalDebug
 
 /**
  * XtreamClient – API‑first Client für Xtream Codes Panels.
@@ -263,43 +264,123 @@ class XtreamClient(
             }
         }
         infoObj ?: return null
-        // Some panels nest VOD details under "movie_data", others under "info", and a few return flat fields.
-        val movieData = infoObj["movie_data"]?.jsonObject ?: infoObj["info"]?.jsonObject ?: infoObj
-
-        val backdrops = movieData["backdrop_path"]?.jsonArray?.mapNotNull { it.asString() }.orEmpty()
-        val poster = movieData["poster_path"]?.asString()
-        val cover = movieData["cover"]?.asString()
-        val container = sanitizeContainerExt(movieData["container_extension"]?.asString())
-        val durationSecs = parseDurationSeconds(movieData["duration"]?.asString())
-        val images = buildList {
-            if (poster != null) add(poster)
-            if (cover != null && cover != poster) add(cover)
-            addAll(backdrops)
+        // Prefer info{} for rich metadata; movie_data{} holds stream/container bits
+        val info = infoObj["info"]?.jsonObject
+        val movieData = infoObj["movie_data"]?.jsonObject
+        fun pickStr(key: String): String? = info?.get(key)?.asString() ?: movieData?.get(key)?.asString() ?: infoObj[key]?.asString()
+        fun pickArray(key: String): List<String> {
+            val el = info?.get(key) ?: movieData?.get(key) ?: infoObj[key]
+            return when {
+                el?.isJsonArray() == true -> el.jsonArray.mapNotNull { it.asString() }
+                else -> el?.asString()?.let { listOf(it) } ?: emptyList()
+            }
         }
 
-        // Plot can live under different keys depending on panel theme
-        val plotText = listOf("plot", "description", "plot_outline", "overview")
-            .firstNotNullOfOrNull { key -> movieData[key]?.asString() }
-            ?.trim()?.takeIf { it.isNotEmpty() }
+        // TMDb-style: images = [poster, cover?, backdrops...]
+        val poster = pickStr("movie_image") ?: pickStr("poster_path") ?: pickStr("cover") ?: pickStr("cover_big")
+        val cover = pickStr("cover")?.takeUnless { it == poster } ?: pickStr("cover_big")?.takeUnless { it == poster }
+        val backdrops = pickArray("backdrop_path")
+        val container = sanitizeContainerExt(movieData?.get("container_extension")?.asString() ?: pickStr("container_extension"))
+        val durationSecs = parseDurationSeconds(pickStr("duration")) ?: pickStr("duration_secs")?.toIntOrNull()
+        val images = buildList {
+            if (poster != null) add(poster)
+            if (cover != null) add(cover)
+            backdrops.forEach { b -> if (!contains(b)) add(b) }
+        }
 
-        return NormalizedVodDetail(
+        val plotText = listOf("plot", "description", "plot_outline", "overview").firstNotNullOfOrNull { k -> pickStr(k) }?.trim()?.takeIf { it.isNotEmpty() }
+        val trailerText = listOf("youtube_trailer", "trailer", "trailer_url", "youtube", "yt_trailer").firstNotNullOfOrNull { k -> pickStr(k) }
+
+        val detail = NormalizedVodDetail(
             vodId = vodId,
-            name = movieData["name"]?.asString().orEmpty(),
-            year = movieData["year"]?.asIntOrNull(),
-            rating = movieData["rating"]?.asDoubleOrNull(),
+            name = pickStr("name").orEmpty(),
+            year = pickStr("year")?.toIntOrNull(),
+            rating = pickStr("rating")?.toDoubleOrNull(),
             plot = plotText,
-            genre = movieData["genre"]?.asString(),
-            director = movieData["director"]?.asString(),
-            cast = movieData["cast"]?.asString(),
-            country = movieData["country"]?.asString(),
-            releaseDate = movieData["releasedate"]?.asString(),
-            imdbId = movieData["imdb_id"]?.asString(),
-            tmdbId = movieData["tmdb_id"]?.asString(),
+            genre = (pickStr("genre") ?: pickStr("genres"))?.takeIf { it.isNotBlank() },
+            director = pickStr("director"),
+            cast = pickStr("cast") ?: pickStr("actors"),
+            country = pickStr("country"),
+            releaseDate = pickStr("releasedate") ?: pickStr("releaseDate"),
+            imdbId = pickStr("imdb_id"),
+            tmdbId = pickStr("tmdb_id"),
             images = images.distinct(),
-            trailer = movieData["youtube_trailer"]?.asString(),
+            trailer = trailerText,
             containerExt = container,
             durationSecs = durationSecs,
+            audio = pickStr("audio"),
+            video = pickStr("video"),
+            bitrate = pickStr("bitrate"),
+            mpaaRating = pickStr("mpaa_rating"),
+            age = pickStr("age"),
+            tmdbUrl = pickStr("tmdb_url"),
+            oName = pickStr("o_name"),
+            coverBig = pickStr("cover_big"),
         )
+        if (GlobalDebug.isEnabled()) {
+            logVodDebug(vodId, infoObj, info, movieData, detail)
+        }
+        return detail
+    }
+
+    private fun logVodDebug(
+        vodId: Int,
+        root: Map<String, JsonElement>,
+        info: JsonObject?,
+        movieData: JsonObject?,
+        detail: NormalizedVodDetail
+    ) {
+        val tag = "XtreamDetail"
+        fun sanitised(value: String?): String? {
+            if (value.isNullOrEmpty()) return value
+            var out = value.replace('\n', ' ').replace('\r', ' ')
+            cfg.username.takeIf { it.isNotBlank() }?.let { out = out.replace(it, "***", ignoreCase = true) }
+            cfg.password.takeIf { it.isNotBlank() }?.let { out = out.replace(it, "***", ignoreCase = true) }
+            out = out.replace(Regex("""(?i)username=[^&"']+"""), "username=***")
+            out = out.replace(Regex("""(?i)password=[^&"']+"""), "password=***")
+            return out
+        }
+
+        val imagesStr = detail.images
+            .mapNotNull { sanitised(it)?.takeIf { s -> s.isNotBlank() } }
+            .joinToString(prefix = "[", postfix = "]")
+
+        val detailParts = buildList {
+            sanitised(detail.name)?.takeIf { it.isNotBlank() }?.let { add("name=$it") }
+            detail.year?.toString()?.let { add("year=$it") }
+            detail.rating?.toString()?.let { add("rating=$it") }
+            sanitised(detail.plot)?.takeIf { it.isNotBlank() }?.let { add("plot=$it") }
+            sanitised(detail.genre)?.takeIf { it.isNotBlank() }?.let { add("genre=$it") }
+            sanitised(detail.director)?.takeIf { it.isNotBlank() }?.let { add("director=$it") }
+            sanitised(detail.cast)?.takeIf { it.isNotBlank() }?.let { add("cast=$it") }
+            sanitised(detail.country)?.takeIf { it.isNotBlank() }?.let { add("country=$it") }
+            sanitised(detail.releaseDate)?.takeIf { it.isNotBlank() }?.let { add("releaseDate=$it") }
+            sanitised(detail.imdbId)?.takeIf { it.isNotBlank() }?.let { add("imdbId=$it") }
+            sanitised(detail.tmdbId)?.takeIf { it.isNotBlank() }?.let { add("tmdbId=$it") }
+            sanitised(detail.trailer)?.takeIf { it.isNotBlank() }?.let { add("trailer=$it") }
+            sanitised(detail.containerExt)?.takeIf { it.isNotBlank() }?.let { add("containerExt=$it") }
+            detail.durationSecs?.let { add("durationSecs=$it") }
+            sanitised(detail.audio)?.takeIf { it.isNotBlank() }?.let { add("audio=$it") }
+            sanitised(detail.video)?.takeIf { it.isNotBlank() }?.let { add("video=$it") }
+            sanitised(detail.bitrate)?.takeIf { it.isNotBlank() }?.let { add("bitrate=$it") }
+            sanitised(detail.mpaaRating)?.takeIf { it.isNotBlank() }?.let { add("mpaaRating=$it") }
+            sanitised(detail.age)?.takeIf { it.isNotBlank() }?.let { add("age=$it") }
+            sanitised(detail.tmdbUrl)?.takeIf { it.isNotBlank() }?.let { add("tmdbUrl=$it") }
+            sanitised(detail.oName)?.takeIf { it.isNotBlank() }?.let { add("oName=$it") }
+            sanitised(detail.coverBig)?.takeIf { it.isNotBlank() }?.let { add("coverBig=$it") }
+            if (imagesStr.isNotBlank()) add("images=$imagesStr")
+        }.joinToString(", ")
+
+        Log.i(tag, "vod:$vodId detail { $detailParts }")
+
+        val infoStr = sanitised(info?.toString()) ?: "null"
+        Log.i(tag, "vod:$vodId info=$infoStr")
+
+        val movieStr = sanitised(movieData?.toString()) ?: "null"
+        Log.i(tag, "vod:$vodId movie_data=$movieStr")
+
+        val rootStr = sanitised(JsonObject(root).toString()) ?: "null"
+        Log.i(tag, "vod:$vodId raw=$rootStr")
     }
 
     suspend fun getSeriesDetailFull(seriesId: Int): NormalizedSeriesDetail? {
@@ -311,9 +392,9 @@ class XtreamClient(
         val images = buildList {
             info?.get("poster_path")?.asString()?.let { add(it) }
             info?.get("cover")?.asString()?.let { if (!contains(it)) add(it) }
-            info?.get("backdrop_path")?.jsonArray?.forEach { el ->
-                el.asString()?.let { if (!contains(it)) add(it) }
-            }
+            val b = info?.get("backdrop_path")
+            if (b?.isJsonArray() == true) b.jsonArray.forEach { el -> el.asString()?.let { if (!contains(it)) add(it) } }
+            else b?.asString()?.let { if (!contains(it)) add(it) }
         }
 
         val normalizedSeasons = mutableListOf<NormalizedSeason>()
@@ -353,21 +434,25 @@ class XtreamClient(
             )
         }
 
+        // Trailer synonyms for series
+        val trailerTextSer = listOf("youtube_trailer", "trailer", "trailer_url", "youtube", "yt_trailer")
+            .firstNotNullOfOrNull { key -> info?.get(key)?.asString() }
+
         return NormalizedSeriesDetail(
             seriesId = seriesId,
             name = info?.get("name")?.asString().orEmpty(),
             year = info?.get("year")?.asIntOrNull(),
             rating = info?.get("rating")?.asDoubleOrNull(),
-            plot = info?.get("plot")?.asString(),
-            genre = info?.get("genre")?.asString(),
+            plot = (listOf("plot", "description", "overview").firstNotNullOfOrNull { k -> info?.get(k)?.asString() }),
+            genre = (info?.get("genre")?.asString() ?: info?.get("genres")?.asString()),
             director = info?.get("director")?.asString(),
             cast = info?.get("cast")?.asString(),
             imdbId = info?.get("imdb_id")?.asString(),
             tmdbId = info?.get("tmdb_id")?.asString(),
             images = images.distinct(),
-            trailer = info?.get("youtube_trailer")?.asString(),
+            trailer = trailerTextSer,
             country = info?.get("country")?.asString(),
-            releaseDate = info?.get("releasedate")?.asString(),
+            releaseDate = info?.get("releasedate")?.asString() ?: info?.get("releaseDate")?.asString(),
             seasons = normalizedSeasons,
         )
     }

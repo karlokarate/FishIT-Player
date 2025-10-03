@@ -22,10 +22,11 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 
 - Feature Flag: Global in Settings (`tg_enabled`, default false). Zusatzoptionen: `tg_selected_chats_csv`, `tg_cache_limit_gb`.
  - ObjectBox: Telegram messages are stored in `ObxTelegramMessage` (chatId/messageId/fileId/uniqueId/supportsStreaming/caption/date/localPath/thumbFileId). Repository/DataSources update OBX directly.
-- Login (Alpha): Reflection‑Bridge `telegram/TdLibReflection.kt` + `TelegramAuthRepository` (kein direkter TDLib‑Compile‑Dep). Settings: Button „Telegram verbinden“ (Telefon → Code → Passwort), auto DB‑Key‑Check, Status‑Debug.
+- Login (Alpha): Reflection‑Bridge `telegram/TdLibReflection.kt` + `TelegramAuthRepository` (kein direkter TDLib‑Compile‑Dep). Settings: Button „Telegram verbinden“ (Telefon → Code → Passwort), auto DB‑Key‑Check, Status‑Debug. Telefon-Eingabe nutzt `PhoneNumberAuthenticationSettings` (Tokens + `is_current_phone_number` Toggle im UI) für Single-Device-Logins; bei `authorizationStateWaitOtherDevice` öffnet die App den `tg://login` Link automatisch, wenn die Telegram-App lokal installiert ist.
 - Playback DataSource: `TelegramRoutingDataSource` für Media3 routet `tg://message?chatId=&messageId=` auf lokale Pfade und triggert bei Bedarf `DownloadFile(fileId)`; `localPath` wird persistiert.
 - Settings: Film/Serien Sync zeigt Chat‑Picker (Hauptordner/Archiv) und zeigt die gewählten Chats mit Namen an (wenn AUTHENTICATED).
-- Sync: `TelegramSyncWorker` (manueller Backfill) liest jüngste Nachrichten aus den ausgewählten Chats (VOD/Series) und indiziert Minimal‑Metadaten in `ObxTelegramMessage` (chat/message/file/unique/supportsStreaming/caption/date/localPath/thumb). Mapping auf VOD/Serien‑Modelle folgt heuristisch in Phase‑2.
+- Sync: `TelegramSyncWorker` (manueller Backfill) ruft pro ausgewähltem Chat `CMD_PULL_CHAT_HISTORY` im Service auf. Der Service nutzt `getChatHistory` (limit=200) und `indexMessageContent(..)` für `ObxTelegramMessage`. Mapping auf VOD/Serien‑Modelle folgt heuristisch in Phase‑2.
+- Scheduling: Nach erfolgreichem Sync ruft der Worker `SchedulingGateway.onTelegramSyncCompleted(ctx, refreshHome)` auf. Standardmäßig werden `TelegramCacheCleanupWorker.schedule(...)` und `ObxKeyBackfillWorker.scheduleOnce(...)` getriggert; optional (z. B. Settings CTA) kann `scheduleAll()` erneut ausgeführt werden, damit HomeChrome sofort aktualisiert.
 - Mapping/Heuristik: SxxExx‑Parser ordnet Nachrichten Episoden (Serie) vs. Filme (VOD) zu; Serien/Filme werden als `MediaItem` mit `source="TG"` projiziert (Titel aus Caption). Thumbnails werden on‑demand via TDLib `GetFile` geladen und als `file://` angezeigt (kein Prefetch).
  - Heuristik erweitert: erkennt Bereiche (z. B. S01E01‑03, 1x02‑05) und Sprach‑Tags ([DE]/[EN]/…).
  - Metadaten: via TDLib werden zusätzliche Felder persistiert (`durationSecs`, `mimeType`, `sizeBytes`, `width`/`height`, `language`). `MediaItem` übernimmt `durationSecs`/`plot` sowie `containerExt` (aus `mimeType`).
@@ -55,7 +56,7 @@ Telegram Gating
 ## Telegram Service Process
 
 - Service (`.telegram.service.TelegramTdlibService`) läuft in separatem Prozess `:tdlib` und hostet genau eine TDLib‑Client‑Instanz.
-- IPC via `Messenger` (minimal): Start/Params, Auth‑Kommandos (Phone/Code/Passwort/QR), Logout, Abfrage Auth‑State; Push‑Kommandos (`registerDevice`, `processPushNotification`); Lifecycle (`SetInBackground`).
+- IPC via `Messenger` (minimal): Start/Params, Auth‑Kommandos (Phone/Code/Passwort/QR), Logout, Abfrage Auth‑State; Push‑Kommandos (`registerDevice`, `processPushNotification`); Lifecycle (`SetInBackground`) sowie Chat‑Kommandos (`CMD_LIST_CHATS`, `CMD_RESOLVE_CHAT_TITLES`, `CMD_PULL_CHAT_HISTORY`). Der Service ruft `loadChats` (Main/Archive/Folder) auf, pflegt einen Chat-Cache mittels `updateNewChat`/`updateChat*` (inkl. `chatPosition.order`) und beantwortet Anfragen ohne zusätzliche `getChat`-Runden (Fallback nur bei leerem Cache).
 - Events: `REPLY_AUTH_STATE` bei Zustandswechseln; TDLib‑Fehler (`TdApi.Error`) werden als `REPLY_ERROR` an die UI gemeldet (Code + Message), sodass Fehl­eingaben (z. B. Telefonnummernformat, ungültige API‑Keys) nicht mehr stumm hängen.
 - Foreground: Vordergrund‑Modus bei interaktivem Login und aktiven Downloads (`UpdateFile`); stoppt im Leerlauf/bei AUTHENTICATED.
 - Network: beobachtet Connectivity und setzt `SetNetworkType(WiFi/Mobile/Other/None)` entsprechend.
@@ -66,7 +67,7 @@ Push (FCM)
 - Keine Foreground‑Nutzung für Push, minimaler RAM/CPU‑Footprint; ohne google‑services.json bleibt es no‑op.
 
 Client‑Wrapper (`.telegram.service.TelegramServiceClient`)
-- Bind/Unbind; Befehle (`start`, `requestQr`, `sendPhone`, `sendCode`, `sendPassword`, `getAuth`, `logout`, `registerFcm`, `processPush`, `setInBackground`).
+- Bind/Unbind; Befehle (`start`, `requestQr`, `sendPhone`, `sendCode`, `sendPassword`, `getAuth`, `logout`, `registerFcm`, `processPush`, `setInBackground`, `listChats`, `resolveChatTitles`, `pullChatHistory`).
 - Pufferung/Race‑Fix: Befehle werden in einer Queue gepuffert, bis die Service‑Verbindung steht. So erreicht `CMD_START` den Service garantiert vor nachfolgenden Auth‑Kommandos (z. B. `sendPhone`), und die UI erhält Zustands‑Events zuverlässig (kein „Warte auf Antwort…“‑Hänger mehr).
 - `authStates(): Flow<String>` liefert Zustandswechsel an die UI/Repos.
 
@@ -136,6 +137,7 @@ app/src/main/java/com/chris/m3usuite
 │   ├── components/                         # UI-Bausteine (Header, Carousels, Controls)
 │   ├── forms/                              # TV-Form-Kit (v1): TvFormSection/Switch/Slider/TextField/Select/Button + Validation
 │   ├── home/HomeChromeScaffold.kt          # Gemeinsamer Chrome (Header + Bottom) mit TV-Only Chrome-State (Visible/Collapsed/Expanded); ESC/BACK kollabiert Chrome zuerst (TV), bevor Back weitergereicht wird
+│   │   - TV (Empty Start): Wenn der Start-Screen leer ist (keine Rows), wird der Chrome auf TV automatisch expandiert und der Fokus landet im Header auf dem Einstellungs-Button (oben rechts). DPAD-LEFT expandiert Chrome auch aus diesem leeren Zustand.
 │   │   - TV: Header/Bottom anfangs sichtbar, auto-collapse bei Content-Scroll; Menu (Burger) toggelt Expanded (Fokus-Trap Header↔Bottom, Content geblurred). Long‑Press DPAD‑LEFT triggert dieselbe Burger‑Funktion (Expand/Collapse). Panels sliden animiert ein/aus; Content-Padding passt sich an.
 │   ├── home/StartScreen.kt                 # „Gate“-Home: Suche, Carousels, Live-Favoriten
 │   │   - Live-Favoriten-Picker nutzt Paging über `MediaQueryRepository.pagingSearchFilteredFlow("live", …)`; Suchtreffer entsprechen der Library-Suche.
@@ -196,8 +198,16 @@ Routen (aus `MainActivity`):
    - Navigation state preservation: Top‑level switches between Start (`library?q=…`) and Library (`browse`) use Navigation‑Compose state saving (`restoreState=true` and `popUpTo(findStartDestination()){ saveState=true }`). Additionally, a lightweight in‑memory scroll cache in `ScrollStateRegistry` ensures list/grid positions persist even if backstack entries are removed by navigation.
 
 4. **Details: `live/{id}`, `vod/{id}`, `series/{id}`**
-   - Aktionen: Play (via `PlayerChooser`), Favorisieren, Kids freigeben/sperren.
-   - VOD/Series Details/Poster/Episoden per OBX: delta‑import; Serien on‑demand via `XtreamObxRepository.importSeriesDetailOnce`.
+   - Aktionen: Play (via `MediaActionBar`), Favorisieren (Live), Kids freigeben/sperren.
+   - VOD/Series: Köpfe/Episoden per OBX; Serien on‑demand via `XtreamObxRepository.importSeriesDetailOnce`. VOD/Series laden Zusatz‑Metadaten on‑demand beim Öffnen (kein Prefetch auf Start/Home).
+   - UI‑Schichtung (VOD/Series):
+     - Layer 1: Vollbild‑Hero (Backdrop/Poster) über gesamte Fläche, `ContentScale.Crop`, gemeinsame Alpha `HERO_SCRIM_IMAGE_ALPHA`.
+     - Layer 2–3: Lesbarkeits‑Overlays (vertikaler Scrim + radialer Glow) innerhalb Content‑Padding.
+    - Layer 4: Content‑Karte mit zentralem `DetailHeader` (ohne Scrim; `showHeroScrim=false`), darunter fokusierbare Plot/Info-Karten mit Expand/Collapse; bei Serie folgen Staffeln/Episoden.
+    - Zentraler Header: `ui/detail/DetailHeader` nutzt `MetaChips` (Jahr, Laufzeit, Qualität, Audio, Provider, Kategorie, Genres) und `MediaActionBar`. Header‑Extras (MPAA/Age/kompakte Audio/Video) kommen über `ui/detail/DetailHeaderExtras`. Plot- und Fakten-Karte (TV-fokussierbar) zeigen alle Xtream‑Metadaten (Bewertung, Laufzeit, Format, MPAA/Age, Provider/Kategorie, Genres/Länder, Regie/Cast, Release, Audio/Video/Bitrate, IMDb/TMDb inkl. Link).
+     - Faktenblock: `ui/detail/DetailFacts` zeigt ★Rating, Container/Qualität, MPAA/Age, Provider/Kategorie, Genres/Länder, Regie/Cast, Release und IMDB/TMDB‑IDs + TMDb Link sowie Technik (Audio/Video/Bitrate).
+     - Hinweis: Legacy‑Header ist entfernt/deaktiviert. FishBackground ist auf Detailseiten entfernt.
+   - DPAD/BACK Verhalten (Details): DPAD‑LEFT öffnet HomeChrome nicht (Scaffold‑Schalter `enableDpadLeftChrome=false`). BACK funktioniert per `BackHandler` in VOD/Serie.
 
 5. **player = `InternalPlayerScreen`**
    - Media3/ExoPlayer, Resume‑Handling (`ResumeRepository`), Untertitel‑Stil, Rotation‑Lock Option.

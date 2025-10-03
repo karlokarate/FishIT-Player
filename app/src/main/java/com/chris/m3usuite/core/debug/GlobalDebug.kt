@@ -70,6 +70,16 @@ object GlobalDebug {
         Log.i(TAG, "obxKey:$kind id=$id { $s }")
     }
 
+    fun logDetailSection(type: String, id: String, section: String, entries: Map<String, Any?>) {
+        if (!enabled.get()) return
+        if (entries.isEmpty()) return
+        val body = entries.entries.joinToString(", ") { (k, v) ->
+            val value = v?.toString()?.replace('\n', ' ')?.replace('\r', ' ')
+            "$k=${value ?: ""}"
+        }
+        Log.i(TAG, "detail:$type id=$id section=$section { $body }")
+    }
+
     // Row navigation intent/decision logging
     fun logRowNav(direction: String, rowKey: String?, fromIndex: Int?, targetIndex: Int?, note: String? = null) {
         if (!enabled.get()) return

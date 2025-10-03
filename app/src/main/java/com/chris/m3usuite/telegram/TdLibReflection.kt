@@ -24,6 +24,36 @@ object TdLibReflection {
 
     enum class AuthState { UNKNOWN, UNAUTHENTICATED, WAIT_ENCRYPTION_KEY, WAIT_FOR_NUMBER, WAIT_FOR_CODE, WAIT_FOR_PASSWORD, WAIT_OTHER_DEVICE, AUTHENTICATED, LOGGING_OUT }
 
+    data class PhoneAuthSettings(
+        val allowFlashCall: Boolean = false,
+        val allowMissedCall: Boolean = false,
+        val isCurrentPhoneNumber: Boolean = false,
+        val hasUnknownPhoneNumber: Boolean = false,
+        val allowSmsRetrieverApi: Boolean = false,
+        val authenticationTokens: List<String> = emptyList()
+    )
+
+    sealed class ChatListTag {
+        object Main : ChatListTag()
+        object Archive : ChatListTag()
+        data class Folder(val id: Int) : ChatListTag()
+
+        override fun toString(): String = when (this) {
+            Main -> "main"
+            Archive -> "archive"
+            is Folder -> "folder:${id}"
+        }
+
+        companion object {
+            fun fromString(value: String?): ChatListTag? = when {
+                value == "main" -> Main
+                value == "archive" -> Archive
+                value != null && value.startsWith("folder:") -> value.removePrefix("folder:").toIntOrNull()?.let { Folder(it) }
+                else -> null
+            }
+        }
+    }
+
     // Some builds ship TDLib under different Java package names. Try both.
     private val PKGS = listOf(
         "org.drinkless.td.libcore.telegram",
@@ -203,7 +233,9 @@ object TdLibReflection {
     // --- Chat list builders ---
     fun buildChatListMain(): Any? = try { new("TdApi\$ChatListMain") } catch (_: Throwable) { null }
     fun buildChatListArchive(): Any? = try { new("TdApi\$ChatListArchive") } catch (_: Throwable) { null }
+    fun buildChatListFolder(folderId: Int): Any? = try { new("TdApi\$ChatListFolder", arrayOf(Int::class.javaPrimitiveType!!), arrayOf(folderId)) } catch (_: Throwable) { null }
     fun buildGetChats(chatList: Any, limit: Int): Any? = try { new("TdApi\$GetChats", arrayOf(td("TdApi\$ChatList"), Int::class.javaPrimitiveType!!), arrayOf(chatList, limit)) } catch (_: Throwable) { null }
+    fun buildLoadChats(chatList: Any, limit: Int): Any? = try { new("TdApi\$LoadChats", arrayOf(td("TdApi\$ChatList"), Int::class.javaPrimitiveType!!), arrayOf(chatList, limit)) } catch (_: Throwable) { null }
     fun buildGetChat(chatId: Long): Any? = try { new("TdApi\$GetChat", arrayOf(Long::class.javaPrimitiveType!!), arrayOf(chatId)) } catch (_: Throwable) { null }
 
     fun extractChatsIds(chatsObj: Any): LongArray? = try {
@@ -211,10 +243,55 @@ object TdLibReflection {
         f.get(chatsObj) as? LongArray
     } catch (_: Throwable) { null }
 
+    fun extractChatId(chatObj: Any): Long? = try {
+        val f = chatObj.javaClass.getDeclaredField("id"); f.isAccessible = true
+        (f.get(chatObj) as? Long)
+    } catch (_: Throwable) { null }
+
     fun extractChatTitle(chatObj: Any): String? = try {
         val f = chatObj.javaClass.getDeclaredField("title"); f.isAccessible = true
         f.get(chatObj) as? String
     } catch (_: Throwable) { null }
+
+    fun extractChatPositions(chatObj: Any): List<Any> = try {
+        val f = chatObj.javaClass.getDeclaredField("positions"); f.isAccessible = true
+        val arr = f.get(chatObj)
+        when (arr) {
+            is Array<*> -> arr.filterNotNull()
+            is Iterable<*> -> arr.filterNotNull()
+            else -> emptyList()
+        }
+    } catch (_: Throwable) { emptyList() }
+
+    fun classifyChatList(obj: Any?): ChatListTag? {
+        if (obj == null) return null
+        val name = obj.javaClass.name
+        return when {
+            PKGS.any { name == "$it.TdApi\$ChatListMain" } -> ChatListTag.Main
+            PKGS.any { name == "$it.TdApi\$ChatListArchive" } -> ChatListTag.Archive
+            PKGS.any { name == "$it.TdApi\$ChatListFolder" } -> {
+                val id = runCatching { obj.javaClass.getDeclaredField("chatFolderId").apply { isAccessible = true }.getInt(obj) }.getOrNull()
+                id?.let { ChatListTag.Folder(it) }
+            }
+            else -> null
+        }
+    }
+
+    fun extractChatPositionOrder(positionObj: Any?): Long? {
+        if (positionObj == null) return null
+        return try {
+            val f = positionObj.javaClass.getDeclaredField("order"); f.isAccessible = true
+            f.get(positionObj) as? Long
+        } catch (_: Throwable) { null }
+    }
+
+    fun extractChatPositionList(positionObj: Any?): Any? {
+        if (positionObj == null) return null
+        return try {
+            val f = positionObj.javaClass.getDeclaredField("list"); f.isAccessible = true
+            f.get(positionObj)
+        } catch (_: Throwable) { null }
+    }
 
     fun buildGetChatHistory(chatId: Long, fromMessageId: Long, offset: Int, limit: Int, onlyLocal: Boolean): Any? =
         try { new("TdApi\$GetChatHistory", arrayOf(Long::class.javaPrimitiveType!!, Long::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!), arrayOf(chatId, fromMessageId, offset, limit, onlyLocal)) } catch (_: Throwable) { null }
@@ -274,13 +351,54 @@ object TdLibReflection {
         client.sendMethod.invoke(client.client, set, rh, eh)
     }
 
-    fun sendSetPhoneNumber(client: ClientHandle, phone: String) {
-        val settings = new(
-            "TdApi\$PhoneNumberAuthenticationSettings",
-            arrayOf(Boolean::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, Array<String>::class.java),
-            arrayOf(false, false, false, false, emptyArray<String>())
+    fun buildPhoneNumberAuthenticationSettings(settings: PhoneAuthSettings): Any? {
+        val tokens = settings.authenticationTokens.distinct().take(20).toTypedArray()
+        val firebaseClass = runCatching { td("TdApi\$FirebaseAuthenticationSettings") }.getOrNull() ?: return null
+        val paramTypes = arrayOf(
+            Boolean::class.javaPrimitiveType!!,
+            Boolean::class.javaPrimitiveType!!,
+            Boolean::class.javaPrimitiveType!!,
+            Boolean::class.javaPrimitiveType!!,
+            Boolean::class.javaPrimitiveType!!,
+            firebaseClass,
+            Array<String>::class.java
         )
-        val fn = new("TdApi\$SetAuthenticationPhoneNumber", arrayOf(String::class.java, settings.javaClass), arrayOf(phone, settings))
+        val args: Array<Any?> = arrayOf(
+            settings.allowFlashCall,
+            settings.allowMissedCall,
+            settings.isCurrentPhoneNumber,
+            settings.hasUnknownPhoneNumber,
+            settings.allowSmsRetrieverApi,
+            null,
+            tokens
+        )
+        return runCatching { new("TdApi\$PhoneNumberAuthenticationSettings", paramTypes, args) }.getOrNull()
+    }
+
+    fun sendSetPhoneNumber(client: ClientHandle, phone: String, settings: PhoneAuthSettings = PhoneAuthSettings()) {
+        val settingsObj = buildPhoneNumberAuthenticationSettings(settings)
+            ?: new(
+                "TdApi\$PhoneNumberAuthenticationSettings",
+                arrayOf(
+                    Boolean::class.javaPrimitiveType!!,
+                    Boolean::class.javaPrimitiveType!!,
+                    Boolean::class.javaPrimitiveType!!,
+                    Boolean::class.javaPrimitiveType!!,
+                    Array<String>::class.java
+                ),
+                arrayOf(
+                    settings.allowFlashCall,
+                    settings.allowMissedCall,
+                    settings.isCurrentPhoneNumber,
+                    settings.hasUnknownPhoneNumber,
+                    settings.authenticationTokens.distinct().take(20).toTypedArray()
+                )
+            )
+        val fn = new(
+            "TdApi\$SetAuthenticationPhoneNumber",
+            arrayOf(String::class.java, settingsObj.javaClass),
+            arrayOf(phone, settingsObj)
+        )
         val handlerType = td("Client\$ResultHandler")
         val exceptionHandlerType = td("Client\$ExceptionHandler")
         // Forward function results (incl. TdApi.Error) to the global update listener
