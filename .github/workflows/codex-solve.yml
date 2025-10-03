@@ -5,8 +5,8 @@ on:
     types: [labeled]
   workflow_dispatch:
     inputs:
-      comment:
-        description: "Optional: Hinweis / Debug für manuellen Start"
+      issue:
+        description: "Issue-Nummer (von Bot 1 übergeben)"
         required: false
         default: ""
 
@@ -20,7 +20,9 @@ jobs:
   solve:
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issues' && github.event.label.name == 'contextmap-ready')
+      (github.event_name == 'issues' &&
+       github.event.action == 'labeled' &&
+       github.event.label.name == 'contextmap-ready')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,18 +36,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade openai requests unidiff
 
-      - name: Export GH_EVENT_NAME
-        run: echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
+      - name: Export GH_EVENT_NAME & ISSUE_NUMBER
+        run: |
+          echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
+          echo "ISSUE_NUMBER=${{ inputs.issue }}" >> $GITHUB_ENV
 
       - name: Run Solver Bot (high)
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}               # <— direkt
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
           OPENAI_REASONING_EFFORT: high
 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GH_EVENT_NAME: ${{ env.GH_EVENT_NAME }}
 
+          # Build-Workflow-Name/ID (kann angepasst werden)
           SOLVER_BUILD_WORKFLOW: release-apk.yml
+          # aus workflow_dispatch kommt ISSUE_NUMBER, bei issues:labeled bleibt leer
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
         run: python .github/codex/bot_solver.py
