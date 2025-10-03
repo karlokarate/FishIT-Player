@@ -4,34 +4,13 @@
 """
 Bot 2 – Solver (Code-Umsetzung)
 
-Startbedingungen:
-- Issue hat Label `contextmap-ready`
-- Ein Kommentar existiert, der mit "### contextmap-ready" beginnt (von Bot 1)
-- Trigger via issues:labeled (Label gesetzt) oder workflow_dispatch
-
-Vorgehen:
-- ContextMap einlesen, "(potentiell) betroffene Module" parsen (nur existierende Pfade)
-- Rekursiv Abhängigkeiten einbeziehen (Gradle/Manifest/Imports)
-- GPT-5 (high) erzeugt EINEN Unified-Diff (zentralisieren wo sinnvoll; Stelle verifizieren)
-- Patch robust anwenden (sanitize, 3-way, .rej Fallback)
-- Branch pushen, PR gegen default branch erstellen
-- Build-Workflow dispatchen (PR-Branch) und Ergebnis abwarten:
-  - success  → Label `solver-done` (und `contextmap-ready` entfernen)
-  - failure  → Label `solver-error` (→ Bot 3 reagiert im Anschluss)
-
-ENV:
-  OPENAI_API_KEY
-  OPENAI_MODEL_DEFAULT (gpt-5)
-  OPENAI_REASONING_EFFORT (high)
-  OPENAI_BASE_URL (optional)
-  GITHUB_TOKEN
-  GITHUB_REPOSITORY
-  GITHUB_EVENT_PATH
-  GH_EVENT_NAME
-  ISSUE_NUMBER (optional; via workflow_dispatch)
-  SOLVER_BUILD_WORKFLOW (optional, default release-apk.yml)
-
-Python-Deps: openai, requests, unidiff
+Fixes & Robustness:
+- Uses -p1 for patches with a/ b/ prefixes (with fallback to -p0)
+- Normalizes CRLF → LF, trims code fences, starts at first 'diff --git'
+- Rewrites brace-rename paths '{old => new}' in diff/---/+++ headers
+- Applies whole patch with multiple strategies, then section-wise fallback
+- Ensures CWD is repo root, sets safe git configs (whitespace, eol)
+- Summarizes .rej hunks back to the issue, labels 'solver-error' on failure
 """
 
 from __future__ import annotations
@@ -78,12 +57,6 @@ def gh_api_raw(method: str, url: str, allow_redirects=True):
     return r
 
 def issue_number() -> Optional[int]:
-    """
-    Issue-Nummer ermitteln:
-    1) klassisch: aus issues-Event
-    2) workflow_dispatch: inputs.issue
-    3) ENV ISSUE_NUMBER (vom Workflow gesetzt)
-    """
     ev = event()
     if "issue" in ev:
         n = (ev.get("issue") or {}).get("number")
@@ -111,12 +84,19 @@ def add_label(num: int, label: str):
 
 def remove_label(num: int, label: str):
     try:
-        requests.delete(f"https://api.github.com/repos/{repo()}/issues/{num}/labels/{label}",
+        requests.delete(f"/repos/{repo()}/issues/{num}/labels/{label}",
                         headers={"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
                                  "Accept": "application/vnd.github+json"},
                         timeout=30)
     except Exception:
-        pass
+        # Fallback to absolute URL
+        try:
+            requests.delete(f"https://api.github.com/repos/{repo()}/issues/{num}/labels/{label}",
+                            headers={"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                                     "Accept": "application/vnd.github+json"},
+                            timeout=30)
+        except Exception:
+            pass
 
 def post_comment(num: int, body: str):
     gh_api("POST", f"/repos/{repo()}/issues/{num}/comments", {"body": body})
@@ -126,6 +106,28 @@ def sh(cmd: str, check=True) -> str:
     if check and p.returncode != 0:
         raise RuntimeError(f"cmd failed: {cmd}\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}")
     return (p.stdout or "")
+
+def ensure_repo_cwd():
+    # Prefer GITHUB_WORKSPACE
+    ws = os.environ.get("GITHUB_WORKSPACE")
+    if ws and Path(ws).exists():
+        os.chdir(ws)
+    else:
+        # Fallback to repo root reported by git
+        try:
+            root = sh("git rev-parse --show-toplevel").strip()
+            if root: os.chdir(root)
+        except Exception:
+            pass
+    # Set safe git configs
+    try:
+        sh("git config user.name 'codex-bot'", check=False)
+        sh("git config user.email 'actions@users.noreply.github.com'", check=False)
+        sh("git config core.autocrlf false", check=False)
+        sh("git config apply.whitespace nowarn", check=False)
+        sh("git config core.safecrlf false", check=False)
+    except Exception:
+        pass
 
 def ls_files() -> List[str]:
     try:
@@ -162,16 +164,12 @@ def parse_affected_modules(contextmap_md: str, all_files: List[str]) -> List[str
         if it in sset:
             existing.add(it)
         else:
+            # Folder?
             if any(f.startswith(it.rstrip("/") + "/") for f in sset):
                 existing.add(it.rstrip("/"))
     return sorted(existing)
 
 def expand_dependencies(seed_paths: List[str], all_files: List[str], max_extra: int = 80) -> List[str]:
-    """
-    Rekursive Erweiterung:
-      - Module: build.gradle(.kts), AndroidManifest.xml ergänzen
-      - Import-Heuristik (com.chris.m3usuite) → zusammenhängende Module
-    """
     sset = set(all_files)
     out: Set[str] = set(seed_paths)
     # Gradle/Manifest je Modul
@@ -198,60 +196,151 @@ def expand_dependencies(seed_paths: List[str], all_files: List[str], max_extra: 
     out.update(extra)
     return sorted(out)
 
-# ---------------- OpenAI Diff-Erzeugung ----------------
+# ---------------- Patch Normalization ----------------
+
+_BRACE_RE = re.compile(r"\{([^{}]*?)\s*=>\s*([^{}]*?)\}")
+
+def _rewrite_brace_path(path: str) -> str:
+    """
+    Converts brace-rename patterns inside path segments:
+    e.g., 'docs/{old => new}/file.md' -> 'docs/new/file.md'
+          '{ => src}/Main.kt' -> 'src/Main.kt'
+          '{pkg => }/Foo.kt' -> 'Foo.kt'
+    """
+    while True:
+        m = _BRACE_RE.search(path)
+        if not m: break
+        left, right = m.group(1), m.group(2)
+        repl = right if right else ""
+        path = path[:m.start()] + repl + path[m.end():]
+    # remove duplicate slashes from empty replacements
+    path = re.sub(r"/{2,}", "/", path)
+    path = path.lstrip("/")  # keep relative
+    return path
+
+def _normalize_brace_renames(patch_text: str) -> str:
+    """
+    Finds occurrences of brace-rename syntax in diff headers and ---/+++ lines,
+    rewrites them to normal paths so 'git apply' can handle them.
+    """
+    lines = patch_text.splitlines()
+    for i, ln in enumerate(lines):
+        if ln.startswith("diff --git "):
+            # Pattern: diff --git a/<p1> b/<p2>
+            m = re.match(r"diff --git a/(.+?)\s+b/(.+?)\s*$", ln)
+            if m:
+                a_path = _rewrite_brace_path(m.group(1))
+                b_path = _rewrite_brace_path(m.group(2))
+                lines[i] = f"diff --git a/{a_path} b/{b_path}"
+        elif ln.startswith("--- ") or ln.startswith("+++ "):
+            # Pattern: --- a/<p> | +++ b/<p> | --- /dev/null
+            m = re.match(r"([+-]{3})\s+(\S+)", ln)
+            if m:
+                prefix, path = m.group(1), m.group(2)
+                if path not in ("/dev/null",):
+                    # Strip a/ or b/ if present to keep consistency; will re-add below
+                    ab = ""
+                    if path.startswith("a/"): ab, core = "a/", path[2:]
+                    elif path.startswith("b/"): ab, core = "b/", path[2:]
+                    else:
+                        core = path
+                    core = _rewrite_brace_path(core)
+                    path = f"{ab}{core}" if ab else core
+                lines[i] = f"{prefix} {path}"
+    return "\n".join(lines) + ("\n" if not patch_text.endswith("\n") else "")
 
 def sanitize_patch(raw: str) -> str:
     if not raw: return raw
+    # cut code fences
     m = re.search(r"```(?:diff)?\s*(.*?)```", raw, re.S)
     if m: raw = m.group(1)
-    i = raw.find("diff --git ")
-    if i != -1: raw = raw[i:]
     raw = raw.replace("\r\n","\n").replace("\r","\n")
+    # keep from first diff header
+    pos = raw.find("diff --git ")
+    if pos != -1:
+        raw = raw[pos:]
+    # normalize brace renames
+    raw = _normalize_brace_renames(raw)
+    # ensure trailing newline
     if not raw.endswith("\n"): raw += "\n"
-    lines = raw.split("\n")
-    if not lines or not lines[0].startswith("diff --git "):
-        for idx, ln in enumerate(lines):
-            if ln.startswith("diff --git "): lines = lines[idx:]; break
-        raw = "\n".join(lines)
     return raw
 
-def apply_patch_unidiff(patch_text: str) -> Tuple[List[str], List[str], List[str]]:
+def patch_uses_ab_prefix(patch_text: str) -> bool:
+    return bool(re.search(r"^diff --git a/[\S]+ b/[\S]+", patch_text, re.M))
+
+# ---------------- Apply Helpers ----------------
+
+def _git_apply_try(tmp: str, pstrip: int, three_way: bool, extra_flags: str = "") -> subprocess.CompletedProcess:
+    t = f"git apply {'-3' if three_way else ''} -p{pstrip} --whitespace=fix {extra_flags} {tmp}".strip()
+    return subprocess.run(t, shell=True, text=True, capture_output=True)
+
+def whole_patch_fallback(patch_text: str) -> Tuple[bool, str]:
+    tmp = ".github/codex/_solver_all.patch"
+    Path(tmp).write_text(patch_text, encoding="utf-8")
+    tries = []
+    # Prefer -p1 when a/b prefixes present
+    pseq = [1,0] if patch_uses_ab_prefix(patch_text) else [0,1]
+    for p in pseq:
+        tries.append((p, True, ""))   # 3-way
+        tries.append((p, False, ""))  # normal
+        tries.append((p, False, "--ignore-whitespace"))
+        tries.append((p, False, "--reject --ignore-whitespace"))
+    last_err = ""
+    for p, three, extra in tries:
+        pr = _git_apply_try(tmp, p, three, extra)
+        if pr.returncode == 0:
+            return True, f"git apply {'-3' if three else ''} -p{p} --whitespace=fix {extra}".strip()
+        last_err = (pr.stderr or pr.stdout or "")[:1200]
+    return False, last_err
+
+def _split_sections(patch_text: str) -> List[str]:
     sections=[]
     for m in re.finditer(r"^diff --git a/(\S+)\s+b/(\S+)\s*$", patch_text, re.M):
         start=m.start()
         next_m=re.search(r"^diff --git ", patch_text[m.end():], re.M)
         end=m.end() + (next_m.start() if next_m else len(patch_text)-m.end())
         sections.append(patch_text[start:end])
+    return sections
+
+def apply_patch_unidiff(patch_text: str) -> Tuple[List[str], List[str], List[str]]:
+    sections = _split_sections(patch_text)
     if not sections:
-        tmp = ".github/codex/_solver_all.patch"
-        Path(tmp).write_text(patch_text, encoding="utf-8")
-        subprocess.run(f"git apply -p0 --whitespace=fix {tmp}", shell=True, check=True, text=True)
+        # Single-shot apply using whole fallback logic
+        ok, info = whole_patch_fallback(patch_text)
+        if not ok:
+            raise RuntimeError(f"git apply failed: {info}")
         return (["<whole>"], [], [])
+
     applied, rejected, skipped = [], [], []
     for idx, body in enumerate(sections,1):
         tmp=f".github/codex/_solver_sec_{idx}.patch"
-        Path(tmp).write_text(body, encoding="utf-8")
-        if subprocess.run(f"git apply --check -3 -p0 {tmp}", shell=True, text=True, capture_output=True).returncode==0:
-            subprocess.run(f"git apply -3 -p0 --whitespace=fix {tmp}", shell=True, check=True, text=True)
-            applied.append(f"section_{idx}"); continue
-        if subprocess.run(f"git apply --check -p0 {tmp}", shell=True, text=True, capture_output=True).returncode==0:
-            subprocess.run(f"git apply -p0 --whitespace=fix {tmp}", shell=True, check=True, text=True)
-            applied.append(f"section_{idx}"); continue
-        # Normalize & retry
-        data = Path(tmp).read_text(encoding="utf-8", errors="replace").replace("\r\n","\n").replace("\r","\n")
-        Path(tmp).write_text(data, encoding="utf-8")
-        if subprocess.run(f"git apply --check -3 -p0 {tmp}", shell=True, text=True, capture_output=True).returncode==0:
-            subprocess.run(f"git apply -3 -p0 --whitespace=fix {tmp}", shell=True, check=True, text=True)
-            applied.append(f"section_{idx}"); continue
-        if subprocess.run(f"git apply --check -p0 {tmp}", shell=True, text=True, capture_output=True).returncode==0:
-            subprocess.run(f"git apply -p0 --whitespace=fix {tmp}", shell=True, check=True, text=True)
-            applied.append(f"section_{idx}"); continue
-        try:
-            subprocess.run(f"git apply -p0 --reject --whitespace=fix {tmp}", shell=True, check=True, text=True)
-            rejected.append(f"section_{idx}")
-        except Exception:
-            skipped.append(f"section_{idx}")
+        # normalize LF
+        Path(tmp).write_text(body.replace("\r\n","\n").replace("\r","\n"), encoding="utf-8")
+        # Try p1 then p0, 3-way first
+        pseq = [1,0] if patch_uses_ab_prefix(body) else [0,1]
+        success=False
+        for p in pseq:
+            for three in (True, False):
+                pr = _git_apply_try(tmp, p, three, "")
+                if pr.returncode == 0:
+                    applied.append(f"section_{idx}"); success=True; break
+            if success: break
+        if not success:
+            # Retry with ignore-whitespace
+            for p in pseq:
+                pr = _git_apply_try(tmp, p, False, "--ignore-whitespace")
+                if pr.returncode == 0:
+                    applied.append(f"section_{idx}"); success=True; break
+        if not success:
+            # Final: --reject
+            pr = _git_apply_try(tmp, pseq[0], False, "--reject --ignore-whitespace")
+            if pr.returncode == 0:
+                rejected.append(f"section_{idx}")  # created .rej — mark as rejected for manual review
+            else:
+                skipped.append(f"section_{idx}")
     return applied, rejected, skipped
+
+# ---------------- OpenAI Diff-Erzeugung ----------------
 
 def openai_diff(contextmap: str, docs: str, target_paths: List[str]) -> str:
     from openai import OpenAI
@@ -259,13 +348,14 @@ def openai_diff(contextmap: str, docs: str, target_paths: List[str]) -> str:
     if not api_key: raise RuntimeError("OPENAI_API_KEY not set")
     client = OpenAI(api_key=api_key, base_url=(os.environ.get("OPENAI_BASE_URL") or "https://api.openai.com/v1"))
     model = os.environ.get("OPENAI_MODEL_DEFAULT","gpt-5")
-    effort = "high"
+    effort = os.environ.get("OPENAI_REASONING_EFFORT","high")
 
     target_preview = "\n".join(sorted(target_paths))[:8000]
     SYSTEM = (
         "You are an expert Android/Kotlin/Gradle engineer. "
-        "Generate ONE unified diff that applies at repo root (git apply -p0). "
-        "Prefer centralized fixes where possible; verify correct location; refactor helpers/modules to ease future maintenance."
+        "Generate ONE unified diff that applies at repo root (git apply -p1 preferred; a/b prefixes). "
+        "Include proper headers: 'diff --git', 'index', '--- a/', '+++ b/', hunks '@@'. "
+        "For new files add 'new file mode 100644' and '/dev/null' header. Avoid brace-rename shorthand."
     )
     USER = f"""ContextMap:
 {contextmap}
@@ -278,7 +368,7 @@ Target files/modules (primary and recursively inferred):
 
 Output rules:
 - Exactly ONE unified diff, starting with: diff --git a/... b/...
-- Include new files with 'new file mode 100644' if needed
+- Include new files with 'new file mode 100644' and correct ---/+++ headers
 - No prose besides the diff.
 """
     resp = client.responses.create(
@@ -303,40 +393,25 @@ def wait_build_result(workflow_ident: str, ref_branch: str, since_iso: str, time
     base=f"/repos/{repo()}/actions/workflows/{workflow_ident}/runs"
     t0=time.time()
     while True:
-        runs=gh_api("GET", f"{base}?event=workflow_dispatch&branch={ref_branch}")
-        arr=runs.get("workflow_runs",[])
-        cand=arr[0] if arr else {}
-        if cand and cand.get("created_at","")>=since_iso:
-            rid=cand.get("id")
-            while True:
-                run=gh_api("GET", f"/repos/{repo()}/actions/runs/{rid}")
-                if run.get("status")=="completed": return run
-                if time.time()-t0>timeout_s: return run
-                time.sleep(6)
+        try:
+            runs=gh_api("GET", f"{base}?event=workflow_dispatch&branch={ref_branch}")
+            arr=runs.get("workflow_runs",[])
+            cand=arr[0] if arr else {}
+            if cand and cand.get("created_at","")>=since_iso:
+                rid=cand.get("id")
+                while True:
+                    run=gh_api("GET", f"/repos/{repo()}/actions/runs/{rid}")
+                    if run.get("status")=="completed": return run
+                    if time.time()-t0>timeout_s: return run
+                    time.sleep(6)
+        except Exception:
+            if time.time()-t0>timeout_s: return {}
         if time.time()-t0>timeout_s: return {}
         time.sleep(3)
 
-# ---------------- Fallbacks bei Unidiff-Warnungen ----------------
-
-def whole_patch_fallback(patch_text: str) -> Tuple[bool, str]:
-    """Versuche den gesamten Patch in robusten Modi zu applizieren."""
-    tmp = ".github/codex/_solver_all.patch"
-    Path(tmp).write_text(patch_text, encoding="utf-8")
-    tries = [
-        f"git apply -3 -p0 --whitespace=fix {tmp}",
-        f"git apply -p0 --whitespace=fix {tmp}",
-        f"git apply -p0 --reject --ignore-whitespace --whitespace=fix {tmp}",
-    ]
-    last_err = ""
-    for cmd in tries:
-        pr = subprocess.run(cmd, shell=True, text=True, capture_output=True)
-        if pr.returncode == 0:
-            return True, cmd
-        last_err = (pr.stderr or pr.stdout or "")[:800]
-    return False, last_err
+# ---------------- .rej Summary ----------------
 
 def summarize_rejects(num: int):
-    """Wenn .rej Dateien existieren, kurze Liste + Ausschnitte ins Issue kommentieren."""
     rej_files = glob.glob("**/*.rej", recursive=True)
     if not rej_files:
         return
@@ -356,6 +431,8 @@ def summarize_rejects(num: int):
 # ---------------- Main ----------------
 
 def main():
+    ensure_repo_cwd()
+
     num = issue_number()
     if not num:
         print("::error::No issue number in event or inputs"); sys.exit(1)
@@ -386,12 +463,11 @@ def main():
 
     targets = expand_dependencies(seeds, all_files, max_extra=80)
 
-    # Branch vorbereiten
+    # Branch vorbereiten (sauber auf default)
     base = default_branch()
-    branch = f"codex/solve-{int(time.time())}"
-    sh("git config user.name 'codex-bot'"); sh("git config user.email 'actions@users.noreply.github.com'")
     sh(f"git fetch origin {base}", check=False)
-    sh(f"git checkout -b {branch} origin/{base}")
+    sh(f"git checkout -B codex/solve-{int(time.time())} origin/{base}")
+    branch = sh("git rev-parse --abbrev-ref HEAD").strip()
 
     # Diff erzeugen
     try:
@@ -407,34 +483,19 @@ def main():
         post_comment(num, f"❌ Solver: Kein gültiger Diff\n```\n{patch[:1200]}\n```")
         sys.exit(1)
 
-    # Unidiff-Validierung + Fallback-Flag
-    parse_warn = False
+    # Unidiff-Validierung als Warnung (kein Hard-Stop)
     try:
         PatchSet.from_string(patch)
-    except UnidiffParseError as e:
-        parse_warn = True
-        post_comment(num, f"ℹ️ Solver: Unidiff parser warning: `{type(e).__name__}: {e}` – erweitere Fallbacks.")
-    except Exception as e:
-        parse_warn = True
-        post_comment(num, f"ℹ️ Solver: Unidiff parser warning (generisch): `{type(e).__name__}: {e}` – erweitere Fallbacks.")
+    except (UnidiffParseError, Exception) as e:
+        post_comment(num, f"ℹ️ Solver: Unidiff parser warning: `{type(e).__name__}: {e}` – nutze robuste Apply-Fallbacks.")
 
-    # Apply
+    # Apply (whole → section-wise)
     applied = rejected = skipped = []
-    if parse_warn:
-        ok, info = whole_patch_fallback(patch)
-        if ok:
-            post_comment(num, f"✅ Solver: Patch via Whole-Apply erfolgreich (`{info}`)")
-        else:
-            post_comment(num, f"❌ Solver: Whole-Apply Fallback scheiterte.\n```\n{info}\n```")
-            # danach klassisch section-wise versuchen
-            try:
-                applied, rejected, skipped = apply_patch_unidiff(patch)
-            except Exception as e:
-                add_label(num, "solver-error")
-                post_comment(num, f"❌ Solver: Patch-Apply fehlgeschlagen\n```\n{e}\n```")
-                summarize_rejects(num)
-                sys.exit(1)
+    ok, info = whole_patch_fallback(patch)
+    if ok:
+        post_comment(num, f"✅ Solver: Patch via Whole-Apply erfolgreich (`{info}`)")
     else:
+        post_comment(num, f"ℹ️ Solver: Whole-Apply scheiterte, versuche section-wise.\n```\n{info}\n```")
         try:
             applied, rejected, skipped = apply_patch_unidiff(patch)
         except Exception as e:
@@ -472,7 +533,7 @@ def main():
     pr_num = pr.get("number"); pr_url = pr.get("html_url")
     post_comment(num, f"🔧 PR erstellt: #{pr_num} — {pr_url}")
 
-    # Build anstoßen: auf PR-Branch bauen + Issue-Nummer mitgeben (für Bot 3)
+    # Build anstoßen
     wf = os.environ.get("SOLVER_BUILD_WORKFLOW", "release-apk.yml")
     try:
         since = dispatch_build(wf, branch, {"build_type":"debug", "issue": str(num)})
@@ -484,21 +545,3 @@ def main():
             post_comment(num, "✅ Build erfolgreich – Label `solver-done` gesetzt.")
         else:
             add_label(num, "solver-error")
-            post_comment(num, "❌ Build fehlgeschlagen – Label `solver-error` gesetzt (Bot 3 wird reagieren).")
-    except Exception as e:
-        add_label(num, "solver-error")
-        post_comment(num, f"❌ Build-Dispatch fehlgeschlagen\n```\n{e}\n```")
-        sys.exit(1)
-
-if __name__ == "__main__":
-    try:
-        main()
-    except SystemExit:
-        raise
-    except Exception as e:
-        try:
-            add_label(issue_number() or 0, "solver-error")
-        except Exception:
-            pass
-        print("::error::Unexpected solver error:", e)
-        sys.exit(1)
