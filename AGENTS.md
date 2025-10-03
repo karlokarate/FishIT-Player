@@ -1,5 +1,6 @@
 # FishIT Player – Agents & Architecture Guide (consolidated)
 
+TV/DPAD: ProfileGate + PIN/Numpad focus visuals fixed (tvClickable/tvFocusableItem + focusGroup, deterministic initial FocusRequester). See CHANGELOG 2025-10-03.
 This file is the single source of truth for contributors (Codex + humans). It supersedes split/older variants and always provides a complete overview.
 
 Update Policy (mandatory)
@@ -164,6 +165,11 @@ Short bullet summary (current highlights)
 - TV buttons: Use `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton` (in `ui/common/TvButtons.kt`) to get focus glow + bounce by default. Avoid raw Material3 buttons in TV paths.
 - Media actions: Use the centralized action model and `MediaActionBar` (`ui/actions/*`) for detail‑screen CTAs (Resume/Play/Trailer/Add/Remove/OpenEPG/Share). Gate via `BuildConfig.MEDIA_ACTIONBAR_V1` (default ON). Order and Telemetry hooks (`ui_action_*`) must be consistent across screens.
  - Detail header: Use `ui/detail` (`DetailHeader`/`MetaChips`) for VOD/Series/Live detail headers under `BuildConfig.DETAIL_SCAFFOLD_V1` (default ON). For VOD/Series set `showHeroScrim=false` (the full‑screen hero below replaces the header band); Live can keep the scrim.
+ - Profile gate + PIN: On TV, the profile tiles and PIN numpad must use `tvClickable`/`TvButtons` with `focusGroup()` on their containers. The first profile tile requests initial focus via a guarded `FocusRequester`. This is implemented and audited.
+   - Focus audit: `tools/audit_tv_focus.sh` covers `ui/auth/*` to ensure ProfileGate/Numpad keep DPAD focus rules (no raw clickable, no ad‑hoc DPAD handlers).
+   - Initial focus: adult tile (or first visible) receives deterministic focus; header/chrome no longer steal focus on gate. Numpad focuses the first key by default and shows halo/scale on DPAD.
+   - Low‑spec TV: Focus visuals respect the reduced-scale profile (≈1.03) and avoid shadow elevation; still clearly visible on TV.
+
 - TV forms (v1): Use `ui/forms/*` rows for DPAD‑first forms in Settings/Setup (`TvFormSection`, `TvSwitchRow`, `TvSliderRow`, `TvTextFieldRow`, `TvSelectRow`, `TvButtonRow`). LEFT/RIGHT adjust values; text fields open a dialog on TV to avoid keyboard traps. Flag `BuildConfig.TV_FORMS_V1` (default ON) allows screen‑wise activation.
 - UiState (v1): Prefer `UiState` + `StatusViews` + `collectAsUiState` for data loading instead of ad‑hoc spinners. Gate via `BuildConfig.UI_STATE_V1` (default ON). Each migrated screen must render exactly one of Loading/Empty/Error/Success.
 - Cards (v1): Use `ui/cards` (`PosterCard`, `ChannelCard`, `SeasonCard`, `EpisodeRow`) in rows/sections under `BuildConfig.CARDS_V1` (default ON). Keep stable keys/contentType in Lazy*.
@@ -199,6 +205,10 @@ Recent
 - Telegram Login UX: Telefon-Login nutzt `PhoneNumberAuthenticationSettings` (Tokens + `is_current_phone_number`) und bietet in den Settings einen Toggle „Code auf diesem Gerät bestätigen“. Erkennt die Telegram-App und öffnet den QR-Link automatisch, sodass kein Zweitgerät nötig ist.
  - Telegram UI/Playback: Library VOD/Series show per‑chat Telegram rows (tiles with blue “T” tag). Start’s global search includes a Telegram row. Player uses low RAM buffers for `tg://` while TDLib handles on‑disk IO caching.
 - TV low-spec tuning (7a/TV): TV devices (detected via UiMode/Leanback/Fire TV) use a reduced-focus profile and smaller paging windows to improve smoothness on low-spec hardware. Focus effects drop shadowElevation; scales reduce to ~1.03. OkHttp dispatcher is throttled (maxRequests=16, perHost=4). Coil crossfades are disabled on TV to lower overdraw.
+- TV/DPAD focus (gate): ProfileGate tiles now use `tvClickable` + `tvFocusableItem` within a `focusGroup()` container, with a guarded initial `FocusRequester`. On TV, the first profile tile is highlighted immediately; DPAD navigation shows halo/scale.
+- TV/DPAD focus (PIN): The PIN numpad uses `TvButton`/`TvTextButton` for keys (0–9, backspace, OK). The grid container is a `focusGroup()` and the first key requests initial focus. Visual focus (halo + scale) is consistent with other TV buttons.
+- Manifest/Gradle: Added leanback/DPAD features (non‑required) and ensured TV libraries are available. Behavior is a no‑op on phones and tablets.
+
 - Playback-aware seeding: While the internal player is active, `m3u_workers_enabled` is temporarily forced OFF and current Xtream jobs are canceled; on exit, the flag is restored if it was previously ON. This ensures background seeding does not contend with playback on low-power devices.
 - Home initial focus: Start screen sets the first focus deterministically to the first tile of the topmost card (Series). Only the Series row is eligible to request initial focus; VOD/Live rows suppress initial focus on Start. Implemented via `RowConfig.initialFocusEligible` + StartScreen wiring.
 - Focus logging at start: GlobalDebug prints the currently focused tile immediately at screen start (no interaction needed). Row engines announce the first tile after requesting initial focus; chrome header/bottom also log when they gain focus.
