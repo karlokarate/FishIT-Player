@@ -2,15 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Bot 2 – Solver (Code-Umsetzung)
-
-Fixes & Robustness:
-- Uses -p1 for patches with a/ b/ prefixes (with fallback to -p0)
-- Normalizes CRLF → LF, trims code fences, starts at first 'diff --git'
-- Rewrites brace-rename paths '{old => new}' in diff/---/+++ headers
-- Applies whole patch with multiple strategies, then section-wise fallback
-- Ensures CWD is repo root, sets safe git configs (whitespace, eol)
-- Summarizes .rej hunks back to the issue, labels 'solver-error' on failure
+Bot 2 - Solver (Code-Umsetzung)
 """
 
 from __future__ import annotations
@@ -28,8 +20,6 @@ import requests
 from unidiff import PatchSet
 from unidiff.errors import UnidiffParseError
 
-# ---------------- GitHub / Shell Utils ----------------
-
 def repo() -> str:
     return os.environ["GITHUB_REPOSITORY"]
 
@@ -37,23 +27,23 @@ def event() -> dict:
     return json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
 
 def gh_api(method: str, path: str, payload: dict | None = None) -> dict:
-    url = f"https://api.github.com{path}"
-    headers = {"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+    url = "https://api.github.com{path}".format(path=path)
+    headers = {"Authorization": "Bearer {t}".format(t=os.environ['GITHUB_TOKEN']),
                "Accept": "application/vnd.github+json"}
     r = requests.request(method, url, headers=headers, json=payload, timeout=45)
     if r.status_code >= 300:
-        raise RuntimeError(f"GitHub API {method} {path} failed: {r.status_code} {r.text[:500]}")
+        raise RuntimeError("GitHub API {m} {p} failed: {c} {t}".format(m=method, p=path, c=r.status_code, t=r.text[:500]))
     try:
         return r.json()
     except Exception:
         return {}
 
 def gh_api_raw(method: str, url: str, allow_redirects=True):
-    headers = {"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+    headers = {"Authorization": "Bearer {t}".format(t=os.environ['GITHUB_TOKEN']),
                "Accept": "application/vnd.github+json"}
     r = requests.request(method, url, headers=headers, allow_redirects=allow_redirects, stream=True, timeout=60)
     if r.status_code >= 300 and r.status_code not in (301, 302):
-        raise RuntimeError(f"GitHub RAW {method} {url} failed: {r.status_code} {r.text[:500]}")
+        raise RuntimeError("GitHub RAW {m} {u} failed: {c} {t}".format(m=method, u=url, c=r.status_code, t=r.text[:500]))
     return r
 
 def issue_number() -> Optional[int]:
@@ -72,54 +62,47 @@ def issue_number() -> Optional[int]:
     return None
 
 def list_issue_comments(num: int) -> List[dict]:
-    res = gh_api("GET", f"/repos/{repo()}/issues/{num}/comments")
+    res = gh_api("GET", "/repos/{r}/issues/{n}/comments".format(r=repo(), n=num))
     return res if isinstance(res, list) else []
 
 def get_labels(num: int) -> Set[str]:
-    issue = gh_api("GET", f"/repos/{repo()}/issues/{num}")
+    issue = gh_api("GET", "/repos/{r}/issues/{n}".format(r=repo(), n=num))
     return {l.get("name","") for l in issue.get("labels",[])}
 
 def add_label(num: int, label: str):
-    gh_api("POST", f"/repos/{repo()}/issues/{num}/labels", {"labels":[label]})
+    gh_api("POST", "/repos/{r}/issues/{n}/labels".format(r=repo(), n=num), {"labels":[label]})
 
 def remove_label(num: int, label: str):
     try:
-        requests.delete(f"/repos/{repo()}/issues/{num}/labels/{label}",
-                        headers={"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
-                                 "Accept": "application/vnd.github+json"},
-                        timeout=30)
+        requests.delete(
+            "https://api.github.com/repos/{r}/issues/{n}/labels/{lab}".format(r=repo(), n=num, lab=label),
+            headers={"Authorization": "Bearer {t}".format(t=os.environ['GITHUB_TOKEN']),
+                     "Accept": "application/vnd.github+json"},
+            timeout=30
+        )
     except Exception:
-        # Fallback to absolute URL
-        try:
-            requests.delete(f"https://api.github.com/repos/{repo()}/issues/{num}/labels/{label}",
-                            headers={"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
-                                     "Accept": "application/vnd.github+json"},
-                            timeout=30)
-        except Exception:
-            pass
+        pass
 
 def post_comment(num: int, body: str):
-    gh_api("POST", f"/repos/{repo()}/issues/{num}/comments", {"body": body})
+    gh_api("POST", "/repos/{r}/issues/{n}/comments".format(r=repo(), n=num), {"body": body})
 
 def sh(cmd: str, check=True) -> str:
     p = subprocess.run(cmd, shell=True, text=True, capture_output=True)
     if check and p.returncode != 0:
-        raise RuntimeError(f"cmd failed: {cmd}\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}")
+        msg = "cmd failed: {cmd}\nSTDOUT:\n{out}\nSTDERR:\n{err}".format(cmd=cmd, out=p.stdout, err=p.stderr)
+        raise RuntimeError(msg)
     return (p.stdout or "")
 
 def ensure_repo_cwd():
-    # Prefer GITHUB_WORKSPACE
     ws = os.environ.get("GITHUB_WORKSPACE")
     if ws and Path(ws).exists():
         os.chdir(ws)
     else:
-        # Fallback to repo root reported by git
         try:
             root = sh("git rev-parse --show-toplevel").strip()
             if root: os.chdir(root)
         except Exception:
             pass
-    # Set safe git configs
     try:
         sh("git config user.name 'codex-bot'", check=False)
         sh("git config user.email 'actions@users.noreply.github.com'", check=False)
@@ -136,8 +119,6 @@ def ls_files() -> List[str]:
     except Exception:
         return []
 
-# ---------------- ContextMap & Kandidaten ----------------
-
 def fetch_contextmap_comment(num: int) -> Optional[str]:
     for c in list_issue_comments(num):
         b = (c.get("body") or "").strip()
@@ -146,10 +127,6 @@ def fetch_contextmap_comment(num: int) -> Optional[str]:
     return None
 
 def parse_affected_modules(contextmap_md: str, all_files: List[str]) -> List[str]:
-    """
-    extrahiert Liste aus Abschnitt '#### (potentiell) betroffene Module'
-    nur existierende Pfade (Dateien/Ordner) werden akzeptiert
-    """
     m = re.search(r"####\s*\(potentiell\)\s*betroffene\s*Module\s*(.*?)\n####", contextmap_md, re.S | re.I)
     if not m:
         m = re.search(r"####\s*\(potentiell\)\s*betroffene\s*Module\s*(.*)$", contextmap_md, re.S | re.I)
@@ -164,15 +141,13 @@ def parse_affected_modules(contextmap_md: str, all_files: List[str]) -> List[str
         if it in sset:
             existing.add(it)
         else:
-            # Folder?
-            if any(f.startswith(it.rstrip("/") + "/") for f in sset):
-                existing.add(it.rstrip("/"))
+            if any(f.startswith(it.rstrip('/') + '/') for f in sset):
+                existing.add(it.rstrip('/'))
     return sorted(existing)
 
 def expand_dependencies(seed_paths: List[str], all_files: List[str], max_extra: int = 80) -> List[str]:
     sset = set(all_files)
     out: Set[str] = set(seed_paths)
-    # Gradle/Manifest je Modul
     for p in list(out):
         g1 = p.rstrip("/") + "/build.gradle"
         g2 = p.rstrip("/") + "/build.gradle.kts"
@@ -180,7 +155,6 @@ def expand_dependencies(seed_paths: List[str], all_files: List[str], max_extra: 
         if g1 in sset: out.add(g1)
         if g2 in sset: out.add(g2)
         if m1 in sset: out.add(m1)
-    # Import-Scan
     pkg_root = "com.chris.m3usuite"
     extra=set()
     for f in [x for x in all_files if x.endswith(".kt") or x.endswith(".java")]:
@@ -190,106 +164,89 @@ def expand_dependencies(seed_paths: List[str], all_files: List[str], max_extra: 
             continue
         if "import " in txt and pkg_root in txt:
             root = f.split("/")[0]
-            if root not in out and any(x.startswith(root+"/") or x==root for x in sset):
+            if root not in out and any(x.startswith(root + "/") or x == root for x in sset):
                 extra.add(root)
                 if len(extra) >= max_extra: break
     out.update(extra)
     return sorted(out)
 
-# ---------------- Patch Normalization ----------------
-
 _BRACE_RE = re.compile(r"\{([^{}]*?)\s*=>\s*([^{}]*?)\}")
 
 def _rewrite_brace_path(path: str) -> str:
-    """
-    Converts brace-rename patterns inside path segments:
-    e.g., 'docs/{old => new}/file.md' -> 'docs/new/file.md'
-          '{ => src}/Main.kt' -> 'src/Main.kt'
-          '{pkg => }/Foo.kt' -> 'Foo.kt'
-    """
     while True:
         m = _BRACE_RE.search(path)
         if not m: break
-        left, right = m.group(1), m.group(2)
+        right = m.group(2)
         repl = right if right else ""
         path = path[:m.start()] + repl + path[m.end():]
-    # remove duplicate slashes from empty replacements
     path = re.sub(r"/{2,}", "/", path)
-    path = path.lstrip("/")  # keep relative
+    path = path.lstrip("/")
     return path
 
 def _normalize_brace_renames(patch_text: str) -> str:
-    """
-    Finds occurrences of brace-rename syntax in diff headers and ---/+++ lines,
-    rewrites them to normal paths so 'git apply' can handle them.
-    """
     lines = patch_text.splitlines()
     for i, ln in enumerate(lines):
         if ln.startswith("diff --git "):
-            # Pattern: diff --git a/<p1> b/<p2>
             m = re.match(r"diff --git a/(.+?)\s+b/(.+?)\s*$", ln)
             if m:
                 a_path = _rewrite_brace_path(m.group(1))
                 b_path = _rewrite_brace_path(m.group(2))
-                lines[i] = f"diff --git a/{a_path} b/{b_path}"
+                lines[i] = "diff --git a/{a} b/{b}".format(a=a_path, b=b_path)
         elif ln.startswith("--- ") or ln.startswith("+++ "):
-            # Pattern: --- a/<p> | +++ b/<p> | --- /dev/null
             m = re.match(r"([+-]{3})\s+(\S+)", ln)
             if m:
                 prefix, path = m.group(1), m.group(2)
                 if path not in ("/dev/null",):
-                    # Strip a/ or b/ if present to keep consistency; will re-add below
                     ab = ""
-                    if path.startswith("a/"): ab, core = "a/", path[2:]
-                    elif path.startswith("b/"): ab, core = "b/", path[2:]
+                    if path.startswith("a/"):
+                        ab, core = "a/", path[2:]
+                    elif path.startswith("b/"):
+                        ab, core = "b/", path[2:]
                     else:
                         core = path
                     core = _rewrite_brace_path(core)
-                    path = f"{ab}{core}" if ab else core
-                lines[i] = f"{prefix} {path}"
-    return "\n".join(lines) + ("\n" if not patch_text.endswith("\n") else "")
+                    path = "{ab}{core}".format(ab=ab, core=core) if ab else core
+                lines[i] = "{p} {path}".format(p=prefix, path=path)
+    text = "\n".join(lines)
+    if not text.endswith("\n"): text += "\n"
+    return text
 
 def sanitize_patch(raw: str) -> str:
     if not raw: return raw
-    # cut code fences
     m = re.search(r"```(?:diff)?\s*(.*?)```", raw, re.S)
     if m: raw = m.group(1)
     raw = raw.replace("\r\n","\n").replace("\r","\n")
-    # keep from first diff header
     pos = raw.find("diff --git ")
     if pos != -1:
         raw = raw[pos:]
-    # normalize brace renames
     raw = _normalize_brace_renames(raw)
-    # ensure trailing newline
     if not raw.endswith("\n"): raw += "\n"
     return raw
 
 def patch_uses_ab_prefix(patch_text: str) -> bool:
     return bool(re.search(r"^diff --git a/[\S]+ b/[\S]+", patch_text, re.M))
 
-# ---------------- Apply Helpers ----------------
-
 def _git_apply_try(tmp: str, pstrip: int, three_way: bool, extra_flags: str = "") -> subprocess.CompletedProcess:
-    t = f"git apply {'-3' if three_way else ''} -p{pstrip} --whitespace=fix {extra_flags} {tmp}".strip()
+    t = "git apply {three} -p{p} --whitespace=fix {extra} {tmp}".format(
+        three="-3" if three_way else "", p=pstrip, extra=extra_flags, tmp=tmp).strip()
     return subprocess.run(t, shell=True, text=True, capture_output=True)
 
 def whole_patch_fallback(patch_text: str) -> Tuple[bool, str]:
     tmp = ".github/codex/_solver_all.patch"
     Path(tmp).write_text(patch_text, encoding="utf-8")
     tries = []
-    # Prefer -p1 when a/b prefixes present
     pseq = [1,0] if patch_uses_ab_prefix(patch_text) else [0,1]
     for p in pseq:
-        tries.append((p, True, ""))   # 3-way
-        tries.append((p, False, ""))  # normal
+        tries.append((p, True, ""))
+        tries.append((p, False, ""))
         tries.append((p, False, "--ignore-whitespace"))
         tries.append((p, False, "--reject --ignore-whitespace"))
     last_err = ""
     for p, three, extra in tries:
         pr = _git_apply_try(tmp, p, three, extra)
         if pr.returncode == 0:
-            return True, f"git apply {'-3' if three else ''} -p{p} --whitespace=fix {extra}".strip()
+            return True, "git apply {three} -p{p} --whitespace=fix {extra}".format(
+                three="-3" if three else "", p=p, extra=extra).strip()
         last_err = (pr.stderr or pr.stdout or "")[:1200]
     return False, last_err
 
@@ -305,42 +262,35 @@ def _split_sections(patch_text: str) -> List[str]:
 def apply_patch_unidiff(patch_text: str) -> Tuple[List[str], List[str], List[str]]:
     sections = _split_sections(patch_text)
     if not sections:
-        # Single-shot apply using whole fallback logic
         ok, info = whole_patch_fallback(patch_text)
         if not ok:
-            raise RuntimeError(f"git apply failed: {info}")
+            raise RuntimeError("git apply failed: {i}".format(i=info))
         return (["<whole>"], [], [])
 
     applied, rejected, skipped = [], [], []
     for idx, body in enumerate(sections,1):
-        tmp=f".github/codex/_solver_sec_{idx}.patch"
-        # normalize LF
+        tmp=".github/codex/_solver_sec_{i}.patch".format(i=idx)
         Path(tmp).write_text(body.replace("\r\n","\n").replace("\r","\n"), encoding="utf-8")
-        # Try p1 then p0, 3-way first
         pseq = [1,0] if patch_uses_ab_prefix(body) else [0,1]
         success=False
         for p in pseq:
             for three in (True, False):
                 pr = _git_apply_try(tmp, p, three, "")
                 if pr.returncode == 0:
-                    applied.append(f"section_{idx}"); success=True; break
+                    applied.append("section_{i}".format(i=idx)); success=True; break
             if success: break
         if not success:
-            # Retry with ignore-whitespace
             for p in pseq:
                 pr = _git_apply_try(tmp, p, False, "--ignore-whitespace")
                 if pr.returncode == 0:
-                    applied.append(f"section_{idx}"); success=True; break
+                    applied.append("section_{i}".format(i=idx)); success=True; break
         if not success:
-            # Final: --reject
             pr = _git_apply_try(tmp, pseq[0], False, "--reject --ignore-whitespace")
             if pr.returncode == 0:
-                rejected.append(f"section_{idx}")  # created .rej — mark as rejected for manual review
+                rejected.append("section_{i}".format(i=idx))
             else:
-                skipped.append(f"section_{idx}")
+                skipped.append("section_{i}".format(i=idx))
     return applied, rejected, skipped
-
-# ---------------- OpenAI Diff-Erzeugung ----------------
 
 def openai_diff(contextmap: str, docs: str, target_paths: List[str]) -> str:
     from openai import OpenAI
@@ -357,20 +307,9 @@ def openai_diff(contextmap: str, docs: str, target_paths: List[str]) -> str:
         "Include proper headers: 'diff --git', 'index', '--- a/', '+++ b/', hunks '@@'. "
         "For new files add 'new file mode 100644' and '/dev/null' header. Avoid brace-rename shorthand."
     )
-    USER = f"""ContextMap:
-{contextmap}
-
-Docs:
-{docs or '(no docs present)'}
-
-Target files/modules (primary and recursively inferred):
-{target_preview}
-
-Output rules:
-- Exactly ONE unified diff, starting with: diff --git a/... b/...
-- Include new files with 'new file mode 100644' and correct ---/+++ headers
-- No prose besides the diff.
-"""
+    USER = "ContextMap:\n{cm}\n\nDocs:\n{docs}\n\nTarget files/modules (primary and recursively inferred):\n{t}\n\nOutput rules:\n- Exactly ONE unified diff, starting with: diff --git a/... b/...\n- Include new files with 'new file mode 100644' and correct ---/+++ headers\n- No prose besides the diff.\n".format(
+        cm=contextmap, docs=(docs or '(no docs present)'), t=target_preview
+    )
     resp = client.responses.create(
         model=model,
         input=[{"role":"system","content":SYSTEM},{"role":"user","content":USER}],
@@ -378,29 +317,26 @@ Output rules:
     )
     return getattr(resp, "output_text", "")
 
-# ---------------- Build Dispatch & Wait ----------------
-
 def default_branch() -> str:
-    return gh_api("GET", f"/repos/{repo()}").get("default_branch","main")
+    return gh_api("GET", "/repos/{r}".format(r=repo())).get("default_branch","main")
 
 def dispatch_build(workflow_ident: str, ref_branch: str, inputs: dict | None) -> str:
-    gh_api("POST", f"/repos/{repo()}/actions/workflows/{workflow_ident}/dispatches",
+    gh_api("POST", "/repos/{r}/actions/workflows/{w}/dispatches".format(r=repo(), w=workflow_ident),
            {"ref": ref_branch, "inputs": inputs or {}})
-    # ISO8601 UTC now
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 def wait_build_result(workflow_ident: str, ref_branch: str, since_iso: str, timeout_s=1800) -> dict:
-    base=f"/repos/{repo()}/actions/workflows/{workflow_ident}/runs"
+    base="/repos/{r}/actions/workflows/{w}/runs".format(r=repo(), w=workflow_ident)
     t0=time.time()
     while True:
         try:
-            runs=gh_api("GET", f"{base}?event=workflow_dispatch&branch={ref_branch}")
+            runs=gh_api("GET", "{base}?event=workflow_dispatch&branch={b}".format(base=base, b=ref_branch))
             arr=runs.get("workflow_runs",[])
             cand=arr[0] if arr else {}
             if cand and cand.get("created_at","")>=since_iso:
                 rid=cand.get("id")
                 while True:
-                    run=gh_api("GET", f"/repos/{repo()}/actions/runs/{rid}")
+                    run=gh_api("GET", "/repos/{r}/actions/runs/{id}".format(r=repo(), id=rid))
                     if run.get("status")=="completed": return run
                     if time.time()-t0>timeout_s: return run
                     time.sleep(6)
@@ -408,8 +344,6 @@ def wait_build_result(workflow_ident: str, ref_branch: str, since_iso: str, time
             if time.time()-t0>timeout_s: return {}
         if time.time()-t0>timeout_s: return {}
         time.sleep(3)
-
-# ---------------- .rej Summary ----------------
 
 def summarize_rejects(num: int):
     rej_files = glob.glob("**/*.rej", recursive=True)
@@ -419,16 +353,13 @@ def summarize_rejects(num: int):
     for rf in rej_files[:10]:
         try:
             txt = Path(rf).read_text(encoding="utf-8", errors="replace")
-            preview.append(f"\n--- {rf} ---\n" + txt[:500])
+            preview.append("\n--- {rf} ---\n".format(rf=rf) + txt[:500])
         except Exception:
-            preview.append(f"- {rf}")
-    body = ("⚠️ Solver: Einige Hunks wurden als `.rej` abgelegt (manuelle Nacharbeit nötig):\n"
-            + "\n".join(f"- {r}" for r in rej_files[:50]))
+            preview.append("- {rf}".format(rf=rf))
+    body = "⚠️ Solver: Einige Hunks wurden als `.rej` abgelegt (manuelle Nacharbeit nötig):\n" + "\n".join("- {r}".format(r=r) for r in rej_files[:50])
     if preview:
         body += "\n\n```diff\n" + "".join(preview) + "\n```"
     post_comment(num, body)
-
-# ---------------- Main ----------------
 
 def main():
     ensure_repo_cwd()
@@ -445,15 +376,13 @@ def main():
     if not cm or not cm.strip().startswith("### contextmap-ready"):
         print("::notice::No contextmap comment; skipping"); sys.exit(0)
 
-    # Docs laden
     docs=[]
     for name in ["AGENTS.md","ARCHITECTURE_OVERVIEW.md","ROADMAP.md","CHANGELOG.md"]:
         if Path(name).exists():
-            try: docs.append(f"\n--- {name} ---\n" + Path(name).read_text(encoding="utf-8", errors="replace"))
+            try: docs.append("\n--- {n} ---\n".format(n=name) + Path(name).read_text(encoding="utf-8", errors="replace"))
             except Exception: pass
     docs_txt="".join(docs)
 
-    # Kandidaten
     all_files=ls_files()
     seeds = parse_affected_modules(cm, all_files)
     if not seeds:
@@ -463,54 +392,49 @@ def main():
 
     targets = expand_dependencies(seeds, all_files, max_extra=80)
 
-    # Branch vorbereiten (sauber auf default)
     base = default_branch()
-    sh(f"git fetch origin {base}", check=False)
-    sh(f"git checkout -B codex/solve-{int(time.time())} origin/{base}")
+    sh("git fetch origin {b}".format(b=base), check=False)
+    sh("git checkout -B codex/solve-{ts} origin/{b}".format(ts=int(time.time()), b=base))
     branch = sh("git rev-parse --abbrev-ref HEAD").strip()
 
-    # Diff erzeugen
     try:
         raw = openai_diff(cm, docs_txt, targets)
     except Exception as e:
         add_label(num, "solver-error")
-        post_comment(num, f"❌ Solver: OpenAI-Fehler\n```\n{e}\n```")
+        post_comment(num, "❌ Solver: OpenAI-Fehler\n```\n{e}\n```".format(e=e))
         sys.exit(1)
 
     patch = sanitize_patch(raw)
     if "diff --git " not in patch:
         add_label(num, "solver-error")
-        post_comment(num, f"❌ Solver: Kein gültiger Diff\n```\n{patch[:1200]}\n```")
+        post_comment(num, "❌ Solver: Kein gültiger Diff\n```\n{p}\n```".format(p=patch[:1200]))
         sys.exit(1)
 
-    # Unidiff-Validierung als Warnung (kein Hard-Stop)
     try:
         PatchSet.from_string(patch)
     except (UnidiffParseError, Exception) as e:
-        post_comment(num, f"ℹ️ Solver: Unidiff parser warning: `{type(e).__name__}: {e}` – nutze robuste Apply-Fallbacks.")
+        post_comment(num, "ℹ️ Solver: Unidiff parser warning: `{t}: {e}` – nutze robuste Apply-Fallbacks.".format(t=type(e).__name__, e=e))
 
-    # Apply (whole → section-wise)
-    applied = rejected = skipped = []
+    applied, rejected, skipped = [], [], []
     ok, info = whole_patch_fallback(patch)
     if ok:
-        post_comment(num, f"✅ Solver: Patch via Whole-Apply erfolgreich (`{info}`)")
+        post_comment(num, "✅ Solver: Patch via Whole-Apply erfolgreich (`{i}`)".format(i=info))
     else:
-        post_comment(num, f"ℹ️ Solver: Whole-Apply scheiterte, versuche section-wise.\n```\n{info}\n```")
+        post_comment(num, "ℹ️ Solver: Whole-Apply scheiterte, versuche section-wise.\n```\n{info}\n```".format(info=info))
         try:
             applied, rejected, skipped = apply_patch_unidiff(patch)
         except Exception as e:
             add_label(num, "solver-error")
-            post_comment(num, f"❌ Solver: Patch-Apply fehlgeschlagen\n```\n{e}\n```")
+            post_comment(num, "❌ Solver: Patch-Apply fehlgeschlagen\n```\n{e}\n```".format(e=e))
             summarize_rejects(num)
             sys.exit(1)
 
-    # Cleanup temporärer Patchdateien
     for f in glob.glob(".github/codex/_solver_sec_*.patch"):
         try: os.remove(f)
-        except: pass
+        except Exception: pass
     if os.path.exists(".github/codex/_solver_all.patch"):
         try: os.remove(".github/codex/_solver_all.patch")
-        except: pass
+        except Exception: pass
 
     status = sh("git status --porcelain")
     if not status.strip():
@@ -519,21 +443,19 @@ def main():
         summarize_rejects(num)
         sys.exit(1)
 
-    # Commit + Push + PR
     sh("git add -A")
     sh("git commit -m 'codex: solver apply'")
     sh("git push --set-upstream origin HEAD")
 
-    pr = gh_api("POST", f"/repos/{repo()}/pulls", {
+    pr = gh_api("POST", "/repos/{r}/pulls".format(r=repo()), {
         "title": "codex: solver changes",
         "head": branch,
         "base": base,
-        "body": f"Automatisch erzeugte Änderungen basierend auf der ContextMap. (issue #{num})"
+        "body": "Automatisch erzeugte Änderungen basierend auf der ContextMap. (issue #{n})".format(n=num)
     })
     pr_num = pr.get("number"); pr_url = pr.get("html_url")
-    post_comment(num, f"🔧 PR erstellt: #{pr_num} — {pr_url}")
+    post_comment(num, "🔧 PR erstellt: #{n} — {u}".format(n=pr_num, u=pr_url))
 
-    # Build anstoßen
     wf = os.environ.get("SOLVER_BUILD_WORKFLOW", "release-apk.yml")
     try:
         since = dispatch_build(wf, branch, {"build_type":"debug", "issue": str(num)})
@@ -545,3 +467,23 @@ def main():
             post_comment(num, "✅ Build erfolgreich – Label `solver-done` gesetzt.")
         else:
             add_label(num, "solver-error")
+            post_comment(num, "❌ Build fehlgeschlagen – Label `solver-error` gesetzt (Bot 3 wird reagieren).")
+    except Exception as e:
+        add_label(num, "solver-error")
+        post_comment(num, "❌ Build-Dispatch fehlgeschlagen\n```\n{e}\n```".format(e=e))
+        sys.exit(1)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:
+        try:
+            num = issue_number()
+            if num:
+                add_label(num, "solver-error")
+        except Exception:
+            pass
+        print("::error::Unexpected solver error:", e)
+        sys.exit(1)
