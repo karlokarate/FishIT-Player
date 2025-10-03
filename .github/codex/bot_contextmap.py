@@ -10,7 +10,9 @@ Bot 1 – ContextMap (Planner)
   Problemzusammenfassung / (potentiell) betroffene Module / Annahmen / Unklarheiten / Risiken / Nächste Schritte (5-Punkte-Plan)
 - Aktualisiert bestehenden ContextMap-Kommentar oder erstellt neuen
 - Labels: contextmap-ready (Erfolg), contextmap-error (Fehler)
-- Deps: openai, requests
+- Dispatcht anschließend Bot 2 (codex-solve.yml) via workflow_dispatch (mit Issue-Nummer)
+
+Deps: openai, requests
 """
 
 from __future__ import annotations
@@ -37,8 +39,7 @@ def gh_api(method: str, path: str, payload: dict | None = None) -> dict:
         "Accept": "application/vnd.github+json",
     }
     resp = requests.request(method, url, headers=headers, json=payload, timeout=45)
-    if resp.status_code >= 300:
-        raise RuntimeError(f"GitHub API {method} {path} failed: {resp.status_code}: {resp.text[:400]}")
+    resp.raise_for_status()
     try:
         return resp.json()
     except Exception:
@@ -199,7 +200,6 @@ def ensure_under_hard_limit(s: str, hard_limit: int=10000) -> bool:
 # ---------- Main ----------
 
 def main():
-    # Reasoning für Bot 1: low (kann auch im Workflow gesetzt werden)
     os.environ.setdefault("OPENAI_REASONING_EFFORT","low")
     issue_text = read_issue_body()
     if not issue_text.strip().startswith("/codex"):
@@ -214,24 +214,47 @@ def main():
 
     try:
         cm = call_openai_contextmap(issue_text=issue_text, allowed_paths=allowed_paths)
+        # Header robust erzwingen
+        clean = cm.strip()
+        marker = "### contextmap-ready"
+        if not clean.startswith(marker):
+            if clean.lower().startswith("contextmap-ready"):
+                clean = clean[len("contextmap-ready"):].lstrip()
+            clean = f"{marker}\n\n{clean}"
+        cm = clean
+
         if not ensure_under_hard_limit(cm):
             cm = call_openai_contextmap(issue_text=issue_text + "\n\n(Hinweis: Bitte kürzer fassen, max. 9000 Zeichen.)",
                                         allowed_paths=allowed_paths)
+            clean = cm.strip()
+            if not clean.startswith(marker):
+                if clean.lower().startswith("contextmap-ready"):
+                    clean = clean[len("contextmap-ready"):].lstrip()
+                clean = f"{marker}\n\n{clean}"
+            cm = clean
+
         if not ensure_under_hard_limit(cm):
             add_label(num, "contextmap-error")
-            remove_label(num, "contextmap-ready")
-            upsert_contextmap_comment(num, "### contextmap-ready\n\nFehler: Die ContextMap überschreitet 10 000 Zeichen. Bitte Issue präzisieren.")
+            upsert_contextmap_comment(num, f"{marker}\n\nFehler: Die ContextMap überschreitet 10 000 Zeichen. Bitte Issue präzisieren.")
             print("::error::ContextMap exceeds limit"); return
-        if not cm.strip().startswith("### contextmap-ready"):
-            cm = "### contextmap-ready\n\n" + cm.strip()
 
         upsert_contextmap_comment(num, cm)
+        # Label setzen
         remove_label(num, "contextmap-error")
         add_label(num, "contextmap-ready")
         print("::notice::ContextMap posted/updated and labeled contextmap-ready")
+
+        # >>> Bot 2 aktiv dispatchen (mit Issue-Nummer) <<<
+        try:
+            default = "main"  # falls anderes default-branch, hier anpassen oder dynamisch abfragen
+            gh_api("POST", f"/repos/{gh_repo()}/actions/workflows/codex-solve.yml/dispatches",
+                   {"ref": default, "inputs": {"issue": str(num)}})
+            print("::notice::Triggered codex-solve via workflow_dispatch")
+        except Exception as e:
+            upsert_contextmap_comment(num, f"{marker}\n\nHinweis: Konnte Bot 2 nicht automatisch starten.\n```\n{e}\n```")
+
     except Exception as e:
         add_label(num, "contextmap-error")
-        remove_label(num, "contextmap-ready")
         upsert_contextmap_comment(num, f"### contextmap-ready\n\nFehler beim Erzeugen der ContextMap:\n\n```\n{e}\n```")
         print(f"::error::ContextMap failed: {e}")
         sys.exit(1)
