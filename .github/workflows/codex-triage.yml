@@ -3,16 +3,16 @@ name: Codex – Triage (Bot 3)
 on:
   issues:
     types: [labeled]
-  workflow_run:
-    workflows: ["Codex Bot", "Codex – ContextMap (Bot 1)", "Codex – Solver (Bot 2)", "release-apk", "Codex – Plan & Solve"]
-    types:
-      - completed
 
 permissions:
   contents: read
   pull-requests: read
   actions: read
   issues: write
+
+concurrency:
+  group: codex-triage
+  cancel-in-progress: false
 
 jobs:
   triage-on-label:
@@ -29,33 +29,7 @@ jobs:
           pip install --upgrade openai requests
       - name: Export GH_EVENT_NAME
         run: echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
-      - name: Run Bot 3 (label trigger)
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
-          OPENAI_REASONING_EFFORT: high
-          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GH_EVENT_NAME: ${{ env.GH_EVENT_NAME }}
-        run: python .github/codex/bot_triage.py
-
-  triage-on-workflow-failure:
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade openai requests
-      - name: Export GH_EVENT_NAME
-        run: echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
-      - name: Run Bot 3 (workflow_run failure)
+      - name: Run Bot 3 (Triage)
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
