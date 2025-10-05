@@ -36,6 +36,18 @@ Completed (moved to Changelog)
 
 ---
 
+PRIO‑1: Kids/Gast Whitelist – Actions + Multi‑Select (Q4 2025)
+- Fix filtering reliability for kid/guest profiles (effective allow = item allows ∪ category allows − item blocks; guests treated like kids).
+- Detail actions: Re-enable "Für Kinder freigeben" / "Freigabe entfernen" in MediaActionBar on Live/VOD/Series details (gated by canEditWhitelist). Open profile picker and call KidContentRepository allow/disallow.
+- Multi‑Select (phase 1 = Allow only):
+  - Add global "Zuweisen"-Modus on Start/Library/Search (TV/DPAD-first). When active, tiles become selectable across rows and global search.
+  - Route-scoped selection state (encoded media IDs) with a visible count and CTA "Profil wählen".
+  - Bulk-apply allow via KidContentRepository. Show snackbar/Toast with the profile name and count.
+- TV usability: Selection overlay uses tvFocusableItem without breaking DPAD traversal; toggling selection via DPAD CENTER.
+- Performance: Bulk ObjectBox writes in a single transaction per type to avoid UI jank.
+- Race‑Safety: Decode encoded media IDs just-in-time to avoid drift during Xtream delta updates; skip missing/invalid rows gracefully.
+
+Status: Backend helpers + selection scaffold landed; detail actions and UI wiring follow next.
 ## Kurzfristig (2–4 Wochen)
 
 PRIO‑1: TV Fokus/DPAD Vereinheitlichung

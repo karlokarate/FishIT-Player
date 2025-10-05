@@ -24,7 +24,8 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write     # neu: für workflow_dispatch (Bot 3)
+  issues: write      # neu: um bei Failure Label 'solver-error' ans Issue zu hängen
 
 jobs:
   build:
@@ -35,6 +36,7 @@ jobs:
       ABIS: ${{ inputs.abis }}
       IGNORE_TDLIB_V7A: ${{ inputs.ignore_missing_tdlib_v7a }}
       ISSUE_NUMBER: ${{ inputs.issue }}
+
     steps:
       - name: Checkout (full)
         uses: actions/checkout@v4
@@ -88,26 +90,26 @@ jobs:
 
       - name: Build (${{ steps.prep.outputs.TASK }})
         id: build
-        # Falls der Build scheitert, wollen wir, dass der Workflow 'failure' liefert -> Bot 3 reagiert.
+        # Falls der Build scheitert, soll der Job 'failure' werden (Bleibt so).
         run: |
           set -o pipefail
-          # Marker in Log schreiben (für Bot 3 Zuordnung)
+          # Marker in Log schreiben (für Mapping)
           if [ -n "${ISSUE_NUMBER}" ]; then
             echo "ISSUE_NUMBER=${ISSUE_NUMBER}"
             echo "issue:#${ISSUE_NUMBER}"
           fi
-          # Optionale ABI-Flags via Gradle-Property, falls verwendet (projektabhängig)
+          # Optional ABI-Flags via Gradle-Property (projektabhängig)
           ./gradlew --no-daemon --stacktrace -Pcodex.abis="${ABIS}" ${{ steps.prep.outputs.TASK }} 2>&1 | tee gradle_build.log
 
       - name: Collect APK/AAB artifacts
         if: always()
         run: |
           mkdir -p artifacts
-          # APKs (debug/release) – passe Pfade ggf. an dein Projekt an
+          # APKs (debug/release) – ggf. an Projektpfade anpassen
           find . -type f -path "*/build/outputs/apk/*/*.apk" -exec cp -v {} artifacts/ \; || true
-          # Bundles
+          # AAB Bundles
           find . -type f -path "*/build/outputs/bundle/*/*.aab" -exec cp -v {} artifacts/ \; || true
-          # Mapping
+          # Proguard Mapping
           find . -type f -path "*/build/outputs/mapping/*/mapping.txt" -exec cp -v {} artifacts/ \; || true
           # Gradle log
           cp -v gradle_build.log artifacts/ || true
@@ -119,6 +121,32 @@ jobs:
           name: build-${{ github.run_id }}-${{ inputs.build_type }}
           path: artifacts
           if-no-files-found: warn
+
+      # ====== Bot 3 Trigger – Label ======
+      - name: Label issue for Bot 3 (solver-error)
+        if: failure() && inputs.issue != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Label 'solver-error' to issue #${{ inputs.issue }} (on build failure)"
+          curl -sSf -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ inputs.issue }}/labels \
+            -d '{"labels":["solver-error"]}'
+
+      # ====== Bot 3 Trigger – Direkter Dispatch ======
+      - name: Dispatch Bot 3 (codex-triage.yml)
+        if: failure() && inputs.issue != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Dispatch triage workflow for issue #${{ inputs.issue }}"
+          curl -sSf -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/codex-triage.yml/dispatches \
+            -d '{"ref":"${{ github.ref_name }}","inputs":{"issue":"${{ inputs.issue }}"}}'
 
       - name: Fail if task failed
         if: failure()
