@@ -216,7 +216,7 @@ def main():
             add_labels(num, ["triage-attempted", "contextmap-ready"])
             try:
                 gh_api("POST", f"/repos/{repo()}/issues/{num}/comments", {
-                    "body": "🔁 Triage: Fehler analysiert, Korrekturversuch eingeleitet – Bot 2 wird erneut ausgeführt."
+                    "body": "🔁 Triage: Fehler analysiert, Korrekturversuch eingeleitet – Bot 2 wird erneut ausgeführt."
                 })
             except Exception as e:
                 print(f"::warning::Failed to post triage restart comment: {e}")
