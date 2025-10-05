@@ -24,8 +24,8 @@ on:
 
 permissions:
   contents: read
-  actions: write     # neu: für workflow_dispatch (Bot 3)
-  issues: write      # neu: um bei Failure Label 'solver-error' ans Issue zu hängen
+  actions: write    # für workflow_dispatch (Triage)
+  issues: write     # um bei Failure Label 'solver-error' ans Issue zu hängen
 
 jobs:
   build:
@@ -55,7 +55,6 @@ jobs:
       - name: Accept licenses & Install Platform/Build-Tools
         run: |
           yes | sdkmanager --licenses
-          # bevorzugt API 35; fallback 34
           sdkmanager "platforms;android-35" "build-tools;35.0.0" || true
           sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
 
@@ -76,13 +75,11 @@ jobs:
           if [ -n "${ISSUE_NUMBER}" ]; then
             echo "issue:#${ISSUE_NUMBER}"
           fi
-          # Gradle tasks
           if [ "${BUILD_TYPE}" = "release" ]; then
             echo "TASK=:app:assembleRelease" >> $GITHUB_OUTPUT
           else
             echo "TASK=:app:assembleDebug" >> $GITHUB_OUTPUT
           fi
-          # Simple ABI hint (falls im Projekt genutzt)
           echo "ABI_FLAGS=${ABIS}" >> $GITHUB_OUTPUT
 
       - name: Show Gradle version
@@ -90,28 +87,21 @@ jobs:
 
       - name: Build (${{ steps.prep.outputs.TASK }})
         id: build
-        # Falls der Build scheitert, soll der Job 'failure' werden (Bleibt so).
         run: |
           set -o pipefail
-          # Marker in Log schreiben (für Mapping)
           if [ -n "${ISSUE_NUMBER}" ]; then
             echo "ISSUE_NUMBER=${ISSUE_NUMBER}"
             echo "issue:#${ISSUE_NUMBER}"
           fi
-          # Optional ABI-Flags via Gradle-Property (projektabhängig)
           ./gradlew --no-daemon --stacktrace -Pcodex.abis="${ABIS}" ${{ steps.prep.outputs.TASK }} 2>&1 | tee gradle_build.log
 
       - name: Collect APK/AAB artifacts
         if: always()
         run: |
           mkdir -p artifacts
-          # APKs (debug/release) – ggf. an Projektpfade anpassen
           find . -type f -path "*/build/outputs/apk/*/*.apk" -exec cp -v {} artifacts/ \; || true
-          # AAB Bundles
           find . -type f -path "*/build/outputs/bundle/*/*.aab" -exec cp -v {} artifacts/ \; || true
-          # Proguard Mapping
           find . -type f -path "*/build/outputs/mapping/*/mapping.txt" -exec cp -v {} artifacts/ \; || true
-          # Gradle log
           cp -v gradle_build.log artifacts/ || true
 
       - name: Upload build artifacts
@@ -122,7 +112,7 @@ jobs:
           path: artifacts
           if-no-files-found: warn
 
-      # ====== Bot 3 Trigger – Label ======
+      # Trigger Bot 3 über Label
       - name: Label issue for Bot 3 (solver-error)
         if: failure() && inputs.issue != ''
         env:
@@ -135,7 +125,7 @@ jobs:
             https://api.github.com/repos/${{ github.repository }}/issues/${{ inputs.issue }}/labels \
             -d '{"labels":["solver-error"]}'
 
-      # ====== Bot 3 Trigger – Direkter Dispatch ======
+      # Und zusätzlich direkt dispatchen (redundant, aber sehr robust)
       - name: Dispatch Bot 3 (codex-triage.yml)
         if: failure() && inputs.issue != ''
         env:
