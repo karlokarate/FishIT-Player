@@ -16,6 +16,10 @@ permissions:
   actions: write
   issues: write
 
+concurrency:
+  group: codex-plan-issue-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
 jobs:
   plan:
     runs-on: ubuntu-latest
