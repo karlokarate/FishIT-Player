@@ -1,0 +1,73 @@
+Zentralisierung Leitfaden — Fokus/TV Darstellung (Compose, 2025)
+
+Zweck
+- Einheitliche, robuste und gut sichtbare DPAD‑Fokusdarstellung auf allen UIs.
+- Eine zentrale Quelle für Verhalten, Stil, Navigation und Bring‑Into‑View.
+- Keine verteilten, widersprüchlichen Implementierungen mehr über Unterordner.
+
+Single Source of Truth (SSOT)
+- Zentrale Primitives/Module (nur hier pflegen):
+  - ui/skin/TvModifiers.kt → `tvClickable`, `focusScaleOnTv`, `tvFocusFrame`, `tvFocusableItem`
+  - ui/tv/TvFocusRow.kt → row‑weite Fokussierung/Scroll + State‑Speicherung
+  - ui/compat/FocusCompat.kt → `focusGroup()` Bridge
+- Alle Screens verwenden ausschließlich diese Primitives. Keine lokalen Kopien/Abwandlungen.
+
+Grundprinzipien
+- Navigation: Container mit `focusGroup()` markieren. In Listen `LazyRow`/`LazyColumn` verwenden (kein `androidx.tv.foundation.TvLazyRow`).
+- Eligibility: Jedes interaktive Element braucht `focusable()` und Interaktion (`clickable`/`tvClickable`) – optional `role=Role.Button`.
+- Sichtbarkeit: Fokuszustand zentral zeichnen (Halo/Scale/Farbe) über `tvFocusFrame(...)`; `tvClickable` mit neutralem Scaling/ohne eigenen Ring verwenden, um Doppel‑Effekte zu vermeiden.
+- Bring‑Into‑View: Pro Reihe zentral (TvFocusRow + `tvFocusableItem(...)`) triggern. Keine per‑Tile Auto‑Scrolls.
+- DPAD: Standard‑Focuschain nutzen. `focusProperties{}` nur bei echten Rastern (z. B. Numpad) setzen; keine DPAD‑Events manuell konsumieren.
+
+Visueller Standard (Default)
+- Halo/Border: `TvFocusColors.Default` aus `TvModifiers.kt` verwenden.
+- Border‑Breite: normal 2–2.5dp; bei Buttons 1.5–2dp; Low‑Spec TVs reduzieren ggf. intern die Effekte.
+- Scale: große Tiles ~1.10–1.12 (pressed ~1.06–1.08), kleine Controls ~1.06–1.08.
+
+Empfohlene Muster
+- Karten/Thumbnails
+  Modifier
+    .focusable()
+    .then(Modifier.tvFocusFrame(...))
+    .then(Modifier.tvClickable(role=Role.Button, scaleFocused=1f, scalePressed=1f, focusBorderWidth=0.dp))
+
+- Horizontale Reihen
+  TvFocusRow(stateKey="<unique>") { idx ->
+    Modifier.tvFocusableItem(stateKey, idx)
+      .focusable()
+      .then(Modifier.tvFocusFrame(...))
+      .then(Modifier.tvClickable(role=Role.Button, scaleFocused=1f, scalePressed=1f, focusBorderWidth=0.dp))
+  }
+
+- Keypads/Grids (gerichtete Nachbarn)
+  Column(Modifier.focusGroup()) { Row {...} }
+  pro Key: `focusProperties { up/down/left/right = ... }`
+
+Migration (Checkliste)
+1) Suchen und ersetzen:
+   - Roh‑`LazyRow` in TV‑Pfaden → `ui/tv/TvFocusRow`.
+   - Per‑Tile `bringIntoViewRequester`/`onFocusChanged` → entfernen; stattdessen `tvFocusableItem`/Row‑zentral.
+   - Mehrfach‑Fokus‑Dekorationen (Ring + Scale doppelt) → auf `tvFocusFrame` + neutralem `tvClickable` vereinheitlichen.
+   - Manuelle DPAD‑Arithmetik → entfernen; `focusGroup()`/FocusDirection nutzen.
+2) Buttons: `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton` oder `tvFocusFrame` + `tvClickable`.
+3) Dialoge/Sheets: Sichtbarer Fokus auf `TextButton` etc. via `tvFocusFrame`.
+4) Logs: Fokus‑Logs bleiben zentral (GlobalDebug) in `TvModifiers.kt`/`TvFocusRow.kt`.
+
+CI/Audit
+- `tools/audit_tv_focus.sh` prüft:
+  - keine Roh‑`LazyRow` in TV‑Ordnern (nur `TvFocusRow`/RowCore erlaubt),
+  - keine `TvLazyRow` Nutzung,
+  - keine doppelten Fokus‑Indikatoren,
+  - Bring‑Into‑View nur zentral.
+- Verstöße lassen CI fehlschlagen.
+
+Akzeptanzkriterien
+- DPAD‑Navigation bewegt Fokus ohne OK‑Druck über alle interaktiven Elemente.
+- Fokus ist stets klar sichtbar (Halo/Scale), ohne Flackern oder Doppel‑Effekte.
+- Liste/Row scrollt nur, wenn nötig, und zentriert fokussierte Items stabil.
+- Keine verstreuten Fokus‑Utilities außerhalb der genannten zentralen Module.
+
+Änderungsprozess
+- Anpassungen an Fokus/TV erfolgen via PRs, die zuerst die zentralen Primitives (oben) aktualisieren. Screens erhalten nur die minimal nötigen Aufrufe.
+- Dokumentation in dieser Datei pflegen; Roadmap/Changelog entsprechend aktualisieren.
+

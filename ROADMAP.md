@@ -5,9 +5,24 @@ Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
 - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
 - Maintenance 2025‑09‑28: Build‑Blocking Lücken geschlossen (Nav‑Extension, TV‑Focus‑Compat, TvRowScroll, safePainter, Adults‑Filter, XtreamImportCoordinator). Kein neues Feature; Roadmap unverändert.
-- Maintenance 2025-09-28 (TV Focus): Start-Home Serien/VOD/Live Reihen repariert – initialer Fokus greift wieder, Tiles skalieren sofort und DPAD‑LEFT expandiert HomeChrome nur am linken Rand.
-- Maintenance 2025-10-03: Detailseiten neu auf stabilem Scaffold (HomeChromeScaffold → Box → Card + LazyColumn). VOD: OBX-first + Xtream-On-Demand, Plot/Facts als Karten, ein Scroll-Container, sichere Play/Resume-Actions. Bruchfeste Klammerstruktur; Build-Fehler behoben.
+ 
+Prio 1 — Globale Zentralisierung Fokus/TV‑Darstellung
+- Ziel: Einheitliche, zentral gesteuerte Fokusdarstellung und -navigation (DPAD) in allen UIs; keine verstreuten Implementierungen mehr.
+- Leitfaden: `tools/Zentralisierung.txt` (kanonisch). Fokus-/TV‑Änderungen erfolgen ausschließlich dort bzw. in den dort benannten Modulen.
+- Aufgaben:
+  - Primitives konsolidieren: `TvFocusRow`, `tvFocusableItem`, `tvClickable`, `tvFocusFrame`, `focusGroup`.
+  - Screens migrieren, lokale Workarounds entfernen (manuelles DPAD, ad‑hoc bringIntoView).
+  - Globale Stilquelle (Halo/Scale/Farben), neutrale Clickables ohne Doppel‑Effekte.
+  - CI‑Audit (`tools/audit_tv_focus.sh`) schärfen und durchsetzen.
+  - Beispiele/Docs im Leitfaden; Code‑Lagen vereinheitlichen (keine Duplikate in Unterordnern).
+  - Modul‑Migration: auth/ProfileGate → FocusKit (DONE); weitere Module folgen.
+- Maintenance 2025-10-03: Detailseiten neu auf stabilem Scaffold (HomeChromeScaffold → Box → Card + LazyColumn). VOD: OBX-first + Xtream-On-Demand, Plot/Facts als Karten, ein Scroll-Container, sichere Play/Resume-Actions. Bruchfeste Klammerstruktur; Build-Fehler behoben. StartScreen: Klammerfehler korrigiert (Compose-Kontextfehler beseitigt).
  - Maintenance 2025-10-03: DetailMask eingeführt (`ui.detail.DetailPage`/`DetailBackdrop`/`DetailSections`) – einheitlicher Aufbau für alle Details (Hero/Gradients/AccentCard/Header/Sections). VOD nutzt bereits die Maske; Series/Live Migration als nächstes.
+- Feature 2025-10-03: Globaler Zuweisen‑Modus auf Start. Mehrfachauswahl über Reihen/Suche, Profil‑Picker für Bulk‑Freigabe (ObjectBox‑Batch), klare Selektion und permisssions‑Gating. VOD‑Details zeigen wieder Freigabe/Entfernen in der `MediaActionBar`.
+- Maintenance 2025-10-04 (Start): Vertikale Gewichtung der Start-Abschnitte (Serien/Filme/Live) implementiert; Landscape nutzt 40/40/20, Portrait gleichmäßig. Keine Überlappung mehr ganz oben; Zeilenhöhen werden in Landscape automatisch an die Kartenhöhe angepasst.
+ - UX 2025-10-04 (Start Assign): Start-Button zum Zuordnen entfernt. Stattdessen hat jedes Tile einen globalen, klickbaren Badge (+/✓) für die Markierung; markierte Tiles zeigen einen sichtbaren Rahmen. Ein schwebender Plus-Button erscheint bei mindestens einer Markierung und öffnet den Profil-Picker zur Zuordnung.
+ - Maintenance 2025-10-04 (TV Forms): Profil-Erstellen-Dialog auf TV-Form-Kit umgestellt (TvTextFieldRow/TvSwitchRow/TvButtonRow). DPAD/OK funktionieren stabil; Fokus-Falle durch Textfeld-IME entfällt.
+ - Maintenance 2025-10-04 (Whitelist Refresh): Nach Bulk-Zuordnung in Start werden gefilterte Listen sofort neu geladen (und wie bisher bei Profilwechsel). Sichtbarkeit für Kids-Profile ist damit konsistent.
   
 Completed (moved to Changelog)
 - Detail screens: full-screen hero background (TV/portrait/landscape) and removal of FishBackground overlay.

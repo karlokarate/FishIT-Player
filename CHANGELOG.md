@@ -1,9 +1,20 @@
 2025-10-03
+- fix(ui/start): StartScreen composable braces fixed (LaunchedEffect block closed correctly) and `ChannelPickTile` added inline. Resolves "@Composable invocations can only happen from the context of a @Composable function" and top-level declaration errors during compile.
+- feat(ui/start/assign): Added Assign Mode on Start. Toggle selection across Series/VOD (and Live) rows; pick profiles via KidSelectSheet and bulk-allow with ObjectBox batch ops. Rows reuse existing assign buttons to toggle selection during Assign Mode.
+- feat(details/vod): Reintroduced kid whitelist actions in VOD detail. MediaActionBar now shows “Für Kinder freigeben” and “Freigabe entfernen” (gated by permissions), wired to KidSelectSheet with bulk allow/revoke.
+- fix(ui/gate,tv): Profile selection and PIN numpad now show proper TV focus. Profile tiles moved onto TvFocusRow with `tvFocusableItem` and `focusScaleOnTv`; `tvClickable` wrappers use neutral scaling to avoid double animations. Numpad keys use the same focus skin and log focus tags. Focus persists per row state key and brings items into view.
+- fix(ui/series-detail/tv): Season filter chips now use TvFocusRow + tvFocusableItem and focusScaleOnTv. They show the same TV focus glow/scale as buttons and are brought safely into view on focus; per-item bring-into-view is disabled to avoid jitter. Added focus logs (focus:widget Chip season-<n>). Updated both code paths in SeriesDetailScreen.
 - refactor(details/vod): Rebuilt VOD detail screen on a stable scaffold (HomeChromeScaffold → Box background → Card + LazyColumn sections). OBX-first load with on-demand Xtream enrichment; simplified Facts/Plot sections; safe Play/Resume actions; removed brittle overlays causing brace/parse issues. This restores full metadata rendering with a single scroll container.
 - feat(details/mask): Introduced unified DetailPage + DetailBackdrop + DetailSections modules. They enforce a single, shared layout (full-screen hero + gradients + AccentCard + DetailHeader + sections). VOD now uses this mask; Series/Live will migrate next for 1:1 parity.
 - fix(details/vod): Build failure “Expecting '}'” in `VodDetailScreen.kt` fixed by removing an extra closing brace at the end of the composable; file now parses and kapt/compile proceed.
 - fix(details/back): Replace recursive BackHandler usage on VOD/Series detail screens with safe dispatcher callbacks so BACK/ESC exits without crashing; scoped `fmt` helpers locally to resolve Compose visibility errors.
 - fix(details/vod): VOD detail now uses focusable cards (plot + info) that expand/collapse on DPAD, surfaces the complete Xtream metadata (Bewertung, Release, Laufzeit, Format, MPAA/Age, Provider/Kategorie, Genres/Länder, Cast, Audio/Video/Bitrate, IMDb/TMDb Links), keeps kid actions/progress inline, ensures hero backdrops differ vom Poster, und loggt die gerenderten Abschnitte via GlobalDebug.
+
+2025-10-04
+- fix(ui/start): Startscreen rows no longer overlap at the top. Enforced per-section minimum height so Serien/Filme/Live occupy distinct vertical slots in all orientations.
+- ux(start/assign): Removed the non-functional "Zuweisen" button from Start. Added a per-tile, global selection badge (+/✓) to mark items directly; selected tiles get a visible frame. A floating plus button appears when at least one item is marked and opens the profile selection to assign contents.
+- fix(tv/forms): Profile creation uses TV Form rows (TvTextFieldRow/TvSwitchRow/TvButtonRow). DPAD focus works; OK/Erstellen triggers save reliably.
+- fix(kids/whitelist): After assigning content to profiles (bulk from Start), Start now reloads filtered lists immediately (and also on profile switches, as before) so items become visible without app restart.
 
 2025-10-02
 - feat(telegram/service): Expose TDLib chat IPC (`CMD_LIST_CHATS`, `CMD_RESOLVE_CHAT_TITLES`, `CMD_PULL_CHAT_HISTORY`) so UI/Worker reuse the authenticated service client instead of spawning reflection clients.
@@ -824,3 +835,11 @@ Status: zu testen durch Nutzer
    - Load metadata only when a detail is opened; removed neighbor/global prefetch from Start/Home rows and details.
    - VOD shows extra fields (MPAA/Age, Audio/Video/Bitrate, TMDb link) as chips/sections; plot rendered only when non-blank.
    - Trailer field robust via synonyms for both VOD/Series (youtube_trailer/trailer/trailer_url/youtube/yt_trailer).
+2025-10-04
+- fix(ui/start): StartScreen sections no longer collapse at the top. Apply vertical weights to Series/Filme/Live containers and auto-size row heights in landscape (40/40/20). Result: three stable sections, no overlap, proper use of screen height on TV.
+2025-10-05
+- fix(ui/gate,tv): ProfileGate tiles (Adult, Add, Kids) wrapped with `tvFocusFrame` for a robust, always-visible TV focus halo. `tvClickable` on these tiles now uses neutral scaling and no extra ring to avoid double effects. Shapes aligned with tile silhouettes (rounded 28dp/22dp) so the halo matches visuals. Improves DPAD clarity on TVs and aligns with Compose TV 2025 guidance.
+ - chore(roadmap/docs): Set "Prio 1 — Globale Zentralisierung Fokus/TV‑Darstellung" at the top of ROADMAP; removed verstreute TV‑Focus Roadmap‑Einträge. Added canonical guide `tools/Zentralisierung.txt` for all future focus/TV work.
+ - feat(ui/focus): Added `ui/focus/FocusKit.kt` as a single import surface for focus primitives and rows. Re‑exports `tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, and both `TvFocusRow` variants via `TvRow(...)`. Screens can now use `FocusKit` only.
+ - chore(ui/gate): ProfileGate now uses FocusKit (`tvFocusFrame`, `tvClickable`, `TvRow`) and removes duplicate per-item focus logic (`tvFocusableItem`, bringIntoViewOnFocus) inside the kids row. Keeps 1:1 visuals with centralized primitives.
+ - refactor(ui/gate): Simplified Adult and Add tiles to a single top‑level Surface that is both focusable and clickable. Removed redundant borders/elevations and ensured bringIntoViewOnFocus is attached to the top wrapper so initial focus is visible and DPAD navigation highlights the correct layer.

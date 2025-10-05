@@ -16,6 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,8 +29,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -52,10 +53,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -223,6 +228,11 @@ fun StartScreen(
     var vodMixed by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var homeUiState by remember { mutableStateOf<com.chris.m3usuite.ui.state.UiState<Unit>>(com.chris.m3usuite.ui.state.UiState.Loading) }
     var vodNewIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    // Assign Mode (multi-select across rows/search)
+    var assignMode by rememberSaveable { mutableStateOf(false) }
+    var selVod by remember { mutableStateOf(setOf<Long>()) }
+    var selSeries by remember { mutableStateOf(setOf<Long>()) }
+    var selLive by remember { mutableStateOf(setOf<Long>()) }
 
     val vm: StartViewModel = viewModel()
     val homeQuery by vm.query.collectAsStateWithLifecycle(initialValue = "")
@@ -388,6 +398,7 @@ fun StartScreen(
     var showLivePicker by remember { mutableStateOf(false) }
     var showSearch by androidx.compose.runtime.saveable.rememberSaveable("start:globalSearch:open") { mutableStateOf(openSearchOnStart) }
     var searchInput by androidx.compose.runtime.saveable.rememberSaveable("start:globalSearch:query") { mutableStateOf(initialSearch ?: "") }
+    var showAssignSheet by androidx.compose.runtime.saveable.rememberSaveable("start:assign:sheet") { mutableStateOf(false) }
 
     LaunchedEffect(initialSearch) {
         if (!initialSearch.isNullOrBlank()) vm.query.value = initialSearch
@@ -568,7 +579,27 @@ fun StartScreen(
                     }
                 )
             }
-
+            // Floating assign action: appears when there is at least one marked tile
+            if (canEditWhitelist) {
+                val totalSel = selVod.size + selSeries.size + selLive.size
+                if (totalSel > 0) {
+                    androidx.compose.material3.FloatingActionButton(
+                        onClick = { showAssignSheet = true },
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 20.dp)
+                    ) {
+                        AppIconButton(
+                            icon = com.chris.m3usuite.ui.common.AppIcon.AddKid,
+                            contentDescription = "In Profile zuordnen",
+                            onClick = { showAssignSheet = true },
+                            size = 28.dp
+                        )
+                    }
+                }
+            }
+        
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.chris.m3usuite.ui.state.LocalAssignBadgeVisible provides canEditWhitelist
+            ) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val sectionSpacing = 2.dp
                 val titleStyle = MaterialTheme.typography.titleMedium.copy(
@@ -598,17 +629,24 @@ fun StartScreen(
                 // In landscape let rows fully grow to fill the card height (minus header/padding)
                 val desiredRowDp = if (isLandscape) rowArea else null
                 val desiredRowInt: Int? = desiredRowDp?.value?.toInt()
-                androidx.compose.foundation.layout.Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(sectionSpacing)
+                val yTop = 0.dp
+                val yMid = perSection + sectionSpacing
+                val yBot = perSection * 2 + sectionSpacing * 2
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     // Serien (Paged)
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(sectionWeights.first)) {
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(perSection)
+                            .offset(y = yTop)
+                            .clipToBounds()
+                    ) {
                         com.chris.m3usuite.ui.common.AccentCard(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)
-                                .fillMaxWidth()
-                                .weight(1f),
+                                .fillMaxWidth(),
                             accent = Accent,
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 10.dp)
                         ) {
@@ -624,7 +662,21 @@ fun StartScreen(
                                 )
                             }
                             Spacer(Modifier.size(4.dp))
-                            CompositionLocalProvider(
+                            androidx.compose.runtime.CompositionLocalProvider(
+                                com.chris.m3usuite.ui.state.LocalAssignSelection provides com.chris.m3usuite.ui.state.AssignSelectionContext(
+                                    enabled = assignMode,
+                                    isSelected = { mi -> when (mi.type) { "vod" -> mi.id in selVod; "series" -> mi.id in selSeries; "live" -> mi.id in selLive; else -> false } },
+                                    toggle = { mi -> when (mi.type) { "vod" -> selVod = if (mi.id in selVod) selVod - mi.id else selVod + mi.id; "series" -> selSeries = if (mi.id in selSeries) selSeries - mi.id else selSeries + mi.id; "live" -> selLive = if (mi.id in selLive) selLive - mi.id else selLive + mi.id } },
+                                    start = { mi ->
+                                        assignMode = true
+                                        when (mi.type) {
+                                            "vod" -> selVod = selVod + mi.id
+                                            "series" -> selSeries = selSeries + mi.id
+                                            "live" -> selLive = selLive + mi.id
+                                            else -> {}
+                                        }
+                                    }
+                                ),
                                 LocalRowItemHeightOverride provides desiredRowInt
                             ) {
                             if (debouncedQuery.isBlank()) {
@@ -649,13 +701,17 @@ fun StartScreen(
                                         }
                                     },
                                     onAssignToKid = { mi ->
-                                        scope.launch {
-                                            val kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } }
-                                            withContext(Dispatchers.IO) {
-                                                val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
-                                                kids.forEach { repo.allow(it.id, "series", mi.id) }
+                                        if (assignMode) {
+                                            selSeries = if (mi.id in selSeries) selSeries - mi.id else selSeries + mi.id
+                                        } else {
+                                            scope.launch {
+                                                val kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } }
+                                                withContext(Dispatchers.IO) {
+                                                    val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                                    kids.forEach { repo.allow(it.id, "series", mi.id) }
+                                                }
+                                                Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                             }
-                                            Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     showAssign = canEditWhitelist,
@@ -726,13 +782,17 @@ fun StartScreen(
                                         }
                                     },
                                     onAssignToKid = { mi ->
-                                        scope.launch {
-                                            val kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } }
-                                            withContext(Dispatchers.IO) {
-                                                val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
-                                                kids.forEach { repo.allow(it.id, "series", mi.id) }
+                                        if (assignMode) {
+                                            selSeries = if (mi.id in selSeries) selSeries - mi.id else selSeries + mi.id
+                                        } else {
+                                            scope.launch {
+                                                val kids = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" } }
+                                                withContext(Dispatchers.IO) {
+                                                    val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                                    kids.forEach { repo.allow(it.id, "series", mi.id) }
+                                                }
+                                                Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                             }
-                                            Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     showAssign = canEditWhitelist,
@@ -740,16 +800,22 @@ fun StartScreen(
                                 )
                             }
                             }
+                            }
                         }
                     }
 
                     // Filme (Paged)
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(sectionWeights.second)) {
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(perSection)
+                            .offset(y = yMid)
+                            .clipToBounds()
+                    ) {
                         com.chris.m3usuite.ui.common.AccentCard(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)
-                                .fillMaxWidth()
-                                .weight(1f),
+                                .fillMaxWidth(),
                             accent = Accent,
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 10.dp)
                         ) {
@@ -765,7 +831,21 @@ fun StartScreen(
                                 )
                             }
                             Spacer(Modifier.size(4.dp))
-                            CompositionLocalProvider(
+                            androidx.compose.runtime.CompositionLocalProvider(
+                                com.chris.m3usuite.ui.state.LocalAssignSelection provides com.chris.m3usuite.ui.state.AssignSelectionContext(
+                                    enabled = assignMode,
+                                    isSelected = { mi -> when (mi.type) { "vod" -> mi.id in selVod; "series" -> mi.id in selSeries; "live" -> mi.id in selLive; else -> false } },
+                                    toggle = { mi -> when (mi.type) { "vod" -> selVod = if (mi.id in selVod) selVod - mi.id else selVod + mi.id; "series" -> selSeries = if (mi.id in selSeries) selSeries - mi.id else selSeries + mi.id; "live" -> selLive = if (mi.id in selLive) selLive - mi.id else selLive + mi.id } },
+                                    start = { mi ->
+                                        assignMode = true
+                                        when (mi.type) {
+                                            "vod" -> selVod = selVod + mi.id
+                                            "series" -> selSeries = selSeries + mi.id
+                                            "live" -> selLive = selLive + mi.id
+                                            else -> {}
+                                        }
+                                    }
+                                ),
                                 LocalRowItemHeightOverride provides desiredRowInt
                             ) {
                             if (debouncedQuery.isBlank()) {
@@ -810,13 +890,17 @@ fun StartScreen(
                                         }
                                     },
                                     onAssignToKid = { mi ->
-                                        scope.launch {
-                                            withContext(Dispatchers.IO) {
-                                                val kids = com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" }
-                                                val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
-                                                kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                        if (assignMode) {
+                                            selVod = if (mi.id in selVod) selVod - mi.id else selVod + mi.id
+                                        } else {
+                                            scope.launch {
+                                                withContext(Dispatchers.IO) {
+                                                    val kids = com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" }
+                                                    val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                                    kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                                }
+                                                Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                             }
-                                            Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     showAssign = canEditWhitelist,
@@ -908,13 +992,17 @@ fun StartScreen(
                                         }
                                     },
                                     onAssignToKid = { mi ->
-                                        scope.launch {
-                                            withContext(Dispatchers.IO) {
-                                                val kids = com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" }
-                                                val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
-                                                kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                        if (assignMode) {
+                                            selVod = if (mi.id in selVod) selVod - mi.id else selVod + mi.id
+                                        } else {
+                                            scope.launch {
+                                                withContext(Dispatchers.IO) {
+                                                    val kids = com.chris.m3usuite.data.repo.ProfileObxRepository(ctx).all().filter { it.type == "kid" }
+                                                    val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                                                    kids.forEach { repo.allow(it.id, "vod", mi.id) }
+                                                }
+                                                Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                             }
-                                            Toast.makeText(ctx, "Für Kinder freigegeben", Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     showAssign = canEditWhitelist,
@@ -988,15 +1076,20 @@ fun StartScreen(
                     }
 
                     // Live (Favoriten oder globale Suche)
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(sectionWeights.third)) {
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(perSection)
+                            .offset(y = yBot)
+                            .clipToBounds()
+                    ) {
                         val q = debouncedQuery.trim()
                         val showFavorites = q.isBlank()
                         if (showFavorites) {
-                            com.chris.m3usuite.ui.common.AccentCard(
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .fillMaxWidth()
-                                    .weight(1f),
+                                com.chris.m3usuite.ui.common.AccentCard(
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp)
+                                        .fillMaxWidth(),
                                 accent = Accent,
                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                             ) {
@@ -1034,6 +1127,22 @@ fun StartScreen(
                                     androidx.compose.foundation.layout.Column {
                                         val liveFiltered = favLive
                                         if (!canEditFavorites) {
+                                            androidx.compose.runtime.CompositionLocalProvider(
+                                                com.chris.m3usuite.ui.state.LocalAssignSelection provides com.chris.m3usuite.ui.state.AssignSelectionContext(
+                                                    enabled = assignMode,
+                                                    isSelected = { mi -> when (mi.type) { "vod" -> mi.id in selVod; "series" -> mi.id in selSeries; "live" -> mi.id in selLive; else -> false } },
+                                                    toggle = { mi -> when (mi.type) { "vod" -> selVod = if (mi.id in selVod) selVod - mi.id else selVod + mi.id; "series" -> selSeries = if (mi.id in selSeries) selSeries - mi.id else selSeries + mi.id; "live" -> selLive = if (mi.id in selLive) selLive - mi.id else selLive + mi.id } },
+                                                    start = { mi ->
+                                                        assignMode = true
+                                                        when (mi.type) {
+                                                            "vod" -> selVod = selVod + mi.id
+                                                            "series" -> selSeries = selSeries + mi.id
+                                                            "live" -> selLive = selLive + mi.id
+                                                            else -> {}
+                                                        }
+                                                    }
+                                                )
+                                            ) {
                                             com.chris.m3usuite.ui.components.rows.LiveRow(
                                                 items = liveFiltered,
                                                 stateKey = "start_live_favorites",
@@ -1071,6 +1180,7 @@ fun StartScreen(
                                                 initialFocusEligible = false,
                                                 edgeLeftExpandChrome = true
                                             )
+                                            }
                                         } else {
                                             com.chris.m3usuite.ui.components.rows.ReorderableLiveRow(
                                                 items = liveFiltered,
@@ -1131,14 +1241,13 @@ fun StartScreen(
                                         }
                                     }
                                 }
-                                }
                             }
-                        } else {
+                        }
+                        if (!showFavorites) {
                             com.chris.m3usuite.ui.common.AccentCard(
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp)
-                                    .fillMaxWidth()
-                                    .weight(1f),
+                                    .fillMaxWidth(),
                                 accent = Accent,
                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 10.dp)
                             ) {
@@ -1155,19 +1264,35 @@ fun StartScreen(
                                     )
                                 }
                                 Spacer(Modifier.size(4.dp))
-                            CompositionLocalProvider(
-                                LocalRowItemHeightOverride provides desiredRowInt
-                            ) {
-                                val liveFlow = remember(q) { mediaRepo.pagingSearchFilteredFlow("live", q) }
-                                val livePaged = liveFlow.collectAsLazyPagingItems()
-                                AttachPagingTelemetry(tag = "home.live.search", items = livePaged)
-                                com.chris.m3usuite.ui.components.rows.LiveRowPaged(
-                                    items = livePaged,
-                                    stateKey = "start_live_search",
-                                    onOpenDetails = { mi -> openLive(mi.id) },
-                                    onPlayDirect = { mi ->
-                                        scope.launch {
-                                            val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
+                                CompositionLocalProvider(
+                                    LocalRowItemHeightOverride provides desiredRowInt
+                                ) {
+                                    val liveFlow = remember(q) { mediaRepo.pagingSearchFilteredFlow("live", q) }
+                                    val livePaged = liveFlow.collectAsLazyPagingItems()
+                                    AttachPagingTelemetry(tag = "home.live.search", items = livePaged)
+                                    androidx.compose.runtime.CompositionLocalProvider(
+                                        com.chris.m3usuite.ui.state.LocalAssignSelection provides com.chris.m3usuite.ui.state.AssignSelectionContext(
+                                            enabled = assignMode,
+                                            isSelected = { mi -> when (mi.type) { "vod" -> mi.id in selVod; "series" -> mi.id in selSeries; "live" -> mi.id in selLive; else -> false } },
+                                            toggle = { mi -> when (mi.type) { "vod" -> selVod = if (mi.id in selVod) selVod - mi.id else selVod + mi.id; "series" -> selSeries = if (mi.id in selSeries) selSeries - mi.id else selSeries + mi.id; "live" -> selLive = if (mi.id in selLive) selLive - mi.id else selLive + mi.id } },
+                                            start = { mi ->
+                                                assignMode = true
+                                                when (mi.type) {
+                                                    "vod" -> selVod = selVod + mi.id
+                                                    "series" -> selSeries = selSeries + mi.id
+                                                    "live" -> selLive = selLive + mi.id
+                                                    else -> {}
+                                                }
+                                            }
+                                        )
+                                    ) {
+                                    com.chris.m3usuite.ui.components.rows.LiveRowPaged(
+                                        items = livePaged,
+                                        stateKey = "start_live_search",
+                                        onOpenDetails = { mi -> openLive(mi.id) },
+                                        onPlayDirect = { mi ->
+                                            scope.launch {
+                                                val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
                                             if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
                                                 playbackLauncher.launch(
                                                     com.chris.m3usuite.playback.PlayRequest(
@@ -1197,13 +1322,40 @@ fun StartScreen(
                                     },
                                     edgeLeftExpandChrome = true
                                 )
+                                    }
                                 }
                             }
                         }
-                    }
                 }
             }
+            }
         }
+    }
+
+    // Bulk assign confirmation via KidSelectSheet
+    if (showAssignSheet) {
+        com.chris.m3usuite.ui.components.sheets.KidSelectSheet(
+            onConfirm = { kidIds ->
+                scope.launch(Dispatchers.IO) {
+                    val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                    kidIds.forEach { kid ->
+                        if (selVod.isNotEmpty()) repo.allowBulk(kid, "vod", selVod)
+                        if (selSeries.isNotEmpty()) repo.allowBulk(kid, "series", selSeries)
+                        if (selLive.isNotEmpty()) repo.allowBulk(kid, "live", selLive)
+                    }
+                }
+                scope.launch {
+                    android.widget.Toast.makeText(ctx, "Freigegeben (${selVod.size + selSeries.size + selLive.size})", android.widget.Toast.LENGTH_SHORT).show()
+                    // After changes, immediately reload filtered lists to reflect new allowances
+                    reloadFromObx()
+                    recomputeMixedRows()
+                }
+                showAssignSheet = false
+                assignMode = false
+                selVod = emptySet(); selSeries = emptySet(); selLive = emptySet()
+            },
+            onDismiss = { showAssignSheet = false }
+        )
     }
 
     // moved above to ensure it is in scope before usage
@@ -1295,7 +1447,7 @@ fun StartScreen(
                         items(liveItems.itemCount, key = { idx -> liveItems[idx]?.id ?: idx.toLong() }) { idx ->
                             val mi = liveItems[idx] ?: return@items
                             val isSel = mi.id in selected
-                            ChannelPickTile(
+                            com.chris.m3usuite.ui.home.ChannelPickTile(
                                 item = mi,
                                 selected = isSel,
                                 onToggle = { selected = if (isSel) selected - mi.id else selected + mi.id },
@@ -1343,6 +1495,9 @@ fun StartScreen(
         }
     }
 }
+}
+
+// Use Compose's official weight extension (foundation.layout.weight)
 
 @Composable
 fun ChannelPickTile(

@@ -224,6 +224,12 @@ fun VodDetailScreen(
 
     val listState = rememberLazyListState()
     val snackHost = remember { SnackbarHostState() }
+    // Kid whitelist sheets need to be declared before actions builder uses them
+    var showGrantSheet by rememberSaveable { mutableStateOf(false) }
+    var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
+    val permRepo = remember { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
+    var canEditWhitelist by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { canEditWhitelist = permRepo.current().canEditWhitelist }
     // Profile (adult/kid) — used for accent + backdrop parity with Series
     val profileId by store.currentProfileId.collectAsState(initial = -1L)
     var isAdult by remember { mutableStateOf(true) }
@@ -251,7 +257,9 @@ fun VodDetailScreen(
         val lblResume = stringResource(com.chris.m3usuite.R.string.action_resume)
         val lblTrailer = stringResource(com.chris.m3usuite.R.string.action_trailer)
         val lblShare = stringResource(com.chris.m3usuite.R.string.action_share)
-        val actions = remember(data, resumeSecs, url, lblPlay, lblResume, lblTrailer, lblShare, uriHandler) {
+        val lblGrant = "Für Kinder freigeben"
+        val lblRevoke = "Freigabe entfernen"
+        val actions = remember(data, resumeSecs, url, lblPlay, lblResume, lblTrailer, lblShare, lblGrant, lblRevoke, uriHandler, canEditWhitelist) {
             buildList {
                 val canPlay = url != null
                 val resumeLabel = resumeSecs?.let { fmt(it) }
@@ -300,6 +308,22 @@ fun VodDetailScreen(
                         }
                     )
                 )
+                if (canEditWhitelist) {
+                    add(
+                        MediaAction(
+                            id = MediaActionId.AddToList,
+                            label = lblGrant,
+                            onClick = { showGrantSheet = true }
+                        )
+                    )
+                    add(
+                        MediaAction(
+                            id = MediaActionId.RemoveFromList,
+                            label = lblRevoke,
+                            onClick = { showRevokeSheet = true }
+                        )
+                    )
+                }
             }
         }
 
@@ -362,8 +386,6 @@ fun VodDetailScreen(
     }
 
     // Sheets
-    var showGrantSheet by rememberSaveable { mutableStateOf(false) }
-    var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
     if (showGrantSheet) KidSelectSheet(onConfirm = { kidIds ->
         scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.allowBulk(it, "vod", listOf(id)) } }
         scope.launch { snackHost.showSnackbar("VOD freigegeben für ${kidIds.size} Kinder") }

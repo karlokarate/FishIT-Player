@@ -252,6 +252,33 @@ fun MediaCard(
                 modifier = Modifier.fillMaxSize(),
                 crossfade = false
             )
+            // Assign badge (visible only when allowed) and selected frame
+            run {
+                val assignCtx = com.chris.m3usuite.ui.state.LocalAssignSelection.current
+                val showBadge = com.chris.m3usuite.ui.state.LocalAssignBadgeVisible.current
+                if (showBadge) {
+                    androidx.compose.material3.Surface(
+                        color = Color.Black.copy(alpha = 0.55f),
+                        contentColor = Color.White,
+                        shape = CircleShape,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(6.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.55f))
+                            .tvClickable(focusBorderWidth = 0.dp, onClick = {
+                                if (assignCtx.enabled) assignCtx.toggle(item) else assignCtx.start(item)
+                            })
+                    ) {
+                        val sel = assignCtx.isSelected(item)
+                        val label = if (sel) "✓" else "+"
+                        Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                    }
+                }
+                if (assignCtx.isSelected(item)) {
+                    Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, TILE_SHAPE))
+                }
+            }
             com.chris.m3usuite.ui.components.common.FocusTitleOverlay(
                 title = item.name,
                 focused = focused
@@ -721,6 +748,7 @@ fun SeriesTileCard(
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
     val tileHeight = rowItemHeight().dp
     val tileWidth = tileHeight * POSTER_ASPECT_RATIO
+    val assignCtx = com.chris.m3usuite.ui.state.LocalAssignSelection.current
     Card(
         modifier = Modifier
             .height(tileHeight)
@@ -744,7 +772,9 @@ fun SeriesTileCard(
                 brightenContent = false,
                 autoBringIntoView = false,
                 focusRequester = selfReq
-            ) { onOpenDetails(item) }
+            ) {
+                if (assignCtx.enabled) assignCtx.toggle(item) else onOpenDetails(item)
+            }
             .focusScaleOnTv(
                 focusedScale = 1.40f,
                 pressedScale = 1.40f,
@@ -773,7 +803,7 @@ fun SeriesTileCard(
             .tvFocusGlow(focused = focused, shape = shape, ringWidth = 5.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
-    ) {
+        ) {
         // Debug: log focused tile + OBX title in parentheses + tree path
         LaunchedEffect(focused, item.streamId) {
             if (focused) {
@@ -815,6 +845,31 @@ fun SeriesTileCard(
                         onSuccess = { loaded = true },
                         onError = { loaded = true }
                     )
+                    // Assign badge (always available) and selected frame
+                    run {
+                        if (showAssign) {
+                            androidx.compose.material3.Surface(
+                                color = Color.Black.copy(alpha = 0.55f),
+                                contentColor = Color.White,
+                                shape = CircleShape,
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(6.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.Black.copy(alpha = 0.55f))
+                                    .tvClickable(focusBorderWidth = 0.dp, onClick = {
+                                        if (assignCtx.enabled) assignCtx.toggle(item) else assignCtx.start(item)
+                                    })
+                            ) {
+                                val sel = assignCtx.isSelected(item)
+                                val label = if (sel) "✓" else "+"
+                                Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                            }
+                        }
+                        if (assignCtx.isSelected(item)) {
+                            Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, shape))
+                        }
+                    }
                     PlayOverlay(visible = focused)
                     FocusTitleOverlay(
                         title = item.name,
@@ -887,7 +942,7 @@ fun SeriesTileCard(
                         horizontalArrangement = Arrangement.End
                     ) {
                         AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
-                        if (showAssign) {
+                        if (showAssign && !assignCtx.enabled) {
                             AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
                         }
                     }
@@ -957,6 +1012,7 @@ fun VodTileCard(
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
     val tileHeight = rowItemHeight().dp
     val tileWidth = tileHeight * POSTER_ASPECT_RATIO
+    val assignCtx = com.chris.m3usuite.ui.state.LocalAssignSelection.current
     Card(
         modifier = Modifier
             .height(tileHeight)
@@ -969,7 +1025,9 @@ fun VodTileCard(
                 brightenContent = false,
                 autoBringIntoView = false,
                 focusRequester = selfReq
-            ) { onOpenDetails(item) }
+            ) {
+                if (assignCtx.enabled) assignCtx.toggle(item) else onOpenDetails(item)
+            }
             .focusScaleOnTv(
                 focusedScale = 1.40f,
                 pressedScale = 1.40f,
@@ -1039,6 +1097,29 @@ fun VodTileCard(
                         onSuccess = { loaded = true },
                         onError = { loaded = true }
                     )
+                    // Assign badge (always available) and selected frame
+                    if (showAssign) {
+                        androidx.compose.material3.Surface(
+                            color = Color.Black.copy(alpha = 0.55f),
+                            contentColor = Color.White,
+                            shape = CircleShape,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(6.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.55f))
+                                .tvClickable(focusBorderWidth = 0.dp, onClick = {
+                                    if (assignCtx.enabled) assignCtx.toggle(item) else assignCtx.start(item)
+                                })
+                        ) {
+                            val sel = assignCtx.isSelected(item)
+                            val label = if (sel) "✓" else "+"
+                            Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                        }
+                    }
+                    if (assignCtx.isSelected(item)) {
+                        Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, shape))
+                    }
                     // Resume progress overlay (thin line near bottom)
                     var resumeSecs by remember(item.id) { mutableStateOf<Int?>(null) }
                     LaunchedEffect(item.id) {
@@ -1085,7 +1166,7 @@ fun VodTileCard(
                         horizontalArrangement = Arrangement.End
                     ) {
                         AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
-                        if (showAssign) {
+                        if (showAssign && !assignCtx.enabled) {
                             AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
                         }
                     }

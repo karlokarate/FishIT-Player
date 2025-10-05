@@ -5,7 +5,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.unit.dp
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.forms.TvFormSection
+import com.chris.m3usuite.ui.forms.TvTextFieldRow
+import com.chris.m3usuite.ui.forms.TvSwitchRow
+import com.chris.m3usuite.ui.forms.TvButtonRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -20,18 +23,21 @@ fun CreateProfileSheet(
         Column(Modifier.padding(16.dp)) {
             Text("Profil anlegen", style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(12.dp))
-            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
-            Spacer(Modifier.height(12.dp))
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Checkbox(checked = isKid, onCheckedChange = { isKid = it })
-                Spacer(Modifier.width(8.dp))
-                Text("Kinderprofil")
+
+            TvFormSection(title = "Details") {
+                TvTextFieldRow(label = "Name", value = name, onValueChange = { name = it.trimStart() })
+                Spacer(Modifier.height(8.dp))
+                TvSwitchRow(label = "Kinderprofil", checked = isKid, onCheckedChange = { isKid = it })
             }
+
             Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = { if (name.isNotBlank()) onCreate(name.trim(), isKid) },
-                modifier = Modifier.focusScaleOnTv()
-            ) { Text("Erstellen") }
+            TvButtonRow(
+                primaryText = "Erstellen",
+                onPrimary = { if (name.isNotBlank()) onCreate(name.trim(), isKid) },
+                secondaryText = "Abbrechen",
+                onSecondary = onDismiss,
+                enabled = name.isNotBlank()
+            )
             Spacer(Modifier.height(8.dp))
         }
     }
