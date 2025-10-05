@@ -11,9 +11,9 @@ on:
         default: ""
 
 permissions:
-  contents: read
-  pull-requests: read
-  actions: read
+  contents: write
+  pull-requests: write
+  actions: write
   issues: write
 
 concurrency:
@@ -31,25 +31,31 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade openai requests
+
       - name: Export GH_EVENT_NAME & ISSUE_NUMBER
         run: |
           echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
           echo "ISSUE_NUMBER=${{ github.event.inputs.issue }}" >> $GITHUB_ENV
+
       - name: Run Bot 3 (Triage)
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
           OPENAI_REASONING_EFFORT: high
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GH_EVENT_NAME: ${{ env.GH_EVENT_NAME }}
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
         run: python .github/codex/bot_triage.py
