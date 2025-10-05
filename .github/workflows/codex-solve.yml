@@ -16,6 +16,10 @@ permissions:
   actions: write
   issues: write
 
+concurrency:
+  group: codex-solve-issue-${{ github.event.issue.number || github.event.inputs.issue }}
+  cancel-in-progress: false
+
 jobs:
   solve:
     if: >
