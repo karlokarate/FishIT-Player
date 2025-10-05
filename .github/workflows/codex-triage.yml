@@ -1,6 +1,7 @@
 name: Codex – Triage (Bot 3)
 
 on:
+  # Bot 2/1 signalisieren Fehler über Labels
   issues:
     types: [labeled]
 
@@ -10,31 +11,48 @@ permissions:
   actions: read
   issues: write
 
+# Nur eine Triage gleichzeitig (verhindert Doppelarbeit)
 concurrency:
   group: codex-triage
   cancel-in-progress: false
 
 jobs:
   triage-on-label:
-    if: github.event_name == 'issues' && (github.event.label.name == 'contextmap-error' || github.event.label.name == 'solver-error')
+    # Nur auf solver-error / contextmap-error reagieren
+    if: >
+      github.event_name == 'issues' &&
+      github.event.action == 'labeled' &&
+      (github.event.label.name == 'solver-error' || github.event.label.name == 'contextmap-error')
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-      - name: Install deps
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade openai requests
+
       - name: Export GH_EVENT_NAME
         run: echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
-      - name: Run Bot 3 (Triage)
+
+      - name: Run Triage (Bot 3)
         env:
+          # OpenAI
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}  # optional/self-host
+          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }} # z.B. gpt-5
           OPENAI_REASONING_EFFORT: high
-          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+
+          # GitHub/CI
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
