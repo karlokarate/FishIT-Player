@@ -1,12 +1,14 @@
 name: Codex – Solver (Bot 2)
 
 on:
+  # Automatisch, sobald Bot 1 (ContextMap) das Label setzt
   issues:
     types: [labeled]
+  # Manuell anstossbar für Tests
   workflow_dispatch:
     inputs:
       issue:
-        description: "Issue-Nummer (von Bot 1 übergeben)"
+        description: "Issue-Nummer (optional; überschreibt Event)"
         required: false
         default: ""
 
@@ -16,48 +18,63 @@ permissions:
   actions: write
   issues: write
 
+# Keine parallelen Solver-Läufe pro Issue/Dispatch
 concurrency:
-  group: codex-solve-issue-${{ github.event.issue.number || github.event.inputs.issue }}
+  group: codex-solve-${{ github.event.issue.number || inputs.issue || github.run_id }}
   cancel-in-progress: false
 
 jobs:
   solve:
+    # Label-Trigger NUR bei 'contextmap-ready' oder manueller Dispatch
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issues' &&
        github.event.action == 'labeled' &&
        github.event.label.name == 'contextmap-ready')
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-      - name: Install deps
+      - name: Show tool versions
+        run: |
+          git --version
+          python --version
+          patch --version || true
+
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade openai requests unidiff
 
-      - name: Export GH_EVENT_NAME & ISSUE_NUMBER
+      - name: Export env (GH_EVENT_NAME, ISSUE_NUMBER)
         run: |
           echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
           echo "ISSUE_NUMBER=${{ inputs.issue }}" >> $GITHUB_ENV
 
-      - name: Run Solver Bot (high)
+      - name: Run Solver (Bot 2)
         env:
+          # OpenAI
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}  # optional/self-host
+          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }} # z.B. gpt-5
           OPENAI_REASONING_EFFORT: high
 
+          # GitHub/CI
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GH_EVENT_NAME: ${{ env.GH_EVENT_NAME }}
 
-          # Build-Workflow-Name/ID (kann angepasst werden)
-          SOLVER_BUILD_WORKFLOW: release-apk.yml
-          # aus workflow_dispatch kommt ISSUE_NUMBER, bei issues:labeled bleibt leer
+          # Optionaler Build, den der Solver nach PR triggert
+          SOLVER_BUILD_WORKFLOW: ${{ vars.SOLVER_BUILD_WORKFLOW || 'release-apk.yml' }}
           ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
         run: python .github/codex/bot_solver.py
