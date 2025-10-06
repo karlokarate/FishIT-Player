@@ -1,17 +1,9 @@
 name: Codex – Solver (Bot 2)
 
 on:
-  issues:
-    types: [labeled]
-  workflow_dispatch:
-    inputs:
-      issue:
-        description: "Issue number to solve"
-        required: true
-      dry_run:
-        description: "Run solver in dry-run mode (no network/git ops)"
-        required: false
-        default: "false"
+  workflow_run:
+    workflows: ["Codex – ContextMap (Bot 1)"]
+    types: [completed]
 
 permissions:
   contents: write
@@ -19,91 +11,120 @@ permissions:
   actions: write
   issues: write
 
-concurrency:
-  group: codex-solve-issue-${{ github.event.inputs.issue || github.event.issue.number }}
-  cancel-in-progress: true
-
 jobs:
   solve:
-    # Trigger on workflow_dispatch or when the 'contextmap-ready' label is applied
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.action == 'labeled' && contains(github.event.label.name, 'contextmap-ready')) }}
+    # Start nur, wenn Bot 1 erfolgreich war
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout (full; LFS + submodules)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          lfs: true
+          submodules: recursive
 
-      - name: Ensure system deps
+      - name: Download context artifact from Bot 1
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Artefakte aus dem auslösenden workflow_run laden
+          run-id: ${{ github.event.workflow_run.id }}
+          path: codex-context
+
+      - name: Prepare context into expected location
         run: |
-          sudo apt-get update
-          sudo apt-get install -y patch
+          mkdir -p .github/codex/context
+          # zentrale Dateien kopieren (flexibel bzgl. Artefaktnamen)
+          find codex-context -type f -name "solver_input.json" -exec cp -f {} .github/codex/context/solver_input.json \;
+          find codex-context -type f -name "solver_input.json.gz" -exec cp -f {} .github/codex/context/solver_input.json.gz \; || true
+          find codex-context -type f -name "summary.txt" -exec cp -f {} .github/codex/context/summary.txt \; || true
+          # attachments (falls vorhanden)
+          if ls codex-context/**/attachments/* 1> /dev/null 2>&1; then
+            mkdir -p .github/codex/context/attachments
+            cp -rf codex-context/**/attachments/* .github/codex/context/attachments/ 2>/dev/null || true
+          fi
+          echo "Prepared context files:"
+          ls -R .github/codex/context || true
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install deps
+      - name: Install solver deps
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade openai requests unidiff
+          pip install -r .github/codex/requirements-solver.txt
 
-      - name: Resolve ISSUE_NUMBER
-        id: res
+      - name: Extract ISSUE_NUMBER from solver_input.json
+        id: extract_issue
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "ISSUE_NUMBER=${{ github.event.inputs.issue }}" >> $GITHUB_ENV
-          else
-            echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
-          fi
+          python - << 'PY'
+import json, sys, pathlib, os
+p = pathlib.Path(".github/codex/context/solver_input.json")
+if not p.exists():
+    print("::error::solver_input.json not found"); sys.exit(1)
+data = json.loads(p.read_text(encoding="utf-8"))
+n = (data.get("issue_context") or {}).get("number")
+if n is None:
+    print("::error::No issue number in solver_input.json"); sys.exit(1)
+print(f"ISSUE_NUMBER={n}")
+with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+    fh.write(f"ISSUE_NUMBER={n}\n")
+with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as fh:
+    fh.write(f"ISSUE_NUMBER={n}\n")
+PY
 
-      - name: Set dry-run env (from workflow_dispatch)
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
-        run: echo "SOLVER_DRY_RUN=1" >> $GITHUB_ENV
-
-      # Try to download context artifact produced by Bot 1 (codex-plan.yml)
-      - name: Download context artifact from Bot 1 (if available)
-        uses: dawidd6/action-download-artifact@v3
-        continue-on-error: true
-        with:
-          name: codex-context-${{ env.ISSUE_NUMBER }}
-          workflow: codex-plan.yml
-          path: ./
-          if_no_artifact_found: ignore
-
-      - name: Inspect / place context files
-        run: |
-          mkdir -p .codex
-          # Move to .codex if downloaded to root
-          if [ -f "./context.json" ]; then mv ./context.json .codex/context.json; fi
-          if [ -f "./context_full.md" ]; then mv ./context_full.md .codex/context_full.md; fi
-          # Search within subfolders if needed
-          if [ ! -f ".codex/context.json" ]; then
-            found=$(find . -maxdepth 3 -type f -name context.json | head -n 1 || true)
-            if [ -n "$found" ]; then mv "$found" .codex/context.json; fi
-          fi
-          if [ ! -f ".codex/context_full.md" ]; then
-            found=$(find . -maxdepth 3 -type f -name context_full.md | head -n 1 || true)
-            if [ -n "$found" ]; then mv "$found" .codex/context_full.md; fi
-          fi
-          ls -la .codex || true
-
-      - name: Run Solver (high)
+      - name: Check for contextmap-ready label (gate)
+        id: gate_check
         env:
-          # OpenAI
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ steps.extract_issue.outputs.ISSUE_NUMBER }}
+        run: |
+          python - << 'PY'
+import os, json, urllib.request
+repo = os.environ["REPO"]
+issue = os.environ["ISSUE"]
+req = urllib.request.Request(
+    f"https://api.github.com/repos/{repo}/issues/{issue}",
+    headers={
+        "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+        "Accept": "application/vnd.github+json"
+    }
+)
+with urllib.request.urlopen(req, timeout=60) as r:
+    data = json.loads(r.read().decode("utf-8"))
+labels = { (l.get("name") or "") for l in data.get("labels", []) }
+has_label = "contextmap-ready" in labels
+with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+    fh.write(f"has_label={'true' if has_label else 'false'}\n")
+PY
+
+      - name: Comment waiting notice (if missing label)
+        if: steps.gate_check.outputs.has_label != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ steps.extract_issue.outputs.ISSUE_NUMBER }}
+        run: |
+          BODY='⏸️ Solver startet erst, wenn **contextmap-ready** gesetzt ist.'
+          curl -s -X POST             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             https://api.github.com/repos/$REPO/issues/$ISSUE/comments             -d "{"body": "$BODY"}" > /dev/null
+
+      - name: Run Solver (Bot 2)
+        if: steps.gate_check.outputs.has_label == 'true'
+        env:
+          # OpenAI (nur für Spec-to-File/AI-Diff benötigt)
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}  # e.g. gpt-5
+          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
           OPENAI_REASONING_EFFORT: high
           # GitHub
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GH_EVENT_NAME: ${{ github.event_name }}
-          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
-          # Optional: Build workflow triggered after PR creation
-          SOLVER_BUILD_WORKFLOW: ${{ vars.SOLVER_BUILD_WORKFLOW || 'release-apk.yml' }}
+          ISSUE_NUMBER: ${{ steps.extract_issue.outputs.ISSUE_NUMBER }}
         run: |
           python .github/codex/bot_solver.py
