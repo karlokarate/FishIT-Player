@@ -40,12 +40,26 @@ jobs:
         run: |
           python .github/codex/bot_contextmap.py
 
+      # Robust handling to avoid "Matching delimiter not found 'EOF'"
+      - name: Normalize summary file (newline + LF endings)
+        run: |
+          mkdir -p .github/codex/context
+          # create file if missing
+          [ -f .github/codex/context/summary.txt ] || touch .github/codex/context/summary.txt
+          # ensure LF line endings (strip potential CR)
+          sed -i 's/\r$//' .github/codex/context/summary.txt
+          # ensure file ends with a newline so EOF lands on its own line
+          tail -c1 .github/codex/context/summary.txt | od -An -t x1 | grep -qi '0a' || printf '\n' >> .github/codex/context/summary.txt
+
       - name: Set summary output
         id: summaryout
         run: |
-          echo "summary<<EOF" >> $GITHUB_OUTPUT
-          cat .github/codex/context/summary.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo 'summary<<EOF'
+            # write content with CR stripped again defensively (in case file was regenerated)
+            sed 's/\r$//' .github/codex/context/summary.txt
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Upload context artifact
         uses: actions/upload-artifact@v4
