@@ -1,4 +1,4 @@
-name: Codex ContextMap Bot
+name: Codex – ContextMap (Bot 1)
 
 on:
   issues:
@@ -14,62 +14,56 @@ permissions:
 
 jobs:
   contextmap:
-    name: Build Context for Solver
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
-      - name: Checkout (full, with LFS + submodules)
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true
-          submodules: recursive
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install requirements
+      - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r .github/codex/requirements.txt
 
-      - name: Build Context (Bot 1)
-        id: build_context
+      - name: Run Bot 1 (ContextMap)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python .github/codex/bot_contextmap.py
-
-      # Robust handling to avoid "Matching delimiter not found 'EOF'"
-      - name: Normalize summary file (newline + LF endings)
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GH_EVENT_NAME: ${{ github.event_name }}
         run: |
           mkdir -p .github/codex/context
-          # create file if missing
-          [ -f .github/codex/context/summary.txt ] || touch .github/codex/context/summary.txt
-          # ensure LF line endings (strip potential CR)
-          sed -i 's/\r$//' .github/codex/context/summary.txt
-          # ensure file ends with a newline so EOF lands on its own line
-          tail -c1 .github/codex/context/summary.txt | od -An -t x1 | grep -qi '0a' || printf '\n' >> .github/codex/context/summary.txt
-
-      - name: Set summary output
-        id: summaryout
-        run: |
-          {
-            echo 'summary<<EOF'
-            # write content with CR stripped again defensively (in case file was regenerated)
-            sed 's/\r$//' .github/codex/context/summary.txt
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
+          python .github/codex/bot_contextmap.py
 
       - name: Upload context artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: codex-context
           path: |
-            .github/codex/context/solver_input.json
-            .github/codex/context/solver_input.json.gz
-            .github/codex/context/summary.txt
-            .github/codex/context/attachments/**
+            .github/codex/context/**
+
+      - name: Read summary
+        id: summaryout
+        shell: bash
+        run: |
+          if [[ -f .github/codex/context/summary.txt ]]; then
+            {
+              echo "summary<<'EOF'"
+              cat .github/codex/context/summary.txt
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "summary=ContextMap completed." >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Comment summary to issue
         if: github.event_name == 'issues' || github.event_name == 'issue_comment'
