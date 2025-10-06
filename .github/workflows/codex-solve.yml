@@ -1,22 +1,32 @@
-name: Android – Build APK
+name: Codex – Solver (Bot 2)
 
 on:
+  workflow_run:
+    workflows: ["Codex – ContextMap (Bot 1)"]
+    types: [completed]
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
-      build_type:
-        description: "Build-Variante (debug | release)"
-        required: false
-        default: "debug"
       issue:
-        description: "Issue-Nummer (optional, nur Info)"
+        description: "Issue-Nummer (optional; überschreibt Kontext)"
+        required: false
+        default: ""
+      build_type:
+        description: "Optional: Build-Dispatch (debug|release)"
         required: false
         default: ""
 
 permissions:
-  contents: read
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: write
 
 jobs:
-  build:
+  solve:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -32,41 +42,62 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Compute Gradle task
-        id: task
-        shell: bash
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies (solver)
         run: |
-          case "${{ github.event.inputs.build_type }}" in
-            release) echo "task=:app:assembleRelease" ;;
-            *) echo "task=:app:assembleDebug" ;;
-          esac | tee -a "$GITHUB_OUTPUT"
+          python -m pip install --upgrade pip
+          pip install -r .github/codex/requirements-solver.txt
 
-      - name: Build APK
-        run: ./gradlew ${{ steps.task.outputs.task }} -x test --no-daemon --stacktrace
-
-      - name: Locate APKs
-        id: apks
+      - name: Determine ISSUE_NUMBER
+        id: issue
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t FILES < <(find app -type f -path "*/build/outputs/apk/*/*.apk" -print | sort)
-          if [[ ${#FILES[@]} -eq 0 ]]; then
-            echo "Keine APK gefunden." >&2
-            exit 1
-          fi
-          printf 'APK: %s\n' "${FILES[@]}"
-          printf '%s\n' "${FILES[@]}" > "${{ runner.temp }}/apk_list.txt"
+          case "${{ github.event_name }}" in
+            workflow_run)
+              # Best effort: try to get issue number from context artifact
+              if [[ -f ".github/codex/context/solver_input.json" ]]; then
+                num=$(jq -r '.issue_number // empty' ".github/codex/context/solver_input.json" || true)
+                [[ -n "$num" ]] && echo "num=$num" >> "$GITHUB_OUTPUT" || true
+              fi
+              ;;
+            issues)
+              echo "num=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+              ;;
+            issue_comment)
+              echo "num=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "num=${{ github.event.inputs.issue }}" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
 
-      - name: Upload APK artifacts
+      - name: Run Bot 2 (Solver)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
+          OPENAI_REASONING_EFFORT: high
+
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GH_EVENT_NAME: ${{ github.event_name }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.num }}
+        run: |
+          python .github/codex/bot_solver.py
+
+      - name: Upload rejects (if any)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: apk-${{ github.event.inputs.build_type || 'debug' }}
+          name: solver-rejects
           path: |
-            ${{ runner.temp }}/apk_list.txt
-            app/build/outputs/apk/**/**/*.apk
-
-      - name: Build Context Info (optional)
-        if: ${{ github.event.inputs.issue != '' }}
-        run: |
-          echo "Issue: #${{ github.event.inputs.issue }}"
-          echo "Build type: ${{ github.event.inputs.build_type || 'debug' }}"
+            **/*.rej
+            **/*.orig
+            .github/codex/context/**
+          if-no-files-found: ignore
