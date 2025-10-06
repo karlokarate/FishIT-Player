@@ -40,6 +40,13 @@ jobs:
         run: |
           python .github/codex/bot_contextmap.py
 
+      - name: Set summary output
+        id: summaryout
+        run: |
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          cat .github/codex/context/summary.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Upload context artifact
         uses: actions/upload-artifact@v4
         with:
@@ -62,5 +69,5 @@ jobs:
             - Repo files indexed: see artifact (`codex-context`)
             - Summary:
               ```
-              ${{ steps.build_context.outputs.summary || '' }}
+              ${{ steps.summaryout.outputs.summary }}
               ```
