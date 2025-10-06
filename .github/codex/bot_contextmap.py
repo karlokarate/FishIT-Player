@@ -14,7 +14,8 @@ ContextMap Bot (enhanced + preanalysis + autolabel + comment)
 - Writes outputs to .github/codex/context/ and prints a compact summary for the job log.
 - NEW:
   * Adds the 'contextmap-ready' label automatically (issues/issue_comment).
-  * Posts a concise PROBLEM DESCRIPTION + DETAILED PREANALYSIS comment to the issue for the Solver.
+  * (Optional) Posts a concise PROBLEM DESCRIPTION + DETAILED PREANALYSIS comment to the issue for the Solver
+    -> per ENV steuerbar: CODEX_POST_ISSUE_COMMENT=true|false (Default: true, im Workflow deaktiviert).
 """
 
 import os
@@ -33,6 +34,7 @@ from typing import List, Dict, Any, Optional, Tuple
 try:
     import requests
 except Exception as e:
+        # Anforderungen sind in .github/codex/requirements.txt
     print("ERROR: requests not installed. Please `pip install -r .github/codex/requirements.txt`", file=sys.stderr)
     raise
 
@@ -53,9 +55,14 @@ DEFAULT_ALWAYS_EMBED_REFERENCED = True  # Always embed referenced/attached files
 
 WORK_DIR = os.path.abspath(".")
 CTX_DIR = os.path.join(".github", "codex", "context")
+CTX_DIR_ABS = os.path.abspath(CTX_DIR)
 OUT_JSON = os.path.join(CTX_DIR, "solver_input.json")
 OUT_SUMMARY = os.path.join(CTX_DIR, "summary.txt")
 ATTACH_DIR = os.path.join(CTX_DIR, "attachments")
+
+# Optionales Verhalten per ENV
+POST_ISSUE_COMMENT = os.getenv("CODEX_POST_ISSUE_COMMENT", "true").strip().lower() in {"1", "true", "yes"}
+ADD_LABEL = os.getenv("CODEX_ADD_LABEL", "true").strip().lower() in {"1", "true", "yes"}
 
 # ------------------------- Utilities -------------------------
 
@@ -76,7 +83,6 @@ def git_ls_files() -> List[str]:
 def is_probably_text(data: bytes) -> bool:
     if b"\x00" in data[:4096]:
         return False
-    # Heuristic: if mostly printable
     sample = data[:4096]
     text_chars = sum(c >= 9 and c <= 13 or (32 <= c <= 126) for c in sample)
     return (text_chars / max(1, len(sample))) > 0.85
@@ -142,7 +148,7 @@ def fetch_issue_context(event: Dict[str, Any], repo: str, token: str) -> Dict[st
     evname = os.getenv("GITHUB_EVENT_NAME", "")
     ctx = {"event_name": evname, "issue_number": None, "title": "", "body": ""}
     if evname == "issues":
-        issue = event.get("issue") or event.get("data", {}).get("issue") or {}
+        issue = event.get("issue") or {}
         number = issue.get("number")
         ctx["issue_number"] = number
         ctx["title"] = issue.get("title", "")
@@ -156,8 +162,8 @@ def fetch_issue_context(event: Dict[str, Any], repo: str, token: str) -> Dict[st
         ctx["body"] = comment.get("body", "") or ""
     else:
         # e.g., workflow_dispatch
-        ctx["title"] = event.get("inputs", {}).get("title", "")
-        ctx["body"] = event.get("inputs", {}).get("body", "")
+        ctx["title"] = (event.get("inputs", {}) or {}).get("title", "")
+        ctx["body"] = (event.get("inputs", {}) or {}).get("body", "")
     return ctx
 
 # ------------------------- Reference parsing -------------------------
@@ -173,9 +179,9 @@ def extract_paths_and_urls(text: str) -> Tuple[List[str], List[str]]:
     urls = set()
 
     # From diff headers
-    for m in re.finditer(r"^\+\+\+ b/([^\n\r]+)$", text, re.MULTILINE):
+    for m in re.finditer(r"^\+\+\+ b/([^\n\r]+)$", text or "", re.MULTILINE):
         paths.add(m.group(1).strip())
-    for m in re.finditer(r"^--- a/([^\n\r]+)$", text, re.MULTILINE):
+    for m in re.finditer(r"^--- a/([^\n\r]+)$", text or "", re.MULTILINE):
         paths.add(m.group(1).strip())
 
     # From code blocks/backticks and plain text
@@ -197,7 +203,7 @@ def download_attachment(url: str, token: str) -> Dict[str, Any]:
     try:
         r = github_api_get(url, token, accept="application/octet-stream")
     except Exception as e:
-        # If direct GET fails (e.g., needs redirect), try without API accept
+        # Fallback ohne spezielles Accept
         try:
             headers = {"Authorization": f"Bearer {token}"} if token else {}
             r = requests.get(url, headers=headers, allow_redirects=True, timeout=60)
@@ -214,7 +220,6 @@ def download_attachment(url: str, token: str) -> Dict[str, Any]:
     # decide file name
     name = url.split("/")[-1]
     if not name or "." not in name:
-        # try to guess from headers
         cd = r.headers.get("Content-Disposition", "")
         mt = r.headers.get("Content-Type", "")
         if "filename=" in cd:
@@ -251,26 +256,34 @@ def download_attachment(url: str, token: str) -> Dict[str, Any]:
 # ------------------------- Repo scanning -------------------------
 
 def list_all_files() -> List[str]:
-    """Walk the working tree to include tracked + untracked files. Exclude common build/VCS dirs."""
+    """Walk the working tree to include tracked + untracked files.
+       Exclude common build/VCS dirs and ALWAYS exclude the generated context dir (.github/codex/context)."""
     files = []
     for root, dirs, fnames in os.walk(WORK_DIR):
         # prune dirs
-        pruned = []
         for d in list(dirs):
-            if d in DEFAULT_EXCLUDE_DIRS and os.path.abspath(os.path.join(root, d)) != os.path.abspath(".github"):
-                pruned.append(d)
-        for d in pruned:
-            dirs.remove(d)
+            absd = os.path.abspath(os.path.join(root, d))
+            # Exclude generated context dir (and its subtree) unconditionally
+            if absd == CTX_DIR_ABS or absd.startswith(CTX_DIR_ABS + os.sep):
+                dirs.remove(d)
+                continue
+            # Exclude defaults except top-level .github (damit Workflows & Bot gescannt werden)
+            if d in DEFAULT_EXCLUDE_DIRS and absd != os.path.abspath(".github"):
+                dirs.remove(d)
 
         for fn in fnames:
             p = os.path.join(root, fn)
+            # skip any file inside generated context dir (defensive double-check)
+            absp = os.path.abspath(p)
+            if absp == CTX_DIR_ABS or absp.startswith(CTX_DIR_ABS + os.sep):
+                continue
             rel = safe_relpath(p)
             if rel.startswith(".git/"):
                 continue
             files.append(rel)
     return sorted(set(files))
 
-def read_repo_file(path: str, always_embed: bool=False) -> Dict[str, Any]:
+def read_repo_file(path: str, always_embed: bool=False, tracked_set: Optional[set]=None) -> Dict[str, Any]:
     """Read file metadata + content (text/binary). May chunk or base64 depending on size and type.
        For referenced/attached files: set always_embed=True to bypass size guards.
     """
@@ -288,20 +301,27 @@ def read_repo_file(path: str, always_embed: bool=False) -> Dict[str, Any]:
     info["sha1"] = hashlib.sha1(b).hexdigest()
     info["sha256"] = file_sha256(b)
 
-    tracked = path in set(git_ls_files())
-    info["is_tracked"] = tracked
+    if tracked_set is None:
+        tracked_set = set(git_ls_files())
+    info["is_tracked"] = path in tracked_set
 
     # LFS pointer check
     head = b[:200].decode("utf-8", errors="ignore")
-    if "git-lfs.github.com/spec/v1" in head and head.startswith("version https://git-lfs.github.com/spec/v1"):
+    if head.startswith("version https://git-lfs.github.com/spec/v1") and "git-lfs.github.com/spec/v1" in head:
         info["lfs_pointer"] = True
 
-    # submodule hint: entries in .gitmodules
+    # submodule hint
     if path == ".gitmodules":
         info["submodule_hint"] = True
 
     # content embedding
-    if is_probably_text(b) or path.endswith((".gradle",".kts",".xml",".md",".txt",".json",".yml",".yaml",".kt",".java",".py",".sh",".bat",".ps1",".properties",".cfg",".ini",".csv",".proto",".tl",".go",".rs",".swift",".dart",".html",".css",".scss",".ts",".tsx",".jsx",".c",".h",".cc",".cpp",".hpp",".sql")):
+    text_like_ext = path.endswith((
+        ".gradle",".kts",".xml",".md",".txt",".json",".yml",".yaml",".kt",".java",
+        ".py",".sh",".bat",".ps1",".properties",".cfg",".ini",".csv",".proto",".tl",
+        ".go",".rs",".swift",".dart",".html",".css",".scss",".ts",".tsx",".jsx",
+        ".c",".h",".cc",".cpp",".hpp",".sql"
+    ))
+    if is_probably_text(b) or text_like_ext:
         info["is_text"] = True
         enc = detect_encoding(b)
         try:
@@ -311,7 +331,6 @@ def read_repo_file(path: str, always_embed: bool=False) -> Dict[str, Any]:
             text = b.decode(enc, errors="replace")
         info["encoding"] = enc
 
-        # Always embed referenced files; otherwise chunk if too large
         if always_embed or len(b) <= DEFAULT_MAX_TEXT_EMBED_BYTES:
             info["text"] = text
         else:
@@ -437,7 +456,6 @@ def find_related_files(keywords: List[str], limit: int = 60) -> List[str]:
     for p in list_all_files():
         lp = p.lower()
         if any(k in lp for k in keys):
-            # skip generated/build
             if "/build/" in lp or "/.gradle/" in lp or lp.startswith(".github/"):
                 continue
             acc.append(p)
@@ -446,9 +464,7 @@ def find_related_files(keywords: List[str], limit: int = 60) -> List[str]:
     return acc
 
 def summarize_issue_problem(body: str) -> str:
-    # Very lightweight extraction: build a clean paragraph out of the issue body
     body = (body or "").strip()
-    # keep first ~1200 chars for the comment
     return body[:1200]
 
 def post_issue_comment(issue_number: Optional[int], repo: str, token: str, body: str):
@@ -490,16 +506,15 @@ def main():
     # Download attachments
     attachments = []
     for u in ref_urls:
-        if "github.com" in u or "user-images.githubusercontent.com" in u or "/assets/" in u:
+        if "user-images.githubusercontent.com" in u or "/assets/" in u or "github.com" in u and "/releases/download/" in u:
             logging.info("Downloading attachment: %s", u)
             meta = download_attachment(u, token)
             attachments.append(meta)
         else:
-            # leave external links as references only
             attachments.append({"url": u, "status": "external-reference"})
 
     # Build repo index
-    tracked = set(git_ls_files())
+    tracked_set = set(git_ls_files())
     allfiles = list_all_files()
 
     # Read files, embedding full contents (text chunked if large)
@@ -507,7 +522,7 @@ def main():
     total_bytes_embedded = 0
     for p in allfiles:
         always_embed = DEFAULT_ALWAYS_EMBED_REFERENCED and (p in ref_paths)
-        info = read_repo_file(p, always_embed=always_embed)
+        info = read_repo_file(p, always_embed=always_embed, tracked_set=tracked_set)
         file_index[p] = info
 
         # approximate counting for safety logging
@@ -518,12 +533,10 @@ def main():
         elif not info.get("is_text") and "base64" in info:
             total_bytes_embedded += len(info["base64"])
 
-    # For each referenced path that doesn't exist on disk (e.g., provided only as attachment),
-    # if we downloaded an attachment, also expose it under a virtual path in the index.
+    # Expose attachments also unter virtuellen Pfaden
     for att in attachments:
         if att.get("status") == "ok":
             vpath = f"__attachments__/{os.path.basename(att['saved_as'])}"
-            # embed 1:1
             finfo = {
                 "path": vpath,
                 "size": att.get("size"),
@@ -538,12 +551,17 @@ def main():
             file_index[vpath] = finfo
 
     # Deep analysis
+    try:
+        repo_size_kb = round(sum(os.path.getsize(p) for p in allfiles if os.path.exists(p)) / 1024, 2)
+    except Exception:
+        repo_size_kb = None
+
     analysis = {
         "gradle_modules": analyze_gradle_modules(),
         "android_project": analyze_android_project(),
         "compose_focus": analyze_compose_and_focus(),
         "language_bytes_kb": language_stats(),
-        "repo_size_kb": round(sum(os.path.getsize(p) for p in allfiles if os.path.exists(p))/1024, 2),
+        "repo_size_kb": repo_size_kb,
         "file_count": len(allfiles),
     }
 
@@ -576,7 +594,7 @@ def main():
         "analysis": analysis,
     }
 
-    # Safety: compress JSON if huge but still write the uncompressed as requested
+    # Write outputs (plain + gz)
     with open(OUT_JSON, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False)
 
@@ -584,11 +602,11 @@ def main():
         gz.write(json.dumps(out, ensure_ascii=False).encode("utf-8"))
 
     # Summary text
+    comp = analysis.get("compose_focus", {}).get("counts", {})
     summary_lines = []
     summary_lines.append(f"Issue #{ictx.get('issue_number')} — {ictx.get('title','').strip()}")
     summary_lines.append(f"Referenced paths: {len(ref_paths)} | URLs: {len(ref_urls)} | Attachments: {sum(1 for a in attachments if a.get('status')=='ok')}")
     summary_lines.append(f"Repo files indexed: {len(allfiles)} | Embedded bytes (est.): {total_bytes_embedded}")
-    comp = analysis.get("compose_focus", {}).get("counts", {})
     summary_lines.append(f"Kotlin files: {comp.get('kotlin_files',0)} | @Composable: {comp.get('composables',0)} | focusable(): {comp.get('focusable_usages',0)} | chips: {comp.get('chips',0)}")
     with open(OUT_SUMMARY, "w", encoding="utf-8") as f:
         f.write("\n".join(summary_lines))
@@ -598,14 +616,11 @@ def main():
     print(f"Gzipped copy          → {OUT_JSON}.gz")
     print(f"Summary               → {OUT_SUMMARY}")
 
-    # -------- Post concise PROBLEM + PREANALYSIS comment --------
+    # -------- Optional: Post concise PROBLEM + PREANALYSIS comment --------
     issue_no = ictx.get("issue_number")
-    if issue_no:
-        # Heuristic preanalysis for Telegram auth topic
+    if POST_ISSUE_COMMENT and issue_no:
         related = find_related_files(["telegram", "tdlib", "tg", "auth", "login", "code", "qr", "otp", "twofactor", "td lib", "telethon"])
-        # Check single-source docs presence
-        docs_present = [p for p in allfiles if p.lower().endswith("tools/telegram api readme.txt".lower()) or p.lower().endswith("tools/td lib api scheme.tl".lower())]
-        # Build comment
+        docs_present = [p for p in list_all_files() if p.lower().endswith("tools/telegram api readme.txt".lower()) or p.lower().endswith("tools/td lib api scheme.tl".lower())]
         problem = summarize_issue_problem(body)
         preview_related = "\n".join(f"- `{p}`" for p in related[:20]) or "- (keine offensichtlichen Module gefunden)"
         preview_docs = "\n".join(f"- `{p}`" for p in docs_present) or "- (nicht gefunden)"
@@ -637,11 +652,12 @@ f"""**ContextMap ready** ✅
 
 **Artefakte**: `solver_input.json`, `summary.txt` (inkl. Deep-Analyse)."""
         )
-        post_issue_comment(issue_no, repo, token, comment_body)
+        repo_env, token_env = get_repo_env()
+        post_issue_comment(issue_no, repo_env, token_env, comment_body)
 
     # Auto-label context readiness
     evn = os.getenv("GITHUB_EVENT_NAME", "")
-    if evn in ("issues", "issue_comment"):
+    if ADD_LABEL and evn in ("issues", "issue_comment"):
         repo_env, token_env = get_repo_env()
         add_contextmap_ready_label(issue_no, repo_env, token_env)
 
