@@ -30,66 +30,16 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
-          cache: gradle
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      # (Optional) Keystore aus Secret decodieren – nur wenn Secret vorhanden
-      - name: Prepare signing (optional)
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
-        env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          STORE_PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PW: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          RTEMP: ${{ runner.temp }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          ANDROID_KEYSTORE_PATH="$RTEMP/android-upload-keystore.jks"
-          GRADLE_PROPS="$RTEMP/gradle.properties"
-          echo "$KEYSTORE_B64" | base64 -d > "$ANDROID_KEYSTORE_PATH"
-          {
-            echo "storeFile=$ANDROID_KEYSTORE_PATH"
-            echo "storePassword=$STORE_PW"
-            echo "keyAlias=$KEY_ALIAS"
-            echo "keyPassword=$KEY_PW"
-            # alternative Property-Namen (falls im build.gradle(.kts) erwartet)
-            echo "MYAPP_UPLOAD_STORE_FILE=$ANDROID_KEYSTORE_PATH"
-            echo "MYAPP_UPLOAD_STORE_PASSWORD=$STORE_PW"
-            echo "MYAPP_UPLOAD_KEY_ALIAS=$KEY_ALIAS"
-            echo "MYAPP_UPLOAD_KEY_PASSWORD=$KEY_PW"
-          } >> "$GRADLE_PROPS"
-          echo "ANDROID_KEYSTORE_PATH=$ANDROID_KEYSTORE_PATH" >> $GITHUB_ENV
-          echo "GRADLE_PROPS=$GRADLE_PROPS" >> $GITHUB_ENV
-
-      - name: Install gradle.properties (optional)
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.gradle
-          if [[ -n "${GRADLE_PROPS:-}" && -f "$GRADLE_PROPS" ]]; then
-            cat "$GRADLE_PROPS" >> ~/.gradle/gradle.properties
-            echo "Wrote signing props to ~/.gradle/gradle.properties"
-          else
-            echo "No signing props present; skipping"
-          fi
+          java-version: '17'
 
       - name: Compute Gradle task
         id: task
         shell: bash
         run: |
-          set -euo pipefail
-          BT="${{ github.event.inputs.build_type }}"
-          if [[ "$BT" == "release" || "$BT" == "Release" ]]; then
-            echo "task=assembleRelease" >> $GITHUB_OUTPUT
-          else
-            echo "task=assembleDebug" >> $GITHUB_OUTPUT
-          fi
-          echo "Using task=$(cat $GITHUB_OUTPUT)"
+          case "${{ github.event.inputs.build_type }}" in
+            release) echo "task=:app:assembleRelease" ;;
+            *) echo "task=:app:assembleDebug" ;;
+          esac | tee -a "$GITHUB_OUTPUT"
 
       - name: Build APK
         run: ./gradlew ${{ steps.task.outputs.task }} -x test --no-daemon --stacktrace
@@ -104,12 +54,8 @@ jobs:
             echo "Keine APK gefunden." >&2
             exit 1
           fi
-          printf 'APK: %s
-' "${FILES[@]}"
-          # For artifact upload, we output a newline list into a known temp file:
-          echo "RTEMP=${{ runner.temp }}" >> $GITHUB_OUTPUT
-          printf '%s
-' "${FILES[@]}" > "${{ runner.temp }}/apk_list.txt"
+          printf 'APK: %s\n' "${FILES[@]}"
+          printf '%s\n' "${FILES[@]}" > "${{ runner.temp }}/apk_list.txt"
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
