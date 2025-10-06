@@ -8,6 +8,7 @@ import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.telegram.TdLibReflection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -37,7 +38,7 @@ class TelegramTdlibService : Service() {
         const val REPLY_CHAT_TITLES = 202
     }
 
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val clients = mutableSetOf<Messenger>()
     private val authFlow = MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
     private val downloadFlow = MutableStateFlow(false)
@@ -53,6 +54,13 @@ class TelegramTdlibService : Service() {
 
     private val chatCache = mutableMapOf<Long, ChatSummary>()
     private val authTokens = ArrayDeque<String>()
+
+    // Connectivity tracking
+    private var netCallback: android.net.ConnectivityManager.NetworkCallback? = null
+    private var lastNetType: TdLibReflection.Net? = null
+
+    // Foreground state
+    @Volatile private var isForeground = false
 
     private val handler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
@@ -107,6 +115,35 @@ class TelegramTdlibService : Service() {
     private val messenger = Messenger(handler)
 
     override fun onBind(intent: Intent?): IBinder = messenger.binder
+
+    override fun onCreate() {
+        super.onCreate()
+        val cm = getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val req = android.net.NetworkRequest.Builder().build()
+        val cb = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) { setNetType(cm) }
+            override fun onLost(network: android.net.Network) { setNetType(cm) }
+            override fun onCapabilitiesChanged(network: android.net.Network, caps: android.net.NetworkCapabilities) { setNetType(cm) }
+        }
+        netCallback = cb
+        kotlin.runCatching { cm.registerNetworkCallback(req, cb) }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Unregister connectivity callback
+        kotlin.runCatching {
+            val cm = getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            netCallback?.let { cm.unregisterNetworkCallback(it) }
+        }
+        netCallback = null
+        // Stop foreground if running
+        stopFgSafe()
+        // Cancel coroutines
+        kotlin.runCatching { scope.cancel() }
+        // Best-effort: clear clients
+        synchronized(clients) { clients.clear() }
+    }
 
     private fun startTdlib(apiId: Int, apiHash: String) {
         if (!TdLibReflection.available()) {
@@ -192,6 +229,7 @@ class TelegramTdlibService : Service() {
                                     }
                                 }
                         }
+                        // Chat updates
                         name.endsWith("TdApi\$UpdateNewChat") -> {
                             val chat = runCatching { obj.javaClass.getDeclaredField("chat").apply { isAccessible = true }.get(obj) }.getOrNull()
                             if (chat != null) updateChatFromObject(chat)
@@ -228,6 +266,7 @@ class TelegramTdlibService : Service() {
                             val chatList = runCatching { obj.javaClass.getDeclaredField("chatList").apply { isAccessible = true }.get(obj) }.getOrNull()
                             if (chatId != null) markChatListMembership(chatId, chatList, false)
                         }
+                        // Watch for auth option tokens (for SMS retriever / anti-spam tokens)
                         name.endsWith("TdApi\$UpdateOption") -> {
                             val optionName = runCatching { obj.javaClass.getDeclaredField("name").apply { isAccessible = true }.get(obj) as? String }.getOrNull()
                             if (optionName == "authentication_token") {
@@ -249,7 +288,7 @@ class TelegramTdlibService : Service() {
                             }
                         }
                     }
-                } catch (_: Throwable) {}
+                } catch (_: Throwable) { }
             }
             // Observe auth changes and broadcast
             scope.launch {
@@ -271,7 +310,7 @@ class TelegramTdlibService : Service() {
             return
         }
         clientHandle?.let {
-            Log.i("TdSvc", "Sending SetTdlibParameters (apiId present=${id>0})")
+            Log.i("TdSvc", "Sending SetTdlibParameters (apiId present=${id > 0})")
             TdLibReflection.sendSetTdlibParameters(it, params)
             val key = com.chris.m3usuite.telegram.TelegramKeyStore.getOrCreateDatabaseKey(applicationContext)
             Log.i("TdSvc", "Sending CheckDatabaseEncryptionKey (${key.size} bytes)")
@@ -656,19 +695,11 @@ class TelegramTdlibService : Service() {
     }
 
     private fun updateForeground(auth: TdLibReflection.AuthState, downloading: Boolean) {
-        if (auth == TdLibReflection.AuthState.AUTHENTICATED && !downloading) stopFgSafe() else startFgSafe()
-    }
-
-    // Monitor connectivity and inform TDLib about network type changes
-    override fun onCreate() {
-        super.onCreate()
-        val cm = getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-        val req = android.net.NetworkRequest.Builder().build()
-        cm.registerNetworkCallback(req, object : android.net.ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: android.net.Network) { setNetType(cm) }
-            override fun onLost(network: android.net.Network) { setNetType(cm) }
-            override fun onCapabilitiesChanged(network: android.net.Network, caps: android.net.NetworkCapabilities) { setNetType(cm) }
-        })
+        if (auth == TdLibReflection.AuthState.AUTHENTICATED && !downloading) {
+            stopFgSafe()
+        } else {
+            startFgSafe()
+        }
     }
 
     private fun setNetType(cm: android.net.ConnectivityManager) {
@@ -681,11 +712,15 @@ class TelegramTdlibService : Service() {
             caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> TdLibReflection.Net.MOBILE
             else -> TdLibReflection.Net.OTHER
         }
-        TdLibReflection.sendSetNetworkType(client, net)
+        if (lastNetType != net) {
+            lastNetType = net
+            TdLibReflection.sendSetNetworkType(client, net)
+        }
     }
 
     // --- Foreground helpers ---
     private fun startFgSafe() {
+        if (isForeground) return
         try {
             val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
             val chId = "tdlib"
@@ -700,10 +735,21 @@ class TelegramTdlibService : Service() {
                 .setOngoing(true)
                 .build()
             startForeground(1001, notif)
+            isForeground = true
         } catch (_: Throwable) {}
     }
 
     private fun stopFgSafe() {
-        try { stopForeground(STOP_FOREGROUND_DETACH) } catch (_: Throwable) {}
+        if (!isForeground) return
+        try {
+            if (Build.VERSION.SDK_INT >= 24) {
+                stopForeground(STOP_FOREGROUND_DETACH)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+        } catch (_: Throwable) {} finally {
+            isForeground = false
+        }
     }
 }
