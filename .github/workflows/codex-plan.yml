@@ -1,76 +1,66 @@
-name: Codex – ContextMap (Bot 1)
+name: Codex ContextMap Bot
 
 on:
   issues:
-    types: [opened, edited]
+    types: [opened, edited, labeled]
+  issue_comment:
+    types: [created, edited]
   workflow_dispatch:
-    inputs:
-      comment:
-        description: "/codex … (optional, für manuellen Test)"
-        required: false
-        default: ""
 
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write
+  contents: read
   issues: write
-
-concurrency:
-  group: codex-plan-issue-${{ github.event.issue.number }}
-  cancel-in-progress: true
+  pull-requests: write
 
 jobs:
-  plan:
+  contextmap:
+    name: Build Context for Solver
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
+      - name: Checkout (full, with LFS + submodules)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          lfs: true
+          submodules: recursive
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
-      - name: Install deps
+      - name: Install requirements
         run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade openai requests
+          pip install -r .github/codex/requirements.txt
 
-      - name: Prepare env for workflow_dispatch
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: echo "DISPATCH_COMMENT=${{ inputs.comment }}" >> $GITHUB_ENV
-
-      - name: Export GH_EVENT_NAME
-        run: echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
-
-      - name: Run ContextMap Bot (high)
+      - name: Build Context (Bot 1)
+        id: build_context
         env:
-          # OpenAI
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}  # z.B. gpt-5
-          OPENAI_REASONING_EFFORT: high
-
-          # GitHub
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GH_EVENT_NAME: ${{ env.GH_EVENT_NAME }}
-          DISPATCH_COMMENT: ${{ env.DISPATCH_COMMENT }}
         run: |
-          mkdir -p .codex
           python .github/codex/bot_contextmap.py
 
-      - name: Upload context artifacts for Solver
-        if: always()
+      - name: Upload context artifact
         uses: actions/upload-artifact@v4
         with:
-          name: codex-context-${{ github.event.issue.number }}
+          name: codex-context
           path: |
-            .codex/context.json
-            .codex/context_full.md
-          if-no-files-found: warn
+            .github/codex/context/solver_input.json
+            .github/codex/context/solver_input.json.gz
+            .github/codex/context/summary.txt
+            .github/codex/context/attachments/**
+
+      - name: Comment summary to issue
+        if: github.event_name == 'issues' || github.event_name == 'issue_comment'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            **ContextMap ready** ✅
+            - Referenced paths: embedded
+            - Attachments: embedded 1:1
+            - Repo files indexed: see artifact (`codex-context`)
+            - Summary:
+              ```
+              ${{ steps.build_context.outputs.summary || '' }}
+              ```
