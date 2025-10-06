@@ -1,7 +1,6 @@
 name: Android – Build APK
 
 on:
-  # vorhandene Trigger kannst du zusätzlich behalten – hier der neue Dispatch:
   workflow_dispatch:
     inputs:
       build_type:
@@ -16,12 +15,6 @@ on:
 permissions:
   contents: read
 
-env:
-  # Pfade/Dateinamen für den Keystore (falls Signatur via Secrets gewünscht)
-  ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/android-upload-keystore.jks
-  # Optional: Gradle-Properties-Datei (für Secrets/Signatur)
-  GRADLE_PROPS: ${{ runner.temp }}/gradle.properties
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,8 +26,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ⚠️ Viele aktuelle Android-Gradle-Plugin-Versionen benötigen JDK 17.
-      # Wenn dein Projekt noch JDK 11 nutzt, ändere 'java-version' auf '11'.
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -45,66 +36,80 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      # (Optional) Keystore aus Secret decodieren – wenn Secrets gesetzt sind
+      # (Optional) Keystore aus Secret decodieren – nur wenn Secret vorhanden
       - name: Prepare signing (optional)
         if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PW: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          RTEMP: ${{ runner.temp }}
         shell: bash
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$ANDROID_KEYSTORE_PATH"
-          echo "storeFile=$ANDROID_KEYSTORE_PATH" >> "$GRADLE_PROPS"
-          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> "$GRADLE_PROPS"
-          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> "$GRADLE_PROPS"
-          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> "$GRADLE_PROPS"
-          # Häufige alternative Property-Namen (falls im build.gradle.kts so erwartet):
+          set -euo pipefail
+          ANDROID_KEYSTORE_PATH="$RTEMP/android-upload-keystore.jks"
+          GRADLE_PROPS="$RTEMP/gradle.properties"
+          echo "$KEYSTORE_B64" | base64 -d > "$ANDROID_KEYSTORE_PATH"
           {
+            echo "storeFile=$ANDROID_KEYSTORE_PATH"
+            echo "storePassword=$STORE_PW"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PW"
+            # alternative Property-Namen (falls im build.gradle(.kts) erwartet)
             echo "MYAPP_UPLOAD_STORE_FILE=$ANDROID_KEYSTORE_PATH"
-            echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
-            echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}"
-            echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}"
+            echo "MYAPP_UPLOAD_STORE_PASSWORD=$STORE_PW"
+            echo "MYAPP_UPLOAD_KEY_ALIAS=$KEY_ALIAS"
+            echo "MYAPP_UPLOAD_KEY_PASSWORD=$KEY_PW"
           } >> "$GRADLE_PROPS"
+          echo "ANDROID_KEYSTORE_PATH=$ANDROID_KEYSTORE_PATH" >> $GITHUB_ENV
+          echo "GRADLE_PROPS=$GRADLE_PROPS" >> $GITHUB_ENV
 
-      # Gradle nutzt standardmäßig ~/.gradle/gradle.properties
       - name: Install gradle.properties (optional)
         if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
         shell: bash
         run: |
+          set -euo pipefail
           mkdir -p ~/.gradle
-          cat "$GRADLE_PROPS" >> ~/.gradle/gradle.properties
-          echo "Wrote signing props to ~/.gradle/gradle.properties"
+          if [[ -n "${GRADLE_PROPS:-}" && -f "$GRADLE_PROPS" ]]; then
+            cat "$GRADLE_PROPS" >> ~/.gradle/gradle.properties
+            echo "Wrote signing props to ~/.gradle/gradle.properties"
+          else
+            echo "No signing props present; skipping"
+          fi
 
-      # Build-Type bestimmen (assembleRelease vs assembleDebug)
       - name: Compute Gradle task
         id: task
         shell: bash
         run: |
+          set -euo pipefail
           BT="${{ github.event.inputs.build_type }}"
           if [[ "$BT" == "release" || "$BT" == "Release" ]]; then
             echo "task=assembleRelease" >> $GITHUB_OUTPUT
           else
             echo "task=assembleDebug" >> $GITHUB_OUTPUT
           fi
-          echo "Using task: $(cat $GITHUB_OUTPUT)"
+          echo "Using task=$(cat $GITHUB_OUTPUT)"
 
-      # Build – Tests unterdrücken; Lint kannst du bei Bedarf mit -x lint ebenfalls abschalten
       - name: Build APK
         run: ./gradlew ${{ steps.task.outputs.task }} -x test --no-daemon --stacktrace
-        # falls Lint stört:  ./gradlew ${{ steps.task.outputs.task }} -x test -x lint --no-daemon --stacktrace
 
-      # Artefakte finden und hochladen (alle APKs – Debug/Release)
       - name: Locate APKs
         id: apks
         shell: bash
         run: |
-          # Sammle APKs aus Standard-Ausgabepfaden
-          mapfile -t FILES < <(find app -type f -path "*/build/outputs/apk/*/*.apk" -print)
+          set -euo pipefail
+          mapfile -t FILES < <(find app -type f -path "*/build/outputs/apk/*/*.apk" -print | sort)
           if [[ ${#FILES[@]} -eq 0 ]]; then
             echo "Keine APK gefunden." >&2
             exit 1
           fi
-          # Liste zeigen
-          printf 'APK: %s\n' "${FILES[@]}"
-          # Als Newline-getrennte Liste für Upload bereitstellen
-          printf '%s\n' "${FILES[@]}" > "$RUNNER_TEMP/apk_list.txt"
+          printf 'APK: %s
+' "${FILES[@]}"
+          # For artifact upload, we output a newline list into a known temp file:
+          echo "RTEMP=${{ runner.temp }}" >> $GITHUB_OUTPUT
+          printf '%s
+' "${FILES[@]}" > "${{ runner.temp }}/apk_list.txt"
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
@@ -114,7 +119,6 @@ jobs:
             ${{ runner.temp }}/apk_list.txt
             app/build/outputs/apk/**/**/*.apk
 
-      # Optional: Ausgabe der Info (Build-Kontext)
       - name: Build Context Info (optional)
         if: ${{ github.event.inputs.issue != '' }}
         run: |
