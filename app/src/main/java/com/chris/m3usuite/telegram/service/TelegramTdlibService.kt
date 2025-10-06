@@ -4,8 +4,8 @@ import android.app.Service
 import android.content.Intent
 import android.os.*
 import android.util.Log
-import com.chris.m3usuite.telegram.TdLibReflection
 import com.chris.m3usuite.BuildConfig
+import com.chris.m3usuite.telegram.TdLibReflection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -173,7 +173,8 @@ class TelegramTdlibService : Service() {
                             val chatId = obj.javaClass.getDeclaredField("chatId").apply { isAccessible = true }.getLong(obj)
                             val messageId = obj.javaClass.getDeclaredField("messageId").apply { isAccessible = true }.getLong(obj)
                             val content = obj.javaClass.getDeclaredField("newContent").apply { isAccessible = true }.get(obj)
-                            indexMessageContent(chatId, messageId, content)
+                            // Date unknown in this delta; preserve existing or derive if possible inside indexer
+                            indexMessageContent(chatId, messageId, content, null)
                         }
                         // UpdateFile: persist localPath when available
                         name.endsWith("TdApi\$UpdateFile") -> {
@@ -283,40 +284,55 @@ class TelegramTdlibService : Service() {
             val chatId = msg.javaClass.getDeclaredField("chatId").apply { isAccessible = true }.getLong(msg)
             val messageId = TdLibReflection.extractMessageId(msg) ?: return
             val content = runCatching { msg.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(msg) }.getOrNull()
-            indexMessageContent(chatId, messageId, content)
+            val messageDate = runCatching { TdLibReflection.extractMessageDate(msg) }.getOrNull()
+            indexMessageContent(chatId, messageId, content, messageDate)
         } catch (_: Throwable) {}
     }
 
-    private fun indexMessageContent(chatId: Long, messageId: Long, content: Any?) {
+    private fun indexMessageContent(chatId: Long, messageId: Long, content: Any?, messageDate: Long? = null) {
         try {
             val fileObj = TdLibReflection.findFirstFile(content) ?: return
             val info = TdLibReflection.extractFileInfo(fileObj) ?: return
             val unique = TdLibReflection.extractFileUniqueId(fileObj)
             val supports = TdLibReflection.extractSupportsStreaming(content)
             val caption = kotlin.runCatching {
-                // fabricate a temporary message-like container to use helper
-                TdLibReflection.extractFileName(content) ?: "Telegram $messageId"
-            }.getOrNull()
+                TdLibReflection.extractCaption(content)
+                    ?: TdLibReflection.extractFileName(content)
+                    ?: "Telegram $messageId"
+            }.getOrDefault("Telegram $messageId")
             val duration = TdLibReflection.extractDurationSecs(content)
             val mime = TdLibReflection.extractMimeType(content)
             val dims = TdLibReflection.extractVideoDimensions(content)
             val parsed = com.chris.m3usuite.telegram.TelegramHeuristics.parse(caption)
-            val date = System.currentTimeMillis() / 1000
             val thumbFileId = TdLibReflection.extractThumbFileId(content)
+
             scope.launch(Dispatchers.IO) {
                 kotlin.runCatching {
-                    val box = com.chris.m3usuite.data.obx.ObxStore.get(applicationContext).boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+                    val store = com.chris.m3usuite.data.obx.ObxStore.get(applicationContext)
+                    val box = store.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
                     val existing = box.query(
                         com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId)
                             .and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(messageId))
                     ).build().findFirst()
+
+                    // Resolve best-effort message date:
+                    // 1) explicit argument (UpdateNewMessage/history)
+                    // 2) attempt from content if possible
+                    // 3) keep existing row date if present
+                    // 4) fallback to current time in seconds
+                    val derivedFromContent = if (content != null) runCatching { TdLibReflection.extractMessageDate(content) }.getOrNull() else null
+                    val resolvedDate = messageDate
+                        ?: derivedFromContent
+                        ?: existing?.date
+                        ?: (System.currentTimeMillis() / 1000)
+
                     val row = existing ?: com.chris.m3usuite.data.obx.ObxTelegramMessage(chatId = chatId, messageId = messageId)
                     row.fileId = info.fileId
                     row.fileUniqueId = unique
                     row.supportsStreaming = supports
                     row.caption = caption
-                    row.captionLower = caption?.lowercase()
-                    row.date = date
+                    row.captionLower = caption.lowercase()
+                    row.date = resolvedDate
                     row.localPath = info.localPath
                     row.thumbFileId = thumbFileId
                     row.durationSecs = duration
@@ -499,7 +515,8 @@ class TelegramTdlibService : Service() {
             val content = runCatching {
                 messageObj.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(messageObj)
             }.getOrNull()
-            indexMessageContent(chatId, messageId, content)
+            val messageDate = runCatching { TdLibReflection.extractMessageDate(messageObj) }.getOrNull()
+            indexMessageContent(chatId, messageId, content, messageDate)
         }
     }
 
