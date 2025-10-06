@@ -8,6 +8,10 @@ on:
       issue:
         description: "Issue number to solve"
         required: true
+      dry_run:
+        description: "Run solver in dry-run mode (no network/git ops)"
+        required: false
+        default: "false"
 
 permissions:
   contents: write
@@ -21,7 +25,7 @@ concurrency:
 
 jobs:
   solve:
-    # Trigger, wenn per Dispatch gestartet ODER wenn Label "contextmap-ready" gesetzt wird
+    # Trigger on workflow_dispatch or when the 'contextmap-ready' label is applied
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.action == 'labeled' && contains(github.event.label.name, 'contextmap-ready')) }}
     runs-on: ubuntu-latest
 
@@ -55,7 +59,11 @@ jobs:
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
           fi
 
-      # Artefakt aus Bot 1 (codex-plan.yml) laden – falls vorhanden
+      - name: Set dry-run env (from workflow_dispatch)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
+        run: echo "SOLVER_DRY_RUN=1" >> $GITHUB_ENV
+
+      # Try to download context artifact produced by Bot 1 (codex-plan.yml)
       - name: Download context artifact from Bot 1 (if available)
         uses: dawidd6/action-download-artifact@v3
         continue-on-error: true
@@ -68,10 +76,10 @@ jobs:
       - name: Inspect / place context files
         run: |
           mkdir -p .codex
-          # Falls die Dateien im Root extrahiert wurden, verschieben:
+          # Move to .codex if downloaded to root
           if [ -f "./context.json" ]; then mv ./context.json .codex/context.json; fi
           if [ -f "./context_full.md" ]; then mv ./context_full.md .codex/context_full.md; fi
-          # Falls als Unterordner extrahiert: suchen und verschieben
+          # Search within subfolders if needed
           if [ ! -f ".codex/context.json" ]; then
             found=$(find . -maxdepth 3 -type f -name context.json | head -n 1 || true)
             if [ -n "$found" ]; then mv "$found" .codex/context.json; fi
@@ -87,7 +95,7 @@ jobs:
           # OpenAI
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}  # z.B. gpt-5
+          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}  # e.g. gpt-5
           OPENAI_REASONING_EFFORT: high
           # GitHub
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -95,7 +103,7 @@ jobs:
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GH_EVENT_NAME: ${{ github.event_name }}
           ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
-          # Optional: Build-Workflow (für Post-Build-Test)
+          # Optional: Build workflow triggered after PR creation
           SOLVER_BUILD_WORKFLOW: ${{ vars.SOLVER_BUILD_WORKFLOW || 'release-apk.yml' }}
         run: |
           python .github/codex/bot_solver.py
