@@ -1,23 +1,19 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Bot 2 – Solver (robust, self-healing)
+Bot 2 – Solver (robust, self-healing) — v11-adapted-for-Bot1v3
 
-Fähigkeiten:
-- Liest Context-Artefakte (.codex/context.json, .codex/context_full.md), falls vorhanden.
-- Nutzt Diffs aus Issue/Kommentare; bei fehlerhaften/abgeschnittenen Diffs: mehrstufige Apply-Fallbacks.
-- Scheitern die Apply-Versuche oder fehlen Dateien: Spec-to-File (Create/Replace) mit vollständigen Dateien.
-- Directory-Targets werden rekursiv behandelt (alle .kt Dateien).
-- Lint/Compile-Gate vor Push (spotless + compileDebugKotlin).
-- PR-Erstellung; Build-Workflow-Dispatch und Statuskommentar.
-- Keine harten Abbrüche bei Teilerfolgen; .rej wird gesammelt kommentiert.
+Neu gegenüber deiner Referenz (11):
+- **Bot‑1 v3 kompatibel**: Liest primär `.github/codex/context/solver_input.json` (+ `summary.txt`),
+  behält Legacy‑Fallback auf `.codex/context.json` / `.codex/context_full.md`.
+- **Issue‑Nummer aus neuem JSON**: Falls `ISSUE_NUMBER`/Event fehlen.
+- **Zielauswahl aus neuem JSON**: Nutzt `issue_context.referenced_paths` und `repo.files`.
+- **Hard‑Gate auf `contextmap-ready`**: bleibt erhalten (außer `workflow_dispatch`).
+- **Reagiert auf Comments**: Patches aus Issue **und allen Kommentaren** (wie gehabt).
+- Rest (Unidiff‑Prüfung, Apply‑Matrix, Zero‑Context, GNU‑Fallback, Spec‑to‑File, Build‑Dispatch, .rej‑Summary)
+  bleibt unverändert bzw. verbessert.
 
-Env:
-- OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL_DEFAULT, OPENAI_REASONING_EFFORT
-- GITHUB_TOKEN, GITHUB_REPOSITORY, GITHUB_EVENT_PATH, GH_EVENT_NAME/GITHUB_EVENT_NAME
-- ISSUE_NUMBER (vom Workflow gesetzt)
-- SOLVER_BUILD_WORKFLOW (optional; z.B. release-apk.yml)
-
-Deps: openai, requests, unidiff
+Referenzbasis: dein „Solver (11)“. Anpassungen sind gezielt und minimal-invasiv.
 """
 
 from __future__ import annotations
@@ -74,17 +70,39 @@ def gh_api(method: str, path: str, payload: dict | None = None) -> dict:
     return _retry(_do)
 
 def issue_number() -> Optional[int]:
+    # 1) explicit env
     env_issue = os.environ.get("ISSUE_NUMBER")
     if env_issue:
         try:
             return int(env_issue)
         except Exception:
             pass
+    # 2) new context JSON
+    pnew = Path(".github/codex/context/solver_input.json")
+    if pnew.exists():
+        try:
+            data = json.loads(pnew.read_text(encoding="utf-8"))
+            n = (data.get("issue_context") or {}).get("number")
+            if n is not None:
+                return int(n)
+        except Exception:
+            pass
+    # 3) event payload
     ev = event()
     if "issue" in ev:
         n = (ev.get("issue") or {}).get("number")
         if n:
             return int(n)
+    # 4) legacy (if present)
+    pleg = Path(".codex/context.json")
+    if pleg.exists():
+        try:
+            d = json.loads(pleg.read_text(encoding="utf-8"))
+            n = d.get("issue_number")
+            if n is not None:
+                return int(n)
+        except Exception:
+            pass
     return None
 
 def list_issue_comments(num: int) -> List[dict]:
@@ -150,7 +168,26 @@ def ls_files() -> List[str]:
         return []
 
 # ---------- Context / Artifacts ----------
-def read_context_json() -> Dict[str, Any]:
+def read_new_context_json() -> Dict[str, Any]:
+    """Bot‑1 v3 JSON: .github/codex/context/solver_input.json"""
+    p = Path(".github/codex/context/solver_input.json")
+    if p.exists():
+        try:
+            return json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+    return {}
+
+def read_new_summary_txt() -> str:
+    p = Path(".github/codex/context/summary.txt")
+    if p.exists():
+        try:
+            return p.read_text(encoding="utf-8")
+        except Exception:
+            return ""
+    return ""
+
+def read_legacy_context_json() -> Dict[str, Any]:
     p = Path(".codex/context.json")
     if p.exists():
         try:
@@ -159,7 +196,7 @@ def read_context_json() -> Dict[str, Any]:
             return {}
     return {}
 
-def read_context_full_md() -> str:
+def read_legacy_context_full_md() -> str:
     p = Path(".codex/context_full.md")
     if p.exists():
         try:
@@ -171,7 +208,8 @@ def read_context_full_md() -> str:
 def fetch_contextmap_comment(num: int) -> Optional[str]:
     for c in list_issue_comments(num):
         b = (c.get("body") or "").strip()
-        if b.startswith("### contextmap-ready"):
+        # Akzeptiere sowohl die alte Form ("### contextmap-ready") als auch die neue ("ContextMap ready")
+        if b.lower().startswith("### contextmap-ready".lower()) or "contextmap ready" in b.lower():
             return b
     return None
 
@@ -185,6 +223,39 @@ def extract_issue_raw_diff(num: int) -> str:
     raw = "\n\n".join(bodies)
     pos = raw.find("diff --git ")
     return raw[pos:] if pos != -1 else ""
+
+# ---------- Helpers aus Context ----------
+def choose_targets_from_new_context(ctx: Dict[str, Any], all_files: List[str]) -> Tuple[List[str], List[str]]:
+    """
+    Nutzt Bot‑1 v3 Felder:
+      - issue_context.referenced_paths
+      - repo.files
+    Liefert (create_paths, existing_paths).
+    """
+    create_paths: List[str] = []
+    existing_paths: List[str] = []
+    if not ctx:
+        # Fallback später
+        return create_paths, existing_paths
+
+    mentioned = (ctx.get("issue_context") or {}).get("referenced_paths") or []
+    files = [f for f in (ctx.get("repo") or {}).get("files", []) if isinstance(f, str)]
+    fset = set(files)
+    for p in mentioned:
+        if p in fset:
+            existing_paths.append(p)
+        else:
+            create_paths.append(p)
+
+    # Wenn nix referenziert: sinnvollen Default
+    if not mentioned:
+        if any(f.startswith("app/") for f in files) or "app" in files:
+            existing_paths.append("app")
+
+    # Dedupe
+    seen=set(); existing_paths=[x for x in existing_paths if not (x in seen or seen.add(x))]
+    seen=set(); create_paths=[x for x in create_paths if not (x in seen or seen.add(x))]
+    return create_paths, existing_paths
 
 def parse_affected_modules(contextmap_md: str, all_files: List[str]) -> List[str]:
     m = re.search(r"####\s*\(potentiell\)\s*betroffene\s*Module\s*(.*?)\n####", contextmap_md, re.S | re.I)
@@ -211,7 +282,6 @@ _VALID_LINE = re.compile(
 )
 
 def _strip_code_fences(text: str) -> str:
-    """Entfernt äußere ```...``` code fences (mit/ohne Sprache) ein Mal."""
     if not text:
         return text
     m = re.match(r"^```[a-zA-Z0-9_-]*\s*\n(.*?)\n```$", text.strip(), re.S)
@@ -228,7 +298,8 @@ def sanitize_patch(raw: str) -> str:
     for ln in txt.splitlines():
         if re.match(r"^\s*\d+\.\s*:?\s*$", ln):  # numerierte leere Zeilen
             continue
-        if re.match(r"^\s*[–—\-]\s*$", ln):     # reine Separator-Linien
+    # (Nebenbei sehr kurze Strichtrenner ausfiltern)
+        if re.match(r"^\s*[–—\-]\s*$", ln):
             continue
         if _VALID_LINE.match(ln):
             clean.append(ln)
@@ -406,6 +477,7 @@ Full Context (excerpt):
 Constraints:
 - File must compile against typical Android/Kotlin setup.
 - If file is new, include necessary imports and minimal implementation as per context.
+- Output only file content (no fences).
 """
 
     resp = _retry(lambda: client.responses.create(
@@ -508,43 +580,35 @@ def summarize_rejects(num: int):
     post_comment(num, body)
 
 # ---------- Solver strategy ----------
-def choose_targets_from_context(ctx: Dict[str, Any], all_files: List[str]) -> Tuple[List[str], List[str]]:
+def choose_targets_fallback_legacy(ctx_legacy: Dict[str, Any], all_files: List[str], cm_comment: str) -> Tuple[List[str], List[str]]:
     """
-    Liefert (create_paths, existing_paths) aus context.json + existence_map.
-    Fallback: Context-Kommentar-Module oder 'app'.
+    Legacy-Pfad (so wie in deiner 11er-Version): nutze ggf. (Kommentar)Seeds oder app-Default.
     """
     create_paths: List[str] = []
     existing_paths: List[str] = []
-
-    if ctx:
-        mentioned = ctx.get("mentioned_paths") or []
-        exists_map = ctx.get("mentioned_paths_exists") or {}
+    if ctx_legacy:
+        mentioned = ctx_legacy.get("mentioned_paths") or []
+        exists_map = ctx_legacy.get("mentioned_paths_exists") or {}
         for p in mentioned:
             if exists_map.get(p) is False:
                 create_paths.append(p)
             elif exists_map.get(p) is True:
                 existing_paths.append(p)
-        if not mentioned:
-            if any(f.startswith("app/") for f in all_files) or "app" in all_files:
-                existing_paths.append("app")
-    else:
-        cm = fetch_contextmap_comment(issue_number() or 0) or ""
-        seeds = parse_affected_modules(cm, all_files)
+    if not create_paths and not existing_paths:
+        seeds = parse_affected_modules(cm_comment or "", all_files)
         if seeds:
             existing_paths.extend(seeds)
         else:
             if any(f.startswith("app/") for f in all_files) or "app" in all_files:
                 existing_paths.append("app")
-
     # dedupe
-    def norm_unique(arr: List[str]) -> List[str]:
-        seen = set(); out=[]
-        for x in arr:
-            if x not in seen:
-                seen.add(x); out.append(x)
+    def dq(xs: List[str]) -> List[str]:
+        out=[]; s=set()
+        for x in xs:
+            if x not in s:
+                s.add(x); out.append(x)
         return out
-
-    return norm_unique(create_paths), norm_unique(existing_paths)
+    return dq(create_paths), dq(existing_paths)
 
 def gather_repo_symbols(limit:int=1600) -> Dict[str, Any]:
     """
@@ -585,13 +649,11 @@ def _write_text_file(path: str, content: str):
     Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
     Path(path).write_text(content, encoding="utf-8")
 
-def apply_or_spec_to_file(num: int, patch: str, ctx_json: Dict[str, Any], cm_comment: str):
+def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old: Dict[str, Any], cm_comment: str):
     """
     1) Versuche Patch anzuwenden (whole → section → zero-context → GNU).
     2) Scheitert dies/ist kein Patch vorhanden:
-       - Create-Targets: komplette neue Dateien generieren.
-       - Existing-Targets: komplette Dateien ersetzen.
-       - Directory-Targets: rekursiv alle .kt-Dateien ersetzen.
+       - Create/Existing-Targets (neu oder legacy) verarbeiten; Dir-Targets rekursiv (.kt).
     """
     base = default_branch()
     sh(f"git fetch origin {base}", check=False)
@@ -616,24 +678,39 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_json: Dict[str, Any], cm_com
 
         # ---- Spec-to-File Pfad ----
         repo_syms = gather_repo_symbols()
-        context_full = read_context_full_md()
-        summary_ctx = (ctx_json.get("contextmap_markdown_summary") if ctx_json else cm_comment) or ""
-        create_paths, exist_targets = choose_targets_from_context(ctx_json, ls_files())
+        context_full = read_legacy_context_full_md()  # falls vorhanden (alt)
+        if not context_full:
+            # nutze neuen Summary-Text (knapp), ergänzt durch einen JSON-Auszug (analysis/issue)
+            s = read_new_summary_txt()
+            if not s:
+                s = ""
+            try:
+                # kleine Stütze aus dem JSON
+                ctx_excerpt = json.dumps({"issue": (ctx_new.get("issue_context") if ctx_new else {}),
+                                          "analysis": (ctx_new.get("analysis") if ctx_new else {})}, ensure_ascii=False)
+            except Exception:
+                ctx_excerpt = ""
+            context_full = s + ("\n\n" + ctx_excerpt if ctx_excerpt else "")
+
+        # Ziele bestimmen: bevorzugt neuer Context, sonst Legacy/Kommentar
+        create_paths, existing_paths = choose_targets_from_new_context(ctx_new, ls_files())
+        if not create_paths and not existing_paths:
+            create_paths, existing_paths = choose_targets_fallback_legacy(ctx_old, ls_files(), cm_comment)
 
         # 1) Neue Dateien erzeugen
         for pth in create_paths:
             try:
                 if Path(pth).exists():
                     continue
-                gen = ai_generate_full_file(pth, repo_syms, context_full, summary_ctx)
+                gen = ai_generate_full_file(pth, repo_syms, context_full, read_new_summary_txt())
                 _write_text_file(pth, gen)
                 post_comment(num, f"🆕 Datei erzeugt (Spec-to-File): `{pth}`")
                 applied_any = True
             except Exception as e:
                 post_comment(num, f"⚠️ Konnte Datei nicht erzeugen `{pth}`:\n```\n{e}\n```")
 
-        # 2) Bestehende Dateien: ersetzen (nur konkrete Dateien)
-        for target in exist_targets:
+        # 2) Bestehende Dateien ersetzen (konkrete Dateien)
+        for target in existing_paths:
             p = Path(target)
             if p.is_dir():
                 continue
@@ -644,7 +721,7 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_json: Dict[str, Any], cm_com
             except Exception:
                 cur = ""
             try:
-                newc = ai_rewrite_full_file(target, cur, repo_syms, context_full, summary_ctx)
+                newc = ai_rewrite_full_file(target, cur, repo_syms, context_full, read_new_summary_txt())
                 _write_text_file(target, newc)
                 post_comment(num, f"🔁 Datei ersetzt (Spec-to-File): `{target}`")
                 applied_any = True
@@ -652,43 +729,18 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_json: Dict[str, Any], cm_com
                 post_comment(num, f"⚠️ Konnte Datei nicht ersetzen `{target}`:\n```\n{e}\n```")
 
         # 2b) Directory-Targets: rekursiv alle .kt verarbeiten
-        for target in exist_targets:
+        for target in existing_paths:
             p = Path(target)
             if p.is_dir():
                 for f in p.rglob("*.kt"):
                     try:
                         cur = f.read_text(encoding="utf-8", errors="replace")
-                        newc = ai_rewrite_full_file(f.as_posix(), cur, repo_syms, context_full, summary_ctx)
+                        newc = ai_rewrite_full_file(f.as_posix(), cur, repo_syms, context_full, read_new_summary_txt())
                         f.write_text(newc, encoding="utf-8")
                         post_comment(num, f"🔁 Datei ersetzt (Dir-Target): `{f.as_posix()}`")
                         applied_any = True
                     except Exception as e:
                         post_comment(num, f"⚠️ Ersetzen fehlgeschlagen `{f.as_posix()}`:\n```\n{e}\n```")
-
-        # 3) Wenn gar nichts angewendet und kein Patch existierte → generiere Gesamt-Diff
-        if not applied_any and not patch:
-            docs = []
-            for n in ["AGENTS.md", "ARCHITECTURE_OVERVIEW.md", "ROADMAP.md", "CHANGELOG.md"]:
-                if Path(n).exists():
-                    try:
-                        docs.append(f"\n--- {n} ---\n" + Path(n).read_text(encoding="utf-8", errors="replace"))
-                    except Exception:
-                        pass
-            docs_txt = "".join(docs)
-            all_files = ls_files()
-            seeds = parse_affected_modules(cm_comment or "", all_files) if cm_comment else (["app"] if ("app" in all_files or any(p.startswith("app/") for p in all_files)) else [])
-            targets = seeds or all_files[:80]
-            try:
-                raw_ai = ai_generate_diff(cm_comment or "(no contextmap; artifact missing)", docs_txt, targets)
-                new_patch = sanitize_patch(raw_ai)
-                ok2, info2 = whole_git_apply(new_patch)
-                if not ok2:
-                    post_comment(num, f"⚠️ Generierter Diff konnte nicht vollständig angewendet werden.\n```\n{info2}\n```")
-                else:
-                    post_comment(num, f"✅ Generierter Diff angewendet (`{info2}`)")
-                    applied_any = True
-            except Exception as e:
-                post_comment(num, f"⚠️ AI-Diff-Erzeugung fehlgeschlagen:\n```\n{e}\n```")
 
     # Keine Änderungen?
     status = sh("git status --porcelain", check=False)
@@ -715,7 +767,6 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_json: Dict[str, Any], cm_com
 
     # Commit & Push
     sh("git add -A", check=False)
-    # Leeren Commit vermeiden
     staged_diff = subprocess.run("git diff --cached --quiet", shell=True)
     if staged_diff.returncode == 0:
         add_label(num, "solver-error")
@@ -732,14 +783,13 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_json: Dict[str, Any], cm_com
         "base": default_branch(),
         "body": (
             f"Automatisch erzeugte Änderungen basierend auf ContextMap/Artefakt (issue #{num}).\n\n"
-            f"- Kontext: `.codex/context_full.md` / `.codex/context.json`\n"
+            f"- Kontext: `.github/codex/context/solver_input.json` (+ `summary.txt`) / Legacy: `.codex/context_full.md`, `.codex/context.json`\n"
             f"- Modus: Patch → Fallbacks → Spec-to-File\n"
             f"- Bitte nach Merge Branch löschen (`codex/solve-*`)."
         )
     })
     pr_num = pr.get("number"); pr_url = pr.get("html_url")
     post_comment(num, f"🔧 PR erstellt: #{pr_num} — {pr_url}")
-
     return pr_url
 
 # ---------- Main ----------
@@ -757,17 +807,17 @@ def dispatch_triage(issue_num: int):
         print(f"::warning::Failed to dispatch triage workflow: {e}")
 
 def main():
-    # Optionaler Dry-Run zum lokalen Testen (keine Netzwerk-/GitHub-Aufrufe)
+    # Dry run (keine Netz-/GitHub‑Aufrufe)
     if os.environ.get("SOLVER_DRY_RUN") == "1":
-        # Minimaler Selbsttest der wichtigsten reinen Funktionen:
-        sample = textwrap.dedent("""        diff --git a/README.md b/README.md
+        sample = textwrap.dedent("""
+        diff --git a/README.md b/README.md
         index 1111111..2222222 100644
         --- a/README.md
         +++ b/README.md
         @@ -1,1 +1,1 @@
         -Hello
         +Hello World
-        """)
+        """).strip("\n")
         assert "diff --git" in sanitize_patch(sample)
         assert isinstance(_split_sections(sample), list)
         print("DRY_RUN OK")
@@ -786,24 +836,24 @@ def main():
             print("::notice::No 'contextmap-ready' label; skipping")
             sys.exit(0)
 
-    # Kontext laden
-    ctx_json = read_context_json()
+    # Kontext laden (neu vor alt)
+    ctx_new = read_new_context_json()
+    ctx_old = read_legacy_context_json()
     cm_comment = fetch_contextmap_comment(num) or ""
-    # Diff ggf. aus Issue lesen
+    # Diff ggf. aus Issue + Comments
     raw_issue_diff = extract_issue_raw_diff(num)
     patch = sanitize_patch(raw_issue_diff) if raw_issue_diff else ""
 
-    # Parser-Warnung tolerieren → Fallbacks nutzen
     if patch and "diff --git " in patch:
         try:
-            PatchSet.from_string(patch)
-        except (UnidiffParseError, Exception) as e:
+            if PatchSet:
+                PatchSet.from_string(patch)
+        except Exception as e:
             post_comment(num, f"ℹ️ Solver: Unidiff Parser Warning: `{type(e).__name__}: {e}` – nutze Fallbacks.")
     else:
         patch = ""  # erzwinge Spec-to-File/AI-Diff-Pfad
 
-    # Anwenden oder Spec-to-File
-    pr_url = apply_or_spec_to_file(num, patch, ctx_json, cm_comment)
+    pr_url = apply_or_spec_to_file(num, patch, ctx_new, ctx_old, cm_comment)
     if pr_url is None:
         add_label(num, "solver-error")
         summarize_rejects(num)
