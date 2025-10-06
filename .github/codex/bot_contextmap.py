@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ContextMap Bot (enhanced)
+ContextMap Bot (enhanced + preanalysis + autolabel + comment)
 - Scans ALL files in the repository working tree (tracked + untracked), excluding only common build and VCS dirs.
 - Fetches the triggering Issue/Comment via GitHub API, extracts referenced paths and URLs.
 - Downloads *attached* files from the Issue body (GitHub assets / user-images) and embeds them 1:1.
@@ -12,32 +12,22 @@ ContextMap Bot (enhanced)
   * 1:1 contents for all repo text files, chunked if large (binaries base64 if small, or summarized + artifact hint)
   * Deep analysis (modules, Compose/@Composable counts, Focus heuristics, Gradle + AndroidManifest overview)
 - Writes outputs to .github/codex/context/ and prints a compact summary for the job log.
-
-Environment:
-- Requires GITHUB_TOKEN, GITHUB_REPOSITORY, GITHUB_EVENT_NAME, GITHUB_EVENT_PATH provided by GitHub Actions.
-- Assumes actions/checkout with lfs:true and submodules:recursive.
-
-Notes:
-- Extremely large repos can produce huge JSON. This bot embeds everything by default to honor "1:1 availability".
-  You can tune limits via CLI args or environment variables if needed (see DEFAULTS below).
+- NEW:
+  * Adds the 'contextmap-ready' label automatically (issues/issue_comment).
+  * Posts a concise PROBLEM DESCRIPTION + DETAILED PREANALYSIS comment to the issue for the Solver.
 """
 
 import os
 import re
-import io
 import sys
 import json
 import time
 import gzip
-import math
-import glob
 import base64
-import shutil
 import hashlib
 import logging
 import mimetypes
 import subprocess
-from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Optional, Tuple
 
 try:
@@ -59,7 +49,6 @@ DEFAULT_EXCLUDE_DIRS = {
 }
 DEFAULT_MAX_TEXT_EMBED_BYTES = int(os.getenv("CODEX_MAX_TEXT_EMBED_BYTES", "1048576"))  # 1 MiB per file
 DEFAULT_MAX_BIN_BASE64_BYTES = int(os.getenv("CODEX_MAX_BIN_BASE64_BYTES", "524288"))   # 512 KiB per file
-DEFAULT_MAX_TOTAL_JSON_MB = int(os.getenv("CODEX_MAX_TOTAL_JSON_MB", "200"))            # 200 MB safety
 DEFAULT_ALWAYS_EMBED_REFERENCED = True  # Always embed referenced/attached files 1:1 regardless of size
 
 WORK_DIR = os.path.abspath(".")
@@ -84,18 +73,13 @@ def git_ls_files() -> List[str]:
         return []
     return [line.strip() for line in out.splitlines() if line.strip()]
 
-def git_hash_object(path: str) -> Optional[str]:
-    code, out, err = run(["git", "hash-object", path])
-    if code != 0:
-        return None
-    return out.strip()
-
 def is_probably_text(data: bytes) -> bool:
     if b"\x00" in data[:4096]:
         return False
     # Heuristic: if mostly printable
-    text_chars = sum(c >= 9 and c <= 13 or (32 <= c <= 126) for c in data[:4096])
-    return (text_chars / max(1, len(data[:4096]))) > 0.85
+    sample = data[:4096]
+    text_chars = sum(c >= 9 and c <= 13 or (32 <= c <= 126) for c in sample)
+    return (text_chars / max(1, len(sample))) > 0.85
 
 def detect_encoding(data: bytes) -> str:
     if not HAVE_CHARDET:
@@ -153,15 +137,8 @@ def github_api_post_json(url: str, token: str, payload: dict):
     r = requests.post(url, headers=headers, json=payload, timeout=30)
     return r
 
-    headers = {"Accept": accept}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    r = requests.get(url, headers=headers, allow_redirects=True, timeout=60)
-    r.raise_for_status()
-    return r
-
 def fetch_issue_context(event: Dict[str, Any], repo: str, token: str) -> Dict[str, Any]:
-    """Return dict with: type ('issues'|'issue_comment'|'workflow_dispatch'), issue_number, body, title, urls."""
+    """Return dict with: type ('issues'|'issue_comment'|'workflow_dispatch'), issue_number, body, title."""
     evname = os.getenv("GITHUB_EVENT_NAME", "")
     ctx = {"event_name": evname, "issue_number": None, "title": "", "body": ""}
     if evname == "issues":
@@ -179,15 +156,14 @@ def fetch_issue_context(event: Dict[str, Any], repo: str, token: str) -> Dict[st
         ctx["body"] = comment.get("body", "") or ""
     else:
         # e.g., workflow_dispatch
-        # Try to fetch last opened issue with /codex trigger? Otherwise empty.
         ctx["title"] = event.get("inputs", {}).get("title", "")
         ctx["body"] = event.get("inputs", {}).get("body", "")
     return ctx
 
 # ------------------------- Reference parsing -------------------------
-
+# Allow spaces in paths and include .sql
 PATH_PATTERN = re.compile(r"""(?P<path>
-    (?:[A-Za-z0-9_\-./]+/)*[A-Za-z0-9_\-./]+\.(?:kt|java|kts|gradle|xml|md|txt|yml|yaml|json|tf|properties|py|sh|bat|ps1|tl|proto|cc|cpp|hpp|c|h|dart|swift|go|rs|ini|cfg|csv|ts|tsx|jsx|html|css|scss)
+    (?:[A-Za-z0-9_\-./ ]+/)*[A-Za-z0-9_\-./ ]+\.(?:kt|java|kts|gradle|xml|md|txt|yml|yaml|json|tf|properties|py|sh|bat|ps1|tl|proto|cc|cpp|hpp|c|h|dart|swift|go|rs|ini|cfg|csv|ts|tsx|jsx|html|css|scss|sql)
 )""", re.VERBOSE)
 
 URL_PATTERN = re.compile(r"""https?://[^\s)>'"]+""")
@@ -203,10 +179,10 @@ def extract_paths_and_urls(text: str) -> Tuple[List[str], List[str]]:
         paths.add(m.group(1).strip())
 
     # From code blocks/backticks and plain text
-    for m in PATH_PATTERN.finditer(text):
+    for m in PATH_PATTERN.finditer(text or ""):
         paths.add(m.group("path").strip())
 
-    for m in URL_PATTERN.finditer(text):
+    for m in URL_PATTERN.finditer(text or ""):
         urls.add(m.group(0).strip())
 
     return sorted(paths), sorted(urls)
@@ -325,7 +301,7 @@ def read_repo_file(path: str, always_embed: bool=False) -> Dict[str, Any]:
         info["submodule_hint"] = True
 
     # content embedding
-    if is_probably_text(b) or path.endswith((".gradle",".kts",".xml",".md",".txt",".json",".yml",".yaml",".kt",".java",".py",".sh",".bat",".ps1",".properties",".cfg",".ini",".csv",".proto",".tl",".go",".rs",".swift",".dart",".html",".css",".scss",".ts",".tsx",".jsx",".c",".h",".cc",".cpp",".hpp")):
+    if is_probably_text(b) or path.endswith((".gradle",".kts",".xml",".md",".txt",".json",".yml",".yaml",".kt",".java",".py",".sh",".bat",".ps1",".properties",".cfg",".ini",".csv",".proto",".tl",".go",".rs",".swift",".dart",".html",".css",".scss",".ts",".tsx",".jsx",".c",".h",".cc",".cpp",".hpp",".sql")):
         info["is_text"] = True
         enc = detect_encoding(b)
         try:
@@ -453,6 +429,35 @@ def language_stats() -> Dict[str, Any]:
     # sizes in KB
     return {k: round(v/1024, 2) for k, v in sorted(exts.items(), key=lambda kv: kv[1], reverse=True)}
 
+# ------------------------- Heuristics for Telegram Preanalysis -------------------------
+
+def find_related_files(keywords: List[str], limit: int = 60) -> List[str]:
+    acc = []
+    keys = [k.lower() for k in keywords]
+    for p in list_all_files():
+        lp = p.lower()
+        if any(k in lp for k in keys):
+            # skip generated/build
+            if "/build/" in lp or "/.gradle/" in lp or lp.startswith(".github/"):
+                continue
+            acc.append(p)
+            if len(acc) >= limit:
+                break
+    return acc
+
+def summarize_issue_problem(body: str) -> str:
+    # Very lightweight extraction: build a clean paragraph out of the issue body
+    body = (body or "").strip()
+    # keep first ~1200 chars for the comment
+    return body[:1200]
+
+def post_issue_comment(issue_number: Optional[int], repo: str, token: str, body: str):
+    if not (issue_number and repo and token and body):
+        return
+    url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
+    r = github_api_post_json(url, token, {"body": body})
+    if r is None or r.status_code >= 300:
+        logging.warning("Failed to post issue comment: %s", getattr(r, "text", "")[:300])
 
 # ------------------------- Label helper -------------------------
 
@@ -593,54 +598,52 @@ def main():
     print(f"Gzipped copy          → {OUT_JSON}.gz")
     print(f"Summary               → {OUT_SUMMARY}")
 
+    # -------- Post concise PROBLEM + PREANALYSIS comment --------
+    issue_no = ictx.get("issue_number")
+    if issue_no:
+        # Heuristic preanalysis for Telegram auth topic
+        related = find_related_files(["telegram", "tdlib", "tg", "auth", "login", "code", "qr", "otp", "twofactor", "td lib", "telethon"])
+        # Check single-source docs presence
+        docs_present = [p for p in allfiles if p.lower().endswith("tools/telegram api readme.txt".lower()) or p.lower().endswith("tools/td lib api scheme.tl".lower())]
+        # Build comment
+        problem = summarize_issue_problem(body)
+        preview_related = "\n".join(f"- `{p}`" for p in related[:20]) or "- (keine offensichtlichen Module gefunden)"
+        preview_docs = "\n".join(f"- `{p}`" for p in docs_present) or "- (nicht gefunden)"
+        short_hints = [
+            "UI-Flows verifizieren (OK/Abbrechen, Navigation, Fokus/DPAD, BringIntoView).",
+            "Eingabedialog für Login-Code korrekt triggern (Zeitpunkt, State).",
+            "TDLib/Telegram-Auth gegen aktuellen Standard prüfen (Single-Device Code-Flow).",
+            "Snackbars/Toasts für Fortschritt/Fehler mit eindeutigen Messages.",
+            "Fehlerfälle: Netzwerk, Rate-Limits, falscher Code, Two-Factor, Session-Refresh.",
+        ]
+        comment_body = (
+f"""**ContextMap ready** ✅
+
+### Problem (aus dem Issue)
+{problem}
+
+### Voranalyse (für den Solver)
+- Referenzierte Pfade erkannt: {len(ref_paths)}  — {", ".join(ref_paths) if ref_paths else "(keine expliziten Pfade)"}  
+- Nachschlagewerke im Repo:
+{preview_docs}
+
+- Vermutlich relevante Module/Dateien (Heuristik):
+{preview_related}
+
+- Repo-Kurzprofil: Kotlin-Dateien {comp.get('kotlin_files',0)}, @Composable {comp.get('composables',0)}, focusable() {comp.get('focusable_usages',0)}.
+
+### To‑do‑Hints
+{os.linesep.join(f"- {h}" for h in short_hints)}
+
+**Artefakte**: `solver_input.json`, `summary.txt` (inkl. Deep-Analyse)."""
+        )
+        post_issue_comment(issue_no, repo, token, comment_body)
+
     # Auto-label context readiness
     evn = os.getenv("GITHUB_EVENT_NAME", "")
     if evn in ("issues", "issue_comment"):
         repo_env, token_env = get_repo_env()
-        add_contextmap_ready_label(ictx.get("issue_number"), repo_env, token_env)
+        add_contextmap_ready_label(issue_no, repo_env, token_env)
 
 if __name__ == "__main__":
-    try:
-        main()
-        # --- NEU: Output setzen für GitHub Workflow ---
-        # Schreibe summary.txt als Workflow-Output "summary"
-        summary_path = ".github/codex/context/summary.txt"
-        if os.path.exists(summary_path):
-            with open(summary_path, "r", encoding="utf-8") as f:
-                summary_text = f.read()
-            # Output für GitHub Actions
-            # (Schreibe in $GITHUB_OUTPUT falls vorhanden)
-            github_output = os.environ.get("GITHUB_OUTPUT")
-            if github_output:
-                with open(github_output, "a", encoding="utf-8") as fh:
-                    fh.write("summary<<EOF\n")
-                    fh.write(summary_text)
-                    fh.write("\nEOF\n")
-            # Legacy: Zusätzlich als Log für Diagnose
-            print("\n::notice::ContextMap Summary:\n" + summary_text)
-    except Exception as e:
-        # Versuche, Issue-Nummer und Repo aus Env zu holen
-        repo = os.getenv("GITHUB_REPOSITORY", "")
-        token = os.getenv("GITHUB_TOKEN", "")
-        event = load_event_payload()
-        ictx = fetch_issue_context(event, repo, token)
-        issue_number = ictx.get("issue_number")
-        # Setze Label 'contextmap-error'
-        try:
-            if issue_number and repo and token:
-                url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/labels"
-                github_api_post_json(url, token, {"labels": ["contextmap-error"]})
-        except Exception as e_label:
-            logging.warning(f"Fehler beim Label-Setzen: {e_label}")
-
-        # Schreibe Kommentar zum Issue
-        try:
-            if issue_number and repo and token:
-                url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
-                error_msg = f"❌ Fehler im ContextMap Bot:\n```\n{type(e).__name__}: {e}\n```"
-                github_api_post_json(url, token, {"body": error_msg})
-        except Exception as e_comment:
-            logging.warning(f"Fehler beim Kommentieren: {e_comment}")
-
-        print(f"::error::ContextMap-Bot Exception: {e}")
-        sys.exit(1)
+    main()
