@@ -4,11 +4,13 @@ import android.app.Service
 import android.content.Intent
 import android.os.*
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.telegram.TdLibReflection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -390,7 +392,7 @@ class TelegramTdlibService : Service() {
         clientHandle?.let {
             try {
                 val sanitized = sanitizePhone(phone)
-                android.util.Log.i("TdSvc", "Submitting phone number to TDLib (masked)")
+                Log.i("TdSvc", "Submitting phone number to TDLib (masked)")
                 val tokens = synchronized(authTokens) { authTokens.toList() }
                 val settings = TdLibReflection.PhoneAuthSettings(
                     allowFlashCall = allowFlash,
@@ -724,11 +726,11 @@ class TelegramTdlibService : Service() {
         try {
             val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
             val chId = "tdlib"
-            if (android.os.Build.VERSION.SDK_INT >= 26) {
+            if (Build.VERSION.SDK_INT >= 26) {
                 val ch = android.app.NotificationChannel(chId, "Telegram", android.app.NotificationManager.IMPORTANCE_LOW)
                 nm.createNotificationChannel(ch)
             }
-            val notif = androidx.core.app.NotificationCompat.Builder(this, chId)
+            val notif = NotificationCompat.Builder(this, chId)
                 .setContentTitle("Telegram aktiv")
                 .setContentText("Anmeldung/Sync läuft…")
                 .setSmallIcon(android.R.drawable.stat_sys_download)
@@ -743,7 +745,7 @@ class TelegramTdlibService : Service() {
         if (!isForeground) return
         try {
             if (Build.VERSION.SDK_INT >= 24) {
-                stopForeground(STOP_FOREGROUND_DETACH)
+                stopForeground(Service.STOP_FOREGROUND_DETACH)
             } else {
                 @Suppress("DEPRECATION")
                 stopForeground(true)
