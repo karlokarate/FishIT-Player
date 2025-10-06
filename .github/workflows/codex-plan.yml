@@ -65,10 +65,12 @@ jobs:
           mkdir -p .codex
           python .github/codex/bot_contextmap.py
 
-      - name: Upload context artifact for Solver
+      - name: Upload context artifacts for Solver
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: codex-context-${{ github.event.issue.number }}
-          path: .codex/context.json
+          path: |
+            .codex/context.json
+            .codex/context_full.md
           if-no-files-found: warn
