@@ -6,9 +6,8 @@ on:
   workflow_dispatch:
     inputs:
       issue:
-        description: "Issue-Nummer (optional; überschreibt Event)"
-        required: false
-        default: ""
+        description: "Issue number to solve"
+        required: true
 
 permissions:
   contents: write
@@ -17,16 +16,12 @@ permissions:
   issues: write
 
 concurrency:
-  group: codex-solve-${{ github.event.issue.number || inputs.issue || github.run_id }}
-  cancel-in-progress: false
+  group: codex-solve-issue-${{ github.event.inputs.issue || github.event.issue.number }}
+  cancel-in-progress: true
 
 jobs:
   solve:
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issues' &&
-       github.event.action == 'labeled' &&
-       github.event.label.name == 'contextmap-ready')
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.label.name, 'contextmap-ready') }}
     runs-on: ubuntu-latest
 
     steps:
@@ -40,34 +35,52 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Show tool versions
-        run: |
-          git --version
-          python --version
-          patch --version || true
-
-      - name: Install Python deps
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade openai requests unidiff
 
-      - name: Export env (GH_EVENT_NAME, ISSUE_NUMBER)
+      - name: Resolve ISSUE_NUMBER
+        id: res
         run: |
-          echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
-          echo "ISSUE_NUMBER=${{ inputs.issue }}" >> $GITHUB_ENV
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ISSUE_NUMBER=${{ github.event.inputs.issue }}" >> $GITHUB_ENV
+          else
+            echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
+          fi
 
-      - name: Run Solver (Bot 2)
+      # Versuche, das Artefakt aus Bot 1 (codex-plan.yml) zu laden
+      - name: Download context artifact from Bot 1 (if available)
+        uses: dawidd6/action-download-artifact@v3
+        continue-on-error: true
+        with:
+          name: codex-context-${{ env.ISSUE_NUMBER }}
+          workflow: codex-plan.yml
+          path: ./
+          if_no_artifact_found: ignore
+
+      - name: Inspect context files
+        run: |
+          mkdir -p .codex
+          # Verschiebe ggf. aus root in .codex (falls der Download die Dateien im Root ablegte)
+          if [ -f "./context.json" ]; then mv ./context.json .codex/context.json; fi
+          if [ -f "./context_full.md" ]; then mv ./context_full.md .codex/context_full.md; fi
+          ls -la .codex || true
+
+      - name: Run Solver (high)
         env:
+          # OpenAI
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}  # z.B. gpt-5
           OPENAI_REASONING_EFFORT: high
-
+          # GitHub
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GH_EVENT_NAME: ${{ env.GH_EVENT_NAME }}
-
-          SOLVER_BUILD_WORKFLOW: ${{ vars.SOLVER_BUILD_WORKFLOW || 'release-apk.yml' }}
+          GH_EVENT_NAME: ${{ github.event_name }}
           ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
-        run: python .github/codex/bot_solver.py
+          # Build-Workflow (für Post-Build-Test)
+          SOLVER_BUILD_WORKFLOW: ${{ vars.SOLVER_BUILD_WORKFLOW || 'release-apk.yml' }}
+        run: |
+          python .github/codex/bot_solver.py
