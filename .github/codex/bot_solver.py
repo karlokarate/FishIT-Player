@@ -21,27 +21,39 @@ Deps: openai, requests, unidiff
 """
 
 from __future__ import annotations
-import os, re, json, time, subprocess, sys, glob, textwrap
+import os
+import re
+import json
+import time
+import subprocess
+import sys
+import glob
+import textwrap
 from pathlib import Path
 from typing import List, Tuple, Optional, Set, Dict, Any
 
 import requests
-from unidiff import PatchSet
-from unidiff.errors import UnidiffParseError
+try:
+    from unidiff import PatchSet
+    from unidiff.errors import UnidiffParseError
+except Exception:
+    PatchSet = None
+    class UnidiffParseError(Exception):
+        pass
 
 # ---------- Utility: Retry ----------
 def _retry(fn, tries: int = 3, delay: float = 2.0):
     for i in range(tries):
         try:
             return fn()
-        except Exception as e:
+        except Exception:
             if i == tries - 1:
                 raise
             time.sleep(delay * (i + 1))
 
 # ---------- GitHub helpers ----------
 def repo() -> str:
-    return os.environ["GITHUB_REPOSITORY"]
+    return os.environ.get("GITHUB_REPOSITORY", "")
 
 def event() -> dict:
     path = os.environ.get("GITHUB_EVENT_PATH") or ""
@@ -66,7 +78,7 @@ def issue_number() -> Optional[int]:
     if env_issue:
         try:
             return int(env_issue)
-        except:
+        except Exception:
             pass
     ev = event()
     if "issue" in ev:
@@ -279,6 +291,7 @@ def _gnu_patch_apply(tmp: str, p: int, rej_path: str) -> subprocess.CompletedPro
 
 def whole_git_apply(patch_text: str) -> Tuple[bool, str]:
     tmp = ".github/codex/_solver_all.patch"
+    Path(tmp).parent.mkdir(parents=True, exist_ok=True)
     Path(tmp).write_text(patch_text, encoding="utf-8")
     uses_ab = patch_uses_ab_prefix(patch_text)
     last_err = ""
@@ -291,6 +304,7 @@ def whole_git_apply(patch_text: str) -> Tuple[bool, str]:
 
 def apply_section(sec_text: str, idx: int) -> bool:
     tmp = f".github/codex/_solver_sec_{idx}.patch"
+    Path(tmp).parent.mkdir(parents=True, exist_ok=True)
     Path(tmp).write_text(sec_text, encoding="utf-8")
     uses_ab = patch_uses_ab_prefix(sec_text)
     for p, three, extra in _git_apply_matrix(tmp, uses_ab):
@@ -313,7 +327,7 @@ def apply_section(sec_text: str, idx: int) -> bool:
 
 # ---------- OpenAI helpers ----------
 def _openai_client():
-    from openai import OpenAI
+    from openai import OpenAI  # lazy import
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY not set")
@@ -421,6 +435,8 @@ def ai_rewrite_full_file(path: str, current: str, repo_symbols: Dict[str, Any], 
 Current file content:
 ```kotlin
 {current}
+```
+
 Symbols preview:
 {textwrap.shorten(json.dumps(repo_symbols, ensure_ascii=False), width=6000, placeholder=' …')}
 
@@ -430,387 +446,403 @@ Short Context:
 Full Context (excerpt):
 {textwrap.shorten(context_full or '', width=8000, placeholder=' …')}
 """
-resp = _retry(lambda: client.responses.create(
-model=model,
-input=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": USER}],
-reasoning={"effort": effort},
-))
-out = getattr(resp, "output_text", "") or ""
-out = _strip_outer_code_fences(out)
-if not out.strip():
-raise RuntimeError("AI rewrite returned empty content")
-return out
-
----------- Build dispatch ----------
-
-def default_branch() -> str:
-return gh_api("GET", f"/repos/{repo()}").get("default_branch", "main")
-
-def dispatch_build(workflow_ident: str, ref_branch: str, inputs: dict | None) -> str:
-gh_api("POST", f"/repos/{repo()}/actions/workflows/{workflow_ident}/dispatches", {"ref": ref_branch, "inputs": inputs or {}})
-return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-
-def wait_build_result(workflow_ident: str, ref_branch: str, since_iso: str, timeout_s=1800) -> dict:
-base = f"/repos/{repo()}/actions/workflows/{workflow_ident}/runs"
-t0 = time.time()
-while True:
-try:
-runs = gh_api("GET", f"{base}?event=workflow_dispatch&branch={ref_branch}")
-arr = runs.get("workflow_runs", []) or []
-cands = [r for r in arr if r.get("head_branch") == ref_branch and r.get("created_at", "") >= since_iso]
-cand = cands[0] if cands else {}
-if cand:
-rid = cand.get("id")
-while True:
-run = gh_api("GET", f"/repos/{repo()}/actions/runs/{rid}")
-if run.get("status") == "completed":
-return run
-if time.time() - t0 > timeout_s:
-return run
-time.sleep(6)
-except Exception:
-if time.time() - t0 > timeout_s:
-return {}
-if time.time() - t0 > timeout_s:
-return {}
-time.sleep(3)
-
----------- Summaries ----------
-
-def summarize_rejects(num: int):
-rej_files = glob.glob("**/*.rej", recursive=True)
-if not rej_files:
-return
-preview = []
-for rf in rej_files[:10]:
-try:
-txt = Path(rf).read_text(encoding="utf-8", errors="replace")
-except Exception:
-txt = ""
-preview.append(f"\n--- {rf} ---\n{txt[:500]}")
-body = "⚠️ Solver: Einige Hunks wurden als .rej abgelegt (manuelle Nacharbeit möglich):\n" +
-"\n".join(f"- {r}" for r in rej_files[:50])
-if preview:
-body += "\n\ndiff\n" + "".join(preview) + "\n"
-post_comment(num, body)
-
----------- Solver strategy ----------
-
-def choose_targets_from_context(ctx: Dict[str, Any], all_files: List[str]) -> Tuple[List[str], List[str]]:
-"""
-Liefert (create_paths, existing_paths) aus context.json + existence_map.
-Fallback: Context-Kommentar-Module oder 'app'.
-"""
-create_paths: List[str] = []
-existing_paths: List[str] = []
-if ctx:
-    mentioned = ctx.get("mentioned_paths") or []
-    exists_map = ctx.get("mentioned_paths_exists") or {}
-    for p in mentioned:
-        if exists_map.get(p) is False:
-            create_paths.append(p)
-        elif exists_map.get(p) is True:
-            existing_paths.append(p)
-    if not mentioned:
-        if any(f.startswith("app/") for f in all_files) or "app" in all_files:
-            existing_paths.append("app")
-else:
-    cm = fetch_contextmap_comment(issue_number() or 0) or ""
-    seeds = parse_affected_modules(cm, all_files)
-    if seeds:
-        existing_paths.extend(seeds)
-    else:
-        if any(f.startswith("app/") for f in all_files) or "app" in all_files:
-            existing_paths.append("app")
-
-# dedupe
-def norm_unique(arr: List[str]) -> List[str]:
-    seen = set(); out=[]
-    for x in arr:
-        if x not in seen:
-            seen.add(x); out.append(x)
+    resp = _retry(lambda: client.responses.create(
+        model=model,
+        input=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": USER}],
+        reasoning={"effort": effort},
+    ))
+    out = getattr(resp, "output_text", "") or ""
+    out = _strip_outer_code_fences(out)
+    if not out.strip():
+        raise RuntimeError("AI rewrite returned empty content")
     return out
 
-return norm_unique(create_paths), norm_unique(existing_paths)
+# ---------- Build dispatch ----------
+def default_branch() -> str:
+    return gh_api("GET", f"/repos/{repo()}").get("default_branch", "main")
+
+def dispatch_build(workflow_ident: str, ref_branch: str, inputs: dict | None) -> str:
+    gh_api("POST", f"/repos/{repo()}/actions/workflows/{workflow_ident}/dispatches", {"ref": ref_branch, "inputs": inputs or {}})
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+def wait_build_result(workflow_ident: str, ref_branch: str, since_iso: str, timeout_s=1800) -> dict:
+    base = f"/repos/{repo()}/actions/workflows/{workflow_ident}/runs"
+    t0 = time.time()
+    while True:
+        try:
+            runs = gh_api("GET", f"{base}?event=workflow_dispatch&branch={ref_branch}")
+            arr = runs.get("workflow_runs", []) or []
+            cands = [r for r in arr if r.get("head_branch") == ref_branch and r.get("created_at", "") >= since_iso]
+            cand = cands[0] if cands else {}
+            if cand:
+                rid = cand.get("id")
+                while True:
+                    run = gh_api("GET", f"/repos/{repo()}/actions/runs/{rid}")
+                    if run.get("status") == "completed":
+                        return run
+                    if time.time() - t0 > timeout_s:
+                        return run
+                    time.sleep(6)
+        except Exception:
+            if time.time() - t0 > timeout_s:
+                return {}
+        if time.time() - t0 > timeout_s:
+            return {}
+        time.sleep(3)
+
+# ---------- Summaries ----------
+def summarize_rejects(num: int):
+    rej_files = glob.glob("**/*.rej", recursive=True)
+    if not rej_files:
+        return
+    preview = []
+    for rf in rej_files[:10]:
+        try:
+            txt = Path(rf).read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            txt = ""
+        preview.append(f"\n--- {rf} ---\n{txt[:500]}")
+    body = "⚠️ Solver: Einige Hunks wurden als `.rej` abgelegt (manuelle Nacharbeit möglich):\n" +            "\n".join(f"- {r}" for r in rej_files[:50])
+    if preview:
+        body += "\n\n```diff\n" + "".join(preview) + "\n```"
+    post_comment(num, body)
+
+# ---------- Solver strategy ----------
+def choose_targets_from_context(ctx: Dict[str, Any], all_files: List[str]) -> Tuple[List[str], List[str]]:
+    """
+    Liefert (create_paths, existing_paths) aus context.json + existence_map.
+    Fallback: Context-Kommentar-Module oder 'app'.
+    """
+    create_paths: List[str] = []
+    existing_paths: List[str] = []
+
+    if ctx:
+        mentioned = ctx.get("mentioned_paths") or []
+        exists_map = ctx.get("mentioned_paths_exists") or {}
+        for p in mentioned:
+            if exists_map.get(p) is False:
+                create_paths.append(p)
+            elif exists_map.get(p) is True:
+                existing_paths.append(p)
+        if not mentioned:
+            if any(f.startswith("app/") for f in all_files) or "app" in all_files:
+                existing_paths.append("app")
+    else:
+        cm = fetch_contextmap_comment(issue_number() or 0) or ""
+        seeds = parse_affected_modules(cm, all_files)
+        if seeds:
+            existing_paths.extend(seeds)
+        else:
+            if any(f.startswith("app/") for f in all_files) or "app" in all_files:
+                existing_paths.append("app")
+
+    # dedupe
+    def norm_unique(arr: List[str]) -> List[str]:
+        seen = set(); out=[]
+        for x in arr:
+            if x not in seen:
+                seen.add(x); out.append(x)
+        return out
+
+    return norm_unique(create_paths), norm_unique(existing_paths)
+
 def gather_repo_symbols(limit:int=1600) -> Dict[str, Any]:
-"""
-Leichtgewichtige Kotlin-Symbolsammlung für Prompts.
-"""
-files = ls_files()
-symbols=[]; cnt=0
-for f in files:
-if not f.endswith(".kt"): continue
-if "/build/" in f or "/generated/" in f: continue
-if cnt >= limit: break
-try:
-t = Path(f).read_text(encoding="utf-8", errors="replace")
-except Exception:
-continue
-pkg = re.search(r"^\s*package\s+([a-zA-Z0-9_.]+)", t, flags=re.MULTILINE)
-pkgname = pkg.group(1) if pkg else ""
-for line in t.splitlines():
-line=line.strip()
-m_class = re.match(r"(?:public\s+)?(?:data\s+)?class\s+([A-Za-z0-9_]+)", line)
-m_obj = re.match(r"(?:public\s+)?object\s+([A-Za-z0-9_]+)", line)
-m_comp = re.match(r"@Composable\s+fun\s+([A-Za-z0-9_]+)(", line)
-m_fun = re.match(r"(?:public\s+)?fun\s+([A-Za-z0-9_]+)(", line)
-if m_class:
-symbols.append({"file":f,"package":pkgname,"kind":"class","name":m_class.group(1)})
-elif m_obj:
-symbols.append({"file":f,"package":pkgname,"kind":"object","name":m_obj.group(1)})
-elif m_comp:
-symbols.append({"file":f,"package":pkgname,"kind":"composable","name":m_comp.group(1)})
-elif m_fun:
-symbols.append({"file":f,"package":pkgname,"kind":"fun","name":m_fun.group(1)})
-cnt += 1
-if cnt >= limit:
-break
-return {"count": len(symbols), "items": symbols}
+    """
+    Leichtgewichtige Kotlin-Symbolsammlung für Prompts.
+    """
+    files = ls_files()
+    symbols=[]; cnt=0
+    for f in files:
+        if not f.endswith(".kt"): continue
+        if "/build/" in f or "/generated/" in f: continue
+        if cnt >= limit: break
+        try:
+            t = Path(f).read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        pkg = re.search(r"^\s*package\s+([a-zA-Z0-9_.]+)", t, flags=re.MULTILINE)
+        pkgname = pkg.group(1) if pkg else ""
+        for line in t.splitlines():
+            line=line.strip()
+            m_class = re.match(r"(?:public\s+)?(?:data\s+)?class\s+([A-Za-z0-9_]+)", line)
+            m_obj   = re.match(r"(?:public\s+)?object\s+([A-Za-z0-9_]+)", line)
+            m_comp  = re.match(r"@Composable\s+fun\s+([A-Za-z0-9_]+)\(", line)
+            m_fun   = re.match(r"(?:public\s+)?fun\s+([A-Za-z0-9_]+)\(", line)
+            if m_class:
+                symbols.append({"file":f,"package":pkgname,"kind":"class","name":m_class.group(1)})
+            elif m_obj:
+                symbols.append({"file":f,"package":pkgname,"kind":"object","name":m_obj.group(1)})
+            elif m_comp:
+                symbols.append({"file":f,"package":pkgname,"kind":"composable","name":m_comp.group(1)})
+            elif m_fun:
+                symbols.append({"file":f,"package":pkgname,"kind":"fun","name":m_fun.group(1)})
+                cnt += 1
+            if cnt >= limit:
+                break
+    return {"count": len(symbols), "items": symbols}
 
 def _write_text_file(path: str, content: str):
-Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
-Path(path).write_text(content, encoding="utf-8")
+    Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(content, encoding="utf-8")
 
 def apply_or_spec_to_file(num: int, patch: str, ctx_json: Dict[str, Any], cm_comment: str):
-"""
-1) Versuche Patch anzuwenden (whole → section → zero-context → GNU).
-2) Scheitert dies/ist kein Patch vorhanden:
-- Create-Targets: komplette neue Dateien generieren.
-- Existing-Targets: komplette Dateien ersetzen.
-- Directory-Targets: rekursiv alle .kt-Dateien ersetzen.
-"""
-base = default_branch()
-sh(f"git fetch origin {base}", check=False)
-sh(f"git checkout -B codex/solve-{int(time.time())} origin/{base}")
-branch = sh("git rev-parse --abbrev-ref HEAD").strip()
-ok, info = whole_git_apply(patch) if patch else (False, "no patch text")
-applied_any = False
+    """
+    1) Versuche Patch anzuwenden (whole → section → zero-context → GNU).
+    2) Scheitert dies/ist kein Patch vorhanden:
+       - Create-Targets: komplette neue Dateien generieren.
+       - Existing-Targets: komplette Dateien ersetzen.
+       - Directory-Targets: rekursiv alle .kt-Dateien ersetzen.
+    """
+    base = default_branch()
+    sh(f"git fetch origin {base}", check=False)
+    sh(f"git checkout -B codex/solve-{int(time.time())} origin/{base}")
+    branch = sh("git rev-parse --abbrev-ref HEAD").strip()
 
-if ok:
-    post_comment(num, f"✅ Solver: Patch via Whole-Apply erfolgreich (`{info}`)")
-    applied_any = True
-else:
-    sections = _split_sections(patch) if patch else []
-    if patch:
-        post_comment(num, f"ℹ️ Solver: Whole-Apply scheiterte, section-wise Fallback.\n```\n{info}\n```")
-    for i, sec in enumerate(sections, 1):
-        if apply_section(sec, i):
-            applied_any = True
-    if patch and not applied_any:
-        post_comment(num, "ℹ️ Solver: Section-wise Apply fehlgeschlagen – wechsle zu Spec-to-File.")
+    ok, info = whole_git_apply(patch) if patch else (False, "no patch text")
+    applied_any = False
 
-    # ---- Spec-to-File Pfad ----
-    repo_syms = gather_repo_symbols()
-    context_full = read_context_full_md()
-    summary_ctx = (ctx_json.get("contextmap_markdown_summary") if ctx_json else cm_comment) or ""
-    create_paths, exist_targets = choose_targets_from_context(ctx_json, ls_files())
-
-    # 1) Neue Dateien erzeugen
-    for pth in create_paths:
-        try:
-            if Path(pth).exists():
-                continue
-            gen = ai_generate_full_file(pth, repo_syms, context_full, summary_ctx)
-            _write_text_file(pth, gen)
-            post_comment(num, f"🆕 Datei erzeugt (Spec-to-File): `{pth}`")
-            applied_any = True
-        except Exception as e:
-            post_comment(num, f"⚠️ Konnte Datei nicht erzeugen `{pth}`:\n```\n{e}\n```")
-
-    # 2) Bestehende Dateien: ersetzen (nur konkrete Dateien)
-    for target in exist_targets:
-        p = Path(target)
-        if p.is_dir():
-            continue
-        if not (target.endswith(".kt") or target.endswith(".kts") or target.endswith(".gradle")):
-            continue
-        try:
-            cur = p.read_text(encoding="utf-8", errors="replace") if p.exists() else ""
-        except Exception:
-            cur = ""
-        try:
-            newc = ai_rewrite_full_file(target, cur, repo_syms, context_full, summary_ctx)
-            _write_text_file(target, newc)
-            post_comment(num, f"🔁 Datei ersetzt (Spec-to-File): `{target}`")
-            applied_any = True
-        except Exception as e:
-            post_comment(num, f"⚠️ Konnte Datei nicht ersetzen `{target}`:\n```\n{e}\n```")
-
-    # 2b) Directory-Targets: rekursiv alle .kt verarbeiten
-    for target in exist_targets:
-        p = Path(target)
-        if p.is_dir():
-            for f in p.rglob("*.kt"):
-                try:
-                    cur = f.read_text(encoding="utf-8", errors="replace")
-                    newc = ai_rewrite_full_file(f.as_posix(), cur, repo_syms, context_full, summary_ctx)
-                    f.write_text(newc, encoding="utf-8")
-                    post_comment(num, f"🔁 Datei ersetzt (Dir-Target): `{f.as_posix()}`")
-                    applied_any = True
-                except Exception as e:
-                    post_comment(num, f"⚠️ Ersetzen fehlgeschlagen `{f.as_posix()}`:\n```\n{e}\n```")
-
-    # 3) Wenn gar nichts angewendet und kein Patch existierte → generiere Gesamt-Diff
-    if not applied_any and not patch:
-        docs = []
-        for n in ["AGENTS.md", "ARCHITECTURE_OVERVIEW.md", "ROADMAP.md", "CHANGELOG.md"]:
-            if Path(n).exists():
-                try:
-                    docs.append(f"\n--- {n} ---\n" + Path(n).read_text(encoding="utf-8", errors="replace"))
-                except Exception:
-                    pass
-        docs_txt = "".join(docs)
-        all_files = ls_files()
-        seeds = parse_affected_modules(cm_comment or "", all_files) if cm_comment else (["app"] if ("app" in all_files or any(p.startswith("app/") for p in all_files)) else [])
-        targets = seeds or all_files[:80]
-        try:
-            raw_ai = ai_generate_diff(cm_comment or "(no contextmap; artifact missing)", docs_txt, targets)
-            new_patch = sanitize_patch(raw_ai)
-            ok2, info2 = whole_git_apply(new_patch)
-            if not ok2:
-                post_comment(num, f"⚠️ Generierter Diff konnte nicht vollständig angewendet werden.\n```\n{info2}\n```")
-            else:
-                post_comment(num, f"✅ Generierter Diff angewendet (`{info2}`)")
+    if ok:
+        post_comment(num, f"✅ Solver: Patch via Whole-Apply erfolgreich (`{info}`)")
+        applied_any = True
+    else:
+        sections = _split_sections(patch) if patch else []
+        if patch:
+            post_comment(num, f"ℹ️ Solver: Whole-Apply scheiterte, section-wise Fallback.\n```\n{info}\n```")
+        for i, sec in enumerate(sections, 1):
+            if apply_section(sec, i):
                 applied_any = True
-        except Exception as e:
-            post_comment(num, f"⚠️ AI-Diff-Erzeugung fehlgeschlagen:\n```\n{e}\n```")
+        if patch and not applied_any:
+            post_comment(num, "ℹ️ Solver: Section-wise Apply fehlgeschlagen – wechsle zu Spec-to-File.")
 
-# Keine Änderungen?
-status = sh("git status --porcelain", check=False)
-if not status.strip():
-    add_label(num, "solver-error")
-    post_comment(num, "❌ Solver: Keine Änderungen im Working Tree nach Verarbeitung.")
-    summarize_rejects(num)
-    return None
+        # ---- Spec-to-File Pfad ----
+        repo_syms = gather_repo_symbols()
+        context_full = read_context_full_md()
+        summary_ctx = (ctx_json.get("contextmap_markdown_summary") if ctx_json else cm_comment) or ""
+        create_paths, exist_targets = choose_targets_from_context(ctx_json, ls_files())
 
-# Auto-Format & Schnell-Compile (best effort)
-try:
-    sh("./gradlew -q :app:spotlessApply", check=False)
-    sh("./gradlew -q :app:compileDebugKotlin --no-daemon", check=False)
-except Exception:
-    pass
+        # 1) Neue Dateien erzeugen
+        for pth in create_paths:
+            try:
+                if Path(pth).exists():
+                    continue
+                gen = ai_generate_full_file(pth, repo_syms, context_full, summary_ctx)
+                _write_text_file(pth, gen)
+                post_comment(num, f"🆕 Datei erzeugt (Spec-to-File): `{pth}`")
+                applied_any = True
+            except Exception as e:
+                post_comment(num, f"⚠️ Konnte Datei nicht erzeugen `{pth}`:\n```\n{e}\n```")
 
-# Nach evtl. Formatierung erneut prüfen
-status = sh("git status --porcelain", check=False)
-if not status.strip():
-    add_label(num, "solver-error")
-    post_comment(num, "❌ Solver: Nach Formatierung keine Änderungen übrig.")
-    summarize_rejects(num)
-    return None
+        # 2) Bestehende Dateien: ersetzen (nur konkrete Dateien)
+        for target in exist_targets:
+            p = Path(target)
+            if p.is_dir():
+                continue
+            if not (target.endswith(".kt") or target.endswith(".kts") or target.endswith(".gradle")):
+                continue
+            try:
+                cur = p.read_text(encoding="utf-8", errors="replace") if p.exists() else ""
+            except Exception:
+                cur = ""
+            try:
+                newc = ai_rewrite_full_file(target, cur, repo_syms, context_full, summary_ctx)
+                _write_text_file(target, newc)
+                post_comment(num, f"🔁 Datei ersetzt (Spec-to-File): `{target}`")
+                applied_any = True
+            except Exception as e:
+                post_comment(num, f"⚠️ Konnte Datei nicht ersetzen `{target}`:\n```\n{e}\n```")
 
-# Commit & Push
-sh("git add -A", check=False)
-# Leeren Commit vermeiden
-staged_diff = subprocess.run("git diff --cached --quiet", shell=True)
-if staged_diff.returncode == 0:
-    add_label(num, "solver-error")
-    post_comment(num, "❌ Solver: Keine Änderungen zum Commit (staged diff leer).")
-    summarize_rejects(num)
-    return None
+        # 2b) Directory-Targets: rekursiv alle .kt verarbeiten
+        for target in exist_targets:
+            p = Path(target)
+            if p.is_dir():
+                for f in p.rglob("*.kt"):
+                    try:
+                        cur = f.read_text(encoding="utf-8", errors="replace")
+                        newc = ai_rewrite_full_file(f.as_posix(), cur, repo_syms, context_full, summary_ctx)
+                        f.write_text(newc, encoding="utf-8")
+                        post_comment(num, f"🔁 Datei ersetzt (Dir-Target): `{f.as_posix()}`")
+                        applied_any = True
+                    except Exception as e:
+                        post_comment(num, f"⚠️ Ersetzen fehlgeschlagen `{f.as_posix()}`:\n```\n{e}\n```")
 
-sh(f"git commit -m 'codex: solver changes (issue #{num})'", check=False)
-sh("git push --set-upstream origin HEAD", check=False)
+        # 3) Wenn gar nichts angewendet und kein Patch existierte → generiere Gesamt-Diff
+        if not applied_any and not patch:
+            docs = []
+            for n in ["AGENTS.md", "ARCHITECTURE_OVERVIEW.md", "ROADMAP.md", "CHANGELOG.md"]:
+                if Path(n).exists():
+                    try:
+                        docs.append(f"\n--- {n} ---\n" + Path(n).read_text(encoding="utf-8", errors="replace"))
+                    except Exception:
+                        pass
+            docs_txt = "".join(docs)
+            all_files = ls_files()
+            seeds = parse_affected_modules(cm_comment or "", all_files) if cm_comment else (["app"] if ("app" in all_files or any(p.startswith("app/") for p in all_files)) else [])
+            targets = seeds or all_files[:80]
+            try:
+                raw_ai = ai_generate_diff(cm_comment or "(no contextmap; artifact missing)", docs_txt, targets)
+                new_patch = sanitize_patch(raw_ai)
+                ok2, info2 = whole_git_apply(new_patch)
+                if not ok2:
+                    post_comment(num, f"⚠️ Generierter Diff konnte nicht vollständig angewendet werden.\n```\n{info2}\n```")
+                else:
+                    post_comment(num, f"✅ Generierter Diff angewendet (`{info2}`)")
+                    applied_any = True
+            except Exception as e:
+                post_comment(num, f"⚠️ AI-Diff-Erzeugung fehlgeschlagen:\n```\n{e}\n```")
 
-pr = gh_api("POST", f"/repos/{repo()}/pulls", {
-    "title": f"codex: solver changes (issue #{num})",
-    "head": sh('git rev-parse --abbrev-ref HEAD').strip(),
-    "base": default_branch(),
-    "body": (
-        f"Automatisch erzeugte Änderungen basierend auf ContextMap/Artefakt (issue #{num}).\n\n"
-        f"- Kontext: `.codex/context_full.md` / `.codex/context.json`\n"
-        f"- Modus: Patch → Fallbacks → Spec-to-File\n"
-        f"- Bitte nach Merge Branch löschen (`codex/solve-*`)."
-    )
-})
-pr_num = pr.get("number"); pr_url = pr.get("html_url")
-post_comment(num, f"🔧 PR erstellt: #{pr_num} — {pr_url}")
+    # Keine Änderungen?
+    status = sh("git status --porcelain", check=False)
+    if not status.strip():
+        add_label(num, "solver-error")
+        post_comment(num, "❌ Solver: Keine Änderungen im Working Tree nach Verarbeitung.")
+        summarize_rejects(num)
+        return None
 
-return pr_url
----------- Main ----------
+    # Auto-Format & Schnell-Compile (best effort)
+    try:
+        sh("./gradlew -q :app:spotlessApply", check=False)
+        sh("./gradlew -q :app:compileDebugKotlin --no-daemon", check=False)
+    except Exception:
+        pass
 
+    # Nach evtl. Formatierung erneut prüfen
+    status = sh("git status --porcelain", check=False)
+    if not status.strip():
+        add_label(num, "solver-error")
+        post_comment(num, "❌ Solver: Nach Formatierung keine Änderungen übrig.")
+        summarize_rejects(num)
+        return None
+
+    # Commit & Push
+    sh("git add -A", check=False)
+    # Leeren Commit vermeiden
+    staged_diff = subprocess.run("git diff --cached --quiet", shell=True)
+    if staged_diff.returncode == 0:
+        add_label(num, "solver-error")
+        post_comment(num, "❌ Solver: Keine Änderungen zum Commit (staged diff leer).")
+        summarize_rejects(num)
+        return None
+
+    sh(f"git commit -m 'codex: solver changes (issue #{num})'", check=False)
+    sh("git push --set-upstream origin HEAD", check=False)
+
+    pr = gh_api("POST", f"/repos/{repo()}/pulls", {
+        "title": f"codex: solver changes (issue #{num})",
+        "head": sh('git rev-parse --abbrev-ref HEAD').strip(),
+        "base": default_branch(),
+        "body": (
+            f"Automatisch erzeugte Änderungen basierend auf ContextMap/Artefakt (issue #{num}).\n\n"
+            f"- Kontext: `.codex/context_full.md` / `.codex/context.json`\n"
+            f"- Modus: Patch → Fallbacks → Spec-to-File\n"
+            f"- Bitte nach Merge Branch löschen (`codex/solve-*`)."
+        )
+    })
+    pr_num = pr.get("number"); pr_url = pr.get("html_url")
+    post_comment(num, f"🔧 PR erstellt: #{pr_num} — {pr_url}")
+
+    return pr_url
+
+# ---------- Main ----------
 def dispatch_triage(issue_num: int):
-try:
-wfs = gh_api("GET", f"/repos/{repo()}/actions/workflows")
-names = { (w.get("path") or "").split("/")[-1] for w in (wfs.get("workflows") or []) }
-target = "codex-triage.yml"
-if target in names:
-gh_api("POST", f"/repos/{repo()}/actions/workflows/{target}/dispatches",
-{"ref": default_branch(), "inputs": {"issue": str(issue_num)}})
-else:
-print("::notice::No codex-triage.yml found; skipping triage dispatch")
-except Exception as e:
-print(f"::warning::Failed to dispatch triage workflow: {e}")
+    try:
+        wfs = gh_api("GET", f"/repos/{repo()}/actions/workflows")
+        names = { (w.get("path") or "").split("/")[-1] for w in (wfs.get("workflows") or []) }
+        target = "codex-triage.yml"
+        if target in names:
+            gh_api("POST", f"/repos/{repo()}/actions/workflows/{target}/dispatches",
+                   {"ref": default_branch(), "inputs": {"issue": str(issue_num)}})
+        else:
+            print("::notice::No codex-triage.yml found; skipping triage dispatch")
+    except Exception as e:
+        print(f"::warning::Failed to dispatch triage workflow: {e}")
 
 def main():
-ensure_repo_cwd()
-num = issue_number()
-if not num:
-print("::error::No issue number")
-sys.exit(1)
-ev_name = (os.environ.get("GH_EVENT_NAME") or os.environ.get("GITHUB_EVENT_NAME") or "")
-if ev_name != "workflow_dispatch":
-    labels = get_labels(num)
-    if "contextmap-ready" not in labels:
-        print("::notice::No 'contextmap-ready' label; skipping")
-        sys.exit(0)
+    # Optionaler Dry-Run zum lokalen Testen (keine Netzwerk-/GitHub-Aufrufe)
+    if os.environ.get("SOLVER_DRY_RUN") == "1":
+        # Minimaler Selbsttest der wichtigsten reinen Funktionen:
+        sample = textwrap.dedent("""        diff --git a/README.md b/README.md
+        index 1111111..2222222 100644
+        --- a/README.md
+        +++ b/README.md
+        @@ -1,1 +1,1 @@
+        -Hello
+        +Hello World
+        """)
+        assert "diff --git" in sanitize_patch(sample)
+        assert isinstance(_split_sections(sample), list)
+        print("DRY_RUN OK")
+        return
 
-# Kontext laden
-ctx_json = read_context_json()
-cm_comment = fetch_contextmap_comment(num) or ""
-# Diff ggf. aus Issue lesen
-raw_issue_diff = extract_issue_raw_diff(num)
-patch = sanitize_patch(raw_issue_diff) if raw_issue_diff else ""
+    ensure_repo_cwd()
+    num = issue_number()
+    if not num:
+        print("::error::No issue number")
+        sys.exit(1)
 
-# Parser-Warnung tolerieren → Fallbacks nutzen
-if patch and "diff --git " in patch:
-    try:
-        PatchSet.from_string(patch)
-    except (UnidiffParseError, Exception) as e:
-        post_comment(num, f"ℹ️ Solver: Unidiff Parser Warning: `{type(e).__name__}: {e}` – nutze Fallbacks.")
+    ev_name = (os.environ.get("GH_EVENT_NAME") or os.environ.get("GITHUB_EVENT_NAME") or "")
+    if ev_name != "workflow_dispatch":
+        labels = get_labels(num)
+        if "contextmap-ready" not in labels:
+            print("::notice::No 'contextmap-ready' label; skipping")
+            sys.exit(0)
 
-else:
-    patch = ""  # erzwinge Spec-to-File/AI-Diff-Pfad
+    # Kontext laden
+    ctx_json = read_context_json()
+    cm_comment = fetch_contextmap_comment(num) or ""
+    # Diff ggf. aus Issue lesen
+    raw_issue_diff = extract_issue_raw_diff(num)
+    patch = sanitize_patch(raw_issue_diff) if raw_issue_diff else ""
 
-# Anwenden oder Spec-to-File
-pr_url = apply_or_spec_to_file(num, patch, ctx_json, cm_comment)
-if pr_url is None:
-    add_label(num, "solver-error")
-    summarize_rejects(num)
-    dispatch_triage(num)
-    sys.exit(1)
-
-# Optionaler Build
-try:
-    wf = os.environ.get("SOLVER_BUILD_WORKFLOW", "release-apk.yml")
-    branch = sh('git rev-parse --abbrev-ref HEAD').strip()
-    since = dispatch_build(wf, branch, {"build_type": "debug", "issue": str(num)})
-    run = wait_build_result(wf, branch, since, timeout_s=1800)
-    concl = (run or {}).get("conclusion", "")
-    if concl == "success":
-        remove_label(num, "contextmap-ready")
-        add_label(num, "solver-done")
-        post_comment(num, "✅ Build erfolgreich – Label `solver-done` gesetzt.")
+    # Parser-Warnung tolerieren → Fallbacks nutzen
+    if patch and "diff --git " in patch:
+        try:
+            PatchSet.from_string(patch)
+        except (UnidiffParseError, Exception) as e:
+            post_comment(num, f"ℹ️ Solver: Unidiff Parser Warning: `{type(e).__name__}: {e}` – nutze Fallbacks.")
     else:
+        patch = ""  # erzwinge Spec-to-File/AI-Diff-Pfad
+
+    # Anwenden oder Spec-to-File
+    pr_url = apply_or_spec_to_file(num, patch, ctx_json, cm_comment)
+    if pr_url is None:
         add_label(num, "solver-error")
-        post_comment(num, "❌ Build fehlgeschlagen – Label `solver-error` gesetzt (Bot 3 wird reagieren).")
+        summarize_rejects(num)
         dispatch_triage(num)
-except Exception as e:
-    add_label(num, "solver-error")
-    post_comment(num, f"❌ Build-Dispatch fehlgeschlagen\n```\n{e}\n```")
-    dispatch_triage(num)
-    sys.exit(1)
-if name == "main":
-try:
-main()
-except SystemExit:
-raise
-except Exception as e:
-try:
-num = issue_number()
-if num:
-add_label(num, "solver-error")
-dispatch_triage(num)
-except Exception:
-pass
-print(f"::error::Unexpected solver error: {e}")
-sys.exit(1)
+        sys.exit(1)
+
+    # Optionaler Build
+    try:
+        wf = os.environ.get("SOLVER_BUILD_WORKFLOW", "release-apk.yml")
+        branch = sh('git rev-parse --abbrev-ref HEAD').strip()
+        since = dispatch_build(wf, branch, {"build_type": "debug", "issue": str(num)})
+        run = wait_build_result(wf, branch, since, timeout_s=1800)
+        concl = (run or {}).get("conclusion", "")
+        if concl == "success":
+            remove_label(num, "contextmap-ready")
+            add_label(num, "solver-done")
+            post_comment(num, "✅ Build erfolgreich – Label `solver-done` gesetzt.")
+        else:
+            add_label(num, "solver-error")
+            post_comment(num, "❌ Build fehlgeschlagen – Label `solver-error` gesetzt (Bot 3 wird reagieren).")
+            dispatch_triage(num)
+    except Exception as e:
+        add_label(num, "solver-error")
+        post_comment(num, f"❌ Build-Dispatch fehlgeschlagen\n```\n{e}\n```")
+        dispatch_triage(num)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:
+        try:
+            num = issue_number()
+            if num:
+                add_label(num, "solver-error")
+                dispatch_triage(num)
+        except Exception:
+            pass
+        print(f"::error::Unexpected solver error: {e}")
+        sys.exit(1)
