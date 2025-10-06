@@ -4,6 +4,20 @@ on:
   workflow_run:
     workflows: ["Codex – ContextMap (Bot 1)"]
     types: [completed]
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue-Nummer (optional; überschreibt Kontext)"
+        required: false
+        default: ""
+      force:
+        description: "Label-Gate überspringen (true/false)"
+        required: false
+        default: "false"
 
 permissions:
   contents: write
@@ -11,10 +25,21 @@ permissions:
   actions: write
   issues: write
 
+concurrency:
+  group: codex-solve-${{ github.event.issue.number || github.event.workflow_run.id || github.event.comment.id || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   solve:
-    # Start nur, wenn Bot 1 erfolgreich war
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Start-Bedingungen: erfolgreicher Bot 1 ODER Label gesetzt ODER manueller Start ODER Kommentar mit /solve
+    if: >
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'contextmap-ready') ||
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'issue_comment' && github.event.action == 'created' &&
+        (contains(github.event.comment.body, '/codex solve') ||
+         contains(github.event.comment.body, '/codex-solve') ||
+         contains(github.event.comment.body, '/solve')))
     runs-on: ubuntu-latest
 
     steps:
@@ -25,12 +50,58 @@ jobs:
           lfs: true
           submodules: recursive
 
+      # Ermittele die passende run-id von Bot 1 (je nach Trigger)
+      - name: Resolve Bot 1 run-id
+        id: resolve_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          WF_NAME: Codex – ContextMap (Bot 1)
+          EV_NAME: ${{ github.event_name }}
+          RUN_ID_FROM_WR: ${{ github.event.workflow_run.id }}
+        run: |
+          python - << 'PY'
+import os, json, urllib.request, sys
+def api(url):
+    req = urllib.request.Request(url, headers={
+        "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+        "Accept": "application/vnd.github+json"
+    })
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.loads(r.read().decode("utf-8"))
+repo = os.environ["REPO"]
+ev   = os.environ["EV_NAME"]
+# 1) workflow_run: run-id direkt
+if ev == "workflow_run":
+    rid = os.environ.get("RUN_ID_FROM_WR") or ""
+    if not rid:
+        print("::error::No run id in workflow_run event"); sys.exit(1)
+    print(f"run_id={rid}")
+    print(f"run_id={rid}", file=open(os.environ["GITHUB_OUTPUT"], "a")); sys.exit(0)
+# 2) issues/issue_comment/workflow_dispatch: suche neuesten erfolgreichen Bot-1-Run
+wfs = api(f"https://api.github.com/repos/{repo}/actions/workflows")
+wf_id = None
+for wf in wfs.get("workflows", []):
+    if (wf.get("name") or "") == os.environ["WF_NAME"]:
+        wf_id = wf.get("id"); break
+if not wf_id:
+    print(f"::error::Workflow '{os.environ['WF_NAME']}' not found"); sys.exit(1)
+runs = api(f"https://api.github.com/repos/{repo}/actions/workflows/{wf_id}/runs?status=success&per_page=1")
+rid = ""
+arr = runs.get("workflow_runs") or []
+if arr:
+    rid = str(arr[0].get("id") or "")
+if not rid:
+    print("::error::No successful Bot 1 run found"); sys.exit(1)
+print(f"run_id={rid}")
+print(f"run_id={rid}", file=open(os.environ["GITHUB_OUTPUT"], "a"))
+PY
+
       - name: Download context artifact from Bot 1
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Artefakte aus dem auslösenden workflow_run laden
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ steps.resolve_run.outputs.run_id }}
           path: codex-context
 
       - name: Prepare context into expected location
@@ -58,63 +129,82 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r .github/codex/requirements-solver.txt
 
-      - name: Extract ISSUE_NUMBER from solver_input.json
-        id: extract_issue
+      - name: Determine ISSUE_NUMBER
+        id: issue
+        env:
+          EV_NAME: ${{ github.event_name }}
+          EV_ISSUE: ${{ github.event.issue.number }}
+          DISPATCH_ISSUE: ${{ inputs.issue }}
         run: |
           python - << 'PY'
-import json, sys, pathlib, os
+import os, json, pathlib
 p = pathlib.Path(".github/codex/context/solver_input.json")
-if not p.exists():
-    print("::error::solver_input.json not found"); sys.exit(1)
-data = json.loads(p.read_text(encoding="utf-8"))
-n = (data.get("issue_context") or {}).get("number")
-if n is None:
-    print("::error::No issue number in solver_input.json"); sys.exit(1)
-print(f"ISSUE_NUMBER={n}")
-with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-    fh.write(f"ISSUE_NUMBER={n}\n")
-with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as fh:
-    fh.write(f"ISSUE_NUMBER={n}\n")
+issue = None
+if p.exists():
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        issue = (data.get("issue_context") or {}).get("number")
+    except Exception:
+        issue = None
+if not issue:
+    # fallback: issue from event or manual input
+    issue = os.environ.get("EV_ISSUE") or os.environ.get("DISPATCH_ISSUE") or ""
+if not str(issue).strip():
+    print("::error::Could not determine issue number (not in context and not provided)")
+else:
+    print(f"ISSUE_NUMBER={issue}")
+    with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+        fh.write(f"ISSUE_NUMBER={issue}\n")
+    with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as fh:
+        fh.write(f"ISSUE_NUMBER={issue}\n")
 PY
 
-      - name: Check for contextmap-ready label (gate)
-        id: gate_check
+      - name: Check for contextmap-ready label (gate, unless forced)
+        id: gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          ISSUE: ${{ steps.extract_issue.outputs.ISSUE_NUMBER }}
+          ISSUE: ${{ steps.issue.outputs.ISSUE_NUMBER }}
+          EV_NAME: ${{ github.event_name }}
+          FORCE: ${{ inputs.force }}
         run: |
           python - << 'PY'
 import os, json, urllib.request
-repo = os.environ["REPO"]
-issue = os.environ["ISSUE"]
-req = urllib.request.Request(
-    f"https://api.github.com/repos/{repo}/issues/{issue}",
-    headers={
-        "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
-        "Accept": "application/vnd.github+json"
-    }
-)
-with urllib.request.urlopen(req, timeout=60) as r:
-    data = json.loads(r.read().decode("utf-8"))
-labels = { (l.get("name") or "") for l in data.get("labels", []) }
-has_label = "contextmap-ready" in labels
+# Force can bypass the gate (workflow_dispatch only)
+if (os.environ.get("EV_NAME") == "workflow_dispatch") and (os.environ.get("FORCE","").lower() == "true"):
+    has = True
+else:
+    repo = os.environ["REPO"]; issue = os.environ.get("ISSUE") or ""
+    if not issue:
+        print("::error::No issue number to check label"); has = False
+    else:
+        req = urllib.request.Request(
+            f"https://api.github.com/repos/{repo}/issues/{issue}",
+            headers={
+                "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                "Accept": "application/vnd.github+json"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        labels = { (l.get("name") or "") for l in data.get("labels", []) }
+        has = ("contextmap-ready" in labels)
 with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-    fh.write(f"has_label={'true' if has_label else 'false'}\n")
+    fh.write(f"has_label={'true' if has else 'false'}\n")
 PY
 
       - name: Comment waiting notice (if missing label)
-        if: steps.gate_check.outputs.has_label != 'true'
+        if: steps.gate.outputs.has_label != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          ISSUE: ${{ steps.extract_issue.outputs.ISSUE_NUMBER }}
+          ISSUE: ${{ steps.issue.outputs.ISSUE_NUMBER }}
         run: |
           BODY='⏸️ Solver startet erst, wenn **contextmap-ready** gesetzt ist.'
           curl -s -X POST             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             https://api.github.com/repos/$REPO/issues/$ISSUE/comments             -d "{"body": "$BODY"}" > /dev/null
 
       - name: Run Solver (Bot 2)
-        if: steps.gate_check.outputs.has_label == 'true'
+        if: steps.gate.outputs.has_label == 'true'
         env:
           # OpenAI (nur für Spec-to-File/AI-Diff benötigt)
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -125,6 +215,6 @@ PY
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
-          ISSUE_NUMBER: ${{ steps.extract_issue.outputs.ISSUE_NUMBER }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.ISSUE_NUMBER }}
         run: |
           python .github/codex/bot_solver.py
