@@ -201,7 +201,11 @@ PY
           ISSUE: ${{ steps.issue.outputs.ISSUE_NUMBER }}
         run: |
           BODY='⏸️ Solver startet erst, wenn **contextmap-ready** gesetzt ist.'
-          curl -s -X POST             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             https://api.github.com/repos/$REPO/issues/$ISSUE/comments             -d "{"body": "$BODY"}" > /dev/null
+          curl -s -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -d "{\"body\": \"$BODY\"}" \
+            "https://api.github.com/repos/$REPO/issues/$ISSUE/comments"
 
       - name: Run Solver (Bot 2)
         if: steps.gate.outputs.has_label == 'true'
