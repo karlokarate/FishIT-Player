@@ -135,6 +135,35 @@ private fun PlayOverlay(visible: Boolean, sizeDp: Int = 56) {
     }
 }
 
+private fun isTelegram(item: MediaItem): Boolean {
+    return (item.source?.equals("TG", ignoreCase = true) == true) ||
+        (item.tgChatId != null || item.tgMessageId != null || item.tgFileId != null)
+}
+
+@Composable
+private fun TelegramSourceBadge(
+    modifier: Modifier = Modifier,
+    small: Boolean = false
+) {
+    val size = if (small) 20.dp else 24.dp
+    val bg = Color(0xFF229ED9)
+    Box(
+        modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(bg)
+            .border(1.dp, Color.White.copy(alpha = 0.9f), CircleShape)
+            .focusProperties { canFocus = false }
+    ) {
+        Text(
+            text = "T",
+            color = Color.White,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+            modifier = Modifier.align(Alignment.Center)
+        )
+    }
+}
+
 @Composable
 fun rowItemHeight(): Int {
     LocalRowItemHeightOverride.current?.let { return it }
@@ -278,6 +307,10 @@ fun MediaCard(
                 if (assignCtx.isSelected(item)) {
                     Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, TILE_SHAPE))
                 }
+            }
+            // Telegram origin badge (top-right)
+            if (isTelegram(item)) {
+                TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(6.dp), small = true)
             }
             com.chris.m3usuite.ui.components.common.FocusTitleOverlay(
                 title = item.name,
@@ -615,6 +648,11 @@ fun LiveTileCard(
                     .background(Color(0xFF1DB954))
             )
 
+            // Telegram origin badge (top-right)
+            if (isTelegram(item)) {
+                TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp), small = true)
+            }
+
             // EPG under logo (now + next)
             if (epgNow.isNotBlank() || epgNext.isNotBlank()) {
                 Column(
@@ -870,6 +908,10 @@ fun SeriesTileCard(
                             Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, shape))
                         }
                     }
+                    // Telegram origin badge (top-right)
+                    if (isTelegram(item)) {
+                        TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp), small = true)
+                    }
                     PlayOverlay(visible = focused)
                     FocusTitleOverlay(
                         title = item.name,
@@ -1119,6 +1161,10 @@ fun VodTileCard(
                     }
                     if (assignCtx.isSelected(item)) {
                         Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, shape))
+                    }
+                    // Telegram origin badge (top-right)
+                    if (isTelegram(item)) {
+                        TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp), small = true)
                     }
                     // Resume progress overlay (thin line near bottom)
                     var resumeSecs by remember(item.id) { mutableStateOf<Int?>(null) }

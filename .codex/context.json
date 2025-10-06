@@ -1,0 +1,3910 @@
+{
+  "issue_number": 121,
+  "issue_body": "/codex Es gibt nach wie vor Probleme mit der Telegram Integration, ich gebe dir hier 4 diffs, die als Grundlage dienen sollen, um unsere Probleme zu lösen. Es müssen neue Module erstellt und bereits vorhandene gepatcht werden. Schaue dir diese Diffs an und bewerte, inwiefern wie sie bereits nutzen können und was spezifisch für unser Projekt noch angepasst werden muss. Erstelle einen umfangreichen Pull Request, der alle Probleme auf einmal löst\n\n1.:\n--- /dev/null\n+++ b/app/src/main/java/com/chris/m3usuite/telegram/TelegramHeuristics.kt\n@@ -0,0 +78 @@\n+package com.chris.m3usuite.telegram\n+\n+/**\n\nSimple best-effort parser for Telegram captions / filenames.\nExtracts: normalized title, year, SxxEyy (season/episode), language, quality.\nThis is intentionally lightweight and resilient; it should never throw.\n*/\n+object TelegramHeuristics {\ndata class Parsed(\n   val title: String,\n   val year: Int? = null,\n   val season: Int? = null,\n   val episode: Int? = null,\n   val language: String? = null,\n   val quality: String? = null\n)\nprivate val yearRegex = Regex(\"(?<!\\d)(19\\d{2}|20\\d{2})(?!\\d)\")\nprivate val seRegex = Regex(\"(?i)(S(\\d{1,2}))[ ._-]*E(\\d{1,2})\")\nprivate val qualityRegex = Regex(\"(?i)\\b(2160p|1080p|720p|4k|hdr|dv|webrip|web-dl|blu[- ]?ray|x264|x265|hevc|remux)\\b\")\nprivate val langTokens = mapOf(\n   \"GERMAN\" to \"de\", \"GER\" to \"de\", \"DEUTSCH\" to \"de\", \"DE\" to \"de\",\n   \"ENGLISCH\" to \"en\", \"ENGLISH\" to \"en\", \"ENG\" to \"en\", \"EN\" to \"en\",\n   \"MULTI\" to \"multi\", \"DUAL\" to \"multi\",\n   \"DUBBED\" to \"dub\", \"SUBBED\" to \"sub\"\n)\nprivate val junkTokens = setOf(\n   \"x264\",\"x265\",\"hevc\",\"aac\",\"dts\",\"ddp\",\"dd+\",\"hdr\",\"dv\",\"atmos\",\n   \"multi\",\"dubbed\",\"subbed\",\"webrip\",\"web-dl\",\"bluray\",\"blu-ray\",\"remux\",\n   \"repack\",\"proper\",\"readnfo\",\"uncut\",\"extended\",\"remastered\",\"german\",\"deutsch\",\"english\",\"eng\",\"ger\"\n)\nfun parse(raw: String?): Parsed {\n   if (raw.isNullOrBlank()) return Parsed(title = \"Telegram\")\n   var s = raw.replace('_', ' ').replace('.', ' ')\n   s = Regex(\"\\s+\").replace(s, \" \").trim()\n   // Year\n   val year = yearRegex.find(s)?.value?.toIntOrNull()\n   // Season/Episode\n   val seMatch = seRegex.find(s)\n   val season = seMatch?.groups?.get(2)?.value?.toIntOrNull()\n   val episode = seMatch?.groups?.get(3)?.value?.toIntOrNull()\n   // Quality (first match)\n   val quality = qualityRegex.findAll(s).map { it.value.lowercase() }.firstOrNull()\n   // Language (first matching token)\n   var lang: String? = null\n   val upper = s.uppercase()\n   for ((k, v) in langTokens) {\n       if (upper.contains(k)) { lang = v; break }\n   }\n   // Build cleaned title\n   var tokens = s.split(' ')\n   tokens = tokens.filterNot { t ->\n       val tt = t.lowercase()\n       tt in junkTokens || qualityRegex.matches(t) || yearRegex.matches(t) || seRegex.matches(t)\n   }\n   // Remove trailing/leading brackets or dashes\n   var title = tokens.joinToString(\" \").trim(' ', '-', '.', '[', ']', '(', ')')\n   if (title.isBlank()) title = raw.trim()\n   return Parsed(\n       title = title,\n       year = year,\n       season = season,\n       episode = episode,\n       language = lang,\n       quality = quality\n   )\n}\n+}\n2.:\n--- /dev/null\n+++ b/app/src/main/java/com/chris/m3usuite/data/repo/TelegramContentRepository.kt\n@@ -0,0 +89 @@\n+package com.chris.m3usuite.data.repo\n+\n+import android.content.Context\n+import com.chris.m3usuite.data.obx.ObxStore\n+import com.chris.m3usuite.data.obx.ObxTelegramMessage\n+import com.chris.m3usuite.model.MediaItem\n+import com.chris.m3usuite.prefs.SettingsStore\n+import kotlinx.coroutines.Dispatchers\n+import kotlinx.coroutines.withContext\n+\n+/**\n\nProvides per-chat, newest-first lists of Telegram items mapped to MediaItem for UI rows.\nOnly minimal enrichment is done here; full details can be resolved on-demand.\n*/\n+class TelegramContentRepository(\nprivate val context: Context,\nprivate val settings: SettingsStore\n+) {\nprivate val box by lazy { ObxStore.get(context) }\nsuspend fun recentVodByChat(chatId: Long, limit: Int = 60, offset: Int = 0): List =\n   recentByChatInternal(chatId, \"vod\", limit, offset)\nsuspend fun recentSeriesByChat(chatId: Long, limit: Int = 60, offset: Int = 0): List =\n   recentByChatInternal(chatId, \"series\", limit, offset)\nprivate suspend fun recentByChatInternal(chatId: Long, type: String, limit: Int, offset: Int): List =\n   withContext(Dispatchers.IO) {\n       if (chatId == 0L) return@withContext emptyList()\n       val qb = box.boxFor(ObxTelegramMessage::class.java).query(\n           com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId)\n       ).build()\n       val rows = qb.find().sortedWith(\n           compareByDescending<ObxTelegramMessage> { it.date ?: 0L }\n               .thenByDescending { it.messageId }\n       ).drop(offset).take(limit)\n       rows.map { it.toMediaItem(type) }\n   }\nprivate fun ObxTelegramMessage.toMediaItem(type: String): MediaItem {\n   val caption = caption ?: \"Telegram $messageId\"\n   val parsed = com.chris.m3usuite.telegram.TelegramHeuristics.parse(caption)\n   val titleBase = if (parsed.title.isNotBlank()) parsed.title else caption\n   val cleanTitle = buildString {\n       append(titleBase)\n       if (type == \"series\" && parsed.season != null && parsed.episode != null) {\n           append(\" S%02dE%02d\".format(parsed.season, parsed.episode))\n       }\n       if (parsed.year != null) append(\" (${parsed.year})\")\n   }.trim()\n   val encodedId = 5_000_000_000_000L + (this.id)\n   return MediaItem(\n       id = encodedId,\n       type = type,\n       streamId = null,\n       name = cleanTitle,\n       sortTitle = titleBase.lowercase(),\n       categoryId = null,\n       categoryName = null,\n       logo = null,\n       poster = null,\n       backdrop = null,\n       epgChannelId = null,\n       year = parsed.year,\n       rating = null,\n       durationSecs = this.durationSecs,\n       plot = caption,\n       url = null,\n       extraJson = null,\n       source = \"TG\",\n       tgChatId = this.chatId,\n       tgMessageId = this.messageId,\n       tgFileId = this.fileId,\n       images = emptyList(),\n       imdbId = null,\n       tmdbId = null,\n       trailer = null,\n       director = null,\n       cast = null,\n       country = null,\n       releaseDate = null,\n       genre = null,\n       containerExt = null,\n       providerKey = null,\n       genreKey = null,\n   )\n}\n+}\n3.:\n--- a/app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt\n+++ b/app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt\n@@ -173,7 +173,7 @@\nval chatId = obj.javaClass.getDeclaredField(\"chatId\").apply { isAccessible = true }.getLong(obj)\nval messageId = obj.javaClass.getDeclaredField(\"messageId\").apply { isAccessible = true }.getLong(obj)\nval content = obj.javaClass.getDeclaredField(\"newContent\").apply { isAccessible = true }.get(obj)\n\n                       indexMessageContent(chatId, messageId, content)\n                       indexMessageContent(chatId, messageId, content, TdLibReflection.extractMessageDate(obj))\n                   }\n                   // UpdateFile: persist localPath when available\n                   name.endsWith(\"TdApi\\$UpdateFile\") -> {\n@@ -283,11 +283,11 @@\nval chatId = msg.javaClass.getDeclaredField(\"chatId\").apply { isAccessible = true }.getLong(msg)\nval messageId = TdLibReflection.extractMessageId(msg) ?: return\nval content = runCatching { msg.javaClass.getDeclaredField(\"content\").apply { isAccessible = true }.get(msg) }.getOrNull()\n\n       indexMessageContent(chatId, messageId, content)\n       indexMessageContent(chatId, messageId, content, TdLibReflection.extractMessageDate(msg))\n   } catch (_: Throwable) {}\n}\nprivate fun indexMessageContent(chatId: Long, messageId: Long, content: Any?) {\nprivate fun indexMessageContent(chatId: Long, messageId: Long, content: Any?, messageDate: Long?) {\ntry {\nval fileObj = TdLibReflection.findFirstFile(content) ?: return\nval info = TdLibReflection.extractFileInfo(fileObj) ?: return\n@@ -301,7 +301,7 @@\nval mime = TdLibReflection.extractMimeType(content)\nval dims = TdLibReflection.extractVideoDimensions(content)\nval parsed = com.chris.m3usuite.telegram.TelegramHeuristics.parse(caption)\n       val date = System.currentTimeMillis() / 1000\n       val date = messageDate ?: TdLibReflection.extractMessageDate(content ?: Any()) ?: (System.currentTimeMillis() / 1000)\n       val thumbFileId = TdLibReflection.extractThumbFileId(content)\n       scope.launch(Dispatchers.IO) {\n           kotlin.runCatching {\n@@ -499,7 +499,7 @@\nval content = runCatching {\nmessageObj.javaClass.getDeclaredField(\"content\").apply { isAccessible = true }.get(messageObj)\n}.getOrNull()\n\n       indexMessageContent(chatId, messageId, content)\n       indexMessageContent(chatId, messageId, content, TdLibReflection.extractMessageDate(messageObj))\n   }\n}\n4.:\n--- a/app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt\n+++ b/app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt\n@@ -1039,6 +1039,24 @@\nonSuccess = { loaded = true },\nonError = { loaded = true }\n)\n\n               // Telegram source badge (blue \"T\")\n               if (item.source == \"TG\") {\n                   Box(\n                       modifier = Modifier\n                           .align(Alignment.TopStart)\n                           .padding(8.dp)\n                           .clip(RoundedCornerShape(6.dp))\n                           .background(Color(0xFF229ED9))\n                           .padding(horizontal = 6.dp, vertical = 2.dp)\n                   ) {\n                       Text(\n                           text = \"T\",\n                           color = Color.White,\n                           style = MaterialTheme.typography.labelMedium,\n                           fontWeight = FontWeight.Bold\n                       )\n                   }\n               }\n               // Resume progress overlay (thin line near bottom)\n               var resumeSecs by remember(item.id) { mutableStateOf<Int?>(null) }\n               LaunchedEffect(item.id) {",
+  "allowed_paths": [
+    ".",
+    "app",
+    "app/build.gradle.kts",
+    "app/src/main/AndroidManifest.xml",
+    "build.gradle.kts",
+    "libtd",
+    "libtd/build.gradle.kts",
+    "settings.gradle.kts"
+  ],
+  "all_files": [
+    ".github/codex/bot_contextmap.py",
+    ".github/codex/bot_solver.py",
+    ".github/codex/bot_triage.py",
+    ".github/workflows/codex-plan.yml",
+    ".github/workflows/codex-solve.yml",
+    ".github/workflows/codex-triage.yml",
+    ".github/workflows/release-apk.yml",
+    ".gitignore",
+    ".idea/.gitignore",
+    ".idea/AndroidProjectSystem.xml",
+    ".idea/codeStyles/Project.xml",
+    ".idea/codeStyles/codeStyleConfig.xml",
+    ".idea/compiler.xml",
+    ".idea/deploymentTargetSelector.xml",
+    ".idea/gradle.xml",
+    ".idea/inspectionProfiles/Project_Default.xml",
+    ".idea/migrations.xml",
+    ".idea/misc.xml",
+    ".idea/runConfigurations.xml",
+    ".idea/vcs.xml",
+    ".kotlin/errors/errors-1756960337218.log",
+    ".kotlin/errors/errors-1756960340015.log",
+    ".kotlin/errors/errors-1756968033199.log",
+    "AGENTS.md",
+    "ARCHITECTURE_OVERVIEW.md",
+    "CHANGELOG.md",
+    "ROADMAP.md",
+    "app/.gitignore",
+    "app/build.gradle.kts",
+    "app/objectbox-models/default.json",
+    "app/objectbox-models/default.json.bak",
+    "app/proguard-rules.pro",
+    "app/src/androidTest/java/com/chris/m3usuite/TelegramSmokeTest.kt",
+    "app/src/main/AndroidManifest.xml",
+    "app/src/main/java/com/chris/m3usuite/App.kt",
+    "app/src/main/java/com/chris/m3usuite/MainActivity.kt",
+    "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+    "app/src/main/java/com/chris/m3usuite/backup/BackupRestoreSection.kt",
+    "app/src/main/java/com/chris/m3usuite/backup/QuickImportRow.kt",
+    "app/src/main/java/com/chris/m3usuite/backup/SettingsBackupManager.kt",
+    "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+    "app/src/main/java/com/chris/m3usuite/core/device/DeviceProfile.kt",
+    "app/src/main/java/com/chris/m3usuite/core/epg/XmlTv.kt",
+    "app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt",
+    "app/src/main/java/com/chris/m3usuite/core/http/PersistentCookieJar.kt",
+    "app/src/main/java/com/chris/m3usuite/core/http/RequestHeadersProvider.kt",
+    "app/src/main/java/com/chris/m3usuite/core/http/TrafficLogger.kt",
+    "app/src/main/java/com/chris/m3usuite/core/m3u/M3UExporter.kt",
+    "app/src/main/java/com/chris/m3usuite/core/playback/PlayUrlHelper.kt",
+    "app/src/main/java/com/chris/m3usuite/core/telemetry/FrameTimeWatchdog.kt",
+    "app/src/main/java/com/chris/m3usuite/core/telemetry/PagingTelemetry.kt",
+    "app/src/main/java/com/chris/m3usuite/core/telemetry/Telemetry.kt",
+    "app/src/main/java/com/chris/m3usuite/core/util/Adults.kt",
+    "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+    "app/src/main/java/com/chris/m3usuite/core/xtream/ProviderLabelStore.kt",
+    "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+    "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt",
+    "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamConfig.kt",
+    "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamDetect.kt",
+    "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamImportCoordinator.kt",
+    "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+    "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamSeeder.kt",
+    "app/src/main/java/com/chris/m3usuite/data/obx/ObxAdapters.kt",
+    "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+    "app/src/main/java/com/chris/m3usuite/data/obx/ObxStore.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/KidContentBulkOps.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/KidContentRepository.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/MediaQueryRepository.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/ObxPagingSources.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/PermissionRepository.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/ProfileObxRepository.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/ResumeRepository.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/ScreenTimeRepository.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/TelegramRepository.kt",
+    "app/src/main/java/com/chris/m3usuite/data/repo/XtreamObxRepository.kt",
+    "app/src/main/java/com/chris/m3usuite/domain/selectors/ContentSelectors.kt",
+    "app/src/main/java/com/chris/m3usuite/drive/DriveClient.kt",
+    "app/src/main/java/com/chris/m3usuite/metrics/JankReporter.kt",
+    "app/src/main/java/com/chris/m3usuite/metrics/RouteTag.kt",
+    "app/src/main/java/com/chris/m3usuite/model/Episode.kt",
+    "app/src/main/java/com/chris/m3usuite/model/MediaItem.kt",
+    "app/src/main/java/com/chris/m3usuite/navigation/NavExtensions.kt",
+    "app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt",
+    "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+    "app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt",
+    "app/src/main/java/com/chris/m3usuite/prefs/Crypto.kt",
+    "app/src/main/java/com/chris/m3usuite/prefs/SettingsSnapshot.kt",
+    "app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt",
+    "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+    "app/src/main/java/com/chris/m3usuite/telegram/TelegramDataSource.kt",
+    "app/src/main/java/com/chris/m3usuite/telegram/TelegramKeyStore.kt",
+    "app/src/main/java/com/chris/m3usuite/telegram/TelegramTdlibDataSource.kt",
+    "app/src/main/java/com/chris/m3usuite/telegram/push/FirebasePushService.kt",
+    "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+    "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt",
+    "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt.orig",
+    "app/src/main/java/com/chris/m3usuite/traffic-20250915.jsonl",
+    "app/src/main/java/com/chris/m3usuite/ui/auth/CreateProfileSheet.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/common/AppIconButton.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/common/AppIcons.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/common/CardKit.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/common/TvButtons.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/common/Ui.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/compat/FocusCompat.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/components/CollapsibleHeader.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/components/ProviderIcons.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/components/badges/TgBadge.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/components/common/FocusTitleOverlay.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/components/controls/ActionIcons.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt.orig",
+    "app/src/main/java/com/chris/m3usuite/ui/components/rows/RowCore.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/components/sheets/KidSelectSheet.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/debug/FocusDebug.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/debug/SafePainter.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/fx/FishBackground.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/fx/FishSpin.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/fx/FocusGlow.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/fx/Shimmer.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/fx/Transitions.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/home/StartScreen.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/home/StartViewModel.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/home/header/FishITBottomPanel.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/home/header/FishITHeader.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/home/header/HeaderAlpha.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/profile/AvatarPickers.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/profile/KidRowPreview.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/profile/ProfileManagerScreen.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/profile/ProfileManagerViewModel.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/screens/PlaylistSetupScreen.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/screens/SeriesDetailScreen.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/screens/VodDetailScreen.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/screens/XtreamPortalCheckScreen.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/skin/PackageScope.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/skin/TvDevice.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/skin/TvModifiers.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/skin/TvSkin.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/skin/TvSkinPreview.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/state/RememberHelpers.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/theme/CategoryFonts.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/theme/Color.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/theme/DesignTokens.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/theme/Type.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/theme/m3uSuiteTheme.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/tv/TvFocusRow.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/tv/TvRowScroll.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/util/AppImageLoader.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/util/AvatarModel.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/util/CategoryNormalizer.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/util/Images.kt",
+    "app/src/main/java/com/chris/m3usuite/work/BootCompletedReceiver.kt",
+    "app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt",
+    "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+    "app/src/main/java/com/chris/m3usuite/work/ScreenTimeResetWorker.kt",
+    "app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt",
+    "app/src/main/java/com/chris/m3usuite/work/TelegramSyncWorker.kt",
+    "app/src/main/java/com/chris/m3usuite/work/Workers.kt",
+    "app/src/main/java/com/chris/m3usuite/work/XtreamDeltaImportWorker.kt",
+    "app/src/main/java/com/chris/m3usuite/work/XtreamDetailsWorker.kt",
+    "app/src/main/res/drawable-hdpi/ic_add_kid_solid.png",
+    "app/src/main/res/drawable-hdpi/ic_add_profile_solid.png",
+    "app/src/main/res/drawable-hdpi/ic_all_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_all_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_bookmark_add_solid.png",
+    "app/src/main/res/drawable-hdpi/ic_bookmark_remove_solid.png",
+    "app/src/main/res/drawable-hdpi/ic_camera_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_camera_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_edit_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_edit_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_gallery_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_gallery_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_info_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_info_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_kids_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_kids_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_live_tv_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_live_tv_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_lock_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_lock_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_movie_vod_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_movie_vod_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_play_circle_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_play_circle_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_play_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_play_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_profile_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_profile_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_refresh_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_refresh_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_remove_kid_solid.png",
+    "app/src/main/res/drawable-hdpi/ic_restart_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_restart_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_search_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_search_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_series_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_series_primary.png",
+    "app/src/main/res/drawable-hdpi/ic_settings_duotone.png",
+    "app/src/main/res/drawable-hdpi/ic_settings_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_add_kid_solid.png",
+    "app/src/main/res/drawable-mdpi/ic_add_profile_solid.png",
+    "app/src/main/res/drawable-mdpi/ic_all_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_all_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_bookmark_add_solid.png",
+    "app/src/main/res/drawable-mdpi/ic_bookmark_remove_solid.png",
+    "app/src/main/res/drawable-mdpi/ic_camera_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_camera_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_edit_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_edit_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_gallery_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_gallery_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_info_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_info_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_kids_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_kids_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_live_tv_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_live_tv_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_lock_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_lock_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_movie_vod_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_movie_vod_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_play_circle_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_play_circle_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_play_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_play_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_profile_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_profile_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_refresh_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_refresh_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_remove_kid_solid.png",
+    "app/src/main/res/drawable-mdpi/ic_restart_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_restart_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_search_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_search_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_series_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_series_primary.png",
+    "app/src/main/res/drawable-mdpi/ic_settings_duotone.png",
+    "app/src/main/res/drawable-mdpi/ic_settings_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_add_kid_solid.png",
+    "app/src/main/res/drawable-xhdpi/ic_add_profile_solid.png",
+    "app/src/main/res/drawable-xhdpi/ic_all_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_all_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_bookmark_add_solid.png",
+    "app/src/main/res/drawable-xhdpi/ic_bookmark_remove_solid.png",
+    "app/src/main/res/drawable-xhdpi/ic_camera_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_camera_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_edit_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_edit_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_gallery_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_gallery_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_info_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_info_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_kids_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_kids_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_live_tv_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_live_tv_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_lock_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_lock_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_movie_vod_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_movie_vod_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_play_circle_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_play_circle_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_play_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_play_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_profile_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_profile_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_refresh_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_refresh_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_remove_kid_solid.png",
+    "app/src/main/res/drawable-xhdpi/ic_restart_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_restart_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_search_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_search_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_series_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_series_primary.png",
+    "app/src/main/res/drawable-xhdpi/ic_settings_duotone.png",
+    "app/src/main/res/drawable-xhdpi/ic_settings_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_add_kid_solid.png",
+    "app/src/main/res/drawable-xxhdpi/ic_add_profile_solid.png",
+    "app/src/main/res/drawable-xxhdpi/ic_all_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_all_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_bookmark_add_solid.png",
+    "app/src/main/res/drawable-xxhdpi/ic_bookmark_remove_solid.png",
+    "app/src/main/res/drawable-xxhdpi/ic_camera_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_camera_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_edit_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_edit_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_gallery_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_gallery_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_info_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_info_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_kids_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_kids_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_live_tv_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_live_tv_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_lock_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_lock_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_movie_vod_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_movie_vod_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_play_circle_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_play_circle_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_play_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_play_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_profile_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_profile_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_refresh_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_refresh_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_remove_kid_solid.png",
+    "app/src/main/res/drawable-xxhdpi/ic_restart_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_restart_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_search_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_search_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_series_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_series_primary.png",
+    "app/src/main/res/drawable-xxhdpi/ic_settings_duotone.png",
+    "app/src/main/res/drawable-xxhdpi/ic_settings_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_add_kid_solid.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_add_profile_solid.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_all_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_all_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_bookmark_add_solid.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_bookmark_remove_solid.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_camera_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_camera_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_edit_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_edit_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_gallery_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_gallery_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_info_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_info_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_kids_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_kids_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_live_tv_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_live_tv_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_lock_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_lock_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_movie_vod_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_movie_vod_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_play_circle_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_play_circle_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_play_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_play_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_profile_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_profile_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_refresh_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_refresh_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_remove_kid_solid.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_restart_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_restart_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_search_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_search_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_series_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_series_primary.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_settings_duotone.png",
+    "app/src/main/res/drawable-xxxhdpi/ic_settings_primary.png",
+    "app/src/main/res/drawable/fisch_bg.png",
+    "app/src/main/res/drawable/fisch_header.png",
+    "app/src/main/res/drawable/ic_launcher_background.xml",
+    "app/src/main/res/drawable/ic_launcher_foreground.xml",
+    "app/src/main/res/drawable/ic_launcher_foreground_inset.xml",
+    "app/src/main/res/drawable/tv_banner.xml",
+    "app/src/main/res/font/adventpro.ttf",
+    "app/src/main/res/font/baloo2_regular.ttf",
+    "app/src/main/res/font/bangers_regular.ttf",
+    "app/src/main/res/font/cinzel.ttf",
+    "app/src/main/res/font/fredoka.ttf",
+    "app/src/main/res/font/inter.ttf",
+    "app/src/main/res/font/merriweather_regular.ttf",
+    "app/src/main/res/font/mountainsofchristmas_regular.ttf",
+    "app/src/main/res/font/mplusrounded1c_regular.ttf",
+    "app/src/main/res/font/nosifer_regular.ttf",
+    "app/src/main/res/font/orbitron.ttf",
+    "app/src/main/res/font/oswald.ttf",
+    "app/src/main/res/font/parisienne_regular.ttf",
+    "app/src/main/res/font/playfairdisplay.ttf",
+    "app/src/main/res/font/russoone_regular.ttf",
+    "app/src/main/res/font/rye_regular.ttf",
+    "app/src/main/res/font/staatliches_regular.ttf",
+    "app/src/main/res/font/teko.ttf",
+    "app/src/main/res/font/yatraone_regular.ttf",
+    "app/src/main/res/layout/compose_player_view.xml",
+    "app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+    "app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+    "app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+    "app/src/main/res/mipmap-hdpi/ic_launcher_round.webp",
+    "app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+    "app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+    "app/src/main/res/mipmap-xhdpi/ic_launcher.webp",
+    "app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp",
+    "app/src/main/res/mipmap-xxhdpi/ic_launcher.webp",
+    "app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp",
+    "app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp",
+    "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp",
+    "app/src/main/res/values/colors.xml",
+    "app/src/main/res/values/strings.xml",
+    "app/src/main/res/values/themes.xml",
+    "app/src/main/res/xml/backup_rules.xml",
+    "app/src/main/res/xml/data_extraction_rules.xml",
+    "app/src/main/res/xml/file_paths.xml",
+    "b/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt",
+    "b/app/src/main/java/com/chris/m3usuite/ui/cards/Cards.kt",
+    "b/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt",
+    "b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt",
+    "b/app/src/main/java/com/chris/m3usuite/ui/tv/FocusToolkit.kt",
+    "b/app/src/test/java/com/chris/m3usuite/ui/meta/MetaFormattersTest.kt",
+    "b/app/src/v7a/java/org/drinkless/tdlib/Log.java",
+    "b/docs/meta_chips.md",
+    "b/libtd/src/v7a/java/org/drinkless/tdlib/Client.java",
+    "b/libtd/src/v7a/java/org/drinkless/tdlib/package-info.java",
+    "build.gradle.kts",
+    "gradle.properties",
+    "gradle/libs.versions.toml",
+    "gradle/wrapper/gradle-wrapper.jar",
+    "gradle/wrapper/gradle-wrapper.properties",
+    "gradlew",
+    "gradlew.bat",
+    "libtd/build.gradle.kts",
+    "libtd/consumer-rules.pro",
+    "libtd/proguard-rules.pro",
+    "libtd/src/main/java/org/drinkless/tdlib/Client.java",
+    "libtd/src/main/java/org/drinkless/tdlib/Log.java",
+    "libtd/src/main/java/org/drinkless/tdlib/TdApi.java",
+    "libtd/src/main/jniLibs/arm64-v8a/libtdjni.so",
+    "script.sh",
+    "scripts/M3UParseProbe.kt",
+    "scripts/check_xtream_vod_de_providers_json.py",
+    "scripts/check_xtream_vod_providers.py",
+    "scripts/quick_m3u_normalize.py",
+    "scripts/quick_m3u_vod_category_mapping.py",
+    "scripts/quick_m3u_vod_de_providers_check.py",
+    "scripts/quick_m3u_vod_providers.py",
+    "scripts/setup-wsl-build-tools.sh",
+    "scripts/setup-wsl-gperf.sh",
+    "scripts/tdlib-build-arm64.sh",
+    "scripts/tdlib-rebuild-latest.sh",
+    "scripts/verify-tdlib-readelf.sh",
+    "scripts/xtream_vod_genre_audit.sh",
+    "settings.gradle.kts",
+    "tools/Telegram API readme.txt",
+    "tools/Zentralisierung.txt",
+    "tools/audit_tv_focus.sh",
+    "tools/td lib api scheme.tl"
+  ],
+  "mentioned_paths": [
+    "app/src/main/java/com/chris/m3usuite/data/repo/TelegramContentRepository.kt",
+    "app/src/main/java/com/chris/m3usuite/telegram/TelegramHeuristics.kt",
+    "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt",
+    "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt"
+  ],
+  "mentioned_paths_exists": {
+    "app/src/main/java/com/chris/m3usuite/data/repo/TelegramContentRepository.kt": false,
+    "app/src/main/java/com/chris/m3usuite/telegram/TelegramHeuristics.kt": false,
+    "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt": true,
+    "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt": true
+  },
+  "symbols": {
+    "count": 570,
+    "items": [
+      {
+        "file": "app/src/androidTest/java/com/chris/m3usuite/TelegramSmokeTest.kt",
+        "package": "com.chris.m3usuite",
+        "kind": "class",
+        "name": "TelegramSmokeTest"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/App.kt",
+        "package": "com.chris.m3usuite",
+        "kind": "class",
+        "name": "App"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/MainActivity.kt",
+        "package": "com.chris.m3usuite",
+        "kind": "class",
+        "name": "MainActivity"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "object",
+        "name": "BackupFormat"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "class",
+        "name": "Manifest"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "class",
+        "name": "ProfileExport"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "class",
+        "name": "ResumeVodMark"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "class",
+        "name": "ResumeEpisodeMark"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "class",
+        "name": "Payload"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "fun",
+        "name": "zip"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "fun",
+        "name": "put"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "fun",
+        "name": "unzip"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "fun",
+        "name": "pack"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupFormat.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "fun",
+        "name": "unpack"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/BackupRestoreSection.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "fun",
+        "name": "BackupRestoreSection"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/QuickImportRow.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "fun",
+        "name": "QuickImportRow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/SettingsBackupManager.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "class",
+        "name": "SettingsBackupManager"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/backup/SettingsBackupManager.kt",
+        "package": "com.chris.m3usuite.backup",
+        "kind": "class",
+        "name": "Report"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "object",
+        "name": "GlobalDebug"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "setEnabled"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "isEnabled"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logNavigation"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logDpad"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logTree"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logTree"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logTileFocus"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logFocusWidget"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logObxKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logObxKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logDetailSection"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logRowNav"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logRowScrollPlan"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logRowWindow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt",
+        "package": "com.chris.m3usuite.core.debug",
+        "kind": "fun",
+        "name": "logRowFocusState"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/device/DeviceProfile.kt",
+        "package": "com.chris.m3usuite.core.device",
+        "kind": "object",
+        "name": "DeviceProfile"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/device/DeviceProfile.kt",
+        "package": "com.chris.m3usuite.core.device",
+        "kind": "fun",
+        "name": "isTv"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/device/DeviceProfile.kt",
+        "package": "com.chris.m3usuite.core.device",
+        "kind": "fun",
+        "name": "isTvLowSpec"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/epg/XmlTv.kt",
+        "package": "com.chris.m3usuite.core.epg",
+        "kind": "class",
+        "name": "XmlTvProg"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/epg/XmlTv.kt",
+        "package": "com.chris.m3usuite.core.epg",
+        "kind": "object",
+        "name": "XmlTv"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/epg/XmlTv.kt",
+        "package": "com.chris.m3usuite.core.epg",
+        "kind": "fun",
+        "name": "doneForAll"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "object",
+        "name": "HttpClientFactory"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/HttpClient.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "create"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/PersistentCookieJar.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "class",
+        "name": "PersistentCookieJar"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/PersistentCookieJar.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "importFromWebView"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/PersistentCookieJar.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "get"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/PersistentCookieJar.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "object",
+        "name": "CookieBridge"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/PersistentCookieJar.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "importFromWebView"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/RequestHeadersProvider.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "object",
+        "name": "RequestHeadersProvider"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/RequestHeadersProvider.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "start"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/RequestHeadersProvider.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "snapshot"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/RequestHeadersProvider.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "ensureSeededBlocking"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/RequestHeadersProvider.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "defaultHeadersBlocking"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/RequestHeadersProvider.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "parseExtraHeaders"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/RequestHeadersProvider.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "merge"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/TrafficLogger.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "object",
+        "name": "TrafficLogger"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/TrafficLogger.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "setEnabled"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/TrafficLogger.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "isEnabled"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/http/TrafficLogger.kt",
+        "package": "com.chris.m3usuite.core.http",
+        "kind": "fun",
+        "name": "tryLog"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/m3u/M3UExporter.kt",
+        "package": "com.chris.m3usuite.core.m3u",
+        "kind": "object",
+        "name": "M3UExporter"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/m3u/M3UExporter.kt",
+        "package": "com.chris.m3usuite.core.m3u",
+        "kind": "fun",
+        "name": "esc"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/playback/PlayUrlHelper.kt",
+        "package": "com.chris.m3usuite.core.playback",
+        "kind": "object",
+        "name": "PlayUrlHelper"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/playback/PlayUrlHelper.kt",
+        "package": "com.chris.m3usuite.core.playback",
+        "kind": "class",
+        "name": "PlayRequest"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/playback/PlayUrlHelper.kt",
+        "package": "com.chris.m3usuite.core.playback",
+        "kind": "fun",
+        "name": "encodeUrl"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/playback/PlayUrlHelper.kt",
+        "package": "com.chris.m3usuite.core.playback",
+        "kind": "fun",
+        "name": "guessMimeType"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/playback/PlayUrlHelper.kt",
+        "package": "com.chris.m3usuite.core.playback",
+        "kind": "fun",
+        "name": "execute"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/FrameTimeWatchdog.kt",
+        "package": "com.chris.m3usuite.core.telemetry",
+        "kind": "object",
+        "name": "FrameTimeWatchdog"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/FrameTimeWatchdog.kt",
+        "package": "com.chris.m3usuite.core.telemetry",
+        "kind": "fun",
+        "name": "install"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/PagingTelemetry.kt",
+        "package": "com.chris.m3usuite.ui.telemetry",
+        "kind": "fun",
+        "name": "AttachPagingTelemetry"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/PagingTelemetry.kt",
+        "package": "com.chris.m3usuite.ui.telemetry",
+        "kind": "fun",
+        "name": "start"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/PagingTelemetry.kt",
+        "package": "com.chris.m3usuite.ui.telemetry",
+        "kind": "fun",
+        "name": "stop"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/Telemetry.kt",
+        "package": "com.chris.m3usuite.core.telemetry",
+        "kind": "object",
+        "name": "Telemetry"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/Telemetry.kt",
+        "package": "com.chris.m3usuite.core.telemetry",
+        "kind": "fun",
+        "name": "event"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/Telemetry.kt",
+        "package": "com.chris.m3usuite.core.telemetry",
+        "kind": "fun",
+        "name": "error"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/Telemetry.kt",
+        "package": "com.chris.m3usuite.core.telemetry",
+        "kind": "fun",
+        "name": "register"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/Telemetry.kt",
+        "package": "com.chris.m3usuite.core.telemetry",
+        "kind": "fun",
+        "name": "clear"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/Telemetry.kt",
+        "package": "com.chris.m3usuite.core.telemetry",
+        "kind": "fun",
+        "name": "registerDefault"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/Telemetry.kt",
+        "package": "com.chris.m3usuite.core.telemetry",
+        "kind": "fun",
+        "name": "event"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/Telemetry.kt",
+        "package": "com.chris.m3usuite.core.telemetry",
+        "kind": "fun",
+        "name": "error"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/telemetry/Telemetry.kt",
+        "package": "com.chris.m3usuite.core.telemetry",
+        "kind": "fun",
+        "name": "begin"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/Adults.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "isAdultCategory"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/Adults.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "isAdultCategoryLabel"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/Adults.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "isAdultProvider"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "object",
+        "name": "CategoryNormalizer"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "normalizeKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "normalizeBucket"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "has"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "hasWord"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "hasAny"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "langKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "qualityKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "extKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "seriesKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.core.util",
+        "kind": "fun",
+        "name": "displayLabel"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/ProviderLabelStore.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "ProviderLabelStore"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/ProviderLabelStore.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "labelFor"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/ProviderLabelStore.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "learn"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/ProviderLabelStore.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "get"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "XtreamCapabilities"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "ResolvedAliases"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "ActionCapability"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "SchemaHint"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "ExtrasCapability"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "ProviderCapabilityStore"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "get"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "put"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "findByEndpoint"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "EndpointKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "PortResolverConfig"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "EndpointPortStore"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "getResolvedPort"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "putResolvedPort"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "clear"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "CapabilityDiscoverer"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "buildUrl"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamCapabilities.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "enrich"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "XtreamClient"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "pickStr"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "pickArray"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "sanitised"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "buildLivePlayUrl"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "buildVodPlayUrl"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamClient.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "buildSeriesEpisodePlayUrl"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamConfig.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "XtreamConfig"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamConfig.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "playerApi"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamConfig.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "liveUrl"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamConfig.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "vodUrl"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamConfig.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "seriesEpisodeUrl"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamConfig.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "seriesEpisodeUrl"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamConfig.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "fromM3uUrl"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamConfig.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "PathKinds"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamConfig.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "DefaultPrefs"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamDetect.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "object",
+        "name": "XtreamDetect"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamDetect.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "detectCreds"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamDetect.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "parseStreamId"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamDetect.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "XtreamCreds"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamImportCoordinator.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "object",
+        "name": "XtreamImportCoordinator"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamImportCoordinator.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "fun",
+        "name": "enqueueWork"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "RawCategory"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "RawLiveStream"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "RawVod"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "RawSeries"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "RawVodInfo"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "RawSeriesInfo"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "RawInfoBlock"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "RawSeason"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "RawEpisode"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "RawEpisodeInfo"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "NormalizedListItem"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "NormalizedVodDetail"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "NormalizedSeriesDetail"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "NormalizedSeason"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "NormalizedEpisode"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamModels.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "class",
+        "name": "XtShortEPGProgramme"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/core/xtream/XtreamSeeder.kt",
+        "package": "com.chris.m3usuite.core.xtream",
+        "kind": "object",
+        "name": "XtreamSeeder"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxAdapters.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "fun",
+        "name": "getOrNull"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxAdapters.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "fun",
+        "name": "invalidate"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxAdapters.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "fun",
+        "name": "invalidateXtreamUrlCache"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxAdapters.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "fun",
+        "name": "buildEpisodePlayUrl"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxCategory"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxLive"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxVod"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxSeries"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxEpisode"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxEpgNowNext"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxProfile"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxProfilePermissions"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxKidContentAllow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxKidCategoryAllow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxKidContentBlock"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxScreenTimeEntry"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxResumeMark"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxTelegramMessage"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxIndexProvider"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxIndexYear"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxIndexGenre"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxIndexLang"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "class",
+        "name": "ObxIndexQuality"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxStore.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "object",
+        "name": "ObxStore"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/obx/ObxStore.kt",
+        "package": "com.chris.m3usuite.data.obx",
+        "kind": "fun",
+        "name": "get"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/EpgRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "EpgRepository"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/KidContentBulkOps.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "object",
+        "name": "KidContentBulkOps"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/KidContentBulkOps.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "Decoded"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/KidContentBulkOps.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "decode"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/KidContentRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "KidContentRepository"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/MediaQueryRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "MediaQueryRepository"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/MediaQueryRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "applyAdultFilter"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/MediaQueryRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "pagingByTypeFilteredFlow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/MediaQueryRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "pagingSearchFilteredFlow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/ObxPagingSources.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "ObxVodPagingSource"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/ObxPagingSources.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "mapBatch"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/ObxPagingSources.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "ObxLivePagingSource"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/ObxPagingSources.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "mapBatch"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/ObxPagingSources.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "ObxSeriesPagingSource"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/ObxPagingSources.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "mapBatch"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/PermissionRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "Permissions"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/PermissionRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "PermissionRepository"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/ProfileObxRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "ProfileObxRepository"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/ResumeRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "ResumeRepository"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/ResumeRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "ResumeVodView"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/ResumeRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "ResumeEpisodeView"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/ScreenTimeRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "ScreenTimeRepository"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "TelegramAuthRepository"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "isAvailable"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "hasValidKeys"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "bindService"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "unbindService"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "setInBackground"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "start"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "sendPhoneNumber"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "sendCode"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "checkDbKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "sendPassword"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "requestQrLogin"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramAuthRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "logout"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/TelegramRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "TelegramRepository"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/XtreamObxRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "class",
+        "name": "XtreamObxRepository"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/XtreamObxRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "needsSeriesDetailLocal"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/XtreamObxRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "liveChanges"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/XtreamObxRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "vodChanges"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/XtreamObxRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "seriesChanges"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/XtreamObxRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "has"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/XtreamObxRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "hasRe"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/XtreamObxRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "processListChunk"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/XtreamObxRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "needsVodDetail"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/data/repo/XtreamObxRepository.kt",
+        "package": "com.chris.m3usuite.data.repo",
+        "kind": "fun",
+        "name": "needsSeriesDetail"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/domain/selectors/ContentSelectors.kt",
+        "package": "com.chris.m3usuite.domain.selectors",
+        "kind": "fun",
+        "name": "extractYearFrom"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/domain/selectors/ContentSelectors.kt",
+        "package": "com.chris.m3usuite.domain.selectors",
+        "kind": "fun",
+        "name": "isDe"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/drive/DriveClient.kt",
+        "package": "com.chris.m3usuite.drive",
+        "kind": "object",
+        "name": "DriveDefaults"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/drive/DriveClient.kt",
+        "package": "com.chris.m3usuite.drive",
+        "kind": "object",
+        "name": "DriveClient"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/drive/DriveClient.kt",
+        "package": "com.chris.m3usuite.drive",
+        "kind": "fun",
+        "name": "isSignedIn"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/drive/DriveClient.kt",
+        "package": "com.chris.m3usuite.drive",
+        "kind": "fun",
+        "name": "signIn"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/drive/DriveClient.kt",
+        "package": "com.chris.m3usuite.drive",
+        "kind": "fun",
+        "name": "uploadBytes"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/drive/DriveClient.kt",
+        "package": "com.chris.m3usuite.drive",
+        "kind": "fun",
+        "name": "downloadLatestByPrefix"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/metrics/JankReporter.kt",
+        "package": "com.chris.m3usuite.metrics",
+        "kind": "object",
+        "name": "JankReporter"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/metrics/JankReporter.kt",
+        "package": "com.chris.m3usuite.metrics",
+        "kind": "fun",
+        "name": "record"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/metrics/RouteTag.kt",
+        "package": "com.chris.m3usuite.metrics",
+        "kind": "object",
+        "name": "RouteTag"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/metrics/RouteTag.kt",
+        "package": "com.chris.m3usuite.metrics",
+        "kind": "fun",
+        "name": "set"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/model/Episode.kt",
+        "package": "com.chris.m3usuite.model",
+        "kind": "class",
+        "name": "Episode"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/model/MediaItem.kt",
+        "package": "com.chris.m3usuite.model",
+        "kind": "class",
+        "name": "MediaItem"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "object",
+        "name": "ExternalPlayer"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "open"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "putHeaders"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/ExternalPlayer.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "putStart"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "InternalPlayerScreen"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "scheduleAutoHide"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "switchToLive"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "jumpLive"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "finishAndRelease"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "requestPictureInPicture"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "effectiveScale"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "effectiveFg"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "effectiveBg"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "effectiveFgOpacity"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "effectiveBgOpacity"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "class",
+        "name": "SubOpt"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "class",
+        "name": "AudioOpt"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "refreshSubtitleOptions"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "refreshAudioOptions"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "cycleResize"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "togglePlayPause"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "startSeek"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "stopSeek"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "fun",
+        "name": "fmt"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/player/PlayerChooser.kt",
+        "package": "com.chris.m3usuite.player",
+        "kind": "object",
+        "name": "PlayerChooser"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/prefs/Crypto.kt",
+        "package": "com.chris.m3usuite.prefs",
+        "kind": "object",
+        "name": "Crypto"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/prefs/Crypto.kt",
+        "package": "com.chris.m3usuite.prefs",
+        "kind": "fun",
+        "name": "encrypt"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/prefs/Crypto.kt",
+        "package": "com.chris.m3usuite.prefs",
+        "kind": "fun",
+        "name": "decrypt"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/prefs/SettingsSnapshot.kt",
+        "package": "com.chris.m3usuite.prefs",
+        "kind": "object",
+        "name": "SettingsSnapshot"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt",
+        "package": "com.chris.m3usuite.prefs",
+        "kind": "object",
+        "name": "Keys"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt",
+        "package": "com.chris.m3usuite.prefs",
+        "kind": "class",
+        "name": "SettingsStore"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/prefs/SettingsStore.kt",
+        "package": "com.chris.m3usuite.prefs",
+        "kind": "class",
+        "name": "Snapshot"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "object",
+        "name": "TdLibReflection"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "class",
+        "name": "PhoneAuthSettings"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "object",
+        "name": "Main"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "object",
+        "name": "Archive"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "class",
+        "name": "Folder"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "fromString"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "available"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "verifyBindings"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "setUpdateListener"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "class",
+        "name": "ClientHandle"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "createClient"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "getOrCreateClient"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildTdlibParameters"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "set"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildChatListMain"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildChatListArchive"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildChatListFolder"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildGetChats"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildLoadChats"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildGetChat"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractChatsIds"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractChatId"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractChatTitle"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractChatPositions"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "classifyChatList"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractChatPositionOrder"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractChatPositionList"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildGetChatHistory"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractMessagesArray"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractMessageId"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractCaptionOrText"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildGetAuthorizationState"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "mapAuthorizationState"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendSetTdlibParameters"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildPhoneNumberAuthenticationSettings"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendSetPhoneNumber"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendCheckCode"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendGetAuthorizationState"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendCheckDatabaseEncryptionKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendRequestQrCodeAuthentication"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractQrLink"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendCheckPassword"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendLogOut"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendClose"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendRegisterFcm"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendProcessPushNotification"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendSetInBackground"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendSetNetworkType"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "sendForResult"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildGetMessage"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildGetFile"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildDownloadFile"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "buildCancelDownloadFile"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "class",
+        "name": "FileInfo"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractFileInfo"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractFileUniqueId"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractSupportsStreaming"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractThumbFileId"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "tryFileId"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractDurationSecs"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractMimeType"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractVideoDimensions"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "dims"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractMessageDate"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "extractFileName"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "findFirstFile"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TelegramDataSource.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "class",
+        "name": "TelegramRoutingDataSource"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TelegramDataSource.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "class",
+        "name": "Factory"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TelegramKeyStore.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "object",
+        "name": "TelegramKeyStore"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TelegramKeyStore.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "fun",
+        "name": "getOrCreateDatabaseKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TelegramTdlibDataSource.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "class",
+        "name": "TelegramTdlibDataSource"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/TelegramTdlibDataSource.kt",
+        "package": "com.chris.m3usuite.telegram",
+        "kind": "class",
+        "name": "Factory"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/push/FirebasePushService.kt",
+        "package": "com.chris.m3usuite.telegram.push",
+        "kind": "class",
+        "name": "FirebasePushService"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "class",
+        "name": "TelegramServiceClient"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "bind"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "unbind"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "authStates"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "errors"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "qrLinks"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "start"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "requestQr"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "sendPhone"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "sendCode"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "sendPassword"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "getAuth"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "logout"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "registerFcm"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "processPush"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "setInBackground"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramServiceClient.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "fun",
+        "name": "pullChatHistory"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt",
+        "package": "com.chris.m3usuite.telegram.service",
+        "kind": "class",
+        "name": "TelegramTdlibService"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/auth/CreateProfileSheet.kt",
+        "package": "com.chris.m3usuite.ui.auth",
+        "kind": "fun",
+        "name": "CreateProfileSheet"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt",
+        "package": "com.chris.m3usuite.ui.auth",
+        "kind": "fun",
+        "name": "ProfileGate"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt",
+        "package": "com.chris.m3usuite.ui.auth",
+        "kind": "fun",
+        "name": "sha256"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt",
+        "package": "com.chris.m3usuite.ui.auth",
+        "kind": "fun",
+        "name": "PinDialog"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt",
+        "package": "com.chris.m3usuite.ui.auth",
+        "kind": "fun",
+        "name": "updateActivePin"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt",
+        "package": "com.chris.m3usuite.ui.auth",
+        "kind": "fun",
+        "name": "confirmAction"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt",
+        "package": "com.chris.m3usuite.ui.auth",
+        "kind": "fun",
+        "name": "handleKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/common/AppIconButton.kt",
+        "package": "com.chris.m3usuite.ui.common",
+        "kind": "fun",
+        "name": "AppIconButton"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/common/CardKit.kt",
+        "package": "com.chris.m3usuite.ui.common",
+        "kind": "fun",
+        "name": "AccentCard"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt",
+        "package": "com.chris.m3usuite.ui.common",
+        "kind": "fun",
+        "name": "TrailerBox"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/common/TvButtons.kt",
+        "package": "com.chris.m3usuite.ui.common",
+        "kind": "fun",
+        "name": "TvButton"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/common/TvButtons.kt",
+        "package": "com.chris.m3usuite.ui.common",
+        "kind": "fun",
+        "name": "TvTextButton"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/common/TvButtons.kt",
+        "package": "com.chris.m3usuite.ui.common",
+        "kind": "fun",
+        "name": "TvOutlinedButton"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/common/TvButtons.kt",
+        "package": "com.chris.m3usuite.ui.common",
+        "kind": "fun",
+        "name": "TvIconButton"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/common/Ui.kt",
+        "package": "com.chris.m3usuite.ui.common",
+        "kind": "fun",
+        "name": "isTv"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/common/Ui.kt",
+        "package": "com.chris.m3usuite.ui.common",
+        "kind": "fun",
+        "name": "FocusableCard"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/CollapsibleHeader.kt",
+        "package": "com.chris.m3usuite.ui.components",
+        "kind": "fun",
+        "name": "CollapsibleHeader"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/ProviderIcons.kt",
+        "package": "com.chris.m3usuite.ui.components",
+        "kind": "fun",
+        "name": "ProviderIconFor"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/ProviderIcons.kt",
+        "package": "com.chris.m3usuite.ui.components",
+        "kind": "fun",
+        "name": "clearbit"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt",
+        "package": "com.chris.m3usuite.ui.components",
+        "kind": "class",
+        "name": "VodResume"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt",
+        "package": "com.chris.m3usuite.ui.components",
+        "kind": "class",
+        "name": "SeriesResume"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt",
+        "package": "com.chris.m3usuite.ui.components",
+        "kind": "fun",
+        "name": "ResumeSectionAuto"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt",
+        "package": "com.chris.m3usuite.ui.components",
+        "kind": "fun",
+        "name": "ResumeVodRow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt",
+        "package": "com.chris.m3usuite.ui.components",
+        "kind": "fun",
+        "name": "ResumeEpisodeRow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/badges/TgBadge.kt",
+        "package": "com.chris.m3usuite.ui.components.badges",
+        "kind": "fun",
+        "name": "TgBadge"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/badges/TgBadge.kt",
+        "package": "com.chris.m3usuite.ui.components.badges",
+        "kind": "fun",
+        "name": "TgBadgeTiny"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/badges/TgBadge.kt",
+        "package": "com.chris.m3usuite.ui.components.badges",
+        "kind": "fun",
+        "name": "TgBadgeMedium"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt",
+        "package": "com.chris.m3usuite.ui.components.chips",
+        "kind": "class",
+        "name": "ChipStyle"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt",
+        "package": "com.chris.m3usuite.ui.components.chips",
+        "kind": "fun",
+        "name": "CategoryChip"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/chips/CategoryChips.kt",
+        "package": "com.chris.m3usuite.ui.components.chips",
+        "kind": "fun",
+        "name": "drawBand"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/common/FocusTitleOverlay.kt",
+        "package": "com.chris.m3usuite.ui.components.common",
+        "kind": "fun",
+        "name": "FocusTitleOverlay"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/controls/ActionIcons.kt",
+        "package": "com.chris.m3usuite.ui.components.controls",
+        "kind": "fun",
+        "name": "GrantIconButton"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/controls/ActionIcons.kt",
+        "package": "com.chris.m3usuite.ui.components.controls",
+        "kind": "fun",
+        "name": "RemoveIconButton"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "rowItemHeight"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "MediaCard"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "LiveTileCard"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "apply"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "SeriesTileCard"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "VodTileCard"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "ResumeRow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "LiveRow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "LiveAddTile"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "ReorderableLiveRow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "SeriesRow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "VodRow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "VodRowPaged"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "LiveRowPaged"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "SeriesRowPaged"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "TelegramRow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "TelegramRowPaged"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/RowCore.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "class",
+        "name": "RowConfig"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/RowCore.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "MediaRowCore"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/rows/RowCore.kt",
+        "package": "com.chris.m3usuite.ui.components.rows",
+        "kind": "fun",
+        "name": "MediaRowCorePaged"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/components/sheets/KidSelectSheet.kt",
+        "package": "com.chris.m3usuite.ui.components.sheets",
+        "kind": "fun",
+        "name": "KidSelectSheet"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/debug/FocusDebug.kt",
+        "package": "com.chris.m3usuite.ui.debug",
+        "kind": "fun",
+        "name": "ProvideFocusArea"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/debug/SafePainter.kt",
+        "package": "com.chris.m3usuite.ui.debug",
+        "kind": "fun",
+        "name": "safePainter"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/fx/FishBackground.kt",
+        "package": "com.chris.m3usuite.ui.fx",
+        "kind": "fun",
+        "name": "FishBackground"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/fx/FishSpin.kt",
+        "package": "com.chris.m3usuite.ui.fx",
+        "kind": "object",
+        "name": "FishSpin"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/fx/FishSpin.kt",
+        "package": "com.chris.m3usuite.ui.fx",
+        "kind": "fun",
+        "name": "setLoading"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/fx/FishSpin.kt",
+        "package": "com.chris.m3usuite.ui.fx",
+        "kind": "fun",
+        "name": "kickOnce"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/fx/Shimmer.kt",
+        "package": "com.chris.m3usuite.ui.fx",
+        "kind": "fun",
+        "name": "ShimmerBox"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/fx/Shimmer.kt",
+        "package": "com.chris.m3usuite.ui.fx",
+        "kind": "fun",
+        "name": "ShimmerCircle"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/fx/Transitions.kt",
+        "package": "com.chris.m3usuite.ui.fx",
+        "kind": "fun",
+        "name": "FadeThrough"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt",
+        "package": "com.chris.m3usuite.ui.home",
+        "kind": "fun",
+        "name": "HomeChromeScaffold"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt",
+        "package": "com.chris.m3usuite.ui.home",
+        "kind": "fun",
+        "name": "focusContentFromChrome"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/home/StartScreen.kt",
+        "package": "com.chris.m3usuite.ui.home",
+        "kind": "fun",
+        "name": "StartScreen"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/home/StartScreen.kt",
+        "package": "com.chris.m3usuite.ui.home",
+        "kind": "fun",
+        "name": "ChannelPickTile"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/home/StartViewModel.kt",
+        "package": "com.chris.m3usuite.ui.home",
+        "kind": "class",
+        "name": "StartViewModel"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/home/header/FishITBottomPanel.kt",
+        "package": "com.chris.m3usuite.ui.home.header",
+        "kind": "object",
+        "name": "FishITBottomHeights"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/home/header/FishITBottomPanel.kt",
+        "package": "com.chris.m3usuite.ui.home.header",
+        "kind": "fun",
+        "name": "FishITBottomPanel"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/home/header/FishITHeader.kt",
+        "package": "com.chris.m3usuite.ui.home.header",
+        "kind": "object",
+        "name": "FishITHeaderHeights"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/home/header/FishITHeader.kt",
+        "package": "com.chris.m3usuite.ui.home.header",
+        "kind": "fun",
+        "name": "FishITHeader"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/home/header/HeaderAlpha.kt",
+        "package": "com.chris.m3usuite.ui.home.header",
+        "kind": "fun",
+        "name": "rememberHeaderAlpha"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/profile/AvatarPickers.kt",
+        "package": "com.chris.m3usuite.ui.profile",
+        "kind": "fun",
+        "name": "AvatarCaptureAndPickButtons"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/profile/AvatarPickers.kt",
+        "package": "com.chris.m3usuite.ui.profile",
+        "kind": "fun",
+        "name": "launchCameraWithPermission"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/profile/ProfileManagerScreen.kt",
+        "package": "com.chris.m3usuite.ui.profile",
+        "kind": "fun",
+        "name": "ProfileManagerScreen"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/profile/ProfileManagerScreen.kt",
+        "package": "com.chris.m3usuite.ui.profile",
+        "kind": "fun",
+        "name": "row"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/profile/ProfileManagerViewModel.kt",
+        "package": "com.chris.m3usuite.ui.profile",
+        "kind": "class",
+        "name": "ProfileManagerViewModel"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/profile/ProfileManagerViewModel.kt",
+        "package": "com.chris.m3usuite.ui.profile",
+        "kind": "fun",
+        "name": "saveAvatar"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "LibraryScreen"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "invalidateCaches"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "extractPrefix"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "TelegramSection"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "chipKeyForLiveCategory"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "LiveDetailScreen"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/PlaylistSetupScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "PlaylistSetupScreen"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/SeriesDetailScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "SeriesDetailScreen"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/SeriesDetailScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "decodeObxSeriesId"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/SeriesDetailScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "playEpisode"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "SettingsScreen"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "runManualImport"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "extractPrefix"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/VodDetailScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "read"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/VodDetailScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "VodDetailScreen"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/VodDetailScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "play"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/VodDetailScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "setResume"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/VodDetailScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "clearResume"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/screens/XtreamPortalCheckScreen.kt",
+        "package": "com.chris.m3usuite.ui.screens",
+        "kind": "fun",
+        "name": "XtreamPortalCheckScreen"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+        "package": "com.chris.m3usuite.ui.selection",
+        "kind": "class",
+        "name": "AssignSelectionState"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+        "package": "com.chris.m3usuite.ui.selection",
+        "kind": "fun",
+        "name": "toggleActive"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+        "package": "com.chris.m3usuite.ui.selection",
+        "kind": "fun",
+        "name": "select"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+        "package": "com.chris.m3usuite.ui.selection",
+        "kind": "fun",
+        "name": "deselect"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+        "package": "com.chris.m3usuite.ui.selection",
+        "kind": "fun",
+        "name": "toggle"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+        "package": "com.chris.m3usuite.ui.selection",
+        "kind": "fun",
+        "name": "clear"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+        "package": "com.chris.m3usuite.ui.selection",
+        "kind": "fun",
+        "name": "rememberAssignSelectionState"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+        "package": "com.chris.m3usuite.ui.selection",
+        "kind": "fun",
+        "name": "ProvideAssignSelection"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+        "package": "com.chris.m3usuite.ui.selection",
+        "kind": "fun",
+        "name": "AssignModeBar"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+        "package": "com.chris.m3usuite.ui.selection",
+        "kind": "fun",
+        "name": "AssignSelectionBadge"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt",
+        "package": "com.chris.m3usuite.ui.selection",
+        "kind": "fun",
+        "name": "handleAssignSelectionClick"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/skin/PackageScope.kt",
+        "package": "com.chris.m3usuite.ui.skin",
+        "kind": "object",
+        "name": "SkinScope"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/skin/TvDevice.kt",
+        "package": "com.chris.m3usuite.ui.skin",
+        "kind": "fun",
+        "name": "isTvDevice"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/skin/TvModifiers.kt",
+        "package": "com.chris.m3usuite.ui.skin",
+        "kind": "class",
+        "name": "TvFocusColors"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/skin/TvSkin.kt",
+        "package": "com.chris.m3usuite.ui.skin",
+        "kind": "fun",
+        "name": "M3UTvSkin"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/state/RememberHelpers.kt",
+        "package": "com.chris.m3usuite.ui.state",
+        "kind": "fun",
+        "name": "rememberRouteListState"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/state/RememberHelpers.kt",
+        "package": "com.chris.m3usuite.ui.state",
+        "kind": "fun",
+        "name": "rememberRouteGridState"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt",
+        "package": "com.chris.m3usuite.ui.state",
+        "kind": "class",
+        "name": "RowFocus"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt",
+        "package": "com.chris.m3usuite.ui.state",
+        "kind": "fun",
+        "name": "readRowFocus"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt",
+        "package": "com.chris.m3usuite.ui.state",
+        "kind": "fun",
+        "name": "writeRowFocus"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt",
+        "package": "com.chris.m3usuite.ui.state",
+        "kind": "fun",
+        "name": "readRowFocus"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt",
+        "package": "com.chris.m3usuite.ui.state",
+        "kind": "fun",
+        "name": "writeRowFocus"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/state/ScrollStateRegistry.kt",
+        "package": "com.chris.m3usuite.ui.state",
+        "kind": "fun",
+        "name": "rememberRowFocus"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/theme/CategoryFonts.kt",
+        "package": "com.chris.m3usuite.ui.theme",
+        "kind": "object",
+        "name": "CategoryFonts"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/theme/DesignTokens.kt",
+        "package": "com.chris.m3usuite.ui.theme",
+        "kind": "object",
+        "name": "DesignTokens"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/theme/m3uSuiteTheme.kt",
+        "package": "com.chris.m3usuite.ui.theme",
+        "kind": "fun",
+        "name": "AppTheme"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/tv/TvFocusRow.kt",
+        "package": "com.chris.m3usuite.ui.tv",
+        "kind": "fun",
+        "name": "TvFocusRow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/AppImageLoader.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "object",
+        "name": "AppImageLoader"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/AppImageLoader.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "fun",
+        "name": "get"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/AvatarModel.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "fun",
+        "name": "rememberAvatarModel"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "object",
+        "name": "CategoryNormalizer"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "fun",
+        "name": "normalizeKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/CategoryNormalizer.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "fun",
+        "name": "displayLabel"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/Images.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "class",
+        "name": "ImageHeaders"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/Images.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "fun",
+        "name": "asMap"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/Images.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "fun",
+        "name": "rememberImageHeaders"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/Images.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "fun",
+        "name": "buildImageRequest"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/Images.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "fun",
+        "name": "AppAsyncImage"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/Images.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "fun",
+        "name": "AppPosterImage"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/ui/util/Images.kt",
+        "package": "com.chris.m3usuite.ui.util",
+        "kind": "fun",
+        "name": "AppHeroImage"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/BootCompletedReceiver.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "class",
+        "name": "BootCompletedReceiver"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "class",
+        "name": "ObxKeyBackfillWorker"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "sortKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "providerKeyFrom"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "genreKeyFromCategoryId"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "has"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "hasRe"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "yearKeyFrom"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "isBadProviderKey"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "scheduleOnce"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "object",
+        "name": "SchedulingGateway"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "scheduleAll"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "scheduleXtreamPeriodic"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "scheduleXtreamEnrichment"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "scheduleXtreamDeltaPeriodic"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "scheduleEpgPeriodic"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "scheduleScreenTimeReset"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "triggerXtreamRefreshNow"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "triggerXtreamRefreshNowKeep"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "cancelXtreamWork"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "cancelSafeBackgroundWork"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "resumeSafeBackgroundWork"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "enqueueOneTimeUnique"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "scheduleTelegramSync"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/SchedulingGateway.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "onTelegramSyncCompleted"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/ScreenTimeResetWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "class",
+        "name": "ScreenTimeResetWorker"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/ScreenTimeResetWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "schedule"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "class",
+        "name": "TelegramCacheCleanupWorker"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "putChunked"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "schedule"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/TelegramCacheCleanupWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "wipeAll"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/TelegramSyncWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "class",
+        "name": "TelegramSyncWorker"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/TelegramSyncWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "enqueue"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/Workers.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "class",
+        "name": "XtreamRefreshWorker"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/Workers.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "schedule"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/Workers.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "class",
+        "name": "XtreamEnrichmentWorker"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/Workers.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "schedule"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/XtreamDeltaImportWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "class",
+        "name": "XtreamDeltaImportWorker"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/XtreamDeltaImportWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "schedulePeriodic"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/XtreamDeltaImportWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "triggerOnce"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/XtreamDeltaImportWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "triggerOnceDelayedLive"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/XtreamDetailsWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "class",
+        "name": "XtreamDetailsWorker"
+      },
+      {
+        "file": "app/src/main/java/com/chris/m3usuite/work/XtreamDetailsWorker.kt",
+        "package": "com.chris.m3usuite.work",
+        "kind": "fun",
+        "name": "triggerOnce"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt",
+        "package": "com.chris.m3usuite.playback",
+        "kind": "class",
+        "name": "PlayerLauncher"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt",
+        "package": "com.chris.m3usuite.playback",
+        "kind": "fun",
+        "name": "rememberPlayerLauncher"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt",
+        "package": "com.chris.m3usuite.playback",
+        "kind": "class",
+        "name": "DrmInfo"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt",
+        "package": "com.chris.m3usuite.playback",
+        "kind": "class",
+        "name": "PlayRequest"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt",
+        "package": "com.chris.m3usuite.playback",
+        "kind": "class",
+        "name": "Completed"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt",
+        "package": "com.chris.m3usuite.playback",
+        "kind": "class",
+        "name": "Stopped"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/playback/PlayerLauncher.kt",
+        "package": "com.chris.m3usuite.playback",
+        "kind": "class",
+        "name": "Error"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/ui/cards/Cards.kt",
+        "package": "com.chris.m3usuite.ui.cards",
+        "kind": "fun",
+        "name": "PosterCard"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/ui/cards/Cards.kt",
+        "package": "com.chris.m3usuite.ui.cards",
+        "kind": "fun",
+        "name": "ChannelCard"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/ui/cards/Cards.kt",
+        "package": "com.chris.m3usuite.ui.cards",
+        "kind": "fun",
+        "name": "SeasonCard"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/ui/cards/Cards.kt",
+        "package": "com.chris.m3usuite.ui.cards",
+        "kind": "fun",
+        "name": "EpisodeCard"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "class",
+        "name": "MediaMeta"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "class",
+        "name": "VideoInfo"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/ui/meta/MediaMeta.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "class",
+        "name": "AudioInfo"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "object",
+        "name": "MetaMappers"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "fun",
+        "name": "fromBasics"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/ui/meta/MetaMappers.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "fun",
+        "name": "fromMediaItem"
+      },
+      {
+        "file": "b/app/src/main/java/com/chris/m3usuite/ui/tv/FocusToolkit.kt",
+        "package": "com.chris.m3usuite.ui.tv",
+        "kind": "fun",
+        "name": "rememberInitialFocusRequester"
+      },
+      {
+        "file": "b/app/src/test/java/com/chris/m3usuite/ui/meta/MetaFormattersTest.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "class",
+        "name": "MetaFormattersTest"
+      },
+      {
+        "file": "b/app/src/test/java/com/chris/m3usuite/ui/meta/MetaFormattersTest.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "fun",
+        "name": "quality_formats_from_height_and_hdr"
+      },
+      {
+        "file": "b/app/src/test/java/com/chris/m3usuite/ui/meta/MetaFormattersTest.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "fun",
+        "name": "duration_formats_minutes"
+      },
+      {
+        "file": "b/app/src/test/java/com/chris/m3usuite/ui/meta/MetaFormattersTest.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "fun",
+        "name": "audio_formats_languages_and_channels"
+      },
+      {
+        "file": "b/app/src/test/java/com/chris/m3usuite/ui/meta/MetaFormattersTest.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "fun",
+        "name": "year_formats_as_string"
+      },
+      {
+        "file": "b/app/src/test/java/com/chris/m3usuite/ui/meta/MetaFormattersTest.kt",
+        "package": "com.chris.m3usuite.ui.meta",
+        "kind": "fun",
+        "name": "parse_genres_splits_and_dedups"
+      },
+      {
+        "file": "scripts/M3UParseProbe.kt",
+        "package": "probe",
+        "kind": "object",
+        "name": "M3UParseProbe"
+      },
+      {
+        "file": "scripts/M3UParseProbe.kt",
+        "package": "probe",
+        "kind": "fun",
+        "name": "main"
+      },
+      {
+        "file": "scripts/M3UParseProbe.kt",
+        "package": "probe",
+        "kind": "fun",
+        "name": "tally"
+      }
+    ]
+  },
+  "existence_table": "- app/src/main/java/com/chris/m3usuite/data/repo/TelegramContentRepository.kt → MISSING\n- app/src/main/java/com/chris/m3usuite/telegram/TelegramHeuristics.kt → MISSING\n- app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt → EXISTS\n- app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt → EXISTS",
+  "contextmap_markdown_summary": "### contextmap-ready\n#### Problemzusammenfassung\n- Telegram-Integration liefert uneinheitliche Metadaten und fehlende UI-Kennzeichnung; Event-Indexierung speichert falsche/fehlende Nachrichtendaten (Zeitstempel).\n- Vier bereitgestellte Diffs: zwei neue Dateien (Heuristik-Parser, Content-Repo) fehlen im Repo; zwei Patches betreffen bestehende Dateien (Service-Indexierung, UI-Badge).\n- Ziel: Heuristik zur Titel-/SxxEyy-Erkennung hinzufügen, OBX→MediaItem-Abbildung für Telegram-Chats bereitstellen, TDLib-Update-Datum korrekt persistieren, UI-Tiles mit TG-Badge kennzeichnen.\n- Pull Request soll alle Punkte in einem Rutsch adressieren (Create + Patch) und kompilierfähig sein.\n\n#### (potentiell) betroffene Module\n- app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt\n- app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt\n- app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt\n- app/src/main/java/com/chris/m3usuite/data/repo/TelegramContentRepository.kt\n- app/src/main/java/com/chris/m3usuite/telegram/TelegramHeuristics.kt\n\n#### Annahmen\n- ObjectBox-Entity ObxTelegramMessage existiert mit Feldern: id, chatId, messageId, fileId, caption, date, durationSecs, supportsStreaming, thumbFileId, localPath.\n- Model MediaItem existiert und enthält Felder: id, type, name, sortTitle, year, durationSecs, plot, source, tgChatId, tgMessageId, tgFileId, weitere optionale Poster-/Backdrop-/IDs.\n- Telegram-Feature-Gate (tg_enabled) und AUTH-Status werden an anderer Stelle geprüft; Repository darf ohne Hard-Gate arbeiten (UI/Caller filtert).\n- TdLibReflection stellt extractMessageId(...), extractMessageDate(...), findFirstFile(...), extractFileInfo(...), extractCaption(...), extractMimeType(...), extractVideoDimensions(...), extractThumbFileId(...) bereit.\n- UI-Rows (HomeRows) rendern MediaItem-Kacheln; Overlay-Badges sind dort zentral zu ergänzen ohne Bruch der TV-Fokusregeln.\n\n#### Unklarheiten\n- Die im Issue neu vorgeschlagenen Dateien existieren nicht: \n  - app/src/main/java/com/chris/m3usuite/data/repo/TelegramContentRepository.kt → MISSING\n  - app/src/main/java/com/chris/m3usuite/telegram/TelegramHeuristics.kt → MISSING\n- Heuristik-Diff nutzt Regex-Strings mit nicht-escapten Backslashes (\\d, \\b, \\s) → würde so nicht kompilieren; Anpassung an Kotlin-String-Literale nötig.\n- TelegramContentRepository-Diff zeigt unvollständige Typsignaturen (List statt List<MediaItem>) → Compile-Fehler; ferner: nicht genutztes SettingsStore-Argument.\n- ID-Bridging: Diff verwendet 5_000_000_000_000L + obxId für TG-Items. Offiziell sind 1e12/2e12/3e12 für live/vod/series reserviert; TG-Slot ist nicht dokumentiert → Klärung, ob 5e12 als stabiler Bereich gilt.\n- Einbindung in UI-Listen (Rows): Der PR ergänzt nur den Badge in HomeRows, nicht aber die Abfrage/Integration eigener Telegram-Rows. Sind Telegram-Rows bereits an anderer Stelle verdrahtet oder müssen sie in Home/Library ergänzt werden?\n\n#### Risiken\n- Regex-Fehler (illegale Escape-Sequenzen) führen zu Compile-Abbruch; zu aggressive Token-Filter könnten Titel leeren.\n- Änderung der Service-Signatur (indexMessageContent(..., messageDate)) muss alle Aufrufer im Service erfassen; vergessene Stellen brechen die Indexierung.\n- OBX-Lese-Strategie (find().sortedWith(...).drop/take) kann bei großen Chats unnötige In-Memory-Sortierung verursachen; besser limitierte Query, wenn verfügbar.\n- Kollisionen bei MediaItem.id-Encodierung (5e12) könnten Routing/Detail-Navigation beeinträchtigen, falls andere Pfade diesen Bereich verwenden.\n- UI-Badge-Einbau an falscher Ebene kann TV-Fokus/Bring-into-view stören (Z-Reihenfolge, Clip).\n\n#### Nächste Schritte (5-Punkte-Plan)\n1. Codebasis prüfen (Lesereihenfolge):\n   - app/src/main/java/com/chris/m3usuite/telegram/service/TelegramTdlibService.kt (aktuelle Aufrufer von indexMessageContent suchen)\n   - app/src/main/java/com/chris/m3usuite/telegram/TdLibReflection.kt (extractMessageDate vorhanden/Signatur)\n   - app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt (geeignete Stelle für Badge-Overlay)\n2. Solver-Prep:\n   - Create-Targets markieren:\n     - app/src/main/java/com/chris/m3usuite/telegram/TelegramHeuristics.kt (Kotlin-Regex korrekt escapen; niemals werfen; Parsed-DTO)\n     - app/src/main/java/com/chris/m3usuite/data/repo/TelegramContentRepository.kt (saubere Signaturen: suspend fun recentVodByChat(...): List<MediaItem>; Paging später optional)\n   - Bestehende Dateien vollständig einlesen; im Service alle call sites auf neue indexMessageContent-Signatur umstellen.\n3. Schnittstellen/Mini-Specs:\n   - TelegramHeuristics.parse(raw:String?): Parsed\n     - Regex mit String-Escapes oder Triple-Quotes; Junk-/Lang-/Quality-Token robust; Titel-Cleaning ohne harte Löschungen gemeinsamer Worte.\n   - TelegramContentRepository\n     - Query: per chatId; Sort: date desc, messageId desc; Map zu MediaItem (type \"vod\"/\"series\" param), name zusammengesetzt aus Titel (+ SxxEyy, + (Year)); id=TG-encoded; source=\"TG\".\n     - Optional Gate: wenn chatId==0 → empty; spätere Optimierung: limit/offset bereits in Query (falls OBX-API unterstützt).\n   - TelegramTdlibService\n     - indexMessageContent(chatId, messageId, content, messageDate); date = messageDate ?: extractMessageDate(content) ?: nowSecs.\n   - HomeRows\n     - Overlay-Badge \"T\" für item.source==\"TG\" als Box.align(TopStart); keine Fokus-Interferenz.\n4. Validierung:\n   - ktlint/detekt optional; compileDebugKotlin sicherstellen.\n   - Regex-Tests (ein paar Beispiel-Captions lokal): S01E02, 1080p, [GERMAN], 2023; Leer-/Edge-Cases → Titel bleibt nicht leer.\n   - Smoke: TDLib-Service empfängt UpdateNewMessage/UpdateMessageContent → ObxTelegramMessage.date befüllt; HomeRows zeigt Badge; Repository liefert List<MediaItem>.\n5. Handover an Solver (.codex/context.json):\n   - Files: obige 5 Pfade (2 Create, 3 Patch/Verify).\n   - Symbols: TelegramHeuristics.Parsed/parse; TelegramContentRepository.recentVodByChat/recentSeriesByChat; TelegramTdlibService.indexMessageContent(+date).\n   - Missing-Files: Heuristics.kt, TelegramContentRepository.kt.\n   - Plan: Create → Patch → Build → Quick-run Telegram smoke (falls vorhanden) → PR Beschreibung mit Anpassungen/Abweichungen vom Diff (Regex-Escapes, Typsignaturen, ID-Bridging-Hinweis).",
+  "model": "gpt-5",
+  "reasoning_effort": "high"
+}
