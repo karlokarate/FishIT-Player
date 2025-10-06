@@ -600,4 +600,47 @@ def main():
         add_contextmap_ready_label(ictx.get("issue_number"), repo_env, token_env)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+        # --- NEU: Output setzen für GitHub Workflow ---
+        # Schreibe summary.txt als Workflow-Output "summary"
+        summary_path = ".github/codex/context/summary.txt"
+        if os.path.exists(summary_path):
+            with open(summary_path, "r", encoding="utf-8") as f:
+                summary_text = f.read()
+            # Output für GitHub Actions
+            # (Schreibe in $GITHUB_OUTPUT falls vorhanden)
+            github_output = os.environ.get("GITHUB_OUTPUT")
+            if github_output:
+                with open(github_output, "a", encoding="utf-8") as fh:
+                    fh.write("summary<<EOF\n")
+                    fh.write(summary_text)
+                    fh.write("\nEOF\n")
+            # Legacy: Zusätzlich als Log für Diagnose
+            print("\n::notice::ContextMap Summary:\n" + summary_text)
+    except Exception as e:
+        # Versuche, Issue-Nummer und Repo aus Env zu holen
+        repo = os.getenv("GITHUB_REPOSITORY", "")
+        token = os.getenv("GITHUB_TOKEN", "")
+        event = load_event_payload()
+        ictx = fetch_issue_context(event, repo, token)
+        issue_number = ictx.get("issue_number")
+        # Setze Label 'contextmap-error'
+        try:
+            if issue_number and repo and token:
+                url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/labels"
+                github_api_post_json(url, token, {"labels": ["contextmap-error"]})
+        except Exception as e_label:
+            logging.warning(f"Fehler beim Label-Setzen: {e_label}")
+
+        # Schreibe Kommentar zum Issue
+        try:
+            if issue_number and repo and token:
+                url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
+                error_msg = f"❌ Fehler im ContextMap Bot:\n```\n{type(e).__name__}: {e}\n```"
+                github_api_post_json(url, token, {"body": error_msg})
+        except Exception as e_comment:
+            logging.warning(f"Fehler beim Kommentieren: {e_comment}")
+
+        print(f"::error::ContextMap-Bot Exception: {e}")
+        sys.exit(1)
