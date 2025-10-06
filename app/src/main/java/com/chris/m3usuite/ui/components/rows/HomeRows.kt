@@ -4,131 +4,137 @@
 )
 package com.chris.m3usuite.ui.components.rows
 
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusEvent
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.graphics.graphicsLayer
-import com.chris.m3usuite.ui.compat.focusGroup
-import androidx.compose.ui.viewinterop.AndroidView
 import android.net.Uri
-import androidx.media3.common.MediaItem as ExoMediaItem
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.DefaultRenderersFactory
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.ui.PlayerView
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.material3.Surface
+import androidx.annotation.OptIn
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.unit.dp
-import com.chris.m3usuite.ui.util.rememberImageHeaders
-import com.chris.m3usuite.ui.util.AppAsyncImage
-import com.chris.m3usuite.ui.fx.ShimmerBox
-import com.chris.m3usuite.ui.components.common.FocusTitleOverlay
-import com.chris.m3usuite.ui.skin.tvClickable
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
-import com.chris.m3usuite.ui.fx.tvFocusGlow
-// isTvDevice removed (unused)
-import androidx.compose.foundation.layout.Column
-import androidx.compose.ui.Alignment
-import androidx.compose.foundation.focusable
-import androidx.compose.ui.layout.ContentScale
-import com.chris.m3usuite.model.MediaItem
-import androidx.compose.runtime.DisposableEffect
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.matchParentSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.foundation.border
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
-import com.chris.m3usuite.ui.fx.ShimmerCircle
-// use fillMaxSize() for broad Compose compatibility
-import androidx.compose.ui.draw.clip
-import com.chris.m3usuite.domain.selectors.extractYearFrom
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.data.repo.EpgRepository
-import com.chris.m3usuite.ui.cards.PosterCardTagged
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.FlowPreview
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chris.m3usuite.ui.common.AppIcon
-import com.chris.m3usuite.ui.common.AppIconButton
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.onKeyEvent
-import android.os.SystemClock
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.focus.focusGroup
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.type
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.TextButton
 import androidx.compose.ui.input.key.key
-import androidx.compose.animation.core.tween
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.MediaItem as ExoMediaItem
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.PlayerView
 import androidx.paging.compose.LazyPagingItems
-import androidx.paging.LoadState
+import com.chris.m3usuite.BuildConfig
+import com.chris.m3usuite.data.repo.EpgRepository
+import com.chris.m3usuite.domain.selectors.extractYearFrom
+import com.chris.m3usuite.model.MediaItem
+import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.ui.cards.PosterCardTagged
+import com.chris.m3usuite.ui.common.AppIcon
+import com.chris.m3usuite.ui.common.AppIconButton
+import com.chris.m3usuite.ui.components.common.FocusTitleOverlay
+import com.chris.m3usuite.ui.fx.ShimmerBox
+import com.chris.m3usuite.ui.fx.ShimmerCircle
+import com.chris.m3usuite.ui.fx.tvFocusGlow
+import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.tv.TvFocusRow
+import com.chris.m3usuite.ui.util.AppAsyncImage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import kotlin.math.abs
+import kotlin.math.max
 
 val LocalRowItemHeightOverride = compositionLocalOf<Int?> { null }
+
 private const val POSTER_ASPECT_RATIO = 2f / 3f
 private const val LIVE_TILE_ASPECT_RATIO = 16f / 9f
 private val TILE_SHAPE = RoundedCornerShape(14.dp)
 
 @Composable
 private fun PlayOverlay(visible: Boolean, sizeDp: Int = 56) {
-    val a by animateFloatAsState(targetValue = if (visible) 1f else 0f, animationSpec = tween(150), label = "playFade")
+    val a by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(150),
+        label = "playFade"
+    )
     if (a > 0f) {
         Box(Modifier.fillMaxSize()) {
             AppIconButton(
                 icon = AppIcon.PlayCircle,
                 contentDescription = "Abspielen",
                 onClick = {},
-                modifier = Modifier.align(Alignment.Center).alpha(a).focusProperties { canFocus = false },
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .alpha(a)
+                    .focusProperties { canFocus = false },
                 size = sizeDp.dp
             )
         }
@@ -171,14 +177,13 @@ fun rowItemHeight(): Int {
     val isLandscape = cfg.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val sw = cfg.smallestScreenWidthDp
     val isTablet = sw >= 600
-    // Tune heights: phone 180/200, tablet 210/230 depending on orientation
     val base = when {
         isTablet && isLandscape -> 230
         isTablet -> 210
         isLandscape -> 200
         else -> 180
     }
-    return (base * 1.2f).toInt() // +20%
+    return (base * 1.2f).toInt()
 }
 
 @Composable
@@ -190,23 +195,24 @@ fun MediaCard(
 ) {
     val ctx = LocalContext.current
     val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
-    val chromeToggle by rememberUpdatedState(com.chris.m3usuite.ui.home.LocalChromeToggle.current)
     val tileHeight = rowItemHeight().dp
     val tileWidth = tileHeight * POSTER_ASPECT_RATIO
     var focused by remember { mutableStateOf(false) }
-    var leftDownAt by remember { mutableStateOf<Long?>(null) }
+
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = modifier
             .width(tileWidth)
             .padding(end = 12.dp)
-            // No manual DPAD interception; rely on focus traversal and global chrome handler
             .onKeyEvent { ev ->
                 val n = ev.nativeKeyEvent
                 if (n.action == android.view.KeyEvent.ACTION_UP) {
                     val code = n.keyCode
                     if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad(
+                            "CENTER",
+                            mapOf("tile" to (item.streamId ?: item.id), "type" to item.type)
+                        )
                     }
                 }
                 false
@@ -214,7 +220,6 @@ fun MediaCard(
             .tvClickable(
                 brightenContent = false,
                 autoBringIntoView = false,
-                // visuals come from row-level tvFocusFrame wrapper
                 scaleFocused = 1f,
                 scalePressed = 1f,
                 focusRequester = selfReq,
@@ -233,9 +238,7 @@ fun MediaCard(
                     runCatching { selfReq.requestFocus() }
                 }
             }
-            // Dedicated glow not needed; tvClickable draws halo/border on TV
     ) {
-        // Debug: log focused tile + OBX title in parentheses + tree path
         LaunchedEffect(focused, item.streamId, item.type) {
             if (focused) {
                 val sid = item.streamId
@@ -259,12 +262,16 @@ fun MediaCard(
                         }.getOrNull()
                     }
                     com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus(item.type, sid.toString(), item.name, obxTitle)
-                    val node = when (item.type) { "live" -> "row:live"; "vod" -> "row:vod"; "series" -> "row:series"; else -> "row:?" }
+                    val node = when (item.type) {
+                        "live" -> "row:live"
+                        "vod" -> "row:vod"
+                        "series" -> "row:series"
+                        else -> "row:?"
+                    }
                     com.chris.m3usuite.core.debug.GlobalDebug.logTree(node, "tile:$sid")
                 }
             }
         }
-        // Prefer poster/logo/backdrop in this order (fallback to any image field in MediaItem)
         val raw = remember(item.poster ?: item.logo ?: item.backdrop) {
             item.poster ?: item.logo ?: item.backdrop
         }
@@ -281,12 +288,11 @@ fun MediaCard(
                 modifier = Modifier.fillMaxSize(),
                 crossfade = false
             )
-            // Assign badge (visible only when allowed) and selected frame
             run {
                 val assignCtx = com.chris.m3usuite.ui.state.LocalAssignSelection.current
                 val showBadge = com.chris.m3usuite.ui.state.LocalAssignBadgeVisible.current
                 if (showBadge) {
-                    androidx.compose.material3.Surface(
+                    Surface(
                         color = Color.Black.copy(alpha = 0.55f),
                         contentColor = Color.White,
                         shape = CircleShape,
@@ -301,18 +307,25 @@ fun MediaCard(
                     ) {
                         val sel = assignCtx.isSelected(item)
                         val label = if (sel) "✓" else "+"
-                        Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
                     }
                 }
                 if (assignCtx.isSelected(item)) {
-                    Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, TILE_SHAPE))
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .border(3.dp, MaterialTheme.colorScheme.primary, TILE_SHAPE)
+                    )
                 }
             }
-            // Telegram origin badge (top-right)
             if (isTelegram(item)) {
                 TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(6.dp), small = true)
             }
-            com.chris.m3usuite.ui.components.common.FocusTitleOverlay(
+            FocusTitleOverlay(
                 title = item.name,
                 focused = focused
             )
@@ -329,7 +342,7 @@ fun MediaCard(
     }
 }
 
-@androidx.annotation.OptIn(UnstableApi::class)
+@OptIn(UnstableApi::class)
 @Composable
 fun LiveTileCard(
     item: MediaItem,
@@ -342,7 +355,7 @@ fun LiveTileCard(
     insertionLeft: Boolean = false,
     insertionRight: Boolean = false
 ) {
-    if (com.chris.m3usuite.BuildConfig.CARDS_V1) {
+    if (BuildConfig.CARDS_V1) {
         val nowNext: String? = null
         com.chris.m3usuite.ui.cards.ChannelCard(
             name = item.name,
@@ -354,12 +367,9 @@ fun LiveTileCard(
     }
     val ctx = LocalContext.current
     val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
-    val chromeToggle by rememberUpdatedState(com.chris.m3usuite.ui.home.LocalChromeToggle.current)
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
-    val headers = rememberImageHeaders()
-    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
+    val store = remember { SettingsStore(ctx) }
     val epgRepo = remember(store) { EpgRepository(ctx, store) }
-    val roomEnabled by store.roomEnabled.collectAsStateWithLifecycle(initialValue = false)
     val ua by store.userAgent.collectAsStateWithLifecycle(initialValue = "")
     val ref by store.referer.collectAsStateWithLifecycle(initialValue = "")
     val extraJson by store.extraHeadersJson.collectAsStateWithLifecycle(initialValue = "")
@@ -370,10 +380,9 @@ fun LiveTileCard(
     var epgProgress by remember { mutableStateOf<Float?>(null) }
     var focused by remember { mutableStateOf(false) }
     var preview by remember { mutableStateOf(false) }
-    // Show cached EPG immediately if present (reactive to DB updates from prefetch)
+
     val epgChannelId = remember(item.epgChannelId) { item.epgChannelId?.trim().orEmpty() }
     if (epgChannelId.isNotEmpty()) {
-        // Subscribe to OBX EPG updates by channelId
         val box = remember { com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxEpgNowNext::class.java) }
         DisposableEffect(epgChannelId) {
             val q = box.query(com.chris.m3usuite.data.obx.ObxEpgNowNext_.channelId.equal(epgChannelId)).build()
@@ -393,7 +402,6 @@ fun LiveTileCard(
         }
     }
 
-    // Load EPG when tile becomes active (focused). Prefetch happens separately for favorites.
     @OptIn(FlowPreview::class)
     LaunchedEffect(item.streamId) {
         val sid = item.streamId ?: return@LaunchedEffect
@@ -429,12 +437,12 @@ fun LiveTileCard(
             when (ev.key) {
                 Key.DirectionLeft -> {
                     com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
-                    onMoveLeft?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Left)
+                    onMoveLeft?.invoke() ?: focusManager.moveFocus(FocusDirection.Left)
                     true
                 }
                 Key.DirectionRight -> {
                     com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
-                    onMoveRight?.invoke() ?: focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right)
+                    onMoveRight?.invoke() ?: focusManager.moveFocus(FocusDirection.Right)
                     true
                 }
                 else -> false
@@ -447,22 +455,23 @@ fun LiveTileCard(
             .height(tileHeight)
             .width(tileWidth)
             .padding(end = 6.dp)
-            .focusable()
-            // No per-tile DPAD interception; reorder handler handles left/right when active
+            .combinedClickable(
+                onClick = { onOpenDetails(item) },
+                onLongClick = { onLongPress?.invoke() }
+            )
             .onKeyEvent { ev ->
                 val n = ev.nativeKeyEvent
                 if (n.action == android.view.KeyEvent.ACTION_UP) {
                     val code = n.keyCode
                     if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad(
+                            "CENTER",
+                            mapOf("tile" to (item.streamId ?: item.id), "type" to item.type)
+                        )
                     }
                 }
                 false
             }
-            .combinedClickable(
-                onClick = { onOpenDetails(item) },
-                onLongClick = { onLongPress?.invoke() }
-            )
             .then(navKeysMod)
             .onFocusEvent {
                 val nowHas = it.isFocused || it.hasFocus
@@ -485,14 +494,16 @@ fun LiveTileCard(
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
-                val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = 0.12f), 1f to Color.Transparent)
+                val grad = Brush.verticalGradient(
+                    0f to Color.White.copy(alpha = 0.12f),
+                    1f to Color.Transparent
+                )
                 drawRect(brush = grad)
             }
             .tvFocusGlow(focused = focused, shape = shape, ringWidth = 5.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
     ) {
-        // Debug: log focused tile + OBX title in parentheses + tree path
         LaunchedEffect(focused, item.streamId) {
             if (focused) {
                 val sid = item.streamId
@@ -516,7 +527,6 @@ fun LiveTileCard(
                 .fillMaxWidth()
                 .height(tileHeight)
         ) {
-            // Explicit insertion indicator lines inside tile bounds
             if (insertionLeft) {
                 Box(
                     Modifier
@@ -541,7 +551,6 @@ fun LiveTileCard(
                     factory = { c ->
                         val view = PlayerView(c)
                         val httpFactory = DefaultHttpDataSource.Factory().apply {
-                            // Prefer explicit UA at factory level
                             val effUa = (if (ua.isNotBlank()) ua else "IBOPlayer/1.4 (Android)")
                             if (effUa.isNotBlank()) setUserAgent(effUa)
                         }
@@ -572,24 +581,25 @@ fun LiveTileCard(
                             .setRenderersFactory(renderers)
                             .setMediaSourceFactory(mediaFactory)
                             .build().apply {
-                            volume = 0f
-                            repeatMode = ExoPlayer.REPEAT_MODE_ALL
-                            playWhenReady = true
-                            setMediaItem(ExoMediaItem.fromUri(Uri.parse(url)))
-                            prepare()
-                        }
+                                volume = 0f
+                                repeatMode = ExoPlayer.REPEAT_MODE_ALL
+                                playWhenReady = true
+                                setMediaItem(ExoMediaItem.fromUri(Uri.parse(url)))
+                                prepare()
+                            }
                         view.player = player
                         view.useController = false
                         view.tag = player
                         view
                     },
-                    modifier = Modifier.fillMaxWidth().graphicsLayer(alpha = 0.7f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer(alpha = 0.7f),
                     update = { v -> (v.tag as? ExoPlayer)?.let { if (!it.playWhenReady) it.playWhenReady = true } },
                     onRelease = { v -> (v.tag as? ExoPlayer)?.release() }
                 )
             }
 
-            // Circular logo with shimmer placeholder (top-aligned)
             val sz = 77.dp
             val logoTop = 8.dp
             val epgTop = logoTop + sz + 8.dp
@@ -618,7 +628,7 @@ fun LiveTileCard(
                             crossfade = false,
                             onLoading = { loaded = false },
                             onSuccess = { loaded = true },
-                            onError   = { loaded = true }
+                            onError = { loaded = true }
                         )
                     } else {
                         Box(
@@ -631,14 +641,16 @@ fun LiveTileCard(
                 }
             }
 
-            // Selection overlay
             if (selected) {
-                Box(Modifier.fillMaxWidth().fillMaxHeight().graphicsLayer { alpha = 0.18f }.background(Color.Yellow.copy(alpha = 0.2f)))
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .graphicsLayer { alpha = 0.18f }
+                        .background(Color.Yellow.copy(alpha = 0.2f))
+                )
             }
 
-            // Channel name always visible (bottom center)
-            // Moved play/info below the name to avoid covering the logo
-            // LIVE indicator (top-left)
             Box(
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -648,12 +660,10 @@ fun LiveTileCard(
                     .background(Color(0xFF1DB954))
             )
 
-            // Telegram origin badge (top-right)
             if (isTelegram(item)) {
                 TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp), small = true)
             }
 
-            // EPG under logo (now + next)
             if (epgNow.isNotBlank() || epgNext.isNotBlank()) {
                 Column(
                     modifier = Modifier
@@ -694,7 +704,7 @@ fun LiveTileCard(
                     }
                 }
             }
-            // Label und Actions direkt unter dem Icon platzieren (keine Überlagerung)
+
             Column(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -703,10 +713,21 @@ fun LiveTileCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
-                    AppIconButton(icon = AppIcon.Info, contentDescription = "Details", onClick = { onOpenDetails(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
+                    AppIconButton(
+                        icon = AppIcon.PlayCircle,
+                        contentDescription = "Abspielen",
+                        onClick = { onPlayDirect(item) },
+                        size = 24.dp,
+                        modifier = Modifier.focusProperties { canFocus = false }
+                    )
+                    AppIconButton(
+                        icon = AppIcon.Info,
+                        contentDescription = "Details",
+                        onClick = { onOpenDetails(item) },
+                        size = 24.dp,
+                        modifier = Modifier.focusProperties { canFocus = false }
+                    )
                 }
-                // Sendername im Rahmen mit dunklem BG (70% Opacity), weiße Schrift, bis 2 Zeilen
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(10.dp))
@@ -723,7 +744,7 @@ fun LiveTileCard(
                     )
                 }
             }
-            // Progress bar (current programme)
+
             epgProgress?.let { p ->
                 Box(
                     modifier = Modifier
@@ -740,7 +761,7 @@ fun LiveTileCard(
                         .background(Color(0xFF2196F3))
                 )
             }
-            // Center play overlay while focused
+
             PlayOverlay(visible = focused)
             FocusTitleOverlay(
                 title = item.name,
@@ -759,7 +780,7 @@ fun SeriesTileCard(
     isNew: Boolean = false,
     showAssign: Boolean = true
 ) {
-    if (com.chris.m3usuite.BuildConfig.CARDS_V1) {
+    if (BuildConfig.CARDS_V1) {
         com.chris.m3usuite.ui.cards.PosterCard(
             title = item.name,
             imageUrl = item.poster ?: item.backdrop,
@@ -769,36 +790,42 @@ fun SeriesTileCard(
     }
     val ctx = LocalContext.current
     val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
-    var leftDownAt by remember { mutableStateOf<Long?>(null) }
-    val chromeToggle by rememberUpdatedState(com.chris.m3usuite.ui.home.LocalChromeToggle.current)
-    val headers = rememberImageHeaders()
-    var seasons by remember(item.streamId) { mutableStateOf<Int?>(null) }
     var focused by remember { mutableStateOf(false) }
+    var seasons by remember(item.streamId) { mutableStateOf<Int?>(null) }
     LaunchedEffect(item.streamId) {
         val sid = item.streamId ?: return@LaunchedEffect
         try {
             val obx = com.chris.m3usuite.data.obx.ObxStore.get(ctx)
-            val eps = withContext(Dispatchers.IO) { obx.boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java).query(com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(sid.toLong())).build().find() }
+            val eps = withContext(Dispatchers.IO) {
+                obx.boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
+                    .query(com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(sid.toLong()))
+                    .build().find()
+            }
             seasons = eps.map { it.season }.distinct().size
-        } catch (_: Throwable) { seasons = null }
+        } catch (_: Throwable) {
+            seasons = null
+        }
     }
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
     val tileHeight = rowItemHeight().dp
     val tileWidth = tileHeight * POSTER_ASPECT_RATIO
     val assignCtx = com.chris.m3usuite.ui.state.LocalAssignSelection.current
+
     Card(
         modifier = Modifier
             .height(tileHeight)
             .width(tileWidth)
             .padding(end = 6.dp)
-            // No per-tile DPAD interception; rely on focus traversal and global chrome handler
             .onKeyEvent { ev ->
                 val n = ev.nativeKeyEvent
                 if (n.action == android.view.KeyEvent.ACTION_UP) {
                     val code = n.keyCode
                     if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
+                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad(
+                            "CENTER",
+                            mapOf("tile" to (item.streamId ?: item.id), "type" to item.type)
+                        )
                     }
                 }
                 false
@@ -834,15 +861,16 @@ fun SeriesTileCard(
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
-                // subtle top reflection
-                val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
+                val grad = Brush.verticalGradient(
+                    0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f),
+                    1f to Color.Transparent
+                )
                 drawRect(brush = grad)
             }
             .tvFocusGlow(focused = focused, shape = shape, ringWidth = 5.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = shape
-        ) {
-        // Debug: log focused tile + OBX title in parentheses + tree path
+    ) {
         LaunchedEffect(focused, item.streamId) {
             if (focused) {
                 val sid = item.streamId
@@ -883,32 +911,32 @@ fun SeriesTileCard(
                         onSuccess = { loaded = true },
                         onError = { loaded = true }
                     )
-                    // Assign badge (always available) and selected frame
-                    run {
-                        if (showAssign) {
-                            androidx.compose.material3.Surface(
-                                color = Color.Black.copy(alpha = 0.55f),
-                                contentColor = Color.White,
-                                shape = CircleShape,
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .padding(6.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.Black.copy(alpha = 0.55f))
-                                    .tvClickable(focusBorderWidth = 0.dp, onClick = {
-                                        if (assignCtx.enabled) assignCtx.toggle(item) else assignCtx.start(item)
-                                    })
-                            ) {
-                                val sel = assignCtx.isSelected(item)
-                                val label = if (sel) "✓" else "+"
-                                Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
-                            }
-                        }
-                        if (assignCtx.isSelected(item)) {
-                            Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, shape))
+                    if (showAssign) {
+                        Surface(
+                            color = Color.Black.copy(alpha = 0.55f),
+                            contentColor = Color.White,
+                            shape = CircleShape,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(6.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.55f))
+                                .tvClickable(focusBorderWidth = 0.dp, onClick = {
+                                    if (assignCtx.enabled) assignCtx.toggle(item) else assignCtx.start(item)
+                                })
+                        ) {
+                            val sel = assignCtx.isSelected(item)
+                            val label = if (sel) "✓" else "+"
+                            Text(
+                                label,
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
                         }
                     }
-                    // Telegram origin badge (top-right)
+                    if (assignCtx.isSelected(item)) {
+                        Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, shape))
+                    }
                     if (isTelegram(item)) {
                         TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp), small = true)
                     }
@@ -917,22 +945,22 @@ fun SeriesTileCard(
                         title = item.name,
                         focused = focused
                     )
-                    FocusTitleOverlay(
-                        title = item.name,
-                        focused = focused
-                    )
-                    // Minimal resume tooltip on focus (series)
+
                     var resumeSecs by remember(item.streamId) { mutableStateOf<Int?>(null) }
                     var totalSecs by remember(item.streamId) { mutableStateOf<Int?>(null) }
                     LaunchedEffect(item.streamId) {
                         val sid = item.streamId
                         if (sid != null) {
                             try {
-                                val last = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ResumeRepository(ctx).recentEpisodes(50).firstOrNull { it.seriesId == sid } }
+                                val last = withContext(Dispatchers.IO) {
+                                    com.chris.m3usuite.data.repo.ResumeRepository(ctx).recentEpisodes(50)
+                                        .firstOrNull { it.seriesId == sid }
+                                }
                                 if (last != null) {
                                     resumeSecs = last.positionSecs
                                     val ep = withContext(Dispatchers.IO) {
-                                        val b = com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
+                                        val b = com.chris.m3usuite.data.obx.ObxStore.get(ctx)
+                                            .boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
                                         b.query(
                                             com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(sid.toLong())
                                                 .and(com.chris.m3usuite.data.obx.ObxEpisode_.season.equal(last.season.toLong()))
@@ -940,10 +968,10 @@ fun SeriesTileCard(
                                     }
                                     totalSecs = ep?.durationSecs
                                 }
-                            } catch (_: Throwable) {}
+                            } catch (_: Throwable) {
+                            }
                         }
                     }
-                    // Thin progress line near bottom if last-episode resume exists
                     if ((resumeSecs ?: 0) > 0 && (totalSecs ?: 0) > 0) {
                         val errorColor = MaterialTheme.colorScheme.error
                         Canvas(Modifier.matchParentSize()) {
@@ -955,8 +983,20 @@ fun SeriesTileCard(
                             val end = Offset(w - margin, y)
                             val frac = (resumeSecs!!.toFloat() / totalSecs!!.toFloat()).coerceIn(0f, 1f)
                             val fillEnd = Offset(start.x + (end.x - start.x) * frac, y)
-                            drawLine(color = Color.White.copy(alpha = 0.35f), start = start, end = end, strokeWidth = 3f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                            drawLine(color = errorColor, start = start, end = fillEnd, strokeWidth = 3.5f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                            drawLine(
+                                color = Color.White.copy(alpha = 0.35f),
+                                start = start,
+                                end = end,
+                                strokeWidth = 3f,
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
+                            drawLine(
+                                color = errorColor,
+                                start = start,
+                                end = fillEnd,
+                                strokeWidth = 3.5f,
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
                         }
                     }
                     if (focused && (resumeSecs ?: 0) > 0 && (totalSecs ?: 0) > 0) {
@@ -968,7 +1008,9 @@ fun SeriesTileCard(
                                 shape = RoundedCornerShape(50),
                                 color = Color.Black.copy(alpha = 0.65f),
                                 contentColor = Color.White,
-                                modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 8.dp)
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 6.dp, end = 8.dp)
                             ) {
                                 Text(
                                     text = "Weiter ${String.format("%d:%02d", secs / 60, secs % 60)} (${pct}%)",
@@ -978,17 +1020,27 @@ fun SeriesTileCard(
                             }
                         }
                     }
-                    // Overlay: action buttons bottom-right (avoid extra layout space)
                     Row(
                         Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 8.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
+                        AppIconButton(
+                            icon = AppIcon.PlayCircle,
+                            contentDescription = "Abspielen",
+                            onClick = { onPlayDirect(item) },
+                            size = 24.dp,
+                            modifier = Modifier.focusProperties { canFocus = false }
+                        )
                         if (showAssign && !assignCtx.enabled) {
-                            AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
+                            AppIconButton(
+                                icon = AppIcon.BookmarkAdd,
+                                contentDescription = "Für Kinder freigeben",
+                                onClick = { onAssignToKid(item) },
+                                size = 24.dp,
+                                modifier = Modifier.focusProperties { canFocus = false }
+                            )
                         }
                     }
-                    // Overlay: NEW badge (top-left)
                     if (isNew) {
                         Surface(
                             color = Color.Black.copy(alpha = 0.28f),
@@ -996,7 +1048,11 @@ fun SeriesTileCard(
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
                         ) {
-                            Text(text = "NEU", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                            Text(
+                                text = "NEU",
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
                         }
                     }
                 }
@@ -1022,7 +1078,6 @@ fun SeriesTileCard(
                     )
                 }
             }
-            // actions and badges are overlaid inside the image box now
         }
     }
 }
@@ -1036,7 +1091,7 @@ fun VodTileCard(
     isNew: Boolean = false,
     showAssign: Boolean = true
 ) {
-    if (com.chris.m3usuite.BuildConfig.CARDS_V1) {
+    if (BuildConfig.CARDS_V1) {
         com.chris.m3usuite.ui.cards.PosterCard(
             title = item.name,
             imageUrl = item.poster ?: item.backdrop,
@@ -1046,15 +1101,13 @@ fun VodTileCard(
     }
     val ctx = LocalContext.current
     val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
-    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
-    val obxRepo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
-    val headers = rememberImageHeaders()
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
     val tileHeight = rowItemHeight().dp
     val tileWidth = tileHeight * POSTER_ASPECT_RATIO
     val assignCtx = com.chris.m3usuite.ui.state.LocalAssignSelection.current
+
     Card(
         modifier = Modifier
             .height(tileHeight)
@@ -1091,7 +1144,10 @@ fun VodTileCard(
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
-                val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f), 1f to Color.Transparent)
+                val grad = Brush.verticalGradient(
+                    0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f),
+                    1f to Color.Transparent
+                )
                 drawRect(brush = grad)
             }
             .tvFocusGlow(focused = focused, shape = shape, ringWidth = 5.dp),
@@ -1099,7 +1155,6 @@ fun VodTileCard(
         shape = shape
     ) {
         Column(Modifier.fillMaxWidth()) {
-            // Debug: log focused tile + OBX title in parentheses + tree path (was missing for VOD)
             LaunchedEffect(focused, item.streamId) {
                 if (focused) {
                     val sid = item.streamId
@@ -1139,9 +1194,8 @@ fun VodTileCard(
                         onSuccess = { loaded = true },
                         onError = { loaded = true }
                     )
-                    // Assign badge (always available) and selected frame
                     if (showAssign) {
-                        androidx.compose.material3.Surface(
+                        Surface(
                             color = Color.Black.copy(alpha = 0.55f),
                             contentColor = Color.White,
                             shape = CircleShape,
@@ -1156,20 +1210,26 @@ fun VodTileCard(
                         ) {
                             val sel = assignCtx.isSelected(item)
                             val label = if (sel) "✓" else "+"
-                            Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                            Text(
+                                label,
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
                         }
                     }
                     if (assignCtx.isSelected(item)) {
                         Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, shape))
                     }
-                    // Telegram origin badge (top-right)
                     if (isTelegram(item)) {
                         TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp), small = true)
                     }
-                    // Resume progress overlay (thin line near bottom)
                     var resumeSecs by remember(item.id) { mutableStateOf<Int?>(null) }
                     LaunchedEffect(item.id) {
-                        try { resumeSecs = withContext(Dispatchers.IO) { com.chris.m3usuite.data.repo.ResumeRepository(ctx).getVodResume(item.id) } } catch (_: Throwable) {}
+                        runCatching {
+                            resumeSecs = withContext(Dispatchers.IO) {
+                                com.chris.m3usuite.data.repo.ResumeRepository(ctx).getVodResume(item.id)
+                            }
+                        }
                     }
                     val total = item.durationSecs ?: 0
                     if ((resumeSecs ?: 0) > 0 && total > 0) {
@@ -1183,10 +1243,21 @@ fun VodTileCard(
                             val end = Offset(w - margin, y)
                             val frac = (resumeSecs!!.toFloat() / total.toFloat()).coerceIn(0f, 1f)
                             val fillEnd = Offset(start.x + (end.x - start.x) * frac, y)
-                            drawLine(color = Color.White.copy(alpha = 0.35f), start = start, end = end, strokeWidth = 3f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                            drawLine(color = errorColor, start = start, end = fillEnd, strokeWidth = 3.5f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                            drawLine(
+                                color = Color.White.copy(alpha = 0.35f),
+                                start = start,
+                                end = end,
+                                strokeWidth = 3f,
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
+                            drawLine(
+                                color = errorColor,
+                                start = start,
+                                end = fillEnd,
+                                strokeWidth = 3.5f,
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
                         }
-                        // Minimal tooltip on focus
                         if (focused) {
                             val secs = resumeSecs!!.coerceAtLeast(0)
                             val pct = if (total > 0) ((secs * 100) / total) else 0
@@ -1195,7 +1266,9 @@ fun VodTileCard(
                                     shape = RoundedCornerShape(50),
                                     color = Color.Black.copy(alpha = 0.65f),
                                     contentColor = Color.White,
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 8.dp)
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(top = 6.dp, end = 8.dp)
                                 ) {
                                     Text(
                                         text = "Weiter ${String.format("%d:%02d", secs / 60, secs % 60)} (${pct}%)",
@@ -1206,14 +1279,25 @@ fun VodTileCard(
                             }
                         }
                     }
-                    // Overlay: action buttons bottom-right
                     Row(
                         Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 8.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        AppIconButton(icon = AppIcon.PlayCircle, contentDescription = "Abspielen", onClick = { onPlayDirect(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
+                        AppIconButton(
+                            icon = AppIcon.PlayCircle,
+                            contentDescription = "Abspielen",
+                            onClick = { onPlayDirect(item) },
+                            size = 24.dp,
+                            modifier = Modifier.focusProperties { canFocus = false }
+                        )
                         if (showAssign && !assignCtx.enabled) {
-                            AppIconButton(icon = AppIcon.BookmarkAdd, contentDescription = "Für Kinder freigeben", onClick = { onAssignToKid(item) }, size = 24.dp, modifier = Modifier.focusProperties { canFocus = false })
+                            AppIconButton(
+                                icon = AppIcon.BookmarkAdd,
+                                contentDescription = "Für Kinder freigeben",
+                                onClick = { onAssignToKid(item) },
+                                size = 24.dp,
+                                modifier = Modifier.focusProperties { canFocus = false }
+                            )
                         }
                     }
                 }
@@ -1239,14 +1323,13 @@ fun VodTileCard(
                     )
                 }
             }
-            // actions and badges are overlaid inside the image box now
         }
     }
 
-    // On-demand VOD detail import to populate plot when a tile gains focus
-    // Avoid spamming by gating on focus + missing plot + valid streamId.
     val requested = remember(item.id) { mutableStateOf(false) }
     LaunchedEffect(focused) {
+        val store = SettingsStore(ctx)
+        val obxRepo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store)
         if (focused && !requested.value && (item.plot.isNullOrBlank()) && item.streamId != null) {
             requested.value = true
             runCatching { obxRepo.importVodDetailOnce(item.streamId!!) }
@@ -1254,16 +1337,14 @@ fun VodTileCard(
     }
 }
 
-/** Show last 5 resume items in a horizontal row (no header) */
 @Composable
 fun ResumeRow(
     items: List<MediaItem>,
     onClick: (MediaItem) -> Unit,
 ) {
     if (items.isEmpty()) return
-    // Ensure no duplicate ids to keep LazyRow keys unique
     val slice = remember(items) { items.distinctBy { it.id }.take(5) }
-    com.chris.m3usuite.ui.tv.TvFocusRow(
+    TvFocusRow(
         stateKey = "home:resume",
         itemSpacing = 0.dp,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -1275,7 +1356,6 @@ fun ResumeRow(
     }
 }
 
-/** Live TV row, no textual header, horizontally scrollable */
 @Composable
 fun LiveRow(
     items: List<MediaItem>,
@@ -1288,12 +1368,17 @@ fun LiveRow(
 ) {
     if (items.isEmpty()) return
     val ctx = LocalContext.current
-    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
+    val store = remember { SettingsStore(ctx) }
     val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
 
     MediaRowCore(
         items = items,
-        config = RowConfig(stateKey = stateKey, debugKey = stateKey, initialFocusEligible = initialFocusEligible, edgeLeftExpandChrome = edgeLeftExpandChrome),
+        config = RowConfig(
+            stateKey = stateKey,
+            debugKey = stateKey,
+            initialFocusEligible = initialFocusEligible,
+            edgeLeftExpandChrome = edgeLeftExpandChrome
+        ),
         leading = leading,
         onPrefetchKeys = { keys ->
             val sids = keys.mapNotNull { id ->
@@ -1331,7 +1416,10 @@ fun LiveAddTile(onClick: () -> Unit) {
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
-                val grad = Brush.verticalGradient(0f to Color.White.copy(alpha = 0.12f), 1f to Color.Transparent)
+                val grad = Brush.verticalGradient(
+                    0f to Color.White.copy(alpha = 0.12f),
+                    1f to Color.Transparent
+                )
                 drawRect(brush = grad)
             },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -1362,8 +1450,7 @@ fun ReorderableLiveRow(
     edgeLeftExpandChrome: Boolean = false
 ) {
     val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
-    // Ensure stable, unique keys to avoid LazyRow key collisions
-    val order = remember(items) { androidx.compose.runtime.mutableStateListOf<Long>().apply { addAll(items.map { it.id }.distinct()) } }
+    val order = remember(items) { mutableStateListOf<Long>().apply { addAll(items.map { it.id }.distinct()) } }
     var draggingId by remember { mutableStateOf<Long?>(null) }
     var dragOffset by remember { mutableStateOf(0f) }
     var targetKey by remember { mutableStateOf<Long?>(null) }
@@ -1372,33 +1459,27 @@ fun ReorderableLiveRow(
     val tileLift by animateFloatAsState(if (draggingId != null) 1.05f else 1f, label = "lift")
 
     val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
-    // Center-on-focus helpers for TV (leading add tile occupies index 0)
     val pendingScrollIndex = remember { mutableStateOf(-1) }
     val firstFocus = remember { androidx.compose.ui.focus.FocusRequester() }
-    // Track when the focusRequester is actually attached to a composed child
     val firstAttached = remember { mutableStateOf(false) }
     val skipFirstCenter = remember { mutableStateOf(true) }
-    val enterEnabled = remember { mutableStateOf(false) }
     val hasContent = remember(order) { order.isNotEmpty() }
 
     LaunchedEffect(pendingScrollIndex.value) { pendingScrollIndex.value = -1 }
-    // Activate enter once the leading (index 0) or first content (index 1) becomes visible
     LaunchedEffect(state, isTv, hasContent, firstAttached.value, initialFocusEligible) {
         if (!isTv || !initialFocusEligible) return@LaunchedEffect
-        androidx.compose.runtime.snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
             .collect { indices ->
                 val targetIndex = if (hasContent) 1 else 0
-                if (!enterEnabled.value && firstAttached.value && indices.contains(targetIndex)) {
-                    // Defer one frame to ensure focusRequester is attached
-                    kotlinx.coroutines.delay(16)
+                if (!firstAttached.value) return@collect
+                if (indices.contains(targetIndex)) {
+                    delay(16)
                     runCatching { firstFocus.requestFocus() }
-                    enterEnabled.value = true
                     com.chris.m3usuite.core.debug.GlobalDebug.logTree("enter:Set:HomeRows")
                 }
             }
     }
 
-    // Enable focus enter only once a target (leading or first content) is visible
     val rowModifier = if (isTv) Modifier.focusGroup() else Modifier
     val chromeExpand = com.chris.m3usuite.ui.home.LocalChromeExpand.current
 
@@ -1408,7 +1489,10 @@ fun ReorderableLiveRow(
                 if (ev.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
                 if (ev.key == Key.DirectionLeft) {
                     val firstIdx = state.layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
-                    if (firstIdx <= 0) { chromeExpand?.invoke(); return@onPreviewKeyEvent true }
+                    if (firstIdx <= 0) {
+                        chromeExpand?.invoke()
+                        return@onPreviewKeyEvent true
+                    }
                 }
                 false
             } else Modifier
@@ -1418,16 +1502,15 @@ fun ReorderableLiveRow(
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
     ) {
         item("leading") {
-            // If there are no content items, attach firstFocus to the leading tile to satisfy enter
             val leadingMod = if (isTv && !hasContent) Modifier.focusRequester(firstFocus) else Modifier
             Box(leadingMod) {
                 if (isTv && !hasContent) {
-                    androidx.compose.runtime.SideEffect { firstAttached.value = true }
+                    SideEffect { firstAttached.value = true }
                 }
                 LiveAddTile(onClick = onAdd)
             }
         }
-        itemsIndexed(order, key = { idx, it -> it }) { idx, id ->
+        itemsIndexed(order, key = { _, it -> it }) { idx, id ->
             val mi = items.find { it.id == id } ?: return@itemsIndexed
             val isDragging = draggingId == id
             val dragTranslationX = if (isDragging) dragOffset else 0f
@@ -1435,16 +1518,22 @@ fun ReorderableLiveRow(
             val padStart = if (targetKey == id && !insertAfter) 10.dp else 0.dp
             val padEnd = if (targetKey == id && insertAfter) 10.dp else 0.dp
             val setRow = com.chris.m3usuite.ui.home.LocalChromeRowFocusSetter.current
+
             Box(
                 Modifier
                     .padding(start = padStart, end = padEnd)
-                    .graphicsLayer { translationX = trans; scaleX = if (isDragging) tileLift else 1f; scaleY = if (isDragging) tileLift else 1f; shadowElevation = if (isDragging) 18f else 0f }
+                    .graphicsLayer {
+                        translationX = trans
+                        scaleX = if (isDragging) tileLift else 1f
+                        scaleY = if (isDragging) tileLift else 1f
+                        shadowElevation = if (isDragging) 18f else 0f
+                    }
                     .then(
                         if (isTv)
                             Modifier.onFocusEvent { st ->
                                 if (st.hasFocus) {
                                     stateKey?.let { key -> setRow(key) }
-                                    val absIdx = idx + 1 // account for leading tile
+                                    val absIdx = idx + 1
                                     if (skipFirstCenter.value && absIdx == 1) {
                                         skipFirstCenter.value = false
                                     } else {
@@ -1455,7 +1544,6 @@ fun ReorderableLiveRow(
                         else Modifier
                     )
                     .pointerInput(id) {
-                        // Drag starts only after a long press to keep swipe-scrolling smooth on touch devices
                         detectDragGesturesAfterLongPress(
                             onDragStart = { draggingId = id; dragOffset = 0f },
                             onDrag = { change, dragAmount ->
@@ -1465,9 +1553,10 @@ fun ReorderableLiveRow(
                                 val current = visible.find { it.key == id }
                                 if (current != null) {
                                     val center = current.offset + dragOffset + current.size / 2f
-                                    // Only consider real channel items (exclude leading/add tile and any non-Long keys)
                                     val others = visible.filter { it.key is Long && it.key != id }
-                                    val target = others.minByOrNull { kotlin.math.abs(center - (it.offset + it.size / 2f)) }
+                                    val target = others.minByOrNull {
+                                        abs(center - (it.offset + it.size / 2f))
+                                    }
                                     if (target != null) {
                                         val toKey = target.key as Long
                                         val from = order.indexOf(id)
@@ -1476,19 +1565,24 @@ fun ReorderableLiveRow(
                                         targetKey = toKey
                                         if (from != -1 && to != -1 && from != to) {
                                             order.removeAt(from)
-                                            val insertIndex = if (insertAfter) to + (if (from < to) 0 else 1) else to + (if (from < to) -1 else 0)
+                                            val insertIndex =
+                                                if (insertAfter) to + (if (from < to) 0 else 1)
+                                                else to + (if (from < to) -1 else 0)
                                             order.add(insertIndex.coerceIn(0, order.size), id)
                                         }
                                     }
                                 }
                             },
-                            onDragEnd = { draggingId = null; dragOffset = 0f; targetKey = null; onReorder(order.toList()) },
+                            onDragEnd = {
+                                draggingId = null; dragOffset = 0f; targetKey = null
+                                onReorder(order.toList())
+                            },
                             onDragCancel = { draggingId = null; dragOffset = 0f; targetKey = null }
                         )
                     }
             ) {
                 if (isTv && idx == 0) {
-                    androidx.compose.runtime.SideEffect { firstAttached.value = true }
+                    SideEffect { firstAttached.value = true }
                 }
                 LiveTileCard(
                     item = mi,
@@ -1496,17 +1590,24 @@ fun ReorderableLiveRow(
                     onPlayDirect = { if (draggingId == null) onPlay(mi.id) },
                     selected = id in selected,
                     onLongPress = { selected = if (id in selected) selected - id else selected + id },
-                    // Only intercept DPAD LEFT/RIGHT for reordering when selection mode is active
                     onMoveLeft = if (selected.isNotEmpty()) {
                         {
-                            val idx = order.indexOf(id)
-                            if (idx > 0) { order.removeAt(idx); order.add(idx - 1, id); onReorder(order.toList()) }
+                            val pos = order.indexOf(id)
+                            if (pos > 0) {
+                                order.removeAt(pos)
+                                order.add(pos - 1, id)
+                                onReorder(order.toList())
+                            }
                         }
                     } else null,
                     onMoveRight = if (selected.isNotEmpty()) {
                         {
-                            val idx = order.indexOf(id)
-                            if (idx != -1 && idx < order.lastIndex) { order.removeAt(idx); order.add(idx + 1, id); onReorder(order.toList()) }
+                            val pos = order.indexOf(id)
+                            if (pos != -1 && pos < order.lastIndex) {
+                                order.removeAt(pos)
+                                order.add(pos + 1, id)
+                                onReorder(order.toList())
+                            }
                         }
                     } else null,
                     insertionLeft = (targetKey == id && !insertAfter),
@@ -1516,25 +1617,37 @@ fun ReorderableLiveRow(
         }
     }
     if (selected.isNotEmpty()) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)
+        ) {
             TextButton(onClick = { selected = emptySet() }) { Text("Abbrechen") }
             if (selected.size == 1) {
                 val id = selected.first()
                 TextButton(onClick = {
                     val idx = order.indexOf(id)
-                    if (idx > 0) { order.removeAt(idx); order.add(idx - 1, id); onReorder(order.toList()) }
+                    if (idx > 0) {
+                        order.removeAt(idx)
+                        order.add(idx - 1, id)
+                        onReorder(order.toList())
+                    }
                 }) { Text("← Verschieben") }
                 TextButton(onClick = {
                     val idx = order.indexOf(id)
-                    if (idx != -1 && idx < order.lastIndex) { order.removeAt(idx); order.add(idx + 1, id); onReorder(order.toList()) }
+                    if (idx != -1 && idx < order.lastIndex) {
+                        order.removeAt(idx)
+                        order.add(idx + 1, id)
+                        onReorder(order.toList())
+                    }
                 }) { Text("Verschieben →") }
             }
-            TextButton(onClick = { onRemove(selected.toList()); selected = emptySet() }) { Text("Entfernen (${selected.size})") }
+            TextButton(onClick = { onRemove(selected.toList()); selected = emptySet() }) {
+                Text("Entfernen (${selected.size})")
+            }
         }
     }
 }
 
-/** Series row, horizontally scrollable */
 @Composable
 fun SeriesRow(
     items: List<MediaItem>,
@@ -1549,13 +1662,15 @@ fun SeriesRow(
     edgeLeftExpandChrome: Boolean = false
 ) {
     if (items.isEmpty()) return
-    val ctx = LocalContext.current
-    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
-    val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
 
     MediaRowCore(
         items = items,
-        config = RowConfig(stateKey = stateKey, debugKey = stateKey, initialFocusEligible = initialFocusEligible, edgeLeftExpandChrome = edgeLeftExpandChrome),
+        config = RowConfig(
+            stateKey = stateKey,
+            debugKey = stateKey,
+            initialFocusEligible = initialFocusEligible,
+            edgeLeftExpandChrome = edgeLeftExpandChrome
+        ),
         onPrefetchKeys = { _ -> },
         itemKey = { it.id }
     ) { m ->
@@ -1570,7 +1685,6 @@ fun SeriesRow(
     }
 }
 
-/** VOD row, horizontally scrollable */
 @Composable
 fun VodRow(
     items: List<MediaItem>,
@@ -1585,13 +1699,15 @@ fun VodRow(
     edgeLeftExpandChrome: Boolean = false
 ) {
     if (items.isEmpty()) return
-    val ctx = LocalContext.current
-    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
-    val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
 
     MediaRowCore(
         items = items,
-        config = RowConfig(stateKey = stateKey, debugKey = stateKey, initialFocusEligible = initialFocusEligible, edgeLeftExpandChrome = edgeLeftExpandChrome),
+        config = RowConfig(
+            stateKey = stateKey,
+            debugKey = stateKey,
+            initialFocusEligible = initialFocusEligible,
+            edgeLeftExpandChrome = edgeLeftExpandChrome
+        ),
         onPrefetchKeys = { _ -> },
         itemKey = { it.id }
     ) { m ->
@@ -1606,7 +1722,6 @@ fun VodRow(
     }
 }
 
-/** VOD row backed by Paging3; keeps horizontal row optics with skeleton placeholders. */
 @Composable
 fun VodRowPaged(
     items: LazyPagingItems<MediaItem>,
@@ -1617,10 +1732,6 @@ fun VodRowPaged(
     showAssign: Boolean = true,
     edgeLeftExpandChrome: Boolean = false
 ) {
-    val ctx = LocalContext.current
-    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
-    val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
-
     MediaRowCorePaged(
         items = items,
         config = RowConfig(stateKey = stateKey, debugKey = stateKey, edgeLeftExpandChrome = edgeLeftExpandChrome),
@@ -1637,7 +1748,6 @@ fun VodRowPaged(
     }
 }
 
-/** Live row backed by Paging3; preserves horizontal row look and prefetches EPG for visible items. */
 @Composable
 fun LiveRowPaged(
     items: LazyPagingItems<MediaItem>,
@@ -1647,7 +1757,7 @@ fun LiveRowPaged(
     edgeLeftExpandChrome: Boolean = false
 ) {
     val ctx = LocalContext.current
-    val store = remember { com.chris.m3usuite.prefs.SettingsStore(ctx) }
+    val store = remember { SettingsStore(ctx) }
     val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
 
     MediaRowCorePaged(
@@ -1673,9 +1783,6 @@ fun LiveRowPaged(
     }
 }
 
-// (duplicate SeriesRow removed – logic added to primary SeriesRow above)
-
-/** Series row backed by Paging3; preserves horizontal row look with skeletons. */
 @Composable
 fun SeriesRowPaged(
     items: LazyPagingItems<MediaItem>,
@@ -1686,12 +1793,10 @@ fun SeriesRowPaged(
     showAssign: Boolean = true,
     edgeLeftExpandChrome: Boolean = false
 ) {
-    // Prefetch optional: Serien-Details bei Paged kann (wenn gewünscht) analog implementiert werden
-
     MediaRowCorePaged(
         items = items,
         config = RowConfig(stateKey = stateKey, debugKey = stateKey, edgeLeftExpandChrome = edgeLeftExpandChrome),
-        onPrefetchPaged = null // optional später ergänzen
+        onPrefetchPaged = null
     ) { _, mi ->
         SeriesTileCard(
             item = mi,
@@ -1749,7 +1854,7 @@ private fun TelegramTileCard(
     onPlay: (MediaItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (com.chris.m3usuite.BuildConfig.CARDS_V1) {
+    if (BuildConfig.CARDS_V1) {
         PosterCardTagged(
             title = item.name,
             imageUrl = item.poster ?: item.backdrop,
