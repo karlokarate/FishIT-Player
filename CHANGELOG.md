@@ -843,3 +843,24 @@ Status: zu testen durch Nutzer
  - feat(ui/focus): Added `ui/focus/FocusKit.kt` as a single import surface for focus primitives and rows. Re‑exports `tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, and both `TvFocusRow` variants via `TvRow(...)`. Screens can now use `FocusKit` only.
  - chore(ui/gate): ProfileGate now uses FocusKit (`tvFocusFrame`, `tvClickable`, `TvRow`) and removes duplicate per-item focus logic (`tvFocusableItem`, bringIntoViewOnFocus) inside the kids row. Keeps 1:1 visuals with centralized primitives.
  - refactor(ui/gate): Simplified Adult and Add tiles to a single top‑level Surface that is both focusable and clickable. Removed redundant borders/elevations and ensured bringIntoViewOnFocus is attached to the top wrapper so initial focus is visible and DPAD navigation highlights the correct layer.
+2025-10-06
+- tooling(tv/audit): Align `tools/audit_tv_focus.sh` with `tools/Zentralisierung.txt`. Added checks for forbidden TvLazyRow, centralized bring-into-view (flag per-item `bringIntoViewRequester`/`onFocusChanged`/`scrollToItem`), duplicate focus indicators (tvClickable with non-neutral scale/border outside `TvButtons`), and SSOT enforcement (no custom focus primitives outside central modules). Excludes diff folders (`a/**`, `b/**`) and `.git`; allows central facades (`ui/focus/FocusKit.kt`, `ui/skin/PackageScope.kt`). Summary now reports new categories.
+
+- feat(ui/focus): Finalized global `FocusKit` facade. Adds a single import surface for all focus usage (TV + phone/tablet):
+  - Primitives: `tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, `focusBringIntoViewOnFocus`, `focusScaleOnTv`.
+  - Rows: `TvRowLight` (delegates to `ui/tv/TvFocusRow`), `TvRowMedia` and `TvRowPaged` (delegate to `RowCore` engines with prefetch, chrome edge, and focus memory).
+  - DPAD helpers: `onDpadAdjustLeftRight/UpDown` (TV‑only by default), `focusNeighbors` for keypad/grid navigation.
+  - Buttons: Re‑exports `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton` for consistent focus visuals.
+  - Backward‑compat: existing top‑level wrappers remain; new `FocusKit.*` is the single recommended entry point for screens.
+
+- docs(roadmap): Temporarily set all previously open roadmap items to OFF and added a new top priority section “FocusKit Migration (ON)” with a repo‑wide audit and concrete migration list (rows, primitives, forms) plus guidance. Aligns delivery with the finalized FocusKit facade.
+
+- refactor(ui/auth/profilegate): Switched ProfileGate to the FocusKit facade. Replaced TextButton actions with `FocusKit.TvTextButton` and routed keypad/tiles through `FocusKit.run { Modifier.tvClickable/tvFocusFrame/focusBringIntoViewOnFocus }`. Behavior unchanged; audit recognizes button focus visuals.
+
+- docs(ui/layout): Add centralized Fish* modules and plan
+  - Tokens: `FishTheme` (FishDimens) + CompositionLocal; editables for size/spacing/corners/focus scale/glow.
+  - Tiles/Rows: `FishTile` (ContentScale.Fit, no per‑tile scroll) + `FishRow(Light/Media/Paged)` (fixed spacing/padding, DPAD/edge logic in Media).
+  - Content: `FishVodContent` (title/poster/resume/new/assign/play/logging/footer), `FishSeriesContent`/`FishLiveContent` (base), helpers `FishMeta`/`FishActions`/`FishLogging`, `FishResumeTile`.
+  - CARDS_V1 slated for removal during porting; PosterCard/ChannelCard/PosterCardTagged will be replaced with FishTile.
+
+- roadmap: Add Tiles/Rows Centralization (ON). Mark FocusKit Migration as dependent on this centralization.

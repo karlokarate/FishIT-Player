@@ -18,7 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -46,9 +45,6 @@ import com.chris.m3usuite.data.repo.ProfileObxRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.auth.CreateProfileSheet
 import com.chris.m3usuite.ui.focus.focusGroup
-import com.chris.m3usuite.ui.focus.focusBringIntoViewOnFocus
-import com.chris.m3usuite.ui.focus.tvClickable
-import com.chris.m3usuite.ui.focus.tvFocusFrame
 import com.chris.m3usuite.ui.focus.TvRow
 import com.chris.m3usuite.ui.theme.DesignTokens
 import com.chris.m3usuite.ui.util.rememberAvatarModel
@@ -313,27 +309,28 @@ fun ProfileGate(
                                         modifier = Modifier
                                             .size(68.dp)
                                             .focusRequester(requester)
-                                            .focusBringIntoViewOnFocus() // zentral: beim Fokussieren sichtbar machen
-                                            .tvFocusFrame(
+                                            .then(com.chris.m3usuite.ui.focus.run { Modifier.focusBringIntoViewOnFocus() }) // zentral: beim Fokussieren sichtbar machen
+                                            .then(com.chris.m3usuite.ui.focus.run { Modifier.tvFocusFrame(
                                                 focusedScale = 1.08f,
                                                 pressedScale = 1.04f,
                                                 shape = RoundedCornerShape(16.dp),
                                                 focusBorderWidth = 2.dp
-                                            )
+                                            ) })
                                             .focusProperties {
                                                 up = neighbor(-1, 0) ?: requester
                                                 down = neighbor(1, 0) ?: confirmRequester
                                                 left = neighbor(0, -1) ?: requester
                                                 right = neighbor(0, 1) ?: requester
                                             }
-                                            .tvClickable(
+                                            .then(com.chris.m3usuite.ui.focus.run { Modifier.tvClickable(
                                                 role = androidx.compose.ui.semantics.Role.Button,
                                                 scaleFocused = 1f,
                                                 scalePressed = 1f,
                                                 focusBorderWidth = 0.dp,
                                                 brightenContent = false,
-                                                debugTag = "gate:key:$key"
-                                            ) { handleKey(key) },
+                                                debugTag = "gate:key:$key",
+                                                onClick = { handleKey(key) }
+                                            ) }),
                                         shape = RoundedCornerShape(16.dp),
                                         color = MaterialTheme.colorScheme.surfaceVariant
                                     ) {
@@ -349,22 +346,17 @@ fun ProfileGate(
             },
             confirmButton = {
                 val label = if (setPin && stage == 1) "Weiter" else "OK"
-                TextButton(
+                com.chris.m3usuite.ui.focus.FocusKit.TvTextButton(
                     modifier = Modifier
                         .focusRequester(confirmRequester)
                         .focusable()
-                        .focusBringIntoViewOnFocus() // zentral
+                        .then(com.chris.m3usuite.ui.focus.run { Modifier.focusBringIntoViewOnFocus() }) // zentral
                         .focusProperties {
                             up = focusers["0"] ?: confirmRequester
                             left = cancelRequester
                             right = cancelRequester
                         }
-                        .tvFocusFrame(
-                            focusedScale = 1.06f,
-                            pressedScale = 1.03f,
-                            shape = RoundedCornerShape(12.dp),
-                            focusBorderWidth = 2.dp
-                        ),
+                        ,
                     onClick = { confirmAction() },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
@@ -372,22 +364,17 @@ fun ProfileGate(
                 ) { Text(label) }
             },
             dismissButton = {
-                TextButton(
+                com.chris.m3usuite.ui.focus.FocusKit.TvTextButton(
                     modifier = Modifier
                         .focusRequester(cancelRequester)
                         .focusable()
-                        .focusBringIntoViewOnFocus() // zentral
+                        .then(com.chris.m3usuite.ui.focus.run { Modifier.focusBringIntoViewOnFocus() }) // zentral
                         .focusProperties {
                             up = focusers["DEL"] ?: cancelRequester
                             right = confirmRequester
                             left = confirmRequester
                         }
-                        .tvFocusFrame(
-                            focusedScale = 1.06f,
-                            pressedScale = 1.03f,
-                            shape = RoundedCornerShape(12.dp),
-                            focusBorderWidth = 2.dp
-                        ),
+                        ,
                     onClick = {
                         pin = ""; pin2 = ""; pinError = null; stage = if (setPin) 1 else 2
                         onDismiss()
@@ -460,28 +447,29 @@ fun ProfileGate(
                         modifier = Modifier
                             .size(164.dp)
                             .focusRequester(adultFocus)
-                            .focusBringIntoViewOnFocus()
-                            .tvFocusFrame(
+                            .then(com.chris.m3usuite.ui.focus.run { Modifier.focusBringIntoViewOnFocus() })
+                            .then(com.chris.m3usuite.ui.focus.run { Modifier.tvFocusFrame(
                                 focusedScale = 1.12f,
                                 pressedScale = 1.08f,
                                 shape = adultShape,
                                 focusBorderWidth = 2.5.dp
-                            )
-                            .tvClickable(
+                            ) })
+                            .then(com.chris.m3usuite.ui.focus.run { Modifier.tvClickable(
                                 role = androidx.compose.ui.semantics.Role.Button,
                                 scaleFocused = 1f,
                                 scalePressed = 1f,
                                 focusBorderWidth = 0.dp,
                                 brightenContent = false,
-                                debugTag = "gate:adult"
-                            ) {
+                                debugTag = "gate:adult",
+                                onClick = {
                                 if (!pinSet) {
                                     setPin = true; pin = ""; pin2 = ""; pinError = null
                                 } else {
                                     setPin = false; pin = ""; pin2 = ""; pinError = null
                                 }
                                 showPin = true
-                            },
+                            }
+                            ) }),
                         shape = adultShape,
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f)
                     ) {
@@ -507,21 +495,22 @@ fun ProfileGate(
                     Surface(
                         modifier = Modifier
                             .size(164.dp)
-                            .focusBringIntoViewOnFocus()
-                            .tvFocusFrame(
+                            .then(com.chris.m3usuite.ui.focus.run { Modifier.focusBringIntoViewOnFocus() })
+                            .then(com.chris.m3usuite.ui.focus.run { Modifier.tvFocusFrame(
                                 focusedScale = 1.12f,
                                 pressedScale = 1.08f,
                                 shape = addShape,
                                 focusBorderWidth = 2.5.dp
-                            )
-                            .tvClickable(
+                            ) })
+                            .then(com.chris.m3usuite.ui.focus.run { Modifier.tvClickable(
                                 role = androidx.compose.ui.semantics.Role.Button,
                                 scaleFocused = 1f,
                                 scalePressed = 1f,
                                 focusBorderWidth = 0.dp,
                                 brightenContent = false,
-                                debugTag = "gate:add"
-                            ) { showCreate = true },
+                                debugTag = "gate:add",
+                                onClick = { showCreate = true }
+                            ) }),
                         shape = addShape,
                         color = Color(0xFF1F5130)
                     ) {
@@ -578,25 +567,26 @@ fun ProfileGate(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = itemModifier
                                 .widthIn(min = 148.dp)
-                                .tvFocusFrame(
+                                .then(com.chris.m3usuite.ui.focus.run { Modifier.tvFocusFrame(
                                     focusedScale = 1.10f,
                                     pressedScale = 1.06f,
                                     shape = RoundedCornerShape(22.dp),
                                     focusBorderWidth = 2.5.dp
-                                )
-                                .tvClickable(
+                                ) })
+                                .then(com.chris.m3usuite.ui.focus.run { Modifier.tvClickable(
                                     role = androidx.compose.ui.semantics.Role.Button,
                                     scaleFocused = 1f,
                                     scalePressed = 1f,
                                     focusBorderWidth = 0.dp,
                                     brightenContent = false,
-                                    debugTag = "gate:kid:${k.id}"
-                                ) {
+                                    debugTag = "gate:kid:${k.id}",
+                                    onClick = {
                                     scope.launch {
                                         store.setCurrentProfileId(k.id)
                                         onEnter()
                                     }
-                                }
+                                    }
+                                ) })
                         ) {
                             val shadowRadius = 24.dp
                             val avatarShape = CircleShape

@@ -36,6 +36,24 @@ Codex – Operating Rules (override)
 - Respectful scope: Codex does not change/trim/expand modules or files without instruction, except where necessary to uphold these rules or maintain architectural integrity. Existing flows (EPG/Xtream, player paths, list/detail) must be preserved unless requested.
 - Ongoing hygiene: Codex periodically tidies the repo, highlights obsolete files/code to the user, and removes uncritical leftovers (e.g., stale *.old files). Never touch `.gradle/`, `.idea/`, or `app/build/` artifacts, and avoid dependency upgrades unless fixing builds.
 - TV focus/DPAD audit: `tools/audit_tv_focus.sh` enforces rules (TvFocusRow for horizontal containers, tvClickable for interactives, no ad‑hoc DPAD). Wired into CI (`.github/workflows/ci.yml`) and fails PRs on violations.
+ - Central facade: Use `com.chris.m3usuite.ui.focus.FocusKit` as the single entry point for focus across all UIs (TV/phone/tablet). It provides primitives (`tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, `focusBringIntoViewOnFocus`), unified row wrappers (`TvRowLight` → `TvFocusRow`, `TvRowMedia`/`TvRowPaged` → `RowCore` engines), DPAD helpers (`onDpadAdjustLeftRight/UpDown`), grid neighbors (`focusNeighbors`), and re‑exports of `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton`). Avoid importing row engines or skin primitives directly in screens.
+
+**UI Layout Centralization (Fish*)**
+- Tokens: `ui/layout/FishTheme.kt`
+  - `FishDimens` (editables): `tileWidthDp`, `tileHeightDp`, `tileCornerDp`, `tileSpacingDp`, `contentPaddingHorizontalDp`, `focusScale`, `focusBorderWidthDp`, `reflectionAlpha`, `enableGlow`, `showTitleWhenUnfocused`.
+  - Apply via `FishTheme { ... }`; screens/rows read tokens through `LocalFishDimens`.
+- Tile: `ui/layout/FishTile.kt`
+  - Unified tile visuals: ContentScale.Fit, rounded corners, reflection, focus scale + frame + global glow (via FocusKit), optional selection frame, footer/title on focus.
+  - No per‑tile scroll: `autoBringIntoView=false` (Row handles visibility).
+- Row: `ui/layout/FishRow.kt`
+  - `FishRowLight` (simple LazyRow + focus), `FishRow` (Media engine), `FishRowPaged` (Paging engine). Fixed spacing/padding from tokens; header is optional and only rendered when provided.
+  - Media/Paged support `edgeLeftExpandChrome` + `initialFocusEligible`; bring‑into‑view + DPAD handled centrally (no tile hacks).
+- Content composition: `ui/layout/FishVodContent.kt`, `FishSeriesContent.kt`, `FishLiveContent.kt`
+  - Build tile content per type (title, poster/logo, resume/epg, NEW badges, selection badges, bottom‑end actions, focus logging hook, click routing). Vod includes resume progress and NEW status.
+- Shared helpers: `ui/layout/FishMeta.kt` (poster/title/plot/resume), `FishActions.kt` (Assign/Play actions; buttons non‑focusable), `FishLogging.kt` (focus logs with OBX resolution), `FishResumeTile.kt` (global resume card for VOD/Series episodes).
+- Migration policy
+  - Rows/Screens compose only `FishRow` + `FishTile`; all visuals/behavior come from tokens + FocusKit. No extra row frames/overlays.
+  - Eliminate `CARDS_V1` and old `ui/cards/*` (PosterCard/ChannelCard/SeasonCard) while porting; no wrappers. Telegram’s `PosterCardTagged` maps to FishTile with a badge slot.
   - Central facade: Use `com.chris.m3usuite.ui.focus.FocusKit` for all focus primitives and rows (`tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, and `TvRow`). Avoid importing scattered helpers directly.
 - Xtream workers & delta: Legacy `XtreamRefreshWorker`/`XtreamEnrichmentWorker` remain disabled (no‑op). Xtream content updates via `XtreamDeltaImportWorker`: periodic (12h, unmetered+charging) plus on‑demand one‑shot trigger.
   - Global gate: `M3U_WORKERS_ENABLED` in DataStore controls whether Xtream workers/scheduling and related API paths run. When false, workers early‑exit (no network), app‑start auto‑discovery/seed is skipped, and Settings actions for Xtream diagnostics/import are disabled.

@@ -1,0 +1,12 @@
+# .github/codex/tasks/focus_audit.toml
+title = "Audit Focusable Usage"
+model = "gpt-5"
+reasoning_effort = "high"
+prompt = """
+Analysiere alle Kotlin-Dateien im Repo auf falsche oder ineffiziente Nutzung von focusable().
+- Prüfe auf doppelte oder unnötige focusable() Modifiers
+- Prüfe fehlende focusTarget() bei interaktiven Composables
+- Prüfe fehlendes bringIntoViewOnFocus
+Erstelle eine tabellarische Übersicht (Datei, Zeile, Problem, Vorschlag)
+"""
+filter = "app/src/**/*.kt"

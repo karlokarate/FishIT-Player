@@ -161,3 +161,13 @@ fun KidContentRepository.disallowManyEncoded(profileId: Long, encodedIds: Collec
         }
     }
     if (live.isNotEmpty()) {
+        if (disallowLiveBulk != null) {
+            disallowLiveBulk.invoke(this, profileId, live)
+        } else if (disallowGeneric != null) {
+            live.forEach { disallowGeneric.invoke(this, profileId, "live", it) }
+        } else {
+            val disallowLive = clazz.methods.firstOrNull { it.name == "disallowLive" && it.parameterTypes.size == 2 }
+            disallowLive?.let { m -> live.forEach { m.invoke(this, profileId, it) } }
+        }
+    }
+}

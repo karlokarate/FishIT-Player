@@ -173,7 +173,20 @@ fun AssignSelectionBadge(
 /**
  * Tiles can call this in their click handler to toggle selection when assign-mode is active.
  * Return true if the event was consumed by selection.
+ * Use the overload with explicit state for non-Composable contexts (e.g., onClick lambdas).
  */
-fun handleAssignSelectionClick(encodedId: Long): Boolean {
-    val sel = LocalAssignSelection.current ?: return false
+fun handleAssignSelectionClick(encodedId: Long, state: AssignSelectionState?): Boolean {
+    val sel = state ?: return false
     if (!sel.active) return false
+    sel.toggle(encodedId)
+    return true
+}
+
+@Composable
+fun handleAssignSelectionClick(encodedId: Long): Boolean {
+    val sel = LocalAssignSelection.current
+    if (sel == null || !sel.active) return false
+    sel.toggle(encodedId)
+    return true
+}
+

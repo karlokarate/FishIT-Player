@@ -4,7 +4,9 @@ Deep‑Dive Update: 2025‑09‑23
 - Build, networking, images and playback updated to reflect current code.
 - Lifecycle/Performance: `collectAsStateWithLifecycle` breit eingesetzt; JankStats in MainActivity aktiv.
 - Global Debug: per Settings schaltbar (Reiter „Import & Diagnose“). Loggt Navigationsschritte (NavController‑Listener), DPAD‑Eingaben (UP/DOWN/LEFT/RIGHT/CENTER/BACK inkl. Player‑Tasten), Tile‑Focus (inkl. OBX‑Titel in Klammern) und OBX‑Key‑Updates (Backfill der sort/provider/genre/year Keys) unter Logcat‑Tag `GlobalDebug`. Die Kern‑Row‑Engines (MediaRowCore/Paged) emittieren Tile‑Focus für alle Kacheln.
- - Global Debug erweitert: Zusätzlich loggen alle fokussierbaren Widgets (Buttons, Chips, Clickables) `focus:widget component=<type> module=<route> tag=<hint>`, auch direkt beim Start bei der ersten Fokusübernahme.
+- Global Debug erweitert: Zusätzlich loggen alle fokussierbaren Widgets (Buttons, Chips, Clickables) `focus:widget component=<type> module=<route> tag=<hint>`, auch direkt beim Start bei der ersten Fokusübernahme.
+- FocusKit: Einzige öffentliche Oberfläche für Fokus/DPAD über alle UIs. Primitives (`tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, `focusBringIntoViewOnFocus`), vereinheitlichte Row‑Wrapper (`TvRowLight`/`TvRowMedia`/`TvRowPaged`) sowie DPAD‑ und Grid‑Helfer (`onDpadAdjustLeftRight/UpDown`, `focusNeighbors`). Buttons (`TvButton*`) werden re‑exportiert.
+ - UI Layout (Fish*): Tokens (`ui/layout/FishTheme`) steuern Größe/Abstände/Ecken/Fokus‑Scale. `FishTile` normiert das Aussehen (ContentScale.Fit, Glow/Frame, Reflection), `FishRow`/`FishRowPaged` kapseln Row‑Engines (DPAD/edge‑left→Chrome/Paging). Inhaltliche Slots kommen aus `FishVodContent`/`FishSeriesContent`/`FishLiveContent`, geteilt über `FishMeta`/`FishActions`/`FishLogging`. `FishResumeTile` ist die generische Resume‑Karte.
 
 Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module, Flows und Verantwortlichkeiten der App. Es ist aus `AGENTS.md` abgeleitet und wird hier als zentrale Architektur‑Referenz gepflegt.
 
