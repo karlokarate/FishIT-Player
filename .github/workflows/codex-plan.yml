@@ -12,8 +12,16 @@ permissions:
   issues: write
   pull-requests: write
 
+# Verhindert parallele Doppel-Läufe für dasselbe Issue
+concurrency:
+  group: codex-contextmap-${{ github.event_name }}-${{ github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   contextmap:
+    # Loop-Schutz: nicht erneut laufen, wenn der Bot selbst kommentiert hat
+    if: ${{ !(github.event_name == 'issue_comment' && github.actor == 'github-actions[bot]') }}
+
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -35,16 +43,20 @@ jobs:
 
       - name: Run Bot 1 (ContextMap)
         env:
+          # Standardtoken von GitHub Actions
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Werden vom Runner ohnehin gesetzt – hier zur Klarheit explizit übergeben
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GH_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          # Verhindert doppelte Kommentare; Kommentar übernimmt unten die Action
+          CODEX_POST_ISSUE_COMMENT: 'false'
         run: |
           mkdir -p .github/codex/context
           python .github/codex/bot_contextmap.py
 
       - name: Upload context artifact
-        if: always()
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: codex-context
@@ -66,7 +78,7 @@ jobs:
           fi
 
       - name: Comment summary to issue
-        if: github.event_name == 'issues' || github.event_name == 'issue_comment'
+        if: ${{ github.event_name == 'issues' || github.event_name == 'issue_comment' }}
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.issue.number }}
