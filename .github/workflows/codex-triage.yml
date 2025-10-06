@@ -1,61 +1,66 @@
-name: Codex – Triage (Bot 3)
+name: Codex Triage Bot
 
 on:
   issues:
-    types: [labeled]
+    types: [labeled]   # reagiert auf solver-error / contextmap-error
   workflow_dispatch:
     inputs:
       issue:
-        description: "Issue-Nummer (bei manuellem Dispatch)"
+        description: "Issue-Nummer (manueller Triage-Start)"
         required: false
         default: ""
 
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write
-  issues: write
-
-concurrency:
-  group: codex-triage
-  cancel-in-progress: false
+  contents: read        # Repo lesen (Workflows, Bots, Gradle, usw.)
+  actions: read         # Runs/Logs/Artefakte lesen
+  issues: write         # Kommentar & Labels
+  pull-requests: write  # optional: Kommentare in PRs (nicht genutzt, aber nützlich)
+  # Keine Schreibrechte auf contents standardmäßig (kein Auto-Commit hier)
 
 jobs:
   triage:
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issues' &&
-       (github.event.label.name == 'contextmap-error' || github.event.label.name == 'solver-error'))
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.label.name == 'solver-error' || github.event.label.name == 'contextmap-error' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (full)
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          lfs: true
+          submodules: recursive
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade openai requests
+          pip install requests openai
 
-      - name: Export GH_EVENT_NAME & ISSUE_NUMBER
+      - name: Determine ISSUE_NUMBER
+        id: issue
+        shell: bash
         run: |
-          echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
-          echo "ISSUE_NUMBER=${{ github.event.inputs.issue }}" >> $GITHUB_ENV
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.issue }}" ]]; then
+            echo "num=${{ github.event.inputs.issue }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "num=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Run Bot 3 (Triage)
+      - name: Run Triage (Bot 3, KI-Analyse)
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
-          OPENAI_REASONING_EFFORT: high
-          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
-
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GH_EVENT_NAME: ${{ env.GH_EVENT_NAME }}
-          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
-        run: python .github/codex/bot_triage.py
+          GH_EVENT_NAME: ${{ github.event_name }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.num }}
+
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
+        run: |
+          python .github/codex/bot_triage.py
