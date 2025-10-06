@@ -1,145 +1,122 @@
-name: release-apk
+name: Android – Build APK
 
 on:
+  # vorhandene Trigger kannst du zusätzlich behalten – hier der neue Dispatch:
   workflow_dispatch:
     inputs:
       build_type:
-        description: "Build type: debug or release"
+        description: "Build-Variante (debug | release)"
         required: false
-        default: "release"
-        type: choice
-        options: ["debug", "release"]
-      abis:
-        description: "ABIs (comma separated): arm64-v8a,armeabi-v7a,universal"
-        required: false
-        default: "arm64-v8a,armeabi-v7a"
-      ignore_missing_tdlib_v7a:
-        description: "Ignore missing v7a TDLib (true/false)"
-        required: false
-        default: "false"
+        default: "debug"
       issue:
-        description: "Issue number (optional, used by Bot 3 to map logs)"
+        description: "Issue-Nummer (optional, nur Info)"
         required: false
         default: ""
 
 permissions:
   contents: read
-  actions: write    # für workflow_dispatch (Triage)
-  issues: write     # um bei Failure Label 'solver-error' ans Issue zu hängen
+
+env:
+  # Pfade/Dateinamen für den Keystore (falls Signatur via Secrets gewünscht)
+  ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/android-upload-keystore.jks
+  # Optional: Gradle-Properties-Datei (für Secrets/Signatur)
+  GRADLE_PROPS: ${{ runner.temp }}/gradle.properties
 
 jobs:
   build:
-    name: Build ${{ inputs.build_type }} (${{ inputs.abis }})
     runs-on: ubuntu-latest
-    env:
-      BUILD_TYPE: ${{ inputs.build_type }}
-      ABIS: ${{ inputs.abis }}
-      IGNORE_TDLIB_V7A: ${{ inputs.ignore_missing_tdlib_v7a }}
-      ISSUE_NUMBER: ${{ inputs.issue }}
+    timeout-minutes: 60
 
     steps:
-      - name: Checkout (full)
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Java (Temurin 17)
+      # ⚠️ Viele aktuelle Android-Gradle-Plugin-Versionen benötigen JDK 17.
+      # Wenn dein Projekt noch JDK 11 nutzt, ändere 'java-version' auf '11'.
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: "17"
+          cache: gradle
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
 
-      - name: Accept licenses & Install Platform/Build-Tools
+      # (Optional) Keystore aus Secret decodieren – wenn Secrets gesetzt sind
+      - name: Prepare signing (optional)
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        shell: bash
         run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-35" "build-tools;35.0.0" || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$ANDROID_KEYSTORE_PATH"
+          echo "storeFile=$ANDROID_KEYSTORE_PATH" >> "$GRADLE_PROPS"
+          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> "$GRADLE_PROPS"
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> "$GRADLE_PROPS"
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> "$GRADLE_PROPS"
+          # Häufige alternative Property-Namen (falls im build.gradle.kts so erwartet):
+          {
+            echo "MYAPP_UPLOAD_STORE_FILE=$ANDROID_KEYSTORE_PATH"
+            echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+            echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}"
+          } >> "$GRADLE_PROPS"
 
-      - name: Gradle cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
-
-      - name: Prepare build matrix info
-        id: prep
+      # Gradle nutzt standardmäßig ~/.gradle/gradle.properties
+      - name: Install gradle.properties (optional)
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        shell: bash
         run: |
-          echo "ISSUE_NUMBER=${ISSUE_NUMBER}"
-          if [ -n "${ISSUE_NUMBER}" ]; then
-            echo "issue:#${ISSUE_NUMBER}"
-          fi
-          if [ "${BUILD_TYPE}" = "release" ]; then
-            echo "TASK=:app:assembleRelease" >> $GITHUB_OUTPUT
+          mkdir -p ~/.gradle
+          cat "$GRADLE_PROPS" >> ~/.gradle/gradle.properties
+          echo "Wrote signing props to ~/.gradle/gradle.properties"
+
+      # Build-Type bestimmen (assembleRelease vs assembleDebug)
+      - name: Compute Gradle task
+        id: task
+        shell: bash
+        run: |
+          BT="${{ github.event.inputs.build_type }}"
+          if [[ "$BT" == "release" || "$BT" == "Release" ]]; then
+            echo "task=assembleRelease" >> $GITHUB_OUTPUT
           else
-            echo "TASK=:app:assembleDebug" >> $GITHUB_OUTPUT
+            echo "task=assembleDebug" >> $GITHUB_OUTPUT
           fi
-          echo "ABI_FLAGS=${ABIS}" >> $GITHUB_OUTPUT
+          echo "Using task: $(cat $GITHUB_OUTPUT)"
 
-      - name: Show Gradle version
-        run: ./gradlew --version
+      # Build – Tests unterdrücken; Lint kannst du bei Bedarf mit -x lint ebenfalls abschalten
+      - name: Build APK
+        run: ./gradlew ${{ steps.task.outputs.task }} -x test --no-daemon --stacktrace
+        # falls Lint stört:  ./gradlew ${{ steps.task.outputs.task }} -x test -x lint --no-daemon --stacktrace
 
-      - name: Build (${{ steps.prep.outputs.TASK }})
-        id: build
+      # Artefakte finden und hochladen (alle APKs – Debug/Release)
+      - name: Locate APKs
+        id: apks
+        shell: bash
         run: |
-          set -o pipefail
-          if [ -n "${ISSUE_NUMBER}" ]; then
-            echo "ISSUE_NUMBER=${ISSUE_NUMBER}"
-            echo "issue:#${ISSUE_NUMBER}"
+          # Sammle APKs aus Standard-Ausgabepfaden
+          mapfile -t FILES < <(find app -type f -path "*/build/outputs/apk/*/*.apk" -print)
+          if [[ ${#FILES[@]} -eq 0 ]]; then
+            echo "Keine APK gefunden." >&2
+            exit 1
           fi
-          ./gradlew --no-daemon --stacktrace -Pcodex.abis="${ABIS}" ${{ steps.prep.outputs.TASK }} 2>&1 | tee gradle_build.log
+          # Liste zeigen
+          printf 'APK: %s\n' "${FILES[@]}"
+          # Als Newline-getrennte Liste für Upload bereitstellen
+          printf '%s\n' "${FILES[@]}" > "$RUNNER_TEMP/apk_list.txt"
 
-      - name: Collect APK/AAB artifacts
-        if: always()
-        run: |
-          mkdir -p artifacts
-          find . -type f -path "*/build/outputs/apk/*/*.apk" -exec cp -v {} artifacts/ \; || true
-          find . -type f -path "*/build/outputs/bundle/*/*.aab" -exec cp -v {} artifacts/ \; || true
-          find . -type f -path "*/build/outputs/mapping/*/mapping.txt" -exec cp -v {} artifacts/ \; || true
-          cp -v gradle_build.log artifacts/ || true
-
-      - name: Upload build artifacts
-        if: always()
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ github.run_id }}-${{ inputs.build_type }}
-          path: artifacts
-          if-no-files-found: warn
+          name: apk-${{ github.event.inputs.build_type || 'debug' }}
+          path: |
+            ${{ runner.temp }}/apk_list.txt
+            app/build/outputs/apk/**/**/*.apk
 
-      # Trigger Bot 3 über Label
-      - name: Label issue for Bot 3 (solver-error)
-        if: failure() && inputs.issue != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Optional: Ausgabe der Info (Build-Kontext)
+      - name: Build Context Info (optional)
+        if: ${{ github.event.inputs.issue != '' }}
         run: |
-          echo "Label 'solver-error' to issue #${{ inputs.issue }} (on build failure)"
-          curl -sSf -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/${{ github.repository }}/issues/${{ inputs.issue }}/labels \
-            -d '{"labels":["solver-error"]}'
-
-      # Und zusätzlich direkt dispatchen (redundant, aber sehr robust)
-      - name: Dispatch Bot 3 (codex-triage.yml)
-        if: failure() && inputs.issue != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Dispatch triage workflow for issue #${{ inputs.issue }}"
-          curl -sSf -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/${{ github.repository }}/actions/workflows/codex-triage.yml/dispatches \
-            -d '{"ref":"${{ github.ref_name }}","inputs":{"issue":"${{ inputs.issue }}"}}'
-
-      - name: Fail if task failed
-        if: failure()
-        run: |
-          echo "::error::Build failed. Artifacts and logs have been uploaded."
-          exit 1
+          echo "Issue: #${{ github.event.inputs.issue }}"
+          echo "Build type: ${{ github.event.inputs.build_type || 'debug' }}"
