@@ -146,6 +146,20 @@ def github_api_get(url: str, token: str, accept: str = "application/vnd.github+j
     r.raise_for_status()
     return r
 
+def github_api_post_json(url: str, token: str, payload: dict):
+    headers = {"Accept": "application/vnd.github+json", "Content-Type": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    r = requests.post(url, headers=headers, json=payload, timeout=30)
+    return r
+
+    headers = {"Accept": accept}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    r = requests.get(url, headers=headers, allow_redirects=True, timeout=60)
+    r.raise_for_status()
+    return r
+
 def fetch_issue_context(event: Dict[str, Any], repo: str, token: str) -> Dict[str, Any]:
     """Return dict with: type ('issues'|'issue_comment'|'workflow_dispatch'), issue_number, body, title, urls."""
     evname = os.getenv("GITHUB_EVENT_NAME", "")
@@ -439,6 +453,22 @@ def language_stats() -> Dict[str, Any]:
     # sizes in KB
     return {k: round(v/1024, 2) for k, v in sorted(exts.items(), key=lambda kv: kv[1], reverse=True)}
 
+
+# ------------------------- Label helper -------------------------
+
+def add_contextmap_ready_label(issue_number: Optional[int], repo: str, token: str):
+    try:
+        if not issue_number or not repo:
+            return
+        url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/labels"
+        r = github_api_post_json(url, token, {"labels": ["contextmap-ready"]})
+        if r is None or r.status_code >= 300:
+            logging.warning("Adding 'contextmap-ready' failed: %s", getattr(r, 'text', '')[:300])
+        else:
+            logging.info("Label 'contextmap-ready' added to issue #%s", issue_number)
+    except Exception as e:
+        logging.warning("Labeling failed: %s", e)
+
 # ------------------------- Main -------------------------
 
 def main():
@@ -562,6 +592,12 @@ def main():
     print(f"Wrote solver_input.json → {OUT_JSON}")
     print(f"Gzipped copy          → {OUT_JSON}.gz")
     print(f"Summary               → {OUT_SUMMARY}")
+
+    # Auto-label context readiness
+    evn = os.getenv("GITHUB_EVENT_NAME", "")
+    if evn in ("issues", "issue_comment"):
+        repo_env, token_env = get_repo_env()
+        add_contextmap_ready_label(ictx.get("issue_number"), repo_env, token_env)
 
 if __name__ == "__main__":
     main()
