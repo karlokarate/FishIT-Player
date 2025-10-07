@@ -1,20 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ContextMap Bot (generic, Bot 1)
+ContextMap Bot (generic, Bot 1) – mit optionaler Deep-Reasoning-Phase
 
 Aufgaben:
 - Issue/Kommentar einlesen, Probleme/Anforderungen aus natürlicher Sprache extrahieren.
-- Repo generisch voranalysieren (Sprachen, Verzeichnisstruktur, größte Dateien, Stack-/Build-Indikatoren).
-- Wahrscheinlich betroffene Module/Dateien bestimmen + ggf. neue Dateien vorschlagen (Tests/Dokumentation/Migration).
-- Kurz-Zusammenfassung als Kommentar in den Issue schreiben (optional per ENV).
-- Umfassenden Fahrplan als JSON erzeugen (solver_plan.json) + vollständigen Kontext (solver_input.json).
-- Optional: 'contextmap-ready'-Label setzen und Bot 2 via repository_dispatch informieren.
+- Repo generisch voranalysieren (Sprachen, Struktur, größte Dateien, Stack-Indikatoren).
+- Kandidatendateien ermitteln + (optional) Datei-Inhalte für Reasoning auswählen.
+- Kurz-Zusammenfassung als Kommentar posten (optional).
+- Vollständigen Kontext (solver_input.json) + Fahrplan (solver_plan.json) schreiben.
+- Optional: LLM-gestützte Deep-Analyse (Reasoning) → Ergebnis strukturiert in solver_plan.json/llm_deep_dive.
+- Optional: Label setzen, Bot 2 via repository_dispatch informieren.
 
 ENV-Schalter:
-- CODEX_POST_ISSUE_COMMENT = true|false   (default: true)
-- CODEX_ADD_LABEL          = true|false   (default: true)
-- CODEX_NOTIFY_SOLVER      = true|false   (default: true)
+- CODEX_POST_ISSUE_COMMENT = true|false        (default: true)
+- CODEX_ADD_LABEL          = true|false        (default: true)
+- CODEX_NOTIFY_SOLVER      = true|false        (default: true)
+- CODEX_DEEP_REASONING     = true|false        (default: true, aber nur aktiv mit OPENAI_API_KEY)
+- CODEX_MAX_FILES_FOR_REASONER                (default: 25)
+- CODEX_MAX_BYTES_PER_FILE_FOR_REASONER       (default: 100000)
+- CODEX_REASONING_MODEL                       (default: "gpt-5")
+- OPENAI_API_KEY / OPENAI_BASE_URL            (BASE_URL optional, default https://api.openai.com)
+- OPENAI_REASONING_EFFORT                     (default: "high")
+- CODEX_ISSUE_NUMBER                          (optional Override)
 """
 
 import os
@@ -28,10 +36,9 @@ import hashlib
 import logging
 import mimetypes
 import subprocess
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import List, Dict, Any, Optional, Tuple
 
-# ---- deps ----
 try:
     import requests
 except Exception as e:
@@ -44,12 +51,12 @@ try:
 except Exception:
     HAVE_CHARDET = False
 
-# ---- config ----
+# ---------- Config ----------
 DEFAULT_EXCLUDE_DIRS = {
     ".git", ".github", ".gradle", "build", "out", ".idea", ".vscode", ".venv", "node_modules", ".dart_tool"
 }
-DEFAULT_MAX_TEXT_EMBED_BYTES = int(os.getenv("CODEX_MAX_TEXT_EMBED_BYTES", "1048576"))  # 1 MiB per file
-DEFAULT_MAX_BIN_BASE64_BYTES = int(os.getenv("CODEX_MAX_BIN_BASE64_BYTES", "524288"))   # 512 KiB per file
+DEFAULT_MAX_TEXT_EMBED_BYTES = int(os.getenv("CODEX_MAX_TEXT_EMBED_BYTES", "1048576"))  # 1 MiB/file
+DEFAULT_MAX_BIN_BASE64_BYTES = int(os.getenv("CODEX_MAX_BIN_BASE64_BYTES", "524288"))   # 512 KiB/file
 DEFAULT_ALWAYS_EMBED_REFERENCED = True
 
 WORK_DIR = os.path.abspath(".")
@@ -64,6 +71,17 @@ POST_ISSUE_COMMENT = os.getenv("CODEX_POST_ISSUE_COMMENT", "true").strip().lower
 ADD_LABEL = os.getenv("CODEX_ADD_LABEL", "true").strip().lower() in {"1", "true", "yes"}
 NOTIFY_SOLVER = os.getenv("CODEX_NOTIFY_SOLVER", "true").strip().lower() in {"1", "true", "yes"}
 
+# Deep Reasoning
+DEEP_REASONING = os.getenv("CODEX_DEEP_REASONING", "true").strip().lower() in {"1", "true", "yes"}
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+OPENAI_BASE_URL = (os.getenv("OPENAI_BASE_URL") or "https://api.openai.com").rstrip("/")
+REASONING_MODEL = os.getenv("CODEX_REASONING_MODEL", "gpt-5").strip()
+REASONING_EFFORT = os.getenv("OPENAI_REASONING_EFFORT", "high").strip()
+MAX_FILES_FOR_REASONER = int(os.getenv("CODEX_MAX_FILES_FOR_REASONER", "25"))
+MAX_BYTES_PER_FILE_FOR_REASONER = int(os.getenv("CODEX_MAX_BYTES_PER_FILE_FOR_REASONER", "100000"))
+
+ISSUE_NUMBER_OVERRIDE = os.getenv("CODEX_ISSUE_NUMBER", "").strip()
+
 ALLOWED_ATTACHMENT_HOSTS = {
     "user-images.githubusercontent.com",
     "objects.githubusercontent.com",
@@ -71,9 +89,9 @@ ALLOWED_ATTACHMENT_HOSTS = {
     "raw.githubusercontent.com"
 }
 
-# ---- utils ----
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
+# ---------- Utilities ----------
 def run(cmd: List[str], cwd: Optional[str] = None) -> Tuple[int, str, str]:
     p = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     out, err = p.communicate()
@@ -110,15 +128,13 @@ def safe_relpath(p: str) -> str:
         return p.replace("\\", "/")
 
 def file_sha256(b: bytes) -> str:
-    h = hashlib.sha256()
-    h.update(b)
-    return h.hexdigest()
+    h = hashlib.sha256(); h.update(b); return h.hexdigest()
 
 def ensure_dirs():
     os.makedirs(CTX_DIR, exist_ok=True)
     os.makedirs(ATTACH_DIR, exist_ok=True)
 
-# ---- event / API ----
+# ---------- Event / API ----------
 def load_event_payload() -> Dict[str, Any]:
     p = os.getenv("GITHUB_EVENT_PATH")
     if not p or not os.path.exists(p):
@@ -132,66 +148,51 @@ def get_repo_env() -> Tuple[str, str]:
 
 def github_api_get(url: str, token: str, accept: str = "application/vnd.github+json") -> requests.Response:
     headers = {"Accept": accept}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    if token: headers["Authorization"] = f"Bearer {token}"
     r = requests.get(url, headers=headers, allow_redirects=True, timeout=60)
     r.raise_for_status()
     return r
 
 def github_api_post_json(url: str, token: str, payload: dict) -> requests.Response:
     headers = {"Accept": "application/vnd.github+json", "Content-Type": "application/json"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    if token: headers["Authorization"] = f"Bearer {token}"
     return requests.post(url, headers=headers, json=payload, timeout=60)
 
 def post_issue_comment(issue_number: Optional[int], repo: str, token: str, body: str):
-    if not (issue_number and repo and token and body):
-        return
+    if not (issue_number and repo and token and body): return
     url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
     r = github_api_post_json(url, token, {"body": body})
     if r is None or r.status_code >= 300:
         logging.warning("Failed to post issue comment: %s", getattr(r, "text", "")[:300])
 
 def add_contextmap_ready_label(issue_number: Optional[int], repo: str, token: str):
-    if not (issue_number and repo and token and ADD_LABEL and issue_number):
-        return
+    if not (issue_number and repo and token and ADD_LABEL and issue_number): return
     url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/labels"
     r = github_api_post_json(url, token, {"labels": ["contextmap-ready"]})
     if r is None or r.status_code >= 300:
         logging.warning("Adding 'contextmap-ready' failed: %s", getattr(r, 'text', '')[:300])
 
 def notify_solverbot(repo: str, token: str, payload: Dict[str, Any]):
-    """Best-effort: repository_dispatch an Bot 2 mit schlankem Payload."""
-    if not (NOTIFY_SOLVER and repo and token):
-        return
+    if not (NOTIFY_SOLVER and repo and token): return
     url = f"https://api.github.com/repos/{repo}/dispatches"
-    # Payload bewusst klein halten
-    event = {
-        "event_type": "codex-solver-context-ready",
-        "client_payload": payload
-    }
+    event = {"event_type": "codex-solver-context-ready", "client_payload": payload}
     r = github_api_post_json(url, token, event)
     if r is None or r.status_code >= 300:
         logging.warning("repository_dispatch failed: %s", getattr(r, "text", "")[:300])
 
-# ---- reference parsing / attachments ----
+# ---------- References / Attachments ----------
 PATH_PATTERN = re.compile(r"""(?P<path>
     (?:[A-Za-z0-9_\-./ ]+/)*[A-Za-z0-9_\-./ ]+\.(?:kt|java|kts|gradle|xml|md|txt|yml|yaml|json|tf|properties|py|sh|bat|ps1|tl|proto|cc|cpp|hpp|c|h|dart|swift|go|rs|ini|cfg|csv|ts|tsx|jsx|html|css|scss|sql)
 )""", re.VERBOSE)
-
 URL_PATTERN = re.compile(r"""https?://[^\s)>'"]+""")
 
 def extract_paths_and_urls(text: str) -> Tuple[List[str], List[str]]:
     text = text or ""
     paths, urls = set(), set()
-    for m in re.finditer(r"^\+\+\+ b/([^\n\r]+)$", text, re.MULTILINE):
-        paths.add(m.group(1).strip())
-    for m in re.finditer(r"^--- a/([^\n\r]+)$", text, re.MULTILINE):
-        paths.add(m.group(1).strip())
-    for m in PATH_PATTERN.finditer(text):
-        paths.add(m.group("path").strip())
-    for m in URL_PATTERN.finditer(text):
-        urls.add(m.group(0).strip())
+    for m in re.finditer(r"^\+\+\+ b/([^\n\r]+)$", text, re.MULTILINE): paths.add(m.group(1).strip())
+    for m in re.finditer(r"^--- a/([^\n\r]+)$", text, re.MULTILINE): paths.add(m.group(1).strip())
+    for m in PATH_PATTERN.finditer(text): paths.add(m.group("path").strip())
+    for m in URL_PATTERN.finditer(text): urls.add(m.group(0).strip())
     return sorted(paths), sorted(urls)
 
 def _host_allowed(url: str) -> bool:
@@ -206,8 +207,7 @@ def download_attachment(url: str, token: str) -> Dict[str, Any]:
     meta = {"url": url, "saved_as": None, "status": "error", "size": 0, "sha256": None,
             "is_text": None, "encoding": None}
     if not _host_allowed(url):
-        meta["status"] = "external-reference"
-        return meta
+        meta["status"] = "external-reference"; return meta
     try:
         r = github_api_get(url, token, accept="application/octet-stream")
     except Exception:
@@ -220,48 +220,37 @@ def download_attachment(url: str, token: str) -> Dict[str, Any]:
     meta["size"] = len(data)
     name = url.split("/")[-1]
     if not name or "." not in name:
-        cd = r.headers.get("Content-Disposition", "")
-        mt = r.headers.get("Content-Type", "")
-        if "filename=" in (cd or ""):
-            name = cd.split("filename=")[-1].strip('"; ')
+        cd = r.headers.get("Content-Disposition", ""); mt = r.headers.get("Content-Type", "")
+        if "filename=" in cd: name = cd.split("filename=")[-1].strip('"; ')
         else:
             ext = mimetypes.guess_extension(mt or "") or ".bin"
             name = f"attachment_{sha[:8]}{ext}"
     os.makedirs(ATTACH_DIR, exist_ok=True)
     save_path = os.path.join(ATTACH_DIR, name)
-    with open(save_path, "wb") as f:
-        f.write(data)
+    with open(save_path, "wb") as f: f.write(data)
     meta["saved_as"] = save_path.replace("\\", "/")
     if is_probably_text(data):
         enc = detect_encoding(data)
-        meta["is_text"] = True
-        meta["encoding"] = enc
+        meta["is_text"] = True; meta["encoding"] = enc
         meta["text"] = data.decode(enc, errors="replace")
     else:
         meta["is_text"] = False
         meta["base64"] = base64.b64encode(data).decode("ascii")
-    meta["status"] = "ok"
-    return meta
+    meta["status"] = "ok"; return meta
 
-# ---- repo scan ----
+# ---------- Repo scan ----------
 def list_all_files() -> List[str]:
     files = []
     for root, dirs, fnames in os.walk(WORK_DIR):
         for d in list(dirs):
             absd = os.path.abspath(os.path.join(root, d))
-            if absd == CTX_DIR_ABS or absd.startswith(CTX_DIR_ABS + os.sep):
-                dirs.remove(d)
-                continue
-            if d in DEFAULT_EXCLUDE_DIRS and absd != os.path.abspath(".github"):
-                dirs.remove(d)
+            if absd == CTX_DIR_ABS or absd.startswith(CTX_DIR_ABS + os.sep): dirs.remove(d); continue
+            if d in DEFAULT_EXCLUDE_DIRS and absd != os.path.abspath(".github"): dirs.remove(d)
         for fn in fnames:
-            p = os.path.join(root, fn)
-            absp = os.path.abspath(p)
-            if absp == CTX_DIR_ABS or absp.startswith(CTX_DIR_ABS + os.sep):
-                continue
+            p = os.path.join(root, fn); absp = os.path.abspath(p)
+            if absp == CTX_DIR_ABS or absp.startswith(CTX_DIR_ABS + os.sep): continue
             rel = safe_relpath(p)
-            if rel.startswith(".git/"):
-                continue
+            if rel.startswith(".git/"): continue
             files.append(rel)
     return sorted(set(files))
 
@@ -272,19 +261,16 @@ def read_repo_file(path: str, always_embed: bool=False, tracked_set: Optional[se
     try:
         b = read_file_bytes(abspath)
     except Exception as e:
-        info["error"] = f"read_error: {type(e).__name__}: {e}"
-        return info
+        info["error"] = f"read_error: {type(e).__name__}: {e}"; return info
     info["size"] = len(b)
     info["sha1"] = hashlib.sha1(b).hexdigest()
     info["sha256"] = file_sha256(b)
-    if tracked_set is None:
-        tracked_set = set(git_ls_files())
+    if tracked_set is None: tracked_set = set(git_ls_files())
     info["is_tracked"] = path in tracked_set
     head = b[:200].decode("utf-8", errors="ignore")
     if head.startswith("version https://git-lfs.github.com/spec/v1") and "git-lfs.github.com/spec/v1" in head:
         info["lfs_pointer"] = True
-    if path == ".gitmodules":
-        info["submodule_hint"] = True
+    if path == ".gitmodules": info["submodule_hint"] = True
 
     text_like_ext = path.endswith((
         ".gradle",".kts",".xml",".md",".txt",".json",".yml",".yaml",".kt",".java",
@@ -294,9 +280,7 @@ def read_repo_file(path: str, always_embed: bool=False, tracked_set: Optional[se
     ))
     if is_probably_text(b) or text_like_ext:
         info["is_text"] = True
-        enc = detect_encoding(b)
-        txt = b.decode(enc, errors="replace")
-        info["encoding"] = enc
+        enc = detect_encoding(b); txt = b.decode(enc, errors="replace"); info["encoding"] = enc
         if always_embed or len(b) <= DEFAULT_MAX_TEXT_EMBED_BYTES:
             info["text"] = txt
         else:
@@ -310,7 +294,7 @@ def read_repo_file(path: str, always_embed: bool=False, tracked_set: Optional[se
             info["binary_summary"] = {"note": "Binary file too large to embed; saved on runner workspace only.", "size": len(b)}
     return info
 
-# ---- generic analysis ----
+# ---------- Generic analysis ----------
 STOPWORDS = {
     "the","and","for","with","that","this","from","are","was","were","will","would","you","your","have","has","had",
     "ein","eine","einer","eines","einem","einen","der","die","das","und","oder","aber","nicht","kein","keine","den","dem",
@@ -329,10 +313,8 @@ def language_stats(files: List[str]) -> Dict[str, float]:
     for p in files:
         ext = os.path.splitext(p)[1].lower().lstrip(".") or "(none)"
         exts.setdefault(ext, 0)
-        try:
-            exts[ext] += os.path.getsize(p)
-        except Exception:
-            pass
+        try: exts[ext] += os.path.getsize(p)
+        except Exception: pass
     return {k: round(v/1024, 2) for k, v in sorted(exts.items(), key=lambda kv: kv[1], reverse=True)}
 
 def detect_stack_files(files: List[str]) -> Dict[str, List[str]]:
@@ -361,35 +343,30 @@ def detect_stack_files(files: List[str]) -> Dict[str, List[str]]:
     }
     found: Dict[str, List[str]] = {k: [] for k in patterns}
     for p in files:
-        lp = p.lower()
-        bn = os.path.basename(lp)
+        lp = p.lower(); bn = os.path.basename(lp)
         for key, pats in patterns.items():
             for pat in pats:
-                if pat.startswith(".") and bn.endswith(pat):
-                    found[key].append(p); break
-                elif pat.endswith("/") and pat[:-1] in lp:
-                    found[key].append(p); break
+                if pat.startswith(".") and bn.endswith(pat): found[key].append(p); break
+                elif pat.endswith("/") and pat[:-1] in lp:  found[key].append(p); break
                 else:
-                    if bn == pat or lp.endswith("/" + pat) or bn.endswith(pat):
-                        found[key].append(p); break
+                    if bn == pat or lp.endswith("/" + pat) or bn.endswith(pat): found[key].append(p); break
     return {k: sorted(set(v)) for k, v in found.items() if v}
 
 def largest_files(files: List[str], n: int = 15) -> List[Dict[str, Any]]:
     sizes = []
     for p in files:
-        try:
-            sizes.append((p, os.path.getsize(p)))
-        except Exception:
-            pass
+        try: sizes.append((p, os.path.getsize(p)))
+        except Exception: pass
     sizes.sort(key=lambda t: t[1], reverse=True)
     return [{"path": p, "bytes": s} for p, s in sizes[:n]]
 
 def top_dirs_by_count(files: List[str], n: int = 10) -> List[Dict[str, Any]]:
-    cnt = Counter(os.path.dirname(p) or "." for p in files)
+    from collections import Counter as C
+    cnt = C(os.path.dirname(p) or "." for p in files)
     most = cnt.most_common(n)
     return [{"dir": d, "files": c} for d, c in most]
 
-# ---- issue parsing / candidate selection ----
+# ---------- Issue parsing & candidates ----------
 HEADER_PATTERNS = [
     (r"(?im)^#{1,6}\s*expected(?:\s+behavior)?|^erwartetes\s+verhalten\s*:?", "expected"),
     (r"(?im)^#{1,6}\s*actual(?:\s+behavior)?|^tatsächliches\s+verhalten\s*:?|^ist\s*:?", "actual"),
@@ -402,79 +379,142 @@ def segment_sections(body: str) -> Dict[str, str]:
     sections = {"expected":"", "actual":"", "steps":"", "env":""}
     indices = []
     for pat, key in HEADER_PATTERNS:
-        for m in re.finditer(pat, body):
-            indices.append((m.start(), key))
+        for m in re.finditer(pat, body): indices.append((m.start(), key))
     indices.sort()
-    if not indices:
-        return sections
+    if not indices: return sections
     indices.append((len(body), "_end"))
     for i in range(len(indices)-1):
-        start, key = indices[i]
-        end = indices[i+1][0]
-        # Abschnittstext: von Zeilenanfang des Headers bis vor nächsten Header
+        start, key = indices[i]; end = indices[i+1][0]
         start_line = body.rfind("\n", 0, start) + 1
         sec_text = body[start_line:end].strip()
-        # Headerzeile entfernen
         sec_text = re.sub(r"(?im)^#{1,6}\s*[^\n]*\n?", "", sec_text, count=1).strip()
-        if key in sections and sec_text:
-            sections[key] = sec_text
+        if key in sections and sec_text: sections[key] = sec_text
     return sections
 
 def extract_signals(body: str) -> Dict[str, List[str]]:
     lines = (body or "").splitlines()
     errors, traces, codeblocks = [], [], []
-    # Codeblöcke ```
     for m in re.finditer(r"```(?:[a-zA-Z0-9_\-]+)?\n(.*?)\n```", body or "", flags=re.DOTALL):
         codeblocks.append(m.group(1).strip())
     for ln in lines:
         l = ln.strip()
         if re.search(r"\b(exception|traceback|stacktrace|error|fatal|panic)\b", l, re.IGNORECASE):
             errors.append(l)
-        if l.startswith("at ") or l.startswith("File ") or re.match(r".*\w+\.java:\d+", l):
+        if l.startswith("at ") or l.startswith("File ") or re.match(r".*\(\w+\.\w+:\d+\)", l):
             traces.append(l)
     return {"errors": errors[:20], "traces": traces[:50], "codeblocks": codeblocks[:5]}
 
 def score_file_for_keywords(path: str, keywords: List[str]) -> int:
-    lp = path.lower()
-    base = os.path.basename(lp)
-    segments = set(lp.split("/"))
+    lp = path.lower(); base = os.path.basename(lp); segments = set(lp.split("/"))
     score = 0
     for k in keywords:
         if k in base: score += 6
         if k in lp: score += 2
         if k in segments: score += 3
-    # prefer source/test/layout-ish paths
-    if any(s in lp for s in ("/src/", "/lib/", "/app/", "/core/", "/common/", "/server/", "/client/")):
-        score += 2
+    if any(s in lp for s in ("/src/", "/lib/", "/app/", "/core/", "/common/", "/server/", "/client/")): score += 2
     return score
 
 def pick_candidate_files(files: List[str], keywords: List[str], limit: int = 30) -> List[str]:
     scored = [(score_file_for_keywords(p, keywords), p) for p in files]
     scored.sort(key=lambda t: (t[0], -len(t[1])), reverse=True)
-    res = [p for s, p in scored if s > 0][:limit]
-    return res
+    return [p for s, p in scored if s > 0][:limit]
 
 def suggest_new_files(keywords: List[str], stack: Dict[str, List[str]], top_langs: List[str], issue_no: Optional[int]) -> List[str]:
     base = []
     key = keywords[0] if keywords else "feature"
     n = issue_no or int(time.time())
-    # Tests/Doku generisch
-    base.append(f"tests/{key}_spec.md")
-    base.append(f"docs/issue-{n}-decision-record.md")
-    # Je nach Stack einfache Vorschläge
-    if "python" in stack or "py" in top_langs:
-        base.append(f"tests/test_{key}.py")
-    if "nodejs" in stack or "ts" in top_langs or "js" in top_langs:
-        base.append(f"tests/{key}.spec.ts")
-    if "java_gradle" in stack or "android" in stack:
-        base.append(f"{key}/src/test/java/.../{key.capitalize()}Test.java")
-    if ".net" in stack:
-        base.append(f"tests/{key}.Tests.cs")
-    if "go" in stack or "go" in top_langs:
-        base.append(f"{key}/{key}_test.go")
+    base += [f"tests/{key}_spec.md", f"docs/issue-{n}-decision-record.md"]
+    if "python" in stack or "py" in top_langs: base.append(f"tests/test_{key}.py")
+    if "nodejs" in stack or "ts" in top_langs or "js" in top_langs: base.append(f"tests/{key}.spec.ts")
+    if "java_gradle" in stack or "android" in stack: base.append(f"{key}/src/test/java/.../{key.capitalize()}Test.java")
+    if ".net" in stack: base.append(f"tests/{key}.Tests.cs")
+    if "go" in stack or "go" in top_langs: base.append(f"{key}/{key}_test.go")
     return sorted(set(base))
 
-# ---- main ----
+# ---------- Reasoning integration ----------
+def prepare_reasoner_bundle(issue: Dict[str, Any], analysis: Dict[str, Any],
+                            file_index: Dict[str, Any], candidates: List[str],
+                            max_files: int, max_bytes: int) -> Dict[str, Any]:
+    sel = []
+    for p in candidates[:max_files]:
+        info = file_index.get(p) or {}
+        content = ""
+        if info.get("is_text"):
+            if "text" in info:
+                content = info["text"][:max_bytes]
+            elif "chunks" in info and info["chunks"]:
+                content = "".join(ch["text"] for ch in info["chunks"])[:max_bytes]
+        sel.append({"path": p, "content": content})
+    bundle = {
+        "issue": {
+            "number": issue.get("number"),
+            "title": issue.get("title"),
+            "body": issue.get("body"),
+            "sections": analysis.get("issue_sections"),
+            "keywords": analysis.get("keywords"),
+            "signals": analysis.get("issue_signals"),
+        },
+        "repo_profile": {
+            "languages_kb": analysis.get("language_bytes_kb"),
+            "stack_indicators": analysis.get("stack_indicators"),
+            "top_dirs_by_file_count": analysis.get("top_dirs_by_file_count"),
+            "largest_files": analysis.get("largest_files")[:8],
+        },
+        "candidates": candidates[:max_files],
+        "file_samples": sel
+    }
+    return bundle
+
+def call_reasoner_openai(system_prompt: str, bundle: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    if not OPENAI_API_KEY:
+        logging.info("No OPENAI_API_KEY provided; skipping deep reasoning.")
+        return None
+    url = f"{OPENAI_BASE_URL}/v1/chat/completions"
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {OPENAI_API_KEY}"}
+    # Hartes Schema: Wir bitten ausdrücklich um JSON ohne Prosa.
+    user_prompt = (
+        "You will receive a JSON bundle with issue/context and selected file contents.\n"
+        "Produce a STRICT JSON object with these keys:\n"
+        "{\n"
+        "  \"problem_breakdown\": [string...],\n"
+        "  \"root_cause_hypotheses\": [string...],\n"
+        "  \"affected_areas\": [{\"path\": string, \"reason\": string}],\n"
+        "  \"concrete_actions\": [ {\"title\": string, \"steps\": [string...] } ],\n"
+        "  \"tests_to_add\": [string...],\n"
+        "  \"risks\": [string...],\n"
+        "  \"migration_notes\": [string...]\n"
+        "}\n"
+        "Do NOT add any commentary outside JSON. Be precise and actionable.\n"
+        f"Reasoning effort: {REASONING_EFFORT}\n"
+    )
+    data = {
+        "model": REASONING_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+            {"role": "user", "content": json.dumps(bundle, ensure_ascii=False)},
+        ],
+        "temperature": 0.2,
+    }
+    # Einige Modelle akzeptieren 'reasoning': {'effort': 'high'} – optional
+    data["reasoning"] = {"effort": REASONING_EFFORT}
+
+    try:
+        resp = requests.post(url, headers=headers, json=data, timeout=120)
+        if resp.status_code >= 300:
+            logging.warning("Reasoner HTTP error: %s %s", resp.status_code, resp.text[:400])
+            return None
+        payload = resp.json()
+        content = payload["choices"][0]["message"]["content"]
+        # Robust gegen Backticks
+        m = re.search(r"```(?:json)?\s*(\{.*\})\s*```", content, flags=re.DOTALL)
+        raw = m.group(1) if m else content
+        return json.loads(raw)
+    except Exception as e:
+        logging.warning("Reasoner call failed: %s", e)
+        return None
+
+# ---------- Main ----------
 def main():
     ensure_dirs()
 
@@ -499,11 +539,23 @@ def main():
         ictx["title"] = inputs.get("title", "") or ""
         ictx["body"] = inputs.get("body", "") or ""
 
-    body = ictx["body"]
-    title = ictx["title"]
-    issue_no = ictx.get("issue_number")
+    body = ictx["body"]; title = ictx["title"]; issue_no = ictx.get("issue_number")
 
-    # Referenzen u. Attachments
+    # Override für Issue-Nummer (z. B. aus Workflow)
+    if ISSUE_NUMBER_OVERRIDE:
+        try:
+            issue_no = int(ISSUE_NUMBER_OVERRIDE)
+        except ValueError:
+            logging.warning("CODEX_ISSUE_NUMBER='%s' is not numeric; ignoring.", ISSUE_NUMBER_OVERRIDE)
+
+    if issue_no is None and os.getenv("GITHUB_EVENT_NAME","") in ("issues","issue_comment"):
+        # Fallback: #123 im Text
+        m = re.search(r"(?:^|\s)#(\d+)\b", (title + " " + body))
+        if m:
+            issue_no = int(m.group(1))
+            logging.info("Issue number parsed from text: #%s", issue_no)
+
+    # References & attachments
     ref_paths, ref_urls = extract_paths_and_urls(body)
     attachments = []
     for u in ref_urls:
@@ -513,7 +565,7 @@ def main():
         else:
             attachments.append({"url": u, "status": "external-reference"})
 
-    # Repo-Scan (einmal)
+    # Repo scan
     allfiles = list_all_files()
     tracked_set = set(git_ls_files())
 
@@ -551,7 +603,6 @@ def main():
     largest = largest_files(allfiles, 15)
     topdirs = top_dirs_by_count(allfiles, 10)
 
-    # Issue-Analyse (generisch)
     sections = segment_sections(body)
     signals = extract_signals(body)
     keywords = extract_keywords(title + " " + body, limit=15)
@@ -574,7 +625,7 @@ def main():
         "suggested_new_files": new_files,
     }
 
-    # -------- Kontext JSON (vollständiger Index) --------
+    # -------- Kontext JSON --------
     context_out = {
         "meta": {
             "generated_at": time.strftime("%Y-%m-%d %H:%M:%S %z"),
@@ -595,10 +646,7 @@ def main():
             "referenced_urls": ref_urls,
         },
         "attachments": attachments,
-        "repo": {
-            "files": allfiles,
-            "file_index": file_index
-        },
+        "repo": {"files": allfiles, "file_index": file_index},
         "analysis": analysis,
     }
     with open(OUT_JSON, "w", encoding="utf-8") as f:
@@ -606,7 +654,7 @@ def main():
     with gzip.open(OUT_JSON + ".gz", "wb") as gz:
         gz.write(json.dumps(context_out, ensure_ascii=False).encode("utf-8"))
 
-    # -------- Solver-Fahrplan (kompakt & handlungsorientiert) --------
+    # -------- Solver-Fahrplan (baseline) --------
     plan = {
         "issue": {
             "number": issue_no,
@@ -629,43 +677,43 @@ def main():
         },
         "proposed_workplan": {
             "phase_1_understanding": [
-                "Reproduktion gemäß Issue-„Steps“; falls fehlen, Minimal-Repro entwerfen.",
-                "Betroffene Module/Ordner öffnen; Kandidaten-Dateien querlesen und Laufzeitpfad grob skizzieren.",
-                "Aktuelle Tests/CI prüfen; lokale Build-/Testbefehle festhalten."
+                "Reproduktion gemäß Issue-Steps; falls fehlen, Minimal-Repro entwerfen.",
+                "Kandidaten-Dateien querlesen; Laufzeitpfad grob skizzieren.",
+                "Vorhandene Tests/CI prüfen; lokale Build-/Testbefehle festhalten."
             ],
             "phase_2_change_design": [
-                "Konkrete Änderungspunkte pro Kandidaten-Datei festlegen (API, Logik, I/O, UI).",
+                "Konkrete Änderungspunkte pro Kandidaten-Datei (API, Logik, I/O, UI) definieren.",
                 "Fehlende Strukturen anlegen (siehe suggested_new_files).",
-                "Abwärtskompatibilität/Side-Effects bewerten; Feature‑Flags, Migrationspfade definieren."
+                "Abwärtskompatibilität/Side-Effects bewerten; Feature-Flags/Migrationspfade festlegen."
             ],
             "phase_3_implementation": [
-                "Änderungen iterativ umsetzen; kleinteilige Commits mit aussagekräftigen Messages.",
-                "Begleitende Unit-/Integrationstests hinzufügen/aktualisieren.",
+                "Änderungen iterativ umsetzen; kleinteilige Commits mit sauberen Messages.",
+                "Unit-/Integrationstests ergänzen/aktualisieren.",
                 "Logging/Telemetry an heiklen Stellen ergänzen."
             ],
             "phase_4_verification": [
-                "Lokale Tests + Linter/Formatter ausführen.",
-                "Repro-Szenario erneut durchspielen; Edge-Cases aus Signals/Errors abprüfen.",
-                "Review‑Checkliste/Changelog erstellen."
+                "Lokal Tests + Linter/Formatter ausführen.",
+                "Repro-Szenario erneut durchspielen; Edge-Cases prüfen.",
+                "Review-Checkliste/Changelog erstellen."
             ],
             "phase_5_delivery": [
-                "Pull Request mit Beschreibung der Problemursache, Lösung und Risiken.",
-                "Akzeptanzkriterien (siehe unten) gegenprüfen."
+                "PR mit Problemursache, Lösung und Risiken.",
+                "Akzeptanzkriterien gegenprüfen."
             ]
         },
         "acceptance_criteria": [
-            "Repro-Szenario aus dem Issue verläuft ohne Fehler.",
-            "Kein Regress laut vorhandener Tests (CI grün).",
-            "Neue/angepasste Tests decken die Änderung ab.",
+            "Repro aus dem Issue verläuft fehlerfrei.",
+            "CI grün, keine Regression.",
+            "Neue/angepasste Tests decken Änderungen ab.",
             "Dokumentation/Changelog aktualisiert."
         ],
         "ci_build_hints": [
-            "Abhängigkeiten aus Stack-Indikatoren ableiten (z. B. Node/Python/Gradle).",
-            "Format/Lint Hooks nutzen, um CI‑Noise zu vermeiden."
+            "Abhängigkeiten aus Stack-Indikatoren ableiten (Node/Python/Gradle etc.).",
+            "Format/Lint Hooks nutzen, um CI-Noise zu vermeiden."
         ],
         "risks": [
-            "Fehlende/ungenaue Issue-Informationen → Annahmen im PR sichtbar dokumentieren.",
-            "Cross‑Cutting‑Änderungen in Kernmodulen können Seiteneffekte auslösen."
+            "Unvollständige Issue-Infos → Annahmen im PR sichtbar dokumentieren.",
+            "Cross-Cutting-Änderungen in Kernmodulen mit Seiteneffekten."
         ],
         "artifacts": {
             "context_json_path": os.path.relpath(OUT_JSON, WORK_DIR).replace("\\", "/"),
@@ -674,17 +722,46 @@ def main():
             "artifact_bundle": "codex-context"
         }
     }
+
+    # -------- Deep Reasoning (optional) --------
+    llm_result = None
+    if DEEP_REASONING and OPENAI_API_KEY:
+        bundle = prepare_reasoner_bundle(
+            {"number": issue_no, "title": title, "body": body},
+            analysis, file_index, candidates,
+            MAX_FILES_FOR_REASONER, MAX_BYTES_PER_FILE_FOR_REASONER
+        )
+        system_prompt = (
+            "You are a senior repo analyst bot (Bot 1) that prepares context for a solver bot.\n"
+            "Identify root causes, impacted areas, and propose concrete, testable actions."
+        )
+        llm_result = call_reasoner_openai(system_prompt, bundle)
+        if llm_result:
+            plan["llm_deep_dive"] = llm_result
+        else:
+            plan["llm_deep_dive"] = {"note": "Reasoner call failed or was skipped."}
+    else:
+        plan["llm_deep_dive"] = {"note": "Deep reasoning disabled or no OPENAI_API_KEY."}
+
     with open(OUT_PLAN, "w", encoding="utf-8") as f:
         json.dump(plan, f, ensure_ascii=False, indent=2)
 
-    # -------- Kurz-Zusammenfassung (für Log & optionalen Kommentar) --------
+    # -------- Kurz-Zusammenfassung/Kommentar --------
     top_lang_preview = ", ".join(f"{k}:{v}KB" for k, v in list(lang_stats.items())[:3]) or "n/a"
     preview_files = "\n".join(f"- `{p}`" for p in candidates[:10]) or "- (keine Kandidaten erkannt)"
+    llm_head = ""
+    if llm_result:
+        pb = llm_result.get("problem_breakdown") or []
+        ac = (llm_result.get("concrete_actions") or [])[:3]
+        head_list = [f"- {x}" for x in pb[:3]] or ["- (kein Breakdown geliefert)"]
+        act_list = [f"- {a.get('title','(ohne Titel)')}" for a in ac] or ["- (keine Aktionen geliefert)"]
+        llm_head = f"\n**LLM-Breakdown (Top 3)**\n" + "\n".join(head_list) + "\n**LLM-Aktionen (Top 3)**\n" + "\n".join(act_list)
+
     summary_lines = [
         f"Issue #{issue_no} — {title.strip()}",
         f"Keywords: {', '.join(keywords) if keywords else '(keine)'}",
         f"Top-Languages: {top_lang_preview}",
-        f"Kandidatendateien (Top 10):\n{preview_files}",
+        f"Kandidaten (Top 10):\n{preview_files}",
         f"Artefakte: solver_input.json, solver_plan.json"
     ]
     with open(OUT_SUMMARY, "w", encoding="utf-8") as f:
@@ -696,7 +773,6 @@ def main():
     print(f"Gzipped copy            → {OUT_JSON}.gz")
     print(f"Summary                 → {OUT_SUMMARY}")
 
-    # -------- Kommentar in den Issue (kurz) --------
     if POST_ISSUE_COMMENT and issue_no:
         short_problem = (plan["issue"]["summary"] or "(kein Body)").strip()
         short_problem = (short_problem[:600] + "…") if len(short_problem) > 600 else short_problem
@@ -705,21 +781,18 @@ f"""**ContextMap ready** ✅
 
 **Kurz-Zusammenfassung**
 - Keywords: {', '.join(keywords) if keywords else '(keine)'}
-- Kandidaten (Top 10):
-{preview_files}
+- Kandidaten (Top 10):
+{preview_files}{llm_head}
 
 **Kurzproblem (aus dem Issue)**
 > {short_problem}
 
-**Hinweis für Bot 2**: Vollständiger Fahrplan im Artefakt **`codex-context`** → `solver_plan.json`."""
+**Hinweis für Bot 2**: Vollständiger Fahrplan im Artefakt **`codex-context`** → `solver_plan.json`."""
         )
         post_issue_comment(issue_no, repo, token, comment)
 
-    # -------- Label setzen --------
     add_contextmap_ready_label(issue_no, repo, token)
 
-    # -------- Bot 2 informieren (best effort) --------
-    # Nur schlanke Nutzlast senden; Bot 2 lädt Artefakt/Dateien selbst.
     pointer = {
         "issue_number": issue_no,
         "repo": repo,
@@ -729,16 +802,12 @@ f"""**ContextMap ready** ✅
         "plan_json_path": os.path.relpath(OUT_PLAN, WORK_DIR).replace("\\", "/"),
         "keywords": keywords[:10],
     }
-    # kleine Plan-Zusammenfassung für schnelle Sichtung
-    try:
-        compact_plan = {
+    if llm_result:
+        pointer["plan_excerpt"] = {
             "likely_affected_files": candidates[:15],
-            "suggested_new_files": new_files[:10],
-            "acceptance_criteria": plan["acceptance_criteria"]
+            "acceptance_criteria": plan["acceptance_criteria"],
+            "llm_problem_breakdown_top3": (llm_result.get("problem_breakdown") or [])[:3]
         }
-        pointer["plan_excerpt"] = compact_plan
-    except Exception:
-        pass
     notify_solverbot(repo, token, pointer)
 
 if __name__ == "__main__":
