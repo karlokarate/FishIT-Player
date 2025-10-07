@@ -513,8 +513,9 @@ def call_reasoner_openai(system_prompt: str, bundle: Dict[str, Any]) -> Optional
             {"role": "user", "content": user_prompt},
             {"role": "user", "content": json.dumps(bundle, ensure_ascii=False)},
         ],
-        "temperature": 0.2,
     }
+    if re.search(r"reasoning", REASONING_MODEL, re.I):
+    data["reasoning"] = {"effort": REASONING_EFFORT}
 
     try:
         resp = requests.post(url, headers=headers, json=data, timeout=120)
