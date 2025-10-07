@@ -43,13 +43,11 @@ jobs:
 
       - name: Run Bot 1 (ContextMap)
         env:
-          # Standardtoken von GitHub Actions
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Werden vom Runner ohnehin gesetzt – hier zur Klarheit explizit übergeben
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-          # Verhindert doppelte Kommentare; Kommentar übernimmt unten die Action
+          # Kommentar hier deaktiviert – kommentiert ggf. der separate Step unten
           CODEX_POST_ISSUE_COMMENT: 'false'
         run: |
           mkdir -p .github/codex/context
@@ -67,18 +65,32 @@ jobs:
         id: summaryout
         shell: bash
         run: |
-          if [[ -f .github/codex/context/summary.txt ]]; then
-            {
-              echo "summary<<'EOF'"
-              cat .github/codex/context/summary.txt
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
+          set -eo pipefail
+          SUMMARY_PATH=".github/codex/context/summary.txt"
+          if [[ -s "$SUMMARY_PATH" ]]; then
+            if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+              {
+                echo "summary<<EOF"
+                cat "$SUMMARY_PATH"
+                echo "EOF"
+              } >> "$GITHUB_OUTPUT" || {
+                echo "::warning::Could not write to GITHUB_OUTPUT; printing summary below"
+                cat "$SUMMARY_PATH" || true
+              }
+            else
+              echo "::warning::GITHUB_OUTPUT not set; printing summary below"
+              cat "$SUMMARY_PATH" || true
+            fi
           else
-            echo "summary=ContextMap completed." >> "$GITHUB_OUTPUT"
+            if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+              echo "summary=ContextMap completed." >> "$GITHUB_OUTPUT" || true
+            else
+              echo "::notice::ContextMap completed."
+            fi
           fi
 
       - name: Comment summary to issue
-        if: ${{ github.event_name == 'issues' || github.event_name == 'issue_comment' }}
+        if: ${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && always() }}
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.issue.number }}
