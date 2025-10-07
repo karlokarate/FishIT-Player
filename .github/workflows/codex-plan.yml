@@ -32,6 +32,8 @@ jobs:
       - name: Checkout (full, incl. LFS + submodules)
         uses: actions/checkout@v4
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
           fetch-depth: 0
           lfs: true
           submodules: recursive
@@ -39,6 +41,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
           python-version: '3.11'
 
       - name: Install dependencies
@@ -136,6 +140,8 @@ jobs:
         if: ${{ steps.verify.outputs.ok == 'true' }}
         uses: actions/github-script@v7
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
           script: |
             const issue_number = Number("${{ steps.detect.outputs.issue }}");
             await github.rest.issues.addLabels({
@@ -159,6 +165,8 @@ jobs:
         if: ${{ steps.verify.outputs.ok == 'true' }}
         uses: actions/github-script@v7
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
           script: |
             const issue_number = Number("${{ steps.detect.outputs.issue }}");
             await github.request('POST /repos/{owner}/{repo}/dispatches', {
@@ -172,9 +180,51 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
           name: codex-context
           path: |
             .github/codex/context/**
           if-no-files-found: warn
           compression-level: 6
           retention-days: 14
+
+      - name: Set summary output
+        id: summaryout
+        run: |
+          if [ -f ".github/codex/context/summary.txt" ]; then
+            {
+              echo "summary<<EOF"
+              cat .github/codex/context/summary.txt
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trigger Solver (Bot 2)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          python - << 'PY'
+          import json, os, requests, pathlib
+          repo = os.environ['REPO']
+          token = os.environ['GITHUB_TOKEN']
+          headers = {'Authorization': f'Bearer {token}', 'Accept': 'application/vnd.github+json'}
+          plan_path = pathlib.Path('.github/codex/solver_plan.json')
+          input_path = pathlib.Path('.github/codex/solver_input.json')
+          plan = json.loads(plan_path.read_text(encoding='utf-8')) if plan_path.exists() else {}
+          sinput = json.loads(input_path.read_text(encoding='utf-8')) if input_path.exists() else {}
+          payload = {
+            'event_type': 'codex-solver-dispatch',
+            'client_payload': {
+              'from': 'bot1-contextmap',
+              'allowed_targets': plan.get('allowed_targets', {}),
+              'execution': plan.get('execution', {'strict_mode': True, 'dir_rewrite_allowed': False}),
+              'solver_input': sinput
+            }
+          }
+          url = f'https://api.github.com/repos/{repo}/dispatches'
+          r = requests.post(url, headers=headers, json=payload, timeout=30)
+          r.raise_for_status()
+          print('::notice::Repository dispatch sent to Solver (Bot 2).')
+          PY
