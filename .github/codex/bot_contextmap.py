@@ -486,11 +486,26 @@ def prepare_reasoner_bundle(issue: Dict[str, Any], analysis: Dict[str, Any],
     return bundle
 
 def call_reasoner_openai(system_prompt: str, bundle: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Ruft das OpenAI-API auf, um auf Basis des vom ContextMap-Bot erstellten Bundles
+    (Issue + Repoanalyse) eine tiefe JSON-Analyse zu erzeugen.
+
+    - Unterstützt sowohl klassische Chat-Completions-Modelle als auch Reasoning-Modelle.
+    - Entfernt inkompatible Parameter wie 'reasoning' oder 'temperature', wenn das Modell sie nicht akzeptiert.
+    - Gibt ein strukturiertes JSON zurück (Problem-Breakdown, Ursachen, Actions, Tests etc.)
+    """
+
     if not OPENAI_API_KEY:
         logging.info("No OPENAI_API_KEY provided; skipping deep reasoning.")
         return None
+
     url = f"{OPENAI_BASE_URL}/v1/chat/completions"
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {OPENAI_API_KEY}"}
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {OPENAI_API_KEY}"
+    }
+
+    # --- System- und User-Prompts ---
     user_prompt = (
         "You will receive a JSON bundle with issue/context and selected file contents.\n"
         "Produce a STRICT JSON object with these keys:\n"
@@ -503,9 +518,11 @@ def call_reasoner_openai(system_prompt: str, bundle: Dict[str, Any]) -> Optional
         "  \"risks\": [string...],\n"
         "  \"migration_notes\": [string...]\n"
         "}\n"
-        "Do NOT add any commentary outside JSON. Be precise and actionable.\n"
-        f"Reasoning effort: {REASONING_EFFORT}\n"
+        "Do NOT add commentary outside JSON. Be precise and actionable.\n"
+        f"Reasoning effort level: {REASONING_EFFORT.upper()}.\n"
     )
+
+    # --- Basisdaten ohne riskante Felder ---
     data = {
         "model": REASONING_MODEL,
         "messages": [
@@ -514,19 +531,35 @@ def call_reasoner_openai(system_prompt: str, bundle: Dict[str, Any]) -> Optional
             {"role": "user", "content": json.dumps(bundle, ensure_ascii=False)},
         ],
     }
+
+    # Nur hinzufügen, wenn Modell "reasoning" ausdrücklich unterstützt
     if re.search(r"reasoning", REASONING_MODEL, re.I):
-    data["reasoning"] = {"effort": REASONING_EFFORT}
+        data["reasoning"] = {"effort": REASONING_EFFORT}
+    else:
+        # Für klassische Modelle keine Temperaturabweichung setzen → Default (1)
+        # Das vermeidet "Unsupported value: 'temperature'" Fehler
+        pass
 
     try:
-        resp = requests.post(url, headers=headers, json=data, timeout=120)
+        resp = requests.post(url, headers=headers, json=data, timeout=180)
         if resp.status_code >= 300:
-            logging.warning("Reasoner HTTP error: %s %s", resp.status_code, resp.text[:400])
+            logging.warning("Reasoner HTTP error %s: %s",
+                            resp.status_code, resp.text[:400])
             return None
+
         payload = resp.json()
         content = payload["choices"][0]["message"]["content"]
+
+        # JSON innerhalb von Markdown-Backticks extrahieren (```json ... ```)
         m = re.search(r"```(?:json)?\s*(\{.*\})\s*```", content, flags=re.DOTALL)
         raw = m.group(1) if m else content
-        return json.loads(raw)
+
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError as je:
+            logging.warning("Reasoner returned non-JSON content: %s", str(je))
+            return None
+
     except Exception as e:
         logging.warning("Reasoner call failed: %s", e)
         return None
