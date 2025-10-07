@@ -1,61 +1,49 @@
 name: Codex – Solver (Bot 2)
 
 on:
-  # Automatischer Start durch Bot 1 (repository_dispatch)
+  # Bot 1 kann Bot 2 via repository_dispatch triggern
   repository_dispatch:
     types: [codex-solver-context-ready]
 
-  # Manueller Start möglich
+  # Manuell startbar
   workflow_dispatch:
     inputs:
       issue:
-        description: "Issue number (optional; wird sonst aus solver_input.json gelesen)"
+        description: "Issue number (optional; falls back to context JSON)"
         required: false
 
-  # Optional: Label-Fallback (startet, wenn Bot 1 das Label setzt)
+  # Automatisch, sobald Bot 1 das Label setzt
   issues:
     types: [labeled]
 
-  # Optional: Reaktion auf echte Nutzer-Kommentare
+  # Fallback: Kommentar-Trigger (z. B. "/solve" oder "/codex")
   issue_comment:
     types: [created]
 
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
-  actions: write
+  contents: write          # Commits + Push
+  pull-requests: write     # PR erstellen
+  issues: write            # Labels/Kommentare setzen
+  actions: read
+
+concurrency:
+  group: codex-solve-${{ github.event.issue.number || github.event.client_payload.issue_number || inputs.issue || github.run_id }}
+  cancel-in-progress: false
 
 jobs:
   solve:
-    # Startbedingungen:
-    # - repository_dispatch (Bot 1)
-    # - workflow_dispatch (manuell)
-    # - Issues:labeled mit contextmap-ready
-    # - issue_comment (nicht von github-actions[bot])
-    if: >
-      (github.event_name == 'repository_dispatch') ||
-      (github.event_name == 'workflow_dispatch') ||
-      (github.event_name == 'issues' &&
-       github.event.action == 'labeled' &&
-       github.event.label.name == 'contextmap-ready') ||
-      (github.event_name == 'issue_comment' &&
-       github.actor != 'github-actions[bot]')
-
+    name: Run Solver (Bot 2)
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+
+    # Starte nur, wenn sinnvoll getriggert:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'repository_dispatch' ||
+      (github.event_name == 'issues' && contains(join(github.event.label.*.name, ','), 'contextmap-ready')) ||
+      (github.event_name == 'issue_comment' && ( startsWith(github.event.comment.body, '/solve') || startsWith(github.event.comment.body, '/codex') ))
 
     steps:
-      - name: Debug event payload
-        run: |
-          echo "Event:  ${{ github.event_name }}"
-          echo "Action: ${{ github.event.action || '' }}"
-          echo "Label:  ${{ github.event.label.name || '' }}"
-          echo "Actor:  ${{ github.actor }}"
-          echo "Payload (first 500 chars):"
-          echo "${{ toJson(github.event.client_payload) }}" | head -c 500 || true
-
-      - name: Checkout
+      - name: Checkout (full, with LFS + submodules)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -72,27 +60,40 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r .github/codex/requirements.txt
 
+      - name: Echo trigger context (debug)
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "issue_from_inputs=${{ inputs.issue }}"
+          echo "issue_from_payload=${{ github.event.client_payload.issue_number }}"
+          echo "issue_from_issue_obj=${{ github.event.issue.number }}"
+
       - name: Run Solver (Bot 2)
         env:
+          # GitHub Context
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-          # Issue-Nr. aus Dispatch-Payload oder manuellem Input;
-          # ansonsten liest der Solver sie aus .github/codex/context/solver_input.json
-          ISSUE_NUMBER: ${{ github.event.client_payload.issue_number || inputs.issue }}
+          # Issue-Ermittlung: Reihenfolge Inputs → repository_dispatch payload → Issue-Objekt (bei labels/comments)
+          ISSUE_NUMBER: ${{ inputs.issue || github.event.client_payload.issue_number || github.event.issue.number }}
 
-          # Checkpoints (Batch-Commits & Resume)
-          SOLVER_CHECKPOINT_BATCH: '10'
-
-          # Build explizit aus (später true setzen, falls gewünscht)
-          SOLVER_ENABLE_BUILD: 'false'
-
-          # Optional: OpenAI (falls genutzt)
+          # OpenAI
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
           OPENAI_MODEL_DEFAULT: gpt-5
           OPENAI_REASONING_EFFORT: high
 
-        # -u = ungepufferte Ausgabe (bessere Live-Logs)
-        run: python -u .github/codex/bot_solver.py
+          # Solver-Features
+          SOLVER_CHECKPOINT_BATCH: ${{ vars.SOLVER_CHECKPOINT_BATCH || '10' }}
+          SOLVER_ENABLE_BUILD: ${{ vars.SOLVER_ENABLE_BUILD || 'false' }}
+          SOLVER_BUILD_WORKFLOW: ${{ vars.SOLVER_BUILD_WORKFLOW || 'release-apk.yml' }}
+        run: |
+          python -u .github/codex/bot_solver.py
+
+      - name: Upload Solver state (artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: solver-state
+          path: .github/codex/solver_state.json
+          if-no-files-found: ignore
