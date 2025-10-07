@@ -867,6 +867,31 @@ def main():
     print(f"Wrote solver_plan.json  → {OUT_PLAN}")
     print(f"Gzipped copy            → {OUT_JSON}.gz")
     print(f"Summary                 → {OUT_SUMMARY}")
+# --- SAFE: write summary into $GITHUB_OUTPUT with a unique delimiter ---
+    ghout = os.environ.get("GITHUB_OUTPUT")
+    if ghout and os.path.isfile(OUT_SUMMARY):
+        import hashlib, time, random
+
+        # Inhalt laden und \r entfernen (Windows-CRs)
+        with open(OUT_SUMMARY, "r", encoding="utf-8", errors="replace") as sf:
+            s = sf.read().replace("\r", "")
+
+        # Eindeutigen Delimiter generieren, der sicher NICHT im Inhalt vorkommt
+        base = f"{time.time()}:{random.random()}:{len(s)}"
+        delim = "SUMMARY_" + hashlib.sha1(base.encode("utf-8")).hexdigest()
+
+        # Falls extrem unwahrscheinlich der Delimiter im Inhalt steckt -> neu generieren
+        if delim in s:
+            base = f"{base}:{random.random()}"
+            delim = "SUMMARY_" + hashlib.sha1(base.encode("utf-8")).hexdigest()
+
+        # In $GITHUB_OUTPUT schreiben (Multiline Output)
+        with open(ghout, "a", encoding="utf-8") as gout:
+            gout.write(f"summary<<{delim}\n")
+            gout.write(s)
+            if not s.endswith("\n"):
+                gout.write("\n")
+            gout.write(f"{delim}\n")
 
     if POST_ISSUE_COMMENT and issue_no:
         short_problem = (plan["issue"]["summary"] or "(kein Body)").strip()
