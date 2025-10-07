@@ -1,15 +1,22 @@
 name: Codex – Solver (Bot 2)
 
 on:
+  # Automatischer Start durch Bot 1 (repository_dispatch)
   repository_dispatch:
     types: [codex-solver-context-ready]
-  issues:
-    types: [labeled]
+
+  # Manueller Start möglich
   workflow_dispatch:
     inputs:
       issue:
-        description: "Issue number (optional; falls back to context JSON)"
+        description: "Issue number (optional; wird sonst aus solver_input.json gelesen)"
         required: false
+
+  # Optional: Label-Fallback (startet, wenn Bot 1 das Label setzt)
+  issues:
+    types: [labeled]
+
+  # Optional: Reaktion auf echte Nutzer-Kommentare
   issue_comment:
     types: [created]
 
@@ -22,31 +29,29 @@ permissions:
 jobs:
   solve:
     # Startbedingungen:
-    # - bei repository_dispatch (Bot 1)
-    # - oder wenn Label "contextmap-ready" gesetzt wird
-    # - oder bei manuellem issue_comment durch User
+    # - repository_dispatch (Bot 1)
+    # - workflow_dispatch (manuell)
+    # - Issues:labeled mit contextmap-ready
+    # - issue_comment (nicht von github-actions[bot])
     if: >
-      (
-        github.event_name == 'repository_dispatch'
-      ) || (
-        github.event_name == 'issues' &&
-        github.event.action == 'labeled' &&
-        github.event.label.name == 'contextmap-ready'
-      ) || (
-        github.event_name == 'issue_comment' &&
-        github.actor != 'github-actions[bot]'
-      )
+      (github.event_name == 'repository_dispatch') ||
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'issues' &&
+       github.event.action == 'labeled' &&
+       github.event.label.name == 'contextmap-ready') ||
+      (github.event_name == 'issue_comment' &&
+       github.actor != 'github-actions[bot]')
 
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 120
 
     steps:
       - name: Debug event payload
         run: |
-          echo "Event name: ${{ github.event_name }}"
+          echo "Event:  ${{ github.event_name }}"
           echo "Action: ${{ github.event.action || '' }}"
-          echo "Label: ${{ github.event.label.name || '' }}"
-          echo "Actor: ${{ github.actor }}"
+          echo "Label:  ${{ github.event.label.name || '' }}"
+          echo "Actor:  ${{ github.actor }}"
           echo "Payload (first 500 chars):"
           echo "${{ toJson(github.event.client_payload) }}" | head -c 500 || true
 
@@ -73,11 +78,21 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          # Issue-Nr. aus Dispatch-Payload oder manuellem Input;
+          # ansonsten liest der Solver sie aus .github/codex/context/solver_input.json
           ISSUE_NUMBER: ${{ github.event.client_payload.issue_number || inputs.issue }}
 
+          # Checkpoints (Batch-Commits & Resume)
+          SOLVER_CHECKPOINT_BATCH: '10'
+
+          # Build explizit aus (später true setzen, falls gewünscht)
+          SOLVER_ENABLE_BUILD: 'false'
+
+          # Optional: OpenAI (falls genutzt)
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
           OPENAI_MODEL_DEFAULT: gpt-5
           OPENAI_REASONING_EFFORT: high
-        run: |
-          python .github/codex/bot_solver.py
+
+        # -u = ungepufferte Ausgabe (bessere Live-Logs)
+        run: python -u .github/codex/bot_solver.py
