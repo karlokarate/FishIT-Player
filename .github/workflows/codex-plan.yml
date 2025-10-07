@@ -55,6 +55,12 @@ jobs:
           CODEX_POST_ISSUE_COMMENT: 'true'      # Kurz-Zusammenfassung in den Issue schreiben
           CODEX_ADD_LABEL: 'true'               # Label "contextmap-ready" setzen
           CODEX_NOTIFY_SOLVER: 'true'           # repository_dispatch an Bot 2 versuchen
+          CODEX_DEEP_REASONING: 'true'
+          CODEX_REASONING_MODEL: gpt-5
+          OPENAI_REASONING_EFFORT: high
+          CODEX_MAX_FILES_FOR_REASONER: '100'
+          CODEX_MAX_BYTES_PER_FILE_FOR_REASONER: '500000'
+          TIMEOUT_MINUTES: 60
         run: |
           mkdir -p .github/codex/context
           python .github/codex/bot_contextmap.py
