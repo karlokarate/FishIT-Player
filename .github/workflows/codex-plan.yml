@@ -11,25 +11,25 @@ permissions:
   contents: read
   issues: write
   pull-requests: write
+  actions: write
 
-# Verhindert parallele Doppel-Läufe für dasselbe Issue
 concurrency:
   group: codex-contextmap-${{ github.event_name }}-${{ github.event.issue.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   contextmap:
-    # Loop-Schutz: nicht erneut laufen, wenn der Bot selbst kommentiert hat
     if: ${{ !(github.event_name == 'issue_comment' && github.actor == 'github-actions[bot]') }}
-
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
-      - name: Checkout
+      - name: Checkout (full, incl. LFS + submodules)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          lfs: true
+          submodules: recursive
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -42,64 +42,69 @@ jobs:
           pip install -r .github/codex/requirements.txt
 
       - name: Run Bot 1 (ContextMap)
+        id: runbot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-          # Kommentar hier deaktiviert – kommentiert ggf. der separate Step unten
-          CODEX_POST_ISSUE_COMMENT: 'false'
+          CODEX_ISSUE_NUMBER: ${{ github.event.issue.number }}
+
+          # Deep Reasoning (LLM)
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          CODEX_DEEP_REASONING: 'true'
+          CODEX_REASONING_MODEL: gpt-5
+          OPENAI_REASONING_EFFORT: high
+          CODEX_MAX_FILES_FOR_REASONER: '100'
+          CODEX_MAX_BYTES_PER_FILE_FOR_REASONER: '500000'
+
+          # Tiefer Kontext in solver_input.json
+          CODEX_MAX_TEXT_EMBED_BYTES: '10485760'   # 10 MiB pro Textdatei
+          CODEX_MAX_BIN_BASE64_BYTES: '5242880'    # 5 MiB pro Binärdatei
+
+          # Verhalten
+          CODEX_POST_ISSUE_COMMENT: 'true'
+          CODEX_ADD_LABEL: 'false'  # Label macht der Workflow (gateged)
+          CODEX_NOTIFY_SOLVER: 'true'
         run: |
           mkdir -p .github/codex/context
           python .github/codex/bot_contextmap.py
 
-      - name: Upload context artifact
+      - name: Verify context outputs
+        id: verify
+        if: ${{ success() }}   # nur prüfen, wenn der Bot-Step nicht mit Fehler endete
+        shell: bash
+        run: |
+          ok=true
+          [[ -s .github/codex/context/solver_input.json ]] || ok=false
+          [[ -s .github/codex/context/solver_plan.json  ]] || ok=false
+          echo "ok=${ok}" >> "$GITHUB_OUTPUT"
+
+      - name: Add 'contextmap-ready' label
+        if: ${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && success() && steps.verify.outputs.ok == 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.payload.issue?.number;
+            if (!issue_number) {
+              core.info('No issue number available; skipping label.');
+              return;
+            }
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              labels: ['contextmap-ready']
+            });
+
+      - name: Upload context artifact (compressed)
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: codex-context
           path: |
             .github/codex/context/**
-
-      - name: Read summary
-        id: summaryout
-        shell: bash
-        run: |
-          set -eo pipefail
-          SUMMARY_PATH=".github/codex/context/summary.txt"
-          if [[ -s "$SUMMARY_PATH" ]]; then
-            if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-              {
-                echo "summary<<EOF"
-                cat "$SUMMARY_PATH"
-                echo "EOF"
-              } >> "$GITHUB_OUTPUT" || {
-                echo "::warning::Could not write to GITHUB_OUTPUT; printing summary below"
-                cat "$SUMMARY_PATH" || true
-              }
-            else
-              echo "::warning::GITHUB_OUTPUT not set; printing summary below"
-              cat "$SUMMARY_PATH" || true
-            fi
-          else
-            if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-              echo "summary=ContextMap completed." >> "$GITHUB_OUTPUT" || true
-            else
-              echo "::notice::ContextMap completed."
-            fi
-          fi
-
-      - name: Comment summary to issue
-        if: ${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && always() }}
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          body: |
-            **ContextMap ready** ✅
-            - Referenced paths: embedded
-            - Attachments: embedded 1:1
-            - Repo files indexed: see artifact (`codex-context`)
-            - Summary:
-              ```
-              ${{ steps.summaryout.outputs.summary }}
-              ```
+          if-no-files-found: warn
+          compression-level: 6
+          retention-days: 14
