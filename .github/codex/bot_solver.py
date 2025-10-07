@@ -28,6 +28,30 @@ import textwrap
 from pathlib import Path
 from typing import List, Tuple, Optional, Set, Dict, Any
 
+
+# ---------- Logging & Heartbeat ----------
+import logging, threading
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s: %(message)s",
+)
+
+def heartbeat(tag="solver", every_s=60):
+    def _beat():
+        while True:
+            print(f"::notice::{tag} heartbeat", flush=True)
+            time.sleep(every_s)
+    t = threading.Thread(target=_beat, daemon=True)
+    t.start()
+
+def add_step_summary(text: str):
+    path = os.getenv("GITHUB_STEP_SUMMARY")
+    if path:
+        try:
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(text + "\n")
+        except Exception:
+            pass
 import requests
 try:
     from unidiff import PatchSet
@@ -562,6 +586,33 @@ def wait_build_result(workflow_ident: str, ref_branch: str, since_iso: str, time
             return {}
         time.sleep(3)
 
+
+
+# ---------- Checkpoint State (resume across runs) ----------
+from pathlib import Path as _Path
+STATE_PATH = _Path(".github/codex/solver_state.json")
+
+def _load_state(issue_num: int) -> dict:
+    try:
+        if STATE_PATH.exists():
+            st = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+            if int(st.get("issue", -1)) == int(issue_num):
+                return st
+    except Exception:
+        pass
+    return {"issue": issue_num, "profile": os.environ.get("PROFILE","env/default"),
+            "cursor": {"phase":"init","index":0}, "processed": [], "pending": []}
+
+def _save_state_and_push(state: dict, message: str):
+    try:
+        STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+        sh("git add -A", check=False)
+        sh(f"git commit -m '{message}'", check=False)
+        sh("git push", check=False)
+    except Exception as e:
+        post_comment(state.get("issue", 0) or 0, f"⚠️ Konnte Zwischenstand nicht sichern: `{e}`")
+
 # ---------- Summaries ----------
 def summarize_rejects(num: int):
     rej_files = glob.glob("**/*.rej", recursive=True)
@@ -693,24 +744,42 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
             context_full = s + ("\n\n" + ctx_excerpt if ctx_excerpt else "")
 
         # Ziele bestimmen: bevorzugt neuer Context, sonst Legacy/Kommentar
-        create_paths, existing_paths = choose_targets_from_new_context(ctx_new, ls_files())
+        if not pending:
+            pending = (create_paths + existing_paths)[:]
         if not create_paths and not existing_paths:
             create_paths, existing_paths = choose_targets_fallback_legacy(ctx_old, ls_files(), cm_comment)
 
         # 1) Neue Dateien erzeugen
+        logging.info('Phase=create start | %s targets', len(create_paths))
         for pth in create_paths:
             try:
+                logging.info('CREATE %s', pth)
                 if Path(pth).exists():
+                    # mark as processed to avoid rework
+                    processed.add(pth); 
+                    if pth in pending: pending.remove(pth)
                     continue
                 gen = ai_generate_full_file(pth, repo_syms, context_full, read_new_summary_txt())
                 _write_text_file(pth, gen)
-                post_comment(num, f"🆕 Datei erzeugt (Spec-to-File): `{pth}`")
+                post_comment(num, f"🆕 Datei erzeugt (Spec-to-File): `{pth}`"); logging.info('CREATE-DONE %s', pth)
                 applied_any = True
+
+                processed.add(pth)
+                if pth in pending: pending.remove(pth)
+                state["processed"] = sorted(processed)
+                state["pending"] = pending
+                state["cursor"] = {"phase":"create", "index": len(processed)}
+                batch_count += 1
+                if batch_count % BATCH == 0:
+                    _save_state_and_push(state, f"codex: partial (issue #{num}) [create {len(processed)}]"); add_step_summary(f"- Create batch: {len(processed)} processed, {len(pending)} pending")
+
             except Exception as e:
                 post_comment(num, f"⚠️ Konnte Datei nicht erzeugen `{pth}`:\n```\n{e}\n```")
 
         # 2) Bestehende Dateien ersetzen (konkrete Dateien)
+        logging.info('Phase=rewrite start | %s targets', len(existing_paths))
         for target in existing_paths:
+            logging.info('REWRITE %s', target)
             p = Path(target)
             if p.is_dir():
                 continue
@@ -723,8 +792,16 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
             try:
                 newc = ai_rewrite_full_file(target, cur, repo_syms, context_full, read_new_summary_txt())
                 _write_text_file(target, newc)
-                post_comment(num, f"🔁 Datei ersetzt (Spec-to-File): `{target}`")
+                post_comment(num, f"🔁 Datei ersetzt (Spec-to-File): `{target}`"); logging.info('REWRITE-DONE %s', target)
                 applied_any = True
+                processed.add(target)
+                if target in pending: pending.remove(target)
+                state["processed"] = sorted(processed)
+                state["pending"] = pending
+                state["cursor"] = {"phase":"rewrite", "index": len(processed)}
+                batch_count += 1
+                if batch_count % BATCH == 0:
+                    _save_state_and_push(state, f"codex: partial (issue #{num}) [rewrite {len(processed)}]"); add_step_summary(f"- Rewrite batch: {len(processed)} processed, {len(pending)} pending")
             except Exception as e:
                 post_comment(num, f"⚠️ Konnte Datei nicht ersetzen `{target}`:\n```\n{e}\n```")
 
@@ -737,8 +814,16 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
                         cur = f.read_text(encoding="utf-8", errors="replace")
                         newc = ai_rewrite_full_file(f.as_posix(), cur, repo_syms, context_full, read_new_summary_txt())
                         f.write_text(newc, encoding="utf-8")
-                        post_comment(num, f"🔁 Datei ersetzt (Dir-Target): `{f.as_posix()}`")
+                        post_comment(num, f"🔁 Datei ersetzt (Dir-Target): `{f.as_posix()}`"); logging.info('DIR-REWRITE-DONE %s', f.as_posix())
                         applied_any = True
+                        processed.add(f.as_posix())
+                        if f.as_posix() in pending: pending.remove(f.as_posix())
+                        state["processed"] = sorted(processed)
+                        state["pending"] = pending
+                        state["cursor"] = {"phase":"dir-rewrite", "index": len(processed)}
+                        batch_count += 1
+                        if batch_count % BATCH == 0:
+                            _save_state_and_push(state, f"codex: partial (issue #{num}) [dir {len(processed)}]"); add_step_summary(f"- Dir batch: {len(processed)} processed, {len(pending)} pending")
                     except Exception as e:
                         post_comment(num, f"⚠️ Ersetzen fehlgeschlagen `{f.as_posix()}`:\n```\n{e}\n```")
 
@@ -774,6 +859,7 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
         summarize_rejects(num)
         return None
 
+    _save_state_and_push(state, f"codex: partial (issue #{num}) [final]"); add_step_summary(f"- Finalized: {len(processed)} processed total")
     sh(f"git commit -m 'codex: solver changes (issue #{num})'", check=False)
     sh("git push --set-upstream origin HEAD", check=False)
 
@@ -824,6 +910,7 @@ def main():
         return
 
     ensure_repo_cwd()
+    heartbeat('solver', every_s=60)
     num = issue_number()
     if not num:
         print("::error::No issue number")
@@ -860,21 +947,24 @@ def main():
         dispatch_triage(num)
         sys.exit(1)
 
-    # Optionaler Build
+    # Optionaler Build (gated)
     try:
-        wf = os.environ.get("SOLVER_BUILD_WORKFLOW", "release-apk.yml")
-        branch = sh('git rev-parse --abbrev-ref HEAD').strip()
-        since = dispatch_build(wf, branch, {"build_type": "debug", "issue": str(num)})
-        run = wait_build_result(wf, branch, since, timeout_s=1800)
-        concl = (run or {}).get("conclusion", "")
-        if concl == "success":
-            remove_label(num, "contextmap-ready")
-            add_label(num, "solver-done")
-            post_comment(num, "✅ Build erfolgreich – Label `solver-done` gesetzt.")
+        if os.getenv('SOLVER_ENABLE_BUILD','false').lower() not in {'1','true','yes'}:
+            logging.info('Build dispatch disabled (set SOLVER_ENABLE_BUILD=true to enable).')
         else:
-            add_label(num, "solver-error")
-            post_comment(num, "❌ Build fehlgeschlagen – Label `solver-error` gesetzt (Bot 3 wird reagieren).")
-            dispatch_triage(num)
+            wf = os.environ.get('SOLVER_BUILD_WORKFLOW', 'release-apk.yml')
+            branch = sh('git rev-parse --abbrev-ref HEAD').strip()
+            since = dispatch_build(wf, branch, {'build_type': 'debug', 'issue': str(num)})
+            run = wait_build_result(wf, branch, since, timeout_s=1800)
+            concl = (run or {}).get('conclusion', '')
+            if concl == 'success':
+                remove_label(num, 'contextmap-ready')
+                add_label(num, 'solver-done')
+                post_comment(num, '✅ Build erfolgreich – Label `solver-done` gesetzt.')
+            else:
+                add_label(num, 'solver-error')
+                post_comment(num, '❌ Build fehlgeschlagen – Label `solver-error` gesetzt (Bot 3 wird reagieren).')
+                dispatch_triage(num)
     except Exception as e:
         add_label(num, "solver-error")
         post_comment(num, f"❌ Build-Dispatch fehlgeschlagen\n```\n{e}\n```")
