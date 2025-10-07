@@ -13,20 +13,20 @@ permissions:
   pull-requests: write
   actions: write   # erlaubt repository_dispatch im eigenen Repo
 
-# Verhindert parallele Doppel-Läufe für dasselbe Issue
+# Verhindert parallele Doppel-Läufe für dasselbe Issue/Run
 concurrency:
   group: codex-contextmap-${{ github.event_name }}-${{ github.event.issue.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   contextmap:
-    # Loop-Schutz: nicht erneut laufen, wenn unser eigener Bot kommentiert hat
+    # Loop-Schutz: kein Re-Trigger durch eigenen Bot-Kommentar
     if: ${{ !(github.event_name == 'issue_comment' && github.actor == 'github-actions[bot]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      - name: Checkout
+      - name: Checkout (full, incl. LFS + submodules)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -49,6 +49,8 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          # explizit die Issue-Nummer durchreichen (bei workflow_dispatch leer)
+          CODEX_ISSUE_NUMBER: ${{ github.event.issue.number }}
           # Verhalten steuerbar:
           CODEX_POST_ISSUE_COMMENT: 'true'      # Kurz-Zusammenfassung in den Issue schreiben
           CODEX_ADD_LABEL: 'true'               # Label "contextmap-ready" setzen
