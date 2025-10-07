@@ -42,7 +42,6 @@ jobs:
           pip install -r .github/codex/requirements.txt
 
       - name: Run Bot 1 (ContextMap)
-        id: runbot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -50,7 +49,7 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           CODEX_ISSUE_NUMBER: ${{ github.event.issue.number }}
 
-          # Deep Reasoning (LLM)
+          # Deep Reasoning (LLM), per Issue: /codex fast | /codex bal | /codex deep | /codex
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
           CODEX_DEEP_REASONING: 'true'
@@ -64,25 +63,42 @@ jobs:
           CODEX_MAX_BIN_BASE64_BYTES: '5242880'    # 5 MiB pro Binärdatei
 
           # Verhalten
-          CODEX_POST_ISSUE_COMMENT: 'true'
-          CODEX_ADD_LABEL: 'false'  # Label macht der Workflow (gateged)
-          CODEX_NOTIFY_SOLVER: 'true'
+          CODEX_POST_ISSUE_COMMENT: 'true'         # Kurz-Zusammenfassung in den Issue schreiben
+          CODEX_ADD_LABEL: 'false'                 # Label setzt der Workflow nach Verify
+          CODEX_NOTIFY_SOLVER: 'true'              # repository_dispatch an Bot 2
+
         run: |
           mkdir -p .github/codex/context
           python .github/codex/bot_contextmap.py
 
-      - name: Verify context outputs
+      - name: Verify context outputs (this run)
         id: verify
-        if: ${{ success() }}   # nur prüfen, wenn der Bot-Step nicht mit Fehler endete
+        if: ${{ success() }}
         shell: bash
         run: |
-          ok=true
-          [[ -s .github/codex/context/solver_input.json ]] || ok=false
-          [[ -s .github/codex/context/solver_plan.json  ]] || ok=false
-          echo "ok=${ok}" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          META=".github/codex/context/last_run.json"
+          if [[ ! -s "$META" ]]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning ::last_run.json missing"
+            exit 0
+          fi
+          RUN_DIR=$(jq -r '.run_dir' "$META" 2>/dev/null || echo "")
+          CTX=$(jq -r '.context' "$META" 2>/dev/null || echo "solver_input.json")
+          PLN=$(jq -r '.plan' "$META" 2>/dev/null || echo "solver_plan.json")
+          INP="$RUN_DIR/$CTX"
+          PLN="$RUN_DIR/$PLN"
+          if [[ -s "$INP" && -s "$PLN" ]]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            echo "run_dir=$RUN_DIR" >> "$GITHUB_OUTPUT"
+            echo "::notice ::Verified outputs in $RUN_DIR"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning ::Outputs missing or empty: $INP | $PLN"
+          fi
 
       - name: Add 'contextmap-ready' label
-        if: ${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && success() && steps.verify.outputs.ok == 'true' }}
+        if: ${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && steps.verify.outputs.ok == 'true' }}
         uses: actions/github-script@v7
         with:
           script: |
