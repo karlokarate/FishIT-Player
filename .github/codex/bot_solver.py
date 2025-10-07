@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Bot 2 – Solver (robust, self-healing) — v11-adapted-for-Bot1v3
+Bot 2 – Solver (robust, self-healing) — v12
 
-Neu gegenüber deiner Referenz (11):
-- **Bot‑1 v3 kompatibel**: Liest primär `.github/codex/context/solver_input.json` (+ `summary.txt`),
-  behält Legacy‑Fallback auf `.codex/context.json` / `.codex/context_full.md`.
-- **Issue‑Nummer aus neuem JSON**: Falls `ISSUE_NUMBER`/Event fehlen.
-- **Zielauswahl aus neuem JSON**: Nutzt `issue_context.referenced_paths` und `repo.files`.
-- **Hard‑Gate auf `contextmap-ready`**: bleibt erhalten (außer `workflow_dispatch`).
-- **Reagiert auf Comments**: Patches aus Issue **und allen Kommentaren** (wie gehabt).
-- Rest (Unidiff‑Prüfung, Apply‑Matrix, Zero‑Context, GNU‑Fallback, Spec‑to‑File, Build‑Dispatch, .rej‑Summary)
-  bleibt unverändert bzw. verbessert.
-
-Referenzbasis: dein „Solver (11)“. Anpassungen sind gezielt und minimal-invasiv.
+Fixes vs v11 (uploaded):
+- Initialize and thread `state`, `processed`, `pending`, `batch_count`, `BATCH` correctly
+- Remove UnboundLocalError by passing/creating state inside apply path
+- Define `since` for build-dispatch (was referenced before assignment)
+- Safer defaults + summaries; minor log polish
+- No behavior changes otherwise
 """
-
 from __future__ import annotations
 import os
 import re
@@ -27,7 +21,6 @@ import glob
 import textwrap
 from pathlib import Path
 from typing import List, Tuple, Optional, Set, Dict, Any
-
 
 # ---------- Logging & Heartbeat ----------
 import logging, threading
@@ -44,6 +37,7 @@ def heartbeat(tag="solver", every_s=60):
     t = threading.Thread(target=_beat, daemon=True)
     t.start()
 
+
 def add_step_summary(text: str):
     path = os.getenv("GITHUB_STEP_SUMMARY")
     if path:
@@ -52,6 +46,7 @@ def add_step_summary(text: str):
                 f.write(text + "\n")
         except Exception:
             pass
+
 import requests
 try:
     from unidiff import PatchSet
@@ -62,6 +57,7 @@ except Exception:
         pass
 
 # ---------- Utility: Retry ----------
+
 def _retry(fn, tries: int = 3, delay: float = 2.0):
     for i in range(tries):
         try:
@@ -72,12 +68,15 @@ def _retry(fn, tries: int = 3, delay: float = 2.0):
             time.sleep(delay * (i + 1))
 
 # ---------- GitHub helpers ----------
+
 def repo() -> str:
     return os.environ.get("GITHUB_REPOSITORY", "")
+
 
 def event() -> dict:
     path = os.environ.get("GITHUB_EVENT_PATH") or ""
     return json.loads(Path(path).read_text(encoding="utf-8")) if path and Path(path).exists() else {}
+
 
 def gh_api(method: str, path: str, payload: dict | None = None) -> dict:
     def _do():
@@ -92,6 +91,7 @@ def gh_api(method: str, path: str, payload: dict | None = None) -> dict:
         except Exception:
             return {}
     return _retry(_do)
+
 
 def issue_number() -> Optional[int]:
     # 1) explicit env
@@ -129,19 +129,24 @@ def issue_number() -> Optional[int]:
             pass
     return None
 
+
 def list_issue_comments(num: int) -> List[dict]:
     res = gh_api("GET", f"/repos/{repo()}/issues/{num}/comments")
     return res if isinstance(res, list) else []
 
+
 def get_issue(num: int) -> dict:
     return gh_api("GET", f"/repos/{repo()}/issues/{num}")
+
 
 def get_labels(num: int) -> Set[str]:
     issue = get_issue(num)
     return {l.get("name", "") for l in issue.get("labels", [])}
 
+
 def add_label(num: int, label: str):
     gh_api("POST", f"/repos/{repo()}/issues/{num}/labels", {"labels": [label]})
+
 
 def remove_label(num: int, label: str):
     try:
@@ -156,15 +161,18 @@ def remove_label(num: int, label: str):
     except Exception:
         pass
 
+
 def post_comment(num: int, body: str):
     gh_api("POST", f"/repos/{repo()}/issues/{num}/comments", {"body": body})
 
 # ---------- Shell / Git ----------
+
 def sh(cmd: str, check=True) -> str:
     p = subprocess.run(cmd, shell=True, text=True, capture_output=True)
     if check and p.returncode != 0:
         raise RuntimeError(f"cmd failed: {cmd}\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}")
     return p.stdout or ""
+
 
 def ensure_repo_cwd():
     ws = os.environ.get("GITHUB_WORKSPACE")
@@ -185,6 +193,7 @@ def ensure_repo_cwd():
         except Exception:
             pass
 
+
 def ls_files() -> List[str]:
     try:
         return [l.strip() for l in sh("git ls-files", check=False).splitlines() if l.strip()]
@@ -192,6 +201,7 @@ def ls_files() -> List[str]:
         return []
 
 # ---------- Context / Artifacts ----------
+
 def read_new_context_json() -> Dict[str, Any]:
     """Bot‑1 v3 JSON: .github/codex/context/solver_input.json"""
     p = Path(".github/codex/context/solver_input.json")
@@ -202,6 +212,7 @@ def read_new_context_json() -> Dict[str, Any]:
             return {}
     return {}
 
+
 def read_new_summary_txt() -> str:
     p = Path(".github/codex/context/summary.txt")
     if p.exists():
@@ -210,6 +221,7 @@ def read_new_summary_txt() -> str:
         except Exception:
             return ""
     return ""
+
 
 def read_legacy_context_json() -> Dict[str, Any]:
     p = Path(".codex/context.json")
@@ -220,6 +232,7 @@ def read_legacy_context_json() -> Dict[str, Any]:
             return {}
     return {}
 
+
 def read_legacy_context_full_md() -> str:
     p = Path(".codex/context_full.md")
     if p.exists():
@@ -229,13 +242,14 @@ def read_legacy_context_full_md() -> str:
             return ""
     return ""
 
+
 def fetch_contextmap_comment(num: int) -> Optional[str]:
     for c in list_issue_comments(num):
         b = (c.get("body") or "").strip()
-        # Akzeptiere sowohl die alte Form ("### contextmap-ready") als auch die neue ("ContextMap ready")
         if b.lower().startswith("### contextmap-ready".lower()) or "contextmap ready" in b.lower():
             return b
     return None
+
 
 def extract_issue_raw_diff(num: int) -> str:
     """Concat issue + comments, return text from first 'diff --git' onward (if any)."""
@@ -249,6 +263,7 @@ def extract_issue_raw_diff(num: int) -> str:
     return raw[pos:] if pos != -1 else ""
 
 # ---------- Helpers aus Context ----------
+
 def choose_targets_from_new_context(ctx: Dict[str, Any], all_files: List[str]) -> Tuple[List[str], List[str]]:
     """
     Nutzt Bot‑1 v3 Felder:
@@ -259,7 +274,6 @@ def choose_targets_from_new_context(ctx: Dict[str, Any], all_files: List[str]) -
     create_paths: List[str] = []
     existing_paths: List[str] = []
     if not ctx:
-        # Fallback später
         return create_paths, existing_paths
 
     mentioned = (ctx.get("issue_context") or {}).get("referenced_paths") or []
@@ -271,15 +285,14 @@ def choose_targets_from_new_context(ctx: Dict[str, Any], all_files: List[str]) -
         else:
             create_paths.append(p)
 
-    # Wenn nix referenziert: sinnvollen Default
     if not mentioned:
         if any(f.startswith("app/") for f in files) or "app" in files:
             existing_paths.append("app")
 
-    # Dedupe
     seen=set(); existing_paths=[x for x in existing_paths if not (x in seen or seen.add(x))]
     seen=set(); create_paths=[x for x in create_paths if not (x in seen or seen.add(x))]
     return create_paths, existing_paths
+
 
 def parse_affected_modules(contextmap_md: str, all_files: List[str]) -> List[str]:
     m = re.search(r"####\s*\(potentiell\)\s*betroffene\s*Module\s*(.*?)\n####", contextmap_md, re.S | re.I)
@@ -305,11 +318,13 @@ _VALID_LINE = re.compile(
     r"similarity index |rename (from|to) |Binary files |--- |\+\+\+ |@@ |[\+\- ]|\\ No newline at end of file)"
 )
 
+
 def _strip_code_fences(text: str) -> str:
     if not text:
         return text
     m = re.match(r"^```[a-zA-Z0-9_-]*\s*\n(.*?)\n```$", text.strip(), re.S)
     return (m.group(1) if m else text)
+
 
 def sanitize_patch(raw: str) -> str:
     if not raw:
@@ -320,9 +335,8 @@ def sanitize_patch(raw: str) -> str:
         txt = txt[pos:]
     clean = []
     for ln in txt.splitlines():
-        if re.match(r"^\s*\d+\.\s*:?\s*$", ln):  # numerierte leere Zeilen
+        if re.match(r"^\s*\d+\.\s*:?\s*$", ln):
             continue
-    # (Nebenbei sehr kurze Strichtrenner ausfiltern)
         if re.match(r"^\s*[–—\-]\s*$", ln):
             continue
         if _VALID_LINE.match(ln):
@@ -332,8 +346,10 @@ def sanitize_patch(raw: str) -> str:
         out += "\n"
     return out
 
+
 def patch_uses_ab_prefix(patch_text: str) -> bool:
     return bool(re.search(r"^diff --git a/[\S]+ b/[\S]+", patch_text, re.M))
+
 
 def _split_sections(patch_text: str) -> List[str]:
     sections = []
@@ -345,9 +361,11 @@ def _split_sections(patch_text: str) -> List[str]:
     return sections
 
 # ---------- Apply mechanics ----------
+
 def _git_apply_try(tmp: str, pstrip: int, three_way: bool, extra_flags: str = "") -> subprocess.CompletedProcess:
     cmd = f"git apply {'-3' if three_way else ''} -p{pstrip} --whitespace=fix {extra_flags} {tmp}".strip()
     return subprocess.run(cmd, shell=True, text=True, capture_output=True)
+
 
 def _git_apply_matrix(tmp: str, uses_ab: bool) -> List[Tuple[int, bool, str]]:
     pseq = [1, 0] if uses_ab else [0, 1]
@@ -365,6 +383,7 @@ def _git_apply_matrix(tmp: str, uses_ab: bool) -> List[Tuple[int, bool, str]]:
         ]
     return combos
 
+
 def _make_zero_context(patch_text: str) -> str:
     out = []
     for ln in patch_text.splitlines():
@@ -380,9 +399,11 @@ def _make_zero_context(patch_text: str) -> str:
         z += "\n"
     return z
 
+
 def _gnu_patch_apply(tmp: str, p: int, rej_path: str) -> subprocess.CompletedProcess:
     cmd = f"patch -p{p} -f -N --follow-symlinks --no-backup-if-mismatch -r {rej_path} < {tmp}"
     return subprocess.run(cmd, shell=True, text=True, capture_output=True)
+
 
 def whole_git_apply(patch_text: str) -> Tuple[bool, str]:
     tmp = ".github/codex/_solver_all.patch"
@@ -396,6 +417,7 @@ def whole_git_apply(patch_text: str) -> Tuple[bool, str]:
             return True, f"git apply {'-3' if three else ''} -p{p} --whitespace=fix {extra}".strip()
         last_err = (pr.stderr or pr.stdout or "")[:1600]
     return False, last_err
+
 
 def apply_section(sec_text: str, idx: int) -> bool:
     tmp = f".github/codex/_solver_sec_{idx}.patch"
@@ -421,6 +443,7 @@ def apply_section(sec_text: str, idx: int) -> bool:
     return False
 
 # ---------- OpenAI helpers ----------
+
 def _openai_client():
     from openai import OpenAI  # lazy import
     api_key = os.environ.get("OPENAI_API_KEY")
@@ -429,11 +452,13 @@ def _openai_client():
     base = os.environ.get("OPENAI_BASE_URL") or "https://api.openai.com/v1"
     return OpenAI(api_key=api_key, base_url=base)
 
+
 def _strip_outer_code_fences(txt: str) -> str:
     if not txt:
         return txt
     m = re.match(r"^```[a-zA-Z0-9_-]*\s*\n(.*?)\n```$", txt.strip(), re.S)
     return (m.group(1) if m else txt)
+
 
 def ai_generate_diff(contextmap: str, docs: str, target_paths: List[str]) -> str:
     client = _openai_client()
@@ -458,6 +483,7 @@ def ai_generate_diff(contextmap: str, docs: str, target_paths: List[str]) -> str
     ))
     out = getattr(resp, "output_text", "") or ""
     return sanitize_patch(_strip_outer_code_fences(out))
+
 
 def ai_generate_full_file(path: str, repo_symbols: Dict[str, Any], context_full: str, summary_ctx: str) -> str:
     client = _openai_client()
@@ -515,6 +541,7 @@ Constraints:
         raise RuntimeError("AI full-file generation returned empty content")
     return out
 
+
 def ai_rewrite_full_file(path: str, current: str, repo_symbols: Dict[str, Any], context_full: str, summary_ctx: str) -> str:
     client = _openai_client()
     model = os.environ.get("OPENAI_MODEL_DEFAULT", "gpt-5")
@@ -554,12 +581,15 @@ Full Context (excerpt):
     return out
 
 # ---------- Build dispatch ----------
+
 def default_branch() -> str:
     return gh_api("GET", f"/repos/{repo()}").get("default_branch", "main")
+
 
 def dispatch_build(workflow_ident: str, ref_branch: str, inputs: dict | None) -> str:
     gh_api("POST", f"/repos/{repo()}/actions/workflows/{workflow_ident}/dispatches", {"ref": ref_branch, "inputs": inputs or {}})
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
 
 def wait_build_result(workflow_ident: str, ref_branch: str, since_iso: str, timeout_s=1800) -> dict:
     base = f"/repos/{repo()}/actions/workflows/{workflow_ident}/runs"
@@ -586,11 +616,10 @@ def wait_build_result(workflow_ident: str, ref_branch: str, since_iso: str, time
             return {}
         time.sleep(3)
 
-
-
 # ---------- Checkpoint State (resume across runs) ----------
 from pathlib import Path as _Path
 STATE_PATH = _Path(".github/codex/solver_state.json")
+
 
 def _load_state(issue_num: int) -> dict:
     try:
@@ -603,6 +632,7 @@ def _load_state(issue_num: int) -> dict:
     return {"issue": issue_num, "profile": os.environ.get("PROFILE","env/default"),
             "cursor": {"phase":"init","index":0}, "processed": [], "pending": []}
 
+
 def _save_state_and_push(state: dict, message: str):
     try:
         STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -614,6 +644,7 @@ def _save_state_and_push(state: dict, message: str):
         post_comment(state.get("issue", 0) or 0, f"⚠️ Konnte Zwischenstand nicht sichern: `{e}`")
 
 # ---------- Summaries ----------
+
 def summarize_rejects(num: int):
     rej_files = glob.glob("**/*.rej", recursive=True)
     if not rej_files:
@@ -625,16 +656,14 @@ def summarize_rejects(num: int):
         except Exception:
             txt = ""
         preview.append(f"\n--- {rf} ---\n{txt[:500]}")
-    body = "⚠️ Solver: Einige Hunks wurden als `.rej` abgelegt (manuelle Nacharbeit möglich):\n" +            "\n".join(f"- {r}" for r in rej_files[:50])
+    body = "⚠️ Solver: Einige Hunks wurden als `.rej` abgelegt (manuelle Nacharbeit möglich):\n" + "\n".join(f"- {r}" for r in rej_files[:50])
     if preview:
         body += "\n\n```diff\n" + "".join(preview) + "\n```"
     post_comment(num, body)
 
 # ---------- Solver strategy ----------
+
 def choose_targets_fallback_legacy(ctx_legacy: Dict[str, Any], all_files: List[str], cm_comment: str) -> Tuple[List[str], List[str]]:
-    """
-    Legacy-Pfad (so wie in deiner 11er-Version): nutze ggf. (Kommentar)Seeds oder app-Default.
-    """
     create_paths: List[str] = []
     existing_paths: List[str] = []
     if ctx_legacy:
@@ -652,7 +681,6 @@ def choose_targets_fallback_legacy(ctx_legacy: Dict[str, Any], all_files: List[s
         else:
             if any(f.startswith("app/") for f in all_files) or "app" in all_files:
                 existing_paths.append("app")
-    # dedupe
     def dq(xs: List[str]) -> List[str]:
         out=[]; s=set()
         for x in xs:
@@ -661,10 +689,8 @@ def choose_targets_fallback_legacy(ctx_legacy: Dict[str, Any], all_files: List[s
         return out
     return dq(create_paths), dq(existing_paths)
 
+
 def gather_repo_symbols(limit:int=1600) -> Dict[str, Any]:
-    """
-    Leichtgewichtige Kotlin-Symbolsammlung für Prompts.
-    """
     files = ls_files()
     symbols=[]; cnt=0
     for f in files:
@@ -696,23 +722,33 @@ def gather_repo_symbols(limit:int=1600) -> Dict[str, Any]:
                 break
     return {"count": len(symbols), "items": symbols}
 
+
 def _write_text_file(path: str, content: str):
     Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
     Path(path).write_text(content, encoding="utf-8")
 
-def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old: Dict[str, Any], cm_comment: str):
+
+def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old: Dict[str, Any], cm_comment: str, state: dict, BATCH: int) -> Optional[str]:
     """
     1) Versuche Patch anzuwenden (whole → section → zero-context → GNU).
     2) Scheitert dies/ist kein Patch vorhanden:
        - Create/Existing-Targets (neu oder legacy) verarbeiten; Dir-Targets rekursiv (.kt).
     """
+    # Thread local working sets derived from `state`
+    processed: Set[str] = set(state.get("processed") or [])
+    pending: List[str] = list(state.get("pending") or [])
+    batch_count = 0
+
     base = default_branch()
     sh(f"git fetch origin {base}", check=False)
     sh(f"git checkout -B codex/solve-{int(time.time())} origin/{base}")
     branch = sh("git rev-parse --abbrev-ref HEAD").strip()
 
-    ok, info = whole_git_apply(patch) if patch else (False, "no patch text")
     applied_any = False
+    if patch:
+        ok, info = whole_git_apply(patch)
+    else:
+        ok, info = False, "no patch text"
 
     if ok:
         post_comment(num, f"✅ Solver: Patch via Whole-Apply erfolgreich (`{info}`)")
@@ -729,24 +765,20 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
 
         # ---- Spec-to-File Pfad ----
         repo_syms = gather_repo_symbols()
-        context_full = read_legacy_context_full_md()  # falls vorhanden (alt)
+        context_full = read_legacy_context_full_md() or ""
         if not context_full:
-            # nutze neuen Summary-Text (knapp), ergänzt durch einen JSON-Auszug (analysis/issue)
-            s = read_new_summary_txt()
-            if not s:
-                s = ""
+            s = read_new_summary_txt() or ""
             try:
-                # kleine Stütze aus dem JSON
                 ctx_excerpt = json.dumps({"issue": (ctx_new.get("issue_context") if ctx_new else {}),
                                           "analysis": (ctx_new.get("analysis") if ctx_new else {})}, ensure_ascii=False)
             except Exception:
                 ctx_excerpt = ""
             context_full = s + ("\n\n" + ctx_excerpt if ctx_excerpt else "")
 
-        # Ziele bestimmen: bevorzugt neuer Context, sonst Legacy/Kommentar
+        # Ziele bestimmen
         create_paths, existing_paths = choose_targets_from_new_context(ctx_new, ls_files())
         if not pending:
-            pending = (create_paths + existing_paths)[:]
+            pending = list((create_paths + existing_paths))
         if not create_paths and not existing_paths:
             create_paths, existing_paths = choose_targets_fallback_legacy(ctx_old, ls_files(), cm_comment)
 
@@ -756,9 +788,9 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
             try:
                 logging.info('CREATE %s', pth)
                 if Path(pth).exists():
-                    # mark as processed to avoid rework
-                    processed.add(pth); 
-                    if pth in pending: pending.remove(pth)
+                    processed.add(pth)
+                    if pth in pending:
+                        pending.remove(pth)
                     continue
                 gen = ai_generate_full_file(pth, repo_syms, context_full, read_new_summary_txt())
                 _write_text_file(pth, gen)
@@ -766,14 +798,15 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
                 applied_any = True
 
                 processed.add(pth)
-                if pth in pending: pending.remove(pth)
+                if pth in pending:
+                    pending.remove(pth)
                 state["processed"] = sorted(processed)
                 state["pending"] = pending
                 state["cursor"] = {"phase":"create", "index": len(processed)}
                 batch_count += 1
                 if batch_count % BATCH == 0:
-                    _save_state_and_push(state, f"codex: partial (issue #{num}) [create {len(processed)}]"); add_step_summary(f"- Create batch: {len(processed)} processed, {len(pending)} pending")
-
+                    _save_state_and_push(state, f"codex: partial (issue #{num}) [create {len(processed)}]")
+                    add_step_summary(f"- Create batch: {len(processed)} processed, {len(pending)} pending")
             except Exception as e:
                 post_comment(num, f"⚠️ Konnte Datei nicht erzeugen `{pth}`:\n```\n{e}\n```")
 
@@ -796,13 +829,15 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
                 post_comment(num, f"🔁 Datei ersetzt (Spec-to-File): `{target}`"); logging.info('REWRITE-DONE %s', target)
                 applied_any = True
                 processed.add(target)
-                if target in pending: pending.remove(target)
+                if target in pending:
+                    pending.remove(target)
                 state["processed"] = sorted(processed)
                 state["pending"] = pending
                 state["cursor"] = {"phase":"rewrite", "index": len(processed)}
                 batch_count += 1
                 if batch_count % BATCH == 0:
-                    _save_state_and_push(state, f"codex: partial (issue #{num}) [rewrite {len(processed)}]"); add_step_summary(f"- Rewrite batch: {len(processed)} processed, {len(pending)} pending")
+                    _save_state_and_push(state, f"codex: partial (issue #{num}) [rewrite {len(processed)}]")
+                    add_step_summary(f"- Rewrite batch: {len(processed)} processed, {len(pending)} pending")
             except Exception as e:
                 post_comment(num, f"⚠️ Konnte Datei nicht ersetzen `{target}`:\n```\n{e}\n```")
 
@@ -818,13 +853,15 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
                         post_comment(num, f"🔁 Datei ersetzt (Dir-Target): `{f.as_posix()}`"); logging.info('DIR-REWRITE-DONE %s', f.as_posix())
                         applied_any = True
                         processed.add(f.as_posix())
-                        if f.as_posix() in pending: pending.remove(f.as_posix())
+                        if f.as_posix() in pending:
+                            pending.remove(f.as_posix())
                         state["processed"] = sorted(processed)
                         state["pending"] = pending
                         state["cursor"] = {"phase":"dir-rewrite", "index": len(processed)}
                         batch_count += 1
                         if batch_count % BATCH == 0:
-                            _save_state_and_push(state, f"codex: partial (issue #{num}) [dir {len(processed)}]"); add_step_summary(f"- Dir batch: {len(processed)} processed, {len(pending)} pending")
+                            _save_state_and_push(state, f"codex: partial (issue #{num}) [dir {len(processed)}]")
+                            add_step_summary(f"- Dir batch: {len(processed)} processed, {len(pending)} pending")
                     except Exception as e:
                         post_comment(num, f"⚠️ Ersetzen fehlgeschlagen `{f.as_posix()}`:\n```\n{e}\n```")
 
@@ -860,7 +897,8 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
         summarize_rejects(num)
         return None
 
-    _save_state_and_push(state, f"codex: partial (issue #{num}) [final]"); add_step_summary(f"- Finalized: {len(processed)} processed total")
+    _save_state_and_push(state, f"codex: partial (issue #{num}) [final]")
+    add_step_summary(f"- Finalized: {len(processed)} processed total")
     sh(f"git commit -m 'codex: solver changes (issue #{num})'", check=False)
     sh("git push --set-upstream origin HEAD", check=False)
 
@@ -880,6 +918,7 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
     return pr_url
 
 # ---------- Main ----------
+
 def dispatch_triage(issue_num: int):
     try:
         wfs = gh_api("GET", f"/repos/{repo()}/actions/workflows")
@@ -893,8 +932,12 @@ def dispatch_triage(issue_num: int):
     except Exception as e:
         print(f"::warning::Failed to dispatch triage workflow: {e}")
 
+
 def main():
-    # Dry run (keine Netz-/GitHub‑Aufrufe)
+    # Configurable batch threshold (checkpoint commits)
+    BATCH = int(os.environ.get("SOLVER_CHECKPOINT_BATCH", "10"))
+
+    # Dry run
     if os.environ.get("SOLVER_DRY_RUN") == "1":
         sample = textwrap.dedent("""
         diff --git a/README.md b/README.md
@@ -904,7 +947,8 @@ def main():
         @@ -1,1 +1,1 @@
         -Hello
         +Hello World
-        """).strip("\n")
+        """
+        ).strip("\n")
         assert "diff --git" in sanitize_patch(sample)
         assert isinstance(_split_sections(sample), list)
         print("DRY_RUN OK")
@@ -917,6 +961,9 @@ def main():
         print("::error::No issue number")
         sys.exit(1)
 
+    # Load state early
+    state = _load_state(num)
+
     ev_name = (os.environ.get("GH_EVENT_NAME") or os.environ.get("GITHUB_EVENT_NAME") or "")
     if ev_name != "workflow_dispatch":
         labels = get_labels(num)
@@ -928,10 +975,10 @@ def main():
     ctx_new = read_new_context_json()
     ctx_old = read_legacy_context_json()
     cm_comment = fetch_contextmap_comment(num) or ""
+
     # Diff ggf. aus Issue + Comments
     raw_issue_diff = extract_issue_raw_diff(num)
     patch = sanitize_patch(raw_issue_diff) if raw_issue_diff else ""
-
     if patch and "diff --git " in patch:
         try:
             if PatchSet:
@@ -941,7 +988,8 @@ def main():
     else:
         patch = ""  # erzwinge Spec-to-File/AI-Diff-Pfad
 
-    pr_url = apply_or_spec_to_file(num, patch, ctx_new, ctx_old, cm_comment)
+    # Apply / Spec-to-File
+    pr_url = apply_or_spec_to_file(num, patch, ctx_new, ctx_old, cm_comment, state=state, BATCH=BATCH)
     if pr_url is None:
         add_label(num, "solver-error")
         summarize_rejects(num)
@@ -955,6 +1003,7 @@ def main():
         else:
             wf = os.environ.get('SOLVER_BUILD_WORKFLOW', 'release-apk.yml')
             branch = sh('git rev-parse --abbrev-ref HEAD').strip()
+            since = dispatch_build(wf, branch, inputs={"issue": str(num)})  # FIX: define since before wait
             run = wait_build_result(wf, branch, since, timeout_s=1800)
             concl = (run or {}).get('conclusion', '')
             if concl == 'success':
@@ -970,6 +1019,7 @@ def main():
         post_comment(num, f"❌ Build-Dispatch fehlgeschlagen\n```\n{e}\n```")
         dispatch_triage(num)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     try:
