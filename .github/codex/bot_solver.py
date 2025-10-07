@@ -633,8 +633,32 @@ def _load_state(issue_num: int) -> dict:
             "cursor": {"phase":"init","index":0}, "processed": [], "pending": []}
 
 
+
 def _save_state_and_push(state: dict, message: str):
     try:
+        STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+        # Stage and commit (empty commit allowed)
+        sh("git add -A", check=True)
+        sh(f"git commit -m '{message}'", check=False)
+
+        # Determine current branch
+        branch = sh("git rev-parse --abbrev-ref HEAD").strip()
+
+        # Token-friendly remote URL to ensure push auth in Actions
+        tok = os.environ.get("GITHUB_TOKEN", "") or os.environ.get("INPUT_TOKEN", "")
+        if tok:
+            sh('git config url."https://x-access-token:%s@github.com/".insteadOf "https://github.com/"' % tok, check=False)
+
+        # Push explicitly to the branch, fail hard so the job surfaces errors
+        sh(f"git push --set-upstream origin {branch}", check=True)
+    except Exception as e:
+        try:
+            post_comment(state.get("issue", 0) or 0, f"❌ Push fehlgeschlagen:\n```
+{e}
+```")
+        finally:
+            raise
         STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
         STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
         sh("git add -A", check=False)
@@ -900,7 +924,8 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
     _save_state_and_push(state, f"codex: partial (issue #{num}) [final]")
     add_step_summary(f"- Finalized: {len(processed)} processed total")
     sh(f"git commit -m 'codex: solver changes (issue #{num})'", check=False)
-    sh("git push --set-upstream origin HEAD", check=False)
+    branch = sh("git rev-parse --abbrev-ref HEAD").strip()
+    sh(f"git push --set-upstream origin {branch}", check=True)
 
     pr = gh_api("POST", f"/repos/{repo()}/pulls", {
         "title": f"codex: solver changes (issue #{num})",
