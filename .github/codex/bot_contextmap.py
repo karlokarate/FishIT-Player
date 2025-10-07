@@ -909,3 +909,88 @@ f"""**ContextMap ready** ✅{profile_line}
 
 if __name__ == "__main__":
     main()
+
+
+# == Post-hardener: enforce allowed_targets/execution ==
+
+if __name__ == "__main__":
+    try:
+        # After the original script completed its work, harden/patch the plan if needed.
+        import json, os, pathlib, re, datetime
+
+        plan_path = pathlib.Path(".github/codex/solver_plan.json")
+        input_path = pathlib.Path(".github/codex/solver_input.json")
+        ctx_dir   = pathlib.Path(".github/codex/context")
+        ctx_dir.mkdir(parents=True, exist_ok=True)
+
+        plan = {}
+        if plan_path.exists():
+            try:
+                plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            except Exception:
+                plan = {}
+
+        # If allowed_targets/execution are missing or empty, fill minimal safe defaults based on keywords.
+        need_exec = not isinstance(plan.get("execution"), dict)
+        at = plan.get("allowed_targets")
+        need_allowed = not isinstance(at, dict) or (not at.get("modify") and not at.get("create") and not at.get("tests"))
+
+        if need_exec or need_allowed:
+            # derive keywords either from solver_input.json or from event body
+            keywords = []
+            if input_path.exists():
+                try:
+                    sinput = json.loads(input_path.read_text(encoding="utf-8"))
+                    kw = sinput.get("keywords") or []
+                    if isinstance(kw, list):
+                        keywords = [str(x).lower() for x in kw]
+                except Exception:
+                    pass
+
+            def infer_auto_scope_from_keywords(keywords):
+                kws = {k.lower() for k in (keywords or [])}
+                allowed = {"modify": [], "create": [], "tests": []}
+                exec_opts = {"strict_mode": True, "dir_rewrite_allowed": False}
+                if ({"telegram","tdlib"} & kws) or ("login" in kws) or ("auth" in kws):
+                    allowed["modify"] += [
+                        "app/src/main/java/**/telegram/**",
+                        "app/src/main/java/**/settings/**/Telegram*.*",
+                        "app/src/main/res/values*/strings.xml",
+                    ]
+                    allowed["create"] += [
+                        "app/src/main/java/com/chris/m3usuite/telegram/ui/TelegramLoginFlow.kt",
+                        "app/src/main/java/com/chris/m3usuite/telegram/TelegramAuthErrorMapper.kt",
+                        "app/src/main/java/com/chris/m3usuite/telegram/ipc/TelegramAuthStateIpc.kt",
+                    ]
+                    allowed["tests"] += [
+                        "app/src/androidTest/java/**/telegram/**",
+                        "app/src/test/java/**/telegram/**",
+                    ]
+                return {"allowed_targets": allowed, "execution": exec_opts}
+
+            auto = infer_auto_scope_from_keywords(keywords)
+            if need_exec:
+                plan["execution"] = auto.get("execution", {"strict_mode": True, "dir_rewrite_allowed": False})
+            if need_allowed:
+                plan["allowed_targets"] = auto.get("allowed_targets", {"modify": [], "create": [], "tests": []})
+
+            plan_path.parent.mkdir(parents=True, exist_ok=True)
+            plan_path.write_text(json.dumps(plan, indent=2, ensure_ascii=False), encoding="utf-8")
+
+            # write/update summary preview
+            lines = []
+            lines.append(f"# ContextMap Summary (post-hardener {datetime.datetime.utcnow().isoformat()}Z)")
+            kws = ", ".join(keywords) if keywords else "—"
+            lines.append("## Keywords")
+            lines.append("`" + kws + "`\n")
+            lines.append("## Allowed Targets (preview)")
+            for k in ["modify","create","tests"]:
+                globs = plan.get("allowed_targets", {}).get(k, [])[:5]
+                lines.append(f"- **{k}**: " + (", ".join(globs) if globs else "—"))
+            (ctx_dir / "summary.txt").write_text("\n".join(lines), encoding="utf-8")
+
+            print("::notice::Post-hardener applied: strict plan enforced")
+        else:
+            print("::notice::Post-hardener skipped: plan already strict")
+    except Exception as _e:
+        print(f"::warning::Post-hardener failed: {_e}")
