@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ContextMap Bot (enhanced + preanalysis + autolabel + comment)
-- Scans ALL files in the repository working tree (tracked + untracked), excluding only common build and VCS dirs.
-- Fetches the triggering Issue/Comment via GitHub API, extracts referenced paths and URLs.
-- Downloads *attached* files from the Issue body (GitHub assets / user-images) and embeds them 1:1.
-- Builds a solver_input.json containing:
-  * Complete issue/context text
-  * Full file index of the repo (size, sha1, tracked/untracked, LFS pointer, submodule hint)
-  * 1:1 contents for referenced/attached files (always embedded)
-  * 1:1 contents for all repo text files, chunked if large (binaries base64 if small, or summarized + artifact hint)
-  * Deep analysis (modules, Compose/@Composable counts, Focus heuristics, Gradle + AndroidManifest overview)
-- Writes outputs to .github/codex/context/ and prints a compact summary for the job log.
-- NEW:
-  * Adds the 'contextmap-ready' label automatically (issues/issue_comment).
-  * (Optional) Posts a concise PROBLEM DESCRIPTION + DETAILED PREANALYSIS comment to the issue for the Solver
-    -> per ENV steuerbar: CODEX_POST_ISSUE_COMMENT=true|false (Default: true, im Workflow deaktiviert).
+ContextMap Bot (generic)
+- Scans ALL files in the repository working tree (tracked + untracked), excluding common build/VCS dirs
+  and the generated context folder itself.
+- Reads the triggering Issue/Comment via GitHub event payload, extracts referenced paths and URLs.
+- Downloads attachments from GitHub/user-images and embeds them 1:1.
+- Builds solver_input.json with:
+  * Issue text (title, body)
+  * Repo file index (size, hashes, tracked flag, LFS pointer/submodule hint)
+  * Embedded content for referenced/attached files (always), text files chunked if large
+  * Generic analysis: language bytes, stack/build indicators, largest files, top directories
+- Writes outputs to .github/codex/context/ and emits a compact summary.
+- Optional: adds 'contextmap-ready' label and posts a generic pre-analysis comment (toggled via env).
 """
 
 import os
@@ -29,12 +26,12 @@ import hashlib
 import logging
 import mimetypes
 import subprocess
+from collections import Counter
 from typing import List, Dict, Any, Optional, Tuple
 
 try:
     import requests
 except Exception as e:
-        # Anforderungen sind in .github/codex/requirements.txt
     print("ERROR: requests not installed. Please `pip install -r .github/codex/requirements.txt`", file=sys.stderr)
     raise
 
@@ -51,7 +48,7 @@ DEFAULT_EXCLUDE_DIRS = {
 }
 DEFAULT_MAX_TEXT_EMBED_BYTES = int(os.getenv("CODEX_MAX_TEXT_EMBED_BYTES", "1048576"))  # 1 MiB per file
 DEFAULT_MAX_BIN_BASE64_BYTES = int(os.getenv("CODEX_MAX_BIN_BASE64_BYTES", "524288"))   # 512 KiB per file
-DEFAULT_ALWAYS_EMBED_REFERENCED = True  # Always embed referenced/attached files 1:1 regardless of size
+DEFAULT_ALWAYS_EMBED_REFERENCED = True
 
 WORK_DIR = os.path.abspath(".")
 CTX_DIR = os.path.join(".github", "codex", "context")
@@ -60,9 +57,16 @@ OUT_JSON = os.path.join(CTX_DIR, "solver_input.json")
 OUT_SUMMARY = os.path.join(CTX_DIR, "summary.txt")
 ATTACH_DIR = os.path.join(CTX_DIR, "attachments")
 
-# Optionales Verhalten per ENV
-POST_ISSUE_COMMENT = os.getenv("CODEX_POST_ISSUE_COMMENT", "true").strip().lower() in {"1", "true", "yes"}
+POST_ISSUE_COMMENT = os.getenv("CODEX_POST_ISSUE_COMMENT", "false").strip().lower() in {"1", "true", "yes"}
 ADD_LABEL = os.getenv("CODEX_ADD_LABEL", "true").strip().lower() in {"1", "true", "yes"}
+
+# Hosts, von denen Attachments geladen werden dürfen
+ALLOWED_ATTACHMENT_HOSTS = {
+    "user-images.githubusercontent.com",
+    "objects.githubusercontent.com",
+    "github.com",    # für Releases/Assets Redirects
+    "raw.githubusercontent.com"
+}
 
 # ------------------------- Utilities -------------------------
 
@@ -113,7 +117,7 @@ def ensure_dirs():
     os.makedirs(CTX_DIR, exist_ok=True)
     os.makedirs(ATTACH_DIR, exist_ok=True)
 
-# ------------------------- Issue / Event handling -------------------------
+# ------------------------- Event helpers -------------------------
 
 def load_event_payload() -> Dict[str, Any]:
     p = os.getenv("GITHUB_EVENT_PATH")
@@ -144,30 +148,27 @@ def github_api_post_json(url: str, token: str, payload: dict):
     return r
 
 def fetch_issue_context(event: Dict[str, Any], repo: str, token: str) -> Dict[str, Any]:
-    """Return dict with: type ('issues'|'issue_comment'|'workflow_dispatch'), issue_number, body, title."""
     evname = os.getenv("GITHUB_EVENT_NAME", "")
     ctx = {"event_name": evname, "issue_number": None, "title": "", "body": ""}
     if evname == "issues":
         issue = event.get("issue") or {}
-        number = issue.get("number")
-        ctx["issue_number"] = number
+        ctx["issue_number"] = issue.get("number")
         ctx["title"] = issue.get("title", "")
         ctx["body"] = issue.get("body", "") or ""
     elif evname == "issue_comment":
         issue = event.get("issue", {})
         comment = event.get("comment", {})
-        number = issue.get("number")
-        ctx["issue_number"] = number
+        ctx["issue_number"] = issue.get("number")
         ctx["title"] = issue.get("title", "")
         ctx["body"] = comment.get("body", "") or ""
-    else:
-        # e.g., workflow_dispatch
-        ctx["title"] = (event.get("inputs", {}) or {}).get("title", "")
-        ctx["body"] = (event.get("inputs", {}) or {}).get("body", "")
+    else:  # workflow_dispatch or others
+        inputs = event.get("inputs", {}) or {}
+        ctx["title"] = inputs.get("title", "")
+        ctx["body"] = inputs.get("body", "")
     return ctx
 
 # ------------------------- Reference parsing -------------------------
-# Allow spaces in paths and include .sql
+
 PATH_PATTERN = re.compile(r"""(?P<path>
     (?:[A-Za-z0-9_\-./ ]+/)*[A-Za-z0-9_\-./ ]+\.(?:kt|java|kts|gradle|xml|md|txt|yml|yaml|json|tf|properties|py|sh|bat|ps1|tl|proto|cc|cpp|hpp|c|h|dart|swift|go|rs|ini|cfg|csv|ts|tsx|jsx|html|css|scss|sql)
 )""", re.VERBOSE)
@@ -177,33 +178,42 @@ URL_PATTERN = re.compile(r"""https?://[^\s)>'"]+""")
 def extract_paths_and_urls(text: str) -> Tuple[List[str], List[str]]:
     paths = set()
     urls = set()
+    text = text or ""
 
-    # From diff headers
-    for m in re.finditer(r"^\+\+\+ b/([^\n\r]+)$", text or "", re.MULTILINE):
+    for m in re.finditer(r"^\+\+\+ b/([^\n\r]+)$", text, re.MULTILINE):
         paths.add(m.group(1).strip())
-    for m in re.finditer(r"^--- a/([^\n\r]+)$", text or "", re.MULTILINE):
+    for m in re.finditer(r"^--- a/([^\n\r]+)$", text, re.MULTILINE):
         paths.add(m.group(1).strip())
 
-    # From code blocks/backticks and plain text
-    for m in PATH_PATTERN.finditer(text or ""):
+    for m in PATH_PATTERN.finditer(text):
         paths.add(m.group("path").strip())
 
-    for m in URL_PATTERN.finditer(text or ""):
+    for m in URL_PATTERN.finditer(text):
         urls.add(m.group(0).strip())
 
     return sorted(paths), sorted(urls)
 
-# ------------------------- Downloader for attachments -------------------------
+# ------------------------- Attachments -------------------------
+
+def _host_allowed(url: str) -> bool:
+    try:
+        from urllib.parse import urlparse
+        host = urlparse(url).netloc.lower()
+        # raw.githubusercontent.com liefert Dateien direkt
+        return any(h in host for h in ALLOWED_ATTACHMENT_HOSTS)
+    except Exception:
+        return False
 
 def download_attachment(url: str, token: str) -> Dict[str, Any]:
-    """Download a URL (GitHub assets/user-images supported). Returns metadata + content (text/base64)."""
     meta = {"url": url, "saved_as": None, "status": "error", "size": 0, "sha256": None,
             "is_text": None, "encoding": None}
+    if not _host_allowed(url):
+        meta["status"] = "external-reference"
+        return meta
 
     try:
         r = github_api_get(url, token, accept="application/octet-stream")
     except Exception as e:
-        # Fallback ohne spezielles Accept
         try:
             headers = {"Authorization": f"Bearer {token}"} if token else {}
             r = requests.get(url, headers=headers, allow_redirects=True, timeout=60)
@@ -217,7 +227,6 @@ def download_attachment(url: str, token: str) -> Dict[str, Any]:
     meta["sha256"] = sha
     meta["size"] = len(data)
 
-    # decide file name
     name = url.split("/")[-1]
     if not name or "." not in name:
         cd = r.headers.get("Content-Disposition", "")
@@ -228,14 +237,12 @@ def download_attachment(url: str, token: str) -> Dict[str, Any]:
             ext = mimetypes.guess_extension(mt or "") or ".bin"
             name = f"attachment_{sha[:8]}{ext}"
 
-    # save raw attachment
     os.makedirs(ATTACH_DIR, exist_ok=True)
     save_path = os.path.join(ATTACH_DIR, name)
     with open(save_path, "wb") as f:
         f.write(data)
     meta["saved_as"] = save_path.replace("\\", "/")
 
-    # embed content 1:1
     if is_probably_text(data):
         enc = detect_encoding(data)
         try:
@@ -256,24 +263,19 @@ def download_attachment(url: str, token: str) -> Dict[str, Any]:
 # ------------------------- Repo scanning -------------------------
 
 def list_all_files() -> List[str]:
-    """Walk the working tree to include tracked + untracked files.
-       Exclude common build/VCS dirs and ALWAYS exclude the generated context dir (.github/codex/context)."""
+    """Tracked + untracked; excludes generated context dir and common build/VCS dirs."""
     files = []
     for root, dirs, fnames in os.walk(WORK_DIR):
-        # prune dirs
         for d in list(dirs):
             absd = os.path.abspath(os.path.join(root, d))
-            # Exclude generated context dir (and its subtree) unconditionally
             if absd == CTX_DIR_ABS or absd.startswith(CTX_DIR_ABS + os.sep):
                 dirs.remove(d)
                 continue
-            # Exclude defaults except top-level .github (damit Workflows & Bot gescannt werden)
             if d in DEFAULT_EXCLUDE_DIRS and absd != os.path.abspath(".github"):
                 dirs.remove(d)
 
         for fn in fnames:
             p = os.path.join(root, fn)
-            # skip any file inside generated context dir (defensive double-check)
             absp = os.path.abspath(p)
             if absp == CTX_DIR_ABS or absp.startswith(CTX_DIR_ABS + os.sep):
                 continue
@@ -284,9 +286,6 @@ def list_all_files() -> List[str]:
     return sorted(set(files))
 
 def read_repo_file(path: str, always_embed: bool=False, tracked_set: Optional[set]=None) -> Dict[str, Any]:
-    """Read file metadata + content (text/binary). May chunk or base64 depending on size and type.
-       For referenced/attached files: set always_embed=True to bypass size guards.
-    """
     info = {"path": path, "size": None, "sha1": None, "sha256": None, "is_tracked": None,
             "is_text": None, "encoding": None, "lfs_pointer": False, "submodule_hint": False}
 
@@ -305,16 +304,13 @@ def read_repo_file(path: str, always_embed: bool=False, tracked_set: Optional[se
         tracked_set = set(git_ls_files())
     info["is_tracked"] = path in tracked_set
 
-    # LFS pointer check
     head = b[:200].decode("utf-8", errors="ignore")
     if head.startswith("version https://git-lfs.github.com/spec/v1") and "git-lfs.github.com/spec/v1" in head:
         info["lfs_pointer"] = True
 
-    # submodule hint
     if path == ".gitmodules":
         info["submodule_hint"] = True
 
-    # content embedding
     text_like_ext = path.endswith((
         ".gradle",".kts",".xml",".md",".txt",".json",".yml",".yaml",".kt",".java",
         ".py",".sh",".bat",".ps1",".properties",".cfg",".ini",".csv",".proto",".tl",
@@ -334,7 +330,6 @@ def read_repo_file(path: str, always_embed: bool=False, tracked_set: Optional[se
         if always_embed or len(b) <= DEFAULT_MAX_TEXT_EMBED_BYTES:
             info["text"] = text
         else:
-            # chunk into ~256 KiB chunks
             chunk_size = 256 * 1024
             chunks = []
             for i in range(0, len(text), chunk_size):
@@ -352,91 +347,9 @@ def read_repo_file(path: str, always_embed: bool=False, tracked_set: Optional[se
 
     return info
 
-# ------------------------- Deep Analysis -------------------------
+# ------------------------- Generic analysis -------------------------
 
-def analyze_gradle_modules() -> Dict[str, Any]:
-    mods = {"settings_files": [], "includes": [], "build_files": [], "warnings": []}
-    for f in ["settings.gradle", "settings.gradle.kts"]:
-        if os.path.exists(f):
-            mods["settings_files"].append(f)
-            try:
-                with open(f, "r", encoding="utf-8") as fh:
-                    s = fh.read()
-                inc = re.findall(r'include\((?P<q>"|\'):(?P<name>[^"\']+)(?P=q)\)', s)
-                inc2 = re.findall(r'include\s+(?P<q>"|\'):(?P<name>[^"\']+)(?P=q)', s)
-                names = sorted(set([m[1] for m in inc] + [m[1] for m in inc2]))
-                mods["includes"].extend(names)
-            except Exception as e:
-                mods["warnings"].append(f"{f}: {type(e).__name__}: {e}")
-    # collect build files
-    for path in list_all_files():
-        if path.endswith(("build.gradle", "build.gradle.kts")):
-            mods["build_files"].append(path)
-    return mods
-
-def analyze_android_project() -> Dict[str, Any]:
-    manis = []
-    for path in list_all_files():
-        if path.endswith("AndroidManifest.xml"):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    t = f.read()
-                app_name = None
-                m = re.search(r'android:name\s*=\s*"([^"]+)"', t)
-                if m:
-                    app_name = m.group(1)
-                manis.append({"path": path, "application_name": app_name})
-            except Exception as e:
-                manis.append({"path": path, "error": f"{type(e).__name__}: {e}"})
-    return {"manifests": manis}
-
-def analyze_compose_and_focus() -> Dict[str, Any]:
-    counts = {
-        "kotlin_files": 0,
-        "composables": 0,
-        "focusable_usages": 0,
-        "onFocusChanged": 0,
-        "bringIntoViewRequester": 0,
-        "chips": 0,
-        "indication_params": 0,
-    }
-    samples = {"composable_decl_paths": [], "chip_paths": [], "focus_paths": []}
-    for path in list_all_files():
-        if path.endswith(".kt"):
-            counts["kotlin_files"] += 1
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    t = f.read()
-                c = t.count("@Composable")
-                counts["composables"] += c
-                if c and len(samples["composable_decl_paths"]) < 20:
-                    samples["composable_decl_paths"].append(path)
-
-                # focus heuristics
-                fc = t.count("Modifier.focusable(") + t.count(".focusable(")
-                counts["focusable_usages"] += fc
-                of = t.count("onFocusChanged(")
-                counts["onFocusChanged"] += of
-                bi = t.count("bringIntoViewRequester(")
-                counts["bringIntoViewRequester"] += bi
-                ic = t.count("indication =")
-                counts["indication_params"] += ic
-
-                # chips
-                if "FilterChip" in t or "AssistChip" in t or "SuggestionChip" in t or "InputChip" in t:
-                    counts["chips"] += 1
-                    if len(samples["chip_paths"]) < 20:
-                        samples["chip_paths"].append(path)
-
-                if fc or of or bi:
-                    if len(samples["focus_paths"]) < 20:
-                        samples["focus_paths"].append(path)
-
-            except Exception:
-                pass
-    return {"counts": counts, "samples": samples}
-
-def language_stats() -> Dict[str, Any]:
+def language_stats() -> Dict[str, float]:
     exts = {}
     for p in list_all_files():
         ext = os.path.splitext(p)[1].lower().lstrip(".") or "(none)"
@@ -445,14 +358,88 @@ def language_stats() -> Dict[str, Any]:
             exts[ext] += os.path.getsize(p)
         except Exception:
             pass
-    # sizes in KB
     return {k: round(v/1024, 2) for k, v in sorted(exts.items(), key=lambda kv: kv[1], reverse=True)}
 
-# ------------------------- Heuristics for Telegram Preanalysis -------------------------
+def detect_stack_files() -> Dict[str, List[str]]:
+    patterns = {
+        "python": ["requirements.txt", "pyproject.toml", "setup.py", "Pipfile", "poetry.lock"],
+        "nodejs": ["package.json", "pnpm-lock.yaml", "yarn.lock", "package-lock.json", "tsconfig.json"],
+        "java_gradle": ["build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts", "gradlew", "gradlew.bat"],
+        "java_maven": ["pom.xml", "mvnw", "mvnw.cmd"],
+        "android": ["AndroidManifest.xml", "gradle.properties"],
+        "ios_swiftpm": ["Package.swift"],
+        "ios_cocoapods": ["Podfile"],
+        "rust": ["Cargo.toml", "Cargo.lock"],
+        "go": ["go.mod", "go.sum"],
+        "php": ["composer.json", "composer.lock"],
+        "ruby": ["Gemfile", "Gemfile.lock"],
+        ".net": [".csproj", ".fsproj", ".vbproj", ".sln", "global.json", "Directory.Build.props", "Directory.Build.targets"],
+        "docker": ["Dockerfile", "docker-compose.yml", "compose.yml"],
+        "k8s": ["k8s/", "kubernetes/", "manifests/"],
+        "terraform": [".tf", ".tf.json"],
+        "bazel": ["WORKSPACE", "BUILD", "BUILD.bazel"],
+        "cmake": ["CMakeLists.txt"],
+        "flutter": ["pubspec.yaml"],
+        "swift": ["Project.swift"],
+        "ios_project": [".xcodeproj", ".xcworkspace"],
+        "make": ["Makefile"],
+    }
 
-def find_related_files(keywords: List[str], limit: int = 60) -> List[str]:
+    files = list_all_files()
+    found: Dict[str, List[str]] = {k: [] for k in patterns}
+    for p in files:
+        lp = p.lower()
+        bn = os.path.basename(lp)
+        for key, pats in patterns.items():
+            for pat in pats:
+                if pat.startswith(".") and bn.endswith(pat):  # extensions like .tf
+                    if bn.endswith(pat):
+                        found[key].append(p)
+                        break
+                elif pat.endswith("/") and pat[:-1] in lp:    # directory hint
+                    found[key].append(p)
+                    break
+                else:
+                    if bn == pat or lp.endswith("/" + pat) or bn.endswith(pat):
+                        found[key].append(p)
+                        break
+    # Clean empty
+    return {k: sorted(set(v)) for k, v in found.items() if v}
+
+def largest_files(n: int = 15) -> List[Dict[str, Any]]:
+    sizes = []
+    for p in list_all_files():
+        try:
+            sizes.append((p, os.path.getsize(p)))
+        except Exception:
+            pass
+    sizes.sort(key=lambda t: t[1], reverse=True)
+    return [{"path": p, "bytes": s} for p, s in sizes[:n]]
+
+def top_dirs_by_count(n: int = 10) -> List[Dict[str, Any]]:
+    cnt = Counter(os.path.dirname(p) or "." for p in list_all_files())
+    most = cnt.most_common(n)
+    return [{"dir": d, "files": c} for d, c in most]
+
+# ------------------------- Generic preanalysis / comment -------------------------
+
+STOPWORDS = {
+    # de + en minimal
+    "the","and","for","with","that","this","from","are","was","were","will","would","you","your","have","has","had",
+    "ein","eine","einer","eines","einem","einen","der","die","das","und","oder","aber","nicht","kein","keine","den","dem",
+    "ist","sind","war","waren","wird","würde","wurde","zu","zum","zur","auf","im","in","am","beim","vom","von","mit","ohne",
+    "einfach","problem","issue","bug","fix","fehler","error","fail","failing","läuft","laufen","run","running","open","opened"
+}
+
+def extract_keywords(text: str, limit: int = 12) -> List[str]:
+    text = (text or "").lower()
+    words = re.findall(r"[a-z0-9_][a-z0-9_\-]{2,}", text, flags=re.IGNORECASE)
+    counts = Counter(w for w in words if w not in STOPWORDS)
+    return [w for w, _ in counts.most_common(limit)]
+
+def find_related_files_by_keywords(keywords: List[str], limit: int = 60) -> List[str]:
     acc = []
-    keys = [k.lower() for k in keywords]
+    keys = [k.lower() for k in keywords if k]
     for p in list_all_files():
         lp = p.lower()
         if any(k in lp for k in keys):
@@ -474,8 +461,6 @@ def post_issue_comment(issue_number: Optional[int], repo: str, token: str, body:
     r = github_api_post_json(url, token, {"body": body})
     if r is None or r.status_code >= 300:
         logging.warning("Failed to post issue comment: %s", getattr(r, "text", "")[:300])
-
-# ------------------------- Label helper -------------------------
 
 def add_contextmap_ready_label(issue_number: Optional[int], repo: str, token: str):
     try:
@@ -499,6 +484,7 @@ def main():
     repo, token = get_repo_env()
     ictx = fetch_issue_context(event, repo, token)
     body = ictx.get("body", "") or ""
+    title = ictx.get("title", "") or ""
 
     # Extract paths and URLs from the triggering body
     ref_paths, ref_urls = extract_paths_and_urls(body)
@@ -506,10 +492,9 @@ def main():
     # Download attachments
     attachments = []
     for u in ref_urls:
-        if "user-images.githubusercontent.com" in u or "/assets/" in u or "github.com" in u and "/releases/download/" in u:
+        if _host_allowed(u):
             logging.info("Downloading attachment: %s", u)
-            meta = download_attachment(u, token)
-            attachments.append(meta)
+            attachments.append(download_attachment(u, token))
         else:
             attachments.append({"url": u, "status": "external-reference"})
 
@@ -517,15 +502,13 @@ def main():
     tracked_set = set(git_ls_files())
     allfiles = list_all_files()
 
-    # Read files, embedding full contents (text chunked if large)
-    file_index = {}
+    file_index: Dict[str, Any] = {}
     total_bytes_embedded = 0
     for p in allfiles:
         always_embed = DEFAULT_ALWAYS_EMBED_REFERENCED and (p in ref_paths)
         info = read_repo_file(p, always_embed=always_embed, tracked_set=tracked_set)
         file_index[p] = info
 
-        # approximate counting for safety logging
         if info.get("is_text") and "text" in info:
             total_bytes_embedded += len(info["text"].encode("utf-8", errors="replace"))
         elif info.get("is_text") and "chunks" in info:
@@ -533,7 +516,7 @@ def main():
         elif not info.get("is_text") and "base64" in info:
             total_bytes_embedded += len(info["base64"])
 
-    # Expose attachments also unter virtuellen Pfaden
+    # Virtual index entries for successfully downloaded attachments
     for att in attachments:
         if att.get("status") == "ok":
             vpath = f"__attachments__/{os.path.basename(att['saved_as'])}"
@@ -550,22 +533,22 @@ def main():
                 finfo["base64"] = att.get("base64", "")
             file_index[vpath] = finfo
 
-    # Deep analysis
+    # Generic analysis
     try:
         repo_size_kb = round(sum(os.path.getsize(p) for p in allfiles if os.path.exists(p)) / 1024, 2)
     except Exception:
         repo_size_kb = None
 
     analysis = {
-        "gradle_modules": analyze_gradle_modules(),
-        "android_project": analyze_android_project(),
-        "compose_focus": analyze_compose_and_focus(),
         "language_bytes_kb": language_stats(),
+        "stack_indicators": detect_stack_files(),
+        "largest_files": largest_files(15),
+        "top_dirs_by_file_count": top_dirs_by_count(10),
         "repo_size_kb": repo_size_kb,
         "file_count": len(allfiles),
     }
 
-    # Build output JSON for solver
+    # Build output JSON
     out = {
         "meta": {
             "generated_at": time.strftime("%Y-%m-%d %H:%M:%S %z"),
@@ -581,7 +564,7 @@ def main():
         },
         "issue_context": {
             "number": ictx.get("issue_number"),
-            "title": ictx.get("title"),
+            "title": title,
             "body": body,
             "referenced_paths": ref_paths,
             "referenced_urls": ref_urls,
@@ -601,13 +584,16 @@ def main():
     with gzip.open(OUT_JSON + ".gz", "wb") as gz:
         gz.write(json.dumps(out, ensure_ascii=False).encode("utf-8"))
 
-    # Summary text
-    comp = analysis.get("compose_focus", {}).get("counts", {})
-    summary_lines = []
-    summary_lines.append(f"Issue #{ictx.get('issue_number')} — {ictx.get('title','').strip()}")
-    summary_lines.append(f"Referenced paths: {len(ref_paths)} | URLs: {len(ref_urls)} | Attachments: {sum(1 for a in attachments if a.get('status')=='ok')}")
-    summary_lines.append(f"Repo files indexed: {len(allfiles)} | Embedded bytes (est.): {total_bytes_embedded}")
-    summary_lines.append(f"Kotlin files: {comp.get('kotlin_files',0)} | @Composable: {comp.get('composables',0)} | focusable(): {comp.get('focusable_usages',0)} | chips: {comp.get('chips',0)}")
+    # Summary
+    # Top 3 languages for compact summary
+    lang = list(analysis.get("language_bytes_kb", {}).items())[:3]
+    lang_str = ", ".join(f"{k}: {v} KB" for k, v in lang) if lang else "n/a"
+    summary_lines = [
+        f"Issue #{ictx.get('issue_number')} — {title.strip()}",
+        f"Referenced paths: {len(ref_paths)} | URLs: {len(ref_urls)} | Attachments: {sum(1 for a in attachments if a.get('status')=='ok')}",
+        f"Repo files indexed: {len(allfiles)} | Embedded bytes (est.): {total_bytes_embedded}",
+        f"Repo size: {analysis.get('repo_size_kb')} KB | Top languages: {lang_str}",
+    ]
     with open(OUT_SUMMARY, "w", encoding="utf-8") as f:
         f.write("\n".join(summary_lines))
 
@@ -616,46 +602,38 @@ def main():
     print(f"Gzipped copy          → {OUT_JSON}.gz")
     print(f"Summary               → {OUT_SUMMARY}")
 
-    # -------- Optional: Post concise PROBLEM + PREANALYSIS comment --------
+    # -------- Optional: generic pre-analysis comment --------
     issue_no = ictx.get("issue_number")
     if POST_ISSUE_COMMENT and issue_no:
-        related = find_related_files(["telegram", "tdlib", "tg", "auth", "login", "code", "qr", "otp", "twofactor", "td lib", "telethon"])
-        docs_present = [p for p in list_all_files() if p.lower().endswith("tools/telegram api readme.txt".lower()) or p.lower().endswith("tools/td lib api scheme.tl".lower())]
+        keywords = extract_keywords(title + " " + body, limit=12)
+        related = find_related_files_by_keywords(keywords, limit=30)
+        stack = analysis.get("stack_indicators", {})
+        stack_preview = "\n".join(f"- {k}: {len(v)} Hinweise" for k, v in stack.items()) or "- (keine gefunden)"
+
         problem = summarize_issue_problem(body)
-        preview_related = "\n".join(f"- `{p}`" for p in related[:20]) or "- (keine offensichtlichen Module gefunden)"
-        preview_docs = "\n".join(f"- `{p}`" for p in docs_present) or "- (nicht gefunden)"
-        short_hints = [
-            "UI-Flows verifizieren (OK/Abbrechen, Navigation, Fokus/DPAD, BringIntoView).",
-            "Eingabedialog für Login-Code korrekt triggern (Zeitpunkt, State).",
-            "TDLib/Telegram-Auth gegen aktuellen Standard prüfen (Single-Device Code-Flow).",
-            "Snackbars/Toasts für Fortschritt/Fehler mit eindeutigen Messages.",
-            "Fehlerfälle: Netzwerk, Rate-Limits, falscher Code, Two-Factor, Session-Refresh.",
-        ]
+        preview_related = "\n".join(f"- `{p}`" for p in related[:20]) or "- (keine offensichtlichen Dateien gefunden)"
+
         comment_body = (
 f"""**ContextMap ready** ✅
 
 ### Problem (aus dem Issue)
 {problem}
 
-### Voranalyse (für den Solver)
-- Referenzierte Pfade erkannt: {len(ref_paths)}  — {", ".join(ref_paths) if ref_paths else "(keine expliziten Pfade)"}  
-- Nachschlagewerke im Repo:
-{preview_docs}
-
-- Vermutlich relevante Module/Dateien (Heuristik):
+### Voranalyse (generisch)
+- Schlüsselwörter (aus Titel/Body): {", ".join(keywords) if keywords else "(keine)"}  
+- Referenzierte Pfade: {len(ref_paths)}  
+- Mögliche relevante Dateien (Heuristik):
 {preview_related}
 
-- Repo-Kurzprofil: Kotlin-Dateien {comp.get('kotlin_files',0)}, @Composable {comp.get('composables',0)}, focusable() {comp.get('focusable_usages',0)}.
+- Build/Stack‑Hinweise (erkannt):
+{stack_preview}
 
-### To‑do‑Hints
-{os.linesep.join(f"- {h}" for h in short_hints)}
-
-**Artefakte**: `solver_input.json`, `summary.txt` (inkl. Deep-Analyse)."""
+**Artefakte**: `solver_input.json`, `summary.txt`."""
         )
         repo_env, token_env = get_repo_env()
         post_issue_comment(issue_no, repo_env, token_env, comment_body)
 
-    # Auto-label context readiness
+    # Auto-label
     evn = os.getenv("GITHUB_EVENT_NAME", "")
     if ADD_LABEL and evn in ("issues", "issue_comment"):
         repo_env, token_env = get_repo_env()
