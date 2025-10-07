@@ -21,6 +21,7 @@ import glob
 import textwrap
 from pathlib import Path
 from typing import List, Tuple, Optional, Set, Dict, Any
+import fnmatch
 
 # ---------- Logging & Heartbeat ----------
 import logging, threading
@@ -223,6 +224,102 @@ def read_new_summary_txt() -> str:
     return ""
 
 
+
+# == Allowed-targets / execution enforcement helpers ==
+def _load_allowed_config() -> tuple[dict, dict]:
+    """Return (allowed_targets, execution) from plan or repository_dispatch client_payload."""
+    import json, os, pathlib
+    allowed = {}
+    execution = {}
+    # 1) From plan written by Bot 1
+    p = pathlib.Path(".github/codex/solver_plan.json")
+    if p.exists():
+        try:
+            plan = json.loads(p.read_text(encoding="utf-8"))
+            allowed = plan.get("allowed_targets") or {}
+            execution = plan.get("execution") or {}
+        except Exception:
+            pass
+    # 2) From client_payload (repository_dispatch)
+    try:
+        evp = event()
+        cp = (evp.get("client_payload") or {}) if isinstance(evp, dict) else {}
+        if cp:
+            allowed = cp.get("allowed_targets") or allowed
+            execution = cp.get("execution") or execution
+    except Exception:
+        pass
+    # sane defaults
+    if not isinstance(allowed, dict):
+        allowed = {}
+    for k in ("modify","create","tests"):
+        if k not in allowed or not isinstance(allowed[k], list):
+            allowed[k] = []
+    if not isinstance(execution, dict):
+        execution = {}
+    if "strict_mode" not in execution:
+        execution["strict_mode"] = False
+    if "dir_rewrite_allowed" not in execution:
+        execution["dir_rewrite_allowed"] = False
+    return allowed, execution
+
+
+def _match_any(path: str, globs: list[str]) -> bool:
+    return any(fnmatch.fnmatch(path, g) for g in (globs or []))
+
+
+def _filter_targets_by_allowed(create_paths: list[str], existing_paths: list[str]) -> tuple[list[str], list[str], list[str]]:
+    """Return (create_ok, existing_ok, rejected)."""
+    allowed, execution = _load_allowed_config()
+    rej = []
+
+    # filter create files
+    create_ok = []
+    for p in create_paths:
+        if _match_any(p, allowed.get("create")):
+            create_ok.append(p)
+        else:
+            rej.append(p)
+
+    # filter existing files/dirs
+    existing_ok = []
+    for p in existing_paths:
+        from pathlib import Path as _P
+        if _P(p).is_dir() or p.endswith('/'):
+            if execution.get("dir_rewrite_allowed", False):
+                existing_ok.append(p)
+            else:
+                rej.append(p)
+            continue
+        if _match_any(p, allowed.get("modify")):
+            existing_ok.append(p)
+        else:
+            rej.append(p)
+
+    return create_ok, existing_ok, rej
+
+
+def _extract_patch_targets(patch_text: str) -> list[str]:
+    if not patch_text:
+        return []
+    out = []
+    for m in re.finditer(r"^diff --git a/(\S+)\s+b/(\S+)\s*$", patch_text, re.M):
+        out.append(m.group(2))
+    return out
+
+
+def _validate_patch_against_allowed(patch_text: str) -> tuple[bool, list[str]]:
+    allowed, execution = _load_allowed_config()
+    if not patch_text.strip():
+        return True, []
+    targets = _extract_patch_targets(patch_text)
+    bad = []
+    for t in targets:
+        if not (_match_any(t, allowed.get("modify")) or _match_any(t, allowed.get("create"))):
+            bad.append(t)
+    if bad and execution.get("strict_mode", False):
+        return False, bad
+    return True, bad
 def read_legacy_context_json() -> Dict[str, Any]:
     p = Path(".codex/context.json")
     if p.exists():
@@ -801,6 +898,19 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
 
         # Ziele bestimmen
         create_paths, existing_paths = choose_targets_from_new_context(ctx_new, ls_files())
+    # # == Enforce allowed_targets on chosen paths ==
+    ok, bad_from_patch = _validate_patch_against_allowed(patch)
+    if not ok:
+        post_comment(num, "❌ Patch enthält verbotene Ziele (strict_mode aktiv). Wechsle in Spec-to-File und filtere Targets.\n```
+" + "\n".join(bad_from_patch) + "\n```")
+        patch = ""
+
+    c_ok, e_ok, rejected = _filter_targets_by_allowed(create_paths, existing_paths)
+    if rejected:
+        post_comment(num, "ℹ️ Solver: Einige angeforderte Ziele sind außerhalb des erlaubten Scopes und werden ignoriert.\n```
+" + "\n".join(rejected[:50]) + "\n```")
+    create_paths, existing_paths = c_ok, e_ok
+
         if not pending:
             pending = list((create_paths + existing_paths))
         if not create_paths and not existing_paths:
@@ -870,6 +980,12 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
             p = Path(target)
             if p.is_dir():
                 for f in p.rglob("*.kt"):
+                    # # == Per-file check inside dir rewrite ==
+                    allowed, execution = _load_allowed_config()
+                    rel = f.as_posix()
+                    if execution.get("strict_mode", False) and not _match_any(rel, allowed.get("modify")):
+                        continue
+
                     try:
                         cur = f.read_text(encoding="utf-8", errors="replace")
                         newc = ai_rewrite_full_file(f.as_posix(), cur, repo_syms, context_full, read_new_summary_txt())
