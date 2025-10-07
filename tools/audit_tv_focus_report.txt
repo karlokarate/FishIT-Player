@@ -1,0 +1,96 @@
+Audit: TV Focus/DPAD
+Generated: 2025-10-06 06:57:01Z
+
+== HORIZONTALE CONTAINER (prüfen/aufrüsten) ==
+app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:1359:    LazyRow(
+app/src/main/java/com/chris/m3usuite/ui/home/StartScreen.kt:1034:                                        androidx.compose.foundation.lazy.LazyRow(
+
+== TV FOUNDATION (verboten) ==
+
+
+== CLICKABLE (prüfen: tvClickable bevorzugen) ==
+
+
+== SCREENS: onPreviewKeyEvent / DPAD (prüfen) ==
+
+
+== BUTTONS OHNE TV-FOCUS (prüfen) ==
+app/src/main/java/com/chris/m3usuite/ui/forms/TvTextFieldRow.kt:                TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/forms/TvTextFieldRow.kt:                TextButton(onClick = { showDialog = false }) { Text("Abbrechen") }
+app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt:                TextButton(
+app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt:                TextButton(
+app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt:        Button(onClick = { state.toggleActive() }) {
+app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt:        OutlinedButton(
+app/src/main/java/com/chris/m3usuite/ui/state/StatusViews.kt:            Button(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
+app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt:                            TextButton(
+app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt:                                TextButton(
+app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt:                                TextButton(
+app/src/main/java/com/chris/m3usuite/ui/screens/SeriesDetailScreen.kt:                                                    androidx.compose.material3.TextButton(
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                Button(
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:        Button(
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    Button(
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    Button(onClick = { pinDialogMode = PinMode.Set }) { Text("PIN festlegen…") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                        Button(onClick = { pinDialogMode = PinMode.Change }) { Text("PIN ändern…") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                        TextButton(onClick = { pinDialogMode = PinMode.Clear }) { Text("PIN entfernen") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    TextButton(onClick = { scope.launch { store.setSeedPrefixesCsv("DE,US,UK,VOD,FOR") } }) { Text("Standard: DE/US/UK/VOD/FOR") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    TextButton(onClick = { scope.launch { store.setSeedPrefixesCsv(availablePrefixes.joinToString(",")) } }) { Text("Alle aktivieren") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    Button(
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                        TextButton(
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                        TextButton(onClick = { showLogout = true }) { Text("Abmelden/Reset") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                        TextButton(onClick = { val st = authRepo.authState.value; scope.launch { snackHost.toast("Telegram-Status: $st") } }) { Text("Status (Debug)") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                                TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                                TextButton(onClick = { showLogout = false }) { Text("Abbrechen") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                        Button(
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                        Button(
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                            TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                            TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:            Button(
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    Button(
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:        confirmButton = { TextButton(onClick = { onDone(text); onDismiss() }) { Text("OK") } },
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                                TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                                TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                                TextButton(onClick = { repo.requestQrLogin() }) { Text("Neu laden") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                            TextButton(onClick = { repo.requestQrLogin() }) { Text("QR erneut anfordern") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    TextButton(onClick = { if (code.isNotBlank()) { busy = true; repo.sendCode(code) } }) { Text("Bestätigen") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    TextButton(onClick = { if (password.isNotBlank()) { busy = true; repo.sendPassword(password) } }) { Text("Bestätigen") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    TextButton(onClick = { }) { Text("Weiter") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    TextButton(onClick = onDismiss) { Text("Schließen") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                else -> { TextButton(onClick = {}) { Text("OK") } }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    TextButton(onClick = { repo.requestQrLogin() }) { Text("Erneut versuchen") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    Button(
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                    TextButton(onClick = onDismiss) { Text("Schließen") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                TextButton(onClick = onDismiss) { Text("Schließen") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:    TextButton(onClick = { show = true }) { Text("Externen Player auswählen…") }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                Button(onClick = { onPick(ri.activityInfo.packageName); show = false }) { Text(label) }
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:            TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:        dismissButton = { TextButton(onClick = { open = false }) { Text("Abbrechen") } }
+app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:            TextButton(onClick = { selected = emptySet() }) { Text("Abbrechen") }
+app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:                TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:                TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:            TextButton(onClick = { onRemove(selected.toList()); selected = emptySet() }) { Text("Entfernen (${selected.size})") }
+app/src/main/java/com/chris/m3usuite/ui/components/controls/ActionIcons.kt:    IconButton(
+app/src/main/java/com/chris/m3usuite/ui/components/controls/ActionIcons.kt:    IconButton(
+
+== BRING-INTO-VIEW (roh/per-Item) ==
+
+
+== DOPPELTE FOKUS-INDIKATOREN (prüfen) ==
+
+
+== SSOT: FOKUS-UTILITIES AUSSERHALB ZENTRALER MODULE ==
+
+
+== SUMMARY ==
+Horizontal-Container (roh): 1
+TV foundation (verboten):  0
+Clickable (roh):           0
+Screens-DPAD:              0
+Buttons ohne TV-Focus:     58 (advisory)
+Bring-into-view (roh):     0
+Doppelte Fokus-Indikator.: 0 (advisory)
+SSOT-Verstöße (Defs):      0
+Total findings:            1

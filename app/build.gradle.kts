@@ -173,7 +173,7 @@ android {
         compose = true
         buildConfig = true
     }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
 
     // >>> Angepasst: Split-APKs pro ABI + Universal-APK
     splits {
@@ -240,14 +240,14 @@ tasks.withType<JavaCompile>().configureEach {
     exclude("**/com/chris/m3usuite/reference/**")
 }
 
-    dependencies {
-        val compose = "1.7.6" // aktuellstes Compose (Feb 2025)
+dependencies {
+    val compose = "1.7.6" // aktuellstes Compose (Feb 2025)
 
     // Core + Compose
-    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.activity:activity-compose:1.10.0")
     implementation("androidx.activity:activity-ktx:1.10.0")
-    implementation("androidx.navigation:navigation-compose:2.8.5")
+    implementation("androidx.navigation:navigation-compose:2.9.5")
 
     implementation("androidx.compose.ui:ui:$compose")
     implementation("androidx.compose.material3:material3:1.3.1")
@@ -259,10 +259,10 @@ tasks.withType<JavaCompile>().configureEach {
     debugImplementation("androidx.compose.ui:ui-test-manifest:$compose")
 
     // Material (für XML-Themes)
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("com.google.android.material:material:1.13.0")
 
     // Lifecycle Compose (für LocalLifecycleOwner etc.)
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.6")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
 
     // Networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -274,37 +274,38 @@ tasks.withType<JavaCompile>().configureEach {
     // Room removed
 
     // DataStore
-    implementation("androidx.datastore:datastore-preferences:1.1.2")
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
 
     // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.10.0")
+    implementation("androidx.work:work-runtime-ktx:2.10.5")
 
     // Paging 3
-    implementation("androidx.paging:paging-runtime-ktx:3.3.2")
-    implementation("androidx.paging:paging-compose:3.3.2")
+    implementation("androidx.paging:paging-runtime-ktx:3.3.6")
+    implementation("androidx.paging:paging-compose:3.3.6")
 
     // Coil (Bilder) – Coil 3 + OkHttp Backend
-    implementation("io.coil-kt.coil3:coil:3.0.0")
-    implementation("io.coil-kt.coil3:coil-compose:3.0.0")
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.0")
-    implementation("io.coil-kt.coil3:coil-network-core:3.0.0")
+    implementation("io.coil-kt.coil3:coil:3.3.0")
+    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
+    implementation("io.coil-kt.coil3:coil-network-core:3.3.0")
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
     // Firebase Cloud Messaging (optional; used for TDLib push integration)
-    implementation("com.google.firebase:firebase-messaging:24.0.0")
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-messaging")
 
     // JankStats (performance diagnostics)
     implementation("androidx.metrics:metrics-performance:1.0.0-beta01")
 
     // QR (ZXing core for QR bitmap generation)
-    implementation("com.google.zxing:core:3.5.2")
+    implementation("com.google.zxing:core:3.5.3")
 
     // Media3 (ExoPlayer + UI + DataSource)
     implementation("androidx.media3:media3-exoplayer:1.5.0")
     implementation("androidx.media3:media3-ui:1.5.0")
-    implementation("androidx.media3:media3-exoplayer-hls:1.5.0")
+    implementation("androidx.media3:media3-exoplayer-hls:1.8.0")
 
     // Compose for TV (Material)
     implementation("androidx.tv:tv-material:1.0.1")
@@ -318,8 +319,8 @@ tasks.withType<JavaCompile>().configureEach {
 
     // Tests
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 
     // ObjectBox (high-performance local DB)
     implementation("io.objectbox:objectbox-android:3.7.1")
