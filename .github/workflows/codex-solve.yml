@@ -3,6 +3,8 @@ name: Codex – Solver (Bot 2)
 on:
   repository_dispatch:
     types: [codex-solver-context-ready]
+  issues:
+    types: [labeled]
   workflow_dispatch:
     inputs:
       issue:
@@ -19,11 +21,35 @@ permissions:
 
 jobs:
   solve:
-    if: ${{ !(github.event_name == 'issue_comment' && github.actor == 'github-actions[bot]') }}
+    # Startbedingungen:
+    # - bei repository_dispatch (Bot 1)
+    # - oder wenn Label "contextmap-ready" gesetzt wird
+    # - oder bei manuellem issue_comment durch User
+    if: >
+      (
+        github.event_name == 'repository_dispatch'
+      ) || (
+        github.event_name == 'issues' &&
+        github.event.action == 'labeled' &&
+        github.event.label.name == 'contextmap-ready'
+      ) || (
+        github.event_name == 'issue_comment' &&
+        github.actor != 'github-actions[bot]'
+      )
+
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
     steps:
+      - name: Debug event payload
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Action: ${{ github.event.action || '' }}"
+          echo "Label: ${{ github.event.label.name || '' }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Payload (first 500 chars):"
+          echo "${{ toJson(github.event.client_payload) }}" | head -c 500 || true
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
