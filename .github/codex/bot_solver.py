@@ -744,6 +744,7 @@ def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old
             context_full = s + ("\n\n" + ctx_excerpt if ctx_excerpt else "")
 
         # Ziele bestimmen: bevorzugt neuer Context, sonst Legacy/Kommentar
+        create_paths, existing_paths = choose_targets_from_new_context(ctx_new, ls_files())
         if not pending:
             pending = (create_paths + existing_paths)[:]
         if not create_paths and not existing_paths:
@@ -954,7 +955,6 @@ def main():
         else:
             wf = os.environ.get('SOLVER_BUILD_WORKFLOW', 'release-apk.yml')
             branch = sh('git rev-parse --abbrev-ref HEAD').strip()
-            since = dispatch_build(wf, branch, {'build_type': 'debug', 'issue': str(num)})
             run = wait_build_result(wf, branch, since, timeout_s=1800)
             concl = (run or {}).get('conclusion', '')
             if concl == 'success':
