@@ -186,13 +186,25 @@ def add_contextmap_ready_label(issue_number: Optional[int], repo: str, token: st
     if r is None or getattr(r, "status_code", 599) >= 300:
         logging.warning("Adding 'contextmap-ready' failed.")
 
-def notify_solverbot(repo: str, token: str, payload: Dict[str, Any]):
-    if not (NOTIFY_SOLVER and repo and token): return
+def notify_solverbot(repo: str, token: str, payload: dict) -> bool:
+    if not (repo and token):
+        logging.warning("repository_dispatch skipped: repo or token empty")
+        return False
     url = f"https://api.github.com/repos/{repo}/dispatches"
     event = {"event_type": "codex-solver-context-ready", "client_payload": payload}
-    r = github_api_post_json(url, token, event)
-    if r is None or getattr(r, "status_code", 599) >= 300:
-        logging.warning("repository_dispatch failed.")
+    try:
+        r = github_api_post_json(url, token, event)
+        code = getattr(r, "status_code", None)
+        text = (getattr(r, "text", "") or "")[:400]
+        if code is None or code >= 300:
+            logging.warning("repository_dispatch failed: %s %s", code, text)
+            return False
+        logging.info("repository_dispatch OK: %s", code)
+        return True
+    except Exception as e:
+        logging.warning("repository_dispatch exception: %s", e)
+        return False
+
 
 # ---------- References / Attachments ----------
 PATH_PATTERN = re.compile(r"""(?P<path>
