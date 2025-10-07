@@ -4,10 +4,13 @@ import android.app.Service
 import android.content.Intent
 import android.os.*
 import android.util.Log
-import com.chris.m3usuite.telegram.TdLibReflection
+import androidx.core.app.NotificationCompat
 import com.chris.m3usuite.BuildConfig
+import com.chris.m3usuite.telegram.TdLibReflection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -37,7 +40,7 @@ class TelegramTdlibService : Service() {
         const val REPLY_CHAT_TITLES = 202
     }
 
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val clients = mutableSetOf<Messenger>()
     private val authFlow = MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
     private val downloadFlow = MutableStateFlow(false)
@@ -53,6 +56,13 @@ class TelegramTdlibService : Service() {
 
     private val chatCache = mutableMapOf<Long, ChatSummary>()
     private val authTokens = ArrayDeque<String>()
+
+    // Connectivity tracking
+    private var netCallback: android.net.ConnectivityManager.NetworkCallback? = null
+    private var lastNetType: TdLibReflection.Net? = null
+
+    // Foreground state
+    @Volatile private var isForeground = false
 
     private val handler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
@@ -107,6 +117,35 @@ class TelegramTdlibService : Service() {
     private val messenger = Messenger(handler)
 
     override fun onBind(intent: Intent?): IBinder = messenger.binder
+
+    override fun onCreate() {
+        super.onCreate()
+        val cm = getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val req = android.net.NetworkRequest.Builder().build()
+        val cb = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) { setNetType(cm) }
+            override fun onLost(network: android.net.Network) { setNetType(cm) }
+            override fun onCapabilitiesChanged(network: android.net.Network, caps: android.net.NetworkCapabilities) { setNetType(cm) }
+        }
+        netCallback = cb
+        kotlin.runCatching { cm.registerNetworkCallback(req, cb) }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Unregister connectivity callback
+        kotlin.runCatching {
+            val cm = getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            netCallback?.let { cm.unregisterNetworkCallback(it) }
+        }
+        netCallback = null
+        // Stop foreground if running
+        stopFgSafe()
+        // Cancel coroutines
+        kotlin.runCatching { scope.cancel() }
+        // Best-effort: clear clients
+        synchronized(clients) { clients.clear() }
+    }
 
     private fun startTdlib(apiId: Int, apiHash: String) {
         if (!TdLibReflection.available()) {
@@ -173,7 +212,8 @@ class TelegramTdlibService : Service() {
                             val chatId = obj.javaClass.getDeclaredField("chatId").apply { isAccessible = true }.getLong(obj)
                             val messageId = obj.javaClass.getDeclaredField("messageId").apply { isAccessible = true }.getLong(obj)
                             val content = obj.javaClass.getDeclaredField("newContent").apply { isAccessible = true }.get(obj)
-                            indexMessageContent(chatId, messageId, content)
+                            // Date unknown in this delta; preserve existing or derive if possible inside indexer
+                            indexMessageContent(chatId, messageId, content, null)
                         }
                         // UpdateFile: persist localPath when available
                         name.endsWith("TdApi\$UpdateFile") -> {
@@ -191,6 +231,7 @@ class TelegramTdlibService : Service() {
                                     }
                                 }
                         }
+                        // Chat updates
                         name.endsWith("TdApi\$UpdateNewChat") -> {
                             val chat = runCatching { obj.javaClass.getDeclaredField("chat").apply { isAccessible = true }.get(obj) }.getOrNull()
                             if (chat != null) updateChatFromObject(chat)
@@ -227,6 +268,7 @@ class TelegramTdlibService : Service() {
                             val chatList = runCatching { obj.javaClass.getDeclaredField("chatList").apply { isAccessible = true }.get(obj) }.getOrNull()
                             if (chatId != null) markChatListMembership(chatId, chatList, false)
                         }
+                        // Watch for auth option tokens (for SMS retriever / anti-spam tokens)
                         name.endsWith("TdApi\$UpdateOption") -> {
                             val optionName = runCatching { obj.javaClass.getDeclaredField("name").apply { isAccessible = true }.get(obj) as? String }.getOrNull()
                             if (optionName == "authentication_token") {
@@ -248,7 +290,7 @@ class TelegramTdlibService : Service() {
                             }
                         }
                     }
-                } catch (_: Throwable) {}
+                } catch (_: Throwable) { }
             }
             // Observe auth changes and broadcast
             scope.launch {
@@ -270,7 +312,7 @@ class TelegramTdlibService : Service() {
             return
         }
         clientHandle?.let {
-            Log.i("TdSvc", "Sending SetTdlibParameters (apiId present=${id>0})")
+            Log.i("TdSvc", "Sending SetTdlibParameters (apiId present=${id > 0})")
             TdLibReflection.sendSetTdlibParameters(it, params)
             val key = com.chris.m3usuite.telegram.TelegramKeyStore.getOrCreateDatabaseKey(applicationContext)
             Log.i("TdSvc", "Sending CheckDatabaseEncryptionKey (${key.size} bytes)")
@@ -283,40 +325,55 @@ class TelegramTdlibService : Service() {
             val chatId = msg.javaClass.getDeclaredField("chatId").apply { isAccessible = true }.getLong(msg)
             val messageId = TdLibReflection.extractMessageId(msg) ?: return
             val content = runCatching { msg.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(msg) }.getOrNull()
-            indexMessageContent(chatId, messageId, content)
+            val messageDate = runCatching { TdLibReflection.extractMessageDate(msg) }.getOrNull()
+            indexMessageContent(chatId, messageId, content, messageDate)
         } catch (_: Throwable) {}
     }
 
-    private fun indexMessageContent(chatId: Long, messageId: Long, content: Any?) {
+    private fun indexMessageContent(chatId: Long, messageId: Long, content: Any?, messageDate: Long? = null) {
         try {
             val fileObj = TdLibReflection.findFirstFile(content) ?: return
             val info = TdLibReflection.extractFileInfo(fileObj) ?: return
             val unique = TdLibReflection.extractFileUniqueId(fileObj)
             val supports = TdLibReflection.extractSupportsStreaming(content)
             val caption = kotlin.runCatching {
-                // fabricate a temporary message-like container to use helper
-                TdLibReflection.extractFileName(content) ?: "Telegram $messageId"
-            }.getOrNull()
+                TdLibReflection.extractCaption(content)
+                    ?: TdLibReflection.extractFileName(content)
+                    ?: "Telegram $messageId"
+            }.getOrDefault("Telegram $messageId")
             val duration = TdLibReflection.extractDurationSecs(content)
             val mime = TdLibReflection.extractMimeType(content)
             val dims = TdLibReflection.extractVideoDimensions(content)
             val parsed = com.chris.m3usuite.telegram.TelegramHeuristics.parse(caption)
-            val date = System.currentTimeMillis() / 1000
             val thumbFileId = TdLibReflection.extractThumbFileId(content)
+
             scope.launch(Dispatchers.IO) {
                 kotlin.runCatching {
-                    val box = com.chris.m3usuite.data.obx.ObxStore.get(applicationContext).boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+                    val store = com.chris.m3usuite.data.obx.ObxStore.get(applicationContext)
+                    val box = store.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
                     val existing = box.query(
                         com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId)
                             .and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(messageId))
                     ).build().findFirst()
+
+                    // Resolve best-effort message date:
+                    // 1) explicit argument (UpdateNewMessage/history)
+                    // 2) attempt from content if possible
+                    // 3) keep existing row date if present
+                    // 4) fallback to current time in seconds
+                    val derivedFromContent = if (content != null) runCatching { TdLibReflection.extractMessageDate(content) }.getOrNull() else null
+                    val resolvedDate = messageDate
+                        ?: derivedFromContent
+                        ?: existing?.date
+                        ?: (System.currentTimeMillis() / 1000)
+
                     val row = existing ?: com.chris.m3usuite.data.obx.ObxTelegramMessage(chatId = chatId, messageId = messageId)
                     row.fileId = info.fileId
                     row.fileUniqueId = unique
                     row.supportsStreaming = supports
                     row.caption = caption
-                    row.captionLower = caption?.lowercase()
-                    row.date = date
+                    row.captionLower = caption.lowercase()
+                    row.date = resolvedDate
                     row.localPath = info.localPath
                     row.thumbFileId = thumbFileId
                     row.durationSecs = duration
@@ -335,7 +392,7 @@ class TelegramTdlibService : Service() {
         clientHandle?.let {
             try {
                 val sanitized = sanitizePhone(phone)
-                android.util.Log.i("TdSvc", "Submitting phone number to TDLib (masked)")
+                Log.i("TdSvc", "Submitting phone number to TDLib (masked)")
                 val tokens = synchronized(authTokens) { authTokens.toList() }
                 val settings = TdLibReflection.PhoneAuthSettings(
                     allowFlashCall = allowFlash,
@@ -499,7 +556,8 @@ class TelegramTdlibService : Service() {
             val content = runCatching {
                 messageObj.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(messageObj)
             }.getOrNull()
-            indexMessageContent(chatId, messageId, content)
+            val messageDate = runCatching { TdLibReflection.extractMessageDate(messageObj) }.getOrNull()
+            indexMessageContent(chatId, messageId, content, messageDate)
         }
     }
 
@@ -639,19 +697,11 @@ class TelegramTdlibService : Service() {
     }
 
     private fun updateForeground(auth: TdLibReflection.AuthState, downloading: Boolean) {
-        if (auth == TdLibReflection.AuthState.AUTHENTICATED && !downloading) stopFgSafe() else startFgSafe()
-    }
-
-    // Monitor connectivity and inform TDLib about network type changes
-    override fun onCreate() {
-        super.onCreate()
-        val cm = getSystemService(CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-        val req = android.net.NetworkRequest.Builder().build()
-        cm.registerNetworkCallback(req, object : android.net.ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: android.net.Network) { setNetType(cm) }
-            override fun onLost(network: android.net.Network) { setNetType(cm) }
-            override fun onCapabilitiesChanged(network: android.net.Network, caps: android.net.NetworkCapabilities) { setNetType(cm) }
-        })
+        if (auth == TdLibReflection.AuthState.AUTHENTICATED && !downloading) {
+            stopFgSafe()
+        } else {
+            startFgSafe()
+        }
     }
 
     private fun setNetType(cm: android.net.ConnectivityManager) {
@@ -664,29 +714,44 @@ class TelegramTdlibService : Service() {
             caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> TdLibReflection.Net.MOBILE
             else -> TdLibReflection.Net.OTHER
         }
-        TdLibReflection.sendSetNetworkType(client, net)
+        if (lastNetType != net) {
+            lastNetType = net
+            TdLibReflection.sendSetNetworkType(client, net)
+        }
     }
 
     // --- Foreground helpers ---
     private fun startFgSafe() {
+        if (isForeground) return
         try {
             val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
             val chId = "tdlib"
-            if (android.os.Build.VERSION.SDK_INT >= 26) {
+            if (Build.VERSION.SDK_INT >= 26) {
                 val ch = android.app.NotificationChannel(chId, "Telegram", android.app.NotificationManager.IMPORTANCE_LOW)
                 nm.createNotificationChannel(ch)
             }
-            val notif = androidx.core.app.NotificationCompat.Builder(this, chId)
+            val notif = NotificationCompat.Builder(this, chId)
                 .setContentTitle("Telegram aktiv")
                 .setContentText("Anmeldung/Sync läuft…")
                 .setSmallIcon(android.R.drawable.stat_sys_download)
                 .setOngoing(true)
                 .build()
             startForeground(1001, notif)
+            isForeground = true
         } catch (_: Throwable) {}
     }
 
     private fun stopFgSafe() {
-        try { stopForeground(STOP_FOREGROUND_DETACH) } catch (_: Throwable) {}
+        if (!isForeground) return
+        try {
+            if (Build.VERSION.SDK_INT >= 24) {
+                stopForeground(Service.STOP_FOREGROUND_DETACH)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+        } catch (_: Throwable) {} finally {
+            isForeground = false
+        }
     }
 }

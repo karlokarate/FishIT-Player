@@ -2,55 +2,104 @@ name: Codex – ContextMap (Bot 1)
 
 on:
   issues:
-    types: [opened, edited]
+    types: [opened, edited, labeled]
+  issue_comment:
+    types: [created, edited]
   workflow_dispatch:
-    inputs:
-      comment:
-        description: "/codex … (optional, für manuellen Test)"
-        required: false
-        default: ""
 
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write
+  contents: read
   issues: write
+  pull-requests: write
 
+# Verhindert parallele Doppel-Läufe für dasselbe Issue
 concurrency:
-  group: codex-plan-issue-${{ github.event.issue.number }}
+  group: codex-contextmap-${{ github.event_name }}-${{ github.event.issue.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  plan:
+  contextmap:
+    # Loop-Schutz: nicht erneut laufen, wenn der Bot selbst kommentiert hat
+    if: ${{ !(github.event_name == 'issue_comment' && github.actor == 'github-actions[bot]') }}
+
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      - name: Install minimal deps
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade openai requests
+          pip install -r .github/codex/requirements.txt
 
-      - name: Prepare env for workflow_dispatch
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: echo "DISPATCH_COMMENT=${{ inputs.comment }}" >> $GITHUB_ENV
-
-      - name: Export GH_EVENT_NAME
-        run: echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
-
-      - name: Run ContextMap Bot (low)
+      - name: Run Bot 1 (ContextMap)
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}               # <— direkt
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}      # gpt-5
-          OPENAI_REASONING_EFFORT: low
-
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GH_EVENT_NAME: ${{ env.GH_EVENT_NAME }}
-          DISPATCH_COMMENT: ${{ env.DISPATCH_COMMENT }}
-        run: python .github/codex/bot_contextmap.py
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          # Kommentar hier deaktiviert – kommentiert ggf. der separate Step unten
+          CODEX_POST_ISSUE_COMMENT: 'false'
+        run: |
+          mkdir -p .github/codex/context
+          python .github/codex/bot_contextmap.py
+
+      - name: Upload context artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-context
+          path: |
+            .github/codex/context/**
+
+      - name: Read summary
+        id: summaryout
+        shell: bash
+        run: |
+          set -eo pipefail
+          SUMMARY_PATH=".github/codex/context/summary.txt"
+          if [[ -s "$SUMMARY_PATH" ]]; then
+            if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+              {
+                echo "summary<<EOF"
+                cat "$SUMMARY_PATH"
+                echo "EOF"
+              } >> "$GITHUB_OUTPUT" || {
+                echo "::warning::Could not write to GITHUB_OUTPUT; printing summary below"
+                cat "$SUMMARY_PATH" || true
+              }
+            else
+              echo "::warning::GITHUB_OUTPUT not set; printing summary below"
+              cat "$SUMMARY_PATH" || true
+            fi
+          else
+            if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+              echo "summary=ContextMap completed." >> "$GITHUB_OUTPUT" || true
+            else
+              echo "::notice::ContextMap completed."
+            fi
+          fi
+
+      - name: Comment summary to issue
+        if: ${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && always() }}
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            **ContextMap ready** ✅
+            - Referenced paths: embedded
+            - Attachments: embedded 1:1
+            - Repo files indexed: see artifact (`codex-context`)
+            - Summary:
+              ```
+              ${{ steps.summaryout.outputs.summary }}
+              ```

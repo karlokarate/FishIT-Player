@@ -1,37 +1,34 @@
 name: Codex – Solver (Bot 2)
 
 on:
-  # Automatisch, sobald Bot 1 (ContextMap) das Label setzt
+  workflow_run:
+    workflows: ["Codex – ContextMap (Bot 1)"]
+    types: [completed]
   issues:
     types: [labeled]
-  # Manuell anstossbar für Tests
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
       issue:
-        description: "Issue-Nummer (optional; überschreibt Event)"
+        description: "Issue-Nummer (optional; überschreibt Kontext)"
+        required: false
+        default: ""
+      build_type:
+        description: "Optional: Build-Dispatch (debug|release)"
         required: false
         default: ""
 
 permissions:
   contents: write
+  issues: write
   pull-requests: write
   actions: write
-  issues: write
-
-# Keine parallelen Solver-Läufe pro Issue/Dispatch
-concurrency:
-  group: codex-solve-${{ github.event.issue.number || inputs.issue || github.run_id }}
-  cancel-in-progress: false
 
 jobs:
   solve:
-    # Label-Trigger NUR bei 'contextmap-ready' oder manueller Dispatch
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issues' &&
-       github.event.action == 'labeled' &&
-       github.event.label.name == 'contextmap-ready')
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -39,42 +36,68 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
-      - name: Show tool versions
-        run: |
-          git --version
-          python --version
-          patch --version || true
-
-      - name: Install Python deps
+      - name: Install dependencies (solver)
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade openai requests unidiff
+          pip install -r .github/codex/requirements-solver.txt
 
-      - name: Export env (GH_EVENT_NAME, ISSUE_NUMBER)
+      - name: Determine ISSUE_NUMBER
+        id: issue
+        shell: bash
         run: |
-          echo "GH_EVENT_NAME=${{ github.event_name }}" >> $GITHUB_ENV
-          echo "ISSUE_NUMBER=${{ inputs.issue }}" >> $GITHUB_ENV
+          set -euo pipefail
+          case "${{ github.event_name }}" in
+            workflow_run)
+              # Best effort: try to get issue number from context artifact
+              if [[ -f ".github/codex/context/solver_input.json" ]]; then
+                num=$(jq -r '.issue_number // empty' ".github/codex/context/solver_input.json" || true)
+                [[ -n "$num" ]] && echo "num=$num" >> "$GITHUB_OUTPUT" || true
+              fi
+              ;;
+            issues)
+              echo "num=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+              ;;
+            issue_comment)
+              echo "num=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "num=${{ github.event.inputs.issue }}" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
 
-      - name: Run Solver (Bot 2)
+      - name: Run Bot 2 (Solver)
         env:
-          # OpenAI
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}  # optional/self-host
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }} # z.B. gpt-5
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
           OPENAI_REASONING_EFFORT: high
 
-          # GitHub/CI
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GH_EVENT_NAME: ${{ env.GH_EVENT_NAME }}
+          GH_EVENT_NAME: ${{ github.event_name }}
+          ISSUE_NUMBER: ${{ steps.issue.outputs.num }}
+        run: |
+          python .github/codex/bot_solver.py
 
-          # Optionaler Build, den der Solver nach PR triggert
-          SOLVER_BUILD_WORKFLOW: ${{ vars.SOLVER_BUILD_WORKFLOW || 'release-apk.yml' }}
-          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
-        run: python .github/codex/bot_solver.py
+      - name: Upload rejects (if any)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: solver-rejects
+          path: |
+            **/*.rej
+            **/*.orig
+            .github/codex/context/**
+          if-no-files-found: ignore

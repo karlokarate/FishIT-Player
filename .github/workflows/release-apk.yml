@@ -1,155 +1,72 @@
-name: release-apk
+name: Android – Build APK
 
 on:
   workflow_dispatch:
     inputs:
       build_type:
-        description: "Build type: debug or release"
+        description: "Build-Variante (debug | release)"
         required: false
-        default: "release"
-        type: choice
-        options: ["debug", "release"]
-      abis:
-        description: "ABIs (comma separated): arm64-v8a,armeabi-v7a,universal"
-        required: false
-        default: "arm64-v8a,armeabi-v7a"
-      ignore_missing_tdlib_v7a:
-        description: "Ignore missing v7a TDLib (true/false)"
-        required: false
-        default: "false"
+        default: "debug"
       issue:
-        description: "Issue number (optional, used by Bot 3 to map logs)"
+        description: "Issue-Nummer (optional, nur Info)"
         required: false
         default: ""
 
 permissions:
   contents: read
-  actions: write     # neu: für workflow_dispatch (Bot 3)
-  issues: write      # neu: um bei Failure Label 'solver-error' ans Issue zu hängen
 
 jobs:
   build:
-    name: Build ${{ inputs.build_type }} (${{ inputs.abis }})
     runs-on: ubuntu-latest
-    env:
-      BUILD_TYPE: ${{ inputs.build_type }}
-      ABIS: ${{ inputs.abis }}
-      IGNORE_TDLIB_V7A: ${{ inputs.ignore_missing_tdlib_v7a }}
-      ISSUE_NUMBER: ${{ inputs.issue }}
+    timeout-minutes: 60
 
     steps:
-      - name: Checkout (full)
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Java (Temurin 17)
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
-          java-version: "17"
+          distribution: temurin
+          java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept licenses & Install Platform/Build-Tools
+      - name: Compute Gradle task
+        id: task
+        shell: bash
         run: |
-          yes | sdkmanager --licenses
-          # bevorzugt API 35; fallback 34
-          sdkmanager "platforms;android-35" "build-tools;35.0.0" || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
+          case "${{ github.event.inputs.build_type }}" in
+            release) echo "task=:app:assembleRelease" ;;
+            *) echo "task=:app:assembleDebug" ;;
+          esac | tee -a "$GITHUB_OUTPUT"
 
-      - name: Gradle cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
+      - name: Build APK
+        run: ./gradlew ${{ steps.task.outputs.task }} -x test --no-daemon --stacktrace
 
-      - name: Prepare build matrix info
-        id: prep
+      - name: Locate APKs
+        id: apks
+        shell: bash
         run: |
-          echo "ISSUE_NUMBER=${ISSUE_NUMBER}"
-          if [ -n "${ISSUE_NUMBER}" ]; then
-            echo "issue:#${ISSUE_NUMBER}"
+          set -euo pipefail
+          mapfile -t FILES < <(find app -type f -path "*/build/outputs/apk/*/*.apk" -print | sort)
+          if [[ ${#FILES[@]} -eq 0 ]]; then
+            echo "Keine APK gefunden." >&2
+            exit 1
           fi
-          # Gradle tasks
-          if [ "${BUILD_TYPE}" = "release" ]; then
-            echo "TASK=:app:assembleRelease" >> $GITHUB_OUTPUT
-          else
-            echo "TASK=:app:assembleDebug" >> $GITHUB_OUTPUT
-          fi
-          # Simple ABI hint (falls im Projekt genutzt)
-          echo "ABI_FLAGS=${ABIS}" >> $GITHUB_OUTPUT
+          printf 'APK: %s\n' "${FILES[@]}"
+          printf '%s\n' "${FILES[@]}" > "${{ runner.temp }}/apk_list.txt"
 
-      - name: Show Gradle version
-        run: ./gradlew --version
-
-      - name: Build (${{ steps.prep.outputs.TASK }})
-        id: build
-        # Falls der Build scheitert, soll der Job 'failure' werden (Bleibt so).
-        run: |
-          set -o pipefail
-          # Marker in Log schreiben (für Mapping)
-          if [ -n "${ISSUE_NUMBER}" ]; then
-            echo "ISSUE_NUMBER=${ISSUE_NUMBER}"
-            echo "issue:#${ISSUE_NUMBER}"
-          fi
-          # Optional ABI-Flags via Gradle-Property (projektabhängig)
-          ./gradlew --no-daemon --stacktrace -Pcodex.abis="${ABIS}" ${{ steps.prep.outputs.TASK }} 2>&1 | tee gradle_build.log
-
-      - name: Collect APK/AAB artifacts
-        if: always()
-        run: |
-          mkdir -p artifacts
-          # APKs (debug/release) – ggf. an Projektpfade anpassen
-          find . -type f -path "*/build/outputs/apk/*/*.apk" -exec cp -v {} artifacts/ \; || true
-          # AAB Bundles
-          find . -type f -path "*/build/outputs/bundle/*/*.aab" -exec cp -v {} artifacts/ \; || true
-          # Proguard Mapping
-          find . -type f -path "*/build/outputs/mapping/*/mapping.txt" -exec cp -v {} artifacts/ \; || true
-          # Gradle log
-          cp -v gradle_build.log artifacts/ || true
-
-      - name: Upload build artifacts
-        if: always()
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ github.run_id }}-${{ inputs.build_type }}
-          path: artifacts
-          if-no-files-found: warn
+          name: apk-${{ github.event.inputs.build_type || 'debug' }}
+          path: |
+            ${{ runner.temp }}/apk_list.txt
+            app/build/outputs/apk/**/**/*.apk
 
-      # ====== Bot 3 Trigger – Label ======
-      - name: Label issue for Bot 3 (solver-error)
-        if: failure() && inputs.issue != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Context Info (optional)
+        if: ${{ github.event.inputs.issue != '' }}
         run: |
-          echo "Label 'solver-error' to issue #${{ inputs.issue }} (on build failure)"
-          curl -sSf -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/${{ github.repository }}/issues/${{ inputs.issue }}/labels \
-            -d '{"labels":["solver-error"]}'
-
-      # ====== Bot 3 Trigger – Direkter Dispatch ======
-      - name: Dispatch Bot 3 (codex-triage.yml)
-        if: failure() && inputs.issue != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Dispatch triage workflow for issue #${{ inputs.issue }}"
-          curl -sSf -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/${{ github.repository }}/actions/workflows/codex-triage.yml/dispatches \
-            -d '{"ref":"${{ github.ref_name }}","inputs":{"issue":"${{ inputs.issue }}"}}'
-
-      - name: Fail if task failed
-        if: failure()
-        run: |
-          echo "::error::Build failed. Artifacts and logs have been uploaded."
-          exit 1
+          echo "Issue: #${{ github.event.inputs.issue }}"
+          echo "Build type: ${{ github.event.inputs.build_type || 'debug' }}"
