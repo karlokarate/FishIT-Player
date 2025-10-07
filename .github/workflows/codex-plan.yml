@@ -1,24 +1,29 @@
 name: Codex – ContextMap (Bot 1)
 
 on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue number (optional)"
+        required: false
   issues:
     types: [opened, edited, labeled]
   issue_comment:
     types: [created, edited]
-  workflow_dispatch:
 
 permissions:
-  contents: read
-  issues: write
+  contents: write         # Bot 1 darf Kontextdateien schreiben/committen (falls nötig)
+  issues: write           # Labels + Kommentare
   pull-requests: write
-  actions: write
+  actions: write          # repository_dispatch an Bot 2
 
 concurrency:
-  group: codex-contextmap-${{ github.event_name }}-${{ github.event.issue.number || github.run_id }}
+  group: codex-contextmap-${{ github.event.issue.number || inputs.issue || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   contextmap:
+    # verhindere Endlosschleife durch Bot-Kommentare
     if: ${{ !(github.event_name == 'issue_comment' && github.actor == 'github-actions[bot]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -41,15 +46,30 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r .github/codex/requirements.txt
 
+      - name: Detect Issue #
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+          ISSUE="${{ inputs.issue }}"
+          if [ -z "$ISSUE" ] && [ "${{ github.event.issue.number }}" != "" ]; then ISSUE="${{ github.event.issue.number }}"; fi
+          if [ -z "$ISSUE" ]; then
+            echo "::error::No issue number available"; exit 1
+          fi
+          echo "issue=$ISSUE" >> "$GITHUB_OUTPUT"
+
       - name: Run Bot 1 (ContextMap)
         env:
+          # GitHub Context
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-          CODEX_ISSUE_NUMBER: ${{ github.event.issue.number }}
 
-          # Deep Reasoning (LLM), per Issue: /codex fast | /codex bal | /codex deep | /codex
+          # Issue (vereinheitlicht)
+          CODEX_ISSUE_NUMBER: ${{ steps.detect.outputs.issue }}
+
+          # Deep Reasoning / Limits
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
           CODEX_DEEP_REASONING: 'true'
@@ -58,18 +78,18 @@ jobs:
           CODEX_MAX_FILES_FOR_REASONER: '100'
           CODEX_MAX_BYTES_PER_FILE_FOR_REASONER: '500000'
 
-          # Tiefer Kontext in solver_input.json
-          CODEX_MAX_TEXT_EMBED_BYTES: '10485760'   # 10 MiB pro Textdatei
-          CODEX_MAX_BIN_BASE64_BYTES: '5242880'    # 5 MiB pro Binärdatei
+          # Tiefer Kontext
+          CODEX_MAX_TEXT_EMBED_BYTES: '10485760'
+          CODEX_MAX_BIN_BASE64_BYTES: '5242880'
 
           # Verhalten
-          CODEX_POST_ISSUE_COMMENT: 'true'         # Kurz-Zusammenfassung in den Issue schreiben
-          CODEX_ADD_LABEL: 'false'                 # Label setzt der Workflow nach Verify
-          CODEX_NOTIFY_SOLVER: 'true'              # repository_dispatch an Bot 2
-
+          CODEX_POST_ISSUE_COMMENT: 'true'
+          CODEX_ADD_LABEL: 'false'          # Label setzt der Workflow nach Verify
+          CODEX_NOTIFY_SOLVER: 'true'       # zusätzlich feuern wir unten repository_dispatch
         run: |
+          set -e
           mkdir -p .github/codex/context
-          python .github/codex/bot_contextmap.py
+          python -u .github/codex/bot_contextmap.py
 
       - name: Verify context outputs (this run)
         id: verify
@@ -85,33 +105,67 @@ jobs:
           fi
           RUN_DIR=$(jq -r '.run_dir' "$META" 2>/dev/null || echo "")
           CTX=$(jq -r '.context' "$META" 2>/dev/null || echo "solver_input.json")
-          PLN=$(jq -r '.plan' "$META" 2>/dev/null || echo "solver_plan.json")
+          SUM="summary.txt"
           INP="$RUN_DIR/$CTX"
-          PLN="$RUN_DIR/$PLN"
-          if [[ -s "$INP" && -s "$PLN" ]]; then
+          SUMSRC="$RUN_DIR/$SUM"
+
+          # Kopiere/vereinheitliche in die vom Solver erwarteten Pfade
+          mkdir -p .github/codex/context
+          if [[ -s "$INP" ]]; then cp -f "$INP" .github/codex/context/solver_input.json; fi
+          if [[ -s "$SUMSRC" ]]; then cp -f "$SUMSRC" .github/codex/context/summary.txt; fi
+
+          if [[ -s ".github/codex/context/solver_input.json" ]]; then
+            echo "::notice ::Verified solver_input.json"
+          else
+            echo "::warning ::solver_input.json missing"; true
+          fi
+          if [[ -s ".github/codex/context/summary.txt" ]]; then
+            echo "::notice ::Verified summary.txt"
+          else
+            echo "::warning ::summary.txt missing"; true
+          fi
+
+          if [[ -s ".github/codex/context/solver_input.json" ]]; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
             echo "run_dir=$RUN_DIR" >> "$GITHUB_OUTPUT"
-            echo "::notice ::Verified outputs in $RUN_DIR"
           else
             echo "ok=false" >> "$GITHUB_OUTPUT"
-            echo "::warning ::Outputs missing or empty: $INP | $PLN"
           fi
 
       - name: Add 'contextmap-ready' label
-        if: ${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && steps.verify.outputs.ok == 'true' }}
+        if: ${{ steps.verify.outputs.ok == 'true' }}
         uses: actions/github-script@v7
         with:
           script: |
-            const issue_number = context.payload.issue?.number;
-            if (!issue_number) {
-              core.info('No issue number available; skipping label.');
-              return;
-            }
+            const issue_number = Number("${{ steps.detect.outputs.issue }}");
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number,
               labels: ['contextmap-ready']
+            });
+
+      - name: Post ContextMap summary (notice)
+        if: always()
+        run: |
+          if [ -f .github/codex/context/summary.txt ]; then
+            echo "::notice::ContextMap Summary:"
+            sed -n '1,200p' .github/codex/context/summary.txt || true
+          else
+            echo "::notice::No summary.txt generated"
+          fi
+
+      - name: Notify Solver (repository_dispatch)
+        if: ${{ steps.verify.outputs.ok == 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = Number("${{ steps.detect.outputs.issue }}");
+            await github.request('POST /repos/{owner}/{repo}/dispatches', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'codex-solver-context-ready',
+              client_payload: { issue_number }
             });
 
       - name: Upload context artifact (compressed)
