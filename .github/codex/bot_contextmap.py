@@ -1,28 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ContextMap Bot (generic, Bot 1) – mit optionaler Deep-Reasoning-Phase
+ContextMap Bot (generic, Bot 1) – mit optionaler Deep-Reasoning-Phase + Run-Ordner + Profilsteuerung
 
-Aufgaben:
-- Issue/Kommentar einlesen, Probleme/Anforderungen aus natürlicher Sprache extrahieren.
-- Repo generisch voranalysieren (Sprachen, Struktur, größte Dateien, Stack-Indikatoren).
-- Kandidatendateien ermitteln + (optional) Datei-Inhalte für Reasoning auswählen.
-- Kurz-Zusammenfassung als Kommentar posten (optional).
-- Vollständigen Kontext (solver_input.json) + Fahrplan (solver_plan.json) schreiben.
-- Optional: LLM-gestützte Deep-Analyse (Reasoning) → Ergebnis strukturiert in solver_plan.json/llm_deep_dive.
-- Optional: Label setzen, Bot 2 via repository_dispatch informieren.
-
-ENV-Schalter:
-- CODEX_POST_ISSUE_COMMENT = true|false        (default: true)
-- CODEX_ADD_LABEL          = true|false        (default: true)
-- CODEX_NOTIFY_SOLVER      = true|false        (default: true)
-- CODEX_DEEP_REASONING     = true|false        (default: true, aber nur aktiv mit OPENAI_API_KEY)
-- CODEX_MAX_FILES_FOR_REASONER                (default: 25)
-- CODEX_MAX_BYTES_PER_FILE_FOR_REASONER       (default: 100000)
-- CODEX_REASONING_MODEL                       (default: "gpt-5")
-- OPENAI_API_KEY / OPENAI_BASE_URL            (BASE_URL optional, default https://api.openai.com)
-- OPENAI_REASONING_EFFORT                     (default: "high")
-- CODEX_ISSUE_NUMBER                          (optional Override)
+- Schreibt Outputs in run-spezifischen Ordner: .github/codex/context/run-{GITHUB_RUN_ID}-issue-{#}-{$SHA7}
+- Legt last_run.json im Basispfad ab, damit der Workflow gezielt den aktuellen Run verifizieren kann.
+- Profilsteuerung per Issue-Befehl: /codex fast | /codex bal | /codex deep | /codex  (=> deep)
 """
 
 import os
@@ -62,10 +45,17 @@ DEFAULT_ALWAYS_EMBED_REFERENCED = True
 WORK_DIR = os.path.abspath(".")
 CTX_DIR = os.path.join(".github", "codex", "context")
 CTX_DIR_ABS = os.path.abspath(CTX_DIR)
-OUT_JSON = os.path.join(CTX_DIR, "solver_input.json")
-OUT_PLAN = os.path.join(CTX_DIR, "solver_plan.json")
-OUT_SUMMARY = os.path.join(CTX_DIR, "summary.txt")
-ATTACH_DIR = os.path.join(CTX_DIR, "attachments")
+
+# Run-ident
+RUN_ID = os.getenv("GITHUB_RUN_ID", str(int(time.time())))
+SHORT_SHA = (os.getenv("GITHUB_SHA", "")[:7] or "nosha")
+
+# Pfade (werden nach Ermittlung der Issue-Nummer konkret gesetzt)
+RUN_DIR = None
+OUT_JSON = None
+OUT_PLAN = None
+OUT_SUMMARY = None
+ATTACH_DIR = None
 
 POST_ISSUE_COMMENT = os.getenv("CODEX_POST_ISSUE_COMMENT", "true").strip().lower() in {"1", "true", "yes"}
 ADD_LABEL = os.getenv("CODEX_ADD_LABEL", "true").strip().lower() in {"1", "true", "yes"}
@@ -90,6 +80,27 @@ ALLOWED_ATTACHMENT_HOSTS = {
 }
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
+# --- Profile per Issue command (/codex fast|bal|deep) -------------------------
+def _detect_codex_profile(text: str) -> Optional[str]:
+    if not text:
+        return None
+    t = re.sub(r"\s+", " ", text.lower()).strip()
+    for m in re.finditer(r"/codex(?:\s+\w+)?", t):
+        cmd = m.group(0)
+        if " fast" in cmd:
+            return "fast"
+        if " bal" in cmd or " balanced" in cmd:
+            return "balanced"
+        return "deep"
+    return None
+
+def _apply_profile_overrides(profile: str) -> Tuple[int, int, str]:
+    if profile == "fast":
+        return (20, 120_000, "medium")
+    if profile == "balanced":
+        return (50, 250_000, "high")
+    return (100, 500_000, "high")
 
 # ---------- Utilities ----------
 def run(cmd: List[str], cwd: Optional[str] = None) -> Tuple[int, str, str]:
@@ -132,7 +143,6 @@ def file_sha256(b: bytes) -> str:
 
 def ensure_dirs():
     os.makedirs(CTX_DIR, exist_ok=True)
-    os.makedirs(ATTACH_DIR, exist_ok=True)
 
 # ---------- Event / API ----------
 def load_event_payload() -> Dict[str, Any]:
@@ -153,32 +163,36 @@ def github_api_get(url: str, token: str, accept: str = "application/vnd.github+j
     r.raise_for_status()
     return r
 
-def github_api_post_json(url: str, token: str, payload: dict) -> requests.Response:
+def github_api_post_json(url: str, token: str, payload: dict) -> Optional["requests.Response"]:
     headers = {"Accept": "application/vnd.github+json", "Content-Type": "application/json"}
     if token: headers["Authorization"] = f"Bearer {token}"
-    return requests.post(url, headers=headers, json=payload, timeout=60)
+    try:
+        return requests.post(url, headers=headers, json=payload, timeout=60)
+    except Exception as e:
+        logging.warning("HTTP POST failed to %s: %s", url, e)
+        return None
 
 def post_issue_comment(issue_number: Optional[int], repo: str, token: str, body: str):
     if not (issue_number and repo and token and body): return
     url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
     r = github_api_post_json(url, token, {"body": body})
-    if r is None or r.status_code >= 300:
-        logging.warning("Failed to post issue comment: %s", getattr(r, "text", "")[:300])
+    if r is None or getattr(r, "status_code", 599) >= 300:
+        logging.warning("Failed to post issue comment.")
 
 def add_contextmap_ready_label(issue_number: Optional[int], repo: str, token: str):
     if not (issue_number and repo and token and ADD_LABEL and issue_number): return
     url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/labels"
     r = github_api_post_json(url, token, {"labels": ["contextmap-ready"]})
-    if r is None or r.status_code >= 300:
-        logging.warning("Adding 'contextmap-ready' failed: %s", getattr(r, 'text', '')[:300])
+    if r is None or getattr(r, "status_code", 599) >= 300:
+        logging.warning("Adding 'contextmap-ready' failed.")
 
 def notify_solverbot(repo: str, token: str, payload: Dict[str, Any]):
     if not (NOTIFY_SOLVER and repo and token): return
     url = f"https://api.github.com/repos/{repo}/dispatches"
     event = {"event_type": "codex-solver-context-ready", "client_payload": payload}
     r = github_api_post_json(url, token, event)
-    if r is None or r.status_code >= 300:
-        logging.warning("repository_dispatch failed: %s", getattr(r, "text", "")[:300])
+    if r is None or getattr(r, "status_code", 599) >= 300:
+        logging.warning("repository_dispatch failed.")
 
 # ---------- References / Attachments ----------
 PATH_PATTERN = re.compile(r"""(?P<path>
@@ -212,8 +226,14 @@ def download_attachment(url: str, token: str) -> Dict[str, Any]:
         r = github_api_get(url, token, accept="application/octet-stream")
     except Exception:
         headers = {"Authorization": f"Bearer {token}"} if token else {}
-        r = requests.get(url, headers=headers, allow_redirects=True, timeout=60)
-        r.raise_for_status()
+        try:
+            import requests as _rq
+            r = _rq.get(url, headers=headers, allow_redirects=True, timeout=60)
+            r.raise_for_status()
+        except Exception as e2:
+            meta["status"] = "error"
+            meta["error"] = str(e2)
+            return meta
     data = r.content
     sha = file_sha256(data)
     meta["sha256"] = sha
@@ -284,7 +304,7 @@ def read_repo_file(path: str, always_embed: bool=False, tracked_set: Optional[se
         if always_embed or len(b) <= DEFAULT_MAX_TEXT_EMBED_BYTES:
             info["text"] = txt
         else:
-            chunk_size = 256 * 1024
+            chunk_size = int(os.getenv("CODEX_CHUNK_SIZE_BYTES", str(256*1024)))
             info["chunks"] = [{"index": i // chunk_size, "text": txt[i:i+chunk_size]} for i in range(0, len(txt), chunk_size)]
     else:
         info["is_text"] = False
@@ -471,7 +491,6 @@ def call_reasoner_openai(system_prompt: str, bundle: Dict[str, Any]) -> Optional
         return None
     url = f"{OPENAI_BASE_URL}/v1/chat/completions"
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {OPENAI_API_KEY}"}
-    # Hartes Schema: Wir bitten ausdrücklich um JSON ohne Prosa.
     user_prompt = (
         "You will receive a JSON bundle with issue/context and selected file contents.\n"
         "Produce a STRICT JSON object with these keys:\n"
@@ -496,7 +515,6 @@ def call_reasoner_openai(system_prompt: str, bundle: Dict[str, Any]) -> Optional
         ],
         "temperature": 0.2,
     }
-    # Einige Modelle akzeptieren 'reasoning': {'effort': 'high'} – optional
     data["reasoning"] = {"effort": REASONING_EFFORT}
 
     try:
@@ -506,7 +524,6 @@ def call_reasoner_openai(system_prompt: str, bundle: Dict[str, Any]) -> Optional
             return None
         payload = resp.json()
         content = payload["choices"][0]["message"]["content"]
-        # Robust gegen Backticks
         m = re.search(r"```(?:json)?\s*(\{.*\})\s*```", content, flags=re.DOTALL)
         raw = m.group(1) if m else content
         return json.loads(raw)
@@ -549,11 +566,40 @@ def main():
             logging.warning("CODEX_ISSUE_NUMBER='%s' is not numeric; ignoring.", ISSUE_NUMBER_OVERRIDE)
 
     if issue_no is None and os.getenv("GITHUB_EVENT_NAME","") in ("issues","issue_comment"):
-        # Fallback: #123 im Text
         m = re.search(r"(?:^|\s)#(\d+)\b", (title + " " + body))
         if m:
             issue_no = int(m.group(1))
             logging.info("Issue number parsed from text: #%s", issue_no)
+
+    # --- Run-spezifische Pfade initialisieren ---
+    global RUN_DIR, OUT_JSON, OUT_PLAN, OUT_SUMMARY, ATTACH_DIR
+    safe_issue = f"{issue_no}" if issue_no is not None else "noissue"
+    RUN_DIR = os.path.join(CTX_DIR, f"run-{RUN_ID}-issue-{safe_issue}-{SHORT_SHA}")
+    os.makedirs(RUN_DIR, exist_ok=True)
+    OUT_JSON = os.path.join(RUN_DIR, "solver_input.json")
+    OUT_PLAN = os.path.join(RUN_DIR, "solver_plan.json")
+    OUT_SUMMARY = os.path.join(RUN_DIR, "summary.txt")
+    ATTACH_DIR = os.path.join(RUN_DIR, "attachments")
+    os.makedirs(ATTACH_DIR, exist_ok=True)
+    with open(os.path.join(CTX_DIR, "last_run.json"), "w", encoding="utf-8") as fh:
+        json.dump(
+            {"run_id": RUN_ID, "issue_number": issue_no, "short_sha": SHORT_SHA,
+             "run_dir": RUN_DIR.replace("\\", "/"),
+             "context": "solver_input.json", "plan": "solver_plan.json"},
+            fh, ensure_ascii=False, indent=2
+        )
+
+    # --- Profil per Issue-Befehl (/codex ...) anwenden ---
+    selected_profile = _detect_codex_profile((title or "") + "\n" + (body or ""))
+    if selected_profile:
+        pf_files, pf_bytes, pf_effort = _apply_profile_overrides(selected_profile)
+        global MAX_FILES_FOR_REASONER, MAX_BYTES_PER_FILE_FOR_REASONER, REASONING_EFFORT, DEEP_REASONING
+        MAX_FILES_FOR_REASONER = pf_files
+        MAX_BYTES_PER_FILE_FOR_REASONER = pf_bytes
+        REASONING_EFFORT = pf_effort
+        DEEP_REASONING = True  # Profile implizieren Deep-Analyse
+        logging.info("Codex profile from issue: %s (files=%s, bytes/file=%s, effort=%s)",
+                     selected_profile, MAX_FILES_FOR_REASONER, MAX_BYTES_PER_FILE_FOR_REASONER, REASONING_EFFORT)
 
     # References & attachments
     ref_paths, ref_urls = extract_paths_and_urls(body)
@@ -757,6 +803,10 @@ def main():
         act_list = [f"- {a.get('title','(ohne Titel)')}" for a in ac] or ["- (keine Aktionen geliefert)"]
         llm_head = f"\n**LLM-Breakdown (Top 3)**\n" + "\n".join(head_list) + "\n**LLM-Aktionen (Top 3)**\n" + "\n".join(act_list)
 
+    profile_line = ""
+    if selected_profile:
+        profile_line = f"\n- Profil: **{selected_profile}** (files={MAX_FILES_FOR_REASONER}, bytes/file={MAX_BYTES_PER_FILE_FOR_REASONER}, effort={REASONING_EFFORT})"
+
     summary_lines = [
         f"Issue #{issue_no} — {title.strip()}",
         f"Keywords: {', '.join(keywords) if keywords else '(keine)'}",
@@ -777,7 +827,7 @@ def main():
         short_problem = (plan["issue"]["summary"] or "(kein Body)").strip()
         short_problem = (short_problem[:600] + "…") if len(short_problem) > 600 else short_problem
         comment = (
-f"""**ContextMap ready** ✅
+f"""**ContextMap ready** ✅{profile_line}
 
 **Kurz-Zusammenfassung**
 - Keywords: {', '.join(keywords) if keywords else '(keine)'}
@@ -791,6 +841,7 @@ f"""**ContextMap ready** ✅
         )
         post_issue_comment(issue_no, repo, token, comment)
 
+    # Label/Dispatch optional (best effort – no crash if offline)
     add_contextmap_ready_label(issue_no, repo, token)
 
     pointer = {
@@ -801,6 +852,7 @@ f"""**ContextMap ready** ✅
         "context_json_path": os.path.relpath(OUT_JSON, WORK_DIR).replace("\\", "/"),
         "plan_json_path": os.path.relpath(OUT_PLAN, WORK_DIR).replace("\\", "/"),
         "keywords": keywords[:10],
+        "profile": selected_profile or "env/default"
     }
     if llm_result:
         pointer["plan_excerpt"] = {
