@@ -11,6 +11,7 @@ permissions:
   contents: read
   issues: write
   pull-requests: write
+  actions: write   # erlaubt repository_dispatch im eigenen Repo
 
 # Verhindert parallele Doppel-Läufe für dasselbe Issue
 concurrency:
@@ -19,17 +20,18 @@ concurrency:
 
 jobs:
   contextmap:
-    # Loop-Schutz: nicht erneut laufen, wenn der Bot selbst kommentiert hat
+    # Loop-Schutz: nicht erneut laufen, wenn unser eigener Bot kommentiert hat
     if: ${{ !(github.event_name == 'issue_comment' && github.actor == 'github-actions[bot]') }}
-
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
+          with:
           fetch-depth: 0
+          lfs: true
+          submodules: recursive
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -47,8 +49,10 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-          # Kommentar hier deaktiviert – kommentiert ggf. der separate Step unten
-          CODEX_POST_ISSUE_COMMENT: 'false'
+          # Verhalten steuerbar:
+          CODEX_POST_ISSUE_COMMENT: 'true'      # Kurz-Zusammenfassung in den Issue schreiben
+          CODEX_ADD_LABEL: 'true'               # Label "contextmap-ready" setzen
+          CODEX_NOTIFY_SOLVER: 'true'           # repository_dispatch an Bot 2 versuchen
         run: |
           mkdir -p .github/codex/context
           python .github/codex/bot_contextmap.py
@@ -60,46 +64,3 @@ jobs:
           name: codex-context
           path: |
             .github/codex/context/**
-
-      - name: Read summary
-        id: summaryout
-        shell: bash
-        run: |
-          set -eo pipefail
-          SUMMARY_PATH=".github/codex/context/summary.txt"
-          if [[ -s "$SUMMARY_PATH" ]]; then
-            if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-              {
-                echo "summary<<EOF"
-                cat "$SUMMARY_PATH"
-                echo "EOF"
-              } >> "$GITHUB_OUTPUT" || {
-                echo "::warning::Could not write to GITHUB_OUTPUT; printing summary below"
-                cat "$SUMMARY_PATH" || true
-              }
-            else
-              echo "::warning::GITHUB_OUTPUT not set; printing summary below"
-              cat "$SUMMARY_PATH" || true
-            fi
-          else
-            if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-              echo "summary=ContextMap completed." >> "$GITHUB_OUTPUT" || true
-            else
-              echo "::notice::ContextMap completed."
-            fi
-          fi
-
-      - name: Comment summary to issue
-        if: ${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && always() }}
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          body: |
-            **ContextMap ready** ✅
-            - Referenced paths: embedded
-            - Attachments: embedded 1:1
-            - Repo files indexed: see artifact (`codex-context`)
-            - Summary:
-              ```
-              ${{ steps.summaryout.outputs.summary }}
-              ```
