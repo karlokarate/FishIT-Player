@@ -26,3 +26,7 @@ Migrated call-sites (v1)
 Notes
 - Internal player persists resume periodically; external result reporting is best-effort (no strict position).
 - Future extensions: pass series/episode metadata into request for richer telemetry and result handling.
+
+Fish* relation
+- FishVodContent can expose a bottom-end Play action in tiles; call sites wire `onPlayDirect` using `PlaybackLauncher` when enabled.
+- Details remain the primary place for complete action sets and resume handling via `MediaActionBar`.

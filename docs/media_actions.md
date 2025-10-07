@@ -14,6 +14,10 @@ Usage
 - Telemetry: OnClick handlers invoke `Telemetry.event("ui_action_*", attrs)` with route context.
 - Gate by `BuildConfig.MEDIA_ACTIONBAR_V1` (default ON). Screens fall back to legacy chips/buttons when OFF.
 
+Fish* integration
+- In grid/list tiles, small actions live in FishTile bottom‑end slots via `FishActions` (e.g., Play, Assign). These are not focusable; DPAD stays on tiles.
+- In details, use MediaActionBar as the single visible action surface; avoid duplicating mini actions from tiles.
+
 Guidelines
 - Order: Resume? → Play → Trailer? → Add/Remove → OpenEPG? → Share?
 - Primary action uses filled TV button; others outlined/text.

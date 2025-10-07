@@ -12,7 +12,11 @@ Package
   - `HeroScrim.kt` — shared hero image with top/bottom gradient scrim
 
 Flags
-- `BuildConfig.DETAIL_SCAFFOLD_V1` (default ON). Screens can opt-in and keep legacy header as fallback.
+- `BuildConfig.DETAIL_SCAFFOLD_V1` (default ON). Screens can opt‑in and keep legacy header as fallback.
+
+Relation to Fish*
+- Fish* (tiles/rows) centralizes list/grid visuals outside details. Detail screens continue to use the scaffold + MediaActionBar.
+- Tile appearance (tokens, focus, content) in list views is independent from the detail scaffold.
 
 Usage patterns
 - VOD/Series: Use `DetailHeader(...)` as the first item of the screen’s LazyColumn (or `DetailScaffold` as wrapper) and pass `content` items below.

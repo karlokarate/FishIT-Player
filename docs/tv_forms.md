@@ -39,3 +39,5 @@ Guidelines
 Feature flag
 - `BuildConfig.TV_FORMS_V1` (default ON). Screens can opt-in and keep legacy controls as fallback.
 
+Notes
+- Focus visuals come from FocusKit. Forms live alongside Fish* tiles but are independent: FishTile/FishRow do not apply row frames or DPAD overrides to form sections.

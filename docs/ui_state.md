@@ -24,3 +24,6 @@ Status views
 Adoption (v1)
 - Detail screens (VOD/Series/Live) migrated to UiState gating.
 - Start/Library pending: they have multiple data sources; will adopt collector per flow and map combined emptiness.
+
+Fish* note
+- UiState complements Fish*: when state is Success the screen composes rows via FishRow + FishTile; Loading/Empty/Error render the status views.
