@@ -1,8 +1,7 @@
 name: Codex – Solver (Bot 2)
 true:
   repository_dispatch:
-    types:
-    - codex-solver-context-ready
+    types: [codex-solver-context-ready, codex-solver-dispatch]
   workflow_dispatch:
     inputs:
       issue:
