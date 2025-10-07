@@ -515,7 +515,6 @@ def call_reasoner_openai(system_prompt: str, bundle: Dict[str, Any]) -> Optional
         ],
         "temperature": 0.2,
     }
-    data["reasoning"] = {"effort": REASONING_EFFORT}
 
     try:
         resp = requests.post(url, headers=headers, json=data, timeout=120)
