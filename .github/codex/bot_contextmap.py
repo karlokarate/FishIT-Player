@@ -12,7 +12,7 @@ import os
 import re
 import sys
 import json
-import time
+import time as pytime
 import gzip
 import base64
 import hashlib
@@ -47,7 +47,7 @@ CTX_DIR = os.path.join(".github", "codex", "context")
 CTX_DIR_ABS = os.path.abspath(CTX_DIR)
 
 # Run-ident
-RUN_ID = os.getenv("GITHUB_RUN_ID", str(int(time.time())))
+RUN_ID = os.getenv("GITHUB_RUN_ID", str(int(pytime.time())))
 SHORT_SHA = (os.getenv("GITHUB_SHA", "")[:7] or "nosha")
 
 # Pfade (werden nach Ermittlung der Issue-Nummer konkret gesetzt)
@@ -454,7 +454,7 @@ def pick_candidate_files(files: List[str], keywords: List[str], limit: int = 30)
 def suggest_new_files(keywords: List[str], stack: Dict[str, List[str]], top_langs: List[str], issue_no: Optional[int]) -> List[str]:
     base = []
     key = keywords[0] if keywords else "feature"
-    n = issue_no or int(time.time())
+    n = issue_no or int(pytime.time())
     base += [f"tests/{key}_spec.md", f"docs/issue-{n}-decision-record.md"]
     if "python" in stack or "py" in top_langs: base.append(f"tests/test_{key}.py")
     if "nodejs" in stack or "ts" in top_langs or "js" in top_langs: base.append(f"tests/{key}.spec.ts")
@@ -524,7 +524,7 @@ def call_reasoner_openai(system_prompt: str, bundle: Dict[str, Any]) -> Optional
         "{\n"
         "  \"problem_breakdown\": [string...],\n"
         "  \"root_cause_hypotheses\": [string...],\n"
-        "  \"affected_areas\": [{\"path\": string, \"reason\": string}],\n"
+        "  \"affected_areas\": {\"path\": string, \"reason\": string}],\n"
         "  \"concrete_actions\": [ {\"title\": string, \"steps\": [string...] } ],\n"
         "  \"tests_to_add\": [string...],\n"
         "  \"risks\": [string...],\n"
@@ -719,7 +719,7 @@ def main():
     # -------- Kontext JSON --------
     context_out = {
         "meta": {
-            "generated_at": time.strftime("%Y-%m-%d %H:%M:%S %z"),
+            "generated_at": pytime.strftime("%Y-%m-%d %H:%M:%S %z"),
             "repo": repo,
             "event_name": os.getenv("GITHUB_EVENT_NAME", ""),
             "ref": os.getenv("GITHUB_REF", ""),
@@ -870,14 +870,13 @@ def main():
 # --- SAFE: write summary into $GITHUB_OUTPUT with a unique delimiter ---
     ghout = os.environ.get("GITHUB_OUTPUT")
     if ghout and os.path.isfile(OUT_SUMMARY):
-        import hashlib, time, random
-
+        import hashlib, random  # NOTE: do not import 'time' here to avoid shadowing
         # Inhalt laden und \r entfernen (Windows-CRs)
         with open(OUT_SUMMARY, "r", encoding="utf-8", errors="replace") as sf:
             s = sf.read().replace("\r", "")
 
         # Eindeutigen Delimiter generieren, der sicher NICHT im Inhalt vorkommt
-        base = f"{time.time()}:{random.random()}:{len(s)}"
+        base = f"{pytime.time()}:{random.random()}:{len(s)}"
         delim = "SUMMARY_" + hashlib.sha1(base.encode("utf-8")).hexdigest()
 
         # Falls extrem unwahrscheinlich der Delimiter im Inhalt steckt -> neu generieren
