@@ -1,4 +1,3 @@
-\
 """
 Allowed-targets & execution guardrails shared across bots.
 """
