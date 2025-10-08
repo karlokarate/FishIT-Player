@@ -1,114 +1,61 @@
-name: Codex – Solver (Bot 2)
-true:
+name: codex-solve
+
+on:
   repository_dispatch:
-    types: [codex-solver-context-ready, codex-solver-dispatch]
+    types: [codex-solver-context-ready]
   workflow_dispatch:
     inputs:
       issue:
-        description: Issue number (optional; falls back to context JSON)
+        description: "Issue number (optional manual run)"
         required: false
-  issues:
-    types:
-    - labeled
-  issue_comment:
-    types:
-    - created
+
 permissions:
   contents: write
   pull-requests: write
   issues: write
   actions: read
-concurrency:
-  group: codex-solve-${{ github.event.issue.number || github.event.client_payload.issue_number
-    || inputs.issue || github.run_id }}
-  cancel-in-progress: false
+
 jobs:
   solve:
-    name: Run Solver (Bot 2)
     runs-on: ubuntu-latest
-    if: 'github.event_name == ''workflow_dispatch'' ||
-
-      github.event_name == ''repository_dispatch'' ||
-
-      (github.event_name == ''issues'' && contains(join(github.event.label.*.name,
-      '',''), ''contextmap-ready'')) ||
-
-      (github.event_name == ''issue_comment'' && ( startsWith(github.event.comment.body,
-      ''/solve'') || startsWith(github.event.comment.body, ''/codex'') ))
-
-      '
     steps:
-    - name: Checkout (full, with LFS + submodules)
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        lfs: true
-        submodules: recursive
-        persist-credentials: true
-        token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    - name: Install deps
-      run: 'python -m pip install --upgrade pip
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-        pip install -r .github/codex/requirements.txt
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-        '
-    - name: Echo trigger context (debug)
-      run: 'echo "event_name=${{ github.event_name }}"
+      - name: Install requirements
+        shell: bash
+        run: |
+          pip install -U pip
+          if [ -f .github/codex/requirements.txt ]; then
+            pip install -r .github/codex/requirements.txt
+          else
+            pip install 'requests>=2.32.3,<3' 'chardet>=5.2.0,<6' 'openai>=1.40.0,<2' 'unidiff>=0.7.5,<1'
+          fi
 
-        echo "issue_from_inputs=${{ inputs.issue }}"
+      - name: Unpack shared-lib (optional)
+        shell: bash
+        run: |
+          if [ ! -d .github/codex/lib ] && [ -f .github/codex/codex-shared-lib.zip ]; then
+            python - <<'PY'
+import zipfile, os
+z=zipfile.ZipFile('.github/codex/codex-shared-lib.zip')
+z.extractall('.github/codex/lib')
+print('unzipped shared lib')
+PY
+          fi
 
-        echo "issue_from_payload=${{ github.event.client_payload.issue_number }}"
-
-        echo "issue_from_issue_obj=${{ github.event.issue.number }}"
-
-        '
-    - name: Run Solver (Bot 2)
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GITHUB_REPOSITORY: ${{ github.repository }}
-        GITHUB_EVENT_PATH: ${{ github.event_path }}
-        GITHUB_EVENT_NAME: ${{ github.event_name }}
-        ISSUE_NUMBER: ${{ inputs.issue || github.event.client_payload.issue_number
-          || github.event.issue.number }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-        OPENAI_MODEL_DEFAULT: gpt-5
-        OPENAI_REASONING_EFFORT: high
-        SOLVER_CHECKPOINT_BATCH: ${{ vars.SOLVER_CHECKPOINT_BATCH || '10' }}
-        SOLVER_ENABLE_BUILD: ${{ vars.SOLVER_ENABLE_BUILD || 'false' }}
-        SOLVER_BUILD_WORKFLOW: ${{ vars.SOLVER_BUILD_WORKFLOW || 'release-apk.yml'
-          }}
-      run: 'python -u .github/codex/bot_solver.py
-
-        '
-    - name: Upload Solver state (artifact)
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: solver-state
-        path: .github/codex/solver_state.json
-        if-no-files-found: ignore
-    - name: Git diagnostics (after solver)
-      if: always()
-      shell: bash
-      run: 'set -x
-
-        git config --list
-
-        git remote -v
-
-        echo "Current branch: $(git rev-parse --abbrev-ref HEAD || true)"
-
-        echo "Last commit:"
-
-        git --no-pager log -1 --stat || true
-
-        echo "Remote branches codex/solve-*:"
-
-        git ls-remote --heads origin "codex/solve-*" || true
-
-        '
+      - name: Run Solver (Bot 2)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          ISSUE_NUMBER: ${{ github.event.client_payload.issue_number || inputs.issue }}
+          SOLVER_SEPARATE_PRS: 'false'
+          SOLVER_RUN_TESTS: 'false'
+        run: python -u .github/codex/bot_solver.py
