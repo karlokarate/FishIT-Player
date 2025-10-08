@@ -1,4 +1,3 @@
-\
 """
 Shared I/O utilities and artifact path helpers.
 """
