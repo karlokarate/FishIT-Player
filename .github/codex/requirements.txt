@@ -1,4 +1,4 @@
-# Codex Bots (Bot 1: ContextMap, Bot 2: Solver)
+# Codex Bots (Bot 1: ContextMap, Bot 2: Solver, Bot 3: Triage)
 requests>=2.32.3,<3
 chardet>=5.2.0,<6
 openai>=1.40.0,<2
