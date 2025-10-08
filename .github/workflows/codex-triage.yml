@@ -21,15 +21,18 @@ permissions:
 jobs:
   triage:
     runs-on: ubuntu-latest
+    # Run when codex-solve failed, or a solver/contextmap error label gets applied, or manual dispatch
     if: >
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure')
-      || (github.event_name == 'issues' && (github.event.action == 'labeled') && (contains('contextmap-error,solver-error', github.event.label.name)))
+      || (github.event_name == 'issues' && github.event.action == 'labeled' &&
+          (github.event.label.name == 'contextmap-error' || github.event.label.name == 'solver-error'))
       || (github.event_name == 'workflow_dispatch')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: true
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -46,34 +49,32 @@ jobs:
             pip install 'requests>=2.32.3,<3' 'chardet>=5.2.0,<6' 'openai>=1.40.0,<2' 'unidiff>=0.7.5,<1'
           fi
 
+      # Robust: kein Heredoc, einfach unzip nutzen
       - name: Unpack shared-lib (optional)
+        if: ${{ !exists('.github/codex/lib') && exists('.github/codex/codex-shared-lib.zip') }}
         shell: bash
         run: |
-          if [ ! -d .github/codex/lib ] && [ -f .github/codex/codex-shared-lib.zip ]; then
-            python - <<'PY'
-import zipfile, os
-z=zipfile.ZipFile('.github/codex/codex-shared-lib.zip')
-z.extractall('.github/codex/lib')
-print('unzipped shared lib')
-PY
-          fi
+          mkdir -p .github/codex/lib
+          unzip -q -o .github/codex/codex-shared-lib.zip -d .github/codex/lib
+          echo "unzipped shared lib"
 
+      # ISSUE_NUMBER aus workflow_run ableiten (z. B. Branch: SOLVERBOT/145/...)
       - name: Derive ISSUE_NUMBER from workflow_run (if present)
         if: github.event_name == 'workflow_run'
         id: derive
         shell: bash
         run: |
           python - <<'PY'
-import json, os, re, sys
-p=os.environ.get("GITHUB_EVENT_PATH")
-data=json.load(open(p))
-hb=(data.get("workflow_run") or {}).get("head_branch","") or ""
-m=re.match(r"SOLVERBOT/(\d+)/", hb)
-issue = m.group(1) if m else ""
-with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-    f.write(f"issue={issue}\n")
-print("ISSUE_NUMBER derived:", issue)
-PY
+          import json, os, re
+          p=os.environ.get("GITHUB_EVENT_PATH")
+          data=json.load(open(p))
+          hb=(data.get("workflow_run") or {}).get("head_branch","") or ""
+          m=re.match(r"SOLVERBOT/(\d+)/", hb)
+          issue = m.group(1) if m else ""
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"issue={issue}\n")
+          print("ISSUE_NUMBER derived:", issue)
+          PY
 
       - name: Run Triage (Bot 3)
         env:
@@ -83,4 +84,5 @@ PY
           TRIAGE_WRITE: 'false'
           TRIAGE_OPEN_PR: 'true'
           TRIAGE_RERUN_SOLVER: 'true'
+          TRIAGE_ALLOWED_GLOBS: ".github/workflows/**.yml,.github/workflows/**.yaml,.github/codex/**/*.py,.github/codex/requirements*.txt"
         run: python -u .github/codex/bot_triage.py
