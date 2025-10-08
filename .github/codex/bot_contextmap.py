@@ -14,15 +14,16 @@ Funktionen:
 - Repo-Scan & Stack-/Keyword-Analyse
 - Kandidaten-/Modul-Erkennung (heuristisch, projektneutral)
 - Allowed-Targets & Execution-Guardrails (strict by default)
-- Dispatch an Bot 2 (repository_dispatch: codex-solver-context-ready)
+- Dispatch an Bot 2 (direkt via workflow_dispatch: codex-solve.yml)
 - Kommentar im Issue (eigene Zusammenfassung; kein Copy-Paste)
+- Fallback: Wenn kein Issue-Kontext vorhanden ist, wird NICHT kommentiert, aber Artefakte/Step-Summary werden geschrieben.
 
 Benötigt: requests, openai (für AI-Zusammenfassung optional), chardet (optional)
 Kompatibel mit der Shared-Lib in `.github/codex/lib/`.
 """
 
 from __future__ import annotations
-import os, re, sys, json, time, logging, hashlib
+import os, re, sys, json, time, logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -64,7 +65,7 @@ SHORT_SHA = (os.getenv("GITHUB_SHA", "")[:7] or "nosha")
 # ---------- Hilfsfunktionen ----------
 
 def _event_ctx() -> Dict[str, Any]:
-    ev = os.getenv("GITHUB_EVENT_NAME", "")
+    ev = os.getenv("GITHUB_EVENT_NAME", "") or os.getenv("GH_EVENT_NAME", "")
     payload = gh.event_payload()
     ictx = {"event_name": ev, "issue_number": None, "title": "", "body": ""}
 
@@ -79,10 +80,16 @@ def _event_ctx() -> Dict[str, Any]:
         ictx["issue_number"] = issue.get("number")
         ictx["title"] = issue.get("title", "") or ""
         ictx["body"] = comment.get("body", "") or ""
-    else:
+    else:  # workflow_dispatch or other
         inputs = payload.get("inputs", {}) or {}
         ictx["title"] = inputs.get("title", "") or ""
         ictx["body"] = inputs.get("body", "") or ""
+        # Allow manual override by input "issue"
+        try:
+            if (inputs.get("issue") or "").strip().isdigit():
+                ictx["issue_number"] = int(inputs.get("issue"))
+        except Exception:
+            pass
     return ictx
 
 _TEXT_LIKE_EXT = (".gradle",".kts",".xml",".md",".txt",".json",".yml",".yaml",".kt",".java",
@@ -109,8 +116,7 @@ def _read_repo_file(path: str, always_embed: bool = False, tracked_set: Optional
         if always_embed or len(b) <= MAX_TEXT_BYTES:
             info["text"] = b.decode(enc, errors="replace")
         else:
-            chunk = b.decode(enc, errors="replace")[:MAX_TEXT_BYTES]
-            info["text"] = chunk
+            info["text"] = b.decode(enc, errors="replace")[:MAX_TEXT_BYTES]
     else:
         if always_embed or len(b) <= MAX_BIN_B64_BYTES:
             import base64
@@ -153,11 +159,11 @@ def _summarize_issue_own_words(issue_ctx: Dict[str, Any], analysis: Dict[str, An
         except Exception as e:
             logging.warning("AI-Summary fehlgeschlagen, Fallback: %s", e)
 
-    title = (issue_ctx.get("title") or "").strip()
+    title = (issue_ctx.get("title") or "").strip() or "(no title)"
     candidates = analysis.get("candidate_files") or []
     lines = [
         "## Problem (condensed)",
-        f"{title or 'No title provided.'}",
+        f"{title}",
         "",
         "## Proposed solution path",
         "- Reproduce based on provided steps or minimal repro.",
@@ -166,6 +172,12 @@ def _summarize_issue_own_words(issue_ctx: Dict[str, Any], analysis: Dict[str, An
         "- Add/adjust tests to prove the fix.",
     ]
     return "\n".join(lines)
+
+def _keywords_from_ctx(title: str, body: str) -> List[str]:
+    txt = (title or "") + " " + (body or "")
+    kws = repo_utils.extract_keywords(txt, limit=15)
+    # Safety: ensure we don't pick nonsense if both are empty
+    return kws or ["bug", "error", "crash"]
 
 # ---------- Main ----------
 
@@ -187,7 +199,9 @@ def main():
     stack = repo_utils.detect_stack_files(all_files)
     largest = sorted(all_files, key=lambda p: (Path(p).stat().st_size if Path(p).exists() else 0), reverse=True)[:15]
     topdirs = repo_utils.top_dirs_by_count(all_files, 10)
-    keywords = repo_utils.extract_keywords(title + " " + body, limit=15)
+
+    # robust: keywords even if title/body empty
+    keywords = _keywords_from_ctx(title, body)
     candidates = repo_utils.pick_candidate_files(all_files, keywords, limit=30)
 
     def _suggest_new_files(keywords: List[str], stack: Dict[str, List[str]], top_langs: List[str], issue_no: Optional[int]) -> List[str]:
@@ -209,8 +223,7 @@ def main():
     file_index: Dict[str, Any] = {}
     total_bytes_embedded = 0
     for p in all_files:
-        always = False
-        info = _read_repo_file(p, always_embed=always, tracked_set=tracked_set)
+        info = _read_repo_file(p, always_embed=False, tracked_set=tracked_set)
         file_index[p] = info
         if info.get("is_text") and "text" in info:
             total_bytes_embedded += len((info["text"] or "").encode("utf-8", errors="replace"))
@@ -369,35 +382,31 @@ def main():
         "context": "solver_input.json", "task": "solver_task.json", "plan": "solver_plan.json"
     })
 
+    # Kommentare nur, wenn Issue-Nummer bekannt
     if POST_ISSUE_COMMENT and issue_no:
         head = f"### ContextMap ready ✅\n\n"
         body_md = head + summary_md + "\n\n" + "#### Impacted modules\n" + "".join(f"- `{m}`\n" for m in (impacted_modules or [])) + \
                   "\n\n" + "#### Candidate files (Top 10)\n" + "".join(f"- `{p}`\n" for p in candidates[:10])
         gh.post_comment(issue_no, body_md)
+        if ADD_LABEL:
+            try:
+                gh.add_labels(issue_no, ["contextmap-ready"])
+            except Exception:
+                pass
+    else:
+        # Kein Issue-Kontext (z. B. workflow_dispatch ohne inputs.issue) → Step Summary informieren
+        logging_utils.add_step_summary("ℹ️ Bot 1 lief im workflow_dispatch ohne Issue-Nummer. Es wurden Artefakte erzeugt, aber kein Kommentar gepostet.")
+        print("No issue number provided; skipping issue comment/label.")
 
-    if ADD_LABEL and issue_no:
+    # Solver triggern: direktes workflow_dispatch (kein repository_dispatch, um 403 zu vermeiden)
+    if NOTIFY_SOLVER and issue_no:
         try:
-            gh.add_labels(issue_no, ["contextmap-ready"])
-        except Exception:
-            pass
-
-    if NOTIFY_SOLVER:
-        payload = {
-            "event_type": "codex-solver-context-ready",
-            "client_payload": {
-                "issue_number": issue_no,
-                "run_dir": RUN_DIR.replace("\\","/"),
-                "task_path": os.path.relpath(SOLVER_TASK, os.getcwd()).replace("\\","/"),
-                "allowed_targets": allowed_targets,
-                "execution": execution
-            }
-        }
-        try:
-            gh.dispatch_repo_event(payload["event_type"], payload["client_payload"])
-            logging.info("repository_dispatch sent → codex-solver-context-ready")
+            gh.dispatch_workflow("codex-solve.yml", gh.default_branch(), inputs={"issue": str(issue_no)})
+            logging.info("workflow_dispatch → codex-solve.yml gestartet")
         except Exception as e:
-            logging.warning("repository_dispatch failed: %s", e)
+            logging.warning("Solver-Dispatch fehlgeschlagen: %s", e)
 
+    # Step-Summary
     top_lang_preview = ", ".join(f"{k}:{v}KB" for k, v in list(lang_stats.items())[:3]) or "n/a"
     preview_files = "\n".join(f"- `{p}`" for p in candidates[:10]) or "- (keine Kandidaten erkannt)"
     summary_lines = [
@@ -406,7 +415,7 @@ def main():
         f"Kandidaten (Top 10):\n{preview_files}",
         f"Artefakte: solver_input.json, solver_task.json, solver_plan.json, summary.md"
     ]
-    gh.add_step_summary("\n".join(summary_lines))
+    logging_utils.add_step_summary("\n".join(summary_lines))
     print("\n".join(summary_lines))
 
 if __name__ == "__main__":
