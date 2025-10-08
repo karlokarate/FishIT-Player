@@ -1,103 +1,50 @@
-name: Codex – Solver (Bot 2)
+name: codex-solve
 
 on:
-  workflow_run:
-    workflows: ["Codex – ContextMap (Bot 1)"]
-    types: [completed]
-  issues:
-    types: [labeled]
-  issue_comment:
-    types: [created]
+  repository_dispatch:
+    types: [codex-solver-context-ready]
   workflow_dispatch:
     inputs:
       issue:
-        description: "Issue-Nummer (optional; überschreibt Kontext)"
+        description: "Issue number (optional manual run)"
         required: false
-        default: ""
-      build_type:
-        description: "Optional: Build-Dispatch (debug|release)"
-        required: false
-        default: ""
 
 permissions:
   contents: write
-  issues: write
   pull-requests: write
+  issues: write
   actions: write
 
 jobs:
   solve:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: true
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies (solver)
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r .github/codex/requirements-solver.txt
-
-      - name: Determine ISSUE_NUMBER
-        id: issue
+      - name: Install requirements
         shell: bash
         run: |
-          set -euo pipefail
-          case "${{ github.event_name }}" in
-            workflow_run)
-              # Best effort: try to get issue number from context artifact
-              if [[ -f ".github/codex/context/solver_input.json" ]]; then
-                num=$(jq -r '.issue_number // empty' ".github/codex/context/solver_input.json" || true)
-                [[ -n "$num" ]] && echo "num=$num" >> "$GITHUB_OUTPUT" || true
-              fi
-              ;;
-            issues)
-              echo "num=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
-              ;;
-            issue_comment)
-              echo "num=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "num=${{ github.event.inputs.issue }}" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
+          set -e
+          pip install -U pip
+          if [ -f .github/codex/requirements.txt ]; then
+            pip install -r .github/codex/requirements.txt
+          else
+            pip install 'requests>=2.32.3,<3' 'chardet>=5.2.0,<6' 'openai>=1.40.0,<2' 'unidiff>=0.7.5,<1'
 
-      - name: Run Bot 2 (Solver)
+      - name: Run Solver (Bot 2)
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT }}
-          OPENAI_REASONING_EFFORT: high
-
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GH_EVENT_NAME: ${{ github.event_name }}
-          ISSUE_NUMBER: ${{ steps.issue.outputs.num }}
-        run: |
-          python .github/codex/bot_solver.py
-
-      - name: Upload rejects (if any)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: solver-rejects
-          path: |
-            **/*.rej
-            **/*.orig
-            .github/codex/context/**
-          if-no-files-found: ignore
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          ISSUE_NUMBER: ${{ github.event.client_payload.issue_number || inputs.issue }}
+          SOLVER_SEPARATE_PRS: 'false'
+          SOLVER_RUN_TESTS: 'false'
+        run: python -u .github/codex/bot_solver.py

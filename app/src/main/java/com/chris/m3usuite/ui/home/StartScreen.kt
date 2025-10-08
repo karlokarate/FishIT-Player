@@ -1430,3 +1430,123 @@ private fun StartTelegramSection(
         TelegramFishTile(media = media, onPlay = playTelegram)
     }
 }
+
+// -----------------------------------------------------------------------------
+// StartScreen – Preview: Voll verdrahtet, befüllter Zustand (nur eine Variante)
+// -----------------------------------------------------------------------------
+
+@Composable
+private fun previewMediaList(type: String, count: Int = 10): List<MediaItem> = List(count) { idx ->
+    val baseId = when (type) {
+        "live" -> 1_000_000_000_000L
+        "vod" -> 2_000_000_000_000L
+        "series" -> 3_000_000_000_000L
+        else -> 9_000_000_000_000L
+    }
+    MediaItem(
+        id = baseId + idx + 1,
+        type = type,
+        name = when (type) {
+            "live" -> "Sender ${idx + 1}"
+            "vod" -> "Film ${idx + 1}"
+            "series" -> "Serie ${idx + 1}"
+            else -> "Item ${idx + 1}"
+        },
+        year = 2024
+    )
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF101010, name = "Start – Voll (Loaded)")
+@Composable
+private fun StartScreenPreview_FullLoaded() {
+    com.chris.m3usuite.ui.layout.FishTheme {
+        val listState = rememberLazyListState()
+        HomeChromeScaffold(
+            title = "Start",
+            onSearch = {},
+            onProfiles = {},
+            onSettings = {},
+            listState = listState,
+            onLogo = {},
+            preferSettingsFirstFocus = false
+        ) { pads: PaddingValues ->
+            val series = previewMediaList("series", 12)
+            val vod = previewMediaList("vod", 12)
+            val live = previewMediaList("live", 12)
+
+            FishHeaderHost(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(pads),
+                    contentPadding = PaddingValues(vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                ) {
+                    // Serien
+                    item("preview_series_row") {
+                        FishRow(
+                            items = series,
+                            stateKey = "preview_series",
+                            edgeLeftExpandChrome = true,
+                            header = FishHeaderData.Text(
+                                anchorKey = "preview_series",
+                                text = "Serien",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        ) { mi ->
+                            com.chris.m3usuite.ui.layout.FishTile(
+                                title = mi.name,
+                                poster = com.chris.m3usuite.R.drawable.fisch_bg,
+                                contentScale = ContentScale.Fit,
+                                onClick = {}
+                            )
+                        }
+                    }
+                    // Filme
+                    item("preview_vod_row") {
+                        FishRow(
+                            items = vod,
+                            stateKey = "preview_vod",
+                            edgeLeftExpandChrome = true,
+                            header = FishHeaderData.Text(
+                                anchorKey = "preview_vod",
+                                text = "Filme",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        ) { mi ->
+                            com.chris.m3usuite.ui.layout.FishTile(
+                                title = mi.name,
+                                poster = com.chris.m3usuite.R.drawable.fisch_bg,
+                                contentScale = ContentScale.Fit,
+                                onClick = {}
+                            )
+                        }
+                    }
+                    // Live
+                    item("preview_live_row") {
+                        FishRow(
+                            items = live,
+                            stateKey = "preview_live",
+                            edgeLeftExpandChrome = true,
+                            header = FishHeaderData.Text(
+                                anchorKey = "preview_live",
+                                text = "LiveTV",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        ) { mi ->
+                            com.chris.m3usuite.ui.layout.FishTile(
+                                title = mi.name,
+                                poster = com.chris.m3usuite.R.drawable.fisch_bg,
+                                contentScale = ContentScale.Fit,
+                                onClick = {}
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
