@@ -1,187 +1,66 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Bot 2 – Solver (robust, self-healing) — v12
+Bot 2 — Solver (projektneutral, Shared‑Lib)
+=================================================
+Ziele (gemäß Vorgabe):
+- Verarbeitet Arbeitsauftrag aus `.github/codex/context/run-*/solver_task.json` (NEU, Vertrag von Bot 1)
+- Erzwingt Allowed‑Targets & Execution aus `solver_task.json` (oder Fallback: legacy `solver_plan.json`)
+- Arbeitet im Branch **SOLVERBOT/<issue>/<ts>**
+- **Pro geänderter Datei** sofort **commit & push**, bevor die nächste Datei angefasst wird
+- Kommentiert **je Änderung** im Issue mit kurzem "WARUM" (ai_utils.explain_change)
+- Akzeptiert zusätzlich nur Dateien, die **direkt im Zusammenhang** stehen (Scope‑Guardrails)
+- Erzeugt PR am Ende; optional PR pro Datei via ENV
 
-Fixes vs v11 (uploaded):
-- Initialize and thread `state`, `processed`, `pending`, `batch_count`, `BATCH` correctly
-- Remove UnboundLocalError by passing/creating state inside apply path
-- Define `since` for build-dispatch (was referenced before assignment)
-- Safer defaults + summaries; minor log polish
-- No behavior changes otherwise
+Optionale ENV‑Flags:
+- SOLVER_SEPARATE_PRS: 'true' → je Datei einen separaten PR (default: false, ein PR mit mehreren Commits)
+- SOLVER_RUN_TESTS: 'true' → nach Änderungen Tests gemäß Profile ausführen (default: false)
+- SOLVER_CHECKPOINT_BATCH: Zahl > 0; beeinflusst Step‑Summary (Commit‑Batching ist IMMER 1 pro Datei)
+- OPENAI_MODEL_DEFAULT / OPENAI_BASE_URL / OPENAI_API_KEY: für ai_utils
+
+Voraussetzungen: Shared‑Lib unter `.github/codex/lib/` (gh, io_utils, patching, repo_utils, logging_utils, scopes, profiles, ai_utils, task_schema).
 """
+
 from __future__ import annotations
-import os
-import re
-import json
-import time
-import subprocess
-import sys
-import glob
-import textwrap
+import os, sys, json, re, time, textwrap, subprocess, shutil
 from pathlib import Path
-from typing import List, Tuple, Optional, Set, Dict, Any
-import fnmatch
+from typing import Any, Dict, List, Tuple, Optional, Set
 
-# ---------- Logging & Heartbeat ----------
-import logging, threading
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s: %(message)s",
-)
+# ---------- Shared‑Lib laden ----------
+LIB_CANDIDATES = [
+    os.path.join(os.getcwd(), ".github", "codex", "lib"),
+    os.path.join(os.path.dirname(__file__), "lib"),
+]
+for _lib in LIB_CANDIDATES:
+    if os.path.isdir(_lib) and _lib not in sys.path:
+        sys.path.insert(0, _lib)
 
-def heartbeat(tag="solver", every_s=60):
-    def _beat():
-        while True:
-            print(f"::notice::{tag} heartbeat", flush=True)
-            time.sleep(every_s)
-    t = threading.Thread(target=_beat, daemon=True)
-    t.start()
-
-
-def add_step_summary(text: str):
-    path = os.getenv("GITHUB_STEP_SUMMARY")
-    if path:
-        try:
-            with open(path, "a", encoding="utf-8") as f:
-                f.write(text + "\n")
-        except Exception:
-            pass
-
-import requests
 try:
-    from unidiff import PatchSet
-    from unidiff.errors import UnidiffParseError
-except Exception:
-    PatchSet = None
-    class UnidiffParseError(Exception):
-        pass
+    import gh, io_utils, repo_utils, patching, logging_utils, scopes, profiles, ai_utils, task_schema
+except Exception as e:
+    print("::error::Shared‑Library nicht gefunden. Stelle sicher, dass `.github/codex/lib/` vorhanden ist.", flush=True)
+    raise
 
-# ---------- Utility: Retry ----------
+# ---------- Konfiguration ----------
+BATCH = int(os.getenv("SOLVER_CHECKPOINT_BATCH", "1"))  # Commit/PUSH ist sowieso pro Datei
+SEPARATE_PRS = os.getenv("SOLVER_SEPARATE_PRS", "false").strip().lower() in {"1","true","yes"}
+RUN_TESTS = os.getenv("SOLVER_RUN_TESTS", "false").strip().lower() in {"1","true","yes"}
 
-def _retry(fn, tries: int = 3, delay: float = 2.0):
-    for i in range(tries):
-        try:
-            return fn()
-        except Exception:
-            if i == tries - 1:
-                raise
-            time.sleep(delay * (i + 1))
-
-# ---------- GitHub helpers ----------
-
-def repo() -> str:
-    return os.environ.get("GITHUB_REPOSITORY", "")
-
-
-def event() -> dict:
-    path = os.environ.get("GITHUB_EVENT_PATH") or ""
-    return json.loads(Path(path).read_text(encoding="utf-8")) if path and Path(path).exists() else {}
-
-
-def gh_api(method: str, path: str, payload: dict | None = None) -> dict:
-    def _do():
-        token = os.environ.get("GITHUB_TOKEN") or os.environ.get("INPUT_TOKEN") or ""
-        url = f"https://api.github.com{path}"
-        headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
-        r = requests.request(method, url, headers=headers, json=payload, timeout=60)
-        if r.status_code >= 300:
-            raise RuntimeError(f"GitHub API {method} {path} failed: {r.status_code} {r.text[:800]}")
-        try:
-            return r.json()
-        except Exception:
-            return {}
-    return _retry(_do)
-
-
-def issue_number() -> Optional[int]:
-    # 1) explicit env
-    env_issue = os.environ.get("ISSUE_NUMBER")
-    if env_issue:
-        try:
-            return int(env_issue)
-        except Exception:
-            pass
-    # 2) new context JSON
-    pnew = Path(".github/codex/context/solver_input.json")
-    if pnew.exists():
-        try:
-            data = json.loads(pnew.read_text(encoding="utf-8"))
-            n = (data.get("issue_context") or {}).get("number")
-            if n is not None:
-                return int(n)
-        except Exception:
-            pass
-    # 3) event payload
-    ev = event()
-    if "issue" in ev:
-        n = (ev.get("issue") or {}).get("number")
-        if n:
-            return int(n)
-    # 4) legacy (if present)
-    pleg = Path(".codex/context.json")
-    if pleg.exists():
-        try:
-            d = json.loads(pleg.read_text(encoding="utf-8"))
-            n = d.get("issue_number")
-            if n is not None:
-                return int(n)
-        except Exception:
-            pass
-    return None
-
-
-def list_issue_comments(num: int) -> List[dict]:
-    res = gh_api("GET", f"/repos/{repo()}/issues/{num}/comments")
-    return res if isinstance(res, list) else []
-
-
-def get_issue(num: int) -> dict:
-    return gh_api("GET", f"/repos/{repo()}/issues/{num}")
-
-
-def get_labels(num: int) -> Set[str]:
-    issue = get_issue(num)
-    return {l.get("name", "") for l in issue.get("labels", [])}
-
-
-def add_label(num: int, label: str):
-    gh_api("POST", f"/repos/{repo()}/issues/{num}/labels", {"labels": [label]})
-
-
-def remove_label(num: int, label: str):
-    try:
-        requests.delete(
-            f"https://api.github.com/repos/{repo()}/issues/{num}/labels/{label}",
-            headers={
-                "Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN') or os.environ.get('INPUT_TOKEN')}",
-                "Accept": "application/vnd.github+json"
-            },
-            timeout=30
-        )
-    except Exception:
-        pass
-
-
-def post_comment(num: int, body: str):
-    gh_api("POST", f"/repos/{repo()}/issues/{num}/comments", {"body": body})
-
-# ---------- Shell / Git ----------
+# ---------- Git / Shell ----------
 
 def sh(cmd: str, check=True) -> str:
     p = subprocess.run(cmd, shell=True, text=True, capture_output=True)
     if check and p.returncode != 0:
-        raise RuntimeError(f"cmd failed: {cmd}\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}")
-    return p.stdout or ""
+        raise RuntimeError(f"cmd failed: {cmd}\n--- stdout ---\n{p.stdout}\n--- stderr ---\n{p.stderr}")
+    return p.stdout
 
-
-def ensure_repo_cwd():
+def ensure_repo_cwd_and_git():
     ws = os.environ.get("GITHUB_WORKSPACE")
     if ws and Path(ws).exists():
         os.chdir(ws)
-    # Tolerante Git-Settings
+    # Git Identity + Safe Defaults
     for k, v in [
-        ("user.name", "codex-bot"),
+        ("user.name", "solverbot"),
         ("user.email", "actions@users.noreply.github.com"),
         ("core.autocrlf", "false"),
         ("apply.whitespace", "nowarn"),
@@ -193,19 +72,51 @@ def ensure_repo_cwd():
             sh(f"git config {k} {v}", check=False)
         except Exception:
             pass
+    # Auth rewrite for pushes
+    tok = os.environ.get("GITHUB_TOKEN", "") or os.environ.get("INPUT_TOKEN", "")
+    if tok:
+        sh('git config url."https://x-access-token:%s@github.com/".insteadOf "https://github.com/"' % tok, check=False)
 
+def current_branch() -> str:
+    return (sh("git rev-parse --abbrev-ref HEAD", check=False).strip() or "HEAD")
 
-def ls_files() -> List[str]:
-    try:
-        return [l.strip() for l in sh("git ls-files", check=False).splitlines() if l.strip()]
-    except Exception:
-        return []
+def create_solver_branch(issue_no: int) -> str:
+    base = gh.default_branch()
+    ts = int(time.time())
+    name = f"SOLVERBOT/{issue_no}/{ts}"
+    sh(f"git fetch origin {base}", check=False)
+    sh(f"git checkout -B {name} origin/{base}", check=True)
+    return name
 
-# ---------- Context / Artifacts ----------
+def commit_and_push(path: str, issue_no: int, why_markdown: Optional[str] = None):
+    # Stage only the given path + solver_state.json (if present)
+    if Path(path).is_dir():
+        sh(f"git add -A -- {path}", check=True)
+    else:
+        sh(f"git add -- {path}", check=True)
+    state = Path(".github/codex/solver_state.json")
+    if state.exists():
+        sh(f"git add -- {state.as_posix()}", check=False)
 
-def read_new_context_json() -> Dict[str, Any]:
-    """Bot‑1 v3 JSON: .github/codex/context/solver_input.json"""
-    p = Path(".github/codex/context/solver_input.json")
+    # Avoid empty commit
+    staged_empty = subprocess.run("git diff --cached --quiet", shell=True)
+    if staged_empty.returncode == 0:
+        return False
+
+    # Commit
+    sh(f"git commit -m 'SOLVERBOT: {path} (issue #{issue_no})'", check=True)
+
+    # Push
+    br = current_branch()
+    sh(f"git push --set-upstream origin {br}", check=True)
+
+    # Optional WHY comment already posted by caller per‑file
+    return True
+
+# ---------- Context/Task Laden ----------
+
+def _load_last_run() -> Dict[str, Any]:
+    p = Path(".github/codex/context/last_run.json")
     if p.exists():
         try:
             return json.loads(p.read_text(encoding="utf-8"))
@@ -213,954 +124,327 @@ def read_new_context_json() -> Dict[str, Any]:
             return {}
     return {}
 
+def _resolve_run_dir() -> Path:
+    lr = _load_last_run()
+    if lr.get("run_dir"):
+        rd = Path(lr["run_dir"])
+        if rd.exists():
+            return rd
+    # Fallback: wähle jüngsten run-Ordner
+    ctx = Path(".github/codex/context")
+    cands = sorted([p for p in ctx.glob("run-*") if p.is_dir()], key=lambda p: p.stat().st_mtime, reverse=True)
+    return cands[0] if cands else ctx
 
-def read_new_summary_txt() -> str:
-    p = Path(".github/codex/context/summary.txt")
-    if p.exists():
+def _copy_task_for_scopes(run_dir: Path):
+    """Kopiert solver_task.json in den erwarteten Pfad von scopes.py, damit Guardrails greifen."""
+    src = run_dir / "solver_task.json"
+    dst = Path(".github/codex/context/solver_task.json")
+    if src.exists():
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src, dst)
+    # Legacy plan (falls vorhanden)
+    src_plan = run_dir / "solver_plan.json"
+    if src_plan.exists():
+        shutil.copyfile(src_plan, Path(".github/codex/solver_plan.json"))
+
+def load_task_and_context() -> Tuple[Dict[str, Any], Dict[str, Any], Path]:
+    run_dir = _resolve_run_dir()
+    task_path = run_dir / "solver_task.json"
+    ctx_path  = run_dir / "solver_input.json"
+
+    task = {}
+    ctx = {}
+    if task_path.exists():
         try:
-            return p.read_text(encoding="utf-8")
+            task = json.loads(task_path.read_text(encoding="utf-8"))
         except Exception:
-            return ""
-    return ""
-
-
-
-# == Allowed-targets / execution enforcement helpers ==
-def _load_allowed_config() -> tuple[dict, dict]:
-    """Return (allowed_targets, execution) from plan or repository_dispatch client_payload."""
-    import json, os, pathlib
-    allowed = {}
-    execution = {}
-    # 1) From plan written by Bot 1
-    p = pathlib.Path(".github/codex/solver_plan.json")
-    if p.exists():
+            task = {}
+    if ctx_path.exists():
         try:
-            plan = json.loads(p.read_text(encoding="utf-8"))
-            allowed = plan.get("allowed_targets") or {}
-            execution = plan.get("execution") or {}
+            ctx = json.loads(ctx_path.read_text(encoding="utf-8"))
         except Exception:
-            pass
-    # 2) From client_payload (repository_dispatch)
-    try:
-        evp = event()
-        cp = (evp.get("client_payload") or {}) if isinstance(evp, dict) else {}
-        if cp:
-            allowed = cp.get("allowed_targets") or allowed
-            execution = cp.get("execution") or execution
-    except Exception:
-        pass
-    # sane defaults
-    if not isinstance(allowed, dict):
-        allowed = {}
-    for k in ("modify","create","tests"):
-        if k not in allowed or not isinstance(allowed[k], list):
-            allowed[k] = []
-    if not isinstance(execution, dict):
-        execution = {}
-    if "strict_mode" not in execution:
-        execution["strict_mode"] = False
-    if "dir_rewrite_allowed" not in execution:
-        execution["dir_rewrite_allowed"] = False
-    return allowed, execution
+            ctx = {}
 
+    # Für scopes.py Guardrails die Kopie ablegen
+    _copy_task_for_scopes(run_dir)
+    return task, ctx, run_dir
 
-def _match_any(path: str, globs: list[str]) -> bool:
-    return any(fnmatch.fnmatch(path, g) for g in (globs or []))
+# ---------- Allowed‑Targets / Scope ----------
 
+def filter_targets(create_paths: List[str], modify_paths: List[str]) -> Tuple[List[str], List[str], List[str]]:
+    """Nutzt shared scopes.py (liest solver_task.json/solver_plan.json)."""
+    c_ok, m_ok, rej = scopes.filter_paths_by_allowed(create_paths, modify_paths)
+    return c_ok, m_ok, rej
 
-def _filter_targets_by_allowed(create_paths: list[str], existing_paths: list[str]) -> tuple[list[str], list[str], list[str]]:
-    """Return (create_ok, existing_ok, rejected)."""
-    allowed, execution = _load_allowed_config()
-    rej = []
+def ensure_allowed_or_explain(issue_no: int, paths: List[str], kind: str):
+    """Kommentiert im Issue, wenn Pfade außerhalb des Scopes liegen (strict_mode aktiv)."""
+    ok_c, ok_m, rej = filter_targets(paths if kind=="create" else [], paths if kind=="modify" else [])
+    if rej:
+        msg = "Einige Ziele liegen **außerhalb des erlaubten Scopes** (strict mode aktiv):\n" + "\n".join(f"- `{r}`" for r in rej[:50])
+        gh.post_comment(issue_no, "⚠️ " + msg + "\n\nBitte passe `scope.modify/create` in `solver_task.json` an, falls diese Dateien nötig sind.")
+    return ok_c if kind=="create" else ok_m
 
-    # filter create files
-    create_ok = []
-    for p in create_paths:
-        if _match_any(p, allowed.get("create")):
-            create_ok.append(p)
-        else:
-            rej.append(p)
+# ---------- Diff & Apply ----------
 
-    # filter existing files/dirs
-    existing_ok = []
-    for p in existing_paths:
-        from pathlib import Path as _P
-        if _P(p).is_dir() or p.endswith('/'):
-            if execution.get("dir_rewrite_allowed", False):
-                existing_ok.append(p)
-            else:
-                rej.append(p)
-            continue
-        if _match_any(p, allowed.get("modify")):
-            existing_ok.append(p)
-        else:
-            rej.append(p)
+def _changed_paths_porcelain() -> List[str]:
+    out = sh("git status --porcelain", check=False)
+    paths = []
+    for ln in out.splitlines():
+        ln = ln.strip()
+        if not ln: continue
+        parts = ln.split(maxsplit=1)
+        if len(parts) == 2:
+            p = parts[1]
+            if p.startswith('"') and p.endswith('"'):
+                p = p.strip('"')
+            paths.append(p)
+    return paths
 
-    return create_ok, existing_ok, rej
+def _file_diff_against_head(path: str) -> str:
+    return sh(f"git diff HEAD -- {path}", check=False)
 
-
-def _extract_patch_targets(patch_text: str) -> list[str]:
-    if not patch_text:
+def _apply_unified_patch_if_any(issue_no: int, raw_patch: str) -> List[str]:
+    """Versucht Whole‑Apply → section‑wise → zero‑context/gnu. Gibt Liste der geänderten Pfade zurück (oder [])."""
+    raw_patch = (raw_patch or "").strip()
+    if not raw_patch:
         return []
-    out = []
-    for m in re.finditer(r"^diff --git a/(\S+)\s+b/(\S+)\s*$", patch_text, re.M):
-        out.append(m.group(2))
-    return out
+    clean = patching.sanitize_patch(raw_patch)
+    ok, bad_targets, exec_cfg = scopes.validate_patch_against_allowed(clean)
+    if not ok:
+        gh.post_comment(issue_no, "❌ Patch enthält verbotene Ziele (strict_mode aktiv). Ignoriere Patch und wechsle zu Spec‑to‑File.\n\n" +
+                        "\n".join(f"- `{b}`" for b in bad_targets[:30]))
+        return []
 
+    # Apply whole
+    applied, info = patching.whole_git_apply(clean)
+    if applied:
+        gh.post_comment(issue_no, f"✅ Patch applied (whole): `{info}`")
+    else:
+        gh.post_comment(issue_no, f"ℹ️ Whole‑apply scheiterte, versuche section‑wise. Fehler:\n```\n{info}\n```")
+        changed_before = set(_changed_paths_porcelain())
+        sections = patching.split_sections(clean)
+        any_ok = False
+        for i, sec in enumerate(sections, 1):
+            if patching.apply_section(sec, i):
+                any_ok = True
+        if not any_ok:
+            gh.post_comment(issue_no, "ℹ️ Section‑wise Apply fehlgeschlagen – wechsle zu Spec‑to‑File.")
+            return []
+    changed = _changed_paths_porcelain()
+    return changed
 
-def _validate_patch_against_allowed(patch_text: str) -> tuple[bool, list[str]]:
-    allowed, execution = _load_allowed_config()
-    if not patch_text.strip():
-        return True, []
-    targets = _extract_patch_targets(patch_text)
-    bad = []
-    for t in targets:
-        if not (_match_any(t, allowed.get("modify")) or _match_any(t, allowed.get("create"))):
-            bad.append(t)
-    if bad and execution.get("strict_mode", False):
-        return False, bad
-    return True, bad
-def read_legacy_context_json() -> Dict[str, Any]:
-    p = Path(".codex/context.json")
+# ---------- AI‑gestützte Erstellung/Umschreiben ----------
+
+def _gather_symbols_if_needed(limit:int=1200) -> Dict[str, Any]:
+    try:
+        return repo_utils.gather_symbols(repo_utils.list_all_files(), limit=limit)
+    except Exception:
+        return {"count":0,"items":[]}
+
+def _spec_create_file(path: str, ctx_short: str, ctx_full: str, symbols: Dict[str, Any]) -> str:
+    content = ai_utils.generate_full_file(path, json.dumps(symbols, ensure_ascii=False), ctx_full, ctx_short)
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(content, encoding="utf-8")
+    return content
+
+def _spec_rewrite_file(path: str, ctx_short: str, ctx_full: str, symbols: Dict[str, Any]) -> str:
+    cur = ""
+    p = Path(path)
     if p.exists():
         try:
-            return json.loads(p.read_text(encoding="utf-8"))
+            cur = p.read_text(encoding="utf-8", errors="replace")
         except Exception:
-            return {}
-    return {}
+            cur = ""
+    content = ai_utils.rewrite_full_file(path, cur, json.dumps(symbols, ensure_ascii=False), ctx_full, ctx_short)
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(content, encoding="utf-8")
+    return content
 
+# ---------- Build/Test ----------
 
-def read_legacy_context_full_md() -> str:
-    p = Path(".codex/context_full.md")
-    if p.exists():
-        try:
-            return p.read_text(encoding="utf-8")
-        except Exception:
-            return ""
-    return ""
+def _resolve_commands(task: Dict[str, Any]) -> Tuple[List[str], List[str], List[str]]:
+    files = repo_utils.list_all_files()
+    prof = (task.get("language_profile") or profiles.detect_language_profile(files))
+    cmds = profiles.resolve_commands(prof)
+    fmt = (task.get("build") or {}).get("fmt") or cmds.get("fmt") or []
+    build = (task.get("build") or {}).get("cmd") or cmds.get("build") or []
+    test = (task.get("test") or {}).get("cmd") or cmds.get("test") or []
+    return fmt, build, test
 
+def _run_cmd_list(cmd: List[str], title: str, issue_no: int):
+    if not cmd: return
+    try:
+        out = sh(" ".join(cmd), check=False)
+        gh.add_step_summary(f"**{title}**\n\n```\n{out[-1200:]}\n```")
+    except Exception as e:
+        gh.post_comment(issue_no, f"⚠️ {title} fehlgeschlagen:\n```\n{e}\n```")
 
-def fetch_contextmap_comment(num: int) -> Optional[str]:
-    for c in list_issue_comments(num):
-        b = (c.get("body") or "").strip()
-        if b.lower().startswith("### contextmap-ready".lower()) or "contextmap ready" in b.lower():
-            return b
+# ---------- Hauptlogik ----------
+
+def _extract_issue_number(task: Dict[str, Any], ctx: Dict[str, Any]) -> Optional[int]:
+    n = (task.get("issue") or {}).get("number")
+    if n: return int(n)
+    n = (ctx.get("issue_context") or {}).get("number")
+    if n: return int(n)
+    env_issue = os.getenv("ISSUE_NUMBER") or os.getenv("INPUT_ISSUE") or ""
+    if env_issue.isdigit(): return int(env_issue)
     return None
 
-
-def extract_issue_raw_diff(num: int) -> str:
-    """Concat issue + comments, return text from first 'diff --git' onward (if any)."""
-    bodies = []
-    issue = get_issue(num)
-    bodies.append(issue.get("body") or "")
-    for c in list_issue_comments(num):
-        bodies.append(c.get("body") or "")
-    raw = "\n\n".join(bodies)
-    pos = raw.find("diff --git ")
-    return raw[pos:] if pos != -1 else ""
-
-# ---------- Helpers aus Context ----------
-
-def choose_targets_from_new_context(ctx: Dict[str, Any], all_files: List[str]) -> Tuple[List[str], List[str]]:
-    """
-    Nutzt Bot‑1 v3 Felder:
-      - issue_context.referenced_paths
-      - repo.files
-    Liefert (create_paths, existing_paths).
-    """
-    create_paths: List[str] = []
-    existing_paths: List[str] = []
-    if not ctx:
-        return create_paths, existing_paths
-
-    mentioned = (ctx.get("issue_context") or {}).get("referenced_paths") or []
-    files = [f for f in (ctx.get("repo") or {}).get("files", []) if isinstance(f, str)]
-    fset = set(files)
-    for p in mentioned:
-        if p in fset:
-            existing_paths.append(p)
-        else:
-            create_paths.append(p)
-
-    if not mentioned:
-        if any(f.startswith("app/") for f in files) or "app" in files:
-            existing_paths.append("app")
-
-    seen=set(); existing_paths=[x for x in existing_paths if not (x in seen or seen.add(x))]
-    seen=set(); create_paths=[x for x in create_paths if not (x in seen or seen.add(x))]
-    return create_paths, existing_paths
-
-
-def parse_affected_modules(contextmap_md: str, all_files: List[str]) -> List[str]:
-    m = re.search(r"####\s*\(potentiell\)\s*betroffene\s*Module\s*(.*?)\n####", contextmap_md, re.S | re.I)
-    if not m:
-        m = re.search(r"####\s*\(potentiell\)\s*betroffene\s*Module\s*(.*)$", contextmap_md, re.S | re.I)
-        if not m:
-            return []
-    block = m.group(1)
-    items = re.findall(r"^\s*-\s+(.+)$", block, re.M)
-    items = [i.strip().strip("`").strip() for i in items if i.strip()]
-    sset = set(all_files)
-    existing = set()
-    for it in items:
-        if it in sset:
-            existing.add(it)
-        elif any(f.startswith(it.rstrip('/') + '/') for f in sset):
-            existing.add(it.rstrip('/'))
-    return sorted(existing)
-
-# ---------- Patch normalization ----------
-_VALID_LINE = re.compile(
-    r"^(diff --git |index |new file mode |deleted file mode |old mode |new mode |"
-    r"similarity index |rename (from|to) |Binary files |--- |\+\+\+ |@@ |[\+\- ]|\\ No newline at end of file)"
-)
-
-
-def _strip_code_fences(text: str) -> str:
-    if not text:
-        return text
-    m = re.match(r"^```[a-zA-Z0-9_-]*\s*\n(.*?)\n```$", text.strip(), re.S)
-    return (m.group(1) if m else text)
-
-
-def sanitize_patch(raw: str) -> str:
-    if not raw:
-        return raw
-    txt = _strip_code_fences(raw).replace("\r\n", "\n").replace("\r", "\n")
-    pos = txt.find("diff --git ")
-    if pos != -1:
-        txt = txt[pos:]
-    clean = []
-    for ln in txt.splitlines():
-        if re.match(r"^\s*\d+\.\s*:?\s*$", ln):
-            continue
-        if re.match(r"^\s*[–—\-]\s*$", ln):
-            continue
-        if _VALID_LINE.match(ln):
-            clean.append(ln)
-    out = "\n".join(clean)
-    if not out.endswith("\n"):
-        out += "\n"
-    return out
-
-
-def patch_uses_ab_prefix(patch_text: str) -> bool:
-    return bool(re.search(r"^diff --git a/[\S]+ b/[\S]+", patch_text, re.M))
-
-
-def _split_sections(patch_text: str) -> List[str]:
-    sections = []
-    it = list(re.finditer(r"^diff --git a/(\S+)\s+b/(\S+)\s*$", patch_text, re.M))
-    for i, m in enumerate(it):
-        start = m.start()
-        end = it[i + 1].start() if i + 1 < len(it) else len(patch_text)
-        sections.append(patch_text[start:end].rstrip() + "\n")
-    return sections
-
-# ---------- Apply mechanics ----------
-
-def _git_apply_try(tmp: str, pstrip: int, three_way: bool, extra_flags: str = "") -> subprocess.CompletedProcess:
-    cmd = f"git apply {'-3' if three_way else ''} -p{pstrip} --whitespace=fix {extra_flags} {tmp}".strip()
-    return subprocess.run(cmd, shell=True, text=True, capture_output=True)
-
-
-def _git_apply_matrix(tmp: str, uses_ab: bool) -> List[Tuple[int, bool, str]]:
-    pseq = [1, 0] if uses_ab else [0, 1]
-    combos = []
-    for p in pseq:
-        combos += [
-            (p, True, ""),
-            (p, False, ""),
-            (p, False, "--ignore-whitespace"),
-            (p, False, "--inaccurate-eof"),
-            (p, False, "--unidiff-zero"),
-            (p, False, "--ignore-whitespace --inaccurate-eof"),
-            (p, False, "--reject --ignore-whitespace"),
-            (p, False, "--reject --unidiff-zero"),
-        ]
-    return combos
-
-
-def _make_zero_context(patch_text: str) -> str:
-    out = []
-    for ln in patch_text.splitlines():
-        if ln.startswith("@@"):
-            ln = re.sub(r"(@@\s+-\d+)(?:,\d+)?(\s+\+\d+)(?:,\d+)?(\s+@@.*)", r"\1,0\2,0\3", ln)
-            out.append(ln)
-        elif ln.startswith(" "):
-            continue
-        else:
-            out.append(ln)
-    z = "\n".join(out)
-    if not z.endswith("\n"):
-        z += "\n"
-    return z
-
-
-def _gnu_patch_apply(tmp: str, p: int, rej_path: str) -> subprocess.CompletedProcess:
-    cmd = f"patch -p{p} -f -N --follow-symlinks --no-backup-if-mismatch -r {rej_path} < {tmp}"
-    return subprocess.run(cmd, shell=True, text=True, capture_output=True)
-
-
-def whole_git_apply(patch_text: str) -> Tuple[bool, str]:
-    tmp = ".github/codex/_solver_all.patch"
-    Path(tmp).parent.mkdir(parents=True, exist_ok=True)
-    Path(tmp).write_text(patch_text, encoding="utf-8")
-    uses_ab = patch_uses_ab_prefix(patch_text)
-    last_err = ""
-    for p, three, extra in _git_apply_matrix(tmp, uses_ab):
-        pr = _git_apply_try(tmp, p, three, extra)
-        if pr.returncode == 0:
-            return True, f"git apply {'-3' if three else ''} -p{p} --whitespace=fix {extra}".strip()
-        last_err = (pr.stderr or pr.stdout or "")[:1600]
-    return False, last_err
-
-
-def apply_section(sec_text: str, idx: int) -> bool:
-    tmp = f".github/codex/_solver_sec_{idx}.patch"
-    Path(tmp).parent.mkdir(parents=True, exist_ok=True)
-    Path(tmp).write_text(sec_text, encoding="utf-8")
-    uses_ab = patch_uses_ab_prefix(sec_text)
-    for p, three, extra in _git_apply_matrix(tmp, uses_ab):
-        pr = _git_apply_try(tmp, p, three, extra)
-        if pr.returncode == 0:
-            return True
-    # Zero-Context-Versuch
-    ztmp = f".github/codex/_solver_sec_{idx}_zc.patch"
-    Path(ztmp).write_text(_make_zero_context(sec_text), encoding="utf-8")
-    for p in ([1, 0] if uses_ab else [0, 1]):
-        pr = _git_apply_try(ztmp, p, False, "--unidiff-zero --ignore-whitespace")
-        if pr.returncode == 0:
-            return True
-    # GNU patch Fallback
-    for pp in (1, 0):
-        pr = _gnu_patch_apply(tmp, pp, f".github/codex/_solver_sec_{idx}.rej")
-        if pr.returncode == 0:
-            return True
-    return False
-
-# ---------- OpenAI helpers ----------
-
-def _openai_client():
-    from openai import OpenAI  # lazy import
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY not set")
-    base = os.environ.get("OPENAI_BASE_URL") or "https://api.openai.com/v1"
-    return OpenAI(api_key=api_key, base_url=base)
-
-
-def _strip_outer_code_fences(txt: str) -> str:
-    if not txt:
-        return txt
-    m = re.match(r"^```[a-zA-Z0-9_-]*\s*\n(.*?)\n```$", txt.strip(), re.S)
-    return (m.group(1) if m else txt)
-
-
-def ai_generate_diff(contextmap: str, docs: str, target_paths: List[str]) -> str:
-    client = _openai_client()
-    model = os.environ.get("OPENAI_MODEL_DEFAULT", "gpt-5")
-    effort = os.environ.get("OPENAI_REASONING_EFFORT", "high")
-    target_preview = "\n".join(sorted(target_paths))[:8000]
-    SYSTEM = (
-        "You are an expert Android/Kotlin/Gradle engineer. "
-        "Generate ONE unified diff at repo root. Use a/b prefixes. "
-        "Headers: diff --git, index, --- a/..., +++ b/..., @@. "
-        "New files must use /dev/null header. LF only; trailing newline. Output ONLY the diff."
-    )
-    USER = (
-        f"ContextMap:\n{contextmap}\n\nDocs:\n{docs or '(no docs)'}\n\n"
-        f"Targets:\n{target_preview}\n\n"
-        "Output: ONE unified diff, no prose."
-    )
-    resp = _retry(lambda: client.responses.create(
-        model=model,
-        input=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": USER}],
-        reasoning={"effort": effort},
-    ))
-    out = getattr(resp, "output_text", "") or ""
-    return sanitize_patch(_strip_outer_code_fences(out))
-
-
-def ai_generate_full_file(path: str, repo_symbols: Dict[str, Any], context_full: str, summary_ctx: str) -> str:
-    client = _openai_client()
-    model = os.environ.get("OPENAI_MODEL_DEFAULT", "gpt-5")
-    effort = os.environ.get("OPENAI_REASONING_EFFORT", "high")
-    # Package ableiten
-    pkg = ""
-    if path.endswith(".kt") and "/src/main/java/" in path:
-        pkg = path.split("/src/main/java/")[1]
-        pkg = os.path.dirname(pkg).replace("/", ".")
-        pkg = re.sub(r"[^a-zA-Z0-9_.]", "", pkg)
-
-    symbols_preview = ""
+def _get_issue_raw_diff(num: int) -> str:
     try:
-        items = repo_symbols.get("items", [])[:120]
-        symbols_preview = "\n".join(f"{it.get('kind')} {it.get('name')} ({it.get('package')}) @ {it.get('file')}" for it in items)
+        bodies = []
+        issue = gh.get_issue(num)
+        bodies.append(issue.get("body") or "")
+        for c in gh.list_issue_comments(num):
+            bodies.append(c.get("body") or "")
+        raw = "\n\n".join(bodies)
+        pos = raw.find("diff --git ")
+        return raw[pos:] if pos != -1 else ""
     except Exception:
-        pass
+        return ""
 
-    SYSTEM = (
-        "You are an expert Kotlin/Android engineer. "
-        "Produce a COMPLETE file content for the given path. "
-        "If it's a Kotlin source, include the correct package line derived from the path. "
-        "Honor repository conventions inferred from symbols. "
-        "No placeholders, no ellipses. Output ONLY the file content (no code fences)."
-    )
-    USER = f"""Target path:
-{path}
-
-Inferred package (if Kotlin): {pkg or '(n/a)'}
-
-Repository symbols (preview):
-{symbols_preview or '(none)'}
-
-Short Context:
-{summary_ctx or '(none)'}
-
-Full Context (excerpt):
-{textwrap.shorten(context_full or '', width=8000, placeholder=' …')}
-
-Constraints:
-- File must compile against typical Android/Kotlin setup.
-- If file is new, include necessary imports and minimal implementation as per context.
-- Output only file content (no fences).
-"""
-
-    resp = _retry(lambda: client.responses.create(
-        model=model,
-        input=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": USER}],
-        reasoning={"effort": effort},
-    ))
-    out = getattr(resp, "output_text", "") or ""
-    out = _strip_outer_code_fences(out)
-    if not out.strip():
-        raise RuntimeError("AI full-file generation returned empty content")
-    return out
-
-
-def ai_rewrite_full_file(path: str, current: str, repo_symbols: Dict[str, Any], context_full: str, summary_ctx: str) -> str:
-    client = _openai_client()
-    model = os.environ.get("OPENAI_MODEL_DEFAULT", "gpt-5")
-    effort = os.environ.get("OPENAI_REASONING_EFFORT", "high")
-    SYSTEM = (
-        "You are an expert Kotlin/Android engineer. "
-        "Rewrite the given file completely to satisfy the context (no partial diffs). "
-        "Maintain public API compatibility if possible; otherwise, adjust per context. "
-        "Output ONLY the new file content (no code fences)."
-    )
-    USER = f"""Path:
-{path}
-
-Current file content:
-```kotlin
-{current}
-```
-
-Symbols preview:
-{textwrap.shorten(json.dumps(repo_symbols, ensure_ascii=False), width=6000, placeholder=' …')}
-
-Short Context:
-{summary_ctx or '(none)'}
-
-Full Context (excerpt):
-{textwrap.shorten(context_full or '', width=8000, placeholder=' …')}
-"""
-    resp = _retry(lambda: client.responses.create(
-        model=model,
-        input=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": USER}],
-        reasoning={"effort": effort},
-    ))
-    out = getattr(resp, "output_text", "") or ""
-    out = _strip_outer_code_fences(out)
-    if not out.strip():
-        raise RuntimeError("AI rewrite returned empty content")
-    return out
-
-# ---------- Build dispatch ----------
-
-def default_branch() -> str:
-    return gh_api("GET", f"/repos/{repo()}").get("default_branch", "main")
-
-
-def dispatch_build(workflow_ident: str, ref_branch: str, inputs: dict | None) -> str:
-    gh_api("POST", f"/repos/{repo()}/actions/workflows/{workflow_ident}/dispatches", {"ref": ref_branch, "inputs": inputs or {}})
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-
-
-def wait_build_result(workflow_ident: str, ref_branch: str, since_iso: str, timeout_s=1800) -> dict:
-    base = f"/repos/{repo()}/actions/workflows/{workflow_ident}/runs"
-    t0 = time.time()
-    while True:
-        try:
-            runs = gh_api("GET", f"{base}?event=workflow_dispatch&branch={ref_branch}")
-            arr = runs.get("workflow_runs", []) or []
-            cands = [r for r in arr if r.get("head_branch") == ref_branch and r.get("created_at", "") >= since_iso]
-            cand = cands[0] if cands else {}
-            if cand:
-                rid = cand.get("id")
-                while True:
-                    run = gh_api("GET", f"/repos/{repo()}/actions/runs/{rid}")
-                    if run.get("status") == "completed":
-                        return run
-                    if time.time() - t0 > timeout_s:
-                        return run
-                    time.sleep(6)
-        except Exception:
-            if time.time() - t0 > timeout_s:
-                return {}
-        if time.time() - t0 > timeout_s:
-            return {}
-        time.sleep(3)
-
-# ---------- Checkpoint State (resume across runs) ----------
-from pathlib import Path as _Path
-STATE_PATH = _Path(".github/codex/solver_state.json")
-
-
-def _load_state(issue_num: int) -> dict:
+def _ai_explain_and_comment(issue_no: int, path: str, diff_text: str, task_hint: Dict[str, Any]):
     try:
-        if STATE_PATH.exists():
-            st = json.loads(STATE_PATH.read_text(encoding="utf-8"))
-            if int(st.get("issue", -1)) == int(issue_num):
-                return st
-    except Exception:
-        pass
-    return {"issue": issue_num, "profile": os.environ.get("PROFILE","env/default"),
-            "cursor": {"phase":"init","index":0}, "processed": [], "pending": []}
-
-
-
-def _save_state_and_push(state: dict, message: str):
-    try:
-        STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
-        # Stage and commit (empty commit allowed)
-        sh("git add -A", check=True)
-        sh(f"git commit -m '{message}'", check=False)
-
-        # Determine current branch
-        branch = sh("git rev-parse --abbrev-ref HEAD").strip()
-
-        # Token-friendly remote URL to ensure push auth in Actions
-        tok = os.environ.get("GITHUB_TOKEN", "") or os.environ.get("INPUT_TOKEN", "")
-        if tok:
-            sh('git config url."https://x-access-token:%s@github.com/".insteadOf "https://github.com/"' % tok, check=False)
-
-        # Push explicitly to the branch, fail hard so the job surfaces errors
-        sh(f"git push --set-upstream origin {branch}", check=True)
+        why = ai_utils.explain_change(path, diff_text or f"created/rewritten: {path}", task_hint or {})
     except Exception as e:
-        try:
-            post_comment(state.get("issue", 0) or 0, f"❌ Push fehlgeschlagen:\n```
-{e}
-```")
-        finally:
-            raise
-        STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
-        sh("git add -A", check=False)
-        sh(f"git commit -m '{message}'", check=False)
-        sh("git push", check=False)
-    except Exception as e:
-        post_comment(state.get("issue", 0) or 0, f"⚠️ Konnte Zwischenstand nicht sichern: `{e}`")
+        why = f"(keine AI‑Begründung verfügbar: {e})"
+    gh.post_comment(issue_no, f"🛠️ **Änderung** `{path}`\n\n{('```diff\\n'+diff_text+'\\n```') if diff_text else ''}\n\n**Warum:** {why}")
 
-# ---------- Summaries ----------
-
-def summarize_rejects(num: int):
-    rej_files = glob.glob("**/*.rej", recursive=True)
-    if not rej_files:
-        return
-    preview = []
-    for rf in rej_files[:10]:
-        try:
-            txt = Path(rf).read_text(encoding="utf-8", errors="replace")
-        except Exception:
-            txt = ""
-        preview.append(f"\n--- {rf} ---\n{txt[:500]}")
-    body = "⚠️ Solver: Einige Hunks wurden als `.rej` abgelegt (manuelle Nacharbeit möglich):\n" + "\n".join(f"- {r}" for r in rej_files[:50])
-    if preview:
-        body += "\n\n```diff\n" + "".join(preview) + "\n```"
-    post_comment(num, body)
-
-# ---------- Solver strategy ----------
-
-def choose_targets_fallback_legacy(ctx_legacy: Dict[str, Any], all_files: List[str], cm_comment: str) -> Tuple[List[str], List[str]]:
-    create_paths: List[str] = []
-    existing_paths: List[str] = []
-    if ctx_legacy:
-        mentioned = ctx_legacy.get("mentioned_paths") or []
-        exists_map = ctx_legacy.get("mentioned_paths_exists") or {}
-        for p in mentioned:
-            if exists_map.get(p) is False:
-                create_paths.append(p)
-            elif exists_map.get(p) is True:
-                existing_paths.append(p)
-    if not create_paths and not existing_paths:
-        seeds = parse_affected_modules(cm_comment or "", all_files)
-        if seeds:
-            existing_paths.extend(seeds)
-        else:
-            if any(f.startswith("app/") for f in all_files) or "app" in all_files:
-                existing_paths.append("app")
-    def dq(xs: List[str]) -> List[str]:
-        out=[]; s=set()
-        for x in xs:
-            if x not in s:
-                s.add(x); out.append(x)
-        return out
-    return dq(create_paths), dq(existing_paths)
-
-
-def gather_repo_symbols(limit:int=1600) -> Dict[str, Any]:
-    files = ls_files()
-    symbols=[]; cnt=0
-    for f in files:
-        if not f.endswith(".kt"): continue
-        if "/build/" in f or "/generated/" in f: continue
-        if cnt >= limit: break
-        try:
-            t = Path(f).read_text(encoding="utf-8", errors="replace")
-        except Exception:
-            continue
-        pkg = re.search(r"^\s*package\s+([a-zA-Z0-9_.]+)", t, flags=re.MULTILINE)
-        pkgname = pkg.group(1) if pkg else ""
-        for line in t.splitlines():
-            line=line.strip()
-            m_class = re.match(r"(?:public\s+)?(?:data\s+)?class\s+([A-Za-z0-9_]+)", line)
-            m_obj   = re.match(r"(?:public\s+)?object\s+([A-Za-z0-9_]+)", line)
-            m_comp  = re.match(r"@Composable\s+fun\s+([A-Za-z0-9_]+)\(", line)
-            m_fun   = re.match(r"(?:public\s+)?fun\s+([A-Za-z0-9_]+)\(", line)
-            if m_class:
-                symbols.append({"file":f,"package":pkgname,"kind":"class","name":m_class.group(1)})
-            elif m_obj:
-                symbols.append({"file":f,"package":pkgname,"kind":"object","name":m_obj.group(1)})
-            elif m_comp:
-                symbols.append({"file":f,"package":pkgname,"kind":"composable","name":m_comp.group(1)})
-            elif m_fun:
-                symbols.append({"file":f,"package":pkgname,"kind":"fun","name":m_fun.group(1)})
-                cnt += 1
-            if cnt >= limit:
-                break
-    return {"count": len(symbols), "items": symbols}
-
-
-def _write_text_file(path: str, content: str):
-    Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(content, encoding="utf-8")
-
-
-def apply_or_spec_to_file(num: int, patch: str, ctx_new: Dict[str, Any], ctx_old: Dict[str, Any], cm_comment: str, state: dict, BATCH: int) -> Optional[str]:
-    """
-    1) Versuche Patch anzuwenden (whole → section → zero-context → GNU).
-    2) Scheitert dies/ist kein Patch vorhanden:
-       - Create/Existing-Targets (neu oder legacy) verarbeiten; Dir-Targets rekursiv (.kt).
-    """
-    # Thread local working sets derived from `state`
-    processed: Set[str] = set(state.get("processed") or [])
-    pending: List[str] = list(state.get("pending") or [])
-    batch_count = 0
-
-    base = default_branch()
-    sh(f"git fetch origin {base}", check=False)
-    sh(f"git checkout -B codex/solve-{int(time.time())} origin/{base}")
-    branch = sh("git rev-parse --abbrev-ref HEAD").strip()
-
-    applied_any = False
-    if patch:
-        ok, info = whole_git_apply(patch)
-    else:
-        ok, info = False, "no patch text"
-
-    if ok:
-        post_comment(num, f"✅ Solver: Patch via Whole-Apply erfolgreich (`{info}`)")
-        applied_any = True
-    else:
-        sections = _split_sections(patch) if patch else []
-        if patch:
-            post_comment(num, f"ℹ️ Solver: Whole-Apply scheiterte, section-wise Fallback.\n```\n{info}\n```")
-        for i, sec in enumerate(sections, 1):
-            if apply_section(sec, i):
-                applied_any = True
-        if patch and not applied_any:
-            post_comment(num, "ℹ️ Solver: Section-wise Apply fehlgeschlagen – wechsle zu Spec-to-File.")
-
-        # ---- Spec-to-File Pfad ----
-        repo_syms = gather_repo_symbols()
-        context_full = read_legacy_context_full_md() or ""
-        if not context_full:
-            s = read_new_summary_txt() or ""
-            try:
-                ctx_excerpt = json.dumps({"issue": (ctx_new.get("issue_context") if ctx_new else {}),
-                                          "analysis": (ctx_new.get("analysis") if ctx_new else {})}, ensure_ascii=False)
-            except Exception:
-                ctx_excerpt = ""
-            context_full = s + ("\n\n" + ctx_excerpt if ctx_excerpt else "")
-
-        # Ziele bestimmen
-        create_paths, existing_paths = choose_targets_from_new_context(ctx_new, ls_files())
-    # # == Enforce allowed_targets on chosen paths ==
-    ok, bad_from_patch = _validate_patch_against_allowed(patch)
-    if not ok:
-        post_comment(num, "❌ Patch enthält verbotene Ziele (strict_mode aktiv). Wechsle in Spec-to-File und filtere Targets.\n```
-" + "\n".join(bad_from_patch) + "\n```")
-        patch = ""
-
-    c_ok, e_ok, rejected = _filter_targets_by_allowed(create_paths, existing_paths)
-    if rejected:
-        post_comment(num, "ℹ️ Solver: Einige angeforderte Ziele sind außerhalb des erlaubten Scopes und werden ignoriert.\n```
-" + "\n".join(rejected[:50]) + "\n```")
-    create_paths, existing_paths = c_ok, e_ok
-
-        if not pending:
-            pending = list((create_paths + existing_paths))
-        if not create_paths and not existing_paths:
-            create_paths, existing_paths = choose_targets_fallback_legacy(ctx_old, ls_files(), cm_comment)
-
-        # 1) Neue Dateien erzeugen
-        logging.info('Phase=create start | %s targets', len(create_paths))
-        for pth in create_paths:
-            try:
-                logging.info('CREATE %s', pth)
-                if Path(pth).exists():
-                    processed.add(pth)
-                    if pth in pending:
-                        pending.remove(pth)
-                    continue
-                gen = ai_generate_full_file(pth, repo_syms, context_full, read_new_summary_txt())
-                _write_text_file(pth, gen)
-                post_comment(num, f"🆕 Datei erzeugt (Spec-to-File): `{pth}`"); logging.info('CREATE-DONE %s', pth)
-                applied_any = True
-
-                processed.add(pth)
-                if pth in pending:
-                    pending.remove(pth)
-                state["processed"] = sorted(processed)
-                state["pending"] = pending
-                state["cursor"] = {"phase":"create", "index": len(processed)}
-                batch_count += 1
-                if batch_count % BATCH == 0:
-                    _save_state_and_push(state, f"codex: partial (issue #{num}) [create {len(processed)}]")
-                    add_step_summary(f"- Create batch: {len(processed)} processed, {len(pending)} pending")
-            except Exception as e:
-                post_comment(num, f"⚠️ Konnte Datei nicht erzeugen `{pth}`:\n```\n{e}\n```")
-
-        # 2) Bestehende Dateien ersetzen (konkrete Dateien)
-        logging.info('Phase=rewrite start | %s targets', len(existing_paths))
-        for target in existing_paths:
-            logging.info('REWRITE %s', target)
-            p = Path(target)
-            if p.is_dir():
-                continue
-            if not (target.endswith(".kt") or target.endswith(".kts") or target.endswith(".gradle")):
-                continue
-            try:
-                cur = p.read_text(encoding="utf-8", errors="replace") if p.exists() else ""
-            except Exception:
-                cur = ""
-            try:
-                newc = ai_rewrite_full_file(target, cur, repo_syms, context_full, read_new_summary_txt())
-                _write_text_file(target, newc)
-                post_comment(num, f"🔁 Datei ersetzt (Spec-to-File): `{target}`"); logging.info('REWRITE-DONE %s', target)
-                applied_any = True
-                processed.add(target)
-                if target in pending:
-                    pending.remove(target)
-                state["processed"] = sorted(processed)
-                state["pending"] = pending
-                state["cursor"] = {"phase":"rewrite", "index": len(processed)}
-                batch_count += 1
-                if batch_count % BATCH == 0:
-                    _save_state_and_push(state, f"codex: partial (issue #{num}) [rewrite {len(processed)}]")
-                    add_step_summary(f"- Rewrite batch: {len(processed)} processed, {len(pending)} pending")
-            except Exception as e:
-                post_comment(num, f"⚠️ Konnte Datei nicht ersetzen `{target}`:\n```\n{e}\n```")
-
-        # 2b) Directory-Targets: rekursiv alle .kt verarbeiten
-        for target in existing_paths:
-            p = Path(target)
-            if p.is_dir():
-                for f in p.rglob("*.kt"):
-                    # # == Per-file check inside dir rewrite ==
-                    allowed, execution = _load_allowed_config()
-                    rel = f.as_posix()
-                    if execution.get("strict_mode", False) and not _match_any(rel, allowed.get("modify")):
-                        continue
-
-                    try:
-                        cur = f.read_text(encoding="utf-8", errors="replace")
-                        newc = ai_rewrite_full_file(f.as_posix(), cur, repo_syms, context_full, read_new_summary_txt())
-                        f.write_text(newc, encoding="utf-8")
-                        post_comment(num, f"🔁 Datei ersetzt (Dir-Target): `{f.as_posix()}`"); logging.info('DIR-REWRITE-DONE %s', f.as_posix())
-                        applied_any = True
-                        processed.add(f.as_posix())
-                        if f.as_posix() in pending:
-                            pending.remove(f.as_posix())
-                        state["processed"] = sorted(processed)
-                        state["pending"] = pending
-                        state["cursor"] = {"phase":"dir-rewrite", "index": len(processed)}
-                        batch_count += 1
-                        if batch_count % BATCH == 0:
-                            _save_state_and_push(state, f"codex: partial (issue #{num}) [dir {len(processed)}]")
-                            add_step_summary(f"- Dir batch: {len(processed)} processed, {len(pending)} pending")
-                    except Exception as e:
-                        post_comment(num, f"⚠️ Ersetzen fehlgeschlagen `{f.as_posix()}`:\n```\n{e}\n```")
-
-    # Keine Änderungen?
-    status = sh("git status --porcelain", check=False)
-    if not status.strip():
-        add_label(num, "solver-error")
-        post_comment(num, "❌ Solver: Keine Änderungen im Working Tree nach Verarbeitung.")
-        summarize_rejects(num)
-        return None
-
-    # Auto-Format & Schnell-Compile (best effort)
-    try:
-        sh("./gradlew -q :app:spotlessApply", check=False)
-        sh("./gradlew -q :app:compileDebugKotlin --no-daemon", check=False)
-    except Exception:
-        pass
-
-    # Nach evtl. Formatierung erneut prüfen
-    status = sh("git status --porcelain", check=False)
-    if not status.strip():
-        add_label(num, "solver-error")
-        post_comment(num, "❌ Solver: Nach Formatierung keine Änderungen übrig.")
-        summarize_rejects(num)
-        return None
-
-    # Commit & Push
-    sh("git add -A", check=False)
-    staged_diff = subprocess.run("git diff --cached --quiet", shell=True)
-    if staged_diff.returncode == 0:
-        add_label(num, "solver-error")
-        post_comment(num, "❌ Solver: Keine Änderungen zum Commit (staged diff leer).")
-        summarize_rejects(num)
-        return None
-
-    _save_state_and_push(state, f"codex: partial (issue #{num}) [final]")
-    add_step_summary(f"- Finalized: {len(processed)} processed total")
-    sh(f"git commit -m 'codex: solver changes (issue #{num})'", check=False)
-    branch = sh("git rev-parse --abbrev-ref HEAD").strip()
-    sh(f"git push --set-upstream origin {branch}", check=True)
-
-    pr = gh_api("POST", f"/repos/{repo()}/pulls", {
-        "title": f"codex: solver changes (issue #{num})",
-        "head": sh('git rev-parse --abbrev-ref HEAD').strip(),
-        "base": default_branch(),
-        "body": (
-            f"Automatisch erzeugte Änderungen basierend auf ContextMap/Artefakt (issue #{num}).\n\n"
-            f"- Kontext: `.github/codex/context/solver_input.json` (+ `summary.txt`) / Legacy: `.codex/context_full.md`, `.codex/context.json`\n"
-            f"- Modus: Patch → Fallbacks → Spec-to-File\n"
-            f"- Bitte nach Merge Branch löschen (`codex/solve-*`)."
-        )
+def _open_pr(issue_no: int, title: str, body: str) -> Dict[str, Any]:
+    head = current_branch()
+    pr = gh.gh_api("POST", f"/repos/{gh.repo()}/pulls", {
+        "title": title,
+        "head": head,
+        "base": gh.default_branch(),
+        "body": body
     })
-    pr_num = pr.get("number"); pr_url = pr.get("html_url")
-    post_comment(num, f"🔧 PR erstellt: #{pr_num} — {pr_url}")
-    return pr_url
-
-# ---------- Main ----------
-
-def dispatch_triage(issue_num: int):
-    try:
-        wfs = gh_api("GET", f"/repos/{repo()}/actions/workflows")
-        names = { (w.get("path") or "").split("/")[-1] for w in (wfs.get("workflows") or []) }
-        target = "codex-triage.yml"
-        if target in names:
-            gh_api("POST", f"/repos/{repo()}/actions/workflows/{target}/dispatches",
-                   {"ref": default_branch(), "inputs": {"issue": str(issue_num)}})
-        else:
-            print("::notice::No codex-triage.yml found; skipping triage dispatch")
-    except Exception as e:
-        print(f"::warning::Failed to dispatch triage workflow: {e}")
-
+    return pr if isinstance(pr, dict) else {}
 
 def main():
-    # Configurable batch threshold (checkpoint commits)
-    BATCH = int(os.environ.get("SOLVER_CHECKPOINT_BATCH", "10"))
+    ensure_repo_cwd_and_git()
+    logging_utils.heartbeat("solver", every_s=60)
 
-    # Dry run
-    if os.environ.get("SOLVER_DRY_RUN") == "1":
-        sample = textwrap.dedent("""
-        diff --git a/README.md b/README.md
-        index 1111111..2222222 100644
-        --- a/README.md
-        +++ b/README.md
-        @@ -1,1 +1,1 @@
-        -Hello
-        +Hello World
-        """
-        ).strip("\n")
-        assert "diff --git" in sanitize_patch(sample)
-        assert isinstance(_split_sections(sample), list)
-        print("DRY_RUN OK")
-        return
-
-    ensure_repo_cwd()
-    heartbeat('solver', every_s=60)
-    num = issue_number()
-    if not num:
-        print("::error::No issue number")
+    task, ctx, run_dir = load_task_and_context()
+    issue_no = _extract_issue_number(task, ctx)
+    if not issue_no:
+        print("::error::Konnte Issue‑Nummer nicht ermitteln.")
         sys.exit(1)
 
-    # Load state early
-    state = _load_state(num)
+    branch = create_solver_branch(issue_no)
+    gh.add_step_summary(f"- Branch: `{branch}` (base: {gh.default_branch()})")
 
-    ev_name = (os.environ.get("GH_EVENT_NAME") or os.environ.get("GITHUB_EVENT_NAME") or "")
-    if ev_name != "workflow_dispatch":
-        labels = get_labels(num)
-        if "contextmap-ready" not in labels:
-            print("::notice::No 'contextmap-ready' label; skipping")
-            sys.exit(0)
+    raw_patch = _get_issue_raw_diff(issue_no)
+    changed_from_patch = _apply_unified_patch_if_any(issue_no, raw_patch)
 
-    # Kontext laden (neu vor alt)
-    ctx_new = read_new_context_json()
-    ctx_old = read_legacy_context_json()
-    cm_comment = fetch_contextmap_comment(num) or ""
+    total_commits = 0
+    for path in changed_from_patch:
+        diff_text = _file_diff_against_head(path)
+        _ai_explain_and_comment(issue_no, path, diff_text, task)
+        if commit_and_push(path, issue_no):
+            total_commits += 1
+            gh.add_step_summary(f"- Commit/PUSH: `{path}`")
 
-    # Diff ggf. aus Issue + Comments
-    raw_issue_diff = extract_issue_raw_diff(num)
-    patch = sanitize_patch(raw_issue_diff) if raw_issue_diff else ""
-    if patch and "diff --git " in patch:
-        try:
-            if PatchSet:
-                PatchSet.from_string(patch)
-        except Exception as e:
-            post_comment(num, f"ℹ️ Solver: Unidiff Parser Warning: `{type(e).__name__}: {e}` – nutze Fallbacks.")
-    else:
-        patch = ""  # erzwinge Spec-to-File/AI-Diff-Pfad
+    allowed_scope = (task.get("scope") or {})
+    create_targets = list(allowed_scope.get("create") or [])
+    modify_targets = list(allowed_scope.get("modify") or [])
+    create_targets = ensure_allowed_or_explain(issue_no, create_targets, "create")
+    modify_targets = ensure_allowed_or_explain(issue_no, modify_targets, "modify")
 
-    # Apply / Spec-to-File
-    pr_url = apply_or_spec_to_file(num, patch, ctx_new, ctx_old, cm_comment, state=state, BATCH=BATCH)
-    if pr_url is None:
-        add_label(num, "solver-error")
-        summarize_rejects(num)
-        dispatch_triage(num)
-        sys.exit(1)
-
-    # Optionaler Build (gated)
+    short_ctx = (task.get("problem") or {}).get("summary") or (ctx.get("issue_context") or {}).get("title") or ""
+    full_ctx = ""
     try:
-        if os.getenv('SOLVER_ENABLE_BUILD','false').lower() not in {'1','true','yes'}:
-            logging.info('Build dispatch disabled (set SOLVER_ENABLE_BUILD=true to enable).')
+        full_ctx = (run_dir / "summary.md").read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        try:
+            full_ctx = (run_dir / "summary.txt").read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            full_ctx = json.dumps({"issue": ctx.get("issue_context"), "analysis": ctx.get("analysis")}, ensure_ascii=False)
+
+    symbols = _gather_symbols_if_needed()
+
+    for new_path in (create_targets or []):
+        p = Path(new_path)
+        if p.exists():
+            continue
+        try:
+            _spec_create_file(new_path, short_ctx, full_ctx, symbols)
+            diff_text = _file_diff_against_head(new_path)
+            _ai_explain_and_comment(issue_no, new_path, diff_text, task)
+            if commit_and_push(new_path, issue_no):
+                total_commits += 1
+        except Exception as e:
+            gh.post_comment(issue_no, f"⚠️ Konnte Datei nicht erzeugen `{new_path}`:\n```\n{e}\n```")
+
+    dir_rewrite_allowed = bool((task.get("scope") or {}).get("dir_rewrite_allowed", False))
+    for tgt in (modify_targets or []):
+        p = Path(tgt)
+        if p.is_dir():
+            if not dir_rewrite_allowed:
+                gh.post_comment(issue_no, f"ℹ️ Verzeichnisse sind nicht erlaubt (dir_rewrite_allowed=false): `{tgt}`")
+                continue
+            for f in p.rglob("*"):
+                if not f.is_file(): continue
+                if not any(f.suffix.lower() == ext for ext in (".kt",".java",".py",".ts",".tsx",".js",".cs",".go",".rs")):
+                    continue
+                try:
+                    _spec_rewrite_file(f.as_posix(), short_ctx, full_ctx, symbols)
+                    diff_text = _file_diff_against_head(f.as_posix())
+                    _ai_explain_and_comment(issue_no, f.as_posix(), diff_text, task)
+                    if commit_and_push(f.as_posix(), issue_no):
+                        total_commits += 1
+                except Exception as e:
+                    gh.post_comment(issue_no, f"⚠️ Umschreiben fehlgeschlagen `{f.as_posix()}`:\n```\n{e}\n```")
         else:
-            wf = os.environ.get('SOLVER_BUILD_WORKFLOW', 'release-apk.yml')
-            branch = sh('git rev-parse --abbrev-ref HEAD').strip()
-            since = dispatch_build(wf, branch, inputs={"issue": str(num)})  # FIX: define since before wait
-            run = wait_build_result(wf, branch, since, timeout_s=1800)
-            concl = (run or {}).get('conclusion', '')
-            if concl == 'success':
-                remove_label(num, 'contextmap-ready')
-                add_label(num, 'solver-done')
-                post_comment(num, '✅ Build erfolgreich – Label `solver-done` gesetzt.')
-            else:
-                add_label(num, 'solver-error')
-                post_comment(num, '❌ Build fehlgeschlagen – Label `solver-error` gesetzt (Bot 3 wird reagieren).')
-                dispatch_triage(num)
-    except Exception as e:
-        add_label(num, "solver-error")
-        post_comment(num, f"❌ Build-Dispatch fehlgeschlagen\n```\n{e}\n```")
-        dispatch_triage(num)
+            if not p.exists():
+                gh.post_comment(issue_no, f"ℹ️ Datei in `scope.modify` existiert nicht (skipping): `{tgt}`")
+                continue
+            try:
+                _spec_rewrite_file(tgt, short_ctx, full_ctx, symbols)
+                diff_text = _file_diff_against_head(tgt)
+                _ai_explain_and_comment(issue_no, tgt, diff_text, task)
+                if commit_and_push(tgt, issue_no):
+                    total_commits += 1
+            except Exception as e:
+                gh.post_comment(issue_no, f"⚠️ Umschreiben fehlgeschlagen `{tgt}`:\n```\n{e}\n```")
+
+    if RUN_TESTS:
+        fmt, build, test = _resolve_commands(task)
+        _run_cmd_list(fmt, "Formatierung", issue_no)
+        _run_cmd_list(build, "Build", issue_no)
+        _run_cmd_list(test, "Tests", issue_no)
+
+    status = sh("git status --porcelain", check=False).strip()
+    if total_commits == 0 and not status:
+        gh.add_labels(issue_no, ["solver-error"])
+        gh.post_comment(issue_no, "❌ Solver: Keine Änderungen vorgenommen. Triage wird ausgelöst.")
+        try:
+            gh.dispatch_workflow("codex-triage.yml", gh.default_branch(), inputs={"issue": str(issue_no)})
+        except Exception:
+            pass
         sys.exit(1)
 
+    pr_title = f"SOLVERBOT: Änderungen für Issue #{issue_no}"
+    pr_body = textwrap.dedent(f"""
+    Automatisch erzeugte Änderungen durch **Bot 2 (Solver)**.
+    
+    **Hinweise**
+    - Branch: `{current_branch()}` (Basis: `{gh.default_branch()}`)
+    - Allowed‑Targets: aus `solver_task.json` (strict_mode enforced)
+    - Commits: pro Datei (ein Commit pro Änderung)
+    - Auswahl einzelner Patches: Nutze *Rebase & Merge* um Commits selektiv zu übernehmen; alternativ `SOLVER_SEPARATE_PRS=true`, um je Datei einen separaten PR zu erstellen.
+    
+    **Artefakte**
+    - Kontext: `{(run_dir/'solver_input.json').as_posix()}`
+    - Auftrag: `{(run_dir/'solver_task.json').as_posix()}`
+    """).strip()
+
+    pr = _open_pr(issue_no, pr_title, pr_body)
+    pr_url = pr.get("html_url", "")
+    if pr_url:
+        gh.post_comment(issue_no, f"🔧 PR erstellt: {pr_url}")
+
+    if SEPARATE_PRS:
+        gh.post_comment(issue_no, "ℹ️ `SOLVER_SEPARATE_PRS=true`: separierte PRs sind noch nicht aktiviert (v1 öffnet einen PR).")
 
 if __name__ == "__main__":
     try:
@@ -1169,11 +453,15 @@ if __name__ == "__main__":
         raise
     except Exception as e:
         try:
-            num = issue_number()
-            if num:
-                add_label(num, "solver-error")
-                dispatch_triage(num)
+            task, ctx, _ = load_task_and_context()
+            issue_no = (task.get("issue") or {}).get("number") or (ctx.get("issue_context") or {}).get("number")
+            if issue_no:
+                gh.add_labels(int(issue_no), ["solver-error"])
+                try:
+                    gh.dispatch_workflow("codex-triage.yml", gh.default_branch(), inputs={"issue": str(issue_no)})
+                except Exception:
+                    pass
         except Exception:
             pass
-        print(f"::error::Unexpected solver error: {e}")
-        sys.exit(1)
+        print(f"::error::Solver fatal: {e}")
+        raise
