@@ -1,4 +1,3 @@
-\
 """
 Repository discovery, file listing, stack detection, keywording, and simple symbol extraction.
 """
