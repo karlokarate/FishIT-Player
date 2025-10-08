@@ -1,4 +1,3 @@
-\
 """
 Unified diff sanitization and robust apply matrix.
 """
