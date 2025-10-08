@@ -35,6 +35,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: true   # wichtig für Pushes in SOLVERBOT/...
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -48,33 +49,47 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies (solver)
+        shell: bash
         run: |
+          set -euo pipefail
           python -m pip install --upgrade pip
-          pip install -r .github/codex/requirements-solver.txt
+          if [ -f .github/codex/requirements-solver.txt ]; then
+            pip install -r .github/codex/requirements-solver.txt
+          elif [ -f .github/codex/requirements.txt ]; then
+            pip install -r .github/codex/requirements.txt
+          else
+            pip install 'requests>=2.32.3,<3' 'chardet>=5.2.0,<6' 'openai>=1.40.0,<2' 'unidiff>=0.7.5,<1'
+          fi
 
       - name: Determine ISSUE_NUMBER
         id: issue
         shell: bash
         run: |
           set -euo pipefail
+          num=""
           case "${{ github.event_name }}" in
             workflow_run)
-              # Best effort: try to get issue number from context artifact
-              if [[ -f ".github/codex/context/solver_input.json" ]]; then
-                num=$(jq -r '.issue_number // empty' ".github/codex/context/solver_input.json" || true)
-                [[ -n "$num" ]] && echo "num=$num" >> "$GITHUB_OUTPUT" || true
+              # Versuche, Issue-Nr. aus Branch-Namen oder Context-Datei zu ermitteln
+              branch="$(jq -r '.workflow_run.head_branch' "${GITHUB_EVENT_PATH}" 2>/dev/null || true)"
+              if [[ "$branch" =~ SOLVERBOT/([0-9]+)/ ]]; then
+                num="${BASH_REMATCH[1]}"
+              elif [[ -f ".github/codex/context/last_run.json" ]]; then
+                num="$(jq -r '.issue_number // empty' ".github/codex/context/last_run.json" || true)"
               fi
               ;;
             issues)
-              echo "num=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+              num="${{ github.event.issue.number }}"
               ;;
             issue_comment)
-              echo "num=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+              num="${{ github.event.issue.number }}"
               ;;
             *)
-              echo "num=${{ github.event.inputs.issue }}" >> "$GITHUB_OUTPUT"
+              num="${{ github.event.inputs.issue }}"
               ;;
           esac
+
+          echo "num=$num" >> "$GITHUB_OUTPUT"
+          echo "Derived ISSUE_NUMBER: $num"
 
       - name: Run Bot 2 (Solver)
         env:
@@ -89,6 +104,8 @@ jobs:
           GH_EVENT_NAME: ${{ github.event_name }}
           ISSUE_NUMBER: ${{ steps.issue.outputs.num }}
         run: |
+          set -e
+          echo "Running Solver for ISSUE_NUMBER=${ISSUE_NUMBER}"
           python .github/codex/bot_solver.py
 
       - name: Upload rejects (if any)
