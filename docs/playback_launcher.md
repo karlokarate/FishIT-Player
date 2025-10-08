@@ -21,7 +21,7 @@ Migrated call-sites (v1)
 - VodDetailScreen: ActionBar Play/Resume uses `PlaybackLauncher`.
 - LiveDetailScreen: Play uses `PlaybackLauncher`.
 - SeriesDetailScreen: Episode play uses `PlaybackLauncher`.
-- ResumeCarousel: Modal “Intern” uses `PlaybackLauncher` for VOD + Series.
+- (Legacy) ResumeCarousel wurde entfernt; FishRow/FishResumeTile triggern weiterhin den `PlaybackLauncher` für VOD und Serienfortsetzungen.
 
 Notes
 - Internal player persists resume periodically; external result reporting is best-effort (no strict position).

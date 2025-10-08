@@ -111,7 +111,7 @@ fun HomeChromeScaffold(
     val ctx = LocalContext.current
     val isTv = remember(ctx) {
         val pm = ctx.packageManager
-        pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK) || pm.hasSystemFeature(PackageManager.FEATURE_TELEVISION)
+        pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK) || pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY)
     }
 
     // Chrome state: Visible (default), Collapsed (hidden), Expanded (focus trap + blur)
@@ -129,7 +129,7 @@ fun HomeChromeScaffold(
     val focusManager: FocusManager = LocalFocusManager.current
 
     fun focusContentFromChrome(direction: FocusDirection) {
-        // Try a few steps to escape chrome and land in content (middle row will accept focus via RowCore firstFocus)
+        // Try a few steps to escape chrome and land in content (middle row will accept focus via FocusKit’s row engine)
         repeat(4) { focusManager.moveFocus(direction) }
         com.chris.m3usuite.core.debug.GlobalDebug.logTree("focusReq:Chrome:content")
     }

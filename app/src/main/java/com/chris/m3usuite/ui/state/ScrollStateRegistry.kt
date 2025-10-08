@@ -45,7 +45,7 @@ private val rowFocusSaver: Saver<MutableState<RowFocus>, Int> = Saver(
 @Composable
 fun rememberRowFocus(key: String): MutableState<RowFocus> {
     val initial = ScrollStateRegistry.readRowFocus(key)
-    val state = rememberSaveable(key = "rowFocus:$key", saver = rowFocusSaver) {
+    val state = rememberSaveable("rowFocus", key, saver = rowFocusSaver) {
         mutableStateOf(initial)
     }
     LaunchedEffect(key, state.value.index) {

@@ -38,6 +38,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
+import com.chris.m3usuite.ui.focus.FocusKit
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.chris.m3usuite.ui.profile.AvatarCaptureAndPickButtons
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -51,7 +52,7 @@ import coil3.request.ImageRequest
 import com.chris.m3usuite.ui.util.rememberAvatarModel
 import java.io.File
 import java.io.FileOutputStream
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import com.chris.m3usuite.data.obx.ObxKidCategoryAllow
 import com.chris.m3usuite.data.obx.ObxKidContentBlock
 import com.chris.m3usuite.data.obx.ObxKidContentAllow
@@ -120,7 +121,7 @@ fun ProfileManagerScreen(
                     FilterChip(
                         modifier = Modifier
                             .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
-                            .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { newType = "kid" }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
+                            .then(FocusKit.run {  Modifier.tvClickable(onClick = { newType = "kid" }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
                         selected = newType == "kid",
                         onClick = { newType = "kid" },
                         label = { Text("Kind") }
@@ -128,7 +129,7 @@ fun ProfileManagerScreen(
                     FilterChip(
                         modifier = Modifier
                             .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
-                            .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { newType = "guest" }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
+                            .then(FocusKit.run {  Modifier.tvClickable(onClick = { newType = "guest" }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
                         selected = newType == "guest",
                         onClick = { newType = "guest" },
                         label = { Text("Gast") }
@@ -413,7 +414,7 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                     FilterChip(
                         modifier = Modifier
                             .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
-                            .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { tab = i }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
+                            .then(FocusKit.run {  Modifier.tvClickable(onClick = { tab = i }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
                         selected = tab == i,
                         onClick = { tab = i },
                         label = { Text(t) }
@@ -474,7 +475,7 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                             AssistChip(
                                 modifier = Modifier
                                     .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
-                                    .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { expanded = if (expanded == cat) null else cat }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
+                                    .then(FocusKit.run {  Modifier.tvClickable(onClick = { expanded = if (expanded == cat) null else cat }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
                                 onClick = { expanded = if (expanded == cat) null else cat },
                                 label = { Text(cat) }
                             )

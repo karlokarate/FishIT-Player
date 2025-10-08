@@ -30,7 +30,6 @@ fun FishResumeTile(
     var focused by remember { mutableStateOf(false) }
     Card(
         modifier = modifier
-            .focusable()
             .onFocusEvent { focused = it.isFocused || it.hasFocus }
             .then(
                 FocusKit.run {
@@ -93,4 +92,3 @@ fun FishResumeTile(
         }
     }
 }
-

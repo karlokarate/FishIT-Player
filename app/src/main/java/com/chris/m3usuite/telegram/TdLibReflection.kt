@@ -3,6 +3,7 @@ package com.chris.m3usuite.telegram
 import android.content.Context
 import android.os.Build
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -138,24 +139,50 @@ object TdLibReflection {
         return ClientHandle(nonNullClient, send)
     }
 
-    /** Returns a shared TDLib client; initializes parameters from BuildConfig TG_API_ID/HASH if possible. */
+    /** Returns a shared TDLib client; initializes parameters from BuildConfig TG_API_ID/HASH or Settings overrides. */
     @Synchronized
     fun getOrCreateClient(context: Context, authStateFlow: MutableStateFlow<AuthState>): ClientHandle? {
         if (!available()) return null
         if (singleton == null) {
             singleton = createClient(authStateFlow, null)
             // best-effort set parameters
-            val (apiId, apiHash) = try {
+            // 1) Try BuildConfig (ENV/.tg.secrets.properties/-P at build time)
+            var apiId = 0
+            var apiHash = ""
+            try {
                 val bc = Class.forName(context.packageName + ".BuildConfig")
                 val fid = bc.getDeclaredField("TG_API_ID"); fid.isAccessible = true
                 val fhash = bc.getDeclaredField("TG_API_HASH"); fhash.isAccessible = true
-                (fid.get(null) as? Int ?: 0) to (fhash.get(null) as? String ?: "")
-            } catch (_: Throwable) { 0 to "" }
+                apiId = (fid.get(null) as? Int) ?: 0
+                apiHash = (fhash.get(null) as? String) ?: ""
+            } catch (_: Throwable) { /* ignored */ }
+
+            // 2) Runtime fallback: read Settings overrides synchron synchronously if BuildConfig is empty
             if (apiId <= 0 || apiHash.isBlank()) {
-                android.util.Log.w("TdLib", "TG_API_ID/HASH missing – set via ENV/ .tg.secrets.properties / -P props")
+                try {
+                    val store = com.chris.m3usuite.prefs.SettingsStore(context)
+                    val id = kotlinx.coroutines.runBlocking { store.tgApiId.first() }
+                    val hash = kotlinx.coroutines.runBlocking { store.tgApiHash.first() }
+                    if (id > 0 && !hash.isNullOrBlank()) {
+                        apiId = id
+                        apiHash = hash
+                    }
+                } catch (_: Throwable) { /* ignored */ }
             }
-            val params = buildTdlibParameters(context, apiId, apiHash)
-            if (params != null) sendSetTdlibParameters(singleton!!, params)
+
+            if (apiId <= 0 || apiHash.isBlank()) {
+                android.util.Log.w("TdLib", "TG_API_ID/HASH missing – set via ENV/.tg.secrets.properties/-P or in Settings (tg_api_id/hash)")
+            } else {
+                val params = buildTdlibParameters(context, apiId, apiHash)
+                if (params != null) {
+                    sendSetTdlibParameters(singleton!!, params)
+                    // Provide database key early so the client can proceed past WAIT_ENCRYPTION_KEY without user action
+                    kotlin.runCatching {
+                        val key = com.chris.m3usuite.telegram.TelegramKeyStore.getOrCreateDatabaseKey(context)
+                        sendCheckDatabaseEncryptionKey(singleton!!, key)
+                    }
+                }
+            }
         }
         return singleton
     }

@@ -4,7 +4,6 @@
 )
 package com.chris.m3usuite.ui.components.rows
 
-import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -22,13 +21,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -38,12 +35,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -54,7 +51,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.focusGroup
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusEvent
@@ -63,50 +59,34 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.nativeKeyEvent
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.consume
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.common.MediaItem as ExoMediaItem
-import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.exoplayer.DefaultRenderersFactory
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.ui.PlayerView
 import androidx.paging.compose.LazyPagingItems
-import com.chris.m3usuite.BuildConfig
-import com.chris.m3usuite.data.repo.EpgRepository
 import com.chris.m3usuite.domain.selectors.extractYearFrom
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.ui.cards.PosterCardTagged
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
-import com.chris.m3usuite.ui.components.common.FocusTitleOverlay
 import com.chris.m3usuite.ui.fx.ShimmerBox
-import com.chris.m3usuite.ui.fx.ShimmerCircle
 import com.chris.m3usuite.ui.fx.tvFocusGlow
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
-import com.chris.m3usuite.ui.skin.tvClickable
-import com.chris.m3usuite.ui.tv.TvFocusRow
+import com.chris.m3usuite.ui.layout.FishHeaderData
+import com.chris.m3usuite.ui.layout.FishResumeTile
+import com.chris.m3usuite.ui.layout.FishRow
+import com.chris.m3usuite.ui.layout.LiveFishTile
+import com.chris.m3usuite.ui.layout.LocalFishDimens
+import com.chris.m3usuite.ui.focus.FocusKit
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
+import com.chris.m3usuite.ui.focus.tvClickable
 import com.chris.m3usuite.ui.util.AppAsyncImage
+import com.chris.m3usuite.ui.focus.focusGroup
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.debounce
@@ -120,29 +100,6 @@ val LocalRowItemHeightOverride = compositionLocalOf<Int?> { null }
 private const val POSTER_ASPECT_RATIO = 2f / 3f
 private const val LIVE_TILE_ASPECT_RATIO = 16f / 9f
 private val TILE_SHAPE = RoundedCornerShape(14.dp)
-
-@Composable
-private fun PlayOverlay(visible: Boolean, sizeDp: Int = 56) {
-    val a by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(150),
-        label = "playFade"
-    )
-    if (a > 0f) {
-        Box(Modifier.fillMaxSize()) {
-            AppIconButton(
-                icon = AppIcon.PlayCircle,
-                contentDescription = "Abspielen",
-                onClick = {},
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .alpha(a)
-                    .focusProperties { canFocus = false },
-                size = sizeDp.dp
-            )
-        }
-    }
-}
 
 private fun isTelegram(item: MediaItem): Boolean {
     return (item.source?.equals("TG", ignoreCase = true) == true) ||
@@ -190,1232 +147,42 @@ fun rowItemHeight(): Int {
 }
 
 @Composable
-fun MediaCard(
-    item: MediaItem,
-    onClick: (MediaItem) -> Unit,
-    modifier: Modifier = Modifier,
-    showTitle: Boolean = true
+fun LiveAddTile(
+    requestInitialFocus: Boolean,
+    onClick: () -> Unit
 ) {
-    val ctx = LocalContext.current
-    val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
-    val tileHeight = rowItemHeight().dp
-    val tileWidth = tileHeight * POSTER_ASPECT_RATIO
-    var focused by remember { mutableStateOf(false) }
-
-    Column(
-        horizontalAlignment = Alignment.Start,
-        modifier = modifier
-            .width(tileWidth)
-            .padding(end = 12.dp)
-            .onKeyEvent { ev ->
-                val n = ev.nativeKeyEvent
-                if (n.action == android.view.KeyEvent.ACTION_UP) {
-                    val code = n.keyCode
-                    if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad(
-                            "CENTER",
-                            mapOf("tile" to (item.streamId ?: item.id), "type" to item.type)
-                        )
-                    }
-                }
-                false
-            }
-            .tvClickable(
-                brightenContent = false,
-                autoBringIntoView = false,
-                scaleFocused = 1f,
-                scalePressed = 1f,
-                focusRequester = selfReq,
-                focusColors = com.chris.m3usuite.ui.skin.TvFocusColors(
-                    focusFill = Color.Transparent,
-                    focusBorder = Color.Transparent,
-                    pressedFill = Color.Transparent,
-                    pressedBorder = Color.Transparent
-                ),
-                focusBorderWidth = 0.dp
-            ) { onClick(item) }
-            .onFocusEvent {
-                val nowHas = it.isFocused || it.hasFocus
-                focused = nowHas
-                if (!it.isFocused && it.hasFocus && com.chris.m3usuite.metrics.RouteTag.current == "home") {
-                    runCatching { selfReq.requestFocus() }
-                }
-            }
-    ) {
-        LaunchedEffect(focused, item.streamId, item.type) {
-            if (focused) {
-                val sid = item.streamId
-                if (sid != null) {
-                    val ctxLocal = ctx
-                    val obxTitle = withContext(Dispatchers.IO) {
-                        runCatching {
-                            val store = com.chris.m3usuite.data.obx.ObxStore.get(ctxLocal)
-                            when (item.type) {
-                                "live" -> store.boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
-                                    .query(com.chris.m3usuite.data.obx.ObxLive_.streamId.equal(sid))
-                                    .build().findFirst()?.name
-                                "vod" -> store.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
-                                    .query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(sid))
-                                    .build().findFirst()?.name
-                                "series" -> store.boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
-                                    .query(com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(sid))
-                                    .build().findFirst()?.name
-                                else -> null
-                            }
-                        }.getOrNull()
-                    }
-                    com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus(item.type, sid.toString(), item.name, obxTitle)
-                    val node = when (item.type) {
-                        "live" -> "row:live"
-                        "vod" -> "row:vod"
-                        "series" -> "row:series"
-                        else -> "row:?"
-                    }
-                    com.chris.m3usuite.core.debug.GlobalDebug.logTree(node, "tile:$sid")
-                }
-            }
-        }
-        val raw = remember(item.poster ?: item.logo ?: item.backdrop) {
-            item.poster ?: item.logo ?: item.backdrop
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(tileHeight)
-                .clip(TILE_SHAPE)
-        ) {
-            AppAsyncImage(
-                url = raw,
-                contentDescription = item.name,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize(),
-                crossfade = false
-            )
-            run {
-                val assignCtx = com.chris.m3usuite.ui.state.LocalAssignSelection.current
-                val showBadge = com.chris.m3usuite.ui.state.LocalAssignBadgeVisible.current
-                if (showBadge) {
-                    Surface(
-                        color = Color.Black.copy(alpha = 0.55f),
-                        contentColor = Color.White,
-                        shape = CircleShape,
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(6.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.55f))
-                            .tvClickable(focusBorderWidth = 0.dp, onClick = {
-                                if (assignCtx.enabled) assignCtx.toggle(item) else assignCtx.start(item)
-                            })
-                    ) {
-                        val sel = assignCtx.isSelected(item)
-                        val label = if (sel) "✓" else "+"
-                        Text(
-                            label,
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-                if (assignCtx.isSelected(item)) {
-                    Box(
-                        Modifier
-                            .matchParentSize()
-                            .border(3.dp, MaterialTheme.colorScheme.primary, TILE_SHAPE)
-                    )
-                }
-            }
-            if (isTelegram(item)) {
-                TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(6.dp), small = true)
-            }
-            FocusTitleOverlay(
-                title = item.name,
-                focused = focused
-            )
-        }
-        if (showTitle) {
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 6.dp)
-            )
-        }
-    }
-}
-
-@OptIn(UnstableApi::class)
-@Composable
-fun LiveTileCard(
-    item: MediaItem,
-    onOpenDetails: (MediaItem) -> Unit,
-    onPlayDirect: (MediaItem) -> Unit,
-    selected: Boolean = false,
-    onLongPress: (() -> Unit)? = null,
-    onMoveLeft: (() -> Unit)? = null,
-    onMoveRight: (() -> Unit)? = null,
-    insertionLeft: Boolean = false,
-    insertionRight: Boolean = false
-) {
-    if (BuildConfig.CARDS_V1) {
-        val nowNext: String? = null
-        com.chris.m3usuite.ui.cards.ChannelCard(
-            name = item.name,
-            logoUrl = item.logo ?: item.poster,
-            nowNext = nowNext,
-            onClick = { onPlayDirect(item) }
-        )
-        return
-    }
-    val ctx = LocalContext.current
-    val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
-    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
-    val store = remember { SettingsStore(ctx) }
-    val epgRepo = remember(store) { EpgRepository(ctx, store) }
-    val ua by store.userAgent.collectAsStateWithLifecycle(initialValue = "")
-    val ref by store.referer.collectAsStateWithLifecycle(initialValue = "")
-    val extraJson by store.extraHeadersJson.collectAsStateWithLifecycle(initialValue = "")
-    var epgNow by remember { mutableStateOf("") }
-    var epgNext by remember { mutableStateOf("") }
-    var nowStartMs by remember { mutableStateOf<Long?>(null) }
-    var nowEndMs by remember { mutableStateOf<Long?>(null) }
-    var epgProgress by remember { mutableStateOf<Float?>(null) }
-    var focused by remember { mutableStateOf(false) }
-    var preview by remember { mutableStateOf(false) }
-
-    val epgChannelId = remember(item.epgChannelId) { item.epgChannelId?.trim().orEmpty() }
-    if (epgChannelId.isNotEmpty()) {
-        val box = remember { com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxEpgNowNext::class.java) }
-        DisposableEffect(epgChannelId) {
-            val q = box.query(com.chris.m3usuite.data.obx.ObxEpgNowNext_.channelId.equal(epgChannelId)).build()
-            fun apply(row: com.chris.m3usuite.data.obx.ObxEpgNowNext?) {
-                epgNow = row?.nowTitle.orEmpty()
-                epgNext = row?.nextTitle.orEmpty()
-                nowStartMs = row?.nowStartMs
-                nowEndMs = row?.nowEndMs
-                epgProgress = if (nowStartMs != null && nowEndMs != null && nowEndMs!! > nowStartMs!!) {
-                    val now = System.currentTimeMillis()
-                    ((now - nowStartMs!!).coerceAtLeast(0).toFloat() / (nowEndMs!! - nowStartMs!!).toFloat()).coerceIn(0f, 1f)
-                } else null
-            }
-            apply(q.findFirst())
-            val sub = q.subscribe().on(io.objectbox.android.AndroidScheduler.mainThread()).observer { res -> apply(res.firstOrNull()) }
-            onDispose { sub.cancel() }
-        }
-    }
-
-    @OptIn(FlowPreview::class)
-    LaunchedEffect(item.streamId) {
-        val sid = item.streamId ?: return@LaunchedEffect
-        if (item.type != "live") return@LaunchedEffect
-        snapshotFlow { focused }
-            .distinctUntilChanged()
-            .debounce(120)
-            .filter { it }
-            .collect {
-                runCatching {
-                    val list = epgRepo.nowNext(sid, 2)
-                    val first = list.getOrNull(0)
-                    val second = list.getOrNull(1)
-                    epgNow = first?.title.orEmpty()
-                    epgNext = second?.title.orEmpty()
-                    val start = first?.start?.toLongOrNull()?.let { it * 1000 }
-                    val end = first?.end?.toLongOrNull()?.let { it * 1000 }
-                    nowStartMs = start; nowEndMs = end
-                    epgProgress = if (start != null && end != null && end > start) {
-                        val now = System.currentTimeMillis()
-                        ((now - start).coerceAtLeast(0).toFloat() / (end - start).toFloat()).coerceIn(0f, 1f)
-                    } else null
-                }.onFailure { epgNow = ""; epgNext = "" }
-            }
-    }
-    val shape = RoundedCornerShape(14.dp)
+    val dimens = LocalFishDimens.current
+    val shape = RoundedCornerShape(dimens.tileCornerDp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
-    val tileHeight = rowItemHeight().dp
-    val tileWidth = tileHeight * LIVE_TILE_ASPECT_RATIO
-    val navKeysMod = if (onMoveLeft != null || onMoveRight != null) {
-        Modifier.onPreviewKeyEvent { ev ->
-            if (ev.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
-            when (ev.key) {
-                Key.DirectionLeft -> {
-                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
-                    onMoveLeft?.invoke() ?: focusManager.moveFocus(FocusDirection.Left)
-                    true
-                }
-                Key.DirectionRight -> {
-                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("tile" to (item.streamId ?: item.id), "type" to item.type))
-                    onMoveRight?.invoke() ?: focusManager.moveFocus(FocusDirection.Right)
-                    true
-                }
-                else -> false
-            }
+    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+
+    LaunchedEffect(requestInitialFocus) {
+        if (requestInitialFocus) {
+            // Wait for composition so focus requester is attached before requesting focus
+            kotlinx.coroutines.delay(16)
+            runCatching { focusRequester.requestFocus() }
         }
-    } else Modifier
+    }
+
+    val clickable = FocusKit.run {
+        Modifier.tvClickable(
+            scaleFocused = dimens.focusScale,
+            scalePressed = dimens.focusScale + 0.02f,
+            elevationFocusedDp = 18f,
+            brightenContent = false,
+            autoBringIntoView = false,
+            focusBorderWidth = dimens.focusBorderWidthDp,
+            shape = shape,
+            focusRequester = if (requestInitialFocus) focusRequester else null,
+            onClick = onClick
+        )
+    }
 
     Card(
         modifier = Modifier
-            .height(tileHeight)
-            .width(tileWidth)
-            .padding(end = 6.dp)
-            .combinedClickable(
-                onClick = { onOpenDetails(item) },
-                onLongClick = { onLongPress?.invoke() }
-            )
-            .onKeyEvent { ev ->
-                val n = ev.nativeKeyEvent
-                if (n.action == android.view.KeyEvent.ACTION_UP) {
-                    val code = n.keyCode
-                    if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad(
-                            "CENTER",
-                            mapOf("tile" to (item.streamId ?: item.id), "type" to item.type)
-                        )
-                    }
-                }
-                false
-            }
-            .then(navKeysMod)
-            .onFocusEvent {
-                val nowHas = it.isFocused || it.hasFocus
-                focused = nowHas
-                if (!it.isFocused && it.hasFocus && com.chris.m3usuite.metrics.RouteTag.current == "home") {
-                    runCatching { selfReq.requestFocus() }
-                }
-            }
-            .focusScaleOnTv(
-                focusedScale = 1.40f,
-                pressedScale = 1.40f,
-                focusColors = com.chris.m3usuite.ui.skin.TvFocusColors(
-                    focusFill = Color.White.copy(alpha = 0.28f),
-                    focusBorder = Color.White.copy(alpha = 0.92f),
-                    pressedFill = Color.White.copy(alpha = 0.32f),
-                    pressedBorder = Color.White.copy(alpha = 1.0f)
-                ),
-                focusBorderWidth = 2.5.dp
-            )
-            .border(1.dp, borderBrush, shape)
-            .drawWithContent {
-                drawContent()
-                val grad = Brush.verticalGradient(
-                    0f to Color.White.copy(alpha = 0.12f),
-                    1f to Color.Transparent
-                )
-                drawRect(brush = grad)
-            }
-            .tvFocusGlow(focused = focused, shape = shape, ringWidth = 5.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = shape
-    ) {
-        LaunchedEffect(focused, item.streamId) {
-            if (focused) {
-                val sid = item.streamId
-                if (sid != null) {
-                    val ctxLocal = ctx
-                    val obxTitle = withContext(Dispatchers.IO) {
-                        runCatching {
-                            val store = com.chris.m3usuite.data.obx.ObxStore.get(ctxLocal)
-                            store.boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
-                                .query(com.chris.m3usuite.data.obx.ObxLive_.streamId.equal(sid))
-                                .build().findFirst()?.name
-                        }.getOrNull()
-                    }
-                    com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus("live", sid.toString(), item.name, obxTitle)
-                    com.chris.m3usuite.core.debug.GlobalDebug.logTree("row:live", "tile:$sid")
-                }
-            }
-        }
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(tileHeight)
-        ) {
-            if (insertionLeft) {
-                Box(
-                    Modifier
-                        .align(Alignment.CenterStart)
-                        .width(3.dp)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.primary)
-                )
-            }
-            if (insertionRight) {
-                Box(
-                    Modifier
-                        .align(Alignment.CenterEnd)
-                        .width(3.dp)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.primary)
-                )
-            }
-            if (preview && !item.url.isNullOrBlank()) {
-                val url = item.url!!
-                AndroidView(
-                    factory = { c ->
-                        val view = PlayerView(c)
-                        val httpFactory = DefaultHttpDataSource.Factory().apply {
-                            val effUa = (if (ua.isNotBlank()) ua else "IBOPlayer/1.4 (Android)")
-                            if (effUa.isNotBlank()) setUserAgent(effUa)
-                        }
-                            .setAllowCrossProtocolRedirects(true)
-                            .apply {
-                                val base = buildMap<String, String> {
-                                    val effUa = (if (ua.isNotBlank()) ua else "IBOPlayer/1.4 (Android)")
-                                    if (effUa.isNotBlank()) put("User-Agent", effUa)
-                                    if (ref.isNotBlank()) put("Referer", ref)
-                                    put("Accept", "*/*")
-                                }
-                                val extras = com.chris.m3usuite.core.http.RequestHeadersProvider.parseExtraHeaders(extraJson)
-                                val merged = com.chris.m3usuite.core.http.RequestHeadersProvider.merge(base, extras)
-                                runCatching {
-                                    android.util.Log.d(
-                                        "TilePreviewHTTP",
-                                        "prepare ua=\"${merged["User-Agent"] ?: ""}\" ref=\"${merged["Referer"] ?: ""}\" accept=\"${merged["Accept"] ?: ""}\""
-                                    )
-                                }
-                                if (merged.isNotEmpty()) setDefaultRequestProperties(merged)
-                            }
-                        val dsFactory = DefaultDataSource.Factory(c, httpFactory)
-                        val mediaFactory = DefaultMediaSourceFactory(dsFactory)
-                        val renderers = DefaultRenderersFactory(c)
-                            .setEnableDecoderFallback(true)
-                            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
-                        val player = ExoPlayer.Builder(c)
-                            .setRenderersFactory(renderers)
-                            .setMediaSourceFactory(mediaFactory)
-                            .build().apply {
-                                volume = 0f
-                                repeatMode = ExoPlayer.REPEAT_MODE_ALL
-                                playWhenReady = true
-                                setMediaItem(ExoMediaItem.fromUri(Uri.parse(url)))
-                                prepare()
-                            }
-                        view.player = player
-                        view.useController = false
-                        view.tag = player
-                        view
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .graphicsLayer(alpha = 0.7f),
-                    update = { v -> (v.tag as? ExoPlayer)?.let { if (!it.playWhenReady) it.playWhenReady = true } },
-                    onRelease = { v -> (v.tag as? ExoPlayer)?.release() }
-                )
-            }
-
-            val sz = 77.dp
-            val logoTop = 8.dp
-            val epgTop = logoTop + sz + 8.dp
-            val labelTop = if (epgNow.isNotBlank() || epgNext.isNotBlank()) epgTop + 8.dp else (logoTop + sz + 8.dp)
-            val logoUrl = item.logo ?: item.poster
-            run {
-                var loaded by remember { mutableStateOf(false) }
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = logoTop)
-                        .size(sz)
-                ) {
-                    if (!loaded) {
-                        ShimmerCircle(Modifier.fillMaxSize())
-                    }
-                    if (logoUrl != null) {
-                        AppAsyncImage(
-                            url = logoUrl,
-                            contentDescription = item.name,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape)
-                                .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape),
-                            crossfade = false,
-                            onLoading = { loaded = false },
-                            onSuccess = { loaded = true },
-                            onError = { loaded = true }
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape)
-                                .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
-                        )
-                    }
-                }
-            }
-
-            if (selected) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight()
-                        .graphicsLayer { alpha = 0.18f }
-                        .background(Color.Yellow.copy(alpha = 0.2f))
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(8.dp)
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF1DB954))
-            )
-
-            if (isTelegram(item)) {
-                TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp), small = true)
-            }
-
-            if (epgNow.isNotBlank() || epgNext.isNotBlank()) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = epgTop)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color.Black.copy(alpha = 0.70f))
-                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if (epgNow.isNotBlank()) {
-                        val meta = remember(nowStartMs, nowEndMs) {
-                            if (nowStartMs != null && nowEndMs != null && nowEndMs!! > nowStartMs!!) {
-                                val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                                val range = fmt.format(java.util.Date(nowStartMs!!)) + "–" + fmt.format(java.util.Date(nowEndMs!!))
-                                val rem = ((nowEndMs!! - System.currentTimeMillis()).coerceAtLeast(0L) / 60000L).toInt()
-                                " $range • noch ${rem}m"
-                            } else ""
-                        }
-                        Text(
-                            text = "Jetzt: ${epgNow}${meta}",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = Color.White,
-                            maxLines = 1,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    if (epgNext.isNotBlank()) {
-                        Text(
-                            text = "Danach: ${epgNext}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            maxLines = 1,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = labelTop, start = 8.dp, end = 8.dp, bottom = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AppIconButton(
-                        icon = AppIcon.PlayCircle,
-                        contentDescription = "Abspielen",
-                        onClick = { onPlayDirect(item) },
-                        size = 24.dp,
-                        modifier = Modifier.focusProperties { canFocus = false }
-                    )
-                    AppIconButton(
-                        icon = AppIcon.Info,
-                        contentDescription = "Details",
-                        onClick = { onOpenDetails(item) },
-                        size = 24.dp,
-                        modifier = Modifier.focusProperties { canFocus = false }
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color.Black.copy(alpha = 0.70f))
-                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                ) {
-                    Text(
-                        text = item.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White,
-                        maxLines = 2,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    )
-                }
-            }
-
-            epgProgress?.let { p ->
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(3.dp)
-                        .background(Color.White.copy(alpha = 0.15f))
-                )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .fillMaxWidth(p)
-                        .height(3.dp)
-                        .background(Color(0xFF2196F3))
-                )
-            }
-
-            PlayOverlay(visible = focused)
-            FocusTitleOverlay(
-                title = item.name,
-                focused = focused
-            )
-        }
-    }
-}
-
-@Composable
-fun SeriesTileCard(
-    item: MediaItem,
-    onOpenDetails: (MediaItem) -> Unit,
-    onPlayDirect: (MediaItem) -> Unit,
-    onAssignToKid: (MediaItem) -> Unit,
-    isNew: Boolean = false,
-    showAssign: Boolean = true
-) {
-    if (BuildConfig.CARDS_V1) {
-        com.chris.m3usuite.ui.cards.PosterCard(
-            title = item.name,
-            imageUrl = item.poster ?: item.backdrop,
-            onClick = { onOpenDetails(item) }
-        )
-        return
-    }
-    val ctx = LocalContext.current
-    val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
-    var focused by remember { mutableStateOf(false) }
-    var seasons by remember(item.streamId) { mutableStateOf<Int?>(null) }
-    LaunchedEffect(item.streamId) {
-        val sid = item.streamId ?: return@LaunchedEffect
-        try {
-            val obx = com.chris.m3usuite.data.obx.ObxStore.get(ctx)
-            val eps = withContext(Dispatchers.IO) {
-                obx.boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
-                    .query(com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(sid.toLong()))
-                    .build().find()
-            }
-            seasons = eps.map { it.season }.distinct().size
-        } catch (_: Throwable) {
-            seasons = null
-        }
-    }
-    val shape = RoundedCornerShape(14.dp)
-    val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
-    val tileHeight = rowItemHeight().dp
-    val tileWidth = tileHeight * POSTER_ASPECT_RATIO
-    val assignCtx = com.chris.m3usuite.ui.state.LocalAssignSelection.current
-
-    Card(
-        modifier = Modifier
-            .height(tileHeight)
-            .width(tileWidth)
-            .padding(end = 6.dp)
-            .onKeyEvent { ev ->
-                val n = ev.nativeKeyEvent
-                if (n.action == android.view.KeyEvent.ACTION_UP) {
-                    val code = n.keyCode
-                    if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad(
-                            "CENTER",
-                            mapOf("tile" to (item.streamId ?: item.id), "type" to item.type)
-                        )
-                    }
-                }
-                false
-            }
-            .tvClickable(
-                scaleFocused = 1f,
-                scalePressed = 1f,
-                elevationFocusedDp = 18f,
-                brightenContent = false,
-                autoBringIntoView = false,
-                focusRequester = selfReq
-            ) {
-                if (assignCtx.enabled) assignCtx.toggle(item) else onOpenDetails(item)
-            }
-            .focusScaleOnTv(
-                focusedScale = 1.40f,
-                pressedScale = 1.40f,
-                focusColors = com.chris.m3usuite.ui.skin.TvFocusColors(
-                    focusFill = Color.White.copy(alpha = 0.28f),
-                    focusBorder = Color.White.copy(alpha = 0.92f),
-                    pressedFill = Color.White.copy(alpha = 0.32f),
-                    pressedBorder = Color.White.copy(alpha = 1.0f)
-                ),
-                focusBorderWidth = 2.5.dp
-            )
-            .onFocusEvent {
-                val nowHas = it.isFocused || it.hasFocus
-                focused = nowHas
-                if (!it.isFocused && it.hasFocus && com.chris.m3usuite.metrics.RouteTag.current == "home") {
-                    runCatching { selfReq.requestFocus() }
-                }
-            }
-            .border(1.dp, borderBrush, shape)
-            .drawWithContent {
-                drawContent()
-                val grad = Brush.verticalGradient(
-                    0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f),
-                    1f to Color.Transparent
-                )
-                drawRect(brush = grad)
-            }
-            .tvFocusGlow(focused = focused, shape = shape, ringWidth = 5.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = shape
-    ) {
-        LaunchedEffect(focused, item.streamId) {
-            if (focused) {
-                val sid = item.streamId
-                if (sid != null) {
-                    val ctxLocal = ctx
-                    val obxTitle = withContext(Dispatchers.IO) {
-                        runCatching {
-                            val store = com.chris.m3usuite.data.obx.ObxStore.get(ctxLocal)
-                            store.boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
-                                .query(com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(sid))
-                                .build().findFirst()?.name
-                        }.getOrNull()
-                    }
-                    com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus("series", sid.toString(), item.name, obxTitle)
-                    com.chris.m3usuite.core.debug.GlobalDebug.logTree("row:series", "tile:$sid")
-                }
-            }
-        }
-        Column(Modifier.fillMaxWidth()) {
-            run {
-                var loaded by remember(item.id) { mutableStateOf(false) }
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(tileHeight)
-                        .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
-                ) {
-                    if (!loaded) {
-                        ShimmerBox(modifier = Modifier.fillMaxSize(), cornerRadius = 0.dp)
-                    }
-                    AppAsyncImage(
-                        url = item.poster ?: item.logo ?: item.backdrop,
-                        contentDescription = item.name,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize(),
-                        crossfade = false,
-                        onLoading = { loaded = false },
-                        onSuccess = { loaded = true },
-                        onError = { loaded = true }
-                    )
-                    if (showAssign) {
-                        Surface(
-                            color = Color.Black.copy(alpha = 0.55f),
-                            contentColor = Color.White,
-                            shape = CircleShape,
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(6.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.55f))
-                                .tvClickable(focusBorderWidth = 0.dp, onClick = {
-                                    if (assignCtx.enabled) assignCtx.toggle(item) else assignCtx.start(item)
-                                })
-                        ) {
-                            val sel = assignCtx.isSelected(item)
-                            val label = if (sel) "✓" else "+"
-                            Text(
-                                label,
-                                style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                    if (assignCtx.isSelected(item)) {
-                        Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, shape))
-                    }
-                    if (isTelegram(item)) {
-                        TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp), small = true)
-                    }
-                    PlayOverlay(visible = focused)
-                    FocusTitleOverlay(
-                        title = item.name,
-                        focused = focused
-                    )
-
-                    var resumeSecs by remember(item.streamId) { mutableStateOf<Int?>(null) }
-                    var totalSecs by remember(item.streamId) { mutableStateOf<Int?>(null) }
-                    LaunchedEffect(item.streamId) {
-                        val sid = item.streamId
-                        if (sid != null) {
-                            try {
-                                val last = withContext(Dispatchers.IO) {
-                                    com.chris.m3usuite.data.repo.ResumeRepository(ctx).recentEpisodes(50)
-                                        .firstOrNull { it.seriesId == sid }
-                                }
-                                if (last != null) {
-                                    resumeSecs = last.positionSecs
-                                    val ep = withContext(Dispatchers.IO) {
-                                        val b = com.chris.m3usuite.data.obx.ObxStore.get(ctx)
-                                            .boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
-                                        b.query(
-                                            com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(sid.toLong())
-                                                .and(com.chris.m3usuite.data.obx.ObxEpisode_.season.equal(last.season.toLong()))
-                                        ).build().find().firstOrNull { it.episodeNum == last.episodeNum }
-                                    }
-                                    totalSecs = ep?.durationSecs
-                                }
-                            } catch (_: Throwable) {
-                            }
-                        }
-                    }
-                    if ((resumeSecs ?: 0) > 0 && (totalSecs ?: 0) > 0) {
-                        val errorColor = MaterialTheme.colorScheme.error
-                        Canvas(Modifier.matchParentSize()) {
-                            val w = size.width
-                            val h = size.height
-                            val y = h - 10f
-                            val margin = w * 0.06f
-                            val start = Offset(margin, y)
-                            val end = Offset(w - margin, y)
-                            val frac = (resumeSecs!!.toFloat() / totalSecs!!.toFloat()).coerceIn(0f, 1f)
-                            val fillEnd = Offset(start.x + (end.x - start.x) * frac, y)
-                            drawLine(
-                                color = Color.White.copy(alpha = 0.35f),
-                                start = start,
-                                end = end,
-                                strokeWidth = 3f,
-                                cap = StrokeCap.Round
-                            )
-                            drawLine(
-                                color = errorColor,
-                                start = start,
-                                end = fillEnd,
-                                strokeWidth = 3.5f,
-                                cap = StrokeCap.Round
-                            )
-                        }
-                    }
-                    if (focused && (resumeSecs ?: 0) > 0 && (totalSecs ?: 0) > 0) {
-                        val secs = resumeSecs!!.coerceAtLeast(0)
-                        val total = totalSecs!!.coerceAtLeast(1)
-                        val pct = (secs * 100) / total
-                        Box(Modifier.matchParentSize()) {
-                            Surface(
-                                shape = RoundedCornerShape(50),
-                                color = Color.Black.copy(alpha = 0.65f),
-                                contentColor = Color.White,
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(top = 6.dp, end = 8.dp)
-                            ) {
-                                Text(
-                                    text = "Weiter ${String.format("%d:%02d", secs / 60, secs % 60)} (${pct}%)",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
-                    Row(
-                        Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 8.dp),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        AppIconButton(
-                            icon = AppIcon.PlayCircle,
-                            contentDescription = "Abspielen",
-                            onClick = { onPlayDirect(item) },
-                            size = 24.dp,
-                            modifier = Modifier.focusProperties { canFocus = false }
-                        )
-                        if (showAssign && !assignCtx.enabled) {
-                            AppIconButton(
-                                icon = AppIcon.BookmarkAdd,
-                                contentDescription = "Für Kinder freigeben",
-                                onClick = { onAssignToKid(item) },
-                                size = 24.dp,
-                                modifier = Modifier.focusProperties { canFocus = false }
-                            )
-                        }
-                    }
-                    if (isNew) {
-                        Surface(
-                            color = Color.Black.copy(alpha = 0.28f),
-                            contentColor = Color.Red,
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
-                        ) {
-                            Text(
-                                text = "NEU",
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                }
-            }
-            if (focused) {
-                val year = item.year ?: extractYearFrom(item.name)
-                val title = item.name.substringAfter(" - ", item.name)
-                Text(
-                    text = if (year != null) "$title ($year)" else title,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                )
-                val plot = item.plot
-                if (!plot.isNullOrBlank()) {
-                    Text(
-                        text = plot,
-                        style = MaterialTheme.typography.labelSmall,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 10.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun VodTileCard(
-    item: MediaItem,
-    onOpenDetails: (MediaItem) -> Unit,
-    onPlayDirect: (MediaItem) -> Unit,
-    onAssignToKid: (MediaItem) -> Unit,
-    isNew: Boolean = false,
-    showAssign: Boolean = true
-) {
-    if (BuildConfig.CARDS_V1) {
-        com.chris.m3usuite.ui.cards.PosterCard(
-            title = item.name,
-            imageUrl = item.poster ?: item.backdrop,
-            onClick = { onOpenDetails(item) }
-        )
-        return
-    }
-    val ctx = LocalContext.current
-    val selfReq = remember { androidx.compose.ui.focus.FocusRequester() }
-    var focused by remember { mutableStateOf(false) }
-    val shape = RoundedCornerShape(14.dp)
-    val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
-    val tileHeight = rowItemHeight().dp
-    val tileWidth = tileHeight * POSTER_ASPECT_RATIO
-    val assignCtx = com.chris.m3usuite.ui.state.LocalAssignSelection.current
-
-    Card(
-        modifier = Modifier
-            .height(tileHeight)
-            .width(tileWidth)
-            .padding(end = 6.dp)
-            .tvClickable(
-                scaleFocused = 1f,
-                scalePressed = 1f,
-                elevationFocusedDp = 18f,
-                brightenContent = false,
-                autoBringIntoView = false,
-                focusRequester = selfReq
-            ) {
-                if (assignCtx.enabled) assignCtx.toggle(item) else onOpenDetails(item)
-            }
-            .focusScaleOnTv(
-                focusedScale = 1.40f,
-                pressedScale = 1.40f,
-                focusColors = com.chris.m3usuite.ui.skin.TvFocusColors(
-                    focusFill = Color.White.copy(alpha = 0.28f),
-                    focusBorder = Color.White.copy(alpha = 0.92f),
-                    pressedFill = Color.White.copy(alpha = 0.32f),
-                    pressedBorder = Color.White.copy(alpha = 1.0f)
-                ),
-                focusBorderWidth = 2.5.dp
-            )
-            .onFocusEvent {
-                val nowHas = it.isFocused || it.hasFocus
-                focused = nowHas
-                if (!it.isFocused && it.hasFocus && com.chris.m3usuite.metrics.RouteTag.current == "home") {
-                    runCatching { selfReq.requestFocus() }
-                }
-            }
-            .border(1.dp, borderBrush, shape)
-            .drawWithContent {
-                drawContent()
-                val grad = Brush.verticalGradient(
-                    0f to Color.White.copy(alpha = if (focused) 0.18f else 0.10f),
-                    1f to Color.Transparent
-                )
-                drawRect(brush = grad)
-            }
-            .tvFocusGlow(focused = focused, shape = shape, ringWidth = 5.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = shape
-    ) {
-        Column(Modifier.fillMaxWidth()) {
-            LaunchedEffect(focused, item.streamId) {
-                if (focused) {
-                    val sid = item.streamId
-                    if (sid != null) {
-                        val ctxLocal = ctx
-                        val obxTitle = withContext(Dispatchers.IO) {
-                            runCatching {
-                                val store = com.chris.m3usuite.data.obx.ObxStore.get(ctxLocal)
-                                store.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
-                                    .query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(sid))
-                                    .build().findFirst()?.name
-                            }.getOrNull()
-                        }
-                        com.chris.m3usuite.core.debug.GlobalDebug.logTileFocus("vod", sid.toString(), item.name, obxTitle)
-                        com.chris.m3usuite.core.debug.GlobalDebug.logTree("row:vod", "tile:$sid")
-                    }
-                }
-            }
-            run {
-                var loaded by remember(item.id) { mutableStateOf(false) }
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(tileHeight)
-                        .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
-                ) {
-                    if (!loaded) {
-                        ShimmerBox(modifier = Modifier.fillMaxSize(), cornerRadius = 0.dp)
-                    }
-                    AppAsyncImage(
-                        url = item.poster ?: item.logo ?: item.backdrop,
-                        contentDescription = item.name,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize(),
-                        crossfade = false,
-                        onLoading = { loaded = false },
-                        onSuccess = { loaded = true },
-                        onError = { loaded = true }
-                    )
-                    if (showAssign) {
-                        Surface(
-                            color = Color.Black.copy(alpha = 0.55f),
-                            contentColor = Color.White,
-                            shape = CircleShape,
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(6.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.55f))
-                                .tvClickable(focusBorderWidth = 0.dp, onClick = {
-                                    if (assignCtx.enabled) assignCtx.toggle(item) else assignCtx.start(item)
-                                })
-                        ) {
-                            val sel = assignCtx.isSelected(item)
-                            val label = if (sel) "✓" else "+"
-                            Text(
-                                label,
-                                style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                    if (assignCtx.isSelected(item)) {
-                        Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, shape))
-                    }
-                    if (isTelegram(item)) {
-                        TelegramSourceBadge(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp), small = true)
-                    }
-                    var resumeSecs by remember(item.id) { mutableStateOf<Int?>(null) }
-                    LaunchedEffect(item.id) {
-                        runCatching {
-                            resumeSecs = withContext(Dispatchers.IO) {
-                                com.chris.m3usuite.data.repo.ResumeRepository(ctx).getVodResume(item.id)
-                            }
-                        }
-                    }
-                    val total = item.durationSecs ?: 0
-                    if ((resumeSecs ?: 0) > 0 && total > 0) {
-                        val errorColor = MaterialTheme.colorScheme.error
-                        Canvas(Modifier.matchParentSize()) {
-                            val w = size.width
-                            val h = size.height
-                            val y = h - 10f
-                            val margin = w * 0.06f
-                            val start = Offset(margin, y)
-                            val end = Offset(w - margin, y)
-                            val frac = (resumeSecs!!.toFloat() / total.toFloat()).coerceIn(0f, 1f)
-                            val fillEnd = Offset(start.x + (end.x - start.x) * frac, y)
-                            drawLine(
-                                color = Color.White.copy(alpha = 0.35f),
-                                start = start,
-                                end = end,
-                                strokeWidth = 3f,
-                                cap = StrokeCap.Round
-                            )
-                            drawLine(
-                                color = errorColor,
-                                start = start,
-                                end = fillEnd,
-                                strokeWidth = 3.5f,
-                                cap = StrokeCap.Round
-                            )
-                        }
-                        if (focused) {
-                            val secs = resumeSecs!!.coerceAtLeast(0)
-                            val pct = if (total > 0) ((secs * 100) / total) else 0
-                            Box(Modifier.matchParentSize()) {
-                                Surface(
-                                    shape = RoundedCornerShape(50),
-                                    color = Color.Black.copy(alpha = 0.65f),
-                                    contentColor = Color.White,
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(top = 6.dp, end = 8.dp)
-                                ) {
-                                    Text(
-                                        text = "Weiter ${String.format("%d:%02d", secs / 60, secs % 60)} (${pct}%)",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Row(
-                        Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 8.dp),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        AppIconButton(
-                            icon = AppIcon.PlayCircle,
-                            contentDescription = "Abspielen",
-                            onClick = { onPlayDirect(item) },
-                            size = 24.dp,
-                            modifier = Modifier.focusProperties { canFocus = false }
-                        )
-                        if (showAssign && !assignCtx.enabled) {
-                            AppIconButton(
-                                icon = AppIcon.BookmarkAdd,
-                                contentDescription = "Für Kinder freigeben",
-                                onClick = { onAssignToKid(item) },
-                                size = 24.dp,
-                                modifier = Modifier.focusProperties { canFocus = false }
-                            )
-                        }
-                    }
-                }
-            }
-            if (focused) {
-                val y = item.year ?: extractYearFrom(item.name)
-                val title = item.name.substringAfter(" - ", item.name)
-                Text(
-                    text = if (y != null) "$title ($y)" else title,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                )
-                val plot = item.plot
-                if (!plot.isNullOrBlank()) {
-                    Text(
-                        text = plot,
-                        style = MaterialTheme.typography.labelSmall,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 10.dp)
-                    )
-                }
-            }
-        }
-    }
-
-    val requested = remember(item.id) { mutableStateOf(false) }
-    LaunchedEffect(focused) {
-        val store = SettingsStore(ctx)
-        val obxRepo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store)
-        if (focused && !requested.value && (item.plot.isNullOrBlank()) && item.streamId != null) {
-            requested.value = true
-            runCatching { obxRepo.importVodDetailOnce(item.streamId!!) }
-        }
-    }
-}
-
-@Composable
-fun ResumeRow(
-    items: List<MediaItem>,
-    onClick: (MediaItem) -> Unit,
-) {
-    if (items.isEmpty()) return
-    val slice = remember(items) { items.distinctBy { it.id }.take(5) }
-    TvFocusRow(
-        stateKey = "home:resume",
-        itemSpacing = 0.dp,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        itemCount = slice.size,
-        itemKey = { idx -> slice[idx].id }
-    ) { idx ->
-        val m = slice[idx]
-        MediaCard(item = m, onClick = onClick)
-    }
-}
-
-@Composable
-fun LiveRow(
-    items: List<MediaItem>,
-    stateKey: String? = null,
-    leading: (@Composable (() -> Unit))? = null,
-    onOpenDetails: (MediaItem) -> Unit,
-    onPlayDirect: (MediaItem) -> Unit,
-    initialFocusEligible: Boolean = true,
-    edgeLeftExpandChrome: Boolean = false,
-) {
-    if (items.isEmpty()) return
-    val ctx = LocalContext.current
-    val store = remember { SettingsStore(ctx) }
-    val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
-
-    MediaRowCore(
-        items = items,
-        config = RowConfig(
-            stateKey = stateKey,
-            debugKey = stateKey,
-            initialFocusEligible = initialFocusEligible,
-            edgeLeftExpandChrome = edgeLeftExpandChrome
-        ),
-        leading = leading,
-        onPrefetchKeys = { keys ->
-            val sids = keys.mapNotNull { id ->
-                items.firstOrNull { it.id == id && it.type == "live" }?.streamId
-            }
-            if (sids.isNotEmpty()) {
-                obx.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
-            }
-        },
-        itemKey = { it.id }
-    ) { m ->
-        LiveTileCard(
-            item = m,
-            onOpenDetails = onOpenDetails,
-            onPlayDirect = onPlayDirect
-        )
-    }
-}
-
-@Composable
-fun LiveAddTile(onClick: () -> Unit) {
-    val shape = RoundedCornerShape(14.dp)
-    val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
-    Card(
-        modifier = Modifier
-            .height(rowItemHeight().dp)
-            .padding(end = 6.dp)
-            .tvClickable(
-                scaleFocused = 1.06f,
-                scalePressed = 1.08f,
-                elevationFocusedDp = 18f,
-                brightenContent = false,
-                autoBringIntoView = false
-            ) { onClick() }
+            .size(dimens.tileWidthDp, dimens.tileHeightDp)
+            .padding(end = dimens.tileSpacingDp / 2)
+            .then(clickable)
             .border(1.dp, borderBrush, shape)
             .drawWithContent {
                 drawContent()
@@ -1440,6 +207,7 @@ fun LiveAddTile(onClick: () -> Unit) {
     }
 }
 
+
 @Composable
 fun ReorderableLiveRow(
     items: List<MediaItem>,
@@ -1450,179 +218,245 @@ fun ReorderableLiveRow(
     onRemove: (List<Long>) -> Unit,
     stateKey: String? = null,
     initialFocusEligible: Boolean = true,
-    edgeLeftExpandChrome: Boolean = false
+    edgeLeftExpandChrome: Boolean = false,
+    header: FishHeaderData? = null
 ) {
-    val state = stateKey?.let { com.chris.m3usuite.ui.state.rememberRouteListState(it) } ?: rememberLazyListState()
+    val context = LocalContext.current
+    val isTv = FocusKit.isTvDevice(context)
+    val focusManager = LocalFocusManager.current
+    val dimens = LocalFishDimens.current
+
     val order = remember(items) { mutableStateListOf<Long>().apply { addAll(items.map { it.id }.distinct()) } }
+    var selected by remember { mutableStateOf(setOf<Long>()) }
     var draggingId by remember { mutableStateOf<Long?>(null) }
     var dragOffset by remember { mutableStateOf(0f) }
     var targetKey by remember { mutableStateOf<Long?>(null) }
     var insertAfter by remember { mutableStateOf(false) }
-    var selected by remember { mutableStateOf(setOf<Long>()) }
-    val tileLift by animateFloatAsState(if (draggingId != null) 1.05f else 1f, label = "lift")
+    val tileLift by animateFloatAsState(if (draggingId != null) 1.05f else 1f, label = "liveReorderLift")
+    val skipInnerClickFlags = remember { mutableStateMapOf<Long, Boolean>() }
 
-    val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
-    val pendingScrollIndex = remember { mutableStateOf(-1) }
-    val firstFocus = remember { androidx.compose.ui.focus.FocusRequester() }
-    val firstAttached = remember { mutableStateOf(false) }
-    val skipFirstCenter = remember { mutableStateOf(true) }
-    val hasContent = remember(order) { order.isNotEmpty() }
-
-    LaunchedEffect(pendingScrollIndex.value) { pendingScrollIndex.value = -1 }
-    LaunchedEffect(state, isTv, hasContent, firstAttached.value, initialFocusEligible) {
-        if (!isTv || !initialFocusEligible) return@LaunchedEffect
-        snapshotFlow { state.layoutInfo.visibleItemsInfo.map { it.index } }
-            .collect { indices ->
-                val targetIndex = if (hasContent) 1 else 0
-                if (!firstAttached.value) return@collect
-                if (indices.contains(targetIndex)) {
-                    delay(16)
-                    runCatching { firstFocus.requestFocus() }
-                    com.chris.m3usuite.core.debug.GlobalDebug.logTree("enter:Set:HomeRows")
-                }
-            }
+    LaunchedEffect(items) {
+        val incomingIds = items.map { it.id }
+        val incomingSet = incomingIds.toSet()
+        order.removeAll { it !in incomingSet }
+        incomingIds.forEach { id -> if (!order.contains(id)) order.add(id) }
+        selected = selected.filter { it in incomingSet }.toSet()
+        val stale = skipInnerClickFlags.keys - incomingSet
+        stale.forEach { skipInnerClickFlags.remove(it) }
     }
 
-    val rowModifier = if (isTv) Modifier.focusGroup() else Modifier
-    val chromeExpand = com.chris.m3usuite.ui.home.LocalChromeExpand.current
+    val itemsById = remember(items) { items.associateBy { it.id } }
+    val displayItems = remember(order, itemsById) { order.mapNotNull { itemsById[it] } }
 
-    LazyRow(
-        modifier = rowModifier.then(
-            if (isTv && edgeLeftExpandChrome) Modifier.onPreviewKeyEvent { ev ->
-                if (ev.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
-                if (ev.key == Key.DirectionLeft) {
-                    val firstIdx = state.layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
-                    if (firstIdx <= 0) {
-                        chromeExpand?.invoke()
-                        return@onPreviewKeyEvent true
-                    }
-                }
-                false
-            } else Modifier
-        ),
-        state = state,
-        flingBehavior = rememberSnapFlingBehavior(state),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 3.dp)
-    ) {
-        item("leading") {
-            val leadingMod = if (isTv && !hasContent) Modifier.focusRequester(firstFocus) else Modifier
-            Box(leadingMod) {
-                if (isTv && !hasContent) {
-                    SideEffect { firstAttached.value = true }
-                }
-                LiveAddTile(onClick = onAdd)
-            }
-        }
-        itemsIndexed(order, key = { _, it -> it }) { idx, id ->
-            val mi = items.find { it.id == id } ?: return@itemsIndexed
+    FishRow(
+        items = displayItems,
+        stateKey = stateKey,
+        leading = {
+            LiveAddTile(
+                requestInitialFocus = isTv && displayItems.isEmpty() && initialFocusEligible,
+                onClick = onAdd
+            )
+        },
+        edgeLeftExpandChrome = edgeLeftExpandChrome,
+        initialFocusEligible = initialFocusEligible && displayItems.isNotEmpty(),
+        header = header,
+        itemModifier = { _, _, media, base, state ->
+            val id = media.id
             val isDragging = draggingId == id
-            val dragTranslationX = if (isDragging) dragOffset else 0f
-            val trans by animateFloatAsState(dragTranslationX, label = "drag")
-            val padStart = if (targetKey == id && !insertAfter) 10.dp else 0.dp
-            val padEnd = if (targetKey == id && insertAfter) 10.dp else 0.dp
-            val setRow = com.chris.m3usuite.ui.home.LocalChromeRowFocusSetter.current
+            val dragTranslation by animateFloatAsState(
+                targetValue = if (isDragging) dragOffset else 0f,
+                label = "liveReorderDrag_" + id
+            )
 
-            Box(
-                Modifier
-                    .padding(start = padStart, end = padEnd)
-                    .graphicsLayer {
-                        translationX = trans
-                        scaleX = if (isDragging) tileLift else 1f
-                        scaleY = if (isDragging) tileLift else 1f
-                        shadowElevation = if (isDragging) 18f else 0f
+            val moveLeft: (() -> Unit)? = if (selected.isNotEmpty()) {
+                {
+                    val pos = order.indexOf(id)
+                    if (pos > 0) {
+                        order.removeAt(pos)
+                        order.add(pos - 1, id)
+                        onReorder(order.toList())
                     }
-                    .then(
-                        if (isTv)
-                            Modifier.onFocusEvent { st ->
-                                if (st.hasFocus) {
-                                    stateKey?.let { key -> setRow(key) }
-                                    val absIdx = idx + 1
-                                    if (skipFirstCenter.value && absIdx == 1) {
-                                        skipFirstCenter.value = false
-                                    } else {
-                                        pendingScrollIndex.value = absIdx
-                                    }
-                                }
-                            }.then(if (idx == 0) Modifier.focusRequester(firstFocus) else Modifier)
-                        else Modifier
-                    )
-                    .pointerInput(id) {
-                        detectDragGesturesAfterLongPress(
-                            onDragStart = { draggingId = id; dragOffset = 0f },
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                dragOffset += dragAmount.x
-                                val visible = state.layoutInfo.visibleItemsInfo
-                                val current = visible.find { it.key == id }
-                                if (current != null) {
-                                    val center = current.offset + dragOffset + current.size / 2f
-                                    val others = visible.filter { it.key is Long && it.key != id }
-                                    val target = others.minByOrNull {
-                                        abs(center - (it.offset + it.size / 2f))
-                                    }
-                                    if (target != null) {
-                                        val toKey = target.key as Long
-                                        val from = order.indexOf(id)
-                                        val to = order.indexOf(toKey)
-                                        insertAfter = center > (target.offset + target.size / 2f)
-                                        targetKey = toKey
-                                        if (from != -1 && to != -1 && from != to) {
-                                            order.removeAt(from)
-                                            val insertIndex =
-                                                if (insertAfter) to + (if (from < to) 0 else 1)
-                                                else to + (if (from < to) -1 else 0)
-                                            order.add(insertIndex.coerceIn(0, order.size), id)
-                                        }
-                                    }
-                                }
-                            },
-                            onDragEnd = {
-                                draggingId = null; dragOffset = 0f; targetKey = null
-                                onReorder(order.toList())
-                            },
-                            onDragCancel = { draggingId = null; dragOffset = 0f; targetKey = null }
-                        )
-                    }
-            ) {
-                if (isTv && idx == 0) {
-                    SideEffect { firstAttached.value = true }
                 }
-                LiveTileCard(
-                    item = mi,
-                    onOpenDetails = { if (draggingId == null) onOpen(mi.id) },
-                    onPlayDirect = { if (draggingId == null) onPlay(mi.id) },
-                    selected = id in selected,
-                    onLongPress = { selected = if (id in selected) selected - id else selected + id },
-                    onMoveLeft = if (selected.isNotEmpty()) {
-                        {
-                            val pos = order.indexOf(id)
-                            if (pos > 0) {
-                                order.removeAt(pos)
-                                order.add(pos - 1, id)
-                                onReorder(order.toList())
+            } else null
+
+            val moveRight: (() -> Unit)? = if (selected.isNotEmpty()) {
+                {
+                    val pos = order.indexOf(id)
+                    if (pos != -1 && pos < order.lastIndex) {
+                        order.removeAt(pos)
+                        order.add(pos + 1, id)
+                        onReorder(order.toList())
+                    }
+                }
+            } else null
+
+            val navModifier = if (moveLeft != null || moveRight != null) {
+                FocusKit.run {
+                    Modifier.onDpadAdjustLeftRight(
+                        onLeft = {
+                            com.chris.m3usuite.core.debug.GlobalDebug.logDpad(
+                                "LEFT",
+                                mapOf("tile" to (media.streamId ?: media.id), "type" to media.type)
+                            )
+                            if (moveLeft != null) {
+                                moveLeft()
+                            } else {
+                                focusManager.moveFocus(FocusDirection.Left)
+                            }
+                        },
+                        onRight = {
+                            com.chris.m3usuite.core.debug.GlobalDebug.logDpad(
+                                "RIGHT",
+                                mapOf("tile" to (media.streamId ?: media.id), "type" to media.type)
+                            )
+                            if (moveRight != null) {
+                                moveRight()
+                            } else {
+                                focusManager.moveFocus(FocusDirection.Right)
                             }
                         }
-                    } else null,
-                    onMoveRight = if (selected.isNotEmpty()) {
-                        {
-                            val pos = order.indexOf(id)
-                            if (pos != -1 && pos < order.lastIndex) {
-                                order.removeAt(pos)
-                                order.add(pos + 1, id)
-                                onReorder(order.toList())
+                    )
+                }
+            } else Modifier
+
+            val clickModifier = Modifier.combinedClickable(
+                enabled = draggingId == null,
+                onClick = {
+                    if (draggingId == null) {
+                        skipInnerClickFlags[id] = true
+                        onOpen(id)
+                    }
+                },
+                onLongClick = {
+                    if (draggingId == null) {
+                        selected = if (id in selected) selected - id else selected + id
+                    }
+                }
+            )
+
+            val dragModifier = Modifier.pointerInput(id, draggingId, order.toList()) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = {
+                        draggingId = id
+                        dragOffset = 0f
+                        targetKey = null
+                        insertAfter = false
+                        skipInnerClickFlags[id] = false
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        dragOffset += dragAmount.x
+
+                        val visible = state.layoutInfo.visibleItemsInfo
+                        val current = visible.find { it.key == id }
+                        if (current != null) {
+                            val center = current.offset + dragOffset + current.size / 2f
+                            val targetInfo = visible
+                                .filter { it.key is Long && it.key != id }
+                                .minByOrNull { candidate ->
+                                    val candidateCenter = candidate.offset + candidate.size / 2f
+                                    abs(center - candidateCenter)
+                                }
+                            val toKey = targetInfo?.key as? Long
+                            if (toKey != null) {
+                                insertAfter = center > (targetInfo.offset + targetInfo.size / 2f)
+                                targetKey = toKey
+                                val from = order.indexOf(id)
+                                val to = order.indexOf(toKey)
+                                if (from != -1 && to != -1 && from != to) {
+                                    order.removeAt(from)
+                                    val insertIndex = if (insertAfter) {
+                                        to + if (from < to) 0 else 1
+                                    } else {
+                                        to + if (from < to) -1 else 0
+                                    }
+                                    order.add(insertIndex.coerceIn(0, order.size), id)
+                                }
                             }
                         }
-                    } else null,
-                    insertionLeft = (targetKey == id && !insertAfter),
-                    insertionRight = (targetKey == id && insertAfter)
+                    },
+                    onDragEnd = {
+                        draggingId = null
+                        dragOffset = 0f
+                        val snapshot = order.toList()
+                        targetKey = null
+                        insertAfter = false
+                        onReorder(snapshot)
+                    },
+                    onDragCancel = {
+                        draggingId = null
+                        dragOffset = 0f
+                        targetKey = null
+                        insertAfter = false
+                    }
                 )
             }
+
+            base
+                .padding(end = dimens.tileSpacingDp)
+                .graphicsLayer {
+                    translationX = dragTranslation
+                    scaleX = if (isDragging) tileLift else 1f
+                    scaleY = if (isDragging) tileLift else 1f
+                    shadowElevation = if (isDragging) 18f else 0f
+                }
+                .then(navModifier)
+                .then(clickModifier)
+                .then(dragModifier)
         }
+    ) { media ->
+        val id = media.id
+        LiveFishTile(
+            media = media,
+            onOpenDetails = {
+                val shouldSkip = skipInnerClickFlags[id] == true
+                if (draggingId == null && !shouldSkip) {
+                    onOpen(id)
+                }
+                skipInnerClickFlags[id] = false
+            },
+            onPlayDirect = {
+                if (draggingId == null) onPlay(id)
+            },
+            selected = id in selected,
+            extraOverlay = {
+                if (id in selected) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
+                    )
+                }
+                if (targetKey == id && !insertAfter) {
+                    Box(
+                        Modifier
+                            .align(Alignment.CenterStart)
+                            .width(3.dp)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                }
+                if (targetKey == id && insertAfter) {
+                    Box(
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .width(3.dp)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                }
+            }
+        )
     }
+
     if (selected.isNotEmpty()) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)
+            modifier = Modifier.padding(
+                start = dimens.contentPaddingHorizontalDp,
+                top = 4.dp,
+                bottom = 4.dp
+            )
         ) {
             TextButton(onClick = { selected = emptySet() }) { Text("Abbrechen") }
             if (selected.size == 1) {
@@ -1644,233 +478,12 @@ fun ReorderableLiveRow(
                     }
                 }) { Text("Verschieben →") }
             }
-            TextButton(onClick = { onRemove(selected.toList()); selected = emptySet() }) {
+            TextButton(onClick = {
+                onRemove(selected.toList())
+                selected = emptySet()
+            }) {
                 Text("Entfernen (${selected.size})")
             }
         }
     }
-}
-
-@Composable
-fun SeriesRow(
-    items: List<MediaItem>,
-    stateKey: String? = null,
-    onOpenDetails: (MediaItem) -> Unit,
-    onPlayDirect: (MediaItem) -> Unit,
-    onAssignToKid: (MediaItem) -> Unit,
-    newIds: Set<Long> = emptySet(),
-    showNew: Boolean = false,
-    showAssign: Boolean = true,
-    initialFocusEligible: Boolean = true,
-    edgeLeftExpandChrome: Boolean = false
-) {
-    if (items.isEmpty()) return
-
-    MediaRowCore(
-        items = items,
-        config = RowConfig(
-            stateKey = stateKey,
-            debugKey = stateKey,
-            initialFocusEligible = initialFocusEligible,
-            edgeLeftExpandChrome = edgeLeftExpandChrome
-        ),
-        onPrefetchKeys = { _ -> },
-        itemKey = { it.id }
-    ) { m ->
-        SeriesTileCard(
-            item = m,
-            onOpenDetails = onOpenDetails,
-            onPlayDirect = onPlayDirect,
-            onAssignToKid = onAssignToKid,
-            isNew = showNew || newIds.contains(m.id),
-            showAssign = showAssign
-        )
-    }
-}
-
-@Composable
-fun VodRow(
-    items: List<MediaItem>,
-    stateKey: String? = null,
-    onOpenDetails: (MediaItem) -> Unit,
-    onPlayDirect: (MediaItem) -> Unit,
-    onAssignToKid: (MediaItem) -> Unit,
-    newIds: Set<Long> = emptySet(),
-    showNew: Boolean = false,
-    showAssign: Boolean = true,
-    initialFocusEligible: Boolean = true,
-    edgeLeftExpandChrome: Boolean = false
-) {
-    if (items.isEmpty()) return
-
-    MediaRowCore(
-        items = items,
-        config = RowConfig(
-            stateKey = stateKey,
-            debugKey = stateKey,
-            initialFocusEligible = initialFocusEligible,
-            edgeLeftExpandChrome = edgeLeftExpandChrome
-        ),
-        onPrefetchKeys = { _ -> },
-        itemKey = { it.id }
-    ) { m ->
-        VodTileCard(
-            item = m,
-            onOpenDetails = onOpenDetails,
-            onPlayDirect = onPlayDirect,
-            onAssignToKid = onAssignToKid,
-            isNew = showNew || newIds.contains(m.id),
-            showAssign = showAssign
-        )
-    }
-}
-
-@Composable
-fun VodRowPaged(
-    items: LazyPagingItems<MediaItem>,
-    stateKey: String? = null,
-    onOpenDetails: (MediaItem) -> Unit,
-    onPlayDirect: (MediaItem) -> Unit,
-    onAssignToKid: (MediaItem) -> Unit,
-    showAssign: Boolean = true,
-    edgeLeftExpandChrome: Boolean = false
-) {
-    MediaRowCorePaged(
-        items = items,
-        config = RowConfig(stateKey = stateKey, debugKey = stateKey, edgeLeftExpandChrome = edgeLeftExpandChrome),
-        onPrefetchPaged = { _, _ -> }
-    ) { _, mi ->
-        VodTileCard(
-            item = mi,
-            onOpenDetails = onOpenDetails,
-            onPlayDirect = onPlayDirect,
-            onAssignToKid = onAssignToKid,
-            isNew = false,
-            showAssign = showAssign
-        )
-    }
-}
-
-@Composable
-fun LiveRowPaged(
-    items: LazyPagingItems<MediaItem>,
-    stateKey: String? = null,
-    onOpenDetails: (MediaItem) -> Unit,
-    onPlayDirect: (MediaItem) -> Unit,
-    edgeLeftExpandChrome: Boolean = false
-) {
-    val ctx = LocalContext.current
-    val store = remember { SettingsStore(ctx) }
-    val obx = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
-
-    MediaRowCorePaged(
-        items = items,
-        config = RowConfig(stateKey = stateKey, debugKey = stateKey, edgeLeftExpandChrome = edgeLeftExpandChrome),
-        onPrefetchPaged = { indices, lp ->
-            val count = lp.itemCount
-            if (count <= 0) return@MediaRowCorePaged
-            val sids = indices
-                .filter { it in 0 until count }
-                .mapNotNull { idx ->
-                    val media = lp.peek(idx)
-                    media?.takeIf { it.type == "live" }?.streamId
-                }
-            if (sids.isNotEmpty()) obx.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
-        }
-    ) { _, mi ->
-        LiveTileCard(
-            item = mi,
-            onOpenDetails = onOpenDetails,
-            onPlayDirect = onPlayDirect
-        )
-    }
-}
-
-@Composable
-fun SeriesRowPaged(
-    items: LazyPagingItems<MediaItem>,
-    stateKey: String? = null,
-    onOpenDetails: (MediaItem) -> Unit,
-    onPlayDirect: (MediaItem) -> Unit,
-    onAssignToKid: (MediaItem) -> Unit,
-    showAssign: Boolean = true,
-    edgeLeftExpandChrome: Boolean = false
-) {
-    MediaRowCorePaged(
-        items = items,
-        config = RowConfig(stateKey = stateKey, debugKey = stateKey, edgeLeftExpandChrome = edgeLeftExpandChrome),
-        onPrefetchPaged = null
-    ) { _, mi ->
-        SeriesTileCard(
-            item = mi,
-            onOpenDetails = onOpenDetails,
-            onPlayDirect = onPlayDirect,
-            onAssignToKid = onAssignToKid,
-            isNew = false,
-            showAssign = showAssign
-        )
-    }
-}
-
-@Composable
-fun TelegramRow(
-    items: List<MediaItem>,
-    stateKey: String? = null,
-    onPlay: (MediaItem) -> Unit,
-    initialFocusEligible: Boolean = true,
-    edgeLeftExpandChrome: Boolean = false
-) {
-    if (items.isEmpty()) return
-    MediaRowCore(
-        items = items,
-        config = RowConfig(
-            stateKey = stateKey,
-            debugKey = stateKey,
-            initialFocusEligible = initialFocusEligible,
-            edgeLeftExpandChrome = edgeLeftExpandChrome
-        ),
-        itemKey = { it.id }
-    ) { item ->
-        TelegramTileCard(item = item, onPlay = onPlay)
-    }
-}
-
-@Composable
-fun TelegramRowPaged(
-    items: LazyPagingItems<MediaItem>,
-    stateKey: String? = null,
-    onPlay: (MediaItem) -> Unit,
-    edgeLeftExpandChrome: Boolean = false
-) {
-    MediaRowCorePaged(
-        items = items,
-        config = RowConfig(stateKey = stateKey, debugKey = stateKey, edgeLeftExpandChrome = edgeLeftExpandChrome),
-        onPrefetchPaged = null
-    ) { _, item ->
-        TelegramTileCard(item = item, onPlay = onPlay)
-    }
-}
-
-@Composable
-private fun TelegramTileCard(
-    item: MediaItem,
-    onPlay: (MediaItem) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    if (BuildConfig.CARDS_V1) {
-        PosterCardTagged(
-            title = item.name,
-            imageUrl = item.poster ?: item.backdrop,
-            onClick = { onPlay(item) },
-            modifier = modifier.padding(end = 12.dp)
-        )
-        return
-    }
-    VodTileCard(
-        item = item,
-        onOpenDetails = { onPlay(item) },
-        onPlayDirect = onPlay,
-        onAssignToKid = {},
-        showAssign = false
-    )
 }

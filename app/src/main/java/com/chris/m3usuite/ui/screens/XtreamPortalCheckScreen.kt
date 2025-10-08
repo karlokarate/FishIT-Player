@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import com.chris.m3usuite.core.http.CookieBridge
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.flow.first

@@ -3,7 +3,7 @@ package com.chris.m3usuite.ui.detail
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -21,18 +21,17 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import com.chris.m3usuite.model.Episode
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.common.AccentCard
+import com.chris.m3usuite.ui.focus.FocusDefaults
 import com.chris.m3usuite.ui.theme.DesignTokens
 import com.chris.m3usuite.ui.util.AppAsyncImage
 import com.chris.m3usuite.ui.util.AppHeroImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
-import com.chris.m3usuite.ui.skin.TvFocusColors
+import com.chris.m3usuite.ui.focus.FocusKit
 
 @Composable
 private fun parseTags(raw: String?): List<String> = raw
@@ -256,61 +255,55 @@ fun SeriesDetailMask(
                                 )
                             }
                             Spacer(Modifier.height(6.dp))
-                            com.chris.m3usuite.ui.tv.TvFocusRow(
-                                stateKey = "series:seasons:${seriesStreamId ?: -1}",
-                                itemSpacing = 8.dp,
-                                contentPadding = PaddingValues(end = 8.dp),
+                            val seasonsStateKey = remember(seriesStreamId) {
+                                "series:seasons:${seriesStreamId ?: -1}"
+                            }
+                            FocusKit.TvRowLight(
+                                stateKey = seasonsStateKey,
                                 itemCount = seasons.size,
-                                itemKey = { idx -> seasons[idx] }
+                                itemKey = { idx -> seasons[idx] },
+                                itemSpacing = 8.dp,
+                                contentPadding = PaddingValues(end = 8.dp)
                             ) { idx ->
                                 val s = seasons[idx]
-                                val chipIsrc = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-                                Box(
-                                    modifier = Modifier
-                                        .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
-                                        // 1) Mark item focusable for TvFocusRow (brings into view, saves index)
-                                        .then(com.chris.m3usuite.ui.skin.run {
-                                            Modifier.tvFocusableItem(
-                                                stateKey = "series:seasons:${seriesStreamId ?: -1}",
-                                                index = idx
+                                val chipIsrc = remember { MutableInteractionSource() }
+                                with(FocusKit) {
+                                    Box(
+                                        modifier = Modifier
+                                            .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
+                                            .tvFocusableItem(
+                                                stateKey = seasonsStateKey,
+                                                index = idx,
+                                                debugTag = "season-$s"
                                             )
-                                        })
-                                        // 2) Apply TV glow/scale exactly like TvButton
-                                        .focusScaleOnTv(
-                                            shape = RoundedCornerShape(50.dp),
-                                            focusColors = TvFocusColors.Default,
-                                            interactionSource = chipIsrc
-                                        )
-                                        // 3) Make wrapper clickable without extra scaling/halo
-                                        .then(com.chris.m3usuite.ui.skin.run {
-                                            Modifier.tvClickable(
+                                            .focusScaleOnTv(
+                                                shape = RoundedCornerShape(50.dp),
+                                                focusColors = FocusDefaults.Colors,
+                                                focusBorderWidth = 0.dp,
+                                                interactionSource = chipIsrc,
+                                                brightenContent = false,
+                                                debugTag = "season-$s"
+                                            )
+                                            .tvClickable(
                                                 scaleFocused = 1f,
                                                 scalePressed = 1f,
                                                 focusBorderWidth = 0.dp,
                                                 brightenContent = false,
+                                                debugTag = "season-$s",
                                                 onClick = { onSelectSeason(s) }
                                             )
-                                        })
-                                        .onFocusEvent { st ->
-                                            if (st.isFocused || st.hasFocus) {
-                                                com.chris.m3usuite.core.debug.GlobalDebug.logFocusWidget(
-                                                    component = "Chip",
-                                                    module = com.chris.m3usuite.metrics.RouteTag.current,
-                                                    tag = "season-$s"
-                                                )
-                                            }
-                                        }
-                                ) {
-                                    FilterChip(
-                                        selected = seasonSel == s,
-                                        onClick = { onSelectSeason(s) },
-                                        label = { Text("S$s") },
-                                        interactionSource = chipIsrc,
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = badgeColor,
-                                            selectedLabelColor = Color.White
+                                    ) {
+                                        FilterChip(
+                                            selected = seasonSel == s,
+                                            onClick = { onSelectSeason(s) },
+                                            label = { Text("S$s") },
+                                            interactionSource = chipIsrc,
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = badgeColor,
+                                                selectedLabelColor = Color.White
+                                            )
                                         )
-                                    )
+                                    }
                                 }
                             }
                             Spacer(Modifier.height(8.dp))
@@ -328,32 +321,47 @@ fun SeriesDetailMask(
                         BoxWithConstraints(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
                             val thumbSize = 48.dp
                             val shape = RoundedCornerShape(28.dp)
-                            var epFocused by remember { mutableStateOf(false) }
+                            val episodeTag = "episode-${e.season}-${e.episodeNum}"
 
                             Box(Modifier.fillMaxWidth()) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .then(if (epFocused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape) else Modifier)
-                                        .clip(shape)
-                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f))
-                                        .focusScaleOnTv(
-                                            shape = shape,
-                                            focusColors = TvFocusColors.Default
-                                        )
-                                        .then(com.chris.m3usuite.ui.skin.run {
-                                            Modifier.tvClickable {
+                                with(FocusKit) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(shape)
+                                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f))
+                                            .focusBringIntoViewOnFocus()
+                                            .focusScaleOnTv(
+                                                shape = shape,
+                                                focusColors = FocusDefaults.Colors,
+                                                focusBorderWidth = 0.dp,
+                                                brightenContent = false,
+                                                debugTag = episodeTag
+                                            )
+                                            .tvFocusFrame(
+                                                focusedScale = 1f,
+                                                pressedScale = 1f,
+                                                shape = shape,
+                                                focusColors = FocusDefaults.Colors,
+                                                focusBorderWidth = 2.dp,
+                                                brightenContent = false
+                                            )
+                                            .tvClickable(
+                                                scaleFocused = 1f,
+                                                scalePressed = 1.02f,
+                                                focusBorderWidth = 0.dp,
+                                                brightenContent = false,
+                                                debugTag = episodeTag
+                                            ) {
                                                 if (resumeSecs != null) onPlayEpisode(e, false, resumeSecs)
                                                 else onPlayEpisode(e, true, null)
                                             }
-                                        })
-                                        .onFocusEvent { ev -> epFocused = ev.isFocused }
-                                ) {
-                                    Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        Surface(shape = RoundedCornerShape(12.dp), color = Color.White.copy(alpha = 0.06f)) {
-                                            Box(Modifier.size(thumbSize)) {
-                                                var loaded by remember { mutableStateOf(false) }
-                                                val alpha by animateFloatAsState(if (loaded) 1f else 0f, animationSpec = tween(260), label = "thumbFade")
+                                    ) {
+                                        Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                            Surface(shape = RoundedCornerShape(12.dp), color = Color.White.copy(alpha = 0.06f)) {
+                                                Box(Modifier.size(thumbSize)) {
+                                                    var loaded by remember { mutableStateOf(false) }
+                                                    val alpha by animateFloatAsState(if (loaded) 1f else 0f, animationSpec = tween(260), label = "thumbFade")
                                                 if (!loaded)
                                                     com.chris.m3usuite.ui.fx.ShimmerBox(modifier = Modifier.fillMaxSize(), cornerRadius = 12.dp)
                                                 AppAsyncImage(
@@ -392,4 +400,4 @@ fun SeriesDetailMask(
             }
         }
     }
-}
+}}

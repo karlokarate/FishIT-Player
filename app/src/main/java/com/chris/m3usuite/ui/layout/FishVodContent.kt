@@ -1,8 +1,10 @@
 package com.chris.m3usuite.ui.layout
 
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.ui.selection.LocalAssignSelection
@@ -11,12 +13,15 @@ import kotlinx.coroutines.launch
 data class VodTileContent(
     val title: String?,
     val poster: Any?,
+    val contentScale: ContentScale,
     val resumeFraction: Float?,
     val showNew: Boolean,
     val selected: Boolean,
     val topStartBadge: (@Composable () -> Unit)?,
+    val topEndBadge: (@Composable () -> Unit)?,
     val bottomEndActions: (@Composable RowScope.() -> Unit)?,
     val footer: (@Composable () -> Unit)?,
+    val overlay: (@Composable BoxScope.() -> Unit)?,
     val onFocusChanged: ((Boolean) -> Unit)?,
     val onClick: () -> Unit
 )
@@ -45,10 +50,10 @@ fun buildVodTileContent(
 
     val bottomEndActions: (@Composable RowScope.() -> Unit)? = if (assign?.active != true) {
         {
-            // Play (if available)
-            FishActions.VodBottomActions(onPlay = onPlayDirect)
-            // Assign (if allowed and action provided)
-            if (allowAssign) FishActions.AssignBottomAction(onAssign = onAssignToKid)
+            with(FishActions) {
+                VodBottomActions(onPlay = onPlayDirect)
+                if (allowAssign) AssignBottomAction(onAssign = onAssignToKid)
+            }
         }
     } else null
 
@@ -69,12 +74,15 @@ fun buildVodTileContent(
     return VodTileContent(
         title = displayTitle,
         poster = poster,
+        contentScale = ContentScale.Fit,
         resumeFraction = resumeFraction,
         showNew = showNew,
         selected = selected,
         topStartBadge = topStartBadge,
+        topEndBadge = null,
         bottomEndActions = bottomEndActions,
         footer = footer,
+        overlay = null,
         onFocusChanged = onFocusChanged,
         onClick = onClick
     )

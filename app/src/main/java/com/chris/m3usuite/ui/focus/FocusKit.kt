@@ -1,23 +1,51 @@
 @file:Suppress("FunctionName")
 package com.chris.m3usuite.ui.focus
 
+import android.app.UiModeManager
+import android.content.Context
+import android.content.pm.PackageManager
+import android.content.res.Configuration
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -25,26 +53,13 @@ import kotlinx.coroutines.launch
 // Bring core primitives into one, easy import surface.
 // Screens can: `import com.chris.m3usuite.ui.focus.FocusKit.*` and use these consistently.
 
-import com.chris.m3usuite.ui.compat.focusGroup as compatFocusGroup
-import com.chris.m3usuite.ui.skin.tvClickable as skinTvClickable
-import com.chris.m3usuite.ui.skin.tvFocusableItem as skinTvFocusableItem
-import com.chris.m3usuite.ui.skin.tvFocusFrame as skinTvFocusFrame
-import com.chris.m3usuite.ui.skin.focusScaleOnTv as skinFocusScaleOnTv
-import com.chris.m3usuite.ui.fx.tvFocusGlow as fxTvFocusGlow
-import com.chris.m3usuite.model.MediaItem
-import com.chris.m3usuite.ui.components.rows.RowConfig
-import com.chris.m3usuite.ui.components.rows.MediaRowCore
-import com.chris.m3usuite.ui.components.rows.MediaRowCorePaged
-import com.chris.m3usuite.ui.components.rows.OnPrefetchKeys
-import com.chris.m3usuite.ui.components.rows.OnPrefetchPaged
 import androidx.paging.compose.LazyPagingItems
-import androidx.compose.ui.platform.LocalContext
-
-typealias FocusColors = com.chris.m3usuite.ui.skin.TvFocusColors
-
-object FocusDefaults {
-    val Colors: FocusColors = com.chris.m3usuite.ui.skin.TvFocusColors.Default
-}
+import com.chris.m3usuite.core.debug.GlobalDebug
+import com.chris.m3usuite.metrics.RouteTag
+import com.chris.m3usuite.model.MediaItem
+import com.chris.m3usuite.ui.compat.focusGroup as compatFocusGroup
+import com.chris.m3usuite.ui.fx.tvFocusGlow as fxTvFocusGlow
+import com.chris.m3usuite.ui.state.writeRowFocus
 
 // Modifier extensions (centralized)
 
@@ -63,7 +78,7 @@ fun Modifier.tvClickable(
     debugTag: String? = null,
     focusRequester: androidx.compose.ui.focus.FocusRequester? = null,
     onClick: () -> Unit
-): Modifier = this.skinTvClickable(
+): Modifier = this.focusKitTvClickable(
     enabled = enabled,
     role = role,
     scaleFocused = scaleFocused,
@@ -79,6 +94,7 @@ fun Modifier.tvClickable(
     onClick = onClick
 )
 
+@Composable
 fun Modifier.tvFocusFrame(
     focusedScale: Float = 1.40f,
     pressedScale: Float = 1.40f,
@@ -86,7 +102,7 @@ fun Modifier.tvFocusFrame(
     focusColors: FocusColors = FocusDefaults.Colors,
     focusBorderWidth: androidx.compose.ui.unit.Dp = 2.5.dp,
     brightenContent: Boolean = false
-): Modifier = this.skinTvFocusFrame(
+): Modifier = this.focusKitTvFocusFrame(
     focusedScale = focusedScale,
     pressedScale = pressedScale,
     shape = shape,
@@ -102,7 +118,7 @@ fun Modifier.tvFocusableItem(
     autoBringIntoView: Boolean = true,
     onFocused: () -> Unit = {},
     debugTag: String? = null
-): Modifier = this.skinTvFocusableItem(
+): Modifier = this.focusKitTvFocusableItem(
     stateKey = stateKey,
     index = index,
     autoBringIntoView = autoBringIntoView,
@@ -112,6 +128,7 @@ fun Modifier.tvFocusableItem(
 
 fun Modifier.focusGroup(): Modifier = this.compatFocusGroup()
 
+@Composable
 fun Modifier.focusScaleOnTv(
     focusedScale: Float? = null,
     pressedScale: Float? = null,
@@ -119,19 +136,22 @@ fun Modifier.focusScaleOnTv(
     focusColors: FocusColors = FocusDefaults.Colors,
     focusBorderWidth: androidx.compose.ui.unit.Dp = 1.5.dp,
     interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource? = null,
-    brightenContent: Boolean = true
-): Modifier = this.skinFocusScaleOnTv(
+    brightenContent: Boolean = true,
+    debugTag: String? = null
+): Modifier = this.focusKitFocusScaleOnTv(
     focusedScale = focusedScale,
     pressedScale = pressedScale,
     shape = shape,
     focusColors = focusColors,
     focusBorderWidth = focusBorderWidth,
     interactionSource = interactionSource,
-    brightenContent = brightenContent
+    brightenContent = brightenContent,
+    debugTag = debugTag
 )
 
 // Centralized bring-into-view on focus for top-level wrappers.
 // We opt-in here so call sites don't need to depend on experimental APIs.
+@Composable
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 fun Modifier.focusBringIntoViewOnFocus(): Modifier = composed {
     val requester = remember { BringIntoViewRequester() }
@@ -188,6 +208,15 @@ fun TvRow(
 // Final, centralized FocusKit facade for all UIs (TV, phone, tablet)
 // Provides a single import surface: FocusKit.*
 object FocusKit {
+    object FocusDefaults {
+        val Colors: FocusColors
+            @Composable
+            get() = com.chris.m3usuite.ui.focus.FocusDefaults.Colors
+        val IconColors: FocusColors
+            @Composable
+            get() = com.chris.m3usuite.ui.focus.FocusDefaults.IconColors
+    }
+
     // Primitives (wrappers to ensure a single import path)
     @Composable
     fun Modifier.tvClickable(
@@ -204,7 +233,7 @@ object FocusKit {
         debugTag: String? = null,
         focusRequester: FocusRequester? = null,
         onClick: () -> Unit
-    ): Modifier = this@tvClickable.skinTvClickable(
+    ): Modifier = this@tvClickable.focusKitTvClickable(
         enabled = enabled,
         role = role,
         scaleFocused = scaleFocused,
@@ -220,6 +249,7 @@ object FocusKit {
         onClick = onClick
     )
 
+    @Composable
     fun Modifier.tvFocusFrame(
         focusedScale: Float = 1.40f,
         pressedScale: Float = 1.40f,
@@ -227,7 +257,7 @@ object FocusKit {
         focusColors: FocusColors = FocusDefaults.Colors,
         focusBorderWidth: androidx.compose.ui.unit.Dp = 2.5.dp,
         brightenContent: Boolean = false
-    ): Modifier = this@tvFocusFrame.skinTvFocusFrame(
+    ): Modifier = this@tvFocusFrame.focusKitTvFocusFrame(
         focusedScale = focusedScale,
         pressedScale = pressedScale,
         shape = shape,
@@ -243,7 +273,7 @@ object FocusKit {
         autoBringIntoView: Boolean = true,
         onFocused: () -> Unit = {},
         debugTag: String? = null
-    ): Modifier = this@tvFocusableItem.skinTvFocusableItem(
+    ): Modifier = this@tvFocusableItem.focusKitTvFocusableItem(
         stateKey = stateKey,
         index = index,
         autoBringIntoView = autoBringIntoView,
@@ -253,6 +283,7 @@ object FocusKit {
 
     fun Modifier.focusGroup(): Modifier = this@focusGroup.compatFocusGroup()
 
+    @Composable
     fun Modifier.focusScaleOnTv(
         focusedScale: Float? = null,
         pressedScale: Float? = null,
@@ -260,15 +291,17 @@ object FocusKit {
         focusColors: FocusColors = FocusDefaults.Colors,
         focusBorderWidth: androidx.compose.ui.unit.Dp = 1.5.dp,
         interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource? = null,
-        brightenContent: Boolean = true
-    ): Modifier = this@focusScaleOnTv.skinFocusScaleOnTv(
+        brightenContent: Boolean = true,
+        debugTag: String? = null
+    ): Modifier = this@focusScaleOnTv.focusKitFocusScaleOnTv(
         focusedScale = focusedScale,
         pressedScale = pressedScale,
         shape = shape,
         focusColors = focusColors,
         focusBorderWidth = focusBorderWidth,
         interactionSource = interactionSource,
-        brightenContent = brightenContent
+        brightenContent = brightenContent,
+        debugTag = debugTag
     )
 
     // Focus glow (halo rings) re-export
@@ -280,6 +313,7 @@ object FocusKit {
     ): Modifier = this.fxTvFocusGlow(focused = focused, shape = shape, ringWidth = ringWidth)
 
     // Bring-into-view helper
+    @Composable
     @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
     fun Modifier.focusBringIntoViewOnFocus(): Modifier = composed {
         val requester = remember { BringIntoViewRequester() }
@@ -290,11 +324,12 @@ object FocusKit {
     }
 
     // DPAD helpers (TV-first; on phone/tablet they are no-ops by default)
+    @Composable
     fun Modifier.onDpadAdjustLeftRight(
         onLeft: () -> Unit,
         onRight: () -> Unit
     ): Modifier = composed {
-        val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
+        val isTv = isTvDevice(LocalContext.current)
         if (!isTv) this else this.onPreviewKeyEvent {
             when (it.key) {
                 Key.DirectionLeft -> { onLeft(); true }
@@ -304,11 +339,12 @@ object FocusKit {
         }
     }
 
+    @Composable
     fun Modifier.onDpadAdjustUpDown(
         onUp: () -> Unit,
         onDown: () -> Unit
     ): Modifier = composed {
-        val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
+        val isTv = isTvDevice(LocalContext.current)
         if (!isTv) this else this.onPreviewKeyEvent {
             when (it.key) {
                 Key.DirectionUp -> { onUp(); true }
@@ -358,6 +394,7 @@ object FocusKit {
         leading: (@Composable (() -> Unit))? = null,
         onPrefetchKeys: OnPrefetchKeys? = null,
         itemKey: (MediaItem) -> Long = { it.id },
+        itemModifier: @Composable (index: Int, absoluteIndex: Int, media: MediaItem, base: Modifier, state: LazyListState) -> Modifier = { _, _, _, base, _ -> base },
         itemContent: @Composable (MediaItem) -> Unit
     ) {
         MediaRowCore(
@@ -366,6 +403,7 @@ object FocusKit {
             leading = leading,
             onPrefetchKeys = onPrefetchKeys,
             itemKey = itemKey,
+            itemModifier = itemModifier,
             itemContent = itemContent
         )
     }
@@ -379,6 +417,7 @@ object FocusKit {
         shimmerRefreshCount: Int = 10,
         shimmerAppendCount: Int = 6,
         itemKey: (index: Int) -> Long = { idx -> items[idx]?.id ?: idx.toLong() },
+        itemModifier: @Composable (index: Int, absoluteIndex: Int, media: MediaItem, base: Modifier, state: LazyListState) -> Modifier = { _, _, _, base, _ -> base },
         itemContent: @Composable (index: Int, MediaItem) -> Unit
     ) {
         MediaRowCorePaged(
@@ -389,6 +428,7 @@ object FocusKit {
             shimmerRefreshCount = shimmerRefreshCount,
             shimmerAppendCount = shimmerAppendCount,
             itemKey = itemKey,
+            itemModifier = itemModifier,
             itemContent = itemContent
         )
     }
@@ -489,9 +529,308 @@ object FocusKit {
         focusColors = focusColors,
         content = content
     )
+
+    fun isTvDevice(context: Context): Boolean = com.chris.m3usuite.ui.focus.isTvDevice(context)
 }
 
 // Convenience to use member extension modifiers without explicit `with(...)` at call sites,
 // mirroring the skin PackageScope pattern:
 @Composable
 inline fun <T> run(block: @Composable FocusKit.() -> T): T = FocusKit.block()
+
+@Immutable
+data class FocusColors(
+    val halo: Color,
+    val border: Color,
+    val contentTint: Color = Color.White.copy(alpha = 0.08f)
+)
+
+object FocusDefaults {
+    val Colors: FocusColors
+        @Composable
+        get() {
+            val scheme = MaterialTheme.colorScheme
+            return FocusColors(
+                halo = scheme.primary.copy(alpha = 0.35f),
+                border = scheme.primary.copy(alpha = 0.9f),
+                contentTint = Color.White.copy(alpha = 0.1f)
+            )
+        }
+
+    val IconColors: FocusColors
+        @Composable
+        get() {
+            val scheme = MaterialTheme.colorScheme
+            return FocusColors(
+                halo = scheme.secondary.copy(alpha = 0.32f),
+                border = scheme.secondary.copy(alpha = 0.88f),
+                contentTint = Color.White.copy(alpha = 0.12f)
+            )
+        }
+}
+
+@Composable
+private fun Modifier.focusKitTvClickable(
+    enabled: Boolean,
+    role: Role?,
+    scaleFocused: Float,
+    scalePressed: Float,
+    elevationFocusedDp: Float,
+    autoBringIntoView: Boolean,
+    shape: Shape,
+    focusColors: FocusColors,
+    focusBorderWidth: Dp,
+    brightenContent: Boolean,
+    debugTag: String?,
+    focusRequester: FocusRequester?,
+    onClick: () -> Unit
+): Modifier = composed {
+    val context = LocalContext.current
+    val semanticsModifier = role?.let { Modifier.semantics { this.role = it } } ?: Modifier
+    if (!isTvDevice(context)) {
+        return@composed this.then(semanticsModifier).clickable(
+            enabled = enabled,
+            role = role,
+            onClick = onClick
+        )
+    }
+
+    val density = LocalDensity.current
+    val interactionSource = remember { MutableInteractionSource() }
+    var hasFocus by remember { mutableStateOf(false) }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = when {
+            pressed -> scalePressed
+            hasFocus -> scaleFocused
+            else -> 1f
+        },
+        label = "tvClickableScale"
+    )
+    val focusFraction by animateFloatAsState(
+        targetValue = if (hasFocus) 1f else 0f,
+        label = "tvClickableFocus"
+    )
+    LaunchedEffect(hasFocus) {
+        if (hasFocus) logFocus("Clickable", debugTag)
+    }
+    val focusRequesterModifier = focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier
+    val bringModifier = if (autoBringIntoView) focusBringIntoViewOnFocus() else Modifier
+    val elevationPx = with(density) { elevationFocusedDp.dp.toPx() }
+
+    this
+        .then(focusRequesterModifier)
+        .then(semanticsModifier)
+        .focusable(enabled)
+        .onFocusEvent { state -> hasFocus = state.isFocused || state.hasFocus }
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+            shadowElevation = if (hasFocus) elevationPx else 0f
+        }
+        .applyFocusDecoration(
+            focusFraction = focusFraction,
+            shape = shape,
+            focusColors = focusColors,
+            focusBorderWidth = focusBorderWidth,
+            brightenContent = brightenContent
+        )
+        .then(bringModifier)
+        .clickable(
+            enabled = enabled,
+            interactionSource = interactionSource,
+            indication = null,
+            role = role,
+            onClick = onClick
+        )
+}
+
+@Suppress("UNUSED_PARAMETER")
+@Composable
+private fun Modifier.focusKitTvFocusFrame(
+    focusedScale: Float,
+    pressedScale: Float,
+    shape: Shape,
+    focusColors: FocusColors,
+    focusBorderWidth: Dp,
+    brightenContent: Boolean
+): Modifier = composed {
+    val context = LocalContext.current
+    if (!isTvDevice(context)) {
+        return@composed this
+    }
+    var hasFocus by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (hasFocus) focusedScale else 1f,
+        label = "tvFocusFrameScale"
+    )
+    val focusFraction by animateFloatAsState(
+        targetValue = if (hasFocus) 1f else 0f,
+        label = "tvFocusFrameFocus"
+    )
+    LaunchedEffect(hasFocus) {
+        if (hasFocus) logFocus("Frame", null)
+    }
+    this
+        .onFocusEvent { state -> hasFocus = state.isFocused || state.hasFocus }
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .applyFocusDecoration(
+            focusFraction = focusFraction,
+            shape = shape,
+            focusColors = focusColors,
+            focusBorderWidth = focusBorderWidth,
+            brightenContent = brightenContent
+        )
+}
+
+@Composable
+private fun Modifier.focusKitTvFocusableItem(
+    stateKey: String,
+    index: Int,
+    autoBringIntoView: Boolean,
+    onFocused: () -> Unit,
+    debugTag: String?
+): Modifier = composed {
+    val context = LocalContext.current
+    if (!isTvDevice(context)) {
+        return@composed this
+    }
+    var hasFocus by remember { mutableStateOf(false) }
+    LaunchedEffect(hasFocus) {
+        if (hasFocus) {
+            writeRowFocus(stateKey, index)
+            onFocused()
+            logFocus("Item", debugTag ?: "$stateKey#$index")
+        }
+    }
+    val bringModifier = if (autoBringIntoView) focusBringIntoViewOnFocus() else Modifier
+    this
+        .then(bringModifier)
+        .onFocusEvent { state -> hasFocus = state.isFocused || state.hasFocus }
+}
+
+@Composable
+private fun Modifier.focusKitFocusScaleOnTv(
+    focusedScale: Float?,
+    pressedScale: Float?,
+    shape: Shape,
+    focusColors: FocusColors,
+    focusBorderWidth: Dp,
+    interactionSource: MutableInteractionSource?,
+    brightenContent: Boolean,
+    debugTag: String?
+): Modifier = composed {
+    val context = LocalContext.current
+    if (!isTvDevice(context)) {
+        return@composed this
+    }
+    val source = interactionSource ?: remember { MutableInteractionSource() }
+    var hasFocus by remember { mutableStateOf(false) }
+    val pressed by source.collectIsPressedAsState()
+    val targetScale = when {
+        pressed && pressedScale != null -> pressedScale
+        hasFocus && focusedScale != null -> focusedScale
+        else -> 1f
+    }
+    val scale by animateFloatAsState(targetValue = targetScale, label = "tvFocusScale")
+    val focusFraction by animateFloatAsState(targetValue = if (hasFocus) 1f else 0f, label = "tvFocusScaleFraction")
+    LaunchedEffect(hasFocus) {
+        if (hasFocus) logFocus("Widget", debugTag)
+    }
+    this
+        .onFocusEvent { state -> hasFocus = state.isFocused || state.hasFocus }
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .applyFocusDecoration(
+            focusFraction = focusFraction,
+            shape = shape,
+            focusColors = focusColors,
+            focusBorderWidth = focusBorderWidth,
+            brightenContent = brightenContent
+        )
+}
+
+private fun Modifier.applyFocusDecoration(
+    focusFraction: Float,
+    shape: Shape,
+    focusColors: FocusColors,
+    focusBorderWidth: Dp,
+    brightenContent: Boolean
+): Modifier = drawWithContent {
+    drawContent()
+    if (focusFraction <= 0f) return@drawWithContent
+
+    if (brightenContent || focusColors.contentTint.alpha > 0f) {
+        val tintAlpha = if (brightenContent) 0.12f else focusColors.contentTint.alpha
+        drawRect(
+            color = Color.White.copy(alpha = tintAlpha * focusFraction)
+        )
+    }
+
+    val outline = shape.createOutline(size, layoutDirection, this)
+    val borderWidthPx = focusBorderWidth.toPx()
+    if (borderWidthPx > 0f) {
+        drawOutlineCompat(
+            outline = outline,
+            color = focusColors.halo,
+            style = Stroke(width = borderWidthPx * 1.9f),
+            alpha = 0.45f * focusFraction
+        )
+        drawOutlineCompat(
+            outline = outline,
+            color = focusColors.border,
+            style = Stroke(width = borderWidthPx),
+            alpha = focusFraction
+        )
+    }
+}
+
+private fun DrawScope.drawOutlineCompat(
+    outline: Outline,
+    color: Color,
+    style: Stroke,
+    alpha: Float
+) {
+    when (outline) {
+        is Outline.Rectangle -> drawRect(
+            color = color,
+            topLeft = outline.rect.topLeft,
+            size = outline.rect.size,
+            style = style,
+            alpha = alpha
+        )
+        is Outline.Rounded -> {
+            val path = Path().apply { addRoundRect(outline.roundRect) }
+            drawPath(
+                path = path,
+                color = color,
+                style = style,
+                alpha = alpha
+            )
+        }
+        is Outline.Generic -> drawPath(
+            path = outline.path,
+            color = color,
+            style = style,
+            alpha = alpha
+        )
+    }
+}
+
+private fun logFocus(component: String, tag: String?) {
+    GlobalDebug.logFocusWidget(component = component, module = RouteTag.current, tag = tag)
+}
+
+internal fun isTvDevice(context: Context): Boolean {
+    val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
+    val pm = context.packageManager
+    val modeTv = uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
+    val hasLeanback = pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+    val hasTelevision = pm.hasSystemFeature(PackageManager.FEATURE_TELEVISION)
+    return modeTv || hasLeanback || hasTelevision
+}

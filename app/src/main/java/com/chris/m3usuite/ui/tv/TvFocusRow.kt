@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
+import com.chris.m3usuite.ui.focus.FocusKit
 
 @Composable
 private fun isTelevision(): Boolean {
@@ -161,10 +162,10 @@ fun TvFocusRow(
     itemKey: ((Int) -> Any)? = null,
     itemContent: @Composable (index: Int) -> Unit
 ) {
-    val isTv = com.chris.m3usuite.ui.skin.isTvDevice(LocalContext.current)
+    val isTv = FocusKit.isTvDevice(LocalContext.current)
     val listState = com.chris.m3usuite.ui.state.rememberRouteListState(stateKey)
     val rowFocus = com.chris.m3usuite.ui.state.rememberRowFocus(stateKey)
-    val restoredOnce = rememberSaveable(key = "rowRestore:$stateKey") { mutableStateOf(false) }
+    val restoredOnce = rememberSaveable("rowRestore", stateKey) { mutableStateOf(false) }
 
     LaunchedEffect(stateKey, itemCount) {
         val idx = rowFocus.value.index
@@ -183,11 +184,11 @@ fun TvFocusRow(
         horizontalArrangement = Arrangement.spacedBy(itemSpacing)
     ) {
         items(count = itemCount, key = itemKey) { idx ->
-            val base = com.chris.m3usuite.ui.skin.run {
+            val base = FocusKit.run {
                 val setRow = com.chris.m3usuite.ui.home.LocalChromeRowFocusSetter.current
                 Modifier.tvFocusableItem(stateKey, idx, onFocused = { setRow(stateKey) })
             }
-            val visual = if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvFocusFrame() } else Modifier
+            val visual = if (isTv) FocusKit.run { Modifier.tvFocusFrame() } else Modifier
             Box(base.then(visual)) { itemContent(idx) }
         }
     }

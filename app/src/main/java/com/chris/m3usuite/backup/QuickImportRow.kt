@@ -7,7 +7,6 @@ import com.chris.m3usuite.ui.common.TvOutlinedButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
 import androidx.compose.ui.platform.LocalContext
 import com.chris.m3usuite.drive.DriveClient
 import com.chris.m3usuite.drive.DriveDefaults

@@ -6,13 +6,14 @@ pluginManagement {
     }
     plugins {
         // --- Platform: pin plugin versions project-wide ---
-        id("com.android.application") version "8.6.1" apply false
-        id("com.android.library") version "8.6.1" apply false
+        id("com.android.application") version "8.13.0" apply false
+        id("com.android.library") version "8.13.0" apply false
 
-        // Kotlin Gradle plugins (align with Kotlin 2.1.x)
-        kotlin("android") version "2.1.0" apply false
-        kotlin("kapt") version "2.1.0" apply false
-        kotlin("plugin.serialization") version "2.1.0" apply false
+        // Kotlin Gradle plugins (align with Kotlin 2.0.21 / Compose 1.9.x)
+        kotlin("android") version "2.0.21" apply false
+        kotlin("kapt") version "2.0.21" apply false
+        kotlin("plugin.serialization") version "2.0.21" apply false
+        kotlin("plugin.compose") version "2.0.21" apply false
     }
     resolutionStrategy {
         eachPlugin {

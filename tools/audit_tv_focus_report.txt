@@ -1,15 +1,14 @@
 Audit: TV Focus/DPAD
-Generated: 2025-10-06 06:57:01Z
+Generated: 2025-10-07 18:12:18Z
 
 == HORIZONTALE CONTAINER (prüfen/aufrüsten) ==
-app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:1359:    LazyRow(
-app/src/main/java/com/chris/m3usuite/ui/home/StartScreen.kt:1034:                                        androidx.compose.foundation.lazy.LazyRow(
+app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:497:    LazyRow(
 
 == TV FOUNDATION (verboten) ==
 
 
 == CLICKABLE (prüfen: tvClickable bevorzugen) ==
-
+app/src/main/java/com/chris/m3usuite/ui/focus/FocusPrimitives.kt:291:    out.clickable(
 
 == SCREENS: onPreviewKeyEvent / DPAD (prüfen) ==
 
@@ -17,15 +16,15 @@ app/src/main/java/com/chris/m3usuite/ui/home/StartScreen.kt:1034:               
 == BUTTONS OHNE TV-FOCUS (prüfen) ==
 app/src/main/java/com/chris/m3usuite/ui/forms/TvTextFieldRow.kt:                TextButton(onClick = {
 app/src/main/java/com/chris/m3usuite/ui/forms/TvTextFieldRow.kt:                TextButton(onClick = { showDialog = false }) { Text("Abbrechen") }
-app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt:                TextButton(
-app/src/main/java/com/chris/m3usuite/ui/auth/ProfileGate.kt:                TextButton(
+app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:            TextButton(onClick = { selected = emptySet() }) { Text("Abbrechen") }
+app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:                TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:                TextButton(onClick = {
+app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:            TextButton(onClick = { onRemove(selected.toList()); selected = emptySet() }) {
+app/src/main/java/com/chris/m3usuite/ui/components/controls/ActionIcons.kt:    IconButton(
+app/src/main/java/com/chris/m3usuite/ui/components/controls/ActionIcons.kt:    IconButton(
 app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt:        Button(onClick = { state.toggleActive() }) {
 app/src/main/java/com/chris/m3usuite/ui/selection/AssignSelection.kt:        OutlinedButton(
 app/src/main/java/com/chris/m3usuite/ui/state/StatusViews.kt:            Button(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
-app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt:                            TextButton(
-app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt:                                TextButton(
-app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt:                                TextButton(
-app/src/main/java/com/chris/m3usuite/ui/screens/SeriesDetailScreen.kt:                                                    androidx.compose.material3.TextButton(
 app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                Button(
 app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:        Button(
 app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                TextButton(onClick = onOpenProfiles) { Text("Profile verwalten…") }
@@ -68,15 +67,21 @@ app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:    TextButton
 app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:                Button(onClick = { onPick(ri.activityInfo.packageName); show = false }) { Text(label) }
 app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:            TextButton(onClick = {
 app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:        dismissButton = { TextButton(onClick = { open = false }) { Text("Abbrechen") } }
-app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:            TextButton(onClick = { selected = emptySet() }) { Text("Abbrechen") }
-app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:                TextButton(onClick = {
-app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:                TextButton(onClick = {
-app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:            TextButton(onClick = { onRemove(selected.toList()); selected = emptySet() }) { Text("Entfernen (${selected.size})") }
-app/src/main/java/com/chris/m3usuite/ui/components/controls/ActionIcons.kt:    IconButton(
-app/src/main/java/com/chris/m3usuite/ui/components/controls/ActionIcons.kt:    IconButton(
+app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt:                            TextButton(
+app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt:                                TextButton(
+app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt:                                TextButton(
+app/src/main/java/com/chris/m3usuite/ui/screens/SeriesDetailScreen.kt:                                                    androidx.compose.material3.TextButton(
 
 == BRING-INTO-VIEW (roh/per-Item) ==
-
+app/src/main/java/com/chris/m3usuite/ui/focus/FocusPrimitives.kt:import androidx.compose.foundation.relocation.BringIntoViewRequester
+app/src/main/java/com/chris/m3usuite/ui/focus/FocusPrimitives.kt:import androidx.compose.foundation.relocation.bringIntoViewRequester
+app/src/main/java/com/chris/m3usuite/ui/focus/FocusPrimitives.kt:    val bring = remember { BringIntoViewRequester() }
+app/src/main/java/com/chris/m3usuite/ui/focus/FocusPrimitives.kt:            .bringIntoViewRequester(bring)
+app/src/main/java/com/chris/m3usuite/ui/focus/FocusPrimitives.kt:                        scope.launch { bring.bringIntoView() }
+app/src/main/java/com/chris/m3usuite/ui/focus/FocusPrimitives.kt:    val requester = remember { BringIntoViewRequester() }
+app/src/main/java/com/chris/m3usuite/ui/focus/FocusPrimitives.kt:        .bringIntoViewRequester(requester)
+app/src/main/java/com/chris/m3usuite/ui/focus/FocusPrimitives.kt:                    scope.launch { requester.bringIntoView() }
+app/src/main/java/com/chris/m3usuite/ui/layout/FishTile.kt:            .onFocusChanged {
 
 == DOPPELTE FOKUS-INDIKATOREN (prüfen) ==
 
@@ -85,12 +90,16 @@ app/src/main/java/com/chris/m3usuite/ui/components/controls/ActionIcons.kt:    I
 
 
 == SUMMARY ==
-Horizontal-Container (roh): 1
+Horizontal-Container (roh): 0
 TV foundation (verboten):  0
 Clickable (roh):           0
 Screens-DPAD:              0
-Buttons ohne TV-Focus:     58 (advisory)
-Bring-into-view (roh):     0
+Buttons ohne TV-Focus:     56 (advisory)
+Bring-into-view (roh):     8
 Doppelte Fokus-Indikator.: 0 (advisory)
 SSOT-Verstöße (Defs):      0
-Total findings:            1
+Total findings:            8
+# 2025-10-08 DPAD/Focus Audit
+- Scan command: `rg -n "onPreviewKeyEvent|moveFocus\(|focusBringIntoView|focusRequester\(|onKeyEvent\(|Key\.(Direction|Enter|NumPad|Dpad|Back)|requestFocus\(|focusProperties|focusGroup\(|tvClickable\(|tvFocusFrame\(|tvFocusableItem\(|FocusRequester\b" app/src/main/java`
+- Findings: forms (TvSwitchRow/TvSliderRow/TvSelectRow) already on FocusKit; HomeRows live reorder path converted to `onDpadAdjustLeftRight`; remaining FocusRequester usage confined to InternalPlayerScreen overlays (accepted).
+- Follow-up: formalize FishForms components and migrate Settings/Setup screens before deprecating `ui/forms/*`.

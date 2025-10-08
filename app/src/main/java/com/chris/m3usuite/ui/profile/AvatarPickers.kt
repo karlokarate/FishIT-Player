@@ -29,7 +29,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
 
 @Composable
 fun AvatarCaptureAndPickButtons(

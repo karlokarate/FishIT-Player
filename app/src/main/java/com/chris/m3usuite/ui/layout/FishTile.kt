@@ -3,15 +3,30 @@ package com.chris.m3usuite.ui.layout
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -35,8 +50,10 @@ fun FishTile(
     showNew: Boolean = false,
     resumeFraction: Float? = null, // 0f..1f for progress line; null to hide
     topStartBadge: (@Composable () -> Unit)? = null,
+    topEndBadge: (@Composable () -> Unit)? = null,
     bottomEndActions: (@Composable RowScope.() -> Unit)? = null,
     footer: (@Composable () -> Unit)? = null,
+    overlay: (@Composable BoxScope.() -> Unit)? = null,
     onFocusChanged: ((Boolean) -> Unit)? = null,
     onClick: () -> Unit = {}
 ) {
@@ -89,7 +106,7 @@ fun FishTile(
                 .border(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent)), shape)
         ) {
             var loaded by remember(poster) { mutableStateOf(false) }
-            if (!loaded) Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.1f)))
+            if (!loaded) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.1f)))
             AppAsyncImage(
                 url = poster,
                 contentDescription = title,
@@ -121,6 +138,7 @@ fun FishTile(
                 ) { Text(text = "NEU", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)) }
             }
             if (topStartBadge != null) Box(Modifier.align(Alignment.TopStart).padding(6.dp)) { topStartBadge() }
+            if (topEndBadge != null) Box(Modifier.align(Alignment.TopEnd).padding(6.dp)) { topEndBadge() }
             // Resume progress line
             resumeFraction?.let { f ->
                 val clamped = f.coerceIn(0f, 1f)
@@ -148,8 +166,9 @@ fun FishTile(
             }
         }
 
-        // Footer (focused)
-        if (focused) {
+        // Footer / title band
+        val showTitleBand = focused || (title != null && d.showTitleWhenUnfocused)
+        if (showTitleBand) {
             Column(Modifier.align(Alignment.BottomStart)) {
                 title?.let {
                     Text(
@@ -160,16 +179,20 @@ fun FishTile(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                     )
                 }
-                footer?.let { Box(Modifier.padding(horizontal = 10.dp).fillMaxWidth()) { it() } }
+                if (focused) {
+                    footer?.let { Box(Modifier.padding(horizontal = 10.dp).fillMaxWidth()) { it() } }
+                }
             }
         }
 
-        if (selected) Box(Modifier.matchParentSize().border(3.dp, MaterialTheme.colorScheme.primary, shape))
+        if (selected) Box(Modifier.fillMaxSize().border(3.dp, MaterialTheme.colorScheme.primary, shape))
+
+        overlay?.let { it(this) }
 
         // Global glow via FocusKit wrapper (gate via tokens)
         if (LocalFishDimens.current.enableGlow) {
             FocusKit.run {
-                Box(Modifier.matchParentSize().tvFocusGlow(focused = focused, shape = shape))
+                Box(Modifier.fillMaxSize().tvFocusGlow(focused = focused, shape = shape))
             }
         }
     }

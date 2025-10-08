@@ -24,7 +24,6 @@ import com.chris.m3usuite.ui.util.rememberImageHeaders
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import com.chris.m3usuite.ui.detail.DetailMeta
 import com.chris.m3usuite.ui.detail.DetailPage
-import com.chris.m3usuite.ui.detail.InfoEntry
 import com.chris.m3usuite.ui.actions.MediaAction
 import com.chris.m3usuite.ui.actions.MediaActionId
 import com.chris.m3usuite.ui.actions.MediaActionBar
@@ -49,20 +48,6 @@ private fun fmt(totalSecs: Int): String {
     return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
 }
 
-private data class InfoEntry(val title: String, val value: String)
-
-@Composable
-private fun PlotSection(plot: String) {
-    Card { Text(plot, modifier = Modifier.padding(16.dp)) }
-}
-
-@Composable
-private fun FactsSection(entries: List<InfoEntry>) {
-    if (entries.isEmpty()) return
-    Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        entries.forEach { e -> Text("${e.title}: ${e.value}") }
-    } }
-}
 
 // OBX ID decode
 private fun decodeObxVodId(itemId: Long): Int? =
@@ -131,7 +116,7 @@ private suspend fun loadVodDetail(
     val backdrop = images.firstOrNull { it != poster }
 
     val media = row.toMediaItem(ctx)
-    val playReq = if (media != null) com.chris.m3usuite.core.playback.PlayUrlHelper.forVod(ctx, store, media) else null
+    val playReq = com.chris.m3usuite.core.playback.PlayUrlHelper.forVod(ctx, store, media)
 
     LoadedVod(
         title = row.name ?: "",
@@ -336,15 +321,6 @@ fun VodDetailScreen(
             category = data?.categoryLabel
         )
 
-        val facts = remember(data) {
-            buildList {
-                data?.director?.takeIf { it.isNotBlank() }?.let { add(InfoEntry("Regie", it)) }
-                data?.cast?.takeIf { it.isNotBlank() }?.let { add(InfoEntry("Cast", it)) }
-                data?.country?.takeIf { it.isNotBlank() }?.let { add(InfoEntry("Land", it)) }
-                data?.releaseDate?.takeIf { it.isNotBlank() }?.let { add(InfoEntry("Release", it)) }
-                data?.rating?.takeIf { it != null }?.let { add(InfoEntry("Bewertung", String.format("%.1f", it))) }
-            }
-        }
         DetailPage(
             isAdult = isAdult,
             pads = pads,

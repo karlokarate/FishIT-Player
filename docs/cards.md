@@ -1,7 +1,7 @@
 # Unified Tiles & Rows (Fish*)
 
 Status
-- The legacy Cards v1 (`PosterCard`, `ChannelCard`, `SeasonCard`, `EpisodeRow`) are being retired.
+- Legacy Cards v1 (`PosterCard`, `ChannelCard`, `SeasonCard`, `EpisodeRow`) removed as of 2025-10-07.
 - New single source of truth lives under `ui/layout/*` (Fish*). Screens should compose rows and tiles only from these modules.
 
 Modules
@@ -27,8 +27,7 @@ Helpers
 - `FishResumeTile.kt` — generic resume card (VOD/Series episodes).
 
 Migration
-- Replace `PosterCard`/`ChannelCard`/`PosterCardTagged` with `FishTile` + appropriate FishContent and badges/actions.
-- Remove `BuildConfig.CARDS_V1` gates while porting; do not wrap old Cards around FishTile.
+- Completed. All screens use FishTile/FishRow; continue wiring new surfaces via Fish* modules.
 - Ratios: FishTile uses ContentScale.Fit; size/spacing/corners come from tokens.
 
 Notes

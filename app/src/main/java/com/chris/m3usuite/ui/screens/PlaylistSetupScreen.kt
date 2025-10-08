@@ -34,7 +34,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
+import com.chris.m3usuite.ui.layout.FishFormButtonRow
+import com.chris.m3usuite.ui.layout.FishFormSection
+import com.chris.m3usuite.ui.layout.FishFormSelect
+import com.chris.m3usuite.ui.layout.FishFormSwitch
+import com.chris.m3usuite.ui.layout.FishFormTextField
+import com.chris.m3usuite.ui.layout.TvKeyboard
 import kotlinx.coroutines.flow.first
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
@@ -193,8 +199,8 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
 
                 if (BuildConfig.TV_FORMS_V1) {
                     // TV Form Kit v1
-                    com.chris.m3usuite.ui.forms.TvFormSection(title = "Modus") {
-                        com.chris.m3usuite.ui.forms.TvSelectRow(
+                    FishFormSection(title = "Modus") {
+                        FishFormSelect(
                             label = "Eingabe",
                             options = listOf(SetupMode.M3U, SetupMode.XTREAM),
                             selected = mode,
@@ -205,26 +211,26 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
                     Spacer(Modifier.height(6.dp))
 
                     if (mode == SetupMode.M3U) {
-                        com.chris.m3usuite.ui.forms.TvFormSection(title = "M3U Quelle") {
-                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                        FishFormSection(title = "M3U Quelle") {
+                            FishFormTextField(
                                 label = "M3U / Xtream get.php Link",
                                 value = m3u.text,
                                 onValueChange = { m3u = TextFieldValue(it) },
                                 placeholder = "https://…",
                                 errorText = if (m3u.text.isNotBlank() && !isM3uOk) "Bitte gültige http/https URL eingeben" else null,
-                                keyboard = com.chris.m3usuite.ui.forms.TvKeyboard.Uri
+                                keyboard = TvKeyboard.Uri
                             )
-                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                            FishFormTextField(
                                 label = "EPG XMLTV URL (optional)",
                                 value = epg.text,
                                 onValueChange = { epg = TextFieldValue(it) },
                                 placeholder = "https://…",
-                                keyboard = com.chris.m3usuite.ui.forms.TvKeyboard.Uri
+                                keyboard = TvKeyboard.Uri
                             )
                         }
                     } else {
-                        com.chris.m3usuite.ui.forms.TvFormSection(title = "Xtream Zugang") {
-                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                        FishFormSection(title = "Xtream Zugang") {
+                            FishFormTextField(
                                 label = "Xtream Host (ohne Schema)",
                                 value = xtHost.text,
                                 onValueChange = { raw ->
@@ -235,17 +241,17 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
                                 },
                                 helperText = "Nur Hostname oder Host:Port (ohne http/https)",
                                 errorText = if (xtHost.text.isNotBlank() && !isXtHostValid) "Ungültig: nur Hostname oder Host:Port" else null,
-                                keyboard = com.chris.m3usuite.ui.forms.TvKeyboard.Uri
+                                keyboard = TvKeyboard.Uri
                             )
-                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                            FishFormTextField(
                                 label = "Port (1–65535)",
                                 value = xtPort.text,
                                 onValueChange = { nv -> xtPort = TextFieldValue(nv.filter { it.isDigit() }.take(5)) },
                                 helperText = if (xtHttps) "HTTPS nutzt i. d. R. 443" else "HTTP nutzt i. d. R. 80",
                                 errorText = if (xtPort.text.isNotBlank() && !isXtPortValid) "Ungültiger Port" else null,
-                                keyboard = com.chris.m3usuite.ui.forms.TvKeyboard.Number
+                                keyboard = TvKeyboard.Number
                             )
-                            com.chris.m3usuite.ui.forms.TvSwitchRow(
+                            FishFormSwitch(
                                 label = "HTTPS",
                                 checked = xtHttps,
                                 onCheckedChange = { v ->
@@ -254,18 +260,18 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
                                     if (p == null || (v && p == 80)) xtPort = TextFieldValue("443") else if (!v && p == 443) xtPort = TextFieldValue("80")
                                 }
                             )
-                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                            FishFormTextField(
                                 label = "Benutzername",
                                 value = xtUser.text,
                                 onValueChange = { xtUser = TextFieldValue(it) }
                             )
-                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                            FishFormTextField(
                                 label = "Passwort",
                                 value = xtPass.text,
                                 onValueChange = { xtPass = TextFieldValue(it) },
-                                keyboard = com.chris.m3usuite.ui.forms.TvKeyboard.Password
+                                keyboard = TvKeyboard.Password
                             )
-                            com.chris.m3usuite.ui.forms.TvSelectRow(
+                            FishFormSelect(
                                 label = "Output",
                                 options = listOf("ts", "m3u8", "mp4"),
                                 selected = normalizeOutput(xtOut.text),
@@ -277,13 +283,13 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
                     }
 
                     if (BuildConfig.SHOW_HEADER_UI) {
-                        com.chris.m3usuite.ui.forms.TvFormSection(title = "HTTP Header (optional)") {
-                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                        FishFormSection(title = "HTTP Header (optional)") {
+                            FishFormTextField(
                                 label = "User-Agent",
                                 value = ua.text,
                                 onValueChange = { ua = TextFieldValue(it) }
                             )
-                            com.chris.m3usuite.ui.forms.TvTextFieldRow(
+                            FishFormTextField(
                                 label = "Referer (optional)",
                                 value = ref.text,
                                 onValueChange = { ref = TextFieldValue(it) }
@@ -408,7 +414,7 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
                 }
 
     if (BuildConfig.TV_FORMS_V1) {
-        com.chris.m3usuite.ui.forms.TvButtonRow(
+        FishFormButtonRow(
             primaryText = if (busy) "Bitte warten…" else "Speichern & Importieren",
             onPrimary = {
                 focusManager.clearFocus(force = true)

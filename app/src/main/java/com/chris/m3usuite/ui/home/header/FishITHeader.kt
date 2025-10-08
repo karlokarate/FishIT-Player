@@ -22,17 +22,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import com.chris.m3usuite.ui.compat.focusGroup
-import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.focus.tvClickable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
 import com.chris.m3usuite.ui.common.TvIconButton
-import com.chris.m3usuite.ui.skin.TvFocusColors
 import com.chris.m3usuite.ui.common.IconVariant
 import com.chris.m3usuite.ui.debug.safePainter
-import com.chris.m3usuite.ui.skin.isTvDevice
+import com.chris.m3usuite.ui.focus.FocusKit
 
 object FishITHeaderHeights {
     val topBar = 56.dp
@@ -91,7 +90,7 @@ fun FishITHeader(
             Modifier
                 .height(FishITHeaderHeights.topBar)
                 .fillMaxWidth()
-                .then(if (isTvDevice(LocalContext.current)) Modifier.focusGroup() else Modifier),
+                .then(if (FocusKit.isTvDevice(LocalContext.current)) Modifier.focusGroup() else Modifier),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             val logoModifier = Modifier
@@ -101,7 +100,7 @@ fun FishITHeader(
                 TvIconButton(
                     onClick = { onChromeAction?.invoke(); onLogo() },
                     modifier = logoModifier,
-                    focusColors = TvFocusColors.Icon
+                    focusColors = FocusKit.FocusDefaults.IconColors
                 ) {
                     androidx.compose.foundation.Image(
                         painter = safePainter(com.chris.m3usuite.R.drawable.fisch_header, label = "FishITHeader"),

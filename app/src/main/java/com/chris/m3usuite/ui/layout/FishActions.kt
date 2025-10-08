@@ -57,4 +57,29 @@ object FishActions {
             )
         }
     }
+
+    @Composable
+    fun RowScope.LiveBottomActions(
+        onPlay: (() -> Unit)? = null,
+        onOpenDetails: (() -> Unit)? = null
+    ) {
+        if (onPlay != null) {
+            AppIconButton(
+                icon = AppIcon.PlayCircle,
+                contentDescription = "Abspielen",
+                onClick = onPlay,
+                size = 24.dp,
+                modifier = Modifier.focusProperties { canFocus = false }
+            )
+        }
+        if (onOpenDetails != null) {
+            AppIconButton(
+                icon = AppIcon.Info,
+                contentDescription = "Details",
+                onClick = onOpenDetails,
+                size = 24.dp,
+                modifier = Modifier.focusProperties { canFocus = false }
+            )
+        }
+    }
 }

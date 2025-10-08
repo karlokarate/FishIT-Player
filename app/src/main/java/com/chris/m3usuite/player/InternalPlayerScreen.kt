@@ -7,9 +7,9 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,7 +51,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -61,8 +60,6 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
-import com.chris.m3usuite.ui.skin.isTvDevice
 import android.app.PictureInPictureParams
 import android.util.Rational
 import androidx.lifecycle.Lifecycle
@@ -94,6 +91,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.core.playback.PlayUrlHelper
+import com.chris.m3usuite.ui.focus.FocusKit
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import android.widget.Toast
 
 /**
@@ -141,7 +140,7 @@ fun InternalPlayerScreen(
     val ctx = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
-    val isTv = remember(ctx) { isTvDevice(ctx) }
+    val isTv = remember(ctx) { FocusKit.isTvDevice(ctx) }
 
     val obxStore = remember(ctx) { ObxStore.get(ctx) }
     val resumeRepo = remember(ctx) { ResumeRepository(ctx) }
@@ -1209,7 +1208,7 @@ fun InternalPlayerScreen(
                             ) { idx ->
                                 if (idx == 0) {
                                     androidx.compose.material3.FilterChip(
-                                        modifier = com.chris.m3usuite.ui.skin.run {
+                                        modifier = FocusKit.run {
                                             Modifier.tvClickable { selCat = null }
                                         },
                                         selected = selCat == null,
@@ -1219,7 +1218,7 @@ fun InternalPlayerScreen(
                                 } else {
                                     val c = cats[idx - 1]
                                     androidx.compose.material3.FilterChip(
-                                        modifier = com.chris.m3usuite.ui.skin.run {
+                                        modifier = FocusKit.run {
                                             Modifier.tvClickable { selCat = c }
                                         },
                                         selected = selCat == c,
@@ -1238,7 +1237,7 @@ fun InternalPlayerScreen(
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
-                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showLiveListSheet = false; switchToLive(mi) }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) })
+                                        .then(FocusKit.run { Modifier.tvClickable(onClick = { showLiveListSheet = false; switchToLive(mi) }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) })
                                         .padding(horizontal = 8.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -1254,7 +1253,7 @@ fun InternalPlayerScreen(
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
-                                        .then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showLiveListSheet = false; switchToLive(mi) }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) })
+                                        .then(FocusKit.run { Modifier.tvClickable(onClick = { showLiveListSheet = false; switchToLive(mi) }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) })
                                         .padding(horizontal = 8.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -1653,7 +1652,7 @@ private fun OverlayIconButton(
     val clickableModifier = if (onLongClick != null) {
         modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
     } else {
-        modifier.then(com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = onClick) })
+        modifier.then(FocusKit.run { Modifier.tvClickable(onClick = onClick) })
     }
     ElevatedCard(
         shape = shape,

@@ -19,7 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -27,8 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chris.m3usuite.R
 import com.chris.m3usuite.ui.debug.safePainter
-import com.chris.m3usuite.ui.skin.TvFocusColors
-import com.chris.m3usuite.ui.skin.isTvDevice
+import com.chris.m3usuite.ui.focus.FocusKit
 
 @Composable
 fun AppIconButton(
@@ -43,7 +46,7 @@ fun AppIconButton(
     focusBorderWidth: Dp = 1.5.dp
 ) {
     val context = LocalContext.current
-    val isTv = remember(context) { isTvDevice(context) }
+    val isTv = remember(context) { FocusKit.isTvDevice(context) }
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val focusShape = remember { RoundedCornerShape(14.dp) }
@@ -68,18 +71,16 @@ fun AppIconButton(
         modifier = modifier
             .semantics { this.contentDescription = contentDescription }
             .onKeyEvent { ev ->
-                val n = ev.nativeKeyEvent
-                if (n.action == android.view.KeyEvent.ACTION_UP) {
-                    val code = n.keyCode
-                    if (code == android.view.KeyEvent.KEYCODE_ENTER || code == android.view.KeyEvent.KEYCODE_DPAD_CENTER) {
-                        com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER", mapOf("button" to icon.name))
-                        onClick(); true
-                    } else false
-                } else false
+                if (ev.type == KeyEventType.KeyUp && (ev.key == Key.Enter || ev.key == Key.NumPadEnter || ev.key == Key.DirectionCenter)) {
+                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER", mapOf("button" to icon.name))
+                    onClick()
+                    return@onKeyEvent true
+                }
+                false
             },
         shape = focusShape,
         interactionSource = interactionSource,
-        focusColors = TvFocusColors.Icon
+        focusColors = FocusKit.FocusDefaults.IconColors
     ) {
         Box(contentAlignment = Alignment.Center) {
             if (overlayAlpha > 0f) {

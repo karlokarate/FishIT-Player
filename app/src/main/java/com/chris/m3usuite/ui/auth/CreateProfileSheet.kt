@@ -5,10 +5,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.unit.dp
-import com.chris.m3usuite.ui.forms.TvFormSection
-import com.chris.m3usuite.ui.forms.TvTextFieldRow
-import com.chris.m3usuite.ui.forms.TvSwitchRow
-import com.chris.m3usuite.ui.forms.TvButtonRow
+import com.chris.m3usuite.ui.layout.FishFormButtonRow
+import com.chris.m3usuite.ui.layout.FishFormSection
+import com.chris.m3usuite.ui.layout.FishFormSwitch
+import com.chris.m3usuite.ui.layout.FishFormTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,14 +24,14 @@ fun CreateProfileSheet(
             Text("Profil anlegen", style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(12.dp))
 
-            TvFormSection(title = "Details") {
-                TvTextFieldRow(label = "Name", value = name, onValueChange = { name = it.trimStart() })
+            FishFormSection(title = "Details") {
+                FishFormTextField(label = "Name", value = name, onValueChange = { name = it.trimStart() })
                 Spacer(Modifier.height(8.dp))
-                TvSwitchRow(label = "Kinderprofil", checked = isKid, onCheckedChange = { isKid = it })
+                FishFormSwitch(label = "Kinderprofil", checked = isKid, onCheckedChange = { isKid = it })
             }
 
             Spacer(Modifier.height(16.dp))
-            TvButtonRow(
+            FishFormButtonRow(
                 primaryText = "Erstellen",
                 onPrimary = { if (name.isNotBlank()) onCreate(name.trim(), isKid) },
                 secondaryText = "Abbrechen",

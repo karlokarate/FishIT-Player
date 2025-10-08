@@ -21,7 +21,7 @@ import androidx.compose.ui.zIndex
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
 import com.chris.m3usuite.ui.common.IconVariant
-import com.chris.m3usuite.ui.skin.isTvDevice
+import com.chris.m3usuite.ui.focus.FocusKit
 
 object FishITBottomHeights {
     val bar = 56.dp
@@ -55,7 +55,7 @@ fun FishITBottomPanel(
             )
             .padding(horizontal = 12.dp)
             .height(FishITBottomHeights.bar)
-            .then(if (isTvDevice(LocalContext.current)) Modifier.focusGroup() else Modifier),
+            .then(if (FocusKit.isTvDevice(LocalContext.current)) Modifier.focusGroup() else Modifier),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         AppIconButton(

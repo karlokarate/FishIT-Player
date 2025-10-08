@@ -36,7 +36,7 @@ Codex – Operating Rules (override)
 - Respectful scope: Codex does not change/trim/expand modules or files without instruction, except where necessary to uphold these rules or maintain architectural integrity. Existing flows (EPG/Xtream, player paths, list/detail) must be preserved unless requested.
 - Ongoing hygiene: Codex periodically tidies the repo, highlights obsolete files/code to the user, and removes uncritical leftovers (e.g., stale *.old files). Never touch `.gradle/`, `.idea/`, or `app/build/` artifacts, and avoid dependency upgrades unless fixing builds.
 - TV focus/DPAD audit: `tools/audit_tv_focus.sh` enforces rules (TvFocusRow for horizontal containers, tvClickable for interactives, no ad‑hoc DPAD). Wired into CI (`.github/workflows/ci.yml`) and fails PRs on violations.
- - Central facade: Use `com.chris.m3usuite.ui.focus.FocusKit` as the single entry point for focus across all UIs (TV/phone/tablet). It provides primitives (`tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, `focusBringIntoViewOnFocus`), unified row wrappers (`TvRowLight` → `TvFocusRow`, `TvRowMedia`/`TvRowPaged` → `RowCore` engines), DPAD helpers (`onDpadAdjustLeftRight/UpDown`), grid neighbors (`focusNeighbors`), and re‑exports of `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton`). Avoid importing row engines or skin primitives directly in screens.
+- Central facade: Use `com.chris.m3usuite.ui.focus.FocusKit` as the single entry point for focus across all UIs (TV/phone/tablet). It provides primitives (`tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, `focusBringIntoViewOnFocus`), unified row wrappers (`TvRowLight` → `TvFocusRow`, `TvRowMedia`/`TvRowPaged` → FocusKit’s row engine), DPAD helpers (`onDpadAdjustLeftRight/UpDown`), grid neighbors (`focusNeighbors`), and re‑exports of `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton`). Avoid importing row engines or skin primitives directly in screens.
 
 **UI Layout Centralization (Fish*)**
 - Tokens: `ui/layout/FishTheme.kt`
@@ -47,14 +47,17 @@ Codex – Operating Rules (override)
   - No per‑tile scroll: `autoBringIntoView=false` (Row handles visibility).
 - Row: `ui/layout/FishRow.kt`
   - `FishRowLight` (simple LazyRow + focus), `FishRow` (Media engine), `FishRowPaged` (Paging engine). Fixed spacing/padding from tokens; header is optional and only rendered when provided.
+  - `header: FishHeaderData?` aktiviert die schwebende Beacon-Overlay (`FishHeaderHost`) und ersetzt klassische Section-Header.
   - Media/Paged support `edgeLeftExpandChrome` + `initialFocusEligible`; bring‑into‑view + DPAD handled centrally (no tile hacks).
 - Content composition: `ui/layout/FishVodContent.kt`, `FishSeriesContent.kt`, `FishLiveContent.kt`
   - Build tile content per type (title, poster/logo, resume/epg, NEW badges, selection badges, bottom‑end actions, focus logging hook, click routing). Vod includes resume progress and NEW status.
 - Shared helpers: `ui/layout/FishMeta.kt` (poster/title/plot/resume), `FishActions.kt` (Assign/Play actions; buttons non‑focusable), `FishLogging.kt` (focus logs with OBX resolution), `FishResumeTile.kt` (global resume card for VOD/Series episodes).
 - Migration policy
   - Rows/Screens compose only `FishRow` + `FishTile`; all visuals/behavior come from tokens + FocusKit. No extra row frames/overlays.
-  - Eliminate `CARDS_V1` and old `ui/cards/*` (PosterCard/ChannelCard/SeasonCard) while porting; no wrappers. Telegram’s `PosterCardTagged` maps to FishTile with a badge slot.
+  - Legacy cards removed: `BuildConfig.CARDS_V1` and `ui/cards/*` (PosterCard/ChannelCard/SeasonCard/EpisodeRow) are gone. Telegram badges now render via FishTile’s badge slot.
   - Central facade: Use `com.chris.m3usuite.ui.focus.FocusKit` for all focus primitives and rows (`tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, and `TvRow`). Avoid importing scattered helpers directly.
+  - Start- und Library-Sektionen erzeugen Header (Text/Chip/Provider) nur noch über `FishHeaderData`; Inline-Texte/Chips (`SeriesNewChip`) wurden entfernt.
+  - FishForms: TV-Form-Rows liegen in `ui/layout/FishForm.kt` (`FishFormSection/Switch/Select/Slider/TextField/ButtonRow`) und nutzen Fokus/DPAD aus FocusKit plus FishTheme Tokens. Die bisherigen `ui/forms/*` Wrapper delegieren nur noch und werden entfernt, sobald alle Screens migriert sind.
 - Xtream workers & delta: Legacy `XtreamRefreshWorker`/`XtreamEnrichmentWorker` remain disabled (no‑op). Xtream content updates via `XtreamDeltaImportWorker`: periodic (12h, unmetered+charging) plus on‑demand one‑shot trigger.
   - Global gate: `M3U_WORKERS_ENABLED` in DataStore controls whether Xtream workers/scheduling and related API paths run. When false, workers early‑exit (no network), app‑start auto‑discovery/seed is skipped, and Settings actions for Xtream diagnostics/import are disabled.
   - One‑shot `ObxKeyBackfillWorker` fills missing `sortTitleLower`/`providerKey`/`genreKey`/`yearKey` for existing OBX rows.
@@ -155,6 +158,7 @@ Short bullet summary (current highlights)
 - TDLib secrets sourcing: `TG_API_ID`/`TG_API_HASH` are injected at build time without committing secrets.
    - Precedence: ENV vars (`TG_API_ID`, `TG_API_HASH`) → root `/.tg.secrets.properties` (not tracked) → `-P` Gradle props → default 0/empty.
    - To test locally: either set env vars for the Gradle run, or create a root‑level file `.tg.secrets.properties` with `TG_API_ID=...` and `TG_API_HASH=...`.
+   - Player fallback: If BuildConfig keys are empty at runtime, the app‑process TDLib client (DataSource path) now falls back to `SettingsStore` (`tg_api_id`, `tg_api_hash`) so `tg://` playback can stream on‑demand after entering keys in Settings.
  - Default UA (secret): HTTP `User-Agent` is injected as `BuildConfig.DEFAULT_UA`.
    - Precedence: ENV var `HEADER` → root `/.ua.secrets.properties` (not tracked) → `-P HEADER` → empty.
    - Neither the repo nor the compiled APK contain the literal UA; app fallbacks read `DEFAULT_UA`.
@@ -189,9 +193,9 @@ Short bullet summary (current highlights)
    - Initial focus: adult tile (or first visible) receives deterministic focus; header/chrome no longer steal focus on gate. Numpad focuses the first key by default and shows halo/scale on DPAD.
    - Low‑spec TV: Focus visuals respect the reduced-scale profile (≈1.03) and avoid shadow elevation; still clearly visible on TV.
 
-- TV forms (v1): Use `ui/forms/*` rows for DPAD‑first forms in Settings/Setup (`TvFormSection`, `TvSwitchRow`, `TvSliderRow`, `TvTextFieldRow`, `TvSelectRow`, `TvButtonRow`). LEFT/RIGHT adjust values; text fields open a dialog on TV to avoid keyboard traps. Flag `BuildConfig.TV_FORMS_V1` (default ON) allows screen‑wise activation.
+- TV forms: `ui/layout/FishForm.kt` stellt DPAD‑first Form-Rows (`FishFormSection/Switch/Select/Slider/TextField/ButtonRow`) bereit. Sie nutzen FocusKit + FishTheme Tokens, und die historischen `ui/forms` Wrapper sind entfernt. Flag `BuildConfig.TV_FORMS_V1` (default ON) aktiviert die TV-spezifischen Pfade; Phone/Tablet behalten Material OutlinedTextFields.
 - UiState (v1): Prefer `UiState` + `StatusViews` + `collectAsUiState` for data loading instead of ad‑hoc spinners. Gate via `BuildConfig.UI_STATE_V1` (default ON). Each migrated screen must render exactly one of Loading/Empty/Error/Success.
-- Cards (v1): Use `ui/cards` (`PosterCard`, `ChannelCard`, `SeasonCard`, `EpisodeRow`) in rows/sections under `BuildConfig.CARDS_V1` (default ON). Keep stable keys/contentType in Lazy*.
+-- Cards (v1): **Removed** – Fish* tiles/rows are now the only path. See `CHANGELOG.md` (2025-10-07) for the cleanup entry.
  - Playback (v1): Use `playback/PlaybackLauncher` with `PlayRequest` for all playback starts. Gate via `BuildConfig.PLAYBACK_LAUNCHER_V1` (default ON). Screens provide `onOpenInternal` to route to `InternalPlayerScreen`.
 - TV Lazy migration: Do not use `androidx.tv.foundation.TvLazyRow` (deprecated). Use `LazyRow` from compose.foundation with TV focus APIs: `focusGroup()` on the container and `focusable()` + bring-into-view on item focus. A reusable wrapper `com.chris.m3usuite.ui.tv.TvFocusRow` is available and should be used for horizontal TV rows (chips, carousels, overlays). Remove manual DPAD index arithmetic; prefer `moveFocus(...)` when needed.
 - TV live controls: DPAD Select toggles a bottom‑right quick‑actions popup (PiP, Subtitle/Audio, Format). Popup stays until Select again or Back. When open, DPAD_DOWN focuses the first button; LEFT/RIGHT navigate; Select activates; Back saves CC settings (if open) and closes the popup.
@@ -236,7 +240,7 @@ Recent
  - TV chrome empty-start: On TV, if Start is empty (no rows yet, e.g., right after PIN on a fresh setup), HomeChrome auto-expands and the Settings button in the header receives initial focus so users can immediately open Settings. DPAD LEFT also expands HomeChrome from this empty state.
 - Tile focus logging: Core row engines (MediaRowCore/MediaRowCorePaged) now emit detailed `focus:<type> id=<id> <ui title> (<OBX title>)` logs on focus, plus a `tree:` hint. Makes it visible in logcat which concrete tile currently has focus across Start/Library/Details rows.
 - TV rows scroll: Minimal adjustment when the focused tile is clipped; if the target tile is already fully visible, no re-centering occurs. Debounced focus requests while scrolling; last requested index applies when motion stops. Prevents over-scrolling/jumps on single DPAD steps.
-- TV rows scroll helper: Introduced `ui/tv/TvRowScroll.kt` and refactored RowCore and TvFocusRow to use one centering implementation. Row tiles no longer invoke per-tile auto bring-into-view, avoiding conflicting scrolls. DPAD LEFT/RIGHT now navigates reliably; focused tiles are always visible.
+- TV rows scroll helper: Introduced `ui/tv/TvRowScroll.kt` and refactored the FocusKit row engine and TvFocusRow to use one centering implementation. Row tiles no longer invoke per-tile auto bring-into-view, avoiding conflicting scrolls. DPAD LEFT/RIGHT now navigates reliably; focused tiles are always visible.
 - Stronger tile focus: VOD/Series/Live row tiles and Resume carousel use a +40% focused scale and a thicker focus halo for clear visual focus until navigation moves on.
 - Navigation state: Top‑level route switches (`library?q=…` ⇄ `browse`) now use Navigation‑Compose state saving (`restoreState=true`, `popUpTo(findStartDestination()){ saveState=true }`). Combined with route‑scoped `rememberRouteListState(...)`, Start/Library lists restore scroll/focus positions reliably.
 - Use `NavHostController.navigateTopLevel(route)` for top-level switches. It wraps `popUpTo(start){ saveState=true }`, `launchSingleTop=true`, and `restoreState=true` to preserve state across Home/Library/Search hops. Return from detail via `popBackStack()` only.
@@ -264,7 +268,7 @@ Recent
 - EPG: Now/Next dual-persist (Room + OBX) + XMLTV multi-index; fallback aktiv auch ohne Xtream; kein periodischer Worker mehr (on‑demand Prefetch sichtbar/Favoriten), optional stale cleanup.
 - UI: Live tiles enriched with current programme + progress bar.
 - Xtream: Detection supports compact stream URLs; import merges missing `epg_channel_id` from existing DB by `streamId`.
-- UI polish: Long-press reordering for Live favorites (touch-friendly), carded look across Start/Library/Details/Setup, Accent/KidAccent tokens, background glow treatment.
+- UI polish: Long-press reordering for Live favorites (touch-friendly), Library/Details/Setup behalten den carded Look; Start teilt sich jetzt das Library-Layout (FishRow/FishTile) samt Accent/KidAccent Tokens und Hintergrund-Glow.
 - Profiles/Permissions: Added Guest profile type; per‑profile permissions with enforcement (Settings route gating, external player fallback to internal, favorites/assign UI gating, resume visibility, whitelist editing).
 - Kid-mode correctness: Home refresh now uses filtered queries; favorites read‑only for restricted profiles; “Für Kinder freigeben” visible only when permitted.
 - Whitelist UX: Category‑level allow with item‑level exceptions; admin sheet in ProfileManager to manage both.

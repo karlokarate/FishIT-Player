@@ -18,6 +18,7 @@ import com.chris.m3usuite.ui.common.TvButton
 import com.chris.m3usuite.ui.common.TvOutlinedButton
 import com.chris.m3usuite.ui.common.TvTextButton
 import com.chris.m3usuite.ui.theme.DesignTokens
+import com.chris.m3usuite.ui.focus.FocusKit
 
 /**
  * Horizontal bar of actions with TV focus visuals.
@@ -30,7 +31,7 @@ fun MediaActionBar(
     requestInitialFocus: Boolean = false
 ) {
     val focusRequester = androidx.compose.ui.focus.FocusRequester()
-    val isTv = com.chris.m3usuite.ui.skin.isTvDevice(androidx.compose.ui.platform.LocalContext.current)
+    val isTv = FocusKit.isTvDevice(androidx.compose.ui.platform.LocalContext.current)
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         modifier = modifier

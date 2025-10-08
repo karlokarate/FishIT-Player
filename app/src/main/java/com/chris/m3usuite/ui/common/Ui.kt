@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Context.UI_MODE_SERVICE
 import android.content.res.Configuration
 import androidx.compose.animation.core.animateFloatAsState
-import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.focus.tvClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box

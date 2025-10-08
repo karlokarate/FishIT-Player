@@ -43,7 +43,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.media3.common.util.UnstableApi
 import com.chris.m3usuite.R
 import com.chris.m3usuite.ui.debug.safePainter
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
 
 private fun isYoutubeUrl(url: String): Boolean =
     url.contains("youtube.com", ignoreCase = true) || url.contains("youtu.be", ignoreCase = true)

@@ -1,13 +1,5 @@
 package com.chris.m3usuite.ui.screens
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,17 +9,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import android.net.Uri
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontWeight
@@ -52,13 +40,22 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import com.chris.m3usuite.ui.theme.CategoryFonts
-import com.chris.m3usuite.ui.theme.DesignTokens
-import com.chris.m3usuite.ui.components.rows.TelegramRow
+import com.chris.m3usuite.ui.focus.OnPrefetchKeys
+import com.chris.m3usuite.ui.focus.OnPrefetchPaged
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
+import com.chris.m3usuite.ui.layout.FishHeaderData
+import com.chris.m3usuite.ui.layout.FishHeaderHost
+import com.chris.m3usuite.ui.layout.FishRow
+import com.chris.m3usuite.ui.layout.FishRowPaged
+import com.chris.m3usuite.ui.layout.LiveFishTile
+import com.chris.m3usuite.ui.layout.SeriesFishTile
+import com.chris.m3usuite.ui.layout.TelegramFishTile
+import com.chris.m3usuite.ui.layout.VodFishTile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 
 private enum class ContentTab { Live, Vod, Series }
@@ -72,7 +69,6 @@ private fun rememberSelectedTab(store: SettingsStore): ContentTab {
         else -> ContentTab.Series
     }
 }
-
 private data class GroupKeys(
     val providers: List<String> = emptyList(),
     val genres: List<String> = emptyList(),
@@ -394,7 +390,6 @@ fun LibraryScreen(
             }
         }
 
-        val titleStyle = MaterialTheme.typography.titleMedium.copy(color = Color.White)
         val headers = remember { com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store) }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             chatIds.forEachIndexed { index, chatId ->
@@ -415,28 +410,36 @@ fun LibraryScreen(
                     }
                 }
 
-                Text("Telegram – ${chatTitle}", style = titleStyle)
                 val stateKey = "lib:tg:${tab.name.lowercase(Locale.getDefault())}:$chatId"
-                TelegramRow(
+                FishRow(
                     items = items,
                     stateKey = stateKey,
-                    onPlay = { mi ->
-                        val tgUrl = "tg://message?chatId=${mi.tgChatId}&messageId=${mi.tgMessageId}"
-                        scope.launch {
-                            com.chris.m3usuite.player.PlayerChooser.start(
-                                context = ctx,
-                                store = store,
-                                url = tgUrl,
-                                headers = headers,
-                                startPositionMs = null,
-                                mimeType = null
-                            ) { _, _ -> }
-                        }
-                    },
+                    edgeLeftExpandChrome = false,
                     initialFocusEligible = index == 0,
-                    edgeLeftExpandChrome = false
-                )
-                Spacer(Modifier.height(10.dp))
+                    header = FishHeaderData.Text(
+                        anchorKey = stateKey,
+                        text = "Telegram – ${chatTitle}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+                ) { media ->
+                    TelegramFishTile(
+                        media = media,
+                        onPlay = { mi ->
+                            val tgUrl = "tg://message?chatId=${mi.tgChatId}&messageId=${mi.tgMessageId}"
+                            scope.launch {
+                                com.chris.m3usuite.player.PlayerChooser.start(
+                                    context = ctx,
+                                    store = store,
+                                    url = tgUrl,
+                                    headers = headers,
+                                    startPositionMs = null,
+                                    mimeType = null
+                                ) { _, _ -> }
+                            }
+                        }
+                    )
+                }
             }
         }
     }
@@ -773,80 +776,96 @@ fun LibraryScreen(
         }
     }
 
-    HomeChromeScaffold(
-        title = "Bibliothek",
-        onSettings = navigateToSettings,
-        onSearch = { navController.navigateTopLevel("library?qs=show") },
-        onProfiles = null,
-        listState = listState,
-        onLogo = {
-            val current = navController.currentBackStackEntry?.destination?.route
-            if (current != "library?q={q}&qs={qs}") {
-                navController.navigateTopLevel("library?q=&qs=")
-            }
-        },
-        bottomBar = {
-            com.chris.m3usuite.ui.home.header.FishITBottomPanel(
-                selected = when (selectedTab) {
-                    ContentTab.Live -> "live"
-                    ContentTab.Vod -> "vod"
-                    ContentTab.Series -> "series"
-                },
-                onSelect = { sel ->
-                    val idx = when (sel) { "live" -> 0; "vod" -> 1; else -> 2 }
-                    scope.launch { store.setLibraryTabIndex(idx) }
+    FishHeaderHost(modifier = Modifier.fillMaxSize()) {
+        HomeChromeScaffold(
+            title = "Bibliothek",
+            onSettings = navigateToSettings,
+            onSearch = { navController.navigateTopLevel("library?qs=show") },
+            onProfiles = null,
+            listState = listState,
+            onLogo = {
+                val current = navController.currentBackStackEntry?.destination?.route
+                if (current != "library?q={q}&qs={qs}") {
+                    navController.navigateTopLevel("library?q=&qs=")
                 }
-            )
-        }
-    ) { pads ->
-        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
-            when (val s = uiState) {
-                is com.chris.m3usuite.ui.state.UiState.Loading -> { com.chris.m3usuite.ui.state.LoadingState(); return@HomeChromeScaffold }
-                is com.chris.m3usuite.ui.state.UiState.Empty -> { com.chris.m3usuite.ui.state.EmptyState(); return@HomeChromeScaffold }
-                is com.chris.m3usuite.ui.state.UiState.Error -> { com.chris.m3usuite.ui.state.ErrorState(s.message, s.retry); return@HomeChromeScaffold }
-                is com.chris.m3usuite.ui.state.UiState.Success -> { /* render content */ }
+            },
+            bottomBar = {
+                com.chris.m3usuite.ui.home.header.FishITBottomPanel(
+                    selected = when (selectedTab) {
+                        ContentTab.Live -> "live"
+                        ContentTab.Vod -> "vod"
+                        ContentTab.Series -> "series"
+                    },
+                    onSelect = { sel ->
+                        val idx = when (sel) { "live" -> 0; "vod" -> 1; else -> 2 }
+                        scope.launch { store.setLibraryTabIndex(idx) }
+                    }
+                )
             }
-        }
+        ) { pads ->
+            if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
+                when (val s = uiState) {
+                    is com.chris.m3usuite.ui.state.UiState.Loading -> {
+                        com.chris.m3usuite.ui.state.LoadingState()
+                        return@HomeChromeScaffold
+                    }
+                    is com.chris.m3usuite.ui.state.UiState.Empty -> {
+                        com.chris.m3usuite.ui.state.EmptyState()
+                        return@HomeChromeScaffold
+                    }
+                    is com.chris.m3usuite.ui.state.UiState.Error -> {
+                        com.chris.m3usuite.ui.state.ErrorState(s.message, s.retry)
+                        return@HomeChromeScaffold
+                    }
+                    is com.chris.m3usuite.ui.state.UiState.Success -> Unit
+                }
+            }
 
-        val stateHolder = rememberSaveableStateHolder()
-        // Save whole screen UI state per tab to survive deep route hops
-        stateHolder.SaveableStateProvider(key = "library/tab/$selectedTabKey") {
-        // identische Optik wie Start/Settings: Fish-Background + Paddings
-        Box(Modifier.fillMaxSize()) {
-            com.chris.m3usuite.ui.fx.FishBackground(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(32.dp),
-                alpha = 0.06f
-            )
-        }
+            val stateHolder = rememberSaveableStateHolder()
+            stateHolder.SaveableStateProvider(key = "library/tab/$selectedTabKey") {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    com.chris.m3usuite.ui.fx.FishBackground(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(32.dp),
+                        alpha = 0.06f
+                    )
 
-        LazyColumn(
-            state = listState,
-            flingBehavior = androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior(listState),
-            contentPadding = PaddingValues(vertical = 12.dp),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(pads)
-        ) {
+                    LazyColumn(
+                        state = listState,
+                        flingBehavior = androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior(listState),
+                        contentPadding = PaddingValues(vertical = 12.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(pads)
+                    ) {
             // Globale Suche per Header – lokales Suchfeld entfernt
 
             // Suchergebnisse (ein Row pro aktivem Tab) – Paging + UiState gate
             if (query.text.isNotBlank()) {
-                item {
-                    Text(
-                        when (selectedTab) {
-                            ContentTab.Live -> "Live – Suchtreffer"
-                            ContentTab.Vod -> "Filme – Suchtreffer"
-                            ContentTab.Series -> "Serien – Suchtreffer"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                    )
-                }
-
+                val searchStateKey = "library:${selectedTabKey}:search"
                 if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
                     item {
+                        val searchHeader = when (selectedTab) {
+                            ContentTab.Live -> FishHeaderData.Text(
+                                anchorKey = searchStateKey,
+                                text = "Live – Suchtreffer",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                            ContentTab.Vod -> FishHeaderData.Text(
+                                anchorKey = searchStateKey,
+                                text = "Filme – Suchtreffer",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                            ContentTab.Series -> FishHeaderData.Text(
+                                anchorKey = searchStateKey,
+                                text = "Serien – Suchtreffer",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                        }
                         val flow = remember(selectedTab, query.text) {
                             val kind = when (selectedTab) { ContentTab.Live -> "live"; ContentTab.Vod -> "vod"; ContentTab.Series -> "series" }
                             mediaRepo.pagingSearchFilteredFlow(kind, query.text)
@@ -865,54 +884,87 @@ fun LibraryScreen(
                                 com.chris.m3usuite.ui.state.ErrorState(text = s.message, onRetry = { itemsPaged.retry() })
                             }
                             is com.chris.m3usuite.ui.state.UiState.Success -> {
-                                when (selectedTab) {
-                                    ContentTab.Live ->
-                                        com.chris.m3usuite.ui.components.rows.LiveRowPaged(
-                                            items = itemsPaged,
-                                            stateKey = "library:${selectedTabKey}:search",
-                                            onOpenDetails = { mi -> onOpen(mi) },
-                                            onPlayDirect = { mi -> onPlay(mi) },
-                                            edgeLeftExpandChrome = true
-                                        )
-                                    ContentTab.Vod ->
-                                        com.chris.m3usuite.ui.components.rows.VodRowPaged(
-                                            items = itemsPaged,
-                                            stateKey = "library:${selectedTabKey}:search",
-                                            onOpenDetails = { mi -> onOpen(mi) },
-                                            onPlayDirect = { mi -> onPlay(mi) },
-                                            onAssignToKid = { m -> if (canEditWhitelist) onAssignVod(m) },
-                                            showAssign = canEditWhitelist,
-                                            edgeLeftExpandChrome = true
-                                        )
-                                    ContentTab.Series ->
-                                        com.chris.m3usuite.ui.components.rows.SeriesRowPaged(
-                                            items = itemsPaged,
-                                            stateKey = "library:${selectedTabKey}:search",
-                                            onOpenDetails = { mi -> onOpen(mi) },
-                                            onPlayDirect = { mi -> onPlay(mi) },
-                                            onAssignToKid = { m -> if (canEditWhitelist) onAssignSeries(m) },
-                                            showAssign = canEditWhitelist,
-                                            edgeLeftExpandChrome = true
-                                        )
-                                }
+                                val allowAssign = selectedTab != ContentTab.Live && canEditWhitelist
+                                val onPrefetchPaged: OnPrefetchPaged? = if (selectedTab == ContentTab.Live) {
+                                    { indices, lp ->
+                                        val count = lp.itemCount
+                                        if (count > 0) {
+                                            val sids = indices
+                                                .filter { it in 0 until count }
+                                                .mapNotNull { idx -> lp.peek(idx)?.takeIf { it?.type == "live" }?.streamId }
+                                            if (sids.isNotEmpty()) {
+                                                repo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
+                                            }
+                                        }
+                                    }
+                                } else null
+                                libraryMediaRowPaged(
+                                    tab = selectedTab,
+                                    items = itemsPaged,
+                                    stateKey = searchStateKey,
+                                    edgeLeftExpandChrome = true,
+                                    header = searchHeader,
+                                    allowAssign = allowAssign,
+                                    onPrefetchPaged = onPrefetchPaged,
+                                    onOpenDetails = onOpen,
+                                    onPlayDirect = onPlay,
+                                    onAssignToKid = when (selectedTab) {
+                                        ContentTab.Vod -> onAssignVod
+                                        ContentTab.Series -> onAssignSeries
+                                        ContentTab.Live -> null
+                                    }
+                                )
                             }
                         }
                     }
                 } else {
-                    // Legacy (non-paging) fallback
                     item {
-                        MediaRowForTab(
+                        val searchHeader = when (selectedTab) {
+                            ContentTab.Live -> FishHeaderData.Text(
+                                anchorKey = searchStateKey,
+                                text = "Live – Suchtreffer",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                            ContentTab.Vod -> FishHeaderData.Text(
+                                anchorKey = searchStateKey,
+                                text = "Filme – Suchtreffer",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                            ContentTab.Series -> FishHeaderData.Text(
+                                anchorKey = searchStateKey,
+                                text = "Serien – Suchtreffer",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                        }
+                        val allowAssign = selectedTab != ContentTab.Live && canEditWhitelist
+                        val onPrefetchKeys: OnPrefetchKeys? = if (selectedTab == ContentTab.Live) {
+                            { keys ->
+                                val sids = keys.mapNotNull { key -> searchResults.firstOrNull { it.id == key && it.type == "live" }?.streamId }
+                                if (sids.isNotEmpty()) {
+                                    repo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
+                                }
+                            }
+                        } else null
+                        libraryMediaRow(
                             tab = selectedTab,
-                            stateKey = "library:${selectedTabKey}:search",
                             items = searchResults,
+                            stateKey = searchStateKey,
+                            edgeLeftExpandChrome = true,
+                            initialFocusEligible = false,
+                            allowAssign = allowAssign,
+                            header = searchHeader,
+                            highlightIds = emptySet(),
+                            onPrefetchKeys = onPrefetchKeys,
                             onOpenDetails = onOpen,
                             onPlayDirect = onPlay,
                             onAssignToKid = when (selectedTab) {
                                 ContentTab.Vod -> onAssignVod
                                 ContentTab.Series -> onAssignSeries
                                 ContentTab.Live -> null
-                            },
-                            showAssign = canEditWhitelist && selectedTab != ContentTab.Live
+                            }
                         )
                     }
                 }
@@ -925,124 +977,120 @@ fun LibraryScreen(
                     // Top rows for VOD/Series: Zuletzt gesehen, Neu
                     if (recentRow.isNotEmpty()) {
                         item {
-                            if (selectedTab == ContentTab.Vod) {
-                                Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-                                    com.chris.m3usuite.ui.components.chips.CategoryChip(key = "recent", label = "Zuletzt gespielt")
+                            val headerRecent = when (selectedTab) {
+                                ContentTab.Vod -> FishHeaderData.Chip(
+                                    anchorKey = "library:${selectedTabKey}:recent",
+                                    key = "recent",
+                                    label = "Zuletzt gespielt"
+                                )
+                                ContentTab.Series -> FishHeaderData.Text(
+                                    anchorKey = "library:${selectedTabKey}:recent",
+                                    text = "Zuletzt gesehen – Serien",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White
+                                )
+                                ContentTab.Live -> FishHeaderData.Text(
+                                    anchorKey = "library:${selectedTabKey}:recent",
+                                    text = "LiveTV – Zuletzt genutzt",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White
+                                )
+                            }
+                            val allowAssign = selectedTab != ContentTab.Live && canEditWhitelist
+                            libraryMediaRow(
+                                tab = selectedTab,
+                                items = recentRow,
+                                stateKey = "library:${selectedTabKey}:recent",
+                                edgeLeftExpandChrome = true,
+                                initialFocusEligible = true,
+                                allowAssign = allowAssign,
+                                header = headerRecent,
+                                onOpenDetails = onOpen,
+                                onPlayDirect = onPlay,
+                                onAssignToKid = when (selectedTab) {
+                                    ContentTab.Vod -> onAssignVod
+                                    ContentTab.Series -> onAssignSeries
+                                    ContentTab.Live -> null
                                 }
-                            } else {
-                                Text("Zuletzt gesehen – Serien", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
-                            }
-                        }
-                        item {
-                            when (selectedTab) {
-                                ContentTab.Vod -> com.chris.m3usuite.ui.components.rows.VodRow(
-                                    items = recentRow,
-                                    stateKey = "library:${selectedTabKey}:recent",
-                                    onOpenDetails = onOpen,
-                                    onPlayDirect = onPlay,
-                                    onAssignToKid = onAssignVod,
-                                    showAssign = canEditWhitelist,
-                                    initialFocusEligible = true,
-                                    edgeLeftExpandChrome = true
-                                )
-                                ContentTab.Series -> com.chris.m3usuite.ui.components.rows.SeriesRow(
-                                    items = recentRow,
-                                    stateKey = "library:${selectedTabKey}:recent",
-                                    onOpenDetails = onOpen,
-                                    onPlayDirect = onPlay,
-                                    onAssignToKid = onAssignSeries,
-                                    showAssign = canEditWhitelist,
-                                    initialFocusEligible = true,
-                                    edgeLeftExpandChrome = true
-                                )
-                                else -> {}
-                            }
+                            )
                         }
                     }
                     if (newestRow.isNotEmpty()) {
                         val labelNew = if (selectedTab == ContentTab.Vod) "Neu – Aktuell" else "Neu"
+                        val highlightIds = newestRow.map { it.id }.toSet()
                         item {
-                            if (selectedTab == ContentTab.Vod) {
-                                Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-                                    com.chris.m3usuite.ui.components.chips.CategoryChip(key = "new", label = labelNew)
+                            val headerNew = when (selectedTab) {
+                                ContentTab.Vod -> FishHeaderData.Chip(
+                                    anchorKey = "library:${selectedTabKey}:newest",
+                                    key = "new",
+                                    label = labelNew
+                                )
+                                ContentTab.Series -> FishHeaderData.Text(
+                                    anchorKey = "library:${selectedTabKey}:newest",
+                                    text = labelNew,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White
+                                )
+                                ContentTab.Live -> FishHeaderData.Text(
+                                    anchorKey = "library:${selectedTabKey}:newest",
+                                    text = labelNew,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White
+                                )
+                            }
+                            val allowAssign = selectedTab != ContentTab.Live && canEditWhitelist
+                            libraryMediaRow(
+                                tab = selectedTab,
+                                items = newestRow,
+                                stateKey = "library:${selectedTabKey}:newest",
+                                edgeLeftExpandChrome = true,
+                                initialFocusEligible = recentRow.isEmpty(),
+                                allowAssign = allowAssign,
+                                header = headerNew,
+                                highlightIds = highlightIds,
+                                onOpenDetails = onOpen,
+                                onPlayDirect = onPlay,
+                                onAssignToKid = when (selectedTab) {
+                                    ContentTab.Vod -> onAssignVod
+                                    ContentTab.Series -> onAssignSeries
+                                    ContentTab.Live -> null
                                 }
-                            } else {
-                                SeriesNewChip(
-                                    label = labelNew,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                                )
-                            }
-                        }
-                        item {
-                            when (selectedTab) {
-                                ContentTab.Vod -> com.chris.m3usuite.ui.components.rows.VodRow(
-                                    items = newestRow,
-                                    stateKey = "library:${selectedTabKey}:newest",
-                                    onOpenDetails = onOpen,
-                                    onPlayDirect = onPlay,
-                                    onAssignToKid = onAssignVod,
-                                    showNew = true,
-                                    showAssign = canEditWhitelist,
-                                    initialFocusEligible = recentRow.isEmpty(),
-                                    edgeLeftExpandChrome = true
-                                )
-                                ContentTab.Series -> com.chris.m3usuite.ui.components.rows.SeriesRow(
-                                    items = newestRow,
-                                    stateKey = "library:${selectedTabKey}:newest",
-                                    onOpenDetails = onOpen,
-                                    onPlayDirect = onPlay,
-                                    onAssignToKid = onAssignSeries,
-                                    showNew = true,
-                                    showAssign = canEditWhitelist,
-                                    initialFocusEligible = recentRow.isEmpty(),
-                                    edgeLeftExpandChrome = true
-                                )
-                                else -> {}
-                            }
+                            )
                         }
                     }
                     // Second row: 2025 + 2024 (new to old)
                     if (topYearsRow.isNotEmpty()) {
                         item {
-                            if (selectedTab == ContentTab.Vod) {
-                                Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-                                    com.chris.m3usuite.ui.components.chips.CategoryChip(
-                                        key = "year_2025_2024",
-                                        label = "2025–2024"
-                                    )
-                                }
-                            } else {
-                                Text(
-                                    "2025–2024",
+                            val headerYears = when (selectedTab) {
+                                ContentTab.Vod -> FishHeaderData.Chip(
+                                    anchorKey = "library:${selectedTabKey}:years",
+                                    key = "year_2025_2024",
+                                    label = "2025–2024"
+                                )
+                                else -> FishHeaderData.Text(
+                                    anchorKey = "library:${selectedTabKey}:years",
+                                    text = "2025–2024",
                                     style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                    color = Color.White
                                 )
                             }
-                        }
-                        item {
-                            when (selectedTab) {
-                                ContentTab.Vod -> com.chris.m3usuite.ui.components.rows.VodRow(
-                                    items = topYearsRow,
-                                    stateKey = "library:${selectedTabKey}:years",
-                                    onOpenDetails = onOpen,
-                                    onPlayDirect = onPlay,
-                                    onAssignToKid = onAssignVod,
-                                    showAssign = canEditWhitelist,
-                                    initialFocusEligible = recentRow.isEmpty() && newestRow.isEmpty(),
-                                    edgeLeftExpandChrome = true
-                                )
-                                ContentTab.Series -> com.chris.m3usuite.ui.components.rows.SeriesRow(
-                                    items = topYearsRow,
-                                    stateKey = "library:${selectedTabKey}:years",
-                                    onOpenDetails = onOpen,
-                                    onPlayDirect = onPlay,
-                                    onAssignToKid = onAssignSeries,
-                                    showAssign = canEditWhitelist,
-                                    initialFocusEligible = recentRow.isEmpty() && newestRow.isEmpty(),
-                                    edgeLeftExpandChrome = true
-                                )
-                                else -> {}
-                            }
+                            val allowAssign = selectedTab != ContentTab.Live && canEditWhitelist
+                            libraryMediaRow(
+                                tab = selectedTab,
+                                items = topYearsRow,
+                                stateKey = "library:${selectedTabKey}:years",
+                                edgeLeftExpandChrome = true,
+                                initialFocusEligible = recentRow.isEmpty() && newestRow.isEmpty(),
+                                allowAssign = allowAssign,
+                                header = headerYears,
+                                onOpenDetails = onOpen,
+                                onPlayDirect = onPlay,
+                                onAssignToKid = when (selectedTab) {
+                                    ContentTab.Vod -> onAssignVod
+                                    ContentTab.Series -> onAssignSeries
+                                    ContentTab.Live -> null
+                                }
+                            )
                         }
                     }
                 }
@@ -1053,7 +1101,7 @@ fun LibraryScreen(
                         val s = label.lowercase()
                         return when {
                             Regex("^\\s*for \\badults\\b").containsMatchIn(s) -> "adult"
-                            Regex("\\bsport|dazn|bundesliga|uefa|magenta|sky sport").containsMatchIn(s) -> "action" // use energetic style
+                            Regex("\\bsport|dazn|bundesliga|uefa|magenta|sky sport").containsMatchIn(s) -> "action"
                             Regex("\\bnews|nachricht|cnn|bbc|al jazeera").containsMatchIn(s) -> "documentary"
                             Regex("\\bdoku|docu|documentary|history|discovery|nat geo").containsMatchIn(s) -> "documentary"
                             Regex("\\bkids|kinder|nick|kika|disney channel").containsMatchIn(s) -> "kids"
@@ -1062,20 +1110,20 @@ fun LibraryScreen(
                             else -> "other"
                         }
                     }
-                    item {
-                        Text("Live – Kategorien", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
-                    }
                     items(groupKeys.categories, key = { it }) { catId ->
                         val sectionKey = "library:${selectedTabKey}:category:$catId"
                         val label = (labelById[catId] ?: catId).trim()
                         val chipKey = chipKeyForLiveCategory(label)
+                        val headerData = FishHeaderData.Chip(
+                            anchorKey = sectionKey,
+                            key = chipKey,
+                            label = label
+                        )
                         ExpandableGroupSection(
                             tab = selectedTab,
                             stateKey = sectionKey,
                             refreshSignal = cacheVersion + resumeTick,
-                            groupLabel = { label },
-                            chipKey = chipKey,
-                            groupIcon = { com.chris.m3usuite.ui.components.chips.CategoryChip(key = chipKey, label = label) },
+                            header = headerData,
                             expandedDefault = true,
                             loadItems = { loadItemsForLiveCategory(catId) },
                             onOpenDetails = onOpen,
@@ -1143,18 +1191,19 @@ fun LibraryScreen(
                             .sortedBy { com.chris.m3usuite.core.util.CategoryNormalizer.displayLabel(it) }
                     }
                     if (curated.isNotEmpty()) {
-                        item {
-                            Text("Genres & Themen", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
-                        }
                         items(curated, key = { it }) { key ->
                             val sectionKey = "library:${selectedTabKey}:curated:$key"
                             val label = com.chris.m3usuite.core.util.CategoryNormalizer.displayLabel(key)
+                            val headerData = FishHeaderData.Chip(
+                                anchorKey = sectionKey,
+                                key = key,
+                                label = label
+                            )
                             ExpandableGroupSection(
                                 tab = selectedTab,
                                 stateKey = sectionKey,
                                 refreshSignal = cacheVersion + resumeTick,
-                                groupLabel = { label },
-                                chipKey = key,
+                                header = headerData,
                                 expandedDefault = true,
                                 loadItems = { loadItemsForGenre(selectedTab, key) },
                                 onOpenDetails = onOpen,
@@ -1170,12 +1219,17 @@ fun LibraryScreen(
                     // 2) 4K
                     if (groupKeys.genres.contains("4k")) {
                         item {
+                            val sectionKey = "library:${selectedTabKey}:curated:4k"
+                            val headerData = FishHeaderData.Chip(
+                                anchorKey = sectionKey,
+                                key = "4k",
+                                label = "4K"
+                            )
                             ExpandableGroupSection(
                                 tab = selectedTab,
-                                stateKey = "library:${selectedTabKey}:curated:4k",
+                                stateKey = sectionKey,
                                 refreshSignal = cacheVersion + resumeTick,
-                                groupLabel = { "4K" },
-                                chipKey = "4k",
+                                header = headerData,
                                 expandedDefault = true,
                                 loadItems = { loadItemsForGenre(selectedTab, "4k") },
                                 onOpenDetails = onOpen,
@@ -1189,12 +1243,17 @@ fun LibraryScreen(
                     // 3) Kollektionen
                     if (groupKeys.genres.contains("collection")) {
                         item {
+                            val sectionKey = "library:${selectedTabKey}:curated:collection"
+                            val headerData = FishHeaderData.Chip(
+                                anchorKey = sectionKey,
+                                key = "collection",
+                                label = "Kollektionen"
+                            )
                             ExpandableGroupSection(
                                 tab = selectedTab,
-                                stateKey = "library:${selectedTabKey}:curated:collection",
+                                stateKey = sectionKey,
                                 refreshSignal = cacheVersion + resumeTick,
-                                groupLabel = { "Kollektionen" },
-                                chipKey = "collection",
+                                header = headerData,
                                 expandedDefault = true,
                                 loadItems = { loadItemsForGenre(selectedTab, "collection") },
                                 onOpenDetails = onOpen,
@@ -1208,12 +1267,17 @@ fun LibraryScreen(
                     // 4) Unkategorisiert
                     if (groupKeys.genres.contains("other")) {
                         item {
+                            val sectionKey = "library:${selectedTabKey}:curated:other"
+                            val headerData = FishHeaderData.Chip(
+                                anchorKey = sectionKey,
+                                key = "other",
+                                label = "Unkategorisiert"
+                            )
                             ExpandableGroupSection(
                                 tab = selectedTab,
-                                stateKey = "library:${selectedTabKey}:curated:other",
+                                stateKey = sectionKey,
                                 refreshSignal = cacheVersion + resumeTick,
-                                groupLabel = { "Unkategorisiert" },
-                                chipKey = "other",
+                                header = headerData,
                                 expandedDefault = true,
                                 loadItems = { loadItemsForGenre(selectedTab, "other") },
                                 onOpenDetails = onOpen,
@@ -1226,29 +1290,22 @@ fun LibraryScreen(
 
                     // 5) Adults handled in dedicated section below when enabled
                 } else if (selectedTab != ContentTab.Live && !showGenres && providersAll.isNotEmpty()) {
-                    if (selectedTab == ContentTab.Vod) {
-                        item {
-                            Text(
-                                "Provider",
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
                     val normalProviders = providersAll.filterNot { it.startsWith("adult_") || it.isBlank() }
 
                     // Render non-adult provider groups
                     items(normalProviders, key = { it }) { key ->
                         val sectionKey = "library:${selectedTabKey}:provider:$key"
                         val displayLabel = providerLabelStore.labelFor(key)
+                        val headerData = FishHeaderData.Provider(
+                            anchorKey = sectionKey,
+                            key = key,
+                            label = displayLabel
+                        )
                         ExpandableGroupSection(
                             tab = selectedTab,
                             stateKey = sectionKey,
                             refreshSignal = cacheVersion + resumeTick,
-                            groupLabel = { displayLabel },
-                            groupIcon = {
-                                com.chris.m3usuite.ui.components.ProviderIconFor(key, displayLabel, sizeDp = 24)
-                            },
+                            header = headerData,
                             expandedDefault = true,
                             loadItems = { loadItemsForProvider(selectedTab, key) },
                             onOpenDetails = onOpen,
@@ -1279,12 +1336,16 @@ fun LibraryScreen(
                         items(adultProviders, key = { it }) { key ->
                             val sectionKey = "library:${selectedTabKey}:adults:$key"
                             val subLabel = key.removePrefix("adult_").replace('_', ' ').replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() }
+                            val headerData = FishHeaderData.Chip(
+                                anchorKey = sectionKey,
+                                key = key,
+                                label = subLabel
+                            )
                             ExpandableGroupSection(
                                 tab = selectedTab,
                                 stateKey = sectionKey,
                                 refreshSignal = cacheVersion + resumeTick,
-                                groupLabel = { subLabel },
-                                chipKey = key,
+                                header = headerData,
                                 expandedDefault = true,
                                 loadItems = { loadItemsForProvider(selectedTab, key) },
                                 onOpenDetails = onOpen,
@@ -1300,24 +1361,19 @@ fun LibraryScreen(
 
                 // Jahre (nur zeigen, wenn Provider-Ansicht aktiv und Live-Tab)
                 if (groupKeys.years.isNotEmpty() && selectedTab == ContentTab.Live && !showGenres) {
-                    item {
-                        Text(
-                            when (selectedTab) {
-                                ContentTab.Vod -> "Filme – Jahre"
-                                ContentTab.Series -> "Serien – Jahre"
-                                else -> ""
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                        )
-                    }
                     items(groupKeys.years, key = { it }) { y ->
                         val sectionKey = "library:${selectedTabKey}:year:$y"
+                        val headerData = FishHeaderData.Text(
+                            anchorKey = sectionKey,
+                            text = y.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
                         ExpandableGroupSection(
                             tab = selectedTab,
                             stateKey = sectionKey,
                             refreshSignal = cacheVersion + resumeTick,
-                            groupLabel = { y.toString() },
+                            header = headerData,
                             expandedDefault = false,
                             loadItems = { loadItemsForYear(selectedTab, y) },
                             onOpenDetails = onOpen,
@@ -1334,25 +1390,20 @@ fun LibraryScreen(
 
                 // Genres (nur wenn Genre-Ansicht aktiv)
                 if (groupKeys.genres.isNotEmpty() && showGenres && selectedTab == ContentTab.Series) {
-                    item {
-                        Text(
-                            when (selectedTab) {
-                                ContentTab.Live -> "Live – Genres"
-                                ContentTab.Vod -> "Filme – Genres"
-                                ContentTab.Series -> "Serien – Genres"
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                        )
-                    }
                     items(groupKeys.genres, key = { it }) { key ->
                         val genreKey = key.ifBlank { "unknown" }
                         val sectionKey = "library:${selectedTabKey}:genre:$genreKey"
+                        val label = key.ifBlank { "Unbekannt" }
+                        val headerData = FishHeaderData.Chip(
+                            anchorKey = sectionKey,
+                            key = genreKey,
+                            label = label
+                        )
                         ExpandableGroupSection(
                             tab = selectedTab,
                             stateKey = sectionKey,
                             refreshSignal = cacheVersion + resumeTick,
-                            groupLabel = { key.ifBlank { "Unbekannt" } },
+                            header = headerData,
                             expandedDefault = selectedTab == ContentTab.Live,
                             loadItems = { loadItemsForGenre(selectedTab, key) },
                             onOpenDetails = onOpen,
@@ -1374,82 +1425,149 @@ fun LibraryScreen(
                     }
                 }
             }
+        } // Box
+    } // SaveableStateProvider
+} // HomeChromeScaffold
+} // FishHeaderHost
+}
+
+} // LibraryScreen
+
+
+@Composable
+private fun libraryMediaRow(
+    tab: ContentTab,
+    items: List<MediaItem>,
+    stateKey: String?,
+    edgeLeftExpandChrome: Boolean,
+    initialFocusEligible: Boolean = true,
+    allowAssign: Boolean = false,
+    header: FishHeaderData?,
+    highlightIds: Set<Long> = emptySet(),
+    onPrefetchKeys: OnPrefetchKeys? = null,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlayDirect: (MediaItem) -> Unit,
+    onAssignToKid: ((MediaItem) -> Unit)?
+) {
+    if (items.isEmpty()) return
+    when (tab) {
+        ContentTab.Live -> FishRow(
+            items = items,
+            stateKey = stateKey,
+            edgeLeftExpandChrome = edgeLeftExpandChrome,
+            initialFocusEligible = initialFocusEligible,
+            onPrefetchKeys = onPrefetchKeys,
+            header = header
+        ) { media ->
+            LiveFishTile(
+                media = media,
+                onOpenDetails = onOpenDetails,
+                onPlayDirect = onPlayDirect
+            )
         }
+        ContentTab.Vod -> FishRow(
+            items = items,
+            stateKey = stateKey,
+            edgeLeftExpandChrome = edgeLeftExpandChrome,
+            initialFocusEligible = initialFocusEligible,
+            header = header
+        ) { media ->
+            VodFishTile(
+                media = media,
+                isNew = highlightIds.contains(media.id),
+                allowAssign = allowAssign,
+                onOpenDetails = onOpenDetails,
+                onPlayDirect = onPlayDirect,
+                onAssignToKid = onAssignToKid ?: {}
+            )
+        }
+        ContentTab.Series -> FishRow(
+            items = items,
+            stateKey = stateKey,
+            edgeLeftExpandChrome = edgeLeftExpandChrome,
+            initialFocusEligible = initialFocusEligible,
+            header = header
+        ) { media ->
+            SeriesFishTile(
+                media = media,
+                isNew = highlightIds.contains(media.id),
+                allowAssign = allowAssign,
+                onOpenDetails = onOpenDetails,
+                onPlayDirect = onPlayDirect,
+                onAssignToKid = onAssignToKid ?: {}
+            )
         }
     }
 }
 
 @Composable
-private fun SeriesNewChip(label: String, modifier: Modifier = Modifier) {
-    val accent = DesignTokens.Accent
-    val transition = rememberInfiniteTransition(label = "seriesNewPulse")
-    val scale by transition.animateFloat(
-        initialValue = 0.94f,
-        targetValue = 1.04f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "seriesNewScale"
-    )
-    val glow by transition.animateFloat(
-        initialValue = 0.38f,
-        targetValue = 0.68f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "seriesNewGlow"
-    )
-    Box(
-        modifier = modifier
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .clip(RoundedCornerShape(24.dp))
-            .background(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(
-                        accent.copy(alpha = 0.72f),
-                        accent.copy(alpha = glow)
-                    )
-                )
+private fun libraryMediaRowPaged(
+    tab: ContentTab,
+    items: LazyPagingItems<MediaItem>,
+    stateKey: String?,
+    edgeLeftExpandChrome: Boolean,
+    header: FishHeaderData?,
+    allowAssign: Boolean,
+    onPrefetchPaged: OnPrefetchPaged?,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlayDirect: (MediaItem) -> Unit,
+    onAssignToKid: ((MediaItem) -> Unit)?
+) {
+    when (tab) {
+        ContentTab.Live -> FishRowPaged(
+            items = items,
+            stateKey = stateKey,
+            edgeLeftExpandChrome = edgeLeftExpandChrome,
+            onPrefetchPaged = onPrefetchPaged,
+            header = header
+        ) { _, media ->
+            LiveFishTile(
+                media = media,
+                onOpenDetails = onOpenDetails,
+                onPlayDirect = onPlayDirect
             )
-            .border(
-                width = 1.5.dp,
-                brush = Brush.linearGradient(
-                    listOf(
-                        Color.White.copy(alpha = 0.65f),
-                        accent.copy(alpha = 0.9f)
-                    )
-                ),
-                shape = RoundedCornerShape(24.dp)
+        }
+        ContentTab.Vod -> FishRowPaged(
+            items = items,
+            stateKey = stateKey,
+            edgeLeftExpandChrome = edgeLeftExpandChrome,
+            onPrefetchPaged = onPrefetchPaged,
+            header = header
+        ) { _, media ->
+            VodFishTile(
+                media = media,
+                isNew = false,
+                allowAssign = allowAssign,
+                onOpenDetails = onOpenDetails,
+                onPlayDirect = onPlayDirect,
+                onAssignToKid = onAssignToKid ?: {}
             )
-            .padding(horizontal = 18.dp, vertical = 8.dp)
-    ) {
-        Text(
-            text = label.uppercase(),
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontFamily = CategoryFonts.Orbitron,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.1.sp
-            ),
-            color = Color.White
-        )
+        }
+        ContentTab.Series -> FishRowPaged(
+            items = items,
+            stateKey = stateKey,
+            edgeLeftExpandChrome = edgeLeftExpandChrome,
+            onPrefetchPaged = onPrefetchPaged,
+            header = header
+        ) { _, media ->
+            SeriesFishTile(
+                media = media,
+                isNew = false,
+                allowAssign = allowAssign,
+                onOpenDetails = onOpenDetails,
+                onPlayDirect = onPlayDirect,
+                onAssignToKid = onAssignToKid ?: {}
+            )
+        }
     }
 }
 
-/**
- * Generische, wiederverwendbare Sektion mit expand/collapse und Lazy-Loading der Items.
- * Der Row-Typ (Live/Vod/Series) wird über 'tab' bestimmt – dadurch keine doppelten UI-Bausteine.
- */
-@Suppress("UNUSED_PARAMETER")
 @Composable
 private fun ExpandableGroupSection(
     tab: ContentTab,
     stateKey: String,
     refreshSignal: Int,
-    groupLabel: () -> String,
-    chipKey: String? = null,
-    groupIcon: (@Composable (() -> Unit))? = null,
+    header: FishHeaderData,
     expandedDefault: Boolean,
     loadItems: suspend () -> List<MediaItem>,
     onOpenDetails: (MediaItem) -> Unit,
@@ -1457,92 +1575,21 @@ private fun ExpandableGroupSection(
     onAssignToKid: ((MediaItem) -> Unit)?,
     showAssign: Boolean
 ) {
-    // Sections render expanded immediately; parameter kept for API compatibility
     var items by remember(stateKey) { mutableStateOf<List<MediaItem>>(emptyList()) }
-
     LaunchedEffect(stateKey, refreshSignal) {
-        try {
-            items = loadItems()
-        } catch (_: Throwable) {
-            // keep previous list on failure
-        }
+        runCatching { items = loadItems() }
     }
-
-    Column(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            when {
-                chipKey != null -> {
-                    com.chris.m3usuite.ui.components.chips.CategoryChip(key = chipKey, label = groupLabel())
-                }
-                groupIcon != null -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) { groupIcon() }
-                }
-                else -> {
-                    Text(groupLabel(), style = MaterialTheme.typography.titleSmall)
-                }
-            }
-        }
-        MediaRowForTab(
-            tab = tab,
-            stateKey = stateKey,
-            items = items,
-            onOpenDetails = onOpenDetails,
-            onPlayDirect = onPlayDirect,
-            onAssignToKid = onAssignToKid,
-            showAssign = showAssign,
-            rowInitialFocusEligible = false
-        )
-    }
-}
-
-// (removed ExpandableAdultGroupsSection: adult umbrella now rendered as separate LazyColumn items)
-
-@Composable
-private fun MediaRowForTab(
-    tab: ContentTab,
-    stateKey: String? = null,
-    items: List<MediaItem>,
-    onOpenDetails: (MediaItem) -> Unit,
-    onPlayDirect: (MediaItem) -> Unit,
-    onAssignToKid: ((MediaItem) -> Unit)?,
-    showAssign: Boolean,
-    rowInitialFocusEligible: Boolean = false
-) {
-    when (tab) {
-        ContentTab.Live -> {
-            com.chris.m3usuite.ui.components.rows.LiveRow(
-                items = items,
-                stateKey = stateKey,
-                onOpenDetails = { m -> onOpenDetails(m) },
-                onPlayDirect = { m -> onPlayDirect(m) }
-            )
-        }
-        ContentTab.Vod -> {
-            com.chris.m3usuite.ui.components.rows.VodRow(
-                items = items,
-                stateKey = stateKey,
-                onOpenDetails = { m -> onOpenDetails(m) },
-                onPlayDirect = { m -> onPlayDirect(m) },
-                onAssignToKid = { m -> onAssignToKid?.invoke(m) },
-                showAssign = showAssign,
-                initialFocusEligible = rowInitialFocusEligible,
-                edgeLeftExpandChrome = true
-            )
-        }
-        ContentTab.Series -> {
-            com.chris.m3usuite.ui.components.rows.SeriesRow(
-                items = items,
-                stateKey = stateKey,
-                onOpenDetails = { m -> onOpenDetails(m) },
-                onPlayDirect = { m -> onPlayDirect(m) },
-                onAssignToKid = { m -> onAssignToKid?.invoke(m) },
-                showAssign = showAssign,
-                initialFocusEligible = rowInitialFocusEligible,
-                edgeLeftExpandChrome = true
-            )
-        }
-    }
+    val allowAssign = showAssign && tab != ContentTab.Live
+    libraryMediaRow(
+        tab = tab,
+        items = items,
+        stateKey = stateKey,
+        edgeLeftExpandChrome = true,
+        initialFocusEligible = expandedDefault,
+        allowAssign = allowAssign,
+        header = header,
+        onOpenDetails = onOpenDetails,
+        onPlayDirect = onPlayDirect,
+        onAssignToKid = onAssignToKid
+    )
 }

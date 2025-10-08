@@ -58,8 +58,10 @@ import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.components.sheets.KidSelectSheet
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
-import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
+import com.chris.m3usuite.ui.focus.tvClickable
+import com.chris.m3usuite.ui.layout.FishRow
+import com.chris.m3usuite.ui.layout.LiveFishTile
 import io.objectbox.android.AndroidScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -789,17 +791,29 @@ fun LiveDetailScreen(
                     } // end legacy header branch
 
                     // More channels in same category
-                    if (com.chris.m3usuite.BuildConfig.CARDS_V1 && moreInCategory.isNotEmpty()) {
-                        Spacer(Modifier.size(12.dp))
-                        Text("Mehr aus Kategorie", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.size(6.dp))
-                        com.chris.m3usuite.ui.components.rows.LiveRow(
-                            items = moreInCategory,
-                            stateKey = "liveDetail:more:${liveCategoryId}",
-                            onOpenDetails = { m -> openLive?.invoke(m.id) },
-                            onPlayDirect = { m -> scope.launch { url = m.url; chooseAndPlay() } }
-                        )
-                    }
+                        if (moreInCategory.isNotEmpty()) {
+                            Spacer(Modifier.size(12.dp))
+                            Text("Mehr aus Kategorie", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.size(6.dp))
+                            val categoryId = liveCategoryId
+                            FishRow(
+                                items = moreInCategory,
+                                stateKey = "liveDetail:more:${categoryId}",
+                                edgeLeftExpandChrome = false,
+                                onPrefetchKeys = { keys ->
+                                    val sids = keys.mapNotNull { id -> moreInCategory.firstOrNull { it.id == id }?.streamId }
+                                    if (sids.isNotEmpty()) {
+                                        runCatching { liveRepo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4) }
+                                    }
+                                }
+                            ) { media ->
+                                LiveFishTile(
+                                    media = media,
+                                    onOpenDetails = { item -> openLive?.invoke(item.id) },
+                                    onPlayDirect = { scope.launch { url = media.url; chooseAndPlay() } }
+                                )
+                            }
+                        }
 
                     // --- EPG Overlay ---
                     if (showEpg) {

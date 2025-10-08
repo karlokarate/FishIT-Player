@@ -31,12 +31,12 @@ val hasKeystore = !keystorePath.isNullOrBlank()
 
 android {
     namespace = "com.chris.m3usuite"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.chris.m3usuite"
         minSdk = 21
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
         vectorDrawables { useSupportLibrary = true }
@@ -104,13 +104,6 @@ android {
             ?: true
         buildConfigField("boolean", "UI_STATE_V1", uiStateV1.toString())
 
-        // Cards v1 rollout flag
-        // Precedence: -P feature.cards_v1 | -P CARDS_V1 | default true
-        val cardsV1 = (project.findProperty("feature.cards_v1")?.toString()?.toBooleanStrictOrNull())
-            ?: (project.findProperty("CARDS_V1")?.toString()?.toBooleanStrictOrNull())
-            ?: true
-        buildConfigField("boolean", "CARDS_V1", cardsV1.toString())
-
         // Playback launcher v1 rollout flag
         // Precedence: -P feature.playback_launcher_v1 | -P PLAYBACK_LAUNCHER_V1 | default true
         val playbackLauncherV1 = (project.findProperty("feature.playback_launcher_v1")?.toString()?.toBooleanStrictOrNull())
@@ -173,7 +166,7 @@ android {
         compose = true
         buildConfig = true
     }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
+    composeOptions { kotlinCompilerExtensionVersion = "1.8.0" }
 
     // >>> Angepasst: Split-APKs pro ABI + Universal-APK
     splits {

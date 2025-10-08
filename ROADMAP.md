@@ -5,31 +5,30 @@ Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
 - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
 - Maintenance 2025‑09‑28: Build‑Blocking Lücken geschlossen (Nav‑Extension, TV‑Focus‑Compat, TvRowScroll, safePainter, Adults‑Filter, XtreamImportCoordinator). Kein neues Feature; Roadmap unverändert.
+ - Maintenance 2025‑10‑08: Telegram TDLib‑Streaming liest API‑ID/HASH zur Laufzeit aus Settings (Fallback, wenn BuildConfig leer). Keine Roadmap‑Auswirkung.
 
 Prio 1 — Tiles/Rows Centralization (ON)
 - Ziel: UI‑Layout vollständig zentralisieren (Tokens + Tile + Row + Content), damit Screens nur noch `FishRow` + `FishTile` verdrahten.
 - Module (Stand): `ui/layout/FishTheme`, `FishTile`, `FishRow(Light/Media/Paged)`, `FishVodContent` (VOD), `FishSeriesContent`/`FishLiveContent` (Basis), `FishMeta`, `FishActions`, `FishLogging`, `FishResumeTile`.
 - Maßnahmen:
   - VOD Rows (Start/Library/Suche/Telegram) auf `FishRow` + `FishTile` + `FishVodContent` portieren.
-  - Bottom‑End Assign‑Action in VOD anbinden (bereit in FishActions/FishVodContent).
-  - `CARDS_V1` entfernen; `PosterCard`/`ChannelCard`/`PosterCardTagged` durch FishTile ersetzen.
-  - Rows nutzen feste Abstände/Padding aus Tokens, ContentScale=Fit, kein per‑Tile Bring‑Into‑View.
+  - Bottom-End Assign-Action in VOD anbinden (bereit in FishActions/FishVodContent).
+  - Legacy cards removed (2025-10-07); FishTile/FishRow are now the single tile path.
+  - Rows nutzen feste Abstände/Padding aus Tokens, ContentScale=Fit, kein per-Tile Bring-Into-View.
+  - ✅ FishHeader overlay (Text/Chip/Provider) aktiv für Start- und Library-Sektionen; alte Inline-Header entfernt (2025-10-08).
   - Optional: Title‑outside‑focus (Token) nur falls Poster‑Parität später gewünscht.
 
 Prio 2 — FocusKit Migration (ON, blockiert durch Prio 1)
 - Here’s a fresh repo-wide audit of focus usages and a precise list of modules to migrate to the new FocusKit facade. Grouped by what needs changing to plan the rollout.
 
 - Rows → FocusKit.TvRowXXX
-  - Use FocusKit.TvRowLight/Media/Paged instead of direct TvFocusRow/RowCore or raw LazyRow.
-  - app/src/main/java/com/chris/m3usuite/ui/screens/SeriesDetailScreen.kt:659
-  - app/src/main/java/com/chris/m3usuite/ui/screens/SeriesDetailScreen.kt:1143
-  - app/src/main/java/com/chris/m3usuite/ui/home/StartScreen.kt:1034 (raw LazyRow; Telegram row)
-  - app/src/main/java/com/chris/m3usuite/ui/home/StartScreen.kt:1406
-  - app/src/main/java/com/chris/m3usuite/ui/detail/SeriesDetailMask.kt:259
-  - app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt:346
-  - app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt:380
+  - Use FocusKit.TvRowLight/Media/Paged instead of direct TvFocusRow/FocusRowEngine or raw LazyRow.
+  - ✅ SeriesDetailScreen (Season-Chips) nutzt FocusKit.TvRowLight statt direktem TvFocusRow.
+  - ✅ SeriesDetailMask Seasons-Row auf FocusKit.TvRowLight portiert.
+  - ✅ StartScreen Live-Picker (Provider-Chips) läuft auf FocusKit.TvRowLight; keine Roh-LazyRow mehr offen.
+  - ✅ RowCore-Engine in FocusKit integriert (`ui/focus/FocusRowEngine.kt`); altes Modul in `ui/components/rows` entfernt.
   - app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt:1204
-  - Optional engine keepers (can stay as-is): app/src/main/java/com/chris/m3usuite/ui/components/rows/HomeRows.kt:1248, 1510, 1546, 1578, 1607, 1645, 1670, 1691 (RowCore internal engine calls).
+  - ✅ ReorderableLiveRow now delegates to FishRow/FocusRowEngine via item modifiers; only drag/drop logic remains local.
 
   Abhängigkeit
   - Finalisierung des FocusKit (End‑to‑end Audit, Entfernen alt. Pfade) erfolgt erst nach Abschluss der Tiles/Rows‑Zentralisierung (Prio 1).
@@ -37,54 +36,27 @@ Prio 2 — FocusKit Migration (ON, blockiert durch Prio 1)
   Guidance
   - Use FocusKit.TvRowLight for chip/overlay rows (filters, season chips, small carousels).
   - Use FocusKit.TvRowMedia for non-paged media rows; FocusKit.TvRowPaged for Paging rows.
-  - Replace raw LazyRow (e.g., Start’s Telegram results) with FocusKit.TvRowLight(stateKey=..., itemCount=...) { … }.
 
 - Primitives → FocusKit primitives (tvClickable, tvFocusFrame, tvFocusableItem, focusScaleOnTv)
-  - Replace direct skin.* usages or skin.run { … } with FocusKit equivalents (or FocusKit.run { … }).
-  - Screens
-    - app/src/main/java/com/chris/m3usuite/ui/screens/SettingsScreen.kt:62, 72, 288, 303, 328, 342, 359, 370, 383, 395, 422, 1058
-    - app/src/main/java/com/chris/m3usuite/ui/screens/SeriesDetailScreen.kt:77, 78, 671, 682, 754, 1156, 1169
-    - app/src/main/java/com/chris/m3usuite/ui/screens/LiveDetailScreen.kt:61, 62
-    - app/src/main/java/com/chris/m3usuite/ui/screens/PlaylistSetupScreen.kt:37
-    - app/src/main/java/com/chris/m3usuite/ui/screens/LibraryScreen.kt:61
-    - app/src/main/java/com/chris/m3usuite/ui/home/StartScreen.kt:112, 1417, 1427
-    - app/src/main/java/com/chris/m3usuite/ui/detail/SeriesDetailMask.kt:34, 272, 285, 344
-    - app/src/main/java/com/chris/m3usuite/ui/home/header/FishITHeader.kt:25
-  - Profile/Manager
-    - app/src/main/java/com/chris/m3usuite/ui/profile/ProfileManagerScreen.kt:54, 123, 131, 416, 477
-    - app/src/main/java/com/chris/m3usuite/ui/profile/KidRowPreview.kt:18
-    - app/src/main/java/com/chris/m3usuite/ui/profile/AvatarPickers.kt:32
-  - Components
-    - app/src/main/java/com/chris/m3usuite/ui/components/controls/ActionIcons.kt:14
-    - app/src/main/java/com/chris/m3usuite/ui/components/ResumeCarousel.kt:9
-    - app/src/main/java/com/chris/m3usuite/ui/components/CollapsibleHeader.kt:12
-    - app/src/main/java/com/chris/m3usuite/ui/common/Ui.kt:8
-    - app/src/main/java/com/chris/m3usuite/ui/common/TrailerBox.kt:46
-    - app/src/main/java/com/chris/m3usuite/ui/cards/SeasonCard.kt:17, 18
-    - app/src/main/java/com/chris/m3usuite/ui/cards/PosterCard.kt:18, 19
-    - app/src/main/java/com/chris/m3usuite/ui/cards/EpisodeRow.kt:17, 18
-    - app/src/main/java/com/chris/m3usuite/ui/cards/ChannelCard.kt:19, 20
-  - Player
-    - app/src/main/java/com/chris/m3usuite/player/InternalPlayerScreen.kt:64, 1212, 1222, 1241, 1257, 1656
-  - Backup
-    - app/src/main/java/com/chris/m3usuite/backup/QuickImportRow.kt:10
-    - app/src/main/java/com/chris/m3usuite/backup/BackupRestoreSection.kt:14
-
-  Guidance
-  - Replace import com.chris.m3usuite.ui.skin.* with FocusKit or FocusKit.run { … }.
-  - Use FocusKit.tvClickable and FocusKit.tvFocusFrame on interactives; keep neutral scaling on tvClickable and let tvFocusFrame draw visuals.
-  - For generic button visuals, use FocusKit.TvButton/TvTextButton/TvOutlinedButton/TvIconButton.
+  - ✅ Completed (2025-10-07). All screens use FocusKit; legacy `ui.skin` facade has been removed.
+  - Guidance
+    - Keep using `FocusKit.run { … }` for modifier scopes to stay on the single facade.
+    - Prefer FocusKit.TvButton/TvTextButton/TvOutlinedButton/TvIconButton for shared button visuals.
 
 - Forms (DPAD adjust) → FocusKit DPAD helpers
-  - Replace ad-hoc onPreviewKeyEvent LEFT/RIGHT with FocusKit.onDpadAdjustLeftRight.
-  - app/src/main/java/com/chris/m3usuite/ui/forms/TvSwitchRow.kt:40
-  - app/src/main/java/com/chris/m3usuite/ui/forms/TvSliderRow.kt:54
-  - app/src/main/java/com/chris/m3usuite/ui/forms/TvSelectRow.kt:50
-  - app/src/main/java/com/chris/m3usuite/ui/forms/TvTextFieldRow.kt:31 (keeps tvClickable; can switch to FocusKit tvClickable)
+  - ✅ Replace ad-hoc onPreviewKeyEvent LEFT/RIGHT with FocusKit.onDpadAdjustLeftRight (TvSwitchRow/TvSliderRow/TvSelectRow) – 2025-10-08.
+  - FishFormTextField behält die dialogbasierte Eingabe für TV und nutzt FocusKit.tvClickable (siehe `ui/layout/FishForm.kt`).
 
   Guidance
   - Keep rows clickable via FocusKit.tvClickable; add FocusKit.onDpadAdjustLeftRight { … } to adjust values.
   - This standardizes behavior and reduces key handling drift.
+
+  Nächste Schritte (FocusKit x FishForms)
+  1. **DPAD-Audit abschließen** – `rg onPreviewKeyEvent`/`focusScaleOnTv` repo-weit regelmäßig laufen lassen und Findings in `tools/audit_tv_focus_report.txt` protokollieren.
+  2. **FishForm-Komponenten entwerfen** – `FishFormSwitch/Select/Slider/TextField` als wiederverwendbare Compose-Bausteine aufsetzen; FocusKit + FishTheme Tokens verwenden und APIs so schneiden, dass Screens/Module (Setup, Settings, Profile, kommende Flows) dieselben Primitives konsumieren können.
+  3. **Screens migrieren** – `CreateProfileSheet`, `PlaylistSetupScreen`, Settings-Abschnitte usw. auf die neuen FishForm-Komponenten umstellen und UI-Tests/TV-Manualläufe durchführen.
+  4. **Alte Form-Rows entfernen** – `ui/forms/*` deprecaten, Referenzen bereinigen, BUILD-Gates (`TV_FORMS_V1`) vereinheitlichen.
+  5. **Dokumentation & Audit-Tooling** – `docs/tv_forms.md`, `docs/fish_layout.md`, `tools/audit_tv_focus.sh` aktualisieren; FishForms in den Fokus-Audit aufnehmen und CI-Checks erweitern.
 
 - Already aligned (no change required)
   - Profile gate and keypad are already built on FocusKit package‑level wrappers:
@@ -92,8 +64,8 @@ Prio 2 — FocusKit Migration (ON, blockiert durch Prio 1)
 
 - Notes
   - Internal engines and primitives remain providers:
-    - ui/tv/TvFocusRow.kt, ui/components/rows/RowCore.kt, ui/skin/TvModifiers.kt stay; FocusKit fronts them in screens.
-  - StartScreen has one raw LazyRow (StartScreen.kt:1034) for Telegram search; migrate to FocusKit.TvRowLight with stateKey "start_tg_search".
+  - ui/tv/TvFocusRow.kt, ui/focus/FocusRowEngine.kt, ui/skin/TvModifiers.kt stay; FocusKit fronts them in screens.
+  - ✅ StartScreen Telegram-Suche nutzt bereits FocusKit.TvRowLight (stateKey `start_tg_search`).
 
 Prio 1 — Globale Zentralisierung Fokus/TV‑Darstellung (OFF)
 - Ziel: Einheitliche, zentral gesteuerte Fokusdarstellung und -navigation (DPAD) in allen UIs; keine verstreuten Implementierungen mehr.
@@ -103,7 +75,7 @@ Prio 1 — Globale Zentralisierung Fokus/TV‑Darstellung (OFF)
   - Screens migrieren, lokale Workarounds entfernen (manuelles DPAD, ad‑hoc bringIntoView).
   - Globale Stilquelle (Halo/Scale/Farben), neutrale Clickables ohne Doppel‑Effekte.
 - CI‑Audit (`tools/audit_tv_focus.sh`) schärfen und durchsetzen.
-  - Neu (2025‑10‑06): `FocusKit.TvRowLight/Media/Paged` als Frontdoor – Screens nutzen nur noch `FocusKit`, nicht direkt `TvFocusRow`/`RowCore`.
+  - Neu (2025‑10‑06): `FocusKit.TvRowLight/Media/Paged` als Frontdoor – Screens nutzen nur noch `FocusKit`, nicht direkt `TvFocusRow`/`FocusRowEngine`.
   - Beispiele/Docs im Leitfaden; Code‑Lagen vereinheitlichen (keine Duplikate in Unterordnern).
   - Modul‑Migration: auth/ProfileGate → FocusKit (DONE); weitere Module folgen.
 - Maintenance 2025-10-03: Detailseiten neu auf stabilem Scaffold (HomeChromeScaffold → Box → Card + LazyColumn). VOD: OBX-first + Xtream-On-Demand, Plot/Facts als Karten, ein Scroll-Container, sichere Play/Resume-Actions. Bruchfeste Klammerstruktur; Build-Fehler behoben. StartScreen: Klammerfehler korrigiert (Compose-Kontextfehler beseitigt).
@@ -111,7 +83,7 @@ Prio 1 — Globale Zentralisierung Fokus/TV‑Darstellung (OFF)
 - Feature 2025-10-03: Globaler Zuweisen‑Modus auf Start. Mehrfachauswahl über Reihen/Suche, Profil‑Picker für Bulk‑Freigabe (ObjectBox‑Batch), klare Selektion und permisssions‑Gating. VOD‑Details zeigen wieder Freigabe/Entfernen in der `MediaActionBar`.
 - Maintenance 2025-10-04 (Start): Vertikale Gewichtung der Start-Abschnitte (Serien/Filme/Live) implementiert; Landscape nutzt 40/40/20, Portrait gleichmäßig. Keine Überlappung mehr ganz oben; Zeilenhöhen werden in Landscape automatisch an die Kartenhöhe angepasst.
  - UX 2025-10-04 (Start Assign): Start-Button zum Zuordnen entfernt. Stattdessen hat jedes Tile einen globalen, klickbaren Badge (+/✓) für die Markierung; markierte Tiles zeigen einen sichtbaren Rahmen. Ein schwebender Plus-Button erscheint bei mindestens einer Markierung und öffnet den Profil-Picker zur Zuordnung.
- - Maintenance 2025-10-04 (TV Forms): Profil-Erstellen-Dialog auf TV-Form-Kit umgestellt (TvTextFieldRow/TvSwitchRow/TvButtonRow). DPAD/OK funktionieren stabil; Fokus-Falle durch Textfeld-IME entfällt.
+- Maintenance 2025-10-04 (TV Forms): Profil-Erstellen-Dialog auf TV-Form-Kit umgestellt (FishFormTextField/FishFormSwitch/FishFormButtonRow). DPAD/OK funktionieren stabil; Fokus-Falle durch Textfeld-IME entfällt.
  - Maintenance 2025-10-04 (Whitelist Refresh): Nach Bulk-Zuordnung in Start werden gefilterte Listen sofort neu geladen (und wie bisher bei Profilwechsel). Sichtbarkeit für Kids-Profile ist damit konsistent.
   
 Completed (moved to Changelog)
@@ -151,10 +123,9 @@ PRIO‑1: TV Fokus/DPAD Vereinheitlichung
 Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten auf TV eine visuelle Fokus‑Hervorhebung (`TvButtons` oder `focusScaleOnTv`).
 
 - PRIO‑1: TV‑Form‑Kit (Settings/Setup)
-  - v1 mit DPAD‑optimierten Rows (Switch/Slider/TextField/Select/Button) unter `ui.forms` bereitgestellt.
-  - Validierungs‑Hints, konsistenter Fokus (scale + halo), Dialog‑Eingabe für Textfelder auf TV.
-  - Proof‑of‑Concept Migration: `PlaylistSetupScreen` (gated via `BuildConfig.TV_FORMS_V1`, default ON).
-  - Nächste Schritte: `SettingsScreen` Kernoptionen (Player‑Wahl, Cache‑Größe) und `XtreamPortalCheckScreen` (Status/Retry, Eingaben) migrieren.
+  - FishForms (`ui/layout/FishForm.kt`) stellt DPAD‑optimierte Rows (Switch/Select/Slider/TextField/Button) auf Basis FocusKit + FishTheme Tokens bereit; Legacy `ui/forms` wurde entfernt.
+  - Validierungs‑Hints, konsistenter Fokus (Scale + Halo), Dialog‑Eingabe für Textfelder auf TV.
+  - Migrationen: `CreateProfileSheet`, `PlaylistSetupScreen` abgeschlossen (`BuildConfig.TV_FORMS_V1` gate bleibt aktiv); Settings-Module folgen.
 
 - TV Fokus QA: Nach Compose-Updates automatisierte Regression (Screenshot/UI-Test) für TvFocusRow + Tiles aufsetzen, damit Scale/Halo-Verhalten gesichert bleibt.
 - Fonts (UI): Korrupte/fehlende TTFs ersetzen (AdventPro, Cinzel, Fredoka, Inter, Merriweather, MountainsOfChristmas, Orbitron, Oswald, Playfair Display, Teko, Baloo2). Ziel: stabile dekorative Familien ohne Fallbacks.
@@ -194,9 +165,8 @@ Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten 
 
 Abgeschlossen → siehe `CHANGELOG.md`.
 - PRIO‑1: Cards‑Bibliothek
-   - `ui.cards` mit `PosterCard`/`ChannelCard`/`SeasonCard`/`EpisodeRow`, Flag `BuildConfig.CARDS_V1` (default ON).
-   - Einsatz: Start/Library Rows via `HomeRows` Delegation; Serien‑Episoden nutzen `EpisodeRow`.
+   - ✅ Legacy `ui.cards` + `BuildConfig.CARDS_V1` removed (2025-10-07); FishTile/FishRow cover all usages.
  - PRIO‑1: PlaybackLauncher (Unification)
    - `playback/` mit `PlayRequest`/`PlayerResult` und `rememberPlaybackLauncher`; Flag `BuildConfig.PLAYBACK_LAUNCHER_V1` (default ON).
-   - V1 Migration: VOD/Serie/Live Detail + ResumeCarousel rufen Playback über Launcher (intern/extern via PlayerChooser, Resume-Lesen vor Start).
+   - V1 Migration: VOD/Serie/Live Detail nutzen PlaybackLauncher (intern/extern via PlayerChooser); ehemalige ResumeCarousel-Ansichten durch FishRow/FishResumeTile ersetzt.
  - Maintenance 2025-10-06: Audit an `tools/Zentralisierung.txt` angepasst – prüft jetzt verbotene TvLazyRow‑Nutzung, per‑Item Bring‑Into‑View (nur zentral erlaubt), doppelte Fokus‑Indikatoren (Heuristik) sowie SSOT‑Verstöße (eigene Fokus‑Primitives außerhalb der Zentral‑Module). Diff‑Ordner (`a/**`,`b/**`) und `.git` werden ignoriert; `FocusKit`/`PackageScope` sind als zentrale Fassaden zugelassen.

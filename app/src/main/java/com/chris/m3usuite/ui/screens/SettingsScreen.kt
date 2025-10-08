@@ -48,7 +48,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import androidx.compose.runtime.snapshotFlow
-import com.chris.m3usuite.ui.skin.isTvDevice
+import com.chris.m3usuite.ui.focus.FocusKit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.core.xtream.XtreamClient
@@ -59,7 +59,7 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -69,7 +69,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import com.chris.m3usuite.telegram.TdLibReflection
 import com.chris.m3usuite.core.http.HttpClientFactory
-import com.chris.m3usuite.ui.skin.tvClickable
+import com.chris.m3usuite.ui.focus.tvClickable
+import com.chris.m3usuite.ui.layout.FishFormSection
+import com.chris.m3usuite.ui.layout.FishFormSelect
+import com.chris.m3usuite.ui.layout.FishFormSwitch
+import com.chris.m3usuite.ui.layout.FishFormTextField
+import com.chris.m3usuite.ui.layout.TvKeyboard
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -109,7 +114,7 @@ fun SettingsScreen(
     }
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
-    val isTv = remember { isTvDevice(ctx) }
+    val isTv = remember { FocusKit.isTvDevice(ctx) }
     val xtRepo = remember(ctx) { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
 
     // Permissions
@@ -285,7 +290,7 @@ fun SettingsScreen(
             readOnly = isTv,
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (isTv && canChangeSources) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditM3u = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
+                .then(if (isTv && canChangeSources) FocusKit.run { Modifier.tvClickable(onClick = { showEditM3u = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
             colors = tfColors
         )
         if (isTv && canChangeSources) {
@@ -300,7 +305,7 @@ fun SettingsScreen(
             readOnly = isTv,
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (isTv && canChangeSources) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditEpg = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
+                .then(if (isTv && canChangeSources) FocusKit.run { Modifier.tvClickable(onClick = { showEditEpg = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
             colors = tfColors
         )
         if (isTv && canChangeSources) {
@@ -325,7 +330,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditUa = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
+                    .then(if (isTv) FocusKit.run { Modifier.tvClickable(onClick = { showEditUa = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
             if (isTv) { TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showEditUa = true }) { Text("Bearbeiten…") } }
@@ -339,7 +344,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditRef = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
+                    .then(if (isTv) FocusKit.run { Modifier.tvClickable(onClick = { showEditRef = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
             if (isTv) { TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showEditRef = true }) { Text("Bearbeiten…") } }
@@ -356,7 +361,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .weight(1f)
-                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditHost = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
+                    .then(if (isTv) FocusKit.run { Modifier.tvClickable(onClick = { showEditHost = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
             OutlinedTextField(
@@ -367,7 +372,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .width(120.dp)
-                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditPort = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
+                    .then(if (isTv) FocusKit.run { Modifier.tvClickable(onClick = { showEditPort = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
         }
@@ -380,7 +385,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .weight(1f)
-                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditUser = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
+                    .then(if (isTv) FocusKit.run { Modifier.tvClickable(onClick = { showEditUser = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
             OutlinedTextField(
@@ -392,7 +397,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .weight(1f)
-                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditPass = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
+                    .then(if (isTv) FocusKit.run { Modifier.tvClickable(onClick = { showEditPass = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
         }
@@ -419,7 +424,7 @@ fun SettingsScreen(
                 readOnly = isTv,
                 modifier = Modifier
                     .width(200.dp)
-                    .then(if (isTv) com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = { showEditOut = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
+                    .then(if (isTv) FocusKit.run { Modifier.tvClickable(onClick = { showEditOut = true }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) } else Modifier),
                 colors = tfColors
             )
             val ctxLocal = LocalContext.current
@@ -1055,7 +1060,7 @@ fun SettingsScreen(
                     availablePrefixes.forEach { pfx ->
                         val checked = pfx in currentSet
                         FilterChip(
-                            modifier = com.chris.m3usuite.ui.skin.run { Modifier.tvClickable(onClick = {
+                            modifier = FocusKit.run { Modifier.tvClickable(onClick = {
                                 val next = if (checked) currentSet - pfx else currentSet + pfx
                                 scope.launch { store.setSeedPrefixesCsv(next.joinToString(",")) }
                             }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) },

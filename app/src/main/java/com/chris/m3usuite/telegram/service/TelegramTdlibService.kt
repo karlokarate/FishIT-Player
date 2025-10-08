@@ -332,20 +332,21 @@ class TelegramTdlibService : Service() {
 
     private fun indexMessageContent(chatId: Long, messageId: Long, content: Any?, messageDate: Long? = null) {
         try {
-            val fileObj = TdLibReflection.findFirstFile(content) ?: return
+            val safeContent = content ?: return
+            val fileObj = TdLibReflection.findFirstFile(safeContent) ?: return
             val info = TdLibReflection.extractFileInfo(fileObj) ?: return
             val unique = TdLibReflection.extractFileUniqueId(fileObj)
-            val supports = TdLibReflection.extractSupportsStreaming(content)
+            val supports = TdLibReflection.extractSupportsStreaming(safeContent)
             val caption = kotlin.runCatching {
-                TdLibReflection.extractCaption(content)
-                    ?: TdLibReflection.extractFileName(content)
+                TdLibReflection.extractCaptionOrText(safeContent)
+                    ?: TdLibReflection.extractFileName(safeContent)
                     ?: "Telegram $messageId"
             }.getOrDefault("Telegram $messageId")
-            val duration = TdLibReflection.extractDurationSecs(content)
-            val mime = TdLibReflection.extractMimeType(content)
-            val dims = TdLibReflection.extractVideoDimensions(content)
+            val duration = TdLibReflection.extractDurationSecs(safeContent)
+            val mime = TdLibReflection.extractMimeType(safeContent)
+            val dims = TdLibReflection.extractVideoDimensions(safeContent)
             val parsed = com.chris.m3usuite.telegram.TelegramHeuristics.parse(caption)
-            val thumbFileId = TdLibReflection.extractThumbFileId(content)
+            val thumbFileId = TdLibReflection.extractThumbFileId(safeContent)
 
             scope.launch(Dispatchers.IO) {
                 kotlin.runCatching {
@@ -361,7 +362,7 @@ class TelegramTdlibService : Service() {
                     // 2) attempt from content if possible
                     // 3) keep existing row date if present
                     // 4) fallback to current time in seconds
-                    val derivedFromContent = if (content != null) runCatching { TdLibReflection.extractMessageDate(content) }.getOrNull() else null
+                    val derivedFromContent = runCatching { TdLibReflection.extractMessageDate(safeContent) }.getOrNull()
                     val resolvedDate = messageDate
                         ?: derivedFromContent
                         ?: existing?.date

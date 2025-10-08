@@ -5,13 +5,22 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonElevation
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
-import com.chris.m3usuite.ui.skin.TvFocusColors
-import com.chris.m3usuite.ui.skin.focusScaleOnTv
+import com.chris.m3usuite.ui.focus.FocusColors
+import com.chris.m3usuite.ui.focus.FocusKit
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
 
 @Composable
 fun TvButton(
@@ -24,7 +33,7 @@ fun TvButton(
     border: BorderStroke? = null,
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
-    focusColors: TvFocusColors = TvFocusColors.Default,
+    focusColors: FocusColors = FocusKit.FocusDefaults.Colors,
     content: @Composable RowScope.() -> Unit
 ) {
     Button(
@@ -55,7 +64,7 @@ fun TvTextButton(
     colors: ButtonColors = ButtonDefaults.textButtonColors(),
     contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
     interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
-    focusColors: TvFocusColors = TvFocusColors.Default,
+    focusColors: FocusColors = FocusKit.FocusDefaults.Colors,
     content: @Composable RowScope.() -> Unit
 ) {
     TextButton(
@@ -86,7 +95,7 @@ fun TvOutlinedButton(
     border: BorderStroke? = ButtonDefaults.outlinedButtonBorder(enabled),
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
-    focusColors: TvFocusColors = TvFocusColors.Default,
+    focusColors: FocusColors = FocusKit.FocusDefaults.Colors,
     content: @Composable RowScope.() -> Unit
 ) {
     OutlinedButton(
@@ -115,7 +124,7 @@ fun TvIconButton(
     enabled: Boolean = true,
     shape: Shape = RoundedCornerShape(18.dp),
     interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
-    focusColors: TvFocusColors = TvFocusColors.Default,
+    focusColors: FocusColors = FocusKit.FocusDefaults.Colors,
     content: @Composable () -> Unit
 ) {
     IconButton(

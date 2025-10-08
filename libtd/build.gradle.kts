@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.chris.m3usuite.libtd"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 21

@@ -1,3 +1,28 @@
+2025-10-08
+- fix(focus/start/library): Restore Compose 1.7 compatibility by annotating FocusKit modifier facades, replacing `drawOutline` with a local outline renderer, and relocating Start/Library header composables inside LazyColumn items. Resolves `compileDebugKotlin` failures introduced after the FocusKit facade merge.
+- feat(telegram/player): TDLib‑Streaming im App‑Prozess liest API‑ID/HASH nun zur Laufzeit aus den Settings, wenn BuildConfig leer ist. Dadurch funktionieren `tg://`‑On‑Demand‑Streams auch ohne Build‑Zeit‑Keys; weiterhin Fallback auf lokale Dateien, wenn keine Auth vorliegt.
+- fix(start,library): Balance unmatched braces in `StartScreen.kt` and `LibraryScreen.kt` (add missing closing brace at file end). Resolves Kotlin parser errors "Expecting '}'" during kapt stubs.
+- fix(settings): Replace legacy `ui.skin` wrappers with `FocusKit.run { tvClickable(...) }` in `SettingsScreen.kt`; keep phone OutlinedTextFields and TV edit dialogs. Defers full FishForm migration for Settings to a later pass.
+- refactor(ui/header): Library rows (search, curated, providers, genres, years, Telegram) now emit FishHeaderData beacons and rely exclusively on the floating overlay; removed legacy inline Text headers and the unused `SeriesNewChip` badge.
+- chore(ui/forms): TvSwitchRow/TvSliderRow/TvSelectRow route DPAD LEFT/RIGHT via `FocusKit.onDpadAdjustLeftRight`, eliminating local `onPreviewKeyEvent` handlers.
+- feat(ui/forms): Added FishForm components (`FishFormSection/Switch/Select/Slider/TextField/ButtonRow`) in `ui/layout`; existing `Tv*` forms now delegate to them and CreateProfileSheet/PlaylistSetup/Settings (TV mode) use the new module.
+- refactor(ui/tv): StartScreen now renders all VOD/Series/Live sections via `FishRow`/`FishRowPaged` + Fish tiles, eliminating the bespoke `SeriesRow`/`VodRow`/`LiveRow` composables.
+- refactor(ui/library): Library screen is fully on FishRow/FishMediaTiles for Live/VOD/Series (including search + expandable groups); Telegram rows use FishRow as well.
+- refactor(focus): Row engine logic moved into `ui/focus/FocusRowEngine.kt`; legacy `ui/components/rows/RowCore.kt` is gone and FocusKit is the single entry point.
+- refactor(ui/components): Removed the unused `ResumeCarousel`/`ResumeRow`/`MediaCard` composables now superseded by FishTile rows; cleaned up imports and badges accordingly.
+- docs(layout): Updated Fish layout and playback launcher docs to drop references to the removed Resume carousel and card helpers.
+- feat(ui/header): Introduced `FishHeaderHost` + floating beacon overlay (Text/Chip) driven via `header` parameters on `FishRow`/`FishRowPaged`. Start screen rows now use the overlay instead of inline headers.
+- refactor(ui/live): Favorite Live reorder row now rides on FishRow + FocusRowEngine item modifiers, and LiveAddTile scales via Fish tokens.
+
+2025-10-07
+- fix(ui/home): Dropped the deprecated Compose pointer `consume` import so Home rows compile against 1.7+ pointer APIs.
+- refactor(ui/detail): Series detail seasons & episode entries now rely solely on FocusKit (tvFocusableItem/tvFocusFrame/tvClickable) and AccentCard participates in FocusKit focus scaffolding.
+- refactor(ui/start): Start screen now renders Series/VOD/Live (and Telegram) exclusively via FishRow/FishTile, removing CardKit columns + BoxWithConstraints and aligning layout with Library.
+- fix(ui/home): Updated Fish rows/tiles to Compose 1.7 APIs (KeyEvent accessors, pointer consumePositionChange, fillMaxSize overlays) so Kotlin compile passes.
+- fix(ui/series): Wire Series Fish tiles with assign callbacks and reuse FishActions helpers via scoped receivers to keep kid-assign focus consistent with VOD.
+- fix(telegram/index): Guard TDLib content reflections against null payloads to avoid Any?/Any mismatches during ObjectBox indexing.
+- chore(build): Silenced Kotlin warnings by migrating to new pointer consumption, opting into FlowPreview flows, replacing deprecated TV feature checks, tightening rememberSaveable usage, and cleaning always-true guards in VOD detail.
+
 2025-10-03
 - fix(ui/start): StartScreen composable braces fixed (LaunchedEffect block closed correctly) and `ChannelPickTile` added inline. Resolves "@Composable invocations can only happen from the context of a @Composable function" and top-level declaration errors during compile.
 - feat(ui/start/assign): Added Assign Mode on Start. Toggle selection across Series/VOD (and Live) rows; pick profiles via KidSelectSheet and bulk-allow with ObjectBox batch ops. Rows reuse existing assign buttons to toggle selection during Assign Mode.
@@ -760,6 +785,8 @@ Status: zu testen durch Nutzer
   - Keeps static BoringSSL but compiles with size flags; no dynamic OpenSSL deps.
   - Expect a significant APK size reduction (primarily native .so).
 ## Unreleased
+- chore(ui/focus): Replace the legacy `ui.skin` facade with native FocusKit primitives, add `FocusPrimitives`, and migrate all screens/components to `FocusKit.run`.
+- chore(ui/layout): Drop `BuildConfig.CARDS_V1` and remove `ui/cards/*` (PosterCard/ChannelCard/SeasonCard/EpisodeRow + Tagged). Home rows, detail screens, and Live detail now use FishTile-only flows for "more" sections.
 - Bootstrap performance: reduce UI overhead while parsing
   - Replace animated Material3 progress with lightweight bar.
   - Suppress live progress during bootstrap (single final update).
@@ -864,3 +891,5 @@ Status: zu testen durch Nutzer
   - CARDS_V1 slated for removal during porting; PosterCard/ChannelCard/PosterCardTagged will be replaced with FishTile.
 
 - roadmap: Add Tiles/Rows Centralization (ON). Mark FocusKit Migration as dependent on this centralization.
+2025-10-07
+- docs(centralization): Deep-docs sweep to align with new Fish* layout. Marked legacy Cards v1 (PosterCard/ChannelCard/SeasonCard/EpisodeRow) as deprecated/replaced, removed guidance that suggested building tiles/focus per-screen, and documented FishTheme/FishTile/FishRow/FishContent (+ FishMeta/FishActions/FishLogging/FishResumeTile) as the single source of truth. Updated media_actions, detail_scaffold, tv_forms, playback_launcher to reference Fish* where relevant. Roadmap now blocks FocusKit finalization on completing Tiles/Rows centralization.

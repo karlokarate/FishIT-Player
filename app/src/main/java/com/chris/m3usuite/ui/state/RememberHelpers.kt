@@ -27,9 +27,9 @@ private val gridSaver: Saver<LazyGridState, Pair<Int, Int>> = Saver(
 fun rememberRouteListState(routeKey: String): LazyListState {
     val cached = ScrollStateRegistry.list[routeKey]
     val state = if (cached != null)
-        rememberSaveable(key = routeKey, saver = listSaver) { LazyListState(cached.first, cached.second) }
+        rememberSaveable("routeList", routeKey, saver = listSaver) { LazyListState(cached.first, cached.second) }
     else
-        rememberSaveable(key = routeKey, saver = listSaver) { LazyListState() }
+        rememberSaveable("routeList", routeKey, saver = listSaver) { LazyListState() }
 
     LaunchedEffect(routeKey, state) {
         snapshotFlow { state.firstVisibleItemIndex to state.firstVisibleItemScrollOffset }
@@ -42,9 +42,9 @@ fun rememberRouteListState(routeKey: String): LazyListState {
 fun rememberRouteGridState(routeKey: String): LazyGridState {
     val cached = ScrollStateRegistry.grid[routeKey]
     val state = if (cached != null)
-        rememberSaveable(key = routeKey, saver = gridSaver) { LazyGridState(cached.first, cached.second) }
+        rememberSaveable("routeGrid", routeKey, saver = gridSaver) { LazyGridState(cached.first, cached.second) }
     else
-        rememberSaveable(key = routeKey, saver = gridSaver) { LazyGridState() }
+        rememberSaveable("routeGrid", routeKey, saver = gridSaver) { LazyGridState() }
 
     LaunchedEffect(routeKey, state) {
         snapshotFlow { state.firstVisibleItemIndex to state.firstVisibleItemScrollOffset }
@@ -52,4 +52,3 @@ fun rememberRouteGridState(routeKey: String): LazyGridState {
     }
     return state
 }
-

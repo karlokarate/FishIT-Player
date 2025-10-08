@@ -42,7 +42,6 @@ import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.auth.ProfileGate
 import com.chris.m3usuite.ui.profile.ProfileManagerScreen
 import com.chris.m3usuite.ui.theme.AppTheme
-import com.chris.m3usuite.ui.skin.M3UTvSkin
 import com.chris.m3usuite.work.SchedulingGateway
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -69,7 +68,6 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            M3UTvSkin {
             AppTheme {
                 val nav = rememberNavController()
                 // Global nav debug listener (switchable via Settings)
@@ -434,7 +432,6 @@ class MainActivity : ComponentActivity() {
                         // Do nothing – consume BACK at root. Home button remains the only way to leave the app.
                     }
                 }
-            }
             }
         }
     }
