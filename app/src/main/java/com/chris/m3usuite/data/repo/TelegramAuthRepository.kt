@@ -113,7 +113,13 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
 
     fun sendPhoneNumber(phone: String, isCurrentDevice: Boolean) {
         if (useService) {
-            svc?.sendPhone(phone, isCurrentDevice)
+            svc?.sendPhone(
+                phone = phone,
+                isCurrentDevice = isCurrentDevice,
+                allowFlashCall = false,
+                allowMissedCall = false,
+                allowSmsRetriever = true
+            )
             return
         }
         val c = client ?: return

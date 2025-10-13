@@ -1,3 +1,12 @@
+2025-10-14
+- fix(telegram/series-indexer): Rebuild the aggregated Telegram series catalog from ObjectBox messages. Episodes now map each
+  SxxEyy caption reliably, persist tg:// identifiers, copy duration/container/mime/size/language metadata, and normalize
+  posters/years so Library’s “Telegram Serien” row finally lists every season and episode instead of just the newest message.
+- fix(telegram/meta-mapper): Share Telegram media helpers for posters/containerExt between repository and indexer, ensuring
+  thumbnails resolve immediately and metadata stays consistent for playback.
+- fix(telegram/auth): Phone-login requests now enable Telegram’s SMS retriever path so entering the code directly in FishIT
+  matches the official client’s variant A. QR authentication remains available as the secondary option.
+
 2025-10-13
 - fix(telegram/paging): Use TDLib-compliant history pagination (`fromMessageId=oldestId` with `offset=-1`) to fetch older pages. Resolves 400 "Invalid value of parameter from_message_id specified" and ensures all files are discovered, even when many lie on the same page.
 - fix(telegram/posters): Proactively resolve and download thumbnails on first load when missing (`thumbFileId` → `GetFile`/`DownloadFile`), then persist `thumbLocalPath`. Tiles now show posters immediately (e.g., Handmaid’s Tale) without waiting for later updates.
