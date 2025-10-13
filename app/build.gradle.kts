@@ -115,12 +115,14 @@ android {
         (project.findProperty("versionName") as String?)?.let { versionName = it }
 
         // >>> ABI-Filters optional aus Property in defaultConfig.ndk (hilft lokalen Builds ohne Splits)
-        if (abiFiltersProp.isNotEmpty()) {
-            ndk {
-                abiFiltersProp.forEach { abiFilters += it }
-            }
-        }
+        val useSplits = (project.findProperty("useSplits") as String?)
+    ?.toBooleanStrictOrNull() ?: true // CI: true → nur Splits verwenden
+
+if (!useSplits && abiFiltersProp.isNotEmpty()) {
+    ndk {
+        abiFiltersProp.forEach { abiFilters += it }
     }
+}
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -174,16 +176,16 @@ android {
 
     // >>> Split-APKs pro ABI (per Property steuerbar); standardmäßig zwei Splits, keine Universal-APK
     splits {
-        abi {
-            isEnable = true
-            reset()
-            include(*(if (abiFiltersProp.isNotEmpty())
-                abiFiltersProp.toTypedArray()
-            else
-                arrayOf("arm64-v8a", "armeabi-v7a")))
-            isUniversalApk = universalApkProp
-        }
+    abi {
+        isEnable = useSplits
+        reset()
+        include(*(if (abiFiltersProp.isNotEmpty())
+            abiFiltersProp.toTypedArray()
+        else
+            arrayOf("arm64-v8a","armeabi-v7a")))
+        isUniversalApk = universalApkProp
     }
+}
 
     packaging {
         resources.excludes += setOf(
