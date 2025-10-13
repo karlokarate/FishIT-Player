@@ -24,13 +24,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
-    # Gradle-Properties via ENV (ORG_GRADLE_PROJECT_* == -Pkey=value)
     env:
-      # Zwei ABIs als Splits bauen
       ORG_GRADLE_PROJECT_abiFilters: arm64-v8a,armeabi-v7a
-      # Im CI keine Universal-APK
       ORG_GRADLE_PROJECT_universalApk: false
-      # WICHTIG: Splits verwenden (kein Konflikt mit ndk.abiFilters)
       ORG_GRADLE_PROJECT_useSplits: true
 
     steps:
@@ -47,6 +43,7 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # compileSdk/targetSdk = 36 ⇒ API 36 + Build-Tools 36
       - name: Set up Android SDK/NDK
         uses: android-actions/setup-android@v3
         with:
@@ -75,28 +72,75 @@ jobs:
         run: chmod +x ./gradlew
 
       # === Secrets → Env (Signing + TG + HEADER) ===
+      # Smarter Decoder: entfernt data:*-Präfixe, Quotes/Backticks, whitespace;
+      # versucht Rohwert, dann längsten Base64-Substring; Standard + URL-safe + Padding-Fix.
       - name: Decode & Setup Signing + App Secrets
         shell: bash
         run: |
-          # --- Keystore decodieren und Pfade/Passwörter als MYAPP_* bereitstellen ---
-          if [[ -n "${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}" ]]; then
-            echo "${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+          python3 - <<'PY'
+import os, re, base64, binascii, sys, pathlib
+raw = os.environ.get("KS_B64","")
+def normalize(s:str)->str:
+    # entferne umschließende Backticks/Quotes
+    s = s.strip()
+    if (s.startswith(("'''",'"""')) and s.endswith(("'''",'"""'))) or (s[0]==s[-1] and s[0] in "'\"`"):
+        s = s[1:-1]
+    # data:*;base64, Präfix entfernen
+    if "base64," in s:
+        s = s.split("base64,",1)[1]
+    # whitespace entfernen
+    return "".join(s.split())
+
+def try_decode(candidate:str):
+    for fn in (base64.b64decode, base64.urlsafe_b64decode):
+        try:
+            pad = '=' * (-len(candidate) % 4)
+            return fn(candidate + pad)
+        except binascii.Error:
+            pass
+    return None
+
+decoded = None
+norm = normalize(raw)
+candidates = []
+if norm:
+    candidates.append(norm)
+
+# Fallback: längsten Base64-ähnlichen Substring extrahieren
+# erlaubt + / _ - = Zeichen
+if not candidates or not try_decode(candidates[0]):
+    substrs = re.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw)
+    if substrs:
+        longest = max(substrs, key=len)
+        candidates.append(normalize(longest))
+
+for c in candidates:
+    decoded = try_decode(c)
+    if decoded:
+        break
+
+if decoded:
+    pathlib.Path("release.keystore").write_bytes(decoded)
+    print("DECODE_OK")
+else:
+    print("DECODE_FAIL")
+PY
+          if [[ -f "release.keystore" ]]; then
             echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore" >> $GITHUB_ENV
             echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
             echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}" >> $GITHUB_ENV
             echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}" >> $GITHUB_ENV
+            echo "Keystore: OK (signierte Releases möglich)"
+          else
+            echo "::warning::Keystore-Secret ungültig/unklar – fallback auf UNSIGNIERTEN Build."
           fi
 
-          # --- Telegram / Header (Gradle liest ENV → buildConfigFields) ---
-          if [[ -n "${{ secrets.TG_API_ID }}" ]]; then
-            echo "TG_API_ID=${{ secrets.TG_API_ID }}" >> $GITHUB_ENV
-          fi
-          if [[ -n "${{ secrets.TG_API_HASH }}" ]]; then
-            echo "TG_API_HASH=${{ secrets.TG_API_HASH }}" >> $GITHUB_ENV
-          fi
-          if [[ -n "${{ secrets.HEADER }}" ]]; then
-            echo "HEADER=${{ secrets.HEADER }}" >> $GITHUB_ENV
-          fi
+          # Telegram / Header (Gradle liest ENV → buildConfigFields)
+          [[ -n "${{ secrets.TG_API_ID }}"   ]] && echo "TG_API_ID=${{ secrets.TG_API_ID }}"     >> $GITHUB_ENV
+          [[ -n "${{ secrets.TG_API_HASH }}" ]] && echo "TG_API_HASH=${{ secrets.TG_API_HASH }}" >> $GITHUB_ENV
+          [[ -n "${{ secrets.HEADER }}"     ]] && echo "HEADER=${{ secrets.HEADER }}"           >> $GITHUB_ENV
+        env:
+          KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
 
       # ---- TDLib: arm64 + v7a bauen; Script legt .so in libtd/src/main/jniLibs/... ab
       - name: TDLib (arm64 + v7a) bauen
