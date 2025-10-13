@@ -1,4 +1,3 @@
-\
 """
 solver_task.json schema and helpers.
 """

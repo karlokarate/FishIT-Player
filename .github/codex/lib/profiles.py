@@ -1,4 +1,3 @@
-\
 """
 Language/build/test profiles and auto-detection.
 """

@@ -1,4 +1,3 @@
-\
 """
 Shared GitHub helper utilities (requests-based) for all bots.
 """

@@ -1,4 +1,3 @@
-\
 """
 Heartbeat and step summary helpers.
 """
