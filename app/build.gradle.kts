@@ -49,7 +49,7 @@ android {
 
     defaultConfig {
         applicationId = "com.chris.m3usuite"
-        minSdk = 21
+        minSdk = 23
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
