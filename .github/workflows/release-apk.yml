@@ -1,4 +1,4 @@
-name: Android – FishITPlayer (arm64 + v7a)
+name: Android -- FishITPlayer (arm64 + v7a)
 
 on:
   workflow_dispatch:
