@@ -1,4 +1,4 @@
-name: Android -- FishITPlayer (arm64 + v7a)
+name: Android – FishITPlayer (arm64 + v7a)
 
 on:
   workflow_dispatch:
@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
+    # Gradle-Properties via ENV (ORG_GRADLE_PROJECT_* == -Pkey=value)
     env:
       ORG_GRADLE_PROJECT_abiFilters: arm64-v8a,armeabi-v7a
       ORG_GRADLE_PROJECT_universalApk: false
@@ -72,51 +73,45 @@ jobs:
         run: chmod +x ./gradlew
 
       # === Secrets → Env (Signing + TG + HEADER) ===
-      # Smarter Decoder: entfernt data:*-Präfixe, Quotes/Backticks, whitespace;
-      # versucht Rohwert, dann längsten Base64-Substring; Standard + URL-safe + Padding-Fix.
+      # Robust: entfernt data:*;base64, Quotes/Backticks, Whitespaces; findet längsten b64-Substring; std+urlsafe mit Padding-Fix.
       - name: Decode & Setup Signing + App Secrets
         shell: bash
         run: |
           python3 - <<'PY'
-import os, re, base64, binascii, sys, pathlib
+import os, re, base64, binascii, pathlib
 raw = os.environ.get("KS_B64","")
+
 def normalize(s:str)->str:
-    # entferne umschließende Backticks/Quotes
     s = s.strip()
-    if (s.startswith(("'''",'"""')) and s.endswith(("'''",'"""'))) or (s[0]==s[-1] and s[0] in "'\"`"):
+    if len(s)>=2 and s[0]==s[-1] and s[0] in "'\"`":
         s = s[1:-1]
-    # data:*;base64, Präfix entfernen
     if "base64," in s:
         s = s.split("base64,",1)[1]
-    # whitespace entfernen
     return "".join(s.split())
 
-def try_decode(candidate:str):
+def try_decode(c:str):
     for fn in (base64.b64decode, base64.urlsafe_b64decode):
         try:
-            pad = '=' * (-len(candidate) % 4)
-            return fn(candidate + pad)
+            pad = '=' * (-len(c) % 4)
+            return fn(c + pad)
         except binascii.Error:
             pass
     return None
 
 decoded = None
-norm = normalize(raw)
-candidates = []
-if norm:
-    candidates.append(norm)
+cand = normalize(raw)
+candidates = [cand] if cand else []
 
-# Fallback: längsten Base64-ähnlichen Substring extrahieren
-# erlaubt + / _ - = Zeichen
 if not candidates or not try_decode(candidates[0]):
-    substrs = re.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw)
-    if substrs:
-        longest = max(substrs, key=len)
-        candidates.append(normalize(longest))
+    # längsten b64-ähnlichen Substring nehmen
+    parts = re.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw or '')
+    if parts:
+        candidates.append(normalize(max(parts, key=len)))
 
 for c in candidates:
-    decoded = try_decode(c)
-    if decoded:
+    d = try_decode(c)
+    if d:
+        decoded = d
         break
 
 if decoded:
@@ -132,7 +127,7 @@ PY
             echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}" >> $GITHUB_ENV
             echo "Keystore: OK (signierte Releases möglich)"
           else
-            echo "::warning::Keystore-Secret ungültig/unklar – fallback auf UNSIGNIERTEN Build."
+            echo "::warning::Keystore-Secret ungültig/leer – fallback auf UNSIGNIERTEN Build."
           fi
 
           # Telegram / Header (Gradle liest ENV → buildConfigFields)
@@ -146,7 +141,6 @@ PY
       - name: TDLib (arm64 + v7a) bauen
         run: |
           chmod +x scripts/tdlib-build-arm64.sh
-          # Ohne Flags => baut beide ABIs (arm64 & v7a)
           bash scripts/tdlib-build-arm64.sh
 
       - name: Sanity-Check TDLib Artefakte
