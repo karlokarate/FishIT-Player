@@ -103,7 +103,7 @@ fun ProfileManagerScreen(
         onProfiles = null,
         listState = listState,
         onLogo = onLogo,
-        bottomBar = {}
+        showBottomBar = false
     ) { pads ->
         Box(Modifier.fillMaxSize().padding(pads)) {
             val Accent = DesignTokens.KidAccent
@@ -113,7 +113,10 @@ fun ProfileManagerScreen(
                 modifier = Modifier.align(Alignment.Center).size(540.dp),
                 alpha = 0.06f
             )
-            Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 TextButton(modifier = Modifier.focusScaleOnTv(), onClick = onBack) { Text("Zurück") }
                 OutlinedTextField(value = newKidName, onValueChange = { newKidName = it }, label = { Text("Neues Profil (Name)") })
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {

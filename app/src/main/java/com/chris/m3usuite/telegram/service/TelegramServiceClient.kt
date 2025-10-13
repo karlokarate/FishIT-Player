@@ -15,7 +15,9 @@ class TelegramServiceClient(private val context: Context) {
     private val pending = ArrayDeque<Message>()
     private val pendingChatList = mutableMapOf<Int, (LongArray, Array<String>) -> Unit>()
     private val pendingTitles = mutableMapOf<Int, (LongArray, Array<String>) -> Unit>()
+    private val pendingPulls = mutableMapOf<Int, (Long, Int) -> Unit>()
     private val nextReqId = AtomicInteger(1)
+    private var pendingFolderList: ((IntArray) -> Unit)? = null
     private val incoming = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             when (msg.what) {
@@ -40,6 +42,19 @@ class TelegramServiceClient(private val context: Context) {
                     val ids = msg.data.getLongArray("ids") ?: longArrayOf()
                     val titles = msg.data.getStringArray("titles") ?: emptyArray()
                     pendingTitles.remove(reqId)?.invoke(ids, titles)
+                }
+                TelegramTdlibService.REPLY_FOLDERS -> {
+                    val folders = msg.data.getIntArray("folders") ?: intArrayOf()
+                    pendingFolderList?.invoke(folders)
+                    pendingFolderList = null
+                }
+                TelegramTdlibService.REPLY_PULL_DONE -> {
+                    val reqId = msg.data.getInt("reqId", -1)
+                    val chatId = msg.data.getLong("chatId")
+                    val count = msg.data.getInt("count", 0)
+                    synchronized(pendingPulls) {
+                        pendingPulls.remove(reqId)?.invoke(chatId, count)
+                    }
                 }
                 else -> super.handleMessage(msg)
             }
@@ -149,6 +164,12 @@ class TelegramServiceClient(private val context: Context) {
     fun processPush(payload: String) = send(TelegramTdlibService.CMD_PROCESS_PUSH) { putString("payload", payload) }
     fun setInBackground(inBg: Boolean) = send(TelegramTdlibService.CMD_SET_IN_BACKGROUND) { putBoolean("inBg", inBg) }
 
+    suspend fun listFolders(): IntArray = suspendCancellableCoroutine { cont ->
+        pendingFolderList = { arr -> cont.resume(arr) }
+        cont.invokeOnCancellation { pendingFolderList = null }
+        send(TelegramTdlibService.CMD_LIST_FOLDERS)
+    }
+
     suspend fun listChats(list: String, limit: Int = 200, query: String? = null): List<Pair<Long, String>> =
         suspendCancellableCoroutine { cont ->
             val reqId = nextReqId.getAndIncrement()
@@ -187,9 +208,25 @@ class TelegramServiceClient(private val context: Context) {
             }
         }
 
-    fun pullChatHistory(chatId: Long, limit: Int = 200) =
+    fun pullChatHistory(chatId: Long, limit: Int = 200, fetchAll: Boolean = false) =
         send(TelegramTdlibService.CMD_PULL_CHAT_HISTORY) {
             putLong("chatId", chatId)
             putInt("limit", limit)
+            putBoolean("fetchAll", fetchAll)
+        }
+
+    suspend fun pullChatHistoryAwait(chatId: Long, limit: Int = 200, fetchAll: Boolean = false): Int =
+        suspendCancellableCoroutine { cont ->
+            val reqId = nextReqId.getAndIncrement()
+            synchronized(pendingPulls) {
+                pendingPulls[reqId] = { _, count -> cont.resume(count) }
+            }
+            cont.invokeOnCancellation { synchronized(pendingPulls) { pendingPulls.remove(reqId) } }
+            send(TelegramTdlibService.CMD_PULL_CHAT_HISTORY) {
+                putInt("reqId", reqId)
+                putLong("chatId", chatId)
+                putInt("limit", limit)
+                putBoolean("fetchAll", fetchAll)
+            }
         }
 }

@@ -236,7 +236,16 @@ fun ObxEpisode.toEpisode(): Episode = Episode(
     rating = this.rating,
     airDate = this.airDate,
     containerExt = this.playExt,
-    poster = this.imageUrl
+    poster = this.imageUrl,
+    tgChatId = this.tgChatId,
+    tgMessageId = this.tgMessageId,
+    tgFileId = this.tgFileId,
+    mimeType = this.mimeType,
+    width = this.width,
+    height = this.height,
+    sizeBytes = this.sizeBytes,
+    supportsStreaming = this.supportsStreaming,
+    language = this.language
 )
 
 // ---------------------------------------------------------

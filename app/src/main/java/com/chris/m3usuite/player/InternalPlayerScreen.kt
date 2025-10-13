@@ -48,6 +48,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -68,6 +70,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.datasource.DefaultDataSource
@@ -85,6 +88,7 @@ import com.chris.m3usuite.data.repo.ScreenTimeRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -92,8 +96,12 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.ui.focus.FocusKit
+import com.chris.m3usuite.ui.home.MiniPlayerState
 import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import android.widget.Toast
+import android.os.SystemClock
+import android.os.Build
+import com.chris.m3usuite.playback.PlaybackSession
 
 /**
  * Interner Player (Media3) mit:
@@ -230,7 +238,7 @@ fun InternalPlayerScreen(
         com.chris.m3usuite.telegram.TelegramTdlibDataSource.Factory(ctx, base)
     }
 
-    // Player
+    // Player (shared via PlaybackSession so mini player can attach after leaving screen)
     val exoPlayer = remember(url, headers, dataSourceFactory, mimeType) {
         val renderers = DefaultRenderersFactory(ctx)
             .setEnableDecoderFallback(true)
@@ -254,14 +262,20 @@ fun InternalPlayerScreen(
             .setTargetBufferBytes(6 * 1024 * 1024) // small target to avoid large pools on low-RAM devices
             .build()
 
+        // Align button-based seek increments (also used by PlayerView controller buttons)
+        val seekIncrementMs = 60_000L
+
+        PlaybackSession.getOrCreate(ctx) {
         ExoPlayer.Builder(ctx)
             .setRenderersFactory(renderers)
             .setMediaSourceFactory(
                 androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
             )
+            .setSeekBackIncrementMs(seekIncrementMs)
+            .setSeekForwardIncrementMs(seekIncrementMs)
             .setLoadControl(loadControl)
             .build()
-            .apply {
+        }.apply {
                 android.util.Log.d("ExoSetup", "setMediaItem url=${url}")
                 val inferredMime = mimeType ?: PlayUrlHelper.guessMimeType(url, null)
                 val mediaItem = MediaItem.Builder()
@@ -269,10 +283,11 @@ fun InternalPlayerScreen(
                     .also { builder -> inferredMime?.let { builder.setMimeType(it) } }
                     .build()
                 setMediaItem(mediaItem)
+                // SeekParameters tuning omitted for compatibility
                 prepare()
                 playWhenReady = false // Phase 4: erst nach Screen-Time-Check starten
                 startPositionMs?.let { seekTo(it) }
-            }
+        }
     }
 
     // Phase 4: Kid-Profil + Screen-Time-Gate vor Start
@@ -326,9 +341,12 @@ fun InternalPlayerScreen(
         val obs = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_PAUSE -> {
-                    // Don't pause when entering Picture-in-Picture
+                    // Don't pause when entering Picture-in-Picture (guard by SDK)
                     val act = ctx as? Activity
-                    if (act?.isInPictureInPictureMode != true) {
+                    val inPip = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        act?.isInPictureInPictureMode == true
+                    } else false
+                    if (!inPip) {
                         exoPlayer.playWhenReady = false
                     }
                     // Free up pooled buffer segments when pausing (TV v7a)
@@ -697,7 +715,11 @@ fun InternalPlayerScreen(
                 }
             } catch (_: Throwable) {}
             withContext(Dispatchers.Main) {
-                try { exoPlayer.release() } catch (_: Throwable) {}
+                val keepForMini = isTv && MiniPlayerState.visible.value
+                if (!keepForMini) {
+                    runCatching { exoPlayer.release() }
+                    PlaybackSession.set(null)
+                }
                 onExit()
             }
         }
@@ -711,12 +733,19 @@ fun InternalPlayerScreen(
     fun requestPictureInPicture() {
         val act = ctx as? Activity ?: return
         if (isTv) {
-            Toast.makeText(ctx, "PiP im TV-Modus deaktiviert – App bleibt geöffnet.", Toast.LENGTH_SHORT).show()
+            com.chris.m3usuite.ui.home.MiniPlayerState.show()
         } else {
-            val params = PictureInPictureParams.Builder()
-                .setAspectRatio(Rational(16, 9))
-                .build()
-            act.enterPictureInPictureMode(params)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(16, 9))
+                    .build()
+                act.enterPictureInPictureMode(params)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                @Suppress("DEPRECATION")
+                act.enterPictureInPictureMode()
+            } else {
+                runCatching { Toast.makeText(ctx, "PiP nicht verfügbar", Toast.LENGTH_SHORT).show() }
+            }
         }
     }
     var quickActionsFocusActive by remember { mutableStateOf(false) }
@@ -862,6 +891,7 @@ fun InternalPlayerScreen(
             }
             showAspectMenu -> { showAspectMenu = false }
             quickActionsVisible -> { quickActionsVisible = false; quickActionsFocusActive = false }
+            controlsVisible -> { controlsVisible = false }
             else -> finishAndRelease()
         }
     }
@@ -884,19 +914,20 @@ fun InternalPlayerScreen(
         onDispose { exoPlayer.removeListener(listener) }
     }
 
-    // Auto-hide controls after 3 seconds when visible and no modal open
-    LaunchedEffect(controlsVisible, controlsTick, showCcMenu, showAspectMenu, quickActionsVisible, isTv) {
-        if (controlsVisible && !showCcMenu && !showAspectMenu) {
-            if (isTv && !quickActionsVisible) {
-                pipFocusRequester.requestFocus()
-            }
-            delay(3000)
-            if (controlsVisible && !showCcMenu && !showAspectMenu) {
-                controlsVisible = false
-            }
+    // Auto-hide controls after inactivity: phone/tablet 5s, TV 10s
+    LaunchedEffect(controlsVisible, controlsTick, isTv) {
+        if (!controlsVisible) return@LaunchedEffect
+        // Don't auto-hide while modal sheets/menus are open
+        val blockingPopupOpen = showCcMenu || showAspectMenu || (type == "live" && quickActionsVisible)
+        if (blockingPopupOpen) return@LaunchedEffect
+        val timeoutMs = if (isTv) 10_000L else 5_000L
+        val startTick = controlsTick
+        delay(timeoutMs)
+        // Hide only if still visible and there was no interaction
+        if (controlsVisible && controlsTick == startTick) {
+            controlsVisible = false
         }
     }
-
     
 
     Box(Modifier.fillMaxSize()) {
@@ -912,9 +943,11 @@ fun InternalPlayerScreen(
             label = "seekPreviewAlpha"
         )
 
+        val playerModifier = Modifier.fillMaxSize()
+
+
         AndroidView(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = playerModifier
                 .graphicsLayer {
                     if (customScaleEnabled) {
                         scaleX = customScaleX.coerceIn(0.5f, 2.0f)
@@ -931,16 +964,65 @@ fun InternalPlayerScreen(
                     view.isFocusable = true
                     view.isFocusableInTouchMode = true
                     view.requestFocus()
-                    // Accelerated seek on long-press LEFT/RIGHT and media FF/REW keys
+                    // Burst tap seeking and long-press accelerated seeking
                     var seekRepeatJob: kotlinx.coroutines.Job? = null
                     var seekDir: Int = 0
+
+                    // Burst state
+                    var burstDir = 0
+                    var burstCount = 0
+                    var lastPressMs = 0L
+                    var burstResetJob: Job? = null
+                    val burstWindowMs = 600L
+
+                    // Long-press gate
+                    var pendingLongPressJob: Job? = null
+                    var longPressActive = false
+
+                    fun burstStep(dir: Int) {
+                        if (!canSeek) return
+                        val now = SystemClock.uptimeMillis()
+                        if (dir == burstDir && (now - lastPressMs) <= burstWindowMs) {
+                            burstCount = (burstCount + 1).coerceAtMost(10)
+                        } else {
+                            burstDir = dir
+                            burstCount = 0
+                            // remember base at burst start for delta overlay
+                            try { seekPreviewBaseMs = exoPlayer.currentPosition } catch (_: Throwable) {}
+                        }
+                        lastPressMs = now
+
+                        // Non-live burst steps: 60s -> 120s -> 360s
+                        val stepMs = when (burstCount) {
+                            0 -> 60_000L
+                            1 -> 120_000L
+                            else -> 360_000L
+                        }
+                        val dur = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
+                        val cur = exoPlayer.currentPosition
+                        val target = (cur + dir * stepMs).coerceIn(0L, dur)
+                        exoPlayer.seekTo(target)
+                        seekPreviewTargetMs = target
+                        seekPreviewVisible = true
+                        controlsVisible = true; controlsTick++
+
+                        burstResetJob?.cancel()
+                        burstResetJob = scope.launch {
+                            delay(900)
+                            burstCount = 0
+                            seekPreviewVisible = false
+                            seekPreviewTargetMs = null
+                        }
+                    }
+
                     fun startSeek(dir: Int) {
                         if (!canSeek) return
+                        if (seekRepeatJob?.isActive == true) return
+                        longPressActive = true
+                        var step = 10_000L
+                        var target = exoPlayer.currentPosition
                         seekDir = dir
-                        seekRepeatJob?.cancel()
                         seekRepeatJob = scope.launch {
-                            var step = 10_000L
-                            var target = exoPlayer.currentPosition
                             seekPreviewBaseMs = target
                             seekPreviewVisible = true
                             val max = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
@@ -952,7 +1034,6 @@ fun InternalPlayerScreen(
                                 seekPreviewTargetMs = target
                                 controlsVisible = true; controlsTick++
                                 tick++
-                                // accelerate step every few ticks up to 60s
                                 if (tick % 5 == 0 && step < 60_000L) step += 10_000L
                                 delay(180)
                             }
@@ -960,6 +1041,8 @@ fun InternalPlayerScreen(
                     }
                     fun stopSeek() {
                         seekRepeatJob?.cancel(); seekRepeatJob = null; seekDir = 0
+                        pendingLongPressJob?.cancel(); pendingLongPressJob = null
+                        longPressActive = false
                         // fade out preview shortly after release
                         scope.launch {
                             delay(420)
@@ -973,7 +1056,17 @@ fun InternalPlayerScreen(
                             when (keyCode) {
                                 android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_MEDIA_REWIND, android.view.KeyEvent.KEYCODE_BUTTON_L1,
                                 android.view.KeyEvent.KEYCODE_DPAD_RIGHT, android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, android.view.KeyEvent.KEYCODE_BUTTON_R1 -> {
-                                    stopSeek(); return@setOnKeyListener true
+                                    // If long-press didn’t activate, handle as burst tap
+                                    if (!longPressActive && canSeek && type != "live") {
+                                        val dir = when (keyCode) {
+                                            android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_MEDIA_REWIND, android.view.KeyEvent.KEYCODE_BUTTON_L1 -> -1
+                                            else -> +1
+                                        }
+                                        burstStep(dir)
+                                    } else {
+                                        stopSeek()
+                                    }
+                                    return@setOnKeyListener true
                                 }
                             }
                             return@setOnKeyListener false
@@ -1003,24 +1096,38 @@ fun InternalPlayerScreen(
                             android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
                             android.view.KeyEvent.KEYCODE_BUTTON_R1 -> {
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("FFWD", mapOf("screen" to "player", "type" to type))
-                                if (canSeek) { startSeek(+1); true } else false
+                                if (!canSeek || type == "live") return@setOnKeyListener false
+                                pendingLongPressJob?.cancel()
+                                pendingLongPressJob = scope.launch { delay(280); startSeek(+1) }
+                                true
                             }
                             android.view.KeyEvent.KEYCODE_MEDIA_REWIND,
                             android.view.KeyEvent.KEYCODE_BUTTON_L1 -> {
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("REW", mapOf("screen" to "player", "type" to type))
-                                if (canSeek) { startSeek(-1); true } else false
+                                if (!canSeek || type == "live") return@setOnKeyListener false
+                                pendingLongPressJob?.cancel()
+                                pendingLongPressJob = scope.launch { delay(280); startSeek(-1) }
+                                true
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("screen" to "player", "type" to type))
                                 if (type == "live") { jumpLive(-1); true }
-                                else if (canSeek) { startSeek(-1); true }
-                                else false
+                                else if (!canSeek) { false }
+                                else {
+                                    pendingLongPressJob?.cancel()
+                                    pendingLongPressJob = scope.launch { delay(280); startSeek(-1) }
+                                    true
+                                }
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("screen" to "player", "type" to type))
                                 if (type == "live") { jumpLive(+1); true }
-                                else if (canSeek) { startSeek(+1); true }
-                                else false
+                                else if (!canSeek) { false }
+                                else {
+                                    pendingLongPressJob?.cancel()
+                                    pendingLongPressJob = scope.launch { delay(280); startSeek(+1) }
+                                    true
+                                }
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_UP -> {
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("UP", mapOf("screen" to "player", "type" to type))
@@ -1274,7 +1381,15 @@ fun InternalPlayerScreen(
             alignment = Alignment.Center,
             properties = PopupProperties(focusable = true, dismissOnBackPress = false, usePlatformDefaultWidth = false)
         ) {
-            Box(Modifier.fillMaxSize()) {
+            Box(Modifier
+                .fillMaxSize()
+                .then(FocusKit.run { Modifier.focusGroup() })
+                // Any key activity within the overlay resets the auto-hide timer
+                .onPreviewKeyEvent {
+                    controlsTick++
+                    false
+                }
+            ) {
                 // When controls open, request focus to center control (TV)
                 LaunchedEffect(Unit) { centerFocus.requestFocus() }
                 // Top seekbar + close (80% opacity)
@@ -1287,7 +1402,7 @@ fun InternalPlayerScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    com.chris.m3usuite.ui.common.TvIconButton(onClick = { finishAndRelease() }) {
+                    FocusKit.TvIconButton(onClick = { controlsTick++; finishAndRelease() }) {
                         Icon(
                             painter = painterResource(android.R.drawable.ic_menu_close_clear_cancel),
                             contentDescription = "Schließen",
@@ -1345,15 +1460,17 @@ fun InternalPlayerScreen(
                     horizontalArrangement = Arrangement.spacedBy(18.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    com.chris.m3usuite.ui.common.TvIconButton(modifier = Modifier.focusRequester(centerFocus), onClick = {
+                    FocusKit.TvIconButton(modifier = Modifier.focusRequester(centerFocus), onClick = {
+                        controlsTick++
                         val pos = exoPlayer.currentPosition
                         exoPlayer.seekTo((pos - 10_000L).coerceAtLeast(0L))
                     }) { Icon(painter = painterResource(android.R.drawable.ic_media_rew), contentDescription = "-10s", tint = Color.White.copy(alpha = 0.8f)) }
-                    com.chris.m3usuite.ui.common.TvIconButton(onClick = { val playing = exoPlayer.playWhenReady && exoPlayer.isPlaying; exoPlayer.playWhenReady = !playing }) {
+                    FocusKit.TvIconButton(onClick = { controlsTick++; val playing = exoPlayer.playWhenReady && exoPlayer.isPlaying; exoPlayer.playWhenReady = !playing }) {
                         val icon = if (exoPlayer.playWhenReady && exoPlayer.isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
                         Icon(painter = painterResource(icon), contentDescription = "Play/Pause", tint = Color.White.copy(alpha = 0.8f))
                     }
-                    com.chris.m3usuite.ui.common.TvIconButton(onClick = {
+                    FocusKit.TvIconButton(onClick = {
+                        controlsTick++
                         val pos = exoPlayer.currentPosition
                         val dur = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
                         exoPlayer.seekTo((pos + 10_000L).coerceAtMost(dur))
@@ -1375,6 +1492,7 @@ fun InternalPlayerScreen(
                     containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
                     contentColor = Color.White
                 ) {
+                    controlsTick++
                     requestPictureInPicture()
                 }
                 OverlayIconButton(
@@ -1383,6 +1501,7 @@ fun InternalPlayerScreen(
                     containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                     contentColor = Color.White
                 ) {
+                    controlsTick++
                     if (!showCcMenu) {
                         localScale = effectiveScale(); localFg = effectiveFg(); localBg = effectiveBg();
                         localFgOpacity = effectiveFgOpacity(); localBgOpacity = effectiveBgOpacity();
@@ -1397,6 +1516,7 @@ fun InternalPlayerScreen(
                     contentColor = Color.White,
                     onLongClick = { showAspectMenu = true }
                 ) {
+                        controlsTick++
                         customScaleEnabled = false
                         cycleResize()
                     }
@@ -1407,7 +1527,10 @@ fun InternalPlayerScreen(
 
         // Quick actions popup: bottom-right buttons only, persistent until toggled off
         if (type == "live" && quickActionsVisible) {
-            Box(Modifier.fillMaxSize()) {
+            Box(Modifier
+                .fillMaxSize()
+                .then(FocusKit.run { Modifier.focusGroup() })
+            ) {
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)

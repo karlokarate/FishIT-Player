@@ -40,6 +40,8 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
         if (svc == null) {
             svc = TelegramServiceClient(context.applicationContext).also { s ->
                 s.bind()
+                // Request current auth state immediately
+                runCatching { s.getAuth() }
                 // Bridge service auth states into local flow
                 scope.launch(Dispatchers.Main.immediate) {
                     s.authStates().collect { st ->
@@ -79,6 +81,7 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
             if (svc == null) {
                 svc = TelegramServiceClient(context.applicationContext).also { s ->
                     s.bind()
+                    runCatching { s.getAuth() }
                     // Bridge service auth states into local flow
                     scope.launch(Dispatchers.Main.immediate) {
                         s.authStates().collect { st ->
@@ -94,6 +97,7 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
                 }
             }
             svc?.start(apiId, apiHash)
+            svc?.getAuth()
             return true
         }
         if (client == null) client = TdLibReflection.createClient(_authState)
@@ -101,6 +105,10 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
         client?.let { TdLibReflection.sendSetTdlibParameters(it, params) }
         client?.let { TdLibReflection.sendCheckDatabaseEncryptionKey(it) }
         return true
+    }
+
+    fun requestAuthState() {
+        if (useService) { svc?.getAuth(); return }
     }
 
     fun sendPhoneNumber(phone: String, isCurrentDevice: Boolean) {

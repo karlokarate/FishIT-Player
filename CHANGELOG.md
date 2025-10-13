@@ -1,5 +1,75 @@
+2025-10-13
+- fix(telegram/paging): Use TDLib-compliant history pagination (`fromMessageId=oldestId` with `offset=-1`) to fetch older pages. Resolves 400 "Invalid value of parameter from_message_id specified" and ensures all files are discovered, even when many lie on the same page.
+- fix(telegram/posters): Proactively resolve and download thumbnails on first load when missing (`thumbFileId` → `GetFile`/`DownloadFile`), then persist `thumbLocalPath`. Tiles now show posters immediately (e.g., Handmaid’s Tale) without waiting for later updates.
+- polish(telegram/playback): Keep clear IOException message when Telegram isn’t authenticated or the file isn’t downloaded yet; routing remains as fallback. Improves diagnosability of “unspecified IO” errors in player logs.
+
+2025-10-12
+- feat(telegram/telesync): Add dedicated Logcat tag `telesync` that dumps the raw TDLib response object for chat history backfills. When selecting a Telegram chat in Settings and pressing “Sync series/films”, the service logs the full `GetChatHistory` body and each `Message` entry for that chat. Output is a JSON‑ish reflection dump (class names + fields), chunked for Logcat.
+- feat(telegram/sync/series): Make series sync unbounded. TelegramSyncWorker now requests full history for series chats, and the service paginates `GetChatHistory` until exhaustion (no cap). VOD sync remains single‑page by default. New `fetchAll` flag in IPC.
+  - fix(telegram/paging): Robust history paging. Subsequent pages now use `fromMessageId = oldestId - 1` with `offset=0`, plus a duplicate‑page guard. Prevents cases where only the last visible message was indexed (e.g., Handmaid's Tale).
+  - feat(telegram/series-poster): Series poster now uses the chat photo (largest size) as canonical poster. We download the chat photo via TDLib during indexing and put it first in `ObxSeries.imagesJson`.
+  - feat(telegram/regex): Heuristics now also recognize German patterns like “Staffel 6 Folge 10”, in addition to S06E10 / 6x10 / S6 E10.
+  - fix(telegram/playback-gate): Improve routing DataSource error when Telegram is not authenticated and no local file is available — clearer IOException (“auth/download”).
+- fix(telegram/sync/await): Add "pull done" IPC reply so `TelegramSyncWorker` can await per‑chat completion before running the series aggregator. Prevents indexer from running too early.
+- chore(telegram/logs): Add concise logs: Service logs per‑chat backfill start/end (pages, processed), per‑message OBX upserts; Indexer logs per‑series upserts and final totals (series/episodes). Tag: `TdSvc` and `TgIndex`.
+- feat(telegram/series): Aggregate Telegram messages into OBX `ObxSeries` + `ObxEpisode` using SxxEyy heuristics. Episodes carry `tgChatId/tgMessageId/tgFileId` for direct tg:// playback. Library (Series) shows a new row "Telegram Serien" with series posters from downloaded thumbnails.
+- chore(start/telegram): Remove per-chat Telegram rows in Start’s Series section. Series are shown only via the single aggregated "Telegram Serien" row under Library.
+ - feat(telegram/meta): Enrich `ObxEpisode` with `mimeType`, `width`, `height`, `sizeBytes`, `supportsStreaming`, `language`. Add `fileName` to `ObxTelegramMessage`. Maintain `ObxIndexLang(kind="series")` for Telegram series based on episode languages.
+
+2025-10-10
+- fix(tdlib/auth): Queue phone/code/password until TDLib explicitly requests them (WAIT_FOR_NUMBER/CODE/PASSWORD); resend TdlibParameters + DB key on 400 "Initialization parameters are needed"; prefer QR on 406 UPDATE_APP_TO_LOGIN. Prevents race causing 400 during phone login.
+- fix(settings/telegram): Migrate Telegram section to FocusKit/FishForm. Text inputs no longer auto-focus or open IME on TV; API ID/HASH edits commit on confirm (no live DataStore writes while typing). Cache limit uses DPAD-friendly slider. Resolves UI hangs during typing and focus issues.
+- polish(settings/telegram/focus): Convert action buttons to FocusKit.TvButton/TvTextButton and group rows with focusGroup for visible TV focus halos and predictable DPAD.
+- polish(settings/chat-picker): Make Telegram Chat Picker FocusKit-compliant: group focus scopes, use TvButton/TvTextButton, tvClickable list rows, and FishFormTextField for search (prevents IME auto-pop on TV).
+- feat(tdlib/auto-start): Persist auth status across app restarts by auto-starting the TDLib service on app launch when Telegram is enabled and keys are present; service also reads SettingsStore keys if BuildConfig is empty when first used.
+- fix(telegram/repo): Don’t filter out items with supportsStreaming=false. Treat video MIME/container (mp4/mkv/webm/mov/avi/ts) as playable via progressive download; broaden MIME mapping and add thumbnail download/store for posters.
+- chore(dev/sync): Add scripts to mirror repo to ext4 for builds: `scripts/sync-ext4.sh` (one‑shot rsync) and `scripts/watch-sync-ext4.sh` (inotify watch). Excludes build/IDE artifacts; keeps repo in `$HOME/dev/FishITplayer` by default.
+- chore(repo/wsl): Purged repo-local `.wsl-*` toolchains and caches (.wsl-android-sdk, .wsl-gradle, .wsl-java-17, etc.). WSL builds use user-home bootstrap; project tree stays clean.
+- chore(repo/wsl): Ignore `.wsl-home/` and remove tracked `.wsl-home/.objectbox-build.properties`. WSL bootstrap/tooling stays in user home, not in the project tree.
+- fix(player/controls): Auto-collapse overlay controls after inactivity
+  - Phone/Tablet: hide after 5s without interaction.
+  - TV: hide after 10s without interaction; DPAD activity within the overlay resets the timer.
+  - Keeps quick-actions popup (Live) persistent until user toggles it off; modal sheets (CC/Aspect) block auto-hide.
+ - feat(start/preview): Added StartScreen Compose previews with hoisted UiState and a state switcher (Loading/Empty/Error/Loaded). Rows render static lists (lazy + simulated paging) using our fish placeholder. All IO/LaunchedEffect paths are avoided in preview.
+
+2025-10-09
+- feat(player/seek): Improved seeking and scrubbing on Media3 1.8.0
+  - Builder: set 60s seek increments (forward/back) for controller buttons.
+  - DPAD burst (VOD/Series): 60s → 120s → 360s per tap within ~600 ms.
+  - Long-press: keeps accelerated repeat seeking with smooth ramp-up.
+  - SeekParameters: HLS/Live use CLOSEST_SYNC; MP4 uses EXACT.
+  - Controls UX: no auto-hide; Back closes controls first (playback stays).
+  - player/focus: Controls and quick-actions wrapped in FocusKit.focusGroup(); use FocusKit.TvIconButton re-exports instead of direct TvIconButton.
+  - TV Mini-Player: Elevated to HomeChrome level as a global overlay. On TV, the PiP button shows the mini; phone/tablet still use system PiP.
+  - Mini focus: MENU key focuses the mini when visible; during Chrome Expanded state the mini remains visible but is not focusable.
+  - Player session: ExoPlayer is shared via PlaybackSession; InternalPlayerScreen does not release the player when the mini is visible on TV.
+- build/compose: Remove explicit `composeOptions.kotlinCompilerExtensionVersion` pin. With Kotlin Compose Gradle plugin and Compose UI 1.9.3, the compiler is managed by the plugin; avoids mismatched 1.8.x compiler.
+- fix(deps): `androidx.compose.material:material-icons-extended` isn’t published at 1.9.x. Pin it to 1.7.8 while keeping UI at 1.9.3; this artifact only ships vector assets and remains compatible.
+- fix(okhttp): Drop `ZstdInterceptor` import/usage. The class is not required for core OkHttp 5.2.0 usage and caused an unresolved reference. We keep OkHttp 5.2.0 and default gzip handling.
+- build(kotlin): Migrate deprecated `kotlinOptions { jvmTarget = "17" }` to the Kotlin `compilerOptions` DSL in `app` and `libtd`.
+ - fix(home/live): Show the Live row even when it has no items so the leading “+” add‑tile is visible for first‑time favorites. Implemented a leading‑only path in `FocusRowEngine.MediaRowCore` so `ReorderableLiveRow` renders the add tile on an empty dataset.
+- fix(tv/rows/dpad): Ensure left-most tile scrolls into view when navigating with DPAD LEFT. We now skip the “no-center on first tile” optimization only for the programmatic initial focus, not for user navigation to index 0.
+ - chore(tv/rows): Disable row auto-initial-focus globally in TV mode. Rows no longer auto-request focus for the first tile; focus starts wherever the screen decides (e.g., chrome/search) and moves into rows only on user DPAD.
+
 2025-10-08
+- fix(tv/chrome/focus): Stop clearing focus before requesting header targets in `HomeChromeOverlay`; DPAD highlight stays visible immediately after expand (no 80 ms gap).
+- fix(tv/chrome/focus-init): Retry header focus requests each frame until attached; logs `chromeFocusInit` attempts for diagnostics.
+- polish(tv/chrome/ui): Header buttons wrap `FocusKit.tvFocusFrame` over a larger 52 dp hit area so the FocusKit glow appears immediately (no fallback green circle).
+- chore(deps): Bump Compose UI to 1.9.3, Media3 stack to 1.8.0 (shared variable), and OkHttp to 5.2.0 (+ zstd module via `ZstdInterceptor`).
+- fix(profile/ui): Restore `Arrangement.spacedBy` on the Profile manager column (accidental typo broke compilation on Compose 1.7).
+- fix(tv/chrome): Make DPAD traversal in HomeChrome linear. Removed manual left/right focusNeighbors on header/bottom buttons (no wrap-around). Keep only UP/DOWN bridging between panels (header ↔ bottom). Result: left→right order is linear (Logo → Suche → Profile → Einstellungen; Live → VOD → Serien) and edges stop instead of cycling.
+  - impl: Simplified focusNeighbors in `FishITHeader.kt` and `FishITBottomPanel.kt` to only set `down`/`up` respectively; rely on `focusGroup()` natural order for horizontal traversal.
+  - follow-up: Bottom panel still skipped VOD on some devices. Added explicit linear left/right neighbors (Live→VOD→Serien) without wrap-around, keeping only UP bridge to header. File: `FishITBottomPanel.kt`.
+- fix(compose/focus): Wrap fallback FocusRequester instances in `remember { ... }` inside `FishITHeader.kt` and `FishITBottomPanel.kt` to satisfy Compose 1.7 `@RememberInComposition` enforcement and avoid recomposition churn/warnings.
+- fix(tv/buttons): Make `AppIconButton` explicitly focusable to stabilize DPAD focus candidates for header/bottom chrome icons. Prevents skipping middle icon (VOD) on some devices/DPAD heuristics.
+- refactor(tv/chrome): Replace header/bottom chrome buttons with `FocusKit.tvClickable` boxes (no `AppIconButton`/`IconButton`). Removes legacy logic, guarantees focusable + halo/scale via FocusKit, and uses explicit neighbor mapping for deterministic DPAD traversal.
+ - fix(tv/chrome/dpad): Remove global DPAD interception in `HomeChromeScaffold`. Focus navigation now relies on `focusGroup` + `focusNeighbors` only; prevents duplicate `moveFocus(...)` calls and erratic jumps/closures when moving between header/bottom/content.
+- fix(tv/chrome/focus-trap): While HomeChrome is Expanded, content area disables focus (`focusProperties { canFocus = false }`) so DPAD stays within header/bottom until the user clicks or presses BACK. Prevents accidental collapse when moving Down from header.
+ - ux(tv/chrome): Initial focus in header now prefers Search (when present) rather than Settings. This makes the global search immediately reachable when HomeChrome expands (including auto-expand on empty Start).
+- fix(tv/focuskit/overlay): Add `FocusKit.LocalForceTvFocus` and scope it around HomeChrome overlays so `tvClickable` always runs the TV focusable path there. Ensures focus halo/scale render immediately on DPAD focus without requiring a click.
+ - refactor(tv/homechrome): Introduce `HomeChromeOverlay` with a single top panel containing Logo, Search, Profile, Settings, and Live/VOD/Series. FocusKit tvClickable + explicit neighbors ensure deterministic DPAD; initial focus is Search. `HomeChromeScaffold` delegates to the overlay and no longer accepts a `bottomBar` slot. Start/Library/Settings/Profile/Detail screens updated to `showBottomBar=false` and pass `selectedBottom` for coloring.
 - fix(focus/start/library): Restore Compose 1.7 compatibility by annotating FocusKit modifier facades, replacing `drawOutline` with a local outline renderer, and relocating Start/Library header composables inside LazyColumn items. Resolves `compileDebugKotlin` failures introduced after the FocusKit facade merge.
+- refactor(home/chrome): HomeChrome header/bottom panels now use FocusKit focusGroup/DPAD helpers, DPAD routing sits on `FocusKit.onDpadAdjust*`, and chrome stays open while navigating; DPAD order is now deterministic (Fish → Search → Profile → Settings, Live → VOD → Serien) and all seven buttons stay reachable, collapsing only on BACK.
 - feat(telegram/player): TDLib‑Streaming im App‑Prozess liest API‑ID/HASH nun zur Laufzeit aus den Settings, wenn BuildConfig leer ist. Dadurch funktionieren `tg://`‑On‑Demand‑Streams auch ohne Build‑Zeit‑Keys; weiterhin Fallback auf lokale Dateien, wenn keine Auth vorliegt.
 - fix(start,library): Balance unmatched braces in `StartScreen.kt` and `LibraryScreen.kt` (add missing closing brace at file end). Resolves Kotlin parser errors "Expecting '}'" during kapt stubs.
 - fix(settings): Replace legacy `ui.skin` wrappers with `FocusKit.run { tvClickable(...) }` in `SettingsScreen.kt`; keep phone OutlinedTextFields and TV edit dialogs. Defers full FishForm migration for Settings to a later pass.

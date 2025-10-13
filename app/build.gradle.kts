@@ -120,7 +120,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
 
     /**
      * >>> Neu: Signing-Config "release" aus MYAPP_* (nur wenn Keystore vorhanden)
@@ -166,7 +170,8 @@ android {
         compose = true
         buildConfig = true
     }
-    composeOptions { kotlinCompilerExtensionVersion = "1.8.0" }
+    // Compose compiler is managed by the Kotlin Compose Gradle plugin.
+    // No explicit kotlinCompilerExtensionVersion needed with Compose 1.9.x + Kotlin 2.x.
 
     // >>> Angepasst: Split-APKs pro ABI + Universal-APK
     splits {
@@ -234,7 +239,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 dependencies {
-    val compose = "1.7.6" // aktuellstes Compose (Feb 2025)
+    val compose = "1.9.3" // Compose UI release (Jan 2026)
 
     // Core + Compose
     implementation("androidx.core:core-ktx:1.17.0")
@@ -244,7 +249,8 @@ dependencies {
 
     implementation("androidx.compose.ui:ui:$compose")
     implementation("androidx.compose.material3:material3:1.3.1")
-    implementation("androidx.compose.material:material-icons-extended:$compose")
+    // Material (M2) icons-extended track is not published at 1.9.x; latest is 1.7.x
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation("androidx.compose.ui:ui-tooling-preview:$compose")
     debugImplementation("androidx.compose.ui:ui-tooling:$compose")
     // Compose UI testing
@@ -258,7 +264,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
 
     // Networking
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp:5.2.0")
+    implementation("com.squareup.okhttp3:okhttp-zstd:5.2.0")
     implementation("com.squareup.okio:okio:3.10.2")
 
     // JSON (Kotlin Serialization)
@@ -296,9 +303,12 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
 
     // Media3 (ExoPlayer + UI + DataSource)
-    implementation("androidx.media3:media3-exoplayer:1.5.0")
-    implementation("androidx.media3:media3-ui:1.5.0")
-    implementation("androidx.media3:media3-exoplayer-hls:1.8.0")
+    val media3 = "1.8.0"
+    implementation("androidx.media3:media3-exoplayer:$media3")
+    implementation("androidx.media3:media3-ui:$media3")
+    implementation("androidx.media3:media3-exoplayer-hls:$media3")
+    // Optional:
+    // implementation("androidx.media3:media3-ui-compose:$media3")
 
     // Compose for TV (Material)
     implementation("androidx.tv:tv-material:1.0.1")

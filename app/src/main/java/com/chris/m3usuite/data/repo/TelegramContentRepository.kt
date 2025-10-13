@@ -39,7 +39,9 @@ class TelegramContentRepository(
         val rows = q.find(offset.toLong(), limit.toLong())
         rows.asSequence()
             .mapNotNull { row ->
-                if (row.supportsStreaming == false) return@mapNotNull null
+                // Treat supportsStreaming as a hint only; consider video types streamable via progressive download.
+                val isVideo = (row.mimeType?.lowercase()?.startsWith("video/") == true) || (row.containerExt() != null)
+                if (!isVideo) return@mapNotNull null
                 val parsed = TelegramHeuristics.parse(row.caption)
                 if (parsed.isSeries) return@mapNotNull null
                 row.toVodMediaItem(parsed)
@@ -57,7 +59,8 @@ class TelegramContentRepository(
         val rows = q.find(offset.toLong(), limit.toLong())
         rows.asSequence()
             .mapNotNull { row ->
-                if (row.supportsStreaming == false) return@mapNotNull null
+                val isVideo = (row.mimeType?.lowercase()?.startsWith("video/") == true) || (row.containerExt() != null)
+                if (!isVideo) return@mapNotNull null
                 val parsed = TelegramHeuristics.parse(row.caption)
                 if (!parsed.isSeries || parsed.seriesTitle.isNullOrBlank() || parsed.season == null || parsed.episode == null)
                     return@mapNotNull null
@@ -80,7 +83,8 @@ class TelegramContentRepository(
             ).orderDesc(ObxTelegramMessage_.date).build()
             val rows = q.find(0, 60).toList()
             rows.asSequence().forEach { row ->
-                if (row.supportsStreaming == false) return@forEach
+                val isVideo = (row.mimeType?.lowercase()?.startsWith("video/") == true) || (row.containerExt() != null)
+                if (!isVideo) return@forEach
                 val parsed = TelegramHeuristics.parse(row.caption)
                 if (parsed.isSeries && parsed.seriesTitle != null && parsed.season != null && parsed.episode != null) {
                     row.toSeriesItem(parsed)?.let { acc += it }
@@ -150,10 +154,60 @@ class TelegramContentRepository(
     }
 
     private fun ObxTelegramMessage.posterUri(): String? {
-        val path = this.localPath
-        if (path.isNullOrBlank()) return null
-        val file = File(path)
-        return if (file.exists()) file.toURI().toString() else null
+        // Prefer downloaded thumbnail path if available
+        val thumb = this.thumbLocalPath
+        if (!thumb.isNullOrBlank()) {
+            val f = File(thumb)
+            if (f.exists()) return f.toURI().toString()
+        }
+        // Best-effort: if a thumbnail file id exists but no local path yet, try to resolve quickly via TDLib
+        val thumbId = this.thumbFileId
+        if ((thumbId ?: 0) > 0 && com.chris.m3usuite.telegram.TdLibReflection.available()) {
+            runCatching {
+                val authFlow = kotlinx.coroutines.flow.MutableStateFlow(com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
+                val client = com.chris.m3usuite.telegram.TdLibReflection.getOrCreateClient(context, authFlow)
+                if (client != null) {
+                    val auth = com.chris.m3usuite.telegram.TdLibReflection.mapAuthorizationState(
+                        com.chris.m3usuite.telegram.TdLibReflection.buildGetAuthorizationState()
+                            ?.let { com.chris.m3usuite.telegram.TdLibReflection.sendForResult(client, it, 500) }
+                    )
+                    if (auth == com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED) {
+                        // Nudge download and poll briefly for local path
+                        com.chris.m3usuite.telegram.TdLibReflection.buildDownloadFile(thumbId!!, 8, 0, 0, false)
+                            ?.let { com.chris.m3usuite.telegram.TdLibReflection.sendForResult(client, it, 100) }
+                        var attempts = 0
+                        var path: String? = null
+                        while (attempts < 15 && (path.isNullOrBlank() || !File(path!!).exists())) {
+                            val get = com.chris.m3usuite.telegram.TdLibReflection.buildGetFile(thumbId)
+                            val res = if (get != null) com.chris.m3usuite.telegram.TdLibReflection.sendForResult(client, get, 250) else null
+                            val info = res?.let { com.chris.m3usuite.telegram.TdLibReflection.extractFileInfo(it) }
+                            path = info?.localPath
+                            if (!path.isNullOrBlank() && File(path!!).exists()) {
+                                // Persist for future queries
+                                val obx = ObxStore.get(context)
+                                val b = obx.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+                                val row = b.query(
+                                    com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(this.chatId)
+                                        .and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(this.messageId))
+                                ).build().findFirst() ?: this
+                                row.thumbLocalPath = path
+                                b.put(row)
+                                return File(path!!).toURI().toString()
+                            }
+                            Thread.sleep(100)
+                            attempts++
+                        }
+                    }
+                }
+            }
+        }
+        // Fallback to media local path if it is an image (rare) or if the image loader can handle it
+        val media = this.localPath
+        if (!media.isNullOrBlank()) {
+            val f = File(media)
+            if (f.exists()) return f.toURI().toString()
+        }
+        return null
     }
 
     private fun ObxTelegramMessage.containerExt(): String? {
@@ -161,8 +215,10 @@ class TelegramContentRepository(
         return when {
             mt.contains("mp4") -> "mp4"
             mt.contains("matroska") || mt.contains("mkv") -> "mkv"
-            mt.contains("quicktime") -> "mov"
+            mt.contains("webm") -> "webm"
+            mt.contains("quicktime") || mt.contains("mov") -> "mov"
             mt.contains("avi") -> "avi"
+            mt.contains("mp2t") || mt.contains("mpeg2-ts") || mt.contains("ts") -> "ts"
             else -> null
         }
     }

@@ -49,42 +49,26 @@ class TelegramTdlibDataSource(
             return d.open(dataSpec)
         }
 
-        // Gate by Settings flag first (avoid any TDLib touch when disabled)
+        // Prefer TDLib streaming path; on any failure, gracefully fall back to routing/local.
         val store = com.chris.m3usuite.prefs.SettingsStore(context)
         val enabled = runBlocking { store.tgEnabled.first() }
-        if (!enabled) {
-            val d = routingFallback.createDataSource().also { delegate = it; listener?.let(it::addTransferListener) }
-            opened = true
-            return d.open(dataSpec)
-        }
-
-        // Need TDLib presence
-        if (!TdLibReflection.available()) {
-            val d = routingFallback.createDataSource().also { delegate = it; listener?.let(it::addTransferListener) }
-            opened = true
-            return d.open(dataSpec)
-        }
-
+        val tdAvailable = TdLibReflection.available()
         val authFlow = kotlinx.coroutines.flow.MutableStateFlow(AuthState.UNKNOWN)
-        val client = TdLibReflection.getOrCreateClient(context, authFlow)
-        if (client == null) {
-            val d = routingFallback.createDataSource().also { delegate = it; listener?.let(it::addTransferListener) }
-            opened = true
-            return d.open(dataSpec)
-        }
+        val client = if (tdAvailable) TdLibReflection.getOrCreateClient(context, authFlow) else null
 
         val chatId = uri.getQueryParameter("chatId")?.toLongOrNull()
         val msgId = uri.getQueryParameter("messageId")?.toLongOrNull()
         if (chatId == null || msgId == null) throw IOException("tg:// uri missing chatId/messageId")
 
         // Ensure authenticated before using TDLib
-        runCatching {
-            val a = TdLibReflection.buildGetAuthorizationState()?.let { TdLibReflection.sendForResult(client, it, 500) }
+        val authOk = runCatching {
+            val a = if (client != null) TdLibReflection.buildGetAuthorizationState()?.let { TdLibReflection.sendForResult(client, it, 500) } else null
             val st = TdLibReflection.mapAuthorizationState(a)
-            if (st != AuthState.AUTHENTICATED) throw IOException("TDLib not authenticated")
-        }.onFailure {
-            if (!authFallbackNotified) {
-                val msg = "Telegram nicht verbunden – lokale Dateien werden verwendet"
+            st == AuthState.AUTHENTICATED
+        }.getOrDefault(false)
+        if (!enabled || !tdAvailable || client == null || !authOk) {
+            if (!authFallbackNotified && (!enabled || !authOk)) {
+                val msg = if (!enabled) "Telegram deaktiviert – lokale Dateien werden verwendet" else "Telegram nicht verbunden – lokale Dateien werden verwendet"
                 if (notify != null) notify.invoke(msg) else try { android.widget.Toast.makeText(context.applicationContext, msg, android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) {}
                 authFallbackNotified = true
             }
@@ -101,7 +85,7 @@ class TelegramTdlibDataSource(
             msgObj.javaClass.getDeclaredField("message").apply { isAccessible = true }.get(msgObj)
         }.getOrElse { msgObj }
         val content = runCatching { message.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(message) }.getOrNull()
-        val fileObj = TdLibReflection.findFirstFile(content) ?: throw IOException("tdlib: no file in message content")
+        val fileObj = TdLibReflection.findPrimaryFile(content) ?: throw IOException("tdlib: no file in message content")
         val initialInfo = TdLibReflection.extractFileInfo(fileObj) ?: throw IOException("tdlib: cannot read file info")
         fileId = initialInfo.fileId
 
@@ -113,8 +97,8 @@ class TelegramTdlibDataSource(
         // 3) Resolve local path & open RAF
         var info = initialInfo
         var attempts = 0
-        while ((info.localPath.isNullOrBlank() || !java.io.File(info.localPath).exists()) && attempts < 50) {
-            Thread.sleep(300)
+        while ((info.localPath.isNullOrBlank() || !java.io.File(info.localPath).exists()) && attempts < 80) {
+            Thread.sleep(250)
             val getFile = TdLibReflection.buildGetFile(fileId) ?: break
             val f = TdLibReflection.sendForResult(client, getFile) ?: break
             TdLibReflection.extractFileInfo(f)?.let { info = it }

@@ -280,6 +280,26 @@ object TdLibReflection {
         f.get(chatObj) as? String
     } catch (_: Throwable) { null }
 
+    /** Extract best (largest) chat photo File.id if available. */
+    fun extractChatPhotoBigFileId(chatObj: Any): Int? {
+        return try {
+            val photo = chatObj.javaClass.getDeclaredField("photo").apply { isAccessible = true }.get(chatObj) ?: return null
+            val sizes = runCatching { photo.javaClass.getDeclaredField("sizes").apply { isAccessible = true }.get(photo) }.getOrNull()
+            val list: List<Any> = when (sizes) {
+                is Array<*> -> sizes.filterNotNull().map { it as Any }
+                is Iterable<*> -> sizes.filterNotNull().map { it as Any }
+                else -> emptyList()
+            }
+            if (list.isEmpty()) return null
+            // choose last (typically the largest variant)
+            val last = list.last()
+            val pf = runCatching { last.javaClass.getDeclaredField("photo").apply { isAccessible = true }.get(last) }.getOrNull()
+            if (pf == null) return null
+            // pf should be TdApi.File
+            runCatching { pf.javaClass.getDeclaredField("id").apply { isAccessible = true }.getInt(pf) }.getOrNull()
+        } catch (_: Throwable) { null }
+    }
+
     fun extractChatPositions(chatObj: Any): List<Any> = try {
         val f = chatObj.javaClass.getDeclaredField("positions"); f.isAccessible = true
         val arr = f.get(chatObj)
@@ -660,22 +680,47 @@ object TdLibReflection {
     /** Try to locate a thumbnail file id in a content object (e.g., video.thumbnail.file.id). */
     fun extractThumbFileId(contentObj: Any?): Int? {
         if (contentObj == null) return null
-        // Common path: content.video.thumbnail.file.id
         fun tryFileId(obj: Any?): Int? {
             if (obj == null) return null
-            // If this is a File, return id
             if (PKGS.any { obj.javaClass.name == "$it.TdApi\$File" }) {
                 return runCatching { obj.javaClass.getDeclaredField("id").apply { isAccessible = true }.getInt(obj) }.getOrNull()
             }
-            // If has field 'file', dive
+            // common holder: Thumbnail{ file=File }
             val fileField = runCatching { obj.javaClass.getDeclaredField("file").apply { isAccessible = true }.get(obj) }.getOrNull()
             if (fileField != null) return tryFileId(fileField)
             return null
         }
-        // Look for 'thumbnail' field first
-        val thumb = runCatching { contentObj.javaClass.getDeclaredField("thumbnail").apply { isAccessible = true }.get(contentObj) }.getOrNull()
-        tryFileId(thumb)?.let { return it }
-        // Fallback: scan nested fields for a 'thumbnail' that contains a File
+        // Direct thumbnail on content
+        runCatching { contentObj.javaClass.getDeclaredField("thumbnail").apply { isAccessible = true }.get(contentObj) }
+            .onSuccess { tryFileId(it)?.let { id -> return id } }
+        // Nested media containers
+        val candidates = listOf("video", "document", "animation")
+        for (name in candidates) {
+            val media = runCatching { contentObj.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(contentObj) }.getOrNull()
+            if (media != null) {
+                val thumb = runCatching { media.javaClass.getDeclaredField("thumbnail").apply { isAccessible = true }.get(media) }.getOrNull()
+                val id = tryFileId(thumb)
+                if (id != null) return id
+            }
+        }
+        // MessagePhoto: pick largest size
+        val photo = runCatching { contentObj.javaClass.getDeclaredField("photo").apply { isAccessible = true }.get(contentObj) }.getOrNull()
+        if (photo != null) {
+            val sizes = runCatching { photo.javaClass.getDeclaredField("sizes").apply { isAccessible = true }.get(photo) }.getOrNull()
+            val array: List<Any> = when (sizes) {
+                is Array<*> -> sizes.filterNotNull().map { it as Any }
+                is Iterable<*> -> sizes.filterNotNull().map { it as Any }
+                else -> emptyList()
+            }
+            // take the last (often largest)
+            val last = array.lastOrNull()
+            if (last != null) {
+                val p = runCatching { last.javaClass.getDeclaredField("photo").apply { isAccessible = true }.get(last) }.getOrNull()
+                val id = tryFileId(p)
+                if (id != null) return id
+            }
+        }
+        // Fallback: scan all nested fields recursively
         contentObj.javaClass.declaredFields.forEach { f ->
             f.isAccessible = true
             val v = runCatching { f.get(contentObj) }.getOrNull()
@@ -721,8 +766,10 @@ object TdLibReflection {
             when (ext) {
                 "mp4" -> return "video/mp4"
                 "mkv" -> return "video/x-matroska"
+                "webm" -> return "video/webm"
                 "avi" -> return "video/x-msvideo"
                 "mov" -> return "video/quicktime"
+                "ts", "m2ts" -> return "video/MP2T"
                 "mp3" -> return "audio/mpeg"
                 "m4a" -> return "audio/mp4"
             }
@@ -798,5 +845,31 @@ object TdLibReflection {
             if (found != null) return found
         }
         return null
+    }
+
+    /**
+     * Try to find the primary media file for common content types, preferring the main video/document over thumbnails.
+     * Falls back to [findFirstFile] if no prioritized path is found.
+     */
+    fun findPrimaryFile(contentObj: Any?): Any? {
+        if (contentObj == null) return null
+        // Heuristic: look for nested fields named 'video', 'document', 'animation', 'audio' first and try their internal 'file' (or 'video')
+        fun tryField(obj: Any?, name: String, inner: String = "file"): Any? {
+            if (obj == null) return null
+            val fld = runCatching { obj.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(obj) }.getOrNull() ?: return null
+            // nested file inside (e.g., Video.video, Document.document)
+            val innerVal = runCatching { fld.javaClass.getDeclaredField(inner).apply { isAccessible = true }.get(fld) }.getOrNull()
+            if (innerVal != null && PKGS.any { innerVal.javaClass.name == "$it.TdApi\$File" }) return innerVal
+            return findFirstFile(fld)
+        }
+        // MessageVideo: content.video.video (File)
+        tryField(contentObj, "video", inner = "video")?.let { return it }
+        // MessageDocument: content.document.document (File)
+        tryField(contentObj, "document", inner = "document")?.let { return it }
+        // MessageAnimation: content.animation.video (File)
+        tryField(contentObj, "animation", inner = "video")?.let { return it }
+        // MessageAudio: content.audio.audio (File)
+        tryField(contentObj, "audio", inner = "audio")?.let { return it }
+        return findFirstFile(contentObj)
     }
 }

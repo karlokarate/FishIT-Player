@@ -30,7 +30,7 @@ class TelegramRoutingDataSource(
         val uri = dataSpec.uri
         val scheme = uri.scheme?.lowercase()
         val delegate: DataSource = if (scheme == "tg") {
-            buildTelegramDataSource(uri) ?: throw IOException("Telegram file not available")
+            buildTelegramDataSource(uri) ?: throw IOException("Telegram file not available (auth/download)")
         } else {
             fallbackFactory.createDataSource()
         }
@@ -93,6 +93,9 @@ class TelegramRoutingDataSource(
                                 attempts++
                             }
                         }
+                    } else {
+                        // Not authenticated: let caller surface a clear error by returning null here
+                        return null
                     }
                 }
             }

@@ -4,8 +4,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.foundation.Image
 import coil3.compose.AsyncImage
 import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
@@ -114,6 +116,18 @@ fun AppAsyncImage(
     onSuccess: (() -> Unit)? = null,
     onError: (() -> Unit)? = null
 ) {
+    // In Compose Preview, avoid Coil and any filesystem/network usage.
+    if (LocalInspectionMode.current) {
+        val ph = placeholder ?: safePainter(R.drawable.fisch_bg, label = "Images/placeholder")
+        Image(
+            painter = ph,
+            contentDescription = contentDescription,
+            modifier = modifier,
+            contentScale = contentScale,
+            alignment = alignment
+        )
+        return
+    }
     val ctx = LocalContext.current
     var measured by remember { mutableStateOf(IntSize.Zero) }
     val request = remember(url, headers, crossfade, measured) {
@@ -223,6 +237,18 @@ fun AppHeroImage(
     onSuccess: (() -> Unit)? = null,
     onError: (() -> Unit)? = null
 ) {
+    // In Compose Preview, avoid Coil and any filesystem/network usage.
+    if (LocalInspectionMode.current) {
+        val ph = placeholder ?: safePainter(R.drawable.fisch_bg, label = "Images/placeholder")
+        Image(
+            painter = ph,
+            contentDescription = contentDescription,
+            modifier = modifier,
+            contentScale = contentScale,
+            alignment = alignment
+        )
+        return
+    }
     val ctx = LocalContext.current
     // Try TMDb size fallbacks for hero: w780 → w500 → w342 → original
     val heroCandidates = remember { listOf("w780", "w500", "w342", "original") }

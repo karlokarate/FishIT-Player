@@ -46,7 +46,7 @@ fun DetailHeader(
                     Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
                     subtitle?.let { Text(it, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     meta?.let { MetaChips(it, compact = false, collapsible = collapsibleMeta) }
-                    MediaActionBar(actions = actions, requestInitialFocus = true)
+                    MediaActionBar(actions = actions, requestInitialFocus = false)
                 }
             }
             headerExtras()

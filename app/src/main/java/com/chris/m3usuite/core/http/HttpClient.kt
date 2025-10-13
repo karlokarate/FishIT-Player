@@ -44,6 +44,7 @@ object HttpClientFactory {
             .writeTimeout(120, TimeUnit.SECONDS)
             .followRedirects(true)
             .retryOnConnectionFailure(true)
+            // Zstd interceptor removed: OkHttp core handles gzip by default; zstd is optional.
             // --- 5xx-Retry (2 Wiederholungen) ---
             .addInterceptor { chain ->
                 var attempt = 0

@@ -23,6 +23,8 @@ object TelegramHeuristics {
     private val nxm   = Regex("""(?i)(?:^|[\s._\-\[\(])(\d{1,2})x(\d{1,2})(?:$|[\s._\-\]\)])""")
     private val nxmRange = Regex("""(?i)(?:^|[\s._\-\[\(])(\d{1,2})x(\d{1,2})[-–](\d{1,2})(?:$|[\s._\-\]\)])""")
     private val sXeY  = Regex("""(?i)(?:^|[\s._\-\[\(])S(\d{1,2})[\s._\-]*E(\d{1,2})(?:$|[\s._\-\]\)])""")
+    // German verbose forms: "Staffel 6 Folge 10"
+    private val staffelFolge = Regex("""(?i)Staffel\s*(\d{1,2})\D{0,6}Folge\s*(\d{1,3})""")
 
     private val langTags = listOf(
         "de" to listOf("[DE]","[GER]","[DEU]","GERMAN","DEUTSCH","(DE)","(GER)","(DEU)"),
@@ -62,7 +64,10 @@ object TelegramHeuristics {
             return ParseResult(true, series.ifBlank { null }, s, e1, e2, rest.ifBlank { null }, lang)
         }
         // Singles
-        val m = sxxexx.find(text) ?: sXeY.find(text) ?: nxm.find(text)
+        val m = sxxexx.find(text)
+            ?: sXeY.find(text)
+            ?: nxm.find(text)
+            ?: staffelFolge.find(text)
         if (m != null) {
             val s = m.groupValues[1].toIntOrNull()
             val e = m.groupValues[2].toIntOrNull()

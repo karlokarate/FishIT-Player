@@ -11,8 +11,12 @@ import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Backfill Telegram sync worker (no-op if Telegram is disabled).
@@ -29,6 +33,7 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
             else -> settings.tgSelectedVodChatsCsv.first()
         }
         val chatIds = csv.split(',').mapNotNull { it.trim().toLongOrNull() }.distinct()
+        android.util.Log.i("TgWorker", "start mode=${mode} selectedChats=${chatIds.size}")
         if (chatIds.isEmpty()) return@withContext Result.success()
 
         val apiId = settings.tgApiId.first().takeIf { it > 0 } ?: BuildConfig.TG_API_ID
@@ -38,16 +43,49 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
         val service = TelegramServiceClient(applicationContext)
         return@withContext try {
             service.bind()
-            service.start(apiId, apiHash)
-            service.getAuth()
-            chatIds.forEach { chatId -> service.pullChatHistory(chatId, 200) }
+            var ready = false
+            var attempt = 0
+            while (attempt < 3 && !ready) {
+                attempt++
+                service.start(apiId, apiHash)
+                service.getAuth()
+                ready = waitForAuthReady(service, timeoutMs = 8000L)
+                if (!ready) delay(600L)
+            }
+            if (!ready) {
+                return@withContext Result.failure(workDataOf("error" to "Telegram nicht authentifiziert (Timeout)"))
+            }
+            // Progress reporting
+            setProgress(workDataOf("processed" to 0, "total" to chatIds.size))
+            chatIds.forEachIndexed { idx, chatId ->
+                // For series mode, fetch the entire history (no upper bound) and await completion
+                val all = (mode == MODE_SERIES)
+                val processed = service.pullChatHistoryAwait(chatId, 200, fetchAll = all)
+                android.util.Log.i("TgWorker", "pulled chatId=${chatId} processed=${processed}")
+                setProgress(workDataOf("processed" to (idx + 1), "total" to chatIds.size))
+            }
+            // After history backfill, rebuild aggregated Telegram series into OBX
+            if (mode == MODE_SERIES) {
+                val series = runCatching { com.chris.m3usuite.data.repo.TelegramSeriesIndexer.rebuild(applicationContext) }.getOrDefault(0)
+                android.util.Log.i("TgWorker", "indexer done series=${series}")
+            }
             SchedulingGateway.onTelegramSyncCompleted(applicationContext, triggerRefresh)
             Result.success()
-        } catch (_: Throwable) {
-            Result.failure()
+        } catch (e: Throwable) {
+            Result.failure(workDataOf("error" to (e.message ?: e::class.simpleName ?: "Unbekannter Fehler")))
         } finally {
             service.unbind()
         }
+    }
+
+    private suspend fun waitForAuthReady(service: TelegramServiceClient, timeoutMs: Long): Boolean {
+        return withTimeoutOrNull(timeoutMs) {
+            service.authStates()
+                .map { runCatching { com.chris.m3usuite.telegram.TdLibReflection.AuthState.valueOf(it) }.getOrDefault(com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN) }
+                .filter { it == com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED }
+                .first()
+            true
+        } ?: false
     }
 
     companion object {

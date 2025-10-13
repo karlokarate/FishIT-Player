@@ -5,7 +5,9 @@ Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
 - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
 - Maintenance 2025‑09‑28: Build‑Blocking Lücken geschlossen (Nav‑Extension, TV‑Focus‑Compat, TvRowScroll, safePainter, Adults‑Filter, XtreamImportCoordinator). Kein neues Feature; Roadmap unverändert.
- - Maintenance 2025‑10‑08: Telegram TDLib‑Streaming liest API‑ID/HASH zur Laufzeit aus Settings (Fallback, wenn BuildConfig leer). Keine Roadmap‑Auswirkung.
+- Maintenance 2025‑10‑08: Telegram TDLib‑Streaming liest API‑ID/HASH zur Laufzeit aus Settings (Fallback, wenn BuildConfig leer). Keine Roadmap‑Auswirkung.
+- Maintenance 2025‑10‑10: TDLib‑Auth konformisiert – Service queued Phone/Code/Password bis TDLib die jeweiligen States anfordert; 400 „Initialization parameters are needed“ triggert einmaliges Re‑Senden der TdlibParameters + DB‑Key; 406 „UPDATE_APP_TO_LOGIN“ schaltet deterministisch auf QR um.
+ - Maintenance 2025‑10‑10: Settings → Telegram auf FocusKit/FishForm umgestellt. Keine auto‑fokussierten Textfelder mehr auf TV; API‑Eingaben werden erst bei Bestätigung gespeichert (keine Live‑Writes während Tippen). Cache‑Limit per DPAD‑Slider.
 
 Prio 1 — Tiles/Rows Centralization (ON)
 - Ziel: UI‑Layout vollständig zentralisieren (Tokens + Tile + Row + Content), damit Screens nur noch `FishRow` + `FishTile` verdrahten.
@@ -92,7 +94,7 @@ Completed (moved to Changelog)
 - Maintenance 2025‑09‑29 (TV Low-Spec): Laufzeitprofil für TV hinzugefügt (reduzierte Fokus‑Effekte, kleinere Paging‑Fenster, OkHttp Drosselung, Coil ohne Crossfade). Während der Wiedergabe werden Xtream‑Seeding‑Worker pausiert und danach wieder aktiviert (wenn zuvor aktiv).
 - Maintenance 2025‑09‑30: LiveDetailScreen Buildfix – Klammerfehler behoben, EPG/Kid-Dialogs in den Screenkörper verlagert. Kein Roadmap‑Impact.
  - Maintenance 2025‑09‑30: Start/Library Playback-Migration – Verbleibende Direktaufrufe von PlayerChooser auf PlaybackLauncher (Flag `PLAYBACK_LAUNCHER_V1`) umgestellt; VOD „Ähnliche Inhalte“ und Live „Mehr aus Kategorie“ öffnen nun Details des gewählten Elements (Lambdas an Screens ergänzt und in MainActivity verdrahtet).
-- Maintenance 2025‑10‑01: Telegram – Settings zeigen nun Chat‑Namen für ausgewählte Film/Serien‑Sync‑Quellen; Backfill‑Worker `TelegramSyncWorker` liest jüngste Nachrichten aus selektierten Chats und indiziert Minimal‑Metadaten (ObxTelegramMessage).
+- Maintenance 2025‑10‑01: Telegram – Settings zeigen nun Chat‑Namen für ausgewählte Film/Serien‑Sync‑Quellen; Backfill‑Worker `TelegramSyncWorker` indiziert Nachrichten aus selektierten Chats (ObxTelegramMessage).
 - Maintenance 2025‑10‑01: Telegram – Zusätzliche Rows in Library (VOD/Series) je ausgewähltem Chat, mit on‑demand Thumbnails und blauem „T“-Badge. Globale Suche auf Start bindet Telegram als zusätzliche Row ein. Player nutzt für tg:// geringe RAM‑Buffer, IO (TDLib) cached.
 - Maintenance 2025‑10‑02: Telegram – Service stellt Chat-IPC (`listChats`, `resolveChatTitles`, `pullChatHistory`) bereit; Settings-Dialog + Sync-Worker hängen sich an denselben TDLib-Kontext, sodass die Auth-Session erhalten bleibt und kein zweiter Reflection-Client nötig ist. Login-Dialog erkennt die lokale Telegram-App, setzt `PhoneNumberAuthenticationSettings` (`is_current_phone_number`, Tokens) und öffnet den QR-Link automatisch für Single-Device-Anmeldungen.
 
@@ -152,7 +154,11 @@ Status: umgesetzt und in CI verankert (Audit Schritt). Buttons/Actions erhalten 
 
 ## Mittelfristig (4–8 Wochen)
 
-- TDLib Phase‑2 (offen):
+- TDLib Phase‑2 (laufend):
+  - ✅ Telegram Serien Aggregation: Indexer baut `ObxSeries` + `ObxEpisode` aus `ObxTelegramMessage` (SxxEyy), ProviderKey `telegram`; Library zeigt Row „Telegram Serien“. Playback via tg:// in Detail‑Screen.
+    - ✅ Serienposter = Chat‑Foto (größte Größe), wird via TDLib geladen und als erstes Bild in `imagesJson` abgelegt.
+    - ✅ Paging (fetchAll): robuste Mehrseiten‑Historie (fromId = oldestId‑1), verhindert „nur letzte Seite“ Fälle.
+    - ✅ Heuristik erweitert: „Staffel X Folge Y“ zusätzlich zu SxxEyy/xxxyyy Formen.
   - E‑Mail‑Flows: `AuthorizationStateWaitEmailAddress`/`AuthorizationStateWaitEmailCode`.
   - Storage‑Cleanup: `getStorageStatistics`‑basiert (LRU/selten genutzt) zusätzlich zum GB‑Limit.
   - Logging‑Kontrolle: `setLogStream` (Datei optional), `setVerbosityLevel(1)` in Prod konfigurierbar.

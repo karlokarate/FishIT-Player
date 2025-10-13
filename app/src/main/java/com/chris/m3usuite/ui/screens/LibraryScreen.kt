@@ -116,19 +116,17 @@ fun LibraryScreen(
     val wm = remember { WorkManager.getInstance(ctx) }
 
     // Centralized playback launcher for Library; opens internal player via nav and marks origin=lib for live
-    val playbackLauncher = if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1)
-        com.chris.m3usuite.playback.rememberPlaybackLauncher(
-            onOpenInternal = { pr ->
-                val encoded = com.chris.m3usuite.core.playback.PlayUrlHelper.encodeUrl(pr.url)
-                val mimeArg = pr.mimeType?.let { android.net.Uri.encode(it) } ?: ""
-                when (pr.type) {
-                    "live" -> navController.navigate("player?url=$encoded&type=live&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg&origin=lib")
-                    "vod" -> navController.navigate("player?url=$encoded&type=vod&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
-                    "series" -> navController.navigate("player?url=$encoded&type=series&seriesId=${pr.seriesId ?: -1}&season=${pr.season ?: -1}&episodeNum=${pr.episodeNum ?: -1}&episodeId=${pr.episodeId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
-                }
+    val playbackLauncher = com.chris.m3usuite.playback.rememberPlaybackLauncher(
+        onOpenInternal = { pr ->
+            val encoded = com.chris.m3usuite.core.playback.PlayUrlHelper.encodeUrl(pr.url)
+            val mimeArg = pr.mimeType?.let { android.net.Uri.encode(it) } ?: ""
+            when (pr.type) {
+                "live" -> navController.navigate("player?url=$encoded&type=live&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg&origin=lib")
+                "vod" -> navController.navigate("player?url=$encoded&type=vod&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
+                "series" -> navController.navigate("player?url=$encoded&type=series&seriesId=${pr.seriesId ?: -1}&season=${pr.season ?: -1}&episodeNum=${pr.episodeNum ?: -1}&episodeId=${pr.episodeId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
             }
-        )
-    else null
+        }
+    )
 
     // UiState for library content (combined): Loading until first load; Empty when no groups/rows; Success otherwise
     var uiState by remember { mutableStateOf<com.chris.m3usuite.ui.state.UiState<Unit>>(com.chris.m3usuite.ui.state.UiState.Loading) }
@@ -444,6 +442,42 @@ fun LibraryScreen(
         }
     }
 
+    @Composable
+    fun TelegramAggregatedSeriesSection(
+        onOpenDetails: (MediaItem) -> Unit,
+        onPlayDirect: (MediaItem) -> Unit,
+        onAssignToKid: ((MediaItem) -> Unit)?
+    ) {
+        val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
+        if (!tgEnabled) return
+        var items by remember(tgEnabled, resumeTick, cacheVersion) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
+        LaunchedEffect(tgEnabled, resumeTick, cacheVersion) {
+            if (!tgEnabled) return@LaunchedEffect
+            items = withContext(Dispatchers.IO) {
+                repo.seriesByProviderKeyNewest("telegram", 0, 120).map { it.toMediaItem(ctx) }
+            }
+        }
+        if (items.isEmpty()) return
+        val stateKey = "lib:tg:series:aggregated"
+        libraryMediaRow(
+            tab = ContentTab.Series,
+            items = items,
+            stateKey = stateKey,
+            edgeLeftExpandChrome = false,
+            initialFocusEligible = true,
+            allowAssign = canEditWhitelist,
+            header = com.chris.m3usuite.ui.layout.FishHeaderData.Text(
+                anchorKey = stateKey,
+                text = "Telegram Serien",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White
+            ),
+            onOpenDetails = onOpenDetails,
+            onPlayDirect = onPlayDirect,
+            onAssignToKid = onAssignToKid
+        )
+    }
+
     suspend fun loadItemsForGenre(tab: ContentTab, key: String): List<MediaItem> = withContext(Dispatchers.IO) {
         genreCache[key] ?: run {
             val itemsRaw = when (tab) {
@@ -484,7 +518,7 @@ fun LibraryScreen(
     // (Re)Load bei Tab- oder Suchwechsel
     // Also re-run when the screen comes back into focus (resumeTick)
     LaunchedEffect(selectedTab, query.text, resumeTick) {
-        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) uiState = com.chris.m3usuite.ui.state.UiState.Loading
+        uiState = com.chris.m3usuite.ui.state.UiState.Loading
         val isBlank = query.text.isBlank()
         val tabChanged = selectedTab != lastTab
         val searchModeChanged = isBlank != lastIsSearchBlank
@@ -522,7 +556,7 @@ fun LibraryScreen(
                 topYearsRow = yearsRow
             }
 
-            if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
+            run {
                 val hasGroups = groupKeys.providers.isNotEmpty() || groupKeys.genres.isNotEmpty() || groupKeys.years.isNotEmpty() || groupKeys.categories.isNotEmpty()
                 val hasRows = recentRow.isNotEmpty() || newestRow.isNotEmpty() || topYearsRow.isNotEmpty()
                 uiState = if (hasGroups || hasRows) com.chris.m3usuite.ui.state.UiState.Success(Unit) else com.chris.m3usuite.ui.state.UiState.Empty
@@ -673,7 +707,7 @@ fun LibraryScreen(
                         onOpen(media)
                         return@launch
                     }
-                    if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                    if (playbackLauncher != null) {
                         playbackLauncher.launch(
                             com.chris.m3usuite.playback.PlayRequest(
                                 type = "live",
@@ -708,7 +742,7 @@ fun LibraryScreen(
                         onOpen(media)
                         return@launch
                     }
-                    if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                    if (playbackLauncher != null) {
                         playbackLauncher.launch(
                             com.chris.m3usuite.playback.PlayRequest(
                                 type = "vod",
@@ -789,21 +823,18 @@ fun LibraryScreen(
                     navController.navigateTopLevel("library?q=&qs=")
                 }
             },
-            bottomBar = {
-                com.chris.m3usuite.ui.home.header.FishITBottomPanel(
-                    selected = when (selectedTab) {
-                        ContentTab.Live -> "live"
-                        ContentTab.Vod -> "vod"
-                        ContentTab.Series -> "series"
-                    },
-                    onSelect = { sel ->
-                        val idx = when (sel) { "live" -> 0; "vod" -> 1; else -> 2 }
-                        scope.launch { store.setLibraryTabIndex(idx) }
-                    }
-                )
+            showBottomBar = false,
+            selectedBottom = when (selectedTab) {
+                ContentTab.Live -> "live"
+                ContentTab.Vod -> "vod"
+                ContentTab.Series -> "series"
+            },
+            onSelectBottom = { sel ->
+                val idx = when (sel) { "live" -> 0; "vod" -> 1; else -> 2 }
+                scope.launch { store.setLibraryTabIndex(idx) }
             }
         ) { pads ->
-            if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
+            run {
                 when (val s = uiState) {
                     is com.chris.m3usuite.ui.state.UiState.Loading -> {
                         com.chris.m3usuite.ui.state.LoadingState()
@@ -844,8 +875,7 @@ fun LibraryScreen(
             // Suchergebnisse (ein Row pro aktivem Tab) – Paging + UiState gate
             if (query.text.isNotBlank()) {
                 val searchStateKey = "library:${selectedTabKey}:search"
-                if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
-                    item {
+                item {
                         val searchHeader = when (selectedTab) {
                             ContentTab.Live -> FishHeaderData.Text(
                                 anchorKey = searchStateKey,
@@ -917,57 +947,6 @@ fun LibraryScreen(
                             }
                         }
                     }
-                } else {
-                    item {
-                        val searchHeader = when (selectedTab) {
-                            ContentTab.Live -> FishHeaderData.Text(
-                                anchorKey = searchStateKey,
-                                text = "Live – Suchtreffer",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color.White
-                            )
-                            ContentTab.Vod -> FishHeaderData.Text(
-                                anchorKey = searchStateKey,
-                                text = "Filme – Suchtreffer",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color.White
-                            )
-                            ContentTab.Series -> FishHeaderData.Text(
-                                anchorKey = searchStateKey,
-                                text = "Serien – Suchtreffer",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color.White
-                            )
-                        }
-                        val allowAssign = selectedTab != ContentTab.Live && canEditWhitelist
-                        val onPrefetchKeys: OnPrefetchKeys? = if (selectedTab == ContentTab.Live) {
-                            { keys ->
-                                val sids = keys.mapNotNull { key -> searchResults.firstOrNull { it.id == key && it.type == "live" }?.streamId }
-                                if (sids.isNotEmpty()) {
-                                    repo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
-                                }
-                            }
-                        } else null
-                        libraryMediaRow(
-                            tab = selectedTab,
-                            items = searchResults,
-                            stateKey = searchStateKey,
-                            edgeLeftExpandChrome = true,
-                            initialFocusEligible = false,
-                            allowAssign = allowAssign,
-                            header = searchHeader,
-                            highlightIds = emptySet(),
-                            onPrefetchKeys = onPrefetchKeys,
-                            onOpenDetails = onOpen,
-                            onPlayDirect = onPlay,
-                            onAssignToKid = when (selectedTab) {
-                                ContentTab.Vod -> onAssignVod
-                                ContentTab.Series -> onAssignSeries
-                                ContentTab.Live -> null
-                            }
-                        )
-                    }
-                }
             }
 
             // Gruppenansichten (nur wenn keine Suche aktiv)
@@ -1418,8 +1397,19 @@ fun LibraryScreen(
                     }
                 }
 
-                // Telegram extra rows (per selected chat), only on VOD/Series tabs and only outside search
-                if (query.text.isBlank() && (selectedTab == ContentTab.Vod || selectedTab == ContentTab.Series)) {
+                // Telegram aggregated series row (built from OBX), only on Series tab and outside search
+                if (query.text.isBlank() && selectedTab == ContentTab.Series) {
+                    item {
+                        TelegramAggregatedSeriesSection(
+                            onOpenDetails = onOpen,
+                            onPlayDirect = onPlay,
+                            onAssignToKid = onAssignSeries
+                        )
+                    }
+                }
+
+                // Telegram extra rows (per selected chat) only for VOD; Series uses a single aggregated row
+                if (query.text.isBlank() && selectedTab == ContentTab.Vod) {
                     item {
                         TelegramSection(selectedTab)
                     }

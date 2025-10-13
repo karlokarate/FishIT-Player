@@ -125,15 +125,14 @@ fun LiveDetailScreen(
     var internalUa by rememberSaveable(id) { mutableStateOf("") }
     var internalRef by rememberSaveable(id) { mutableStateOf("") }
     var internalMime by rememberSaveable(id) { mutableStateOf<String?>(null) }
-    val liveLauncher = if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1)
-        com.chris.m3usuite.playback.rememberPlaybackLauncher(onOpenInternal = { pr ->
-            internalUrl = pr.url
-            internalStartMs = pr.startPositionMs
-            internalUa = pr.headers["User-Agent"].orEmpty()
-            internalRef = pr.headers["Referer"].orEmpty()
-            internalMime = pr.mimeType
-            showInternal = true
-        }) else null
+    val liveLauncher = com.chris.m3usuite.playback.rememberPlaybackLauncher(onOpenInternal = { pr ->
+        internalUrl = pr.url
+        internalStartMs = pr.startPositionMs
+        internalUa = pr.headers["User-Agent"].orEmpty()
+        internalRef = pr.headers["Referer"].orEmpty()
+        internalMime = pr.mimeType
+        showInternal = true
+    })
 
     // --- Profile / Adult Gate ---
     val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
@@ -181,7 +180,7 @@ fun LiveDetailScreen(
         }
         val hdrs = buildStreamHeaders()
         val mimeGuess = com.chris.m3usuite.core.playback.PlayUrlHelper.guessMimeType(playUrl, null)
-        if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && liveLauncher != null) {
+        if (liveLauncher != null) {
             liveLauncher.launch(
                 com.chris.m3usuite.playback.PlayRequest(
                     type = "live",
@@ -338,7 +337,7 @@ fun LiveDetailScreen(
         return
     }
 
-    if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
+    run {
         when (val s = uiState) {
             is com.chris.m3usuite.ui.state.UiState.Loading -> { com.chris.m3usuite.ui.state.LoadingState(); return }
             is com.chris.m3usuite.ui.state.UiState.Empty -> { com.chris.m3usuite.ui.state.EmptyState(); return }
@@ -356,7 +355,7 @@ fun LiveDetailScreen(
         onProfiles = null,
         listState = listState,
         onLogo = onLogo,
-        bottomBar = {},
+        showBottomBar = false,
         enableDpadLeftChrome = false
     ) { pads ->
 

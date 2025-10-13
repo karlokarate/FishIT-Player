@@ -10,32 +10,33 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-// removed windowInsetsPadding; using statusBarsPadding()
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import com.chris.m3usuite.ui.compat.focusGroup
-import com.chris.m3usuite.ui.focus.tvClickable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.chris.m3usuite.ui.common.AppIcon
-import com.chris.m3usuite.ui.common.AppIconButton
-import com.chris.m3usuite.ui.common.TvIconButton
 import com.chris.m3usuite.ui.common.IconVariant
+import com.chris.m3usuite.ui.common.resId
 import com.chris.m3usuite.ui.debug.safePainter
 import com.chris.m3usuite.ui.focus.FocusKit
+import com.chris.m3usuite.ui.focus.focusGroup
+import com.chris.m3usuite.ui.home.ChromeBottomFocusRefs
+import com.chris.m3usuite.ui.home.ChromeHeaderFocusRefs
+import com.chris.m3usuite.ui.home.LocalChromeBottomFocusRefs
+import com.chris.m3usuite.ui.home.LocalChromeHeaderFocusRefs
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 
 object FishITHeaderHeights {
     val topBar = 56.dp
-    val spacer = 8.dp
+    val spacer = 2.dp
     val total = topBar + spacer
 }
 
@@ -59,16 +60,25 @@ fun FishITHeader(
     onLogo: (() -> Unit)? = null,
 ) {
     val firstFocus = LocalHeaderFirstFocus.current
+    val bottomPrimaryFocus = LocalBottomFirstFocus.current
     val onChromeAction = LocalChromeOnAction.current
     val preferSettingsFirst = LocalPreferSettingsFirstFocus.current
+    val headerRefs = LocalChromeHeaderFocusRefs.current
+        ?: remember { ChromeHeaderFocusRefs(FocusRequester(), FocusRequester(), FocusRequester(), FocusRequester()) }
+    val bottomRefs = LocalChromeBottomFocusRefs.current
     val scrim = scrimAlpha.coerceIn(0f, 1f)
-    // Decide which header action receives the initial FocusRequester.
-    // Normally: Search -> Profiles -> Settings -> Logo
-    // If preferSettingsFirst is true: Settings -> Search -> Profiles -> Logo
     val attachToSettings = firstFocus != null && onSettings != null && preferSettingsFirst
     val attachToSearch = firstFocus != null && onSearch != null && !attachToSettings
     val attachToProfiles = firstFocus != null && onProfiles != null && !attachToSettings && !attachToSearch
     val attachToLogo = firstFocus != null && onLogo != null && !attachToSettings && !attachToSearch && !attachToProfiles
+    val logoRequester = if (attachToLogo && firstFocus != null) firstFocus else headerRefs.logo
+    val searchRequester = if (attachToSearch && firstFocus != null) firstFocus else headerRefs.search
+    val profileRequester = if (attachToProfiles && firstFocus != null) firstFocus else headerRefs.profile
+    val settingsRequester = if (attachToSettings && firstFocus != null) firstFocus else headerRefs.settings
+    val bottomLive = bottomRefs?.live ?: bottomPrimaryFocus
+    val bottomVod = bottomRefs?.vod ?: bottomPrimaryFocus
+    val bottomSeries = bottomRefs?.series ?: bottomPrimaryFocus
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -85,7 +95,6 @@ fun FishITHeader(
             .statusBarsPadding()
             .padding(horizontal = 12.dp)
     ) {
-        // Top bar
         Row(
             Modifier
                 .height(FishITHeaderHeights.topBar)
@@ -93,14 +102,39 @@ fun FishITHeader(
                 .then(if (FocusKit.isTvDevice(LocalContext.current)) Modifier.focusGroup() else Modifier),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // Determine the first icon to the right of the logo (for robust LEFT/RIGHT)
+            val firstRightOfLogo = when {
+                onSearch != null -> searchRequester
+                onProfiles != null -> profileRequester
+                onSettings != null -> settingsRequester
+                else -> null
+            }
             val logoModifier = Modifier
                 .padding(vertical = 8.dp)
-                .let { m -> if (attachToLogo) m.focusRequester(firstFocus!!) else m }
+                .then(
+                    FocusKit.run {
+                        // Linear traversal: allow RIGHT from logo to first available action; DOWN bridges to bottom.
+                        Modifier.focusNeighbors(
+                            right = firstRightOfLogo,
+                            down = bottomLive
+                        )
+                    }
+                )
             if (onLogo != null) {
-                TvIconButton(
-                    onClick = { onChromeAction?.invoke(); onLogo() },
-                    modifier = logoModifier,
-                    focusColors = FocusKit.FocusDefaults.IconColors
+                androidx.compose.foundation.layout.Box(
+                    modifier = logoModifier
+                        .semantics { this.contentDescription = title }
+                        .then(
+                            FocusKit.run {
+                                Modifier.tvClickable(
+                                    onClick = { onChromeAction?.invoke(); onLogo() },
+                                    focusRequester = logoRequester,
+                                    focusColors = FocusKit.FocusDefaults.IconColors,
+                                    focusBorderWidth = 2.2.dp,
+                                    debugTag = "Logo"
+                                )
+                            }
+                        )
                 ) {
                     androidx.compose.foundation.Image(
                         painter = safePainter(com.chris.m3usuite.R.drawable.fisch_header, label = "FishITHeader"),
@@ -115,34 +149,109 @@ fun FishITHeader(
                     modifier = logoModifier
                 )
             }
+
             val focusOverlay = Color.White.copy(alpha = 0.4f)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (onSearch != null) AppIconButton(
-                    icon = AppIcon.Search,
-                    contentDescription = "Suche öffnen",
-                    onClick = { onChromeAction?.invoke(); onSearch() },
-                    size = 28.dp,
-                    tvFocusOverlay = focusOverlay,
-                    modifier = if (attachToSearch) Modifier.focusRequester(firstFocus!!) else Modifier
-                )
-                if (onProfiles != null) AppIconButton(
-                    icon = AppIcon.Profile,
-                    contentDescription = "Profile",
-                    onClick = { onChromeAction?.invoke(); onProfiles() },
-                    size = 28.dp,
-                    tvFocusOverlay = focusOverlay,
-                    modifier = if (attachToProfiles) Modifier.focusRequester(firstFocus!!) else Modifier
-                )
+                if (onSearch != null) {
+                    val searchRight = when {
+                        onProfiles != null -> profileRequester
+                        onSettings != null -> settingsRequester
+                        else -> null
+                    }
+                    val searchIcon = AppIcon.Search.resId()
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier
+                            .semantics { this.contentDescription = "Suche öffnen" }
+                            .then(
+                                FocusKit.run {
+                                    Modifier
+                                        .tvClickable(
+                                            onClick = { onChromeAction?.invoke(); onSearch() },
+                                            focusRequester = searchRequester,
+                                            focusColors = FocusKit.FocusDefaults.IconColors,
+                                            focusBorderWidth = 2.2.dp,
+                                            debugTag = "Search"
+                                        )
+                                        .focusNeighbors(
+                                            left = logoRequester,
+                                            right = searchRight,
+                                            down = bottomVod
+                                        )
+                                }
+                            )
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = safePainter(searchIcon, label = "Header/Search"),
+                            contentDescription = "Suche öffnen",
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+                if (onProfiles != null) {
+                    val profileLeft = if (onSearch != null) searchRequester else logoRequester
+                    val profileRight = if (onSettings != null) settingsRequester else null
+                    val profileIcon = AppIcon.Profile.resId()
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier
+                            .semantics { this.contentDescription = "Profile" }
+                            .then(
+                                FocusKit.run {
+                                    Modifier
+                                        .tvClickable(
+                                            onClick = { onChromeAction?.invoke(); onProfiles() },
+                                            focusRequester = profileRequester,
+                                            focusColors = FocusKit.FocusDefaults.IconColors,
+                                            focusBorderWidth = 2.2.dp,
+                                            debugTag = "Profile"
+                                        )
+                                        .focusNeighbors(
+                                            left = profileLeft,
+                                            right = profileRight,
+                                            down = bottomSeries
+                                        )
+                                }
+                            )
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = safePainter(profileIcon, label = "Header/Profile"),
+                            contentDescription = "Profile",
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
                 if (onSettings != null) {
-                    AppIconButton(
-                        icon = AppIcon.Settings,
-                        variant = IconVariant.Primary,
-                        contentDescription = "Einstellungen",
-                        onClick = { onChromeAction?.invoke(); onSettings() },
-                        size = 28.dp,
-                        tvFocusOverlay = focusOverlay,
-                        modifier = if (attachToSettings) Modifier.focusRequester(firstFocus!!) else Modifier
-                    )
+                    val settingsLeft = when {
+                        onProfiles != null -> profileRequester
+                        onSearch != null -> searchRequester
+                        else -> logoRequester
+                    }
+                    val settingsIcon = AppIcon.Settings.resId(IconVariant.Primary)
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier
+                            .semantics { this.contentDescription = "Einstellungen" }
+                            .then(
+                                FocusKit.run {
+                                    Modifier
+                                        .tvClickable(
+                                            onClick = { onChromeAction?.invoke(); onSettings() },
+                                            focusRequester = settingsRequester,
+                                            focusColors = FocusKit.FocusDefaults.IconColors,
+                                            focusBorderWidth = 2.2.dp,
+                                            debugTag = "Settings"
+                                        )
+                                        .focusNeighbors(
+                                            left = settingsLeft,
+                                            down = bottomSeries
+                                        )
+                                }
+                            )
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = safePainter(settingsIcon, label = "Header/Settings"),
+                            contentDescription = "Einstellungen",
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
             }
         }

@@ -284,10 +284,11 @@ fun SeriesDetailScreen(
             var row = box.query(
                 com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(obxSid.toLong())
             ).build().findFirst()
-            val shouldImport = row == null || (
+            val isTelegramSeries = (row?.providerKey == "telegram")
+            val shouldImport = (!isTelegramSeries) && (row == null || (
                 row.plot.isNullOrBlank() &&
                 row.imagesJson.isNullOrBlank()
-            )
+            ))
             if (shouldImport) {
                 val repo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store)
                 repo.importSeriesDetailOnce(obxSid)
@@ -394,16 +395,11 @@ fun SeriesDetailScreen(
         onDispose { callback.remove() }
     }
 
-    if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) {
-        when (val s = uiState) {
-            is com.chris.m3usuite.ui.state.UiState.Loading -> { com.chris.m3usuite.ui.state.LoadingState(); return }
-            is com.chris.m3usuite.ui.state.UiState.Empty -> { com.chris.m3usuite.ui.state.EmptyState(); return }
-            is com.chris.m3usuite.ui.state.UiState.Error -> { com.chris.m3usuite.ui.state.ErrorState(s.message, s.retry); return }
-            is com.chris.m3usuite.ui.state.UiState.Success -> { /* render content */ }
-        }
-    } else if (!detailReady) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        return
+    when (val s = uiState) {
+        is com.chris.m3usuite.ui.state.UiState.Loading -> { com.chris.m3usuite.ui.state.LoadingState(); return }
+        is com.chris.m3usuite.ui.state.UiState.Empty -> { com.chris.m3usuite.ui.state.EmptyState(); return }
+        is com.chris.m3usuite.ui.state.UiState.Error -> { com.chris.m3usuite.ui.state.ErrorState(s.message, s.retry); return }
+        is com.chris.m3usuite.ui.state.UiState.Success -> { /* render content */ }
     }
 
     // Nach Player-Exit: kurzer „Next“-Hinweis (derzeit ohne EpisodeId‑Pfad)
@@ -415,8 +411,7 @@ fun SeriesDetailScreen(
         }
     }
 
-    val seriesLauncher = if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1)
-        com.chris.m3usuite.playback.rememberPlaybackLauncher(
+    val seriesLauncher = com.chris.m3usuite.playback.rememberPlaybackLauncher(
             onOpenInternal = { pr ->
                 if (openInternal != null) {
                     openInternal(pr.url, pr.startPositionMs, seriesStreamId ?: 0, pr.season ?: 0, pr.episodeNum ?: 0, pr.episodeId, pr.mimeType)
@@ -455,7 +450,7 @@ fun SeriesDetailScreen(
                     }
                 }
             }
-        ) else null
+        )
 
     fun playEpisode(e: Episode, fromStart: Boolean = false, resumeSecs: Int? = null) {
         scope.launch {
@@ -485,7 +480,7 @@ fun SeriesDetailScreen(
             val playableUrl = urlToPlay
             val resolvedMime = com.chris.m3usuite.core.playback.PlayUrlHelper.guessMimeType(playableUrl, e.containerExt)
 
-            if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && seriesLauncher != null) {
+            if (seriesLauncher != null) {
                 seriesLauncher.launch(
                     com.chris.m3usuite.playback.PlayRequest(
                         type = "series",
@@ -535,7 +530,7 @@ fun SeriesDetailScreen(
         onProfiles = null,
         listState = listState,
         onLogo = onLogo,
-        bottomBar = {},
+        showBottomBar = false,
         enableDpadLeftChrome = false
     ) { pads ->
         // New unified detail mask (behind flag). Fallback below keeps legacy path.

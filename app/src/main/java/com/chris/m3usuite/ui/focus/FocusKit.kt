@@ -17,6 +17,7 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,6 +63,14 @@ import com.chris.m3usuite.ui.fx.tvFocusGlow as fxTvFocusGlow
 import com.chris.m3usuite.ui.state.writeRowFocus
 
 // Modifier extensions (centralized)
+
+// Forces TV focus behavior even if device detection reports non-TV (e.g., overlays or misdetection).
+// Scoped via CompositionLocal around special overlays like HomeChrome.
+val LocalForceTvFocus: androidx.compose.runtime.ProvidableCompositionLocal<Boolean> = compositionLocalOf { false }
+
+object LocalForceTvFocusFacade {
+    val value: androidx.compose.runtime.ProvidableCompositionLocal<Boolean> = LocalForceTvFocus
+}
 
 @Composable
 fun Modifier.tvClickable(
@@ -208,6 +217,9 @@ fun TvRow(
 // Final, centralized FocusKit facade for all UIs (TV, phone, tablet)
 // Provides a single import surface: FocusKit.*
 object FocusKit {
+    // Expose overlay-forced TV focus flag through the facade
+    val LocalForceTvFocus: androidx.compose.runtime.ProvidableCompositionLocal<Boolean>
+        get() = com.chris.m3usuite.ui.focus.LocalForceTvFocus
     object FocusDefaults {
         val Colors: FocusColors
             @Composable
@@ -586,8 +598,9 @@ private fun Modifier.focusKitTvClickable(
     onClick: () -> Unit
 ): Modifier = composed {
     val context = LocalContext.current
+    val forceTv = LocalForceTvFocus.current
     val semanticsModifier = role?.let { Modifier.semantics { this.role = it } } ?: Modifier
-    if (!isTvDevice(context)) {
+    if (!forceTv && !isTvDevice(context)) {
         return@composed this.then(semanticsModifier).clickable(
             enabled = enabled,
             role = role,

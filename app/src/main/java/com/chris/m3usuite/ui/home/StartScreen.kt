@@ -2,9 +2,9 @@ package com.chris.m3usuite.ui.home
 
 import android.graphics.RenderEffect
 import android.graphics.Shader
+import android.net.Uri
 import android.os.Build
 import android.widget.Toast
-import android.net.Uri
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -15,19 +15,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -42,20 +43,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -64,13 +64,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+// PreviewParameter imports removed (single preview variant only)
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -80,15 +80,32 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.filter
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
-import com.chris.m3usuite.navigation.navigateTopLevel
+import com.chris.m3usuite.core.http.RequestHeadersProvider
+import com.chris.m3usuite.core.playback.PlayUrlHelper
+import com.chris.m3usuite.data.obx.toMediaItem
 import com.chris.m3usuite.data.repo.MediaQueryRepository
+import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.domain.selectors.sortByYearDesc
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.model.isAdultCategory
+import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
-import com.chris.m3usuite.ui.fx.FadeThrough
+import com.chris.m3usuite.ui.components.rows.ReorderableLiveRow
+import com.chris.m3usuite.ui.focus.FocusKit
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
+import com.chris.m3usuite.ui.fx.tvFocusGlow
+import com.chris.m3usuite.ui.layout.FishHeaderData
+import com.chris.m3usuite.ui.layout.FishHeaderHost
+import com.chris.m3usuite.ui.layout.FishRow
+import com.chris.m3usuite.ui.layout.FishRowPaged
+import com.chris.m3usuite.ui.layout.LiveFishTile
+import com.chris.m3usuite.ui.layout.SeriesFishTile
+import com.chris.m3usuite.ui.layout.TelegramFishTile
+import com.chris.m3usuite.ui.layout.VodFishTile
+import com.chris.m3usuite.ui.telemetry.AttachPagingTelemetry
 import com.chris.m3usuite.ui.theme.DesignTokens
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -100,24 +117,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.chris.m3usuite.core.playback.PlayUrlHelper
-import com.chris.m3usuite.ui.telemetry.AttachPagingTelemetry
-import com.chris.m3usuite.data.obx.toMediaItem
-import com.chris.m3usuite.ui.focus.FocusKit
-import com.chris.m3usuite.ui.layout.FishHeaderData
-import com.chris.m3usuite.ui.layout.FishHeaderHost
-import com.chris.m3usuite.ui.layout.FishRow
-import com.chris.m3usuite.ui.layout.FishRowPaged
-import com.chris.m3usuite.ui.layout.LiveFishTile
-import com.chris.m3usuite.ui.layout.SeriesFishTile
-import com.chris.m3usuite.ui.layout.TelegramFishTile
-import com.chris.m3usuite.ui.layout.VodFishTile
-import com.chris.m3usuite.ui.focus.focusScaleOnTv
-import com.chris.m3usuite.ui.fx.tvFocusGlow
-import com.chris.m3usuite.data.repo.TelegramContentRepository
-import com.chris.m3usuite.ui.components.rows.ReorderableLiveRow
-import com.chris.m3usuite.telegram.service.TelegramServiceClient
-import com.chris.m3usuite.core.http.RequestHeadersProvider
 
 @OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
 @Composable
@@ -151,20 +150,18 @@ fun StartScreen(
         }
     }
 
-    // Centralized playback launcher (v1): opens internal player via nav when chosen
-    val playbackLauncher = if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1)
-        com.chris.m3usuite.playback.rememberPlaybackLauncher(
-            onOpenInternal = { pr ->
-                val encoded = com.chris.m3usuite.core.playback.PlayUrlHelper.encodeUrl(pr.url)
-                val mimeArg = pr.mimeType?.let { android.net.Uri.encode(it) } ?: ""
-                when (pr.type) {
-                    "vod" -> navController.navigate("player?url=$encoded&type=vod&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
-                    "live" -> navController.navigate("player?url=$encoded&type=live&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
-                    "series" -> navController.navigate("player?url=$encoded&type=series&seriesId=${pr.seriesId ?: -1}&season=${pr.season ?: -1}&episodeNum=${pr.episodeNum ?: -1}&episodeId=${pr.episodeId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
-                }
+    // Centralized playback launcher: always enabled; settings decide internal/external/ask
+    val playbackLauncher = com.chris.m3usuite.playback.rememberPlaybackLauncher(
+        onOpenInternal = { pr ->
+            val encoded = PlayUrlHelper.encodeUrl(pr.url)
+            val mimeArg = pr.mimeType?.let { Uri.encode(it) } ?: ""
+            when (pr.type) {
+                "vod" -> navController.navigate("player?url=$encoded&type=vod&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
+                "live" -> navController.navigate("player?url=$encoded&type=live&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
+                "series" -> navController.navigate("player?url=$encoded&type=series&seriesId=${pr.seriesId ?: -1}&season=${pr.season ?: -1}&episodeNum=${pr.episodeNum ?: -1}&episodeId=${pr.episodeId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
             }
-        )
-    else null
+        }
+    )
 
     val telegramRepo = remember { TelegramContentRepository(ctx, store) }
     val telegramService = remember { TelegramServiceClient(ctx) }
@@ -177,13 +174,13 @@ fun StartScreen(
     val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
     val tgVodSelection by store.tgSelectedVodChatsCsv.collectAsStateWithLifecycle(initialValue = "")
     val tgSeriesSelection by store.tgSelectedSeriesChatsCsv.collectAsStateWithLifecycle(initialValue = "")
-    val playTelegram: (com.chris.m3usuite.model.MediaItem) -> Unit = remember(playbackLauncher, telegramHeaders) {
+    val playTelegram: (MediaItem) -> Unit = remember(playbackLauncher, telegramHeaders) {
         { item ->
             scope.launch {
                 val chatId = item.tgChatId ?: return@launch
                 val messageId = item.tgMessageId ?: return@launch
                 val tgUrl = "tg://message?chatId=$chatId&messageId=$messageId"
-                if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                if (playbackLauncher != null) {
                     playbackLauncher.launch(
                         com.chris.m3usuite.playback.PlayRequest(
                             type = item.type.ifBlank { "vod" },
@@ -237,7 +234,6 @@ fun StartScreen(
     var selLive by remember { mutableStateOf(setOf<Long>()) }
 
     val vm: StartViewModel = viewModel()
-    val homeQuery by vm.query.collectAsStateWithLifecycle(initialValue = "")
     val debouncedQuery by vm.debouncedQuery.collectAsStateWithLifecycle(initialValue = "")
 
     suspend fun recomputeMixedRows() {
@@ -260,7 +256,7 @@ fun StartScreen(
                 val recentItems = recMarks.mapNotNull { mk ->
                     val row = serBox.query(com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(mk.seriesId.toLong())).build().findFirst()
                     val mi = row?.toMediaItem(ctx)?.copy(categoryName = catSer[row?.categoryId])
-                    if (mi != null) mi else null
+                    mi
                 }.distinctBy { it.id }
                     .filter { item -> showAdults || !item.isAdultCategory() }
                     .filter { isAllowed("series", it.id) }
@@ -297,7 +293,7 @@ fun StartScreen(
                 vodMixed = recentItems + newestExcl
                 vodNewIds = newestExcl.map { it.id }.toSet()
             }
-            if (com.chris.m3usuite.BuildConfig.UI_STATE_V1 && debouncedQuery.isBlank()) {
+            if (debouncedQuery.isBlank()) {
                 homeUiState = if (seriesMixed.isNotEmpty() || vodMixed.isNotEmpty() || tv.isNotEmpty())
                     com.chris.m3usuite.ui.state.UiState.Success(Unit)
                 else com.chris.m3usuite.ui.state.UiState.Empty
@@ -315,7 +311,7 @@ fun StartScreen(
     }
 
     LaunchedEffect(isKid, showAdults) {
-        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1) homeUiState = com.chris.m3usuite.ui.state.UiState.Loading
+        homeUiState = com.chris.m3usuite.ui.state.UiState.Loading
         reloadFromObx()
         recomputeMixedRows()
         val isEmpty = series.isEmpty() && movies.isEmpty() && tv.isEmpty()
@@ -386,7 +382,7 @@ fun StartScreen(
         val translated = rawIds.filter { it >= 1_000_000_000_000L }
         val map = allAllowed.associateBy { it.id }
         favLive = translated.mapNotNull { map[it] }.distinctBy { it.id }
-        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1 && debouncedQuery.isBlank()) {
+        if (debouncedQuery.isBlank()) {
             homeUiState = if (seriesMixed.isNotEmpty() || vodMixed.isNotEmpty() || tv.isNotEmpty() || favLive.isNotEmpty())
                 com.chris.m3usuite.ui.state.UiState.Success(Unit)
             else com.chris.m3usuite.ui.state.UiState.Empty
@@ -428,22 +424,16 @@ fun StartScreen(
                 }
             }
         },
-        showBottomBar = !isKid,
-        bottomBar = if (!isKid) {
-            {
-                com.chris.m3usuite.ui.home.header.FishITBottomPanel(
-                    selected = "all",
-                    onSelect = { id ->
-                        val tab = when (id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
-                        scope.launch { store.setLibraryTabIndex(tab) }
-                        val current = navController.currentBackStackEntry?.destination?.route
-                        if (current != "browse") {
-                            navController.navigate("browse") { launchSingleTop = true }
-                        }
-                    }
-                )
+        showBottomBar = false,
+        selectedBottom = "all",
+        onSelectBottom = { id ->
+            val tab = when (id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
+            scope.launch { store.setLibraryTabIndex(tab) }
+            val current = navController.currentBackStackEntry?.destination?.route
+            if (current != "browse") {
+                navController.navigate("browse") { launchSingleTop = true }
             }
-        } else null,
+        },
         listState = listState,
         onLogo = {
             val current = navController.currentBackStackEntry?.destination?.route
@@ -455,7 +445,7 @@ fun StartScreen(
     ) { pads: PaddingValues ->
         // TV-only: if Start is empty, auto-expand chrome once and focus Settings for immediate access.
         val isTv = FocusKit.isTvDevice(LocalContext.current)
-        val expandChrome = com.chris.m3usuite.ui.home.LocalChromeExpand.current
+        val expandChrome = LocalChromeExpand.current
         var didAutoOpenChrome by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
         LaunchedEffect(homeUiState, isTv) {
             if (isTv && homeUiState is com.chris.m3usuite.ui.state.UiState.Empty && !didAutoOpenChrome) {
@@ -466,7 +456,7 @@ fun StartScreen(
             }
         }
         val loading by com.chris.m3usuite.ui.fx.FishSpin.isLoading.collectAsState(initial = false)
-        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1 && debouncedQuery.isBlank()) {
+        if (debouncedQuery.isBlank()) {
             when (val s = homeUiState) {
                 is com.chris.m3usuite.ui.state.UiState.Loading -> { com.chris.m3usuite.ui.state.LoadingState(); return@HomeChromeScaffold }
                 is com.chris.m3usuite.ui.state.UiState.Empty -> { com.chris.m3usuite.ui.state.EmptyState(); return@HomeChromeScaffold }
@@ -476,7 +466,7 @@ fun StartScreen(
         }
 
         // Search mode gating using combined paging flows (series/vod/live)
-        if (com.chris.m3usuite.BuildConfig.UI_STATE_V1 && debouncedQuery.isNotBlank()) {
+        if (debouncedQuery.isNotBlank()) {
             val seriesFlowG = remember(debouncedQuery) { mediaRepo.pagingSearchFilteredFlow("series", debouncedQuery) }
             val vodFlowG = remember(debouncedQuery) { mediaRepo.pagingSearchFilteredFlow("vod", debouncedQuery) }
             val liveFlowG = remember(debouncedQuery) { mediaRepo.pagingSearchFilteredFlow("live", debouncedQuery) }
@@ -560,24 +550,24 @@ fun StartScreen(
             if (showSearch) {
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = { showSearch = false },
-                    title = { androidx.compose.material3.Text("Globale Suche") },
+                    title = { Text("Globale Suche") },
                     text = {
-                        androidx.compose.material3.OutlinedTextField(
+                        OutlinedTextField(
                             value = searchInput,
                             onValueChange = { searchInput = it },
                             singleLine = true,
-                            label = { androidx.compose.material3.Text("Suchbegriff") },
+                            label = { Text("Suchbegriff") },
                             modifier = Modifier.fillMaxWidth()
                         )
                     },
                     confirmButton = {
-                        androidx.compose.material3.TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
+                        TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                             vm.query.value = searchInput
                             showSearch = false
-                        }) { androidx.compose.material3.Text("Suchen") }
+                        }) { Text("Suchen") }
                     },
                     dismissButton = {
-                        androidx.compose.material3.TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showSearch = false }) { androidx.compose.material3.Text("Abbrechen") }
+                        TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showSearch = false }) { Text("Abbrechen") }
                     }
                 )
             }
@@ -585,12 +575,12 @@ fun StartScreen(
             if (canEditWhitelist) {
                 val totalSel = selVod.size + selSeries.size + selLive.size
                 if (totalSel > 0) {
-                    androidx.compose.material3.FloatingActionButton(
+                    FloatingActionButton(
                         onClick = { showAssignSheet = true },
                         modifier = Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 20.dp)
                     ) {
                         AppIconButton(
-                            icon = com.chris.m3usuite.ui.common.AppIcon.AddKid,
+                            icon = AppIcon.AddKid,
                             contentDescription = "In Profile zuordnen",
                             onClick = { showAssignSheet = true },
                             size = 28.dp
@@ -656,7 +646,7 @@ fun StartScreen(
                     }
                 } else null
 
-                val searchUi = if (com.chris.m3usuite.BuildConfig.UI_STATE_V1 && isSearchMode) {
+                val searchUi = if (isSearchMode) {
                     val countFlow = remember(seriesPagingItems, vodPagingItems, livePagingItems) {
                         com.chris.m3usuite.ui.state.combinedPagingCountFlow(
                             seriesPagingItems!!,
@@ -700,7 +690,7 @@ fun StartScreen(
                 val onVodPlayDirect: (MediaItem) -> Unit = { media ->
                     scope.launch {
                         val req = PlayUrlHelper.forVod(ctx, store, media) ?: return@launch
-                        if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                        if (playbackLauncher != null) {
                             playbackLauncher.launch(
                                 com.chris.m3usuite.playback.PlayRequest(
                                     type = "vod",
@@ -754,7 +744,7 @@ fun StartScreen(
                 val onLivePlayDirect: (MediaItem) -> Unit = { media ->
                     scope.launch {
                         val req = PlayUrlHelper.forLive(ctx, store, media) ?: return@launch
-                        if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                        if (playbackLauncher != null) {
                             playbackLauncher.launch(
                                 com.chris.m3usuite.playback.PlayRequest(
                                     type = "live",
@@ -836,21 +826,7 @@ fun StartScreen(
                                     )
                                 }
                             }
-                            if (tgEnabled) {
-                                items(telegramSeriesChats, key = { "start_series_tg_$it" }) { chatId ->
-                                    StartTelegramSection(
-                                        chatId = chatId,
-                                        stateKey = "start:tg:series:$chatId",
-                                        repo = telegramRepo,
-                                        service = telegramService,
-                                        enabled = tgEnabled,
-                                        selectionCsv = tgSeriesSelection,
-                                        labelPrefix = "Telegram",
-                                        playTelegram = playTelegram,
-                                        loader = { telegramRepo.recentSeriesByChat(chatId, 60, 0) }
-                                    )
-                                }
-                            }
+                            // No per-chat Telegram rows for Series on Start; aggregated row exists under Library.
                         }
 
                         if (vodMixed.isNotEmpty()) {
@@ -882,11 +858,9 @@ fun StartScreen(
                                     StartTelegramSection(
                                         chatId = chatId,
                                         stateKey = "start:tg:vod:$chatId",
-                                        repo = telegramRepo,
                                         service = telegramService,
                                         enabled = tgEnabled,
                                         selectionCsv = tgVodSelection,
-                                        labelPrefix = "Telegram",
                                         playTelegram = playTelegram,
                                         loader = { telegramRepo.recentVodByChat(chatId, 60, 0) }
                                     )
@@ -927,7 +901,7 @@ fun StartScreen(
                                                 scope.launch {
                                                     val mi = favLive.firstOrNull { it.id == id } ?: return@launch
                                                     val req = PlayUrlHelper.forLive(ctx, store, mi) ?: return@launch
-                                                    if (com.chris.m3usuite.BuildConfig.PLAYBACK_LAUNCHER_V1 && playbackLauncher != null) {
+                                                    if (playbackLauncher != null) {
                                                         playbackLauncher.launch(
                                                             com.chris.m3usuite.playback.PlayRequest(
                                                                 type = "live",
@@ -1093,7 +1067,7 @@ fun StartScreen(
 
                         if (tgEnabled) {
                             item("start_vod_search_telegram") {
-                                var tgResults by remember(debouncedQuery) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
+                                var tgResults by remember(debouncedQuery) { mutableStateOf<List<MediaItem>>(emptyList()) }
                                 LaunchedEffect(debouncedQuery) {
                                     tgResults = withContext(Dispatchers.IO) { telegramRepo.searchAllChats(debouncedQuery, limit = 60) }
                                 }
@@ -1164,7 +1138,7 @@ fun StartScreen(
                     }
                 }
                 scope.launch {
-                    android.widget.Toast.makeText(ctx, "Freigegeben (${selVod.size + selSeries.size + selLive.size})", android.widget.Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, "Freigegeben (${selVod.size + selSeries.size + selLive.size})", Toast.LENGTH_SHORT).show()
                     // After changes, immediately reload filtered lists to reflect new allowances
                     reloadFromObx()
                     recomputeMixedRows()
@@ -1200,7 +1174,7 @@ fun StartScreen(
         ModalBottomSheet(onDismissRequest = { showLivePicker = false }) {
             val addReq = remember { FocusRequester() }
             Box(Modifier.fillMaxWidth()) {
-                androidx.compose.foundation.layout.Column(
+                Column(
                     Modifier.fillMaxWidth().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -1264,7 +1238,7 @@ fun StartScreen(
                         items(liveItems.itemCount, key = { idx -> liveItems[idx]?.id ?: idx.toLong() }) { idx ->
                             val mi = liveItems[idx] ?: return@items
                             val isSel = mi.id in selected
-                            com.chris.m3usuite.ui.home.ChannelPickTile(
+                            ChannelPickTile(
                                 item = mi,
                                 selected = isSel,
                                 onToggle = { selected = if (isSel) selected - mi.id else selected + mi.id },
@@ -1329,7 +1303,7 @@ fun ChannelPickTile(
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
     var focused by remember { mutableStateOf(false) }
-    androidx.compose.material3.Card(
+    Card(
         onClick = onToggle,
         shape = shape,
         colors = CardDefaults.cardColors(
@@ -1354,7 +1328,7 @@ fun ChannelPickTile(
             }
             .tvFocusGlow(focused = focused, shape = shape)
     ) {
-        androidx.compose.foundation.layout.Row(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 10.dp),
@@ -1389,11 +1363,9 @@ fun ChannelPickTile(
 private fun StartTelegramSection(
     chatId: Long,
     stateKey: String,
-    repo: TelegramContentRepository,
     service: TelegramServiceClient,
     enabled: Boolean,
     selectionCsv: String,
-    labelPrefix: String,
     playTelegram: (MediaItem) -> Unit,
     loader: suspend () -> List<MediaItem>
 ) {
@@ -1422,7 +1394,7 @@ private fun StartTelegramSection(
         initialFocusEligible = false,
         header = FishHeaderData.Text(
             anchorKey = stateKey,
-            text = "$labelPrefix – $chatTitle",
+            text = "Telegram – $chatTitle",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -1456,10 +1428,10 @@ private fun previewMediaList(type: String, count: Int = 10): List<MediaItem> = L
     )
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFF101010, name = "Start – Voll (Loaded)")
+@Preview(showBackground = true, backgroundColor = 0xFF101010, name = "Start Full (Loaded)")
 @Composable
-private fun StartScreenPreview_FullLoaded() {
-    com.chris.m3usuite.ui.layout.FishTheme {
+fun StartScreenPreview_FullLoaded() {
+    com.chris.m3usuite.ui.theme.AppTheme {
         val listState = rememberLazyListState()
         HomeChromeScaffold(
             title = "Start",
@@ -1473,6 +1445,35 @@ private fun StartScreenPreview_FullLoaded() {
             val series = previewMediaList("series", 12)
             val vod = previewMediaList("vod", 12)
             val live = previewMediaList("live", 12)
+
+            // Hintergrund wie im StartScreen: Verlauf + radialer Glow + FishBackground
+            Box(Modifier.fillMaxSize()) {
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                0f to MaterialTheme.colorScheme.background,
+                                1f to MaterialTheme.colorScheme.surface
+                            )
+                        )
+                )
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f), Color.Transparent),
+                                radius = with(LocalDensity.current) { 680.dp.toPx() }
+                            )
+                        )
+                )
+                com.chris.m3usuite.ui.fx.FishBackground(
+                    modifier = Modifier.align(Alignment.Center).size(560.dp),
+                    alpha = 0.05f,
+                    neutralizeUnderlay = true
+                )
+            }
 
             FishHeaderHost(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(

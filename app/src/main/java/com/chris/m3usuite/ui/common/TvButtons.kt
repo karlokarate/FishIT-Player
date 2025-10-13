@@ -36,7 +36,7 @@ fun TvButton(
     focusColors: FocusColors = FocusKit.FocusDefaults.Colors,
     content: @Composable RowScope.() -> Unit
 ) {
-    Button(
+    androidx.compose.material3.Button(
         onClick = onClick,
         modifier = modifier.focusScaleOnTv(
             shape = shape,

@@ -96,6 +96,17 @@ data class ObxEpisode(
     var airDate: String? = null,
     var playExt: String? = null,
     var imageUrl: String? = null,
+    // Telegram bridging for direct playback via tg://
+    @Index var tgChatId: Long? = null,
+    @Index var tgMessageId: Long? = null,
+    @Index var tgFileId: Int? = null,
+    // Enriched media meta for UI/filtering
+    var mimeType: String? = null,
+    var width: Int? = null,
+    var height: Int? = null,
+    @Index var sizeBytes: Long? = null,
+    var supportsStreaming: Boolean? = null,
+    @Index var language: String? = null,
 )
 
 @Entity
@@ -195,6 +206,8 @@ data class ObxTelegramMessage(
     var date: Long? = null,
     @Index var localPath: String? = null,
     var thumbFileId: Int? = null,
+    var thumbLocalPath: String? = null,
+    var fileName: String? = null,
     // Enriched metadata (best-effort via TDLib):
     var durationSecs: Int? = null,
     var mimeType: String? = null,

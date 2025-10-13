@@ -645,7 +645,8 @@ fun SettingsScreen(
         listState = listState,
         onLogo = onBack,
         snackbarHost = snackHost,
-        bottomBar = {}
+        showBottomBar = false,
+        enableDpadLeftChrome = false
     ) { pads ->
         // Hintergrund + Inhalt
         // (Der Fehler aus deinem Screenshot entstand hier nur, weil HomeChromeScaffold kein @Composable war.)
@@ -1135,23 +1136,22 @@ fun SettingsScreen(
                 val tgSeriesSel by store.tgSelectedSeriesChatsCsv.collectAsStateWithLifecycle(initialValue = "")
                 val tgCacheGb by store.tgCacheLimitGb.collectAsStateWithLifecycle(initialValue = 2)
                 
-                OutlinedTextField(
+                // TV/DPAD-friendly inputs via FishForm; commit on confirm to avoid live DataStore churn
+                FishFormTextField(
+                    label = "Chat-IDs (CSV), optional",
                     value = tgChats,
-                    onValueChange = { scope.launch { store.setTelegramSelectedChatsCsv(it) } },
-                    label = { Text("Chat-IDs (CSV), optional") },
-                    singleLine = true,
                     enabled = tgEnabled,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = tfColors
+                    onValueChange = { newValue -> scope.launch { store.setTelegramSelectedChatsCsv(newValue) } },
+                    helperText = "Kommagetrennte Chat-IDs; leer = Auswahl über Picker",
                 )
-                OutlinedTextField(
-                    value = tgCacheGb.toString(),
-                    onValueChange = { s -> s.toIntOrNull()?.let { g -> scope.launch { store.setTelegramCacheLimitGb(g.coerceIn(1, 20)) } } },
-                    label = { Text("Cache-Limit (GB)") },
-                    singleLine = true,
+                com.chris.m3usuite.ui.layout.FishFormSlider(
+                    label = "Cache-Limit (GB)",
+                    value = tgCacheGb,
+                    range = 1..20,
+                    step = 1,
                     enabled = tgEnabled,
-                    modifier = Modifier.width(220.dp),
-                    colors = tfColors
+                    onValueChange = { g -> scope.launch { store.setTelegramCacheLimitGb(g.coerceIn(1, 20)) } },
+                    helperText = "Begrenzung für lokale Telegram‑Downloads"
                 )
                 
                 if (tgEnabled) {
@@ -1166,6 +1166,7 @@ fun SettingsScreen(
                                 androidx.lifecycle.Lifecycle.Event.ON_START -> {
                                     authRepo.bindService()
                                     authRepo.setInBackground(false)
+                                    authRepo.requestAuthState()
                                 }
                                 androidx.lifecycle.Lifecycle.Event.ON_STOP -> {
                                     authRepo.setInBackground(true)
@@ -1178,6 +1179,7 @@ fun SettingsScreen(
                         if (tgEnabled && lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
                             authRepo.bindService()
                             authRepo.setInBackground(false)
+                            authRepo.requestAuthState()
                         }
                         onDispose {
                             lifecycleOwner.lifecycle.removeObserver(observer)
@@ -1207,8 +1209,8 @@ fun SettingsScreen(
                         }
                     }
                 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Button(
+                    Row(modifier = FocusKit.run { Modifier.focusGroup() }, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    FocusKit.TvButton(
                         enabled = keysValid,
                         onClick = {
                                 if (!authRepo.isAvailable()) {
@@ -1222,11 +1224,10 @@ fun SettingsScreen(
                                     }
                                     if (ok) showTgDialog = true
                                 }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
+                            }
                         ) { Text("Telegram verbinden") }
-                
-                        TextButton(
+
+                        FocusKit.TvTextButton(
                             enabled = keysValid,
                             onClick = {
                                 if (!authRepo.hasValidKeys()) {
@@ -1237,9 +1238,9 @@ fun SettingsScreen(
                                 }
                             }
                         ) { Text("QR‑Login anfordern") }
-                
-                        TextButton(onClick = { showLogout = true }) { Text("Abmelden/Reset") }
-                        TextButton(onClick = { val st = authRepo.authState.value; scope.launch { snackHost.toast("Telegram-Status: $st") } }) { Text("Status (Debug)") }
+
+                        FocusKit.TvTextButton(onClick = { showLogout = true }) { Text("Abmelden/Reset") }
+                        FocusKit.TvTextButton(onClick = { val st = authRepo.authState.value; scope.launch { snackHost.toast("Telegram-Status: $st") } }) { Text("Status (Debug)") }
                     }
                 
                     if (showLogout) {
@@ -1275,43 +1276,50 @@ fun SettingsScreen(
                     Text("Keys: ID=$effApiId  HASH=$maskedHash", style = MaterialTheme.typography.bodySmall, color = Color.White)
                 
                     Spacer(Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = if (overrideApiId > 0) overrideApiId.toString() else "",
-                            onValueChange = { s -> s.toIntOrNull()?.let { v -> scope.launch { store.setTelegramApiId(v) } } },
-                            label = { Text("API ID (optional)") },
-                            singleLine = true,
+                    // Avoid live writes while typing: edit locally and commit on confirm via FishFormTextField dialogs
+                    var apiIdLocal by remember(overrideApiId) { mutableStateOf(if (overrideApiId > 0) overrideApiId.toString() else "") }
+                    var apiHashLocal by remember(overrideApiHash) { mutableStateOf(overrideApiHash) }
+                    FishFormSection(title = "API‑Schlüssel (optional)", description = "Nur notwendig, wenn BuildConfig leer ist oder für Laufzeit‑Override.") {
+                        FishFormTextField(
+                            label = "API ID",
+                            value = apiIdLocal,
                             enabled = tgEnabled,
-                            modifier = Modifier.width(200.dp)
+                            keyboard = com.chris.m3usuite.ui.layout.TvKeyboard.Number,
+                            onValueChange = { newVal ->
+                                apiIdLocal = newVal
+                                newVal.toIntOrNull()?.let { v -> scope.launch { store.setTelegramApiId(v) } }
+                            },
+                            helperText = "Integer; z. B. 123456"
                         )
-                        OutlinedTextField(
-                            value = overrideApiHash,
-                            onValueChange = { s -> scope.launch { store.setTelegramApiHash(s.trim()) } },
-                            label = { Text("API HASH (optional)") },
-                            singleLine = true,
+                        FishFormTextField(
+                            label = "API HASH",
+                            value = apiHashLocal,
                             enabled = tgEnabled,
-                            modifier = Modifier.weight(1f)
+                            keyboard = com.chris.m3usuite.ui.layout.TvKeyboard.Password,
+                            onValueChange = { newVal ->
+                                apiHashLocal = newVal.trim()
+                                scope.launch { store.setTelegramApiHash(apiHashLocal) }
+                            },
+                            helperText = "32‑stelliger Hex‑String"
                         )
                     }
                 
                     if (showTgDialog) TelegramLoginDialog(onDismiss = { showTgDialog = false }, repo = authRepo)
                 
                     Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(modifier = FocusKit.run { Modifier.focusGroup() }, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         var showVodPicker by remember { mutableStateOf(false) }
                         var showSeriesPicker by remember { mutableStateOf(false) }
-                        Button(
+                        FocusKit.TvButton(
                             onClick = { showVodPicker = true },
                             enabled = tgEnabled && authState == com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED,
-                            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
                         ) { Text("Film Sync") }
-                        Button(
+                        FocusKit.TvButton(
                             onClick = { showSeriesPicker = true },
                             enabled = tgEnabled && authState == com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED,
-                            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.Black)
                         ) { Text("Serien Sync") }
                         if (tgVodSel.isNotBlank()) {
-                            TextButton(onClick = {
+                            FocusKit.TvTextButton(onClick = {
                                 com.chris.m3usuite.work.SchedulingGateway.scheduleTelegramSync(
                                     ctx2,
                                     com.chris.m3usuite.work.TelegramSyncWorker.MODE_VOD,
@@ -1320,7 +1328,7 @@ fun SettingsScreen(
                             }) { Text("Filme synchronisieren") }
                         }
                         if (tgSeriesSel.isNotBlank()) {
-                            TextButton(onClick = {
+                            FocusKit.TvTextButton(onClick = {
                                 com.chris.m3usuite.work.SchedulingGateway.scheduleTelegramSync(
                                     ctx2,
                                     com.chris.m3usuite.work.TelegramSyncWorker.MODE_SERIES,
@@ -1368,14 +1376,59 @@ fun SettingsScreen(
                     var seriesProcessed by remember { mutableStateOf<Int?>(null) }
                     LaunchedEffect(tgEnabled) {
                         if (!tgEnabled) return@LaunchedEffect
+                        var lastVodId: java.util.UUID? = null
+                        var vodNotifiedSuccess = false
+                        var vodNotifiedFailed = false
+                        var lastSeriesId: java.util.UUID? = null
+                        var seriesNotifiedSuccess = false
+                        var seriesNotifiedFailed = false
                         while (true) {
                             try {
+                                // VOD work tracking
                                 val vodInfos = withContext(Dispatchers.IO) { wm.getWorkInfosForUniqueWork("tg_sync_vod").get() }
                                 val vi = vodInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.RUNNING }
-                                vodProcessed = vi?.progress?.getInt("processed", -1)?.takeIf { it >= 0 }
+                                val ve = vodInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.ENQUEUED }
+                                val vf = vodInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.FAILED }
+                                val vs = vodInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.SUCCEEDED }
+                                val currentVodId = (vi ?: ve ?: vf ?: vs)?.id
+                                if (currentVodId != null && currentVodId != lastVodId) {
+                                    lastVodId = currentVodId
+                                    vodNotifiedSuccess = false
+                                    vodNotifiedFailed = false
+                                }
+                                vodProcessed = vi?.progress?.getInt("processed", -1)?.takeIf { it >= 0 } ?: run { null }
+                                if (vf != null && !vodNotifiedFailed) {
+                                    vodNotifiedFailed = true
+                                    val msg = vf.outputData.getString("error") ?: "Unbekannter Fehler"
+                                    snackHost.toast("Telegram Sync (Filme) fehlgeschlagen: $msg")
+                                }
+                                if (vs != null && !vodNotifiedSuccess) {
+                                    vodNotifiedSuccess = true
+                                    snackHost.toast("Telegram Sync (Filme) abgeschlossen")
+                                }
+
+                                // SERIES work tracking
                                 val seriesInfos = withContext(Dispatchers.IO) { wm.getWorkInfosForUniqueWork("tg_sync_series").get() }
                                 val si = seriesInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.RUNNING }
-                                seriesProcessed = si?.progress?.getInt("processed", -1)?.takeIf { it >= 0 }
+                                val se = seriesInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.ENQUEUED }
+                                val sf = seriesInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.FAILED }
+                                val ss = seriesInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.SUCCEEDED }
+                                val currentSeriesId = (si ?: se ?: sf ?: ss)?.id
+                                if (currentSeriesId != null && currentSeriesId != lastSeriesId) {
+                                    lastSeriesId = currentSeriesId
+                                    seriesNotifiedSuccess = false
+                                    seriesNotifiedFailed = false
+                                }
+                                seriesProcessed = si?.progress?.getInt("processed", -1)?.takeIf { it >= 0 } ?: run { null }
+                                if (sf != null && !seriesNotifiedFailed) {
+                                    seriesNotifiedFailed = true
+                                    val msg = sf.outputData.getString("error") ?: "Unbekannter Fehler"
+                                    snackHost.toast("Telegram Sync (Serien) fehlgeschlagen: $msg")
+                                }
+                                if (ss != null && !seriesNotifiedSuccess) {
+                                    seriesNotifiedSuccess = true
+                                    snackHost.toast("Telegram Sync (Serien) abgeschlossen")
+                                }
                             } catch (_: Throwable) {}
                             kotlinx.coroutines.delay(600)
                         }
@@ -1524,6 +1577,9 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
     var useCurrentDevice by remember { mutableStateOf(hasTelegramApp) }
     var autoLaunched by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
+        // Ensure TDLib client is initialized when dialog opens and request current state
+        runCatching { repo.start() }
+        runCatching { repo.requestAuthState() }
         repo.qrLinks.collect { link -> qrLink = link }
     }
     val title = when (state) {
@@ -1688,7 +1744,7 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
                 com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> {
                     TextButton(onClick = onDismiss) { Text("Schließen") }
                 }
-                else -> { TextButton(onClick = {}) { Text("OK") } }
+                else -> { TextButton(onClick = { runCatching { repo.start() } }) { Text("Neu initialisieren") } }
             }
         },
         dismissButton = {
@@ -1720,6 +1776,9 @@ private fun TelegramChatPickerDialog(
     var folder by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("main") }
     var search by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     val svc = remember { com.chris.m3usuite.telegram.service.TelegramServiceClient(ctx) }
+    // Dynamic folder list and folder chats for selected folder
+    val folders = remember { mutableStateListOf<Int>() }
+    var folderChats by remember { mutableStateOf<List<Pair<Long, String>>>(emptyList()) }
     DisposableEffect(Unit) {
         svc.bind()
         onDispose { svc.unbind() }
@@ -1741,37 +1800,52 @@ private fun TelegramChatPickerDialog(
             val archive = runCatching { svc.listChats("archive", 200) }.getOrDefault(emptyList())
             chatsMain.clear(); chatsMain.addAll(main)
             chatsArchive.clear(); chatsArchive.addAll(archive)
+            // Load available folders dynamically from service cache
+            val folderIds = runCatching { svc.listFolders() }.getOrDefault(intArrayOf())
+            folders.clear(); folders.addAll(folderIds.toList())
             loading = false
         } else {
             loading = false
         }
     }
 
+    // Load chats for a selected folder when folder changes
+    LaunchedEffect(folder, authState.value) {
+        if (authState.value != TdLibReflection.AuthState.AUTHENTICATED) return@LaunchedEffect
+        if (folder.startsWith("folder:")) {
+            folderChats = runCatching { svc.listChats(folder, 200) }.getOrDefault(emptyList())
+        } else {
+            folderChats = emptyList()
+        }
+    }
+
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp).then(FocusKit.run { Modifier.focusGroup() })) {
             Text("Telegram – Chat-Liste", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             if (authState.value != TdLibReflection.AuthState.AUTHENTICATED) {
                 Text("Bitte zuerst Telegram verbinden.", style = MaterialTheme.typography.bodySmall, color = Color.White)
                 Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { onRequestLogin() },
-                        colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.Accent, contentColor = Color.Black)
-                    ) { Text("Jetzt verbinden") }
-                    TextButton(onClick = onDismiss) { Text("Schließen") }
+                Row(modifier = FocusKit.run { Modifier.focusGroup() }, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FocusKit.TvButton(onClick = { onRequestLogin() }) { Text("Jetzt verbinden") }
+                    FocusKit.TvTextButton(onClick = onDismiss) { Text("Schließen") }
                 }
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AssistChip(label = { Text("Hauptordner") }, onClick = { folder = "main" }, leadingIcon = null, enabled = !loading)
-                    AssistChip(label = { Text("Archiv") }, onClick = { folder = "archive" }, leadingIcon = null, enabled = !loading)
+                Row(modifier = FocusKit.run { Modifier.focusGroup() }, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FocusKit.TvTextButton(onClick = { folder = "main" }, enabled = !loading) { Text("Hauptordner") }
+                    FocusKit.TvTextButton(onClick = { folder = "archive" }, enabled = !loading) { Text("Archiv") }
+                    folders.forEach { fid ->
+                        FocusKit.TvTextButton(onClick = { folder = "folder:${fid}" }, enabled = !loading) { Text("Ordner ${fid}") }
+                    }
                 }
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = search,
-                    onValueChange = { search = it },
-                    label = { Text("Suchen…") },
-                    singleLine = true,
+                var searchLocal by rememberSaveable(search) { mutableStateOf(search) }
+                com.chris.m3usuite.ui.layout.FishFormTextField(
+                    label = "Suchen…",
+                    value = searchLocal,
+                    onValueChange = { v -> searchLocal = v; search = v },
+                    enabled = true,
+                    helperText = "Titel oder Chat‑ID",
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
@@ -1780,13 +1854,17 @@ private fun TelegramChatPickerDialog(
                     Spacer(Modifier.height(8.dp))
                     Text("Lade Chats…", style = MaterialTheme.typography.bodySmall)
                 } else {
-                    val itemsBase = if (folder == "archive") chatsArchive else chatsMain
+                    val itemsBase = when (folder) {
+                        "archive" -> chatsArchive
+                        "main" -> chatsMain
+                        else -> if (folder.startsWith("folder:")) folderChats else chatsMain
+                    }
                     val q = search.trim().lowercase()
                     val items = if (q.isBlank()) itemsBase else itemsBase.filter { it.second.lowercase().contains(q) || it.first.toString().contains(q) }
                     val chatListState = com.chris.m3usuite.ui.state.rememberRouteListState("settings:chatPicker:${folder}")
                     LazyColumn(Modifier.fillMaxWidth().heightIn(max = 520.dp), state = chatListState, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         items(items, key = { it.first }) { (id, title) ->
-                            ElevatedCard(onClick = { onSelect(id) }, modifier = Modifier.fillMaxWidth()) {
+                            ElevatedCard(modifier = FocusKit.run { Modifier.tvClickable(onClick = { onSelect(id) }) }.fillMaxWidth()) {
                                 Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                     Text(title)
                                     Text(id.toString(), style = MaterialTheme.typography.labelSmall, color = Color.White)
@@ -1797,8 +1875,8 @@ private fun TelegramChatPickerDialog(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onDismiss) { Text("Schließen") }
+            Row(Modifier.fillMaxWidth().then(FocusKit.run { Modifier.focusGroup() }), horizontalArrangement = Arrangement.End) {
+                FocusKit.TvTextButton(onClick = onDismiss) { Text("Schließen") }
             }
         }
     }

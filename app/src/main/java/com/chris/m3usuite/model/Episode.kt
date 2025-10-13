@@ -16,4 +16,11 @@ data class Episode(
     val tgChatId: Long? = null,
     val tgMessageId: Long? = null,
     val tgFileId: Int? = null,
+    // Optional enriched meta (Telegram-derived)
+    val mimeType: String? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    val sizeBytes: Long? = null,
+    val supportsStreaming: Boolean? = null,
+    val language: String? = null,
 )

@@ -13,6 +13,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 /**
  * Dedicated TDLib service running in its own process. Minimal IPC via Messenger.
@@ -33,11 +34,14 @@ class TelegramTdlibService : Service() {
         const val CMD_LIST_CHATS = 11
         const val CMD_RESOLVE_CHAT_TITLES = 12
         const val CMD_PULL_CHAT_HISTORY = 13
+        const val CMD_LIST_FOLDERS = 14
 
         const val REPLY_AUTH_STATE = 101
         const val REPLY_ERROR = 199
         const val REPLY_CHAT_LIST = 201
         const val REPLY_CHAT_TITLES = 202
+        const val REPLY_FOLDERS = 203
+        const val REPLY_PULL_DONE = 204
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -47,6 +51,18 @@ class TelegramTdlibService : Service() {
     private var clientHandle: TdLibReflection.ClientHandle? = null
     private var lastApiId: Int = 0
     private var lastApiHash: String = ""
+    private val authLock = Any()
+    private data class PendingPhone(
+        val phone: String,
+        val isCurrent: Boolean,
+        val allowFlash: Boolean,
+        val allowMissed: Boolean,
+        val allowSmsRetriever: Boolean
+    )
+    @Volatile private var pendingPhone: PendingPhone? = null
+    @Volatile private var pendingCode: String? = null
+    @Volatile private var pendingPassword: String? = null
+    @Volatile private var didResendParamsAfterInitError: Boolean = false
 
     private data class ChatSummary(
         val id: Long,
@@ -82,10 +98,17 @@ class TelegramTdlibService : Service() {
                     val allowFlash = data.getBoolean("allowFlash", false)
                     val allowMissed = data.getBoolean("allowMissed", false)
                     val allowSmsRetriever = data.getBoolean("allowSmsRetriever", false)
-                    sendPhone(phone, isCurrent, allowFlash, allowMissed, allowSmsRetriever)
+                    queuePhone(phone, isCurrent, allowFlash, allowMissed, allowSmsRetriever)
+                    maybeDispatchAuthAction(authFlow.value)
                 }
-                CMD_SEND_CODE -> data.getString("code")?.let { sendCode(it) }
-                CMD_SEND_PASSWORD -> data.getString("password")?.let { sendPassword(it) }
+                CMD_SEND_CODE -> data.getString("code")?.let {
+                    queueCode(it)
+                    maybeDispatchAuthAction(authFlow.value)
+                }
+                CMD_SEND_PASSWORD -> data.getString("password")?.let {
+                    queuePassword(it)
+                    maybeDispatchAuthAction(authFlow.value)
+                }
                 CMD_REQUEST_QR -> requestQr()
                 CMD_GET_AUTH -> sendAuthState(msg.replyTo)
                 CMD_LOGOUT -> logout()
@@ -107,7 +130,25 @@ class TelegramTdlibService : Service() {
                 CMD_PULL_CHAT_HISTORY -> {
                     val chatId = data.getLong("chatId")
                     val limit = data.getInt("limit", 200)
-                    scope.launch(Dispatchers.IO) { backfillChatHistory(chatId, limit) }
+                    val fetchAll = data.getBoolean("fetchAll", false)
+                    val target = msg.replyTo
+                    val reqId = data.getInt("reqId", -1)
+                    scope.launch(Dispatchers.IO) {
+                        val count = backfillChatHistory(chatId, limit, fetchAll)
+                        // Acknowledge completion to caller with processed count
+                        if (target != null) {
+                            val m = Message.obtain(null, REPLY_PULL_DONE)
+                            m.data = Bundle().apply {
+                                putInt("reqId", reqId)
+                                putLong("chatId", chatId)
+                                putInt("count", count)
+                            }
+                            runCatching { target.send(m) }
+                        }
+                    }
+                }
+                CMD_LIST_FOLDERS -> {
+                    listFolders(msg.replyTo)
                 }
                 else -> super.handleMessage(msg)
             }
@@ -152,6 +193,8 @@ class TelegramTdlibService : Service() {
             sendErrorToAll("TDLib not available")
             return
         }
+        // Reset one-shot guards and clear any stale pending inputs on fresh start
+        didResendParamsAfterInitError = false
         var id = apiId
         var hash = apiHash
         if (id <= 0 || hash.isBlank()) {
@@ -179,8 +222,21 @@ class TelegramTdlibService : Service() {
                             if (code == 406 && (message?.contains("UPDATE_APP_TO_LOGIN", ignoreCase = true) == true)) {
                                 clientHandle?.let { ch ->
                                     Log.i("TdSvc", "Trigger QR login due to UPDATE_APP_TO_LOGIN")
+                                    // Clear pending phone/code; QR flow takes precedence
+                                    synchronized(authLock) { pendingPhone = null; pendingCode = null }
                                     TdLibReflection.sendRequestQrCodeAuthentication(ch)
                                     runCatching { TdLibReflection.sendGetAuthorizationState(ch) }
+                                }
+                            } else if (code == 400 && (message?.contains("Initialization parameters are needed", ignoreCase = true) == true)) {
+                                // TDLib expects parameters again. Resend once and wait for proper state.
+                                if (!didResendParamsAfterInitError) {
+                                    didResendParamsAfterInitError = true
+                                    val effectiveId = lastApiId.takeIf { it > 0 } ?: BuildConfig.TG_API_ID
+                                    val effectiveHash = lastApiHash.takeIf { it.isNotBlank() } ?: BuildConfig.TG_API_HASH
+                                    val params = TdLibReflection.buildTdlibParameters(applicationContext, effectiveId, effectiveHash)
+                                    if (params != null) clientHandle?.let { TdLibReflection.sendSetTdlibParameters(it, params) }
+                                    val key = com.chris.m3usuite.telegram.TelegramKeyStore.getOrCreateDatabaseKey(applicationContext)
+                                    clientHandle?.let { TdLibReflection.sendCheckDatabaseEncryptionKey(it, key) }
                                 }
                             }
                         }
@@ -201,6 +257,8 @@ class TelegramTdlibService : Service() {
                                 }
                                 else -> Unit
                             }
+                            // Try to dispatch any queued auth action for this state
+                            maybeDispatchAuthAction(mapped)
                         }
                         // UpdateNewMessage: carries a full message object
                         name.endsWith("TdApi\$UpdateNewMessage") -> {
@@ -222,11 +280,61 @@ class TelegramTdlibService : Service() {
                             if (!info.localPath.isNullOrBlank())
                                 scope.launch(Dispatchers.IO) {
                                     kotlin.runCatching {
-                                        val box = com.chris.m3usuite.data.obx.ObxStore.get(applicationContext).boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
-                                        val row = box.query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.fileId.equal(info.fileId.toLong())).build().findFirst()
-                                        if (row != null) {
-                                            row.localPath = info.localPath
-                                            box.put(row)
+                                        val store = com.chris.m3usuite.data.obx.ObxStore.get(applicationContext)
+                                        val tBox = store.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+                                        // Update main media local path
+                                        val rowMain = tBox.query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.fileId.equal(info.fileId.toLong())).build().findFirst()
+                                        if (rowMain != null) { rowMain.localPath = info.localPath; tBox.put(rowMain) }
+                                        // Update thumbnail local path if this UpdateFile refers to the thumb and cascade to episodes' poster
+                                        val rowThumb = tBox.query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.thumbFileId.equal(info.fileId)).build().findFirst()
+                                        if (rowThumb != null) {
+                                            rowThumb.thumbLocalPath = info.localPath; tBox.put(rowThumb)
+                                            kotlin.runCatching {
+                                                val epBox = store.boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
+                                                val eps = epBox.query(
+                                                    com.chris.m3usuite.data.obx.ObxEpisode_.tgChatId.equal(rowThumb.chatId)
+                                                        .and(com.chris.m3usuite.data.obx.ObxEpisode_.tgMessageId.equal(rowThumb.messageId))
+                                                ).build().find()
+                                                if (eps.isNotEmpty()) {
+                                                    var changed = false
+                                                    eps.forEach { if (it.imageUrl.isNullOrBlank()) { it.imageUrl = info.localPath; changed = true } }
+                                                    if (changed) epBox.put(eps)
+                                                }
+                                            }
+                                            // Also enrich series poster if missing: derive seriesId from caption
+                                            kotlin.runCatching {
+                                                val cap = rowThumb.caption
+                                                if (!cap.isNullOrBlank()) {
+                                                    val parsed = com.chris.m3usuite.telegram.TelegramHeuristics.parse(cap)
+                                                    val seriesTitle = parsed.seriesTitle
+                                                    if (!seriesTitle.isNullOrBlank()) {
+                                                        val sid = seriesIdFor(normalizeSeriesKey(seriesTitle))
+                                                        val sBox = store.boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
+                                                        val sRow = sBox.query(com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(sid.toLong())).build().findFirst()
+                                                        if (sRow != null) {
+                                                            val current = sRow.imagesJson
+                                                            if (current.isNullOrBlank()) {
+                                                                val arr = org.json.JSONArray().apply { put(info.localPath) }
+                                                                sRow.imagesJson = arr.toString(); sBox.put(sRow)
+                                                            } else {
+                                                                val arr = org.json.JSONArray(current)
+                                                                var exists = false
+                                                                for (i in 0 until arr.length()) if (arr.optString(i) == info.localPath) { exists = true; break }
+                                                                if (!exists) {
+                                                                    val out = org.json.JSONArray()
+                                                                    out.put(info.localPath)
+                                                                    var added = 1
+                                                                    for (i in 0 until arr.length()) {
+                                                                        val v = arr.optString(i)
+                                                                        if (v != info.localPath) { out.put(v); added++; if (added >= 3) break }
+                                                                    }
+                                                                    sRow.imagesJson = out.toString(); sBox.put(sRow)
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -298,6 +406,8 @@ class TelegramTdlibService : Service() {
                     broadcastAuthState(st)
                     // Foreground during interactive auth, stop when authenticated
                     updateForeground(st, downloadFlow.value)
+                    // Attempt to send any queued auth step when TDLib asks for it
+                    maybeDispatchAuthAction(st)
                 }
             }
             scope.launch {
@@ -330,10 +440,10 @@ class TelegramTdlibService : Service() {
         } catch (_: Throwable) {}
     }
 
-    private fun indexMessageContent(chatId: Long, messageId: Long, content: Any?, messageDate: Long? = null) {
+    private fun indexMessageContent(chatId: Long, messageId: Long, content: Any?, messageDate: Long? = null, asyncWrite: Boolean = true) {
         try {
             val safeContent = content ?: return
-            val fileObj = TdLibReflection.findFirstFile(safeContent) ?: return
+            val fileObj = TdLibReflection.findPrimaryFile(safeContent) ?: return
             val info = TdLibReflection.extractFileInfo(fileObj) ?: return
             val unique = TdLibReflection.extractFileUniqueId(fileObj)
             val supports = TdLibReflection.extractSupportsStreaming(safeContent)
@@ -347,8 +457,13 @@ class TelegramTdlibService : Service() {
             val dims = TdLibReflection.extractVideoDimensions(safeContent)
             val parsed = com.chris.m3usuite.telegram.TelegramHeuristics.parse(caption)
             val thumbFileId = TdLibReflection.extractThumbFileId(safeContent)
+            val fileName = TdLibReflection.extractFileName(safeContent)
 
-            scope.launch(Dispatchers.IO) {
+            val writer: suspend () -> Unit = {
+                android.util.Log.i(
+                    "TdSvc",
+                    "prepare upsert tg_message chatId=${chatId} messageId=${messageId} fileId=${info.fileId} mime=${mime ?: ""}"
+                )
                 kotlin.runCatching {
                     val store = com.chris.m3usuite.data.obx.ObxStore.get(applicationContext)
                     val box = store.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
@@ -383,10 +498,91 @@ class TelegramTdlibService : Service() {
                     row.width = dims?.first
                     row.height = dims?.second
                     row.language = parsed.language
+                    row.fileName = fileName
                     box.put(row)
+                    android.util.Log.i("TdSvc", "OBX upsert tg_message chatId=$chatId messageId=$messageId fileId=${info.fileId} thumbFileId=$thumbFileId local=${info.localPath != null}")
+                    // Kick off thumbnail download asynchronously to populate poster
+                    requestThumbnailDownloadIfNeeded(thumbFileId)
+                }.onFailure { e ->
+                    android.util.Log.w("TdSvc", "OBX upsert failed chatId=${chatId} messageId=${messageId}: ${e.message}")
                 }
             }
+            if (asyncWrite) scope.launch(Dispatchers.IO) { writer() } else kotlinx.coroutines.runBlocking(Dispatchers.IO) { writer() }
         } catch (_: Throwable) {}
+    }
+
+    private fun requestThumbnailDownloadIfNeeded(thumbFileId: Int?) {
+        if (thumbFileId == null || thumbFileId <= 0) return
+        val ch = clientHandle ?: return
+        runCatching {
+            TdLibReflection.buildDownloadFile(thumbFileId, /* priority */ 8, /* offset */ 0, /* limit */ 0, /* synchronous */ false)
+                ?.let { fn -> TdLibReflection.sendForResult(ch, fn, 100) }
+        }
+    }
+
+    private fun normalizeSeriesKey(raw: String): String {
+        val s = raw.trim().lowercase()
+        val nfd = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+        val noMarks = nfd.replace(Regex("\\p{M}+"), "")
+        val replaced = noMarks.replace(Regex("[^a-z0-9]+"), " ")
+        return replaced.trim().replace(Regex("\\s+"), " ")
+    }
+
+    private fun seriesIdFor(normTitle: String): Int {
+        val sha = java.security.MessageDigest.getInstance("SHA-1").digest(normTitle.toByteArray())
+        var h = 0
+        for (i in 0 until 4) { h = (h shl 8) or (sha[i].toInt() and 0xFF) }
+        if (h < 0) h = -h
+        val base = 1_500_000_000
+        val span = 400_000_000
+        return base + (h % span)
+    }
+
+    // --- Auth queueing/conformance helpers ---
+    private fun queuePhone(phone: String, isCurrentDevice: Boolean, allowFlash: Boolean, allowMissed: Boolean, allowSmsRetriever: Boolean) {
+        synchronized(authLock) {
+            pendingPhone = PendingPhone(phone, isCurrentDevice, allowFlash, allowMissed, allowSmsRetriever)
+        }
+        Log.i("TdSvc", "Queued phone number for TDLib (will send when WAIT_FOR_NUMBER)")
+    }
+
+    private fun queueCode(code: String) {
+        synchronized(authLock) { pendingCode = code }
+        Log.i("TdSvc", "Queued auth code (will send when WAIT_FOR_CODE)")
+    }
+
+    private fun queuePassword(password: String) {
+        synchronized(authLock) { pendingPassword = password }
+        Log.i("TdSvc", "Queued password (will send when WAIT_FOR_PASSWORD)")
+    }
+
+    private fun maybeDispatchAuthAction(state: TdLibReflection.AuthState) {
+        val ch = clientHandle ?: return
+        when (state) {
+            TdLibReflection.AuthState.WAIT_FOR_NUMBER -> {
+                val ph = synchronized(authLock) { val v = pendingPhone; pendingPhone = null; v }
+                if (ph != null) {
+                    sendPhone(ph.phone, ph.isCurrent, ph.allowFlash, ph.allowMissed, ph.allowSmsRetriever)
+                    // After sending phone, ask for next state
+                    runCatching { TdLibReflection.sendGetAuthorizationState(ch) }
+                }
+            }
+            TdLibReflection.AuthState.WAIT_FOR_CODE -> {
+                val code = synchronized(authLock) { val v = pendingCode; pendingCode = null; v }
+                if (!code.isNullOrBlank()) {
+                    sendCode(code)
+                    runCatching { TdLibReflection.sendGetAuthorizationState(ch) }
+                }
+            }
+            TdLibReflection.AuthState.WAIT_FOR_PASSWORD -> {
+                val pw = synchronized(authLock) { val v = pendingPassword; pendingPassword = null; v }
+                if (!pw.isNullOrBlank()) {
+                    sendPassword(pw)
+                    runCatching { TdLibReflection.sendGetAuthorizationState(ch) }
+                }
+            }
+            else -> Unit
+        }
     }
 
     private fun sendPhone(phone: String, isCurrentDevice: Boolean, allowFlash: Boolean, allowMissed: Boolean, allowSmsRetriever: Boolean) {
@@ -545,27 +741,84 @@ class TelegramTdlibService : Service() {
         runCatching { target.send(message) }
     }
 
-    private fun backfillChatHistory(chatId: Long, limit: Int) {
-        if (chatId == 0L || limit <= 0) return
-        if (!ensureStartedOrError()) return
-        val ch = clientHandle ?: return
-        val function = TdLibReflection.buildGetChatHistory(chatId, 0L, 0, limit, false) ?: return
-        val result = TdLibReflection.sendForResult(ch, function, 7000) ?: return
-        val messages = TdLibReflection.extractMessagesArray(result)
-        messages.forEach { messageObj ->
-            val messageId = TdLibReflection.extractMessageId(messageObj) ?: return@forEach
-            val content = runCatching {
-                messageObj.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(messageObj)
-            }.getOrNull()
-            val messageDate = runCatching { TdLibReflection.extractMessageDate(messageObj) }.getOrNull()
-            indexMessageContent(chatId, messageId, content, messageDate)
+    private fun backfillChatHistory(chatId: Long, limit: Int, fetchAll: Boolean = false): Int {
+        android.util.Log.i("TdSvc", "backfill start chatId=${chatId} limit=${limit} fetchAll=${fetchAll}")
+        if (chatId == 0L || limit <= 0) return 0
+        if (!ensureStartedOrError()) return 0
+        val ch = clientHandle ?: return 0
+
+        var fromId = 0L
+        var page = 0
+        var keepGoing = true
+        var lastFirstOnPage: Long = -1L
+        val perPage = limit.coerceAtLeast(1)
+
+        var processed = 0
+        while (keepGoing) {
+            // TDLib paging semantics:
+            // - First page: from_message_id=0, offset=0 → newest messages
+            // - Older pages: from_message_id=oldestId, offset=-1 → strictly older than oldestId
+            val effectiveFromId = fromId
+            val offset = if (page == 0) 0 else -1
+            val fn = TdLibReflection.buildGetChatHistory(chatId, effectiveFromId, offset, perPage, false) ?: break
+            val result = TdLibReflection.sendForResult(ch, fn, 10_000) ?: break
+            com.chris.m3usuite.telegram.TgRawLogger.log(
+                prefix = "GetChatHistory[page=${page}] chatId=$chatId fromId=$effectiveFromId offset=$offset limit=$perPage",
+                obj = result
+            )
+            val messages = TdLibReflection.extractMessagesArray(result)
+            if (messages.isEmpty()) break
+            var oldestId: Long = Long.MAX_VALUE
+            var firstIdThisPage: Long = -1L
+            messages.forEach { messageObj ->
+                com.chris.m3usuite.telegram.TgRawLogger.log(
+                    prefix = "Message chatId=$chatId id=${TdLibReflection.extractMessageId(messageObj) ?: 0L}",
+                    obj = messageObj
+                )
+                val messageId = TdLibReflection.extractMessageId(messageObj) ?: return@forEach
+                if (firstIdThisPage < 0) firstIdThisPage = messageId
+                if (messageId < oldestId) oldestId = messageId
+                val content = runCatching {
+                    messageObj.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(messageObj)
+                }.getOrNull()
+                val messageDate = runCatching { TdLibReflection.extractMessageDate(messageObj) }.getOrNull()
+                indexMessageContent(chatId, messageId, content, messageDate, asyncWrite = false)
+                processed++
+            }
+            page++
+            // Prepare next page (older messages)
+            val nextFrom = if (oldestId == Long.MAX_VALUE) 0L else oldestId
+            // Duplicate guard: if page returned the same leading id as previous page, stop
+            if (firstIdThisPage > 0 && firstIdThisPage == lastFirstOnPage) break
+            lastFirstOnPage = firstIdThisPage
+            if (nextFrom <= 0L || nextFrom == fromId) break
+            fromId = nextFrom
+
+            // Continue only if fetchAll requested; otherwise single page
+            keepGoing = fetchAll
         }
+        android.util.Log.i("TdSvc", "backfill done chatId=${chatId} pages=${page} processed=${processed}")
+        return processed
     }
 
     private fun ensureStartedOrError(): Boolean {
         if (clientHandle != null) return true
-        val apiId = lastApiId.takeIf { it > 0 } ?: BuildConfig.TG_API_ID
-        val apiHash = lastApiHash.takeIf { it.isNotBlank() } ?: BuildConfig.TG_API_HASH
+        // Try last provided keys, then BuildConfig, finally SettingsStore (blocking read)
+        var apiId = lastApiId.takeIf { it > 0 } ?: BuildConfig.TG_API_ID
+        var apiHash = lastApiHash.takeIf { it.isNotBlank() } ?: BuildConfig.TG_API_HASH
+        if (apiId <= 0 || apiHash.isBlank()) {
+            try {
+                // Minimal blocking read; called rarely and only when TDLib is first needed.
+                val store = com.chris.m3usuite.prefs.SettingsStore(applicationContext)
+                val enabled = kotlinx.coroutines.runBlocking { store.tgEnabled.first() }
+                if (enabled) {
+                    val idFromStore = kotlinx.coroutines.runBlocking { store.tgApiId.first() }
+                    val hashFromStore = kotlinx.coroutines.runBlocking { store.tgApiHash.first() }
+                    if (idFromStore > 0) apiId = idFromStore
+                    if (hashFromStore.isNotBlank()) apiHash = hashFromStore
+                }
+            } catch (_: Throwable) { }
+        }
         return if (apiId > 0 && apiHash.isNotBlank()) {
             startTdlib(apiId, apiHash)
             clientHandle != null
@@ -669,6 +922,26 @@ class TelegramTdlibService : Service() {
             }
         }
         try { target.send(m) } catch (e: Exception) { Log.w("TdSvc", "sendAuthState failed", e) }
+    }
+
+    private fun listFolders(target: Messenger?) {
+        target ?: return
+        val ids: IntArray = synchronized(chatCache) {
+            chatCache.values
+                .flatMap { it.orders.keys }
+                .mapNotNull {
+                    when (it) {
+                        is TdLibReflection.ChatListTag.Folder -> it.id
+                        else -> null
+                    }
+                }
+                .distinct()
+                .sorted()
+                .toIntArray()
+        }
+        val m = Message.obtain(null, REPLY_FOLDERS)
+        m.data = Bundle().apply { putIntArray("folders", ids) }
+        try { target.send(m) } catch (_: Exception) { }
     }
 
     private fun broadcastAuthState(state: TdLibReflection.AuthState) {

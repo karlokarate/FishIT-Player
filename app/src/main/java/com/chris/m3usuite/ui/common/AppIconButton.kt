@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +26,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -32,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.chris.m3usuite.R
 import com.chris.m3usuite.ui.debug.safePainter
 import com.chris.m3usuite.ui.focus.FocusKit
+import androidx.compose.ui.focus.onFocusEvent
 
 @Composable
 fun AppIconButton(
@@ -48,10 +52,10 @@ fun AppIconButton(
     val context = LocalContext.current
     val isTv = remember(context) { FocusKit.isTvDevice(context) }
     val interactionSource = remember { MutableInteractionSource() }
-    val isFocused by interactionSource.collectIsFocusedAsState()
+    var hasFocus by remember { mutableStateOf(false) }
     val focusShape = remember { RoundedCornerShape(14.dp) }
     val overlayAlpha by animateFloatAsState(
-        targetValue = if (isTv && isFocused) 1f else 0f,
+        targetValue = if (isTv && hasFocus) 1f else 0f,
         label = "tv-icon-focus-alpha"
     )
 
@@ -70,6 +74,8 @@ fun AppIconButton(
         onClick = onClick,
         modifier = modifier
             .semantics { this.contentDescription = contentDescription }
+            .focusable()
+            .onFocusEvent { st -> hasFocus = st.isFocused || st.hasFocus }
             .onKeyEvent { ev ->
                 if (ev.type == KeyEventType.KeyUp && (ev.key == Key.Enter || ev.key == Key.NumPadEnter || ev.key == Key.DirectionCenter)) {
                     com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER", mapOf("button" to icon.name))
