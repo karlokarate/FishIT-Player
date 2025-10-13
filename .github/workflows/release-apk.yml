@@ -24,12 +24,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
-    # An Gradle durchgereichte Properties (werden zusätzlich unten per -P gesetzt)
+    # Gradle-Properties via ENV (ORG_GRADLE_PROJECT_* == -Pkey=value)
     env:
-      # Beide ABIs als Splits bauen
+      # Zwei ABIs als Splits bauen
       ORG_GRADLE_PROJECT_abiFilters: arm64-v8a,armeabi-v7a
-      # In CI KEINE Universal-APK
+      # Im CI keine Universal-APK
       ORG_GRADLE_PROJECT_universalApk: false
+      # WICHTIG: Splits verwenden (kein Konflikt mit ndk.abiFilters)
+      ORG_GRADLE_PROJECT_useSplits: true
 
     steps:
       - name: Checkout (mit LFS & Submodules)
@@ -72,6 +74,30 @@ jobs:
       - name: Make gradlew ausführbar
         run: chmod +x ./gradlew
 
+      # === Secrets → Env (Signing + TG + HEADER) ===
+      - name: Decode & Setup Signing + App Secrets
+        shell: bash
+        run: |
+          # --- Keystore decodieren und Pfade/Passwörter als MYAPP_* bereitstellen ---
+          if [[ -n "${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}" ]]; then
+            echo "${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+            echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore" >> $GITHUB_ENV
+            echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}" >> $GITHUB_ENV
+            echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}" >> $GITHUB_ENV
+          fi
+
+          # --- Telegram / Header (Gradle liest ENV → buildConfigFields) ---
+          if [[ -n "${{ secrets.TG_API_ID }}" ]]; then
+            echo "TG_API_ID=${{ secrets.TG_API_ID }}" >> $GITHUB_ENV
+          fi
+          if [[ -n "${{ secrets.TG_API_HASH }}" ]]; then
+            echo "TG_API_HASH=${{ secrets.TG_API_HASH }}" >> $GITHUB_ENV
+          fi
+          if [[ -n "${{ secrets.HEADER }}" ]]; then
+            echo "HEADER=${{ secrets.HEADER }}" >> $GITHUB_ENV
+          fi
+
       # ---- TDLib: arm64 + v7a bauen; Script legt .so in libtd/src/main/jniLibs/... ab
       - name: TDLib (arm64 + v7a) bauen
         run: |
@@ -106,6 +132,7 @@ jobs:
           ./gradlew ${{ steps.task.outputs.task }} \
             -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}" \
             -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}" \
+            -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}" \
             "${EXTRA_PROPS[@]}" \
             -x test --no-daemon --stacktrace
 
@@ -151,3 +178,4 @@ jobs:
           echo "versionName : ${{ github.event.inputs.version_name || '(unverändert)' }}"
           echo "ABI-Splits  : ${{ env.ORG_GRADLE_PROJECT_abiFilters }}"
           echo "Universal   : ${{ env.ORG_GRADLE_PROJECT_universalApk }}"
+          echo "useSplits   : ${{ env.ORG_GRADLE_PROJECT_useSplits }}"
