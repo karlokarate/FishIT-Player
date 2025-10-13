@@ -8,7 +8,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        minSdk = 21
+        minSdk = 23
         consumerProguardFiles("consumer-rules.pro")
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
