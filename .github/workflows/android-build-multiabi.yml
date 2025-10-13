@@ -78,48 +78,49 @@ jobs:
         shell: bash
         run: |
           python3 - <<'PY'
-import os, re, base64, binascii, pathlib
-raw = os.environ.get("KS_B64","")
+          import os, re, base64, binascii, pathlib
+          raw = os.environ.get("KS_B64","")
 
-def normalize(s:str)->str:
-    s = s.strip()
-    if len(s)>=2 and s[0]==s[-1] and s[0] in "'\"`":
-        s = s[1:-1]
-    if "base64," in s:
-        s = s.split("base64,",1)[1]
-    return "".join(s.split())
+          def normalize(s:str)->str:
+              s = s.strip()
+              if len(s)>=2 and s[0]==s[-1] and s[0] in "'\"`":
+                  s = s[1:-1]
+              if "base64," in s:
+                  s = s.split("base64,",1)[1]
+              return "".join(s.split())
 
-def try_decode(c:str):
-    for fn in (base64.b64decode, base64.urlsafe_b64decode):
-        try:
-            pad = '=' * (-len(c) % 4)
-            return fn(c + pad)
-        except binascii.Error:
-            pass
-    return None
+          def try_decode(c:str):
+              for fn in (base64.b64decode, base64.urlsafe_b64decode):
+                  try:
+                      pad = '=' * (-len(c) % 4)
+                      return fn(c + pad)
+                  except binascii.Error:
+                      pass
+              return None
 
-decoded = None
-cand = normalize(raw)
-candidates = [cand] if cand else []
+          decoded = None
+          cand = normalize(raw)
+          candidates = [cand] if cand else []
 
-if not candidates or not try_decode(candidates[0]):
-    # längsten b64-ähnlichen Substring nehmen
-    parts = re.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw or '')
-    if parts:
-        candidates.append(normalize(max(parts, key=len)))
+          if not candidates or not try_decode(candidates[0]):
+              # längsten b64-ähnlichen Substring nehmen
+              parts = re.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw or '')
+              if parts:
+                  candidates.append(normalize(max(parts, key=len)))
 
-for c in candidates:
-    d = try_decode(c)
-    if d:
-        decoded = d
-        break
+          for c in candidates:
+              d = try_decode(c)
+              if d:
+                  decoded = d
+                  break
 
-if decoded:
-    pathlib.Path("release.keystore").write_bytes(decoded)
-    print("DECODE_OK")
-else:
-    print("DECODE_FAIL")
-PY
+          if decoded:
+              pathlib.Path("release.keystore").write_bytes(decoded)
+              print("DECODE_OK")
+          else:
+              print("DECODE_FAIL")
+          PY
+
           if [[ -f "release.keystore" ]]; then
             echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore" >> $GITHUB_ENV
             echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
@@ -204,7 +205,7 @@ PY
       - name: Upload APK (v7a)
         uses: actions/upload-artifact@v4
         with:
-          name: fishitplayer-${{ github.event.inputs.build_type || 'debug' }}-v7a
+          name: fishitplayer-${{ github.event_inputs.build_type || 'debug' }}-v7a
           path: |
             ${{ runner.temp }}/apk_v7a.txt
             app/build/outputs/apk/**/**/*armeabi-v7a*.apk
