@@ -1,4 +1,4 @@
-name: Android – Build APK
+name: Android – FishITPlayer (arm64 + v7a)
 
 on:
   workflow_dispatch:
@@ -7,8 +7,12 @@ on:
         description: "Build-Variante (debug | release)"
         required: false
         default: "debug"
-      issue:
-        description: "Issue-Nummer (optional, nur Info)"
+      version_code:
+        description: "Optional: versionCode (überschreibt Gradle)"
+        required: false
+        default: ""
+      version_name:
+        description: "Optional: versionName (überschreibt Gradle)"
         required: false
         default: ""
 
@@ -16,57 +20,134 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-multiabi:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
+
+    # An Gradle durchgereichte Properties (werden zusätzlich unten per -P gesetzt)
+    env:
+      # Beide ABIs als Splits bauen
+      ORG_GRADLE_PROJECT_abiFilters: arm64-v8a,armeabi-v7a
+      # In CI KEINE Universal-APK
+      ORG_GRADLE_PROJECT_universalApk: false
 
     steps:
-      - name: Checkout
+      - name: Checkout (mit LFS & Submodules)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          lfs: true
+          submodules: recursive
 
-      - name: Set up JDK
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
-      - name: Compute Gradle task
+      - name: Set up Android SDK/NDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 35.0.0
+          ndk-version: 26.3.11579264
+          cmake-version: 3.22.1
+
+      - name: Export ANDROID_NDK_HOME/ROOT
+        run: |
+          NDK_DIR="$ANDROID_SDK_ROOT/ndk/26.3.11579264"
+          echo "ANDROID_NDK_HOME=$NDK_DIR"  >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$NDK_DIR"  >> $GITHUB_ENV
+
+      - name: System-Deps für TDLib
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+            build-essential ninja-build gperf ccache pkg-config \
+            zlib1g-dev libssl-dev python3 git ca-certificates ripgrep
+
+      - name: Gradle Cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Make gradlew ausführbar
+        run: chmod +x ./gradlew
+
+      # ---- TDLib: arm64 + v7a bauen; Script legt .so in libtd/src/main/jniLibs/... ab
+      - name: TDLib (arm64 + v7a) bauen
+        run: |
+          chmod +x scripts/tdlib-build-arm64.sh
+          # Ohne Flags => baut beide ABIs (arm64 & v7a)
+          bash scripts/tdlib-build-arm64.sh
+
+      - name: Sanity-Check TDLib Artefakte
+        run: |
+          ls -lah libtd/src/main/jniLibs/arm64-v8a/ || (echo "arm64-v8a fehlt" && exit 1)
+          ls -lah libtd/src/main/jniLibs/armeabi-v7a/ || (echo "armeabi-v7a fehlt" && exit 1)
+
+      - name: Gradle Task bestimmen
         id: task
         shell: bash
         run: |
           case "${{ github.event.inputs.build_type }}" in
             release) echo "task=:app:assembleRelease" ;;
-            *) echo "task=:app:assembleDebug" ;;
-          esac | tee -a "$GITHUB_OUTPUT"
+            *)       echo "task=:app:assembleDebug" ;;
+          esac >> "$GITHUB_OUTPUT"
 
-      - name: Build APK
-        run: ./gradlew ${{ steps.task.outputs.task }} -x test --no-daemon --stacktrace
+      - name: Build (Split-APKs je ABI)
+        run: |
+          EXTRA_PROPS=()
+          if [[ -n "${{ github.event.inputs.version_code }}" ]]; then
+            EXTRA_PROPS+=("-PversionCode=${{ github.event.inputs.version_code }}")
+          fi
+          if [[ -n "${{ github.event.inputs.version_name }}" ]]; then
+            EXTRA_PROPS+=("-PversionName=${{ github.event.inputs.version_name }}")
+          fi
 
-      - name: Locate APKs
+          ./gradlew ${{ steps.task.outputs.task }} \
+            -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}" \
+            -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}" \
+            "${EXTRA_PROPS[@]}" \
+            -x test --no-daemon --stacktrace
+
+      - name: APKs finden (arm64 & v7a)
         id: apks
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t FILES < <(find app -type f -path "*/build/outputs/apk/*/*.apk" -print | sort)
-          if [[ ${#FILES[@]} -eq 0 ]]; then
-            echo "Keine APK gefunden." >&2
-            exit 1
-          fi
-          printf 'APK: %s\n' "${FILES[@]}"
-          printf '%s\n' "${FILES[@]}" > "${{ runner.temp }}/apk_list.txt"
+          mapfile -t ARM64 < <(find app -type f -path "*/build/outputs/apk/*/*" -name "*arm64-v8a*.apk" -print | sort)
+          mapfile -t V7A   < <(find app -type f -path "*/build/outputs/apk/*/*" -name "*armeabi-v7a*.apk" -print | sort)
 
-      - name: Upload APK artifacts
+          [[ ${#ARM64[@]} -gt 0 ]] || { echo "::error::Keine arm64-APK gefunden"; exit 1; }
+          [[ ${#V7A[@]}   -gt 0 ]] || { echo "::error::Keine v7a-APK gefunden";   exit 1; }
+
+          printf '%s\n' "${ARM64[@]}" > "${{ runner.temp }}/apk_arm64.txt"
+          printf '%s\n' "${V7A[@]}"   > "${{ runner.temp }}/apk_v7a.txt"
+
+          echo "Gefundene arm64 APKs:"
+          printf ' - %s\n' "${ARM64[@]}"
+          echo "Gefundene v7a APKs:"
+          printf ' - %s\n' "${V7A[@]}"
+
+      - name: Upload APK (arm64)
         uses: actions/upload-artifact@v4
         with:
-          name: apk-${{ github.event.inputs.build_type || 'debug' }}
+          name: fishitplayer-${{ github.event.inputs.build_type || 'debug' }}-arm64
           path: |
-            ${{ runner.temp }}/apk_list.txt
-            app/build/outputs/apk/**/**/*.apk
+            ${{ runner.temp }}/apk_arm64.txt
+            app/build/outputs/apk/**/**/*arm64-v8a*.apk
 
-      - name: Build Context Info (optional)
-        if: ${{ github.event.inputs.issue != '' }}
+      - name: Upload APK (v7a)
+        uses: actions/upload-artifact@v4
+        with:
+          name: fishitplayer-${{ github.event.inputs.build_type || 'debug' }}-v7a
+          path: |
+            ${{ runner.temp }}/apk_v7a.txt
+            app/build/outputs/apk/**/**/*armeabi-v7a*.apk
+
+      - name: Build Kontext
         run: |
-          echo "Issue: #${{ github.event.inputs.issue }}"
-          echo "Build type: ${{ github.event.inputs.build_type || 'debug' }}"
+          echo "Build type  : ${{ github.event.inputs.build_type || 'debug' }}"
+          echo "versionCode : ${{ github.event.inputs.version_code || '(unverändert)' }}"
+          echo "versionName : ${{ github.event.inputs.version_name || '(unverändert)' }}"
+          echo "ABI-Splits  : ${{ env.ORG_GRADLE_PROJECT_abiFilters }}"
+          echo "Universal   : ${{ env.ORG_GRADLE_PROJECT_universalApk }}"
