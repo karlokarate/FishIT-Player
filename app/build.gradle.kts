@@ -29,7 +29,7 @@ val keystoreKeyPassword: String? =
         ?: System.getenv("MYAPP_UPLOAD_KEY_PASSWORD")
 val hasKeystore = !keystorePath.isNullOrBlank()
 
-// >>> Neu: ABI/Splits per -P konfigurierbar (CI: arm64-v8a,armeabi-v7a; lokal optional Universal-APK)
+// >>> ABI/Splits per -P (CI: arm64-v8a,armeabi-v7a; lokal optional Universal-APK)
 val abiFiltersProp = (project.findProperty("abiFilters") as String?)
     ?.split(",")
     ?.map { it.trim() }
@@ -38,6 +38,10 @@ val abiFiltersProp = (project.findProperty("abiFilters") as String?)
 
 val universalApkProp = (project.findProperty("universalApk") as String?)
     ?.toBooleanStrictOrNull() ?: false   // CI: false, lokal ggf. true
+
+// WICHTIG: useSplits oben definieren (Scope!), damit unten in splits sichtbar
+val useSplits = (project.findProperty("useSplits") as String?)
+    ?.toBooleanStrictOrNull() ?: true    // CI: true → nur Splits verwenden
 
 android {
     namespace = "com.chris.m3usuite"
@@ -114,15 +118,13 @@ android {
         (project.findProperty("versionCode") as String?)?.toIntOrNull()?.let { versionCode = it }
         (project.findProperty("versionName") as String?)?.let { versionName = it }
 
-        // >>> ABI-Filters optional aus Property in defaultConfig.ndk (hilft lokalen Builds ohne Splits)
-        val useSplits = (project.findProperty("useSplits") as String?)
-    ?.toBooleanStrictOrNull() ?: true // CI: true → nur Splits verwenden
-
-if (!useSplits && abiFiltersProp.isNotEmpty()) {
-    ndk {
-        abiFiltersProp.forEach { abiFilters += it }
-    }
-}
+        // >>> ndk.abiFilters NUR wenn Splits deaktiviert sind (lokale Einzelfall-Builds)
+        if (!useSplits && abiFiltersProp.isNotEmpty()) {
+            ndk {
+                abiFiltersProp.forEach { abiFilters += it }
+            }
+        }
+    } // <<<<<< fehlte vorher
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -176,16 +178,16 @@ if (!useSplits && abiFiltersProp.isNotEmpty()) {
 
     // >>> Split-APKs pro ABI (per Property steuerbar); standardmäßig zwei Splits, keine Universal-APK
     splits {
-    abi {
-        isEnable = useSplits
-        reset()
-        include(*(if (abiFiltersProp.isNotEmpty())
-            abiFiltersProp.toTypedArray()
-        else
-            arrayOf("arm64-v8a","armeabi-v7a")))
-        isUniversalApk = universalApkProp
+        abi {
+            isEnable = useSplits
+            reset()
+            include(*(if (abiFiltersProp.isNotEmpty())
+                abiFiltersProp.toTypedArray()
+            else
+                arrayOf("arm64-v8a","armeabi-v7a")))
+            isUniversalApk = universalApkProp
+        }
     }
-}
 
     packaging {
         resources.excludes += setOf(
