@@ -18,8 +18,9 @@ Hinweis
   erfolgreich durchläuft.
 - Maintenance 2025‑10‑19: InternalPlayer nutzt die Media3-FFmpeg-Extension und priorisiert hochwertige Audio-/Video-Codecs
   (höchste verfügbare Bitrate und bevorzugte Formate werden automatisch gewählt).
-- Maintenance 2025-10-20: Build fix – Media3 Artefakte auf 1.4.1 zurückgestellt, weil `media3-exoplayer-ffmpeg` 1.8.0
-  nicht veröffentlicht ist. Debug-Builds laufen wieder durch.
+- Maintenance 2025-10-20: Build fix – Media3 Artefakte auf 1.4.1 zurückgestellt und zentral
+  erzwungen, weil `media3-exoplayer-ffmpeg` 1.8.0/1.5.1 nicht veröffentlicht ist. Debug- und
+  Release-Builds laufen wieder durch.
 
 Prio 1 — Tiles/Rows Centralization (ON)
 - Ziel: UI‑Layout vollständig zentralisieren (Tokens + Tile + Row + Content), damit Screens nur noch `FishRow` + `FishTile` verdrahten.

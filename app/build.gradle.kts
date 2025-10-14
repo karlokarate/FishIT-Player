@@ -1,6 +1,3 @@
-import java.io.File
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -10,6 +7,11 @@ plugins {
     id("io.objectbox") version "5.0.1"
     // id("com.google.gms.google-services") // enable if google-services.json is configured
 }
+
+import java.io.File
+import java.util.Properties
+
+private const val media3Version = "1.4.1"
 
 /**
  * Optional: Keystore-Pfade/Secrets aus Gradle-Properties oder ENV lesen.
@@ -239,6 +241,15 @@ tasks.withType<JavaCompile>().configureEach {
     exclude("**/com/chris/m3usuite/reference/**")
 }
 
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "androidx.media3") {
+            useVersion(media3Version)
+            because("Media3 FFmpeg artifacts are only published up to 1.4.1; keep all variants aligned.")
+        }
+    }
+}
+
 dependencies {
     // Compose UI (Release 08.10.2025)
     val compose = "1.9.3"
@@ -261,11 +272,10 @@ dependencies {
     implementation("com.google.android.material:material:1.13.0")
 
     // Media3 (ExoPlayer + UI + HLS)
-    val media3 = "1.4.1"
-    implementation("androidx.media3:media3-exoplayer:$media3")
-    implementation("androidx.media3:media3-ui:$media3")
-    implementation("androidx.media3:media3-exoplayer-hls:$media3")
-    implementation("androidx.media3:media3-exoplayer-ffmpeg:$media3")
+    implementation("androidx.media3:media3-exoplayer:$media3Version")
+    implementation("androidx.media3:media3-ui:$media3Version")
+    implementation("androidx.media3:media3-exoplayer-hls:$media3Version")
+    implementation("androidx.media3:media3-exoplayer-ffmpeg:$media3Version")
     // Optional:
     // implementation("androidx.media3:media3-ui-compose:$media3")
 
