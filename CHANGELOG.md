@@ -1,3 +1,6 @@
+2025-10-20
+- fix(build/media3): Downgraded Media3 to 1.4.1 so the FFmpeg extension resolves again.
+
 2025-10-19
 - feat(player/ffmpeg): Internal player bundles Media3 FFmpeg codecs, prefers the extension renderers,
   and biases track selection towards premium audio/video formats at the highest supported bitrate. VOD,

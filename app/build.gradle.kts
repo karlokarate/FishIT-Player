@@ -261,7 +261,7 @@ dependencies {
     implementation("com.google.android.material:material:1.13.0")
 
     // Media3 (ExoPlayer + UI + HLS)
-    val media3 = "1.8.0"
+    val media3 = "1.4.1"
     implementation("androidx.media3:media3-exoplayer:$media3")
     implementation("androidx.media3:media3-ui:$media3")
     implementation("androidx.media3:media3-exoplayer-hls:$media3")
