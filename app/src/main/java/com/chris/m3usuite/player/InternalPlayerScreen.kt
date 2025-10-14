@@ -1196,6 +1196,9 @@ fun InternalPlayerScreen(
                             android.view.KeyEvent.KEYCODE_MEDIA_PLAY,
                             android.view.KeyEvent.KEYCODE_MEDIA_PAUSE -> {
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER/PLAY_PAUSE", mapOf("screen" to "player", "type" to type))
+                                if (seekRepeatJob != null || pendingLongPressJob != null || longPressActive) {
+                                    stopSeek()
+                                }
                                 if (type == "live") {
                                     // Toggle quick actions; if already focusing a button, let the button handle the click
                                     return@setOnKeyListener if (!quickActionsVisible) {
