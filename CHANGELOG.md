@@ -1,3 +1,12 @@
+2025-10-21
+- feat(player/media3): Upgrade the Media3 stack to 1.8.0 now that the release
+  is available on Google Maven again. Keeps ExoPlayer current and aligned with
+  upstream fixes.
+- fix(player/ffmpeg): Centralize renderer configuration so the internal player
+  and trailer preview both prefer the bundled FFmpeg extension while decoder
+  fallback stays enabled. Resolves sporadic playback failures caused by
+  missing platform codecs.
+
 2025-10-20
 - fix(build/media3): Pin Media3 dependencies to 1.5.1 so Gradle can resolve the FFmpeg
   extension again. Version 1.8.0 is not yet published on Maven Central/Google Maven and

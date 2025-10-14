@@ -18,8 +18,9 @@ Hinweis
   erfolgreich durchläuft.
 - Maintenance 2025‑10‑19: InternalPlayer nutzt die Media3-FFmpeg-Extension und priorisiert hochwertige Audio-/Video-Codecs
   (höchste verfügbare Bitrate und bevorzugte Formate werden automatisch gewählt).
-- Maintenance 2025‑10‑20: Media3-Abhängigkeiten auf 1.5.1 fixiert, weil 1.8.0 noch nicht auf Google/Maven Central liegt und
-  den Gradle-Task `:app:checkDebugAarMetadata` blockiert hat.
+- Maintenance 2025‑10‑21: Media3 1.8.0 ist wieder verfügbar. Interner Player und
+  Trailer-Preview teilen sich eine RenderersFactory, die die FFmpeg-Extension
+  bevorzugt und Decoder-Fallback aktiviert lässt.
 
 Prio 1 — Tiles/Rows Centralization (ON)
 - Ziel: UI‑Layout vollständig zentralisieren (Tokens + Tile + Row + Content), damit Screens nur noch `FishRow` + `FishTile` verdrahten.
