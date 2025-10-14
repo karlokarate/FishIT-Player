@@ -26,17 +26,39 @@ internal fun ObxTelegramMessage.posterUri(context: Context): String? {
             if (client != null) {
                 val auth = TdLibReflection.mapAuthorizationState(
                     TdLibReflection.buildGetAuthorizationState()
-                        ?.let { TdLibReflection.sendForResult(client, it, 500) }
+                        ?.let {
+                            TdLibReflection.sendForResult(
+                                client,
+                                it,
+                                timeoutMs = 500,
+                                retries = 1,
+                                traceTag = "MediaMapper:Auth"
+                            )
+                        }
                 )
                 if (auth == TdLibReflection.AuthState.AUTHENTICATED) {
                     // Nudge download and poll briefly for local path
                     TdLibReflection.buildDownloadFile(thumbId!!, 8, 0, 0, false)
-                        ?.let { TdLibReflection.sendForResult(client, it, 100) }
+                        ?.let {
+                            TdLibReflection.sendForResult(
+                                client,
+                                it,
+                                timeoutMs = 200,
+                                retries = 1,
+                                traceTag = "MediaMapper:DownloadThumb[$thumbId]"
+                            )
+                        }
                     var attempts = 0
                     var path: String? = null
                     while (attempts < 15 && (path.isNullOrBlank() || !File(path!!).exists())) {
                         val get = TdLibReflection.buildGetFile(thumbId)
-                        val res = if (get != null) TdLibReflection.sendForResult(client, get, 250) else null
+                        val res = if (get != null) TdLibReflection.sendForResult(
+                            client,
+                            get,
+                            timeoutMs = 300,
+                            retries = 1,
+                            traceTag = "MediaMapper:GetThumb[$thumbId]"
+                        ) else null
                         val info = res?.let { TdLibReflection.extractFileInfo(it) }
                         path = info?.localPath
                         if (!path.isNullOrBlank() && File(path!!).exists()) {

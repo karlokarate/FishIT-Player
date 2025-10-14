@@ -65,19 +65,29 @@ class TelegramRoutingDataSource(
                 if (client != null) {
                     // only if authenticated
                     val auth = TdLibReflection.mapAuthorizationState(
-                        TdLibReflection.buildGetAuthorizationState()?.let { TdLibReflection.sendForResult(client, it, 500) }
+                        TdLibReflection.buildGetAuthorizationState()?.let {
+                            TdLibReflection.sendForResult(client, it, timeoutMs = 500, retries = 1, traceTag = "Routing:AuthState")
+                        }
                     )
                     if (auth == TdLibReflection.AuthState.AUTHENTICATED) {
                         val tg = runBlocking { obx.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java).query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId).and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(msgId))).build().findFirst() }
                         val fid = tg?.fileId
                         if (fid != null && fid > 0) {
                             val dl = TdLibReflection.buildDownloadFile(fid, 16, 0, 0, false)
-                            if (dl != null) TdLibReflection.sendForResult(client, dl, 100)
+                            if (dl != null) {
+                                TdLibReflection.sendForResult(client, dl, timeoutMs = 300, retries = 1, traceTag = "Routing:DownloadFile[$fid]")
+                            }
                             // Also poll getFile for local path and persist when available
                             var attempts = 0
                             while (attempts < 20) {
                                 val gf = TdLibReflection.buildGetFile(fid)
-                                val fo = if (gf != null) TdLibReflection.sendForResult(client, gf) else null
+                                val fo = if (gf != null) TdLibReflection.sendForResult(
+                                    client,
+                                    gf,
+                                    timeoutMs = 1_000,
+                                    retries = 1,
+                                    traceTag = "Routing:GetFile[$fid]"
+                                ) else null
                                 val info = fo?.let { TdLibReflection.extractFileInfo(it) }
                                 val pnow = info?.localPath
                                 if (!pnow.isNullOrBlank() && java.io.File(pnow).exists()) {

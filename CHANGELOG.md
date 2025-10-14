@@ -1,3 +1,16 @@
+2025-10-22
+- feat(telegram/tdlib): Harden the reflection bridge with retry/backoff-aware
+  `sendForResult` calls, trace tags, and explicit timeouts for every TDLib
+  request. Failures now surface predictable logs and avoid stuck handlers.
+- fix(telegram/playback): TelegramTdlibDataSource reads ObjectBox metadata
+  before issuing TDLib calls, applies streamability heuristics, waits for full
+  downloads when TDLib flags files as non-streamable, and persistently caches
+  the resolved local path. Playback now recovers gracefully when TDLib stalls
+  and falls back to routing with user messaging when required.
+- fix(telegram/routing): Align the routing datasource and thumbnail helpers
+  with the new robust TDLib invocation pattern so chat lookups and thumbnail
+  downloads reuse the same retry/backoff semantics.
+
 2025-10-21
 - feat(player/media3): Upgrade the Media3 stack to 1.8.0 now that the release
   is available on Google Maven again. Keeps ExoPlayer current and aligned with
