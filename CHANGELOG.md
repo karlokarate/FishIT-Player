@@ -1,3 +1,10 @@
+2025-10-16
+- refactor(tv/homechrome): Introduced HomeChromeOverlay host wiring chrome focus locals, "prefer settings first focus" toggle, and collapse callback, so HomeChromeScaffold can drop inline overlay plumbing.
+- feat(ui/header): Expanded FishHeader controller/data to support accent badge text and provider chips via a shared overlay host.
+- feat(ui/live): Added FishTelegramBadge + overlay merge logic for live tiles, showing Telegram origin on Start/Library rows and keeping play vs. detail click handlers separated.
+- refactor(focus/rows): Updated FocusRowEngine with suspend prefetch callbacks and chrome row focus setter integration; Start, Live detail, and library rows migrated.
+- fix(forms): Normalized FishForm button row params (primaryEnabled/isBusy) so CreateProfile/Playlist screens compile on Compose 1.9.
+
 2025-10-14
 - fix(player/mini): Restored the TV mini-player overlay via MiniPlayerHost/MiniPlayerState, reusing PlaybackSession without
   resetting media items. The overlay now shows title/subtitle/progress, requests focus on MENU, and resumes the full player via

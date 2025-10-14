@@ -36,7 +36,7 @@ data class MiniPlayerSnapshot(
     val durationMs: Long
 )
 
-val LocalMiniPlayerResume = compositionLocalOf<((MiniPlayerSnapshot) -> Unit)?>(initialValue = null)
+val LocalMiniPlayerResume = compositionLocalOf<((MiniPlayerSnapshot) -> Unit)?> { null }
 
 object MiniPlayerState {
     private val visibleState = MutableStateFlow(false)

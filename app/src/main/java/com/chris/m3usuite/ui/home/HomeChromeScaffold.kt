@@ -323,6 +323,7 @@ fun HomeChromeScaffold(
             statusPad = statusPad,
             navPad = navPad,
             scrimAlpha = scrimAlpha,
+            preferSettingsFirstFocus = preferSettingsFirstFocus,
             onActionCollapse = { if (isTv) tvChromeMode.value = ChromeMode.Collapsed }
         )
 

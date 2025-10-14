@@ -959,7 +959,6 @@ fun LibraryScreen(
                             val headerRecent = when (selectedTab) {
                                 ContentTab.Vod -> FishHeaderData.Chip(
                                     anchorKey = "library:${selectedTabKey}:recent",
-                                    key = "recent",
                                     label = "Zuletzt gespielt"
                                 )
                                 ContentTab.Series -> FishHeaderData.Text(
@@ -1001,7 +1000,6 @@ fun LibraryScreen(
                             val headerNew = when (selectedTab) {
                                 ContentTab.Vod -> FishHeaderData.Chip(
                                     anchorKey = "library:${selectedTabKey}:newest",
-                                    key = "new",
                                     label = labelNew
                                 )
                                 ContentTab.Series -> FishHeaderData.Text(
@@ -1043,7 +1041,6 @@ fun LibraryScreen(
                             val headerYears = when (selectedTab) {
                                 ContentTab.Vod -> FishHeaderData.Chip(
                                     anchorKey = "library:${selectedTabKey}:years",
-                                    key = "year_2025_2024",
                                     label = "2025–2024"
                                 )
                                 else -> FishHeaderData.Text(
@@ -1095,7 +1092,6 @@ fun LibraryScreen(
                         val chipKey = chipKeyForLiveCategory(label)
                         val headerData = FishHeaderData.Chip(
                             anchorKey = sectionKey,
-                            key = chipKey,
                             label = label
                         )
                         ExpandableGroupSection(
@@ -1175,7 +1171,6 @@ fun LibraryScreen(
                             val label = com.chris.m3usuite.core.util.CategoryNormalizer.displayLabel(key)
                             val headerData = FishHeaderData.Chip(
                                 anchorKey = sectionKey,
-                                key = key,
                                 label = label
                             )
                             ExpandableGroupSection(
@@ -1201,7 +1196,6 @@ fun LibraryScreen(
                             val sectionKey = "library:${selectedTabKey}:curated:4k"
                             val headerData = FishHeaderData.Chip(
                                 anchorKey = sectionKey,
-                                key = "4k",
                                 label = "4K"
                             )
                             ExpandableGroupSection(
@@ -1225,7 +1219,6 @@ fun LibraryScreen(
                             val sectionKey = "library:${selectedTabKey}:curated:collection"
                             val headerData = FishHeaderData.Chip(
                                 anchorKey = sectionKey,
-                                key = "collection",
                                 label = "Kollektionen"
                             )
                             ExpandableGroupSection(
@@ -1249,7 +1242,6 @@ fun LibraryScreen(
                             val sectionKey = "library:${selectedTabKey}:curated:other"
                             val headerData = FishHeaderData.Chip(
                                 anchorKey = sectionKey,
-                                key = "other",
                                 label = "Unkategorisiert"
                             )
                             ExpandableGroupSection(
@@ -1277,7 +1269,6 @@ fun LibraryScreen(
                         val displayLabel = providerLabelStore.labelFor(key)
                         val headerData = FishHeaderData.Provider(
                             anchorKey = sectionKey,
-                            key = key,
                             label = displayLabel
                         )
                         ExpandableGroupSection(
@@ -1317,7 +1308,6 @@ fun LibraryScreen(
                             val subLabel = key.removePrefix("adult_").replace('_', ' ').replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() }
                             val headerData = FishHeaderData.Chip(
                                 anchorKey = sectionKey,
-                                key = key,
                                 label = subLabel
                             )
                             ExpandableGroupSection(
@@ -1375,7 +1365,6 @@ fun LibraryScreen(
                         val label = key.ifBlank { "Unbekannt" }
                         val headerData = FishHeaderData.Chip(
                             anchorKey = sectionKey,
-                            key = genreKey,
                             label = label
                         )
                         ExpandableGroupSection(

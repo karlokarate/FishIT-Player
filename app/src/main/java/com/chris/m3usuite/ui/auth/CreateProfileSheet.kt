@@ -36,7 +36,7 @@ fun CreateProfileSheet(
                 onPrimary = { if (name.isNotBlank()) onCreate(name.trim(), isKid) },
                 secondaryText = "Abbrechen",
                 onSecondary = onDismiss,
-                enabled = name.isNotBlank()
+                primaryEnabled = name.isNotBlank()
             )
             Spacer(Modifier.height(8.dp))
         }

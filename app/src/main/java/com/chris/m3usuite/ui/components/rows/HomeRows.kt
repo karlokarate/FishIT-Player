@@ -427,23 +427,16 @@ fun ReorderableLiveRow(
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
                     )
                 }
-                if (targetKey == id && !insertAfter) {
-                    Box(
-                        Modifier
-                            .align(Alignment.CenterStart)
-                            .width(3.dp)
-                            .fillMaxHeight()
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
-                }
-                if (targetKey == id && insertAfter) {
-                    Box(
-                        Modifier
-                            .align(Alignment.CenterEnd)
-                            .width(3.dp)
-                            .fillMaxHeight()
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
+                if (targetKey == id) {
+                    val alignment = if (insertAfter) Alignment.CenterEnd else Alignment.CenterStart
+                    Box(Modifier.fillMaxSize(), contentAlignment = alignment) {
+                        Box(
+                            Modifier
+                                .width(3.dp)
+                                .fillMaxHeight()
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                    }
                 }
             }
         )

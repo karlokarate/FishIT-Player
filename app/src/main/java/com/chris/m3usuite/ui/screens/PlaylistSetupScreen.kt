@@ -496,8 +496,8 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
                             }
                         }
             },
-            enabled = canSubmit,
-            busy = busy
+            primaryEnabled = canSubmit,
+            isBusy = busy
         )
     } else com.chris.m3usuite.ui.common.TvButton(
         enabled = canSubmit,

@@ -958,14 +958,13 @@ fun StartScreen(
                                         )
                                     }
                                     favoritesAvailable -> {
-                                        val favLiveById = remember(favLive) { favLive.associateBy { it.id } }
                                         FishRow(
                                             items = favLive,
                                             stateKey = "start_live_favorites",
                                             edgeLeftExpandChrome = true,
                                             initialFocusEligible = false,
-                                            onPrefetchKeys = { keys ->
-                                                val sids = keys.mapNotNull { favLiveById[it]?.streamId }
+                                            onPrefetchKeys = { indices, source ->
+                                                val sids = indices.mapNotNull { source.getOrNull(it)?.streamId }
                                                 if (sids.isNotEmpty()) {
                                                     obxRepo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
                                                 }
@@ -985,14 +984,13 @@ fun StartScreen(
                                         }
                                     }
                                     defaultLiveItems.isNotEmpty() -> {
-                                        val defaultLiveById = remember(defaultLiveItems) { defaultLiveItems.associateBy { it.id } }
                                         FishRow(
                                             items = defaultLiveItems,
                                             stateKey = "start_live_default",
                                             edgeLeftExpandChrome = true,
                                             initialFocusEligible = false,
-                                            onPrefetchKeys = { keys ->
-                                                val sids = keys.mapNotNull { defaultLiveById[it]?.streamId }
+                                            onPrefetchKeys = { indices, source ->
+                                                val sids = indices.mapNotNull { source.getOrNull(it)?.streamId }
                                                 if (sids.isNotEmpty()) {
                                                     obxRepo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
                                                 }

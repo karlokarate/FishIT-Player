@@ -14,9 +14,8 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.TelegramHeuristics
 import com.chris.m3usuite.telegram.containerExt
 import com.chris.m3usuite.telegram.posterUri
+import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
-import io.objectbox.kotlin.put
-import io.objectbox.kotlin.query
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -230,7 +229,7 @@ object TelegramSeriesIndexer {
         aggregates.size
     }
 
-    private fun cleanupTelegramSeries(store: ObxStore) {
+    private fun cleanupTelegramSeries(store: BoxStore) {
         val seriesBox = store.boxFor<ObxSeries>()
         val episodeBox = store.boxFor<ObxEpisode>()
         val q = seriesBox.query(ObxSeries_.providerKey.equal(PROVIDER_KEY)).build()
@@ -320,7 +319,7 @@ object TelegramSeriesIndexer {
         }.getOrNull()
     }
 
-    private fun updateLanguageIndex(store: ObxStore, counts: Map<String, Int>) {
+    private fun updateLanguageIndex(store: BoxStore, counts: Map<String, Int>) {
         val langBox = store.boxFor<ObxIndexLang>()
         val existingQuery = langBox.query(
             ObxIndexLang_.kind.equal("series")
