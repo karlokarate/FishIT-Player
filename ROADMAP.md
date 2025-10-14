@@ -16,6 +16,8 @@ Hinweis
 - Maintenance 2025‑10‑18: Release-Build brach auf Kotlin 2.0 wegen Telegram-Indexer/Service Typ-Mismatches. IDs bleiben jetzt
   als `Int`-Sets im Indexer und der TDLib-Schreibpfad liefert wieder konkrete Outcomes, sodass `:app:compileReleaseKotlin`
   erfolgreich durchläuft.
+- Maintenance 2025‑10‑19: InternalPlayer nutzt die Media3-FFmpeg-Extension und priorisiert hochwertige Audio-/Video-Codecs
+  (höchste verfügbare Bitrate und bevorzugte Formate werden automatisch gewählt).
 
 Prio 1 — Tiles/Rows Centralization (ON)
 - Ziel: UI‑Layout vollständig zentralisieren (Tokens + Tile + Row + Content), damit Screens nur noch `FishRow` + `FishTile` verdrahten.
