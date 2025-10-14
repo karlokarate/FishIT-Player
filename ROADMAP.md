@@ -13,6 +13,9 @@ Hinweis
   kompiliert.
 - Maintenance 2025‑10‑17: Telegram Sync liefert nun globale Banner mit Fortschritt/Zähler, Settings melden echte Ergebnisse und
   die Library zeigt die Live/VOD/Serien-Schalter im Header wieder an. Login-Dialog besitzt eine "Per Code anmelden"-Fallback.
+- Maintenance 2025‑10‑18: Release-Build brach auf Kotlin 2.0 wegen Telegram-Indexer/Service Typ-Mismatches. IDs bleiben jetzt
+  als `Int`-Sets im Indexer und der TDLib-Schreibpfad liefert wieder konkrete Outcomes, sodass `:app:compileReleaseKotlin`
+  erfolgreich durchläuft.
 
 Prio 1 — Tiles/Rows Centralization (ON)
 - Ziel: UI‑Layout vollständig zentralisieren (Tokens + Tile + Row + Content), damit Screens nur noch `FishRow` + `FishTile` verdrahten.

@@ -483,7 +483,7 @@ class TelegramTdlibService : Service() {
             val thumbFileId = TdLibReflection.extractThumbFileId(safeContent)
             val fileName = TdLibReflection.extractFileName(safeContent)
 
-            val writer: suspend () -> IndexedMessageOutcome? = {
+            val writer: suspend () -> IndexedMessageOutcome = {
                 android.util.Log.i(
                     "TdSvc",
                     "prepare upsert tg_message chatId=${chatId} messageId=${messageId} fileId=${info.fileId} mime=${mime ?: ""}"
@@ -541,7 +541,7 @@ class TelegramTdlibService : Service() {
                 }.onFailure { e ->
                     android.util.Log.w("TdSvc", "OBX upsert failed chatId=${chatId} messageId=${messageId}: ${e.message}")
                     throw e
-                }
+                }.getOrThrow()
             }
             return if (asyncWrite) {
                 scope.launch(Dispatchers.IO) { kotlin.runCatching { writer() } }
