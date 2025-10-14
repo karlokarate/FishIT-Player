@@ -799,8 +799,8 @@ fun LiveDetailScreen(
                                 items = moreInCategory,
                                 stateKey = "liveDetail:more:${categoryId}",
                                 edgeLeftExpandChrome = false,
-                                onPrefetchKeys = { keys ->
-                                    val sids = keys.mapNotNull { id -> moreInCategory.firstOrNull { it.id == id }?.streamId }
+                                onPrefetchKeys = { indices, items ->
+                                    val sids = indices.mapNotNull { items.getOrNull(it)?.streamId }
                                     if (sids.isNotEmpty()) {
                                         runCatching { liveRepo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4) }
                                     }

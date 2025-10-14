@@ -23,6 +23,10 @@ Prio 1 — Tiles/Rows Centralization (ON)
   - ✅ FishHeader overlay (Text/Chip/Provider) aktiv für Start- und Library-Sektionen; alte Inline-Header entfernt (2025-10-08).
   - Optional: Title‑outside‑focus (Token) nur falls Poster‑Parität später gewünscht.
 
+  - TODO 2025-10-16: FocusRowEngine parity (initialFocusEligible, edgeLeftExpandChrome, chrome setter) still pending; keep Start/Library wiring ready.
+  - TODO 2025-10-16: FishHeader overlay needs gradient/badge polish and accent exposure.
+  - TODO 2025-10-16: FishMediaTiles must reintroduce resume/assign states and Telegram play vs. detail handling.
+
 Prio 2 — FocusKit Migration (ON, blockiert durch Prio 1)
 - Here’s a fresh repo-wide audit of focus usages and a precise list of modules to migrate to the new FocusKit facade. Grouped by what needs changing to plan the rollout.
 

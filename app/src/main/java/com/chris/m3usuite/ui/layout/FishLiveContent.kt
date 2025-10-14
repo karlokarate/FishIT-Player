@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import com.chris.m3usuite.data.repo.EpgRepository
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
@@ -68,9 +69,42 @@ data class LiveTileContent(
     val onClick: () -> Unit
 )
 
+private fun MediaItem.isTelegramItem(): Boolean {
+    if (source?.equals("TG", ignoreCase = true) == true) return true
+    return tgChatId != null || tgMessageId != null || tgFileId != null
+}
+
+@Composable
+fun FishTelegramBadge(
+    modifier: Modifier = Modifier,
+    small: Boolean = false
+) {
+    val size = if (small) 20.dp else 24.dp
+    Surface(
+        modifier = modifier
+            .size(size)
+            .clip(CircleShape),
+        shape = CircleShape,
+        color = Color(0xFF229ED9),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text = "T",
+                color = Color.White,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                maxLines = 1,
+                overflow = TextOverflow.Clip
+            )
+        }
+    }
+}
+
 @Composable
 fun buildLiveTileContent(
     media: MediaItem,
+    selected: Boolean = false,
     onOpenDetails: (() -> Unit)? = null,
     onPlayDirect: (() -> Unit)? = null
 ): LiveTileContent {
@@ -131,7 +165,7 @@ fun buildLiveTileContent(
         title = media.name,
         logo = media.logo ?: media.poster ?: media.backdrop,
         contentScale = ContentScale.Fit,
-        selected = false,
+        selected = selected,
         resumeFraction = null,
         topStartBadge = topStartBadge,
         topEndBadge = topEndBadge,
