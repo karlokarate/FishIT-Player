@@ -559,7 +559,15 @@ class TelegramTdlibService : Service() {
         val ch = clientHandle ?: return
         runCatching {
             TdLibReflection.buildDownloadFile(thumbFileId, /* priority */ 8, /* offset */ 0, /* limit */ 0, /* synchronous */ false)
-                ?.let { fn -> TdLibReflection.sendForResult(ch, fn, 100) }
+                ?.let { fn ->
+                    TdLibReflection.sendForResult(
+                        ch,
+                        fn,
+                        timeoutMs = 200,
+                        retries = 1,
+                        traceTag = "ThumbDownload[$thumbFileId]"
+                    )
+                }
         }
     }
 
@@ -724,14 +732,34 @@ class TelegramTdlibService : Service() {
             is TdLibReflection.ChatListTag.Folder -> TdLibReflection.buildChatListFolder(tag.id)
             null -> null
         }
-        listObj?.let { load -> TdLibReflection.buildLoadChats(load, limit)?.let { TdLibReflection.sendForResult(ch, it, 1500) } }
+        listObj?.let { load ->
+            TdLibReflection.buildLoadChats(load, limit)?.let { fn ->
+                TdLibReflection.sendForResult(
+                    ch,
+                    fn,
+                    timeoutMs = 1_500,
+                    retries = 1,
+                    traceTag = "Chats:Load[$list]"
+                )
+            }
+        }
         var results = snapshotChats(tag?.toString() ?: list, query, limit)
         if (results.isEmpty() && listObj != null) {
             val fallback = TdLibReflection.buildGetChats(listObj, limit)
-            val response = fallback?.let { TdLibReflection.sendForResult(ch, it, 2000) }
+            val response = fallback?.let {
+                TdLibReflection.sendForResult(ch, it, timeoutMs = 2_000, retries = 1, traceTag = "Chats:Get[$list]")
+            }
             val ids = response?.let { TdLibReflection.extractChatsIds(it) } ?: longArrayOf()
             ids.forEach { id ->
-                val chatObj = TdLibReflection.buildGetChat(id)?.let { TdLibReflection.sendForResult(ch, it, 1500) }
+                val chatObj = TdLibReflection.buildGetChat(id)?.let { fn ->
+                    TdLibReflection.sendForResult(
+                        ch,
+                        fn,
+                        timeoutMs = 1_500,
+                        retries = 1,
+                        traceTag = "Chats:GetChat[$id]"
+                    )
+                }
                 if (chatObj != null) updateChatFromObject(chatObj)
             }
             results = snapshotChats(tag?.toString() ?: list, query, limit)
@@ -767,7 +795,15 @@ class TelegramTdlibService : Service() {
             if (fromCache != null) {
                 outTitles += fromCache
             } else {
-                val chatObj = TdLibReflection.buildGetChat(id)?.let { TdLibReflection.sendForResult(ch, it, 1000) }
+                val chatObj = TdLibReflection.buildGetChat(id)?.let { fn ->
+                    TdLibReflection.sendForResult(
+                        ch,
+                        fn,
+                        timeoutMs = 1_000,
+                        retries = 1,
+                        traceTag = "Chats:Resolve[$id]"
+                    )
+                }
                 if (chatObj != null) {
                     updateChatFromObject(chatObj)
                 }
@@ -807,7 +843,13 @@ class TelegramTdlibService : Service() {
             val effectiveFromId = fromId
             val offset = if (page == 0) 0 else -1
             val fn = TdLibReflection.buildGetChatHistory(chatId, effectiveFromId, offset, perPage, false) ?: break
-            val result = TdLibReflection.sendForResult(ch, fn, 10_000) ?: break
+            val result = TdLibReflection.sendForResult(
+                ch,
+                fn,
+                timeoutMs = 10_000,
+                retries = 2,
+                traceTag = "History[$chatId:$page]"
+            ) ?: break
             com.chris.m3usuite.telegram.TgRawLogger.log(
                 prefix = "GetChatHistory[page=${page}] chatId=$chatId fromId=$effectiveFromId offset=$offset limit=$perPage",
                 obj = result
@@ -971,7 +1013,9 @@ class TelegramTdlibService : Service() {
             if (authFlow.value == TdLibReflection.AuthState.WAIT_OTHER_DEVICE) {
                 val qr = runCatching {
                     val c = clientHandle ?: return@runCatching null
-                    val obj = TdLibReflection.buildGetAuthorizationState()?.let { TdLibReflection.sendForResult(c, it, 500) }
+                    val obj = TdLibReflection.buildGetAuthorizationState()?.let {
+                        TdLibReflection.sendForResult(c, it, timeoutMs = 500, retries = 1, traceTag = "AuthQueue:state")
+                    }
                     TdLibReflection.extractQrLink(obj)
                 }.getOrNull()
                 if (!qr.isNullOrBlank()) putString("qr", qr)
@@ -1007,7 +1051,9 @@ class TelegramTdlibService : Service() {
             if (state == TdLibReflection.AuthState.WAIT_OTHER_DEVICE) {
                 val qr = runCatching {
                     val c = clientHandle ?: return@runCatching null
-                    val obj = TdLibReflection.buildGetAuthorizationState()?.let { TdLibReflection.sendForResult(c, it, 500) }
+                    val obj = TdLibReflection.buildGetAuthorizationState()?.let {
+                        TdLibReflection.sendForResult(c, it, timeoutMs = 500, retries = 1, traceTag = "AuthQueue:state")
+                    }
                     TdLibReflection.extractQrLink(obj)
                 }.getOrNull()
                 if (!qr.isNullOrBlank()) putString("qr", qr)

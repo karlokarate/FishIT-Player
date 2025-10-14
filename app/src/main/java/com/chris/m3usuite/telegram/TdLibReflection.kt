@@ -2,6 +2,7 @@ package com.chris.m3usuite.telegram
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.lang.reflect.Method
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 /**
  * Minimal reflection-based TDLib bridge so the app compiles without tdlib classes.
@@ -22,6 +24,10 @@ import java.util.Locale
  * - Observe UpdateAuthorizationState and expose a lightweight AuthState enum
  */
 object TdLibReflection {
+
+    private const val LOG_TAG = "TdLib"
+    private val NULL_MARKER = Any()
+    private const val MAX_BACKOFF_MS = 20_000L
 
     enum class AuthState { UNKNOWN, UNAUTHENTICATED, WAIT_ENCRYPTION_KEY, WAIT_FOR_NUMBER, WAIT_FOR_CODE, WAIT_FOR_PASSWORD, WAIT_OTHER_DEVICE, AUTHENTICATED, LOGGING_OUT }
 
@@ -603,20 +609,114 @@ object TdLibReflection {
         client.sendMethod.invoke(client.client, fn, rh, eh)
     }
 
+    private fun isTdError(obj: Any): Boolean = PKGS.any { pkg -> obj.javaClass.name == "$pkg.TdApi\$Error" }
+
+    private fun extractTdError(obj: Any): Pair<Int, String> {
+        val code = runCatching {
+            obj.javaClass.getDeclaredField("code").apply { isAccessible = true }.getInt(obj)
+        }.getOrDefault(-1)
+        val message = runCatching {
+            obj.javaClass.getDeclaredField("message").apply { isAccessible = true }.get(obj) as? String
+        }.getOrNull() ?: ""
+        return code to message
+    }
+
+    private fun shouldRetryTdError(code: Int, message: String): Boolean {
+        if (code in 500..599) return true
+        if (code == 429 || code == 420) return true
+        val normalized = message.lowercase(Locale.getDefault())
+        if (normalized.contains("timeout") || normalized.contains("temporarily") || normalized.contains("try again")) return true
+        if (normalized.contains("flood") || normalized.contains("too many requests")) return true
+        return false
+    }
+
+    private fun describeFunction(functionObj: Any, traceTag: String?): String {
+        val base = functionObj.javaClass.simpleName.ifBlank {
+            functionObj.javaClass.name.substringAfterLast('.')
+        }
+        return traceTag?.let { "$it/$base" } ?: base
+    }
+
     /** Generic send with one-off result handler that blocks until a result arrives or timeout. */
-    fun sendForResult(client: ClientHandle, functionObj: Any, timeoutMs: Long = 7000): Any? {
+    fun sendForResult(
+        client: ClientHandle,
+        functionObj: Any,
+        timeoutMs: Long = 7000,
+        retries: Int = 2,
+        traceTag: String? = null
+    ): Any? {
         val handlerType = try { td("Client\$ResultHandler") } catch (_: Throwable) { return null }
         val exceptionHandlerType = td("Client\$ExceptionHandler")
-        val box = java.util.concurrent.ArrayBlockingQueue<Any>(1)
-        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
-            if (args != null && args.isNotEmpty() && args[0] != null) {
-                box.offer(args[0])
-            } else box.offer(Any())
-            null
+        val operation = describeFunction(functionObj, traceTag)
+        var attempt = 0
+        var waitMs = timeoutMs.coerceAtLeast(50L)
+        while (true) {
+            val queue = java.util.concurrent.LinkedBlockingQueue<Any?>(1)
+            val resultHandler = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, method, args ->
+                if (method?.name == "onResult") {
+                    val payload = args?.getOrNull(0) ?: NULL_MARKER
+                    queue.offer(payload)
+                }
+                null
+            }
+            val exceptionHandler = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, method, args ->
+                if (method?.name == "onException") {
+                    val throwable = args?.getOrNull(0) as? Throwable
+                    queue.offer(throwable ?: NULL_MARKER)
+                }
+                null
+            }
+            try {
+                client.sendMethod.invoke(client.client, functionObj, resultHandler, exceptionHandler)
+            } catch (e: Throwable) {
+                Log.w(LOG_TAG, "sendForResult invoke failed ($operation attempt=${attempt + 1}): ${e.message}")
+                if (attempt >= retries) {
+                    return null
+                }
+            }
+            val result = try {
+                queue.poll(waitMs, TimeUnit.MILLISECONDS)
+            } catch (ie: InterruptedException) {
+                Thread.currentThread().interrupt()
+                return null
+            }
+            when {
+                result == null -> {
+                    Log.w(LOG_TAG, "sendForResult timeout after ${waitMs}ms ($operation attempt=${attempt + 1}/${retries + 1})")
+                }
+                result === NULL_MARKER -> {
+                    return null
+                }
+                result is Throwable -> {
+                    Log.w(LOG_TAG, "sendForResult exception ($operation attempt=${attempt + 1}/${retries + 1}): ${result.message}")
+                }
+                isTdError(result) -> {
+                    val (code, message) = extractTdError(result)
+                    val retry = attempt < retries && shouldRetryTdError(code, message)
+                    Log.w(
+                        LOG_TAG,
+                        "sendForResult error code=$code message='${message}' ($operation attempt=${attempt + 1}/${retries + 1}, retry=$retry)"
+                    )
+                    if (!retry) {
+                        return null
+                    }
+                }
+                else -> {
+                    return result
+                }
+            }
+            if (attempt >= retries) {
+                return null
+            }
+            attempt++
+            waitMs = (waitMs + waitMs / 2).coerceAtMost(MAX_BACKOFF_MS)
+            try {
+                Thread.sleep((100L * (attempt + 1)).coerceAtMost(750L))
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                return null
+            }
         }
-        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
-        client.sendMethod.invoke(client.client, functionObj, rh, eh)
-        return box.poll(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
     }
 
     // Builders for common TdApi functions

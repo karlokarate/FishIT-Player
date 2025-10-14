@@ -10,6 +10,7 @@ import com.chris.m3usuite.telegram.TdLibReflection.AuthState
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
 import java.io.IOException
+import java.io.File
 import java.io.RandomAccessFile
 
 /**
@@ -35,6 +36,10 @@ class TelegramTdlibDataSource(
     private var delegate: DataSource? = null
     private var listener: TransferListener? = null
     private var authFallbackNotified: Boolean = false
+    private var activeClient: TdLibReflection.ClientHandle? = null
+    private var requireCompleteDownload: Boolean = false
+    private var currentChatId: Long = 0L
+    private var currentMessageId: Long = 0L
 
     override fun addTransferListener(transferListener: TransferListener) { listener = transferListener }
 
@@ -44,119 +49,205 @@ class TelegramTdlibDataSource(
         val uri = dataSpec.uri
         currentUri = uri
         if (uri.scheme?.lowercase() != "tg") {
-            val d = fallbackFactory.createDataSource().also { delegate = it; listener?.let(it::addTransferListener) }
+            val d = fallbackFactory.createDataSource().also {
+                delegate = it
+                listener?.let(it::addTransferListener)
+            }
             opened = true
             return d.open(dataSpec)
         }
-
-        // Prefer TDLib streaming path; on any failure, gracefully fall back to routing/local.
-        val store = com.chris.m3usuite.prefs.SettingsStore(context)
-        val enabled = runBlocking { store.tgEnabled.first() }
-        val tdAvailable = TdLibReflection.available()
-        val authFlow = kotlinx.coroutines.flow.MutableStateFlow(AuthState.UNKNOWN)
-        val client = if (tdAvailable) TdLibReflection.getOrCreateClient(context, authFlow) else null
 
         val chatId = uri.getQueryParameter("chatId")?.toLongOrNull()
         val msgId = uri.getQueryParameter("messageId")?.toLongOrNull()
         if (chatId == null || msgId == null) throw IOException("tg:// uri missing chatId/messageId")
 
-        // Ensure authenticated before using TDLib
-        val authOk = runCatching {
-            val a = if (client != null) TdLibReflection.buildGetAuthorizationState()?.let { TdLibReflection.sendForResult(client, it, 500) } else null
-            val st = TdLibReflection.mapAuthorizationState(a)
-            st == AuthState.AUTHENTICATED
-        }.getOrDefault(false)
-        if (!enabled || !tdAvailable || client == null || !authOk) {
-            if (!authFallbackNotified && (!enabled || !authOk)) {
-                val msg = if (!enabled) "Telegram deaktiviert – lokale Dateien werden verwendet" else "Telegram nicht verbunden – lokale Dateien werden verwendet"
-                if (notify != null) notify.invoke(msg) else try { android.widget.Toast.makeText(context.applicationContext, msg, android.widget.Toast.LENGTH_SHORT).show() } catch (_: Throwable) {}
-                authFallbackNotified = true
-            }
-            val d = routingFallback.createDataSource().also { delegate = it; listener?.let(it::addTransferListener) }
-            opened = true
-            return d.open(dataSpec)
+        currentChatId = chatId
+        currentMessageId = msgId
+        requireCompleteDownload = false
+
+        val store = com.chris.m3usuite.prefs.SettingsStore(context)
+        val enabled = runBlocking { store.tgEnabled.first() }
+        val tdAvailable = TdLibReflection.available()
+        val authFlow = kotlinx.coroutines.flow.MutableStateFlow(AuthState.UNKNOWN)
+        val client = if (tdAvailable) TdLibReflection.getOrCreateClient(context, authFlow) else null
+        activeClient = client
+
+        val fallback: (String?, Boolean) -> Long = { message, markAuth ->
+            activeClient = null
+            openFallback(dataSpec, message, markAuth)
         }
 
-        // 1) Get message -> extract file
-        val getMsg = TdLibReflection.buildGetMessage(chatId, msgId) ?: throw IOException("tdlib build GetMessage failed")
-        val msgObj = TdLibReflection.sendForResult(client, getMsg) ?: throw IOException("tdlib GetMessage timeout")
-        // message has field 'message' or is directly TdApi.Message
+        if (!enabled || !tdAvailable || client == null) {
+            val message = if (!enabled) {
+                "Telegram deaktiviert – lokale Dateien werden verwendet"
+            } else {
+                "Telegram nicht verbunden – lokale Dateien werden verwendet"
+            }
+            return fallback(message, markAuth = true)
+        }
+
+        val authOk = runCatching {
+            val fn = TdLibReflection.buildGetAuthorizationState()
+            val obj = fn?.let {
+                TdLibReflection.sendForResult(client, it, timeoutMs = 700, retries = 1, traceTag = "AuthState")
+            }
+            TdLibReflection.mapAuthorizationState(obj) == AuthState.AUTHENTICATED
+        }.getOrDefault(false)
+        if (!authOk) {
+            return fallback("Telegram nicht verbunden – lokale Dateien werden verwendet", markAuth = true)
+        }
+
+        val cachedRow = fetchMessageRow(chatId, msgId)
+        val cachedPath = cachedRow?.localPath?.takeIf { !it.isNullOrBlank() && File(it).exists() }
+        val cachedSupports = cachedRow?.supportsStreaming
+        val cachedMime = cachedRow?.mimeType
+        val cachedSize = cachedRow?.sizeBytes ?: -1L
+        val cachedFileId = cachedRow?.fileId ?: -1
+        val cachedName = cachedRow?.fileName
+
+        val getMsg = TdLibReflection.buildGetMessage(chatId, msgId)
+            ?: return fallback("Telegram-Datei konnte nicht vorbereitet werden", markAuth = false)
+        val msgObj = TdLibReflection.sendForResult(
+            client,
+            getMsg,
+            timeoutMs = 5_000,
+            retries = 2,
+            traceTag = "GetMessage[$chatId/$msgId]"
+        ) ?: return fallback("Telegram-Datei nicht abrufbar – lokale Kopie wird verwendet", markAuth = false)
+
         val message = if (msgObj.javaClass.name.endsWith("TdApi\$Message")) msgObj else runCatching {
             msgObj.javaClass.getDeclaredField("message").apply { isAccessible = true }.get(msgObj)
         }.getOrElse { msgObj }
-        val content = runCatching { message.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(message) }.getOrNull()
-        val fileObj = TdLibReflection.findPrimaryFile(content) ?: throw IOException("tdlib: no file in message content")
-        val initialInfo = TdLibReflection.extractFileInfo(fileObj) ?: throw IOException("tdlib: cannot read file info")
-        fileId = initialInfo.fileId
-
-        // 2) Start/continue download from requested offset
-        val desiredOffset = dataSpec.position.toInt()
-        val dl = TdLibReflection.buildDownloadFile(fileId, 32, desiredOffset, 0, false)
-        if (dl != null) TdLibReflection.sendForResult(client, dl, 100)
-
-        // 3) Resolve local path & open RAF
-        var info = initialInfo
-        var attempts = 0
-        while ((info.localPath.isNullOrBlank() || !java.io.File(info.localPath).exists()) && attempts < 200) {
-            Thread.sleep(250)
-            val getFile = TdLibReflection.buildGetFile(fileId) ?: break
-            val f = TdLibReflection.sendForResult(client, getFile) ?: break
-            TdLibReflection.extractFileInfo(f)?.let { info = it }
-            attempts++
-        }
-        val path = info.localPath ?: throw IOException("tdlib: file path unavailable")
-        val file = java.io.File(path)
-        if (!file.exists()) throw IOException("tdlib: local file missing")
-
-        // Best-effort: persist localPath in ObjectBox telegram_messages
-        runBlocking {
-            runCatching {
-                val box = com.chris.m3usuite.data.obx.ObxStore.get(context)
-                val b = box.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
-                val q = b.query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId).and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(msgId))).build()
-                val row = q.findFirst() ?: com.chris.m3usuite.data.obx.ObxTelegramMessage(chatId = chatId, messageId = msgId)
-                row.localPath = path
-                b.put(row)
-            }
+        val content = runCatching {
+            message.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(message)
+        }.getOrNull()
+        val fileObj = TdLibReflection.findPrimaryFile(content)
+            ?: return fallback("Telegram-Datei ohne Mediendaten – lokale Kopie wird verwendet", markAuth = false)
+        var info = TdLibReflection.extractFileInfo(fileObj)
+            ?: return fallback("Telegram-Datei konnte nicht gelesen werden", markAuth = false)
+        fileId = info.fileId.takeIf { it > 0 } ?: cachedFileId
+        if (fileId <= 0) {
+            return fallback("Telegram-Datei ohne File-ID – lokale Kopie wird verwendet", markAuth = false)
         }
 
-        expectedSize = if (info.expectedSize > 0) info.expectedSize else -1
-        completed = info.downloadingCompleted
+        val supportsStreaming = TdLibReflection.extractSupportsStreaming(content) ?: cachedSupports
+        val mimeType = TdLibReflection.extractMimeType(content) ?: cachedMime
+        val fileName = TdLibReflection.extractFileName(content) ?: cachedName
+
+        val isProgressive = isLikelyProgressiveContainer(mimeType, fileName)
+        val canStream = when {
+            supportsStreaming == true -> true
+            supportsStreaming == false && !isProgressive -> false
+            else -> true
+        }
+        requireCompleteDownload = !canStream
+        if (requireCompleteDownload && cachedPath == null) {
+            showUserMessage("Telegram-Video wird vollständig heruntergeladen, bevor es startet …")
+        }
+
+        val offset = if (canStream) dataSpec.position.coerceAtLeast(0L).toInt() else 0
+        val priority = if (requireCompleteDownload) 64 else 32
+        TdLibReflection.buildDownloadFile(fileId, priority, offset, 0, false)?.let { fn ->
+            TdLibReflection.sendForResult(client, fn, timeoutMs = 800, retries = 1, traceTag = "DownloadFile[$fileId]")
+        }
+
+        val waited = waitForFile(
+            client = client,
+            fileId = fileId,
+            initial = info,
+            expectCompletion = requireCompleteDownload,
+            maxWaitMs = if (requireCompleteDownload) 180_000 else 60_000,
+            traceTag = "GetFile[$fileId]"
+        )
+        info = waited
+
+        val path = when {
+            !info.localPath.isNullOrBlank() && File(info.localPath).exists() -> info.localPath
+            cachedPath != null -> cachedPath
+            else -> null
+        }
+        val file = path?.let { File(it) }
+        if (file == null || !file.exists()) {
+            return fallback("Telegram-Datei nicht lokal verfügbar – lokale Kopie wird verwendet", markAuth = false)
+        }
+
+        persistLocalPath(chatId, msgId, file.absolutePath)
+
+        expectedSize = when {
+            info.expectedSize > 0 -> info.expectedSize
+            cachedSize > 0 -> cachedSize
+            else -> -1
+        }
+        completed = info.downloadingCompleted || (requireCompleteDownload && expectedSize > 0 && file.length() >= expectedSize)
 
         try {
             raf = RandomAccessFile(file, "r")
-            if (dataSpec.position > 0) raf!!.seek(dataSpec.position)
+            if (dataSpec.position > 0) {
+                raf!!.seek(dataSpec.position)
+            }
         } catch (e: Throwable) {
-            throw IOException("open RAF failed", e)
+            return fallback("Telegram-Datei konnte nicht geöffnet werden – lokale Kopie wird verwendet", markAuth = false)
         }
         opened = true
-        // If known, return remaining length; otherwise LENGTH_UNSET (-1)
         return if (expectedSize > 0) kotlin.math.max(0L, expectedSize - dataSpec.position) else -1L
     }
 
     override fun read(buffer: ByteArray, offset: Int, readLength: Int): Int {
         delegate?.let { return it.read(buffer, offset, readLength) }
-        val f = raf ?: throw IllegalStateException("not opened")
+        val fileHandle = raf ?: throw IllegalStateException("not opened")
         if (readLength == 0) return 0
 
+        var idleLoops = 0
         while (true) {
-            val available = (try { f.length() } catch (_: Throwable) { 0L }) - f.filePointer
+            val length = runCatching { fileHandle.length() }.getOrDefault(0L)
+            val available = length - fileHandle.filePointer
             if (available > 0) {
                 val toRead = kotlin.math.min(readLength.toLong(), available).toInt()
-                return try { f.read(buffer, offset, toRead) } catch (e: Throwable) { throw IOException(e) }
-            }
-            if (completed) return -1
-            // Poll TDLib for completion and wait for more bytes
-            if (fileId > 0 && TdLibReflection.available()) {
-                val client = TdLibReflection.getOrCreateClient(context, kotlinx.coroutines.flow.MutableStateFlow(AuthState.UNKNOWN))
-                val gf = TdLibReflection.buildGetFile(fileId)
-                if (client != null && gf != null) {
-                    val fo = TdLibReflection.sendForResult(client, gf)
-                    val info = fo?.let { TdLibReflection.extractFileInfo(it) }
-                    if (info != null) completed = info.downloadingCompleted
+                return try {
+                    fileHandle.read(buffer, offset, toRead)
+                } catch (e: Throwable) {
+                    throw IOException(e)
                 }
             }
-            try { Thread.sleep(350) } catch (_: InterruptedException) { }
+            if (!completed && expectedSize > 0 && length >= expectedSize) {
+                completed = true
+            }
+            if (completed) return -1
+
+            val client = if (fileId > 0 && TdLibReflection.available()) {
+                activeClient ?: TdLibReflection.getOrCreateClient(context, kotlinx.coroutines.flow.MutableStateFlow(AuthState.UNKNOWN)).also {
+                    if (it != null) activeClient = it
+                }
+            } else null
+            if (client != null) {
+                val fn = TdLibReflection.buildGetFile(fileId)
+                val result = fn?.let {
+                    TdLibReflection.sendForResult(client, it, timeoutMs = 1_000, retries = 1, traceTag = "Read:GetFile[$fileId]")
+                }
+                val info = result?.let { TdLibReflection.extractFileInfo(it) }
+                if (info != null) {
+                    completed = info.downloadingCompleted
+                    if (expectedSize <= 0 && info.expectedSize > 0) {
+                        expectedSize = info.expectedSize
+                    }
+                    if (!info.localPath.isNullOrBlank() && File(info.localPath).exists()) {
+                        persistLocalPath(currentChatId, currentMessageId, info.localPath!!)
+                    }
+                }
+            }
+
+            idleLoops++
+            val sleep = when {
+                idleLoops < 5 -> 180L
+                idleLoops < 15 -> 260L
+                else -> 400L
+            }
+            try {
+                Thread.sleep(sleep)
+            } catch (ie: InterruptedException) {
+                Thread.currentThread().interrupt()
+                throw IOException("interrupted")
+            }
         }
     }
 
@@ -165,15 +256,136 @@ class TelegramTdlibDataSource(
         delegate = null
         runCatching { raf?.close() }
         raf = null
-        // Cancel further TDLib downloads for this file to free IO/memory (best-effort)
         if (fileId > 0 && !completed && TdLibReflection.available()) {
             runCatching {
-                val client = TdLibReflection.getOrCreateClient(context, kotlinx.coroutines.flow.MutableStateFlow(AuthState.UNKNOWN))
+                val client = activeClient ?: TdLibReflection.getOrCreateClient(
+                    context,
+                    kotlinx.coroutines.flow.MutableStateFlow(AuthState.UNKNOWN)
+                )?.also { activeClient = it }
                 val cancel = TdLibReflection.buildCancelDownloadFile(fileId, /* onlyIfPending = */ false)
-                if (client != null && cancel != null) TdLibReflection.sendForResult(client, cancel, 100)
+                if (client != null && cancel != null) {
+                    TdLibReflection.sendForResult(client, cancel, timeoutMs = 500, retries = 1, traceTag = "CancelDownload[$fileId]")
+                }
             }
         }
         opened = false
+        if (!completed && expectedSize > 0 && fileId > 0) {
+            // leave TDLib to continue download in background to finish caching
+        }
+        fileId = -1
+        currentChatId = 0L
+        currentMessageId = 0L
+        requireCompleteDownload = false
+        activeClient = null
+    }
+
+    private fun fetchMessageRow(chatId: Long, messageId: Long): com.chris.m3usuite.data.obx.ObxTelegramMessage? = runBlocking {
+        runCatching {
+            val box = com.chris.m3usuite.data.obx.ObxStore.get(context).boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+            val query = box.query(
+                com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId)
+                    .and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(messageId))
+            ).build()
+            val result = query.findFirst()
+            query.close()
+            result
+        }.getOrNull()
+    }
+
+    private fun persistLocalPath(chatId: Long, messageId: Long, path: String) {
+        runBlocking {
+            runCatching {
+                val box = com.chris.m3usuite.data.obx.ObxStore.get(context).boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+                val query = box.query(
+                    com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId)
+                        .and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(messageId))
+                ).build()
+                val row = query.findFirst() ?: com.chris.m3usuite.data.obx.ObxTelegramMessage(chatId = chatId, messageId = messageId)
+                query.close()
+                if (row.localPath != path) {
+                    row.localPath = path
+                    box.put(row)
+                }
+            }
+        }
+    }
+
+    private fun isLikelyProgressiveContainer(mimeType: String?, fileName: String?): Boolean {
+        val mime = mimeType?.lowercase() ?: ""
+        if (mime.startsWith("video/")) return true
+        if (mime.contains("x-matroska") || mime.contains("matroska") || mime.contains("webm") || mime.contains("quicktime") || mime.contains("x-msvideo") || mime.contains("mp2t")) {
+            return true
+        }
+        val name = fileName?.lowercase() ?: return false
+        return listOf(".mp4", ".m4v", ".mkv", ".webm", ".mov", ".avi", ".ts", ".m2ts", ".mpg", ".mpeg").any { name.endsWith(it) }
+    }
+
+    private fun waitForFile(
+        client: TdLibReflection.ClientHandle,
+        fileId: Int,
+        initial: TdLibReflection.FileInfo,
+        expectCompletion: Boolean,
+        maxWaitMs: Long,
+        traceTag: String
+    ): TdLibReflection.FileInfo {
+        var info = initial
+        val deadline = android.os.SystemClock.elapsedRealtime() + maxWaitMs
+        var sleepMs = 200L
+        while (android.os.SystemClock.elapsedRealtime() <= deadline) {
+            val pathReady = !info.localPath.isNullOrBlank() && File(info.localPath).exists()
+            if (pathReady && (!expectCompletion || info.downloadingCompleted)) {
+                return info
+            }
+            val fn = TdLibReflection.buildGetFile(fileId)
+            val result = fn?.let {
+                TdLibReflection.sendForResult(client, it, timeoutMs = 1_200, retries = 2, traceTag = traceTag)
+            }
+            val updated = result?.let { TdLibReflection.extractFileInfo(it) }
+            if (updated != null) {
+                info = updated
+                val updatedReady = !info.localPath.isNullOrBlank() && File(info.localPath).exists()
+                if (updatedReady && (!expectCompletion || info.downloadingCompleted)) {
+                    return info
+                }
+            }
+            try {
+                Thread.sleep(sleepMs)
+            } catch (ie: InterruptedException) {
+                Thread.currentThread().interrupt()
+                break
+            }
+            sleepMs = (sleepMs + sleepMs / 4).coerceAtMost(2_000L)
+        }
+        return info
+    }
+
+    private fun openFallback(dataSpec: DataSpec, message: String?, markAuth: Boolean): Long {
+        if (!message.isNullOrBlank()) {
+            if (markAuth) {
+                if (!authFallbackNotified) {
+                    showUserMessage(message)
+                    authFallbackNotified = true
+                }
+            } else {
+                showUserMessage(message)
+            }
+        }
+        val d = routingFallback.createDataSource().also {
+            delegate = it
+            listener?.let(it::addTransferListener)
+        }
+        opened = true
+        return d.open(dataSpec)
+    }
+
+    private fun showUserMessage(message: String) {
+        if (notify != null) {
+            notify.invoke(message)
+        } else {
+            runCatching {
+                android.widget.Toast.makeText(context.applicationContext, message, android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     class Factory(

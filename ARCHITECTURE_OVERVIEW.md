@@ -27,6 +27,11 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 - Feature Flag: Global in Settings (`tg_enabled`, default false). Zusatzoptionen: `tg_selected_chats_csv`, `tg_cache_limit_gb`.
  - ObjectBox: Telegram messages are stored in `ObxTelegramMessage` (chatId/messageId/fileId/uniqueId/supportsStreaming/caption/date/localPath/thumbFileId). Repository/DataSources update OBX directly.
 - Login (Alpha): Reflection‑Bridge `telegram/TdLibReflection.kt` + `TelegramAuthRepository` (kein direkter TDLib‑Compile‑Dep). Settings: Button „Telegram verbinden“ (Telefon → Code → Passwort), auto DB‑Key‑Check, Status‑Debug. Telefon-Eingabe nutzt `PhoneNumberAuthenticationSettings` (Tokens + `is_current_phone_number` Toggle im UI) für Single-Device-Logins; bei `authorizationStateWaitOtherDevice` öffnet die App den `tg://login` Link automatisch, wenn die Telegram-App lokal installiert ist. Falls QR nicht möglich ist, bietet der Dialog einen Button „Per Code anmelden“, der den klassischen SMS-Code-Flow erneut startet.
+- TdLibReflection `sendForResult` kapselt nun Timeouts, Retry/Backoff und optionale
+  Trace-Tags pro Aufruf. Service, Datasource und Mapper übergeben sprechende
+  Tags („History[…]“, „Chats:…“, „MediaMapper:…“), damit Logcat die
+  jeweiligen Requests klar zuordnet und fehlerhafte Antworten automatisch
+  retried oder sauber abgebrochen werden.
 - Playback DataSource: `TelegramRoutingDataSource` für Media3 routet `tg://message?chatId=&messageId=` auf lokale Pfade und triggert bei Bedarf `DownloadFile(fileId)`; `localPath` wird persistiert.
 - Settings: Film/Serien Sync zeigt Chat‑Picker (Hauptordner/Archiv) und zeigt die gewählten Chats mit Namen an (wenn AUTHENTICATED).
 - Sync: `TelegramSyncWorker` (manueller Backfill) ruft pro ausgewähltem Chat `CMD_PULL_CHAT_HISTORY` im Service auf. Der Service nutzt `getChatHistory` (limit=200) und `indexMessageContent(..)` für `ObxTelegramMessage`. Mapping auf VOD/Serien‑Modelle folgt heuristisch in Phase‑2. Der Worker sammelt Neuheiten (Filme/Serien/Episoden) und publiziert sie über `SchedulingGateway.telegramSyncState`; HomeChrome blendet währenddessen einen nicht-blockierenden „Telegram Sync“-Banner mit Fortschritt/Resultat ein.
@@ -39,7 +44,13 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 - Telegram Serien Aggregation: Nach dem Sync werden Nachrichten aus ausgewählten Serien‑Chats zu `ObxSeries` + `ObxEpisode` aggregiert (SxxEyy‑Heuristik). ProviderKey=`telegram`. Library (Tab Serien) zeigt zusätzlich eine Row „Telegram Serien“. Episoden tragen `tgChatId/tgMessageId/tgFileId`; Playback bevorzugt `tg://` in `SeriesDetailScreen`. `TelegramSeriesIndexer.rebuildWithStats` liefert neben der Gesamtanzahl auch Neu-Zählungen, die der Worker an die UI weiterreicht.
   - Build Guard: Kotlin 2.0 verlangt strikt `Int`-basierte Set-Typen für OBX IDs und einen `IndexedMessageOutcome`-Return der TDLib-Schreibkoroutine. Diese Fixes sind aktiv; keine Rückkehr zu `Set<Long>`/`Result`-Rückgaben.
  - Playback: Für `tg://` nutzt der Player reduzierte RAM‑Puffer (`LoadControl`), während der Download über TDLib (IO) fortschreitet.
-- Streaming DataSource: `TelegramTdlibDataSource` (gated via `tg_enabled` + AUTH) lädt/streamt Dateien progressiv (Seek) via TDLib; persistiert `localPath`; Fallback auf Routing/HTTP.
+- Streaming DataSource: `TelegramTdlibDataSource` (gated via `tg_enabled` + AUTH)
+  entscheidet anhand von TDLibs `supportsStreaming` und Dateiheuristiken, ob
+  progressives Streaming möglich ist. Nicht-streambare Container werden vor der
+  Wiedergabe vollständig geladen; währenddessen laufen belastbare Polls über
+  `sendForResult` (Timeout + Retry). Erfolgreiche Downloads persistieren das
+  `localPath`-Attribut; bei Fehlern erfolgt ein klarer Fallback auf Routing/HTTP
+  inklusive Nutzerhinweis.
 - Build: `TG_API_ID`/`TG_API_HASH` als BuildConfig via sichere Lookup‑Kette (ohne Secrets im Repo). Reihenfolge: ENV → `/.tg.secrets.properties` (root, untracked) → `-P` Gradle‑Props → Default 0/leer. Runtime‑Fallback: Ist BuildConfig leer, liest der app‑seitige TDLib‑Client (Player‑DataSource) die Keys aus den Settings (`tg_api_id`, `tg_api_hash`). Packaging: TDLib (arm64‑v8a), ProGuard‑Keep für `org.drinkless.td.libcore.telegram.**`. Die JNI‑Lib `libtdjni.so` wird durch einen statischen Initializer in `org.drinkless.tdlib.Client` automatisch geladen.
 - Packaging: `:libtd` Android‑Library mit `jniLibs` (`arm64-v8a/libtdjni.so`). App hängt an `:libtd`, sodass TDLib zur Laufzeit vorhanden ist; BuildConfig `TG_API_ID`/`TG_API_HASH` kommen aus `gradle.properties`.
 - Build TDLib/JNI: Single‑ABI arm64‑v8a wird mit statisch gelinktem BoringSSL gebaut und ins Modul kopiert.
