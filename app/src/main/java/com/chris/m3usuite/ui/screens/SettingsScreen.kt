@@ -1404,7 +1404,14 @@ fun SettingsScreen(
                                 }
                                 if (vs != null && !vodNotifiedSuccess) {
                                     vodNotifiedSuccess = true
-                                    snackHost.toast("Telegram Sync (Filme) abgeschlossen")
+                                    val processedChats = vs.outputData.getInt("processed_chats", 0)
+                                    if (processedChats > 0) {
+                                        val moviesAdded = vs.outputData.getInt("vod_new", 0)
+                                        val parts = mutableListOf<String>()
+                                        if (moviesAdded > 0) parts += "${moviesAdded} Filme"
+                                        val detail = if (parts.isEmpty()) "keine neuen Inhalte" else parts.joinToString(", ")
+                                        snackHost.toast("Telegram Sync (Filme) abgeschlossen – $detail")
+                                    }
                                 }
 
                                 // SERIES work tracking
@@ -1427,7 +1434,16 @@ fun SettingsScreen(
                                 }
                                 if (ss != null && !seriesNotifiedSuccess) {
                                     seriesNotifiedSuccess = true
-                                    snackHost.toast("Telegram Sync (Serien) abgeschlossen")
+                                    val processedChats = ss.outputData.getInt("processed_chats", 0)
+                                    if (processedChats > 0) {
+                                        val newSeries = ss.outputData.getInt("series_new", 0)
+                                        val newEpisodes = ss.outputData.getInt("series_episode_new", 0)
+                                        val parts = mutableListOf<String>()
+                                        if (newSeries > 0) parts += "${newSeries} Serien"
+                                        if (newEpisodes > 0) parts += "${newEpisodes} Episoden"
+                                        val detail = if (parts.isEmpty()) "keine neuen Inhalte" else parts.joinToString(", ")
+                                        snackHost.toast("Telegram Sync (Serien) abgeschlossen – $detail")
+                                    }
                                 }
                             } catch (_: Throwable) {}
                             kotlinx.coroutines.delay(600)
@@ -1703,6 +1719,18 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
                                     }
                                 }) { Text("In Telegram öffnen") }
                                 TextButton(onClick = { repo.requestQrLogin() }) { Text("Neu laden") }
+                                TextButton(
+                                    onClick = {
+                                        if (phone.isNotBlank()) {
+                                            busy = true
+                                            useCurrentDevice = false
+                                            repo.start()
+                                            repo.sendPhoneNumber(phone, false)
+                                            repo.requestAuthState()
+                                        }
+                                    },
+                                    enabled = phone.isNotBlank()
+                                ) { Text("Per Code anmelden") }
                             }
                             if (hasTelegramApp) {
                                 Spacer(Modifier.height(4.dp))

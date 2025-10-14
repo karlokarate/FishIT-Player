@@ -97,7 +97,7 @@ class TelegramTdlibDataSource(
         // 3) Resolve local path & open RAF
         var info = initialInfo
         var attempts = 0
-        while ((info.localPath.isNullOrBlank() || !java.io.File(info.localPath).exists()) && attempts < 80) {
+        while ((info.localPath.isNullOrBlank() || !java.io.File(info.localPath).exists()) && attempts < 200) {
             Thread.sleep(250)
             val getFile = TdLibReflection.buildGetFile(fileId) ?: break
             val f = TdLibReflection.sendForResult(client, getFile) ?: break

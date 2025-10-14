@@ -5,7 +5,9 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -73,6 +75,7 @@ import kotlinx.coroutines.delay
 import com.chris.m3usuite.ui.focus.FocusKit
 import com.chris.m3usuite.ui.home.MiniPlayerHost
 import com.chris.m3usuite.ui.home.MiniPlayerState
+import com.chris.m3usuite.work.SchedulingGateway
 import com.chris.m3usuite.ui.focus.run as focusKitRun
 
 // Rows notify current focused row to drive chrome behavior
@@ -141,6 +144,7 @@ fun HomeChromeScaffold(
     val navPad = with(density) { (if (isPreview) 16.dp else WindowInsets.navigationBars.getBottom(this).toDp()) }
 
     val seedingInFlight by XtreamImportCoordinator.seederInFlight.collectAsStateWithLifecycle(initialValue = false)
+    val telegramSyncState by SchedulingGateway.telegramSyncState.collectAsStateWithLifecycle(initialValue = SchedulingGateway.TelegramSyncState.Idle)
 
     // Focus manager to push focus back into content after collapsing chrome via BACK
     val focusManager: FocusManager = LocalFocusManager.current
@@ -207,6 +211,43 @@ fun HomeChromeScaffold(
         }
     } else Modifier
 
+    val telegramBannerVisible = telegramSyncState !is SchedulingGateway.TelegramSyncState.Idle
+    val telegramBannerText = remember(telegramSyncState) {
+        when (val state = telegramSyncState) {
+            is SchedulingGateway.TelegramSyncState.Running -> {
+                val processed = state.processedChats.coerceIn(0, state.totalChats)
+                if (state.totalChats > 0) "Telegram Sync läuft… ${processed}/${state.totalChats} Chats" else "Telegram Sync läuft…"
+            }
+            is SchedulingGateway.TelegramSyncState.Success -> {
+                val result = state.result
+                val parts = buildList {
+                    if (result.seriesAdded > 0) add("${result.seriesAdded} Serien")
+                    if (result.episodesAdded > 0) add("${result.episodesAdded} Episoden")
+                    if (result.moviesAdded > 0) add("${result.moviesAdded} Filme")
+                }
+                val details = if (parts.isEmpty()) "keine neuen Inhalte" else parts.joinToString(", ")
+                "Telegram Sync abgeschlossen – ${details}"
+            }
+            is SchedulingGateway.TelegramSyncState.Failure -> "Telegram Sync fehlgeschlagen: ${state.error}"
+            SchedulingGateway.TelegramSyncState.Idle -> ""
+        }
+    }
+    val telegramSurfaceColor = when (telegramSyncState) {
+        is SchedulingGateway.TelegramSyncState.Failure -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp)
+    }
+    val telegramTextColor = when (telegramSyncState) {
+        is SchedulingGateway.TelegramSyncState.Failure -> MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
+    LaunchedEffect(telegramSyncState) {
+        if (telegramSyncState is SchedulingGateway.TelegramSyncState.Success || telegramSyncState is SchedulingGateway.TelegramSyncState.Failure) {
+            delay(6_000)
+            SchedulingGateway.acknowledgeTelegramSync()
+        }
+    }
+
     Box(
         Modifier
             .fillMaxSize()
@@ -252,24 +293,43 @@ fun HomeChromeScaffold(
         }
     ) {
         // Focus handled inside overlay
-        AnimatedVisibility(
-            visible = seedingInFlight,
+        Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = statusPad + 12.dp)
+                .padding(top = statusPad + 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Surface(
-                tonalElevation = 6.dp,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp)
-            ) {
-                Text(
-                    text = "Import läuft…",
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier
-                        .padding(horizontal = 20.dp, vertical = 8.dp)
-                        .alpha(0.9f)
-                )
+            AnimatedVisibility(visible = seedingInFlight) {
+                Surface(
+                    tonalElevation = 6.dp,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp)
+                ) {
+                    Text(
+                        text = "Import läuft…",
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier
+                            .padding(horizontal = 20.dp, vertical = 8.dp)
+                            .alpha(0.9f)
+                    )
+                }
+            }
+            AnimatedVisibility(visible = telegramBannerVisible) {
+                Surface(
+                    tonalElevation = 6.dp,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                    color = telegramSurfaceColor
+                ) {
+                    Text(
+                        text = telegramBannerText,
+                        color = telegramTextColor,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier
+                            .padding(horizontal = 20.dp, vertical = 8.dp)
+                            .alpha(0.96f)
+                    )
+                }
             }
         }
         // Inhalt mit korrektem Chrome/Inset-Padding (blur in Expanded on TV)

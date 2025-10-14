@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -13,6 +16,19 @@ import androidx.work.ExistingPeriodicWorkPolicy
  * Ensures unique names, consistent policies, and simple entry points.
  */
 object SchedulingGateway {
+    data class TelegramSyncResult(
+        val moviesAdded: Int,
+        val seriesAdded: Int,
+        val episodesAdded: Int
+    )
+
+    sealed class TelegramSyncState {
+        object Idle : TelegramSyncState()
+        data class Running(val mode: String, val processedChats: Int, val totalChats: Int) : TelegramSyncState()
+        data class Success(val mode: String, val result: TelegramSyncResult) : TelegramSyncState()
+        data class Failure(val mode: String, val error: String) : TelegramSyncState()
+    }
+
     const val NAME_XTREAM_REFRESH = "xtream_refresh"
     const val NAME_XTREAM_ENRICH  = "xtream_enrich"
     const val NAME_EPG_REFRESH    = "epg_refresh"
@@ -20,6 +36,9 @@ object SchedulingGateway {
     const val NAME_TG_SYNC_VOD    = "tg_sync_vod"
     const val NAME_TG_SYNC_SERIES = "tg_sync_series"
     const val NAME_XTREAM_DELTA   = "xtream_delta_import"
+
+    private val telegramSyncStateInternal = MutableStateFlow<TelegramSyncState>(TelegramSyncState.Idle)
+    val telegramSyncState: StateFlow<TelegramSyncState> = telegramSyncStateInternal.asStateFlow()
 
     fun scheduleAll(ctx: Context) {
         // Intentionally do NOT schedule Xtream delta periodic.
@@ -108,6 +127,34 @@ object SchedulingGateway {
         runCatching { ObxKeyBackfillWorker.scheduleOnce(ctx) }
         if (refreshHomeChrome) {
             scheduleAll(ctx)
+        }
+    }
+
+    fun notifyTelegramSyncStarted(mode: String, totalChats: Int) {
+        telegramSyncStateInternal.value = TelegramSyncState.Running(mode, 0, totalChats)
+    }
+
+    fun notifyTelegramSyncProgress(mode: String, processedChats: Int, totalChats: Int) {
+        val clamped = processedChats.coerceAtLeast(0)
+        telegramSyncStateInternal.value = TelegramSyncState.Running(mode, clamped, totalChats)
+    }
+
+    fun notifyTelegramSyncCompleted(mode: String, result: TelegramSyncResult) {
+        telegramSyncStateInternal.value = TelegramSyncState.Success(mode, result)
+    }
+
+    fun notifyTelegramSyncFailed(mode: String, error: String) {
+        telegramSyncStateInternal.value = TelegramSyncState.Failure(mode, error)
+    }
+
+    fun notifyTelegramSyncIdle() {
+        telegramSyncStateInternal.value = TelegramSyncState.Idle
+    }
+
+    fun acknowledgeTelegramSync() {
+        val state = telegramSyncStateInternal.value
+        if (state !is TelegramSyncState.Running) {
+            telegramSyncStateInternal.value = TelegramSyncState.Idle
         }
     }
 

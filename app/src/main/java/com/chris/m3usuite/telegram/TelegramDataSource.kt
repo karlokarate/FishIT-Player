@@ -101,7 +101,7 @@ class TelegramRoutingDataSource(
             }
         }
         // Short wait-loop (up to ~2s) for localPath to appear
-        repeat(10) {
+        repeat(20) {
             val p = runBlocking { obx.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java).query(com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId).and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(msgId))).build().findFirst()?.localPath }
             if (p != null) {
                 val f = java.io.File(p)

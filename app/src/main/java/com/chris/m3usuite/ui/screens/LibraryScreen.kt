@@ -823,7 +823,7 @@ fun LibraryScreen(
                     navController.navigateTopLevel("library?q=&qs=")
                 }
             },
-            showBottomBar = false,
+            showBottomBar = true,
             selectedBottom = when (selectedTab) {
                 ContentTab.Live -> "live"
                 ContentTab.Vod -> "vod"
