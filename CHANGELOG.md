@@ -1,3 +1,6 @@
+2025-10-18
+- fix(telegram/build): Release compile restored by aligning Telegram indexer/service Kotlin types with ObjectBox IDs and returning concrete outcomes from the TDLib writer helper. Prevents Kotlin 2.0 Set/Result mismatches from breaking the pipeline.
+
 2025-10-17
 - feat(telegram/sync): Worker now reports per-run stats (new films/series/episodes) and exposes a global `SchedulingGateway.telegramSyncState`. Home chrome shows a persistent "Telegram Sync" banner with progress and completion details until results are acknowledged.
 - feat(settings/telegram): Sync toasts surface the real counts from WorkManager output and stay silent when no chat was processed. Added a fallback button in the login dialog to switch from QR to code-based authentication without leaving the flow.

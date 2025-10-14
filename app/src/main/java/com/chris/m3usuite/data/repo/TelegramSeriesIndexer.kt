@@ -153,7 +153,7 @@ object TelegramSeriesIndexer {
             seriesBox.remove(removeSeries)
         }
 
-        val existingEpisodeIds: Set<Long> = if (existingSeriesIds.isNotEmpty()) {
+        val existingEpisodeIds: Set<Int> = if (existingSeriesIds.isNotEmpty()) {
             val q = episodeBox.query(ObxEpisode_.seriesId.oneOf(existingSeriesIds.map { it.toLong() }.toLongArray())).build()
             try {
                 q.find().map { it.episodeId }.toSet()
