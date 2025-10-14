@@ -1,3 +1,10 @@
+2025-10-17
+- feat(telegram/sync): Worker now reports per-run stats (new films/series/episodes) and exposes a global `SchedulingGateway.telegramSyncState`. Home chrome shows a persistent "Telegram Sync" banner with progress and completion details until results are acknowledged.
+- feat(settings/telegram): Sync toasts surface the real counts from WorkManager output and stay silent when no chat was processed. Added a fallback button in the login dialog to switch from QR to code-based authentication without leaving the flow.
+- fix(ui/library): Restored the Library header bottom buttons (Live/VOD/Serien) for phone users by re-enabling the bottom chrome in `HomeChromeScaffold`.
+- fix(telegram/playback): Increased TDLib polling windows in `TelegramTdlibDataSource`/`TelegramRoutingDataSource` so large downloads no longer abort with IO errors before the local path appears.
+- chore(telegram/indexer): `TelegramSeriesIndexer.rebuildWithStats` returns detailed counts for new series/episodes; the sync worker consumes it to drive UI messaging and cache refreshes.
+
 2025-10-16
 - refactor(tv/homechrome): Introduced HomeChromeOverlay host wiring chrome focus locals, "prefer settings first focus" toggle, and collapse callback, so HomeChromeScaffold can drop inline overlay plumbing.
 - feat(ui/header): Expanded FishHeader controller/data to support accent badge text and provider chips via a shared overlay host.

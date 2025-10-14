@@ -34,13 +34,24 @@ object TelegramSeriesIndexer {
     private const val PROVIDER_KEY = "telegram"
     private const val LANG_INDEX_PREFIX = "telegram:"
 
-    suspend fun rebuild(context: Context): Int = withContext(Dispatchers.IO) {
+    data class RebuildStats(
+        val seriesCount: Int,
+        val episodeCount: Int,
+        val newSeries: Int,
+        val newEpisodes: Int
+    )
+
+    private val EMPTY_STATS = RebuildStats(0, 0, 0, 0)
+
+    suspend fun rebuild(context: Context): Int = rebuildWithStats(context).seriesCount
+
+    suspend fun rebuildWithStats(context: Context): RebuildStats = withContext(Dispatchers.IO) {
         val settings = SettingsStore(context)
         val enabled = settings.tgEnabled.first()
         val store = ObxStore.get(context)
         if (!enabled) {
             cleanupTelegramSeries(store)
-            return@withContext 0
+            return@withContext EMPTY_STATS
         }
 
         val selectedChats = settings.tgSelectedSeriesChatsCsv.first()
@@ -49,7 +60,7 @@ object TelegramSeriesIndexer {
             .distinct()
         if (selectedChats.isEmpty()) {
             cleanupTelegramSeries(store)
-            return@withContext 0
+            return@withContext EMPTY_STATS
         }
 
         val msgBox = store.boxFor<ObxTelegramMessage>()
@@ -66,7 +77,7 @@ object TelegramSeriesIndexer {
         }
         if (messages.isEmpty()) {
             cleanupTelegramSeries(store)
-            return@withContext 0
+            return@withContext EMPTY_STATS
         }
 
         val aggregates = mutableMapOf<String, SeriesAggregate>()
@@ -127,6 +138,7 @@ object TelegramSeriesIndexer {
         // Remove series that no longer exist (deselected chats or no matching messages)
         val existingSeriesQuery = seriesBox.query(ObxSeries_.providerKey.equal(PROVIDER_KEY)).build()
         val existingSeries = try { existingSeriesQuery.find() } finally { existingSeriesQuery.close() }
+        val existingSeriesIds = existingSeries.map { it.seriesId }.toSet()
         val keepSeriesIds = aggregates.values.map { it.seriesId }.toSet()
         val removeSeries = existingSeries.filter { it.seriesId !in keepSeriesIds }
         if (removeSeries.isNotEmpty()) {
@@ -140,6 +152,15 @@ object TelegramSeriesIndexer {
             }
             seriesBox.remove(removeSeries)
         }
+
+        val existingEpisodeIds: Set<Long> = if (existingSeriesIds.isNotEmpty()) {
+            val q = episodeBox.query(ObxEpisode_.seriesId.oneOf(existingSeriesIds.map { it.toLong() }.toLongArray())).build()
+            try {
+                q.find().map { it.episodeId }.toSet()
+            } finally {
+                q.close()
+            }
+        } else emptySet()
 
         // Drop existing episodes for kept series before writing the fresh snapshot
         if (keepSeriesIds.isNotEmpty()) {
@@ -226,7 +247,15 @@ object TelegramSeriesIndexer {
         // Refresh aggregated indexes so provider/year/genre counts remain accurate
         runCatching { XtreamObxRepository(context, settings).rebuildIndexes() }
 
-        aggregates.size
+        val newSeriesCount = aggregates.values.count { it.seriesId !in existingSeriesIds }
+        val newEpisodeCount = newEpisodeRows.count { it.episodeId !in existingEpisodeIds }
+
+        RebuildStats(
+            seriesCount = aggregates.size,
+            episodeCount = newEpisodeRows.size,
+            newSeries = newSeriesCount,
+            newEpisodes = newEpisodeCount
+        )
     }
 
     private fun cleanupTelegramSeries(store: BoxStore) {

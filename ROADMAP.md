@@ -11,6 +11,8 @@ Hinweis
 - Maintenance 2025‑10‑15: TV Mini-Player Overlay wieder funktionsfähig (MiniPlayerHost/MiniPlayerState + PlaybackSession
   Navigator). Release-Builds binden `objectbox-kotlin` ein, damit TelegramSeriesIndexer (`query`/`put`) ohne Debug-Abhängigkeiten
   kompiliert.
+- Maintenance 2025‑10‑17: Telegram Sync liefert nun globale Banner mit Fortschritt/Zähler, Settings melden echte Ergebnisse und
+  die Library zeigt die Live/VOD/Serien-Schalter im Header wieder an. Login-Dialog besitzt eine "Per Code anmelden"-Fallback.
 
 Prio 1 — Tiles/Rows Centralization (ON)
 - Ziel: UI‑Layout vollständig zentralisieren (Tokens + Tile + Row + Content), damit Screens nur noch `FishRow` + `FishTile` verdrahten.

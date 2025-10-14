@@ -73,6 +73,21 @@ class TelegramTdlibService : Service() {
     private val chatCache = mutableMapOf<Long, ChatSummary>()
     private val authTokens = ArrayDeque<String>()
 
+    private data class BackfillStats(
+        val processed: Int,
+        val newVod: Int,
+        val newSeriesEpisodes: Int,
+        val newSeriesIds: LongArray
+    )
+
+    private data class IndexedMessageOutcome(
+        val isNew: Boolean,
+        val kind: IndexedKind,
+        val seriesId: Long? = null
+    )
+
+    private enum class IndexedKind { UNKNOWN, VOD, SERIES }
+
     // Connectivity tracking
     private var netCallback: android.net.ConnectivityManager.NetworkCallback? = null
     private var lastNetType: TdLibReflection.Net? = null
@@ -134,14 +149,17 @@ class TelegramTdlibService : Service() {
                     val target = msg.replyTo
                     val reqId = data.getInt("reqId", -1)
                     scope.launch(Dispatchers.IO) {
-                        val count = backfillChatHistory(chatId, limit, fetchAll)
+                        val stats = backfillChatHistory(chatId, limit, fetchAll)
                         // Acknowledge completion to caller with processed count
                         if (target != null) {
                             val m = Message.obtain(null, REPLY_PULL_DONE)
                             m.data = Bundle().apply {
                                 putInt("reqId", reqId)
                                 putLong("chatId", chatId)
-                                putInt("count", count)
+                                putInt("count", stats.processed)
+                                putInt("vodNew", stats.newVod)
+                                putInt("seriesEpisodeNew", stats.newSeriesEpisodes)
+                                putLongArray("seriesIds", stats.newSeriesIds)
                             }
                             runCatching { target.send(m) }
                         }
@@ -440,11 +458,17 @@ class TelegramTdlibService : Service() {
         } catch (_: Throwable) {}
     }
 
-    private fun indexMessageContent(chatId: Long, messageId: Long, content: Any?, messageDate: Long? = null, asyncWrite: Boolean = true) {
+    private fun indexMessageContent(
+        chatId: Long,
+        messageId: Long,
+        content: Any?,
+        messageDate: Long? = null,
+        asyncWrite: Boolean = true
+    ): IndexedMessageOutcome? {
         try {
-            val safeContent = content ?: return
-            val fileObj = TdLibReflection.findPrimaryFile(safeContent) ?: return
-            val info = TdLibReflection.extractFileInfo(fileObj) ?: return
+            val safeContent = content ?: return null
+            val fileObj = TdLibReflection.findPrimaryFile(safeContent) ?: return null
+            val info = TdLibReflection.extractFileInfo(fileObj) ?: return null
             val unique = TdLibReflection.extractFileUniqueId(fileObj)
             val supports = TdLibReflection.extractSupportsStreaming(safeContent)
             val caption = kotlin.runCatching {
@@ -459,7 +483,7 @@ class TelegramTdlibService : Service() {
             val thumbFileId = TdLibReflection.extractThumbFileId(safeContent)
             val fileName = TdLibReflection.extractFileName(safeContent)
 
-            val writer: suspend () -> Unit = {
+            val writer: suspend () -> IndexedMessageOutcome? = {
                 android.util.Log.i(
                     "TdSvc",
                     "prepare upsert tg_message chatId=${chatId} messageId=${messageId} fileId=${info.fileId} mime=${mime ?: ""}"
@@ -471,6 +495,7 @@ class TelegramTdlibService : Service() {
                         com.chris.m3usuite.data.obx.ObxTelegramMessage_.chatId.equal(chatId)
                             .and(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId.equal(messageId))
                     ).build().findFirst()
+                    val isNew = existing == null
 
                     // Resolve best-effort message date:
                     // 1) explicit argument (UpdateNewMessage/history)
@@ -503,12 +528,30 @@ class TelegramTdlibService : Service() {
                     android.util.Log.i("TdSvc", "OBX upsert tg_message chatId=$chatId messageId=$messageId fileId=${info.fileId} thumbFileId=$thumbFileId local=${info.localPath != null}")
                     // Kick off thumbnail download asynchronously to populate poster
                     requestThumbnailDownloadIfNeeded(thumbFileId)
+                    val kind = when {
+                        parsed.isSeries && !parsed.seriesTitle.isNullOrBlank() && parsed.season != null && parsed.episode != null -> IndexedKind.SERIES
+                        parsed.isSeries -> IndexedKind.UNKNOWN
+                        else -> IndexedKind.VOD
+                    }
+                    val seriesId = if (kind == IndexedKind.SERIES) {
+                        val normalized = normalizeSeriesKey(parsed.seriesTitle!!)
+                        seriesIdFor(normalized).toLong()
+                    } else null
+                    IndexedMessageOutcome(isNew = isNew, kind = kind, seriesId = seriesId)
                 }.onFailure { e ->
                     android.util.Log.w("TdSvc", "OBX upsert failed chatId=${chatId} messageId=${messageId}: ${e.message}")
+                    throw e
                 }
             }
-            if (asyncWrite) scope.launch(Dispatchers.IO) { writer() } else kotlinx.coroutines.runBlocking(Dispatchers.IO) { writer() }
-        } catch (_: Throwable) {}
+            return if (asyncWrite) {
+                scope.launch(Dispatchers.IO) { kotlin.runCatching { writer() } }
+                null
+            } else {
+                kotlinx.coroutines.runBlocking(Dispatchers.IO) { runCatching { writer() }.getOrNull() }
+            }
+        } catch (_: Throwable) {
+            return null
+        }
     }
 
     private fun requestThumbnailDownloadIfNeeded(thumbFileId: Int?) {
@@ -741,11 +784,11 @@ class TelegramTdlibService : Service() {
         runCatching { target.send(message) }
     }
 
-    private fun backfillChatHistory(chatId: Long, limit: Int, fetchAll: Boolean = false): Int {
+    private fun backfillChatHistory(chatId: Long, limit: Int, fetchAll: Boolean = false): BackfillStats {
         android.util.Log.i("TdSvc", "backfill start chatId=${chatId} limit=${limit} fetchAll=${fetchAll}")
-        if (chatId == 0L || limit <= 0) return 0
-        if (!ensureStartedOrError()) return 0
-        val ch = clientHandle ?: return 0
+        if (chatId == 0L || limit <= 0) return BackfillStats(0, 0, 0, longArrayOf())
+        if (!ensureStartedOrError()) return BackfillStats(0, 0, 0, longArrayOf())
+        val ch = clientHandle ?: return BackfillStats(0, 0, 0, longArrayOf())
 
         var fromId = 0L
         var page = 0
@@ -754,6 +797,9 @@ class TelegramTdlibService : Service() {
         val perPage = limit.coerceAtLeast(1)
 
         var processed = 0
+        var newVod = 0
+        var newSeriesEpisodes = 0
+        val newSeriesIds = mutableSetOf<Long>()
         while (keepGoing) {
             // TDLib paging semantics:
             // - First page: from_message_id=0, offset=0 → newest messages
@@ -782,7 +828,17 @@ class TelegramTdlibService : Service() {
                     messageObj.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(messageObj)
                 }.getOrNull()
                 val messageDate = runCatching { TdLibReflection.extractMessageDate(messageObj) }.getOrNull()
-                indexMessageContent(chatId, messageId, content, messageDate, asyncWrite = false)
+                val outcome = indexMessageContent(chatId, messageId, content, messageDate, asyncWrite = false)
+                if (outcome?.isNew == true) {
+                    when (outcome.kind) {
+                        IndexedKind.VOD -> newVod++
+                        IndexedKind.SERIES -> {
+                            newSeriesEpisodes++
+                            outcome.seriesId?.let { newSeriesIds += it }
+                        }
+                        IndexedKind.UNKNOWN -> Unit
+                    }
+                }
                 processed++
             }
             page++
@@ -797,8 +853,8 @@ class TelegramTdlibService : Service() {
             // Continue only if fetchAll requested; otherwise single page
             keepGoing = fetchAll
         }
-        android.util.Log.i("TdSvc", "backfill done chatId=${chatId} pages=${page} processed=${processed}")
-        return processed
+        android.util.Log.i("TdSvc", "backfill done chatId=${chatId} pages=${page} processed=${processed} newVod=${newVod} newSeriesEpisodes=${newSeriesEpisodes}")
+        return BackfillStats(processed, newVod, newSeriesEpisodes, newSeriesIds.toLongArray())
     }
 
     private fun ensureStartedOrError(): Boolean {

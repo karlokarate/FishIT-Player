@@ -10,12 +10,20 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
 class TelegramServiceClient(private val context: Context) {
+    data class ChatSyncResult(
+        val chatId: Long,
+        val processedMessages: Int,
+        val newVod: Int,
+        val newSeriesEpisodes: Int,
+        val newSeriesIds: LongArray
+    )
+
     private var serviceMessenger: Messenger? = null
     // Queue outbound commands until the service binding is established to avoid races
     private val pending = ArrayDeque<Message>()
     private val pendingChatList = mutableMapOf<Int, (LongArray, Array<String>) -> Unit>()
     private val pendingTitles = mutableMapOf<Int, (LongArray, Array<String>) -> Unit>()
-    private val pendingPulls = mutableMapOf<Int, (Long, Int) -> Unit>()
+    private val pendingPulls = mutableMapOf<Int, (ChatSyncResult) -> Unit>()
     private val nextReqId = AtomicInteger(1)
     private var pendingFolderList: ((IntArray) -> Unit)? = null
     private val incoming = object : Handler(Looper.getMainLooper()) {
@@ -52,8 +60,12 @@ class TelegramServiceClient(private val context: Context) {
                     val reqId = msg.data.getInt("reqId", -1)
                     val chatId = msg.data.getLong("chatId")
                     val count = msg.data.getInt("count", 0)
+                    val vodNew = msg.data.getInt("vodNew", 0)
+                    val seriesEpisodes = msg.data.getInt("seriesEpisodeNew", 0)
+                    val seriesIds = msg.data.getLongArray("seriesIds") ?: longArrayOf()
+                    val result = ChatSyncResult(chatId, count, vodNew, seriesEpisodes, seriesIds)
                     synchronized(pendingPulls) {
-                        pendingPulls.remove(reqId)?.invoke(chatId, count)
+                        pendingPulls.remove(reqId)?.invoke(result)
                     }
                 }
                 else -> super.handleMessage(msg)
@@ -215,11 +227,11 @@ class TelegramServiceClient(private val context: Context) {
             putBoolean("fetchAll", fetchAll)
         }
 
-    suspend fun pullChatHistoryAwait(chatId: Long, limit: Int = 200, fetchAll: Boolean = false): Int =
+    suspend fun pullChatHistoryAwait(chatId: Long, limit: Int = 200, fetchAll: Boolean = false): ChatSyncResult =
         suspendCancellableCoroutine { cont ->
             val reqId = nextReqId.getAndIncrement()
             synchronized(pendingPulls) {
-                pendingPulls[reqId] = { _, count -> cont.resume(count) }
+                pendingPulls[reqId] = { result -> cont.resume(result) }
             }
             cont.invokeOnCancellation { synchronized(pendingPulls) { pendingPulls.remove(reqId) } }
             send(TelegramTdlibService.CMD_PULL_CHAT_HISTORY) {
