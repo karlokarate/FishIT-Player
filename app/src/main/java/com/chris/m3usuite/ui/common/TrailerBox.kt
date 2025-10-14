@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,16 +33,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
-import androidx.media3.datasource.DefaultHttpDataSource
-import com.chris.m3usuite.ui.common.AppIcon
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.media3.common.util.UnstableApi
 import com.chris.m3usuite.R
+import com.chris.m3usuite.player.PlayerComponents
+import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.debug.safePainter
 import com.chris.m3usuite.ui.focus.focusScaleOnTv
 
@@ -145,9 +145,7 @@ private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
             .setReadTimeoutMs(15_000)
         if (headers.isNotEmpty()) httpFactory.setDefaultRequestProperties(headers)
         val mediaSourceFactory = DefaultMediaSourceFactory(context).setDataSourceFactory(httpFactory)
-        val renderers = DefaultRenderersFactory(context)
-            .setEnableDecoderFallback(true)
-            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
+        val renderers = PlayerComponents.renderersFactory(context)
         ExoPlayer.Builder(context)
             .setRenderersFactory(renderers)
             .setTrackSelector(trackSelector)

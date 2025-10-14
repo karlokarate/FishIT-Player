@@ -77,7 +77,6 @@ import androidx.media3.common.Tracks
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.AspectRatioFrameLayout
@@ -286,9 +285,7 @@ fun InternalPlayerScreen(
 
     // Player (shared via PlaybackSession so mini player can attach after leaving screen)
     val session = remember(url, headers, dataSourceFactory, mimeType, trackSelector) {
-        val renderers = DefaultRenderersFactory(ctx)
-            .setEnableDecoderFallback(true)
-            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+        val renderers = PlayerComponents.renderersFactory(ctx)
 
         val loadControl = if (isTelegramContent) {
             // Keep RAM small; rely on TDLib on-disk caching while downloading
