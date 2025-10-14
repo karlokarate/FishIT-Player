@@ -96,6 +96,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.ui.focus.FocusKit
+import com.chris.m3usuite.ui.home.MiniPlayerDescriptor
 import com.chris.m3usuite.ui.home.MiniPlayerState
 import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import android.widget.Toast
@@ -149,6 +150,8 @@ fun InternalPlayerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val isTv = remember(ctx) { FocusKit.isTvDevice(ctx) }
+
+    LaunchedEffect(Unit) { MiniPlayerState.hide() }
 
     val obxStore = remember(ctx) { ObxStore.get(ctx) }
     val resumeRepo = remember(ctx) { ResumeRepository(ctx) }
@@ -239,7 +242,7 @@ fun InternalPlayerScreen(
     }
 
     // Player (shared via PlaybackSession so mini player can attach after leaving screen)
-    val exoPlayer = remember(url, headers, dataSourceFactory, mimeType) {
+    val session = remember(url, headers, dataSourceFactory, mimeType) {
         val renderers = DefaultRenderersFactory(ctx)
             .setEnableDecoderFallback(true)
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
@@ -265,28 +268,34 @@ fun InternalPlayerScreen(
         // Align button-based seek increments (also used by PlayerView controller buttons)
         val seekIncrementMs = 60_000L
 
-        PlaybackSession.getOrCreate(ctx) {
-        ExoPlayer.Builder(ctx)
-            .setRenderersFactory(renderers)
-            .setMediaSourceFactory(
-                androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
-            )
-            .setSeekBackIncrementMs(seekIncrementMs)
-            .setSeekForwardIncrementMs(seekIncrementMs)
-            .setLoadControl(loadControl)
-            .build()
-        }.apply {
-                android.util.Log.d("ExoSetup", "setMediaItem url=${url}")
-                val inferredMime = mimeType ?: PlayUrlHelper.guessMimeType(url, null)
-                val mediaItem = MediaItem.Builder()
-                    .setUri(url)
-                    .also { builder -> inferredMime?.let { builder.setMimeType(it) } }
-                    .build()
-                setMediaItem(mediaItem)
-                // SeekParameters tuning omitted for compatibility
-                prepare()
-                playWhenReady = false // Phase 4: erst nach Screen-Time-Check starten
-                startPositionMs?.let { seekTo(it) }
+        PlaybackSession.acquire(ctx) {
+            ExoPlayer.Builder(ctx)
+                .setRenderersFactory(renderers)
+                .setMediaSourceFactory(
+                    androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
+                )
+                .setSeekBackIncrementMs(seekIncrementMs)
+                .setSeekForwardIncrementMs(seekIncrementMs)
+                .setLoadControl(loadControl)
+                .build()
+        }
+    }
+    val exoPlayer = session.player
+
+    LaunchedEffect(session.isNew, url, mimeType, startPositionMs) {
+        val needsConfig = session.isNew || PlaybackSession.currentSource() != url
+        if (needsConfig) {
+            android.util.Log.d("ExoSetup", "setMediaItem url=${url}")
+            val inferredMime = mimeType ?: PlayUrlHelper.guessMimeType(url, null)
+            val mediaItem = MediaItem.Builder()
+                .setUri(url)
+                .also { builder -> inferredMime?.let { builder.setMimeType(it) } }
+                .build()
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
+            exoPlayer.playWhenReady = false // Phase 4: erst nach Screen-Time-Check starten
+            startPositionMs?.let { exoPlayer.seekTo(it) }
+            PlaybackSession.setSource(url)
         }
     }
 
@@ -520,6 +529,8 @@ fun InternalPlayerScreen(
     var epgNext by remember { mutableStateOf("") }
     var showEpgOverlay by remember { mutableStateOf(false) }
     var currentLiveId by remember { mutableStateOf(mediaId) }
+    var activeLiveCategory by remember { mutableStateOf(liveCategoryHint) }
+    var activeLiveProvider by remember { mutableStateOf(liveProviderHint) }
 
     suspend fun computeOverlayTitle(): String {
         return withContext(Dispatchers.IO) {
@@ -610,6 +621,58 @@ fun InternalPlayerScreen(
         }
     }
 
+    fun miniSubtitle(
+        type: String,
+        provider: String?,
+        category: String?,
+        seasonValue: Int?,
+        episodeValue: Int?,
+        mime: String?
+    ): String? = when (type) {
+        "live" -> listOfNotNull(
+            provider?.takeIf { it.isNotBlank() },
+            category?.takeIf { it.isNotBlank() }
+        ).joinToString(" • ").takeIf { it.isNotBlank() }
+        "series" -> if (seasonValue != null && seasonValue > 0 && episodeValue != null && episodeValue > 0) {
+            "Staffel $seasonValue Folge $episodeValue"
+        } else null
+        else -> mime?.takeIf { it.isNotBlank() }
+    }
+
+    LaunchedEffect(
+        type,
+        mediaId,
+        currentLiveId,
+        seriesId,
+        season,
+        episodeNum,
+        episodeId,
+        url,
+        mimeType,
+        activeLiveCategory,
+        activeLiveProvider,
+        originLiveLibrary
+    ) {
+        val resolvedTitle = computeOverlayTitle()
+        val resolvedMediaId = if (type == "live") currentLiveId ?: mediaId else mediaId
+        val descriptor = MiniPlayerDescriptor(
+            type = type,
+            url = url,
+            mediaId = resolvedMediaId,
+            seriesId = seriesId,
+            season = season,
+            episodeNum = episodeNum,
+            episodeId = episodeId,
+            mimeType = mimeType,
+            origin = if (originLiveLibrary) "lib" else null,
+            liveCategory = activeLiveCategory,
+            liveProvider = activeLiveProvider,
+            title = resolvedTitle,
+            subtitle = miniSubtitle(type, activeLiveProvider, activeLiveCategory, season, episodeNum, mimeType)
+        )
+        MiniPlayerState.setDescriptor(descriptor)
+    }
+
     fun scheduleAutoHide(overTitleMs: Long = 4000L, epgMs: Long = 3000L) {
         if (showOverlayTitle) scope.launch { delay(overTitleMs); showOverlayTitle = false }
         if (showEpgOverlay) scope.launch { delay(epgMs); showEpgOverlay = false }
@@ -664,6 +727,8 @@ fun InternalPlayerScreen(
     }
 
     fun switchToLive(mi: com.chris.m3usuite.model.MediaItem) {
+        activeLiveCategory = mi.categoryName ?: activeLiveCategory
+        activeLiveProvider = mi.providerKey ?: activeLiveProvider
         currentLiveId = mi.id
         scope.launch {
             overlayTitle = mi.name
@@ -718,7 +783,9 @@ fun InternalPlayerScreen(
                 val keepForMini = isTv && MiniPlayerState.visible.value
                 if (!keepForMini) {
                     runCatching { exoPlayer.release() }
+                    PlaybackSession.setSource(null)
                     PlaybackSession.set(null)
+                    MiniPlayerState.clearDescriptor()
                 }
                 onExit()
             }

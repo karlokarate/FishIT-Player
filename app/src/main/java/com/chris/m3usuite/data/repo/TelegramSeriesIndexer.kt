@@ -15,6 +15,8 @@ import com.chris.m3usuite.telegram.TelegramHeuristics
 import com.chris.m3usuite.telegram.containerExt
 import com.chris.m3usuite.telegram.posterUri
 import io.objectbox.kotlin.boxFor
+import io.objectbox.kotlin.put
+import io.objectbox.kotlin.query
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext

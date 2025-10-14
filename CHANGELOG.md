@@ -1,4 +1,9 @@
 2025-10-14
+- fix(player/mini): Restored the TV mini-player overlay via MiniPlayerHost/MiniPlayerState, reusing PlaybackSession without
+  resetting media items. The overlay now shows title/subtitle/progress, requests focus on MENU, and resumes the full player via
+  a shared navigator hook.
+- build(objectbox): Include `objectbox-kotlin` and import the Kotlin extensions so TelegramSeriesIndexer (query/put) compiles
+  in release builds.
 - fix(telegram/series-indexer): Rebuild the aggregated Telegram series catalog from ObjectBox messages. Episodes now map each
   SxxEyy caption reliably, persist tg:// identifiers, copy duration/container/mime/size/language metadata, and normalize
   posters/years so Library’s “Telegram Serien” row finally lists every season and episode instead of just the newest message.
