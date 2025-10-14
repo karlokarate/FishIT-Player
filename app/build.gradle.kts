@@ -318,5 +318,6 @@ dependencies {
 
     // ObjectBox (5.x)
     implementation("io.objectbox:objectbox-android:5.0.1")
+    implementation("io.objectbox:objectbox-kotlin:5.0.1")
     kapt("io.objectbox:objectbox-processor:5.0.1")
 }

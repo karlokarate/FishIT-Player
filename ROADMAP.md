@@ -7,7 +7,10 @@ Hinweis
 - Maintenance 2025‑09‑28: Build‑Blocking Lücken geschlossen (Nav‑Extension, TV‑Focus‑Compat, TvRowScroll, safePainter, Adults‑Filter, XtreamImportCoordinator). Kein neues Feature; Roadmap unverändert.
 - Maintenance 2025‑10‑08: Telegram TDLib‑Streaming liest API‑ID/HASH zur Laufzeit aus Settings (Fallback, wenn BuildConfig leer). Keine Roadmap‑Auswirkung.
 - Maintenance 2025‑10‑10: TDLib‑Auth konformisiert – Service queued Phone/Code/Password bis TDLib die jeweiligen States anfordert; 400 „Initialization parameters are needed“ triggert einmaliges Re‑Senden der TdlibParameters + DB‑Key; 406 „UPDATE_APP_TO_LOGIN“ schaltet deterministisch auf QR um.
- - Maintenance 2025‑10‑10: Settings → Telegram auf FocusKit/FishForm umgestellt. Keine auto‑fokussierten Textfelder mehr auf TV; API‑Eingaben werden erst bei Bestätigung gespeichert (keine Live‑Writes während Tippen). Cache‑Limit per DPAD‑Slider.
+- Maintenance 2025‑10‑10: Settings → Telegram auf FocusKit/FishForm umgestellt. Keine auto‑fokussierten Textfelder mehr auf TV; API‑Eingaben werden erst bei Bestätigung gespeichert (keine Live‑Writes während Tippen). Cache‑Limit per DPAD‑Slider.
+- Maintenance 2025‑10‑15: TV Mini-Player Overlay wieder funktionsfähig (MiniPlayerHost/MiniPlayerState + PlaybackSession
+  Navigator). Release-Builds binden `objectbox-kotlin` ein, damit TelegramSeriesIndexer (`query`/`put`) ohne Debug-Abhängigkeiten
+  kompiliert.
 
 Prio 1 — Tiles/Rows Centralization (ON)
 - Ziel: UI‑Layout vollständig zentralisieren (Tokens + Tile + Row + Content), damit Screens nur noch `FishRow` + `FishTile` verdrahten.

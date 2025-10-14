@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +42,9 @@ import com.chris.m3usuite.ui.screens.XtreamPortalCheckScreen
 import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.auth.ProfileGate
 import com.chris.m3usuite.ui.profile.ProfileManagerScreen
+import com.chris.m3usuite.ui.home.LocalMiniPlayerResume
+import com.chris.m3usuite.ui.home.MiniPlayerState
+import com.chris.m3usuite.ui.home.buildRoute
 import com.chris.m3usuite.ui.theme.AppTheme
 import com.chris.m3usuite.work.SchedulingGateway
 import java.net.URLDecoder
@@ -189,7 +193,14 @@ class MainActivity : ComponentActivity() {
 
                 // EPG periodic refresh removed; lazy on-demand prefetch keeps visible/favorites fresh
 
-                NavHost(navController = nav, startDestination = startDestination) {
+                CompositionLocalProvider(
+                    LocalMiniPlayerResume provides { snapshot ->
+                        val route = snapshot.descriptor.buildRoute(snapshot.positionMs)
+                        MiniPlayerState.hide()
+                        nav.navigate(route) { launchSingleTop = true }
+                    }
+                ) {
+                    NavHost(navController = nav, startDestination = startDestination) {
                     composable("setup") {
                         PlaylistSetupScreen(
                             onDone = {
@@ -423,6 +434,8 @@ class MainActivity : ComponentActivity() {
                     composable("xt_cfcheck") {
                         XtreamPortalCheckScreen(onDone = { nav.popBackStack() })
                     }
+                }
+
                 }
 
                 // Global back handling: pop if possible; otherwise consume (never close app via BACK)
