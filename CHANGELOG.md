@@ -1,3 +1,7 @@
+2025-10-20
+- fix(player/seek): Long-press seeking now cancels immediately when Play/Pause is pressed, so the
+  internal player exits seek loops and resumes playback without continuing to fast-forward or rewind.
+
 2025-10-19
 - feat(player/ffmpeg): Internal player bundles Media3 FFmpeg codecs, prefers the extension renderers,
   and biases track selection towards premium audio/video formats at the highest supported bitrate. VOD,

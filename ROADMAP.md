@@ -18,6 +18,8 @@ Hinweis
   erfolgreich durchläuft.
 - Maintenance 2025‑10‑19: InternalPlayer nutzt die Media3-FFmpeg-Extension und priorisiert hochwertige Audio-/Video-Codecs
   (höchste verfügbare Bitrate und bevorzugte Formate werden automatisch gewählt).
+- Maintenance 2025‑10‑20: Long-Press-Spulen stoppt sofort, sobald Play/Pause ausgelöst wird. Der interne Player beendet
+  laufende Seek-Loops und reagiert unmittelbar auf den Wiedergabe-Befehl.
 
 Prio 1 — Tiles/Rows Centralization (ON)
 - Ziel: UI‑Layout vollständig zentralisieren (Tokens + Tile + Row + Content), damit Screens nur noch `FishRow` + `FishTile` verdrahten.

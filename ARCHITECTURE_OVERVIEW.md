@@ -218,6 +218,7 @@ Routen (aus `MainActivity`):
 
 5. **player = `InternalPlayerScreen`**
    - Media3/ExoPlayer, Resume‑Handling (`ResumeRepository`), Untertitel‑Stil, Rotation‑Lock Option.
+   - Long-Press-Seeking stoppt sofort, wenn Play/Pause (oder Center) ausgelöst wird; das Seek-Coroutine wird beendet, bevor die Wiedergabe fortgesetzt wird.
 
 6. **settings = `SettingsScreen`**
    - Player-Modus (ask/internal/external + bevorzugtes externes Paket), Subtitle‑Stil, Header‑Verhalten, Autoplay Next, TV‑Filter.
