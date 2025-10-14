@@ -69,15 +69,17 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.Tracks
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
@@ -241,11 +243,52 @@ fun InternalPlayerScreen(
         com.chris.m3usuite.telegram.TelegramTdlibDataSource.Factory(ctx, base)
     }
 
+    val preferredVideoMimeTypes = remember {
+        arrayOf(
+            MimeTypes.VIDEO_DOLBY_VISION,
+            MimeTypes.VIDEO_H265,
+            MimeTypes.VIDEO_AV1,
+            MimeTypes.VIDEO_VP9,
+            MimeTypes.VIDEO_H264,
+            MimeTypes.VIDEO_VP8
+        )
+    }
+    val preferredAudioMimeTypes = remember {
+        arrayOf(
+            MimeTypes.AUDIO_E_AC3_JOC,
+            MimeTypes.AUDIO_TRUEHD,
+            MimeTypes.AUDIO_E_AC3,
+            MimeTypes.AUDIO_AC4,
+            MimeTypes.AUDIO_AC3,
+            MimeTypes.AUDIO_DTS_HD,
+            MimeTypes.AUDIO_DTS,
+            MimeTypes.AUDIO_FLAC,
+            MimeTypes.AUDIO_OPUS,
+            MimeTypes.AUDIO_AAC,
+            MimeTypes.AUDIO_MPEG,
+            MimeTypes.AUDIO_MPEG_L2,
+            MimeTypes.AUDIO_MPEG_L1,
+            MimeTypes.AUDIO_VORBIS
+        )
+    }
+    val trackSelectionParameters = remember {
+        TrackSelectionParameters.Builder()
+            .setForceHighestSupportedBitrate(true)
+            .setPreferredVideoMimeTypes(*preferredVideoMimeTypes)
+            .setPreferredAudioMimeTypes(*preferredAudioMimeTypes)
+            .build()
+    }
+    val trackSelector = remember(ctx) { DefaultTrackSelector(ctx) }
+    DisposableEffect(trackSelector) {
+        trackSelector.setParameters(trackSelectionParameters)
+        onDispose { }
+    }
+
     // Player (shared via PlaybackSession so mini player can attach after leaving screen)
-    val session = remember(url, headers, dataSourceFactory, mimeType) {
+    val session = remember(url, headers, dataSourceFactory, mimeType, trackSelector) {
         val renderers = DefaultRenderersFactory(ctx)
             .setEnableDecoderFallback(true)
-            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
+            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
 
         val loadControl = if (isTelegramContent) {
             // Keep RAM small; rely on TDLib on-disk caching while downloading
@@ -271,6 +314,7 @@ fun InternalPlayerScreen(
         PlaybackSession.acquire(ctx) {
             ExoPlayer.Builder(ctx)
                 .setRenderersFactory(renderers)
+                .setTrackSelector(trackSelector)
                 .setMediaSourceFactory(
                     androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
                 )
@@ -281,6 +325,12 @@ fun InternalPlayerScreen(
         }
     }
     val exoPlayer = session.player
+
+    LaunchedEffect(exoPlayer, trackSelectionParameters) {
+        if (exoPlayer.trackSelectionParameters != trackSelectionParameters) {
+            exoPlayer.trackSelectionParameters = trackSelectionParameters
+        }
+    }
 
     LaunchedEffect(session.isNew, url, mimeType, startPositionMs) {
         val needsConfig = session.isNew || PlaybackSession.currentSource() != url

@@ -1,3 +1,9 @@
+2025-10-19
+- feat(player/ffmpeg): Internal player bundles Media3 FFmpeg codecs, prefers the extension renderers,
+  and biases track selection towards premium audio/video formats at the highest supported bitrate. VOD,
+  live, and series playback now automatically choose the richest streams when panels offer multiple
+  variants.
+
 2025-10-18
 - fix(telegram/build): Release compile restored by aligning Telegram indexer/service Kotlin types with ObjectBox IDs and returning concrete outcomes from the TDLib writer helper. Prevents Kotlin 2.0 Set/Result mismatches from breaking the pipeline.
 
