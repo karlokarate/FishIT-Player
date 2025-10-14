@@ -1,3 +1,8 @@
+2025-10-20
+- fix(build/media3): Pin Media3 dependencies to 1.5.1 so Gradle can resolve the FFmpeg
+  extension again. Version 1.8.0 is not yet published on Maven Central/Google Maven and
+  broke `:app:checkDebugAarMetadata`.
+
 2025-10-19
 - feat(player/ffmpeg): Internal player bundles Media3 FFmpeg codecs, prefers the extension renderers,
   and biases track selection towards premium audio/video formats at the highest supported bitrate. VOD,
