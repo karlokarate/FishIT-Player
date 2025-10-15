@@ -1,6 +1,9 @@
 package com.chris.m3usuite.telegram
 
 import android.util.Log
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 
 /**
  * Lightweight logger for raw TDLib payloads.
@@ -10,6 +13,9 @@ import android.util.Log
 object TgRawLogger {
     private const val TAG = "TgRaw"
     private const val CHUNK = 3500
+    private val overlayFlow = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 32, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    val overlayEvents: SharedFlow<String> = overlayFlow
 
     fun log(prefix: String, obj: Any?) {
         val body = runCatching { objString(obj) }.getOrElse { "<error:${it.message.orEmpty()}>" }
@@ -25,6 +31,7 @@ object TgRawLogger {
     }
 
     private fun emitChunks(message: String) {
+        emitOverlayPreview(message)
         if (message.length <= CHUNK) {
             Log.v(TAG, message)
         } else {
@@ -38,5 +45,13 @@ object TgRawLogger {
                 part++
             }
         }
+    }
+
+    private fun emitOverlayPreview(message: String) {
+        val lines = message.lineSequence().take(2).toList()
+        if (lines.isEmpty()) return
+        val combined = lines.joinToString(separator = " ⏐ ")
+        val preview = if (combined.length <= 220) combined else combined.take(217) + "…"
+        overlayFlow.tryEmit(preview)
     }
 }

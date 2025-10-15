@@ -1,4 +1,15 @@
+2025-10-28
+- feat(telegram/debug): Added an on-screen TDLib log overlay that streams recent
+  Telegram logs as snackbars whenever the new settings toggle is enabled and the
+  log level is above 0.
+- feat(settings/telegram): Extended the Telegram debug section with a "TDLib-Logs
+  als Snackbar" switch so testers can turn the live overlay on and off without
+  reconnecting the service.
+
 2025-10-27
+- fix(telegram/auth): Normalize submitted phone numbers to E.164 using the
+  device region when they are missing a leading "+". Prevents TDLib from
+  staying stuck in WAIT_FOR_NUMBER after entering a local-format number.
 - fix(telegram/auth): Provide realistic TDLib parameters (app version, device
   model, Android release/API, language, test DC flag, unique database directory)
   so TDLib accepts code-based logins again without forcing QR on 406.
