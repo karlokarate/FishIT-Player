@@ -32,6 +32,9 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
   Tags („History[…]“, „Chats:…“, „MediaMapper:…“), damit Logcat die
   jeweiligen Requests klar zuordnet und fehlerhafte Antworten automatisch
   retried oder sauber abgebrochen werden.
+- Kotlin 2.0 benötigt explizite `Array<Class<*>>`-Parameterlisten für reflektierte
+  TDLib-Konstruktoren; TdLibReflection setzt diese nun typisiert zusammen, damit
+  Release-Builds nicht an `Comparable & Serializable`-Schnittmengen scheitern.
 - Playback DataSource: `TelegramRoutingDataSource` für Media3 routet `tg://message?chatId=&messageId=` auf lokale Pfade und triggert bei Bedarf `DownloadFile(fileId)`; `localPath` wird persistiert.
 - Settings: Film/Serien Sync zeigt Chat‑Picker (Hauptordner/Archiv) und zeigt die gewählten Chats mit Namen an (wenn AUTHENTICATED).
 - Sync: `TelegramSyncWorker` (manueller Backfill) ruft pro ausgewähltem Chat `CMD_PULL_CHAT_HISTORY` im Service auf. Der Service nutzt `getChatHistory` (limit=200) und `indexMessageContent(..)` für `ObxTelegramMessage`. Mapping auf VOD/Serien‑Modelle folgt heuristisch in Phase‑2. Der Worker sammelt Neuheiten (Filme/Serien/Episoden) und publiziert sie über `SchedulingGateway.telegramSyncState`; HomeChrome blendet währenddessen einen nicht-blockierenden „Telegram Sync“-Banner mit Fortschritt/Resultat ein.
