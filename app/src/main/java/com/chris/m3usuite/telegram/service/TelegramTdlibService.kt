@@ -353,13 +353,10 @@ class TelegramTdlibService : Service() {
                             Log.w("TdSvc", em)
                             sendErrorToAll(em)
                             if (code == 406 && (message?.contains("UPDATE_APP_TO_LOGIN", ignoreCase = true) == true)) {
-                                clientHandle?.let { ch ->
-                                    Log.i("TdSvc", "Trigger QR login due to UPDATE_APP_TO_LOGIN")
-                                    // Clear pending phone/code; QR flow takes precedence
-                                    synchronized(authLock) { pendingPhone = null; pendingCode = null }
-                                    TdLibReflection.sendRequestQrCodeAuthentication(ch)
-                                    runCatching { TdLibReflection.sendGetAuthorizationState(ch) }
-                                }
+                                Log.i(
+                                    "TdSvc",
+                                    "TDLib requested an app update for login – keeping phone/code flow active until the user opts into QR."
+                                )
                             } else if (code == 400 && (message?.contains("Initialization parameters are needed", ignoreCase = true) == true)) {
                                 // TDLib expects parameters again. Resend once and wait for proper state.
                                 if (!didResendParamsAfterInitError) {

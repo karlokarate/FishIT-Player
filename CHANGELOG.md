@@ -1,12 +1,20 @@
+2025-10-27
+- fix(telegram/auth): Provide realistic TDLib parameters (app version, device
+  model, Android release/API, language, test DC flag, unique database directory)
+  so TDLib accepts code-based logins again without forcing QR on 406.
+- fix(telegram/auth): Keep the phone/code flow active when TDLib returns 406,
+  introduce an explicit "QR-Login anfordern" action in Settings, and clarify the
+  cooldown guidance instead of auto-triggering QR requests.
+
 2025-10-26
 - fix(telegram/tdlib): Align reflection constructor parameter arrays with Kotlin
   2.0's stricter `arrayOf` inference so release builds stop reporting
   `Array<Class<out Comparable<*> & Serializable>>` mismatches.
 - fix(telegram/settings): Import the FishForm slider composable so the Telegram
-  Settings sliders compile again under Kotlin 2.0.<<<<<<< codex/fix-compilation-errors-in-settingsscreen-f81x40
+  Settings sliders compile again under Kotlin 2.0.
 - fix(telegram/tdlib): Explicitly type the phone-auth settings constructor
   parameters as `Array<Class<*>>` so Kotlin 2.0 release builds accept the
-  mixed primitive/custom class signatures TDLib expects.=======>>>>>>> main
+  mixed primitive/custom class signatures TDLib expects.
 
 2025-10-25
 - feat(telegram/settings): Expose full TDLib runtime controls in Settings. Users can

@@ -6,7 +6,7 @@ Hinweis
 - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
 - Maintenance 2025‑09‑28: Build‑Blocking Lücken geschlossen (Nav‑Extension, TV‑Focus‑Compat, TvRowScroll, safePainter, Adults‑Filter, XtreamImportCoordinator). Kein neues Feature; Roadmap unverändert.
 - Maintenance 2025‑10‑08: Telegram TDLib‑Streaming liest API‑ID/HASH zur Laufzeit aus Settings (Fallback, wenn BuildConfig leer). Keine Roadmap‑Auswirkung.
-- Maintenance 2025‑10‑10: TDLib‑Auth konformisiert – Service queued Phone/Code/Password bis TDLib die jeweiligen States anfordert; 400 „Initialization parameters are needed“ triggert einmaliges Re‑Senden der TdlibParameters + DB‑Key; 406 „UPDATE_APP_TO_LOGIN“ schaltet deterministisch auf QR um.
+- Maintenance 2025‑10‑10: TDLib‑Auth konformisiert – Service queued Phone/Code/Password bis TDLib die jeweiligen States anfordert; 400 „Initialization parameters are needed“ triggert einmaliges Re‑Senden der TdlibParameters + DB‑Key; 406 „UPDATE_APP_TO_LOGIN“ bleibt im Code‑Flow und bietet QR nur noch per Button an.
 - Maintenance 2025‑10‑10: Settings → Telegram auf FocusKit/FishForm umgestellt. Keine auto‑fokussierten Textfelder mehr auf TV; API‑Eingaben werden erst bei Bestätigung gespeichert (keine Live‑Writes während Tippen). Cache‑Limit per DPAD‑Slider.
 - Maintenance 2025‑10‑15: TV Mini-Player Overlay wieder funktionsfähig (MiniPlayerHost/MiniPlayerState + PlaybackSession
   Navigator). Release-Builds binden `objectbox-kotlin` ein, damit TelegramSeriesIndexer (`query`/`put`) ohne Debug-Abhängigkeiten
@@ -29,10 +29,10 @@ Hinweis
   Status, Proxy/Loglevel, Auto-Download-Profile, Streaming-Prefetch, Seek-Boost,
   parallele Downloads und Storage-Optimizer sind direkt in den Settings
   schaltbar und werden beim Start konsistent auf TDLib angewendet.
-- Maintenance 2025‑10‑26: Kotlin 2.0 Inferenz-Probleme im TDLib-Reflection-Pfad<<<<<<< codex/fix-compilation-errors-in-settingsscreen-f81x40
-  (Auto-Download + PhoneAuth-Constructor Arrays sind jetzt `Array<Class<*>>`)=======>>>>>>> main
-  und in den Telegram-Settings korrigiert, damit Release-Builds wieder
-  kompilieren.
+ - Maintenance 2025‑10‑26: Kotlin 2.0 Inferenz-Probleme im TDLib-Reflection-Pfad
+   (Auto-Download + PhoneAuth-Constructor Arrays sind jetzt `Array<Class<*>>`) und
+   in den Telegram-Settings korrigiert, damit Release-Builds wieder
+   kompilieren.
 - Maintenance 2025‑10‑23: Build block durch fehlendes Media3-FFmpeg-AAR gelöst.
   Wir binden Jellyfins `media3-ffmpeg-decoder` 1.8.0+1 ein, halten die restlichen
   Media3-Module auf 1.8.0 und behalten die bisherigen ABI-Splits bei.

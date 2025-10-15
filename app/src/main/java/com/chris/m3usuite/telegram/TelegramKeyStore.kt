@@ -19,6 +19,7 @@ object TelegramKeyStore {
     private const val PREFS = "tg_keystore"
     private const val KEY_ENC = "enc"
     private const val KEY_IV = "iv"
+    private const val KEY_INSTALL_ID = "install_id"
 
     fun getOrCreateDatabaseKey(context: Context): ByteArray {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -38,6 +39,15 @@ object TelegramKeyStore {
             // Fallback: ephemeral key (not persisted) if Keystore fails
             ByteArray(32).also { java.security.SecureRandom().nextBytes(it) }
         }
+    }
+
+    fun getOrCreateInstallId(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val existing = prefs.getString(KEY_INSTALL_ID, null)
+        if (!existing.isNullOrBlank()) return existing
+        val id = java.util.UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_INSTALL_ID, id).apply()
+        return id
     }
 
     private fun getOrCreateKsKey(): SecretKey {
