@@ -22,6 +22,10 @@ Hinweis
   Trailer-Preview teilen sich eine RenderersFactory, die die FFmpeg-Extension
   bevorzugt und Decoder-Fallback aktiviert lässt.
 
+- Maintenance 2025‑10‑23: Build block durch fehlendes Media3-FFmpeg-AAR gelöst.
+  Wir binden Jellyfins `media3-ffmpeg-decoder` 1.8.0+1 ein, halten die restlichen
+  Media3-Module auf 1.8.0 und behalten die bisherigen ABI-Splits bei.
+
 Prio 1 — Tiles/Rows Centralization (ON)
 - Ziel: UI‑Layout vollständig zentralisieren (Tokens + Tile + Row + Content), damit Screens nur noch `FishRow` + `FishTile` verdrahten.
 - Module (Stand): `ui/layout/FishTheme`, `FishTile`, `FishRow(Light/Media/Paged)`, `FishVodContent` (VOD), `FishSeriesContent`/`FishLiveContent` (Basis), `FishMeta`, `FishActions`, `FishLogging`, `FishResumeTile`.

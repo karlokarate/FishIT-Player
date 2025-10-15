@@ -245,6 +245,9 @@ Recent
 - TV/DPAD focus (gate): ProfileGate tiles now use `tvClickable` + `tvFocusableItem` within a `focusGroup()` container, with a guarded initial `FocusRequester`. On TV, the first profile tile is highlighted immediately; DPAD navigation shows halo/scale.
 - TV/DPAD focus (PIN): The PIN numpad uses `TvButton`/`TvTextButton` for keys (0–9, backspace, OK). The grid container is a `focusGroup()` and the first key requests initial focus. Visual focus (halo + scale) is consistent with other TV buttons.
 - Manifest/Gradle: Added leanback/DPAD features (non‑required) and ensured TV libraries are available. Behavior is a no‑op on phones and tablets.
+- Media3 FFmpeg: Google Maven ships no FFmpeg artifacts. We vendor Jellyfin's `org.jellyfin.media3:media3-ffmpeg-decoder:1.8.0+1`
+  AAR (GPL-3.0). Keep Media3 core artifacts on version `1.8.0` and ensure our ABI filters stay aligned with the bundled `.so`
+  set (arm64-v8a + armeabi-v7a by default).
 
 - Playback-aware seeding: While the internal player is active, `m3u_workers_enabled` is temporarily forced OFF and current Xtream jobs are canceled; on exit, the flag is restored if it was previously ON. This ensures background seeding does not contend with playback on low-power devices.
 - Home initial focus: Start screen sets the first focus deterministically to the first tile of the topmost card (Series). Only the Series row is eligible to request initial focus; VOD/Live rows suppress initial focus on Start. Implemented via `RowConfig.initialFocusEligible` + StartScreen wiring.
