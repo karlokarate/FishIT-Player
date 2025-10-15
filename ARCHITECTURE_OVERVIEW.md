@@ -26,12 +26,15 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 
 - Feature Flag: Global in Settings (`tg_enabled`, default false). Zusatzoptionen: `tg_selected_chats_csv`, `tg_cache_limit_gb`.
  - ObjectBox: Telegram messages are stored in `ObxTelegramMessage` (chatId/messageId/fileId/uniqueId/supportsStreaming/caption/date/localPath/thumbFileId). Repository/DataSources update OBX directly.
-- Login (Alpha): Reflection‑Bridge `telegram/TdLibReflection.kt` + `TelegramAuthRepository` (kein direkter TDLib‑Compile‑Dep). Settings: Button „Telegram verbinden“ (Telefon → Code → Passwort), auto DB‑Key‑Check, Status‑Debug. Telefon-Eingabe nutzt `PhoneNumberAuthenticationSettings` (Tokens + `is_current_phone_number` Toggle im UI) für Single-Device-Logins; bei `authorizationStateWaitOtherDevice` öffnet die App den `tg://login` Link automatisch, wenn die Telegram-App lokal installiert ist. Falls QR nicht möglich ist, bietet der Dialog einen Button „Per Code anmelden“, der den klassischen SMS-Code-Flow erneut startet.
+- Login (Alpha): Reflection‑Bridge `telegram/TdLibReflection.kt` + `TelegramAuthRepository` (kein direkter TDLib‑Compile‑Dep). Settings: Button „Telegram verbinden“ (Telefon → Code → Passwort), auto DB‑Key‑Check, Status‑Debug. Telefon-Eingabe nutzt `PhoneNumberAuthenticationSettings` (Tokens + `is_current_phone_number` Toggle im UI) für Single-Device-Logins; bei `authorizationStateWaitOtherDevice` öffnet die App den `tg://login` Link automatisch, wenn die Telegram-App lokal installiert ist. Falls QR nicht möglich ist, bietet der Dialog einen Button „Per Code anmelden“, der den klassischen SMS-Code-Flow erneut startet. Kotlin 2.0 verlangt, dass die Reflection-Konstruktoren ihre Parameterlisten als `Array<Class<*>>` übergeben; der Bridge hält dies für Auto-Download und PhoneAuth konsistent ein.
 - TdLibReflection `sendForResult` kapselt nun Timeouts, Retry/Backoff und optionale
   Trace-Tags pro Aufruf. Service, Datasource und Mapper übergeben sprechende
   Tags („History[…]“, „Chats:…“, „MediaMapper:…“), damit Logcat die
   jeweiligen Requests klar zuordnet und fehlerhafte Antworten automatisch
   retried oder sauber abgebrochen werden.
+- Kotlin 2.0 benötigt explizite `Array<Class<*>>`-Parameterlisten für reflektierte
+  TDLib-Konstruktoren; TdLibReflection setzt diese nun typisiert zusammen, damit
+  Release-Builds nicht an `Comparable & Serializable`-Schnittmengen scheitern.
 - Playback DataSource: `TelegramRoutingDataSource` für Media3 routet `tg://message?chatId=&messageId=` auf lokale Pfade und triggert bei Bedarf `DownloadFile(fileId)`; `localPath` wird persistiert.
 - Settings: Film/Serien Sync zeigt Chat‑Picker (Hauptordner/Archiv) und zeigt die gewählten Chats mit Namen an (wenn AUTHENTICATED).
 - Sync: `TelegramSyncWorker` (manueller Backfill) ruft pro ausgewähltem Chat `CMD_PULL_CHAT_HISTORY` im Service auf. Der Service nutzt `getChatHistory` (limit=200) und `indexMessageContent(..)` für `ObxTelegramMessage`. Mapping auf VOD/Serien‑Modelle folgt heuristisch in Phase‑2. Der Worker sammelt Neuheiten (Filme/Serien/Episoden) und publiziert sie über `SchedulingGateway.telegramSyncState`; HomeChrome blendet währenddessen einen nicht-blockierenden „Telegram Sync“-Banner mit Fortschritt/Resultat ein.

@@ -308,7 +308,7 @@ object TdLibReflection {
         val fn = runCatching {
             new(
                 "TdApi\$SetOption",
-                arrayOf(String::class.java, td("TdApi\$OptionValue")),
+                arrayOf<Class<*>>(String::class.java, td("TdApi\$OptionValue")),
                 arrayOf(name, optionValue)
             )
         }.getOrNull() ?: return
@@ -395,7 +395,7 @@ object TdLibReflection {
     }
 
     private fun buildAutoDownloadSettings(settings: AutoDownloadSettings): Any? {
-        val paramTypes = arrayOf(
+        val paramTypes: Array<Class<*>> = arrayOf(
             Boolean::class.javaPrimitiveType!!,
             Long::class.javaPrimitiveType!!,
             Long::class.javaPrimitiveType!!,
@@ -451,7 +451,7 @@ object TdLibReflection {
         val fn = runCatching {
             new(
                 "TdApi\$SetAutoDownloadSettings",
-                arrayOf(td("TdApi\$AutoDownloadSettings"), td("TdApi\$NetworkType")),
+                arrayOf<Class<*>>(td("TdApi\$AutoDownloadSettings"), td("TdApi\$NetworkType")),
                 arrayOf(settingsObj, networkObj)
             )
         }.getOrNull() ?: return
@@ -519,21 +519,21 @@ object TdLibReflection {
             ProxyKind.SOCKS5 -> runCatching {
                 new(
                     "TdApi\$ProxyTypeSocks5",
-                    arrayOf(String::class.java, String::class.java),
+                    arrayOf<Class<*>>(String::class.java, String::class.java),
                     arrayOf(config.username, config.password)
                 )
             }.getOrNull()
             ProxyKind.HTTP -> runCatching {
                 new(
                     "TdApi\$ProxyTypeHttp",
-                    arrayOf(String::class.java, String::class.java, Boolean::class.javaPrimitiveType!!),
+                    arrayOf<Class<*>>(String::class.java, String::class.java, Boolean::class.javaPrimitiveType!!),
                     arrayOf(config.username, config.password, false)
                 )
             }.getOrNull()
             ProxyKind.MTPROTO -> runCatching {
                 new(
                     "TdApi\$ProxyTypeMtproto",
-                    arrayOf(String::class.java),
+                    arrayOf<Class<*>>(String::class.java),
                     arrayOf(config.secret)
                 )
             }.getOrNull()
@@ -545,7 +545,7 @@ object TdLibReflection {
         val fn = runCatching {
             new(
                 "TdApi\$AddProxy",
-                arrayOf(String::class.java, Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, td("TdApi\$ProxyType")),
+                arrayOf<Class<*>>(String::class.java, Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, td("TdApi\$ProxyType")),
                 arrayOf(config.host, config.port, config.enabled, proxyType)
             )
         }.getOrNull() ?: return false
@@ -700,7 +700,7 @@ object TdLibReflection {
     }
 
     fun sendSetTdlibParameters(client: ClientHandle, parameters: Any) {
-        val set = new("TdApi\$SetTdlibParameters", arrayOf(td("TdApi\$TdlibParameters")), arrayOf(parameters))
+        val set = new("TdApi\$SetTdlibParameters", arrayOf<Class<*>>(td("TdApi\$TdlibParameters")), arrayOf(parameters))
         val handlerType = td("Client\$ResultHandler")
         val exceptionHandlerType = td("Client\$ExceptionHandler")
         val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
@@ -711,7 +711,7 @@ object TdLibReflection {
     fun buildPhoneNumberAuthenticationSettings(settings: PhoneAuthSettings): Any? {
         val tokens = settings.authenticationTokens.distinct().take(20).toTypedArray()
         val firebaseClass = runCatching { td("TdApi\$FirebaseAuthenticationSettings") }.getOrNull() ?: return null
-        val paramTypes = arrayOf(
+        val paramTypes: Array<Class<*>> = arrayOf(
             Boolean::class.javaPrimitiveType!!,
             Boolean::class.javaPrimitiveType!!,
             Boolean::class.javaPrimitiveType!!,
@@ -734,15 +734,15 @@ object TdLibReflection {
 
     fun sendSetPhoneNumber(client: ClientHandle, phone: String, settings: PhoneAuthSettings = PhoneAuthSettings()) {
         val settingsObj = buildPhoneNumberAuthenticationSettings(settings)
-            ?: new(
-                "TdApi\$PhoneNumberAuthenticationSettings",
-                arrayOf(
-                    Boolean::class.javaPrimitiveType!!,
-                    Boolean::class.javaPrimitiveType!!,
-                    Boolean::class.javaPrimitiveType!!,
-                    Boolean::class.javaPrimitiveType!!,
-                    Array<String>::class.java
-                ),
+                ?: new(
+                    "TdApi\$PhoneNumberAuthenticationSettings",
+                    arrayOf<Class<*>>(
+                        Boolean::class.javaPrimitiveType!!,
+                        Boolean::class.javaPrimitiveType!!,
+                        Boolean::class.javaPrimitiveType!!,
+                        Boolean::class.javaPrimitiveType!!,
+                        Array<String>::class.java
+                    ),
                 arrayOf(
                     settings.allowFlashCall,
                     settings.allowMissedCall,
@@ -753,7 +753,7 @@ object TdLibReflection {
             )
         val fn = new(
             "TdApi\$SetAuthenticationPhoneNumber",
-            arrayOf(String::class.java, settingsObj.javaClass),
+            arrayOf<Class<*>>(String::class.java, settingsObj.javaClass),
             arrayOf(phone, settingsObj)
         )
         val handlerType = td("Client\$ResultHandler")
@@ -771,7 +771,7 @@ object TdLibReflection {
     }
 
     fun sendCheckCode(client: ClientHandle, code: String) {
-        val fn = new("TdApi\$CheckAuthenticationCode", arrayOf(String::class.java), arrayOf(code))
+        val fn = new("TdApi\$CheckAuthenticationCode", arrayOf<Class<*>>(String::class.java), arrayOf(code))
         val handlerType = td("Client\$ResultHandler")
         val exceptionHandlerType = td("Client\$ExceptionHandler")
         val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
@@ -829,7 +829,7 @@ object TdLibReflection {
     }
 
     fun sendCheckPassword(client: ClientHandle, password: String) {
-        val fn = new("TdApi\$CheckAuthenticationPassword", arrayOf(String::class.java), arrayOf(password))
+        val fn = new("TdApi\$CheckAuthenticationPassword", arrayOf<Class<*>>(String::class.java), arrayOf(password))
         val handlerType = td("Client\$ResultHandler")
         val exceptionHandlerType = td("Client\$ExceptionHandler")
         val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
@@ -868,9 +868,9 @@ object TdLibReflection {
         // Build DeviceTokenFirebaseCloudMessaging with best-effort constructor resolution
         val tokenObj = runCatching {
             // Newer: (String token, boolean encrypt, String data)
-            new("TdApi\$DeviceTokenFirebaseCloudMessaging", arrayOf(String::class.java, Boolean::class.javaPrimitiveType!!, String::class.java), arrayOf(fcmToken, false, ""))
+            new("TdApi\$DeviceTokenFirebaseCloudMessaging", arrayOf<Class<*>>(String::class.java, Boolean::class.javaPrimitiveType!!, String::class.java), arrayOf(fcmToken, false, ""))
         }.getOrElse {
-            runCatching { new("TdApi\$DeviceTokenFirebaseCloudMessaging", arrayOf(String::class.java, Boolean::class.javaPrimitiveType!!), arrayOf(fcmToken, false)) }.getOrNull()
+            runCatching { new("TdApi\$DeviceTokenFirebaseCloudMessaging", arrayOf<Class<*>>(String::class.java, Boolean::class.javaPrimitiveType!!), arrayOf(fcmToken, false)) }.getOrNull()
         } ?: return
         val superCls = (tokenObj.javaClass.superclass as Class<*>)
         val arrCls = java.lang.reflect.Array.newInstance(superCls, 1).javaClass // DeviceToken[]
@@ -884,7 +884,7 @@ object TdLibReflection {
         val exceptionHandlerType = td("Client\$ExceptionHandler")
         val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
         val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
-        val fn = runCatching { new("TdApi\$ProcessPushNotification", arrayOf(String::class.java), arrayOf(payload)) }.getOrNull() ?: return
+        val fn = runCatching { new("TdApi\$ProcessPushNotification", arrayOf<Class<*>>(String::class.java), arrayOf(payload)) }.getOrNull() ?: return
         client.sendMethod.invoke(client.client, fn, rh, eh)
     }
 
