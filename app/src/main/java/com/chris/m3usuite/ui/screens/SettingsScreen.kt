@@ -1120,8 +1120,17 @@ fun SettingsScreen(
                                     } else if (!authRepo.hasValidKeys()) {
                                         snackHost.toast("API-Keys fehlen – ID/HASH setzen.")
                                     } else {
-                                        runCatching { authRepo.bindService(); authRepo.setInBackground(false); authRepo.start() }
-                                            .onFailure { snackHost.toast("Start fehlgeschlagen: ${it.message ?: "Unbekannt"}") }
+                                        runCatching {
+                                            authRepo.bindService()
+                                            authRepo.setInBackground(false)
+                                            val started = authRepo.start()
+                                            if (!started) {
+                                                throw IllegalStateException("TDLib Start fehlgeschlagen")
+                                            }
+                                            authRepo.applyAllRuntimeSettings()
+                                        }.onFailure {
+                                            snackHost.toast("Start fehlgeschlagen: ${it.message ?: "Unbekannt"}")
+                                        }
                                     }
                                 } else {
                                     runCatching { authRepo.setInBackground(true); authRepo.unbindService() }
@@ -1135,6 +1144,36 @@ fun SettingsScreen(
                 val tgVodSel by store.tgSelectedVodChatsCsv.collectAsStateWithLifecycle(initialValue = "")
                 val tgSeriesSel by store.tgSelectedSeriesChatsCsv.collectAsStateWithLifecycle(initialValue = "")
                 val tgCacheGb by store.tgCacheLimitGb.collectAsStateWithLifecycle(initialValue = 2)
+                val tgPreferIpv6 by store.tgPreferIpv6.collectAsStateWithLifecycle(initialValue = true)
+                val tgStayOnline by store.tgStayOnline.collectAsStateWithLifecycle(initialValue = true)
+                val tgLogLevel by store.tgLogVerbosity.collectAsStateWithLifecycle(initialValue = 1)
+                val tgPrefetchMb by store.tgPrefetchWindowMb.collectAsStateWithLifecycle(initialValue = 8)
+                val tgSeekBoost by store.tgSeekBoostEnabled.collectAsStateWithLifecycle(initialValue = true)
+                val tgMaxParallel by store.tgMaxParallelDownloads.collectAsStateWithLifecycle(initialValue = 2)
+                val tgStorageOptimizer by store.tgStorageOptimizerEnabled.collectAsStateWithLifecycle(initialValue = true)
+                val tgIgnoreFileNames by store.tgIgnoreFileNames.collectAsStateWithLifecycle(initialValue = false)
+                val tgProxyType by store.tgProxyType.collectAsStateWithLifecycle(initialValue = "")
+                val tgProxyHost by store.tgProxyHost.collectAsStateWithLifecycle(initialValue = "")
+                val tgProxyPort by store.tgProxyPort.collectAsStateWithLifecycle(initialValue = 0)
+                val tgProxyUser by store.tgProxyUsername.collectAsStateWithLifecycle(initialValue = "")
+                val tgProxyPassword by store.tgProxyPassword.collectAsStateWithLifecycle(initialValue = "")
+                val tgProxySecret by store.tgProxySecret.collectAsStateWithLifecycle(initialValue = "")
+                val tgProxyEnabled by store.tgProxyEnabled.collectAsStateWithLifecycle(initialValue = false)
+                val tgAutoWifiEnabled by store.tgAutoWifiEnabled.collectAsStateWithLifecycle(initialValue = true)
+                val tgAutoWifiPreloadLarge by store.tgAutoWifiPreloadLarge.collectAsStateWithLifecycle(initialValue = true)
+                val tgAutoWifiPreloadNext by store.tgAutoWifiPreloadNextAudio.collectAsStateWithLifecycle(initialValue = true)
+                val tgAutoWifiPreloadStories by store.tgAutoWifiPreloadStories.collectAsStateWithLifecycle(initialValue = false)
+                val tgAutoWifiLessDataCalls by store.tgAutoWifiLessDataCalls.collectAsStateWithLifecycle(initialValue = false)
+                val tgAutoMobileEnabled by store.tgAutoMobileEnabled.collectAsStateWithLifecycle(initialValue = true)
+                val tgAutoMobilePreloadLarge by store.tgAutoMobilePreloadLarge.collectAsStateWithLifecycle(initialValue = false)
+                val tgAutoMobilePreloadNext by store.tgAutoMobilePreloadNextAudio.collectAsStateWithLifecycle(initialValue = false)
+                val tgAutoMobilePreloadStories by store.tgAutoMobilePreloadStories.collectAsStateWithLifecycle(initialValue = false)
+                val tgAutoMobileLessDataCalls by store.tgAutoMobileLessDataCalls.collectAsStateWithLifecycle(initialValue = true)
+                val tgAutoRoamEnabled by store.tgAutoRoamingEnabled.collectAsStateWithLifecycle(initialValue = false)
+                val tgAutoRoamPreloadLarge by store.tgAutoRoamingPreloadLarge.collectAsStateWithLifecycle(initialValue = false)
+                val tgAutoRoamPreloadNext by store.tgAutoRoamingPreloadNextAudio.collectAsStateWithLifecycle(initialValue = false)
+                val tgAutoRoamPreloadStories by store.tgAutoRoamingPreloadStories.collectAsStateWithLifecycle(initialValue = false)
+                val tgAutoRoamLessDataCalls by store.tgAutoRoamingLessDataCalls.collectAsStateWithLifecycle(initialValue = true)
                 
                 // TV/DPAD-friendly inputs via FishForm; commit on confirm to avoid live DataStore churn
                 FishFormTextField(
@@ -1155,6 +1194,404 @@ fun SettingsScreen(
                 )
                 
                 if (tgEnabled) {
+                    val proxyTypeValue = if (tgProxyType.isBlank()) "none" else tgProxyType
+                    val proxyOptions = listOf("none", "socks5", "http", "mtproto")
+                    FishFormSection(title = "Netzwerk") {
+                        FishFormSwitch(
+                            label = "IPv6 bevorzugen",
+                            checked = tgPreferIpv6,
+                            enabled = tgEnabled,
+                            helperText = "Aktiviert IPv6-Verbindungen, wenn der Provider sie bereitstellt.",
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramPreferIpv6(value)
+                                    authRepo.setPreferIpv6(value)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Online-Status halten",
+                            checked = tgStayOnline,
+                            enabled = tgEnabled,
+                            helperText = "Verhindert, dass TDLib in den Offline-Modus fällt (z. B. Energiesparen).",
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramStayOnline(value)
+                                    authRepo.setStayOnline(value)
+                                }
+                            }
+                        )
+                        FishFormSlider(
+                            label = "TDLib-Loglevel",
+                            value = tgLogLevel,
+                            range = 0..5,
+                            step = 1,
+                            enabled = tgEnabled,
+                            helperText = "0 = still, 5 = sehr ausführlich (für Fehleranalyse).",
+                            onValueChange = { level ->
+                                scope.launch {
+                                    store.setTelegramLogVerbosity(level)
+                                    authRepo.setLogVerbosity(level)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Storage-Optimizer verwenden",
+                            checked = tgStorageOptimizer,
+                            enabled = tgEnabled,
+                            helperText = "Lässt TDLib ungenutzte Dateien automatisch bereinigen.",
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramStorageOptimizerEnabled(value)
+                                    authRepo.setStorageOptimizer(value)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Dateinamen ignorieren (stabile Pfade)",
+                            checked = tgIgnoreFileNames,
+                            enabled = tgEnabled,
+                            helperText = "Nutzt TDLib-IDs statt originaler Dateinamen für lokale Pfade.",
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramIgnoreFileNames(value)
+                                    authRepo.setIgnoreFileNames(value)
+                                }
+                            }
+                        )
+                        FocusKit.TvTextButton(
+                            onClick = {
+                                scope.launch {
+                                    authRepo.optimizeStorage()
+                                    snackHost.toast("Telegram-Cache wird optimiert …")
+                                }
+                            },
+                            enabled = tgEnabled
+                        ) { Text("Cache jetzt optimieren") }
+                    }
+
+                    FishFormSection(title = "Proxy") {
+                        FishFormSelect(
+                            label = "Proxy-Typ",
+                            options = proxyOptions,
+                            selected = proxyOptions.firstOrNull { it == proxyTypeValue } ?: "none",
+                            optionLabel = { opt ->
+                                when (opt) {
+                                    "socks5" -> "SOCKS5"
+                                    "http" -> "HTTP"
+                                    "mtproto" -> "MTProxy"
+                                    else -> "Kein Proxy"
+                                }
+                            },
+                            enabled = tgEnabled,
+                            onSelected = { newType ->
+                                scope.launch {
+                                    store.setTelegramProxyType(if (newType == "none") "" else newType)
+                                    if (tgProxyEnabled) {
+                                        if (newType == "none") {
+                                            authRepo.disableProxy()
+                                        } else {
+                                            authRepo.applyProxy(newType, tgProxyHost, tgProxyPort, tgProxyUser, tgProxyPassword, tgProxySecret, true)
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                        FishFormTextField(
+                            label = "Proxy-Host",
+                            value = tgProxyHost,
+                            enabled = tgEnabled,
+                            onValueChange = { newValue ->
+                                scope.launch {
+                                    store.setTelegramProxyHost(newValue)
+                                    if (tgProxyEnabled && proxyTypeValue != "none") {
+                                        authRepo.applyProxy(proxyTypeValue, newValue, tgProxyPort, tgProxyUser, tgProxyPassword, tgProxySecret, true)
+                                    }
+                                }
+                            },
+                            helperText = "Hostname oder IP-Adresse"
+                        )
+                        FishFormTextField(
+                            label = "Proxy-Port",
+                            value = tgProxyPort.takeIf { it > 0 }?.toString().orEmpty(),
+                            enabled = tgEnabled,
+                            keyboard = com.chris.m3usuite.ui.layout.TvKeyboard.Number,
+                            onValueChange = { newValue ->
+                                val port = newValue.toIntOrNull()?.coerceIn(0, 65535) ?: 0
+                                scope.launch {
+                                    store.setTelegramProxyPort(port)
+                                    if (tgProxyEnabled && proxyTypeValue != "none") {
+                                        authRepo.applyProxy(proxyTypeValue, tgProxyHost, port, tgProxyUser, tgProxyPassword, tgProxySecret, true)
+                                    }
+                                }
+                            }
+                        )
+                        FishFormTextField(
+                            label = "Benutzername",
+                            value = tgProxyUser,
+                            enabled = tgEnabled,
+                            onValueChange = { newValue ->
+                                scope.launch {
+                                    store.setTelegramProxyUsername(newValue)
+                                    if (tgProxyEnabled && proxyTypeValue != "none") {
+                                        authRepo.applyProxy(proxyTypeValue, tgProxyHost, tgProxyPort, newValue, tgProxyPassword, tgProxySecret, true)
+                                    }
+                                }
+                            }
+                        )
+                        FishFormTextField(
+                            label = "Passwort",
+                            value = tgProxyPassword,
+                            enabled = tgEnabled,
+                            keyboard = com.chris.m3usuite.ui.layout.TvKeyboard.Password,
+                            onValueChange = { newValue ->
+                                scope.launch {
+                                    store.setTelegramProxyPassword(newValue)
+                                    if (tgProxyEnabled && proxyTypeValue != "none") {
+                                        authRepo.applyProxy(proxyTypeValue, tgProxyHost, tgProxyPort, tgProxyUser, newValue, tgProxySecret, true)
+                                    }
+                                }
+                            }
+                        )
+                        FishFormTextField(
+                            label = "MTProxy-Secret",
+                            value = tgProxySecret,
+                            enabled = tgEnabled && proxyTypeValue == "mtproto",
+                            keyboard = com.chris.m3usuite.ui.layout.TvKeyboard.Password,
+                            onValueChange = { newValue ->
+                                scope.launch {
+                                    store.setTelegramProxySecret(newValue)
+                                    if (tgProxyEnabled && proxyTypeValue == "mtproto") {
+                                        authRepo.applyProxy(proxyTypeValue, tgProxyHost, tgProxyPort, tgProxyUser, tgProxyPassword, newValue, true)
+                                    }
+                                }
+                            },
+                            helperText = "Nur für MTProxy erforderlich"
+                        )
+                        FishFormSwitch(
+                            label = "Proxy aktiv",
+                            checked = tgProxyEnabled,
+                            enabled = tgEnabled && proxyTypeValue != "none",
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramProxyEnabled(value)
+                                    if (value) {
+                                        authRepo.applyProxy(proxyTypeValue, tgProxyHost, tgProxyPort, tgProxyUser, tgProxyPassword, tgProxySecret, true)
+                                    } else {
+                                        authRepo.disableProxy()
+                                    }
+                                }
+                            }
+                        )
+                    }
+
+                    FishFormSection(title = "Streaming & Downloads") {
+                        FishFormSlider(
+                            label = "Prefetch-Fenster (MB)",
+                            value = tgPrefetchMb,
+                            range = 1..32,
+                            step = 1,
+                            enabled = tgEnabled,
+                            helperText = "Bestimmt die vorab geladene Datenmenge pro Download-Range.",
+                            onValueChange = { value ->
+                                scope.launch { store.setTelegramPrefetchWindowMb(value) }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Seek-Boost",
+                            checked = tgSeekBoost,
+                            enabled = tgEnabled,
+                            helperText = "Erhöht Priorität und Range nach Sprüngen im Player.",
+                            onCheckedChange = { value ->
+                                scope.launch { store.setTelegramSeekBoostEnabled(value) }
+                            }
+                        )
+                        FishFormSlider(
+                            label = "Max. parallele Downloads",
+                            value = tgMaxParallel,
+                            range = 1..4,
+                            step = 1,
+                            enabled = tgEnabled,
+                            helperText = "Begrenzt gleichzeitige downloadFile-Aufrufe.",
+                            onValueChange = { value ->
+                                scope.launch { store.setTelegramMaxParallelDownloads(value) }
+                            }
+                        )
+                    }
+
+                    FishFormSection(title = "Automatischer Download") {
+                        Text("WLAN", style = MaterialTheme.typography.titleSmall, color = Color.White)
+                        FishFormSwitch(
+                            label = "Automatisch herunterladen",
+                            checked = tgAutoWifiEnabled,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoWifi(value, tgAutoWifiPreloadLarge, tgAutoWifiPreloadNext, tgAutoWifiPreloadStories, tgAutoWifiLessDataCalls)
+                                    authRepo.setAutoDownload("wifi", value, tgAutoWifiPreloadLarge, tgAutoWifiPreloadNext, tgAutoWifiPreloadStories, tgAutoWifiLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Große Videos vorladen",
+                            checked = tgAutoWifiPreloadLarge,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoWifi(tgAutoWifiEnabled, value, tgAutoWifiPreloadNext, tgAutoWifiPreloadStories, tgAutoWifiLessDataCalls)
+                                    authRepo.setAutoDownload("wifi", tgAutoWifiEnabled, value, tgAutoWifiPreloadNext, tgAutoWifiPreloadStories, tgAutoWifiLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Nächste Audios vorladen",
+                            checked = tgAutoWifiPreloadNext,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoWifi(tgAutoWifiEnabled, tgAutoWifiPreloadLarge, value, tgAutoWifiPreloadStories, tgAutoWifiLessDataCalls)
+                                    authRepo.setAutoDownload("wifi", tgAutoWifiEnabled, tgAutoWifiPreloadLarge, value, tgAutoWifiPreloadStories, tgAutoWifiLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Stories vorladen",
+                            checked = tgAutoWifiPreloadStories,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoWifi(tgAutoWifiEnabled, tgAutoWifiPreloadLarge, tgAutoWifiPreloadNext, value, tgAutoWifiLessDataCalls)
+                                    authRepo.setAutoDownload("wifi", tgAutoWifiEnabled, tgAutoWifiPreloadLarge, tgAutoWifiPreloadNext, value, tgAutoWifiLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Weniger Daten für Anrufe",
+                            checked = tgAutoWifiLessDataCalls,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoWifi(tgAutoWifiEnabled, tgAutoWifiPreloadLarge, tgAutoWifiPreloadNext, tgAutoWifiPreloadStories, value)
+                                    authRepo.setAutoDownload("wifi", tgAutoWifiEnabled, tgAutoWifiPreloadLarge, tgAutoWifiPreloadNext, tgAutoWifiPreloadStories, value)
+                                }
+                            }
+                        )
+
+                        Text("Mobil", style = MaterialTheme.typography.titleSmall, color = Color.White)
+                        FishFormSwitch(
+                            label = "Automatisch herunterladen",
+                            checked = tgAutoMobileEnabled,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoMobile(value, tgAutoMobilePreloadLarge, tgAutoMobilePreloadNext, tgAutoMobilePreloadStories, tgAutoMobileLessDataCalls)
+                                    authRepo.setAutoDownload("mobile", value, tgAutoMobilePreloadLarge, tgAutoMobilePreloadNext, tgAutoMobilePreloadStories, tgAutoMobileLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Große Videos vorladen",
+                            checked = tgAutoMobilePreloadLarge,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoMobile(tgAutoMobileEnabled, value, tgAutoMobilePreloadNext, tgAutoMobilePreloadStories, tgAutoMobileLessDataCalls)
+                                    authRepo.setAutoDownload("mobile", tgAutoMobileEnabled, value, tgAutoMobilePreloadNext, tgAutoMobilePreloadStories, tgAutoMobileLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Nächste Audios vorladen",
+                            checked = tgAutoMobilePreloadNext,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoMobile(tgAutoMobileEnabled, tgAutoMobilePreloadLarge, value, tgAutoMobilePreloadStories, tgAutoMobileLessDataCalls)
+                                    authRepo.setAutoDownload("mobile", tgAutoMobileEnabled, tgAutoMobilePreloadLarge, value, tgAutoMobilePreloadStories, tgAutoMobileLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Stories vorladen",
+                            checked = tgAutoMobilePreloadStories,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoMobile(tgAutoMobileEnabled, tgAutoMobilePreloadLarge, tgAutoMobilePreloadNext, value, tgAutoMobileLessDataCalls)
+                                    authRepo.setAutoDownload("mobile", tgAutoMobileEnabled, tgAutoMobilePreloadLarge, tgAutoMobilePreloadNext, value, tgAutoMobileLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Weniger Daten für Anrufe",
+                            checked = tgAutoMobileLessDataCalls,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoMobile(tgAutoMobileEnabled, tgAutoMobilePreloadLarge, tgAutoMobilePreloadNext, tgAutoMobilePreloadStories, value)
+                                    authRepo.setAutoDownload("mobile", tgAutoMobileEnabled, tgAutoMobilePreloadLarge, tgAutoMobilePreloadNext, tgAutoMobilePreloadStories, value)
+                                }
+                            }
+                        )
+
+                        Text("Roaming", style = MaterialTheme.typography.titleSmall, color = Color.White)
+                        FishFormSwitch(
+                            label = "Automatisch herunterladen",
+                            checked = tgAutoRoamEnabled,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoRoaming(value, tgAutoRoamPreloadLarge, tgAutoRoamPreloadNext, tgAutoRoamPreloadStories, tgAutoRoamLessDataCalls)
+                                    authRepo.setAutoDownload("roaming", value, tgAutoRoamPreloadLarge, tgAutoRoamPreloadNext, tgAutoRoamPreloadStories, tgAutoRoamLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Große Videos vorladen",
+                            checked = tgAutoRoamPreloadLarge,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoRoaming(tgAutoRoamEnabled, value, tgAutoRoamPreloadNext, tgAutoRoamPreloadStories, tgAutoRoamLessDataCalls)
+                                    authRepo.setAutoDownload("roaming", tgAutoRoamEnabled, value, tgAutoRoamPreloadNext, tgAutoRoamPreloadStories, tgAutoRoamLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Nächste Audios vorladen",
+                            checked = tgAutoRoamPreloadNext,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoRoaming(tgAutoRoamEnabled, tgAutoRoamPreloadLarge, value, tgAutoRoamPreloadStories, tgAutoRoamLessDataCalls)
+                                    authRepo.setAutoDownload("roaming", tgAutoRoamEnabled, tgAutoRoamPreloadLarge, value, tgAutoRoamPreloadStories, tgAutoRoamLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Stories vorladen",
+                            checked = tgAutoRoamPreloadStories,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoRoaming(tgAutoRoamEnabled, tgAutoRoamPreloadLarge, tgAutoRoamPreloadNext, value, tgAutoRoamLessDataCalls)
+                                    authRepo.setAutoDownload("roaming", tgAutoRoamEnabled, tgAutoRoamPreloadLarge, tgAutoRoamPreloadNext, value, tgAutoRoamLessDataCalls)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "Weniger Daten für Anrufe",
+                            checked = tgAutoRoamLessDataCalls,
+                            enabled = tgEnabled,
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramAutoRoaming(tgAutoRoamEnabled, tgAutoRoamPreloadLarge, tgAutoRoamPreloadNext, tgAutoRoamPreloadStories, value)
+                                    authRepo.setAutoDownload("roaming", tgAutoRoamEnabled, tgAutoRoamPreloadLarge, tgAutoRoamPreloadNext, tgAutoRoamPreloadStories, value)
+                                }
+                            }
+                        )
+                    }
+
                     var showTgDialog by remember { mutableStateOf(false) }
                     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
                     val keysValid = effApiId > 0 && effApiHash.isNotBlank()

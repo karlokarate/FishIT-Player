@@ -1,3 +1,14 @@
+2025-10-25
+- feat(telegram/settings): Expose full TDLib runtime controls in Settings. Users can
+  toggle IPv6 preference, persistent online status, storage optimizer, and log
+  verbosity, configure SOCKS5/HTTP/MTProto proxies, tune streaming prefetch window,
+  seek boost, and set parallel download limits. Auto-download profiles now have
+  per-network switches for preload behaviour and call data usage, and a one-touch
+  cache optimizer is available.
+- feat(telegram/playback): TelegramTdlibDataSource respects the new streaming
+  configuration with a semaphore for `downloadFile` requests, configurable range
+  prefetching, and higher-priority seeks to keep playback responsive.
+
 2025-10-24
 - fix(telegram/build): Remove named arguments when invoking the TDLib fallback
   lambda in `TelegramTdlibDataSource`. Kotlin 2.0 forbids named parameters on

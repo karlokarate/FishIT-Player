@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import java.io.IOException
 import java.io.File
 import java.io.RandomAccessFile
+import java.util.concurrent.Semaphore
 
 /**
  * Streaming DataSource that uses TDLib (via reflection) to download a Telegram message file on demand
@@ -25,6 +26,33 @@ class TelegramTdlibDataSource(
     private val routingFallback: DataSource.Factory = TelegramRoutingDataSource.Factory(context, fallbackFactory),
     private val notify: ((String) -> Unit)? = null
 ) : DataSource {
+
+    companion object {
+        @Volatile private var parallelLimit: Int = 2
+        @Volatile private var downloadSemaphore: Semaphore = Semaphore(parallelLimit, true)
+        @Volatile private var globalPrefetchBytes: Int = 8 * 1024 * 1024
+        @Volatile private var globalSeekBoost: Boolean = true
+
+        private fun normalizeParallel(value: Int): Int = value.coerceIn(1, 4)
+
+        fun updateParallelLimit(newLimit: Int) {
+            val normalized = normalizeParallel(newLimit)
+            if (parallelLimit != normalized) {
+                parallelLimit = normalized
+                downloadSemaphore = Semaphore(parallelLimit, true)
+            }
+        }
+
+        fun updatePrefetchBytes(bytes: Int) {
+            globalPrefetchBytes = bytes.coerceAtLeast(0)
+        }
+
+        fun updateSeekBoost(enabled: Boolean) {
+            globalSeekBoost = enabled
+        }
+
+        fun currentSemaphore(): Semaphore = downloadSemaphore
+    }
 
     private var opened = false
     private var raf: RandomAccessFile? = null
@@ -40,10 +68,76 @@ class TelegramTdlibDataSource(
     private var requireCompleteDownload: Boolean = false
     private var currentChatId: Long = 0L
     private var currentMessageId: Long = 0L
+    private var streamPrefetchBytes: Int = globalPrefetchBytes
+    private var streamSeekBoost: Boolean = globalSeekBoost
+    private var lastRequestedOffset: Int = 0
+    private var lastRequestedLimit: Int = 0
 
     override fun addTransferListener(transferListener: TransferListener) { listener = transferListener }
 
     override fun getUri(): Uri? = currentUri ?: delegate?.uri
+
+    private fun refreshStreamingPrefs() {
+        val store = com.chris.m3usuite.prefs.SettingsStore(context)
+        val parallel = runBlocking { store.tgMaxParallelDownloads.first() }.coerceIn(1, 4)
+        updateParallelLimit(parallel)
+        val prefetchMb = runBlocking { store.tgPrefetchWindowMb.first() }.coerceIn(0, 64)
+        val bytes = if (prefetchMb <= 0) 0 else (prefetchMb.toLong() * 1024 * 1024L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        updatePrefetchBytes(bytes)
+        streamPrefetchBytes = bytes
+        val seek = runBlocking { store.tgSeekBoostEnabled.first() }
+        updateSeekBoost(seek)
+        streamSeekBoost = seek
+    }
+
+    private fun requestDownloadRange(
+        client: TdLibReflection.ClientHandle,
+        priority: Int,
+        offset: Int,
+        limit: Int,
+        synchronous: Boolean = false
+    ) {
+        if (fileId <= 0) return
+        val fn = TdLibReflection.buildDownloadFile(fileId, priority, offset, limit, synchronous) ?: return
+        val semaphore = currentSemaphore()
+        try {
+            semaphore.acquire()
+        } catch (ie: InterruptedException) {
+            Thread.currentThread().interrupt()
+            return
+        }
+        try {
+            TdLibReflection.sendForResult(
+                client,
+                fn,
+                timeoutMs = 800,
+                retries = 1,
+                traceTag = "DownloadFile[$fileId@$offset]"
+            )
+        } finally {
+            semaphore.release()
+        }
+    }
+
+    private fun maybePrefetchMore(fileHandle: RandomAccessFile) {
+        if (requireCompleteDownload || streamPrefetchBytes <= 0 || lastRequestedLimit <= 0) return
+        val pointer = fileHandle.filePointer
+        val threshold = lastRequestedOffset.toLong() + (lastRequestedLimit.toLong() * 3L / 4L)
+        if (pointer < threshold) return
+        val client = if (fileId > 0 && TdLibReflection.available()) {
+            activeClient ?: TdLibReflection.getOrCreateClient(
+                context,
+                kotlinx.coroutines.flow.MutableStateFlow(AuthState.UNKNOWN)
+            )?.also { activeClient = it }
+        } else null
+        val handle = client ?: return
+        val newOffset = pointer.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val newLimit = streamPrefetchBytes
+        val priority = if (streamSeekBoost) 80 else 32
+        lastRequestedOffset = newOffset
+        lastRequestedLimit = newLimit
+        requestDownloadRange(handle, priority, newOffset, newLimit, false)
+    }
 
     override fun open(dataSpec: DataSpec): Long {
         val uri = dataSpec.uri
@@ -145,11 +239,21 @@ class TelegramTdlibDataSource(
             showUserMessage("Telegram-Video wird vollständig heruntergeladen, bevor es startet …")
         }
 
-        val offset = if (canStream) dataSpec.position.coerceAtLeast(0L).toInt() else 0
-        val priority = if (requireCompleteDownload) 64 else 32
-        TdLibReflection.buildDownloadFile(fileId, priority, offset, 0, false)?.let { fn ->
-            TdLibReflection.sendForResult(client, fn, timeoutMs = 800, retries = 1, traceTag = "DownloadFile[$fileId]")
+        refreshStreamingPrefs()
+        val isSeek = canStream && dataSpec.position > 0L
+        val offset = if (canStream) dataSpec.position.coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt() else 0
+        val boostMultiplier = if (!requireCompleteDownload && streamSeekBoost && isSeek) 2 else 1
+        val limit = if (!requireCompleteDownload && streamPrefetchBytes > 0) {
+            (streamPrefetchBytes.toLong() * boostMultiplier).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        } else 0
+        val priority = when {
+            requireCompleteDownload -> 64
+            streamSeekBoost && isSeek -> 96
+            else -> 32
         }
+        lastRequestedOffset = offset
+        lastRequestedLimit = limit
+        requestDownloadRange(client, priority, offset, limit, false)
 
         val waited = waitForFile(
             client = client,
@@ -203,11 +307,13 @@ class TelegramTdlibDataSource(
             val available = length - fileHandle.filePointer
             if (available > 0) {
                 val toRead = kotlin.math.min(readLength.toLong(), available).toInt()
-                return try {
+                val bytesRead = try {
                     fileHandle.read(buffer, offset, toRead)
                 } catch (e: Throwable) {
                     throw IOException(e)
                 }
+                maybePrefetchMore(fileHandle)
+                return bytesRead
             }
             if (!completed && expectedSize > 0 && length >= expectedSize) {
                 completed = true
@@ -277,6 +383,10 @@ class TelegramTdlibDataSource(
         currentMessageId = 0L
         requireCompleteDownload = false
         activeClient = null
+        lastRequestedOffset = 0
+        lastRequestedLimit = 0
+        streamPrefetchBytes = globalPrefetchBytes
+        streamSeekBoost = globalSeekBoost
     }
 
     private fun fetchMessageRow(chatId: Long, messageId: Long): com.chris.m3usuite.data.obx.ObxTelegramMessage? = runBlocking {

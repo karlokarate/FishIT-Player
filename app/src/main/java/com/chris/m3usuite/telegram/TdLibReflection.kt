@@ -40,6 +40,38 @@ object TdLibReflection {
         val authenticationTokens: List<String> = emptyList()
     )
 
+    enum class ProxyKind { NONE, SOCKS5, HTTP, MTPROTO }
+
+    data class ProxyConfig(
+        val kind: ProxyKind,
+        val host: String,
+        val port: Int,
+        val username: String = "",
+        val password: String = "",
+        val secret: String = "",
+        val enabled: Boolean = false
+    )
+
+    data class AutoDownloadSettings(
+        val isAutoDownloadEnabled: Boolean,
+        val maxPhotoFileSize: Long,
+        val maxVideoFileSize: Long,
+        val maxOtherFileSize: Long,
+        val videoUploadBitrate: Int,
+        val preloadLargeVideos: Boolean,
+        val preloadNextAudio: Boolean,
+        val preloadStories: Boolean,
+        val useLessDataForCalls: Boolean
+    )
+
+    data class AutoDownloadPresets(
+        val wifi: AutoDownloadSettings,
+        val mobile: AutoDownloadSettings,
+        val roaming: AutoDownloadSettings
+    )
+
+    enum class AutoDownloadNetwork { WIFI, MOBILE, ROAMING }
+
     sealed class ChatListTag {
         object Main : ChatListTag()
         object Archive : ChatListTag()
@@ -261,6 +293,278 @@ object TdLibReflection {
         val key = TelegramKeyStore.getOrCreateDatabaseKey(context)
         runCatching { set("databaseEncryptionKey", key) }
         return params
+    }
+
+    private fun buildOptionValueBoolean(value: Boolean): Any? = runCatching {
+        new(
+            "TdApi\$OptionValueBoolean",
+            arrayOf(Boolean::class.javaPrimitiveType!!),
+            arrayOf(value)
+        )
+    }.getOrNull()
+
+    fun sendSetOptionBoolean(client: ClientHandle, name: String, value: Boolean) {
+        val optionValue = buildOptionValueBoolean(value) ?: return
+        val fn = runCatching {
+            new(
+                "TdApi\$SetOption",
+                arrayOf(String::class.java, td("TdApi\$OptionValue")),
+                arrayOf(name, optionValue)
+            )
+        }.getOrNull() ?: return
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    fun setLogVerbosityLevel(level: Int) {
+        val normalized = level.coerceIn(0, 5)
+        val fn = new("TdApi\$SetLogVerbosityLevel", arrayOf(Int::class.javaPrimitiveType!!), arrayOf(normalized))
+        val clientCls = td("Client")
+        val exec = clientCls.getMethod("execute", td("TdApi\$Function"))
+        exec.invoke(null, fn)
+    }
+
+    fun sendSetLogVerbosityLevel(client: ClientHandle, level: Int) {
+        val normalized = level.coerceIn(0, 5)
+        val fn = new("TdApi\$SetLogVerbosityLevel", arrayOf(Int::class.javaPrimitiveType!!), arrayOf(normalized))
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    fun sendOptimizeStorage(client: ClientHandle) {
+        val fn = runCatching { new("TdApi\$OptimizeStorage") }.getOrElse {
+            val fileTypeClass = td("TdApi\$FileType")
+            val fileTypeArray = java.lang.reflect.Array.newInstance(fileTypeClass, 0)
+            val emptyLongArray = LongArray(0)
+            new(
+                "TdApi\$OptimizeStorage",
+                arrayOf(
+                    Long::class.javaPrimitiveType!!,
+                    Int::class.javaPrimitiveType!!,
+                    Int::class.javaPrimitiveType!!,
+                    Int::class.javaPrimitiveType!!,
+                    fileTypeArray.javaClass,
+                    LongArray::class.java,
+                    LongArray::class.java,
+                    Boolean::class.javaPrimitiveType!!,
+                    Int::class.javaPrimitiveType!!
+                ),
+                arrayOf(0L, 0, 0, 0, fileTypeArray, emptyLongArray, emptyLongArray, false, 0)
+            )
+        } ?: return
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    private fun parseAutoDownloadSettings(obj: Any?): AutoDownloadSettings? {
+        if (obj == null) return null
+        return try {
+            val cls = obj.javaClass
+            val enabled = cls.getDeclaredField("isAutoDownloadEnabled").apply { isAccessible = true }.getBoolean(obj)
+            val maxPhoto = cls.getDeclaredField("maxPhotoFileSize").apply { isAccessible = true }.getLong(obj)
+            val maxVideo = cls.getDeclaredField("maxVideoFileSize").apply { isAccessible = true }.getLong(obj)
+            val maxOther = cls.getDeclaredField("maxOtherFileSize").apply { isAccessible = true }.getLong(obj)
+            val uploadBitrate = cls.getDeclaredField("videoUploadBitrate").apply { isAccessible = true }.getInt(obj)
+            val preloadLarge = cls.getDeclaredField("preloadLargeVideos").apply { isAccessible = true }.getBoolean(obj)
+            val preloadNext = cls.getDeclaredField("preloadNextAudio").apply { isAccessible = true }.getBoolean(obj)
+            val preloadStories = runCatching { cls.getDeclaredField("preloadStories").apply { isAccessible = true }.getBoolean(obj) }.getOrDefault(false)
+            val lessDataCalls = runCatching { cls.getDeclaredField("useLessDataForCalls").apply { isAccessible = true }.getBoolean(obj) }.getOrDefault(false)
+            AutoDownloadSettings(
+                enabled,
+                maxPhoto,
+                maxVideo,
+                maxOther,
+                uploadBitrate,
+                preloadLarge,
+                preloadNext,
+                preloadStories,
+                lessDataCalls
+            )
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun buildAutoDownloadSettings(settings: AutoDownloadSettings): Any? {
+        val paramTypes = arrayOf(
+            Boolean::class.javaPrimitiveType!!,
+            Long::class.javaPrimitiveType!!,
+            Long::class.javaPrimitiveType!!,
+            Long::class.javaPrimitiveType!!,
+            Int::class.javaPrimitiveType!!,
+            Boolean::class.javaPrimitiveType!!,
+            Boolean::class.javaPrimitiveType!!,
+            Boolean::class.javaPrimitiveType!!,
+            Boolean::class.javaPrimitiveType!!
+        )
+        val args: Array<Any?> = arrayOf(
+            settings.isAutoDownloadEnabled,
+            settings.maxPhotoFileSize,
+            settings.maxVideoFileSize,
+            settings.maxOtherFileSize,
+            settings.videoUploadBitrate,
+            settings.preloadLargeVideos,
+            settings.preloadNextAudio,
+            settings.preloadStories,
+            settings.useLessDataForCalls
+        )
+        return runCatching { new("TdApi\$AutoDownloadSettings", paramTypes, args) }.getOrNull()
+    }
+
+    private fun buildNetworkType(network: AutoDownloadNetwork): Any? = when (network) {
+        AutoDownloadNetwork.WIFI -> runCatching { new("TdApi\$NetworkTypeWiFi") }.getOrNull()
+        AutoDownloadNetwork.MOBILE -> runCatching { new("TdApi\$NetworkTypeMobile") }.getOrNull()
+        AutoDownloadNetwork.ROAMING -> runCatching { new("TdApi\$NetworkTypeMobileRoaming") }.getOrNull()
+    }
+
+    fun fetchAutoDownloadSettingsPresets(client: ClientHandle): AutoDownloadPresets? {
+        val fn = runCatching { new("TdApi\$GetAutoDownloadSettingsPresets") }.getOrNull() ?: return null
+        val result = sendForResult(client, fn, timeoutMs = 1_500, retries = 1, traceTag = "GetAutoDownloadSettingsPresets") ?: return null
+        return try {
+            val cls = result.javaClass
+            val low = cls.getDeclaredField("low").apply { isAccessible = true }.get(result)
+            val medium = cls.getDeclaredField("medium").apply { isAccessible = true }.get(result)
+            val high = cls.getDeclaredField("high").apply { isAccessible = true }.get(result)
+            val mobile = parseAutoDownloadSettings(low)
+            val wifi = parseAutoDownloadSettings(medium)
+            val roaming = parseAutoDownloadSettings(high)
+            if (mobile != null && wifi != null && roaming != null) {
+                AutoDownloadPresets(wifi = wifi, mobile = mobile, roaming = roaming)
+            } else null
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    fun sendSetAutoDownloadSettings(client: ClientHandle, settings: AutoDownloadSettings, network: AutoDownloadNetwork) {
+        val settingsObj = buildAutoDownloadSettings(settings) ?: return
+        val networkObj = buildNetworkType(network) ?: return
+        val fn = runCatching {
+            new(
+                "TdApi\$SetAutoDownloadSettings",
+                arrayOf(td("TdApi\$AutoDownloadSettings"), td("TdApi\$NetworkType")),
+                arrayOf(settingsObj, networkObj)
+            )
+        }.getOrNull() ?: return
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    private fun fetchProxies(client: ClientHandle): List<Any> {
+        val fn = runCatching { new("TdApi\$GetProxies") }.getOrNull() ?: return emptyList()
+        val result = sendForResult(client, fn, timeoutMs = 1_500, retries = 1, traceTag = "GetProxies") ?: return emptyList()
+        return try {
+            val field = result.javaClass.getDeclaredField("proxies").apply { isAccessible = true }
+            val arr = field.get(result)
+            when (arr) {
+                is Array<*> -> arr.filterNotNull().map { it as Any }
+                is Iterable<*> -> arr.filterNotNull().map { it as Any }
+                else -> emptyList()
+            }
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+
+    private fun extractProxyId(proxyObj: Any?): Int? = try {
+        proxyObj?.javaClass?.getDeclaredField("id")?.apply { isAccessible = true }?.getInt(proxyObj)
+    } catch (_: Throwable) { null }
+
+    private fun removeProxy(client: ClientHandle, proxyId: Int) {
+        val fn = runCatching { new("TdApi\$RemoveProxy", arrayOf(Int::class.javaPrimitiveType!!), arrayOf(proxyId)) }.getOrNull() ?: return
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    fun disableProxy(client: ClientHandle) {
+        val fn = runCatching { new("TdApi\$DisableProxy") }.getOrNull() ?: return
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+        fetchProxies(client).mapNotNull { extractProxyId(it) }.forEach { removeProxy(client, it) }
+    }
+
+    private fun enableProxy(client: ClientHandle, proxyId: Int) {
+        val fn = runCatching { new("TdApi\$EnableProxy", arrayOf(Int::class.javaPrimitiveType!!), arrayOf(proxyId)) }.getOrNull() ?: return
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
+    fun configureProxy(client: ClientHandle, config: ProxyConfig): Boolean {
+        if (config.kind == ProxyKind.NONE || config.host.isBlank() || config.port <= 0 || !config.enabled) {
+            disableProxy(client)
+            return false
+        }
+        val proxyType = when (config.kind) {
+            ProxyKind.SOCKS5 -> runCatching {
+                new(
+                    "TdApi\$ProxyTypeSocks5",
+                    arrayOf(String::class.java, String::class.java),
+                    arrayOf(config.username, config.password)
+                )
+            }.getOrNull()
+            ProxyKind.HTTP -> runCatching {
+                new(
+                    "TdApi\$ProxyTypeHttp",
+                    arrayOf(String::class.java, String::class.java, Boolean::class.javaPrimitiveType!!),
+                    arrayOf(config.username, config.password, false)
+                )
+            }.getOrNull()
+            ProxyKind.MTPROTO -> runCatching {
+                new(
+                    "TdApi\$ProxyTypeMtproto",
+                    arrayOf(String::class.java),
+                    arrayOf(config.secret)
+                )
+            }.getOrNull()
+            ProxyKind.NONE -> null
+        } ?: return false
+
+        fetchProxies(client).mapNotNull { extractProxyId(it) }.forEach { removeProxy(client, it) }
+
+        val fn = runCatching {
+            new(
+                "TdApi\$AddProxy",
+                arrayOf(String::class.java, Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!, td("TdApi\$ProxyType")),
+                arrayOf(config.host, config.port, config.enabled, proxyType)
+            )
+        }.getOrNull() ?: return false
+
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val resultHolder = arrayOfNulls<Any>(1)
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
+            resultHolder[0] = args?.getOrNull(0)
+            null
+        }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+        val proxyObj = resultHolder[0]
+        val proxyId = extractProxyId(proxyObj)
+        if (config.enabled && proxyId != null) {
+            enableProxy(client, proxyId)
+        }
+        return proxyId != null
     }
 
     // --- Chat list builders ---

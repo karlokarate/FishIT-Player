@@ -103,6 +103,36 @@ private val Context.dataStore by preferencesDataStore("settings")
     val TG_ENABLED = booleanPreferencesKey("tg_enabled")
     val TG_SELECTED_CHATS_CSV = stringPreferencesKey("tg_selected_chats_csv")
     val TG_CACHE_LIMIT_GB = intPreferencesKey("tg_cache_limit_gb")
+    val TG_PREFER_IPV6 = booleanPreferencesKey("tg_prefer_ipv6")
+    val TG_STAY_ONLINE = booleanPreferencesKey("tg_stay_online")
+    val TG_PROXY_TYPE = stringPreferencesKey("tg_proxy_type")
+    val TG_PROXY_HOST = stringPreferencesKey("tg_proxy_host")
+    val TG_PROXY_PORT = intPreferencesKey("tg_proxy_port")
+    val TG_PROXY_USERNAME = stringPreferencesKey("tg_proxy_username")
+    val TG_PROXY_PASSWORD = stringPreferencesKey("tg_proxy_password")
+    val TG_PROXY_SECRET = stringPreferencesKey("tg_proxy_secret")
+    val TG_PROXY_ENABLED = booleanPreferencesKey("tg_proxy_enabled")
+    val TG_LOG_VERBOSITY = intPreferencesKey("tg_log_verbosity")
+    val TG_PREFETCH_WINDOW_MB = intPreferencesKey("tg_prefetch_window_mb")
+    val TG_SEEK_BOOST_ENABLED = booleanPreferencesKey("tg_seek_boost_enabled")
+    val TG_MAX_PARALLEL_DOWNLOADS = intPreferencesKey("tg_max_parallel_downloads")
+    val TG_STORAGE_OPTIMIZER = booleanPreferencesKey("tg_storage_optimizer")
+    val TG_IGNORE_FILE_NAMES = booleanPreferencesKey("tg_ignore_file_names")
+    val TG_AUTO_WIFI_ENABLED = booleanPreferencesKey("tg_auto_wifi_enabled")
+    val TG_AUTO_WIFI_PRELOAD_LARGE = booleanPreferencesKey("tg_auto_wifi_preload_large")
+    val TG_AUTO_WIFI_PRELOAD_NEXT_AUDIO = booleanPreferencesKey("tg_auto_wifi_preload_next_audio")
+    val TG_AUTO_WIFI_PRELOAD_STORIES = booleanPreferencesKey("tg_auto_wifi_preload_stories")
+    val TG_AUTO_WIFI_LESS_DATA_CALLS = booleanPreferencesKey("tg_auto_wifi_less_data_calls")
+    val TG_AUTO_MOBILE_ENABLED = booleanPreferencesKey("tg_auto_mobile_enabled")
+    val TG_AUTO_MOBILE_PRELOAD_LARGE = booleanPreferencesKey("tg_auto_mobile_preload_large")
+    val TG_AUTO_MOBILE_PRELOAD_NEXT_AUDIO = booleanPreferencesKey("tg_auto_mobile_preload_next_audio")
+    val TG_AUTO_MOBILE_PRELOAD_STORIES = booleanPreferencesKey("tg_auto_mobile_preload_stories")
+    val TG_AUTO_MOBILE_LESS_DATA_CALLS = booleanPreferencesKey("tg_auto_mobile_less_data_calls")
+    val TG_AUTO_ROAM_ENABLED = booleanPreferencesKey("tg_auto_roam_enabled")
+    val TG_AUTO_ROAM_PRELOAD_LARGE = booleanPreferencesKey("tg_auto_roam_preload_large")
+    val TG_AUTO_ROAM_PRELOAD_NEXT_AUDIO = booleanPreferencesKey("tg_auto_roam_preload_next_audio")
+    val TG_AUTO_ROAM_PRELOAD_STORIES = booleanPreferencesKey("tg_auto_roam_preload_stories")
+    val TG_AUTO_ROAM_LESS_DATA_CALLS = booleanPreferencesKey("tg_auto_roam_less_data_calls")
     // Telegram sync mapping (separate selections for VOD and Series)
     val TG_SELECTED_VOD_CHATS_CSV = stringPreferencesKey("tg_selected_vod_chats_csv")
     val TG_SELECTED_SERIES_CHATS_CSV = stringPreferencesKey("tg_selected_series_chats_csv")
@@ -249,6 +279,36 @@ class SettingsStore(private val context: Context) {
     val tgEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_ENABLED] ?: false }
     val tgSelectedChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_CHATS_CSV].orEmpty() }
     val tgCacheLimitGb: Flow<Int> = context.dataStore.data.map { it[Keys.TG_CACHE_LIMIT_GB] ?: 2 }
+    val tgPreferIpv6: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_PREFER_IPV6] ?: true }
+    val tgStayOnline: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_STAY_ONLINE] ?: true }
+    val tgProxyType: Flow<String> = context.dataStore.data.map { it[Keys.TG_PROXY_TYPE].orEmpty() }
+    val tgProxyHost: Flow<String> = context.dataStore.data.map { it[Keys.TG_PROXY_HOST].orEmpty() }
+    val tgProxyPort: Flow<Int> = context.dataStore.data.map { it[Keys.TG_PROXY_PORT] ?: 0 }
+    val tgProxyUsername: Flow<String> = context.dataStore.data.map { it[Keys.TG_PROXY_USERNAME].orEmpty() }
+    val tgProxyPassword: Flow<String> = context.dataStore.data.map { Crypto.decrypt(it[Keys.TG_PROXY_PASSWORD].orEmpty()) }
+    val tgProxySecret: Flow<String> = context.dataStore.data.map { Crypto.decrypt(it[Keys.TG_PROXY_SECRET].orEmpty()) }
+    val tgProxyEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_PROXY_ENABLED] ?: false }
+    val tgLogVerbosity: Flow<Int> = context.dataStore.data.map { it[Keys.TG_LOG_VERBOSITY] ?: 1 }
+    val tgPrefetchWindowMb: Flow<Int> = context.dataStore.data.map { it[Keys.TG_PREFETCH_WINDOW_MB] ?: 8 }
+    val tgSeekBoostEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_SEEK_BOOST_ENABLED] ?: true }
+    val tgMaxParallelDownloads: Flow<Int> = context.dataStore.data.map { it[Keys.TG_MAX_PARALLEL_DOWNLOADS] ?: 2 }
+    val tgStorageOptimizerEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_STORAGE_OPTIMIZER] ?: true }
+    val tgIgnoreFileNames: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_IGNORE_FILE_NAMES] ?: false }
+    val tgAutoWifiEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_WIFI_ENABLED] ?: true }
+    val tgAutoWifiPreloadLarge: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_WIFI_PRELOAD_LARGE] ?: true }
+    val tgAutoWifiPreloadNextAudio: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_WIFI_PRELOAD_NEXT_AUDIO] ?: true }
+    val tgAutoWifiPreloadStories: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_WIFI_PRELOAD_STORIES] ?: false }
+    val tgAutoWifiLessDataCalls: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_WIFI_LESS_DATA_CALLS] ?: false }
+    val tgAutoMobileEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_MOBILE_ENABLED] ?: true }
+    val tgAutoMobilePreloadLarge: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_MOBILE_PRELOAD_LARGE] ?: false }
+    val tgAutoMobilePreloadNextAudio: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_MOBILE_PRELOAD_NEXT_AUDIO] ?: false }
+    val tgAutoMobilePreloadStories: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_MOBILE_PRELOAD_STORIES] ?: false }
+    val tgAutoMobileLessDataCalls: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_MOBILE_LESS_DATA_CALLS] ?: true }
+    val tgAutoRoamingEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_ROAM_ENABLED] ?: false }
+    val tgAutoRoamingPreloadLarge: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_ROAM_PRELOAD_LARGE] ?: false }
+    val tgAutoRoamingPreloadNextAudio: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_ROAM_PRELOAD_NEXT_AUDIO] ?: false }
+    val tgAutoRoamingPreloadStories: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_ROAM_PRELOAD_STORIES] ?: false }
+    val tgAutoRoamingLessDataCalls: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] ?: true }
     val tgApiId: Flow<Int> = context.dataStore.data.map { it[Keys.TG_API_ID] ?: 0 }
     val tgApiHash: Flow<String> = context.dataStore.data.map { it[Keys.TG_API_HASH].orEmpty() }
 
@@ -449,6 +509,66 @@ class SettingsStore(private val context: Context) {
     suspend fun setTelegramSelectedSeriesChatsCsv(value: String) { context.dataStore.edit { it[Keys.TG_SELECTED_SERIES_CHATS_CSV] = value } }
     suspend fun setTelegramApiId(value: Int) { context.dataStore.edit { it[Keys.TG_API_ID] = value } }
     suspend fun setTelegramApiHash(value: String) { context.dataStore.edit { it[Keys.TG_API_HASH] = value } }
+    suspend fun setTelegramPreferIpv6(value: Boolean) { context.dataStore.edit { it[Keys.TG_PREFER_IPV6] = value } }
+    suspend fun setTelegramStayOnline(value: Boolean) { context.dataStore.edit { it[Keys.TG_STAY_ONLINE] = value } }
+    suspend fun setTelegramProxyType(value: String) { context.dataStore.edit { it[Keys.TG_PROXY_TYPE] = value } }
+    suspend fun setTelegramProxyHost(value: String) { context.dataStore.edit { it[Keys.TG_PROXY_HOST] = value } }
+    suspend fun setTelegramProxyPort(value: Int) { context.dataStore.edit { it[Keys.TG_PROXY_PORT] = value } }
+    suspend fun setTelegramProxyUsername(value: String) { context.dataStore.edit { it[Keys.TG_PROXY_USERNAME] = value } }
+    suspend fun setTelegramProxyPassword(value: String) { context.dataStore.edit { it[Keys.TG_PROXY_PASSWORD] = Crypto.encrypt(value) } }
+    suspend fun setTelegramProxySecret(value: String) { context.dataStore.edit { it[Keys.TG_PROXY_SECRET] = Crypto.encrypt(value) } }
+    suspend fun setTelegramProxyEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_PROXY_ENABLED] = value } }
+    suspend fun setTelegramLogVerbosity(value: Int) { context.dataStore.edit { it[Keys.TG_LOG_VERBOSITY] = value } }
+    suspend fun setTelegramPrefetchWindowMb(value: Int) { context.dataStore.edit { it[Keys.TG_PREFETCH_WINDOW_MB] = value } }
+    suspend fun setTelegramSeekBoostEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_SEEK_BOOST_ENABLED] = value } }
+    suspend fun setTelegramMaxParallelDownloads(value: Int) { context.dataStore.edit { it[Keys.TG_MAX_PARALLEL_DOWNLOADS] = value } }
+    suspend fun setTelegramStorageOptimizerEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_STORAGE_OPTIMIZER] = value } }
+    suspend fun setTelegramIgnoreFileNames(value: Boolean) { context.dataStore.edit { it[Keys.TG_IGNORE_FILE_NAMES] = value } }
+    suspend fun setTelegramAutoWifi(
+        enabled: Boolean,
+        preloadLarge: Boolean,
+        preloadNextAudio: Boolean,
+        preloadStories: Boolean,
+        lessDataCalls: Boolean
+    ) {
+        context.dataStore.edit {
+            it[Keys.TG_AUTO_WIFI_ENABLED] = enabled
+            it[Keys.TG_AUTO_WIFI_PRELOAD_LARGE] = preloadLarge
+            it[Keys.TG_AUTO_WIFI_PRELOAD_NEXT_AUDIO] = preloadNextAudio
+            it[Keys.TG_AUTO_WIFI_PRELOAD_STORIES] = preloadStories
+            it[Keys.TG_AUTO_WIFI_LESS_DATA_CALLS] = lessDataCalls
+        }
+    }
+    suspend fun setTelegramAutoMobile(
+        enabled: Boolean,
+        preloadLarge: Boolean,
+        preloadNextAudio: Boolean,
+        preloadStories: Boolean,
+        lessDataCalls: Boolean
+    ) {
+        context.dataStore.edit {
+            it[Keys.TG_AUTO_MOBILE_ENABLED] = enabled
+            it[Keys.TG_AUTO_MOBILE_PRELOAD_LARGE] = preloadLarge
+            it[Keys.TG_AUTO_MOBILE_PRELOAD_NEXT_AUDIO] = preloadNextAudio
+            it[Keys.TG_AUTO_MOBILE_PRELOAD_STORIES] = preloadStories
+            it[Keys.TG_AUTO_MOBILE_LESS_DATA_CALLS] = lessDataCalls
+        }
+    }
+    suspend fun setTelegramAutoRoaming(
+        enabled: Boolean,
+        preloadLarge: Boolean,
+        preloadNextAudio: Boolean,
+        preloadStories: Boolean,
+        lessDataCalls: Boolean
+    ) {
+        context.dataStore.edit {
+            it[Keys.TG_AUTO_ROAM_ENABLED] = enabled
+            it[Keys.TG_AUTO_ROAM_PRELOAD_LARGE] = preloadLarge
+            it[Keys.TG_AUTO_ROAM_PRELOAD_NEXT_AUDIO] = preloadNextAudio
+            it[Keys.TG_AUTO_ROAM_PRELOAD_STORIES] = preloadStories
+            it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] = lessDataCalls
+        }
+    }
 
     data class Snapshot(
         val m3uUrl: String,
