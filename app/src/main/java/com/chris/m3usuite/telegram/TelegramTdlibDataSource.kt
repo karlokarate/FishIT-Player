@@ -83,7 +83,7 @@ class TelegramTdlibDataSource(
             } else {
                 "Telegram nicht verbunden – lokale Dateien werden verwendet"
             }
-            return fallback(message, markAuth = true)
+            return fallback(message, true)
         }
 
         val authOk = runCatching {
@@ -94,7 +94,7 @@ class TelegramTdlibDataSource(
             TdLibReflection.mapAuthorizationState(obj) == AuthState.AUTHENTICATED
         }.getOrDefault(false)
         if (!authOk) {
-            return fallback("Telegram nicht verbunden – lokale Dateien werden verwendet", markAuth = true)
+            return fallback("Telegram nicht verbunden – lokale Dateien werden verwendet", true)
         }
 
         val cachedRow = fetchMessageRow(chatId, msgId)
@@ -106,14 +106,14 @@ class TelegramTdlibDataSource(
         val cachedName = cachedRow?.fileName
 
         val getMsg = TdLibReflection.buildGetMessage(chatId, msgId)
-            ?: return fallback("Telegram-Datei konnte nicht vorbereitet werden", markAuth = false)
+            ?: return fallback("Telegram-Datei konnte nicht vorbereitet werden", false)
         val msgObj = TdLibReflection.sendForResult(
             client,
             getMsg,
             timeoutMs = 5_000,
             retries = 2,
             traceTag = "GetMessage[$chatId/$msgId]"
-        ) ?: return fallback("Telegram-Datei nicht abrufbar – lokale Kopie wird verwendet", markAuth = false)
+        ) ?: return fallback("Telegram-Datei nicht abrufbar – lokale Kopie wird verwendet", false)
 
         val message = if (msgObj.javaClass.name.endsWith("TdApi\$Message")) msgObj else runCatching {
             msgObj.javaClass.getDeclaredField("message").apply { isAccessible = true }.get(msgObj)
@@ -122,12 +122,12 @@ class TelegramTdlibDataSource(
             message.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(message)
         }.getOrNull()
         val fileObj = TdLibReflection.findPrimaryFile(content)
-            ?: return fallback("Telegram-Datei ohne Mediendaten – lokale Kopie wird verwendet", markAuth = false)
+            ?: return fallback("Telegram-Datei ohne Mediendaten – lokale Kopie wird verwendet", false)
         var info = TdLibReflection.extractFileInfo(fileObj)
-            ?: return fallback("Telegram-Datei konnte nicht gelesen werden", markAuth = false)
+            ?: return fallback("Telegram-Datei konnte nicht gelesen werden", false)
         fileId = info.fileId.takeIf { it > 0 } ?: cachedFileId
         if (fileId <= 0) {
-            return fallback("Telegram-Datei ohne File-ID – lokale Kopie wird verwendet", markAuth = false)
+            return fallback("Telegram-Datei ohne File-ID – lokale Kopie wird verwendet", false)
         }
 
         val supportsStreaming = TdLibReflection.extractSupportsStreaming(content) ?: cachedSupports
@@ -168,7 +168,7 @@ class TelegramTdlibDataSource(
         }
         val file = path?.let { File(it) }
         if (file == null || !file.exists()) {
-            return fallback("Telegram-Datei nicht lokal verfügbar – lokale Kopie wird verwendet", markAuth = false)
+            return fallback("Telegram-Datei nicht lokal verfügbar – lokale Kopie wird verwendet", false)
         }
 
         persistLocalPath(chatId, msgId, file.absolutePath)
@@ -186,7 +186,7 @@ class TelegramTdlibDataSource(
                 raf!!.seek(dataSpec.position)
             }
         } catch (e: Throwable) {
-            return fallback("Telegram-Datei konnte nicht geöffnet werden – lokale Kopie wird verwendet", markAuth = false)
+            return fallback("Telegram-Datei konnte nicht geöffnet werden – lokale Kopie wird verwendet", false)
         }
         opened = true
         return if (expectedSize > 0) kotlin.math.max(0L, expectedSize - dataSpec.position) else -1L
