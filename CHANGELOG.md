@@ -1,3 +1,8 @@
+2025-10-24
+- fix(telegram/build): Remove named arguments when invoking the TDLib fallback
+  lambda in `TelegramTdlibDataSource`. Kotlin 2.0 forbids named parameters on
+  function-type calls, so this restores `:app:compileDebugKotlin`.
+
 2025-10-23
 - fix(build/media3): Replace the missing Google Maven FFmpeg artifact with Jellyfin's
   `media3-ffmpeg-decoder` 1.8.0+1 build so Gradle resolves Media3 1.8.0 again while

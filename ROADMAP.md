@@ -22,6 +22,9 @@ Hinweis
   Trailer-Preview teilen sich eine RenderersFactory, die die FFmpeg-Extension
   bevorzugt und Decoder-Fallback aktiviert lässt.
 
+- Maintenance 2025‑10‑24: Kotlin 2.0 verbietet benannte Argumente bei Funktions-
+  typen. TelegramTdlibDataSource ruft den Fallback jetzt positionsbasiert auf,
+  sodass `:app:compileDebugKotlin` wieder durchläuft.
 - Maintenance 2025‑10‑23: Build block durch fehlendes Media3-FFmpeg-AAR gelöst.
   Wir binden Jellyfins `media3-ffmpeg-decoder` 1.8.0+1 ein, halten die restlichen
   Media3-Module auf 1.8.0 und behalten die bisherigen ABI-Splits bei.
