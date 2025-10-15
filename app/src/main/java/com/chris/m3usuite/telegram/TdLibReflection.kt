@@ -395,7 +395,7 @@ object TdLibReflection {
     }
 
     private fun buildAutoDownloadSettings(settings: AutoDownloadSettings): Any? {
-        val paramTypes = arrayOf(
+        val paramTypes: Array<Class<*>> = arrayOf(
             Boolean::class.javaPrimitiveType!!,
             Long::class.javaPrimitiveType!!,
             Long::class.javaPrimitiveType!!,
@@ -700,7 +700,7 @@ object TdLibReflection {
     }
 
     fun sendSetTdlibParameters(client: ClientHandle, parameters: Any) {
-        val set = new("TdApi\$SetTdlibParameters", arrayOf(td("TdApi\$TdlibParameters")), arrayOf(parameters))
+        val set = new("TdApi\$SetTdlibParameters", arrayOf<Class<*>>(td("TdApi\$TdlibParameters")), arrayOf(parameters))
         val handlerType = td("Client\$ResultHandler")
         val exceptionHandlerType = td("Client\$ExceptionHandler")
         val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, _ -> null }
@@ -711,7 +711,7 @@ object TdLibReflection {
     fun buildPhoneNumberAuthenticationSettings(settings: PhoneAuthSettings): Any? {
         val tokens = settings.authenticationTokens.distinct().take(20).toTypedArray()
         val firebaseClass = runCatching { td("TdApi\$FirebaseAuthenticationSettings") }.getOrNull() ?: return null
-        val paramTypes = arrayOf(
+        val paramTypes: Array<Class<*>> = arrayOf(
             Boolean::class.javaPrimitiveType!!,
             Boolean::class.javaPrimitiveType!!,
             Boolean::class.javaPrimitiveType!!,
@@ -734,15 +734,15 @@ object TdLibReflection {
 
     fun sendSetPhoneNumber(client: ClientHandle, phone: String, settings: PhoneAuthSettings = PhoneAuthSettings()) {
         val settingsObj = buildPhoneNumberAuthenticationSettings(settings)
-            ?: new(
-                "TdApi\$PhoneNumberAuthenticationSettings",
-                arrayOf(
-                    Boolean::class.javaPrimitiveType!!,
-                    Boolean::class.javaPrimitiveType!!,
-                    Boolean::class.javaPrimitiveType!!,
-                    Boolean::class.javaPrimitiveType!!,
-                    Array<String>::class.java
-                ),
+                ?: new(
+                    "TdApi\$PhoneNumberAuthenticationSettings",
+                    arrayOf<Class<*>>(
+                        Boolean::class.javaPrimitiveType!!,
+                        Boolean::class.javaPrimitiveType!!,
+                        Boolean::class.javaPrimitiveType!!,
+                        Boolean::class.javaPrimitiveType!!,
+                        Array<String>::class.java
+                    ),
                 arrayOf(
                     settings.allowFlashCall,
                     settings.allowMissedCall,
@@ -753,7 +753,7 @@ object TdLibReflection {
             )
         val fn = new(
             "TdApi\$SetAuthenticationPhoneNumber",
-            arrayOf(String::class.java, settingsObj.javaClass),
+            arrayOf<Class<*>>(String::class.java, settingsObj.javaClass),
             arrayOf(phone, settingsObj)
         )
         val handlerType = td("Client\$ResultHandler")
