@@ -2057,6 +2057,7 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
             }
             com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE,
             com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_PASSWORD,
+            com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_OTHER_DEVICE,
             com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> busy = false
             else -> {}
         }
@@ -2095,7 +2096,26 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
                         )
                         Text("Gib deine Telefonnummer im internationalen Format ein (z. B. +491701234567)", style = MaterialTheme.typography.bodySmall)
                         Spacer(Modifier.height(6.dp))
-                        Text("Oder melde dich per QR an: In der Telegram‑App auf deinem Smartphone zu Einstellungen → Geräte → Gerät verbinden gehen.", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "Oder nutze bei Bedarf den Button \"QR-Login anfordern\": In der Telegram-App auf deinem Smartphone unter Einstellungen → Geräte → Gerät verbinden bestätigen.",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        TextButton(
+                            onClick = {
+                                busy = true
+                                val started = runCatching { repo.start() }.getOrDefault(false)
+                                if (started) {
+                                    repo.requestQrLogin()
+                                } else {
+                                    busy = false
+                                }
+                            }
+                        ) { Text("QR-Login anfordern") }
+                        Text(
+                            "Der Telefon-/Code-Flow bleibt parallel verfügbar – Telegram liefert den QR-Code nur, wenn der Server ihn aktuell zulässt.",
+                            style = MaterialTheme.typography.bodySmall
+                        )
                         if (hasTelegramApp) {
                             Spacer(Modifier.height(6.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {

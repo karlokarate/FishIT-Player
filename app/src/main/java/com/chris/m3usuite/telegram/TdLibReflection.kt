@@ -1,6 +1,7 @@
 package com.chris.m3usuite.telegram
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import kotlinx.coroutines.channels.awaitClose
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.io.File
 import java.lang.reflect.Method
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -275,18 +277,52 @@ object TdLibReflection {
         runCatching { set("useChatInfoDatabase", true) }
         runCatching { set("useFileDatabase", true) }
         set("useSecretChats", true)
-        set("systemLanguageCode", Locale.getDefault().language)
-        val base = context.filesDir.absolutePath
-        set("databaseDirectory", base)
-        runCatching { set("filesDirectory", base) }
-        set("deviceModel", Build.MODEL)
-        set("systemVersion", Build.VERSION.RELEASE)
-        // Prefer app's VERSION_NAME; fallback to a sane semantic string
-        val appVer = runCatching {
-            val bc = Class.forName(context.packageName + ".BuildConfig")
-            val f = bc.getDeclaredField("VERSION_NAME"); f.isAccessible = true
-            (f.get(null) as? String)?.ifBlank { null }
-        }.getOrNull() ?: "1.0.0"
+        runCatching { set("useTestDc", false) }
+        val locale = if (Build.VERSION.SDK_INT >= 24) {
+            context.resources.configuration.locales.takeIf { it.size() > 0 }?.get(0)
+        } else {
+            @Suppress("DEPRECATION")
+            context.resources.configuration.locale
+        }
+        val languageCode = locale?.language?.takeIf { it.isNotBlank() }
+            ?.lowercase(Locale.ROOT)
+            ?: "en"
+        set("systemLanguageCode", languageCode)
+        val installId = TelegramKeyStore.getOrCreateInstallId(context)
+        val dbRoot = File(context.filesDir, "tdlib/$installId").apply {
+            if (!exists()) mkdirs()
+        }
+        set("databaseDirectory", dbRoot.absolutePath)
+        runCatching { set("filesDirectory", dbRoot.absolutePath) }
+        val manufacturer = Build.MANUFACTURER?.takeIf { it.isNotBlank() } ?: "Android"
+        val model = Build.MODEL?.takeIf { it.isNotBlank() } ?: manufacturer
+        val deviceModel = listOf(manufacturer, model)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .joinToString(separator = " ")
+            .ifBlank { "Android Device" }
+        set("deviceModel", deviceModel)
+        val release = Build.VERSION.RELEASE?.takeIf { it.isNotBlank() } ?: "Unknown"
+        val systemVersion = "Android ${release} (API ${Build.VERSION.SDK_INT})"
+        set("systemVersion", systemVersion)
+        val pkgName = context.packageName
+        val pmVersion = runCatching {
+            val pm = context.packageManager
+            if (Build.VERSION.SDK_INT >= 33) {
+                pm.getPackageInfo(pkgName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getPackageInfo(pkgName, 0)
+            }
+        }.getOrNull()?.versionName?.takeIf { !it.isNullOrBlank() }
+        val appVer = pmVersion
+            ?: runCatching {
+                val bc = Class.forName("$pkgName.BuildConfig")
+                val f = bc.getDeclaredField("VERSION_NAME"); f.isAccessible = true
+                (f.get(null) as? String)?.ifBlank { null }
+            }.getOrNull()
+            ?: "1.0.0"
         set("applicationVersion", appVer)
         set("enableStorageOptimizer", true)
         // Database encryption key (32 bytes) via KeyStore helper
