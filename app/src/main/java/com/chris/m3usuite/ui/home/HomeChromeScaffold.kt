@@ -72,6 +72,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.delay
+import com.chris.m3usuite.telegram.TgRawLogger
 import com.chris.m3usuite.ui.focus.FocusKit
 import com.chris.m3usuite.ui.home.MiniPlayerHost
 import com.chris.m3usuite.ui.home.MiniPlayerState
@@ -133,6 +134,12 @@ fun HomeChromeScaffold(
     val ctx = LocalContext.current
     val isTv = remember(ctx) { FocusKit.isTvDevice(ctx) }
     val isPreview = LocalInspectionMode.current
+    val settingsStore = remember(ctx) { com.chris.m3usuite.prefs.SettingsStore(ctx) }
+    val logOverlayHost = remember { SnackbarHostState() }
+    val logOverlayState = if (isPreview) remember { mutableStateOf(false) } else settingsStore.tgLogOverlayEnabled.collectAsStateWithLifecycle(initialValue = false)
+    val logVerbosityState = if (isPreview) remember { mutableStateOf(0) } else settingsStore.tgLogVerbosity.collectAsStateWithLifecycle(initialValue = 1)
+    val showLogOverlay by logOverlayState
+    val tgLogVerbosity by logVerbosityState
 
     // Chrome state: Visible (default), Collapsed (hidden), Expanded (focus trap + blur)
     // On TV, start collapsed to keep focus in content rows; header/bottom remain visible on phones
@@ -239,6 +246,15 @@ fun HomeChromeScaffold(
     val telegramTextColor = when (telegramSyncState) {
         is SchedulingGateway.TelegramSyncState.Failure -> MaterialTheme.colorScheme.onErrorContainer
         else -> MaterialTheme.colorScheme.onSurface
+    }
+
+    LaunchedEffect(showLogOverlay, tgLogVerbosity, isPreview) {
+        if (isPreview) return@LaunchedEffect
+        logOverlayHost.currentSnackbarData?.dismiss()
+        if (!showLogOverlay || tgLogVerbosity <= 0) return@LaunchedEffect
+        TgRawLogger.overlayEvents.collectLatest { message ->
+            logOverlayHost.showSnackbar(message)
+        }
     }
 
     LaunchedEffect(telegramSyncState) {
@@ -399,6 +415,18 @@ fun HomeChromeScaffold(
                 contentAlignment = Alignment.BottomCenter
             ) {
                 SnackbarHost(hostState = snackbarHost)
+            }
+        }
+        if (!isPreview && showLogOverlay && tgLogVerbosity > 0) {
+            val navInsets = WindowInsets.navigationBars.asPaddingValues()
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(navInsets),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                val extraBottom = if (snackbarHost != null) 72.dp else 12.dp
+                SnackbarHost(hostState = logOverlayHost, modifier = Modifier.padding(bottom = extraBottom))
             }
         }
     }

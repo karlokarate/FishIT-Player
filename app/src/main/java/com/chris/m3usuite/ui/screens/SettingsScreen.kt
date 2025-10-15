@@ -1148,6 +1148,7 @@ fun SettingsScreen(
                 val tgPreferIpv6 by store.tgPreferIpv6.collectAsStateWithLifecycle(initialValue = true)
                 val tgStayOnline by store.tgStayOnline.collectAsStateWithLifecycle(initialValue = true)
                 val tgLogLevel by store.tgLogVerbosity.collectAsStateWithLifecycle(initialValue = 1)
+                val tgLogOverlay by store.tgLogOverlayEnabled.collectAsStateWithLifecycle(initialValue = false)
                 val tgPrefetchMb by store.tgPrefetchWindowMb.collectAsStateWithLifecycle(initialValue = 8)
                 val tgSeekBoost by store.tgSeekBoostEnabled.collectAsStateWithLifecycle(initialValue = true)
                 val tgMaxParallel by store.tgMaxParallelDownloads.collectAsStateWithLifecycle(initialValue = 2)
@@ -1233,6 +1234,17 @@ fun SettingsScreen(
                                 scope.launch {
                                     store.setTelegramLogVerbosity(level)
                                     authRepo.setLogVerbosity(level)
+                                }
+                            }
+                        )
+                        FishFormSwitch(
+                            label = "TDLib-Logs als Snackbar",
+                            checked = tgLogOverlay,
+                            enabled = tgEnabled,
+                            helperText = "Zeigt Telegram-Logs live am unteren Bildschirmrand (nur für Debugging).",
+                            onCheckedChange = { value ->
+                                scope.launch {
+                                    store.setTelegramLogOverlayEnabled(value)
                                 }
                             }
                         )

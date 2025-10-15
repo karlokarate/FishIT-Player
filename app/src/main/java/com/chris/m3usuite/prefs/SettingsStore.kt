@@ -113,6 +113,7 @@ private val Context.dataStore by preferencesDataStore("settings")
     val TG_PROXY_SECRET = stringPreferencesKey("tg_proxy_secret")
     val TG_PROXY_ENABLED = booleanPreferencesKey("tg_proxy_enabled")
     val TG_LOG_VERBOSITY = intPreferencesKey("tg_log_verbosity")
+    val TG_LOG_OVERLAY = booleanPreferencesKey("tg_log_overlay")
     val TG_PREFETCH_WINDOW_MB = intPreferencesKey("tg_prefetch_window_mb")
     val TG_SEEK_BOOST_ENABLED = booleanPreferencesKey("tg_seek_boost_enabled")
     val TG_MAX_PARALLEL_DOWNLOADS = intPreferencesKey("tg_max_parallel_downloads")
@@ -289,6 +290,7 @@ class SettingsStore(private val context: Context) {
     val tgProxySecret: Flow<String> = context.dataStore.data.map { Crypto.decrypt(it[Keys.TG_PROXY_SECRET].orEmpty()) }
     val tgProxyEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_PROXY_ENABLED] ?: false }
     val tgLogVerbosity: Flow<Int> = context.dataStore.data.map { it[Keys.TG_LOG_VERBOSITY] ?: 1 }
+    val tgLogOverlayEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_LOG_OVERLAY] ?: false }
     val tgPrefetchWindowMb: Flow<Int> = context.dataStore.data.map { it[Keys.TG_PREFETCH_WINDOW_MB] ?: 8 }
     val tgSeekBoostEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_SEEK_BOOST_ENABLED] ?: true }
     val tgMaxParallelDownloads: Flow<Int> = context.dataStore.data.map { it[Keys.TG_MAX_PARALLEL_DOWNLOADS] ?: 2 }
@@ -524,6 +526,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setTelegramMaxParallelDownloads(value: Int) { context.dataStore.edit { it[Keys.TG_MAX_PARALLEL_DOWNLOADS] = value } }
     suspend fun setTelegramStorageOptimizerEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_STORAGE_OPTIMIZER] = value } }
     suspend fun setTelegramIgnoreFileNames(value: Boolean) { context.dataStore.edit { it[Keys.TG_IGNORE_FILE_NAMES] = value } }
+    suspend fun setTelegramLogOverlayEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_LOG_OVERLAY] = value } }
     suspend fun setTelegramAutoWifi(
         enabled: Boolean,
         preloadLarge: Boolean,
