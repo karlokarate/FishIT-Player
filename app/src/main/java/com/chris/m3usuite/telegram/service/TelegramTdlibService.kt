@@ -14,6 +14,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import java.util.Locale
 
 /**
  * Dedicated TDLib service running in its own process. Minimal IPC via Messenger.
@@ -35,6 +36,16 @@ class TelegramTdlibService : Service() {
         const val CMD_RESOLVE_CHAT_TITLES = 12
         const val CMD_PULL_CHAT_HISTORY = 13
         const val CMD_LIST_FOLDERS = 14
+        const val CMD_SET_IPV6 = 15
+        const val CMD_SET_ONLINE = 16
+        const val CMD_SET_LOG_VERBOSITY = 17
+        const val CMD_SET_STORAGE_OPTIMIZER = 18
+        const val CMD_OPTIMIZE_STORAGE = 19
+        const val CMD_SET_IGNORE_FILE_NAMES = 20
+        const val CMD_APPLY_PROXY = 21
+        const val CMD_DISABLE_PROXY = 22
+        const val CMD_SET_AUTO_DOWNLOAD = 23
+        const val CMD_APPLY_ALL_SETTINGS = 24
 
         const val REPLY_AUTH_STATE = 101
         const val REPLY_ERROR = 199
@@ -52,6 +63,9 @@ class TelegramTdlibService : Service() {
     private var lastApiId: Int = 0
     private var lastApiHash: String = ""
     private val authLock = Any()
+    private val settingsStore by lazy { com.chris.m3usuite.prefs.SettingsStore(applicationContext) }
+    @Volatile private var pendingApplyOptions: Boolean = false
+    private var autoDownloadDefaults: TdLibReflection.AutoDownloadPresets? = null
     private data class PendingPhone(
         val phone: String,
         val isCurrent: Boolean,
@@ -168,6 +182,107 @@ class TelegramTdlibService : Service() {
                 CMD_LIST_FOLDERS -> {
                     listFolders(msg.replyTo)
                 }
+                CMD_SET_IPV6 -> {
+                    val enabled = data.getBoolean("enabled", true)
+                    val client = clientHandle
+                    if (client != null) {
+                        TdLibReflection.sendSetOptionBoolean(client, "prefer_ipv6", enabled)
+                    } else {
+                        pendingApplyOptions = true
+                    }
+                }
+                CMD_SET_ONLINE -> {
+                    val enabled = data.getBoolean("enabled", true)
+                    val client = clientHandle
+                    if (client != null) {
+                        TdLibReflection.sendSetOptionBoolean(client, "online", enabled)
+                    } else {
+                        pendingApplyOptions = true
+                    }
+                }
+                CMD_SET_LOG_VERBOSITY -> {
+                    val level = data.getInt("level", 1)
+                    val client = clientHandle
+                    TdLibReflection.setLogVerbosityLevel(level)
+                    if (client != null) {
+                        TdLibReflection.sendSetLogVerbosityLevel(client, level)
+                    } else {
+                        pendingApplyOptions = true
+                    }
+                }
+                CMD_SET_STORAGE_OPTIMIZER -> {
+                    val enabled = data.getBoolean("enabled", true)
+                    val client = clientHandle
+                    if (client != null) {
+                        TdLibReflection.sendSetOptionBoolean(client, "use_storage_optimizer", enabled)
+                    } else {
+                        pendingApplyOptions = true
+                    }
+                }
+                CMD_OPTIMIZE_STORAGE -> {
+                    val client = clientHandle
+                    if (client != null) {
+                        scope.launch(Dispatchers.IO) { TdLibReflection.sendOptimizeStorage(client) }
+                    }
+                }
+                CMD_SET_IGNORE_FILE_NAMES -> {
+                    val enabled = data.getBoolean("enabled", false)
+                    val client = clientHandle
+                    if (client != null) {
+                        TdLibReflection.sendSetOptionBoolean(client, "ignore_file_names", enabled)
+                    } else {
+                        pendingApplyOptions = true
+                    }
+                }
+                CMD_APPLY_PROXY -> {
+                    val client = clientHandle
+                    if (client != null) {
+                        val kind = parseProxyKind(data.getString("type"))
+                        val host = data.getString("host") ?: ""
+                        val port = data.getInt("port", 0)
+                        val username = data.getString("username") ?: ""
+                        val password = data.getString("password") ?: ""
+                        val secret = data.getString("secret") ?: ""
+                        val enabled = data.getBoolean("enabled", false)
+                        scope.launch(Dispatchers.IO) {
+                            TdLibReflection.configureProxy(
+                                client,
+                                TdLibReflection.ProxyConfig(kind, host, port, username, password, secret, enabled)
+                            )
+                        }
+                    } else {
+                        pendingApplyOptions = true
+                    }
+                }
+                CMD_DISABLE_PROXY -> {
+                    clientHandle?.let { handle -> scope.launch(Dispatchers.IO) { TdLibReflection.disableProxy(handle) } }
+                }
+                CMD_SET_AUTO_DOWNLOAD -> {
+                    val client = clientHandle
+                    if (client != null) {
+                        val type = data.getString("type") ?: "wifi"
+                        val enabled = data.getBoolean("enabled", true)
+                        val preloadLarge = data.getBoolean("preloadLarge", false)
+                        val preloadNext = data.getBoolean("preloadNext", false)
+                        val preloadStories = data.getBoolean("preloadStories", false)
+                        val lessDataCalls = data.getBoolean("lessDataCalls", false)
+                        scope.launch(Dispatchers.IO) {
+                            applyAutoDownloadOverride(
+                                type,
+                                enabled,
+                                preloadLarge,
+                                preloadNext,
+                                preloadStories,
+                                lessDataCalls
+                            )
+                        }
+                    } else {
+                        pendingApplyOptions = true
+                    }
+                }
+                CMD_APPLY_ALL_SETTINGS -> {
+                    scope.launch(Dispatchers.IO) { applyRuntimeOptionsFromSettings() }
+                }
                 else -> super.handleMessage(msg)
             }
         }
@@ -252,9 +367,12 @@ class TelegramTdlibService : Service() {
                                     val effectiveId = lastApiId.takeIf { it > 0 } ?: BuildConfig.TG_API_ID
                                     val effectiveHash = lastApiHash.takeIf { it.isNotBlank() } ?: BuildConfig.TG_API_HASH
                                     val params = TdLibReflection.buildTdlibParameters(applicationContext, effectiveId, effectiveHash)
-                                    if (params != null) clientHandle?.let { TdLibReflection.sendSetTdlibParameters(it, params) }
-                                    val key = com.chris.m3usuite.telegram.TelegramKeyStore.getOrCreateDatabaseKey(applicationContext)
-                                    clientHandle?.let { TdLibReflection.sendCheckDatabaseEncryptionKey(it, key) }
+                                    if (params != null) clientHandle?.let { ch ->
+                                        TdLibReflection.sendSetTdlibParameters(ch, params)
+                                        val key = com.chris.m3usuite.telegram.TelegramKeyStore.getOrCreateDatabaseKey(applicationContext)
+                                        TdLibReflection.sendCheckDatabaseEncryptionKey(ch, key)
+                                        scope.launch(Dispatchers.IO) { applyRuntimeOptionsFromSettings() }
+                                    }
                                 }
                             }
                         }
@@ -267,11 +385,17 @@ class TelegramTdlibService : Service() {
                                     val effectiveId = lastApiId.takeIf { it > 0 } ?: BuildConfig.TG_API_ID
                                     val effectiveHash = lastApiHash.takeIf { it.isNotBlank() } ?: BuildConfig.TG_API_HASH
                                     val params = TdLibReflection.buildTdlibParameters(applicationContext, effectiveId, effectiveHash)
-                                    if (params != null) clientHandle?.let { TdLibReflection.sendSetTdlibParameters(it, params) }
+                                    if (params != null) clientHandle?.let { ch ->
+                                        TdLibReflection.sendSetTdlibParameters(ch, params)
+                                        scope.launch(Dispatchers.IO) { applyRuntimeOptionsFromSettings() }
+                                    }
                                 }
                                 TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> {
                                     val key = com.chris.m3usuite.telegram.TelegramKeyStore.getOrCreateDatabaseKey(applicationContext)
-                                    clientHandle?.let { TdLibReflection.sendCheckDatabaseEncryptionKey(it, key) }
+                                    clientHandle?.let { ch ->
+                                        TdLibReflection.sendCheckDatabaseEncryptionKey(ch, key)
+                                        scope.launch(Dispatchers.IO) { applyRuntimeOptionsFromSettings() }
+                                    }
                                 }
                                 else -> Unit
                             }
@@ -439,12 +563,13 @@ class TelegramTdlibService : Service() {
             sendErrorToAll("Failed to build TdlibParameters")
             return
         }
-        clientHandle?.let {
+        clientHandle?.let { ch ->
             Log.i("TdSvc", "Sending SetTdlibParameters (apiId present=${id > 0})")
-            TdLibReflection.sendSetTdlibParameters(it, params)
+            TdLibReflection.sendSetTdlibParameters(ch, params)
             val key = com.chris.m3usuite.telegram.TelegramKeyStore.getOrCreateDatabaseKey(applicationContext)
             Log.i("TdSvc", "Sending CheckDatabaseEncryptionKey (${key.size} bytes)")
-            TdLibReflection.sendCheckDatabaseEncryptionKey(it, key)
+            TdLibReflection.sendCheckDatabaseEncryptionKey(ch, key)
+            scope.launch(Dispatchers.IO) { applyRuntimeOptionsFromSettings() }
         }
     }
 
@@ -1094,6 +1219,134 @@ class TelegramTdlibService : Service() {
             lastNetType = net
             TdLibReflection.sendSetNetworkType(client, net)
         }
+    }
+
+    private fun parseProxyKind(value: String?): TdLibReflection.ProxyKind {
+        val normalized = value?.lowercase(Locale.getDefault()) ?: ""
+        return when (normalized) {
+            "socks", "socks5" -> TdLibReflection.ProxyKind.SOCKS5
+            "http", "https" -> TdLibReflection.ProxyKind.HTTP
+            "mtproto", "mtproxy" -> TdLibReflection.ProxyKind.MTPROTO
+            else -> TdLibReflection.ProxyKind.NONE
+        }
+    }
+
+    private suspend fun ensureAutoDownloadPresets(client: TdLibReflection.ClientHandle): TdLibReflection.AutoDownloadPresets? {
+        val cached = autoDownloadDefaults
+        if (cached != null) return cached
+        val presets = TdLibReflection.fetchAutoDownloadSettingsPresets(client)
+        if (presets != null) autoDownloadDefaults = presets
+        return presets
+    }
+
+    private suspend fun applyAutoDownloadFromStore(client: TdLibReflection.ClientHandle) {
+        val presets = ensureAutoDownloadPresets(client) ?: return
+        val wifi = presets.wifi.copy(
+            isAutoDownloadEnabled = runCatching { settingsStore.tgAutoWifiEnabled.first() }.getOrDefault(true),
+            preloadLargeVideos = runCatching { settingsStore.tgAutoWifiPreloadLarge.first() }.getOrDefault(true),
+            preloadNextAudio = runCatching { settingsStore.tgAutoWifiPreloadNextAudio.first() }.getOrDefault(true),
+            preloadStories = runCatching { settingsStore.tgAutoWifiPreloadStories.first() }.getOrDefault(false),
+            useLessDataForCalls = runCatching { settingsStore.tgAutoWifiLessDataCalls.first() }.getOrDefault(false)
+        )
+        val mobile = presets.mobile.copy(
+            isAutoDownloadEnabled = runCatching { settingsStore.tgAutoMobileEnabled.first() }.getOrDefault(true),
+            preloadLargeVideos = runCatching { settingsStore.tgAutoMobilePreloadLarge.first() }.getOrDefault(false),
+            preloadNextAudio = runCatching { settingsStore.tgAutoMobilePreloadNextAudio.first() }.getOrDefault(false),
+            preloadStories = runCatching { settingsStore.tgAutoMobilePreloadStories.first() }.getOrDefault(false),
+            useLessDataForCalls = runCatching { settingsStore.tgAutoMobileLessDataCalls.first() }.getOrDefault(true)
+        )
+        val roaming = presets.roaming.copy(
+            isAutoDownloadEnabled = runCatching { settingsStore.tgAutoRoamingEnabled.first() }.getOrDefault(false),
+            preloadLargeVideos = runCatching { settingsStore.tgAutoRoamingPreloadLarge.first() }.getOrDefault(false),
+            preloadNextAudio = runCatching { settingsStore.tgAutoRoamingPreloadNextAudio.first() }.getOrDefault(false),
+            preloadStories = runCatching { settingsStore.tgAutoRoamingPreloadStories.first() }.getOrDefault(false),
+            useLessDataForCalls = runCatching { settingsStore.tgAutoRoamingLessDataCalls.first() }.getOrDefault(true)
+        )
+        TdLibReflection.sendSetAutoDownloadSettings(client, wifi, TdLibReflection.AutoDownloadNetwork.WIFI)
+        TdLibReflection.sendSetAutoDownloadSettings(client, mobile, TdLibReflection.AutoDownloadNetwork.MOBILE)
+        TdLibReflection.sendSetAutoDownloadSettings(client, roaming, TdLibReflection.AutoDownloadNetwork.ROAMING)
+        autoDownloadDefaults = TdLibReflection.AutoDownloadPresets(wifi, mobile, roaming)
+    }
+
+    private suspend fun applyAutoDownloadOverride(
+        type: String,
+        enabled: Boolean,
+        preloadLarge: Boolean,
+        preloadNext: Boolean,
+        preloadStories: Boolean,
+        lessDataCalls: Boolean
+    ) {
+        val client = clientHandle ?: run { pendingApplyOptions = true; return }
+        val network = when (type.lowercase(Locale.getDefault())) {
+            "mobile" -> TdLibReflection.AutoDownloadNetwork.MOBILE
+            "roaming" -> TdLibReflection.AutoDownloadNetwork.ROAMING
+            else -> TdLibReflection.AutoDownloadNetwork.WIFI
+        }
+        val presets = ensureAutoDownloadPresets(client) ?: return
+        val updated = when (network) {
+            TdLibReflection.AutoDownloadNetwork.WIFI -> presets.wifi.copy(
+                isAutoDownloadEnabled = enabled,
+                preloadLargeVideos = preloadLarge,
+                preloadNextAudio = preloadNext,
+                preloadStories = preloadStories,
+                useLessDataForCalls = lessDataCalls
+            )
+            TdLibReflection.AutoDownloadNetwork.MOBILE -> presets.mobile.copy(
+                isAutoDownloadEnabled = enabled,
+                preloadLargeVideos = preloadLarge,
+                preloadNextAudio = preloadNext,
+                preloadStories = preloadStories,
+                useLessDataForCalls = lessDataCalls
+            )
+            TdLibReflection.AutoDownloadNetwork.ROAMING -> presets.roaming.copy(
+                isAutoDownloadEnabled = enabled,
+                preloadLargeVideos = preloadLarge,
+                preloadNextAudio = preloadNext,
+                preloadStories = preloadStories,
+                useLessDataForCalls = lessDataCalls
+            )
+        }
+        TdLibReflection.sendSetAutoDownloadSettings(client, updated, network)
+        autoDownloadDefaults = when (network) {
+            TdLibReflection.AutoDownloadNetwork.WIFI -> presets.copy(wifi = updated)
+            TdLibReflection.AutoDownloadNetwork.MOBILE -> presets.copy(mobile = updated)
+            TdLibReflection.AutoDownloadNetwork.ROAMING -> presets.copy(roaming = updated)
+        }
+    }
+
+    private suspend fun applyProxyFromStore(client: TdLibReflection.ClientHandle) {
+        val kindValue = runCatching { settingsStore.tgProxyType.first() }.getOrDefault("")
+        val host = runCatching { settingsStore.tgProxyHost.first() }.getOrDefault("")
+        val port = runCatching { settingsStore.tgProxyPort.first() }.getOrDefault(0)
+        val username = runCatching { settingsStore.tgProxyUsername.first() }.getOrDefault("")
+        val password = runCatching { settingsStore.tgProxyPassword.first() }.getOrDefault("")
+        val secret = runCatching { settingsStore.tgProxySecret.first() }.getOrDefault("")
+        val enabled = runCatching { settingsStore.tgProxyEnabled.first() }.getOrDefault(false)
+        TdLibReflection.configureProxy(
+            client,
+            TdLibReflection.ProxyConfig(parseProxyKind(kindValue), host, port, username, password, secret, enabled)
+        )
+    }
+
+    private suspend fun applyRuntimeOptionsFromSettings() {
+        val client = clientHandle ?: run {
+            pendingApplyOptions = true
+            return
+        }
+        pendingApplyOptions = false
+        val preferIpv6 = runCatching { settingsStore.tgPreferIpv6.first() }.getOrDefault(true)
+        TdLibReflection.sendSetOptionBoolean(client, "prefer_ipv6", preferIpv6)
+        val stayOnline = runCatching { settingsStore.tgStayOnline.first() }.getOrDefault(true)
+        TdLibReflection.sendSetOptionBoolean(client, "online", stayOnline)
+        val storageOptimizer = runCatching { settingsStore.tgStorageOptimizerEnabled.first() }.getOrDefault(true)
+        TdLibReflection.sendSetOptionBoolean(client, "use_storage_optimizer", storageOptimizer)
+        val ignoreNames = runCatching { settingsStore.tgIgnoreFileNames.first() }.getOrDefault(false)
+        TdLibReflection.sendSetOptionBoolean(client, "ignore_file_names", ignoreNames)
+        val logLevel = runCatching { settingsStore.tgLogVerbosity.first() }.getOrDefault(1).coerceIn(0, 5)
+        TdLibReflection.setLogVerbosityLevel(logLevel)
+        TdLibReflection.sendSetLogVerbosityLevel(client, logLevel)
+        applyProxyFromStore(client)
+        applyAutoDownloadFromStore(client)
     }
 
     // --- Foreground helpers ---

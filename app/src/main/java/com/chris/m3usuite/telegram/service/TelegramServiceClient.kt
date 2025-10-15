@@ -175,6 +175,46 @@ class TelegramServiceClient(private val context: Context) {
     fun registerFcm(token: String) = send(TelegramTdlibService.CMD_REGISTER_FCM) { putString("token", token) }
     fun processPush(payload: String) = send(TelegramTdlibService.CMD_PROCESS_PUSH) { putString("payload", payload) }
     fun setInBackground(inBg: Boolean) = send(TelegramTdlibService.CMD_SET_IN_BACKGROUND) { putBoolean("inBg", inBg) }
+    fun setPreferIpv6(enabled: Boolean) = send(TelegramTdlibService.CMD_SET_IPV6) { putBoolean("enabled", enabled) }
+    fun setStayOnline(enabled: Boolean) = send(TelegramTdlibService.CMD_SET_ONLINE) { putBoolean("enabled", enabled) }
+    fun setLogVerbosity(level: Int) = send(TelegramTdlibService.CMD_SET_LOG_VERBOSITY) { putInt("level", level) }
+    fun setStorageOptimizer(enabled: Boolean) = send(TelegramTdlibService.CMD_SET_STORAGE_OPTIMIZER) { putBoolean("enabled", enabled) }
+    fun optimizeStorage() = send(TelegramTdlibService.CMD_OPTIMIZE_STORAGE)
+    fun setIgnoreFileNames(enabled: Boolean) = send(TelegramTdlibService.CMD_SET_IGNORE_FILE_NAMES) { putBoolean("enabled", enabled) }
+    fun applyProxy(
+        type: String,
+        host: String,
+        port: Int,
+        username: String,
+        password: String,
+        secret: String,
+        enabled: Boolean
+    ) = send(TelegramTdlibService.CMD_APPLY_PROXY) {
+        putString("type", type)
+        putString("host", host)
+        putInt("port", port)
+        putString("username", username)
+        putString("password", password)
+        putString("secret", secret)
+        putBoolean("enabled", enabled)
+    }
+    fun disableProxy() = send(TelegramTdlibService.CMD_DISABLE_PROXY)
+    fun setAutoDownload(
+        type: String,
+        enabled: Boolean,
+        preloadLarge: Boolean,
+        preloadNext: Boolean,
+        preloadStories: Boolean,
+        lessDataCalls: Boolean
+    ) = send(TelegramTdlibService.CMD_SET_AUTO_DOWNLOAD) {
+        putString("type", type)
+        putBoolean("enabled", enabled)
+        putBoolean("preloadLarge", preloadLarge)
+        putBoolean("preloadNext", preloadNext)
+        putBoolean("preloadStories", preloadStories)
+        putBoolean("lessDataCalls", lessDataCalls)
+    }
+    fun applyAllSettings() = send(TelegramTdlibService.CMD_APPLY_ALL_SETTINGS)
 
     suspend fun listFolders(): IntArray = suspendCancellableCoroutine { cont ->
         pendingFolderList = { arr -> cont.resume(arr) }
