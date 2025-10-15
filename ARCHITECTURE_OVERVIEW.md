@@ -314,8 +314,11 @@ Backup/Restore
 - Images/Coil (v3): Globaler ImageLoader mit Hardware‑Bitmaps, ~25% RAM‑Cache und dynamischem Disk‑Cache (32‑bit ≈256 MiB, 64‑bit ≈512 MiB; Caps 384/768 MiB; mind. 2% frei). Requests lesen ihre Slot‑Größe via `onSizeChanged`, nutzen RGB_565 global, vergeben WxH‑sensitive Cache‑Keys und überschreiben TMDb‑URLs passend (`AppPosterImage`/`AppHeroImage`). ContentScale: Logos=Fit, Avatare=Crop, Karten=Crop; Standard‑Fallbacks stammen aus den neuen Fish‑Assets.
 - Player (Media3): `PlayerComponents.renderersFactory` liefert eine gemeinsam genutzte
   `DefaultRenderersFactory`, die Decoder‑Fallback aktiviert und die FFmpeg-
-  Extension bevorzugt. `PlayerView` verwendet weiterhin `surface_view` (TV
-  performanter). `DefaultLoadControl` bleibt konservativ.
+  Extension bevorzugt. Die FFmpeg-Decoder stammen aus Jellyfins vorgebautem
+  `media3-ffmpeg-decoder` 1.8.0+1 AAR (GPL-3.0), daher bleiben alle Media3-Module
+  bei 1.8.0 und die ABI-Splits sind auf arm64-v8a/armeabi-v7a festgelegt.
+  `PlayerView` verwendet weiterhin `surface_view` (TV performanter).
+  `DefaultLoadControl` bleibt konservativ.
 - TV Mini‑Player: Der Mini‑Player wird global im `HomeChromeScaffold` als Overlay (unten rechts) gehostet. Auf TV aktiviert der PiP‑Button den Mini statt System‑PiP; die Menü‑Taste (MENU) fokussiert den Mini, sofern sichtbar. Bei expandiertem Chrome bleibt der Mini sichtbar, ist aber nicht fokusierbar. Der ExoPlayer wird über `PlaybackSession` geteilt, sodass der Mini beim Navigieren weiter spielt. `MiniPlayerHost` rendert das PlayerView-Preview plus Titel/Unterzeile/Progress und nutzt `MiniPlayerState` + `MiniPlayerDescriptor`; `LocalMiniPlayerResume` in `MainActivity` navigiert zurück zur Player-Route ohne das ExoPlayer-Objekt zu ersetzen.
 - UI‑State: Scrollpositionen von LazyColumn/LazyRow/LazyVerticalGrid werden pro Route/Gruppe gespeichert und beim Wiederbetreten wiederhergestellt. Zentrale Helper in `ui/state/ScrollStateRegistry.kt` (`rememberRouteListState`, `rememberRouteGridState`).
 - XtreamSeeder / XtreamObxRepository: Kopf-Import (Live/VOD/Series) erstellt Provider-/Genre-/Year-Indizes (`ObxIndex*`) direkt aus den Xtream-Listen.

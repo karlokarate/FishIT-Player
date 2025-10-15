@@ -265,7 +265,8 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:$media3")
     implementation("androidx.media3:media3-ui:$media3")
     implementation("androidx.media3:media3-exoplayer-hls:$media3")
-    implementation("androidx.media3:media3-exoplayer-ffmpeg:$media3")
+    // FFmpeg decoder bundle (prebuilt Jellyfin distribution, GPL-3.0)
+    implementation("org.jellyfin.media3:media3-ffmpeg-decoder:1.8.0+1")
     // Optional:
     // implementation("androidx.media3:media3-ui-compose:$media3")
 
