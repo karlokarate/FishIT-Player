@@ -72,6 +72,7 @@ import com.chris.m3usuite.core.http.HttpClientFactory
 import com.chris.m3usuite.ui.focus.tvClickable
 import com.chris.m3usuite.ui.layout.FishFormSection
 import com.chris.m3usuite.ui.layout.FishFormSelect
+import com.chris.m3usuite.ui.layout.FishFormSlider
 import com.chris.m3usuite.ui.layout.FishFormSwitch
 import com.chris.m3usuite.ui.layout.FishFormTextField
 import com.chris.m3usuite.ui.layout.TvKeyboard
@@ -1183,7 +1184,7 @@ fun SettingsScreen(
                     onValueChange = { newValue -> scope.launch { store.setTelegramSelectedChatsCsv(newValue) } },
                     helperText = "Kommagetrennte Chat-IDs; leer = Auswahl über Picker",
                 )
-                com.chris.m3usuite.ui.layout.FishFormSlider(
+                FishFormSlider(
                     label = "Cache-Limit (GB)",
                     value = tgCacheGb,
                     range = 1..20,
