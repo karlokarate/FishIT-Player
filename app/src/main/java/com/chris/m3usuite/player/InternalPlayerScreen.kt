@@ -75,6 +75,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.Tracks
 import androidx.media3.datasource.DefaultDataSource
+import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -238,8 +239,7 @@ fun InternalPlayerScreen(
 
     val dataSourceFactory = remember(httpFactory, ctx) {
         val base = DefaultDataSource.Factory(ctx, httpFactory)
-        // Prefer TDLib streaming; fallback routing handles local-file cases
-        com.chris.m3usuite.telegram.TelegramTdlibDataSource.Factory(ctx, base)
+        DelegatingDataSourceFactory(ctx, base)
     }
 
     val preferredVideoMimeTypes = remember {
