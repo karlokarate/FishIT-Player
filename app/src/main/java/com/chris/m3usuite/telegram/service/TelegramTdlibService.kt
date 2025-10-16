@@ -3,11 +3,10 @@ package com.chris.m3usuite.telegram.service
 import android.app.Service
 import android.content.Intent
 import android.os.*
-import android.telephony.PhoneNumberUtils
-import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.chris.m3usuite.BuildConfig
+import com.chris.m3usuite.telegram.PhoneNumberSanitizer
 import com.chris.m3usuite.telegram.TdLibReflection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +15,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
-import java.util.Locale
 
 /**
  * Dedicated TDLib service running in its own process. Minimal IPC via Messenger.
@@ -763,7 +761,7 @@ class TelegramTdlibService : Service() {
     private fun sendPhone(phone: String, isCurrentDevice: Boolean, allowFlash: Boolean, allowMissed: Boolean, allowSmsRetriever: Boolean) {
         clientHandle?.let {
             try {
-                val sanitized = sanitizePhone(phone)
+                val sanitized = PhoneNumberSanitizer.sanitize(applicationContext, phone)
                 Log.i("TdSvc", "Submitting phone number to TDLib (masked)")
                 val tokens = synchronized(authTokens) { authTokens.toList() }
                 val settings = TdLibReflection.PhoneAuthSettings(
@@ -780,34 +778,6 @@ class TelegramTdlibService : Service() {
                 sendErrorToAll("Failed to send phone: ${e.message}")
             }
         } ?: sendErrorToAll("Not started")
-    }
-
-    private fun sanitizePhone(raw: String): String {
-        // Remove spaces, dashes, parentheses
-        var s = raw.replace(Regex("[\\s\\-()]+"), "").trim()
-        // Convert leading 00 to +
-        if (s.startsWith("00")) s = "+" + s.drop(2)
-        if (!s.startsWith("+")) {
-            val iso = detectDefaultCountryIso()
-            if (!iso.isNullOrBlank()) {
-                val normalized = kotlin.runCatching { PhoneNumberUtils.formatNumberToE164(s, iso) }.getOrNull()
-                if (!normalized.isNullOrBlank()) {
-                    s = normalized
-                }
-            }
-        }
-        return s
-    }
-
-    private fun detectDefaultCountryIso(): String? {
-        val tm = applicationContext.getSystemService(android.content.Context.TELEPHONY_SERVICE) as? TelephonyManager
-        val candidates = listOfNotNull(
-            tm?.networkCountryIso,
-            tm?.simCountryIso,
-            Locale.getDefault().country
-        )
-        val iso = candidates.firstOrNull { !it.isNullOrBlank() }
-        return iso?.uppercase(Locale.US)
     }
 
     private fun sendCode(code: String) {

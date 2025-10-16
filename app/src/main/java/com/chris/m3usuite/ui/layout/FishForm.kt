@@ -20,6 +20,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Slider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -33,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -44,6 +46,7 @@ import com.chris.m3usuite.ui.focus.FocusKit
 import com.chris.m3usuite.ui.focus.run
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 enum class TvKeyboard {
     Default,
@@ -224,8 +227,11 @@ fun FishFormSlider(
     valueFormatter: (Int) -> String = { it.toString() }
 ) {
     val horizontal = LocalFishDimens.current.contentPaddingHorizontalDp
+    val context = LocalContext.current
+    val isTv = FocusKit.isTvDevice(context)
     val clamped = value.coerceIn(range.first, range.last)
     val ratio = if (range.isEmpty()) 0f else (clamped - range.first).toFloat() / max(1, range.last - range.first)
+    val sliderSteps = if (step <= 0) 0 else max(0, ((range.last - range.first) / step) - 1)
     Column(modifier = modifier.fillMaxWidth()) {
         val rowModifier = FocusKit.run {
             Modifier
@@ -263,21 +269,47 @@ fun FishFormSlider(
                 color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )
         }
-        LinearProgressIndicator(
-            progress = ratio,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontal)
-                .height(6.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(999.dp)
-                ),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = Color.Transparent
-        )
+        if (isTv) {
+            LinearProgressIndicator(
+                progress = ratio,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontal)
+                    .height(6.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(999.dp)
+                    ),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = Color.Transparent
+            )
+        } else {
+            Slider(
+                value = clamped.toFloat(),
+                onValueChange = { raw ->
+                    if (!range.isEmpty()) {
+                        val snapped = snapToStep(raw, range.first, range.last, step)
+                        onValueChange(snapped)
+                    }
+                },
+                valueRange = range.first.toFloat()..range.last.toFloat(),
+                steps = sliderSteps,
+                enabled = enabled,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontal)
+            )
+        }
         FormSupportingText(helperText, errorText, enabled, horizontal)
     }
+}
+
+private fun snapToStep(value: Float, min: Int, max: Int, step: Int): Int {
+    if (step <= 0) return value.roundToInt().coerceIn(min, max)
+    val base = min.toFloat()
+    val normalized = (value - base) / step.toFloat()
+    val snapped = base + normalized.roundToInt() * step
+    return snapped.roundToInt().coerceIn(min, max)
 }
 
 @Composable
