@@ -4,6 +4,7 @@
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
 - Maintenance 2025‑10‑28: Telegram-Logs lassen sich nun per Settings-Schalter live als Snackbar einblenden; ideal für mehrstufige TDLib-Diagnosen ohne Logcat.
+- Maintenance 2025‑10‑29: Telegram-Login akzeptiert wieder lokale Nummern ohne "+" und meldet fehlende TDLib-Starts sofort. Der TDLib-Loglevel lässt sich auf Touch-Geräten über einen Slider anpassen.
 - Maintenance 2025‑10‑27: Telegram‑Login normalisiert lokale Telefonnummern via Gerätestandort (E.164), sodass WAIT_FOR_NUMBER nach Eingabe ohne führendes "+" nicht mehr hängen bleibt.
 - Maintenance 2025‑09‑27: Manifest‑Icon auf `@mipmap/ic_launcher` (+ `roundIcon`) vereinheitlicht; kein Roadmap‑Impact.
 - Maintenance 2025‑09‑28: Build‑Blocking Lücken geschlossen (Nav‑Extension, TV‑Focus‑Compat, TvRowScroll, safePainter, Adults‑Filter, XtreamImportCoordinator). Kein neues Feature; Roadmap unverändert.

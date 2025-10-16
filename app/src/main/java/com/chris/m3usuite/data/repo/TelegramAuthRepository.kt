@@ -1,6 +1,7 @@
 package com.chris.m3usuite.data.repo
 
 import android.content.Context
+import com.chris.m3usuite.telegram.PhoneNumberSanitizer
 import com.chris.m3usuite.telegram.TdLibReflection
 import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -234,18 +235,27 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
     }
 
     fun sendPhoneNumber(phone: String, isCurrentDevice: Boolean) {
+        val sanitized = PhoneNumberSanitizer.sanitize(context, phone)
+        if (sanitized.isBlank()) {
+            scope.launch(Dispatchers.Main.immediate) {
+                _errors.emit("Ungültige Telefonnummer – bitte internationale Vorwahl angeben.")
+            }
+            return
+        }
         if (useService) {
             svc?.sendPhone(
-                phone = phone,
+                phone = sanitized,
                 isCurrentDevice = isCurrentDevice,
                 allowFlashCall = false,
                 allowMissedCall = false,
                 allowSmsRetriever = true
             )
+            svc?.getAuth()
             return
         }
         val c = client ?: return
-        TdLibReflection.sendSetPhoneNumber(c, phone, TdLibReflection.PhoneAuthSettings(isCurrentPhoneNumber = isCurrentDevice))
+        TdLibReflection.sendSetPhoneNumber(c, sanitized, TdLibReflection.PhoneAuthSettings(isCurrentPhoneNumber = isCurrentDevice))
+        TdLibReflection.sendGetAuthorizationState(c)
     }
 
     fun sendCode(code: String) {

@@ -1,3 +1,11 @@
+2025-10-29
+- fix(telegram/auth): Normalize phone numbers before sending from the UI, show a
+  clear error when TDLib cannot be started, and immediately refresh the auth
+  state so phone/code logins progress after submitting the number.
+- fix(settings/telegram): Allow the TDLib log level slider to be adjusted on
+  touch devices by adding a Material slider fallback while keeping DPAD
+  controls on TV.
+
 2025-10-28
 - feat(telegram/debug): Added an on-screen TDLib log overlay that streams recent
   Telegram logs as snackbars whenever the new settings toggle is enabled and the

@@ -56,6 +56,7 @@ import com.chris.m3usuite.core.xtream.XtreamConfig
 import com.chris.m3usuite.core.xtream.XtreamSeeder
 import com.chris.m3usuite.work.SchedulingGateway
 import android.util.Log
+import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
@@ -2191,12 +2192,17 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
                                 TextButton(onClick = { repo.requestQrLogin() }) { Text("Neu laden") }
                                 TextButton(
                                     onClick = {
-                                        if (phone.isNotBlank()) {
-                                            busy = true
-                                            useCurrentDevice = false
-                                            repo.start()
-                                            repo.sendPhoneNumber(phone, false)
-                                            repo.requestAuthState()
+                                        val trimmed = phone.trim()
+                                        if (trimmed.isNotBlank()) {
+                                            val started = repo.start()
+                                            if (started) {
+                                                busy = true
+                                                useCurrentDevice = false
+                                                repo.sendPhoneNumber(trimmed, false)
+                                                repo.requestAuthState()
+                                            } else {
+                                                Toast.makeText(ctx, "TDLib konnte nicht gestartet werden – bitte API-Schlüssel prüfen.", Toast.LENGTH_LONG).show()
+                                            }
                                         }
                                     },
                                     enabled = phone.isNotBlank()
@@ -2227,7 +2233,16 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
             when (state) {
                 com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_NUMBER, com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNAUTHENTICATED -> {
                     TextButton(onClick = {
-                        if (repo.start() && phone.isNotBlank()) { busy = true; repo.sendPhoneNumber(phone, useCurrentDevice) }
+                        val trimmed = phone.trim()
+                        if (trimmed.isBlank()) return@TextButton
+                        val started = repo.start()
+                        if (started) {
+                            busy = true
+                            repo.sendPhoneNumber(trimmed, useCurrentDevice)
+                            repo.requestAuthState()
+                        } else {
+                            Toast.makeText(ctx, "TDLib konnte nicht gestartet werden – bitte API-Schlüssel prüfen.", Toast.LENGTH_LONG).show()
+                        }
                     }) { Text("Weiter") }
                 }
                 com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE -> {
