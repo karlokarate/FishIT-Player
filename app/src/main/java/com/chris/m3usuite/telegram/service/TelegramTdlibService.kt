@@ -60,6 +60,7 @@ class TelegramTdlibService : Service() {
     private val authFlow = MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
     private val downloadFlow = MutableStateFlow(false)
     private var clientHandle: TdLibReflection.ClientHandle? = null
+    private var updateSubscription: AutoCloseable? = null
     private var lastApiId: Int = 0
     private var lastApiHash: String = ""
     private val authLock = Any()
@@ -319,6 +320,8 @@ class TelegramTdlibService : Service() {
         kotlin.runCatching { scope.cancel() }
         // Best-effort: clear clients
         synchronized(clients) { clients.clear() }
+        updateSubscription?.close()
+        updateSubscription = null
     }
 
     private fun startTdlib(apiId: Int, apiHash: String) {
@@ -341,7 +344,8 @@ class TelegramTdlibService : Service() {
         if (clientHandle == null) {
             clientHandle = TdLibReflection.createClient(authFlow, downloadFlow)
             // Wire updates-first listener: index new/changed messages minimally into Room
-            TdLibReflection.setUpdateListener { obj ->
+            updateSubscription?.close()
+            updateSubscription = TdLibReflection.addUpdateListener listener@{ obj ->
                 try {
                     val name = obj.javaClass.name
                     when {
@@ -401,7 +405,7 @@ class TelegramTdlibService : Service() {
                         }
                         // UpdateNewMessage: carries a full message object
                         name.endsWith("TdApi\$UpdateNewMessage") -> {
-                            val msg = obj.javaClass.getDeclaredField("message").apply { isAccessible = true }.get(obj) ?: return@setUpdateListener
+                            val msg = obj.javaClass.getDeclaredField("message").apply { isAccessible = true }.get(obj) ?: return@listener
                             indexMessage(msg)
                         }
                         // UpdateMessageContent: carries chatId/messageId and new content
@@ -414,8 +418,8 @@ class TelegramTdlibService : Service() {
                         }
                         // UpdateFile: persist localPath when available
                         name.endsWith("TdApi\$UpdateFile") -> {
-                            val f = obj.javaClass.getDeclaredField("file").apply { isAccessible = true }.get(obj) ?: return@setUpdateListener
-                            val info = TdLibReflection.extractFileInfo(f) ?: return@setUpdateListener
+                            val f = obj.javaClass.getDeclaredField("file").apply { isAccessible = true }.get(obj) ?: return@listener
+                            val info = TdLibReflection.extractFileInfo(f) ?: return@listener
                             if (!info.localPath.isNullOrBlank())
                                 scope.launch(Dispatchers.IO) {
                                     kotlin.runCatching {

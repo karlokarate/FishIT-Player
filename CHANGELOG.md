@@ -1,3 +1,19 @@
+2025-10-30
+- feat(telegram/player): Replace the legacy TelegramTdlibDataSource with a
+  TDLib-backed random access source that streams `tg://file/<fileId>` URIs on
+  demand. Reads now trigger range downloads with 512 KiB readahead, retry with
+  exponential backoff, merge TDLib `updateFile` progress, and persist
+  `localPath`/`size` updates to ObjectBox for telemetry.
+- feat(rar/player): Added `rar://msg/<msgId>/<entry>` playback via a
+  `RarEntryRandomAccessSource`. The entry is extracted into a ring-buffered
+  cache directory, chunk reads are LRU-cached in memory, and metadata is taken
+  from the Telegram message index so ExoPlayer receives the correct
+  `audio/mpeg` MIME and size.
+- refactor(telegram/tdlib): Allow multiple TDLib update listeners so the
+  service and the new playback source can subscribe simultaneously. The
+  service now registers via `addUpdateListener` and cleans up the subscription
+  on shutdown.
+
 2025-10-29
 - fix(telegram/auth): Normalize phone numbers before sending from the UI, show a
   clear error when TDLib cannot be started, and immediately refresh the auth

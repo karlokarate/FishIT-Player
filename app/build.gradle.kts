@@ -285,6 +285,7 @@ dependencies {
     // Networking
     implementation("com.squareup.okhttp3:okhttp:5.2.1")
     implementation("com.squareup.okio:okio:3.16.1")
+    implementation("com.github.junrar:junrar:7.5.5")
 
     // JSON (Kotlin Serialization)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")

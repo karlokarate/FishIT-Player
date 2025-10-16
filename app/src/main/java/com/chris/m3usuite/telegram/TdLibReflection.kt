@@ -121,8 +121,36 @@ object TdLibReflection {
         } catch (_: Throwable) { false }
     }
 
-    @Volatile private var updateListener: ((Any) -> Unit)? = null
-    fun setUpdateListener(l: ((Any) -> Unit)?) { updateListener = l }
+    private val updateListeners = java.util.concurrent.CopyOnWriteArraySet<(Any) -> Unit>()
+
+    /**
+     * Registers an additional TDLib update listener. Call [AutoCloseable.close] on the
+     * returned handle to unregister the listener again. Existing callers of [setUpdateListener]
+     * are supported by delegating to this API.
+     */
+    fun addUpdateListener(listener: (Any) -> Unit): AutoCloseable {
+        updateListeners += listener
+        return AutoCloseable { removeUpdateListener(listener) }
+    }
+
+    fun removeUpdateListener(listener: (Any) -> Unit) {
+        updateListeners -= listener
+    }
+
+    @Deprecated("Use addUpdateListener/removeUpdateListener instead")
+    fun setUpdateListener(l: ((Any) -> Unit)?) {
+        updateListeners.clear()
+        if (l != null) {
+            updateListeners += l
+        }
+    }
+
+    private fun dispatchUpdate(obj: Any) {
+        if (updateListeners.isEmpty()) return
+        updateListeners.forEach { listener ->
+            runCatching { listener.invoke(obj) }
+        }
+    }
 
     class ClientHandle internal constructor(
         internal val client: Any,
@@ -155,7 +183,7 @@ object TdLibReflection {
                 val obj = args?.getOrNull(0)
                 if (obj != null) {
                     // Forward all updates to listener first (updates-first indexing), then handle built-ins
-                    kotlin.runCatching { updateListener?.invoke(obj) }
+                    dispatchUpdate(obj)
                     handleResult(obj, authStateFlow, downloadActive)
                 }
             }
@@ -797,7 +825,7 @@ object TdLibReflection {
         // Forward function results (incl. TdApi.Error) to the global update listener
         val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
             val obj = args?.getOrNull(0)
-            if (obj != null) kotlin.runCatching { updateListener?.invoke(obj) }
+            if (obj != null) dispatchUpdate(obj)
             null
         }
         val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
@@ -812,7 +840,7 @@ object TdLibReflection {
         val exceptionHandlerType = td("Client\$ExceptionHandler")
         val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
             val obj = args?.getOrNull(0)
-            if (obj != null) kotlin.runCatching { updateListener?.invoke(obj) }
+            if (obj != null) dispatchUpdate(obj)
             null
         }
         val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
@@ -870,7 +898,7 @@ object TdLibReflection {
         val exceptionHandlerType = td("Client\$ExceptionHandler")
         val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
             val obj = args?.getOrNull(0)
-            if (obj != null) kotlin.runCatching { updateListener?.invoke(obj) }
+            if (obj != null) dispatchUpdate(obj)
             null
         }
         val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }

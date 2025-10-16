@@ -44,17 +44,22 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 - Mapping/Heuristik: SxxExx‑Parser ordnet Nachrichten Episoden (Serie) vs. Filme (VOD) zu; Serien/Filme werden als `MediaItem` mit `source="TG"` projiziert (Titel aus Caption). Thumbnails werden on‑demand via TDLib `GetFile` geladen und als `file://` angezeigt (kein Prefetch).
  - Heuristik erweitert: erkennt Bereiche (z. B. S01E01‑03, 1x02‑05) und Sprach‑Tags ([DE]/[EN]/…).
  - Metadaten: via TDLib werden zusätzliche Felder persistiert (`durationSecs`, `mimeType`, `sizeBytes`, `width`/`height`, `language`). `MediaItem` übernimmt `durationSecs`/`plot` sowie `containerExt` (aus `mimeType`).
-- UI: Library zeigt bei VOD Telegram‑Rows pro ausgewähltem Chat (Tiles mit blauem „T“‑Badge). Im Serien‑Tab gibt es eine einzige aggregierte Row „Telegram Serien“, die alle synchronisierten Serien enthält. Start‑Suche rendert eine zusätzliche „Telegram“‑Row. Keine M3U‑Pfadgenerierung; Play startet `tg://message?chatId=…&messageId=…` über `TelegramTdlibDataSource`.
+- UI: Library zeigt bei VOD Telegram‑Rows pro ausgewähltem Chat (Tiles mit blauem „T“‑Badge). Im Serien‑Tab gibt es eine einzige aggregierte Row „Telegram Serien“, die alle synchronisierten Serien enthält. Start‑Suche rendert eine zusätzliche „Telegram“‑Row. Keine M3U‑Pfadgenerierung; Play startet `tg://file/<fileId>` bzw. `rar://msg/<msg>/<entry>` über den Media3 `DelegatingDataSourceFactory` (siehe unten).
 - Telegram Serien Aggregation: Nach dem Sync werden Nachrichten aus ausgewählten Serien‑Chats zu `ObxSeries` + `ObxEpisode` aggregiert (SxxEyy‑Heuristik). ProviderKey=`telegram`. Library (Tab Serien) zeigt zusätzlich eine Row „Telegram Serien“. Episoden tragen `tgChatId/tgMessageId/tgFileId`; Playback bevorzugt `tg://` in `SeriesDetailScreen`. `TelegramSeriesIndexer.rebuildWithStats` liefert neben der Gesamtanzahl auch Neu-Zählungen, die der Worker an die UI weiterreicht.
   - Build Guard: Kotlin 2.0 verlangt strikt `Int`-basierte Set-Typen für OBX IDs und einen `IndexedMessageOutcome`-Return der TDLib-Schreibkoroutine. Diese Fixes sind aktiv; keine Rückkehr zu `Set<Long>`/`Result`-Rückgaben.
  - Playback: Für `tg://` nutzt der Player reduzierte RAM‑Puffer (`LoadControl`), während der Download über TDLib (IO) fortschreitet.
-- Streaming DataSource: `TelegramTdlibDataSource` (gated via `tg_enabled` + AUTH)
-  entscheidet anhand von TDLibs `supportsStreaming` und Dateiheuristiken, ob
-  progressives Streaming möglich ist. Nicht-streambare Container werden vor der
-  Wiedergabe vollständig geladen; währenddessen laufen belastbare Polls über
-  `sendForResult` (Timeout + Retry). Erfolgreiche Downloads persistieren das
-  `localPath`-Attribut; bei Fehlern erfolgt ein klarer Fallback auf Routing/HTTP
-  inklusive Nutzerhinweis.
+- Streaming DataSource: `DelegatingDataSourceFactory` erkennt `tg://file/<id>`
+  und `rar://msg/<msg>/<entry>` URIs. Für Telegram greift
+  `TdlibRandomAccessSource` (Auth + `tg_enabled` vorausgesetzt):
+  - TDLib `downloadFile` mit 512-KiB-Readahead, Backoff und Range-Merging über
+    `updateFile`-Events; Downloads werden in ObjectBox (`localPath`, `sizeBytes`)
+    gespiegelt.
+  - Mehrere TDLib-Listener werden via `TdLibReflection.addUpdateListener`
+    unterstützt; Player und Service hören parallel.
+  Für `rar://` wird `RarEntryRandomAccessSource` genutzt (RAR5-fähiger
+  Junrar-Fork). Der MP3-Eintrag wird deterministisch vorwärts dekomprimiert,
+  die extrahierten Chunks landen in einem 1–4-MiB-LRU-Memory-Cache plus
+  50–200-MiB-Ringbuffer im Cache-Verzeichnis.
 - Build: `TG_API_ID`/`TG_API_HASH` als BuildConfig via sichere Lookup‑Kette (ohne Secrets im Repo). Reihenfolge: ENV → `/.tg.secrets.properties` (root, untracked) → `-P` Gradle‑Props → Default 0/leer. Runtime‑Fallback: Ist BuildConfig leer, liest der app‑seitige TDLib‑Client (Player‑DataSource) die Keys aus den Settings (`tg_api_id`, `tg_api_hash`). Packaging: TDLib (arm64‑v8a), ProGuard‑Keep für `org.drinkless.td.libcore.telegram.**`. Die JNI‑Lib `libtdjni.so` wird durch einen statischen Initializer in `org.drinkless.tdlib.Client` automatisch geladen.
 - Packaging: `:libtd` Android‑Library mit `jniLibs` (`arm64-v8a/libtdjni.so`). App hängt an `:libtd`, sodass TDLib zur Laufzeit vorhanden ist; BuildConfig `TG_API_ID`/`TG_API_HASH` kommen aus `gradle.properties`.
 - Build TDLib/JNI: Single‑ABI arm64‑v8a wird mit statisch gelinktem BoringSSL gebaut und ins Modul kopiert.
