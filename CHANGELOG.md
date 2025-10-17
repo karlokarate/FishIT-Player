@@ -1,3 +1,8 @@
+2025-10-31
+- fix(build): Import `java.util.Locale` in `TelegramTdlibService` so release builds
+  compile again on Kotlin 2.0 after the locale-based proxy/auto-download parsing
+  changes.
+
 2025-10-30
 - feat(telegram/player): Replace the legacy TelegramTdlibDataSource with a
   TDLib-backed random access source that streams `tg://file/<fileId>` URIs on
