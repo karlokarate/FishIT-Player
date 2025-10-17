@@ -297,6 +297,9 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.4.0"))
     implementation("com.google.firebase:firebase-messaging")
 
+    // Google Play Services – SMS User Consent API for Telegram auto-SMS retrieval
+    implementation("com.google.android.gms:play-services-auth-api-phone:+")
+
     // JankStats (performance diagnostics)
     implementation("androidx.metrics:metrics-performance:1.0.0-beta01")
 

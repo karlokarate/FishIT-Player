@@ -1,3 +1,16 @@
+2025-11-01
+- feat(telegram/auth): Extrahiert den Login-Flow in das neue Modul
+  `feature-tg-auth` mit klaren Domain-/Data-/UI-Schichten. Der Settings-Dialog
+  nutzt nun den `TgAuthOrchestrator`, der TDLib-States und Aktionen bündelt und
+  Fehler konsistent abbildet.
+- feat(telegram/auth): Integriert Googles SMS User Consent API für das
+  automatische Befüllen des Bestätigungscodes inklusive Jitter-Rearm bei
+  ungültigen/abgelaufenen Codes sowie resendAuthenticationCode-Support über TDLib.
+- fix(telegram/auth): Service und Client liefern strukturierte Fehlermetadaten,
+  `TgErrorMapper` mappt Flood-Waits, App-Updates und Sperren auf UI-Fehler mit
+  Backoff. Die Settings zeigen Countdown/Cooldown an und QR-Flow bietet
+  einen sauberen Fallback auf den Code-Login.
+
 2025-10-31
 - fix(build): Import `java.util.Locale` in `TelegramTdlibService` so release builds
   compile again on Kotlin 2.0 after the locale-based proxy/auto-download parsing

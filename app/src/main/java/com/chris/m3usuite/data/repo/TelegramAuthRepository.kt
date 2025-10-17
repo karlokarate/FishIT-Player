@@ -19,10 +19,17 @@ import java.util.Locale
  * Requires TDLib native/libs present at runtime. Otherwise, it remains inactive.
  */
 class TelegramAuthRepository(private val context: Context, private val apiId: Int, private val apiHash: String) {
+    data class AuthError(
+        val message: String,
+        val code: Int? = null,
+        val rawMessage: String? = null,
+        val type: String? = null
+    )
+
     private val _authState = MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
     val authState: StateFlow<TdLibReflection.AuthState> get() = _authState
-    private val _errors = kotlinx.coroutines.flow.MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 16)
-    val errors: kotlinx.coroutines.flow.Flow<String> get() = _errors
+    private val _errors = kotlinx.coroutines.flow.MutableSharedFlow<AuthError>(replay = 0, extraBufferCapacity = 16)
+    val errors: kotlinx.coroutines.flow.Flow<AuthError> get() = _errors
 
     private var client: TdLibReflection.ClientHandle? = null
     private var svc: TelegramServiceClient? = null
@@ -52,7 +59,9 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
                 }
                 // Bridge service errors into local flow
                 scope.launch(Dispatchers.Main.immediate) {
-                    s.errors().collect { em -> _errors.tryEmit(em) }
+                    s.errors().collect { em ->
+                        _errors.tryEmit(AuthError(em.message, em.code, em.rawMessage, em.type))
+                    }
                 }
                 // QR links from service
                 scope.launch(Dispatchers.Main.immediate) { s.qrLinks().collect { link -> _qr.tryEmit(link) } }
@@ -213,7 +222,9 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
                     }
                     // Bridge service errors into local flow
                     scope.launch(Dispatchers.Main.immediate) {
-                        s.errors().collect { em -> _errors.tryEmit(em) }
+                    s.errors().collect { em ->
+                        _errors.tryEmit(AuthError(em.message, em.code, em.rawMessage, em.type))
+                    }
                     }
                     // QR links from service
                     scope.launch(Dispatchers.Main.immediate) { s.qrLinks().collect { link -> _qr.tryEmit(link) } }
@@ -238,7 +249,7 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
         val sanitized = PhoneNumberSanitizer.sanitize(context, phone)
         if (sanitized.isBlank()) {
             scope.launch(Dispatchers.Main.immediate) {
-                _errors.emit("Ungültige Telefonnummer – bitte internationale Vorwahl angeben.")
+                _errors.emit(AuthError("Ungültige Telefonnummer – bitte internationale Vorwahl angeben."))
             }
             return
         }
@@ -262,6 +273,15 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
         if (useService) { svc?.sendCode(code); return }
         val c = client ?: return
         TdLibReflection.sendCheckCode(c, code)
+    }
+
+    fun resendCode() {
+        if (useService) {
+            svc?.resendCode()
+            return
+        }
+        val c = client ?: return
+        TdLibReflection.sendResendAuthenticationCode(c)
     }
 
     fun checkDbKey() {
