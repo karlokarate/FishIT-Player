@@ -35,6 +35,10 @@ Hinweis
   mit 512-KiB-Readahead und Backoff gestreamt, `rar://msg/<msg>/<entry>` extrahiert
   MP3s on-the-fly (LRU-Chunk-Cache + Ringbuffer). TDLib-Updates unterstützen
   mehrere Listener gleichzeitig.
+- Maintenance 2025‑11‑01: Telegram-Login in das Modul `feature-tg-auth`
+  ausgelagert. Auto-SMS via Google User Consent, strukturierte Fehlermeldungen
+  und ein orchestrierter QR-/Code-Flow halten die Settings sauber und
+  erleichtern künftige Anpassungen.
 - Maintenance 2025‑10‑25: Telegram-Laufzeitsteuerung erweitert – IPv6/Online-
   Status, Proxy/Loglevel, Auto-Download-Profile, Streaming-Prefetch, Seek-Boost,
   parallele Downloads und Storage-Optimizer sind direkt in den Settings

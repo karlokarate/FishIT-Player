@@ -18,6 +18,13 @@ class TelegramServiceClient(private val context: Context) {
         val newSeriesIds: LongArray
     )
 
+    data class ServiceError(
+        val message: String,
+        val code: Int?,
+        val rawMessage: String?,
+        val type: String?
+    )
+
     private var serviceMessenger: Messenger? = null
     // Queue outbound commands until the service binding is established to avoid races
     private val pending = ArrayDeque<Message>()
@@ -37,7 +44,11 @@ class TelegramServiceClient(private val context: Context) {
                 }
                 TelegramTdlibService.REPLY_ERROR -> {
                     val em = msg.data.getString("message") ?: return
-                    _errorCallbacks.forEach { it(em) }
+                    val code = if (msg.data.containsKey("errorCode")) msg.data.getInt("errorCode") else null
+                    val raw = msg.data.getString("errorRaw")
+                    val type = msg.data.getString("errorType")
+                    val error = ServiceError(em, code, raw, type)
+                    _errorCallbacks.forEach { it(error) }
                 }
                 TelegramTdlibService.REPLY_CHAT_LIST -> {
                     val reqId = msg.data.getInt("reqId")
@@ -74,7 +85,7 @@ class TelegramServiceClient(private val context: Context) {
     }
     private val replyMessenger = Messenger(incoming)
     private val _authCallbacks = mutableSetOf<(String)->Unit>()
-    private val _errorCallbacks = mutableSetOf<(String)->Unit>()
+    private val _errorCallbacks = mutableSetOf<(ServiceError)->Unit>()
     private val _qrCallbacks = mutableSetOf<(String)->Unit>()
 
     private val conn = object : ServiceConnection {
@@ -117,8 +128,8 @@ class TelegramServiceClient(private val context: Context) {
         awaitClose { _authCallbacks.remove(cb) }
     }
 
-    fun errors(): Flow<String> = callbackFlow {
-        val cb: (String)->Unit = { trySend(it).isSuccess }
+    fun errors(): Flow<ServiceError> = callbackFlow {
+        val cb: (ServiceError)->Unit = { trySend(it).isSuccess }
         _errorCallbacks.add(cb)
         awaitClose { _errorCallbacks.remove(cb) }
     }
@@ -170,6 +181,7 @@ class TelegramServiceClient(private val context: Context) {
     }
     fun sendCode(code: String) = send(TelegramTdlibService.CMD_SEND_CODE) { putString("code", code) }
     fun sendPassword(pw: String) = send(TelegramTdlibService.CMD_SEND_PASSWORD) { putString("password", pw) }
+    fun resendCode() = send(TelegramTdlibService.CMD_RESEND_CODE)
     fun getAuth() = send(TelegramTdlibService.CMD_GET_AUTH)
     fun logout() = send(TelegramTdlibService.CMD_LOGOUT)
     fun registerFcm(token: String) = send(TelegramTdlibService.CMD_REGISTER_FCM) { putString("token", token) }

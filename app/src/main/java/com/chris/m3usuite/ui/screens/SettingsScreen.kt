@@ -2,92 +2,95 @@
 package com.chris.m3usuite.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.graphics.Bitmap
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.*
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.runtime.*
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.foundation.layout.ColumnScope
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.produceState
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import androidx.compose.runtime.snapshotFlow
-import com.chris.m3usuite.ui.focus.FocusKit
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.outlined.Info
+import androidx.core.graphics.createBitmap
+import androidx.core.net.toUri
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.BuildConfig
+import com.chris.m3usuite.core.http.HttpClientFactory
 import com.chris.m3usuite.core.xtream.XtreamClient
 import com.chris.m3usuite.core.xtream.XtreamConfig
 import com.chris.m3usuite.core.xtream.XtreamSeeder
-import com.chris.m3usuite.work.SchedulingGateway
-import android.util.Log
-import android.widget.Toast
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import com.chris.m3usuite.ui.home.HomeChromeScaffold
-import com.chris.m3usuite.ui.focus.focusScaleOnTv
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import com.chris.m3usuite.telegram.TdLibReflection
-import com.chris.m3usuite.core.http.HttpClientFactory
+import com.chris.m3usuite.ui.focus.FocusKit
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import com.chris.m3usuite.ui.focus.tvClickable
+import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import com.chris.m3usuite.ui.layout.FishFormSection
 import com.chris.m3usuite.ui.layout.FishFormSelect
 import com.chris.m3usuite.ui.layout.FishFormSlider
 import com.chris.m3usuite.ui.layout.FishFormSwitch
 import com.chris.m3usuite.ui.layout.FishFormTextField
 import com.chris.m3usuite.ui.layout.TvKeyboard
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import com.chris.m3usuite.work.SchedulingGateway
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
-import android.graphics.Bitmap
-import androidx.core.graphics.createBitmap
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.outlined.Info
-import androidx.core.net.toUri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.collectLatest
+import kotlinx.coroutines.combine
+import kotlinx.coroutines.debounce
+import kotlinx.coroutines.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 // ---- Small helpers / constants ------------------------------------------------
 
@@ -1642,7 +1645,7 @@ fun SettingsScreen(
                 
                     LaunchedEffect(tgEnabled) {
                         if (!tgEnabled) return@LaunchedEffect
-                        authRepo.errors.collect { em -> snackHost.toast("Telegram: $em") }
+                        authRepo.errors.collect { em -> snackHost.toast("Telegram: ${em.message}") }
                     }
                 
                     var showLogout by remember { mutableStateOf(false) }
@@ -2032,59 +2035,80 @@ private fun generateQrBitmap(text: String, width: Int, height: Int): Bitmap? {
 
 @Composable
 private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.data.repo.TelegramAuthRepository) {
-    val ctx = LocalContext.current
-    val state by repo.authState.collectAsStateWithLifecycle(initialValue = com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
-    var phone by remember { mutableStateOf("") }
-    var code by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
-    var didCheckDbKey by remember { mutableStateOf(false) }
-    var qrLink by remember { mutableStateOf<String?>(null) }
-    val hasTelegramApp = remember { isTelegramInstalled(ctx) }
-    var useCurrentDevice by remember { mutableStateOf(hasTelegramApp) }
-    var autoLaunched by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        // Ensure TDLib client is initialized when dialog opens and request current state
-        runCatching { repo.start() }
-        runCatching { repo.requestAuthState() }
-        repo.qrLinks.collect { link -> qrLink = link }
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val orchestrator = remember(repo) {
+        com.chris.m3usuite.feature_tg_auth.di.TgAuthModule.provideOrchestrator(context, repo)
     }
-    val title = when (state) {
-        com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_NUMBER,
-        com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNAUTHENTICATED,
-        com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> "Telegram verbinden"
-        com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE -> "Bestätigungscode"
-        com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_PASSWORD -> "Passwort"
-        com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_OTHER_DEVICE -> "QR‑Bestätigung"
-        com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> "Verbunden"
-        else -> "Telegram"
+    val hasTelegramApp = remember { isTelegramInstalled(context) }
+    val activity = remember(context) { context.findActivity() }
+
+    val smsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        orchestrator.handleConsentResult(result)
     }
-    LaunchedEffect(state) {
-        when (state) {
-            com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> {
-                if (!didCheckDbKey) {
-                    busy = true
-                    repo.checkDbKey()
-                    didCheckDbKey = true
-                }
-            }
-            com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE,
-            com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_PASSWORD,
-            com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_OTHER_DEVICE,
-            com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> busy = false
-            else -> {}
+
+    DisposableEffect(orchestrator, activity, lifecycleOwner) {
+        if (activity != null) {
+            orchestrator.attach(activity, lifecycleOwner, smsLauncher)
+        }
+        onDispose {
+            orchestrator.detach()
+            orchestrator.dispose()
         }
     }
 
-    LaunchedEffect(state, qrLink) {
-        if (state == com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_OTHER_DEVICE) {
-            val link = qrLink
+    LaunchedEffect(Unit) {
+        orchestrator.start()
+    }
+
+    val state by orchestrator.state.collectAsStateWithLifecycle(initialValue = com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Unauthenticated)
+
+    var phone by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var useCurrentDevice by remember { mutableStateOf(hasTelegramApp) }
+    var autoLaunched by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state) {
+        when (state) {
+            is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.WaitCode -> {
+                val suggested = state.suggestedCode
+                if (!suggested.isNullOrBlank()) {
+                    code = suggested
+                }
+            }
+            com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.WaitPhone,
+            com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Unauthenticated -> {
+                code = ""
+                password = ""
+            }
+            com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Ready -> {
+                autoLaunched = false
+            }
+            else -> Unit
+        }
+    }
+
+    LaunchedEffect(orchestrator) {
+        orchestrator.errors.collect { error ->
+            when (error) {
+                com.chris.m3usuite.feature_tg_auth.domain.TgAuthError.InvalidCode,
+                com.chris.m3usuite.feature_tg_auth.domain.TgAuthError.CodeExpired,
+                is com.chris.m3usuite.feature_tg_auth.domain.TgAuthError.FloodWait -> Unit
+                else -> Toast.makeText(context, error.userMessage, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    LaunchedEffect(state, hasTelegramApp) {
+        if (state is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Qr) {
+            val link = state.link
             if (!link.isNullOrBlank() && hasTelegramApp && !autoLaunched) {
                 autoLaunched = true
                 kotlin.runCatching {
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(link))
-                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                    ctx.startActivity(intent)
+                    val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(link))
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
                 }
             }
         } else {
@@ -2092,190 +2116,132 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
         }
     }
 
+    val title = when (state) {
+        com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.WaitPhone,
+        com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Unauthenticated -> "Telegram verbinden"
+        is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.WaitCode -> "Bestätigungscode"
+        is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.WaitPassword -> "Passwort"
+        is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Qr -> "QR‑Bestätigung"
+        com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Ready -> "Verbunden"
+        com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.LoggingOut -> "Abmelden"
+        else -> "Telegram"
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                when (state) {
-                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_NUMBER, com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNAUTHENTICATED -> {
-                        OutlinedTextField(
-                            value = phone,
-                            onValueChange = { phone = it },
-                            label = { Text("Telefonnummer") },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                            colors = TextFieldDefaults.colors()
-                        )
-                        Text("Gib deine Telefonnummer im internationalen Format ein (z. B. +491701234567)", style = MaterialTheme.typography.bodySmall)
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            "Oder nutze bei Bedarf den Button \"QR-Login anfordern\": In der Telegram-App auf deinem Smartphone unter Einstellungen → Geräte → Gerät verbinden bestätigen.",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        TextButton(
-                            onClick = {
-                                busy = true
-                                val started = runCatching { repo.start() }.getOrDefault(false)
-                                if (started) {
-                                    repo.requestQrLogin()
-                                } else {
-                                    busy = false
-                                }
+            when (val s = state) {
+                com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.WaitPhone,
+                com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Unauthenticated -> {
+                    com.chris.m3usuite.feature_tg_auth.ui.PhoneScreen(
+                        phone = phone,
+                        onPhoneChange = { phone = it },
+                        useCurrentDevice = useCurrentDevice,
+                        onUseCurrentDeviceChange = { useCurrentDevice = it },
+                        onSubmit = {
+                            val trimmed = phone.trim()
+                            if (trimmed.isNotEmpty()) {
+                                orchestrator.dispatch(
+                                    com.chris.m3usuite.feature_tg_auth.domain.TgAuthAction.EnterPhone(
+                                        trimmed,
+                                        useCurrentDevice
+                                    )
+                                )
                             }
-                        ) { Text("QR-Login anfordern") }
-                        Text(
-                            "Der Telefon-/Code-Flow bleibt parallel verfügbar – Telegram liefert den QR-Code nur, wenn der Server ihn aktuell zulässt.",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        if (hasTelegramApp) {
-                            Spacer(Modifier.height(6.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Switch(checked = useCurrentDevice, onCheckedChange = { useCurrentDevice = it })
-                                Spacer(Modifier.width(8.dp))
-                                Text("Code direkt auf diesem Gerät bestätigen (Telegram-App installiert)", style = MaterialTheme.typography.bodySmall)
+                        },
+                        onRequestQr = { orchestrator.dispatch(com.chris.m3usuite.feature_tg_auth.domain.TgAuthAction.RequestQr) },
+                        showCurrentDeviceSwitch = hasTelegramApp,
+                        error = null
+                    )
+                }
+                is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.WaitCode -> {
+                    com.chris.m3usuite.feature_tg_auth.ui.CodeScreen(
+                        code = code,
+                        onCodeChange = { code = it },
+                        onSubmit = {
+                            if (code.isNotBlank()) {
+                                orchestrator.dispatch(com.chris.m3usuite.feature_tg_auth.domain.TgAuthAction.EnterCode(code.trim()))
                             }
-                        }
-                    }
-                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                        Text("Datenbank‑Schlüssel wird überprüft…", style = MaterialTheme.typography.bodySmall)
-                    }
-                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE -> {
-                        OutlinedTextField(
-                            value = code,
-                            onValueChange = { code = it },
-                            label = { Text("Bestätigungscode") },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            colors = TextFieldDefaults.colors()
-                        )
-                        Text("Den Code aus der Telegram-App eingeben.", style = MaterialTheme.typography.bodySmall)
-                    }
-                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_PASSWORD -> {
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            label = { Text("Passwort") },
-                            singleLine = true,
-                            visualTransformation = PasswordVisualTransformation(),
-                            colors = TextFieldDefaults.colors()
-                        )
-                        Text("Zwei-Faktor-Passwort eingeben (falls aktiviert).", style = MaterialTheme.typography.bodySmall)
-                    }
-                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> {
-                        Text("Erfolgreich verbunden.")
-                    }
-                    com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_OTHER_DEVICE -> {
+                        },
+                        onResend = { orchestrator.dispatch(com.chris.m3usuite.feature_tg_auth.domain.TgAuthAction.ResendCode) },
+                        canResend = s.canResend,
+                        resendSeconds = s.remainingSeconds,
+                        error = s.lastError
+                    )
+                }
+                is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.WaitPassword -> {
+                    com.chris.m3usuite.feature_tg_auth.ui.PasswordScreen(
+                        password = password,
+                        onPasswordChange = { password = it },
+                        onSubmit = {
+                            if (password.isNotBlank()) {
+                                orchestrator.dispatch(com.chris.m3usuite.feature_tg_auth.domain.TgAuthAction.EnterPassword(password))
+                            }
+                        },
+                        error = s.lastError
+                    )
+                }
+                is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Qr -> {
+                    val link = s.link
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Warten auf Bestätigung auf einem anderen Gerät.", style = MaterialTheme.typography.bodySmall)
-                        val link = qrLink
                         if (!link.isNullOrBlank()) {
-                            Spacer(Modifier.height(8.dp))
                             QrCodeBox(data = link)
-                            Spacer(Modifier.height(6.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                val ctx = LocalContext.current
                                 Text(link, style = MaterialTheme.typography.bodySmall, color = Color.White, modifier = Modifier.weight(1f))
                                 TextButton(onClick = {
                                     val clip = android.content.ClipData.newPlainText("tg_login", link)
-                                    val cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                     cm.setPrimaryClip(clip)
                                 }) { Text("Link kopieren") }
                                 TextButton(onClick = {
                                     kotlin.runCatching {
-                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(link))
-                                        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        ctx.startActivity(intent)
+                                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(link))
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        context.startActivity(intent)
                                     }
                                 }) { Text("In Telegram öffnen") }
-                                TextButton(onClick = { repo.requestQrLogin() }) { Text("Neu laden") }
-                                TextButton(
-                                    onClick = {
-                                        val trimmed = phone.trim()
-                                        if (trimmed.isNotBlank()) {
-                                            val started = repo.start()
-                                            if (started) {
-                                                busy = true
-                                                useCurrentDevice = false
-                                                repo.sendPhoneNumber(trimmed, false)
-                                                repo.requestAuthState()
-                                            } else {
-                                                Toast.makeText(ctx, "TDLib konnte nicht gestartet werden – bitte API-Schlüssel prüfen.", Toast.LENGTH_LONG).show()
-                                            }
-                                        }
-                                    },
-                                    enabled = phone.isNotBlank()
-                                ) { Text("Per Code anmelden") }
-                            }
-                            if (hasTelegramApp) {
-                                Spacer(Modifier.height(4.dp))
-                                Text("Telegram ist auf diesem Gerät installiert – sobald du oben auf \"In Telegram öffnen\" tippst (oder der Dialog automatisch erscheint), kannst du die Anmeldung ohne zweites Gerät bestätigen.", style = MaterialTheme.typography.bodySmall)
+                                TextButton(onClick = { orchestrator.dispatch(com.chris.m3usuite.feature_tg_auth.domain.TgAuthAction.RequestQr) }) { Text("Neu laden") }
                             }
                         } else {
-                            Text("Öffne Telegram auf deinem Smartphone → Einstellungen → Geräte → QR‑Code scannen.", style = MaterialTheme.typography.bodySmall)
-                            Spacer(Modifier.height(6.dp))
-                            TextButton(onClick = { repo.requestQrLogin() }) { Text("QR erneut anfordern") }
+                            Text("Öffne Telegram → Einstellungen → Geräte → QR‑Code scannen.", style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = { orchestrator.dispatch(com.chris.m3usuite.feature_tg_auth.domain.TgAuthAction.RequestQr) }) { Text("QR erneut anfordern") }
+                        }
+                        if (phone.isNotBlank()) {
+                            TextButton(onClick = {
+                                orchestrator.dispatch(
+                                    com.chris.m3usuite.feature_tg_auth.domain.TgAuthAction.EnterPhone(
+                                        phone.trim(),
+                                        false
+                                    )
+                                )
+                            }) { Text("Per Code anmelden") }
+                        }
+                        if (hasTelegramApp) {
+                            Text("Telegram auf diesem Gerät installiert – der Dialog öffnet automatisch nach dem QR-Scan.", style = MaterialTheme.typography.bodySmall)
                         }
                     }
-                    else -> {
-                        Text("Warte auf Status…")
+                }
+                com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.LoggingOut -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        Text("Melde ab…", style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                if (busy) {
-                    Spacer(Modifier.height(4.dp))
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    Text("Warte auf Antwort…", style = MaterialTheme.typography.bodySmall, color = Color.White)
+                com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Ready -> {
+                    Text("Erfolgreich verbunden.")
                 }
             }
         },
-        confirmButton = {
-            when (state) {
-                com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_NUMBER, com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNAUTHENTICATED -> {
-                    TextButton(onClick = {
-                        val trimmed = phone.trim()
-                        if (trimmed.isBlank()) return@TextButton
-                        val started = repo.start()
-                        if (started) {
-                            busy = true
-                            repo.sendPhoneNumber(trimmed, useCurrentDevice)
-                            repo.requestAuthState()
-                        } else {
-                            Toast.makeText(ctx, "TDLib konnte nicht gestartet werden – bitte API-Schlüssel prüfen.", Toast.LENGTH_LONG).show()
-                        }
-                    }) { Text("Weiter") }
-                }
-                com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE -> {
-                    TextButton(onClick = { if (code.isNotBlank()) { busy = true; repo.sendCode(code) } }) { Text("Bestätigen") }
-                }
-                com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_PASSWORD -> {
-                    TextButton(onClick = { if (password.isNotBlank()) { busy = true; repo.sendPassword(password) } }) { Text("Bestätigen") }
-                }
-                com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_ENCRYPTION_KEY -> {
-                    TextButton(onClick = { }) { Text("Weiter") }
-                }
-                com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED -> {
-                    TextButton(onClick = onDismiss) { Text("Schließen") }
-                }
-                else -> { TextButton(onClick = { runCatching { repo.start() } }) { Text("Neu initialisieren") } }
-            }
-        },
+        confirmButton = {},
         dismissButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = {
-                    phone = ""; code = ""; password = ""; busy = false
-                    onDismiss()
-                }) { Text("Abbrechen") }
-                if (state == com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_OTHER_DEVICE) {
-                    TextButton(onClick = { repo.requestQrLogin() }) { Text("Erneut versuchen") }
-                }
-            }
+            val label = if (state is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Ready) "Schließen" else "Abbrechen"
+            TextButton(onClick = onDismiss) { Text(label) }
         }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 private fun TelegramChatPickerDialog(
     onDismiss: () -> Unit,
     onSelect: (Long) -> Unit,
@@ -2414,6 +2380,16 @@ private fun isTelegramInstalled(context: android.content.Context): Boolean {
         }.isSuccess
     }
 }
+
+private fun Context.findActivity(): Activity? {
+    var current: Context? = this
+    while (current is ContextWrapper) {
+        if (current is Activity) return current
+        current = current.baseContext
+    }
+    return null
+}
+
 
 // --- External Player Picker UI ---
 // Context-based resolver (actual implementation)

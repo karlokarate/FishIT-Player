@@ -47,6 +47,7 @@ class TelegramTdlibService : Service() {
         const val CMD_DISABLE_PROXY = 22
         const val CMD_SET_AUTO_DOWNLOAD = 23
         const val CMD_APPLY_ALL_SETTINGS = 24
+        const val CMD_RESEND_CODE = 25
 
         const val REPLY_AUTH_STATE = 101
         const val REPLY_ERROR = 199
@@ -285,6 +286,9 @@ class TelegramTdlibService : Service() {
                 CMD_APPLY_ALL_SETTINGS -> {
                     scope.launch(Dispatchers.IO) { applyRuntimeOptionsFromSettings() }
                 }
+                CMD_RESEND_CODE -> {
+                    resendCode()
+                }
                 else -> super.handleMessage(msg)
             }
         }
@@ -356,7 +360,7 @@ class TelegramTdlibService : Service() {
                             val message = runCatching { obj.javaClass.getDeclaredField("message").apply { isAccessible = true }.get(obj) as? String }.getOrNull()
                             val em = "TDLib Fehler ${code}: ${message ?: "Unbekannt"}"
                             Log.w("TdSvc", em)
-                            sendErrorToAll(em)
+                            sendErrorToAll(message ?: em, code = code, rawMessage = message)
                             if (code == 406 && (message?.contains("UPDATE_APP_TO_LOGIN", ignoreCase = true) == true)) {
                                 Log.i(
                                     "TdSvc",
@@ -797,6 +801,10 @@ class TelegramTdlibService : Service() {
         clientHandle?.let { TdLibReflection.sendRequestQrCodeAuthentication(it) } ?: sendErrorToAll("Not started")
     }
 
+    private fun resendCode() {
+        clientHandle?.let { TdLibReflection.sendResendAuthenticationCode(it) } ?: sendErrorToAll("Not started")
+    }
+
     private fun logout() {
         clientHandle?.let { TdLibReflection.sendLogOut(it) }
     }
@@ -1183,9 +1191,14 @@ class TelegramTdlibService : Service() {
         }
     }
 
-    private fun sendErrorToAll(message: String) {
+    private fun sendErrorToAll(message: String, code: Int? = null, rawMessage: String? = null, type: String? = null) {
         val m = Message.obtain(null, REPLY_ERROR)
-        m.data = Bundle().apply { putString("message", message) }
+        m.data = Bundle().apply {
+            putString("message", message)
+            if (code != null) putInt("errorCode", code)
+            if (!rawMessage.isNullOrBlank()) putString("errorRaw", rawMessage)
+            if (!type.isNullOrBlank()) putString("errorType", type)
+        }
         clients.toList().forEach { c ->
             try { c.send(m) } catch (_: Exception) { clients.remove(c) }
         }

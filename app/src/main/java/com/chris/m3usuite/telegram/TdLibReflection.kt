@@ -879,6 +879,19 @@ object TdLibReflection {
         client.sendMethod.invoke(client.client, fn, rh, eh)
     }
 
+    fun sendResendAuthenticationCode(client: ClientHandle) {
+        val fn = runCatching { new("TdApi\$ResendAuthenticationCode") }.getOrNull() ?: return
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionHandlerType = td("Client\$ExceptionHandler")
+        val rh = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
+            val obj = args?.getOrNull(0)
+            if (obj != null) dispatchUpdate(obj)
+            null
+        }
+        val eh = java.lang.reflect.Proxy.newProxyInstance(exceptionHandlerType.classLoader, arrayOf(exceptionHandlerType)) { _, _, _ -> null }
+        client.sendMethod.invoke(client.client, fn, rh, eh)
+    }
+
     // Extract QR link for AuthorizationStateWaitOtherDeviceConfirmation
     fun extractQrLink(authStateObj: Any?): String? {
         return try {
