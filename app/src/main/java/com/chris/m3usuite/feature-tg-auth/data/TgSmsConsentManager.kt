@@ -16,6 +16,7 @@ import java.util.regex.Pattern
 import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
@@ -23,9 +24,9 @@ import kotlinx.coroutines.launch
 
 class TgSmsConsentManager(
     private val appContext: Context,
-    private val job: SupervisorJob = SupervisorJob(),
-    private val scope: CoroutineScope = CoroutineScope(job + Dispatchers.Main.immediate)
+    private val job: Job = SupervisorJob(),
 ) {
+    private val scope: CoroutineScope = CoroutineScope(job + Dispatchers.Main.immediate)
     private val codePattern: Pattern = Pattern.compile("\\b(\\d{5,6})\\b")
     private val random = Random(System.currentTimeMillis())
 

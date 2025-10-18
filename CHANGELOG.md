@@ -1,3 +1,12 @@
+2025-11-02
+- fix(telegram/settings): Kotlin 2.0 debug builds compile again. Flow operators
+  are imported from `kotlinx.coroutines.flow`, the Telegram chat picker is marked
+  as `@Composable`, and JSON helpers are wired so the new Telegram settings
+  screen compiles after the module split.
+- fix(telegram/auth): `TgSmsConsentManager` now owns a `SupervisorJob`-backed
+  `CoroutineScope`, so detaching the consent flow cancels pending launches
+  without tripping the compiler.
+
 2025-11-01
 - feat(telegram/auth): Extrahiert den Login-Flow in das neue Modul
   `feature-tg-auth` mit klaren Domain-/Data-/UI-Schichten. Der Settings-Dialog

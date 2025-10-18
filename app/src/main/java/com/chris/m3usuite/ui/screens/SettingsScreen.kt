@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.*
@@ -82,14 +81,17 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.collectLatest
-import kotlinx.coroutines.combine
-import kotlinx.coroutines.debounce
-import kotlinx.coroutines.distinctUntilChanged
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 // ---- Small helpers / constants ------------------------------------------------
@@ -2069,9 +2071,9 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
     var autoLaunched by remember { mutableStateOf(false) }
 
     LaunchedEffect(state) {
-        when (state) {
+        when (val current = state) {
             is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.WaitCode -> {
-                val suggested = state.suggestedCode
+                val suggested = current.suggestedCode
                 if (!suggested.isNullOrBlank()) {
                     code = suggested
                 }
@@ -2100,8 +2102,9 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
     }
 
     LaunchedEffect(state, hasTelegramApp) {
-        if (state is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Qr) {
-            val link = state.link
+        val current = state
+        if (current is com.chris.m3usuite.feature_tg_auth.domain.TgAuthState.Qr) {
+            val link = current.link
             if (!link.isNullOrBlank() && hasTelegramApp && !autoLaunched) {
                 autoLaunched = true
                 kotlin.runCatching {
@@ -2241,6 +2244,7 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
     )
 }
 
+@Composable
 private fun TelegramChatPickerDialog(
     onDismiss: () -> Unit,
     onSelect: (Long) -> Unit,
