@@ -245,6 +245,10 @@ Recent
   mappt TDLib-States, startet automatisch den Google SMS User Consent, handhabt `ResendAuthenticationCode` und mapped Fehler via
   `TgErrorMapper`. Settings/Dialog nutzen die neuen Composables (`PhoneScreen`, `CodeScreen`, `PasswordScreen`). Alle Änderungen am
   Login-Flow laufen über dieses Modul; Fehler gehen strukturiert über `TelegramServiceClient.ServiceError`.
+- Maintenance 2025-11-06: Kotlin-2.0-Build läuft wieder – Start nutzt für die
+  Telegram-Serien-Row das vollständige `SeriesFishTile`-API (inkl. NEW/Assign/Play)
+  und Settings importieren `contentOrNull`, halten `showTgDialog` global sowie
+  opt-in'en `ModalBottomSheet` via `ExperimentalMaterial3Api`.
 - Maintenance 2025-11-02: Telegram-Settings kompilieren wieder sauber mit Kotlin
   2.0. Flow-Debounces importieren aus `kotlinx.coroutines.flow`, der Telegram
   Chat-Picker ist als `@Composable` markiert und `TgSmsConsentManager` kapselt
