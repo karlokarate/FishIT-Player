@@ -244,6 +244,10 @@ Recent
   mappt TDLib-States, startet automatisch den Google SMS User Consent, handhabt `ResendAuthenticationCode` und mapped Fehler via
   `TgErrorMapper`. Settings/Dialog nutzen die neuen Composables (`PhoneScreen`, `CodeScreen`, `PasswordScreen`). Alle Änderungen am
   Login-Flow laufen über dieses Modul; Fehler gehen strukturiert über `TelegramServiceClient.ServiceError`.
+- Maintenance 2025-11-02: Telegram-Settings kompilieren wieder sauber mit Kotlin
+  2.0. Flow-Debounces importieren aus `kotlinx.coroutines.flow`, der Telegram
+  Chat-Picker ist als `@Composable` markiert und `TgSmsConsentManager` kapselt
+  seinen `SupervisorJob` intern.
 - Telegram Build Guard: Kotlin 2.0 Release-Builds benötigen im Indexer weiterhin `Int`-basierte ID-Mengen und einen TDLib-Schreibpfad, der konkrete `IndexedMessageOutcome` zurückliefert. Die Fixes sind angewendet; Set<Long>/Result-Mismatches dürfen nicht wieder eingeführt werden, sonst scheitert `:app:compileReleaseKotlin`.
 - TV low-spec tuning (7a/TV): TV devices (detected via UiMode/Leanback/Fire TV) use a reduced-focus profile and smaller paging windows to improve smoothness on low-spec hardware. Focus effects drop shadowElevation; scales reduce to ~1.03. OkHttp dispatcher is throttled (maxRequests=16, perHost=4). Coil crossfades are disabled on TV to lower overdraw.
 - TV/DPAD focus (gate): ProfileGate tiles now use `tvClickable` + `tvFocusableItem` within a `focusGroup()` container, with a guarded initial `FocusRequester`. On TV, the first profile tile is highlighted immediately; DPAD navigation shows halo/scale.

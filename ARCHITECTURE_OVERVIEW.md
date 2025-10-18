@@ -27,6 +27,10 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 - Feature Flag: Global in Settings (`tg_enabled`, default false). Zusatzoptionen: `tg_selected_chats_csv`, `tg_cache_limit_gb`.
  - ObjectBox: Telegram messages are stored in `ObxTelegramMessage` (chatId/messageId/fileId/uniqueId/supportsStreaming/caption/date/localPath/thumbFileId). Repository/DataSources update OBX directly.
 - Login (Alpha): Auth-Flow liegt in `feature-tg-auth` (Domain `TgAuthState/TgAuthAction`, Data `TgAuthOrchestrator`, UI `PhoneScreen`/`CodeScreen`/`PasswordScreen`, DI `TgAuthModule`). Der Orchestrator bindet `TelegramAuthRepository`, startet automatisch Googles SMS User Consent, mapped TDLib-Fehler via `TgErrorMapper` (Flood-Wait/App-Update/Ban) und stößt `ResendAuthenticationCode` an. Der Settings-Dialog verwendet die neuen Composables; QR-Login bleibt ein expliziter Button und öffnet `tg://login` nur bei installierter Telegram-App. Ein „Per Code anmelden“-Fallback bleibt jederzeit aktiv.
+- Build hygiene (2025-11-02): Telegram-Settings setzen die Flow-Debounces wieder
+  mit `kotlinx.coroutines.flow` um, der Chat-Picker ist als `@Composable`
+  gekennzeichnet und `TgSmsConsentManager` kapselt den `SupervisorJob`
+  eigenständig, damit Kotlin 2.0 sauber kompiliert.
 - TdLibReflection baut die TdlibParameters mit echten App-/Gerätewerten (VERSION_NAME, Hersteller+Modell, `Android <Release> (API <SDK>)`, Sprache aus `Configuration.locales`, `useTestDc=false`) und nutzt pro Installation einen eindeutigen Unterordner (`filesDir/tdlib/<installId>`) für Datenbank/Dateien. TDLib 406 „UPDATE_APP_TO_LOGIN“ führt nicht mehr zum automatischen QR-Trigger; der Service belässt den Nutzer im Code-Flow und meldet nur den Fehler.
 - TdLibReflection `sendForResult` kapselt nun Timeouts, Retry/Backoff und optionale
   Trace-Tags pro Aufruf. Service, Datasource und Mapper übergeben sprechende

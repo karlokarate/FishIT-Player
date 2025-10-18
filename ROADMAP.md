@@ -39,6 +39,10 @@ Hinweis
   ausgelagert. Auto-SMS via Google User Consent, strukturierte Fehlermeldungen
   und ein orchestrierter QR-/Code-Flow halten die Settings sauber und
   erleichtern künftige Anpassungen.
+- Maintenance 2025‑11‑02: Kotlin-2.0-Buildfix. Telegram-Settings importieren
+  wieder die Flow-Operatoren, der Chat-Picker ist als `@Composable`
+  gekennzeichnet und der SMS-Consent-Manager nutzt einen klaren
+  `SupervisorJob`-Scope.
 - Maintenance 2025‑10‑25: Telegram-Laufzeitsteuerung erweitert – IPv6/Online-
   Status, Proxy/Loglevel, Auto-Download-Profile, Streaming-Prefetch, Seek-Boost,
   parallele Downloads und Storage-Optimizer sind direkt in den Settings
