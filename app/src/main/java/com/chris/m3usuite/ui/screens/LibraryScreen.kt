@@ -93,8 +93,7 @@ fun LibraryScreen(
     val store = remember { SettingsStore(ctx) }
     val repo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
     val tgRepo = remember { com.chris.m3usuite.data.repo.TelegramContentRepository(ctx, store) }
-    val tgVodSelection by store.tgSelectedVodChatsCsv.collectAsStateWithLifecycle(initialValue = "")
-    val tgSeriesSelection by store.tgSelectedSeriesChatsCsv.collectAsStateWithLifecycle(initialValue = "")
+    val tgChatsCsv by store.tgSelectedChatsCsv.collectAsStateWithLifecycle(initialValue = "")
     val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
     val resumeRepo = remember { com.chris.m3usuite.data.repo.ResumeRepository(ctx) }
     val permRepo = remember { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
@@ -369,12 +368,9 @@ fun LibraryScreen(
     fun TelegramSection(tab: ContentTab) {
         val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
         if (!tgEnabled) return
-        val chatIds = remember(tab, tgEnabled, tgVodSelection, tgSeriesSelection) {
+        val chatIds = remember(tab, tgEnabled, tgChatsCsv) {
             if (!tgEnabled) emptyList()
-            else {
-                val source = if (tab == ContentTab.Vod) tgVodSelection else tgSeriesSelection
-                source.split(',').mapNotNull { it.trim().toLongOrNull() }.distinct()
-            }
+            else tgChatsCsv.split(',').mapNotNull { it.trim().toLongOrNull() }.distinct()
         }
         if (chatIds.isEmpty()) return
 
@@ -396,8 +392,7 @@ fun LibraryScreen(
                 var items by remember(chatId, tab, resumeTick, tgEnabled) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
                 LaunchedEffect(chatId, tab, resumeTick, tgEnabled) {
                     items = if (tgEnabled) {
-                        if (tab == ContentTab.Vod) tgRepo.recentVodByChat(chatId, 60, 0)
-                        else tgRepo.recentSeriesByChat(chatId, 60, 0)
+                        if (tab == ContentTab.Vod) tgRepo.recentVodByChat(chatId, 60, 0) else emptyList()
                     } else emptyList()
                 }
                 if (items.isEmpty()) return@forEachIndexed

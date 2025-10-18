@@ -275,10 +275,12 @@ class SettingsStore(private val context: Context) {
     val seriesCatExpandedOrderCsv: Flow<String> = context.dataStore.data.map { it[Keys.SERIES_CAT_EXPANDED_ORDER_CSV].orEmpty() }
 
     // Telegram (default off)
+    val tgEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_ENABLED] ?: false }
+    // Für neue Logik: ein gemeinsames CSV
+    val tgSelectedChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_CHATS_CSV].orEmpty() }
+    // Legacy-Reader (falls Altdaten existieren):
     val tgSelectedVodChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_VOD_CHATS_CSV].orEmpty() }
     val tgSelectedSeriesChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_SERIES_CHATS_CSV].orEmpty() }
-    val tgEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_ENABLED] ?: false }
-    val tgSelectedChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_CHATS_CSV].orEmpty() }
     val tgCacheLimitGb: Flow<Int> = context.dataStore.data.map { it[Keys.TG_CACHE_LIMIT_GB] ?: 2 }
     val tgPreferIpv6: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_PREFER_IPV6] ?: true }
     val tgStayOnline: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_STAY_ONLINE] ?: true }
@@ -506,6 +508,18 @@ class SettingsStore(private val context: Context) {
     // Telegram setters
     suspend fun setTelegramEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_ENABLED] = value } }
     suspend fun setTelegramSelectedChatsCsv(value: String) { context.dataStore.edit { it[Keys.TG_SELECTED_CHATS_CSV] = value } }
+    /** Einmalige Migration: vereinige alte getrennte CSVs (vod/series) in das neue Feld. */
+    suspend fun migrateTelegramSelectedChatsIfNeeded() {
+        val current = tgSelectedChatsCsv.first()
+        if (current.isNotBlank()) return
+        val vod = tgSelectedVodChatsCsv.first()
+        val ser = tgSelectedSeriesChatsCsv.first()
+        val merged = (vod.split(',') + ser.split(','))
+            .mapNotNull { it.trim().toLongOrNull() }
+            .distinct()
+            .joinToString(",")
+        if (merged.isNotBlank()) setTelegramSelectedChatsCsv(merged)
+    }
     suspend fun setTelegramCacheLimitGb(value: Int) { context.dataStore.edit { it[Keys.TG_CACHE_LIMIT_GB] = value } }
     suspend fun setTelegramSelectedVodChatsCsv(value: String) { context.dataStore.edit { it[Keys.TG_SELECTED_VOD_CHATS_CSV] = value } }
     suspend fun setTelegramSelectedSeriesChatsCsv(value: String) { context.dataStore.edit { it[Keys.TG_SELECTED_SERIES_CHATS_CSV] = value } }

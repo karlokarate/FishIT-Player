@@ -172,8 +172,7 @@ fun StartScreen(
     }
     val telegramHeaders = remember { RequestHeadersProvider.defaultHeadersBlocking(store) }
     val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
-    val tgVodSelection by store.tgSelectedVodChatsCsv.collectAsStateWithLifecycle(initialValue = "")
-    val tgSeriesSelection by store.tgSelectedSeriesChatsCsv.collectAsStateWithLifecycle(initialValue = "")
+    val tgSelectedCsv by store.tgSelectedChatsCsv.collectAsStateWithLifecycle(initialValue = "")
     val playTelegram: (MediaItem) -> Unit = remember(playbackLauncher, telegramHeaders) {
         { item ->
             scope.launch {
@@ -203,11 +202,8 @@ fun StartScreen(
             }
         }
     }
-    val telegramVodChats = remember(tgVodSelection) {
-        tgVodSelection.split(',').mapNotNull { it.trim().toLongOrNull() }.distinct()
-    }
-    val telegramSeriesChats = remember(tgSeriesSelection) {
-        tgSeriesSelection.split(',').mapNotNull { it.trim().toLongOrNull() }.distinct()
+    val telegramSelectedChats = remember(tgSelectedCsv) {
+        tgSelectedCsv.split(',').mapNotNull { it.trim().toLongOrNull() }.distinct()
     }
 
     var canEditFavorites by remember { mutableStateOf(true) }
@@ -816,7 +812,7 @@ fun StartScreen(
                                     )
                                 }
                             }
-                            // No per-chat Telegram rows for Series on Start; aggregated row exists under Library.
+                            // Serien werden darunter als aggregierte "Telegram Serien"-Row angezeigt.
                         }
 
                         if (vodMixed.isNotEmpty()) {
@@ -843,18 +839,43 @@ fun StartScreen(
                                     )
                                 }
                             }
-                            if (tgEnabled) {
-                                items(telegramVodChats, key = { "start_vod_tg_$it" }) { chatId ->
-                                    StartTelegramSection(
-                                        chatId = chatId,
-                                        stateKey = "start:tg:vod:$chatId",
-                                        service = telegramService,
-                                        enabled = tgEnabled,
-                                        selectionCsv = tgVodSelection,
-                                        playTelegram = playTelegram,
-                                        loader = { telegramRepo.recentVodByChat(chatId, 60, 0) }
-                                    )
+                        }
+
+                        if (tgEnabled) {
+                            item("start_series_telegram_aggregated") {
+                                var seriesItems by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+                                LaunchedEffect(Unit) {
+                                    val repo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store)
+                                    seriesItems = withContext(Dispatchers.IO) {
+                                        repo.seriesByProviderKeyNewest("telegram", 0, 60).map { it.toMediaItem(ctx) }
+                                    }
                                 }
+                                if (seriesItems.isNotEmpty()) {
+                                    FishRow(
+                                        items = seriesItems,
+                                        stateKey = "start_tg_series_aggregated",
+                                        edgeLeftExpandChrome = true,
+                                        header = FishHeaderData.Text(
+                                            anchorKey = "start_tg_series_header",
+                                            text = "Telegram Serien",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onBackground
+                                        )
+                                    ) { _, media ->
+                                        SeriesFishTile(media = media, onOpenDetails = { item -> openSeries(item.id) })
+                                    }
+                                }
+                            }
+                            items(telegramSelectedChats, key = { "start_vod_tg_$it" }) { chatId ->
+                                StartTelegramSection(
+                                    chatId = chatId,
+                                    stateKey = "start:tg:vod:$chatId",
+                                    service = telegramService,
+                                    enabled = tgEnabled,
+                                    selectionCsv = tgSelectedCsv,
+                                    playTelegram = playTelegram,
+                                    loader = { telegramRepo.recentVodByChat(chatId, 60, 0) }
+                                )
                             }
                         }
 
