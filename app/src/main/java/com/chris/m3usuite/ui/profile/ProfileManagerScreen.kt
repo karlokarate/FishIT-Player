@@ -103,7 +103,6 @@ fun ProfileManagerScreen(
         onProfiles = null,
         listState = listState,
         onLogo = onLogo,
-        showBottomBar = false
     ) { pads ->
         Box(Modifier.fillMaxSize().padding(pads)) {
             val Accent = DesignTokens.KidAccent

@@ -650,7 +650,6 @@ fun SettingsScreen(
         listState = listState,
         onLogo = onBack,
         snackbarHost = snackHost,
-        showBottomBar = false,
         enableDpadLeftChrome = false
     ) { pads ->
         // Hintergrund + Inhalt

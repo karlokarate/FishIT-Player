@@ -39,6 +39,8 @@ import com.chris.m3usuite.model.isAdultCategory
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
+import com.chris.m3usuite.ui.home.LibraryNavConfig
+import com.chris.m3usuite.ui.home.LibraryTab
 import com.chris.m3usuite.ui.theme.CategoryFonts
 import com.chris.m3usuite.ui.focus.OnPrefetchKeys
 import com.chris.m3usuite.ui.focus.OnPrefetchPaged
@@ -823,16 +825,21 @@ fun LibraryScreen(
                     navController.navigateTopLevel("library?q=&qs=")
                 }
             },
-            showBottomBar = true,
-            selectedBottom = when (selectedTab) {
-                ContentTab.Live -> "live"
-                ContentTab.Vod -> "vod"
-                ContentTab.Series -> "series"
-            },
-            onSelectBottom = { sel ->
-                val idx = when (sel) { "live" -> 0; "vod" -> 1; else -> 2 }
-                scope.launch { store.setLibraryTabIndex(idx) }
-            }
+            libraryNav = LibraryNavConfig(
+                selected = when (selectedTab) {
+                    ContentTab.Live -> LibraryTab.Live
+                    ContentTab.Vod -> LibraryTab.Vod
+                    ContentTab.Series -> LibraryTab.Series
+                },
+                onSelect = { tab ->
+                    val idx = when (tab) {
+                        LibraryTab.Live -> 0
+                        LibraryTab.Vod -> 1
+                        LibraryTab.Series -> 2
+                    }
+                    scope.launch { store.setLibraryTabIndex(idx) }
+                }
+            )
         ) { pads ->
             run {
                 when (val s = uiState) {

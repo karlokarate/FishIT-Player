@@ -234,7 +234,6 @@ fun VodDetailScreen(
         onProfiles = null,
         listState = listState,
         onLogo = onLogo,
-        showBottomBar = false
     ) { pads ->
         val hero = data?.backdrop ?: data?.poster
         val uriHandler = LocalUriHandler.current

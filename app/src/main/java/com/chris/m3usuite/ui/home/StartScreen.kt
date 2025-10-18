@@ -424,16 +424,6 @@ fun StartScreen(
                 }
             }
         },
-        showBottomBar = false,
-        selectedBottom = "all",
-        onSelectBottom = { id ->
-            val tab = when (id) { "live" -> 0; "vod" -> 1; "series" -> 2; else -> 3 }
-            scope.launch { store.setLibraryTabIndex(tab) }
-            val current = navController.currentBackStackEntry?.destination?.route
-            if (current != "browse") {
-                navController.navigate("browse") { launchSingleTop = true }
-            }
-        },
         listState = listState,
         onLogo = {
             val current = navController.currentBackStackEntry?.destination?.route

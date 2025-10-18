@@ -16,13 +16,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chris.m3usuite.ui.focus.FocusKit
-import com.chris.m3usuite.ui.home.ChromeBottomFocusRefs
+import com.chris.m3usuite.ui.home.ChromeLibraryFocusRefs
 import com.chris.m3usuite.ui.home.ChromeHeaderFocusRefs
-import com.chris.m3usuite.ui.home.LocalChromeBottomFocusRefs
+import com.chris.m3usuite.ui.home.LocalChromeLibraryFocusRefs
 import com.chris.m3usuite.ui.home.LocalChromeHeaderFocusRefs
-import com.chris.m3usuite.ui.home.header.FishITBottomPanel
 import com.chris.m3usuite.ui.home.header.FishITHeader
-import com.chris.m3usuite.ui.home.header.LocalBottomFirstFocus
+import com.chris.m3usuite.ui.home.header.LocalLibraryFirstFocus
 import com.chris.m3usuite.ui.home.header.LocalHeaderFirstFocus
 import com.chris.m3usuite.ui.home.header.LocalPreferSettingsFirstFocus
 import com.chris.m3usuite.ui.home.header.LocalChromeOnAction
@@ -32,14 +31,14 @@ import com.chris.m3usuite.ui.home.header.LocalChromeOnAction
 fun HomeChromeOverlay(
     expanded: Boolean,
     showHeader: Boolean,
-    showBottom: Boolean,
+    showLibraryNav: Boolean,
     title: String,
     onLogo: (() -> Unit)?,
     onSearch: (() -> Unit)?,
     onProfiles: (() -> Unit)?,
     onSettings: (() -> Unit)?,
-    bottomSelected: String,
-    onBottomSelect: (String) -> Unit,
+    librarySelected: String?,
+    onLibrarySelect: ((String) -> Unit)?,
     statusPad: Dp,
     navPad: Dp,
     scrimAlpha: Float,
@@ -49,27 +48,27 @@ fun HomeChromeOverlay(
     val context = LocalContext.current
     val isTv = remember(context) { FocusKit.isTvDevice(context) }
     val headerFocusRefs = remember { ChromeHeaderFocusRefs(FocusRequester(), FocusRequester(), FocusRequester(), FocusRequester()) }
-    val bottomFocusRefs = remember { ChromeBottomFocusRefs(FocusRequester(), FocusRequester(), FocusRequester()) }
+    val bottomFocusRefs = remember { ChromeLibraryFocusRefs(FocusRequester(), FocusRequester(), FocusRequester()) }
     val headerFirstFocus = remember { FocusRequester() }
     val bottomFirstFocus = remember { FocusRequester() }
 
     val headerInitial = if (expanded && isTv && showHeader) headerFirstFocus else null
-    val bottomInitial = if (expanded && isTv && showBottom) bottomFirstFocus else null
+    val bottomInitial = if (expanded && isTv && showLibraryNav) bottomFirstFocus else null
 
-    LaunchedEffect(expanded, isTv, showHeader, showBottom) {
+    LaunchedEffect(expanded, isTv, showHeader, showLibraryNav) {
         if (expanded && isTv) {
             when {
                 showHeader -> headerInitial?.requestFocus()
-                showBottom -> bottomInitial?.requestFocus()
+                showLibraryNav -> bottomInitial?.requestFocus()
             }
         }
     }
 
     CompositionLocalProvider(
         LocalChromeHeaderFocusRefs provides headerFocusRefs,
-        LocalChromeBottomFocusRefs provides bottomFocusRefs,
+        LocalChromeLibraryFocusRefs provides bottomFocusRefs,
         LocalHeaderFirstFocus provides headerInitial,
-        LocalBottomFirstFocus provides bottomInitial,
+        LocalLibraryFirstFocus provides bottomInitial,
         LocalChromeOnAction provides onActionCollapse,
         LocalPreferSettingsFirstFocus provides preferSettingsFirstFocus
     ) {
@@ -93,19 +92,9 @@ fun HomeChromeOverlay(
                         scrimAlpha = scrimAlpha,
                         onSearch = onSearch,
                         onProfiles = onProfiles,
-                        onLogo = onLogo
-                    )
-                }
-            }
-            if (showBottom) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = navPad)
-                ) {
-                    FishITBottomPanel(
-                        selected = bottomSelected,
-                        onSelect = onBottomSelect
+                        onLogo = onLogo,
+                        librarySelected = if (showLibraryNav) librarySelected else null,
+                        onLibrarySelect = if (showLibraryNav) onLibrarySelect else null
                     )
                 }
             }
