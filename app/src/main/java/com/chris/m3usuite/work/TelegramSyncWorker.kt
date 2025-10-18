@@ -29,12 +29,10 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
             SchedulingGateway.notifyTelegramSyncIdle()
             return@withContext Result.success()
         }
-        val mode = inputData.getString(KEY_MODE) ?: MODE_VOD
+        val mode = inputData.getString(KEY_MODE) ?: MODE_ALL
         val triggerRefresh = inputData.getBoolean(KEY_TRIGGER_REFRESH, false)
-        val csv = when (mode) {
-            MODE_SERIES -> settings.tgSelectedSeriesChatsCsv.first()
-            else -> settings.tgSelectedVodChatsCsv.first()
-        }
+        // Einheitliche Quelle: tgSelectedChatsCsv
+        val csv = settings.tgSelectedChatsCsv.first()
         val chatIds = csv.split(',').mapNotNull { it.trim().toLongOrNull() }.distinct()
         android.util.Log.i("TgWorker", "start mode=${mode} selectedChats=${chatIds.size}")
         if (chatIds.isEmpty()) {
@@ -72,9 +70,9 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
             var totalVodNew = 0
             var totalSeriesEpisodes = 0
             val newSeriesIds = mutableSetOf<Long>()
+            // Immer vollständiger Backfill: fetchAll = true
             chatIds.forEachIndexed { idx, chatId ->
-                // For series mode, fetch the entire history (no upper bound) and await completion
-                val all = (mode == MODE_SERIES)
+                val all = true
                 SchedulingGateway.notifyTelegramSyncProgress(mode, idx, chatIds.size)
                 val result = service.pullChatHistoryAwait(chatId, 200, fetchAll = all)
                 totalMessages += result.processedMessages
@@ -85,21 +83,20 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
                 setProgress(workDataOf("processed" to (idx + 1), "total" to chatIds.size))
                 SchedulingGateway.notifyTelegramSyncProgress(mode, idx + 1, chatIds.size)
             }
-            val seriesStats = if (mode == MODE_SERIES) {
-                runCatching { com.chris.m3usuite.data.repo.TelegramSeriesIndexer.rebuildWithStats(applicationContext) }
-                    .onFailure { e -> android.util.Log.w("TgWorker", "series rebuild failed: ${e.message}") }
-                    .getOrNull()
-            } else null
+            // Nach vollständigem Backfill: Serien-Index neu aufbauen
+            val seriesStats = runCatching { com.chris.m3usuite.data.repo.TelegramSeriesIndexer.rebuildWithStats(applicationContext) }
+                .onFailure { e -> android.util.Log.w("TgWorker", "series rebuild failed: ${e.message}") }
+                .getOrNull()
             if (seriesStats != null) {
                 android.util.Log.i("TgWorker", "indexer done series=${seriesStats.seriesCount} new=${seriesStats.newSeries} episodes=${seriesStats.episodeCount} newEpisodes=${seriesStats.newEpisodes}")
             }
             val summary = when (mode) {
-                MODE_SERIES -> {
+                MODE_SERIES, MODE_ALL -> {
                     val stats = seriesStats
                     val newSeries = stats?.newSeries ?: newSeriesIds.size
                     val newEpisodes = stats?.newEpisodes ?: totalSeriesEpisodes
                     SchedulingGateway.TelegramSyncResult(
-                        moviesAdded = 0,
+                        moviesAdded = totalVodNew,
                         seriesAdded = newSeries,
                         episodesAdded = newEpisodes
                     )
@@ -143,10 +140,15 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
     companion object {
         const val MODE_VOD = "vod"
         const val MODE_SERIES = "series"
+        const val MODE_ALL = "all"
         private const val KEY_MODE = "mode"
         private const val KEY_TRIGGER_REFRESH = "trigger_refresh"
 
         fun enqueue(ctx: Context, mode: String, refreshHome: Boolean) {
+            scheduleNow(ctx, mode, refreshHome)
+        }
+
+        fun scheduleNow(ctx: Context, mode: String = MODE_ALL, refreshHome: Boolean = true) {
             val input = workDataOf(
                 KEY_MODE to mode,
                 KEY_TRIGGER_REFRESH to refreshHome
@@ -156,7 +158,8 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
                 .build()
             val unique = when (mode) {
                 MODE_SERIES -> SchedulingGateway.NAME_TG_SYNC_SERIES
-                else -> SchedulingGateway.NAME_TG_SYNC_VOD
+                MODE_VOD -> SchedulingGateway.NAME_TG_SYNC_VOD
+                else -> SchedulingGateway.NAME_TG_SYNC_ALL
             }
             WorkManager.getInstance(ctx)
                 .enqueueUniqueWork(unique, ExistingWorkPolicy.REPLACE, req)

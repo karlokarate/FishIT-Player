@@ -1,3 +1,22 @@
+2025-11-05
+- feat(telegram/settings): Konsolidiert die Chat-Auswahl in ein Multi-Select mit
+  gemeinsamem `tg_selected_chats_csv`. Der Dialog zeigt die aufgelösten Namen,
+  bestätigt die Auswahl mit „Übernehmen & Sync starten“ und stößt sofort einen
+  kombinierten MODE_ALL-Sync an. Legacy-Felder für getrennte VOD/Serien-CSV
+  werden einmalig migriert.
+- feat(telegram/sync): `TelegramSyncWorker` nutzt `MODE_ALL` als Default,
+  lädt alle ausgewählten Chats mit `fetchAll=true`, rebuildet den
+  `TelegramSeriesIndexer` nach jedem Lauf und berichtet aggregierte Zahlen.
+  `SchedulingGateway` verwaltet nun ein zusätzliches `tg_sync_all`-WorkItem.
+- feat(telegram/ui): Start zeigt eine globale Row „Telegram Serien“ (Aggregat
+  aus ObjectBox) plus Film-Rows je ausgewähltem Chat; Library behält die
+  aggregierte Serien-Row und lädt VOD-Only pro Chat. Die Settings spiegeln die
+  Auswahl als Namen wider und besitzen einen zentralen Sync-Button.
+- feat(telegram/parser): Heuristiken erkennen jetzt Bereiche (`E01–03`),
+  Doppelpunktformen (`S1:E2`), `1x05–07`, deutsch/englische „Staffel/Folge“-
+  Varianten, reine Episodenangaben und normalisieren Sprach-Tags (`GER/ENG`,
+  `VOSTFR`, `ITA`, `ES`).
+
 2025-11-02
 - fix(telegram/settings): Kotlin 2.0 debug builds compile again. Flow operators
   are imported from `kotlinx.coroutines.flow`, the Telegram chat picker is marked

@@ -23,8 +23,10 @@ class App : Application() {
         telemetryCloser = FrameTimeWatchdog.install()
         appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         // Auto-start TDLib if Telegram is enabled and keys are present, so auth state persists across restarts.
-        appScope?.launch {
+        appScope?.launch(Dispatchers.IO) {
             val store = SettingsStore(applicationContext)
+            // Migrate legacy Telegram selections (if any) → unified CSV
+            runCatching { store.migrateTelegramSelectedChatsIfNeeded() }
             val enabled = runCatching { store.tgEnabled.first() }.getOrDefault(false)
             if (!enabled) return@launch
             val apiId = runCatching { store.tgApiId.first() }.getOrDefault(0).takeIf { it > 0 } ?: BuildConfig.TG_API_ID

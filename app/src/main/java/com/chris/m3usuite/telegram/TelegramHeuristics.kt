@@ -17,63 +17,54 @@ object TelegramHeuristics {
         val language: String? = null // ISO-ish (de, en, es...)
     )
 
-    // Single and ranged patterns
-    private val sxxexx = Regex("""(?i)(?:^|[\s._\-\[\(])S(\d{1,2})[Eex](\d{1,2})(?:$|[\s._\-\]\)])""")
-    private val sxxexxRange = Regex("""(?i)(?:^|[\s._\-\[\(])S(\d{1,2})E(\d{1,2})[-–](?:E)?(\d{1,2})(?:$|[\s._\-\]\)])""")
-    private val nxm   = Regex("""(?i)(?:^|[\s._\-\[\(])(\d{1,2})x(\d{1,2})(?:$|[\s._\-\]\)])""")
-    private val nxmRange = Regex("""(?i)(?:^|[\s._\-\[\(])(\d{1,2})x(\d{1,2})[-–](\d{1,2})(?:$|[\s._\-\]\)])""")
-    private val sXeY  = Regex("""(?i)(?:^|[\s._\-\[\(])S(\d{1,2})[\s._\-]*E(\d{1,2})(?:$|[\s._\-\]\)])""")
-    // German verbose forms: "Staffel 6 Folge 10"
-    private val staffelFolge = Regex("""(?i)Staffel\s*(\d{1,2})\D{0,6}Folge\s*(\d{1,3})""")
-
-    private val langTags = listOf(
-        "de" to listOf("[DE]","[GER]","[DEU]","GERMAN","DEUTSCH","(DE)","(GER)","(DEU)"),
-        "en" to listOf("[EN]","[ENG]","ENGLISH","(EN)","(ENG)"),
-        "es" to listOf("[ES]","ESP","SPANISH","(ES)"),
-        "tr" to listOf("[TR]","TURKISH","(TR)"),
-        "ru" to listOf("[RU]","RUS","RUSSIAN","(RU)")
-    )
+    // Erweiterte Muster:
+    private val sxxexx = Regex("""\\bS(\\d{1,2})E(\\d{1,3})(?:\\s*[-–]\\s*(\\d{1,3}))?\\b""", RegexOption.IGNORE_CASE)
+    private val sXeY   = Regex("""\\bS(\\d{1,2})\\s*[:x]\\s*E?(\\d{1,3})(?:\\s*[-–]\\s*(\\d{1,3}))?\\b""", RegexOption.IGNORE_CASE)
+    private val nxm    = Regex("""\\b(\\d{1,2})x(\\d{1,3})(?:\\s*[-–]\\s*(\\d{1,3}))?\\b""", RegexOption.IGNORE_CASE)
+    private val staffelFolge = Regex("""\\b(?:Staffel|Season)\\s*(\\d{1,2})\\s*(?:Folge|Ep\\.?|Episode)\\s*(\\d{1,3})(?:\\s*[-–]\\s*(\\d{1,3}))?\\b""", RegexOption.IGNORE_CASE)
+    private val episodeOnly = Regex("""\\b(?:Ep\\.?|Episode)\\s*(\\d{1,3})\\b""", RegexOption.IGNORE_CASE)
+    private val sColonE = Regex("""\\bS(\\d{1,2})\\s*[:]\\s*E?(\\d{1,3})\\b""", RegexOption.IGNORE_CASE)
+    // Sprache/Tags: [GER], [DEU], GER/ENG, DE/EN, German/Deutsch
+    private val langTag = Regex("""\\b(?:(DEU|GER|DE|GERMAN|DEUTSCH|EN|ENG|ENGLISH|VOSTFR|ITA|ES))\\b""", RegexOption.IGNORE_CASE)
 
     private fun detectLanguage(text: String): String? {
         val upper = text.uppercase()
-        for ((code, markers) in langTags) {
-            if (markers.any { upper.contains(it) }) return code
+        if (upper.contains("GER/ENG") || upper.contains("DE/EN")) return "de+en"
+        val match = langTag.find(upper)?.groupValues?.getOrNull(1)?.uppercase() ?: return null
+        return when (match) {
+            "DEU", "GER", "DE", "GERMAN", "DEUTSCH" -> "de"
+            "EN", "ENG", "ENGLISH" -> "en"
+            "VOSTFR" -> "fr"
+            "ITA" -> "it"
+            "ES" -> "es"
+            else -> null
         }
-        return null
     }
 
     fun parse(caption: String?): ParseResult {
         if (caption.isNullOrBlank()) return ParseResult(false, title = null)
         val text = caption.trim()
         val lang = detectLanguage(text)
-        // Ranges first
-        sxxexxRange.find(text)?.let { m ->
-            val s = m.groupValues[1].toIntOrNull()
-            val e1 = m.groupValues[2].toIntOrNull()
-            val e2 = m.groupValues[3].toIntOrNull()
-            val series = text.substring(0, m.range.first).trim(' ', '.', '-', '_', '[', '(', ')', ']').replace(Regex("[._]+"), " ")
-            val rest = text.substring(m.range.last + 1).trim(' ', '.', '-', '_', '[', '(', ')', ']')
-            return ParseResult(true, series.ifBlank { null }, s, e1, e2, rest.ifBlank { null }, lang)
-        }
-        nxmRange.find(text)?.let { m ->
-            val s = m.groupValues[1].toIntOrNull()
-            val e1 = m.groupValues[2].toIntOrNull()
-            val e2 = m.groupValues[3].toIntOrNull()
-            val series = text.substring(0, m.range.first).trim(' ', '.', '-', '_', '[', '(', ')', ']').replace(Regex("[._]+"), " ")
-            val rest = text.substring(m.range.last + 1).trim(' ', '.', '-', '_', '[', '(', ')', ']')
-            return ParseResult(true, series.ifBlank { null }, s, e1, e2, rest.ifBlank { null }, lang)
-        }
-        // Singles
+        // Ranges/Single Matches (erweitert)
         val m = sxxexx.find(text)
             ?: sXeY.find(text)
+            ?: sColonE.find(text)
             ?: nxm.find(text)
             ?: staffelFolge.find(text)
         if (m != null) {
             val s = m.groupValues[1].toIntOrNull()
-            val e = m.groupValues[2].toIntOrNull()
+            val e1 = m.groupValues.getOrNull(2)?.toIntOrNull()
+            val e2 = m.groupValues.getOrNull(3)?.toIntOrNull()
             val series = text.substring(0, m.range.first).trim(' ', '.', '-', '_', '[', '(', ')', ']').replace(Regex("[._]+"), " ")
             val rest = text.substring(m.range.last + 1).trim(' ', '.', '-', '_', '[', '(', ')', ']')
-            return ParseResult(true, series.ifBlank { null }, s, e, null, rest.ifBlank { null }, lang)
+            return ParseResult(true, series.ifBlank { null }, s, e1, e2, rest.ifBlank { null }, lang)
+        }
+        // Fallback: nur Episoden-Zahl?
+        episodeOnly.find(text)?.let { em ->
+            val e = em.groupValues[1].toIntOrNull()
+            val base = text.substring(0, em.range.first).trim(' ', '.', '-', '_', '[', '(', ')', ']')
+            val rest = text.substring(em.range.last + 1).trim(' ', '.', '-', '_', '[', '(', ')', ']')
+            return ParseResult(true, seriesTitle = base.ifBlank { null }, season = null, episode = e, episodeEnd = null, title = rest.ifBlank { null }, language = lang)
         }
         return ParseResult(false, title = text, language = lang)
     }

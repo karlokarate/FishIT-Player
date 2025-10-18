@@ -35,6 +35,7 @@ object SchedulingGateway {
     const val NAME_SCREEN_RESET   = "screen_time_daily_reset_once"
     const val NAME_TG_SYNC_VOD    = "tg_sync_vod"
     const val NAME_TG_SYNC_SERIES = "tg_sync_series"
+    const val NAME_TG_SYNC_ALL    = "tg_sync_all"
     const val NAME_XTREAM_DELTA   = "xtream_delta_import"
 
     private val telegramSyncStateInternal = MutableStateFlow<TelegramSyncState>(TelegramSyncState.Idle)
@@ -95,6 +96,7 @@ object SchedulingGateway {
         runCatching { wm.cancelUniqueWork("tg_cache_wipe_once") }
         runCatching { wm.cancelUniqueWork(NAME_TG_SYNC_VOD) }
         runCatching { wm.cancelUniqueWork(NAME_TG_SYNC_SERIES) }
+        runCatching { wm.cancelUniqueWork(NAME_TG_SYNC_ALL) }
         // Screen time daily reset (safe to re-schedule)
         runCatching { wm.cancelUniqueWork(NAME_SCREEN_RESET) }
         // OBX key backfill (safe to re-run later)
@@ -119,7 +121,7 @@ object SchedulingGateway {
     }
 
     fun scheduleTelegramSync(ctx: Context, mode: String, refreshHome: Boolean = false) {
-        TelegramSyncWorker.enqueue(ctx, mode, refreshHome)
+        TelegramSyncWorker.scheduleNow(ctx, mode, refreshHome)
     }
 
     fun onTelegramSyncCompleted(ctx: Context, refreshHomeChrome: Boolean) {

@@ -35,6 +35,7 @@ Hinweis
   mit 512-KiB-Readahead und Backoff gestreamt, `rar://msg/<msg>/<entry>` extrahiert
   MP3s on-the-fly (LRU-Chunk-Cache + Ringbuffer). TDLib-Updates unterstützen
   mehrere Listener gleichzeitig.
+- Maintenance 2025-11-05: Telegram-Einstellungen bündeln Film/Serien-Auswahl in einem Multi-Select (gemeinsames CSV), bestätigen Chats starten sofort einen kombinierten Full-Sync (`MODE_ALL`). Start zeigt eine globale Row „Telegram Serien“ plus Film-Rows je ausgewähltem Chat; Library behält die aggregierte Serien-Row und VOD-Rows pro Chat. Heuristiken parsen jetzt Ranges (`E01–03`), `S1:E2`, deutsch/englische Varianten und Sprach-Tags konsistent.
 - Maintenance 2025‑11‑01: Telegram-Login in das Modul `feature-tg-auth`
   ausgelagert. Auto-SMS via Google User Consent, strukturierte Fehlermeldungen
   und ein orchestrierter QR-/Code-Flow halten die Settings sauber und

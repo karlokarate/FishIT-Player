@@ -1146,9 +1146,7 @@ fun SettingsScreen(
                     )
                 }
                 
-                val tgChats by store.tgSelectedChatsCsv.collectAsStateWithLifecycle(initialValue = "")
-                val tgVodSel by store.tgSelectedVodChatsCsv.collectAsStateWithLifecycle(initialValue = "")
-                val tgSeriesSel by store.tgSelectedSeriesChatsCsv.collectAsStateWithLifecycle(initialValue = "")
+                val tgChatsCsv by store.tgSelectedChatsCsv.collectAsStateWithLifecycle(initialValue = "")
                 val tgCacheGb by store.tgCacheLimitGb.collectAsStateWithLifecycle(initialValue = 2)
                 val tgPreferIpv6 by store.tgPreferIpv6.collectAsStateWithLifecycle(initialValue = true)
                 val tgStayOnline by store.tgStayOnline.collectAsStateWithLifecycle(initialValue = true)
@@ -1182,14 +1180,39 @@ fun SettingsScreen(
                 val tgAutoRoamPreloadStories by store.tgAutoRoamingPreloadStories.collectAsStateWithLifecycle(initialValue = false)
                 val tgAutoRoamLessDataCalls by store.tgAutoRoamingLessDataCalls.collectAsStateWithLifecycle(initialValue = true)
                 
-                // TV/DPAD-friendly inputs via FishForm; commit on confirm to avoid live DataStore churn
-                FishFormTextField(
-                    label = "Chat-IDs (CSV), optional",
-                    value = tgChats,
-                    enabled = tgEnabled,
-                    onValueChange = { newValue -> scope.launch { store.setTelegramSelectedChatsCsv(newValue) } },
-                    helperText = "Kommagetrennte Chat-IDs; leer = Auswahl über Picker",
-                )
+                // Anzeige/Resolver der aktuellen Auswahl (Name-Liste) + Picker-Button
+                val resolvedNames = remember(tgChatsCsv) { mutableStateOf<String?>(null) }
+                LaunchedEffect(tgChatsCsv, tgEnabled) {
+                    resolvedNames.value = if (tgEnabled && tgChatsCsv.isNotBlank()) resolveChatNamesCsv(tgChatsCsv, ctx2) else null
+                }
+                var showChatPicker by remember { mutableStateOf(false) }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .then(FocusKit.run { Modifier.focusGroup() }),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Synchronisierte Chats", style = MaterialTheme.typography.titleSmall)
+                        Text(resolvedNames.value ?: "Keine Auswahl", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    FocusKit.TvTextButton(
+                        onClick = { showChatPicker = true },
+                        enabled = tgEnabled
+                    ) { Text("Chats auswählen…") }
+                }
+                FocusKit.TvTextButton(
+                    onClick = {
+                        com.chris.m3usuite.work.TelegramSyncWorker.scheduleNow(
+                            ctx2,
+                            mode = com.chris.m3usuite.work.TelegramSyncWorker.MODE_ALL,
+                            refreshHome = true
+                        )
+                    },
+                    enabled = tgEnabled && tgChatsCsv.isNotBlank()
+                ) { Text("Jetzt synchronisieren") }
                 FishFormSlider(
                     label = "Cache-Limit (GB)",
                     value = tgCacheGb,
@@ -1200,6 +1223,26 @@ fun SettingsScreen(
                     helperText = "Begrenzung für lokale Telegram‑Downloads"
                 )
                 
+                if (showChatPicker) {
+                    TelegramChatPickerDialogMulti(
+                        initialSelection = tgChatsCsv.split(',').mapNotNull { it.trim().toLongOrNull() }.toSet(),
+                        onDismiss = { showChatPicker = false },
+                        onConfirm = { selected ->
+                            scope.launch {
+                                store.setTelegramSelectedChatsCsv(selected.sorted().joinToString(","))
+                                // Nach Bestätigung: kombinierter Full-Sync (Backend)
+                                com.chris.m3usuite.work.TelegramSyncWorker.scheduleNow(
+                                    ctx2,
+                                    mode = com.chris.m3usuite.work.TelegramSyncWorker.MODE_ALL,
+                                    refreshHome = true
+                                )
+                            }
+                            showChatPicker = false
+                        },
+                        onRequestLogin = { showTgDialog = true }
+                    )
+                }
+
                 if (tgEnabled) {
                     val proxyTypeValue = if (tgProxyType.isBlank()) "none" else tgProxyType
                     val proxyOptions = listOf("none", "socks5", "http", "mtproto")
@@ -1760,160 +1803,85 @@ fun SettingsScreen(
                     }
                 
                     if (showTgDialog) TelegramLoginDialog(onDismiss = { showTgDialog = false }, repo = authRepo)
-                
+
                     Spacer(Modifier.height(8.dp))
-                    Row(modifier = FocusKit.run { Modifier.focusGroup() }, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        var showVodPicker by remember { mutableStateOf(false) }
-                        var showSeriesPicker by remember { mutableStateOf(false) }
-                        FocusKit.TvButton(
-                            onClick = { showVodPicker = true },
-                            enabled = tgEnabled && authState == com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED,
-                        ) { Text("Film Sync") }
-                        FocusKit.TvButton(
-                            onClick = { showSeriesPicker = true },
-                            enabled = tgEnabled && authState == com.chris.m3usuite.telegram.TdLibReflection.AuthState.AUTHENTICATED,
-                        ) { Text("Serien Sync") }
-                        if (tgVodSel.isNotBlank()) {
-                            FocusKit.TvTextButton(onClick = {
-                                com.chris.m3usuite.work.SchedulingGateway.scheduleTelegramSync(
-                                    ctx2,
-                                    com.chris.m3usuite.work.TelegramSyncWorker.MODE_VOD,
-                                    refreshHome = true
-                                )
-                            }) { Text("Filme synchronisieren") }
-                        }
-                        if (tgSeriesSel.isNotBlank()) {
-                            FocusKit.TvTextButton(onClick = {
-                                com.chris.m3usuite.work.SchedulingGateway.scheduleTelegramSync(
-                                    ctx2,
-                                    com.chris.m3usuite.work.TelegramSyncWorker.MODE_SERIES,
-                                    refreshHome = true
-                                )
-                            }) { Text("Serien synchronisieren") }
-                        }
-                        if (showVodPicker) TelegramChatPickerDialog(onDismiss = { showVodPicker = false }, onSelect = { chatId ->
-                            val cur = tgVodSel.split(',').filter { it.isNotBlank() }.toMutableSet()
-                            cur.add(chatId.toString())
-                            scope.launch { store.setTelegramSelectedVodChatsCsv(cur.joinToString(",")) }
-                            showVodPicker = false
-                        }, onRequestLogin = { showTgDialog = true })
-                        if (showSeriesPicker) TelegramChatPickerDialog(onDismiss = { showSeriesPicker = false }, onSelect = { chatId ->
-                            val cur = tgSeriesSel.split(',').filter { it.isNotBlank() }.toMutableSet()
-                            cur.add(chatId.toString())
-                            scope.launch { store.setTelegramSelectedSeriesChatsCsv(cur.joinToString(",")) }
-                            showSeriesPicker = false
-                        }, onRequestLogin = { showTgDialog = true })
-                    }
-                
-                    if (tgVodSel.isNotBlank() || tgSeriesSel.isNotBlank()) {
-                        Spacer(Modifier.height(4.dp))
-                        Text("Quellen:", style = MaterialTheme.typography.labelLarge)
-                    }
-                    if (tgVodSel.isNotBlank()) {
-                        val vodNamesState = remember(tgVodSel) { mutableStateOf<String?>(null) }
-                        LaunchedEffect(tgVodSel) {
-                            vodNamesState.value = resolveChatNamesCsv(tgVodSel, ctx2)
-                        }
-                        val label = vodNamesState.value?.takeIf { it.isNotBlank() } ?: tgVodSel
-                        Text("• Filme: $label", style = MaterialTheme.typography.bodySmall, color = Color.White)
-                    }
-                    if (tgSeriesSel.isNotBlank()) {
-                        val seriesNamesState = remember(tgSeriesSel) { mutableStateOf<String?>(null) }
-                        LaunchedEffect(tgSeriesSel) {
-                            seriesNamesState.value = resolveChatNamesCsv(tgSeriesSel, ctx2)
-                        }
-                        val label = seriesNamesState.value?.takeIf { it.isNotBlank() } ?: tgSeriesSel
-                        Text("• Serien: $label", style = MaterialTheme.typography.bodySmall, color = Color.White)
-                    }
                 
                     val wm = remember { androidx.work.WorkManager.getInstance(ctx2) }
-                    var vodProcessed by remember { mutableStateOf<Int?>(null) }
-                    var seriesProcessed by remember { mutableStateOf<Int?>(null) }
+                    var syncProgress by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+                    var syncRunning by remember { mutableStateOf(false) }
                     LaunchedEffect(tgEnabled) {
+                        syncProgress = null
+                        syncRunning = false
                         if (!tgEnabled) return@LaunchedEffect
-                        var lastVodId: java.util.UUID? = null
-                        var vodNotifiedSuccess = false
-                        var vodNotifiedFailed = false
-                        var lastSeriesId: java.util.UUID? = null
-                        var seriesNotifiedSuccess = false
-                        var seriesNotifiedFailed = false
+                        var lastId: java.util.UUID? = null
+                        var notifiedSuccess = false
+                        var notifiedFailed = false
                         while (true) {
                             try {
-                                // VOD work tracking
-                                val vodInfos = withContext(Dispatchers.IO) { wm.getWorkInfosForUniqueWork("tg_sync_vod").get() }
-                                val vi = vodInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.RUNNING }
-                                val ve = vodInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.ENQUEUED }
-                                val vf = vodInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.FAILED }
-                                val vs = vodInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.SUCCEEDED }
-                                val currentVodId = (vi ?: ve ?: vf ?: vs)?.id
-                                if (currentVodId != null && currentVodId != lastVodId) {
-                                    lastVodId = currentVodId
-                                    vodNotifiedSuccess = false
-                                    vodNotifiedFailed = false
+                                val infos = withContext(Dispatchers.IO) {
+                                    wm.getWorkInfosForUniqueWork(com.chris.m3usuite.work.SchedulingGateway.NAME_TG_SYNC_ALL).get()
                                 }
-                                vodProcessed = vi?.progress?.getInt("processed", -1)?.takeIf { it >= 0 } ?: run { null }
-                                if (vf != null && !vodNotifiedFailed) {
-                                    vodNotifiedFailed = true
-                                    val msg = vf.outputData.getString("error") ?: "Unbekannter Fehler"
-                                    snackHost.toast("Telegram Sync (Filme) fehlgeschlagen: $msg")
+                                val running = infos.firstOrNull { it.state == androidx.work.WorkInfo.State.RUNNING }
+                                val enqueued = infos.firstOrNull { it.state == androidx.work.WorkInfo.State.ENQUEUED }
+                                val failed = infos.firstOrNull { it.state == androidx.work.WorkInfo.State.FAILED }
+                                val succeeded = infos.firstOrNull { it.state == androidx.work.WorkInfo.State.SUCCEEDED }
+                                val currentId = (running ?: enqueued ?: failed ?: succeeded)?.id
+                                if (currentId != null && currentId != lastId) {
+                                    lastId = currentId
+                                    notifiedSuccess = false
+                                    notifiedFailed = false
                                 }
-                                if (vs != null && !vodNotifiedSuccess) {
-                                    vodNotifiedSuccess = true
-                                    val processedChats = vs.outputData.getInt("processed_chats", 0)
+                                syncRunning = running != null
+                                syncProgress = running?.progress?.let { progress ->
+                                    val processed = progress.getInt("processed", -1)
+                                    val total = progress.getInt("total", -1)
+                                    if (processed >= 0 && total > 0) processed to total else null
+                                }
+                                if (failed != null && !notifiedFailed) {
+                                    notifiedFailed = true
+                                    val msg = failed.outputData.getString("error") ?: "Unbekannter Fehler"
+                                    snackHost.toast("Telegram Sync fehlgeschlagen: $msg")
+                                }
+                                if (succeeded != null && !notifiedSuccess) {
+                                    notifiedSuccess = true
+                                    val processedChats = succeeded.outputData.getInt("processed_chats", 0)
                                     if (processedChats > 0) {
-                                        val moviesAdded = vs.outputData.getInt("vod_new", 0)
+                                        val moviesAdded = succeeded.outputData.getInt("vod_new", 0)
+                                        val newSeries = succeeded.outputData.getInt("series_new", 0)
+                                        val newEpisodes = succeeded.outputData.getInt("series_episode_new", 0)
                                         val parts = mutableListOf<String>()
                                         if (moviesAdded > 0) parts += "${moviesAdded} Filme"
-                                        val detail = if (parts.isEmpty()) "keine neuen Inhalte" else parts.joinToString(", ")
-                                        snackHost.toast("Telegram Sync (Filme) abgeschlossen – $detail")
-                                    }
-                                }
-
-                                // SERIES work tracking
-                                val seriesInfos = withContext(Dispatchers.IO) { wm.getWorkInfosForUniqueWork("tg_sync_series").get() }
-                                val si = seriesInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.RUNNING }
-                                val se = seriesInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.ENQUEUED }
-                                val sf = seriesInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.FAILED }
-                                val ss = seriesInfos.firstOrNull { it.state == androidx.work.WorkInfo.State.SUCCEEDED }
-                                val currentSeriesId = (si ?: se ?: sf ?: ss)?.id
-                                if (currentSeriesId != null && currentSeriesId != lastSeriesId) {
-                                    lastSeriesId = currentSeriesId
-                                    seriesNotifiedSuccess = false
-                                    seriesNotifiedFailed = false
-                                }
-                                seriesProcessed = si?.progress?.getInt("processed", -1)?.takeIf { it >= 0 } ?: run { null }
-                                if (sf != null && !seriesNotifiedFailed) {
-                                    seriesNotifiedFailed = true
-                                    val msg = sf.outputData.getString("error") ?: "Unbekannter Fehler"
-                                    snackHost.toast("Telegram Sync (Serien) fehlgeschlagen: $msg")
-                                }
-                                if (ss != null && !seriesNotifiedSuccess) {
-                                    seriesNotifiedSuccess = true
-                                    val processedChats = ss.outputData.getInt("processed_chats", 0)
-                                    if (processedChats > 0) {
-                                        val newSeries = ss.outputData.getInt("series_new", 0)
-                                        val newEpisodes = ss.outputData.getInt("series_episode_new", 0)
-                                        val parts = mutableListOf<String>()
                                         if (newSeries > 0) parts += "${newSeries} Serien"
                                         if (newEpisodes > 0) parts += "${newEpisodes} Episoden"
                                         val detail = if (parts.isEmpty()) "keine neuen Inhalte" else parts.joinToString(", ")
-                                        snackHost.toast("Telegram Sync (Serien) abgeschlossen – $detail")
+                                        snackHost.toast("Telegram Sync abgeschlossen – $detail")
                                     }
                                 }
-                            } catch (_: Throwable) {}
+                            } catch (_: Throwable) {
+                                syncRunning = false
+                            }
                             kotlinx.coroutines.delay(600)
                         }
                     }
-                    if (vodProcessed != null || seriesProcessed != null) {
+                    if (syncRunning || syncProgress != null) {
                         Spacer(Modifier.height(4.dp))
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                        val vp = vodProcessed?.let { "Filme: $it" } ?: ""
-                        val sp = seriesProcessed?.let { "Serien: $it" } ?: ""
-                        Text(
-                            "Telegram Sync läuft… ${listOf(vp, sp).filter { it.isNotBlank() }.joinToString("  ")}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White
-                        )
+                        val status = syncProgress?.let { (processed, total) ->
+                            "Chats: $processed / $total"
+                        } ?: "".takeIf { syncRunning } ?: ""
+                        if (!status.isNullOrBlank()) {
+                            Text(
+                                "Telegram Sync läuft… $status",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White
+                            )
+                        } else {
+                            Text(
+                                "Telegram Sync läuft…",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
                 
@@ -2245,9 +2213,10 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
 }
 
 @Composable
-private fun TelegramChatPickerDialog(
+private fun TelegramChatPickerDialogMulti(
+    initialSelection: Set<Long>,
     onDismiss: () -> Unit,
-    onSelect: (Long) -> Unit,
+    onConfirm: (Set<Long>) -> Unit,
     onRequestLogin: () -> Unit
 ) {
     val ctx = LocalContext.current
@@ -2301,6 +2270,7 @@ private fun TelegramChatPickerDialog(
         }
     }
 
+    val selected = remember(initialSelection) { mutableStateOf(initialSelection.toMutableSet()) }
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(16.dp).then(FocusKit.run { Modifier.focusGroup() })) {
             Text("Telegram – Chat-Liste", style = MaterialTheme.typography.titleMedium)
@@ -2344,12 +2314,46 @@ private fun TelegramChatPickerDialog(
                     val q = search.trim().lowercase()
                     val items = if (q.isBlank()) itemsBase else itemsBase.filter { it.second.lowercase().contains(q) || it.first.toString().contains(q) }
                     val chatListState = com.chris.m3usuite.ui.state.rememberRouteListState("settings:chatPicker:${folder}")
-                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 520.dp), state = chatListState, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    LazyColumn(
+                        Modifier.fillMaxWidth().heightIn(min = 240.dp, max = 560.dp),
+                        state = chatListState,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         items(items, key = { it.first }) { (id, title) ->
-                            ElevatedCard(modifier = FocusKit.run { Modifier.tvClickable(onClick = { onSelect(id) }) }.fillMaxWidth()) {
-                                Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Text(title)
-                                    Text(id.toString(), style = MaterialTheme.typography.labelSmall, color = Color.White)
+                            val checked = selected.value.contains(id)
+                            ElevatedCard(
+                                modifier = FocusKit.run {
+                                    Modifier.tvClickable(onClick = {
+                                        val next = selected.value.toMutableSet()
+                                        if (checked) next.remove(id) else next.add(id)
+                                        selected.value = next
+                                    })
+                                }.fillMaxWidth()
+                            ) {
+                                Row(
+                                    Modifier.fillMaxWidth().padding(12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(title, modifier = Modifier.weight(1f))
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(
+                                            checked = checked,
+                                            onCheckedChange = {
+                                                val next = selected.value.toMutableSet()
+                                                if (it) next.add(id) else next.remove(id)
+                                                selected.value = next
+                                            }
+                                        )
+                                        Text(
+                                            id.toString(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color.White
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -2357,8 +2361,13 @@ private fun TelegramChatPickerDialog(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth().then(FocusKit.run { Modifier.focusGroup() }), horizontalArrangement = Arrangement.End) {
-                FocusKit.TvTextButton(onClick = onDismiss) { Text("Schließen") }
+            Row(
+                Modifier.fillMaxWidth().then(FocusKit.run { Modifier.focusGroup() }),
+                horizontalArrangement = Arrangement.End
+            ) {
+                FocusKit.TvTextButton(onClick = onDismiss) { Text("Abbrechen") }
+                Spacer(Modifier.width(8.dp))
+                FocusKit.TvTextButton(onClick = { onConfirm(selected.value.toSet()) }) { Text("Übernehmen & Sync starten") }
             }
         }
     }
