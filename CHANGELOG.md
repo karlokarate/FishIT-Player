@@ -1,3 +1,11 @@
+2025-11-06
+- fix(start/telegram): Align the aggregated "Telegram Serien" row with the
+  FishRow/SeriesFishTile contract so Kotlin 2.0 compiles again (new/assign/play
+  lambdas wired up, lambda signature corrected).
+- fix(settings/telegram): Restore Kotlin 2.0 compatibility by importing
+  `contentOrNull`, hoisting the shared login dialog state, and opting into the
+  Material3 bottom sheet API used by the chat picker.
+
 2025-11-05
 - feat(telegram/settings): Konsolidiert die Chat-Auswahl in ein Multi-Select mit
   gemeinsamem `tg_selected_chats_csv`. Der Dialog zeigt die aufgelösten Namen,

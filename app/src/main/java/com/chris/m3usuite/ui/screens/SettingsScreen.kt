@@ -89,6 +89,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -1186,6 +1187,7 @@ fun SettingsScreen(
                     resolvedNames.value = if (tgEnabled && tgChatsCsv.isNotBlank()) resolveChatNamesCsv(tgChatsCsv, ctx2) else null
                 }
                 var showChatPicker by remember { mutableStateOf(false) }
+                var showTgDialog by remember { mutableStateOf(false) }
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -1653,7 +1655,6 @@ fun SettingsScreen(
                         )
                     }
 
-                    var showTgDialog by remember { mutableStateOf(false) }
                     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
                     val keysValid = effApiId > 0 && effApiHash.isNotBlank()
                 
@@ -2212,6 +2213,7 @@ private fun TelegramLoginDialog(onDismiss: () -> Unit, repo: com.chris.m3usuite.
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TelegramChatPickerDialogMulti(
     initialSelection: Set<Long>,

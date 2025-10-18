@@ -861,8 +861,15 @@ fun StartScreen(
                                             style = MaterialTheme.typography.titleMedium,
                                             color = MaterialTheme.colorScheme.onBackground
                                         )
-                                    ) { _, media ->
-                                        SeriesFishTile(media = media, onOpenDetails = { item -> openSeries(item.id) })
+                                    ) { media ->
+                                        SeriesFishTile(
+                                            media = media,
+                                            isNew = seriesNewIds.contains(media.id),
+                                            allowAssign = canEditWhitelist,
+                                            onOpenDetails = { item -> openSeries(item.id) },
+                                            onPlayDirect = onSeriesPlayDirect,
+                                            onAssignToKid = onSeriesAssign
+                                        )
                                     }
                                 }
                             }
