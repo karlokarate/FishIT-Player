@@ -530,7 +530,6 @@ fun SeriesDetailScreen(
         onProfiles = null,
         listState = listState,
         onLogo = onLogo,
-        showBottomBar = false,
         enableDpadLeftChrome = false
     ) { pads ->
         // New unified detail mask (behind flag). Fallback below keeps legacy path.

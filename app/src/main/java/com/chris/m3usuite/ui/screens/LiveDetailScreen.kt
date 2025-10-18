@@ -355,7 +355,6 @@ fun LiveDetailScreen(
         onProfiles = null,
         listState = listState,
         onLogo = onLogo,
-        showBottomBar = false,
         enableDpadLeftChrome = false
     ) { pads ->
 

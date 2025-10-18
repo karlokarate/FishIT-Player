@@ -55,12 +55,10 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chris.m3usuite.ui.home.header.FishITBottomHeights
-import com.chris.m3usuite.ui.home.header.FishITBottomPanel
 import com.chris.m3usuite.ui.home.header.FishITHeader
 import com.chris.m3usuite.ui.home.header.FishITHeaderHeights
 import com.chris.m3usuite.ui.home.header.rememberHeaderAlpha
-import com.chris.m3usuite.ui.home.header.LocalBottomFirstFocus
+import com.chris.m3usuite.ui.home.header.LocalLibraryFirstFocus
 import com.chris.m3usuite.ui.home.header.LocalHeaderFirstFocus
 import com.chris.m3usuite.ui.home.header.LocalChromeOnAction
 import com.chris.m3usuite.core.xtream.XtreamImportCoordinator
@@ -90,14 +88,29 @@ data class ChromeHeaderFocusRefs(
     val settings: FocusRequester
 )
 
-data class ChromeBottomFocusRefs(
+data class ChromeLibraryFocusRefs(
     val live: FocusRequester,
     val vod: FocusRequester,
     val series: FocusRequester
 )
 
 val LocalChromeHeaderFocusRefs: androidx.compose.runtime.ProvidableCompositionLocal<ChromeHeaderFocusRefs?> = compositionLocalOf { null }
-val LocalChromeBottomFocusRefs: androidx.compose.runtime.ProvidableCompositionLocal<ChromeBottomFocusRefs?> = compositionLocalOf { null }
+val LocalChromeLibraryFocusRefs: androidx.compose.runtime.ProvidableCompositionLocal<ChromeLibraryFocusRefs?> = compositionLocalOf { null }
+
+enum class LibraryTab(val key: String) {
+    Live("live"),
+    Vod("vod"),
+    Series("series");
+
+    companion object {
+        fun fromKey(key: String): LibraryTab = values().firstOrNull { it.key == key } ?: Live
+    }
+}
+
+data class LibraryNavConfig(
+    val selected: LibraryTab,
+    val onSelect: (LibraryTab) -> Unit
+)
 
 // TV chrome mode (file-private)
 private enum class ChromeMode { Visible, Collapsed, Expanded }
@@ -119,10 +132,8 @@ fun HomeChromeScaffold(
     // Optional: TopBar sichtbar? (analog zur BottomBar). Wenn false, wird kein Header gezeichnet
     // und das Top-Padding enthält nur noch Statusbar-Insets.
     showHeader: Boolean = true,
-    // Optional: BottomBar, Sichtbarkeit steuert das untere Padding
-    showBottomBar: Boolean = true,
-    selectedBottom: String = "all",
-    onSelectBottom: (String) -> Unit = {},
+    // Optional: Library-Navigation im Header (Live/VOD/Serien)
+    libraryNav: LibraryNavConfig? = null,
     // TV-only: when true, the header attaches initial focus to the Settings button if available.
     // Useful on first start when no content exists to allow users to reach settings immediately.
     preferSettingsFirstFocus: Boolean = false,
@@ -142,7 +153,7 @@ fun HomeChromeScaffold(
     val tgLogVerbosity by logVerbosityState
 
     // Chrome state: Visible (default), Collapsed (hidden), Expanded (focus trap + blur)
-    // On TV, start collapsed to keep focus in content rows; header/bottom remain visible on phones
+    // On TV, start collapsed to keep focus in content rows; header stays visible on phones
     val tvChromeMode = rememberSaveable { mutableStateOf(if (isTv && !isPreview) ChromeMode.Collapsed else ChromeMode.Visible) }
     var focusedRowKey by remember { mutableStateOf<String?>(null) }
     // System-Insets (compute via density to avoid extension import issues)
@@ -158,18 +169,14 @@ fun HomeChromeScaffold(
 
     // App-Chrome-Höhen
     val topBarHeight: Dp = FishITHeaderHeights.total
-    val bottomBarHeight: Dp = FishITBottomHeights.bar
-
-    // Nur vom "Vorhandensein" der BottomBar abhängig, nicht von ihrer Funktions-Identität
-    val hasBottomBar = showBottomBar
 
     // Visibility derived from TV mode or explicit flags
     val headerShouldShow = showHeader && (!isTv || tvChromeMode.value != ChromeMode.Collapsed)
-    val bottomShouldShow = hasBottomBar && (!isTv || tvChromeMode.value != ChromeMode.Collapsed)
+    val libraryNavVisible = libraryNav != null && (!isTv || tvChromeMode.value != ChromeMode.Collapsed)
 
     // Animated content padding (reclaims space smoothly)
     val targetTopPad = statusPad + if (headerShouldShow) topBarHeight else 0.dp
-    val targetBottomPad = navPad + if (bottomShouldShow) bottomBarHeight else 0.dp
+    val targetBottomPad = navPad
     val animatedTopPad by animateDpAsState(targetValue = targetTopPad, animationSpec = tween(180), label = "topPad")
     val animatedBottomPad by animateDpAsState(targetValue = targetBottomPad, animationSpec = tween(180), label = "bottomPad")
     val pads = PaddingValues(top = animatedTopPad, bottom = animatedBottomPad)
@@ -384,18 +391,20 @@ fun HomeChromeScaffold(
             }
         }
 
-        // Unified overlay for header + bottom
+        // Unified overlay for header + library navigation
         com.chris.m3usuite.ui.home.chrome.HomeChromeOverlay(
             expanded = isTv && tvChromeMode.value == ChromeMode.Expanded,
             showHeader = headerShouldShow,
-            showBottom = bottomShouldShow,
+            showLibraryNav = libraryNavVisible,
             title = title,
             onLogo = onLogo,
             onSearch = onSearch,
             onProfiles = onProfiles,
             onSettings = onSettings,
-            bottomSelected = selectedBottom,
-            onBottomSelect = onSelectBottom,
+            librarySelected = libraryNav?.selected?.key,
+            onLibrarySelect = libraryNav?.let { config ->
+                { key: String -> config.onSelect(LibraryTab.fromKey(key)) }
+            },
             statusPad = statusPad,
             navPad = navPad,
             scrimAlpha = scrimAlpha,
