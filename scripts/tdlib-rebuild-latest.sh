@@ -10,7 +10,7 @@ set -euo pipefail
 #
 # Usage:
 #   bash scripts/tdlib-rebuild-latest.sh            # auto-detect latest v* tag
-#   bash scripts/tdlib-rebuild-latest.sh --ref v1.8.0  # use specific tag/commit
+#   bash scripts/tdlib-rebuild-latest.sh --ref v1.8.56  # use specific tag/commit
 #
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
