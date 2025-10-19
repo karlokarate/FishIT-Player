@@ -5,6 +5,8 @@ Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
 - Maintenance 2025‑10‑31: Release-Builds schlagen nicht mehr auf fehlendem `Locale`-Import
   im Telegram-Dienst fehl; Kotlin 2.0 Release kann wieder kompiliert werden.
+- Maintenance 2025-11-07: Release-Minify bindet jetzt `slf4j-android`, damit Junrar
+  im R8-Schritt keinen `StaticLoggerBinder`-Fehler mehr auslöst.
 - Maintenance 2025‑10‑28: Telegram-Logs lassen sich nun per Settings-Schalter live als Snackbar einblenden; ideal für mehrstufige TDLib-Diagnosen ohne Logcat.
 - Maintenance 2025‑10‑29: Telegram-Login akzeptiert wieder lokale Nummern ohne "+" und meldet fehlende TDLib-Starts sofort. Der TDLib-Loglevel lässt sich auf Touch-Geräten über einen Slider anpassen.
 - Maintenance 2025‑10‑27: Telegram‑Login normalisiert lokale Telefonnummern via Gerätestandort (E.164), sodass WAIT_FOR_NUMBER nach Eingabe ohne führendes "+" nicht mehr hängen bleibt.

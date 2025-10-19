@@ -287,6 +287,9 @@ dependencies {
     implementation("com.squareup.okio:okio:3.16.1")
     implementation("com.github.junrar:junrar:7.5.5")
 
+    // Logging (SLF4J binding required by Junrar when running R8)
+    implementation("org.slf4j:slf4j-android:1.7.36")
+
     // JSON (Kotlin Serialization)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 

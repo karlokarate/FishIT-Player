@@ -1,3 +1,7 @@
+2025-11-07
+- fix(build): Bundle the `slf4j-android` binding so Junrar no longer triggers
+  missing `StaticLoggerBinder` classes during release R8 minification.
+
 2025-11-06
 - fix(start/telegram): Align the aggregated "Telegram Serien" row with the
   FishRow/SeriesFishTile contract so Kotlin 2.0 compiles again (new/assign/play
