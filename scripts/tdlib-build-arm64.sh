@@ -33,7 +33,7 @@ OUT_DIR32="$REPO_DIR/libtd/src/main/jniLibs/armeabi-v7a"
 TD_DIR="$REPO_DIR/.third_party/td"
 # Pin to a specific TDLib tag/branch/commit for reproducibility.
 # Default: latest validated stable for this project.
-TD_DEFAULT_TAG="v1.8.29"
+TD_DEFAULT_TAG="v1.8.56"
 # Priority: CLI --ref > TD_TAG env > TD_COMMIT env > default
 TD_PIN_REF="${TD_REF_ARG:-${TD_TAG:-${TD_COMMIT:-$TD_DEFAULT_TAG}}}"
 
