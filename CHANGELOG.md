@@ -1,6 +1,9 @@
 2025-11-07
 - fix(build): Bundle the `slf4j-android` binding so Junrar no longer triggers
   missing `StaticLoggerBinder` classes during release R8 minification.
+- fix(ui/homechrome): Restored the Live/VOD/Serien quick actions in the
+  HomeChrome header on Start by wiring `LibraryNavConfig` so the overlay renders
+  the library shortcuts on phone and TV again.
 
 2025-11-06
 - fix(start/telegram): Align the aggregated "Telegram Serien" row with the

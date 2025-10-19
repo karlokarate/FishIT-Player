@@ -136,6 +136,14 @@ fun StartScreen(
     val permRepo = remember { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
     val resumeRepo = remember { com.chris.m3usuite.data.repo.ResumeRepository(ctx) }
     val showAdults by store.showAdults.collectAsStateWithLifecycle(initialValue = false)
+    val libraryTabIndex by store.libraryTabIndex.collectAsStateWithLifecycle(initialValue = 0)
+    val headerLibraryTab = remember(libraryTabIndex) {
+        when (libraryTabIndex) {
+            0 -> LibraryTab.Live
+            1 -> LibraryTab.Vod
+            else -> LibraryTab.Series
+        }
+    }
 
     val currentProfileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
     var isKid by remember { mutableStateOf(false) }
@@ -427,6 +435,21 @@ fun StartScreen(
                 navController.navigateTopLevel("library?q=&qs=")
             }
         },
+        libraryNav = LibraryNavConfig(
+            selected = headerLibraryTab,
+            onSelect = { tab ->
+                val idx = when (tab) {
+                    LibraryTab.Live -> 0
+                    LibraryTab.Vod -> 1
+                    LibraryTab.Series -> 2
+                }
+                scope.launch { store.setLibraryTabIndex(idx) }
+                val current = navController.currentBackStackEntry?.destination?.route
+                if (current != "library?q={q}&qs={qs}") {
+                    navController.navigateTopLevel("library?q=&qs=")
+                }
+            }
+        ),
         preferSettingsFirstFocus = preferSettingsFocus
     ) { pads: PaddingValues ->
         // TV-only: if Start is empty, auto-expand chrome once and focus Settings for immediate access.
