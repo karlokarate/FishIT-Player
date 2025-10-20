@@ -728,6 +728,35 @@ object TdLibReflection {
         (f.get(messageObj) as? Long)
     } catch (_: Throwable) { null }
 
+    data class AuthCodeInfo(val timeout: Int?, val type: String?, val nextType: String?)
+
+    fun extractAuthCodeInfo(stateObj: Any?): AuthCodeInfo? {
+        if (stateObj == null) return null
+        val infoObj = runCatching {
+            stateObj.javaClass.getDeclaredField("codeInfo").apply { isAccessible = true }.get(stateObj)
+        }.getOrElse {
+            runCatching {
+                stateObj.javaClass.getDeclaredField("authenticationCodeInfo").apply { isAccessible = true }.get(stateObj)
+            }.getOrNull()
+        } ?: return null
+        val timeout = runCatching {
+            infoObj.javaClass.getDeclaredField("timeout").apply { isAccessible = true }.getInt(infoObj)
+        }.getOrNull()
+        val typeObj = runCatching {
+            infoObj.javaClass.getDeclaredField("type").apply { isAccessible = true }.get(infoObj)
+        }.getOrNull()
+        val nextTypeObj = runCatching {
+            infoObj.javaClass.getDeclaredField("nextType").apply { isAccessible = true }.get(infoObj)
+        }.getOrNull()
+        return AuthCodeInfo(timeout, extractAuthCodeTypeLabel(typeObj), extractAuthCodeTypeLabel(nextTypeObj))
+    }
+
+    private fun extractAuthCodeTypeLabel(typeObj: Any?): String? {
+        if (typeObj == null) return null
+        val raw = typeObj.javaClass.simpleName.ifBlank { typeObj.javaClass.name.substringAfterLast('.') }
+        return raw.removePrefix("AuthenticationCodeType").lowercase(Locale.getDefault())
+    }
+
     fun extractCaptionOrText(messageObj: Any): String? {
         return try {
             val content = messageObj.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(messageObj)
@@ -1018,6 +1047,10 @@ object TdLibReflection {
         return traceTag?.let { "$it/$base" } ?: base
     }
 
+    data class TdError(val code: Int, val message: String)
+
+    data class TdResult(val payload: Any?, val error: TdError?)
+
     /** Generic send with one-off result handler that blocks until a result arrives or timeout. */
     fun sendForResult(
         client: ClientHandle,
@@ -1025,8 +1058,16 @@ object TdLibReflection {
         timeoutMs: Long = 7000,
         retries: Int = 2,
         traceTag: String? = null
-    ): Any? {
-        val handlerType = try { td("Client\$ResultHandler") } catch (_: Throwable) { return null }
+    ): Any? = sendForResultDetailed(client, functionObj, timeoutMs, retries, traceTag).payload
+
+    fun sendForResultDetailed(
+        client: ClientHandle,
+        functionObj: Any,
+        timeoutMs: Long = 7000,
+        retries: Int = 2,
+        traceTag: String? = null
+    ): TdResult {
+        val handlerType = try { td("Client\$ResultHandler") } catch (_: Throwable) { return TdResult(null, TdError(-1, "handler")) }
         val exceptionHandlerType = td("Client\$ExceptionHandler")
         val operation = describeFunction(functionObj, traceTag)
         var attempt = 0
@@ -1052,24 +1093,26 @@ object TdLibReflection {
             } catch (e: Throwable) {
                 Log.w(LOG_TAG, "sendForResult invoke failed ($operation attempt=${attempt + 1}): ${e.message}")
                 if (attempt >= retries) {
-                    return null
+                    return TdResult(null, TdError(-1, e.message ?: "invoke failed"))
                 }
             }
             val result = try {
                 queue.poll(waitMs, TimeUnit.MILLISECONDS)
             } catch (ie: InterruptedException) {
                 Thread.currentThread().interrupt()
-                return null
+                return TdResult(null, TdError(-1, "interrupted"))
             }
             when {
                 result == null -> {
                     Log.w(LOG_TAG, "sendForResult timeout after ${waitMs}ms ($operation attempt=${attempt + 1}/${retries + 1})")
+                    if (attempt >= retries) return TdResult(null, TdError(-1, "timeout"))
                 }
                 result === NULL_MARKER -> {
-                    return null
+                    return TdResult(null, null)
                 }
                 result is Throwable -> {
                     Log.w(LOG_TAG, "sendForResult exception ($operation attempt=${attempt + 1}/${retries + 1}): ${result.message}")
+                    if (attempt >= retries) return TdResult(null, TdError(-1, result.message ?: "exception"))
                 }
                 isTdError(result) -> {
                     val (code, message) = extractTdError(result)
@@ -1079,15 +1122,15 @@ object TdLibReflection {
                         "sendForResult error code=$code message='${message}' ($operation attempt=${attempt + 1}/${retries + 1}, retry=$retry)"
                     )
                     if (!retry) {
-                        return null
+                        return TdResult(null, TdError(code, message))
                     }
                 }
                 else -> {
-                    return result
+                    return TdResult(result, null)
                 }
             }
             if (attempt >= retries) {
-                return null
+                return TdResult(null, TdError(-1, "retry_exhausted"))
             }
             attempt++
             waitMs = (waitMs + waitMs / 2).coerceAtMost(MAX_BACKOFF_MS)
@@ -1095,7 +1138,7 @@ object TdLibReflection {
                 Thread.sleep((100L * (attempt + 1)).coerceAtMost(750L))
             } catch (_: InterruptedException) {
                 Thread.currentThread().interrupt()
-                return null
+                return TdResult(null, TdError(-1, "interrupted"))
             }
         }
     }

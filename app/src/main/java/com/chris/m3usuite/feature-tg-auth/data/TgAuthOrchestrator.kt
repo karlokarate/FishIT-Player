@@ -12,6 +12,7 @@ import com.chris.m3usuite.feature_tg_auth.domain.TgAuthAction
 import com.chris.m3usuite.feature_tg_auth.domain.TgAuthError
 import com.chris.m3usuite.feature_tg_auth.domain.TgAuthState
 import com.chris.m3usuite.telegram.TdLibReflection
+import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +58,18 @@ class TgAuthOrchestrator(
                 val mapped = errorMapper.map(error)
                 _errors.emit(mapped)
                 handleErrorSideEffects(mapped)
+            }
+        }
+        scope.launch {
+            repository.authEvents.collectLatest { event -> handleAuthEvent(event) }
+        }
+        scope.launch {
+            repository.resendSeconds.collectLatest { seconds ->
+                val until = if (seconds > 0) clock() + seconds * 1000 else null
+                resendAvailableAtMillis = until
+                _state.update { current ->
+                    if (current is TgAuthState.WaitCode) current.copy(resendAvailableAtMillis = until) else current
+                }
             }
         }
         scope.launch {
@@ -220,5 +233,21 @@ class TgAuthOrchestrator(
 
     companion object {
         private const val DEFAULT_RESEND_COOLDOWN_MS = 30_000L
+    }
+
+    private fun handleAuthEvent(event: TelegramServiceClient.AuthEvent) {
+        when (event) {
+            is TelegramServiceClient.AuthEvent.CodeSent -> {
+                val until = if (event.timeoutSec > 0) clock() + event.timeoutSec * 1000 else null
+                resendAvailableAtMillis = until
+                _state.update { current ->
+                    if (current is TgAuthState.WaitCode) current.copy(resendAvailableAtMillis = until, lastError = null) else current
+                }
+            }
+            TelegramServiceClient.AuthEvent.SignedIn -> {
+                resendAvailableAtMillis = null
+            }
+            else -> Unit
+        }
     }
 }

@@ -72,9 +72,10 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
             val newSeriesIds = mutableSetOf<Long>()
             // Immer vollständiger Backfill: fetchAll = true
             chatIds.forEachIndexed { idx, chatId ->
+                // pageSize ist nur die Batch-Größe pro API-Call; bei fetchAll=true wird die gesamte Historie eingelesen.
                 val all = true
                 SchedulingGateway.notifyTelegramSyncProgress(mode, idx, chatIds.size)
-                val result = service.pullChatHistoryAwait(chatId, 200, fetchAll = all)
+                val result = service.pullChatHistoryAwait(chatId, pageSize = 200, fetchAll = all)
                 totalMessages += result.processedMessages
                 totalVodNew += result.newVod
                 totalSeriesEpisodes += result.newSeriesEpisodes

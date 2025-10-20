@@ -4,10 +4,21 @@ import android.content.*
 import android.os.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.resume
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 class TelegramServiceClient(private val context: Context) {
     data class ChatSyncResult(
@@ -25,6 +36,13 @@ class TelegramServiceClient(private val context: Context) {
         val type: String?
     )
 
+    sealed interface AuthEvent {
+        data class CodeSent(val timeoutSec: Int, val nextType: String?) : AuthEvent
+        data class Error(val userMessage: String, val retryAfterSec: Int? = null) : AuthEvent
+        object PasswordRequired : AuthEvent
+        object SignedIn : AuthEvent
+    }
+
     private var serviceMessenger: Messenger? = null
     // Queue outbound commands until the service binding is established to avoid races
     private val pending = ArrayDeque<Message>()
@@ -33,6 +51,12 @@ class TelegramServiceClient(private val context: Context) {
     private val pendingPulls = mutableMapOf<Int, (ChatSyncResult) -> Unit>()
     private val nextReqId = AtomicInteger(1)
     private var pendingFolderList: ((IntArray) -> Unit)? = null
+    private val authEventsChannel = Channel<AuthEvent>(Channel.BUFFERED)
+    val authEvents = authEventsChannel.receiveAsFlow()
+    private val resendState = MutableStateFlow(0)
+    val resendInSec: StateFlow<Int> = resendState.asStateFlow()
+    private var resendJob: Job? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val incoming = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             when (msg.what) {
@@ -41,6 +65,13 @@ class TelegramServiceClient(private val context: Context) {
                     _authCallbacks.forEach { it(st) }
                     val qr = msg.data.getString("qr")
                     if (!qr.isNullOrBlank()) _qrCallbacks.forEach { it(qr) }
+                    when (st.uppercase()) {
+                        "WAIT_FOR_PASSWORD" -> authEventsChannel.trySend(AuthEvent.PasswordRequired)
+                        "AUTHENTICATED" -> {
+                            authEventsChannel.trySend(AuthEvent.SignedIn)
+                            stopResendCountdown()
+                        }
+                    }
                 }
                 TelegramTdlibService.REPLY_ERROR -> {
                     val em = msg.data.getString("message") ?: return
@@ -49,6 +80,8 @@ class TelegramServiceClient(private val context: Context) {
                     val type = msg.data.getString("errorType")
                     val error = ServiceError(em, code, raw, type)
                     _errorCallbacks.forEach { it(error) }
+                    val (userMessage, retryAfter) = mapAuthError(error)
+                    authEventsChannel.trySend(AuthEvent.Error(userMessage, retryAfter))
                 }
                 TelegramTdlibService.REPLY_CHAT_LIST -> {
                     val reqId = msg.data.getInt("reqId")
@@ -77,6 +110,22 @@ class TelegramServiceClient(private val context: Context) {
                     val result = ChatSyncResult(chatId, count, vodNew, seriesEpisodes, seriesIds)
                     synchronized(pendingPulls) {
                         pendingPulls.remove(reqId)?.invoke(result)
+                    }
+                }
+                TelegramTdlibService.REPLY_AUTH_EVENT -> {
+                    val type = msg.data.getString("type") ?: return
+                    when (type) {
+                        "code_sent" -> {
+                            val timeout = msg.data.getInt("timeout", 0)
+                            val next = msg.data.getString("nextType")
+                            startResendCountdown(timeout)
+                            authEventsChannel.trySend(AuthEvent.CodeSent(timeout, next))
+                        }
+                        "password_required" -> authEventsChannel.trySend(AuthEvent.PasswordRequired)
+                        "signed_in" -> {
+                            authEventsChannel.trySend(AuthEvent.SignedIn)
+                            stopResendCountdown()
+                        }
                     }
                 }
                 else -> super.handleMessage(msg)
@@ -110,6 +159,8 @@ class TelegramServiceClient(private val context: Context) {
         _authCallbacks.clear()
         _errorCallbacks.clear()
         _qrCallbacks.clear()
+        stopResendCountdown()
+        scope.coroutineContext[Job]?.cancelChildren()
         synchronized(pendingChatList) {
             val callbacks = pendingChatList.values.toList()
             pendingChatList.clear()
@@ -181,7 +232,10 @@ class TelegramServiceClient(private val context: Context) {
     }
     fun sendCode(code: String) = send(TelegramTdlibService.CMD_SEND_CODE) { putString("code", code) }
     fun sendPassword(pw: String) = send(TelegramTdlibService.CMD_SEND_PASSWORD) { putString("password", pw) }
-    fun resendCode() = send(TelegramTdlibService.CMD_RESEND_CODE)
+    fun resendCode() {
+        if (resendState.value > 0) return
+        send(TelegramTdlibService.CMD_RESEND_CODE)
+    }
     fun getAuth() = send(TelegramTdlibService.CMD_GET_AUTH)
     fun logout() = send(TelegramTdlibService.CMD_LOGOUT)
     fun registerFcm(token: String) = send(TelegramTdlibService.CMD_REGISTER_FCM) { putString("token", token) }
@@ -293,4 +347,68 @@ class TelegramServiceClient(private val context: Context) {
                 putBoolean("fetchAll", fetchAll)
             }
         }
+
+    suspend fun resolveChatTitle(chatId: Long): String? {
+        return resolveChatTitles(longArrayOf(chatId)).firstOrNull()?.second
+    }
+
+    suspend fun requestCode(phone: String, isCurrentDevice: Boolean = false) {
+        sendPhone(
+            phone = phone,
+            isCurrentDevice = isCurrentDevice,
+            allowFlashCall = false,
+            allowMissedCall = false,
+            allowSmsRetriever = true
+        )
+        getAuth()
+    }
+
+    suspend fun submitCode(code: String) {
+        sendCode(code)
+        getAuth()
+    }
+
+    suspend fun submitPassword(password: String) {
+        sendPassword(password)
+        getAuth()
+    }
+
+    private fun startResendCountdown(timeout: Int) {
+        if (timeout <= 0) {
+            resendState.tryEmit(0)
+            return
+        }
+        stopResendCountdown()
+        resendJob = scope.launch(Dispatchers.Main.immediate) {
+            var remaining = timeout
+            while (remaining > 0) {
+                resendState.emit(remaining)
+                delay(1000)
+                remaining--
+            }
+            resendState.emit(0)
+            send(TelegramTdlibService.CMD_RESEND_CODE)
+        }
+    }
+
+    private fun stopResendCountdown() {
+        resendJob?.cancel()
+        resendJob = null
+        resendState.tryEmit(0)
+    }
+
+    private fun mapAuthError(error: ServiceError): Pair<String, Int?> {
+        val raw = (error.rawMessage ?: error.message).uppercase()
+        val flood = Regex("FLOOD_WAIT_(\\d+)").find(raw)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        val message = when {
+            raw.contains("PHONE_CODE_INVALID") || raw.contains("PHONE_CODE_EMPTY") -> "Der eingegebene Code ist ungültig."
+            raw.contains("PHONE_CODE_EXPIRED") -> "Der Code ist abgelaufen. Bitte erneut senden."
+            raw.contains("PHONE_NUMBER_FLOOD") || raw.contains("CODE_TOO_MUCH") || raw.contains("TOO MANY REQUESTS") ->
+                "Zu viele Anfragen. Bitte warte einen Moment."
+            raw.contains("SESSION_PASSWORD_NEEDED") -> "2‑Faktor‑Passwort erforderlich."
+            raw.contains("PHONE_NUMBER_INVALID") -> "Die Telefonnummer ist ungültig."
+            else -> "Anmeldung fehlgeschlagen: ${error.message}"
+        }
+        return message to flood
+    }
 }

@@ -1,6 +1,7 @@
 package com.chris.m3usuite.data.repo
 
 import android.content.Context
+import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.data.obx.ObxEpisode
 import com.chris.m3usuite.data.obx.ObxEpisode_
 import com.chris.m3usuite.data.obx.ObxIndexLang
@@ -14,6 +15,7 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.TelegramHeuristics
 import com.chris.m3usuite.telegram.containerExt
 import com.chris.m3usuite.telegram.posterUri
+import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
 import kotlinx.coroutines.Dispatchers
@@ -80,11 +82,21 @@ object TelegramSeriesIndexer {
             return@withContext EMPTY_STATS
         }
 
+        val apiId = settings.tgApiId.first()
+        val apiHash = settings.tgApiHash.first()
+        val resolvedApiId = if (apiId > 0) apiId else BuildConfig.TG_API_ID
+        val resolvedApiHash = apiHash.ifBlank { BuildConfig.TG_API_HASH }
+        val chatTitles = loadChatTitles(context, selectedChats, resolvedApiId, resolvedApiHash)
+
         val aggregates = mutableMapOf<String, SeriesAggregate>()
         messages.forEach { msg ->
             val parsed = TelegramHeuristics.parse(msg.caption)
             if (!parsed.isSeries) return@forEach
-            val baseTitle = parsed.seriesTitle?.takeIf { it.isNotBlank() } ?: return@forEach
+            val rawTitle = parsed.seriesTitle?.takeIf { it.isNotBlank() }
+                ?: chatTitles[msg.chatId]
+                ?: "Telegram ${msg.chatId}"
+            val baseTitle = normalizeSeriesTitle(rawTitle)
+            if (baseTitle.isBlank()) return@forEach
             val season = parsed.season ?: return@forEach
             val startEpisode = parsed.episode ?: return@forEach
             val episodes = buildEpisodeNumbers(startEpisode, parsed.episodeEnd)
@@ -97,7 +109,7 @@ object TelegramSeriesIndexer {
             val aggregate = aggregates.getOrPut(normalized) {
                 SeriesAggregate(
                     seriesId = seriesIdFor(normalized),
-                    title = baseTitle.trim(),
+                    title = baseTitle,
                     posterUri = poster,
                     firstSeen = messageDate,
                     lastSeen = messageDate,
@@ -113,6 +125,7 @@ object TelegramSeriesIndexer {
             if (!msg.caption.isNullOrBlank()) aggregate.captions += msg.caption!!
             detectYear(msg.caption)?.let { aggregate.years += it }
             detectYear(parsed.title)?.let { aggregate.years += it }
+            parsed.year?.let { aggregate.years += it }
             if (!language.isNullOrBlank()) aggregate.languages += language
 
             episodes.forEach { epNum ->
@@ -212,7 +225,7 @@ object TelegramSeriesIndexer {
             }
 
             agg.episodes.values
-                .sortedWith(compareBy<EpisodeAggregate>({ it.season }, { it.episode }))
+                .sortedWith(compareBy<EpisodeAggregate>({ it.season }, { it.episode }, { it.messageDate }))
                 .forEach { entry ->
                     val msg = entry.message
                     val ep = ObxEpisode()
@@ -293,6 +306,13 @@ object TelegramSeriesIndexer {
         val rawEnd = endInclusive?.takeIf { it >= s } ?: s
         val limitedEnd = (s + 199).coerceAtMost(rawEnd)
         return (s..limitedEnd).toList()
+    }
+
+    private fun normalizeSeriesTitle(raw: String): String {
+        return raw
+            .replace(Regex("[._]+"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
     }
 
     private fun normalizeSeriesKey(raw: String): String {
@@ -390,4 +410,30 @@ object TelegramSeriesIndexer {
         val language: String?,
         val posterOverride: String?
     )
+
+    private suspend fun loadChatTitles(
+        context: Context,
+        chatIds: List<Long>,
+        apiId: Int,
+        apiHash: String,
+    ): Map<Long, String> {
+        if (chatIds.isEmpty()) return emptyMap()
+        return withContext(Dispatchers.Main) {
+            val svc = TelegramServiceClient(context.applicationContext)
+            try {
+                svc.bind()
+                if (apiId > 0 && apiHash.isNotBlank()) {
+                    svc.start(apiId, apiHash)
+                    svc.getAuth()
+                }
+                val titles = runCatching { svc.resolveChatTitles(chatIds.toLongArray()) }.getOrNull().orEmpty()
+                titles.associate { (id, title) -> id to normalizeSeriesTitle(title) }
+            } catch (_: Throwable) {
+                emptyMap()
+            } finally {
+                svc.unbind()
+            }
+        }
+    }
+
 }
