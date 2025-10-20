@@ -1,92 +1,103 @@
 package com.chris.m3usuite.telegram
 
 import android.content.Context
+import android.os.Looper
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import java.io.File
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 
 /**
  * Shared helpers to map Telegram ObjectBox rows into media-facing data.
  */
 internal fun ObxTelegramMessage.posterUri(context: Context): String? {
-    // Prefer downloaded thumbnail path if available
-    val thumb = this.thumbLocalPath
-    if (!thumb.isNullOrBlank()) {
-        val f = File(thumb)
-        if (f.exists()) return f.toURI().toString()
-    }
-    // Best-effort: if a thumbnail file id exists but no local path yet, try to resolve quickly via TDLib
-    val thumbId = this.thumbFileId
-    if ((thumbId ?: 0) > 0 && TdLibReflection.available()) {
-        runCatching {
-            val authFlow = kotlinx.coroutines.flow.MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
-            val client = TdLibReflection.getOrCreateClient(context, authFlow)
-            if (client != null) {
-                val auth = TdLibReflection.mapAuthorizationState(
-                    TdLibReflection.buildGetAuthorizationState()
-                        ?.let {
-                            TdLibReflection.sendForResult(
-                                client,
-                                it,
-                                timeoutMs = 500,
-                                retries = 1,
-                                traceTag = "MediaMapper:Auth"
-                            )
-                        }
-                )
-                if (auth == TdLibReflection.AuthState.AUTHENTICATED) {
-                    // Nudge download and poll briefly for local path
-                    TdLibReflection.buildDownloadFile(thumbId!!, 8, 0, 0, false)
-                        ?.let {
-                            TdLibReflection.sendForResult(
-                                client,
-                                it,
-                                timeoutMs = 200,
-                                retries = 1,
-                                traceTag = "MediaMapper:DownloadThumb[$thumbId]"
-                            )
-                        }
-                    var attempts = 0
-                    var path: String? = null
-                    while (attempts < 15 && (path.isNullOrBlank() || !File(path!!).exists())) {
-                        val get = TdLibReflection.buildGetFile(thumbId)
-                        val res = if (get != null) TdLibReflection.sendForResult(
-                            client,
-                            get,
-                            timeoutMs = 300,
-                            retries = 1,
-                            traceTag = "MediaMapper:GetThumb[$thumbId]"
-                        ) else null
-                        val info = res?.let { TdLibReflection.extractFileInfo(it) }
-                        path = info?.localPath
-                        if (!path.isNullOrBlank() && File(path!!).exists()) {
-                            // Persist for future queries
-                            val obx = ObxStore.get(context)
-                            val b = obx.boxFor(ObxTelegramMessage::class.java)
-                            val row = b.query(
-                                ObxTelegramMessage_.chatId.equal(this.chatId)
-                                    .and(ObxTelegramMessage_.messageId.equal(this.messageId))
-                            ).build().findFirst() ?: this
-                            row.thumbLocalPath = path
-                            b.put(row)
-                            return File(path!!).toURI().toString()
-                        }
-                        Thread.sleep(100)
-                        attempts++
-                    }
-                }
-            }
+    fun existingLocalPath(): String? {
+        val thumb = thumbLocalPath
+        if (!thumb.isNullOrBlank()) {
+            val file = File(thumb)
+            if (file.exists()) return file.toURI().toString()
         }
+        val media = localPath
+        if (!media.isNullOrBlank()) {
+            val file = File(media)
+            if (file.exists()) return file.toURI().toString()
+        }
+        return null
     }
-    // Fallback to media local path if it is an image (rare) or if the image loader can handle it
-    val media = this.localPath
-    if (!media.isNullOrBlank()) {
-        val f = File(media)
-        if (f.exists()) return f.toURI().toString()
+
+    existingLocalPath()?.let { return it }
+    if (Looper.myLooper() == Looper.getMainLooper()) {
+        return null
     }
-    return null
+
+    return runBlocking(Dispatchers.IO) {
+        resolvePosterPath(context) ?: existingLocalPath()
+    }
+}
+
+private suspend fun ObxTelegramMessage.resolvePosterPath(context: Context): String? = withContext(Dispatchers.IO) {
+    val thumbId = thumbFileId ?: return@withContext null
+    if (thumbId <= 0 || !TdLibReflection.available()) return@withContext null
+
+    runCatching {
+        val authFlow = kotlinx.coroutines.flow.MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
+        val client = TdLibReflection.getOrCreateClient(context, authFlow) ?: return@runCatching null
+        val auth = TdLibReflection.mapAuthorizationState(
+            TdLibReflection.buildGetAuthorizationState()?.let {
+                TdLibReflection.sendForResult(
+                    client,
+                    it,
+                    timeoutMs = 500,
+                    retries = 1,
+                    traceTag = "MediaMapper:Auth"
+                )
+            }
+        )
+        if (auth != TdLibReflection.AuthState.AUTHENTICATED) return@runCatching null
+
+        TdLibReflection.buildDownloadFile(thumbId, 8, 0, 0, false)?.let {
+            TdLibReflection.sendForResult(
+                client,
+                it,
+                timeoutMs = 200,
+                retries = 1,
+                traceTag = "MediaMapper:DownloadThumb[$thumbId]"
+            )
+        }
+
+        repeat(15) {
+            val get = TdLibReflection.buildGetFile(thumbId) ?: return@repeat
+            val res = TdLibReflection.sendForResult(
+                client,
+                get,
+                timeoutMs = 300,
+                retries = 1,
+                traceTag = "MediaMapper:GetThumb[$thumbId]"
+            )
+            val info = res?.let { TdLibReflection.extractFileInfo(it) }
+            val path = info?.localPath
+            if (!path.isNullOrBlank() && File(path).exists()) {
+                val uri = File(path).toURI().toString()
+                val obx = ObxStore.get(context)
+                val box = obx.boxFor(ObxTelegramMessage::class.java)
+                val row = box.query(
+                    ObxTelegramMessage_.chatId.equal(chatId)
+                        .and(ObxTelegramMessage_.messageId.equal(messageId))
+                ).build().findFirst() ?: this
+                row.thumbLocalPath = path
+                this.thumbLocalPath = path
+                box.put(row)
+                return@runCatching uri
+            }
+            delay(100)
+        }
+        null
+    }.getOrNull()
 }
 
 internal fun ObxTelegramMessage.containerExt(): String? {

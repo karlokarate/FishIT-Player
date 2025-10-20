@@ -1171,3 +1171,18 @@ Status: zu testen durch Nutzer
 - roadmap: Add Tiles/Rows Centralization (ON). Mark FocusKit Migration as dependent on this centralization.
 2025-10-07
 - docs(centralization): Deep-docs sweep to align with new Fish* layout. Marked legacy Cards v1 (PosterCard/ChannelCard/SeasonCard/EpisodeRow) as deprecated/replaced, removed guidance that suggested building tiles/focus per-screen, and documented FishTheme/FishTile/FishRow/FishContent (+ FishMeta/FishActions/FishLogging/FishResumeTile) as the single source of truth. Updated media_actions, detail_scaffold, tv_forms, playback_launcher to reference Fish* where relevant. Roadmap now blocks FocusKit finalization on completing Tiles/Rows centralization.
+2025-11-08
+- fix(telegram/service): korrigiert die Backfill-Paginierung (Offset-Clamping,
+  `fromId`-Step) damit Grenzfälle keine Nachrichten überspringen oder doppelt
+  abholen.
+- feat(telegram/parser): normalisiert Release-Namen robuster (Jahr, Sprache,
+  Qualities) und erweitert die Episoden-Heuristiken; neue Unit-Tests decken
+  die wichtigsten Schreibweisen ab.
+- fix(telegram/media): blockierende Thumbnail-Auflösung läuft nur noch off-main
+  und nutzt einen frühen Main-Thread-Guard.
+- fix(telegram/auth): zentraler Authorization-Gate + Mutex verhindern parallele
+  Login-Calls und TDLib-401/"another authorization"-Fehler.
+- refactor(settings/telegram): eigener `TelegramSettingsViewModel` kümmert sich
+  um Chat-Namen, Sync-Triggers und Snackbar-Effekte, was die UI-Komposition
+  spürbar entlastet.
+

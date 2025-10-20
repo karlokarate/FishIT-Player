@@ -46,12 +46,16 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
   TDLib-Konstruktoren; TdLibReflection setzt diese nun typisiert zusammen, damit
   Release-Builds nicht an `Comparable & Serializable`-Schnittmengen scheitern.
 - Playback DataSource: `TelegramRoutingDataSource` für Media3 routet `tg://message?chatId=&messageId=` auf lokale Pfade und triggert bei Bedarf `DownloadFile(fileId)`; `localPath` wird persistiert.
-- Settings: Der Chat-Picker listet Hauptordner/Archiv/Folder, erlaubt Multi-Select und zeigt aufgelöste Chat-Namen (AUTHENTICATED). „Übernehmen & Sync starten“ schreibt `tg_selected_chats_csv` und stößt direkt MODE_ALL an.
+- Settings: Ein `TelegramSettingsViewModel` koordiniert Chat-Namen-Auflösung,
+  Sync-Triggers und Snackbar-Effekte. Der Chat-Picker listet Hauptordner/Archiv/
+  Folder, erlaubt Multi-Select und zeigt aufgelöste Chat-Namen (AUTHENTICATED).
+  „Übernehmen & Sync starten“ schreibt `tg_selected_chats_csv` und stößt direkt
+  MODE_ALL an.
 - Sync: `TelegramSyncWorker` nutzt `MODE_ALL`, ruft `CMD_PULL_CHAT_HISTORY` pro Chat mit `fetchAll=true` auf, persistiert Ergebnisse via `indexMessageContent(..)` und rebuildet anschließend `TelegramSeriesIndexer.rebuildWithStats`. Ergebnisse (Filme/Serien/Episoden) landen in `SchedulingGateway.telegramSyncState`; HomeChrome blendet Fortschritt/Resultat nicht-blockierend ein.
-  - Paging: Für Serien‑Chats wird die gesamte Historie gepaged. Nach der ersten Seite werden weitere Seiten mit `fromMessageId = oldestId - 1` und `offset=0` abgeholt (Duplicate‑Guard), um Duplikate zu vermeiden und „nur letzte Seite“-Fälle auszuschließen.
+  - Paging: Für Serien‑Chats wird die gesamte Historie gepaged. Nach der ersten Seite werden weitere Seiten mit `fromMessageId = oldestId - 1` und einem negativen Offset > -100 abgeholt; ein Duplicate‑Guard verhindert ausgelassene oder doppelte Nachrichten.
 - Scheduling: Nach erfolgreichem Sync ruft der Worker `SchedulingGateway.onTelegramSyncCompleted(ctx, refreshHome)` auf. Standardmäßig werden `TelegramCacheCleanupWorker.schedule(...)` und `ObxKeyBackfillWorker.scheduleOnce(...)` getriggert; optional (z. B. Settings CTA) kann `scheduleAll()` erneut ausgeführt werden, damit HomeChrome sofort aktualisiert.
-- Mapping/Heuristik: SxxExx‑Parser ordnet Nachrichten Episoden (Serie) vs. Filme (VOD) zu; Serien/Filme werden als `MediaItem` mit `source="TG"` projiziert (Titel aus Caption). Thumbnails werden on‑demand via TDLib `GetFile` geladen und als `file://` angezeigt (kein Prefetch).
- - Heuristik erweitert: erkennt Bereiche (z. B. S01E01‑03, 1x02‑05, `S1:E2`), reine Episodenlabels („Episode 4“), Sprach-Tags (`GER/ENG`, `[VOSTFR]`, `ITA`, `ES`), bereinigt Filmtitel von Release-Tags und extrahiert Jahreszahlen.
+- Mapping/Heuristik: SxxExx‑Parser ordnet Nachrichten Episoden (Serie) vs. Filme (VOD) zu; Serien/Filme werden als `MediaItem` mit `source="TG"` projiziert (Titel aus Caption). Thumbnails werden on‑demand via TDLib `GetFile` geladen und als `file://` angezeigt (kein Prefetch); ein Main-Thread-Guard verhindert blockierende Aufrufe.
+ - Heuristik erweitert: erkennt Bereiche (z. B. S01E01‑03, 1x02‑05, `S1:E2`), reine Episodenlabels („Episode 4“), Sprach-Tags (`GER/ENG`, `[VOSTFR]`, `ITA`, `ES`) und normalisiert Release-Namen (Qualities/Sprache/Jahr) – Unit-Tests decken die gängigen Muster ab.
  - Metadaten: via TDLib werden zusätzliche Felder persistiert (`durationSecs`, `mimeType`, `sizeBytes`, `width`/`height`, `language`). `MediaItem` übernimmt `durationSecs`/`plot` sowie `containerExt` (aus `mimeType`).
 - UI: Library zeigt bei VOD Telegram-Rows pro ausgewähltem Chat (Tiles mit blauem „T“-Badge) und im Serien-Tab eine aggregierte Row „Telegram Serien“. Auf Start existiert zusätzlich eine globale Row „Telegram Serien“ (Aggregat) sowie Film-Rows je ausgewähltem Chat; die Suche rendert weiterhin eine Telegram-Row. Keine M3U-Pfadgenerierung; Play startet `tg://file/<fileId>` bzw. `rar://msg/<msg>/<entry>` über den Media3 `DelegatingDataSourceFactory` (siehe unten).
 - Telegram Serien Aggregation: Nach dem Sync werden Nachrichten aus ausgewählten Serien‑Chats zu `ObxSeries` + `ObxEpisode` aggregiert (SxxEyy‑Heuristik). ProviderKey=`telegram`. Library (Tab Serien) zeigt zusätzlich eine Row „Telegram Serien“. Episoden tragen `tgChatId/tgMessageId/tgFileId`; Playback bevorzugt `tg://` in `SeriesDetailScreen`. `TelegramSeriesIndexer.rebuildWithStats` löst Chat-Namen via TDLib auf, normalisiert Serien-Titel (inkl. Chat-Fallback) und liefert neben der Gesamtanzahl auch Neu-Zählungen, die der Worker an die UI weiterreicht. Episoden werden nach Staffel/Episode/Datum sortiert.
@@ -106,6 +110,10 @@ Client‑Wrapper (`.telegram.service.TelegramServiceClient`)
 - Bind/Unbind; Befehle (`start`, `requestQr`, `sendPhone`, `sendCode`, `sendPassword`, `getAuth`, `logout`, `registerFcm`, `processPush`, `setInBackground`, `listChats`, `resolveChatTitles`, `pullChatHistory`).
 - Pufferung/Race‑Fix: Befehle werden in einer Queue gepuffert, bis die Service‑Verbindung steht. So erreicht `CMD_START` den Service garantiert vor nachfolgenden Auth‑Kommandos (z. B. `sendPhone`), und die UI erhält Zustands‑Events zuverlässig (kein „Warte auf Antwort…“‑Hänger mehr).
 - `authStates(): Flow<String>` liefert Zustandswechsel an die UI/Repos.
+- Ready-Gate: `awaitAuthorized()` blockt Chat-/History-/Title-Abfragen bis TDLib
+  `AuthorizationStateReady` meldet; ein `Mutex` serialisiert `requestCode`/
+  `submitCode`/`submitPassword`, damit TDLib keine parallelen Auth-Queries
+  ablehnt.
 
 Repository/Settings Lifecycle
 - `TelegramAuthRepository` bevorzugt den Service (Fallback: Reflection). Settings binden den Service bei `ON_START` (senden `SetInBackground(false)`) und lösen bei `ON_STOP` `SetInBackground(true)` + Unbind aus.
