@@ -7,6 +7,7 @@ Hinweis
   im Telegram-Dienst fehl; Kotlin 2.0 Release kann wieder kompiliert werden.
 - Maintenance 2025-11-07: Release-Minify bindet jetzt `slf4j-android`, damit Junrar
   im R8-Schritt keinen `StaticLoggerBinder`-Fehler mehr auslöst.
+- Maintenance 2025-11-08: Telegram-Series Aggregation nutzt nun Chat-Titel als Fallback, normalisiert Seriennamen und sortiert Episoden nach Staffel/Episode/Datum. VOD-Heuristiken reinigen Filmtitel und speichern Jahresangaben in ObjectBox.
 - Maintenance 2025-11-07: Start-Header blendet die Live/VOD/Serien-Schalter wieder
   direkt im HomeChrome ein (LibraryNavConfig auf Start), sodass Telefon- und TV-UIs
   die Bibliotheksnavigation oben neben Suche/Profil/Einstellungen anzeigen.

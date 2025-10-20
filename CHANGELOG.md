@@ -1,3 +1,12 @@
+2025-11-08
+- feat(telegram/indexer): Serien fallback auf Chat-Titel, normalized keys und
+  sortierte Episoden (Staffel/Episode/Datum). Serienrebuild nutzt TDLib,
+  um die Chat-Namen für ausgewählte Chats aufzulösen.
+- feat(telegram/parser): Film-/Serien-Heuristik reinigt Titel von Release-Tags
+  und extrahiert Jahreszahlen für die weitere Verwendung.
+- feat(telegram/library): Telegram-VOD/Serien verwenden die bereinigten Titel
+  samt Jahr und speichern Video-Metadaten konsistent in ObjectBox.
+
 2025-11-07
 - fix(build): Bundle the `slf4j-android` binding so Junrar no longer triggers
   missing `StaticLoggerBinder` classes during release R8 minification.

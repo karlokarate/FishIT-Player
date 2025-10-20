@@ -65,6 +65,7 @@ import com.chris.m3usuite.core.xtream.XtreamClient
 import com.chris.m3usuite.core.xtream.XtreamConfig
 import com.chris.m3usuite.core.xtream.XtreamSeeder
 import com.chris.m3usuite.telegram.TdLibReflection
+import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import com.chris.m3usuite.ui.focus.FocusKit
 import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import com.chris.m3usuite.ui.focus.tvClickable
@@ -1205,6 +1206,26 @@ fun SettingsScreen(
                         enabled = tgEnabled
                     ) { Text("Chats auswählen…") }
                 }
+                if (tgEnabled && authState == com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .then(FocusKit.run { Modifier.focusGroup() }),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Probleme beim Code-Empfang?", style = MaterialTheme.typography.titleSmall)
+                            Text("Code per SMS erneut senden", style = MaterialTheme.typography.bodySmall)
+                        }
+                        FocusKit.TvTextButton(
+                            onClick = { scope.launch { authRepo.resendCode() } },
+                            enabled = resendLeft == 0
+                        ) {
+                            Text(if (resendLeft == 0) "Erneut senden" else "Warte ${resendLeft}s")
+                        }
+                    }
+                }
                 FocusKit.TvTextButton(
                     onClick = {
                         com.chris.m3usuite.work.TelegramSyncWorker.scheduleNow(
@@ -1687,10 +1708,27 @@ fun SettingsScreen(
                     }
                 
                     val authState by authRepo.authState.collectAsStateWithLifecycle(initialValue = com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
-                
+                    val resendLeft by authRepo.resendSeconds.collectAsStateWithLifecycle(initialValue = 0)
+
                     LaunchedEffect(tgEnabled) {
                         if (!tgEnabled) return@LaunchedEffect
                         authRepo.errors.collect { em -> snackHost.toast("Telegram: ${em.message}") }
+                    }
+
+                    LaunchedEffect(tgEnabled) {
+                        if (!tgEnabled) return@LaunchedEffect
+                        authRepo.authEvents.collectLatest { ev ->
+                            when (ev) {
+                                is TelegramServiceClient.AuthEvent.CodeSent -> {
+                                    val timeout = ev.timeoutSec
+                                    val message = if (timeout > 0) "Code gesendet – gültig für ${timeout}s" else "Code gesendet"
+                                    snackHost.toast("Telegram: $message")
+                                }
+                                TelegramServiceClient.AuthEvent.PasswordRequired -> snackHost.toast("Telegram: 2‑Faktor‑Passwort erforderlich.")
+                                TelegramServiceClient.AuthEvent.SignedIn -> snackHost.toast("Telegram verbunden.")
+                                is TelegramServiceClient.AuthEvent.Error -> Unit
+                            }
+                        }
                     }
                 
                     var showLogout by remember { mutableStateOf(false) }
@@ -2407,28 +2445,28 @@ private fun Context.findActivity(): Activity? {
 
 // --- External Player Picker UI ---
 // Context-based resolver (actual implementation)
-private suspend fun resolveChatNamesCsv(csv: String, context: android.content.Context): String {
-    return try {
-        val ids = csv.split(',').mapNotNull { it.trim().toLongOrNull() }
-        if (ids.isEmpty()) return csv
-        val svc = com.chris.m3usuite.telegram.service.TelegramServiceClient(context)
-        try {
-            svc.bind()
-            val store = com.chris.m3usuite.prefs.SettingsStore(context)
-            val apiId = store.tgApiId.first().takeIf { it > 0 } ?: BuildConfig.TG_API_ID
-            val apiHash = store.tgApiHash.first().ifBlank { BuildConfig.TG_API_HASH }
-            if (apiId > 0 && apiHash.isNotBlank()) {
-                svc.start(apiId, apiHash)
-                svc.getAuth()
-            }
-            val titles = svc.resolveChatTitles(ids.toLongArray())
-            titles.takeIf { it.isNotEmpty() }
-                ?.joinToString(", ") { it.second }
-                ?: csv
-        } finally {
-            svc.unbind()
+@Suppress("FunctionName")
+suspend fun resolveChatNamesCsv(csv: String, ctx: Context): String = withContext(Dispatchers.IO) {
+    if (csv.isBlank()) return@withContext ""
+    val ids = csv.split(',').mapNotNull { it.trim().toLongOrNull() }
+    if (ids.isEmpty()) return@withContext ""
+    val svc = com.chris.m3usuite.telegram.service.TelegramServiceClient(ctx.applicationContext)
+    try {
+        svc.bind()
+        val store = com.chris.m3usuite.prefs.SettingsStore(ctx)
+        val apiId = store.tgApiId.first().takeIf { it > 0 } ?: BuildConfig.TG_API_ID
+        val apiHash = store.tgApiHash.first().ifBlank { BuildConfig.TG_API_HASH }
+        if (apiId > 0 && apiHash.isNotBlank()) {
+            svc.start(apiId, apiHash)
+            svc.getAuth()
         }
-    } catch (_: Throwable) { csv }
+        val titles = svc.resolveChatTitles(ids.toLongArray())
+        if (titles.isNotEmpty()) titles.joinToString(", ") { it.second } else ids.joinToString(", ") { it.toString() }
+    } catch (_: Throwable) {
+        ids.joinToString(", ") { it.toString() }
+    } finally {
+        svc.unbind()
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

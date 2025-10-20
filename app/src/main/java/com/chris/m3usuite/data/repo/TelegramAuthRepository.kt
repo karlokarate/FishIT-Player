@@ -30,6 +30,10 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
     val authState: StateFlow<TdLibReflection.AuthState> get() = _authState
     private val _errors = kotlinx.coroutines.flow.MutableSharedFlow<AuthError>(replay = 0, extraBufferCapacity = 16)
     val errors: kotlinx.coroutines.flow.Flow<AuthError> get() = _errors
+    private val _authEvents = kotlinx.coroutines.flow.MutableSharedFlow<com.chris.m3usuite.telegram.service.TelegramServiceClient.AuthEvent>(replay = 0, extraBufferCapacity = 16)
+    val authEvents: kotlinx.coroutines.flow.Flow<com.chris.m3usuite.telegram.service.TelegramServiceClient.AuthEvent> get() = _authEvents
+    private val _resendSeconds = MutableStateFlow(0)
+    val resendSeconds: StateFlow<Int> get() = _resendSeconds
 
     private var client: TdLibReflection.ClientHandle? = null
     private var svc: TelegramServiceClient? = null
@@ -65,6 +69,12 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
                 }
                 // QR links from service
                 scope.launch(Dispatchers.Main.immediate) { s.qrLinks().collect { link -> _qr.tryEmit(link) } }
+                scope.launch(Dispatchers.Main.immediate) {
+                    s.authEvents.collect { event -> _authEvents.tryEmit(event) }
+                }
+                scope.launch(Dispatchers.Main.immediate) {
+                    s.resendInSec.collect { secs -> _resendSeconds.value = secs }
+                }
             }
         }
     }
@@ -75,6 +85,7 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
         runCatching { svc?.setInBackground(true) }
         svc?.unbind()
         svc = null
+        _resendSeconds.value = 0
         // Cancel any running collectors bound to this repo scope
         try { job.cancelChildren() } catch (_: Throwable) {}
     }
@@ -222,12 +233,18 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
                     }
                     // Bridge service errors into local flow
                     scope.launch(Dispatchers.Main.immediate) {
-                    s.errors().collect { em ->
-                        _errors.tryEmit(AuthError(em.message, em.code, em.rawMessage, em.type))
-                    }
+                        s.errors().collect { em ->
+                            _errors.tryEmit(AuthError(em.message, em.code, em.rawMessage, em.type))
+                        }
                     }
                     // QR links from service
                     scope.launch(Dispatchers.Main.immediate) { s.qrLinks().collect { link -> _qr.tryEmit(link) } }
+                    scope.launch(Dispatchers.Main.immediate) {
+                        s.authEvents.collect { event -> _authEvents.tryEmit(event) }
+                    }
+                    scope.launch(Dispatchers.Main.immediate) {
+                        s.resendInSec.collect { secs -> _resendSeconds.value = secs }
+                    }
                 }
             }
             svc?.start(apiId, apiHash)
@@ -253,6 +270,7 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
             }
             return
         }
+        _resendSeconds.value = 0
         if (useService) {
             svc?.sendPhone(
                 phone = sanitized,

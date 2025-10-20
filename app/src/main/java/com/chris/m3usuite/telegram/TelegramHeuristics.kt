@@ -7,6 +7,8 @@ package com.chris.m3usuite.telegram
  * - Episode title: remainder after the pattern, with common separators removed.
  */
 object TelegramHeuristics {
+    private val qualityTokens = Regex("(?i)\\b(720p|1080p|1440p|2160p|4k|8k|x264|x265|hevc|webrip|web[- ]?dl|bluray|remux|hdr|dolby|dv|ddp?\\d\\.\\d|atmos|aac|dts|cam|hdtc|bdremux|truehd)\\b")
+    private val yearRegex = Regex("""(?:(?:\\(|\\[)?((?:19|20)\\d{2})(?:\\)|\\])?)""")
     data class ParseResult(
         val isSeries: Boolean,
         val seriesTitle: String? = null,
@@ -14,7 +16,8 @@ object TelegramHeuristics {
         val episode: Int? = null,
         val episodeEnd: Int? = null, // for ranges E01-03
         val title: String? = null,
-        val language: String? = null // ISO-ish (de, en, es...)
+        val language: String? = null, // ISO-ish (de, en, es...)
+        val year: Int? = null,
     )
 
     // Erweiterte Muster:
@@ -57,15 +60,28 @@ object TelegramHeuristics {
             val e2 = m.groupValues.getOrNull(3)?.toIntOrNull()
             val series = text.substring(0, m.range.first).trim(' ', '.', '-', '_', '[', '(', ')', ']').replace(Regex("[._]+"), " ")
             val rest = text.substring(m.range.last + 1).trim(' ', '.', '-', '_', '[', '(', ')', ']')
-            return ParseResult(true, series.ifBlank { null }, s, e1, e2, rest.ifBlank { null }, lang)
+            val yr = yearRegex.find(text)?.groupValues?.getOrNull(1)?.toIntOrNull()
+            return ParseResult(true, series.ifBlank { null }, s, e1, e2, rest.ifBlank { null }, lang, yr)
         }
         // Fallback: nur Episoden-Zahl?
         episodeOnly.find(text)?.let { em ->
             val e = em.groupValues[1].toIntOrNull()
             val base = text.substring(0, em.range.first).trim(' ', '.', '-', '_', '[', '(', ')', ']')
             val rest = text.substring(em.range.last + 1).trim(' ', '.', '-', '_', '[', '(', ')', ']')
-            return ParseResult(true, seriesTitle = base.ifBlank { null }, season = null, episode = e, episodeEnd = null, title = rest.ifBlank { null }, language = lang)
+            val yr = yearRegex.find(text)?.groupValues?.getOrNull(1)?.toIntOrNull()
+            return ParseResult(true, seriesTitle = base.ifBlank { null }, season = null, episode = e, episodeEnd = null, title = rest.ifBlank { null }, language = lang, year = yr)
         }
-        return ParseResult(false, title = text, language = lang)
+        val yr = yearRegex.find(text)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        return ParseResult(false, title = cleanMovieTitle(text), language = lang, year = yr)
+    }
+
+    fun cleanMovieTitle(raw: String): String {
+        return raw
+            .replace(qualityTokens, " ")
+            .replace(Regex("""\\[(?:GER|DEU|DE|ENG|EN|ITA|ES|VOSTFR)\\]""", RegexOption.IGNORE_CASE), " ")
+            .replace(yearRegex, " ")
+            .replace(Regex("[._]+"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim(' ', '-', '_', '.', '[', ']', '(', ')')
     }
 }

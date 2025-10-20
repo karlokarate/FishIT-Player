@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.math.pow
 
 /**
  * Dedicated TDLib service running in its own process. Minimal IPC via Messenger.
@@ -55,6 +56,7 @@ class TelegramTdlibService : Service() {
         const val REPLY_CHAT_TITLES = 202
         const val REPLY_FOLDERS = 203
         const val REPLY_PULL_DONE = 204
+        const val REPLY_AUTH_EVENT = 205
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -407,6 +409,20 @@ class TelegramTdlibService : Service() {
                             }
                             // Try to dispatch any queued auth action for this state
                             maybeDispatchAuthAction(mapped)
+                            when (mapped) {
+                                TdLibReflection.AuthState.WAIT_FOR_CODE -> {
+                                    val info = TdLibReflection.extractAuthCodeInfo(st)
+                                    val timeout = info?.timeout ?: 0
+                                    val nextType = info?.nextType
+                                    broadcastAuthEvent("code_sent") {
+                                        putInt("timeout", timeout)
+                                        if (!nextType.isNullOrBlank()) putString("nextType", nextType)
+                                    }
+                                }
+                                TdLibReflection.AuthState.WAIT_FOR_PASSWORD -> broadcastAuthEvent("password_required")
+                                TdLibReflection.AuthState.AUTHENTICATED -> broadcastAuthEvent("signed_in")
+                                else -> Unit
+                            }
                         }
                         // UpdateNewMessage: carries a full message object
                         name.endsWith("TdApi\$UpdateNewMessage") -> {
@@ -953,46 +969,56 @@ class TelegramTdlibService : Service() {
         if (!ensureStartedOrError()) return BackfillStats(0, 0, 0, longArrayOf())
         val ch = clientHandle ?: return BackfillStats(0, 0, 0, longArrayOf())
 
-        var fromId = 0L
-        var page = 0
-        var keepGoing = true
-        var lastFirstOnPage: Long = -1L
-        val perPage = limit.coerceAtLeast(1)
-
         var processed = 0
         var newVod = 0
         var newSeriesEpisodes = 0
         val newSeriesIds = mutableSetOf<Long>()
+        val seen = mutableSetOf<Long>()
+        var fromId = 0L
+        var keepGoing = true
+        var attempt = 0
+        val pageSize = limit.coerceAtLeast(1)
+
+        fun backoffMs(a: Int): Long = (500 * 2.0.pow(a.coerceAtMost(6))).toLong()
+
         while (keepGoing) {
-            // TDLib paging semantics:
-            // - First page: from_message_id=0, offset=0 → newest messages
-            // - Older pages: from_message_id=oldestId, offset=-1 → strictly older than oldestId
-            val effectiveFromId = fromId
-            val offset = if (page == 0) 0 else -1
-            val fn = TdLibReflection.buildGetChatHistory(chatId, effectiveFromId, offset, perPage, false) ?: break
-            val result = TdLibReflection.sendForResult(
+            val offset = if (fromId == 0L) 0 else -1
+            val fn = TdLibReflection.buildGetChatHistory(chatId, fromId, offset, pageSize, false) ?: break
+            val result = TdLibReflection.sendForResultDetailed(
                 ch,
                 fn,
                 timeoutMs = 10_000,
-                retries = 2,
-                traceTag = "History[$chatId:$page]"
-            ) ?: break
-            com.chris.m3usuite.telegram.TgRawLogger.log(
-                prefix = "GetChatHistory[page=${page}] chatId=$chatId fromId=$effectiveFromId offset=$offset limit=$perPage",
-                obj = result
+                retries = 1,
+                traceTag = "History[$chatId:${fromId}]"
             )
-            val messages = TdLibReflection.extractMessagesArray(result)
+            val error = result.error
+            if (error != null) {
+                val msg = error.message.uppercase()
+                val flood = Regex("FLOOD_WAIT_(\\d+)").find(msg)?.groupValues?.getOrNull(1)?.toIntOrNull()
+                if (flood != null) {
+                    android.util.Log.w("TdSvc", "backfill flood wait $flood s")
+                    Thread.sleep(((flood + 1) * 1000L).coerceAtMost(120_000L))
+                    continue
+                }
+                if (attempt >= 5) {
+                    android.util.Log.w("TdSvc", "backfill abort after error: ${error.message}")
+                    break
+                }
+                Thread.sleep(backoffMs(attempt))
+                attempt++
+                continue
+            }
+            val payload = result.payload ?: break
+            val messages = TdLibReflection.extractMessagesArray(payload)
             if (messages.isEmpty()) break
-            var oldestId: Long = Long.MAX_VALUE
-            var firstIdThisPage: Long = -1L
+
+            var advanced = false
+            var nextFromId = fromId
             messages.forEach { messageObj ->
-                com.chris.m3usuite.telegram.TgRawLogger.log(
-                    prefix = "Message chatId=$chatId id=${TdLibReflection.extractMessageId(messageObj) ?: 0L}",
-                    obj = messageObj
-                )
                 val messageId = TdLibReflection.extractMessageId(messageObj) ?: return@forEach
-                if (firstIdThisPage < 0) firstIdThisPage = messageId
-                if (messageId < oldestId) oldestId = messageId
+                if (!seen.add(messageId)) return@forEach
+                advanced = true
+                if (nextFromId == 0L || messageId < nextFromId) nextFromId = messageId
                 val content = runCatching {
                     messageObj.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(messageObj)
                 }.getOrNull()
@@ -1010,19 +1036,17 @@ class TelegramTdlibService : Service() {
                 }
                 processed++
             }
-            page++
-            // Prepare next page (older messages)
-            val nextFrom = if (oldestId == Long.MAX_VALUE) 0L else oldestId
-            // Duplicate guard: if page returned the same leading id as previous page, stop
-            if (firstIdThisPage > 0 && firstIdThisPage == lastFirstOnPage) break
-            lastFirstOnPage = firstIdThisPage
-            if (nextFrom <= 0L || nextFrom == fromId) break
-            fromId = nextFrom
 
-            // Continue only if fetchAll requested; otherwise single page
+            if (!advanced) {
+                android.util.Log.i("TdSvc", "backfill stopping due to no new messages")
+                break
+            }
+
+            attempt = 0
+            fromId = nextFromId
             keepGoing = fetchAll
         }
-        android.util.Log.i("TdSvc", "backfill done chatId=${chatId} pages=${page} processed=${processed} newVod=${newVod} newSeriesEpisodes=${newSeriesEpisodes}")
+        android.util.Log.i("TdSvc", "backfill done chatId=${chatId} processed=${processed} newVod=${newVod} newSeriesEpisodes=${newSeriesEpisodes}")
         return BackfillStats(processed, newVod, newSeriesEpisodes, newSeriesIds.toLongArray())
     }
 
@@ -1149,6 +1173,18 @@ class TelegramTdlibService : Service() {
             }
         }
         try { target.send(m) } catch (e: Exception) { Log.w("TdSvc", "sendAuthState failed", e) }
+    }
+
+    private fun broadcastAuthEvent(type: String, extras: Bundle.() -> Unit = {}) {
+        val m = Message.obtain(null, REPLY_AUTH_EVENT)
+        m.data = Bundle().apply {
+            putString("type", type)
+            extras()
+        }
+        clients.toList().forEach { client ->
+            val ok = runCatching { client.send(m) }.isSuccess
+            if (!ok) clients.remove(client)
+        }
     }
 
     private fun listFolders(target: Messenger?) {

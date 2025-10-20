@@ -21,6 +21,15 @@ class TelegramContentRepository(
 ) {
     private val store get() = ObxStore.get(context)
 
+    private fun isVideoLike(row: ObxTelegramMessage): Boolean {
+        val mime = row.mimeType?.lowercase(Locale.getDefault()).orEmpty()
+        if (mime.startsWith("video/")) return true
+        if (row.containerExt() != null) return true
+        val fileName = row.fileName?.lowercase(Locale.getDefault()).orEmpty()
+        if (fileName.endsWith(".mp4") || fileName.endsWith(".mkv") || fileName.endsWith(".avi") || fileName.endsWith(".ts") || fileName.endsWith(".mov") || fileName.endsWith(".webm") || fileName.endsWith(".m4v")) return true
+        return false
+    }
+
     suspend fun selectedChatsVod(): List<Long> = settings.tgSelectedVodChatsCsv.first()
         .split(',')
         .mapNotNull { it.trim().toLongOrNull() }
@@ -41,11 +50,9 @@ class TelegramContentRepository(
         val rows = q.find(offset.toLong(), limit.toLong())
         rows.asSequence()
             .mapNotNull { row ->
-                // Treat supportsStreaming as a hint only; consider video types streamable via progressive download.
-                val isVideo = (row.mimeType?.lowercase()?.startsWith("video/") == true) || (row.containerExt() != null)
-                if (!isVideo) return@mapNotNull null
+                if (!isVideoLike(row)) return@mapNotNull null
                 val parsed = TelegramHeuristics.parse(row.caption)
-                if (parsed.isSeries) return@mapNotNull null
+                if (parsed.isSeries && (parsed.season != null || parsed.episode != null)) return@mapNotNull null
                 row.toVodMediaItem(parsed)
             }
             .toList()
@@ -61,8 +68,7 @@ class TelegramContentRepository(
         val rows = q.find(offset.toLong(), limit.toLong())
         rows.asSequence()
             .mapNotNull { row ->
-                val isVideo = (row.mimeType?.lowercase()?.startsWith("video/") == true) || (row.containerExt() != null)
-                if (!isVideo) return@mapNotNull null
+                if (!isVideoLike(row)) return@mapNotNull null
                 val parsed = TelegramHeuristics.parse(row.caption)
                 if (!parsed.isSeries || parsed.seriesTitle.isNullOrBlank() || parsed.season == null || parsed.episode == null)
                     return@mapNotNull null
@@ -85,8 +91,7 @@ class TelegramContentRepository(
             ).orderDesc(ObxTelegramMessage_.date).build()
             val rows = q.find(0, 60).toList()
             rows.asSequence().forEach { row ->
-                val isVideo = (row.mimeType?.lowercase()?.startsWith("video/") == true) || (row.containerExt() != null)
-                if (!isVideo) return@forEach
+                if (!isVideoLike(row)) return@forEach
                 val parsed = TelegramHeuristics.parse(row.caption)
                 if (parsed.isSeries && parsed.seriesTitle != null && parsed.season != null && parsed.episode != null) {
                     row.toSeriesItem(parsed)?.let { acc += it }
@@ -100,7 +105,8 @@ class TelegramContentRepository(
     }
 
     private fun ObxTelegramMessage.toVodMediaItem(parsed: TelegramHeuristics.ParseResult): MediaItem? {
-        val title = (parsed.title ?: this.caption ?: "Telegram ${this.messageId}").trim()
+        val rawTitle = parsed.title ?: this.caption ?: "Telegram ${this.messageId}"
+        val title = TelegramHeuristics.cleanMovieTitle(rawTitle).ifBlank { "Telegram ${this.messageId}" }
         val posterUri = posterUri(context)
         return MediaItem(
             id = telegramVodId(chatId, messageId),
@@ -118,7 +124,8 @@ class TelegramContentRepository(
             plot = this.caption,
             containerExt = containerExt(),
             providerKey = "telegram_chat_${this.chatId}",
-            genreKey = parsed.language
+            genreKey = parsed.language,
+            year = parsed.year,
         )
     }
 
@@ -151,7 +158,8 @@ class TelegramContentRepository(
             plot = this.caption,
             containerExt = containerExt(),
             providerKey = "telegram_chat_${this.chatId}",
-            genreKey = parsed.language
+            genreKey = parsed.language,
+            year = parsed.year,
         )
     }
     private fun telegramVodId(chatId: Long, messageId: Long): Long {
