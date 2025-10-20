@@ -16,9 +16,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class TelegramServiceClient(private val context: Context) {
     data class ChatSyncResult(
@@ -55,6 +59,9 @@ class TelegramServiceClient(private val context: Context) {
     val authEvents = authEventsChannel.receiveAsFlow()
     private val resendState = MutableStateFlow(0)
     val resendInSec: StateFlow<Int> = resendState.asStateFlow()
+    private val authStateInternal = MutableStateFlow("UNKNOWN")
+    val authState: StateFlow<String> = authStateInternal.asStateFlow()
+    private val authMutex = Mutex()
     private var resendJob: Job? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val incoming = object : Handler(Looper.getMainLooper()) {
@@ -62,6 +69,7 @@ class TelegramServiceClient(private val context: Context) {
             when (msg.what) {
                 TelegramTdlibService.REPLY_AUTH_STATE -> {
                     val st = msg.data.getString("state") ?: return
+                    authStateInternal.value = st
                     _authCallbacks.forEach { it(st) }
                     val qr = msg.data.getString("qr")
                     if (!qr.isNullOrBlank()) _qrCallbacks.forEach { it(qr) }
@@ -125,6 +133,7 @@ class TelegramServiceClient(private val context: Context) {
                         "signed_in" -> {
                             authEventsChannel.trySend(AuthEvent.SignedIn)
                             stopResendCountdown()
+                            authStateInternal.value = "AUTHENTICATED"
                         }
                     }
                 }
@@ -161,6 +170,7 @@ class TelegramServiceClient(private val context: Context) {
         _qrCallbacks.clear()
         stopResendCountdown()
         scope.coroutineContext[Job]?.cancelChildren()
+        authStateInternal.value = "UNKNOWN"
         synchronized(pendingChatList) {
             val callbacks = pendingChatList.values.toList()
             pendingChatList.clear()
@@ -282,14 +292,18 @@ class TelegramServiceClient(private val context: Context) {
     }
     fun applyAllSettings() = send(TelegramTdlibService.CMD_APPLY_ALL_SETTINGS)
 
-    suspend fun listFolders(): IntArray = suspendCancellableCoroutine { cont ->
-        pendingFolderList = { arr -> cont.resume(arr) }
-        cont.invokeOnCancellation { pendingFolderList = null }
-        send(TelegramTdlibService.CMD_LIST_FOLDERS)
+    suspend fun listFolders(): IntArray {
+        awaitAuthorized()
+        return suspendCancellableCoroutine { cont ->
+            pendingFolderList = { arr -> cont.resume(arr) }
+            cont.invokeOnCancellation { pendingFolderList = null }
+            send(TelegramTdlibService.CMD_LIST_FOLDERS)
+        }
     }
 
-    suspend fun listChats(list: String, limit: Int = 200, query: String? = null): List<Pair<Long, String>> =
-        suspendCancellableCoroutine { cont ->
+    suspend fun listChats(list: String, limit: Int = 200, query: String? = null): List<Pair<Long, String>> {
+        awaitAuthorized()
+        return suspendCancellableCoroutine { cont ->
             val reqId = nextReqId.getAndIncrement()
             synchronized(pendingChatList) {
                 pendingChatList[reqId] = { ids, titles ->
@@ -307,9 +321,11 @@ class TelegramServiceClient(private val context: Context) {
                 if (!query.isNullOrBlank()) putString("query", query)
             }
         }
+    }
 
-    suspend fun resolveChatTitles(ids: LongArray): List<Pair<Long, String>> =
-        suspendCancellableCoroutine { cont ->
+    suspend fun resolveChatTitles(ids: LongArray): List<Pair<Long, String>> {
+        awaitAuthorized()
+        return suspendCancellableCoroutine { cont ->
             val reqId = nextReqId.getAndIncrement()
             synchronized(pendingTitles) {
                 pendingTitles[reqId] = { resolvedIds, titles ->
@@ -325,6 +341,7 @@ class TelegramServiceClient(private val context: Context) {
                 putLongArray("ids", ids)
             }
         }
+    }
 
     fun pullChatHistory(chatId: Long, limit: Int = 200, fetchAll: Boolean = false) =
         send(TelegramTdlibService.CMD_PULL_CHAT_HISTORY) {
@@ -333,8 +350,9 @@ class TelegramServiceClient(private val context: Context) {
             putBoolean("fetchAll", fetchAll)
         }
 
-    suspend fun pullChatHistoryAwait(chatId: Long, limit: Int = 200, fetchAll: Boolean = false): ChatSyncResult =
-        suspendCancellableCoroutine { cont ->
+    suspend fun pullChatHistoryAwait(chatId: Long, limit: Int = 200, fetchAll: Boolean = false): ChatSyncResult {
+        awaitAuthorized()
+        return suspendCancellableCoroutine { cont ->
             val reqId = nextReqId.getAndIncrement()
             synchronized(pendingPulls) {
                 pendingPulls[reqId] = { result -> cont.resume(result) }
@@ -347,30 +365,42 @@ class TelegramServiceClient(private val context: Context) {
                 putBoolean("fetchAll", fetchAll)
             }
         }
+    }
 
     suspend fun resolveChatTitle(chatId: Long): String? {
         return resolveChatTitles(longArrayOf(chatId)).firstOrNull()?.second
     }
 
     suspend fun requestCode(phone: String, isCurrentDevice: Boolean = false) {
-        sendPhone(
-            phone = phone,
-            isCurrentDevice = isCurrentDevice,
-            allowFlashCall = false,
-            allowMissedCall = false,
-            allowSmsRetriever = true
-        )
-        getAuth()
+        authMutex.withLock {
+            sendPhone(
+                phone = phone,
+                isCurrentDevice = isCurrentDevice,
+                allowFlashCall = false,
+                allowMissedCall = false,
+                allowSmsRetriever = true
+            )
+            getAuth()
+        }
     }
 
     suspend fun submitCode(code: String) {
-        sendCode(code)
-        getAuth()
+        authMutex.withLock {
+            sendCode(code)
+            getAuth()
+        }
     }
 
     suspend fun submitPassword(password: String) {
-        sendPassword(password)
-        getAuth()
+        authMutex.withLock {
+            sendPassword(password)
+            getAuth()
+        }
+    }
+
+    suspend fun awaitAuthorized() {
+        if (authStateInternal.value.equals("AUTHENTICATED", ignoreCase = true)) return
+        authState.filter { it.equals("AUTHENTICATED", ignoreCase = true) }.first()
     }
 
     private fun startResendCountdown(timeout: Int) {

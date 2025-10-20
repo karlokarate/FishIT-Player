@@ -253,6 +253,10 @@ Recent
   2.0. Flow-Debounces importieren aus `kotlinx.coroutines.flow`, der Telegram
   Chat-Picker ist als `@Composable` markiert und `TgSmsConsentManager` kapselt
   seinen `SupervisorJob` intern.
+- Maintenance 2025-11-09: Telegram-Settings nutzen einen eigenen
+  `TelegramSettingsViewModel` (Chat-Auflösung, Sync-Triggers, Snackbar). TDLib
+  Backfill korrigiert `fromId`/Offset, `TelegramMediaMapper` blockiert nicht mehr
+  auf dem Main-Thread und die Heuristiken normalisieren Release-Namen (inkl. Tests).
 - Telegram Build Guard: Kotlin 2.0 Release-Builds benötigen im Indexer weiterhin `Int`-basierte ID-Mengen und einen TDLib-Schreibpfad, der konkrete `IndexedMessageOutcome` zurückliefert. Die Fixes sind angewendet; Set<Long>/Result-Mismatches dürfen nicht wieder eingeführt werden, sonst scheitert `:app:compileReleaseKotlin`.
 - TV low-spec tuning (7a/TV): TV devices (detected via UiMode/Leanback/Fire TV) use a reduced-focus profile and smaller paging windows to improve smoothness on low-spec hardware. Focus effects drop shadowElevation; scales reduce to ~1.03. OkHttp dispatcher is throttled (maxRequests=16, perHost=4). Coil crossfades are disabled on TV to lower overdraw.
 - TV/DPAD focus (gate): ProfileGate tiles now use `tvClickable` + `tvFocusableItem` within a `focusGroup()` container, with a guarded initial `FocusRequester`. On TV, the first profile tile is highlighted immediately; DPAD navigation shows halo/scale.

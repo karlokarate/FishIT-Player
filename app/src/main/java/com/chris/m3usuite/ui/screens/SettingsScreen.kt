@@ -3,6 +3,7 @@ package com.chris.m3usuite.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
@@ -59,6 +60,7 @@ import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.core.http.HttpClientFactory
 import com.chris.m3usuite.core.xtream.XtreamClient
@@ -245,6 +247,20 @@ fun SettingsScreen(
     var pinDialogMode by remember { mutableStateOf<PinMode?>(null) }
     val listState = com.chris.m3usuite.ui.state.rememberRouteListState("settings:main")
     val snackHost = remember { SnackbarHostState() }
+    val app = ctx.applicationContext as? Application
+        ?: throw IllegalStateException("Application context required")
+    val telegramVm: TelegramSettingsViewModel = viewModel(
+        factory = TelegramSettingsViewModel.Factory(app, store)
+    )
+    val telegramUiState by telegramVm.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        telegramVm.effects.collect { effect ->
+            when (effect) {
+                is TelegramSettingsViewModel.Effect.Snackbar -> snackHost.toast(effect.message)
+            }
+        }
+    }
 
     // Theme / input colors remembered once (prevents rebuilding on every recomposition)
     val accent = com.chris.m3usuite.ui.theme.DesignTokens.Accent
@@ -1183,10 +1199,6 @@ fun SettingsScreen(
                 val tgAutoRoamLessDataCalls by store.tgAutoRoamingLessDataCalls.collectAsStateWithLifecycle(initialValue = true)
                 
                 // Anzeige/Resolver der aktuellen Auswahl (Name-Liste) + Picker-Button
-                val resolvedNames = remember(tgChatsCsv) { mutableStateOf<String?>(null) }
-                LaunchedEffect(tgChatsCsv, tgEnabled) {
-                    resolvedNames.value = if (tgEnabled && tgChatsCsv.isNotBlank()) resolveChatNamesCsv(tgChatsCsv, ctx2) else null
-                }
                 var showChatPicker by remember { mutableStateOf(false) }
                 var showTgDialog by remember { mutableStateOf(false) }
                 Row(
@@ -1198,7 +1210,8 @@ fun SettingsScreen(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text("Synchronisierte Chats", style = MaterialTheme.typography.titleSmall)
-                        Text(resolvedNames.value ?: "Keine Auswahl", style = MaterialTheme.typography.bodySmall)
+                        val resolved = telegramUiState.resolvedSelectionLabel
+                        Text(resolved ?: "Keine Auswahl", style = MaterialTheme.typography.bodySmall)
                     }
                     Spacer(Modifier.width(12.dp))
                     FocusKit.TvTextButton(
@@ -1206,6 +1219,7 @@ fun SettingsScreen(
                         enabled = tgEnabled
                     ) { Text("Chats auswählen…") }
                 }
+                val resendLeft = telegramUiState.resendSeconds
                 if (tgEnabled && authState == com.chris.m3usuite.telegram.TdLibReflection.AuthState.WAIT_FOR_CODE) {
                     Row(
                         Modifier
@@ -1227,13 +1241,7 @@ fun SettingsScreen(
                     }
                 }
                 FocusKit.TvTextButton(
-                    onClick = {
-                        com.chris.m3usuite.work.TelegramSyncWorker.scheduleNow(
-                            ctx2,
-                            mode = com.chris.m3usuite.work.TelegramSyncWorker.MODE_ALL,
-                            refreshHome = true
-                        )
-                    },
+                    onClick = { telegramVm.onIntent(TelegramSettingsViewModel.Intent.RequestSync) },
                     enabled = tgEnabled && tgChatsCsv.isNotBlank()
                 ) { Text("Jetzt synchronisieren") }
                 FishFormSlider(
@@ -1251,15 +1259,7 @@ fun SettingsScreen(
                         initialSelection = tgChatsCsv.split(',').mapNotNull { it.trim().toLongOrNull() }.toSet(),
                         onDismiss = { showChatPicker = false },
                         onConfirm = { selected ->
-                            scope.launch {
-                                store.setTelegramSelectedChatsCsv(selected.sorted().joinToString(","))
-                                // Nach Bestätigung: kombinierter Full-Sync (Backend)
-                                com.chris.m3usuite.work.TelegramSyncWorker.scheduleNow(
-                                    ctx2,
-                                    mode = com.chris.m3usuite.work.TelegramSyncWorker.MODE_ALL,
-                                    refreshHome = true
-                                )
-                            }
+                            telegramVm.onIntent(TelegramSettingsViewModel.Intent.ConfirmChats(selected))
                             showChatPicker = false
                         },
                         onRequestLogin = { showTgDialog = true }
@@ -1708,8 +1708,6 @@ fun SettingsScreen(
                     }
                 
                     val authState by authRepo.authState.collectAsStateWithLifecycle(initialValue = com.chris.m3usuite.telegram.TdLibReflection.AuthState.UNKNOWN)
-                    val resendLeft by authRepo.resendSeconds.collectAsStateWithLifecycle(initialValue = 0)
-
                     LaunchedEffect(tgEnabled) {
                         if (!tgEnabled) return@LaunchedEffect
                         authRepo.errors.collect { em -> snackHost.toast("Telegram: ${em.message}") }
@@ -2445,30 +2443,6 @@ private fun Context.findActivity(): Activity? {
 
 // --- External Player Picker UI ---
 // Context-based resolver (actual implementation)
-@Suppress("FunctionName")
-suspend fun resolveChatNamesCsv(csv: String, ctx: Context): String = withContext(Dispatchers.IO) {
-    if (csv.isBlank()) return@withContext ""
-    val ids = csv.split(',').mapNotNull { it.trim().toLongOrNull() }
-    if (ids.isEmpty()) return@withContext ""
-    val svc = com.chris.m3usuite.telegram.service.TelegramServiceClient(ctx.applicationContext)
-    try {
-        svc.bind()
-        val store = com.chris.m3usuite.prefs.SettingsStore(ctx)
-        val apiId = store.tgApiId.first().takeIf { it > 0 } ?: BuildConfig.TG_API_ID
-        val apiHash = store.tgApiHash.first().ifBlank { BuildConfig.TG_API_HASH }
-        if (apiId > 0 && apiHash.isNotBlank()) {
-            svc.start(apiId, apiHash)
-            svc.getAuth()
-        }
-        val titles = svc.resolveChatTitles(ids.toLongArray())
-        if (titles.isNotEmpty()) titles.joinToString(", ") { it.second } else ids.joinToString(", ") { it.toString() }
-    } catch (_: Throwable) {
-        ids.joinToString(", ") { it.toString() }
-    } finally {
-        svc.unbind()
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ExternalPlayerPickerButton(onPick: (String) -> Unit) {

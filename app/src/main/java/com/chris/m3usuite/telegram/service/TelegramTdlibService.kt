@@ -982,7 +982,11 @@ class TelegramTdlibService : Service() {
         fun backoffMs(a: Int): Long = (500 * 2.0.pow(a.coerceAtMost(6))).toLong()
 
         while (keepGoing) {
-            val offset = if (fromId == 0L) 0 else -1
+            val offset = if (fromId == 0L) {
+                0
+            } else {
+                (-pageSize).coerceAtLeast(-99)
+            }
             val fn = TdLibReflection.buildGetChatHistory(chatId, fromId, offset, pageSize, false) ?: break
             val result = TdLibReflection.sendForResultDetailed(
                 ch,
@@ -1043,7 +1047,7 @@ class TelegramTdlibService : Service() {
             }
 
             attempt = 0
-            fromId = nextFromId
+            fromId = if (nextFromId > 0L) nextFromId - 1 else nextFromId
             keepGoing = fetchAll
         }
         android.util.Log.i("TdSvc", "backfill done chatId=${chatId} processed=${processed} newVod=${newVod} newSeriesEpisodes=${newSeriesEpisodes}")

@@ -8,6 +8,7 @@ Hinweis
 - Maintenance 2025-11-07: Release-Minify bindet jetzt `slf4j-android`, damit Junrar
   im R8-Schritt keinen `StaticLoggerBinder`-Fehler mehr auslöst.
 - Maintenance 2025-11-08: Telegram-Series Aggregation nutzt nun Chat-Titel als Fallback, normalisiert Seriennamen und sortiert Episoden nach Staffel/Episode/Datum. VOD-Heuristiken reinigen Filmtitel und speichern Jahresangaben in ObjectBox.
+- Maintenance 2025-11-09: Backfill-Paginierung im Telegram-Service korrigiert (Offset/`fromId`), Heuristiken erweitert (Range, Sprache, Jahr) samt Unit-Tests, Poster-Resolver blockiert nicht mehr den Main-Thread und Settings nutzen einen `TelegramSettingsViewModel` für Sync/Chat-Resolve.
 - Maintenance 2025-11-07: Start-Header blendet die Live/VOD/Serien-Schalter wieder
   direkt im HomeChrome ein (LibraryNavConfig auf Start), sodass Telefon- und TV-UIs
   die Bibliotheksnavigation oben neben Suche/Profil/Einstellungen anzeigen.
