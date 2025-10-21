@@ -9,6 +9,7 @@ import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
@@ -16,85 +17,71 @@ import kotlinx.coroutines.withContext
  * Shared helpers to map Telegram ObjectBox rows into media-facing data.
  */
 internal fun ObxTelegramMessage.posterUri(context: Context): String? {
-    fun existingLocalPath(): String? {
-        val thumb = thumbLocalPath
-        if (!thumb.isNullOrBlank()) {
-            val file = File(thumb)
-            if (file.exists()) return file.toURI().toString()
-        }
-        val media = localPath
-        if (!media.isNullOrBlank()) {
-            val file = File(media)
-            if (file.exists()) return file.toURI().toString()
-        }
-        return null
-    }
-
-    existingLocalPath()?.let { return it }
+    val existing = existingPosterPath()
     if (Looper.myLooper() == Looper.getMainLooper()) {
-        return null
+        return existing
     }
-
-    return runBlocking(Dispatchers.IO) {
-        resolvePosterPath(context) ?: existingLocalPath()
+    if (existing != null) return existing
+    val resolved = runBlocking {
+        withContext(Dispatchers.IO) {
+            downloadThumbIfNeeded(context)
+        }
     }
+    if (!resolved.isNullOrBlank()) return resolved
+    return existingPosterPath()
 }
 
-private suspend fun ObxTelegramMessage.resolvePosterPath(context: Context): String? = withContext(Dispatchers.IO) {
-    val thumbId = thumbFileId ?: return@withContext null
-    if (thumbId <= 0 || !TdLibReflection.available()) return@withContext null
+private fun ObxTelegramMessage.existingPosterPath(): String? {
+    val thumb = thumbLocalPath
+    if (!thumb.isNullOrBlank()) {
+        val file = File(thumb)
+        if (file.exists()) return file.toURI().toString()
+    }
+    val media = localPath
+    if (!media.isNullOrBlank()) {
+        val file = File(media)
+        if (file.exists()) return file.toURI().toString()
+    }
+    return null
+}
 
-    runCatching {
-        val authFlow = kotlinx.coroutines.flow.MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
+private suspend fun ObxTelegramMessage.downloadThumbIfNeeded(context: Context): String? {
+    val thumbId = thumbFileId ?: return null
+    if (thumbId <= 0 || !TdLibReflection.available()) return null
+    return runCatching {
+        val authFlow = MutableStateFlow(TdLibReflection.AuthState.UNKNOWN)
         val client = TdLibReflection.getOrCreateClient(context, authFlow) ?: return@runCatching null
-        val auth = TdLibReflection.mapAuthorizationState(
-            TdLibReflection.buildGetAuthorizationState()?.let {
-                TdLibReflection.sendForResult(
-                    client,
-                    it,
-                    timeoutMs = 500,
-                    retries = 1,
-                    traceTag = "MediaMapper:Auth"
-                )
-            }
-        )
-        if (auth != TdLibReflection.AuthState.AUTHENTICATED) return@runCatching null
+        val authState = TdLibReflection.buildGetAuthorizationState()?.let {
+            TdLibReflection.sendForResult(client, it, timeoutMs = 500, retries = 1, traceTag = "MediaMapper:Auth")
+        }
+        val mapped = TdLibReflection.mapAuthorizationState(authState)
+        if (mapped != TdLibReflection.AuthState.AUTHENTICATED) return@runCatching null
 
         TdLibReflection.buildDownloadFile(thumbId, 8, 0, 0, false)?.let {
-            TdLibReflection.sendForResult(
-                client,
-                it,
-                timeoutMs = 200,
-                retries = 1,
-                traceTag = "MediaMapper:DownloadThumb[$thumbId]"
-            )
+            TdLibReflection.sendForResult(client, it, timeoutMs = 200, retries = 1, traceTag = "MediaMapper:DownloadThumb[$thumbId]")
         }
 
-        repeat(15) {
-            val get = TdLibReflection.buildGetFile(thumbId) ?: return@repeat
-            val res = TdLibReflection.sendForResult(
-                client,
-                get,
-                timeoutMs = 300,
-                retries = 1,
-                traceTag = "MediaMapper:GetThumb[$thumbId]"
-            )
-            val info = res?.let { TdLibReflection.extractFileInfo(it) }
-            val path = info?.localPath
-            if (!path.isNullOrBlank() && File(path).exists()) {
-                val uri = File(path).toURI().toString()
-                val obx = ObxStore.get(context)
-                val box = obx.boxFor(ObxTelegramMessage::class.java)
-                val row = box.query(
-                    ObxTelegramMessage_.chatId.equal(chatId)
-                        .and(ObxTelegramMessage_.messageId.equal(messageId))
-                ).build().findFirst() ?: this
-                row.thumbLocalPath = path
-                this.thumbLocalPath = path
-                box.put(row)
-                return@runCatching uri
+        repeat(10) {
+            val get = TdLibReflection.buildGetFile(thumbId)
+            val res = get?.let {
+                TdLibReflection.sendForResult(client, it, timeoutMs = 250, retries = 1, traceTag = "MediaMapper:GetThumb[$thumbId]")
             }
-            delay(100)
+            val path = res?.let { TdLibReflection.extractFileInfo(it) }?.localPath
+            if (!path.isNullOrBlank()) {
+                val file = File(path)
+                if (file.exists()) {
+                    val obx = ObxStore.get(context)
+                    val box = obx.boxFor(ObxTelegramMessage::class.java)
+                    val row = box.query(
+                        ObxTelegramMessage_.chatId.equal(this.chatId)
+                            .and(ObxTelegramMessage_.messageId.equal(this.messageId))
+                    ).build().findFirst() ?: this
+                    row.thumbLocalPath = path
+                    box.put(row)
+                    return@runCatching file.toURI().toString()
+                }
+            }
+            delay(120)
         }
         null
     }.getOrNull()

@@ -177,7 +177,7 @@ class TdlibRandomAccessSource(
     private fun persistProgress() {
         runCatching {
             val path = localPath
-            val bytes = downloadedBytes
+            downloadedBytes
             val size = expectedSize
             runBlocking {
                 val store = ObxStore.get(context)

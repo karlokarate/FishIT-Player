@@ -3,12 +3,45 @@
 
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-11-11: Telegram-Import nutzt eine gemeinsame Chat-Selektion,
+  erkennt HLS-/Octet-MIMEs zuverlässiger und meldet Sync-Trigger jetzt als
+  Snackbar-Effekt aus dem ViewModel.
+- Maintenance 2025-11-10: Telegram Settings feuern nur noch ViewModel-Intents,
+  der Sync-Worker schützt sich mit Foreground-Start + Fail-Safe, Backfills
+  nutzen suspend-Delays statt `sleep`, und die Content-Repositories filtern
+  Filme/Serien anhand erweiterter Video-Heuristiken.
 - Maintenance 2025‑10‑31: Release-Builds schlagen nicht mehr auf fehlendem `Locale`-Import
   im Telegram-Dienst fehl; Kotlin 2.0 Release kann wieder kompiliert werden.
+- Maintenance 2025‑10‑20: Kotlin/Compose Warning-Cleanup – SMS Consent deprecations
+  beseitigt, Start-Suchgating korrigiert (`UiState` via `.value`), TV Mini-Player
+  Guard vereinfacht, Header-Focus-Requester aufgeräumt, Forms auf neue Icons/
+  Progress-API umgestellt und der Live-Detail-Launcher vereinheitlicht.
+- Maintenance 2025‑10‑20: Settings – Telegram Chat‑Picker neu positioniert
+  (Top‑Docked Dialog statt BottomSheet), keine Drag‑Gesten mehr, flüssigere
+  Liste (Overscroll aus), persistente Bestätigungsleiste mit Zähler.
+- Maintenance 2025‑10‑20: Settings – Fokus vereinheitlicht (FocusKit auf
+   allen Buttons/Links), dadurch gleicher TV‑Fokus‑Glow/Scale.
+ - Maintenance 2025‑10‑20: Telegram – RAW‑Dump bei Loglevel 5. Beim
+   Chat‑Sync loggt der Service die letzten 100 Nachrichten pro Chat
+   (TdSvcRaw) zur schnellen Diagnose von Content‑Typ/Text/Streaming‑Flags.
+- Maintenance 2025‑10‑20: Telegram – Heuristics stürzen nicht mehr ab. Regex
+  wird via `safeRegex` kompiliert und der TdLib-Service fällt bei Fehlern auf
+  einen minimalen Parser zurück, sodass die Indexierung nicht mehr endet.
+- Maintenance 2025‑10‑20: Telegram – Auth-Flow serialisiert (Mutex), Buttons
+  blockieren während Login-Requests und Runtime-Optionen warten auf
+  `AuthorizationStateReady`. Keine 400er/401er/Timeouts mehr beim Einstieg.
+- Maintenance 2025‑10‑20: Telegram – GetChatHistory nutzt jetzt Offsets im TDLib-
+  zulässigen Bereich [-99..0]; 400 „Parameter offset must be greater than -100“ ist
+  damit behoben und Chat-Backfills laufen durch.
+- Maintenance 2025-11-09: Settings – Telegram-Sync läuft nun über
+  `SettingsViewModel`; Chat-Auswahl wird asynchron aufgelöst, Worker-Trigger und
+  Snackbars passieren als Effekte statt direkt in Compose.
+- Maintenance 2025‑10‑20: Telegram – Foreground Sync liefert eine eigene
+  Notification (Kanal `telegram_sync`, Icon `ic_sync`), damit WorkManager beim
+  Hochstufen kein `Invalid resource ID 0x00000000` mehr auslöst.
 - Maintenance 2025-11-07: Release-Minify bindet jetzt `slf4j-android`, damit Junrar
   im R8-Schritt keinen `StaticLoggerBinder`-Fehler mehr auslöst.
 - Maintenance 2025-11-08: Telegram-Series Aggregation nutzt nun Chat-Titel als Fallback, normalisiert Seriennamen und sortiert Episoden nach Staffel/Episode/Datum. VOD-Heuristiken reinigen Filmtitel und speichern Jahresangaben in ObjectBox.
-- Maintenance 2025-11-09: Backfill-Paginierung im Telegram-Service korrigiert (Offset/`fromId`), Heuristiken erweitert (Range, Sprache, Jahr) samt Unit-Tests, Poster-Resolver blockiert nicht mehr den Main-Thread und Settings nutzen einen `TelegramSettingsViewModel` für Sync/Chat-Resolve.
 - Maintenance 2025-11-07: Start-Header blendet die Live/VOD/Serien-Schalter wieder
   direkt im HomeChrome ein (LibraryNavConfig auf Start), sodass Telefon- und TV-UIs
   die Bibliotheksnavigation oben neben Suche/Profil/Einstellungen anzeigen.
@@ -171,6 +204,109 @@ PRIO‑1: Kids/Gast Whitelist – Actions + Multi‑Select (Q4 2025)
 - Race‑Safety: Decode encoded media IDs just-in-time to avoid drift during Xtream delta updates; skip missing/invalid rows gracefully.
 
 Status: Backend helpers + selection scaffold landed; detail actions and UI wiring follow next.
+
+PRIO‑1: Start/Settings MVVM Completion
+- StartScreen läuft jetzt über StartViewModel + StartUseCases (Serien/VOD/Live Flows, Favoriten, Suchpaging, Permissions, Events). Compose hält vorerst KidSelectSheet, Live-Favoriten-Picker und Telegram-Service-Bindung eigenständig.
+- SettingsScreen bindet dedizierte ViewModels pro Abschnitt (Network/Player/Xtream/EPG + Telegram Trio); Diagnose/Backup/Quick-Import-Blöcke liegen weiterhin im Backup-Screen.
+- TODO:
+  - KidSelectSheet → eigenständiger KidAssignViewModel + UI nur als Binding.
+  - Live-Favoriten-Picker → LiveFavoritesPickerViewModel (Paging-Flow, Selektion, Speichern) + StartScreen-Binding.
+  - Telegram-Startintegration → Service-Bindung/Headers in ViewModel kapseln (DI oder Coordinator).
+  - Settings: Wartungs-/Diagnosekarten (Backup/Restore, Quick Import, Import-Diagnose) auf ViewModels/Usecases heben; Backup-Screen ablösen.
+
+Status: Basis-VMs stehen; nächste Iteration zieht verbleibende Compose-Seitenlogik/Backups in MVVM und räumt Backup-Screen aus.
+
+PRIO‑1: Projektstruktur – Feature-Slices & klare Artefakt-Gruppierung
+- Zielstruktur (oberste Ebene schlank, sofort ersichtlich wo etwas liegt):
+  ```
+  ui/
+    home/
+      start/            # StartScreen + VM + Subviews
+      library/          # LibraryScreen + Tabs
+      chrome/           # HomeChromeScaffold
+      diagnostics/      # MiniPlayer, focus banners, etc.
+    settings/           # SettingsScreen + section views/VMs
+    details/            # Live/VOD/Series detail screens
+    auth/               # ProfileGate, PIN, profile manager
+    playback/           # Player UI overlays
+    setup/              # PlaylistSetup, Xtream portal check
+    components/         # Feature-specific composites
+    navigation/         # NavGraph, destinations
+    state/              # Shared UiState helpers (if feature-bound)
+
+  design/
+    focus/              # FocusKit, TV primitives
+    layout/             # FishRow/FishTile/FishForm
+    theme/              # FishTheme, tokens
+    fx/                 # Glow, shimmer, backgrounds
+    components/         # Shared widgets (AppIconButton, KidSelectSheet)
+    state/              # ScrollStateRegistry, UiStatusViews
+
+  telegram/
+    models/
+    network/
+    repositories/
+    usecases/
+    workers/
+    presentation/
+    auth/
+
+  xtream/
+    models/
+    network/
+    repositories/
+    usecases/
+    workers/
+    presentation/
+    diagnostics/
+
+  data/
+    models/
+    sources/
+      local/
+      remote/
+    repositories/
+    backup/
+
+  player/
+    datasource/
+    launcher/
+    components/
+
+  domain/
+    usecases/
+    services/
+    selectors/
+
+  core/
+    network/
+    database/
+    telemetry/
+    system/
+    util/
+
+  shared/
+    extensions/
+    utils/
+    testing/
+
+  work/
+    TelegramSyncWorker.kt
+    XtreamDeltaImportWorker.kt
+    (weitere EntryPoints)
+
+  unused/
+    logs/
+      traffic-20250915.jsonl
+  ```
+- Nächste Schritte:
+  1. Dokumentation & README-Stub pro Bereich anlegen (keine Codeverschiebung).
+  2. Neue Pakete/Ordner in kleinen PRs per IDE-Move füllen (Start → `ui/home/start`, Settings → `ui/settings`, `telegram/…`, …).
+  3. Legacy-Bereiche (`ui/home/backups`, historische Tools) als `legacy/` kennzeichnen und sukzessive migrieren.
+  4. Optional in Phase 2: Multi-Module-Aufteilung (`:features:start`, `:core:design`, …) sobald Paketstruktur stabil.
+
+Status: Skelett abgestimmt; Zielstruktur unten dokumentiert. Migration erfolgt inkrementell per Feature.
+
 ## Kurzfristig (2–4 Wochen)
 
 PRIO‑1: TV Fokus/DPAD Vereinheitlichung

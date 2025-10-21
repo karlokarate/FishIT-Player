@@ -159,7 +159,7 @@ fun LiveAddTile(
     LaunchedEffect(requestInitialFocus) {
         if (requestInitialFocus) {
             // Wait for composition so focus requester is attached before requesting focus
-            kotlinx.coroutines.delay(16)
+            delay(16)
             runCatching { focusRequester.requestFocus() }
         }
     }

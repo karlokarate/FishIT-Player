@@ -198,7 +198,7 @@ class MediaQueryRepository(
         val cats = obxRepo.categories(type)
             .map { it.categoryName }
             .let { if (showA) it else it.filterNot { label -> isAdultCategoryLabel(label) } }
-        val kidId = currentKidIdOrNull() ?: return@withContext cats
+        currentKidIdOrNull() ?: return@withContext cats
         // Näherung über erlaubte Items
         val items = listByTypeFiltered(type, 10_000, 0)
         items.mapNotNull { it.categoryName }.distinct()

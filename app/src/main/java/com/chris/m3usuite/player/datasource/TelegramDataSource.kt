@@ -3,11 +3,13 @@ package com.chris.m3usuite.player.datasource
 import android.content.Context
 import android.net.Uri
 import androidx.media3.common.C
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.TransferListener
 import java.io.IOException
 
+@UnstableApi
 class TelegramDataSource(private val context: Context) : DataSource {
 
     private var source: TdlibRandomAccessSource? = null

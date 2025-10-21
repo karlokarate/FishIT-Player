@@ -74,6 +74,7 @@ Codex – Operating Rules (override)
   - Detail screens render the poster itself (fit scaling) and reuse the poster/backdrop as a 50% overlayed screen background (fallback to poster when no backdrop is stored); auxiliary still galleries are removed to keep focus on the main tile.
   - Library grouped views (Live/VOD/Series) use indexed OBX keys for headers (provider/genre/year) and page per visible row.
   - Start uses paged rows (Series/VOD) and a global paged Live row when no favorites exist; direct-play for Series navigates to details after on-demand OBX import if episodes absent.
+- Start MVVM (2025-10): `StartScreen` fungiert jetzt als reines UI-Binding. `StartViewModel` bündelt alle ObjectBox/Settings-Flows (Serien/VOD/Live, Mixed/New-IDs, Favoriten, Permissions, Suchevents) und sendet One-Shot-Events; `StartUseCases` kapseln Repository-Aufrufe (`MediaQueryRepository`, `XtreamObxRepository`, `KidContentRepository`, Telegram). KidSelectSheet, Live-Favoriten-Picker und die Telegram-Service-Bindung liegen vorerst noch in Compose und wandern als nächstes in dedizierte VMs/Coordinator-Flows, damit der Screen komplett ViewModel-gesteuert wird.
 - Cross‑platform builds: Codex uses Linux/WSL for builds/tests via Gradle wrapper while keeping settings compatible with Windows. Ensure no corruption of Windows‑side project files.
  - WSL build files: Projektstamm enthält Linux‑spezifische Ordner für Build/Tests: `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`. Optional: `.wsl-cmake` (portable CMake), `.wsl-gperf` (portable gperf). Codex verwendet diese Ordner unter WSL; Windows‑seitige Einstellungen bleiben kompatibel.
 - Tooling upgrades: If Codex needs additional tools or configuration to work better, it informs the user and, where possible, sets them up itself; otherwise it provides clear, copy‑pastable step‑by‑step commands for the user to establish the optimal environment.
@@ -186,6 +187,7 @@ Short bullet summary (current highlights)
 - Images (Coil 3): Global ImageLoader uses hardware bitmaps, ~25% memory cache, 512 MiB disk cache; requests capture slot size via `onSizeChanged`, use RGB_565 globally with WxH-aware cache keys, and fall back to the refreshed fish assets. Crossfade stays off for large list rows (on for detail/hero and small avatar/icon uses).
 - Xtream enrichment: Throttled batches with retry/backoff; not auto-scheduled in scheduleAll.
 - Diagnostics: Settings zeigt OBX-Zähler (Live/VOD/Series) und eine "Import aktualisieren"-Aktion, die `XtreamSeeder` erneut ausführt (optional mit Discovery-Force) und Detailjobs plant. Eine Strict-M3U-Option existiert nicht mehr; explizite Prune-Läufe sind Separate Wartungsjobs.
+  - Settings MVVM (2025-10): `SettingsScreen` fungiert als Presenter für `NetworkSettingsViewModel`, `XtreamSettingsViewModel`, `PlayerSettingsViewModel`, `EpgSettingsViewModel` sowie die neuen Telegram-VMS (`TelegramSettingsViewModel`, `TelegramProxyViewModel`, `TelegramAutoDownloadViewModel`). Historische Wartungsbereiche (Quick Import, Diagnose-Werkzeuge, Backup/Restore UI) bleiben vorerst in `ui/home/backups/SettingsScreen_backup.kt` erhalten und werden sukzessive in eigenständige ViewModels/Usecases überführt.
   - Globales Debugging (schaltbar): Schalter in „Import & Diagnose“. Wenn aktiviert, protokolliert das Modul Navigationsschritte (NavController Listener), DPAD‑Eingaben (inkl. Player‑Tasten), Tile‑Focus (mit OBX‑Titel in Klammern) und OBX‑Key‑Updates (Backfill der sort/provider/genre/year Keys) nach Logcat unter dem Tag `GlobalDebug`. Default OFF.
 
 - EPG: Now/Next dual-persist (Room + ObjectBox) with XMLTV fallback; no periodic worker. UI reads OBX; on-demand prefetch for visible tiles and favorites at app start; Live tiles show title + progress.
@@ -234,6 +236,17 @@ For the complete module-by-module guide, see `ARCHITECTURE_OVERVIEW.md`.
 ---
 
 Recent
+- Maintenance 2025-11-11: Telegram-Import nutzt die gemeinsame
+  `tgSelectedChatsCsv`-Quelle für Filme und Serien, erkennt HLS- sowie
+  Octet-Stream-Videos sicherer und sendet Sync-Feedback jetzt als Snackbar-
+  Effekt aus dem SettingsViewModel.
+- Maintenance 2025-11-10: Telegram-Settings feuern nur noch ViewModel-Intents;
+  der ViewModel-State liefert Auth/Resend/LogDir/Chatnamen und persistiert SAF-
+  Berechtigungen. `TelegramSyncWorker` startet sofort als Foreground-Service,
+  nutzt `ic_sync` und fängt unerwartete Fehler als `Result.failure`. TDLib-
+  Backfills deduplizieren Nachrichten, ziehen `fromId-1` sauber weiter und
+  respektieren `FLOOD_WAIT` via `delay`, während das Repository zusätzliche
+  Video-Container erkennt und VOD strikt von Episoden trennt.
 - Telegram backfill: `TelegramSyncWorker` nutzt `MODE_ALL` (kombinierter Full-Sync, `fetchAll=true`) und triggert `CMD_PULL_CHAT_HISTORY` pro ausgewähltem Chat; Legacy-VOD/Serien-CSV wird einmalig in `tg_selected_chats_csv` migriert. Nach jedem Lauf wird `TelegramSeriesIndexer.rebuild*` ausgeführt, damit aggregierte Serien-Rows aktuell bleiben. Settings zeigen Chat-Namen via `CMD_LIST_CHATS`/`CMD_RESOLVE_CHAT_TITLES` an; der Service cached Chats über `loadChats` + Updates (kein doppelter TDLib-Client).
 - Telegram Scheduling: `SchedulingGateway.scheduleTelegramSync(ctx, mode, refreshHome)` startet den Worker. Nach Erfolg ruft dieser `SchedulingGateway.onTelegramSyncCompleted(...)` auf und legt Cache-Cleanup + OBX-Key-Backfill neu auf; bei `refreshHome=true` wird zusätzlich `scheduleAll()` getriggert, damit HomeChrome / Rows sofort aktualisieren.
   - `SchedulingGateway.telegramSyncState` liefert Laufzeitstatus (Idle/Running/Success/Failure) inklusive aggregierter Zähler. HomeChrome nutzt diesen Flow für den globalen „Telegram Sync“-Banner und blendet Abschlussmeldungen nach kurzer Zeit automatisch aus.
@@ -253,10 +266,6 @@ Recent
   2.0. Flow-Debounces importieren aus `kotlinx.coroutines.flow`, der Telegram
   Chat-Picker ist als `@Composable` markiert und `TgSmsConsentManager` kapselt
   seinen `SupervisorJob` intern.
-- Maintenance 2025-11-09: Telegram-Settings nutzen einen eigenen
-  `TelegramSettingsViewModel` (Chat-Auflösung, Sync-Triggers, Snackbar). TDLib
-  Backfill korrigiert `fromId`/Offset, `TelegramMediaMapper` blockiert nicht mehr
-  auf dem Main-Thread und die Heuristiken normalisieren Release-Namen (inkl. Tests).
 - Telegram Build Guard: Kotlin 2.0 Release-Builds benötigen im Indexer weiterhin `Int`-basierte ID-Mengen und einen TDLib-Schreibpfad, der konkrete `IndexedMessageOutcome` zurückliefert. Die Fixes sind angewendet; Set<Long>/Result-Mismatches dürfen nicht wieder eingeführt werden, sonst scheitert `:app:compileReleaseKotlin`.
 - TV low-spec tuning (7a/TV): TV devices (detected via UiMode/Leanback/Fire TV) use a reduced-focus profile and smaller paging windows to improve smoothness on low-spec hardware. Focus effects drop shadowElevation; scales reduce to ~1.03. OkHttp dispatcher is throttled (maxRequests=16, perHost=4). Coil crossfades are disabled on TV to lower overdraw.
 - TV/DPAD focus (gate): ProfileGate tiles now use `tvClickable` + `tvFocusableItem` within a `focusGroup()` container, with a guarded initial `FocusRequester`. On TV, the first profile tile is highlighted immediately; DPAD navigation shows halo/scale.

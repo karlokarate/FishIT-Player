@@ -23,22 +23,28 @@ class TelegramContentRepository(
 
     private fun isVideoLike(row: ObxTelegramMessage): Boolean {
         val mime = row.mimeType?.lowercase(Locale.getDefault()).orEmpty()
+        val containerExt = row.containerExt()
         if (mime.startsWith("video/")) return true
-        if (row.containerExt() != null) return true
+        if (mime == "application/x-mpegurl" || mime == "application/vnd.apple.mpegurl") return true
+        if (mime == "application/octet-stream" && containerExt != null) return true
+        if (containerExt != null) return true
         val fileName = row.fileName?.lowercase(Locale.getDefault()).orEmpty()
-        if (fileName.endsWith(".mp4") || fileName.endsWith(".mkv") || fileName.endsWith(".avi") || fileName.endsWith(".ts") || fileName.endsWith(".mov") || fileName.endsWith(".webm") || fileName.endsWith(".m4v")) return true
-        return false
+        val videoExtensions = listOf(
+            ".mp4", ".mkv", ".avi", ".ts", ".mov", ".webm", ".m4v", ".mpg", ".mpeg", ".wmv", ".flv", ".ogv", ".3gp"
+        )
+        if (videoExtensions.any { fileName.endsWith(it) }) return true
+        val duration = row.durationSecs ?: 0
+        return row.supportsStreaming == true && duration > 0
     }
 
-    suspend fun selectedChatsVod(): List<Long> = settings.tgSelectedVodChatsCsv.first()
+    private suspend fun selectedChatIds(): List<Long> = settings.tgSelectedChatsCsv.first()
         .split(',')
         .mapNotNull { it.trim().toLongOrNull() }
         .distinct()
 
-    suspend fun selectedChatsSeries(): List<Long> = settings.tgSelectedSeriesChatsCsv.first()
-        .split(',')
-        .mapNotNull { it.trim().toLongOrNull() }
-        .distinct()
+    suspend fun selectedChatsVod(): List<Long> = selectedChatIds()
+
+    suspend fun selectedChatsSeries(): List<Long> = selectedChatIds()
 
     suspend fun recentVodByChat(chatId: Long, limit: Int = 60, offset: Int = 0): List<MediaItem> = withContext(Dispatchers.IO) {
         if (!selectedChatsVod().contains(chatId)) return@withContext emptyList()
@@ -79,7 +85,7 @@ class TelegramContentRepository(
 
     suspend fun searchAllChats(query: String, limit: Int = 120): List<MediaItem> = withContext(Dispatchers.IO) {
         if (!settings.tgEnabled.first()) return@withContext emptyList()
-        val chats = (selectedChatsVod() + selectedChatsSeries()).distinct()
+        val chats = selectedChatIds()
         if (chats.isEmpty()) return@withContext emptyList()
         val box = store.boxFor(ObxTelegramMessage::class.java)
         val needle = query.trim().lowercase()

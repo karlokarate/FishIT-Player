@@ -160,7 +160,7 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
     }
 
     // Hintergrund-Brushes: einmalig berechnen (read composition locals outside remember)
-    val cs = MaterialTheme.colorScheme
+    val cs = colorScheme
     val density = LocalDensity.current
     val bgV = remember(cs) {
         Brush.verticalGradient(
@@ -499,7 +499,7 @@ fun PlaylistSetupScreen(onDone: () -> Unit) {
             primaryEnabled = canSubmit,
             isBusy = busy
         )
-    } else com.chris.m3usuite.ui.common.TvButton(
+    } else TvButton(
         enabled = canSubmit,
         onClick = {
             focusManager.clearFocus(force = true)

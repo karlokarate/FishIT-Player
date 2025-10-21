@@ -31,7 +31,7 @@ fun XtreamPortalCheckScreen(onDone: () -> Unit) {
     }
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
-    val scope = rememberCoroutineScope()
+    rememberCoroutineScope()
     var portal by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     var info by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
 
@@ -76,7 +76,7 @@ fun XtreamPortalCheckScreen(onDone: () -> Unit) {
                     CookieBridge.importFromWebView(ctx, portal)
                     onDone()
                 }) { Text("Cookies übernehmen") }
-                com.chris.m3usuite.ui.common.TvTextButton(onClick = onDone) { Text("Abbrechen") }
+                TvTextButton(onClick = onDone) { Text("Abbrechen") }
             }
         }
     }

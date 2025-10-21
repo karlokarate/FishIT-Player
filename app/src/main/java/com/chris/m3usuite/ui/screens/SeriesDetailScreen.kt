@@ -161,7 +161,7 @@ private fun fmt(totalSecs: Int): String {
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-@androidx.media3.common.util.UnstableApi
+@UnstableApi
 @Composable
 fun SeriesDetailScreen(
     id: Long,
@@ -432,7 +432,7 @@ fun SeriesDetailScreen(
                     val eNum = req.episodeNum
                     when (res) {
                         is com.chris.m3usuite.playback.PlayerResult.Completed -> if (sid != null && s != null && eNum != null) {
-                            com.chris.m3usuite.core.telemetry.Telemetry.event(
+                            Telemetry.event(
                                 "resume.clear",
                                 mapOf("type" to "series", "seriesId" to sid, "season" to s, "episode" to eNum)
                             )
@@ -440,7 +440,7 @@ fun SeriesDetailScreen(
                         }
                         is com.chris.m3usuite.playback.PlayerResult.Stopped -> if (sid != null && s != null && eNum != null) {
                             val pos = ((res.positionMs / 1000).toInt()).coerceAtLeast(0)
-                            com.chris.m3usuite.core.telemetry.Telemetry.event(
+                            Telemetry.event(
                                 "resume.set",
                                 mapOf("type" to "series", "seriesId" to sid, "season" to s, "episode" to eNum, "positionSecs" to pos)
                             )
@@ -480,44 +480,21 @@ fun SeriesDetailScreen(
             val playableUrl = urlToPlay
             val resolvedMime = com.chris.m3usuite.core.playback.PlayUrlHelper.guessMimeType(playableUrl, e.containerExt)
 
-            if (seriesLauncher != null) {
-                seriesLauncher.launch(
-                    com.chris.m3usuite.playback.PlayRequest(
-                        type = "series",
-                        mediaId = id,
-                        url = playableUrl,
-                        headers = headers,
-                        startPositionMs = startMs,
-                        mimeType = resolvedMime,
-                        title = title,
-                        seriesId = seriesStreamId,
-                        season = e.season,
-                        episodeNum = e.episodeNum,
-                        episodeId = e.episodeId.takeIf { it > 0 }
-                    )
-                )
-            } else {
-                PlayerChooser.start(
-                    context = ctx,
-                    store = store,
+            seriesLauncher.launch(
+                com.chris.m3usuite.playback.PlayRequest(
+                    type = "series",
+                    mediaId = id,
                     url = playableUrl,
                     headers = headers,
                     startPositionMs = startMs,
-                    mimeType = resolvedMime
-                ) { s, mime ->
-                    if (openInternal != null) {
-                        openInternal(playableUrl, s, seriesStreamId ?: 0, e.season, e.episodeNum, e.episodeId.takeIf { it > 0 }, mime)
-                    } else {
-                        internalUrl = playableUrl
-                        internalEpisodeId = e.episodeId.takeIf { it > 0 }
-                        internalStartMs = s
-                        internalUa = headers["User-Agent"].orEmpty()
-                        internalRef = headers["Referer"].orEmpty()
-                        internalMime = mime
-                        showInternal = true
-                    }
-                }
-            }
+                    mimeType = resolvedMime,
+                    title = title,
+                    seriesId = seriesStreamId,
+                    season = e.season,
+                    episodeNum = e.episodeNum,
+                    episodeId = e.episodeId.takeIf { it > 0 }
+                )
+            )
         }
     }
 
@@ -573,10 +550,10 @@ fun SeriesDetailScreen(
             val lblPlay = stringResource(com.chris.m3usuite.R.string.action_play)
             val lblTrailer = stringResource(com.chris.m3usuite.R.string.action_trailer)
             val actions = remember(firstEp, trailer, lblPlay, lblTrailer, uriHandler) {
-                buildList<com.chris.m3usuite.ui.actions.MediaAction> {
+                buildList<MediaAction> {
                     if (firstEp != null) add(
-                        com.chris.m3usuite.ui.actions.MediaAction(
-                            id = com.chris.m3usuite.ui.actions.MediaActionId.Play,
+                        MediaAction(
+                            id = MediaActionId.Play,
                             label = lblPlay,
                             primary = true,
                             onClick = { playEpisode(firstEp, fromStart = true) }
@@ -584,8 +561,8 @@ fun SeriesDetailScreen(
                     )
                     val tr = normalizeTrailerUrl(trailer)
                     if (!tr.isNullOrBlank()) add(
-                        com.chris.m3usuite.ui.actions.MediaAction(
-                            id = com.chris.m3usuite.ui.actions.MediaActionId.Trailer,
+                        MediaAction(
+                            id = MediaActionId.Trailer,
                             label = lblTrailer,
                             onClick = { runCatching { uriHandler.openUri(tr) } }
                         )
@@ -790,7 +767,7 @@ fun SeriesDetailScreen(
                                                     val h = secs / 3600
                                                     val m = (secs % 3600) / 60
                                                     val text = if (h > 0) String.format("%dh %02dm", h, m) else String.format("%dm", m)
-                                                    androidx.compose.material3.Surface(
+                                                    Surface(
                                                         shape = RoundedCornerShape(10.dp),
                                                         color = Color.Black.copy(alpha = 0.55f),
                                                         contentColor = Color.White,
@@ -881,10 +858,10 @@ fun SeriesDetailScreen(
                         if (true) {
                             item {
                                 val firstEp = episodes.firstOrNull()
-                                val actions = buildList<com.chris.m3usuite.ui.actions.MediaAction> {
+                                val actions = buildList<MediaAction> {
                                     if (firstEp != null) add(
-                                        com.chris.m3usuite.ui.actions.MediaAction(
-                                            id = com.chris.m3usuite.ui.actions.MediaActionId.Play,
+                                        MediaAction(
+                                            id = MediaActionId.Play,
                                             label = androidx.compose.ui.res.stringResource(com.chris.m3usuite.R.string.action_play),
                                             primary = true,
                                             onClick = { playEpisode(firstEp, fromStart = true) }
@@ -892,8 +869,8 @@ fun SeriesDetailScreen(
                                     )
                                     val tr = normalizeTrailerUrl(trailer)
                                     if (!tr.isNullOrBlank()) add(
-                                        com.chris.m3usuite.ui.actions.MediaAction(
-                                            id = com.chris.m3usuite.ui.actions.MediaActionId.Trailer,
+                                        MediaAction(
+                                            id = MediaActionId.Trailer,
                                             label = androidx.compose.ui.res.stringResource(com.chris.m3usuite.R.string.action_trailer),
                                             onClick = { runCatching { uriHandler.openUri(tr) } }
                                         )
@@ -946,7 +923,7 @@ fun SeriesDetailScreen(
                                         crossfade = true
                                     )
                                     if (!trailer.isNullOrBlank()) {
-                                        androidx.compose.material3.Surface(
+                                        Surface(
                                             shape = RoundedCornerShape(12.dp),
                                             color = Color.Black.copy(alpha = 0.6f),
                                             contentColor = Color.White,
@@ -988,7 +965,7 @@ fun SeriesDetailScreen(
                                 if (!trailer.isNullOrBlank()) {
                                     Spacer(Modifier.height(8.dp))
                                     val expand = remember { mutableStateOf(false) }
-                                    androidx.compose.material3.Text("Trailer", style = MaterialTheme.typography.titleSmall)
+                                    Text("Trailer", style = MaterialTheme.typography.titleSmall)
                                     com.chris.m3usuite.ui.common.TrailerBox(
                                         url = trailer!!,
                                         headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store),
@@ -1301,7 +1278,7 @@ fun SeriesDetailScreen(
                                                         val h = secs / 3600
                                                         val m = (secs % 3600) / 60
                                                         val text = if (h > 0) String.format("%dh %02dm", h, m) else String.format("%dm", m)
-                                                        androidx.compose.material3.Surface(
+                                                        Surface(
                                                             shape = RoundedCornerShape(10.dp),
                                                             color = Color.Black.copy(alpha = 0.55f),
                                                             contentColor = Color.White,
@@ -1352,16 +1329,16 @@ fun SeriesDetailScreen(
 
                                                 // Actions (per episode): Resume? → Play → Share
                                                 if (com.chris.m3usuite.BuildConfig.MEDIA_ACTIONBAR_V1) {
-                                                    val actions = buildList<com.chris.m3usuite.ui.actions.MediaAction> {
+                                                    val actions = buildList<MediaAction> {
                                                         val canPlay = true
                                                         val r = resumeSecs
                                                         if (r != null && r > 0) add(
-                                                            com.chris.m3usuite.ui.actions.MediaAction(
-                                                                id = com.chris.m3usuite.ui.actions.MediaActionId.Resume,
+                                                            MediaAction(
+                                                                id = MediaActionId.Resume,
                                                                 label = androidx.compose.ui.res.stringResource(com.chris.m3usuite.R.string.action_resume),
                                                                 badge = fmt(r),
                                                                 onClick = {
-                                                                    com.chris.m3usuite.core.telemetry.Telemetry.event(
+                                                                    Telemetry.event(
                                                                         "ui_action_resume",
                                                                         mapOf(
                                                                             "route" to com.chris.m3usuite.metrics.RouteTag.current,
@@ -1374,13 +1351,13 @@ fun SeriesDetailScreen(
                                                             )
                                                         )
                                                         add(
-                                                            com.chris.m3usuite.ui.actions.MediaAction(
-                                                                id = com.chris.m3usuite.ui.actions.MediaActionId.Play,
+                                                            MediaAction(
+                                                                id = MediaActionId.Play,
                                                                 label = androidx.compose.ui.res.stringResource(com.chris.m3usuite.R.string.action_play),
                                                                 primary = true,
                                                                 enabled = canPlay,
                                                                 onClick = {
-                                                                    com.chris.m3usuite.core.telemetry.Telemetry.event(
+                                                                    Telemetry.event(
                                                                         "ui_action_play",
                                                                         mapOf(
                                                                             "route" to com.chris.m3usuite.metrics.RouteTag.current,
@@ -1394,12 +1371,12 @@ fun SeriesDetailScreen(
                                                             )
                                                         )
                                                         add(
-                                                            com.chris.m3usuite.ui.actions.MediaAction(
-                                                                id = com.chris.m3usuite.ui.actions.MediaActionId.Share,
+                                                            MediaAction(
+                                                                id = MediaActionId.Share,
                                                                 label = androidx.compose.ui.res.stringResource(com.chris.m3usuite.R.string.action_share),
                                                                 onClick = {
                                                                     val link = e.buildPlayUrl(ctx)
-                                                                    com.chris.m3usuite.core.telemetry.Telemetry.event(
+                                                                    Telemetry.event(
                                                                         "ui_action_share",
                                                                         mapOf(
                                                                             "route" to com.chris.m3usuite.metrics.RouteTag.current,
@@ -1429,7 +1406,7 @@ fun SeriesDetailScreen(
                                                             )
                                                         )
                                                     }
-                                                    com.chris.m3usuite.ui.actions.MediaActionBar(actions = actions)
+                                                    MediaActionBar(actions = actions)
                                                 } else {
                                                     androidx.compose.material3.TextButton(
                                                         modifier = Modifier.focusScaleOnTv(),
@@ -1455,7 +1432,7 @@ fun SeriesDetailScreen(
                                                         },
                                                         enabled = true,
                                                         colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = accent)
-                                                    ) { androidx.compose.material3.Text("Link teilen") }
+                                                    ) { Text("Link teilen") }
                                                 }
                                             }
 

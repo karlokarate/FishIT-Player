@@ -232,7 +232,7 @@ fun InternalPlayerScreen(
     }
     // Detect telegram early and prepare a low-RAM allocator (shared with player listeners below)
     val isTelegramContent = remember(url) { url.startsWith("tg://", ignoreCase = true) }
-    val is32BitDevice = remember { try { android.os.Build.SUPPORTED_64_BIT_ABIS.isEmpty() } catch (_: Throwable) { true } }
+    val is32BitDevice = remember { try { Build.SUPPORTED_64_BIT_ABIS.isEmpty() } catch (_: Throwable) { true } }
     val allocator = remember(isTelegramContent, is32BitDevice) {
         androidx.media3.exoplayer.upstream.DefaultAllocator(/* trimOnReset = */ true, /* segmentSize = */ if (isTelegramContent || is32BitDevice) 16 * 1024 else 64 * 1024)
     }
@@ -513,7 +513,7 @@ fun InternalPlayerScreen(
                     "ExoErr",
                     "playback_error type=${type} code=${error.errorCode} cause=${error.cause?.javaClass?.simpleName}: ${error.message}"
                 )
-                try { android.widget.Toast.makeText(ctx, "Wiedergabefehler: ${error.errorCodeName}", android.widget.Toast.LENGTH_LONG).show() } catch (_: Throwable) {}
+                try { Toast.makeText(ctx, "Wiedergabefehler: ${error.errorCodeName}", Toast.LENGTH_LONG).show() } catch (_: Throwable) {}
             }
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_ENDED) {
@@ -565,8 +565,6 @@ fun InternalPlayerScreen(
     }
 
     // Auto-save resume on exit without prompting
-    var confirmExit by remember { mutableStateOf(false) } // retained no-op
-    var discardResume by remember { mutableStateOf(false) } // retained no-op
     var finishing by remember { mutableStateOf(false) }
 
     // --- Overlays: Title/Episode/Channel and EPG (Live) ---
@@ -847,7 +845,7 @@ fun InternalPlayerScreen(
     fun requestPictureInPicture() {
         val act = ctx as? Activity ?: return
         if (isTv) {
-            com.chris.m3usuite.ui.home.MiniPlayerState.show()
+            MiniPlayerState.show()
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val params = PictureInPictureParams.Builder()
@@ -963,17 +961,15 @@ fun InternalPlayerScreen(
     // Back handling: close popups first, then exit
     // Moved below aspect-state declarations to ensure references are resolved
     // Focus helpers for TV/D-Pad navigation
-    val centerFocus = remember { androidx.compose.ui.focus.FocusRequester() }
-    val sliderFocus = remember { androidx.compose.ui.focus.FocusRequester() }
-    val quickPipFocus = remember { androidx.compose.ui.focus.FocusRequester() }
-    val quickCcFocus = remember { androidx.compose.ui.focus.FocusRequester() }
-    val quickAspectFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val centerFocus = remember { FocusRequester() }
+    val sliderFocus = remember { FocusRequester() }
+    val quickPipFocus = remember { FocusRequester() }
+    val quickCcFocus = remember { FocusRequester() }
+    val quickAspectFocus = remember { FocusRequester() }
 
     // Aspect / resize controls
     var resizeMode by remember { mutableStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIT) }
     // Overlays: make container fully transparent (only buttons visible)
-    val scrimAlpha = 0f
-    val bottomScrimAlpha = 0f
     var showAspectMenu by remember { mutableStateOf(false) }
     var customScaleEnabled by remember { mutableStateOf(false) }
     var customScaleX by remember { mutableStateOf(1f) }
@@ -1079,7 +1075,7 @@ fun InternalPlayerScreen(
                     view.isFocusableInTouchMode = true
                     view.requestFocus()
                     // Burst tap seeking and long-press accelerated seeking
-                    var seekRepeatJob: kotlinx.coroutines.Job? = null
+                    var seekRepeatJob: Job? = null
                     var seekDir: Int = 0
 
                     // Burst state
@@ -1338,8 +1334,8 @@ fun InternalPlayerScreen(
                             style = stroke
                         )
                     }
-                    androidx.compose.material3.Text(text = fmt(tgt), style = MaterialTheme.typography.titleMedium)
-                    androidx.compose.material3.Text(text = deltaStr, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(text = fmt(tgt), style = MaterialTheme.typography.titleMedium)
+                    Text(text = deltaStr, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -1382,7 +1378,7 @@ fun InternalPlayerScreen(
                         .padding(start = 12.dp, top = 8.dp)
                         .graphicsLayer { }
                 ) {
-                    Text(text = overlayTitle, color = Color.White, style = androidx.compose.material3.MaterialTheme.typography.titleSmall)
+                    Text(text = overlayTitle, color = Color.White, style = MaterialTheme.typography.titleSmall)
                 }
             }
         }
@@ -1396,8 +1392,8 @@ fun InternalPlayerScreen(
                         .statusBarsPadding()
                         .padding(start = 12.dp, top = if (showOverlayTitle) 30.dp else 8.dp)
                 ) {
-                    if (epgNow.isNotBlank()) Text(text = epgNow, color = Color.White.copy(alpha = 0.9f), style = androidx.compose.material3.MaterialTheme.typography.labelLarge)
-                    if (epgNext.isNotBlank()) Text(text = epgNext, color = Color.White.copy(alpha = 0.7f), style = androidx.compose.material3.MaterialTheme.typography.labelMedium)
+                    if (epgNow.isNotBlank()) Text(text = epgNow, color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.labelLarge)
+                    if (epgNext.isNotBlank()) Text(text = epgNext, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
@@ -1406,7 +1402,7 @@ fun InternalPlayerScreen(
         if (type == "live" && showLiveListSheet) {
             ModalBottomSheet(onDismissRequest = { showLiveListSheet = false }) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(if (originLiveLibrary) "Senderliste" else "Favoriten", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                    Text(if (originLiveLibrary) "Senderliste" else "Favoriten", style = MaterialTheme.typography.titleMedium)
                     if (originLiveLibrary) {
                         // Nur Kategorien (keine Provider-Chips)
                         val itemsWithCats = remember(libraryLive) {
@@ -1462,7 +1458,7 @@ fun InternalPlayerScreen(
                                         .padding(horizontal = 8.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(text = mi.name, color = Color.White, style = androidx.compose.material3.MaterialTheme.typography.bodyLarge)
+                                    Text(text = mi.name, color = Color.White, style = MaterialTheme.typography.bodyLarge)
                                 }
                             }
                         }
@@ -1478,7 +1474,7 @@ fun InternalPlayerScreen(
                                         .padding(horizontal = 8.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(text = mi.name, color = Color.White, style = androidx.compose.material3.MaterialTheme.typography.bodyLarge)
+                                    Text(text = mi.name, color = Color.White, style = MaterialTheme.typography.bodyLarge)
                                 }
                             }
                         }
@@ -1558,8 +1554,8 @@ fun InternalPlayerScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(elapsedText, style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.90f))
-                                    Text(remainingText, style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.90f))
+                                    Text(elapsedText, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.90f))
+                                    Text(remainingText, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.90f))
                                 }
                             }
                         }
@@ -1617,8 +1613,8 @@ fun InternalPlayerScreen(
                 ) {
                     controlsTick++
                     if (!showCcMenu) {
-                        localScale = effectiveScale(); localFg = effectiveFg(); localBg = effectiveBg();
-                        localFgOpacity = effectiveFgOpacity(); localBgOpacity = effectiveBgOpacity();
+                        localScale = effectiveScale(); localFg = effectiveFg(); localBg = effectiveBg()
+                        localFgOpacity = effectiveFgOpacity(); localBgOpacity = effectiveBgOpacity()
                         refreshSubtitleOptions()
                     }
                     showCcMenu = true
@@ -1798,7 +1794,7 @@ fun InternalPlayerScreen(
             if (showAspectMenu) {
                 ModalBottomSheet(onDismissRequest = { showAspectMenu = false }) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Bildformat", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                        Text("Bildformat", style = MaterialTheme.typography.titleMedium)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(modifier = Modifier.focusScaleOnTv(), onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT; customScaleEnabled = false }) { Text("Original") }
                             Button(modifier = Modifier.focusScaleOnTv(), onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM; customScaleEnabled = false }) { Text("Vollbild") }

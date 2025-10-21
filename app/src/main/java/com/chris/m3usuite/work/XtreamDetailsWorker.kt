@@ -36,7 +36,7 @@ class XtreamDetailsWorker(appContext: Context, params: WorkerParameters): Corout
             if (vodUpdated > 0 || seriesUpdated > 0) {
                 kotlin.runCatching {
                     val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                    com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive)
+                    SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive)
                 }
             }
             Result.success()

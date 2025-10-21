@@ -1,7 +1,9 @@
 package com.chris.m3usuite.metrics
 
+import android.os.Build
 import android.os.SystemClock
 import android.util.Log
+import androidx.annotation.RequiresApi
 import java.util.concurrent.ConcurrentHashMap
 
 object JankReporter {
@@ -9,6 +11,7 @@ object JankReporter {
     private val counters = ConcurrentHashMap<String, Counter>()
     private const val WINDOW_MS = 5_000L
 
+    @RequiresApi(Build.VERSION_CODES.N)
     fun record(route: String, isJank: Boolean, durationNs: Long) {
         val key = route.ifBlank { "unknown" }
         val now = SystemClock.uptimeMillis()

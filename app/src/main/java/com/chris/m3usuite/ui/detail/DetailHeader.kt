@@ -13,7 +13,7 @@ import com.chris.m3usuite.ui.actions.MediaAction
 import com.chris.m3usuite.ui.actions.MediaActionBar
 import com.chris.m3usuite.ui.util.AppPosterImage
 
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DetailHeader(
     title: String,

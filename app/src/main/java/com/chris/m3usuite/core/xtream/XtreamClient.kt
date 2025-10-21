@@ -33,12 +33,12 @@ class XtreamClient(
     private val io: CoroutineDispatcher = Dispatchers.IO
 ) {
     companion object {
-        private val rateMutex = kotlinx.coroutines.sync.Mutex()
+        private val rateMutex = Mutex()
         private var lastCallAt = 0L
         private const val MIN_INTERVAL_MS = 120L
 
         private data class CacheEntry(val at: Long, val body: String)
-        private val cacheLock = kotlinx.coroutines.sync.Mutex()
+        private val cacheLock = Mutex()
         private val cache = object : LinkedHashMap<String, CacheEntry>(512, 0.75f, true) {
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CacheEntry>?): Boolean = size > 512
         }

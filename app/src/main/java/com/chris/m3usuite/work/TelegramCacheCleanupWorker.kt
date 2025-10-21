@@ -122,7 +122,7 @@ class TelegramCacheCleanupWorker(appContext: Context, params: WorkerParameters) 
             if (changed.isNotEmpty()) {
                 var i = 0
                 while (i < changed.size) {
-                    val to = kotlin.math.min(i + 2000, changed.size)
+                    val to = min(i + 2000, changed.size)
                     msgBox.put(changed.subList(i, to).onEach { it.localPath = null })
                     i = to
                 }

@@ -113,6 +113,7 @@ private val Context.dataStore by preferencesDataStore("settings")
     val TG_PROXY_SECRET = stringPreferencesKey("tg_proxy_secret")
     val TG_PROXY_ENABLED = booleanPreferencesKey("tg_proxy_enabled")
     val TG_LOG_VERBOSITY = intPreferencesKey("tg_log_verbosity")
+    val LOG_DIR_TREE_URI = stringPreferencesKey("log_dir_tree_uri")
     val TG_LOG_OVERLAY = booleanPreferencesKey("tg_log_overlay")
     val TG_PREFETCH_WINDOW_MB = intPreferencesKey("tg_prefetch_window_mb")
     val TG_SEEK_BOOST_ENABLED = booleanPreferencesKey("tg_seek_boost_enabled")
@@ -292,6 +293,7 @@ class SettingsStore(private val context: Context) {
     val tgProxySecret: Flow<String> = context.dataStore.data.map { Crypto.decrypt(it[Keys.TG_PROXY_SECRET].orEmpty()) }
     val tgProxyEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_PROXY_ENABLED] ?: false }
     val tgLogVerbosity: Flow<Int> = context.dataStore.data.map { it[Keys.TG_LOG_VERBOSITY] ?: 1 }
+    val logDirTreeUri: Flow<String> = context.dataStore.data.map { it[Keys.LOG_DIR_TREE_URI].orEmpty() }
     val tgLogOverlayEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_LOG_OVERLAY] ?: false }
     val tgPrefetchWindowMb: Flow<Int> = context.dataStore.data.map { it[Keys.TG_PREFETCH_WINDOW_MB] ?: 8 }
     val tgSeekBoostEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_SEEK_BOOST_ENABLED] ?: true }
@@ -378,6 +380,17 @@ class SettingsStore(private val context: Context) {
     // Explicit setters for frequently used settings
     suspend fun setM3uUrl(value: String) { context.dataStore.edit { it[Keys.M3U_URL] = value } }
     suspend fun setEpgUrl(value: String) { context.dataStore.edit { it[Keys.EPG_URL] = value } }
+    suspend fun setUserAgent(value: String) { context.dataStore.edit { it[Keys.USER_AGENT] = value } }
+    suspend fun setReferer(value: String) { context.dataStore.edit { it[Keys.REFERER] = value } }
+    suspend fun setExtraHeadersJson(value: String) { context.dataStore.edit { it[Keys.EXTRA_HEADERS] = value } }
+    suspend fun setNetworkBases(m3u: String, epg: String, ua: String, referer: String) {
+        context.dataStore.edit {
+            it[Keys.M3U_URL] = m3u
+            it[Keys.EPG_URL] = epg
+            it[Keys.USER_AGENT] = ua
+            it[Keys.REFERER] = referer
+        }
+    }
     suspend fun setXtHost(value: String) { context.dataStore.edit { it[Keys.XT_HOST] = value } }
     suspend fun setXtPort(value: Int) { context.dataStore.edit { it[Keys.XT_PORT] = value } }
     suspend fun setXtUser(value: String) { context.dataStore.edit { it[Keys.XT_USER] = value } }
@@ -534,6 +547,13 @@ class SettingsStore(private val context: Context) {
     suspend fun setTelegramProxyPassword(value: String) { context.dataStore.edit { it[Keys.TG_PROXY_PASSWORD] = Crypto.encrypt(value) } }
     suspend fun setTelegramProxySecret(value: String) { context.dataStore.edit { it[Keys.TG_PROXY_SECRET] = Crypto.encrypt(value) } }
     suspend fun setTelegramProxyEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_PROXY_ENABLED] = value } }
+    suspend fun setTgProxyType(value: String) = setTelegramProxyType(value)
+    suspend fun setTgProxyHost(value: String) = setTelegramProxyHost(value)
+    suspend fun setTgProxyPort(value: Int) = setTelegramProxyPort(value)
+    suspend fun setTgProxyUsername(value: String) = setTelegramProxyUsername(value)
+    suspend fun setTgProxyPassword(value: String) = setTelegramProxyPassword(value)
+    suspend fun setTgProxySecret(value: String) = setTelegramProxySecret(value)
+    suspend fun setTgProxyEnabled(value: Boolean) = setTelegramProxyEnabled(value)
     suspend fun setTelegramLogVerbosity(value: Int) { context.dataStore.edit { it[Keys.TG_LOG_VERBOSITY] = value } }
     suspend fun setTelegramPrefetchWindowMb(value: Int) { context.dataStore.edit { it[Keys.TG_PREFETCH_WINDOW_MB] = value } }
     suspend fun setTelegramSeekBoostEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_SEEK_BOOST_ENABLED] = value } }
@@ -586,6 +606,24 @@ class SettingsStore(private val context: Context) {
             it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] = lessDataCalls
         }
     }
+    suspend fun setTgAutoWifiEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_WIFI_ENABLED] = value } }
+    suspend fun setTgAutoWifiPreloadLarge(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_WIFI_PRELOAD_LARGE] = value } }
+    suspend fun setTgAutoWifiPreloadNextAudio(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_WIFI_PRELOAD_NEXT_AUDIO] = value } }
+    suspend fun setTgAutoWifiPreloadStories(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_WIFI_PRELOAD_STORIES] = value } }
+    suspend fun setTgAutoWifiLessDataCalls(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_WIFI_LESS_DATA_CALLS] = value } }
+    suspend fun setTgAutoMobileEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_MOBILE_ENABLED] = value } }
+    suspend fun setTgAutoMobilePreloadLarge(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_MOBILE_PRELOAD_LARGE] = value } }
+    suspend fun setTgAutoMobilePreloadNextAudio(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_MOBILE_PRELOAD_NEXT_AUDIO] = value } }
+    suspend fun setTgAutoMobilePreloadStories(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_MOBILE_PRELOAD_STORIES] = value } }
+    suspend fun setTgAutoMobileLessDataCalls(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_MOBILE_LESS_DATA_CALLS] = value } }
+    suspend fun setTgAutoRoamingEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_ROAM_ENABLED] = value } }
+    suspend fun setTgAutoRoamingPreloadLarge(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_ROAM_PRELOAD_LARGE] = value } }
+    suspend fun setTgAutoRoamingPreloadNextAudio(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_ROAM_PRELOAD_NEXT_AUDIO] = value } }
+    suspend fun setTgAutoRoamingPreloadStories(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_ROAM_PRELOAD_STORIES] = value } }
+    suspend fun setTgAutoRoamingLessDataCalls(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] = value } }
+    suspend fun setTgEnabled(value: Boolean) = setTelegramEnabled(value)
+    suspend fun setTgLogVerbosity(value: Int) = setTelegramLogVerbosity(value)
+    suspend fun setLogDirTreeUri(value: String) { context.dataStore.edit { it[Keys.LOG_DIR_TREE_URI] = value } }
 
     data class Snapshot(
         val m3uUrl: String,

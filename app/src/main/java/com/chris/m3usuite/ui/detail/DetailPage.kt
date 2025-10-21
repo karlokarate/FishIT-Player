@@ -71,7 +71,7 @@ fun DetailPage(
         LazyColumn(
             modifier = modifier,
             state = listState,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp)
+            contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             item {
                 DetailHeader(
@@ -134,8 +134,8 @@ fun DetailPage(
             item {
                 androidx.compose.material3.Text(
                     "Tippe auf Poster oder Titel, um abzuspielen.",
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.secondary
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
                 )
             }
         }

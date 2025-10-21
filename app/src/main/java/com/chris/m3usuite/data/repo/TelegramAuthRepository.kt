@@ -30,8 +30,8 @@ class TelegramAuthRepository(private val context: Context, private val apiId: In
     val authState: StateFlow<TdLibReflection.AuthState> get() = _authState
     private val _errors = kotlinx.coroutines.flow.MutableSharedFlow<AuthError>(replay = 0, extraBufferCapacity = 16)
     val errors: kotlinx.coroutines.flow.Flow<AuthError> get() = _errors
-    private val _authEvents = kotlinx.coroutines.flow.MutableSharedFlow<com.chris.m3usuite.telegram.service.TelegramServiceClient.AuthEvent>(replay = 0, extraBufferCapacity = 16)
-    val authEvents: kotlinx.coroutines.flow.Flow<com.chris.m3usuite.telegram.service.TelegramServiceClient.AuthEvent> get() = _authEvents
+    private val _authEvents = kotlinx.coroutines.flow.MutableSharedFlow<TelegramServiceClient.AuthEvent>(replay = 0, extraBufferCapacity = 16)
+    val authEvents: kotlinx.coroutines.flow.Flow<TelegramServiceClient.AuthEvent> get() = _authEvents
     private val _resendSeconds = MutableStateFlow(0)
     val resendSeconds: StateFlow<Int> get() = _resendSeconds
 

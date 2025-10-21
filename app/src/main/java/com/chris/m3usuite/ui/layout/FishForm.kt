@@ -15,7 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -203,7 +203,7 @@ fun <T> FishFormSelect(
                     overflow = TextOverflow.Ellipsis
                 )
                 Icon(
-                    imageVector = Icons.Filled.ArrowForward,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = null,
                     tint = if (enabled && safeOptions.isNotEmpty()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                 )
@@ -271,7 +271,7 @@ fun FishFormSlider(
         }
         if (isTv) {
             LinearProgressIndicator(
-                progress = ratio,
+                progress = { ratio },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = horizontal)
@@ -503,4 +503,4 @@ private fun TvKeyboard.toKeyboardOptions(): KeyboardOptions = when (this) {
     TvKeyboard.Email -> KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done)
 }
 
-private fun IntRange.isEmpty(): Boolean = first > last
+// Use Kotlin's built-in IntRange.isEmpty()

@@ -1,5 +1,6 @@
 package com.chris.m3usuite.ui.home
 
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -35,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.chris.m3usuite.playback.PlaybackSession
@@ -42,6 +44,7 @@ import com.chris.m3usuite.ui.focus.FocusKit
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
+@OptIn(UnstableApi::class)
 @Composable
 fun MiniPlayerHost(
     focusEnabled: Boolean,
@@ -86,7 +89,7 @@ fun MiniPlayerHost(
     var progress by remember { mutableFloatStateOf(0f) }
     var durationMs by remember { mutableStateOf(0L) }
     LaunchedEffect(shouldShow, player) {
-        if (!shouldShow || player == null) return@LaunchedEffect
+        if (!shouldShow) return@LaunchedEffect
         while (isActive && MiniPlayerState.visible.value) {
             val dur = player.duration.takeIf { it > 0 } ?: 0L
             val pos = player.currentPosition

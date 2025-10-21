@@ -1,12 +1,14 @@
 package com.chris.m3usuite.telegram.service
 
 import android.content.*
+import android.net.Uri
 import android.os.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
@@ -16,13 +18,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 class TelegramServiceClient(private val context: Context) {
     data class ChatSyncResult(
@@ -47,6 +45,11 @@ class TelegramServiceClient(private val context: Context) {
         object SignedIn : AuthEvent
     }
 
+    // ---- Einfacher, beobachtbarer Auth-State für Compose (non-breaking) ----
+    enum class AuthState { Idle, CodeSent, PasswordRequired, SignedIn, Error }
+    private val _authState = MutableStateFlow(AuthState.Idle)
+    val authState: StateFlow<AuthState> = _authState.asStateFlow()
+
     private var serviceMessenger: Messenger? = null
     // Queue outbound commands until the service binding is established to avoid races
     private val pending = ArrayDeque<Message>()
@@ -59,9 +62,6 @@ class TelegramServiceClient(private val context: Context) {
     val authEvents = authEventsChannel.receiveAsFlow()
     private val resendState = MutableStateFlow(0)
     val resendInSec: StateFlow<Int> = resendState.asStateFlow()
-    private val authStateInternal = MutableStateFlow("UNKNOWN")
-    val authState: StateFlow<String> = authStateInternal.asStateFlow()
-    private val authMutex = Mutex()
     private var resendJob: Job? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val incoming = object : Handler(Looper.getMainLooper()) {
@@ -69,15 +69,18 @@ class TelegramServiceClient(private val context: Context) {
             when (msg.what) {
                 TelegramTdlibService.REPLY_AUTH_STATE -> {
                     val st = msg.data.getString("state") ?: return
-                    authStateInternal.value = st
                     _authCallbacks.forEach { it(st) }
                     val qr = msg.data.getString("qr")
                     if (!qr.isNullOrBlank()) _qrCallbacks.forEach { it(qr) }
                     when (st.uppercase()) {
-                        "WAIT_FOR_PASSWORD" -> authEventsChannel.trySend(AuthEvent.PasswordRequired)
+                        "WAIT_FOR_PASSWORD" -> {
+                            authEventsChannel.trySend(AuthEvent.PasswordRequired)
+                            _authState.value = AuthState.PasswordRequired
+                        }
                         "AUTHENTICATED" -> {
                             authEventsChannel.trySend(AuthEvent.SignedIn)
                             stopResendCountdown()
+                            _authState.value = AuthState.SignedIn
                         }
                     }
                 }
@@ -90,6 +93,7 @@ class TelegramServiceClient(private val context: Context) {
                     _errorCallbacks.forEach { it(error) }
                     val (userMessage, retryAfter) = mapAuthError(error)
                     authEventsChannel.trySend(AuthEvent.Error(userMessage, retryAfter))
+                    _authState.value = AuthState.Error
                 }
                 TelegramTdlibService.REPLY_CHAT_LIST -> {
                     val reqId = msg.data.getInt("reqId")
@@ -128,12 +132,16 @@ class TelegramServiceClient(private val context: Context) {
                             val next = msg.data.getString("nextType")
                             startResendCountdown(timeout)
                             authEventsChannel.trySend(AuthEvent.CodeSent(timeout, next))
+                            _authState.value = AuthState.CodeSent
                         }
-                        "password_required" -> authEventsChannel.trySend(AuthEvent.PasswordRequired)
+                        "password_required" -> {
+                            authEventsChannel.trySend(AuthEvent.PasswordRequired)
+                            _authState.value = AuthState.PasswordRequired
+                        }
                         "signed_in" -> {
                             authEventsChannel.trySend(AuthEvent.SignedIn)
                             stopResendCountdown()
-                            authStateInternal.value = "AUTHENTICATED"
+                            _authState.value = AuthState.SignedIn
                         }
                     }
                 }
@@ -170,7 +178,6 @@ class TelegramServiceClient(private val context: Context) {
         _qrCallbacks.clear()
         stopResendCountdown()
         scope.coroutineContext[Job]?.cancelChildren()
-        authStateInternal.value = "UNKNOWN"
         synchronized(pendingChatList) {
             val callbacks = pendingChatList.values.toList()
             pendingChatList.clear()
@@ -292,18 +299,14 @@ class TelegramServiceClient(private val context: Context) {
     }
     fun applyAllSettings() = send(TelegramTdlibService.CMD_APPLY_ALL_SETTINGS)
 
-    suspend fun listFolders(): IntArray {
-        awaitAuthorized()
-        return suspendCancellableCoroutine { cont ->
-            pendingFolderList = { arr -> cont.resume(arr) }
-            cont.invokeOnCancellation { pendingFolderList = null }
-            send(TelegramTdlibService.CMD_LIST_FOLDERS)
-        }
+    suspend fun listFolders(): IntArray = suspendCancellableCoroutine { cont ->
+        pendingFolderList = { arr -> cont.resume(arr) }
+        cont.invokeOnCancellation { pendingFolderList = null }
+        send(TelegramTdlibService.CMD_LIST_FOLDERS)
     }
 
-    suspend fun listChats(list: String, limit: Int = 200, query: String? = null): List<Pair<Long, String>> {
-        awaitAuthorized()
-        return suspendCancellableCoroutine { cont ->
+    suspend fun listChats(list: String, limit: Int = 200, query: String? = null): List<Pair<Long, String>> =
+        suspendCancellableCoroutine { cont ->
             val reqId = nextReqId.getAndIncrement()
             synchronized(pendingChatList) {
                 pendingChatList[reqId] = { ids, titles ->
@@ -321,11 +324,9 @@ class TelegramServiceClient(private val context: Context) {
                 if (!query.isNullOrBlank()) putString("query", query)
             }
         }
-    }
 
-    suspend fun resolveChatTitles(ids: LongArray): List<Pair<Long, String>> {
-        awaitAuthorized()
-        return suspendCancellableCoroutine { cont ->
+    suspend fun resolveChatTitles(ids: LongArray): List<Pair<Long, String>> =
+        suspendCancellableCoroutine { cont ->
             val reqId = nextReqId.getAndIncrement()
             synchronized(pendingTitles) {
                 pendingTitles[reqId] = { resolvedIds, titles ->
@@ -341,7 +342,6 @@ class TelegramServiceClient(private val context: Context) {
                 putLongArray("ids", ids)
             }
         }
-    }
 
     fun pullChatHistory(chatId: Long, limit: Int = 200, fetchAll: Boolean = false) =
         send(TelegramTdlibService.CMD_PULL_CHAT_HISTORY) {
@@ -350,9 +350,8 @@ class TelegramServiceClient(private val context: Context) {
             putBoolean("fetchAll", fetchAll)
         }
 
-    suspend fun pullChatHistoryAwait(chatId: Long, limit: Int = 200, fetchAll: Boolean = false): ChatSyncResult {
-        awaitAuthorized()
-        return suspendCancellableCoroutine { cont ->
+    suspend fun pullChatHistoryAwait(chatId: Long, limit: Int = 200, fetchAll: Boolean = false): ChatSyncResult =
+        suspendCancellableCoroutine { cont ->
             val reqId = nextReqId.getAndIncrement()
             synchronized(pendingPulls) {
                 pendingPulls[reqId] = { result -> cont.resume(result) }
@@ -365,6 +364,14 @@ class TelegramServiceClient(private val context: Context) {
                 putBoolean("fetchAll", fetchAll)
             }
         }
+
+    fun persistTreePermission(uri: Uri) {
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        }
     }
 
     suspend fun resolveChatTitle(chatId: Long): String? {
@@ -372,35 +379,24 @@ class TelegramServiceClient(private val context: Context) {
     }
 
     suspend fun requestCode(phone: String, isCurrentDevice: Boolean = false) {
-        authMutex.withLock {
-            sendPhone(
-                phone = phone,
-                isCurrentDevice = isCurrentDevice,
-                allowFlashCall = false,
-                allowMissedCall = false,
-                allowSmsRetriever = true
-            )
-            getAuth()
-        }
+        sendPhone(
+            phone = phone,
+            isCurrentDevice = isCurrentDevice,
+            allowFlashCall = false,
+            allowMissedCall = false,
+            allowSmsRetriever = true
+        )
+        getAuth()
     }
 
     suspend fun submitCode(code: String) {
-        authMutex.withLock {
-            sendCode(code)
-            getAuth()
-        }
+        sendCode(code)
+        getAuth()
     }
 
     suspend fun submitPassword(password: String) {
-        authMutex.withLock {
-            sendPassword(password)
-            getAuth()
-        }
-    }
-
-    suspend fun awaitAuthorized() {
-        if (authStateInternal.value.equals("AUTHENTICATED", ignoreCase = true)) return
-        authState.filter { it.equals("AUTHENTICATED", ignoreCase = true) }.first()
+        sendPassword(password)
+        getAuth()
     }
 
     private fun startResendCountdown(timeout: Int) {

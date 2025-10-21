@@ -367,7 +367,7 @@ fun HomeChromeScaffold(
         }
     } else Modifier
 
-        androidx.compose.runtime.CompositionLocalProvider(
+        CompositionLocalProvider(
             LocalChromeToggle provides ({
                 if (tvChromeMode.value == ChromeMode.Expanded) {
                     tvChromeMode.value = ChromeMode.Collapsed

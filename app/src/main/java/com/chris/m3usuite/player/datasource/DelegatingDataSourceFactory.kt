@@ -2,12 +2,14 @@ package com.chris.m3usuite.player.datasource
 
 import android.content.Context
 import androidx.media3.common.C
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.TransferListener
 import java.io.IOException
 import java.util.Locale
 
+@UnstableApi
 class DelegatingDataSourceFactory(
     private val context: Context,
     private val fallback: DataSource.Factory,
@@ -15,6 +17,7 @@ class DelegatingDataSourceFactory(
     override fun createDataSource(): DataSource = DelegatingDataSource(context, fallback)
 }
 
+@UnstableApi
 private class DelegatingDataSource(
     private val context: Context,
     private val fallback: DataSource.Factory,

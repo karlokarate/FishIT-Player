@@ -75,10 +75,10 @@ fun FishITHeader(
     val attachToSearch = firstFocus != null && onSearch != null && !attachToSettings
     val attachToProfiles = firstFocus != null && onProfiles != null && !attachToSettings && !attachToSearch
     val attachToLogo = firstFocus != null && onLogo != null && !attachToSettings && !attachToSearch && !attachToProfiles
-    val logoRequester = if (attachToLogo && firstFocus != null) firstFocus else headerRefs.logo
-    val searchRequester = if (attachToSearch && firstFocus != null) firstFocus else headerRefs.search
-    val profileRequester = if (attachToProfiles && firstFocus != null) firstFocus else headerRefs.profile
-    val settingsRequester = if (attachToSettings && firstFocus != null) firstFocus else headerRefs.settings
+    val logoRequester = if (attachToLogo) firstFocus!! else headerRefs.logo
+    val searchRequester = if (attachToSearch) firstFocus!! else headerRefs.search
+    val profileRequester = if (attachToProfiles) firstFocus!! else headerRefs.profile
+    val settingsRequester = if (attachToSettings) firstFocus!! else headerRefs.settings
 
     val showLibraryNav = librarySelected != null && onLibrarySelect != null
     val libraryRefsResolved = libraryRefs ?: remember { ChromeLibraryFocusRefs(FocusRequester(), FocusRequester(), FocusRequester()) }

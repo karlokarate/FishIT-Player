@@ -181,7 +181,7 @@ class XtreamObxRepository(
             val liveBox = boxStore.boxFor<ObxLive>()
             val vodBox = boxStore.boxFor<ObxVod>()
             val seriesBox = boxStore.boxFor<ObxSeries>()
-            val epBox = boxStore.boxFor<ObxEpisode>()
+            boxStore.boxFor<ObxEpisode>()
 
             // Kategorien: nur upserten (keine Löschungen, um Flackern zu vermeiden)
             run {
@@ -373,7 +373,8 @@ class XtreamObxRepository(
                                             val gKey = deriveGenreKey(r.name, catName, null)
                                             val seedImagesJson = runCatching {
                                                 val c = r.cover
-                                                if (!c.isNullOrBlank()) kotlinx.serialization.json.Json.encodeToString(kotlinx.serialization.builtins.ListSerializer(String.serializer()), listOf(c)) else null
+                                                if (!c.isNullOrBlank()) Json.encodeToString(
+                                                    ListSerializer(String.serializer()), listOf(c)) else null
                                             }.getOrNull()
                                             val e = if (existing == null) ObxSeries(
                                                 seriesId = sid,
@@ -413,7 +414,8 @@ class XtreamObxRepository(
                             val gKey = deriveGenreKey(r.name, catName, null)
                             val seedImagesJson = runCatching {
                                 val c = r.cover
-                                if (!c.isNullOrBlank()) kotlinx.serialization.json.Json.encodeToString(kotlinx.serialization.builtins.ListSerializer(String.serializer()), listOf(c)) else null
+                                if (!c.isNullOrBlank()) Json.encodeToString(
+                                    ListSerializer(String.serializer()), listOf(c)) else null
                             }.getOrNull()
                             val e = if (existing == null) ObxSeries(
                                 seriesId = sid,
@@ -1296,7 +1298,7 @@ class XtreamObxRepository(
             val serCats = client.getSeriesCategories()
             val liveCatMap = liveCats.associateBy({ it.category_id.orEmpty() }, { it.category_name })
             val vodCatMap = vodCats.associateBy({ it.category_id.orEmpty() }, { it.category_name })
-            val serCatMap = serCats.associateBy({ it.category_id.orEmpty() }, { it.category_name })
+            serCats.associateBy({ it.category_id.orEmpty() }, { it.category_name })
             catBox.removeAll()
             catBox.put(liveCats.map { ObxCategory(kind = "live", categoryId = it.category_id.orEmpty(), categoryName = it.category_name) })
             catBox.put(vodCats.map { ObxCategory(kind = "vod", categoryId = it.category_id.orEmpty(), categoryName = it.category_name) })
@@ -1533,7 +1535,7 @@ class XtreamObxRepository(
     private fun parseShortEpg(json: String?): List<XtShortEPGProgramme> {
         if (json.isNullOrBlank()) return emptyList()
         return try {
-            val root = kotlinx.serialization.json.Json.parseToJsonElement(json)
+            val root = Json.parseToJsonElement(json)
             val arr = root.jsonArray
             arr.mapNotNull { el ->
                 val obj = el.jsonObject
@@ -1760,9 +1762,9 @@ class XtreamObxRepository(
     // --- Distinct key lists (for grouped headers without in-memory scans) ---
     suspend fun indexProviderKeys(kind: String): List<String> = withContext(Dispatchers.IO) {
         val box = ObxStore.get(context).boxFor<ObxIndexProvider>()
-        val rows = box.query(com.chris.m3usuite.data.obx.ObxIndexProvider_.kind.equal(kind)).build().find()
+        val rows = box.query(ObxIndexProvider_.kind.equal(kind)).build().find()
         if (rows.isEmpty()) return@withContext emptyList<String>()
-        val sorted = rows.sortedWith(compareByDescending<com.chris.m3usuite.data.obx.ObxIndexProvider> { it.count }.thenBy { it.key })
+        val sorted = rows.sortedWith(compareByDescending<ObxIndexProvider> { it.count }.thenBy { it.key })
         val (others, rest) = sorted.partition { it.key == "other" }
         val filteredRest = rest.map { it.key }
         val otherKey = others.firstOrNull()?.takeIf { it.count >= 10 }?.key
@@ -1770,8 +1772,8 @@ class XtreamObxRepository(
     }
     suspend fun indexGenreKeys(kind: String): List<String> = withContext(Dispatchers.IO) {
         val box = ObxStore.get(context).boxFor<ObxIndexGenre>()
-        val rows = box.query(com.chris.m3usuite.data.obx.ObxIndexGenre_.kind.equal(kind)).build()
-            .find().sortedWith(compareByDescending<com.chris.m3usuite.data.obx.ObxIndexGenre> { it.count }.thenBy { it.key })
+        val rows = box.query(ObxIndexGenre_.kind.equal(kind)).build()
+            .find().sortedWith(compareByDescending<ObxIndexGenre> { it.count }.thenBy { it.key })
         if (rows.isNotEmpty()) return@withContext rows.map { it.key }
         // Fallback: when index not built yet but content exists, return a minimal bucket so UI shows at least "Unkategorisiert"
         val hasContent = when (kind) {
@@ -1784,8 +1786,8 @@ class XtreamObxRepository(
     }
     suspend fun indexYearKeys(kind: String): List<Int> = withContext(Dispatchers.IO) {
         val box = ObxStore.get(context).boxFor<ObxIndexYear>()
-        box.query(com.chris.m3usuite.data.obx.ObxIndexYear_.kind.equal(kind)).build()
-            .find().sortedWith(compareByDescending<com.chris.m3usuite.data.obx.ObxIndexYear> { it.key }.thenByDescending { it.count })
+        box.query(ObxIndexYear_.kind.equal(kind)).build()
+            .find().sortedWith(compareByDescending<ObxIndexYear> { it.key }.thenByDescending { it.count })
             .map { it.key }
     }
     suspend fun liveProviderKeys(): List<String> = withContext(Dispatchers.IO) {
@@ -1882,7 +1884,7 @@ class XtreamObxRepository(
     }
 
     private fun updateProviderIndex(kind: String, counts: Map<String, Long>, box: Box<ObxIndexProvider>) {
-        val query = box.query(com.chris.m3usuite.data.obx.ObxIndexProvider_.kind.equal(kind)).build()
+        val query = box.query(ObxIndexProvider_.kind.equal(kind)).build()
         val existing = try { query.find() } finally { query.close() }
         if (counts.isEmpty()) {
             if (existing.isNotEmpty()) box.remove(existing)
@@ -1904,7 +1906,7 @@ class XtreamObxRepository(
     }
 
     private fun updateGenreIndex(kind: String, counts: Map<String, Long>, box: Box<ObxIndexGenre>) {
-        val query = box.query(com.chris.m3usuite.data.obx.ObxIndexGenre_.kind.equal(kind)).build()
+        val query = box.query(ObxIndexGenre_.kind.equal(kind)).build()
         val existing = try { query.find() } finally { query.close() }
         if (counts.isEmpty()) {
             if (existing.isNotEmpty()) box.remove(existing)
@@ -1926,7 +1928,7 @@ class XtreamObxRepository(
     }
 
     private fun updateYearIndex(kind: String, counts: Map<Int, Long>, box: Box<ObxIndexYear>) {
-        val query = box.query(com.chris.m3usuite.data.obx.ObxIndexYear_.kind.equal(kind)).build()
+        val query = box.query(ObxIndexYear_.kind.equal(kind)).build()
         val existing = try { query.find() } finally { query.close() }
         if (counts.isEmpty()) {
             if (existing.isNotEmpty()) box.remove(existing)

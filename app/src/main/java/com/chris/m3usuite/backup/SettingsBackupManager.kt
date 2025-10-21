@@ -1,6 +1,8 @@
 package com.chris.m3usuite.backup
 
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.chris.m3usuite.backup.BackupFormat.Manifest
 import com.chris.m3usuite.backup.BackupFormat.Payload
 import com.chris.m3usuite.backup.BackupFormat.ProfileExport
@@ -23,8 +25,10 @@ class SettingsBackupManager(private val context: Context) {
     data class Report(val settingsKeys: Int, val profiles: Int, val resumeVod: Int, val resumeEpisodes: Int)
     enum class ImportMode { Merge, Replace }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun nowIsoUtc(): String = DateTimeFormatter.ISO_INSTANT.format(Instant.now().atZone(ZoneOffset.UTC))
 
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun exportAll(progress: suspend (Int, String) -> Unit, passphrase: CharArray?): Pair<String, ByteArray> =
         withContext(Dispatchers.IO) {
             progress(2, "Lese Einstellungen…")
@@ -60,7 +64,7 @@ class SettingsBackupManager(private val context: Context) {
 
             progress(75, "Packe Backup…")
             val bytes = BackupFormat.pack(manifest, payload, assets, passphrase)
-            val filename = "m3usuite-settings-v1-" + java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmm").format(java.time.LocalDateTime.now()) + ".msbx"
+            val filename = "m3usuite-settings-v1-" + DateTimeFormatter.ofPattern("yyyyMMdd-HHmm").format(java.time.LocalDateTime.now()) + ".msbx"
             progress(100, "Fertig")
             filename to bytes
         }

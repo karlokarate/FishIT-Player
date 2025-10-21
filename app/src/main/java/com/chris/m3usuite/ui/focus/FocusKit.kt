@@ -80,12 +80,12 @@ fun Modifier.tvClickable(
     scalePressed: Float = 1.12f,
     elevationFocusedDp: Float = 12f,
     autoBringIntoView: Boolean = true,
-    shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
     focusColors: FocusColors = FocusDefaults.Colors,
-    focusBorderWidth: androidx.compose.ui.unit.Dp = 1.5.dp,
+    focusBorderWidth: Dp = 1.5.dp,
     brightenContent: Boolean = true,
     debugTag: String? = null,
-    focusRequester: androidx.compose.ui.focus.FocusRequester? = null,
+    focusRequester: FocusRequester? = null,
     onClick: () -> Unit
 ): Modifier = this.focusKitTvClickable(
     enabled = enabled,
@@ -107,9 +107,9 @@ fun Modifier.tvClickable(
 fun Modifier.tvFocusFrame(
     focusedScale: Float = 1.40f,
     pressedScale: Float = 1.40f,
-    shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
     focusColors: FocusColors = FocusDefaults.Colors,
-    focusBorderWidth: androidx.compose.ui.unit.Dp = 2.5.dp,
+    focusBorderWidth: Dp = 2.5.dp,
     brightenContent: Boolean = false
 ): Modifier = this.focusKitTvFocusFrame(
     focusedScale = focusedScale,
@@ -141,10 +141,10 @@ fun Modifier.focusGroup(): Modifier = this.compatFocusGroup()
 fun Modifier.focusScaleOnTv(
     focusedScale: Float? = null,
     pressedScale: Float? = null,
-    shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
     focusColors: FocusColors = FocusDefaults.Colors,
-    focusBorderWidth: androidx.compose.ui.unit.Dp = 1.5.dp,
-    interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource? = null,
+    focusBorderWidth: Dp = 1.5.dp,
+    interactionSource: MutableInteractionSource? = null,
     brightenContent: Boolean = true,
     debugTag: String? = null
 ): Modifier = this.focusKitFocusScaleOnTv(
@@ -238,9 +238,9 @@ object FocusKit {
         scalePressed: Float = 1.12f,
         elevationFocusedDp: Float = 12f,
         autoBringIntoView: Boolean = true,
-        shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
         focusColors: FocusColors = FocusDefaults.Colors,
-        focusBorderWidth: androidx.compose.ui.unit.Dp = 1.5.dp,
+        focusBorderWidth: Dp = 1.5.dp,
         brightenContent: Boolean = true,
         debugTag: String? = null,
         focusRequester: FocusRequester? = null,
@@ -265,9 +265,9 @@ object FocusKit {
     fun Modifier.tvFocusFrame(
         focusedScale: Float = 1.40f,
         pressedScale: Float = 1.40f,
-        shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
         focusColors: FocusColors = FocusDefaults.Colors,
-        focusBorderWidth: androidx.compose.ui.unit.Dp = 2.5.dp,
+        focusBorderWidth: Dp = 2.5.dp,
         brightenContent: Boolean = false
     ): Modifier = this@tvFocusFrame.focusKitTvFocusFrame(
         focusedScale = focusedScale,
@@ -299,10 +299,10 @@ object FocusKit {
     fun Modifier.focusScaleOnTv(
         focusedScale: Float? = null,
         pressedScale: Float? = null,
-        shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
         focusColors: FocusColors = FocusDefaults.Colors,
-        focusBorderWidth: androidx.compose.ui.unit.Dp = 1.5.dp,
-        interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource? = null,
+        focusBorderWidth: Dp = 1.5.dp,
+        interactionSource: MutableInteractionSource? = null,
         brightenContent: Boolean = true,
         debugTag: String? = null
     ): Modifier = this@focusScaleOnTv.focusKitFocusScaleOnTv(
@@ -320,8 +320,8 @@ object FocusKit {
     @Composable
     fun Modifier.tvFocusGlow(
         focused: Boolean,
-        shape: androidx.compose.ui.graphics.Shape,
-        ringWidth: androidx.compose.ui.unit.Dp = 2.dp
+        shape: Shape,
+        ringWidth: Dp = 2.dp
     ): Modifier = this.fxTvFocusGlow(focused = focused, shape = shape, ringWidth = ringWidth)
 
     // Bring-into-view helper
@@ -451,12 +451,12 @@ object FocusKit {
         onClick: () -> Unit,
         modifier: Modifier = Modifier,
         enabled: Boolean = true,
-        shape: androidx.compose.ui.graphics.Shape = androidx.compose.material3.ButtonDefaults.shape,
+        shape: Shape = androidx.compose.material3.ButtonDefaults.shape,
         colors: androidx.compose.material3.ButtonColors = androidx.compose.material3.ButtonDefaults.buttonColors(),
         elevation: androidx.compose.material3.ButtonElevation? = androidx.compose.material3.ButtonDefaults.buttonElevation(),
         border: androidx.compose.foundation.BorderStroke? = null,
         contentPadding: PaddingValues = androidx.compose.material3.ButtonDefaults.ContentPadding,
-        interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+        interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
         focusColors: FocusColors = FocusDefaults.Colors,
         content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
     ) = com.chris.m3usuite.ui.common.TvButton(
@@ -478,10 +478,10 @@ object FocusKit {
         onClick: () -> Unit,
         modifier: Modifier = Modifier,
         enabled: Boolean = true,
-        shape: androidx.compose.ui.graphics.Shape = androidx.compose.material3.ButtonDefaults.textShape,
+        shape: Shape = androidx.compose.material3.ButtonDefaults.textShape,
         colors: androidx.compose.material3.ButtonColors = androidx.compose.material3.ButtonDefaults.textButtonColors(),
         contentPadding: PaddingValues = androidx.compose.material3.ButtonDefaults.TextButtonContentPadding,
-        interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+        interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
         focusColors: FocusColors = FocusDefaults.Colors,
         content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
     ) = com.chris.m3usuite.ui.common.TvTextButton(
@@ -501,12 +501,12 @@ object FocusKit {
         onClick: () -> Unit,
         modifier: Modifier = Modifier,
         enabled: Boolean = true,
-        shape: androidx.compose.ui.graphics.Shape = androidx.compose.material3.ButtonDefaults.outlinedShape,
+        shape: Shape = androidx.compose.material3.ButtonDefaults.outlinedShape,
         colors: androidx.compose.material3.ButtonColors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(),
         elevation: androidx.compose.material3.ButtonElevation? = null,
         border: androidx.compose.foundation.BorderStroke? = androidx.compose.material3.ButtonDefaults.outlinedButtonBorder(enabled),
         contentPadding: PaddingValues = androidx.compose.material3.ButtonDefaults.ContentPadding,
-        interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+        interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
         focusColors: FocusColors = FocusDefaults.Colors,
         content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
     ) = com.chris.m3usuite.ui.common.TvOutlinedButton(
@@ -528,8 +528,8 @@ object FocusKit {
         onClick: () -> Unit,
         modifier: Modifier = Modifier,
         enabled: Boolean = true,
-        shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
-        interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+        shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        interactionSource: MutableInteractionSource = androidx.compose.runtime.remember { MutableInteractionSource() },
         focusColors: FocusColors = FocusDefaults.Colors,
         content: @Composable () -> Unit
     ) = com.chris.m3usuite.ui.common.TvIconButton(
@@ -844,6 +844,7 @@ internal fun isTvDevice(context: Context): Boolean {
     val pm = context.packageManager
     val modeTv = uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
     val hasLeanback = pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+    @Suppress("DEPRECATION")
     val hasTelevision = pm.hasSystemFeature(PackageManager.FEATURE_TELEVISION)
     return modeTv || hasLeanback || hasTelevision
 }

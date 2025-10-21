@@ -32,7 +32,7 @@ object XmlTv {
             val url = settings.epgUrl.first()
             if (url.isBlank()) return@withContext null to null
             val client = HttpClientFactory.create(context, settings)
-            val req = okhttp3.Request.Builder().url(url).build()
+            val req = Request.Builder().url(url).build()
             try {
                 val uaVal = settings.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
                 Log.d("XmlTv", "currentNext url=\"${url}\" chan=${channelId} ua=\"${uaVal}\"")
@@ -102,7 +102,7 @@ object XmlTv {
             val url = settings.epgUrl.first()
             if (url.isBlank()) return@withContext emptyMap()
             val client = HttpClientFactory.create(context, settings)
-            val req = okhttp3.Request.Builder().url(url).build()
+            val req = Request.Builder().url(url).build()
             try {
                 val uaVal = settings.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
                 Log.d("XmlTv", "index url=\"${url}\" chans=${channelIds.size} ua=\"${uaVal}\"")
@@ -131,9 +131,9 @@ object XmlTv {
                     return true
                 }
 
-                while (event != org.xmlpull.v1.XmlPullParser.END_DOCUMENT) {
+                while (event != XmlPullParser.END_DOCUMENT) {
                     when (event) {
-                        org.xmlpull.v1.XmlPullParser.START_TAG -> {
+                        XmlPullParser.START_TAG -> {
                             when (parser.name) {
                                 "programme" -> {
                                     inProgramme = true
@@ -148,7 +148,7 @@ object XmlTv {
                                 }
                             }
                         }
-                        org.xmlpull.v1.XmlPullParser.END_TAG -> {
+                        XmlPullParser.END_TAG -> {
                             if (parser.name == "programme") {
                                 if (curChan != null && curStart != null && curStop != null) {
                                     val ch = curChan!!

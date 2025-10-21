@@ -119,8 +119,8 @@ fun LibraryScreen(
     // Centralized playback launcher for Library; opens internal player via nav and marks origin=lib for live
     val playbackLauncher = com.chris.m3usuite.playback.rememberPlaybackLauncher(
         onOpenInternal = { pr ->
-            val encoded = com.chris.m3usuite.core.playback.PlayUrlHelper.encodeUrl(pr.url)
-            val mimeArg = pr.mimeType?.let { android.net.Uri.encode(it) } ?: ""
+            val encoded = PlayUrlHelper.encodeUrl(pr.url)
+            val mimeArg = pr.mimeType?.let { Uri.encode(it) } ?: ""
             when (pr.type) {
                 "live" -> navController.navigate("player?url=$encoded&type=live&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg&origin=lib")
                 "vod" -> navController.navigate("player?url=$encoded&type=vod&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
@@ -389,7 +389,7 @@ fun LibraryScreen(
         val headers = remember { com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store) }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             chatIds.forEachIndexed { index, chatId ->
-                var items by remember(chatId, tab, resumeTick, tgEnabled) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
+                var items by remember(chatId, tab, resumeTick, tgEnabled) { mutableStateOf<List<MediaItem>>(emptyList()) }
                 LaunchedEffect(chatId, tab, resumeTick, tgEnabled) {
                     items = if (tgEnabled) {
                         if (tab == ContentTab.Vod) tgRepo.recentVodByChat(chatId, 60, 0) else emptyList()
@@ -423,7 +423,7 @@ fun LibraryScreen(
                         onPlay = { mi ->
                             val tgUrl = "tg://message?chatId=${mi.tgChatId}&messageId=${mi.tgMessageId}"
                             scope.launch {
-                                com.chris.m3usuite.player.PlayerChooser.start(
+                                PlayerChooser.start(
                                     context = ctx,
                                     store = store,
                                     url = tgUrl,
@@ -447,7 +447,7 @@ fun LibraryScreen(
     ) {
         val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
         if (!tgEnabled) return
-        var items by remember(tgEnabled, resumeTick, cacheVersion) { mutableStateOf<List<com.chris.m3usuite.model.MediaItem>>(emptyList()) }
+        var items by remember(tgEnabled, resumeTick, cacheVersion) { mutableStateOf<List<MediaItem>>(emptyList()) }
         LaunchedEffect(tgEnabled, resumeTick, cacheVersion) {
             if (!tgEnabled) return@LaunchedEffect
             items = withContext(Dispatchers.IO) {
@@ -463,7 +463,7 @@ fun LibraryScreen(
             edgeLeftExpandChrome = false,
             initialFocusEligible = true,
             allowAssign = canEditWhitelist,
-            header = com.chris.m3usuite.ui.layout.FishHeaderData.Text(
+            header = FishHeaderData.Text(
                 anchorKey = stateKey,
                 text = "Telegram Serien",
                 style = MaterialTheme.typography.titleMedium,
@@ -704,32 +704,16 @@ fun LibraryScreen(
                         onOpen(media)
                         return@launch
                     }
-                    if (playbackLauncher != null) {
-                        playbackLauncher.launch(
-                            com.chris.m3usuite.playback.PlayRequest(
-                                type = "live",
-                                mediaId = media.id,
-                                url = req.url,
-                                headers = req.headers,
-                                mimeType = req.mimeType,
-                                title = media.name
-                            )
-                        )
-                    } else {
-                        PlayerChooser.start(
-                            context = ctx,
-                            store = store,
+                    playbackLauncher.launch(
+                        com.chris.m3usuite.playback.PlayRequest(
+                            type = "live",
+                            mediaId = media.id,
                             url = req.url,
                             headers = req.headers,
-                            startPositionMs = null,
-                            mimeType = req.mimeType
-                        ) { startMs, resolvedMime ->
-                            val encoded = PlayUrlHelper.encodeUrl(req.url)
-                            val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                            // Mark origin as Live Library for global switching & list overlay (not favorites)
-                            navController.navigate("player?url=$encoded&type=live&mediaId=${media.id}&startMs=${startMs ?: -1}&mime=$mimeArg&origin=lib")
-                        }
-                    }
+                            mimeType = req.mimeType,
+                            title = media.name
+                        )
+                    )
                 }
             }
             ContentTab.Vod -> { media ->
@@ -739,37 +723,16 @@ fun LibraryScreen(
                         onOpen(media)
                         return@launch
                     }
-                    if (playbackLauncher != null) {
-                        playbackLauncher.launch(
-                            com.chris.m3usuite.playback.PlayRequest(
-                                type = "vod",
-                                mediaId = media.id,
-                                url = req.url,
-                                headers = req.headers,
-                                mimeType = req.mimeType,
-                                title = media.name
-                            )
-                        )
-                    } else {
-                        val resumeMs = withContext(Dispatchers.IO) {
-                            com.chris.m3usuite.data.repo.ResumeRepository(ctx)
-                                .recentVod(1)
-                                .firstOrNull { it.mediaId == media.id }
-                                ?.positionSecs?.toLong()?.times(1000)
-                        }
-                        PlayerChooser.start(
-                            context = ctx,
-                            store = store,
+                    playbackLauncher.launch(
+                        com.chris.m3usuite.playback.PlayRequest(
+                            type = "vod",
+                            mediaId = media.id,
                             url = req.url,
                             headers = req.headers,
-                            startPositionMs = resumeMs,
-                            mimeType = req.mimeType
-                        ) { startMs, resolvedMime ->
-                            val encoded = PlayUrlHelper.encodeUrl(req.url)
-                            val mimeArg = resolvedMime?.let { Uri.encode(it) } ?: ""
-                            navController.navigate("player?url=$encoded&type=vod&mediaId=${media.id}&startMs=${startMs ?: -1}&mime=$mimeArg")
-                        }
-                    }
+                            mimeType = req.mimeType,
+                            title = media.name
+                        )
+                    )
                 }
             }
             ContentTab.Series -> { media -> onOpen(media) }
@@ -1091,7 +1054,7 @@ fun LibraryScreen(
                     items(groupKeys.categories, key = { it }) { catId ->
                         val sectionKey = "library:${selectedTabKey}:category:$catId"
                         val label = (labelById[catId] ?: catId).trim()
-                        val chipKey = chipKeyForLiveCategory(label)
+                        chipKeyForLiveCategory(label)
                         val headerData = FishHeaderData.Chip(
                             anchorKey = sectionKey,
                             label = label

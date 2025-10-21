@@ -1,4 +1,63 @@
+2025-11-11
+- fix(telegram/repo): Selected chat IDs now come from the unified
+  `tgSelectedChatsCsv` list for both VOD and series flows, leaving the
+  heuristics to decide the media type per message.
+- fix(telegram/repo): Video detection accepts HLS MIME types and
+  `application/octet-stream` payloads with a detected container so playable
+  sources no longer slip through.
+- feat(settings): SettingsViewModel emits one-shot snackbar effects for sync
+  feedback and the Settings screen collects them via a shared flow.
+- fix(worker/telegram): `TelegramSyncWorker` awaits its foreground promotion
+  before touching TDLib to guarantee the notification is shown on time.
+
+2025-11-10
+- feat(settings/telegram): SettingsViewModel now publishes Telegram auth state,
+  resend countdown, selected chat titles, and log directory directly. The
+  Settings screen fires intents only, while the ViewModel persists SAF
+  permissions, resolves chat names off the main thread, and triggers sync
+  scheduling.
+- fix(worker/telegram): TelegramSyncWorker promotes itself to the foreground at
+  start-up with a dedicated channel/icon and wraps the whole execution in a
+  fail-safe to return clean Result.failure values instead of crashing after chat
+  selection.
+- fix(telegram/service): Backfill pacing clamps TDLib offsets, dedupes message
+  ids, and respects FLOOD_WAIT via suspend delays, eliminating the previous
+  off-by-one rewind and busy sleeps.
+- fix(telegram/repo): Video detection recognises more Telegram media variants,
+  keeps VOD distinct from episodic content, and reuses the enhanced heuristics
+  for both VOD and series lists.
+- chore(ui/assets): Added a vector sync icon for worker notifications so the
+  foreground notification no longer falls back to the system download glyph.
+
+2025-11-09
+- fix(telegram/settings): SettingsViewModel now resolves Telegram chat names
+  off the main thread, exposes progress for the picker, and keeps snackbar
+  feedback centralized so the composable stops orchestrating TDLib calls
+  directly.
+- fix(telegram/parser): Reworked caption heuristics with safer regexes,
+  aggressive normalisation, and unit tests covering ranges, SxxEyy, colon, and
+  noisy release tags.
+- fix(telegram/media): posterUri() refuses to block the main thread and moves
+  TDLib polling to Dispatchers.IO while reusing cached local paths.
+- fix(telegram/service): listChats, resolveChatTitles, and chat backfill now
+  wait for AuthorizationStateReady via awaitAuthorizationReady() before
+  touching TDLib to avoid early 401/400 churn.
+
 2025-11-08
+- fix(ui/live): Remove duplicate `isTelegramItem` and local `FishTelegramBadge`
+  from `FishLiveContent.kt` in favor of the shared helpers in
+  `FishTelegramContent.kt`. Resolves overload ambiguity and compiles cleanly.
+- fix(telegram/sync): Replace non-existent named `pageSize` argument with a
+  positional `limit` when calling `pullChatHistoryAwait` in TelegramSyncWorker.
+  Keeps the intended batch size semantics and restores Kotlin 2.0 compatibility.
+- fix(settings/telegram): Declare `authState` and `resendLeft` via
+  `collectAsStateWithLifecycle`, wiring to the repository/service flows so
+  the Settings screen compiles across API levels and shows a stable resend
+  countdown when waiting for a code.
+- fix(telegram/auth): TelegramServiceClient exposes a simple observable auth
+  state (`StateFlow<AuthState>`) and imports `cancelChildren` to resolve the
+  unreferenced coroutine cancelation helper. Settings can now directly observe
+  a typed auth state alongside existing auth events.
 - feat(telegram/indexer): Serien fallback auf Chat-Titel, normalized keys und
   sortierte Episoden (Staffel/Episode/Datum). Serienrebuild nutzt TDLib,
   um die Chat-Namen für ausgewählte Chats aufzulösen.
@@ -163,11 +222,42 @@
   and trailer preview both prefer the bundled FFmpeg extension while decoder
   fallback stays enabled. Resolves sporadic playback failures caused by
   missing platform codecs.
+- refactor(ui/start): StartScreen now delegates data/side-effects to StartViewModel
+  (ObjectBox/Settings flows, search paging, kid permissions) plus StartUseCases for
+  repository access. Compose keeps the kid assignment sheet, live favorites picker,
+  and Telegram binding temporarily; these move into dedicated VMs next.
+- refactor(ui/settings): SettingsScreen binds dedicated section view models
+  (network/player/xtream/epg + Telegram triad) and drops direct repository/service
+  calls. Legacy maintenance/backup flows remain in `ui/home/backups/SettingsScreen_backup.kt`
+  until their MVVM counterparts land.
 
 2025-10-20
 - fix(build/media3): Pin Media3 dependencies to 1.5.1 so Gradle can resolve the FFmpeg
   extension again. Version 1.8.0 is not yet published on Maven Central/Google Maven and
   broke `:app:checkDebugAarMetadata`.
+- fix(telegram/heuristics): Replace the invalid `SxEy` char-class with safe patterns,
+  compile heuristics via `safeRegex`, and wrap TdLib parsing in a fallback so malformed
+  captions no longer crash Telegram indexing with `ExceptionInInitializerError`.
+- fix(telegram/auth): Serialize TDLib auth commands with a mutex, wait for
+  `AuthorizationStateReady` before applying runtime options, and disable login buttons
+  while requests run. This removes 400 “Another authorization query”, early 401s on
+  auto-download presets, and proxy initialization timeouts during login.
+- fix(telegram/history): Clamp `GetChatHistory` offsets to TDLib’s [-99,0] window so
+  backfills no longer trip 400 “Parameter offset must be greater than -100” and chats
+  paginate to completion.
+- fix(ui/auth): OTP dialog now remembers a `FocusRequester` and waits a frame before
+  requesting focus, eliminating Compose “FocusRequester is not initialized” warnings.
+- fix(telegram/thumbs): Poster mapper runs TDLib thumbnail nudges on Dispatchers.IO and
+  skips work on the UI thread, so Coil no longer blocks or floods GC when fetching chat
+  art.
+- refactor(settings): Added `SettingsViewModel` with intents/effects; Telegram sync now
+  schedules via the VM instead of Compose coroutines, and the screen reacts to VM
+  effects for snackbars.
+- fix(telegram/sync): Foreground WorkManager runs now emit a channelized notification with
+  `ic_sync` as the small icon, preventing the `Invalid resource ID 0x00000000` crash when
+  the sync worker enters foreground mode.
+
+- fix(ui/rows): Align prefetch callback to keys-only. `OnPrefetchKeys` now takes `List<Long>` (visible item keys/ids) instead of `(indices, items)`. Updated Start and Live detail rows to decode live `streamId`s from ids and prefetch EPG reliably. Resolves Kotlin type mismatch errors around `onPrefetchKeys` and the `streamId` reference.
 
 2025-10-19
 - feat(player/ffmpeg): Internal player bundles Media3 FFmpeg codecs, prefers the extension renderers,
@@ -1171,18 +1261,32 @@ Status: zu testen durch Nutzer
 - roadmap: Add Tiles/Rows Centralization (ON). Mark FocusKit Migration as dependent on this centralization.
 2025-10-07
 - docs(centralization): Deep-docs sweep to align with new Fish* layout. Marked legacy Cards v1 (PosterCard/ChannelCard/SeasonCard/EpisodeRow) as deprecated/replaced, removed guidance that suggested building tiles/focus per-screen, and documented FishTheme/FishTile/FishRow/FishContent (+ FishMeta/FishActions/FishLogging/FishResumeTile) as the single source of truth. Updated media_actions, detail_scaffold, tv_forms, playback_launcher to reference Fish* where relevant. Roadmap now blocks FocusKit finalization on completing Tiles/Rows centralization.
-2025-11-08
-- fix(telegram/service): korrigiert die Backfill-Paginierung (Offset-Clamping,
-  `fromId`-Step) damit Grenzfälle keine Nachrichten überspringen oder doppelt
-  abholen.
-- feat(telegram/parser): normalisiert Release-Namen robuster (Jahr, Sprache,
-  Qualities) und erweitert die Episoden-Heuristiken; neue Unit-Tests decken
-  die wichtigsten Schreibweisen ab.
-- fix(telegram/media): blockierende Thumbnail-Auflösung läuft nur noch off-main
-  und nutzt einen frühen Main-Thread-Guard.
-- fix(telegram/auth): zentraler Authorization-Gate + Mutex verhindern parallele
-  Login-Calls und TDLib-401/"another authorization"-Fehler.
-- refactor(settings/telegram): eigener `TelegramSettingsViewModel` kümmert sich
-  um Chat-Namen, Sync-Triggers und Snackbar-Effekte, was die UI-Komposition
-  spürbar entlastet.
-
+2025-10-20
+- chore(warnings): Kotlin/Compose warning cleanup across app.
+  - telegram/auth: Replace deprecated `Bundle.getParcelable(String)` calls in
+    `TgSmsConsentManager` with `BundleCompat.getParcelable(..., Class)` for
+    `EXTRA_STATUS` and `EXTRA_CONSENT_INTENT`.
+  - start/search: Fix `UiState` gating to use `searchUi?.value` and remove
+    impossible instance checks that were always false.
+  - player/mini: Simplify progress effect guard; drop redundant `player==null`
+    part that made the condition constant.
+  - header: Remove redundant `firstFocus != null` checks when computing
+    requesters; use non-null (`!!`) under guarded flags.
+  - forms: Use `Icons.AutoMirrored.Filled.ArrowForward`, switch
+    `LinearProgressIndicator` to the lambda overload, and drop the shadowed
+    `IntRange.isEmpty()` extension.
+  - live/detail: Remove always-true `liveLauncher != null` check; rely solely on
+    the centralized `rememberPlaybackLauncher` path.
+ - settings/telegram: Remove redundant `else` in exhaustive `when` for the
+  dialog title.
+  - settings/telegram: Chat‑Picker überarbeitet – kein BottomSheet mehr,
+    stattdessen top‑angerdockter Vollbild‑Dialog ohne Drag‑Gesten. Persistente
+    Aktionsleiste oben mit Auswahl‑Zähler und ständig erreichbarem
+    „Übernehmen“-Button (aktiv bei Auswahl). Overscroll deaktiviert, flüssigeres
+    Scrollen auf schwächeren Geräten.
+ - settings: Einheitlicher TV‑Fokus. Alle Buttons/Links im Settings‑Screen
+    nutzen jetzt FocusKit (TvButton/TvTextButton) statt gemischter Material3
+    Buttons. Dadurch gleiche Helligkeit/Glow/Scale für alle klickbaren Elemente.
+  - telegram/service: Bei Loglevel 5 werden beim Chat‑Sync die letzten 100
+    Nachrichten eines Chats als RAW in Logcat ausgegeben (Tag "TdSvcRaw").
+    Enthält id, datum, content‑Typ, supportsStreaming und Text/Captions.

@@ -34,8 +34,8 @@ data class RowConfig(
     val edgeLeftExpandChrome: Boolean = false
 )
 
-/** Callback used by rows to prefetch data for visible keys. */
-typealias OnPrefetchKeys = suspend (visibleIndices: List<Int>, items: List<MediaItem>) -> Unit
+/** Callback used by rows to prefetch data for visible item keys (IDs). */
+typealias OnPrefetchKeys = suspend (visibleKeys: List<Long>) -> Unit
 
 /** Callback used by paged rows to prefetch data for visible indices. */
 typealias OnPrefetchPaged = suspend (visibleIndices: List<Int>, items: LazyPagingItems<MediaItem>) -> Unit
@@ -64,7 +64,12 @@ fun MediaRowCore(
             snapshotFlow { listState.layoutInfo.visibleItemsInfo.map { it.index } }
                 .distinctUntilChanged()
                 .collect { indices ->
-                    if (indices.isNotEmpty()) onPrefetchKeys(indices, items)
+                    if (indices.isNotEmpty()) {
+                        val keys = indices.mapNotNull { idx ->
+                            items.getOrNull(idx)?.let { m -> itemKey(m) }
+                        }
+                        if (keys.isNotEmpty()) onPrefetchKeys(keys)
+                    }
                 }
         }
     }

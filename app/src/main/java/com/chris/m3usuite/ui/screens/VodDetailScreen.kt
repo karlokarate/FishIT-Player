@@ -164,7 +164,7 @@ fun VodDetailScreen(
     onOpenSettings: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
-    val headers = rememberImageHeaders()
+    rememberImageHeaders()
     val store = remember { SettingsStore(ctx) }
     val scope = rememberCoroutineScope()
     val kidRepo = remember { KidContentRepository(ctx) }

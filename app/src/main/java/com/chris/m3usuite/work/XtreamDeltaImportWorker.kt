@@ -65,7 +65,7 @@ class XtreamDeltaImportWorker(appContext: Context, params: WorkerParameters): Co
                 // After successful updates, proactively prefetch EPG for favorites (keeps home row snappy)
                 kotlin.runCatching {
                     val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                    com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive)
+                    SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive)
                 }
                 Result.success()
             } else Result.retry()

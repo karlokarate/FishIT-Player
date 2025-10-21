@@ -1,6 +1,8 @@
 package com.chris.m3usuite.data.repo
 
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.data.obx.ObxEpisode
 import com.chris.m3usuite.data.obx.ObxEpisode_
@@ -361,6 +363,7 @@ object TelegramSeriesIndexer {
         return if (suffix.isNotBlank() && !suffix.equals(base, ignoreCase = true)) "$core – $suffix" else core
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun formatAirDate(epochSeconds: Long?): String? {
         if (epochSeconds == null || epochSeconds <= 0) return null
         return runCatching {

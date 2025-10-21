@@ -1,6 +1,8 @@
 package com.chris.m3usuite.work
 
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
 import androidx.work.ExistingWorkPolicy
@@ -32,6 +34,7 @@ class ScreenTimeResetWorker(appContext: Context, params: WorkerParameters): Coro
 
     companion object {
         private const val UNIQUE_ONE = "screen_time_daily_reset_once"
+        @RequiresApi(Build.VERSION_CODES.O)
         fun schedule(ctx: Context) {
             // schedule one-time run at next local midnight, then re-schedule from within doWork
             val now = LocalDateTime.now()

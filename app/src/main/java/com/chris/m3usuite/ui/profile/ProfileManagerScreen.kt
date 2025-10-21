@@ -122,7 +122,7 @@ fun ProfileManagerScreen(
                     Text("Typ:")
                     FilterChip(
                         modifier = Modifier
-                            .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
+                            .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
                             .then(FocusKit.run {  Modifier.tvClickable(onClick = { newType = "kid" }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
                         selected = newType == "kid",
                         onClick = { newType = "kid" },
@@ -130,7 +130,7 @@ fun ProfileManagerScreen(
                     )
                     FilterChip(
                         modifier = Modifier
-                            .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
+                            .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
                             .then(FocusKit.run {  Modifier.tvClickable(onClick = { newType = "guest" }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
                         selected = newType == "guest",
                         onClick = { newType = "guest" },
@@ -145,7 +145,7 @@ fun ProfileManagerScreen(
                         newType = "kid"
                         load()
                     }
-                }, enabled = newKidName.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent, contentColor = androidx.compose.ui.graphics.Color.Black)) { Text("Anlegen") }
+                }, enabled = newKidName.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = DesignTokens.KidAccent, contentColor = androidx.compose.ui.graphics.Color.Black)) { Text("Anlegen") }
 
                 HorizontalDivider()
 
@@ -186,10 +186,10 @@ fun ProfileManagerScreen(
                                             crossfade = true,
                                         )
                                     } else {
-                                        Icon(painter = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
+                                        Icon(painter = painterResource(android.R.drawable.ic_menu_report_image), contentDescription = null)
                                     }
                                     OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.weight(1f))
-                                    AssistChip(modifier = Modifier.graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha), onClick = {}, label = { Text(if (kid.type == "guest") "Gast" else "Kind") })
+                                    AssistChip(modifier = Modifier.graphicsLayer(alpha = DesignTokens.BadgeAlpha), onClick = {}, label = { Text(if (kid.type == "guest") "Gast" else "Kind") })
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     AvatarCaptureAndPickButtons { uri ->
@@ -297,7 +297,7 @@ fun ProfileManagerScreen(
                                             }
                                             load()
                                         }
-                                    }, colors = ButtonDefaults.buttonColors(containerColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent, contentColor = androidx.compose.ui.graphics.Color.Black)) { Text("Speichern") }
+                                    }, colors = ButtonDefaults.buttonColors(containerColor = DesignTokens.KidAccent, contentColor = androidx.compose.ui.graphics.Color.Black)) { Text("Speichern") }
                                     TextButton(modifier = Modifier.focusScaleOnTv(), onClick = {
                                         scope.launch(Dispatchers.IO) {
                                             // Orphan-Cleanup: remove whitelist/blocks/permissions for this profile
@@ -312,7 +312,7 @@ fun ProfileManagerScreen(
                                             obx.boxFor(ObxProfile::class.java).remove(kid)
                                             load()
                                         }
-                                    }, colors = ButtonDefaults.textButtonColors(contentColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent)) { Text("Löschen") }
+                                    }, colors = ButtonDefaults.textButtonColors(contentColor = DesignTokens.KidAccent)) { Text("Löschen") }
                                 }
 
                                 // Freigaben (Whitelist) – ausklappbar
@@ -396,7 +396,7 @@ fun ProfileManagerScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
     val ctx = LocalContext.current
-    val profileRepo = remember { ProfileObxRepository(ctx) }
+    remember { ProfileObxRepository(ctx) }
     val obx = remember { ObxStore.get(ctx) }
     val scope = rememberCoroutineScope()
     var tab by remember { mutableStateOf(0) } // 0 live, 1 vod, 2 series
@@ -415,7 +415,7 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                 titles.forEachIndexed { i, t ->
                     FilterChip(
                         modifier = Modifier
-                            .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
+                            .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
                             .then(FocusKit.run {  Modifier.tvClickable(onClick = { tab = i }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
                         selected = tab == i,
                         onClick = { tab = i },
@@ -476,7 +476,7 @@ private fun ManageWhitelistSheet(kidId: Long, onClose: () -> Unit) {
                         Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                             AssistChip(
                                 modifier = Modifier
-                                    .graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
+                                    .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
                                     .then(FocusKit.run {  Modifier.tvClickable(onClick = { expanded = if (expanded == cat) null else cat }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) }),
                                 onClick = { expanded = if (expanded == cat) null else cat },
                                 label = { Text(cat) }

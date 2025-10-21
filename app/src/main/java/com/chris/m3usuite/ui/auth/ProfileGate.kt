@@ -359,7 +359,7 @@ fun ProfileGate(
                         ,
                     onClick = { confirmAction() },
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
+                        contentColor = DesignTokens.KidAccent
                     )
                 ) { Text(label) }
             },
@@ -380,7 +380,7 @@ fun ProfileGate(
                         onDismiss()
                     },
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = com.chris.m3usuite.ui.theme.DesignTokens.KidAccent
+                        contentColor = DesignTokens.KidAccent
                     )
                 ) { Text("Abbrechen") }
             }
@@ -556,7 +556,7 @@ fun ProfileGate(
                                         )
                                 ).build()
                                 val entry = q.findFirst()
-                                withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                withContext(Dispatchers.Main) {
                                     used = entry?.usedMinutes ?: 0
                                     limit = entry?.limitMinutes ?: 0
                                 }

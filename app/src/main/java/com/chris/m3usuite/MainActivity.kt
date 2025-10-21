@@ -33,7 +33,7 @@ import com.chris.m3usuite.navigation.popUpToStartDestination
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.player.InternalPlayerScreen   // <- korrektes Paket (s. Schritt A)
 import com.chris.m3usuite.ui.screens.LibraryScreen
-import com.chris.m3usuite.ui.home.StartScreen
+import com.chris.m3usuite.ui.home.backups.StartScreen
 import com.chris.m3usuite.ui.screens.SettingsScreen
 import com.chris.m3usuite.ui.screens.LiveDetailScreen
 import com.chris.m3usuite.ui.screens.PlaylistSetupScreen
@@ -141,11 +141,11 @@ class MainActivity : ComponentActivity() {
                                     cfg.liveExtPrefs.firstOrNull()?.let { store.setXtOutput(it) }
                                     store.setXtPortVerified(true)
                                     if (store.epgUrl.first().isBlank()) {
-                                        store.set(com.chris.m3usuite.prefs.Keys.EPG_URL, "${cfg.portalBase}/xmltv.php?username=${cfg.username}&password=${cfg.password}")
+                                        store.set(Keys.EPG_URL, "${cfg.portalBase}/xmltv.php?username=${cfg.username}&password=${cfg.password}")
                                     }
                                 } else {
                                     // Kein Port in M3U: Discovery verwenden (Xtream bevorzugen)
-                                    val u = android.net.Uri.parse(m3uUrl)
+                                    val u = Uri.parse(m3uUrl)
                                     val scheme = (u.scheme ?: "http").lowercase()
                                     val host = (u.host ?: "")
                                     val user = u.getQueryParameter("username")
@@ -156,7 +156,7 @@ class MainActivity : ComponentActivity() {
                                         val portStore = com.chris.m3usuite.core.xtream.EndpointPortStore(this@MainActivity)
                                         val discoverer = com.chris.m3usuite.core.xtream.CapabilityDiscoverer(http, capStore, portStore)
                                         val caps = discoverer.discoverAuto(scheme, host, user, pass, null, forceRefresh = false)
-                                        val bu = android.net.Uri.parse(caps.baseUrl)
+                                        val bu = Uri.parse(caps.baseUrl)
                                         val rs = (bu.scheme ?: scheme).lowercase()
                                         val rh = bu.host ?: host
                                         val rp = bu.port
@@ -167,7 +167,7 @@ class MainActivity : ComponentActivity() {
                                             store.setXtPass(pass)
                                             store.setXtPortVerified(true)
                                             if (store.epgUrl.first().isBlank()) {
-                                                store.set(com.chris.m3usuite.prefs.Keys.EPG_URL, "$rs://$rh:$rp/xmltv.php?username=$user&password=$pass")
+                                                store.set(Keys.EPG_URL, "$rs://$rh:$rp/xmltv.php?username=$user&password=$pass")
                                             }
                                         }
                                     }
@@ -182,7 +182,7 @@ class MainActivity : ComponentActivity() {
                     if (!apiEnabled) return@LaunchedEffect
                     // Start background import so index builds even if the UI recomposes or route changes.
                     // Immediately ensure full header lists (heads-only delta) for VOD/Series at app start; skip Live to stay light.
-                    withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    withContext(Dispatchers.IO) {
                         runCatching { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store).importDelta(deleteOrphans = false, includeLive = false) }
                     }
                     // Also schedule a background one-shot (heads-only again if needed; Live remains off here)
@@ -396,7 +396,8 @@ class MainActivity : ComponentActivity() {
                             onOpenXtreamCfCheck = { nav.navigate("xt_cfcheck") },
                             onGlobalSearch = {
                                 nav.navigateTopLevel("library?qs=show")
-                            }
+                            },
+                            onOpenPortalCheck = { nav.navigate("xt_cfcheck") }
                         )
                     }
 

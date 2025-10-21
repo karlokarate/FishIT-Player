@@ -77,7 +77,7 @@ import java.util.Locale
 private fun decodeObxLiveId(v: Long): Int? =
     if (v in 1_000_000_000_000L..1_999_999_999_999L) (v - 1_000_000_000_000L).toInt() else null
 
-@androidx.media3.common.util.UnstableApi
+@UnstableApi
 @Composable
 fun LiveDetailScreen(
     id: Long,
@@ -180,36 +180,17 @@ fun LiveDetailScreen(
         }
         val hdrs = buildStreamHeaders()
         val mimeGuess = com.chris.m3usuite.core.playback.PlayUrlHelper.guessMimeType(playUrl, null)
-        if (liveLauncher != null) {
-            liveLauncher.launch(
-                com.chris.m3usuite.playback.PlayRequest(
-                    type = "live",
-                    mediaId = id,
-                    url = playUrl,
-                    headers = hdrs,
-                    startPositionMs = null,
-                    mimeType = mimeGuess,
-                    title = title
-                )
-            )
-        } else {
-            PlayerChooser.start(
-                context = ctx,
-                store = store,
+        liveLauncher.launch(
+            com.chris.m3usuite.playback.PlayRequest(
+                type = "live",
+                mediaId = id,
                 url = playUrl,
                 headers = hdrs,
-                startPositionMs = null, // Live hat kein Resume
+                startPositionMs = null,
                 mimeType = mimeGuess,
-                buildInternal = { startMs, resolvedMime ->
-                    internalUrl = playUrl
-                    internalStartMs = startMs
-                    internalUa = hdrs["User-Agent"].orEmpty()
-                    internalRef = hdrs["Referer"].orEmpty()
-                    internalMime = resolvedMime
-                    showInternal = true
-                }
+                title = title
             )
-        }
+        )
     }
 
     // --- Initiales Laden: Title/Logo/URL + erstes EPG ---
@@ -295,7 +276,7 @@ fun LiveDetailScreen(
         }
 
         val sub = query.subscribe()
-            .on(io.objectbox.android.AndroidScheduler.mainThread())
+            .on(AndroidScheduler.mainThread())
             .observer { results ->
                 val row = results.firstOrNull() ?: return@observer
                 epgNow = row.nowTitle.orEmpty()
@@ -798,8 +779,11 @@ fun LiveDetailScreen(
                                 items = moreInCategory,
                                 stateKey = "liveDetail:more:${categoryId}",
                                 edgeLeftExpandChrome = false,
-                                onPrefetchKeys = { indices, items ->
-                                    val sids = indices.mapNotNull { items.getOrNull(it)?.streamId }
+                                onPrefetchKeys = { keys ->
+                                    val base = 1_000_000_000_000L
+                                    val sids = keys
+                                        .filter { it >= base && it < 2_000_000_000_000L }
+                                        .map { (it - base).toInt() }
                                     if (sids.isNotEmpty()) {
                                         runCatching { liveRepo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4) }
                                     }

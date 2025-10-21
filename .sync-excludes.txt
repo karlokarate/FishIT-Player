@@ -1,0 +1,29 @@
+# Additional rsync excludes for ext4 sync
+
+# Local OS/editor junk
+*.swp
+*.swo
+*.tmp
+*~
+Thumbs.db
+.DS_Store
+
+# Build outputs beyond top-level excludes
+**/build/
+**/out/
+
+# Gradle caches if any nested
+**/.gradle/
+
+# IDE
+**/.idea/
+**/*.iml
+
+# Android build intermediates
+app/release/
+app/debug/
+
+# Large artifacts
+*.apk
+*.aab
+

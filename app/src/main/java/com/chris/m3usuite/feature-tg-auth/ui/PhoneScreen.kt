@@ -29,6 +29,7 @@ fun PhoneScreen(
     onSubmit: () -> Unit,
     onRequestQr: () -> Unit,
     showCurrentDeviceSwitch: Boolean,
+    isBusy: Boolean,
     error: TgAuthError? = null
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -44,10 +45,10 @@ fun PhoneScreen(
             text = "Bitte im internationalen Format eingeben (z. B. +491701234567).",
             style = MaterialTheme.typography.bodySmall
         )
-        Button(onClick = onSubmit, enabled = phone.isNotBlank()) {
+        Button(onClick = onSubmit, enabled = !isBusy && phone.isNotBlank()) {
             Text("Weiter")
         }
-        Button(onClick = onRequestQr) {
+        Button(onClick = onRequestQr, enabled = !isBusy) {
             Text("QR-Login anfordern")
         }
         Text(

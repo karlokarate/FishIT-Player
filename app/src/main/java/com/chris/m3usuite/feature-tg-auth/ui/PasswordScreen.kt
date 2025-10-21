@@ -22,6 +22,7 @@ fun PasswordScreen(
     password: String,
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
+    isBusy: Boolean,
     error: TgAuthError? = null
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -35,7 +36,7 @@ fun PasswordScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
         Text("Zwei-Faktor-Passwort eingeben (falls aktiviert).", style = MaterialTheme.typography.bodySmall)
-        Button(onClick = onSubmit, enabled = password.isNotBlank()) {
+        Button(onClick = onSubmit, enabled = !isBusy && password.isNotBlank()) {
             Text("Bestätigen")
         }
         if (error != null) {

@@ -11,6 +11,7 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.phone.SmsRetriever
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.api.Status
+import androidx.core.os.BundleCompat
 import java.lang.ref.WeakReference
 import java.util.regex.Pattern
 import kotlin.random.Random
@@ -85,10 +86,10 @@ class TgSmsConsentManager(
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (intent?.action != SmsRetriever.SMS_RETRIEVED_ACTION) return
                 val extras = intent.extras ?: return
-                val status = extras.getParcelable<Status>(SmsRetriever.EXTRA_STATUS) ?: return
+                val status = BundleCompat.getParcelable(extras, SmsRetriever.EXTRA_STATUS, Status::class.java) ?: return
                 when (status.statusCode) {
                     CommonStatusCodes.SUCCESS -> {
-                        val consentIntent = extras.getParcelable<Intent>(SmsRetriever.EXTRA_CONSENT_INTENT)
+                        val consentIntent = BundleCompat.getParcelable(extras, SmsRetriever.EXTRA_CONSENT_INTENT, Intent::class.java)
                         if (consentIntent != null) {
                             launcher?.launch(consentIntent)
                         }

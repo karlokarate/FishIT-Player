@@ -70,7 +70,7 @@ fun TrailerBox(
     url: String,
     headers: Map<String, String> = emptyMap(),
     expanded: MutableState<Boolean>,
-    modifier: Modifier = Modifier.height(220.dp)
+    modifier: Modifier = Modifier
 ) {
     val isYt = remember(url) { isYoutubeUrl(url) }
 

@@ -1,4 +1,4 @@
-@file:OptIn(kotlinx.coroutines.FlowPreview::class)
+@file:OptIn(FlowPreview::class)
 
 package com.chris.m3usuite.ui.layout
 
@@ -69,37 +69,7 @@ data class LiveTileContent(
     val onClick: () -> Unit
 )
 
-private fun MediaItem.isTelegramItem(): Boolean {
-    if (source?.equals("TG", ignoreCase = true) == true) return true
-    return tgChatId != null || tgMessageId != null || tgFileId != null
-}
-
-@Composable
-fun FishTelegramBadge(
-    modifier: Modifier = Modifier,
-    small: Boolean = false
-) {
-    val size = if (small) 20.dp else 24.dp
-    Surface(
-        modifier = modifier
-            .size(size)
-            .clip(CircleShape),
-        shape = CircleShape,
-        color = Color(0xFF229ED9),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                text = "T",
-                color = Color.White,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
-                maxLines = 1,
-                overflow = TextOverflow.Clip
-            )
-        }
-    }
-}
+// Telegram helpers live centrally in FishTelegramContent.kt
 
 @Composable
 fun buildLiveTileContent(
@@ -391,7 +361,7 @@ private fun BoxScope.mediaStreamProgressBar(epgProgress: Float?) {
 
 private fun formatEpgRange(startMs: Long?, endMs: Long?): String {
     if (startMs == null || endMs == null || endMs <= startMs) return ""
-    return kotlin.runCatching {
+    return runCatching {
         val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
         val start = fmt.format(java.util.Date(startMs))
         val end = fmt.format(java.util.Date(endMs))

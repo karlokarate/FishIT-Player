@@ -41,6 +41,9 @@ class TgAuthOrchestrator(
     private val _errors = MutableSharedFlow<TgAuthError>(extraBufferCapacity = 8)
     val errors = _errors.asSharedFlow()
 
+    private val _busy = MutableStateFlow(false)
+    val busy: StateFlow<Boolean> = _busy.asStateFlow()
+
     private var lastQrLink: String? = null
     private var lastAuthState: TdLibReflection.AuthState? = null
     private var resendAvailableAtMillis: Long? = null
@@ -121,26 +124,42 @@ class TgAuthOrchestrator(
         scope.launch {
             when (action) {
                 is TgAuthAction.EnterPhone -> {
-                    if (!ensureStarted()) return@launch
+                    if (!ensureStarted()) {
+                        _busy.value = false
+                        return@launch
+                    }
+                    _busy.value = true
                     resendAvailableAtMillis = null
                     repository.sendPhoneNumber(action.phoneE164, action.useCurrentDevice)
                 }
                 is TgAuthAction.EnterCode -> {
-                    if (!ensureStarted()) return@launch
+                    if (!ensureStarted()) {
+                        _busy.value = false
+                        return@launch
+                    }
+                    _busy.value = true
                     _state.update { current ->
                         if (current is TgAuthState.WaitCode) current.copy(suggestedCode = action.code, lastError = null) else current
                     }
                     repository.sendCode(action.code)
                 }
                 is TgAuthAction.EnterPassword -> {
-                    if (!ensureStarted()) return@launch
+                    if (!ensureStarted()) {
+                        _busy.value = false
+                        return@launch
+                    }
+                    _busy.value = true
                     _state.update { current ->
                         if (current is TgAuthState.WaitPassword) current.copy(lastError = null) else current
                     }
                     repository.sendPassword(action.password)
                 }
                 TgAuthAction.ResendCode -> {
-                    if (!ensureStarted()) return@launch
+                    if (!ensureStarted()) {
+                        _busy.value = false
+                        return@launch
+                    }
+                    _busy.value = true
                     val cooldownUntil = clock() + DEFAULT_RESEND_COOLDOWN_MS
                     resendAvailableAtMillis = cooldownUntil
                     repository.resendCode()
@@ -149,11 +168,16 @@ class TgAuthOrchestrator(
                     }
                 }
                 TgAuthAction.Cancel -> {
+                    _busy.value = true
                     repository.logout()
                     updateState(TgAuthState.LoggingOut)
                 }
                 TgAuthAction.RequestQr -> {
-                    if (!ensureStarted()) return@launch
+                    if (!ensureStarted()) {
+                        _busy.value = false
+                        return@launch
+                    }
+                    _busy.value = true
                     repository.requestQrLogin()
                 }
             }
@@ -193,6 +217,7 @@ class TgAuthOrchestrator(
                 }
             }
         }
+        _busy.value = false
     }
 
     private suspend fun ensureStarted(): Boolean {
@@ -201,6 +226,7 @@ class TgAuthOrchestrator(
         started = ok
         if (!ok) {
             _errors.emit(TgAuthError.Generic("TDLib konnte nicht gestartet werden."))
+            _busy.value = false
         } else {
             repository.requestAuthState()
         }
@@ -226,6 +252,7 @@ class TgAuthOrchestrator(
 
     private fun updateState(newState: TgAuthState) {
         _state.value = newState
+        _busy.value = false
         if (newState is TgAuthState.WaitCode) {
             smsConsentManager.startConsent()
         }

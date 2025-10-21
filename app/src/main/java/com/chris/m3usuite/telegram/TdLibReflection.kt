@@ -173,7 +173,7 @@ object TdLibReflection {
         val resultHandlerCls = td("Client\$ResultHandler")
         val exceptionHandlerCls = td("Client\$ExceptionHandler")
         if (!verifyBindings()) {
-            android.util.Log.e("TdLib", "TdApi bindings likely mismatched with JNI – please align Java/JNI versions.")
+            Log.e("TdLib", "TdApi bindings likely mismatched with JNI – please align Java/JNI versions.")
         }
 
         val resultHandler = java.lang.reflect.Proxy.newProxyInstance(
@@ -239,14 +239,14 @@ object TdLibReflection {
             }
 
             if (apiId <= 0 || apiHash.isBlank()) {
-                android.util.Log.w("TdLib", "TG_API_ID/HASH missing – set via ENV/.tg.secrets.properties/-P or in Settings (tg_api_id/hash)")
+                Log.w("TdLib", "TG_API_ID/HASH missing – set via ENV/.tg.secrets.properties/-P or in Settings (tg_api_id/hash)")
             } else {
                 val params = buildTdlibParameters(context, apiId, apiHash)
                 if (params != null) {
                     sendSetTdlibParameters(singleton!!, params)
                     // Provide database key early so the client can proceed past WAIT_ENCRYPTION_KEY without user action
                     kotlin.runCatching {
-                        val key = com.chris.m3usuite.telegram.TelegramKeyStore.getOrCreateDatabaseKey(context)
+                        val key = TelegramKeyStore.getOrCreateDatabaseKey(context)
                         sendCheckDatabaseEncryptionKey(singleton!!, key)
                     }
                 }
@@ -827,15 +827,15 @@ object TdLibReflection {
 
     fun sendSetPhoneNumber(client: ClientHandle, phone: String, settings: PhoneAuthSettings = PhoneAuthSettings()) {
         val settingsObj = buildPhoneNumberAuthenticationSettings(settings)
-                ?: new(
-                    "TdApi\$PhoneNumberAuthenticationSettings",
-                    arrayOf<Class<*>>(
-                        Boolean::class.javaPrimitiveType!!,
-                        Boolean::class.javaPrimitiveType!!,
-                        Boolean::class.javaPrimitiveType!!,
-                        Boolean::class.javaPrimitiveType!!,
-                        Array<String>::class.java
-                    ),
+            ?: new(
+                "TdApi\$PhoneNumberAuthenticationSettings",
+                arrayOf<Class<*>>(
+                    Boolean::class.javaPrimitiveType!!,
+                    Boolean::class.javaPrimitiveType!!,
+                    Boolean::class.javaPrimitiveType!!,
+                    Boolean::class.javaPrimitiveType!!,
+                    Array<String>::class.java
+                ),
                 arrayOf(
                     settings.allowFlashCall,
                     settings.allowMissedCall,

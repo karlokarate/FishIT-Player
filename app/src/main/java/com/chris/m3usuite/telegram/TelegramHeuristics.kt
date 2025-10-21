@@ -1,137 +1,195 @@
 package com.chris.m3usuite.telegram
 
-/** Simple parsing utilities for Telegram captions to distinguish VOD vs Series episodes.
- * Rules:
- * - Series pattern: SxxEyy, SxEy, or NxM (1x02) anywhere in the text.
- * - Series title: prefix before the pattern, trimmed of separators and brackets.
- * - Episode title: remainder after the pattern, with common separators removed.
- */
-object TelegramHeuristics {
-    private data class Normalized(
-        val title: String,
-        val year: Int?,
-        val language: String?
-    )
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
 
-    private val qualities = Regex("(?i)\\b(720p|1080p|1440p|2160p|4k|8k|x264|x265|hevc|h265|webrip|web[- ]?dl|bluray|bdrip|remux|hdr|dolby|dv|ddp?\\d\\.\\d|atmos|aac|dts|cam|hdtc|bdremux|truehd|xvid)\\b")
-    private val yearRegex = Regex("(?i)\\b(19|20)\\d{2}\\b")
-    private val langRegex = Regex("(?i)\\b(GER/ENG|DE/EN|DEU|GER|DE|GERMAN|DEUTSCH|EN|ENG|ENGLISH|ITA|IT|ES|ESP|ESPAÑOL|SPANISH|VOSTFR|FR|FRENCH)\\b")
-    private val codecNoise = Regex("(?i)\\b(h264|h265|hevc|avc|aac|dd|mp3|flac|opus)\\b")
-    private val bracketNoise = Regex("[\u005B\u005D\u0028\u0029]")
-    private val separatorNoise = Regex("[._]+")
+/** Simple parsing utilities for Telegram captions to distinguish VOD vs Series episodes. */
+object TelegramHeuristics {
+    private const val TAG = "TelegramHeuristics"
+    private val NO_MATCH_REGEX = Regex("(?!.)")
+
+    private fun safeRegex(pattern: String, vararg options: RegexOption): Regex {
+        val optionSet = if (options.isEmpty()) emptySet() else options.toSet()
+        return runCatching { Regex(pattern, optionSet) }
+            .getOrElse { err ->
+                Log.e(TAG, "Invalid regex pattern: $pattern", err)
+                NO_MATCH_REGEX
+            }
+    }
+
+    private val qualityTokens = safeRegex(
+        """\b(?:720p|1080p|1440p|2160p|4k|8k|x264|x265|hevc|webrip|web[- ]?dl|bluray|blu[- ]?ray|bdremux|remux|hdr|dolby(?: vision)?|dv|ddp?\d\.\d|atmos|aac|dts|cam|hdtc|truehd)\b""",
+        RegexOption.IGNORE_CASE
+    )
+    private val bracketLanguageRegex = safeRegex(
+        """[\(\[\{]\s*(?:deu|ger|de|eng|en|ita|es|vostfr|fr|vo|subfrench)(?:\s*/\s*(?:deu|ger|de|eng|en|ita|es|vostfr|fr|vo|subfrench))*\s*[\)\]\}]""",
+        RegexOption.IGNORE_CASE
+    )
+    private val languagePairRegex = safeRegex(
+        """\b(?:deu|ger|de)\s*/\s*(?:eng|en|english)\b""",
+        RegexOption.IGNORE_CASE
+    )
+    private val languageTokenRegex = safeRegex(
+        """\b(DEU|GER|DE|GERMAN|DEUTSCH|ENG|EN|ENGLISH|ITA|ES|VOSTFR|FR|VO|SUBFRENCH)\b""",
+        RegexOption.IGNORE_CASE
+    )
+    private val cleanupSeparatorsRegex = Regex("[._]+")
+    private val punctuationRegex = Regex("[\\[\\]\\(\\)\\{\\}]")
+    private val whitespaceRegex = Regex("\\s+")
+    private val yearRegex = safeRegex("""\b(19\d{2}|20\d{2})\b""", RegexOption.IGNORE_CASE)
+    private val sxxexxRegex = safeRegex(
+        """\bS(?<season>\d{1,2})E(?<episode>\d{1,3})(?:\s*[-–]\s*(?<episodeEnd>\d{1,3}))?\b""",
+        RegexOption.IGNORE_CASE
+    )
+    private val nxmRegex = safeRegex(
+        """\b(?<season>\d{1,2})[x×](?<episode>\d{1,3})(?:\s*[-–]\s*(?<episodeEnd>\d{1,3}))?\b""",
+        RegexOption.IGNORE_CASE
+    )
+    private val colonRegex = safeRegex(
+        """\bS(?<season>\d{1,2})\s*:\s*E?(?<episode>\d{1,3})(?:\s*[-–]\s*(?<episodeEnd>\d{1,3}))?\b""",
+        RegexOption.IGNORE_CASE
+    )
+    private val labeledSeasonEpisodeRegex = safeRegex(
+        """\b(?:Staffel|Season)\s*(?<season>\d{1,2})\s*(?:Folge|Ep\.?|Episode)\s*(?<episode>\d{1,3})(?:\s*[-–]\s*(?<episodeEnd>\d{1,3}))?\b""",
+        RegexOption.IGNORE_CASE
+    )
+    private val episodeOnlyRegex = safeRegex(
+        """\b(?:Ep\.?|Episode)\s*(?<episode>\d{1,3})\b""",
+        RegexOption.IGNORE_CASE
+    )
+    private val seriesTrimChars = charArrayOf(' ', '.', '-', '_', '[', ']', '(', ')', ':', '–')
+
     data class ParseResult(
         val isSeries: Boolean,
         val seriesTitle: String? = null,
         val season: Int? = null,
         val episode: Int? = null,
-        val episodeEnd: Int? = null, // for ranges E01-03
+        val episodeEnd: Int? = null,
         val title: String? = null,
-        val language: String? = null, // ISO-ish (de, en, es...)
+        val language: String? = null,
         val year: Int? = null,
     )
 
-    // Erweiterte Muster:
-    private val sxxexx = Regex("""\\bS(\\d{1,2})E(\\d{1,3})(?:\\s*[-–]\\s*(\\d{1,3}))?\\b""", RegexOption.IGNORE_CASE)
-    private val sXeY = Regex("""\\bS(\\d{1,2})\\s*[:x]\\s*E?(\\d{1,3})(?:\\s*[-–]\\s*(\\d{1,3}))?\\b""", RegexOption.IGNORE_CASE)
-    private val nxm = Regex("""\\b(\\d{1,2})[x×](\\d{1,3})(?:\\s*[-–]\\s*(\\d{1,3}))?\\b""", RegexOption.IGNORE_CASE)
-    private val staffelFolge = Regex("""\\b(?:Staffel|Season)\\s*(\\d{1,2})\\s*(?:Folge|Ep\\.?|Episode)\\s*(\\d{1,3})(?:\\s*[-–]\\s*(\\d{1,3}))?\\b""", RegexOption.IGNORE_CASE)
-    private val episodeOnly = Regex("""\\b(?:Ep\\.?|Episode)\\s*(\\d{1,3})\\b""", RegexOption.IGNORE_CASE)
-    private val sColonE = Regex("""\\bS(\\d{1,2})\\s*:\\s*E?(\\d{1,3})\\b""", RegexOption.IGNORE_CASE)
+    private data class NormalizedCaption(
+        val cleaned: String,
+        val language: String?,
+        val year: Int?
+    )
 
     private fun detectLanguage(text: String): String? {
-        val upper = text.uppercase()
-        return when {
-            upper.contains("GER/ENG") || upper.contains("DE/EN") -> "de+en"
-            upper.contains("GERMAN") || upper.contains("DEUTSCH") || upper.contains("DEU") || upper.contains(" GER ") || upper.contains(" DE ") -> "de"
-            upper.contains("ENGLISH") || upper.contains("ENG") || upper.contains(" EN ") -> "en"
-            upper.contains("VOSTFR") || upper.contains("FR ") || upper.contains("FRENCH") -> "fr"
-            upper.contains("ITA") || upper.contains(" IT ") -> "it"
-            upper.contains("ESPAÑOL") || upper.contains("SPANISH") || upper.contains("ESP") || upper.contains(" ES ") -> "es"
-            else -> langRegex.find(upper)?.value?.lowercase()?.let {
-                when (it) {
-                    "ger", "de", "deu", "german", "deutsch" -> "de"
-                    "en", "eng", "english" -> "en"
-                    "ita", "it" -> "it"
-                    "es", "esp", "español", "spanish" -> "es"
-                    "vostfr", "fr", "french" -> "fr"
-                    else -> null
-                }
-            }
+        if (languagePairRegex.containsMatchIn(text)) return "de+en"
+        val match = languageTokenRegex.find(text)?.groupValues?.getOrNull(1)?.uppercase() ?: return null
+        return when (match) {
+            "DEU", "GER", "DE", "GERMAN", "DEUTSCH" -> "de"
+            "ENG", "EN", "ENGLISH" -> "en"
+            "ITA" -> "it"
+            "ES" -> "es"
+            "VOSTFR", "FR", "SUBFRENCH" -> "fr"
+            "VO" -> "vo"
+            else -> null
         }
     }
 
-    private fun normalize(raw: String): Normalized {
-        val lang = detectLanguage(raw)
-        val year = yearRegex.find(raw)?.value?.toIntOrNull()
+    private fun normalize(raw: String): NormalizedCaption {
+        val language = detectLanguage(raw)
         var working = raw
-        working = bracketNoise.replace(working, " ")
-        working = qualities.replace(working, " ")
-        working = codecNoise.replace(working, " ")
-        working = langRegex.replace(working, " ")
+        val year = yearRegex.find(working)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        working = qualityTokens.replace(working, " ")
+        working = bracketLanguageRegex.replace(working, " ")
+        working = languagePairRegex.replace(working, " ")
+        working = languageTokenRegex.replace(working, " ")
         working = yearRegex.replace(working, " ")
-        working = separatorNoise.replace(working, " ")
-        working = working.replace(Regex("[-–:]+"), " ")
-        working = working.replace(Regex("\\s+"), " ")
-        working = working.trim(' ', '-', '_', '.', '[', ']', '(', ')')
-        return Normalized(working, year, lang)
+        working = punctuationRegex.replace(working, " ")
+        working = cleanupSeparatorsRegex.replace(working, " ")
+        val collapsed = whitespaceRegex.replace(working, " ").trim(*seriesTrimChars)
+        return NormalizedCaption(collapsed, language, year)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun parse(caption: String?): ParseResult {
         if (caption.isNullOrBlank()) return ParseResult(false, title = null)
-        val text = caption.trim()
-        val normalized = normalize(text)
+        val raw = caption.trim()
+        val normalized = normalize(raw)
+        val text = normalized.cleaned
+        val lang = normalized.language
+        val year = normalized.year ?: extractYear(raw)
 
-        val match = sxxexx.find(text)
-            ?: sXeY.find(text)
-            ?: sColonE.find(text)
-            ?: nxm.find(text)
-            ?: staffelFolge.find(text)
+        val episodeMatch = sequenceOf(
+            sxxexxRegex.find(text),
+            nxmRegex.find(text),
+            colonRegex.find(text),
+            labeledSeasonEpisodeRegex.find(text)
+        ).firstOrNull { it != null }
 
-        if (match != null) {
-            val season = match.groupValues.getOrNull(1)?.toIntOrNull()
-            val episode = match.groupValues.getOrNull(2)?.toIntOrNull()
-            val episodeEnd = match.groupValues.getOrNull(3)?.toIntOrNull()
-            val seriesRaw = text.substring(0, match.range.first)
-            val episodeRaw = text.substring(match.range.last + 1)
-            val seriesNorm = normalize(seriesRaw).title.ifBlank { null }
-            val episodeNorm = normalize(episodeRaw).title.ifBlank { null }
+        if (episodeMatch != null) {
+            val seasonValue = episodeMatch.groups["season"]?.value?.toIntOrNull()
+            val episodeValue = episodeMatch.groups["episode"]?.value?.toIntOrNull()
+            val episodeEndValue = episodeMatch.groups["episodeEnd"]?.value?.toIntOrNull()
+            val prefix = text.substring(0, episodeMatch.range.first)
+            val suffix = text.substring(episodeMatch.range.last + 1)
+            val seriesTitle = cleanSegment(prefix).first
+            val episodeTitle = cleanSegment(suffix).first
             return ParseResult(
                 isSeries = true,
-                seriesTitle = seriesNorm,
-                season = season,
-                episode = episode,
-                episodeEnd = episodeEnd,
-                title = episodeNorm,
-                language = normalized.language,
-                year = normalized.year
+                seriesTitle = seriesTitle,
+                season = seasonValue,
+                episode = episodeValue,
+                episodeEnd = episodeEndValue,
+                title = episodeTitle,
+                language = lang,
+                year = year
             )
         }
 
-        episodeOnly.find(text)?.let { only ->
-            val episode = only.groupValues.getOrNull(1)?.toIntOrNull()
-            val seriesRaw = text.substring(0, only.range.first)
-            val episodeRaw = text.substring(only.range.last + 1)
-            val seriesNorm = normalize(seriesRaw).title.ifBlank { null }
-            val episodeNorm = normalize(episodeRaw).title.ifBlank { null }
+        val episodeOnlyMatch = episodeOnlyRegex.find(text)
+        if (episodeOnlyMatch != null) {
+            val episode = episodeOnlyMatch.groups["episode"]?.value?.toIntOrNull()
+            val prefix = text.substring(0, episodeOnlyMatch.range.first)
+            val suffix = text.substring(episodeOnlyMatch.range.last + 1)
+            val seriesTitle = cleanSegment(prefix).first
+            val episodeTitle = cleanSegment(suffix).first
             return ParseResult(
                 isSeries = true,
-                seriesTitle = seriesNorm,
+                seriesTitle = seriesTitle,
                 season = null,
                 episode = episode,
                 episodeEnd = null,
-                title = episodeNorm,
-                language = normalized.language,
-                year = normalized.year
+                title = episodeTitle,
+                language = lang,
+                year = year
             )
         }
 
+        val movieTitle = normalized.cleaned
         return ParseResult(
             isSeries = false,
-            title = normalized.title.ifBlank { null },
-            language = normalized.language,
-            year = normalized.year
+            title = movieTitle.ifBlank { raw },
+            language = lang,
+            year = year
         )
     }
 
-    fun cleanMovieTitle(raw: String): String = normalize(raw).title
+    fun fallbackParse(caption: String?): ParseResult {
+        if (caption.isNullOrBlank()) return ParseResult(isSeries = false)
+        val normalized = normalize(caption.trim())
+        val title = normalized.cleaned
+        return ParseResult(
+            isSeries = false,
+            title = title.ifBlank { caption.trim() },
+            language = normalized.language,
+            year = normalized.year ?: extractYear(caption)
+        )
+    }
+
+    fun cleanMovieTitle(raw: String): String = normalize(raw).cleaned
+
+    private fun cleanSegment(segment: String): Pair<String?, Int?> {
+        val normalized = normalize(segment)
+        val title = normalized.cleaned.trim(*seriesTrimChars)
+        return title.ifBlank { null } to normalized.year
+    }
+
+    private fun extractYear(text: String): Int? =
+        yearRegex.find(text)?.groupValues?.getOrNull(1)?.toIntOrNull()
 }
