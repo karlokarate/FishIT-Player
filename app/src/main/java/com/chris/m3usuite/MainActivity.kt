@@ -26,9 +26,11 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.auth.ProfileGate
 import com.chris.m3usuite.ui.home.LocalMiniPlayerResume
 import com.chris.m3usuite.ui.home.MiniPlayerState
+import com.chris.m3usuite.ui.home.StartScreen
 import com.chris.m3usuite.ui.home.buildRoute
 import com.chris.m3usuite.ui.screens.*
 import com.chris.m3usuite.ui.theme.AppTheme
+import com.chris.m3usuite.ui.profile.ProfileManagerScreen
 import com.chris.m3usuite.work.XtreamDeltaImportWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first

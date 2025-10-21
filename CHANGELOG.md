@@ -1,3 +1,7 @@
+2025-11-12
+- fix(main): Import StartScreen and ProfileManagerScreen in MainActivity so
+  release builds resolve the new package locations.
+
 2025-11-11
 - fix(telegram/repo): Selected chat IDs now come from the unified
   `tgSelectedChatsCsv` list for both VOD and series flows, leaving the
