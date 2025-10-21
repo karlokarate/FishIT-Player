@@ -247,6 +247,7 @@ Recent
   Backfills deduplizieren Nachrichten, ziehen `fromId-1` sauber weiter und
   respektieren `FLOOD_WAIT` via `delay`, während das Repository zusätzliche
   Video-Container erkennt und VOD strikt von Episoden trennt.
+- Maintenance 2025-11-12: Telegram-Settings setzen auf den neuen `TelegramChatPickerDialog`, der Chats/Folders über `TelegramSettingsViewModel.listChats()/listFolders()` lädt, Filter für Hauptliste/Archiv/Ordner anbietet, eine Suche integriert und manuelle CSV-ID-Eingaben unterstützt. TDLib-Busy sperrt QR-Öffnen, Voll-Sync-Chip sowie den "Dieses Gerät"-Schalter, bis der Auth-Flow wieder frei ist.
 - Telegram backfill: `TelegramSyncWorker` nutzt `MODE_ALL` (kombinierter Full-Sync, `fetchAll=true`) und triggert `CMD_PULL_CHAT_HISTORY` pro ausgewähltem Chat; Legacy-VOD/Serien-CSV wird einmalig in `tg_selected_chats_csv` migriert. Nach jedem Lauf wird `TelegramSeriesIndexer.rebuild*` ausgeführt, damit aggregierte Serien-Rows aktuell bleiben. Settings zeigen Chat-Namen via `CMD_LIST_CHATS`/`CMD_RESOLVE_CHAT_TITLES` an; der Service cached Chats über `loadChats` + Updates (kein doppelter TDLib-Client).
 - Telegram Scheduling: `SchedulingGateway.scheduleTelegramSync(ctx, mode, refreshHome)` startet den Worker. Nach Erfolg ruft dieser `SchedulingGateway.onTelegramSyncCompleted(...)` auf und legt Cache-Cleanup + OBX-Key-Backfill neu auf; bei `refreshHome=true` wird zusätzlich `scheduleAll()` getriggert, damit HomeChrome / Rows sofort aktualisieren.
   - `SchedulingGateway.telegramSyncState` liefert Laufzeitstatus (Idle/Running/Success/Failure) inklusive aggregierter Zähler. HomeChrome nutzt diesen Flow für den globalen „Telegram Sync“-Banner und blendet Abschlussmeldungen nach kurzer Zeit automatisch aus.
@@ -258,6 +259,9 @@ Recent
   mappt TDLib-States, startet automatisch den Google SMS User Consent, handhabt `ResendAuthenticationCode` und mapped Fehler via
   `TgErrorMapper`. Settings/Dialog nutzen die neuen Composables (`PhoneScreen`, `CodeScreen`, `PasswordScreen`). Alle Änderungen am
   Login-Flow laufen über dieses Modul; Fehler gehen strukturiert über `TelegramServiceClient.ServiceError`.
+  - `TgAuthViewModel` bindet den Orchestrator an Compose, hält Telefon/Code/Passwort-Eingaben persistent, steuert den Busy-State,
+    verknüpft den SMS-Consent mit dem Lifecycle und speichert Telegram API-ID/-Hash direkt im `SettingsStore`. BuildConfig-Werte
+    greifen weiterhin als Fallback, wenn keine benutzerdefinierten Schlüssel hinterlegt sind.
 - Maintenance 2025-11-06: Kotlin-2.0-Build läuft wieder – Start nutzt für die
   Telegram-Serien-Row das vollständige `SeriesFishTile`-API (inkl. NEW/Assign/Play)
   und Settings importieren `contentOrNull`, halten `showTgDialog` global sowie

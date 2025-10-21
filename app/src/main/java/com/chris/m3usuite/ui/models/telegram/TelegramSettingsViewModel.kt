@@ -78,7 +78,10 @@ class TelegramSettingsViewModel(
         .distinctUntilChanged()
 
     init {
-        runCatching { tg.bind() }
+        runCatching {
+            tg.bind()
+            tg.setInBackground(false)
+        }
         observeStore()
         observeAuthSignals()
     }
@@ -146,15 +149,20 @@ class TelegramSettingsViewModel(
         viewModelScope.launch {
             when (intent) {
                 is TelegramIntent.RequestCode -> runCatching { tg.requestCode(intent.phone) }
+                    .onFailure { notifyError("Code konnte nicht angefordert werden: ${it.message ?: "Unbekannt"}") }
                 is TelegramIntent.SubmitCode -> runCatching { tg.submitCode(intent.code) }
+                    .onFailure { notifyError("Code konnte nicht gesendet werden: ${it.message ?: "Unbekannt"}") }
                 is TelegramIntent.SubmitPassword -> runCatching { tg.submitPassword(intent.password) }
+                    .onFailure { notifyError("Passwort konnte nicht gesendet werden: ${it.message ?: "Unbekannt"}") }
                 is TelegramIntent.ResendCode -> runCatching { tg.resendCode() }
+                    .onFailure { notifyError("Code konnte nicht erneut gesendet werden: ${it.message ?: "Unbekannt"}") }
                 is TelegramIntent.ConfirmChats -> confirmChats(intent.ids)
                 is TelegramIntent.SetLogDir -> setLogDir(intent.treeUri)
                 is TelegramIntent.StartFullSync -> startFullSync()
                 is TelegramIntent.SetEnabled -> setEnabled(intent.value)
                 is TelegramIntent.SetHttpLogLevel -> setHttpLogLevel(intent.level)
                 TelegramIntent.RequestQr -> runCatching { tg.requestQr() }
+                    .onFailure { notifyError("QR-Anfrage fehlgeschlagen: ${it.message ?: "Unbekannt"}") }
             }
         }
     }
@@ -208,6 +216,10 @@ class TelegramSettingsViewModel(
         runCatching { tg.setLogVerbosity(norm) }
     }
 
+    private fun notifyError(message: String) {
+        _effects.tryEmit(TelegramEffect.Snackbar(message))
+    }
+
     /** Returns a list of chats for a given list tag ("main", "archive", "folder:ID"). */
     suspend fun listChats(list: String, query: String? = null, limit: Int = 200): List<ChatUi> {
         val pairs = tg.listChats(list, limit, query)
@@ -234,7 +246,10 @@ class TelegramSettingsViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        runCatching { tg.unbind() }
+        runCatching {
+            tg.setInBackground(true)
+            tg.unbind()
+        }
     }
 
     companion object {
@@ -254,3 +269,4 @@ class TelegramSettingsViewModel(
 
 /** Simple value class for combine of 4 values (no standard Quad in Kotlin). */
 private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
