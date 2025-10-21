@@ -31,7 +31,7 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
   kombinierten MODE_ALL-Sync; die UI löst Chat-Namen via `CMD_RESOLVE_CHAT_TITLES`
   auf und zeigt einen separaten Sync-Button.
  - ObjectBox: Telegram messages are stored in `ObxTelegramMessage` (chatId/messageId/fileId/uniqueId/supportsStreaming/caption/date/localPath/thumbFileId). Repository/DataSources update OBX directly.
-- Login (Alpha): Auth-Flow liegt in `feature-tg-auth` (Domain `TgAuthState/TgAuthAction`, Data `TgAuthOrchestrator`, UI `PhoneScreen`/`CodeScreen`/`PasswordScreen`, DI `TgAuthModule`). Der Orchestrator bindet `TelegramAuthRepository`, startet automatisch Googles SMS User Consent, mapped TDLib-Fehler via `TgErrorMapper` (Flood-Wait/App-Update/Ban) und stößt `ResendAuthenticationCode` an. Der Settings-Dialog verwendet die neuen Composables; QR-Login bleibt ein expliziter Button und öffnet `tg://login` nur bei installierter Telegram-App. Ein „Per Code anmelden“-Fallback bleibt jederzeit aktiv.
+- Login (Alpha): Auth-Flow liegt in `feature-tg-auth` (Domain `TgAuthState/TgAuthAction`, Data `TgAuthOrchestrator`, UI `PhoneScreen`/`CodeScreen`/`PasswordScreen`, DI `TgAuthModule`). `TgAuthViewModel` bindet den Orchestrator an Compose, hält Telefon/Code/Passwort-Eingaben persistent, steuert Busy/Error-State, verwaltet den Google SMS User Consent und speichert Telegram API-ID/-Hash im `SettingsStore` (BuildConfig bleibt Fallback). Der Orchestrator bindet `TelegramAuthRepository`, mapped TDLib-Fehler via `TgErrorMapper` (Flood-Wait/App-Update/Ban) und stößt `ResendAuthenticationCode` an. Der Settings-Dialog verwendet die neuen Composables; QR-Login bleibt ein expliziter Button und öffnet `tg://login` nur bei installierter Telegram-App. Ein „Per Code anmelden“-Fallback bleibt jederzeit aktiv.
 - Build hygiene (2025-11-02): Telegram-Settings setzen die Flow-Debounces wieder
   mit `kotlinx.coroutines.flow` um, der Chat-Picker ist als `@Composable`
   gekennzeichnet und `TgSmsConsentManager` kapselt den `SupervisorJob`
@@ -46,7 +46,12 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
   TDLib-Konstruktoren; TdLibReflection setzt diese nun typisiert zusammen, damit
   Release-Builds nicht an `Comparable & Serializable`-Schnittmengen scheitern.
 - Playback DataSource: `TelegramRoutingDataSource` für Media3 routet `tg://message?chatId=&messageId=` auf lokale Pfade und triggert bei Bedarf `DownloadFile(fileId)`; `localPath` wird persistiert.
-- Settings: Der Chat-Picker listet Hauptordner/Archiv/Folder, erlaubt Multi-Select und zeigt aufgelöste Chat-Namen (AUTHENTICATED). „Übernehmen & Sync starten“ schreibt `tg_selected_chats_csv` und stößt direkt MODE_ALL an.
+- Settings: `TelegramChatPickerDialog` lädt Chats/Folders via
+  `TelegramSettingsViewModel.listChats()/listFolders()`, bietet Filter für
+  Hauptliste/Archiv/Ordner, ein Suchfeld sowie eine manuelle CSV-ID-Eingabe.
+  Multi-Select übernimmt bestehende Selektionen und speichert bei „Übernehmen"
+  das CSV (`tg_selected_chats_csv`). Busy-States sperren QR-Öffnen,
+  Voll-Sync-Chip und den „Dieses Gerät"-Schalter, bis TDLib wieder frei ist.
 - Settings MVVM: Das produktive `SettingsScreen` bindet `NetworkSettingsViewModel`, `XtreamSettingsViewModel`, `PlayerSettingsViewModel`, `EpgSettingsViewModel` sowie die Telegram-spezifischen VMs (`TelegramSettingsViewModel`, `TelegramProxyViewModel`, `TelegramAutoDownloadViewModel`). Jede Sektion liefert `StateFlow` + Intent-Methoden; Compose konsumiert ausschließlich State & Ereignisse.
 - Legacy Wartungspfad: `ui/home/backups/SettingsScreen_backup.kt` nutzt weiterhin `SettingsViewModel`, das einen `SharedFlow<SettingsEffect>` für einmalige Snackbar-Hinweise publiziert. Der Backup-Screen bleibt aktiv, bis Diagnose-/Quick-Import-/Backup-Flows ebenfalls auf MVVM migriert sind.
 - Sync: `TelegramSyncWorker` nutzt `MODE_ALL`, ruft `CMD_PULL_CHAT_HISTORY` pro Chat mit `fetchAll=true` auf, persistiert Ergebnisse via `indexMessageContent(..)` und rebuildet anschließend `TelegramSeriesIndexer.rebuildWithStats`. Ergebnisse (Filme/Serien/Episoden) landen in `SchedulingGateway.telegramSyncState`; HomeChrome blendet Fortschritt/Resultat nicht-blockierend ein.

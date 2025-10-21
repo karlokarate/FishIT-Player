@@ -623,6 +623,13 @@ class SettingsStore(private val context: Context) {
     suspend fun setTgAutoRoamingLessDataCalls(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] = value } }
     suspend fun setTgEnabled(value: Boolean) = setTelegramEnabled(value)
     suspend fun setTgLogVerbosity(value: Int) = setTelegramLogVerbosity(value)
+    suspend fun setTgApiId(value: Int) {
+        context.dataStore.edit { it[Keys.TG_API_ID] = value.coerceAtLeast(0) }
+    }
+
+    suspend fun setTgApiHash(value: String) {
+        context.dataStore.edit { it[Keys.TG_API_HASH] = value.trim() }
+    }
     suspend fun setLogDirTreeUri(value: String) { context.dataStore.edit { it[Keys.LOG_DIR_TREE_URI] = value } }
 
     data class Snapshot(

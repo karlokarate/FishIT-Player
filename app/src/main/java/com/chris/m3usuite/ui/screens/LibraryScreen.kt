@@ -133,7 +133,12 @@ fun LibraryScreen(
     var uiState by remember { mutableStateOf<com.chris.m3usuite.ui.state.UiState<Unit>>(com.chris.m3usuite.ui.state.UiState.Loading) }
 
     // Tab-Auswahl synchron zur Start-Optik (BottomPanel)
-    val selectedTab = rememberSelectedTab(store)
+    val storeTab = rememberSelectedTab(store)
+    var pendingTab by remember { mutableStateOf<ContentTab?>(null) }
+    if (pendingTab != null && pendingTab == storeTab) {
+        pendingTab = null
+    }
+    val selectedTab = pendingTab ?: storeTab
     val selectedTabKey = when (selectedTab) {
         ContentTab.Live -> "live"
         ContentTab.Vod -> "vod"
@@ -794,6 +799,11 @@ fun LibraryScreen(
                         LibraryTab.Live -> 0
                         LibraryTab.Vod -> 1
                         LibraryTab.Series -> 2
+                    }
+                    pendingTab = when (tab) {
+                        LibraryTab.Live -> ContentTab.Live
+                        LibraryTab.Vod -> ContentTab.Vod
+                        LibraryTab.Series -> ContentTab.Series
                     }
                     scope.launch { store.setLibraryTabIndex(idx) }
                 }

@@ -1,4 +1,26 @@
 2025-11-12
+- feat(settings/telegram): Rewired the Settings login block to the
+  `feature-tg-auth` MVVM. A dedicated `TgAuthViewModel` now manages TDLib
+  state, Google SMS consent, and persistent phone/code/password fields while
+  exposing a Compose flow (`PhoneScreen`/`CodeScreen`/`PasswordScreen`) and a
+  QR-state fallback. Users can edit and store Telegram API ID/Hash directly in
+  Settings; BuildConfig defaults remain the fallback when no custom keys are
+  provided.
+- fix(settings/telegram): Surface TDLib command failures as snackbar effects,
+  keep the TDLib service in foreground mode while the screen is visible, and
+  block login toggles/chat selection buttons while TDLib is busy or chat names
+  resolve. The chat picker now shows a progress indicator during name lookup.
+- feat(settings/telegram): Ersetzt den provisorischen CSV-Dialog durch einen
+  vollwertigen Chat-Picker mit Listen-/Ordner-Filtern, Suche, manueller
+  ID-Erfassung und bestehender Vorauswahl. Der Dialog lädt Chats direkt über
+  das ViewModel (TDLib) und verhindert Mehrfachauswahlen während des Ladens.
+- fix(settings/telegram): Sperrt QR-Öffnen, Voll-Sync-Chip und den
+  "Dieses Gerät"-Schalter, solange TDLib Anfragen verarbeitet oder keine
+  Schlüssel verfügbar sind, damit der Auth-Flow keinen inkonsistenten Zustand
+  erreicht.
+- fix(ui/library): Library header shortcuts for Live/VOD/Series switch tabs
+  immediately by optimistically updating local state while DataStore catches
+  up, restoring responsive navigation on touch and TV.
 - fix(main): Import StartScreen and ProfileManagerScreen in MainActivity so
   release builds resolve the new package locations.
 

@@ -5,6 +5,10 @@ Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
 - Maintenance 2025-11-12: MainActivity imports StartScreen/ProfileManagerScreen
   from their ui.home/ui.profile packages so release builds compile again.
+- Maintenance 2025-11-12: Telegram-Settings erhalten einen vollwertigen
+  Chat-Picker (Listen-/Ordner-Filter, Suche, manuelle ID-Eingabe) anstelle des
+  CSV-Fallbacks. Auth-Aktionen (QR öffnen, Voll-Sync, "Dieses Gerät") sind
+  während laufender TDLib-Operationen gesperrt.
 - Maintenance 2025-11-11: Telegram-Import nutzt eine gemeinsame Chat-Selektion,
   erkennt HLS-/Octet-MIMEs zuverlässiger und meldet Sync-Trigger jetzt als
   Snackbar-Effekt aus dem ViewModel.
