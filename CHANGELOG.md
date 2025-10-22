@@ -1,3 +1,9 @@
+2025-11-13
+- fix(settings/telegram): Restore the proxy and auto-download settings blocks
+  that disappeared during the auth refactor and import Compose
+  `KeyboardOptions` from `foundation.text` so Kotlin 2.0 release builds compile
+  again.
+
 2025-11-12
 - feat(settings/telegram): Rewired the Settings login block to the
   `feature-tg-auth` MVVM. A dedicated `TgAuthViewModel` now manages TDLib

@@ -17,10 +17,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -42,7 +45,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -55,7 +59,6 @@ import com.chris.m3usuite.feature_tg_auth.ui.PhoneScreen
 import com.chris.m3usuite.feature_tg_auth.ui.TgAuthViewModel
 import com.chris.m3usuite.feature_tg_auth.ui.TgAuthViewModel.KeysStatus
 import kotlinx.coroutines.launch
-import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
 fun TelegramSettingsSection(
@@ -453,6 +456,185 @@ private fun ChatPickerDialog(
         onConfirm = onConfirm,
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
     )
+}
+
+@Composable
+private fun ProxyBlock(
+    state: ProxyUiState,
+    onChange: (String?, String?, Int?, String?, String?, String?, Boolean?) -> Unit,
+    onApply: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Proxy", style = MaterialTheme.typography.titleSmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("none" to "Keiner", "socks5" to "SOCKS5", "http" to "HTTP", "mtproto" to "MTProto")
+                .forEach { (value, label) ->
+                    FilterChip(
+                        selected = state.type == value,
+                        onClick = { onChange(value, null, null, null, null, null, null) },
+                        label = { Text(label) }
+                    )
+                }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = state.host,
+                onValueChange = { onChange(null, it, null, null, null, null, null) },
+                label = { Text("Host") },
+                modifier = Modifier.weight(2f),
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = state.port.takeIf { it != 0 }?.toString().orEmpty(),
+                onValueChange = { input -> input.toIntOrNull()?.let { onChange(null, null, it, null, null, null, null) } },
+                label = { Text("Port") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = state.username,
+                onValueChange = { onChange(null, null, null, it, null, null, null) },
+                label = { Text("User") },
+                modifier = Modifier.weight(1f),
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = state.password,
+                onValueChange = { onChange(null, null, null, null, it, null, null) },
+                label = { Text("Passwort") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation()
+            )
+        }
+        if (state.type == "mtproto") {
+            OutlinedTextField(
+                value = state.secret,
+                onValueChange = { onChange(null, null, null, null, null, it, null) },
+                label = { Text("MTProto-Secret") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = state.enabled, onCheckedChange = { onChange(null, null, null, null, null, null, it) })
+                Spacer(Modifier.width(8.dp))
+                Text(if (state.enabled) "Aktiv" else "Inaktiv")
+            }
+            Button(onClick = onApply, enabled = !state.isApplying) {
+                Text(if (state.isApplying) "Übernehme…" else "Anwenden")
+            }
+        }
+    }
+}
+
+@Composable
+private fun AutoDownloadBlock(
+    state: AutoUiState,
+    onToggleWifi: (Boolean?, Boolean?, Boolean?, Boolean?, Boolean?) -> Unit,
+    onToggleMobile: (Boolean?, Boolean?, Boolean?, Boolean?, Boolean?) -> Unit,
+    onToggleRoaming: (Boolean?, Boolean?, Boolean?, Boolean?, Boolean?) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text("Auto-Download", style = MaterialTheme.typography.titleSmall)
+        NetworkAutoCard(
+            title = "WLAN",
+            enabled = state.wifiEnabled,
+            preloadLarge = state.wifiPreloadLarge,
+            preloadNext = state.wifiPreloadNextAudio,
+            preloadStories = state.wifiPreloadStories,
+            lessDataCalls = state.wifiLessDataCalls,
+            onEnabled = { onToggleWifi(it, null, null, null, null) },
+            onPreloadLarge = { onToggleWifi(null, it, null, null, null) },
+            onPreloadNext = { onToggleWifi(null, null, it, null, null) },
+            onPreloadStories = { onToggleWifi(null, null, null, it, null) },
+            onLessDataCalls = { onToggleWifi(null, null, null, null, it) }
+        )
+        NetworkAutoCard(
+            title = "Mobil",
+            enabled = state.mobileEnabled,
+            preloadLarge = state.mobilePreloadLarge,
+            preloadNext = state.mobilePreloadNextAudio,
+            preloadStories = state.mobilePreloadStories,
+            lessDataCalls = state.mobileLessDataCalls,
+            onEnabled = { onToggleMobile(it, null, null, null, null) },
+            onPreloadLarge = { onToggleMobile(null, it, null, null, null) },
+            onPreloadNext = { onToggleMobile(null, null, it, null, null) },
+            onPreloadStories = { onToggleMobile(null, null, null, it, null) },
+            onLessDataCalls = { onToggleMobile(null, null, null, null, it) }
+        )
+        NetworkAutoCard(
+            title = "Roaming",
+            enabled = state.roamingEnabled,
+            preloadLarge = state.roamingPreloadLarge,
+            preloadNext = state.roamingPreloadNextAudio,
+            preloadStories = state.roamingPreloadStories,
+            lessDataCalls = state.roamingLessDataCalls,
+            onEnabled = { onToggleRoaming(it, null, null, null, null) },
+            onPreloadLarge = { onToggleRoaming(null, it, null, null, null) },
+            onPreloadNext = { onToggleRoaming(null, null, it, null, null) },
+            onPreloadStories = { onToggleRoaming(null, null, null, it, null) },
+            onLessDataCalls = { onToggleRoaming(null, null, null, null, it) }
+        )
+    }
+}
+
+@Composable
+private fun NetworkAutoCard(
+    title: String,
+    enabled: Boolean,
+    preloadLarge: Boolean,
+    preloadNext: Boolean,
+    preloadStories: Boolean,
+    lessDataCalls: Boolean,
+    onEnabled: (Boolean) -> Unit,
+    onPreloadLarge: (Boolean) -> Unit,
+    onPreloadNext: (Boolean) -> Unit,
+    onPreloadStories: (Boolean) -> Unit,
+    onLessDataCalls: (Boolean) -> Unit
+) {
+    ElevatedCard {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = enabled, onCheckedChange = onEnabled)
+                Spacer(Modifier.width(8.dp))
+                Text(if (enabled) "Aktiv" else "Inaktiv")
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FilterChip(
+                    selected = preloadLarge,
+                    onClick = { onPreloadLarge(!preloadLarge) },
+                    label = { Text("Große Videos vorladen") }
+                )
+                FilterChip(
+                    selected = preloadNext,
+                    onClick = { onPreloadNext(!preloadNext) },
+                    label = { Text("Nächste Audios vorladen") }
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FilterChip(
+                    selected = preloadStories,
+                    onClick = { onPreloadStories(!preloadStories) },
+                    label = { Text("Stories vorladen") }
+                )
+                FilterChip(
+                    selected = lessDataCalls,
+                    onClick = { onLessDataCalls(!lessDataCalls) },
+                    label = { Text("Low-Data Anrufe") }
+                )
+            }
+        }
+    }
 }
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {

@@ -3,6 +3,9 @@
 
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-11-13: Telegram-Settings zeigen wieder Proxy- und
+  Auto-Download-Karten; `KeyboardOptions` kommt aus `foundation.text`, damit
+  Release-Builds mit Kotlin 2.0 erneut durchlaufen.
 - Maintenance 2025-11-12: MainActivity imports StartScreen/ProfileManagerScreen
   from their ui.home/ui.profile packages so release builds compile again.
 - Maintenance 2025-11-12: Telegram-Settings erhalten einen vollwertigen
