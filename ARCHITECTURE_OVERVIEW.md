@@ -30,7 +30,11 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
   `tg_selected_series_chats_csv`) einmalig. Bestätigen startet direkt einen
   kombinierten MODE_ALL-Sync; die UI löst Chat-Namen via `CMD_RESOLVE_CHAT_TITLES`
   auf und zeigt einen separaten Sync-Button.
- - ObjectBox: Telegram messages are stored in `ObxTelegramMessage` (chatId/messageId/fileId/uniqueId/supportsStreaming/caption/date/localPath/thumbFileId). Repository/DataSources update OBX directly.
+- Settings: Der Proxy-Block (SOCKS5/HTTP/MTProto) und die Auto-Download-Karten
+  (WLAN/Mobil/Roaming) bleiben Teil der Telegram-Sektion; `KeyboardOptions`
+  stammt aus `foundation.text`, damit Kotlin-2.0-Release-Builds weiterhin
+  kompilieren.
+- ObjectBox: Telegram messages are stored in `ObxTelegramMessage` (chatId/messageId/fileId/uniqueId/supportsStreaming/caption/date/localPath/thumbFileId). Repository/DataSources update OBX directly.
 - Login (Alpha): Auth-Flow liegt in `feature-tg-auth` (Domain `TgAuthState/TgAuthAction`, Data `TgAuthOrchestrator`, UI `PhoneScreen`/`CodeScreen`/`PasswordScreen`, DI `TgAuthModule`). `TgAuthViewModel` bindet den Orchestrator an Compose, hält Telefon/Code/Passwort-Eingaben persistent, steuert Busy/Error-State, verwaltet den Google SMS User Consent und speichert Telegram API-ID/-Hash im `SettingsStore` (BuildConfig bleibt Fallback). Der Orchestrator bindet `TelegramAuthRepository`, mapped TDLib-Fehler via `TgErrorMapper` (Flood-Wait/App-Update/Ban) und stößt `ResendAuthenticationCode` an. Der Settings-Dialog verwendet die neuen Composables; QR-Login bleibt ein expliziter Button und öffnet `tg://login` nur bei installierter Telegram-App. Ein „Per Code anmelden“-Fallback bleibt jederzeit aktiv.
 - Build hygiene (2025-11-02): Telegram-Settings setzen die Flow-Debounces wieder
   mit `kotlinx.coroutines.flow` um, der Chat-Picker ist als `@Composable`
