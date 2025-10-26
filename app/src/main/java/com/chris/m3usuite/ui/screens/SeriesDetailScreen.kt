@@ -88,6 +88,7 @@ import com.chris.m3usuite.ui.actions.MediaAction
 import com.chris.m3usuite.ui.actions.MediaActionBar
 import com.chris.m3usuite.ui.actions.MediaActionId
 import com.chris.m3usuite.core.telemetry.Telemetry
+import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import androidx.compose.ui.res.stringResource
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
@@ -177,6 +178,7 @@ fun SeriesDetailScreen(
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
     val scope = rememberCoroutineScope()
+    val telegramServiceClient = remember { TelegramServiceClient(ctx.applicationContext) }
     val uriHandler = LocalUriHandler.current
     val resumeRepo = remember { com.chris.m3usuite.data.repo.ResumeRepository(ctx) }
     val profileId by store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L)
@@ -463,8 +465,21 @@ fun SeriesDetailScreen(
             val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
 
             // Telegram bevorzugen, wenn Referenzen existieren
-            val tgUrl = if (e.tgChatId != null && e.tgMessageId != null)
-                "tg://message?chatId=${e.tgChatId}&messageId=${e.tgMessageId}" else null
+            val tgUrl = if (e.tgChatId != null && e.tgMessageId != null) {
+                runCatching {
+                    PlayUrlHelper.tgPlayUri(
+                        chatId = e.tgChatId,
+                        messageId = e.tgMessageId,
+                        svc = telegramServiceClient
+                    ).toString()
+                }.getOrElse { err ->
+                    android.util.Log.w(
+                        "SeriesDetail",
+                        "tgPlayUri failed chatId=${e.tgChatId} messageId=${e.tgMessageId}: ${err.message}"
+                    )
+                    null
+                }
+            } else null
 
             val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store)
             // Bevorzugt: direkte Episode-URL über XtreamUrlFactory/OBX (kein Client-Init, keine Redirect-Probe)

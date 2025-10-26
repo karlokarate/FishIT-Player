@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -24,6 +25,7 @@ import com.chris.m3usuite.ui.screens.PlayerSettingsViewModel
 import com.chris.m3usuite.ui.screens.NetworkSettingsViewModel
 import com.chris.m3usuite.ui.screens.XtreamSettingsViewModel
 import com.chris.m3usuite.ui.screens.EpgSettingsViewModel
+import com.chris.m3usuite.ui.screens.GeneralSettingsViewModel
 
 // --- NEU: Entkoppelter Telegram-Block (MVVM) ---
 import com.chris.m3usuite.ui.models.telegram.TelegramSettingsViewModel as TgViewModel
@@ -48,6 +50,7 @@ fun SettingsScreen(
     val networkVm: NetworkSettingsViewModel = viewModel(factory = NetworkSettingsViewModel.factory(app))
     val xtreamVm: XtreamSettingsViewModel = viewModel(factory = XtreamSettingsViewModel.factory(app))
     val epgVm: EpgSettingsViewModel = viewModel(factory = EpgSettingsViewModel.factory(app))
+    val generalVm: GeneralSettingsViewModel = viewModel(factory = GeneralSettingsViewModel.factory(app))
 
     // --- Telegram VMs (NEU, entkoppelt) ---
     val tgVm: TgViewModel = viewModel(factory = TgViewModel.Factory(app))
@@ -59,6 +62,7 @@ fun SettingsScreen(
     val networkState by networkVm.state.collectAsStateWithLifecycle()
     val xtreamState by xtreamVm.state.collectAsStateWithLifecycle()
     val epgState by epgVm.state.collectAsStateWithLifecycle()
+    val generalState by generalVm.state.collectAsStateWithLifecycle()
 
     val scroll = rememberScrollState()
 
@@ -243,6 +247,20 @@ fun SettingsScreen(
                     onClick = { epgVm.onRefreshFavoritesNow() },
                     enabled = !epgState.isRefreshing
                 ) { Text(if (epgState.isRefreshing) "Aktualisiere …" else "Favoriten-EPG jetzt aktualisieren") }
+            }
+
+            // --- Allgemein ---
+            SettingsCard(title = "Allgemein") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Kategorie 'For Adults' anzeigen",
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = generalState.showAdults,
+                        onCheckedChange = { value -> generalVm.onToggleShowAdults(value) }
+                    )
+                }
             }
 
             // --- Telegram (NEU: MVVM-Section komplett) ---

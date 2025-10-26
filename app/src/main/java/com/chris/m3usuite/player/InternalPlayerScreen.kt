@@ -3,6 +3,7 @@ package com.chris.m3usuite.player
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.view.LayoutInflater
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -49,7 +50,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -70,12 +70,13 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
+import androidx.media3.common.SeekParameters
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.Tracks
 import androidx.media3.datasource.DefaultDataSource
-import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -102,9 +103,11 @@ import com.chris.m3usuite.ui.home.MiniPlayerDescriptor
 import com.chris.m3usuite.ui.home.MiniPlayerState
 import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import android.widget.Toast
-import android.os.SystemClock
 import android.os.Build
 import com.chris.m3usuite.playback.PlaybackSession
+import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
+import com.chris.m3usuite.player.datasource.TelegramDataSource
+import com.chris.m3usuite.telegram.service.TelegramServiceClient
 
 /**
  * Interner Player (Media3) mit:
@@ -237,9 +240,11 @@ fun InternalPlayerScreen(
         androidx.media3.exoplayer.upstream.DefaultAllocator(/* trimOnReset = */ true, /* segmentSize = */ if (isTelegramContent || is32BitDevice) 16 * 1024 else 64 * 1024)
     }
 
-    val dataSourceFactory = remember(httpFactory, ctx) {
+    val telegramServiceClient = remember(ctx) { TelegramServiceClient(ctx.applicationContext) }
+
+    val dataSourceFactory = remember(httpFactory, ctx, telegramServiceClient) {
         val base = DefaultDataSource.Factory(ctx, httpFactory)
-        DelegatingDataSourceFactory(ctx, base)
+        DelegatingDataSourceFactory(ctx, base) { TelegramDataSource(telegramServiceClient) }
     }
 
     val preferredVideoMimeTypes = remember {
@@ -306,7 +311,7 @@ fun InternalPlayerScreen(
             .build()
 
         // Align button-based seek increments (also used by PlayerView controller buttons)
-        val seekIncrementMs = 60_000L
+        val seekIncrementMs = 10_000L
 
         PlaybackSession.acquire(ctx) {
             ExoPlayer.Builder(ctx)
@@ -333,16 +338,46 @@ fun InternalPlayerScreen(
         val needsConfig = session.isNew || PlaybackSession.currentSource() != url
         if (needsConfig) {
             android.util.Log.d("ExoSetup", "setMediaItem url=${url}")
-            val inferredMime = mimeType ?: PlayUrlHelper.guessMimeType(url, null)
+            val resolvedUri = if (url.startsWith("tg://", ignoreCase = true)) {
+                val parsed = runCatching { Uri.parse(url) }.getOrNull()
+                when {
+                    parsed == null -> Uri.parse(url)
+                    parsed.host.equals("file", true) -> parsed
+                    parsed.host.equals("message", true) -> {
+                        val chatId = parsed.getQueryParameter("chatId")?.toLongOrNull()
+                        val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
+                        if (chatId != null && messageId != null) {
+                            if (!telegramServiceClient.isReady()) {
+                                Toast.makeText(
+                                    ctx,
+                                    "Telegram noch nicht verbunden oder TDLib noch nicht initialisiert…",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                onExit()
+                                return@LaunchedEffect
+                            }
+                            runCatching {
+                                PlayUrlHelper.tgPlayUri(chatId = chatId, messageId = messageId, svc = telegramServiceClient)
+                            }.getOrElse { parsed }
+                        } else parsed
+                    }
+                    else -> parsed
+                }
+            } else {
+                Uri.parse(url)
+            }
+            val finalUrl = resolvedUri.toString()
+            val inferredMime = mimeType ?: PlayUrlHelper.guessMimeType(finalUrl, null)
             val mediaItem = MediaItem.Builder()
-                .setUri(url)
+                .setUri(resolvedUri)
                 .also { builder -> inferredMime?.let { builder.setMimeType(it) } }
                 .build()
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
+            exoPlayer.seekParameters = SeekParameters.CLOSEST_SYNC
             exoPlayer.playWhenReady = false // Phase 4: erst nach Screen-Time-Check starten
             startPositionMs?.let { exoPlayer.seekTo(it) }
-            PlaybackSession.setSource(url)
+            PlaybackSession.setSource(finalUrl)
         }
     }
 
@@ -1052,6 +1087,48 @@ fun InternalPlayerScreen(
             animationSpec = androidx.compose.animation.core.tween(180),
             label = "seekPreviewAlpha"
         )
+        val trickplaySpeeds = remember { floatArrayOf(2f, 3f, 5f) }
+        var ffStage by remember { mutableStateOf(0) }
+        var rwStage by remember { mutableStateOf(0) }
+        var rwJob by remember { mutableStateOf<Job?>(null) }
+        var seekPreviewHideJob by remember { mutableStateOf<Job?>(null) }
+
+        fun stopTrickplay(resume: Boolean) {
+            ffStage = 0
+            rwStage = 0
+            rwJob?.cancel(); rwJob = null
+            seekPreviewHideJob?.cancel(); seekPreviewHideJob = null
+            seekPreviewVisible = false
+            seekPreviewTargetMs = null
+            exoPlayer.playbackParameters = PlaybackParameters(1f)
+            if (resume) {
+                exoPlayer.playWhenReady = true
+                runCatching { exoPlayer.play() }
+            }
+        }
+
+        fun showSeekPreview(base: Long, target: Long, autoHide: Boolean = true) {
+            seekPreviewBaseMs = base
+            seekPreviewTargetMs = target
+            seekPreviewVisible = true
+            seekPreviewHideJob?.cancel()
+            if (autoHide) {
+                seekPreviewHideJob = scope.launch {
+                    delay(900)
+                    seekPreviewVisible = false
+                    seekPreviewTargetMs = null
+                }
+            } else {
+                seekPreviewHideJob = null
+            }
+        }
+
+        DisposableEffect(Unit) {
+            onDispose {
+                rwJob?.cancel()
+                seekPreviewHideJob?.cancel()
+            }
+        }
 
         val playerModifier = Modifier.fillMaxSize()
 
@@ -1074,199 +1151,167 @@ fun InternalPlayerScreen(
                     view.isFocusable = true
                     view.isFocusableInTouchMode = true
                     view.requestFocus()
-                    // Burst tap seeking and long-press accelerated seeking
-                    var seekRepeatJob: Job? = null
-                    var seekDir: Int = 0
-
-                    // Burst state
-                    var burstDir = 0
-                    var burstCount = 0
-                    var lastPressMs = 0L
-                    var burstResetJob: Job? = null
-                    val burstWindowMs = 600L
-
-                    // Long-press gate
-                    var pendingLongPressJob: Job? = null
-                    var longPressActive = false
-
-                    fun burstStep(dir: Int) {
-                        if (!canSeek) return
-                        val now = SystemClock.uptimeMillis()
-                        if (dir == burstDir && (now - lastPressMs) <= burstWindowMs) {
-                            burstCount = (burstCount + 1).coerceAtMost(10)
-                        } else {
-                            burstDir = dir
-                            burstCount = 0
-                            // remember base at burst start for delta overlay
-                            try { seekPreviewBaseMs = exoPlayer.currentPosition } catch (_: Throwable) {}
-                        }
-                        lastPressMs = now
-
-                        // Non-live burst steps: 60s -> 120s -> 360s
-                        val stepMs = when (burstCount) {
-                            0 -> 60_000L
-                            1 -> 120_000L
-                            else -> 360_000L
-                        }
-                        val dur = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
-                        val cur = exoPlayer.currentPosition
-                        val target = (cur + dir * stepMs).coerceIn(0L, dur)
-                        exoPlayer.seekTo(target)
-                        seekPreviewTargetMs = target
-                        seekPreviewVisible = true
-                        controlsVisible = true; controlsTick++
-
-                        burstResetJob?.cancel()
-                        burstResetJob = scope.launch {
-                            delay(900)
-                            burstCount = 0
-                            seekPreviewVisible = false
-                            seekPreviewTargetMs = null
-                        }
-                    }
-
-                    fun startSeek(dir: Int) {
-                        if (!canSeek) return
-                        if (seekRepeatJob?.isActive == true) return
-                        longPressActive = true
-                        var step = 10_000L
-                        var target = exoPlayer.currentPosition
-                        seekDir = dir
-                        seekRepeatJob = scope.launch {
-                            seekPreviewBaseMs = target
-                            seekPreviewVisible = true
-                            val max = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
-                            val min = 0L
-                            var tick = 0
-                            while (isActive) {
-                                target = (target + dir * step).coerceIn(min, max)
-                                exoPlayer.seekTo(target)
-                                seekPreviewTargetMs = target
-                                controlsVisible = true; controlsTick++
-                                tick++
-                                if (tick % 5 == 0 && step < 60_000L) step += 10_000L
-                                delay(180)
-                            }
-                        }
-                    }
-                    fun stopSeek() {
-                        seekRepeatJob?.cancel(); seekRepeatJob = null; seekDir = 0
-                        pendingLongPressJob?.cancel(); pendingLongPressJob = null
-                        longPressActive = false
-                        // fade out preview shortly after release
-                        scope.launch {
-                            delay(420)
-                            seekPreviewVisible = false
-                            seekPreviewTargetMs = null
-                        }
-                    }
 
                     view.setOnKeyListener { _, keyCode, event ->
-                        if (event.action == android.view.KeyEvent.ACTION_UP) {
-                            when (keyCode) {
-                                android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_MEDIA_REWIND, android.view.KeyEvent.KEYCODE_BUTTON_L1,
-                                android.view.KeyEvent.KEYCODE_DPAD_RIGHT, android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD, android.view.KeyEvent.KEYCODE_BUTTON_R1 -> {
-                                    // If long-press didn’t activate, handle as burst tap
-                                    if (!longPressActive && canSeek && type != "live") {
-                                        val dir = when (keyCode) {
-                                            android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_MEDIA_REWIND, android.view.KeyEvent.KEYCODE_BUTTON_L1 -> -1
-                                            else -> +1
-                                        }
-                                        burstStep(dir)
-                                    } else {
-                                        stopSeek()
-                                    }
-                                    return@setOnKeyListener true
-                                }
-                            }
-                            return@setOnKeyListener false
-                        }
-                        if (event.action != android.view.KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+                        val isDown = event.action == android.view.KeyEvent.ACTION_DOWN
+
                         when (keyCode) {
                             android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
                             android.view.KeyEvent.KEYCODE_SPACE,
                             android.view.KeyEvent.KEYCODE_DPAD_CENTER,
                             android.view.KeyEvent.KEYCODE_MEDIA_PLAY,
-                            android.view.KeyEvent.KEYCODE_MEDIA_PAUSE -> {
-                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER/PLAY_PAUSE", mapOf("screen" to "player", "type" to type))
-                                if (type == "live") {
-                                    // Toggle quick actions; if already focusing a button, let the button handle the click
-                                    return@setOnKeyListener if (!quickActionsVisible) {
-                                        quickActionsVisible = true; quickActionsFocusActive = false; true
-                                    } else if (quickActionsFocusActive) {
-                                        // Let focused button consume the click
-                                        false
+                            android.view.KeyEvent.KEYCODE_MEDIA_PAUSE,
+                            android.view.KeyEvent.KEYCODE_ENTER -> {
+                                if (isDown) {
+                                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER/PLAY_PAUSE", mapOf("screen" to "player", "type" to type))
+                                    val trickplayActive = ffStage > 0 || rwStage > 0 || rwJob != null || exoPlayer.playbackParameters.speed != 1f
+                                    if (type == "live") {
+                                        stopTrickplay(resume = true)
+                                        return@setOnKeyListener if (!quickActionsVisible) {
+                                            quickActionsVisible = true; quickActionsFocusActive = false; true
+                                        } else if (quickActionsFocusActive) {
+                                            false
+                                        } else {
+                                            quickActionsVisible = false; true
+                                        }
                                     } else {
-                                        quickActionsVisible = false; true
+                                        if (trickplayActive) {
+                                            stopTrickplay(resume = true)
+                                            controlsVisible = true; controlsTick++
+                                        } else {
+                                            controlsVisible = true; controlsTick++
+                                            togglePlayPause()
+                                        }
                                     }
-                                } else {
-                                    controlsVisible = true; controlsTick++; togglePlayPause(); true
                                 }
+                                true
                             }
                             android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
                             android.view.KeyEvent.KEYCODE_BUTTON_R1 -> {
+                                if (!isDown) return@setOnKeyListener true
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("FFWD", mapOf("screen" to "player", "type" to type))
                                 if (!canSeek || type == "live") return@setOnKeyListener false
-                                pendingLongPressJob?.cancel()
-                                pendingLongPressJob = scope.launch { delay(280); startSeek(+1) }
+                                rwStage = 0
+                                rwJob?.cancel(); rwJob = null
+                                seekPreviewHideJob?.cancel()
+                                seekPreviewVisible = false
+                                seekPreviewTargetMs = null
+                                ffStage = (ffStage + 1) % (trickplaySpeeds.size + 1)
+                                if (ffStage in trickplaySpeeds.indices) {
+                                    val speed = trickplaySpeeds[ffStage]
+                                    exoPlayer.playbackParameters = PlaybackParameters(speed)
+                                    exoPlayer.playWhenReady = true
+                                    runCatching { exoPlayer.play() }
+                                    controlsVisible = true; controlsTick++
+                                } else {
+                                    stopTrickplay(resume = false)
+                                }
                                 true
                             }
                             android.view.KeyEvent.KEYCODE_MEDIA_REWIND,
                             android.view.KeyEvent.KEYCODE_BUTTON_L1 -> {
+                                if (!isDown) return@setOnKeyListener true
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("REW", mapOf("screen" to "player", "type" to type))
                                 if (!canSeek || type == "live") return@setOnKeyListener false
-                                pendingLongPressJob?.cancel()
-                                pendingLongPressJob = scope.launch { delay(280); startSeek(-1) }
+                                ffStage = 0
+                                exoPlayer.playbackParameters = PlaybackParameters(1f)
+                                exoPlayer.playWhenReady = false
+                                val nextStage = (rwStage + 1) % (trickplaySpeeds.size + 1)
+                                rwStage = nextStage
+                                rwJob?.cancel(); rwJob = null
+                                if (nextStage in trickplaySpeeds.indices) {
+                                    val speed = trickplaySpeeds[nextStage]
+                                    val stepMs = 2_000L
+                                    val interval = (300f / speed).coerceAtLeast(60f).toLong()
+                                    val base = exoPlayer.currentPosition
+                                    seekPreviewBaseMs = base
+                                    seekPreviewTargetMs = base
+                                    seekPreviewVisible = true
+                                    seekPreviewHideJob?.cancel()
+                                    rwJob = scope.launch {
+                                        while (isActive) {
+                                            val cur = exoPlayer.currentPosition
+                                            val target = (cur - stepMs).coerceAtLeast(0L)
+                                            exoPlayer.seekTo(target)
+                                            seekPreviewTargetMs = target
+                                            controlsVisible = true; controlsTick++
+                                            delay(interval)
+                                        }
+                                    }
+                                } else {
+                                    stopTrickplay(resume = false)
+                                }
                                 true
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
-                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("screen" to "player", "type" to type))
-                                if (type == "live") { jumpLive(-1); true }
-                                else if (!canSeek) { false }
-                                else {
-                                    pendingLongPressJob?.cancel()
-                                    pendingLongPressJob = scope.launch { delay(280); startSeek(-1) }
-                                    true
+                                if (type != "live" && !canSeek) return@setOnKeyListener false
+                                if (isDown && event.repeatCount == 0) {
+                                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("screen" to "player", "type" to type))
+                                    stopTrickplay(resume = false)
+                                    if (type == "live") {
+                                        jumpLive(-1)
+                                    } else {
+                                        val current = exoPlayer.currentPosition
+                                        val target = (current - 10_000L).coerceAtLeast(0L)
+                                        exoPlayer.seekTo(target)
+                                        showSeekPreview(current, target)
+                                        controlsVisible = true; controlsTick++
+                                    }
                                 }
+                                true
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("screen" to "player", "type" to type))
-                                if (type == "live") { jumpLive(+1); true }
-                                else if (!canSeek) { false }
-                                else {
-                                    pendingLongPressJob?.cancel()
-                                    pendingLongPressJob = scope.launch { delay(280); startSeek(+1) }
-                                    true
+                                if (type != "live" && !canSeek) return@setOnKeyListener false
+                                if (isDown && event.repeatCount == 0) {
+                                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("screen" to "player", "type" to type))
+                                    stopTrickplay(resume = false)
+                                    if (type == "live") {
+                                        jumpLive(+1)
+                                    } else {
+                                        val current = exoPlayer.currentPosition
+                                        val max = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
+                                        val target = (current + 10_000L).coerceAtMost(max)
+                                        exoPlayer.seekTo(target)
+                                        showSeekPreview(current, target)
+                                        controlsVisible = true; controlsTick++
+                                    }
                                 }
+                                true
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_UP -> {
-                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("UP", mapOf("screen" to "player", "type" to type))
-                                if (type == "live") {
-                                    // Open favorites or global live list overlay
-                                    showLiveListSheet = true
-                                    true
-                                } else {
-                                    controlsVisible = true; controlsTick++
-                                    sliderFocus.requestFocus(); true
+                                if (isDown) {
+                                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("UP", mapOf("screen" to "player", "type" to type))
+                                    stopTrickplay(resume = false)
+                                    if (type == "live") {
+                                        showLiveListSheet = true
+                                    } else {
+                                        controlsVisible = true; controlsTick++
+                                        sliderFocus.requestFocus()
+                                    }
                                 }
+                                true
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                if (!isDown) return@setOnKeyListener (type == "live")
                                 com.chris.m3usuite.core.debug.GlobalDebug.logDpad("DOWN", mapOf("screen" to "player", "type" to type))
+                                stopTrickplay(resume = false)
                                 if (type == "live") {
                                     if (quickActionsVisible) {
-                                        // Move focus to first quick action button
                                         try { quickPipFocus.requestFocus() } catch (_: Throwable) {}
                                         quickActionsFocusActive = true
-                                        true
                                     } else {
                                         scope.launch { refreshEpgOverlayForLive(currentLiveId ?: mediaId) }
-                                        showEpgOverlay = true; scheduleAutoHide(overTitleMs = 0L, epgMs = 3000L); true
+                                        showEpgOverlay = true
+                                        scheduleAutoHide(overTitleMs = 0L, epgMs = 3000L)
                                     }
+                                    true
                                 } else false
                             }
                             android.view.KeyEvent.KEYCODE_BACK -> {
-                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("BACK", mapOf("screen" to "player"))
-                                // Let BackHandler manage; consume to avoid default finish here
+                                if (isDown) {
+                                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("BACK", mapOf("screen" to "player"))
+                                    stopTrickplay(resume = false)
+                                }
                                 true
                             }
                             else -> false

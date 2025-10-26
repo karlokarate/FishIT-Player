@@ -119,19 +119,25 @@ fun LiveFishTile(
 @Composable
 fun TelegramFishTile(
     media: MediaItem,
-    onPlay: (MediaItem) -> Unit
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlay: ((MediaItem) -> Unit)? = null
 ) {
-    val badge: @Composable () -> Unit = {
-        FishTelegramBadge()
-    }
-    val poster = media.poster ?: media.logo ?: media.backdrop
+    val content = buildTelegramTileContent(
+        media = media,
+        onOpenDetails = { onOpenDetails(media) },
+        onPlay = onPlay?.let { handler -> { handler(media) } }
+    )
     FishTile(
-        title = media.name,
-        poster = poster,
-        contentScale = ContentScale.Crop,
-        selected = false,
-        topStartBadge = badge,
-        onFocusChanged = null,
-        onClick = { onPlay(media) }
+        title = content.title,
+        poster = content.poster,
+        contentScale = content.contentScale,
+        selected = content.selected,
+        topStartBadge = content.topStartBadge,
+        topEndBadge = content.topEndBadge,
+        bottomEndActions = content.bottomEndActions,
+        footer = content.footer,
+        overlay = content.overlay,
+        onFocusChanged = content.onFocusChanged,
+        onClick = content.onClick
     )
 }

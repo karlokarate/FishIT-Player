@@ -17,6 +17,7 @@ import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.R
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.service.TelegramServiceClient
+import com.chris.m3usuite.tg.TgGate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -31,6 +32,10 @@ import kotlinx.coroutines.withTimeoutOrNull
  */
 class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
+        if (TgGate.mirrorOnly()) {
+            SchedulingGateway.notifyTelegramSyncIdle()
+            return Result.success()
+        }
         return try {
             setForeground(createForegroundInfo())
             withContext(Dispatchers.IO) {
@@ -173,6 +178,11 @@ class TelegramSyncWorker(appContext: Context, params: WorkerParameters) : Corout
         }
 
         fun scheduleNow(ctx: Context, mode: String = MODE_ALL, refreshHome: Boolean = true) {
+            if (TgGate.mirrorOnly()) {
+                SchedulingGateway.cancelTelegramWork(ctx)
+                SchedulingGateway.notifyTelegramSyncIdle()
+                return
+            }
             val input = workDataOf(
                 KEY_MODE to mode,
                 KEY_TRIGGER_REFRESH to refreshHome

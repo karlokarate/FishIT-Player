@@ -10,6 +10,7 @@ import com.chris.m3usuite.telegram.TelegramHeuristics
 import com.chris.m3usuite.telegram.containerExt
 import com.chris.m3usuite.telegram.posterUri
 import com.chris.m3usuite.telegram.telegramUri
+import com.chris.m3usuite.tg.TgGate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -42,11 +43,18 @@ class TelegramContentRepository(
         .mapNotNull { it.trim().toLongOrNull() }
         .distinct()
 
-    suspend fun selectedChatsVod(): List<Long> = selectedChatIds()
+    suspend fun selectedChatsVod(): List<Long> {
+        if (TgGate.mirrorOnly()) return emptyList()
+        return selectedChatIds()
+    }
 
-    suspend fun selectedChatsSeries(): List<Long> = selectedChatIds()
+    suspend fun selectedChatsSeries(): List<Long> {
+        if (TgGate.mirrorOnly()) return emptyList()
+        return selectedChatIds()
+    }
 
     suspend fun recentVodByChat(chatId: Long, limit: Int = 60, offset: Int = 0): List<MediaItem> = withContext(Dispatchers.IO) {
+        if (TgGate.mirrorOnly()) return@withContext emptyList()
         if (!selectedChatsVod().contains(chatId)) return@withContext emptyList()
         val box = store.boxFor(ObxTelegramMessage::class.java)
         val q = box.query(
@@ -65,6 +73,7 @@ class TelegramContentRepository(
     }
 
     suspend fun recentSeriesByChat(chatId: Long, limit: Int = 60, offset: Int = 0): List<MediaItem> = withContext(Dispatchers.IO) {
+        if (TgGate.mirrorOnly()) return@withContext emptyList()
         if (!selectedChatsSeries().contains(chatId)) return@withContext emptyList()
         val box = store.boxFor(ObxTelegramMessage::class.java)
         val q = box.query(
@@ -84,6 +93,7 @@ class TelegramContentRepository(
     }
 
     suspend fun searchAllChats(query: String, limit: Int = 120): List<MediaItem> = withContext(Dispatchers.IO) {
+        if (TgGate.mirrorOnly()) return@withContext emptyList()
         if (!settings.tgEnabled.first()) return@withContext emptyList()
         val chats = selectedChatIds()
         if (chats.isEmpty()) return@withContext emptyList()

@@ -18,6 +18,7 @@ import com.chris.m3usuite.telegram.TelegramHeuristics
 import com.chris.m3usuite.telegram.containerExt
 import com.chris.m3usuite.telegram.posterUri
 import com.chris.m3usuite.telegram.service.TelegramServiceClient
+import com.chris.m3usuite.tg.TgGate
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
 import kotlinx.coroutines.Dispatchers
@@ -47,9 +48,16 @@ object TelegramSeriesIndexer {
 
     private val EMPTY_STATS = RebuildStats(0, 0, 0, 0)
 
-    suspend fun rebuild(context: Context): Int = rebuildWithStats(context).seriesCount
+    suspend fun rebuild(context: Context): Int {
+        if (TgGate.mirrorOnly()) return 0
+        return rebuildWithStats(context).seriesCount
+    }
 
     suspend fun rebuildWithStats(context: Context): RebuildStats = withContext(Dispatchers.IO) {
+        if (TgGate.mirrorOnly()) {
+            cleanupTelegramSeries(ObxStore.get(context))
+            return@withContext EMPTY_STATS
+        }
         val settings = SettingsStore(context)
         val enabled = settings.tgEnabled.first()
         val store = ObxStore.get(context)

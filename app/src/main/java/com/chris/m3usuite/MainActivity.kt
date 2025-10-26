@@ -4,43 +4,60 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.activity.compose.BackHandler
-import androidx.compose.runtime.*
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.metrics.performance.JankStats
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.chris.m3usuite.navigation.navigateTopLevel
-import com.chris.m3usuite.navigation.popUpToStartDestination
-import com.chris.m3usuite.player.InternalPlayerScreen
-import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.prefs.Keys
+import com.chris.m3usuite.navigation.popUpToStartDestination
+import com.chris.m3usuite.navigation.navigateTopLevel
+import com.chris.m3usuite.player.InternalPlayerScreen   // <- korrektes Paket (s. Schritt A)
+import com.chris.m3usuite.ui.screens.LibraryScreen
+import com.chris.m3usuite.ui.home.StartScreen
+import com.chris.m3usuite.ui.screens.SettingsScreen
+import com.chris.m3usuite.ui.screens.LiveDetailScreen
+import com.chris.m3usuite.ui.screens.PlaylistSetupScreen
+import com.chris.m3usuite.ui.screens.SeriesDetailScreen
+import com.chris.m3usuite.ui.detail.telegram.TelegramVideoDetailScreen
+import com.chris.m3usuite.ui.screens.XtreamPortalCheckScreen
+import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.auth.ProfileGate
+import com.chris.m3usuite.ui.profile.ProfileManagerScreen
 import com.chris.m3usuite.ui.home.LocalMiniPlayerResume
 import com.chris.m3usuite.ui.home.MiniPlayerState
-import com.chris.m3usuite.ui.home.StartScreen
 import com.chris.m3usuite.ui.home.buildRoute
-import com.chris.m3usuite.ui.screens.*
 import com.chris.m3usuite.ui.theme.AppTheme
-import com.chris.m3usuite.ui.profile.ProfileManagerScreen
-import com.chris.m3usuite.work.XtreamDeltaImportWorker
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.chris.m3usuite.work.SchedulingGateway
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import android.app.Activity
+import androidx.media3.common.util.UnstableApi
+import kotlinx.coroutines.flow.first
+import kotlin.math.abs
 
 class MainActivity : ComponentActivity() {
 
+    @UnstableApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -48,28 +65,23 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         hideSystemBars()
 
-        // JankStats (leichtgewichtige Metriken pro Route)
+        // JankStats: lightweight performance tracking with per-route counters
         runCatching {
             JankStats.createAndTrack(window) { frameData ->
                 val route = com.chris.m3usuite.metrics.RouteTag.current
-                com.chris.m3usuite.metrics.JankReporter.record(
-                    route,
-                    frameData.isJank,
-                    frameData.frameDurationUiNanos
-                )
+                com.chris.m3usuite.metrics.JankReporter.record(route, frameData.isJank, frameData.frameDurationUiNanos)
             }
         }
 
         setContent {
             AppTheme {
                 val nav = rememberNavController()
-
-                // Navigation debug hook (abschaltbar via Settings)
-                DisposableEffect(nav) {
-                    val listener = androidx.navigation.NavController.OnDestinationChangedListener { controller, dest, _ ->
+                // Global nav debug listener (switchable via Settings)
+                androidx.compose.runtime.DisposableEffect(nav) {
+                    val listener = androidx.navigation.NavController.OnDestinationChangedListener { controller, destination, arguments ->
                         val from = controller.previousBackStackEntry?.destination?.route
                             ?: controller.previousBackStackEntry?.destination?.displayName
-                        val to = dest.route ?: dest.displayName
+                        val to = destination.route ?: destination.displayName
                         com.chris.m3usuite.core.debug.GlobalDebug.logNavigation(from, to)
                     }
                     nav.addOnDestinationChangedListener(listener)
@@ -79,13 +91,18 @@ class MainActivity : ComponentActivity() {
                 val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
                 val ctx = LocalContext.current
                 val store = remember(ctx) { SettingsStore(ctx) }
-
-                // Globale Header/Traffic-Logger/Debug-Toggles lifecyclesicher nachziehen
+                // React to Xtream creds becoming available at runtime (Settings/Setup)
+                val xtHost by store.xtHost.collectAsStateWithLifecycle(initialValue = "")
+                val xtUser by store.xtUser.collectAsStateWithLifecycle(initialValue = "")
+                val xtPass by store.xtPass.collectAsStateWithLifecycle(initialValue = "")
+                val xtPort by store.xtPort.collectAsStateWithLifecycle(initialValue = 0)
+                // Keep HTTP header snapshot updated globally for OkHttp/Coil, lifecycle-aware
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                         com.chris.m3usuite.core.http.RequestHeadersProvider.collect(store)
                     }
                 }
+                // Keep TrafficLogger state in sync with Settings (persists across restarts)
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                         store.httpLogEnabled.collect { enabled ->
@@ -93,6 +110,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+                // Keep GlobalDebug in sync with Settings
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                         store.globalDebugEnabled.collect { on ->
@@ -100,13 +118,18 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-
-                // Start-Zeitpunkt für Episoden-Erkennung
+                
+                // Track app start time for new-episode detection
                 LaunchedEffect(Unit) { store.setLastAppStartMs(System.currentTimeMillis()) }
 
-                // M3U/Xtream-Autoableitung wie gehabt (nur beim Store)
+                // DataStore-Flow beobachten
                 val m3uUrl = store.m3uUrl.collectAsStateWithLifecycle(initialValue = "").value
                 val apiEnabled = store.m3uWorkersEnabled.collectAsStateWithLifecycle(initialValue = true).value
+
+                // Startziel: auch ohne M3U kann die App starten (Einstellungen später setzen)
+                val startDestination = "gate"
+                // Wenn M3U vorhanden aber Xtream noch nicht konfiguriert (z. B. nach App-Reinstall via Backup):
+                // automatisch aus der M3U ableiten und direkt die Worker planen.
                 LaunchedEffect(m3uUrl) {
                     if (m3uUrl.isNotBlank() && apiEnabled) {
                         if (!store.hasXtream()) {
@@ -120,13 +143,10 @@ class MainActivity : ComponentActivity() {
                                     cfg.liveExtPrefs.firstOrNull()?.let { store.setXtOutput(it) }
                                     store.setXtPortVerified(true)
                                     if (store.epgUrl.first().isBlank()) {
-                                        store.set(
-                                            Keys.EPG_URL,
-                                            "${cfg.portalBase}/xmltv.php?username=${cfg.username}&password=${cfg.password}"
-                                        )
+                                        store.set(Keys.EPG_URL, "${cfg.portalBase}/xmltv.php?username=${cfg.username}&password=${cfg.password}")
                                     }
                                 } else {
-                                    // Kein Port in M3U: Discovery verwenden
+                                    // Kein Port in M3U: Discovery verwenden (Xtream bevorzugen)
                                     val u = Uri.parse(m3uUrl)
                                     val scheme = (u.scheme ?: "http").lowercase()
                                     val host = (u.host ?: "")
@@ -159,23 +179,21 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Start-Importe (heads-only VOD/Series), Live verspätet
-                val xtHost by store.xtHost.collectAsStateWithLifecycle(initialValue = "")
-                val xtUser by store.xtUser.collectAsStateWithLifecycle(initialValue = "")
-                val xtPass by store.xtPass.collectAsStateWithLifecycle(initialValue = "")
-                val xtPort by store.xtPort.collectAsStateWithLifecycle(initialValue = 0)
                 LaunchedEffect(xtHost, xtUser, xtPass, xtPort) {
                     if (xtHost.isBlank() || xtUser.isBlank() || xtPass.isBlank()) return@LaunchedEffect
                     if (!apiEnabled) return@LaunchedEffect
+                    // Start background import so index builds even if the UI recomposes or route changes.
+                    // Immediately ensure full header lists (heads-only delta) for VOD/Series at app start; skip Live to stay light.
                     withContext(Dispatchers.IO) {
-                        runCatching {
-                            com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store)
-                                .importDelta(deleteOrphans = false, includeLive = false)
-                        }
+                        runCatching { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store).importDelta(deleteOrphans = false, includeLive = false) }
                     }
-                    XtreamDeltaImportWorker.triggerOnce(ctx, includeLive = false, vodLimit = 0, seriesLimit = 0)
-                    XtreamDeltaImportWorker.triggerOnceDelayedLive(ctx, delayMinutes = 5)
+                    // Also schedule a background one-shot (heads-only again if needed; Live remains off here)
+                    com.chris.m3usuite.work.XtreamDeltaImportWorker.triggerOnce(ctx, includeLive = false, vodLimit = 0, seriesLimit = 0)
+                    // Schedule Live heads-only to come in later (delayed), so startup stays light
+                    com.chris.m3usuite.work.XtreamDeltaImportWorker.triggerOnceDelayedLive(ctx, delayMinutes = 5)
                 }
+
+                // EPG periodic refresh removed; lazy on-demand prefetch keeps visible/favorites fresh
 
                 CompositionLocalProvider(
                     LocalMiniPlayerResume provides { snapshot ->
@@ -184,214 +202,280 @@ class MainActivity : ComponentActivity() {
                         nav.navigate(route) { launchSingleTop = true }
                     }
                 ) {
-                    NavHost(navController = nav, startDestination = "gate") {
-
-                        composable("setup") {
-                            PlaylistSetupScreen(
-                                onDone = {
-                                    nav.navigate("library?q=&qs=") {
-                                        popUpTo("setup") { inclusive = true }
-                                    }
-                                }
-                            )
-                        }
-
-                        composable("gate") {
-                            ProfileGate(onEnter = {
+                    NavHost(navController = nav, startDestination = startDestination) {
+                    composable("setup") {
+                        PlaylistSetupScreen(
+                            onDone = {
                                 nav.navigate("library?q=&qs=") {
-                                    popUpTo("gate") { inclusive = true }
+                                    popUpTo("setup") { inclusive = true }
                                 }
-                            })
-                        }
-
-                        composable(
-                            route = "library?q={q}&qs={qs}",
-                            arguments = listOf(
-                                navArgument("q")  { type = NavType.StringType; defaultValue = "" },
-                                navArgument("qs") { type = NavType.StringType; defaultValue = "" }
-                            )
-                        ) { back ->
-                            val q  = back.arguments?.getString("q").orEmpty()
-                            val qs = back.arguments?.getString("qs").orEmpty()
-                            val openDlg = qs == "show"
-                            StartScreen(
-                                navController = nav,
-                                openLive   = { id -> nav.navigate("live/$id") },
-                                openVod    = { id -> nav.navigate("vod/$id") },
-                                openSeries = { id -> nav.navigate("series/$id") },
-                                initialSearch = q.ifBlank { null },
-                                openSearchOnStart = openDlg
-                            )
-                        }
-
-                        // Optional: Vollbrowser
-                        composable("browse") {
-                            LibraryScreen(
-                                navController = nav,
-                                openLive   = { id -> nav.navigate("live/$id") },
-                                openVod    = { id -> nav.navigate("vod/$id") },
-                                openSeries = { id -> nav.navigate("series/$id") }
-                            )
-                        }
-
-                        composable("live/{id}") { back ->
-                            val id = back.arguments?.getString("id")?.toLongOrNull() ?: return@composable
-                            LiveDetailScreen(
-                                id = id,
-                                onLogo = {
-                                    val current = nav.currentBackStackEntry?.destination?.route
-                                    if (current != "library") nav.navigateTopLevel("library?q=&qs=")
-                                },
-                                openLive = { target -> nav.navigate("live/$target") },
-                                onGlobalSearch = { nav.navigateTopLevel("library?qs=show") },
-                                onOpenSettings = {
-                                    val current = nav.currentBackStackEntry?.destination?.route
-                                    if (current != "settings") nav.navigate("settings") { launchSingleTop = true }
-                                }
-                            )
-                        }
-
-                        composable("vod/{id}") { back ->
-                            val id = back.arguments?.getString("id")?.toLongOrNull() ?: return@composable
-                            VodDetailScreen(
-                                id = id,
-                                openInternal = { url, startMs, mime ->
-                                    val encoded = Uri.encode(url)
-                                    val start = startMs ?: -1L
-                                    val mimeArg = mime?.let { Uri.encode(it) } ?: ""
-                                    nav.navigate("player?url=$encoded&type=vod&mediaId=$id&startMs=$start&mime=$mimeArg")
-                                },
-                                openVod = { target -> nav.navigate("vod/$target") },
-                                onLogo = {
-                                    val current = nav.currentBackStackEntry?.destination?.route
-                                    if (current != "library") nav.navigateTopLevel("library?q=&qs=")
-                                },
-                                onGlobalSearch = { nav.navigateTopLevel("library?qs=show") },
-                                onOpenSettings = {
-                                    val current = nav.currentBackStackEntry?.destination?.route
-                                    if (current != "settings") nav.navigate("settings") { launchSingleTop = true }
-                                }
-                            )
-                        }
-
-                        composable("series/{id}") { back ->
-                            val sid = back.arguments?.getString("id")?.toLongOrNull() ?: return@composable
-                            SeriesDetailScreen(
-                                id = sid,
-                                openInternal = { playUrl, startMs, seriesId, season, episodeNum, episodeId, mime ->
-                                    val encoded = Uri.encode(playUrl)
-                                    val start = startMs ?: -1L
-                                    val epId  = episodeId ?: -1
-                                    val mimeArg = mime?.let { Uri.encode(it) } ?: ""
-                                    nav.navigate("player?url=$encoded&type=series&seriesId=$seriesId&season=$season&episodeNum=$episodeNum&episodeId=$epId&startMs=$start&mime=$mimeArg")
-                                },
-                                onLogo = {
-                                    val current = nav.currentBackStackEntry?.destination?.route
-                                    if (current != "library") nav.navigateTopLevel("library?q=&qs=")
-                                },
-                                onOpenSettings = {
-                                    val current = nav.currentBackStackEntry?.destination?.route
-                                    if (current != "settings") nav.navigate("settings") { launchSingleTop = true }
-                                }
-                            )
-                        }
-
-                        composable(
-                            route =
-                            "player?url={url}&type={type}&mediaId={mediaId}&episodeId={episodeId}&seriesId={seriesId}&season={season}&episodeNum={episodeNum}&startMs={startMs}&mime={mime}&origin={origin}&cat={cat}&prov={prov}",
-                            arguments = listOf(
-                                navArgument("url")       { type = NavType.StringType },
-                                navArgument("type")      { type = NavType.StringType; defaultValue = "vod" },
-                                navArgument("mediaId")   { type = NavType.LongType; defaultValue = -1L },
-                                navArgument("episodeId") { type = NavType.IntType; defaultValue = -1 },
-                                navArgument("seriesId")  { type = NavType.IntType; defaultValue = -1 },
-                                navArgument("season")    { type = NavType.IntType; defaultValue = -1 },
-                                navArgument("episodeNum"){ type = NavType.IntType; defaultValue = -1 },
-                                navArgument("startMs")   { type = NavType.LongType; defaultValue = -1L },
-                                navArgument("mime")      { type = NavType.StringType; defaultValue = "" },
-                                navArgument("origin")    { type = NavType.StringType; defaultValue = "" },
-                                navArgument("cat")       { type = NavType.StringType; defaultValue = "" },
-                                navArgument("prov")      { type = NavType.StringType; defaultValue = "" }
-                            )
-                        ) { back ->
-                            val rawUrl  = back.arguments?.getString("url").orEmpty()
-                            val url     = URLDecoder.decode(rawUrl, StandardCharsets.UTF_8.name())
-                            val type    = back.arguments?.getString("type") ?: "vod"
-                            val mediaId = back.arguments?.getLong("mediaId")?.takeIf { it >= 0 }
-                            val episodeId = back.arguments?.getInt("episodeId")?.takeIf { it >= 0 }
-                            val seriesId  = back.arguments?.getInt("seriesId")?.takeIf { it >= 0 }
-                            val season    = back.arguments?.getInt("season")?.takeIf { it >= 0 }
-                            val episodeNum= back.arguments?.getInt("episodeNum")?.takeIf { it >= 0 }
-                            val startMs   = back.arguments?.getLong("startMs")?.takeIf { it >= 0 }
-                            val rawMime   = back.arguments?.getString("mime").orEmpty()
-                            val mime      = rawMime.takeIf { it.isNotEmpty() }?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
-                            val origin    = back.arguments?.getString("origin").orEmpty()
-                            val cat       = back.arguments?.getString("cat").orEmpty()
-                            val prov      = back.arguments?.getString("prov").orEmpty()
-
-                            InternalPlayerScreen(
-                                url = url,
-                                type = type,
-                                mediaId = mediaId,
-                                episodeId = episodeId,
-                                seriesId = seriesId,
-                                season = season,
-                                episodeNum = episodeNum,
-                                startPositionMs = startMs,
-                                mimeType = mime,
-                                onExit = { nav.popBackStack() },
-                                originLiveLibrary = (origin == "lib"),
-                                liveCategoryHint = cat.ifBlank { null },
-                                liveProviderHint = prov.ifBlank { null }
-                            )
-                        }
-
-                        // Settings – MVVM-Variante (kein store/onBack mehr)
-                        composable("settings") {
-                            SettingsScreen(
-                                onOpenPortalCheck = { nav.navigate("xt_cfcheck") }     // ✔ aktuelle Settings-Signatur
-                            )                                                          // 2
-                        }
-
-                        // Profile-Manager
-                        composable("profiles") {
-                            val profileId = store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L).value
-                            var allow: Boolean? by remember { mutableStateOf(null) }
-                            LaunchedEffect(profileId) {
-                                if (profileId <= 0) { allow = null; return@LaunchedEffect }
-                                val prof = withContext(Dispatchers.IO) {
-                                    com.chris.m3usuite.data.obx.ObxStore.get(ctx)
-                                        .boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java)
-                                        .get(profileId)
-                                }
-                                allow = (prof?.type == "adult")
-                                if (allow == false) nav.popBackStack()
                             }
-                            if (allow == true) ProfileManagerScreen(
-                                onBack = { nav.popBackStack() },
-                                onLogo = {
-                                    val current = nav.currentBackStackEntry?.destination?.route
-                                    if (current != "library") nav.navigateTopLevel("library?q=&qs=")
-                                },
-                                onGlobalSearch = { nav.navigateTopLevel("library?qs=show") },
-                                onOpenSettings = {
-                                    val current = nav.currentBackStackEntry?.destination?.route
-                                    if (current != "settings") nav.navigate("settings") { launchSingleTop = true }
-                                }
-                            )
-                        }
+                        )
+                    }
 
-                        // Xtream Cloudflare-/Portal-Check (WebView)
-                        composable("xt_cfcheck") {
-                            XtreamPortalCheckScreen(onDone = { nav.popBackStack() })
+                    composable("gate") {
+                        ProfileGate(onEnter = {
+                            nav.navigate("library?q=&qs=") {
+                                popUpTo("gate") { inclusive = true }
+                            }
+                        })
+                    }
+
+                    composable(
+                        route = "library?q={q}&qs={qs}",
+                        arguments = listOf(
+                            navArgument("q") { type = NavType.StringType; defaultValue = "" },
+                            navArgument("qs") { type = NavType.StringType; defaultValue = "" }
+                        )
+                    ) { back ->
+                        val q = back.arguments?.getString("q").orEmpty()
+                        val qs = back.arguments?.getString("qs").orEmpty()
+                        val openDlg = qs == "show"
+                        StartScreen(
+                            navController = nav,
+                            openLive   = { id -> nav.navigate("live/$id") },
+                            openVod    = { id -> nav.navigate("vod/$id") },
+                            openSeries = { id -> nav.navigate("series/$id") },
+                            initialSearch = q.ifBlank { null },
+                            openSearchOnStart = openDlg
+                        )
+                    }
+
+                    // Full browser (previous LibraryScreen)
+                    composable("browse") {
+                        LibraryScreen(
+                            navController = nav,
+                            openLive   = { id -> nav.navigate("live/$id") },
+                            openVod    = { id -> nav.navigate("vod/$id") },
+                            openSeries = { id -> nav.navigate("series/$id") }
+                        )
+                    }
+
+                    composable("live/{id}") { back ->
+                        val id = back.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+                        LiveDetailScreen(id, onLogo = {
+                            val current = nav.currentBackStackEntry?.destination?.route
+                            if (current != "library") {
+                                nav.navigateTopLevel("library?q=&qs=")
+                            }
+                        }, openLive = { target ->
+                            nav.navigate("live/$target")
+                        }, onGlobalSearch = {
+                            nav.navigateTopLevel("library?qs=show")
+                        }, onOpenSettings = {
+                            val current = nav.currentBackStackEntry?.destination?.route
+                            if (current != "settings") {
+                                nav.navigate("settings") { launchSingleTop = true }
+                            }
+                        })
+                    }
+
+                    // VOD-Details – mit Lambda für internen Player
+                    composable("vod/{id}") { back ->
+                        val id = back.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+                        VodDetailScreen(
+                            id = id,
+                            openInternal = { url, startMs, mime ->
+                                val encoded = Uri.encode(url)
+                                val start   = startMs ?: -1L
+                                val mimeArg = mime?.let { Uri.encode(it) } ?: ""
+                                nav.navigate("player?url=$encoded&type=vod&mediaId=$id&startMs=$start&mime=$mimeArg")
+                            },
+                            openVod = { target -> nav.navigate("vod/$target") },
+                            onLogo = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "library") {
+                                    nav.navigateTopLevel("library?q=&qs=")
+                                }
+                            },
+                            onGlobalSearch = {
+                                nav.navigateTopLevel("library?qs=show")
+                            },
+                            onOpenSettings = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "settings") {
+                                    nav.navigate("settings") { launchSingleTop = true }
+                                }
+                            }
+                        )
+                    }
+
+                    composable("telegram/{chatId}/{messageId}") { back ->
+                        val chatId = back.arguments?.getString("chatId")?.toLongOrNull() ?: return@composable
+                        val messageId = back.arguments?.getString("messageId")?.toLongOrNull() ?: return@composable
+                        val mediaEncoded = abs((chatId shl 32) xor messageId) and Long.MAX_VALUE + 5_500_000_000_000L
+                        TelegramVideoDetailScreen(
+                            chatId = chatId,
+                            messageId = messageId,
+                            onLogo = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "library") {
+                                    nav.navigateTopLevel("library?q=&qs=")
+                                }
+                            },
+                            onOpenSearch = { nav.navigateTopLevel("library?qs=show") },
+                            onOpenSettings = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "settings") {
+                                    nav.navigate("settings") { launchSingleTop = true }
+                                }
+                            },
+                            openInternal = { url, startMs, mime ->
+                                val encoded = Uri.encode(url)
+                                val start = startMs ?: -1L
+                                val mimeArg = mime?.let { Uri.encode(it) } ?: ""
+                                nav.navigate("player?url=$encoded&type=vod&mediaId=$mediaEncoded&startMs=$start&mime=$mimeArg")
+                            }
+                        )
+                    }
+
+                    // Serien-Details – mit Lambda für internen Player (Episoden)
+                    composable("series/{id}") { back ->
+                        val id = back.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+                        SeriesDetailScreen(
+                            id = id,
+                            openInternal = { playUrl, startMs, seriesId, season, episodeNum, episodeId, mime ->
+                                val encoded = Uri.encode(playUrl)
+                                val start   = startMs ?: -1L
+                                val epId    = episodeId ?: -1
+                                val mimeArg = mime?.let { Uri.encode(it) } ?: ""
+                                nav.navigate("player?url=$encoded&type=series&seriesId=$seriesId&season=$season&episodeNum=$episodeNum&episodeId=$epId&startMs=$start&mime=$mimeArg")
+                            },
+                            onLogo = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "library") {
+                                    nav.navigateTopLevel("library?q=&qs=")
+                                }
+                            },
+                            onOpenSettings = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "settings") {
+                                    nav.navigate("settings") { launchSingleTop = true }
+                                }
+                            }
+                        )
+                    }
+
+                    // Interner ExoPlayer (Media3)
+                    composable(
+                        route = "player?url={url}&type={type}&mediaId={mediaId}&episodeId={episodeId}&seriesId={seriesId}&season={season}&episodeNum={episodeNum}&startMs={startMs}&mime={mime}&origin={origin}&cat={cat}&prov={prov}",
+                        arguments = listOf(
+                            navArgument("url")       { type = NavType.StringType },
+                            navArgument("type")      { type = NavType.StringType; defaultValue = "vod" },
+                            navArgument("mediaId")   { type = NavType.LongType;   defaultValue = -1L },
+                            navArgument("episodeId") { type = NavType.IntType;    defaultValue = -1 },
+                            navArgument("seriesId")  { type = NavType.IntType;    defaultValue = -1 },
+                            navArgument("season")    { type = NavType.IntType;    defaultValue = -1 },
+                            navArgument("episodeNum"){ type = NavType.IntType;    defaultValue = -1 },
+                            navArgument("startMs")   { type = NavType.LongType;   defaultValue = -1L },
+                            navArgument("mime")      { type = NavType.StringType; defaultValue = "" },
+                            navArgument("origin")    { type = NavType.StringType; defaultValue = "" },
+                            navArgument("cat")       { type = NavType.StringType; defaultValue = "" },
+                            navArgument("prov")      { type = NavType.StringType; defaultValue = "" }
+                        )
+                    ) { back ->
+                        val rawUrl   = back.arguments?.getString("url").orEmpty()
+                        val url      = URLDecoder.decode(rawUrl, StandardCharsets.UTF_8.name())
+                        val type     = back.arguments?.getString("type") ?: "vod"
+                        val mediaId  = back.arguments?.getLong("mediaId")?.takeIf { it >= 0 }
+                        val episodeId= back.arguments?.getInt("episodeId")?.takeIf { it >= 0 }
+                        val seriesId = back.arguments?.getInt("seriesId")?.takeIf { it >= 0 }
+                        val season   = back.arguments?.getInt("season")?.takeIf { it >= 0 }
+                        val episodeNum = back.arguments?.getInt("episodeNum")?.takeIf { it >= 0 }
+                        val startMs  = back.arguments?.getLong("startMs")?.takeIf { it >= 0 }
+                        val rawMime  = back.arguments?.getString("mime").orEmpty()
+                        val mime     = rawMime.takeIf { it.isNotEmpty() }?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
+                        val origin   = back.arguments?.getString("origin").orEmpty()
+                        val cat      = back.arguments?.getString("cat").orEmpty()
+                        val prov     = back.arguments?.getString("prov").orEmpty()
+
+                        InternalPlayerScreen(
+                            url = url,
+                            type = type,
+                            mediaId = mediaId,
+                            episodeId = episodeId,
+                            seriesId = seriesId,
+                            season = season,
+                            episodeNum = episodeNum,
+                            startPositionMs = startMs,
+                            mimeType = mime,
+                            onExit = { nav.popBackStack() },
+                            originLiveLibrary = (origin == "lib"),
+                            liveCategoryHint = cat.ifBlank { null },
+                            liveProviderHint = prov.ifBlank { null }
+                        )
+                    }
+
+                    // Settings (permissions)
+                    composable("settings") {
+                        val profileId = store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L).value
+                        LaunchedEffect(profileId) {
+                            val perms = com.chris.m3usuite.data.repo.PermissionRepository(this@MainActivity, store).current()
+                            if (!perms.canOpenSettings) {
+                                nav.popBackStack()
+                            }
                         }
+                        SettingsScreen(
+                            store = store,
+                            onBack = { nav.popBackStack() },
+                            onOpenProfiles = { nav.navigate("profiles") },
+                            onOpenGate = {
+                                nav.navigate("gate") {
+                                    popUpTo("library") { inclusive = false }
+                                }
+                            },
+                            onOpenXtreamCfCheck = { nav.navigate("xt_cfcheck") },
+                            onGlobalSearch = {
+                                nav.navigateTopLevel("library?qs=show")
+                            },
+                            onOpenPortalCheck = { nav.navigate("xt_cfcheck") }
+                        )
+                    }
+
+                    composable("profiles") {
+                        // Require adult to open profile manager. Wait for a valid profileId before deciding.
+                        val profileId = store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L).value
+                        var allow: Boolean? by remember { mutableStateOf(null) }
+                        LaunchedEffect(profileId) {
+                            if (profileId <= 0) { allow = null; return@LaunchedEffect }
+                            val prof = withContext(Dispatchers.IO) { com.chris.m3usuite.data.obx.ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java).get(profileId) }
+                            allow = (prof?.type == "adult")
+                            if (allow == false) nav.popBackStack()
+                        }
+                        if (allow == true) ProfileManagerScreen(
+                            onBack = { nav.popBackStack() },
+                            onLogo = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "library") {
+                                    nav.navigateTopLevel("library?q=&qs=")
+                                }
+                            },
+                            onGlobalSearch = {
+                                nav.navigateTopLevel("library?qs=show")
+                            },
+                            onOpenSettings = {
+                                val current = nav.currentBackStackEntry?.destination?.route
+                                if (current != "settings") {
+                                    nav.navigate("settings") { launchSingleTop = true }
+                                }
+                            }
+                        )
+                    }
+
+                    // Xtream Cloudflare portal check (WebView)
+                    composable("xt_cfcheck") {
+                        XtreamPortalCheckScreen(onDone = { nav.popBackStack() })
                     }
                 }
 
-                // Global Back: auf Root nichts tun
+                }
+
+                // Global back handling: pop if possible; otherwise consume (never close app via BACK)
                 BackHandler {
                     val popped = nav.popBackStack()
-                    if (!popped) { /* Root – Back ignorieren */ }
+                    if (!popped) {
+                        // Do nothing – consume BACK at root. Home button remains the only way to leave the app.
+                    }
                 }
             }
         }
@@ -404,7 +488,8 @@ class MainActivity : ComponentActivity() {
 
     private fun hideSystemBars() {
         val c = WindowInsetsControllerCompat(window, window.decorView)
-        c.hide(WindowInsetsCompat.Type.systemBars())
-        c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        c.hide(WindowInsetsCompat.Type.systemBars())   // <- Tippfehler behoben
+        c.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 }

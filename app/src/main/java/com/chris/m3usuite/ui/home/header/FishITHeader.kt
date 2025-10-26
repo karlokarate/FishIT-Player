@@ -32,6 +32,7 @@ import com.chris.m3usuite.ui.home.ChromeLibraryFocusRefs
 import com.chris.m3usuite.ui.home.ChromeHeaderFocusRefs
 import com.chris.m3usuite.ui.home.LocalChromeLibraryFocusRefs
 import com.chris.m3usuite.ui.home.LocalChromeHeaderFocusRefs
+import com.chris.m3usuite.ui.home.LibraryTab
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 
@@ -60,8 +61,8 @@ fun FishITHeader(
     onSearch: (() -> Unit)? = null,
     onProfiles: (() -> Unit)? = null,
     onLogo: (() -> Unit)? = null,
-    librarySelected: String? = null,
-    onLibrarySelect: ((String) -> Unit)? = null,
+    librarySelected: com.chris.m3usuite.ui.home.LibraryTab? = null,
+    onLibrarySelect: ((com.chris.m3usuite.ui.home.LibraryTab) -> Unit)? = null,
 ) {
     val firstFocus = LocalHeaderFirstFocus.current
     val libraryPrimaryFocus = LocalLibraryFirstFocus.current
@@ -82,9 +83,9 @@ fun FishITHeader(
 
     val showLibraryNav = librarySelected != null && onLibrarySelect != null
     val libraryRefsResolved = libraryRefs ?: remember { ChromeLibraryFocusRefs(FocusRequester(), FocusRequester(), FocusRequester()) }
-    val libraryLiveRequester = if (showLibraryNav && librarySelected == "live" && libraryPrimaryFocus != null) libraryPrimaryFocus else libraryRefsResolved.live
-    val libraryVodRequester = if (showLibraryNav && librarySelected == "vod" && libraryPrimaryFocus != null) libraryPrimaryFocus else libraryRefsResolved.vod
-    val librarySeriesRequester = if (showLibraryNav && librarySelected == "series" && libraryPrimaryFocus != null) libraryPrimaryFocus else libraryRefsResolved.series
+    val libraryLiveRequester = if (showLibraryNav && librarySelected == LibraryTab.Live && libraryPrimaryFocus != null) libraryPrimaryFocus else libraryRefsResolved.live
+    val libraryVodRequester = if (showLibraryNav && librarySelected == LibraryTab.Vod && libraryPrimaryFocus != null) libraryPrimaryFocus else libraryRefsResolved.vod
+    val librarySeriesRequester = if (showLibraryNav && librarySelected == LibraryTab.Series && libraryPrimaryFocus != null) libraryPrimaryFocus else libraryRefsResolved.series
     val firstActionRequester = when {
         onSearch != null -> searchRequester
         onProfiles != null -> profileRequester
@@ -162,12 +163,12 @@ fun FishITHeader(
 
                 if (showLibraryNav) {
                     val selectLibrary = onLibrarySelect!!
-                    val selectedKey = librarySelected!!
+                    val selectedTab = librarySelected!!
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val liveIcon = AppIcon.LiveTv.resId(if (selectedKey == "live") IconVariant.Primary else IconVariant.Duotone)
+                        val liveIcon = AppIcon.LiveTv.resId(if (selectedTab == LibraryTab.Live) IconVariant.Primary else IconVariant.Duotone)
                         androidx.compose.foundation.layout.Box(
                             modifier = Modifier
                                 .semantics { this.contentDescription = "TV" }
@@ -175,7 +176,7 @@ fun FishITHeader(
                                     FocusKit.run {
                                         Modifier
                                             .tvClickable(
-                                                onClick = { onChromeAction?.invoke(); selectLibrary("live") },
+                                                onClick = { onChromeAction?.invoke(); selectLibrary(LibraryTab.Live) },
                                                 focusRequester = libraryLiveRequester,
                                                 focusColors = FocusKit.FocusDefaults.IconColors,
                                                 focusBorderWidth = 2.2.dp,
@@ -195,7 +196,7 @@ fun FishITHeader(
                             )
                         }
 
-                        val vodIcon = AppIcon.MovieVod.resId(if (selectedKey == "vod") IconVariant.Primary else IconVariant.Duotone)
+                        val vodIcon = AppIcon.MovieVod.resId(if (selectedTab == LibraryTab.Vod) IconVariant.Primary else IconVariant.Duotone)
                         androidx.compose.foundation.layout.Box(
                             modifier = Modifier
                                 .semantics { this.contentDescription = "Filme" }
@@ -203,7 +204,7 @@ fun FishITHeader(
                                     FocusKit.run {
                                         Modifier
                                             .tvClickable(
-                                                onClick = { onChromeAction?.invoke(); selectLibrary("vod") },
+                                                onClick = { onChromeAction?.invoke(); selectLibrary(LibraryTab.Vod) },
                                                 focusRequester = libraryVodRequester,
                                                 focusColors = FocusKit.FocusDefaults.IconColors,
                                                 focusBorderWidth = 2.2.dp,
@@ -223,7 +224,7 @@ fun FishITHeader(
                             )
                         }
 
-                        val seriesIcon = AppIcon.Series.resId(if (selectedKey == "series") IconVariant.Primary else IconVariant.Duotone)
+                        val seriesIcon = AppIcon.Series.resId(if (selectedTab == LibraryTab.Series) IconVariant.Primary else IconVariant.Duotone)
                         androidx.compose.foundation.layout.Box(
                             modifier = Modifier
                                 .semantics { this.contentDescription = "Serien" }
@@ -231,7 +232,7 @@ fun FishITHeader(
                                     FocusKit.run {
                                         Modifier
                                             .tvClickable(
-                                                onClick = { onChromeAction?.invoke(); selectLibrary("series") },
+                                                onClick = { onChromeAction?.invoke(); selectLibrary(LibraryTab.Series) },
                                                 focusRequester = librarySeriesRequester,
                                                 focusColors = FocusKit.FocusDefaults.IconColors,
                                                 focusBorderWidth = 2.2.dp,

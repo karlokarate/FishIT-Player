@@ -57,11 +57,7 @@ fun PhoneScreen(
         )
         if (showCurrentDeviceSwitch) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(
-                    checked = useCurrentDevice,
-                    onCheckedChange = onUseCurrentDeviceChange,
-                    enabled = !isBusy
-                )
+                Switch(checked = useCurrentDevice, onCheckedChange = onUseCurrentDeviceChange)
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = "Code auf diesem Gerät bestätigen (Telegram-App installiert)",

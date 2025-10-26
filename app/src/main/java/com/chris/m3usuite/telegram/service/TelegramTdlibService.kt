@@ -8,6 +8,7 @@ import androidx.core.app.NotificationCompat
 import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.telegram.PhoneNumberSanitizer
 import com.chris.m3usuite.telegram.TdLibReflection
+import com.chris.m3usuite.tg.TgGate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -55,6 +56,7 @@ class TelegramTdlibService : Service() {
         const val CMD_SET_AUTO_DOWNLOAD = 23
         const val CMD_APPLY_ALL_SETTINGS = 24
         const val CMD_RESEND_CODE = 25
+        const val CMD_FETCH_VERSION = 26
 
         const val REPLY_AUTH_STATE = 101
         const val REPLY_ERROR = 199
@@ -63,6 +65,7 @@ class TelegramTdlibService : Service() {
         const val REPLY_FOLDERS = 203
         const val REPLY_PULL_DONE = 204
         const val REPLY_AUTH_EVENT = 205
+        const val REPLY_TDLIB_VERSION = 206
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -308,9 +311,57 @@ class TelegramTdlibService : Service() {
                 CMD_RESEND_CODE -> {
                     resendCode()
                 }
+                CMD_FETCH_VERSION -> {
+                    val reqId = data.getInt("reqId", -1)
+                    val target = msg.replyTo
+                    scope.launch(Dispatchers.IO) {
+                        val handle = clientHandle
+                        val version = if (handle != null) {
+                            TdLibReflection.awaitOptionString(handle, "version")
+                        } else {
+                            TdLibReflection.getOptionString("version")
+                        }
+                        val tdlib = if (handle != null) {
+                            TdLibReflection.awaitOptionString(handle, "tdlib_version")
+                        } else {
+                            TdLibReflection.getOptionString("tdlib_version")
+                        }
+                        val commit = if (handle != null) {
+                            TdLibReflection.awaitOptionString(handle, "commit_hash")
+                        } else {
+                            TdLibReflection.getOptionString("commit_hash")
+                        }
+                        val bundle = Bundle().apply {
+                            putInt("reqId", reqId)
+                            putString("version", version.value)
+                            putString("versionType", version.type)
+                            putString("versionError", summaryError(version))
+                            putString("tdlibVersion", tdlib.value)
+                            putString("tdlibVersionType", tdlib.type)
+                            putString("tdlibVersionError", summaryError(tdlib))
+                            putString("commitHash", commit.value)
+                            putString("commitType", commit.type)
+                            putString("commitError", summaryError(commit))
+                        }
+                        val reply = Message.obtain(null, REPLY_TDLIB_VERSION).apply { setData(bundle) }
+                        if (target != null) {
+                            runCatching { target.send(reply) }.onFailure {
+                                synchronized(clients) { clients.forEach { messenger -> runCatching { messenger.send(reply) } } }
+                            }
+                        } else {
+                            synchronized(clients) { clients.forEach { messenger -> runCatching { messenger.send(reply) } } }
+                        }
+                    }
+                }
                 else -> super.handleMessage(msg)
             }
         }
+    }
+
+    private fun summaryError(result: TdLibReflection.OptionStringResult): String? {
+        val msg = result.errorMessage ?: return null
+        val suffix = result.errorCode?.let { " (code $it)" } ?: ""
+        return msg + suffix
     }
 
     private val messenger = Messenger(handler)
@@ -328,6 +379,20 @@ class TelegramTdlibService : Service() {
         }
         netCallback = cb
         kotlin.runCatching { cm.registerNetworkCallback(req, cb) }
+        scope.launch(Dispatchers.IO) {
+            val enabled = runCatching { settingsStore.tgEnabled.first() }.getOrDefault(false)
+            if (TgGate.mirrorOnly() || enabled) {
+                val apiId = runCatching { settingsStore.tgApiId.first() }.getOrDefault(0)
+                    .takeIf { it > 0 } ?: BuildConfig.TG_API_ID
+                val apiHash = runCatching { settingsStore.tgApiHash.first() }.getOrDefault("")
+                    .ifBlank { BuildConfig.TG_API_HASH }
+                if (apiId > 0 && apiHash.isNotBlank()) {
+                    startTdlib(apiId, apiHash)
+                } else if (clientHandle == null && TdLibReflection.available()) {
+                    clientHandle = TdLibReflection.createClient(authFlow, downloadFlow)
+                }
+            }
+        }
     }
 
     override fun onDestroy() {
@@ -1069,24 +1134,25 @@ class TelegramTdlibService : Service() {
         var newSeriesEpisodes = 0
         val newSeriesIds = mutableSetOf<Long>()
         val seen = mutableSetOf<Long>()
-        var fromId = 0L
+        var anchorId: Long? = null
         var keepGoing = true
         var attempt = 0
-        val pageSize = limit.coerceAtLeast(1)
+        val pageSize = limit.coerceIn(1, 100)
 
         fun backoffMs(a: Int): Long = (500 * 2.0.pow(a.coerceAtMost(6))).toLong()
 
         while (keepGoing) {
-            // Page backwards deterministically. For the first page, TDLib ignores offset when fromId==0.
+            // Page backwards deterministically. For the first page TDLib ignores offset when fromId==0.
             // For subsequent pages use a negative offset capped at TDLib's -99 lower bound.
-            val offset = if (fromId == 0L) 0 else (-pageSize).coerceAtLeast(-99)
-            val fn = TdLibReflection.buildGetChatHistory(chatId, fromId, offset, pageSize, false) ?: break
+            val currentAnchor = anchorId ?: 0L
+            val offset = if (anchorId == null) 0 else (-pageSize).coerceAtLeast(-99)
+            val fn = TdLibReflection.buildGetChatHistory(chatId, currentAnchor, offset, pageSize, false) ?: break
             val result = TdLibReflection.sendForResultDetailed(
                 ch,
                 fn,
                 timeoutMs = 10_000,
                 retries = 1,
-                traceTag = "History[$chatId:${fromId}]"
+                traceTag = "History[$chatId:$currentAnchor]"
             )
             val error = result.error
             if (error != null) {
@@ -1110,12 +1176,13 @@ class TelegramTdlibService : Service() {
             if (messages.isEmpty()) break
 
             var advanced = false
-            var nextFromId = fromId
+            var nextAnchorId = anchorId
             messages.forEach { messageObj ->
                 val messageId = TdLibReflection.extractMessageId(messageObj) ?: return@forEach
                 if (seen.add(messageId)) {
                     advanced = true
-                    if (nextFromId == 0L || messageId < nextFromId) nextFromId = messageId
+                    val currentAnchor = nextAnchorId
+                    if (currentAnchor == null || messageId < currentAnchor) nextAnchorId = messageId
                     val content = runCatching {
                         messageObj.javaClass.getDeclaredField("content").apply { isAccessible = true }.get(messageObj)
                     }.getOrNull()
@@ -1141,8 +1208,16 @@ class TelegramTdlibService : Service() {
             }
 
             attempt = 0
-            // Continue strictly from the next older message id.
-            fromId = if (nextFromId > 0L) nextFromId - 1L else nextFromId
+            val prevAnchor = anchorId
+            anchorId = nextAnchorId
+            if (anchorId == null) {
+                Log.i("TdSvc", "backfill stopping due to missing anchor id")
+                break
+            }
+            if (prevAnchor != null && anchorId == prevAnchor) {
+                Log.i("TdSvc", "backfill stopping due to unchanged anchor (chatId=$chatId lastId=$anchorId)")
+                break
+            }
             keepGoing = fetchAll
         }
         Log.i("TdSvc", "backfill done chatId=${chatId} processed=${processed} newVod=${newVod} newSeriesEpisodes=${newSeriesEpisodes}")

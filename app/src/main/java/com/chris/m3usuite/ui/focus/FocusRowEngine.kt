@@ -50,7 +50,7 @@ fun MediaRowCore(
     itemModifier: @Composable (index: Int, absoluteIndex: Int, media: MediaItem, base: Modifier, state: LazyListState) -> Modifier = { _, _, _, base, _ -> base },
     itemContent: @Composable (MediaItem) -> Unit
 ) {
-    if (items.isEmpty()) return
+    if (items.isEmpty() && leading == null) return
     val dims = LocalFishDimens.current
     val stateKey = config.stateKey ?: remember(items) { "row:${items.hashCode()}" }
     val listState = rememberRouteListState(stateKey)

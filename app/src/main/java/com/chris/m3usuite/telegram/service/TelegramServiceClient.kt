@@ -3,24 +3,35 @@ package com.chris.m3usuite.telegram.service
 import android.content.*
 import android.net.Uri
 import android.os.*
+import android.os.SystemClock
+import com.chris.m3usuite.telegram.TdLibReflection
+import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import org.drinkless.tdlib.TdApi
 
 class TelegramServiceClient(private val context: Context) {
     data class ChatSyncResult(
@@ -36,6 +47,18 @@ class TelegramServiceClient(private val context: Context) {
         val code: Int?,
         val rawMessage: String?,
         val type: String?
+    )
+
+    data class TdlibVersionSnapshot(
+        val version: String?,
+        val versionType: String?,
+        val versionError: String?,
+        val tdlibVersion: String?,
+        val tdlibVersionType: String?,
+        val tdlibVersionError: String?,
+        val commitHash: String?,
+        val commitType: String?,
+        val commitError: String?
     )
 
     sealed interface AuthEvent {
@@ -56,6 +79,7 @@ class TelegramServiceClient(private val context: Context) {
     private val pendingChatList = mutableMapOf<Int, (LongArray, Array<String>) -> Unit>()
     private val pendingTitles = mutableMapOf<Int, (LongArray, Array<String>) -> Unit>()
     private val pendingPulls = mutableMapOf<Int, (ChatSyncResult) -> Unit>()
+    private val pendingVersions = mutableMapOf<Int, (TdlibVersionSnapshot) -> Unit>()
     private val nextReqId = AtomicInteger(1)
     private var pendingFolderList: ((IntArray) -> Unit)? = null
     private val authEventsChannel = Channel<AuthEvent>(Channel.BUFFERED)
@@ -124,6 +148,23 @@ class TelegramServiceClient(private val context: Context) {
                         pendingPulls.remove(reqId)?.invoke(result)
                     }
                 }
+                TelegramTdlibService.REPLY_TDLIB_VERSION -> {
+                    val reqId = msg.data.getInt("reqId", -1)
+                    val snapshot = TdlibVersionSnapshot(
+                        version = msg.data.getString("version"),
+                        versionType = msg.data.getString("versionType"),
+                        versionError = msg.data.getString("versionError"),
+                        tdlibVersion = msg.data.getString("tdlibVersion"),
+                        tdlibVersionType = msg.data.getString("tdlibVersionType"),
+                        tdlibVersionError = msg.data.getString("tdlibVersionError"),
+                        commitHash = msg.data.getString("commitHash"),
+                        commitType = msg.data.getString("commitType"),
+                        commitError = msg.data.getString("commitError")
+                    )
+                    synchronized(pendingVersions) {
+                        pendingVersions.remove(reqId)?.invoke(snapshot)
+                    }
+                }
                 TelegramTdlibService.REPLY_AUTH_EVENT -> {
                     val type = msg.data.getString("type") ?: return
                     when (type) {
@@ -153,6 +194,21 @@ class TelegramServiceClient(private val context: Context) {
     private val _authCallbacks = mutableSetOf<(String)->Unit>()
     private val _errorCallbacks = mutableSetOf<(ServiceError)->Unit>()
     private val _qrCallbacks = mutableSetOf<(String)->Unit>()
+    private val _updateFiles = MutableSharedFlow<TdApi.UpdateFile>(extraBufferCapacity = 64)
+    val updateFilesFlow: SharedFlow<TdApi.UpdateFile> = _updateFiles.asSharedFlow()
+    @Suppress("unused")
+    private val updateListenerHandle: AutoCloseable? = runCatching {
+        TdLibReflection.addUpdateListener { obj ->
+            if (obj is TdApi.UpdateFile) {
+                _updateFiles.tryEmit(obj)
+            }
+        }
+    }.getOrNull()
+
+    /** Prüft, ob TDLib vollständig authentifiziert ist */
+    fun isReady(): Boolean {
+        return authState.value == AuthState.SignedIn
+    }
 
     private val conn = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
@@ -188,6 +244,11 @@ class TelegramServiceClient(private val context: Context) {
             pendingTitles.clear()
             callbacks.forEach { it(longArrayOf(), emptyArray()) }
         }
+        synchronized(pendingVersions) {
+            val callbacks = pendingVersions.values.toList()
+            pendingVersions.clear()
+            callbacks.forEach { it(defaultVersionSnapshot()) }
+        }
     }
 
     fun authStates(): Flow<String> = callbackFlow {
@@ -207,6 +268,56 @@ class TelegramServiceClient(private val context: Context) {
         _qrCallbacks.add(cb)
         awaitClose { _qrCallbacks.remove(cb) }
     }
+
+    suspend fun waitForRange(fileId: Int, start: Long, end: Long, timeoutMs: Long = 10_000L): Boolean {
+        if (start >= end) return true
+        val initial = runCatching { getFile(fileId) }.getOrNull()
+        if (initial != null && isRangeAvailable(initial, end)) return true
+        val deadline = SystemClock.elapsedRealtime() + timeoutMs
+        var backoff = 25L
+        while (true) {
+            val remaining = deadline - SystemClock.elapsedRealtime()
+            if (remaining <= 0) return false
+            val waitFor = minOf(backoff, remaining)
+            val update = withTimeoutOrNull(waitFor) {
+                updateFilesFlow.filter { it.file.id == fileId }.first()
+            }
+            val file = update?.file ?: runCatching { getFile(fileId) }.getOrNull()
+            if (file != null && isRangeAvailable(file, end)) return true
+            backoff = if (update != null) 25L else (backoff * 2).coerceAtMost(250L)
+        }
+    }
+
+    private fun isRangeAvailable(file: TdApi.File, endExclusive: Long): Boolean {
+        val local = file.local ?: return false
+        val downloadedCandidates = mutableListOf<Long>()
+        runCatching { local.downloadedPrefixSize.toLong() }.getOrNull()?.let { downloadedCandidates += it }
+        runCatching { local.downloadedSize.toLong() }.getOrNull()?.let { downloadedCandidates += it }
+        val path = local.path
+        if (!path.isNullOrBlank()) {
+            runCatching { File(path).takeIf { it.exists() }?.length() }
+                .getOrNull()
+                ?.let { downloadedCandidates += it }
+        }
+        if (local.isDownloadingCompleted) {
+            val expected = file.size.toLong()
+            if (expected > 0) downloadedCandidates += expected
+        }
+        val downloaded = downloadedCandidates.maxOrNull() ?: 0L
+        return downloaded >= endExclusive
+    }
+
+    private fun defaultVersionSnapshot(): TdlibVersionSnapshot = TdlibVersionSnapshot(
+        version = null,
+        versionType = null,
+        versionError = "Service disconnected",
+        tdlibVersion = null,
+        tdlibVersionType = null,
+        tdlibVersionError = "Service disconnected",
+        commitHash = null,
+        commitType = null,
+        commitError = "Service disconnected"
+    )
 
     private fun send(cmd: Int, bundle: Bundle.() -> Unit = {}) {
         val m = Message.obtain(null, cmd)
@@ -365,6 +476,19 @@ class TelegramServiceClient(private val context: Context) {
             }
         }
 
+    suspend fun fetchTdlibVersion(): TdlibVersionSnapshot = suspendCancellableCoroutine { cont ->
+        val reqId = nextReqId.getAndIncrement()
+        synchronized(pendingVersions) {
+            pendingVersions[reqId] = { snapshot -> cont.resume(snapshot) }
+        }
+        cont.invokeOnCancellation {
+            synchronized(pendingVersions) { pendingVersions.remove(reqId) }
+        }
+        send(TelegramTdlibService.CMD_FETCH_VERSION) {
+            putInt("reqId", reqId)
+        }
+    }
+
     fun persistTreePermission(uri: Uri) {
         runCatching {
             context.contentResolver.takePersistableUriPermission(
@@ -373,6 +497,39 @@ class TelegramServiceClient(private val context: Context) {
             )
         }
     }
+
+    /**
+     * Reiner Reflect-Call:
+     * Holt die Message aus TDLib (kein OBX).
+     */
+    suspend fun getMessage(chatId: Long, messageId: Long): TdApi.Message =
+        withContext(Dispatchers.IO) {
+            TdLibReflection.getMessage(chatId, messageId)
+        }
+
+    /**
+     * Reiner Reflect-Call:
+     * Liefert File-Metadaten (Size/Mime/Pfad falls lokal vorhanden).
+     */
+    suspend fun getFile(fileId: Int): TdApi.File =
+        withContext(Dispatchers.IO) {
+            TdLibReflection.getFile(fileId)
+        }
+
+    /**
+     * Reiner Reflect-Call:
+     * Triggert chunkweises Laden. Offset/Limit werden von der DataSource gesteuert.
+     */
+    suspend fun downloadFile(
+        fileId: Int,
+        priority: Int,
+        offset: Long,
+        limit: Long,
+        synchronous: Boolean = false
+    ): TdApi.File =
+        withContext(Dispatchers.IO) {
+            TdLibReflection.downloadFile(fileId, priority, offset, limit, synchronous)
+        }
 
     suspend fun resolveChatTitle(chatId: Long): String? {
         return resolveChatTitles(longArrayOf(chatId)).firstOrNull()?.second

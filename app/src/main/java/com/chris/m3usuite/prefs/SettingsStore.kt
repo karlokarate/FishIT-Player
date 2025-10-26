@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.chris.m3usuite.core.xtream.XtreamCreds
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
@@ -279,6 +280,18 @@ class SettingsStore(private val context: Context) {
     val tgEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_ENABLED] ?: false }
     // Für neue Logik: ein gemeinsames CSV
     val tgSelectedChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_CHATS_CSV].orEmpty() }
+    /**
+     * Bequemer, typisierter Flow der ausgewählten Chat-IDs (Set<Long>), abgeleitet aus dem CSV.
+     * Ideal für IOC/Mirror-Only ohne OBX.
+     */
+    val tgSelectedChatIds: Flow<Set<Long>> =
+        tgSelectedChatsCsv
+            .map { csv ->
+                csv.split(",")
+                    .mapNotNull { it.trim().toLongOrNull() }
+                    .toSet()
+            }
+            .distinctUntilChanged()
     // Legacy-Reader (falls Altdaten existieren):
     val tgSelectedVodChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_VOD_CHATS_CSV].orEmpty() }
     val tgSelectedSeriesChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_SERIES_CHATS_CSV].orEmpty() }
@@ -521,6 +534,28 @@ class SettingsStore(private val context: Context) {
     // Telegram setters
     suspend fun setTelegramEnabled(value: Boolean) { context.dataStore.edit { it[Keys.TG_ENABLED] = value } }
     suspend fun setTelegramSelectedChatsCsv(value: String) { context.dataStore.edit { it[Keys.TG_SELECTED_CHATS_CSV] = value } }
+    /**
+     * Fügt eine Chat-ID zur Auswahl hinzu (idempotent) und schreibt das CSV stabil sortiert.
+     */
+    suspend fun addTelegramSelectedChat(id: Long) {
+        val cur = tgSelectedChatsCsv.first()
+        val set = cur.split(",").mapNotNull { it.trim().toLongOrNull() }.toMutableSet()
+        if (set.add(id)) {
+            val csv = set.asSequence().map(Long::toString).sorted().joinToString(",")
+            setTelegramSelectedChatsCsv(csv)
+        }
+    }
+    /**
+     * Entfernt eine Chat-ID aus der Auswahl (falls vorhanden) und schreibt das CSV stabil sortiert.
+     */
+    suspend fun removeTelegramSelectedChat(id: Long) {
+        val cur = tgSelectedChatsCsv.first()
+        val set = cur.split(",").mapNotNull { it.trim().toLongOrNull() }.toMutableSet()
+        if (set.remove(id)) {
+            val csv = if (set.isEmpty()) "" else set.asSequence().map(Long::toString).sorted().joinToString(",")
+            setTelegramSelectedChatsCsv(csv)
+        }
+    }
     /** Einmalige Migration: vereinige alte getrennte CSVs (vod/series) in das neue Feld. */
     suspend fun migrateTelegramSelectedChatsIfNeeded() {
         val current = tgSelectedChatsCsv.first()
@@ -623,13 +658,6 @@ class SettingsStore(private val context: Context) {
     suspend fun setTgAutoRoamingLessDataCalls(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] = value } }
     suspend fun setTgEnabled(value: Boolean) = setTelegramEnabled(value)
     suspend fun setTgLogVerbosity(value: Int) = setTelegramLogVerbosity(value)
-    suspend fun setTgApiId(value: Int) {
-        context.dataStore.edit { it[Keys.TG_API_ID] = value.coerceAtLeast(0) }
-    }
-
-    suspend fun setTgApiHash(value: String) {
-        context.dataStore.edit { it[Keys.TG_API_HASH] = value.trim() }
-    }
     suspend fun setLogDirTreeUri(value: String) { context.dataStore.edit { it[Keys.LOG_DIR_TREE_URI] = value } }
 
     data class Snapshot(

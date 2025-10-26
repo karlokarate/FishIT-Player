@@ -20,6 +20,7 @@ import com.chris.m3usuite.ui.home.ChromeLibraryFocusRefs
 import com.chris.m3usuite.ui.home.ChromeHeaderFocusRefs
 import com.chris.m3usuite.ui.home.LocalChromeLibraryFocusRefs
 import com.chris.m3usuite.ui.home.LocalChromeHeaderFocusRefs
+import com.chris.m3usuite.ui.home.LibraryTab
 import com.chris.m3usuite.ui.home.header.FishITHeader
 import com.chris.m3usuite.ui.home.header.LocalLibraryFirstFocus
 import com.chris.m3usuite.ui.home.header.LocalHeaderFirstFocus
@@ -37,8 +38,8 @@ fun HomeChromeOverlay(
     onSearch: (() -> Unit)?,
     onProfiles: (() -> Unit)?,
     onSettings: (() -> Unit)?,
-    librarySelected: String?,
-    onLibrarySelect: ((String) -> Unit)?,
+    librarySelected: LibraryTab?,
+    onLibrarySelect: ((LibraryTab) -> Unit)?,
     statusPad: Dp,
     navPad: Dp,
     scrimAlpha: Float,

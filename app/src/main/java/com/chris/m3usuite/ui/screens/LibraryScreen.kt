@@ -37,7 +37,6 @@ import com.chris.m3usuite.core.util.isAdultProvider
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.model.isAdultCategory
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.ui.home.HomeChromeScaffold
 import com.chris.m3usuite.ui.home.LibraryNavConfig
 import com.chris.m3usuite.ui.home.LibraryTab
@@ -53,10 +52,16 @@ import com.chris.m3usuite.ui.layout.LiveFishTile
 import com.chris.m3usuite.ui.layout.SeriesFishTile
 import com.chris.m3usuite.ui.layout.TelegramFishTile
 import com.chris.m3usuite.ui.layout.VodFishTile
+import com.chris.m3usuite.ui.layout.primaryTelegramPoster
+import com.chris.m3usuite.telegram.live.TelegramLiveRepository
+import com.chris.m3usuite.telegram.service.TelegramServiceClient
+import com.chris.m3usuite.ui.util.AppImageLoader
+import com.chris.m3usuite.ui.util.rememberImageHeaders
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
+import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 
@@ -92,7 +97,8 @@ fun LibraryScreen(
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
     val repo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
-    val tgRepo = remember { com.chris.m3usuite.data.repo.TelegramContentRepository(ctx, store) }
+    val telegramLiveRepo = remember { TelegramLiveRepository(ctx) }
+    val telegramServiceClient = remember { TelegramServiceClient(ctx.applicationContext) }
     val tgChatsCsv by store.tgSelectedChatsCsv.collectAsStateWithLifecycle(initialValue = "")
     val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
     val resumeRepo = remember { com.chris.m3usuite.data.repo.ResumeRepository(ctx) }
@@ -128,17 +134,29 @@ fun LibraryScreen(
             }
         }
     )
+    val telegramHeaders = remember { com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store) }
+    val openTelegramDetail: (MediaItem) -> Unit = remember(navController, openVod, openSeries) {
+        { item ->
+            val normalizedType = item.type.lowercase(Locale.getDefault())
+            when (normalizedType) {
+                "series" -> openSeries(item.id)
+                "vod" -> openVod(item.id)
+                else -> {
+                    val chat = item.tgChatId
+                    val message = item.tgMessageId
+                    if (chat != null && message != null) {
+                        navController.navigate("telegram/$chat/$message")
+                    }
+                }
+            }
+        }
+    }
 
     // UiState for library content (combined): Loading until first load; Empty when no groups/rows; Success otherwise
     var uiState by remember { mutableStateOf<com.chris.m3usuite.ui.state.UiState<Unit>>(com.chris.m3usuite.ui.state.UiState.Loading) }
 
     // Tab-Auswahl synchron zur Start-Optik (BottomPanel)
-    val storeTab = rememberSelectedTab(store)
-    var pendingTab by remember { mutableStateOf<ContentTab?>(null) }
-    if (pendingTab != null && pendingTab == storeTab) {
-        pendingTab = null
-    }
-    val selectedTab = pendingTab ?: storeTab
+    val selectedTab = rememberSelectedTab(store)
     val selectedTabKey = when (selectedTab) {
         ContentTab.Live -> "live"
         ContentTab.Vod -> "vod"
@@ -379,63 +397,74 @@ fun LibraryScreen(
         }
         if (chatIds.isEmpty()) return
 
-        val service = remember { com.chris.m3usuite.telegram.service.TelegramServiceClient(ctx) }
-        DisposableEffect(tgEnabled) {
-            if (tgEnabled) {
-                service.bind()
-                service.getAuth()
-                onDispose { service.unbind() }
-            } else {
-                service.unbind()
-                onDispose { }
+        val ctx = LocalContext.current
+        val imageHeaders = rememberImageHeaders()
+        val telegramPrefetcher: OnPrefetchPaged = remember(ctx, imageHeaders) {
+            { indices, items ->
+                val posters = indices.mapNotNull { idx -> items[idx]?.primaryTelegramPoster() }
+                if (posters.isNotEmpty()) {
+                    AppImageLoader.preload(ctx, posters, imageHeaders)
+                }
             }
         }
 
-        val headers = remember { com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store) }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             chatIds.forEachIndexed { index, chatId ->
-                var items by remember(chatId, tab, resumeTick, tgEnabled) { mutableStateOf<List<MediaItem>>(emptyList()) }
-                LaunchedEffect(chatId, tab, resumeTick, tgEnabled) {
-                    items = if (tgEnabled) {
-                        if (tab == ContentTab.Vod) tgRepo.recentVodByChat(chatId, 60, 0) else emptyList()
-                    } else emptyList()
-                }
-                if (items.isEmpty()) return@forEachIndexed
+                val pager = remember(chatId) { telegramLiveRepo.pagerForChat(chatId) }
+                val pagingItems = pager.flow.collectAsLazyPagingItems()
+                val refreshState = pagingItems.loadState.refresh
+                val isRefreshing = refreshState is LoadState.Loading
+                if (!isRefreshing && pagingItems.itemCount == 0) return@forEachIndexed
 
                 var chatTitle by remember(chatId) { mutableStateOf("Telegram ${chatId}") }
                 LaunchedEffect(chatId, tgEnabled) {
                     if (tgEnabled) {
-                        val resolved = runCatching { service.resolveChatTitles(longArrayOf(chatId)) }.getOrNull()
-                        resolved?.firstOrNull()?.second?.let { chatTitle = it }
+                        telegramLiveRepo.chatTitle(chatId)?.let { chatTitle = it }
                     }
                 }
 
                 val stateKey = "lib:tg:${tab.name.lowercase(Locale.getDefault())}:$chatId"
-                FishRow(
-                    items = items,
+                FishRowPaged(
+                    items = pagingItems,
                     stateKey = stateKey,
                     edgeLeftExpandChrome = false,
-                    initialFocusEligible = index == 0,
+                    onPrefetchPaged = telegramPrefetcher,
                     header = FishHeaderData.Text(
                         anchorKey = stateKey,
                         text = "Telegram – ${chatTitle}",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White
                     )
-                ) { media ->
+                ) { _, media ->
                     TelegramFishTile(
                         media = media,
+                        onOpenDetails = openTelegramDetail,
                         onPlay = { mi ->
-                            val tgUrl = "tg://message?chatId=${mi.tgChatId}&messageId=${mi.tgMessageId}"
+                            val chat = mi.tgChatId ?: return@TelegramFishTile
+                            val message = mi.tgMessageId ?: return@TelegramFishTile
+                            val tgUrl = runCatching {
+                                PlayUrlHelper.tgPlayUri(
+                                    chatId = chat,
+                                    messageId = message,
+                                    svc = telegramServiceClient
+                                ).toString()
+                            }.getOrElse { err ->
+                                android.util.Log.w(
+                                    "LibraryScreen",
+                                    "tgPlayUri failed chatId=$chat messageId=$message: ${err.message}"
+                                )
+                                return@launch
+                            }
                             scope.launch {
-                                PlayerChooser.start(
-                                    context = ctx,
-                                    store = store,
-                                    url = tgUrl,
-                                    headers = headers,
-                                    startPositionMs = null,
-                                    mimeType = null
-                                ) { _, _ -> }
+                                playbackLauncher.launch(
+                                    com.chris.m3usuite.playback.PlayRequest(
+                                        type = mi.type.ifBlank { "vod" },
+                                        mediaId = mi.id,
+                                        url = tgUrl,
+                                        headers = telegramHeaders,
+                                        title = mi.name
+                                    )
+                                )
                             }
                         }
                     )
@@ -799,11 +828,6 @@ fun LibraryScreen(
                         LibraryTab.Live -> 0
                         LibraryTab.Vod -> 1
                         LibraryTab.Series -> 2
-                    }
-                    pendingTab = when (tab) {
-                        LibraryTab.Live -> ContentTab.Live
-                        LibraryTab.Vod -> ContentTab.Vod
-                        LibraryTab.Series -> ContentTab.Series
                     }
                     scope.launch { store.setLibraryTabIndex(idx) }
                 }

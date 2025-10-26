@@ -4,17 +4,20 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.lang.reflect.Method
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.suspendCancellableCoroutine
+import org.drinkless.tdlib.TdApi
 
 /**
  * Minimal reflection-based TDLib bridge so the app compiles without tdlib classes.
@@ -30,6 +33,12 @@ object TdLibReflection {
     private const val LOG_TAG = "TdLib"
     private val NULL_MARKER = Any()
     private const val MAX_BACKOFF_MS = 20_000L
+    private val SERIES_HINT_REGEX = listOf(
+        Regex("(?i)S\\s*\\d{1,2}\\s*E\\s*\\d{1,3}"),
+        Regex("(?i)(?:Season|Staffel)\\s*\\d{1,2}"),
+        Regex("(?i)(?:Episode|Folge|Ep\\.?|E)\\s*\\d{1,3}"),
+        Regex("(?i)\\d{1,2}[x×]\\d{1,3}")
+    )
 
     enum class AuthState { UNKNOWN, UNAUTHENTICATED, WAIT_ENCRYPTION_KEY, WAIT_FOR_NUMBER, WAIT_FOR_CODE, WAIT_FOR_PASSWORD, WAIT_OTHER_DEVICE, AUTHENTICATED, LOGGING_OUT }
 
@@ -166,6 +175,10 @@ object TdLibReflection {
 
     private var singleton: ClientHandle? = null
 
+    private fun requireClient(): ClientHandle {
+        return singleton ?: throw IllegalStateException("TDLib client not initialized")
+    }
+
     /** Create a TDLib client and start auth/download state flows */
     fun createClient(authStateFlow: MutableStateFlow<AuthState>, downloadActive: MutableStateFlow<Boolean>? = null): ClientHandle? {
         if (!available()) return null
@@ -291,6 +304,174 @@ object TdLibReflection {
         return ctor.newInstance(*args)
     }
 
+    private fun execute(function: Any): Any? {
+        return runCatching {
+            val clientCls = td("Client")
+            val fnCls = td("TdApi\$Function")
+            val execute = clientCls.getMethod("execute", fnCls)
+            execute.invoke(null, function)
+        }.getOrNull()
+    }
+
+    data class OptionStringResult(
+        val value: String?,
+        val type: String?,
+        val errorCode: Int? = null,
+        val errorMessage: String? = null
+    )
+
+    fun getOptionString(name: String): OptionStringResult {
+        if (!available()) return OptionStringResult(null, null, errorMessage = "TDLib not available")
+        val fn = runCatching {
+            new(
+                "TdApi\$GetOption",
+                arrayOf<Class<*>>(String::class.java),
+                arrayOf(name)
+            )
+        }.getOrNull() ?: return OptionStringResult(null, null, errorMessage = "Failed to construct GetOption")
+        val result = execute(fn) ?: return OptionStringResult(null, null, errorMessage = "TDLib execute returned null")
+        return parseOptionResult(result)
+    }
+
+    fun requestOptionString(client: ClientHandle, name: String, callback: (OptionStringResult) -> Unit) {
+        val fn = runCatching {
+            new(
+                "TdApi\$GetOption",
+                arrayOf<Class<*>>(String::class.java),
+                arrayOf(name)
+            )
+        }.getOrNull()
+        if (fn == null) {
+            callback(OptionStringResult(null, null, errorMessage = "Failed to construct GetOption"))
+            return
+        }
+        val handlerType = td("Client\$ResultHandler")
+        val exceptionType = td("Client\$ExceptionHandler")
+        val resultHandler = java.lang.reflect.Proxy.newProxyInstance(handlerType.classLoader, arrayOf(handlerType)) { _, _, args ->
+            val obj = args?.getOrNull(0)
+            callback(parseOptionResult(obj))
+            null
+        }
+        val exceptionHandler = java.lang.reflect.Proxy.newProxyInstance(exceptionType.classLoader, arrayOf(exceptionType)) { _, _, args ->
+            val throwable = args?.getOrNull(0) as? Throwable
+            callback(OptionStringResult(null, "Exception", errorMessage = throwable?.message ?: "TDLib exception"))
+            null
+        }
+        runCatching {
+            client.sendMethod.invoke(client.client, fn, resultHandler, exceptionHandler)
+        }.onFailure {
+            callback(OptionStringResult(null, "Exception", errorMessage = it.message ?: "TDLib send failed"))
+        }
+    }
+
+    suspend fun awaitOptionString(client: ClientHandle, name: String): OptionStringResult =
+        suspendCancellableCoroutine { cont ->
+            requestOptionString(client, name) { result ->
+                if (cont.isActive) cont.resume(result)
+            }
+        }
+
+    private fun parseOptionResult(result: Any?): OptionStringResult {
+        if (result == null) return OptionStringResult(null, null, errorMessage = "TDLib returned null")
+        val clsName = result.javaClass.name
+        if (PKGS.any { clsName == "$it.TdApi\$Error" }) {
+            val code = runCatching {
+                result.javaClass.getDeclaredField("code").apply { isAccessible = true }.get(result) as? Int
+            }.getOrNull()
+            val message = runCatching {
+                result.javaClass.getDeclaredField("message").apply { isAccessible = true }.get(result) as? String
+            }.getOrNull()
+            return OptionStringResult(null, "Error", code, message ?: "Unknown TDLib error")
+        }
+        val value = runCatching {
+            result.javaClass.getDeclaredField("value").apply { isAccessible = true }.get(result)
+        }.getOrNull()
+        val text = value?.toString() ?: when {
+            PKGS.any { clsName == "$it.TdApi\$OptionValueEmpty" } -> ""
+            else -> result.toString()
+        }
+        return OptionStringResult(
+            value = text,
+            type = result.javaClass.simpleName
+        )
+    }
+
+    private data class TdlibParameterSnapshot(
+        val databaseDirectory: File,
+        val filesDirectory: File,
+        val systemLanguageCode: String,
+        val deviceModel: String,
+        val systemVersion: String,
+        val applicationVersion: String
+    )
+
+    private fun computeTdlibParameterSnapshot(context: Context): TdlibParameterSnapshot {
+        val locale = runCatching {
+            if (Build.VERSION.SDK_INT >= 24) {
+                context.resources.configuration.locales.takeIf { it.size() > 0 }?.get(0)
+            } else {
+                @Suppress("DEPRECATION")
+                context.resources.configuration.locale
+            }
+        }.getOrNull() ?: runCatching { Locale.getDefault() }.getOrNull()
+
+        val languageCode = locale?.language
+            ?.takeIf { it.isNotBlank() }
+            ?.lowercase(Locale.ROOT)
+            ?: "en"
+
+        val installId = TelegramKeyStore.getOrCreateInstallId(context)
+        val dbRoot = File(context.filesDir, "tdlib/$installId").apply {
+            runCatching { if (!exists()) mkdirs() }
+        }
+
+        val manufacturer = runCatching { Build.MANUFACTURER }.getOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?: "Android"
+        val model = runCatching { Build.MODEL }.getOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?: manufacturer
+        val deviceModel = listOf(manufacturer, model)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .joinToString(separator = " ")
+            .ifBlank { "Android Device" }
+
+        val release = runCatching { Build.VERSION.RELEASE }.getOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?: "Unknown"
+        val systemVersion = "Android ${release} (API ${Build.VERSION.SDK_INT})"
+
+        val pkgName = context.packageName
+        val pmVersion = runCatching {
+            val pm = context.packageManager
+            if (Build.VERSION.SDK_INT >= 33) {
+                pm.getPackageInfo(pkgName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getPackageInfo(pkgName, 0)
+            }
+        }.getOrNull()?.versionName?.takeIf { !it.isNullOrBlank() }
+
+        val buildConfigVersion = runCatching {
+            val bc = Class.forName("$pkgName.BuildConfig")
+            val field = bc.getDeclaredField("VERSION_NAME").apply { isAccessible = true }
+            (field.get(null) as? String)?.ifBlank { null }
+        }.getOrNull()
+
+        val applicationVersion = pmVersion ?: buildConfigVersion ?: "1.0.0"
+
+        return TdlibParameterSnapshot(
+            databaseDirectory = dbRoot,
+            filesDirectory = dbRoot,
+            systemLanguageCode = languageCode,
+            deviceModel = deviceModel,
+            systemVersion = systemVersion,
+            applicationVersion = applicationVersion
+        )
+    }
+
     fun buildTdlibParameters(context: Context, apiId: Int, apiHash: String): Any? {
         if (!available()) return null
         val params = new("TdApi\$TdlibParameters")
@@ -306,57 +487,53 @@ object TdLibReflection {
         runCatching { set("useFileDatabase", true) }
         set("useSecretChats", true)
         runCatching { set("useTestDc", false) }
-        val locale = if (Build.VERSION.SDK_INT >= 24) {
-            context.resources.configuration.locales.takeIf { it.size() > 0 }?.get(0)
-        } else {
-            @Suppress("DEPRECATION")
-            context.resources.configuration.locale
-        }
-        val languageCode = locale?.language?.takeIf { it.isNotBlank() }
-            ?.lowercase(Locale.ROOT)
-            ?: "en"
-        set("systemLanguageCode", languageCode)
-        val installId = TelegramKeyStore.getOrCreateInstallId(context)
-        val dbRoot = File(context.filesDir, "tdlib/$installId").apply {
-            if (!exists()) mkdirs()
-        }
-        set("databaseDirectory", dbRoot.absolutePath)
-        runCatching { set("filesDirectory", dbRoot.absolutePath) }
-        val manufacturer = Build.MANUFACTURER?.takeIf { it.isNotBlank() } ?: "Android"
-        val model = Build.MODEL?.takeIf { it.isNotBlank() } ?: manufacturer
-        val deviceModel = listOf(manufacturer, model)
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .joinToString(separator = " ")
-            .ifBlank { "Android Device" }
-        set("deviceModel", deviceModel)
-        val release = Build.VERSION.RELEASE?.takeIf { it.isNotBlank() } ?: "Unknown"
-        val systemVersion = "Android ${release} (API ${Build.VERSION.SDK_INT})"
-        set("systemVersion", systemVersion)
-        val pkgName = context.packageName
-        val pmVersion = runCatching {
-            val pm = context.packageManager
-            if (Build.VERSION.SDK_INT >= 33) {
-                pm.getPackageInfo(pkgName, PackageManager.PackageInfoFlags.of(0))
-            } else {
-                @Suppress("DEPRECATION")
-                pm.getPackageInfo(pkgName, 0)
-            }
-        }.getOrNull()?.versionName?.takeIf { !it.isNullOrBlank() }
-        val appVer = pmVersion
-            ?: runCatching {
-                val bc = Class.forName("$pkgName.BuildConfig")
-                val f = bc.getDeclaredField("VERSION_NAME"); f.isAccessible = true
-                (f.get(null) as? String)?.ifBlank { null }
-            }.getOrNull()
-            ?: "1.0.0"
-        set("applicationVersion", appVer)
+        val snapshot = computeTdlibParameterSnapshot(context)
+        set("systemLanguageCode", snapshot.systemLanguageCode)
+        set("databaseDirectory", snapshot.databaseDirectory.absolutePath)
+        runCatching { set("filesDirectory", snapshot.filesDirectory.absolutePath) }
+        set("deviceModel", snapshot.deviceModel)
+        set("systemVersion", snapshot.systemVersion)
+        set("applicationVersion", snapshot.applicationVersion)
         set("enableStorageOptimizer", true)
-        // Database encryption key (32 bytes) via KeyStore helper
+        runCatching { set("ignoreFileNames", false) }
         val key = TelegramKeyStore.getOrCreateDatabaseKey(context)
         runCatching { set("databaseEncryptionKey", key) }
         return params
+    }
+
+    fun createTdlibParameters(
+        context: Context,
+        apiId: Int,
+        apiHash: String
+    ): TdApi.TdlibParameters? {
+        return runCatching {
+            val snapshot = computeTdlibParameterSnapshot(context)
+            TdApi.TdlibParameters(
+                /* useTestDc = */ false,
+                /* databaseDirectory = */ snapshot.databaseDirectory.absolutePath,
+                /* filesDirectory = */ snapshot.filesDirectory.absolutePath,
+                /* useFileDatabase = */ true,
+                /* useChatInfoDatabase = */ true,
+                /* useMessageDatabase = */ true,
+                /* useSecretChats = */ true,
+                /* apiId = */ apiId,
+                /* apiHash = */ apiHash,
+                /* systemLanguageCode = */ snapshot.systemLanguageCode,
+                /* deviceModel = */ snapshot.deviceModel,
+                /* systemVersion = */ snapshot.systemVersion,
+                /* applicationVersion = */ snapshot.applicationVersion,
+                /* enableStorageOptimizer = */ true,
+                /* ignoreFileNames = */ false
+            )
+        }.getOrNull()
+    }
+
+    fun createSetTdlibParameters(
+        context: Context,
+        apiId: Int,
+        apiHash: String
+    ): TdApi.SetTdlibParameters? {
+        return createTdlibParameters(context, apiId, apiHash)?.let { TdApi.SetTdlibParameters(it) }
     }
 
     private fun buildOptionValueBoolean(value: Boolean): Any? = runCatching {
@@ -773,6 +950,35 @@ object TdLibReflection {
         } catch (_: Throwable) { null }
     }
 
+    private fun extractCaptionFromContent(contentObj: Any?): String? {
+        if (contentObj == null) return null
+        return try {
+            val caption = runCatching { contentObj.javaClass.getDeclaredField("caption").apply { isAccessible = true }.get(contentObj) }.getOrNull()
+            val captionText = caption?.let { cap ->
+                runCatching { cap.javaClass.getDeclaredField("text").apply { isAccessible = true }.get(cap) as? String }.getOrNull()
+            }
+            if (!captionText.isNullOrBlank()) return captionText
+            val textField = runCatching { contentObj.javaClass.getDeclaredField("text").apply { isAccessible = true }.get(contentObj) }.getOrNull()
+            textField?.let { tf ->
+                runCatching { tf.javaClass.getDeclaredField("text").apply { isAccessible = true }.get(tf) as? String }.getOrNull()
+            }
+        } catch (_: Throwable) { null }
+    }
+
+    fun isSeriesLike(text: String?): Boolean {
+        if (text.isNullOrBlank()) return false
+        val normalized = text.lowercase(Locale.getDefault())
+        return SERIES_HINT_REGEX.any { it.containsMatchIn(normalized) }
+    }
+
+    fun isSeriesLike(content: TdApi.MessageContent?, message: TdApi.Message?): Boolean {
+        val caption = when {
+            message != null -> runCatching { extractCaptionOrText(message) }.getOrNull()
+            else -> extractCaptionFromContent(content)
+        }
+        return isSeriesLike(caption)
+    }
+
     // --- Authorization helpers ---
     fun buildGetAuthorizationState(): Any? = try { new("TdApi\$GetAuthorizationState") } catch (_: Throwable) { null }
 
@@ -1154,6 +1360,93 @@ object TdLibReflection {
         new("TdApi\$CancelDownloadFile", arrayOf(Int::class.javaPrimitiveType!!, Boolean::class.javaPrimitiveType!!), arrayOf(fileId, onlyIfPending))
     } catch (_: Throwable) { null }
 
+    fun getMessage(chatId: Long, messageId: Long): TdApi.Message {
+        val client = requireClient()
+        val fn = buildGetMessage(chatId, messageId)
+            ?: throw IllegalStateException("TDLib GetMessage constructor unavailable")
+        val result = sendForResultDetailed(client, fn, timeoutMs = 2_000, retries = 1, traceTag = "Reflect:GetMessage")
+        result.error?.let { throw IllegalStateException("TDLib error ${it.code}: ${it.message}") }
+        val payload = result.payload ?: throw IllegalStateException("TDLib returned null for GetMessage")
+        return payload as? TdApi.Message
+            ?: throw IllegalStateException("Unexpected TDLib payload: ${payload.javaClass.name}")
+    }
+
+    fun getFile(fileId: Int): TdApi.File {
+        val client = requireClient()
+        val fn = buildGetFile(fileId) ?: throw IllegalStateException("TDLib GetFile constructor unavailable")
+        val result = sendForResultDetailed(client, fn, timeoutMs = 2_000, retries = 1, traceTag = "Reflect:GetFile")
+        result.error?.let { throw IllegalStateException("TDLib error ${it.code}: ${it.message}") }
+        val payload = result.payload ?: throw IllegalStateException("TDLib returned null for GetFile")
+        return payload as? TdApi.File
+            ?: throw IllegalStateException("Unexpected TDLib payload: ${payload.javaClass.name}")
+    }
+
+    fun downloadFile(fileId: Int, priority: Int, offset: Long, limit: Long, synchronous: Boolean): TdApi.File {
+        val client = requireClient()
+        val offsetInt = offset.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+        val limitInt = limit.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+        val normalizedPriority = priority.coerceIn(1, 32)
+        val fn = buildDownloadFile(fileId, normalizedPriority, offsetInt, limitInt, synchronous)
+            ?: throw IllegalStateException("TDLib DownloadFile constructor unavailable")
+        val result = sendForResultDetailed(client, fn, timeoutMs = 5_000, retries = 1, traceTag = "Reflect:DownloadFile")
+        result.error?.let { throw IllegalStateException("TDLib error ${it.code}: ${it.message}") }
+        val payload = result.payload ?: throw IllegalStateException("TDLib returned null for DownloadFile")
+        return payload as? TdApi.File
+            ?: throw IllegalStateException("Unexpected TDLib payload: ${payload.javaClass.name}")
+    }
+
+    fun buildSearchMessagesFilterVideo(): Any? = try { new("TdApi\$SearchMessagesFilterVideo") } catch (_: Throwable) { null }
+
+    fun buildSearchChatMessages(
+        chatId: Long,
+        query: String,
+        sender: Any?,
+        fromMessageId: Long,
+        offset: Int,
+        limit: Int,
+        filter: Any?,
+        messageThreadId: Long
+    ): Any? = try {
+        new(
+            "TdApi\$SearchChatMessages",
+            arrayOf(
+                Long::class.javaPrimitiveType!!,
+                String::class.java,
+                td("TdApi\$MessageSender"),
+                Long::class.javaPrimitiveType!!,
+                Int::class.javaPrimitiveType!!,
+                Int::class.javaPrimitiveType!!,
+                td("TdApi\$SearchMessagesFilter"),
+                Long::class.javaPrimitiveType!!
+            ),
+            arrayOf(chatId, query, sender, fromMessageId, offset, limit, filter, messageThreadId)
+        )
+    } catch (_: Throwable) { null }
+
+    fun buildSearchMessages(
+        chatList: Any?,
+        query: String,
+        sender: Any?,
+        fromMessageId: Long,
+        offset: Int,
+        limit: Int,
+        filter: Any?
+    ): Any? = try {
+        new(
+            "TdApi\$SearchMessages",
+            arrayOf(
+                td("TdApi\$ChatList"),
+                String::class.java,
+                td("TdApi\$MessageSender"),
+                Long::class.javaPrimitiveType!!,
+                Int::class.javaPrimitiveType!!,
+                Int::class.javaPrimitiveType!!,
+                td("TdApi\$SearchMessagesFilter")
+            ),
+            arrayOf(chatList, query, sender, fromMessageId, offset, limit, filter)
+        )
+    } catch (_: Throwable) { null }
+
     data class FileInfo(val fileId: Int, val localPath: String?, val downloadingActive: Boolean, val downloadingCompleted: Boolean, val downloadedSize: Long, val expectedSize: Long)
 
     /** Attempts to extract TdApi.File info, including local.path/download flags. */
@@ -1250,6 +1543,34 @@ object TdLibReflection {
             val v = runCatching { f.get(contentObj) }.getOrNull()
             val id = tryFileId(v)
             if (id != null) return id
+        }
+        return null
+    }
+
+    fun extractMiniThumbnailBytes(contentObj: Any?): ByteArray? {
+        if (contentObj == null) return null
+        fun extract(holder: Any?): ByteArray? {
+            if (holder == null) return null
+            val direct = runCatching {
+                val mini = holder.javaClass.getDeclaredField("minithumbnail").apply { isAccessible = true }.get(holder)
+                mini?.javaClass?.getDeclaredField("data")?.apply { isAccessible = true }?.get(mini) as? ByteArray
+            }.getOrNull()
+            if (direct != null && direct.isNotEmpty()) return direct
+            val thumb = runCatching { holder.javaClass.getDeclaredField("thumbnail").apply { isAccessible = true }.get(holder) }.getOrNull()
+            if (thumb != null) {
+                val fromThumb = runCatching {
+                    val mini = thumb.javaClass.getDeclaredField("minithumbnail").apply { isAccessible = true }.get(thumb)
+                    mini?.javaClass?.getDeclaredField("data")?.apply { isAccessible = true }?.get(mini) as? ByteArray
+                }.getOrNull()
+                if (fromThumb != null && fromThumb.isNotEmpty()) return fromThumb
+            }
+            return null
+        }
+        extract(contentObj)?.let { return it }
+        val candidates = listOf("video", "document", "animation", "photo")
+        for (field in candidates) {
+            val nested = runCatching { contentObj.javaClass.getDeclaredField(field).apply { isAccessible = true }.get(contentObj) }.getOrNull()
+            extract(nested)?.let { return it }
         }
         return null
     }

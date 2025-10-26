@@ -401,10 +401,8 @@ fun HomeChromeScaffold(
             onSearch = onSearch,
             onProfiles = onProfiles,
             onSettings = onSettings,
-            librarySelected = libraryNav?.selected?.key,
-            onLibrarySelect = libraryNav?.let { config ->
-                { key: String -> config.onSelect(LibraryTab.fromKey(key)) }
-            },
+            librarySelected = libraryNav?.selected,
+            onLibrarySelect = libraryNav?.onSelect,
             statusPad = statusPad,
             navPad = navPad,
             scrimAlpha = scrimAlpha,

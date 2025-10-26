@@ -6,6 +6,8 @@ import android.os.StatFs
 import coil3.ImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.chris.m3usuite.core.http.HttpClientFactory
 import com.chris.m3usuite.prefs.SettingsStore
 import okio.Path.Companion.toPath
@@ -47,6 +49,65 @@ object AppImageLoader {
 
         cached = loader
         return loader
+    }
+
+    suspend fun preload(
+        context: Context,
+        urls: Collection<Any?>,
+        headers: ImageHeaders? = null,
+        limit: Int = 8
+    ) {
+        if (urls.isEmpty()) return
+        val app = context.applicationContext
+        val loader = get(app)
+        val candidates = urls.asSequence()
+            .mapNotNull { candidate -> normalizePreloadCandidate(candidate) }
+            .distinct()
+            .take(limit)
+            .toList()
+        if (candidates.isEmpty()) return
+
+        withContext(Dispatchers.IO) {
+            for (data in candidates) {
+                runCatching {
+                    val request = buildImageRequest(
+                        ctx = app,
+                        url = data,
+                        crossfade = false,
+                        headers = headers,
+                        preferRgb565 = true
+                    )
+                    loader.execute(request)
+                }
+            }
+        }
+    }
+
+    private fun normalizePreloadCandidate(candidate: Any?): Any? {
+        when (candidate) {
+            null -> return null
+            is String -> {
+                val trimmed = candidate.trim()
+                if (trimmed.isEmpty()) return null
+                val lower = trimmed.lowercase()
+                return when {
+                    lower.startsWith("data:") -> null
+                    lower.startsWith("http://") -> trimmed
+                    lower.startsWith("https://") -> trimmed
+                    lower.startsWith("file://") -> trimmed
+                    lower.startsWith("content://") -> trimmed
+                    else -> null
+                }
+            }
+            is android.net.Uri -> {
+                val scheme = candidate.scheme?.lowercase()
+                return when (scheme) {
+                    "http", "https", "file", "content" -> candidate
+                    else -> null
+                }
+            }
+            else -> return candidate
+        }
     }
 }
 

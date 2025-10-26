@@ -18,6 +18,7 @@ class SettingsRepository(
     val userAgent: Flow<String> = store.userAgent
     val referer: Flow<String> = store.referer
     val extraHeadersJson: Flow<String> = store.extraHeadersJson
+    val showAdults: Flow<Boolean> = store.showAdults
 
     suspend fun saveNetworkBases(
         m3u: String,
@@ -34,6 +35,8 @@ class SettingsRepository(
     suspend fun setExtraHeadersJson(json: String) {
         store.setExtraHeadersJson(json)
     }
+
+    suspend fun setShowAdults(value: Boolean) = store.setShowAdults(value)
 
     // --- Player ---
     val playerMode: Flow<String> = store.playerMode                // "ask" | "internal" | "external"

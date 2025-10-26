@@ -9,6 +9,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.tg.TgGate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -20,6 +21,7 @@ import kotlin.math.min
 class TelegramCacheCleanupWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        if (TgGate.mirrorOnly()) return@withContext Result.success()
         val store = SettingsStore(applicationContext)
         val wipeAll = inputData.getBoolean(KEY_WIPE_ALL, false)
         val enabled = store.tgEnabled.first()
@@ -135,8 +137,13 @@ class TelegramCacheCleanupWorker(appContext: Context, params: WorkerParameters) 
     companion object {
         private const val UNIQUE = "tg_cache_cleanup"
         private const val KEY_WIPE_ALL = "wipe_all"
+        private const val UNIQUE_WIPE_ONCE = "tg_cache_wipe_once"
 
         fun schedule(context: Context) {
+            if (TgGate.mirrorOnly()) {
+                cancel(context)
+                return
+            }
             val req = PeriodicWorkRequestBuilder<TelegramCacheCleanupWorker>(1, TimeUnit.DAYS).build()
             WorkManager.getInstance(context)
                 .enqueueUniquePeriodicWork(UNIQUE, ExistingPeriodicWorkPolicy.UPDATE, req)
@@ -148,7 +155,13 @@ class TelegramCacheCleanupWorker(appContext: Context, params: WorkerParameters) 
                 .setInputData(data)
                 .build()
             WorkManager.getInstance(context)
-                .enqueueUniqueWork("tg_cache_wipe_once", ExistingWorkPolicy.REPLACE, req)
+                .enqueueUniqueWork(UNIQUE_WIPE_ONCE, ExistingWorkPolicy.REPLACE, req)
+        }
+
+        fun cancel(context: Context) {
+            val wm = WorkManager.getInstance(context)
+            runCatching { wm.cancelUniqueWork(UNIQUE) }
+            runCatching { wm.cancelUniqueWork(UNIQUE_WIPE_ONCE) }
         }
     }
 }

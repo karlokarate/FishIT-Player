@@ -78,15 +78,17 @@ import com.chris.m3usuite.core.http.RequestHeadersProvider
 import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.data.obx.toMediaItem
 import com.chris.m3usuite.data.repo.MediaQueryRepository
-import com.chris.m3usuite.data.repo.TelegramContentRepository
+import com.chris.m3usuite.telegram.live.TelegramLiveRepository
+import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
+import com.chris.m3usuite.ui.components.rows.LiveAddTile
 import com.chris.m3usuite.ui.components.rows.ReorderableLiveRow
 import com.chris.m3usuite.ui.focus.FocusKit
+import com.chris.m3usuite.ui.focus.OnPrefetchPaged
 import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import com.chris.m3usuite.ui.fx.tvFocusGlow
 import com.chris.m3usuite.ui.layout.FishHeaderData
@@ -97,8 +99,11 @@ import com.chris.m3usuite.ui.layout.LiveFishTile
 import com.chris.m3usuite.ui.layout.SeriesFishTile
 import com.chris.m3usuite.ui.layout.TelegramFishTile
 import com.chris.m3usuite.ui.layout.VodFishTile
+import com.chris.m3usuite.ui.layout.primaryTelegramPoster
 import com.chris.m3usuite.ui.telemetry.AttachPagingTelemetry
 import com.chris.m3usuite.ui.theme.DesignTokens
+import com.chris.m3usuite.ui.util.AppImageLoader
+import com.chris.m3usuite.ui.util.rememberImageHeaders
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.first
@@ -176,22 +181,23 @@ fun StartScreen(
     )
 
     // Telegram: UI-Binding (Service/Headers) bleibt in der View
-    val telegramRepo = remember { TelegramContentRepository(ctx, store) }
-    val telegramService = remember { TelegramServiceClient(ctx) }
-    DisposableEffect(Unit) {
-        telegramService.bind()
-        telegramService.getAuth()
-        onDispose { telegramService.unbind() }
-    }
+    val telegramLiveRepo = remember { com.chris.m3usuite.telegram.live.TelegramLiveRepository(ctx) }
     val telegramHeaders = remember { RequestHeadersProvider.defaultHeadersBlocking(store) }
     val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
     val tgSelectedCsv by store.tgSelectedChatsCsv.collectAsStateWithLifecycle(initialValue = "")
-    val playTelegram: (MediaItem) -> Unit = remember(playbackLauncher, telegramHeaders) {
+    val telegramServiceClient = remember { TelegramServiceClient(ctx.applicationContext) }
+    val playTelegram: (MediaItem) -> Unit = remember(playbackLauncher, telegramHeaders, telegramServiceClient) {
         { item ->
             scope.launch {
                 val chatId = item.tgChatId ?: return@launch
                 val messageId = item.tgMessageId ?: return@launch
-                val tgUrl = "tg://message?chatId=$chatId&messageId=$messageId"
+                val tgUrl = runCatching {
+                    PlayUrlHelper.tgPlayUri(chatId = chatId, messageId = messageId, svc = telegramServiceClient)
+                        .toString()
+                }.getOrElse { err ->
+                    android.util.Log.w("StartScreen", "tgPlayUri failed chatId=$chatId messageId=$messageId: ${err.message}")
+                    return@launch
+                }
                 playbackLauncher.launch(
                     com.chris.m3usuite.playback.PlayRequest(
                         type = item.type.ifBlank { "vod" },
@@ -201,6 +207,22 @@ fun StartScreen(
                         title = item.name
                     )
                 )
+            }
+        }
+    }
+    val openTelegramDetail: (MediaItem) -> Unit = remember(navController, openVod, openSeries) {
+        { item ->
+            val normalizedType = item.type.lowercase(Locale.getDefault())
+            when (normalizedType) {
+                "series" -> openSeries(item.id)
+                "vod" -> openVod(item.id)
+                else -> {
+                    val chat = item.tgChatId
+                    val message = item.tgMessageId
+                    if (chat != null && message != null) {
+                        navController.navigate("telegram/$chat/$message")
+                    }
+                }
             }
         }
     }
@@ -267,8 +289,8 @@ fun StartScreen(
                 }
                 scope.launch { store.setLibraryTabIndex(idx) }
                 val current = navController.currentBackStackEntry?.destination?.route
-                if (current != "library?q={q}&qs={qs}") {
-                    navController.navigateTopLevel("library?q=&qs=")
+                if (current != "browse") {
+                    navController.navigateTopLevel("browse")
                 }
             }
         ),
@@ -511,9 +533,14 @@ fun StartScreen(
 
                 if (tgEnabled) {
                     item("start_vod_search_telegram") {
-                        var tgResults by remember(debouncedQuery) { mutableStateOf<List<MediaItem>>(emptyList()) }
-                        LaunchedEffect(debouncedQuery) {
-                            tgResults = withContext(Dispatchers.IO) { telegramRepo.searchAllChats(debouncedQuery, limit = 60) }
+                        var tgResults by remember(debouncedQuery, tgEnabled) { mutableStateOf<List<MediaItem>>(emptyList()) }
+                        LaunchedEffect(debouncedQuery, tgEnabled) {
+                            tgResults = if (tgEnabled && debouncedQuery.isNotBlank()) {
+                                runCatching { telegramLiveRepo.searchAllVideos(debouncedQuery, limit = 60) }
+                                    .getOrDefault(emptyList())
+                            } else {
+                                emptyList()
+                            }
                         }
                         if (tgResults.isNotEmpty()) {
                             FishRow(
@@ -528,7 +555,7 @@ fun StartScreen(
                                     color = MaterialTheme.colorScheme.onBackground
                                 )
                             ) { media ->
-                                TelegramFishTile(media = media, onPlay = playTelegram)
+                                TelegramFishTile(media = media, onOpenDetails = openTelegramDetail, onPlay = playTelegram)
                             }
                         }
                     }
@@ -727,14 +754,13 @@ fun StartScreen(
                     }
                 }
                 items(telegramSelectedChats, key = { "start_vod_tg_$it" }) { chatId ->
-                    StartTelegramSection(
+                    StartTelegramRow(
                         chatId = chatId,
                         stateKey = "start:tg:vod:$chatId",
-                        service = telegramService,
                         enabled = tgEnabled,
-                        selectionCsv = tgSelectedCsv,
-                        playTelegram = playTelegram,
-                        loader = { telegramRepo.recentVodByChat(chatId, 60, 0) }
+                        repository = telegramLiveRepo,
+                        onOpenDetails = openTelegramDetail,
+                        onPlay = playTelegram
                     )
                 }
             }
@@ -761,7 +787,7 @@ fun StartScreen(
                 }
                 item("start_live_content") {
                     when {
-                        canEditFavorites -> {
+                        canEditFavorites && favoritesAvailable -> {
                             ReorderableLiveRow(
                                 items = favLive,
                                 onOpen = { openLive(it) },
@@ -794,6 +820,56 @@ fun StartScreen(
                                     color = MaterialTheme.colorScheme.onBackground
                                 )
                             )
+                        }
+                        canEditFavorites -> {
+                            FishRow(
+                                items = defaultLiveItems,
+                                stateKey = "start_live_default_edit",
+                                edgeLeftExpandChrome = true,
+                                initialFocusEligible = false,
+                                leading = {
+                                    LiveAddTile(
+                                        requestInitialFocus = defaultLiveItems.isEmpty(),
+                                        onClick = { showLivePicker = true }
+                                    )
+                                },
+                                onPrefetchKeys = { keys ->
+                                    val base = 1_000_000_000_000L
+                                    val sids = keys
+                                        .filter { it >= base && it < 2_000_000_000_000L }
+                                        .map { (it - base).toInt() }
+                                    if (sids.isNotEmpty()) {
+                                        obxRepo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
+                                    }
+                                },
+                                header = FishHeaderData.Text(
+                                    anchorKey = "start_live",
+                                    text = "LiveTV",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                            ) { media ->
+                                val onLivePlayDirect: (MediaItem) -> Unit = { item ->
+                                    scope.launch {
+                                        val req = PlayUrlHelper.forLive(ctx, store, item) ?: return@launch
+                                        playbackLauncher.launch(
+                                            com.chris.m3usuite.playback.PlayRequest(
+                                                type = "live",
+                                                mediaId = item.id,
+                                                url = req.url,
+                                                headers = req.headers,
+                                                mimeType = req.mimeType,
+                                                title = item.name
+                                            )
+                                        )
+                                    }
+                                }
+                                LiveFishTile(
+                                    media = media,
+                                    onOpenDetails = { item -> openLive(item.id) },
+                                    onPlayDirect = onLivePlayDirect
+                                )
+                            }
                         }
                         favoritesAvailable -> {
                             FishRow(
@@ -1124,46 +1200,52 @@ fun ChannelPickTile(
 }
 
 @Composable
-private fun StartTelegramSection(
+private fun StartTelegramRow(
     chatId: Long,
     stateKey: String,
-    service: TelegramServiceClient,
     enabled: Boolean,
-    selectionCsv: String,
-    playTelegram: (MediaItem) -> Unit,
-    loader: suspend () -> List<MediaItem>
+    repository: TelegramLiveRepository,
+    onOpenDetails: (MediaItem) -> Unit,
+    onPlay: (MediaItem) -> Unit
 ) {
-    var items by remember(chatId, selectionCsv, enabled) { mutableStateOf(emptyList<MediaItem>()) }
-    LaunchedEffect(chatId, enabled, selectionCsv) {
-        items = if (enabled) {
-            withContext(Dispatchers.IO) { loader() }
-        } else {
-            emptyList()
-        }
-    }
-    if (items.isEmpty()) return
+    if (!enabled) return
+    val pager = remember(chatId) { repository.pagerForChat(chatId) }
+    val pagingItems = pager.flow.collectAsLazyPagingItems()
+    val refreshState = pagingItems.loadState.refresh
+    val isRefreshing = refreshState is androidx.paging.LoadState.Loading
+    if (!isRefreshing && pagingItems.itemCount == 0) return
 
     var chatTitle by remember(chatId) { mutableStateOf("Telegram $chatId") }
-    LaunchedEffect(chatId, enabled, selectionCsv) {
+    LaunchedEffect(chatId, enabled) {
         if (enabled) {
-            val resolved = runCatching { service.resolveChatTitles(longArrayOf(chatId)) }.getOrNull()
-            resolved?.firstOrNull()?.second?.let { chatTitle = it }
+            repository.chatTitle(chatId)?.let { chatTitle = it }
         }
     }
 
-    FishRow(
-        items = items,
+    val ctx = LocalContext.current
+    val imageHeaders = rememberImageHeaders()
+    val telegramPrefetcher: OnPrefetchPaged = remember(ctx, imageHeaders) {
+        { indices, items ->
+            val posters = indices.mapNotNull { idx -> items[idx]?.primaryTelegramPoster() }
+            if (posters.isNotEmpty()) {
+                AppImageLoader.preload(ctx, posters, imageHeaders)
+            }
+        }
+    }
+
+    FishRowPaged(
+        items = pagingItems,
         stateKey = stateKey,
         edgeLeftExpandChrome = true,
-        initialFocusEligible = false,
+        onPrefetchPaged = telegramPrefetcher,
         header = FishHeaderData.Text(
             anchorKey = stateKey,
             text = "Telegram – $chatTitle",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
-    ) { media ->
-        TelegramFishTile(media = media, onPlay = playTelegram)
+    ) { _, media ->
+        TelegramFishTile(media = media, onOpenDetails = onOpenDetails, onPlay = onPlay)
     }
 }
 
