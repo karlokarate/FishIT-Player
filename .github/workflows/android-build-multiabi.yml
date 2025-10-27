@@ -68,10 +68,7 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           accept-android-sdk-licenses: true
-          packages: |
-            platforms;android-36
-            build-tools;36.0.0
-            ndk;26.3.11579264
+          packages: platform-tools, platforms;android-36, build-tools;36.0.0, ndk;26.3.11579264
 
       - name: Export ANDROID_NDK_HOME/ROOT
         run: |
