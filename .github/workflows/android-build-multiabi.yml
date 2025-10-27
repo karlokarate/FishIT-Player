@@ -27,6 +27,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-fishitplayer-${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build-multiabi:
     runs-on: ubuntu-latest
@@ -46,26 +54,41 @@ jobs:
           lfs: true
           submodules: recursive
 
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v3
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      # compileSdk/targetSdk = 36 ⇒ API 36 + Build-Tools 36
+      # SDK/NDK – ohne CMake (das installieren wir separat)
       - name: Set up Android SDK/NDK
         uses: android-actions/setup-android@v3
         with:
           api-level: 36
           build-tools: 36.0.0
           ndk-version: 26.3.11579264
-          cmake-version: 3.22.1
 
       - name: Export ANDROID_NDK_HOME/ROOT
         run: |
           NDK_DIR="$ANDROID_SDK_ROOT/ndk/26.3.11579264"
           echo "ANDROID_NDK_HOME=$NDK_DIR"  >> $GITHUB_ENV
           echo "ANDROID_NDK_ROOT=$NDK_DIR"  >> $GITHUB_ENV
+
+      - name: Setup CMake 4.1
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '4.1.x'
+
+      - name: Show tool versions
+        run: |
+          echo "PATH=$PATH"
+          type -a cmake || true
+          cmake --version
+          python3 --version
+          java -version
 
       - name: Gradle Cache
         uses: gradle/actions/setup-gradle@v3
@@ -75,10 +98,11 @@ jobs:
 
       # === Secrets → Env (Signing + TG + HEADER) ===
       - name: Decode & Setup Signing + App Secrets
-        shell: bash
+        env:
+          KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
         run: |
           python3 - <<'PY'
-          import os, re, base64, binascii, pathlib
+          import os, re, base64, pathlib
           raw = os.environ.get("KS_B64","")
 
           def norm(s):
@@ -91,15 +115,13 @@ jobs:
               return "".join(s.split())
 
           def try_decode(c):
-              try:
-                  pad = '=' * (-len(c) % 4)
-                  return base64.b64decode(c+pad)
-              except Exception:
+              for fn in (base64.b64decode, base64.urlsafe_b64decode):
                   try:
                       pad = '=' * (-len(c) % 4)
-                      return base64.urlsafe_b64decode(c+pad)
+                      return fn(c+pad)
                   except Exception:
-                      return None
+                      pass
+              return None
 
           cand = norm(raw)
           d = try_decode(cand)
@@ -115,10 +137,12 @@ jobs:
           PY
 
           if [[ -f "release.keystore" ]]; then
-            echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore" >> $GITHUB_ENV
-            echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-            echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}" >> $GITHUB_ENV
-            echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}" >> $GITHUB_ENV
+            {
+              echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore"
+              echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}"
+              echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}"
+              echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}"
+            } >> $GITHUB_ENV
             echo "Keystore: OK (signierte Releases möglich)"
           else
             echo "::warning::Keystore-Secret ungültig/leer – fallback auf UNSIGNIERTEN Build."
@@ -127,8 +151,6 @@ jobs:
           [[ -n "${{ secrets.TG_API_ID }}"   ]] && echo "TG_API_ID=${{ secrets.TG_API_ID }}"     >> $GITHUB_ENV
           [[ -n "${{ secrets.TG_API_HASH }}" ]] && echo "TG_API_HASH=${{ secrets.TG_API_HASH }}" >> $GITHUB_ENV
           [[ -n "${{ secrets.HEADER }}"     ]] && echo "HEADER=${{ secrets.HEADER }}"           >> $GITHUB_ENV
-        env:
-          KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
 
       # ---- TDLib-Cache (JNI + Java-Bindings + Meta) ----
       - name: Restore TDLib cache
@@ -143,20 +165,20 @@ jobs:
             libtd/.tdlib_meta
             libtd/TDLIB_VERSION.txt
           key: >
-            tdlib-${{ runner.os }}-ndk26.3.11579264-abi-arm64-v8a-armeabi-v7a-bindings-meta-v2-
+            tdlib-${{ runner.os }}-ndk26.3.11579264-cmake4.1-abi-arm64-v8a-armeabi-v7a-v3-
+            tag-${{ secrets.TD_TAG || 'none' }}-
             ${{ hashFiles('scripts/build_tdlib_android.sh','scripts/**.patch') }}
           restore-keys: |
-            tdlib-${{ runner.os }}-ndk26.3.11579264-abi-arm64-v8a-armeabi-v7a-
+            tdlib-${{ runner.os }}-ndk26.3.11579264-cmake4.1-abi-arm64-v8a-armeabi-v7a-
+            tdlib-${{ runner.os }}-ndk26.3.11579264-
 
       # ---- Entscheiden, ob wir bauen müssen (Eingabe, Vollständigkeit, Meta) ----
       - name: Decide TDLib build
         id: tdlib-need
-        shell: bash
         run: |
           set -euo pipefail
           REBUILD="${{ github.event.inputs.rebuild_tdlib || 'false' }}"
           need="$REBUILD"
-          # Dateien vorhanden?
           for f in \
             libtd/src/main/jniLibs/arm64-v8a/libtdjni.so \
             libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so \
@@ -165,12 +187,8 @@ jobs:
             libtd/.tdlib_meta \
             libtd/TDLIB_VERSION.txt
           do
-            if [[ ! -f "$f" ]]; then
-              echo "missing: $f"
-              need="true"
-            fi
+            [[ -f "$f" ]] || { echo "missing: $f"; need="true"; }
           done
-
           echo "need_build=$need" >> "$GITHUB_OUTPUT"
           echo "TDLIB_NEED_BUILD=$need"
 
@@ -181,7 +199,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends \
             build-essential ninja-build gperf ccache pkg-config \
-            zlib1g-dev libssl-dev python3 git ca-certificates ripgrep
+            zlib1g-dev libssl-dev python3 git ca-certificates ripgrep binutils
 
       # ---- TDLib bauen (arm64+v7a) inkl. Java-Bindings ----
       - name: Build TDLib (arm64 + v7a) and Java bindings
@@ -189,14 +207,14 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x scripts/build_tdlib_android.sh
-          # optional: Tag/Commit per Secret vorgeben, sonst Default im Script (z.B. v1.8.56)
+          export CMAKE_BIN="$(command -v cmake)"
+          echo "Using CMake at: $CMAKE_BIN"
+          cmake --version
           if [[ -n "${{ secrets.TD_TAG }}" ]]; then
             bash scripts/build_tdlib_android.sh --ref "${{ secrets.TD_TAG }}"
           else
             bash scripts/build_tdlib_android.sh
           fi
-
-          # Meta aus TDLIB_VERSION.txt + SHAs in .tdlib_meta spiegeln (für bestehenden Flow)
           META_TXT="libtd/TDLIB_VERSION.txt"
           [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
           td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
@@ -210,13 +228,12 @@ jobs:
             echo "SHA_V7A=${SHA_V7A}"
             echo "NDK=${ANDROID_NDK_HOME}"
             echo "BUILT_AT=$(sed -n 's/^built_utc=//p' "$META_TXT")"
+            echo "CMAKE=$(cmake --version | head -1)"
           } > libtd/.tdlib_meta
 
-      # ---- Meta validieren im Cache-Pfad; ggf. erzwungenen Neubau starten ----
       - name: Validate TDLib meta (no-rebuild path)
         id: tdlib-validate
         if: steps.tdlib-need.outputs.need_build == 'false'
-        shell: bash
         run: |
           set -euo pipefail
           force_build=false
@@ -231,12 +248,8 @@ jobs:
             [[ -n "${COMMIT:-}" ]] || { echo "::warning::COMMIT leer"; force_build=true; }
             A="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
             B="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so | awk '{print $1}')"
-            if [[ -n "${SHA_ARM64:-}" && "$A" != "$SHA_ARM64" ]]; then
-              echo "::warning::ARM64 SHA mismatch (cache vs meta)"; force_build=true;
-            fi
-            if [[ -n "${SHA_V7A:-}" && "$B" != "$SHA_V7A" ]]; then
-              echo "::warning::V7A   SHA mismatch (cache vs meta)"; force_build=true;
-            fi
+            [[ -n "${SHA_ARM64:-}" && "$A" == "$SHA_ARM64" ]] || { echo "::warning::ARM64 SHA mismatch"; force_build=true; }
+            [[ -n "${SHA_V7A:-}" && "$B" == "$SHA_V7A" ]]     || { echo "::warning::V7A   SHA mismatch"; force_build=true; }
           fi
           echo "force_build=$force_build" >> "$GITHUB_OUTPUT"
 
@@ -247,8 +260,9 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends \
             build-essential ninja-build gperf ccache pkg-config \
-            zlib1g-dev libssl-dev python3 git ca-certificates ripgrep
+            zlib1g-dev libssl-dev python3 git ca-certificates ripgrep binutils
           chmod +x scripts/build_tdlib_android.sh
+          export CMAKE_BIN="$(command -v cmake)"
           if [[ -n "${{ secrets.TD_TAG }}" ]]; then
             bash scripts/build_tdlib_android.sh --ref "${{ secrets.TD_TAG }}"
           else
@@ -267,9 +281,9 @@ jobs:
             echo "SHA_V7A=${SHA_V7A}"
             echo "NDK=${ANDROID_NDK_HOME}"
             echo "BUILT_AT=$(sed -n 's/^built_utc=//p' "$META_TXT")"
+            echo "CMAKE=$(cmake --version | head -1)"
           } > libtd/.tdlib_meta
 
-      # ---- Robuste Validierung statt fragiler Greps ----
       - name: Validate TDLib metadata (TDLIB_VERSION.txt)
         run: |
           set -euo pipefail
@@ -278,7 +292,6 @@ jobs:
           td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
           td_tag="$(sed -n 's/^tdlib_tag=//p' "$META_TXT")"
           echo "Built TDLib: commit=${td_commit:-<none>} tag=${td_tag:-<none>}"
-          # Optional: erwartete Ref/Commit aus Secret vergleichen
           if [[ -n "${{ secrets.TD_TAG }}" ]]; then
             echo "Expected:    ${{ secrets.TD_TAG }}"
             if [[ "${{ secrets.TD_TAG }}" =~ ^v && -n "$td_tag" ]]; then
@@ -287,11 +300,6 @@ jobs:
               [[ -n "$td_commit" && "$td_commit" == "${{ secrets.TD_TAG }}"* ]] || { echo "::error::Commit mismatch"; exit 3; }
             fi
           fi
-
-      - name: Install nm/strings (for symbol check)
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends binutils
 
       - name: Validate injected symbol in libtdjni.so (arm64 + v7a)
         run: |
@@ -317,15 +325,16 @@ jobs:
             check_so libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so
           fi
 
-      # ---- Gradle Build ----
       - name: Gradle Task bestimmen
         id: task
-        shell: bash
         run: |
           case "${{ github.event.inputs.build_type }}" in
             release) echo "task=:app:assembleRelease" ;;
             *)       echo "task=:app:assembleDebug" ;;
           esac >> "$GITHUB_OUTPUT"
+
+      - name: Aktivieren des Gradle Problem-Matchers
+        run: echo "::add-matcher::.github/gradle-problem-matcher.json"
 
       - name: Build (Split-APKs je ABI)
         run: |
@@ -356,7 +365,6 @@ jobs:
 
       - name: APKs finden (arm64 & v7a)
         id: apks
-        shell: bash
         run: |
           set -euo pipefail
           mapfile -t ARM64 < <(find app -type f -path "*/build/outputs/apk/*/*" -name "*arm64-v8a*.apk" -print | sort)
@@ -378,6 +386,9 @@ jobs:
             libtd/src/main/jniLibs/**/libtdjni.so
             libtd/src/main/java/org/drinkless/tdlib/TdApi.java
             libtd/src/main/java/org/drinkless/tdlib/Client.java
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 6
 
       - name: Upload APK (arm64)
         uses: actions/upload-artifact@v4
@@ -386,6 +397,9 @@ jobs:
           path: |
             ${{ runner.temp }}/apk_arm64.txt
             app/build/outputs/apk/**/**/*arm64-v8a*.apk
+          retention-days: 7
+          if-no-files-found: error
+          compression-level: 6
 
       - name: Upload APK (v7a)
         uses: actions/upload-artifact@v4
@@ -394,6 +408,9 @@ jobs:
           path: |
             ${{ runner.temp }}/apk_v7a.txt
             app/build/outputs/apk/**/**/*armeabi-v7a*.apk
+          retention-days: 7
+          if-no-files-found: error
+          compression-level: 6
 
       - name: Build Kontext
         run: |
