@@ -3,6 +3,8 @@
 
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-11-16: Telegram Start/FishRow prefetcher guards prevent
+  disposal races so leaving Settings or switching tabs stops crashing Start.
 - Maintenance 2025-11-13: Telegram-Settings zeigen wieder Proxy- und
   Auto-Download-Karten; `KeyboardOptions` kommt aus `foundation.text`, damit
   Release-Builds mit Kotlin 2.0 erneut durchlaufen.
