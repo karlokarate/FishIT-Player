@@ -10,10 +10,6 @@ set -euo pipefail
 #   libtd/src/main/jniLibs/{arm64-v8a,armeabi-v7a}/libtdjni.so
 #   libtd/src/main/java/org/drinkless/tdlib/{TdApi.java,Client.java}
 #   libtd/TDLIB_VERSION.txt  (tdlib_commit, tdlib_tag_exact, tdlib_tag_nearest, source_branch, built_utc)
-#
-# Usage:
-#   scripts/build_tdlib_android.sh [--only-arm64|--only-v7a|--skip-v7a]
-#                                  [--ref <tag|commit>] [--latest-tag] [--main=<branch>]
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 OUT_DIR64="$REPO_DIR/libtd/src/main/jniLibs/arm64-v8a"
@@ -147,13 +143,10 @@ cmake_minimum_required(VERSION 3.10)
 project(tdjni_wrap LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 if (NOT DEFINED TD_DIR)
   message(FATAL_ERROR "TD_DIR must be provided via -DTD_DIR=... pointing to TDLib source directory")
 endif()
-
 add_subdirectory(${TD_DIR} td)
-
 add_library(tdjni SHARED
   "${TD_DIR}/example/java/td_jni.cpp"
   "tdlib_version_stub.cpp"
@@ -254,7 +247,7 @@ fi
 
 # ===== armeabi-v7a =====
 if (( BUILD_V7A == 1 )); then
-  echo "\n=== Building TDLib for armeabi-v7a (size-optimized) ==="
+  echo -e "\n=== Building TDLib for armeabi-v7a (size-optimized) ==="
   BORING_BUILD_DIR_32="$BORING_DIR/build-android-armv7"
   build_boringssl "armeabi-v7a" "$BORING_BUILD_DIR_32"
   SSL_A_32="$BORING_BUILD_DIR_32/ssl/libssl.a"; [[ -f "$SSL_A_32" ]] || SSL_A_32="$BORING_BUILD_DIR_32/libssl.a"
@@ -302,35 +295,4 @@ if (( BUILD_V7A == 1 )); then
 
   mkdir -p "$OUT_DIR32"
   cp -f "$LIB32_PATH" "$OUT_DIR32/"
-  echo "OK: Copied $(basename "$LIB32_PATH") -> $OUT_DIR32"
-
-  STRIP_BIN="$(find_strip)"
-  if [[ -n "$STRIP_BIN" ]]; then
-    echo "Stripping unneeded symbols (v7a)…"
-    "$STRIP_BIN" --strip-unneeded -x "$OUT_DIR32/libtdjni.so" || true
-  fi
-fi
-
-# ===== Sync Java bindings =====
-echo "Copying Java bindings (TdApi.java, Client.java) from TDLib example/java…"
-SRC_JAVA_DIR="$TD_DIR/example/java/org/drinkless/tdlib"
-if [[ -f "$SRC_JAVA_DIR/TdApi.java" && -f "$SRC_JAVA_DIR/Client.java" ]]; then
-  mkdir -p "$JAVA_OUT_DIR"
-  cp -f "$SRC_JAVA_DIR/TdApi.java" "$JAVA_OUT_DIR/"
-  cp -f "$SRC_JAVA_DIR/Client.java" "$JAVA_OUT_DIR/"
-  echo "OK: Java bindings synchronized."
-else
-  echo "WARNING: TDLib example/java sources not found; skipping Java binding copy" >&2
-fi
-
-# ===== Write metadata =====
-mkdir -p "$(dirname "$META_FILE")"
-{
-  echo "tdlib_commit=$TD_COMMIT_HASH"
-  [[ -n "$TD_TAG_EXACT" ]]   && echo "tdlib_tag_exact=$TD_TAG_EXACT" || true
-  [[ -n "$TD_TAG_NEAREST" ]] && echo "tdlib_tag_nearest=$TD_TAG_NEAREST" || true
-  echo "source_branch=${SOURCE_BRANCH:-}"
-  echo "built_utc=$BUILD_TIME"
-} > "$META_FILE"
-echo "Wrote metadata: $META_FILE"
-echo "Done."
+  echo "OK: Cop
