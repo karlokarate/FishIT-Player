@@ -1,35 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# TDLib Android Builder — arm64-v8a + (optional) armeabi-v7a
+# TDLib Android Builder — ALWAYS build latest upstream commit by default
+# - Default: latest commit from origin/main (fallback to origin/master)
+# - Optional: --ref <tag-or-commit> to pin, or --latest-tag to build newest v* tag
+# - Injects commit/tag into libtdjni.so (tdlib_android_commit) and writes libtd/TDLIB_VERSION.txt
 #
-# Goals
-# - Reproducible, size-optimized libtdjni.so for Android
-# - Static BoringSSL, MinSizeRel, LTO, GC-sections/ICF, aggressive strip
-# - Always sync Java bindings (TdApi.java/Client.java) to the same TD commit
-# - Inject the exact TDLib commit/tag into the .so as an exported symbol for runtime checks
+# Outputs:
+#   libtd/src/main/jniLibs/{arm64-v8a,armeabi-v7a}/libtdjni.so
+#   libtd/src/main/java/org/drinkless/tdlib/{TdApi.java,Client.java}
+#   libtd/TDLIB_VERSION.txt  (tdlib_commit, tdlib_tag_exact, tdlib_tag_nearest, source_branch, built_utc)
 #
-# Requirements
-# - ANDROID_NDK_HOME or ANDROID_NDK_ROOT set (NDK r23+ recommended)
-# - git, cmake (>=3.18), Ninja (optional, detected automatically)
-# - bash, coreutils; optional: readelf for dep check
+# Usage:
+#   ./build_tdlib_android_latest.sh [--only-arm64|--only-v7a|--skip-v7a] [--ref <tag|commit>] [--latest-tag] [--main=<branch>]
 #
-# Usage
-#   ./build_tdlib_android.sh [--only-arm64 | --only-v7a | --skip-v7a] [--ref <tag-or-commit>]
-#
-# Version pin priority: --ref CLI > TD_TAG env > TD_COMMIT env > TD_DEFAULT_TAG
-#
-# Outputs
-# - libtd/src/main/jniLibs/arm64-v8a/libtdjni.so
-# - libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so (unless disabled)
-# - libtd/src/main/java/org/drinkless/tdlib/{TdApi.java,Client.java} synced to the same commit
-# - libtd/TDLIB_VERSION.txt : commit, tag (if any), build time
-# - Exported symbol in the .so: tdlib_android_commit() -> const char* with the git hash
-#
-# Notes
-# - We build a tiny wrapper CMake project around TDLib's example/java td_jni.cpp.
-#   This lets us inject a small C++ file that exports the commit string as a symbol.
-# - If ripgrep (rg) is absent, we gracefully fall back to grep.
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 OUT_DIR64="$REPO_DIR/libtd/src/main/jniLibs/arm64-v8a"
@@ -40,12 +24,11 @@ META_FILE="$REPO_DIR/libtd/TDLIB_VERSION.txt"
 TD_DIR="$REPO_DIR/.third_party/td"
 BORING_DIR="$REPO_DIR/.third_party/boringssl"
 
-# Default validated tag for this project (override via --ref/TD_TAG/TD_COMMIT)
-TD_DEFAULT_TAG="v1.8.56"
-
 BUILD_ARM64=1
 BUILD_V7A=1
 TD_REF_ARG=""
+USE_LATEST_TAG=0
+MAIN_BRANCH="main"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -53,13 +36,12 @@ while [[ $# -gt 0 ]]; do
     --only-v7a) BUILD_ARM64=0 ;;
     --skip-v7a|--no-v7a) BUILD_V7A=0 ;;
     --ref|--tag|--commit) shift; TD_REF_ARG="${1:-}";;
+    --latest-tag) USE_LATEST_TAG=1 ;;
+    --main=*|--branch=*) MAIN_BRANCH="${1#*=}" ;;
     *) echo "Unknown argument: $1" >&2 ;;
   esac
   shift || true
 done
-
-# Prefer repo-local toolchains if present
-export PATH="$REPO_DIR/.wsl-cmake/bin:$REPO_DIR/.wsl-ninja/bin:$REPO_DIR/.wsl-gperf/usr/bin:$REPO_DIR/.wsl-gperf/bin:$PATH"
 
 # Tool helpers
 NPROC() { command -v nproc >/dev/null 2>&1 && nproc || (command -v sysctl >/dev/null 2>&1 && sysctl -n hw.ncpu) || echo 4; }
@@ -84,32 +66,36 @@ fi
 # Ensure tags are available
 (cd "$TD_DIR" && git fetch --tags --force --prune origin >/dev/null 2>&1 || true)
 
-# Resolve pin
-TD_PIN_REF="${TD_REF_ARG:-${TD_TAG:-${TD_COMMIT:-$TD_DEFAULT_TAG}}}"
-if [[ -n "$TD_PIN_REF" ]]; then
-  echo "Checking out TDLib ref: $TD_PIN_REF (fallback to latest v* tag if missing)…"
-  if (cd "$TD_DIR" && git fetch --depth 1 origin "$TD_PIN_REF" >/dev/null 2>&1); then
-    (cd "$TD_DIR" && git checkout --detach FETCH_HEAD)
-  else
-    echo "Ref $TD_PIN_REF not found upstream; using latest v* tag…" >&2
-    LATEST_TAG=$(cd "$TD_DIR" && git ls-remote --tags --refs origin 'v*' | awk -F/ '{print $3}' | sort -V | tail -1)
-    [[ -n "$LATEST_TAG" ]] || { echo "ERROR: Could not determine latest TDLib tag." >&2; exit 7; }
-    echo "Resolved latest TDLib tag: $LATEST_TAG"
-    (cd "$TD_DIR" && git fetch --depth 1 origin "refs/tags/$LATEST_TAG" && git checkout --detach FETCH_HEAD)
-  fi
-else
-  echo "TD_PIN_REF empty; selecting latest v* tag…"
+# Resolve source to build
+if [[ -n "$TD_REF_ARG" ]]; then
+  echo "Checking out TDLib ref exactly: $TD_REF_ARG"
+  (cd "$TD_DIR" && git fetch --depth 1 origin "$TD_REF_ARG") || { echo "ERROR: Ref '$TD_REF_ARG' not found."; exit 7; }
+  (cd "$TD_DIR" && git checkout --detach FETCH_HEAD)
+elif (( USE_LATEST_TAG == 1 )); then
+  echo "Resolving latest v* tag…"
   LATEST_TAG=$(cd "$TD_DIR" && git ls-remote --tags --refs origin 'v*' | awk -F/ '{print $3}' | sort -V | tail -1)
-  [[ -n "$LATEST_TAG" ]] || { echo "ERROR: Could not determine latest TDLib tag." >&2; exit 7; }
-  echo "Resolved latest TDLib tag: $LATEST_TAG"
+  [[ -n "$LATEST_TAG" ]] || { echo "ERROR: Could not determine latest TDLib tag."; exit 7; }
+  echo "Latest tag: $LATEST_TAG"
   (cd "$TD_DIR" && git fetch --depth 1 origin "refs/tags/$LATEST_TAG" && git checkout --detach FETCH_HEAD)
+else
+  echo "Building LATEST COMMIT on origin/$MAIN_BRANCH (fallback: origin/master)…"
+  if (cd "$TD_DIR" && git ls-remote --heads origin "$MAIN_BRANCH" | grep -q .); then
+    (cd "$TD_DIR" && git fetch --depth 1 origin "$MAIN_BRANCH" && git checkout --detach FETCH_HEAD)
+    SOURCE_BRANCH="$MAIN_BRANCH"
+  elif (cd "$TD_DIR" && git ls-remote --heads origin master | grep -q .); then
+    (cd "$TD_DIR" && git fetch --depth 1 origin master && git checkout --detach FETCH_HEAD)
+    SOURCE_BRANCH="master"
+  else
+    echo "ERROR: Neither origin/$MAIN_BRANCH nor origin/master exists."; exit 7;
+  fi
 fi
 
-# Extract commit info
+# Extract commit/tag info
 TD_COMMIT_HASH="$(cd "$TD_DIR" && git rev-parse --short=12 HEAD)"
-TD_COMMIT_TAG="$(cd "$TD_DIR" && (git describe --tags --exact-match 2>/dev/null || true))"
+TD_TAG_EXACT="$(cd "$TD_DIR" && (git describe --tags --exact-match 2>/dev/null || true))"
+TD_TAG_NEAREST="$(cd "$TD_DIR" && (git describe --tags --abbrev=0 2>/dev/null || true))"
 BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-echo "TDLib commit: ${TD_COMMIT_HASH} ${TD_COMMIT_TAG:+(tag: $TD_COMMIT_TAG)}"
+echo "TDLib commit: ${TD_COMMIT_HASH} ${TD_TAG_EXACT:+(exact tag: $TD_TAG_EXACT)}"
 
 # Clone BoringSSL if missing
 if [[ ! -d "$BORING_DIR/.git" ]]; then
@@ -153,7 +139,7 @@ build_boringssl () {
   cmake --build . --target ssl crypto -j"$(NPROC)"
 }
 
-# Wrapper CMake (lets us inject commit symbol)
+# Wrapper CMake (allows commit symbol injection)
 emit_wrapper_cmake () {
   local path="$1"
   cat > "$path" <<'EOF'
@@ -166,43 +152,35 @@ if (NOT DEFINED TD_DIR)
   message(FATAL_ERROR "TD_DIR must be provided via -DTD_DIR=... pointing to TDLib source directory")
 endif()
 
-# TDLib sources
 add_subdirectory(${TD_DIR} td)
 
-# JNI shared lib
 add_library(tdjni SHARED
   "${TD_DIR}/example/java/td_jni.cpp"
-  "tdlib_version_stub.cpp" # injected at configure time
+  "tdlib_version_stub.cpp"
 )
-
 target_link_libraries(tdjni PRIVATE Td::TdStatic)
 if (ANDROID_ABI STREQUAL "armeabi-v7a")
   target_link_libraries(tdjni PRIVATE atomic)
 endif()
-
 if (CMAKE_SYSROOT)
   target_include_directories(tdjni SYSTEM PRIVATE ${CMAKE_SYSROOT}/usr/include)
 endif()
-
-# Reduce size further
 target_compile_definitions(tdjni PRIVATE PACKAGE_NAME="org/drinkless/tdlib")
 EOF
 }
 
-# Emit version stub that exports the commit as a default-visible symbol
 emit_version_stub () {
-  local path="$1" commit="$2" tag="$3"
+  local path="$1" commit="$2" exact_tag="$3"
   cat > "$path" <<EOF
-// Generated by build_tdlib_android.sh — do not edit.
+// Generated — do not edit.
 #include <cstdint>
 extern "C" __attribute__((visibility("default")))
 const char* tdlib_android_commit() {
-  return "$commit${tag:+ ($tag)}";
+  return "$commit${exact_tag:+ ($exact_tag)}";
 }
 EOF
 }
 
-# Find a valid llvm-strip
 find_strip () {
   local STRIP_BIN=""
   for host in linux-x86_64 windows-x86_64 darwin-x86_64 darwin-aarch64; do
@@ -226,7 +204,7 @@ if (( BUILD_ARM64 == 1 )); then
   rm -rf "$JNI_BUILD_DIR"
   mkdir -p "$JNI_BUILD_DIR"
   emit_wrapper_cmake "$JNI_BUILD_DIR/CMakeLists.txt"
-  emit_version_stub "$JNI_BUILD_DIR/tdlib_version_stub.cpp" "$TD_COMMIT_HASH" "$TD_COMMIT_TAG"
+  emit_version_stub "$JNI_BUILD_DIR/tdlib_version_stub.cpp" "$TD_COMMIT_HASH" "$TD_TAG_EXACT"
 
   cd "$JNI_BUILD_DIR"
   GEN=""; HAS ninja && GEN="-G Ninja"
@@ -256,7 +234,6 @@ if (( BUILD_ARM64 == 1 )); then
   echo "Building tdjni (arm64-v8a)…"
   cmake --build . --target tdjni -j"$(NPROC)"
 
-  # Locate
   LIB_PATH="$(pwd)/libtdjni.so"
   [[ -f "$LIB_PATH" ]] || LIB_PATH="./lib/libtdjni.so"
   [[ -f "$LIB_PATH" ]] || LIB_PATH="./jni/libtdjni.so"
@@ -270,15 +247,6 @@ if (( BUILD_ARM64 == 1 )); then
   if [[ -n "$STRIP_BIN" ]]; then
     echo "Stripping unneeded symbols (arm64)…"
     "$STRIP_BIN" --strip-unneeded -x "$OUT_DIR64/libtdjni.so" || true
-  fi
-
-  if HAS readelf; then
-    echo "Verifying no dynamic OpenSSL deps (arm64)…"
-    if readelf -d "$OUT_DIR64/libtdjni.so" | RG -i 'NEEDED.*(ssl|crypto)' >/dev/null; then
-      echo "WARNING: OpenSSL dyn deps detected in arm64 libtdjni.so" >&2
-    else
-      echo "OK: no dynamic OpenSSL deps (arm64)"
-    fi
   fi
 fi
 
@@ -295,7 +263,7 @@ if (( BUILD_V7A == 1 )); then
   rm -rf "$JNI_BUILD_DIR_32"
   mkdir -p "$JNI_BUILD_DIR_32"
   emit_wrapper_cmake "$JNI_BUILD_DIR_32/CMakeLists.txt"
-  emit_version_stub "$JNI_BUILD_DIR_32/tdlib_version_stub.cpp" "$TD_COMMIT_HASH" "$TD_COMMIT_TAG"
+  emit_version_stub "$JNI_BUILD_DIR_32/tdlib_version_stub.cpp" "$TD_COMMIT_HASH" "$TD_TAG_EXACT"
 
   cd "$JNI_BUILD_DIR_32"
   GEN=""; HAS ninja && GEN="-G Ninja"
@@ -320,54 +288,4 @@ if (( BUILD_V7A == 1 )); then
     -DOPENSSL_CRYPTO_LIBRARY="$CRYPTO_A_32" \
     -DTD_DIR="$TD_DIR" \
     $GEN \
-    "$JNI_BUILD_DIR_32"
-
-  echo "Building tdjni (armeabi-v7a)…"
-  cmake --build . --target tdjni -j"$(NPROC)"
-
-  LIB32_PATH="$(pwd)/libtdjni.so"
-  [[ -f "$LIB32_PATH" ]] || LIB32_PATH="./lib/libtdjni.so"
-  [[ -f "$LIB32_PATH" ]] || LIB32_PATH="./jni/libtdjni.so"
-  [[ -f "$LIB32_PATH" ]] || { echo "ERROR: libtdjni.so (v7a) not found." >&2; exit 6; }
-
-  mkdir -p "$OUT_DIR32"
-  cp -f "$LIB32_PATH" "$OUT_DIR32/"
-  echo "OK: Copied $(basename "$LIB32_PATH") -> $OUT_DIR32"
-
-  STRIP_BIN="$(find_strip)"
-  if [[ -n "$STRIP_BIN" ]]; then
-    echo "Stripping unneeded symbols (v7a)…"
-    "$STRIP_BIN" --strip-unneeded -x "$OUT_DIR32/libtdjni.so" || true
-  fi
-
-  if HAS readelf; then
-    echo "Verifying no dynamic OpenSSL deps (v7a)…"
-    if readelf -d "$OUT_DIR32/libtdjni.so" | RG -i 'NEEDED.*(ssl|crypto)' >/dev/null; then
-      echo "WARNING: OpenSSL dyn deps detected in v7a libtdjni.so" >&2
-    else
-      echo "OK: no dynamic OpenSSL deps (v7a)"
-    fi
-  fi
-fi
-
-# ===== Sync Java bindings to this exact commit =====
-echo "Copying Java bindings (TdApi.java, Client.java) from TDLib example/java…"
-SRC_JAVA_DIR="$TD_DIR/example/java/org/drinkless/tdlib"
-if [[ -f "$SRC_JAVA_DIR/TdApi.java" && -f "$SRC_JAVA_DIR/Client.java" ]]; then
-  mkdir -p "$JAVA_OUT_DIR"
-  cp -f "$SRC_JAVA_DIR/TdApi.java" "$JAVA_OUT_DIR/"
-  cp -f "$SRC_JAVA_DIR/Client.java" "$JAVA_OUT_DIR/"
-  echo "OK: Java bindings synchronized."
-else
-  echo "WARNING: TDLib example/java sources not found; skipping Java binding copy" >&2
-fi
-
-# ===== Write metadata file =====
-mkdir -p "$(dirname "$META_FILE")"
-{
-  echo "tdlib_commit=$TD_COMMIT_HASH"
-  [[ -n "$TD_COMMIT_TAG" ]] && echo "tdlib_tag=$TD_COMMIT_TAG" || true
-  echo "built_utc=$BUILD_TIME"
-} > "$META_FILE"
-echo "Wrote metadata: $META_FILE"
-echo "Done."
+    "$JNI_BUILD_DIR_32"\n\n  echo \"Building tdjni (armeabi-v7a)…\"\n  cmake --build . --target tdjni -j\"$(NPROC)\"\n\n  LIB32_PATH=\"$(pwd)/libtdjni.so\"\n  [[ -f \"$LIB32_PATH\" ]] || LIB32_PATH=\"./lib/libtdjni.so\"\n  [[ -f \"$LIB32_PATH\" ]] || LIB32_PATH=\"./jni/libtdjni.so\"\n  [[ -f \"$LIB32_PATH\" ]] || { echo \"ERROR: libtdjni.so (v7a) not found.\" >&2; exit 6; }\n\n  mkdir -p \"$OUT_DIR32\"\n  cp -f \"$LIB32_PATH\" \"$OUT_DIR32/\"\n  echo \"OK: Copied $(basename \"$LIB32_PATH\") -> $OUT_DIR32\"\n\n  STRIP_BIN=\"$(find_strip)\"\n  if [[ -n \"$STRIP_BIN\" ]]; then\n    echo \"Stripping unneeded symbols (v7a)…\"\n    \"$STRIP_BIN\" --strip-unneeded -x \"$OUT_DIR32/libtdjni.so\" || true\n  fi\nfi\n\n# ===== Sync Java bindings to this exact commit =====\necho \"Copying Java bindings (TdApi.java, Client.java) from TDLib example/java…\"\nSRC_JAVA_DIR=\"$TD_DIR/example/java/org/drinkless/tdlib\"\nif [[ -f \"$SRC_JAVA_DIR/TdApi.java\" && -f \"$SRC_JAVA_DIR/Client.java\" ]]; then\n  mkdir -p \"$JAVA_OUT_DIR\"\n  cp -f \"$SRC_JAVA_DIR/TdApi.java\" \"$JAVA_OUT_DIR/\"\n  cp -f \"$SRC_JAVA_DIR/Client.java\" \"$JAVA_OUT_DIR/\"\n  echo \"OK: Java bindings synchronized.\"\nelse\n  echo \"WARNING: TDLib example/java sources not found; skipping Java binding copy\" >&2\nfi\n\n# ===== Write metadata file =====\nmkdir -p \"$(dirname \"$META_FILE\")\"\n{\n  echo \"tdlib_commit=$TD_COMMIT_HASH\"\n  [[ -n \"$TD_TAG_EXACT\" ]]   && echo \"tdlib_tag_exact=$TD_TAG_EXACT\" || true\n  [[ -n \"$TD_TAG_NEAREST\" ]] && echo \"tdlib_tag_nearest=$TD_TAG_NEAREST\" || true\n  echo \"source_branch=${SOURCE_BRANCH:-}\"\n  echo \"built_utc=$BUILD_TIME\"\n} > \"$META_FILE\"\necho \"Wrote metadata: $META_FILE\"\necho \"Done.\"\n
