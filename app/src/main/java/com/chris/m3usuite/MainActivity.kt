@@ -38,12 +38,13 @@ import com.chris.m3usuite.ui.screens.SettingsScreen
 import com.chris.m3usuite.ui.screens.LiveDetailScreen
 import com.chris.m3usuite.ui.screens.PlaylistSetupScreen
 import com.chris.m3usuite.ui.screens.SeriesDetailScreen
-import com.chris.m3usuite.ui.detail.telegram.TelegramVideoDetailScreen
+import com.chris.m3usuite.ui.screens.TelegramVideoDetailScreen
 import com.chris.m3usuite.ui.screens.XtreamPortalCheckScreen
 import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.auth.ProfileGate
 import com.chris.m3usuite.ui.profile.ProfileManagerScreen
 import com.chris.m3usuite.ui.home.LocalMiniPlayerResume
+import com.chris.m3usuite.ui.home.MiniPlayerSnapshot
 import com.chris.m3usuite.ui.home.MiniPlayerState
 import com.chris.m3usuite.ui.home.buildRoute
 import com.chris.m3usuite.ui.theme.AppTheme
@@ -196,7 +197,7 @@ class MainActivity : ComponentActivity() {
                 // EPG periodic refresh removed; lazy on-demand prefetch keeps visible/favorites fresh
 
                 CompositionLocalProvider(
-                    LocalMiniPlayerResume provides { snapshot ->
+                    LocalMiniPlayerResume provides { snapshot: MiniPlayerSnapshot ->
                         val route = snapshot.descriptor.buildRoute(snapshot.positionMs)
                         MiniPlayerState.hide()
                         nav.navigate(route) { launchSingleTop = true }

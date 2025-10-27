@@ -1,7 +1,5 @@
 package com.chris.m3usuite.tg
 
-import com.chris.m3usuite.BuildConfig
-
 /**
  * Zentraler Gate-Helper für Telegram-OBX.
  * Aktuell: hart auf BuildConfig-Default (false) -> Mirror-Only.
@@ -14,7 +12,7 @@ object TgGate {
     fun set(value: Boolean) { cached = value }
 
     /** OBX/Indexing aktiviert? */
-    fun obxEnabled(): Boolean = cached ?: BuildConfig.TG_OBX_ENABLED_DEFAULT
+    fun obxEnabled(): Boolean = cached ?: false
 
     /** Mirror-Only (Reflect-Flow erzwingen) */
     fun mirrorOnly(): Boolean = !obxEnabled()

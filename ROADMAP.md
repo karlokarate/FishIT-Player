@@ -6,6 +6,9 @@ Hinweis
 - Maintenance 2025-11-13: Telegram-Settings zeigen wieder Proxy- und
   Auto-Download-Karten; `KeyboardOptions` kommt aus `foundation.text`, damit
   Release-Builds mit Kotlin 2.0 erneut durchlaufen.
+- Maintenance 2025-11-14: Telegram-Detailroute und Repo-Helfer sind wieder
+  funktionsfähig; der Media3-Player nutzt `setSeekParameters(...)` und der
+  TG-Gate fällt ohne BuildConfig-Konstante auf Mirror-Only zurück.
 - Maintenance 2025-11-12: MainActivity imports StartScreen/ProfileManagerScreen
   from their ui.home/ui.profile packages so release builds compile again.
 - Maintenance 2025-11-12: Telegram-Settings erhalten einen vollwertigen

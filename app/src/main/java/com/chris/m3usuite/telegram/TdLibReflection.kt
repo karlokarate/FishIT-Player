@@ -1494,29 +1494,29 @@ object TdLibReflection {
         return null
     }
 
+    private fun tryExtractFileId(holder: Any?): Int? {
+        if (holder == null) return null
+        if (PKGS.any { holder.javaClass.name == "$it.TdApi\$File" }) {
+            return runCatching { holder.javaClass.getDeclaredField("id").apply { isAccessible = true }.getInt(holder) }.getOrNull()
+        }
+        val fileField = runCatching { holder.javaClass.getDeclaredField("file").apply { isAccessible = true }.get(holder) }.getOrNull()
+        if (fileField != null) return tryExtractFileId(fileField)
+        return null
+    }
+
     /** Try to locate a thumbnail file id in a content object (e.g., video.thumbnail.file.id). */
     fun extractThumbFileId(contentObj: Any?): Int? {
         if (contentObj == null) return null
-        fun tryFileId(obj: Any?): Int? {
-            if (obj == null) return null
-            if (PKGS.any { obj.javaClass.name == "$it.TdApi\$File" }) {
-                return runCatching { obj.javaClass.getDeclaredField("id").apply { isAccessible = true }.getInt(obj) }.getOrNull()
-            }
-            // common holder: Thumbnail{ file=File }
-            val fileField = runCatching { obj.javaClass.getDeclaredField("file").apply { isAccessible = true }.get(obj) }.getOrNull()
-            if (fileField != null) return tryFileId(fileField)
-            return null
-        }
         // Direct thumbnail on content
         runCatching { contentObj.javaClass.getDeclaredField("thumbnail").apply { isAccessible = true }.get(contentObj) }
-            .onSuccess { tryFileId(it)?.let { id -> return id } }
+            .onSuccess { tryExtractFileId(it)?.let { id -> return id } }
         // Nested media containers
         val candidates = listOf("video", "document", "animation")
         for (name in candidates) {
             val media = runCatching { contentObj.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(contentObj) }.getOrNull()
             if (media != null) {
                 val thumb = runCatching { media.javaClass.getDeclaredField("thumbnail").apply { isAccessible = true }.get(media) }.getOrNull()
-                val id = tryFileId(thumb)
+                val id = tryExtractFileId(thumb)
                 if (id != null) return id
             }
         }
@@ -1533,7 +1533,7 @@ object TdLibReflection {
             val last = array.lastOrNull()
             if (last != null) {
                 val p = runCatching { last.javaClass.getDeclaredField("photo").apply { isAccessible = true }.get(last) }.getOrNull()
-                val id = tryFileId(p)
+                val id = tryExtractFileId(p)
                 if (id != null) return id
             }
         }
@@ -1541,10 +1541,34 @@ object TdLibReflection {
         contentObj.javaClass.declaredFields.forEach { f ->
             f.isAccessible = true
             val v = runCatching { f.get(contentObj) }.getOrNull()
-            val id = tryFileId(v)
+            val id = tryExtractFileId(v)
             if (id != null) return id
         }
         return null
+    }
+
+    fun extractBestPhotoSizeFileId(contentObj: Any?): Int? {
+        if (contentObj == null) return null
+        val photo = runCatching { contentObj.javaClass.getDeclaredField("photo").apply { isAccessible = true }.get(contentObj) }.getOrNull()
+            ?: return null
+        val sizesObj = runCatching { photo.javaClass.getDeclaredField("sizes").apply { isAccessible = true }.get(photo) }.getOrNull()
+        val sizes: List<Any> = when (sizesObj) {
+            is Array<*> -> sizesObj.filterNotNull().map { it as Any }
+            is Iterable<*> -> sizesObj.filterNotNull().map { it as Any }
+            else -> emptyList()
+        }
+        val best = sizes.maxByOrNull { size ->
+            val width = runCatching {
+                size.javaClass.getDeclaredField("width").apply { isAccessible = true }.getInt(size)
+            }.getOrDefault(0)
+            val height = runCatching {
+                size.javaClass.getDeclaredField("height").apply { isAccessible = true }.getInt(size)
+            }.getOrDefault(0)
+            (width.coerceAtLeast(0)) * (height.coerceAtLeast(0))
+        } ?: return null
+        tryExtractFileId(best)?.let { return it }
+        val holder = runCatching { best.javaClass.getDeclaredField("photo").apply { isAccessible = true }.get(best) }.getOrNull()
+        return tryExtractFileId(holder)
     }
 
     fun extractMiniThumbnailBytes(contentObj: Any?): ByteArray? {
