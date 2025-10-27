@@ -58,7 +58,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Telegram API credentials (secure lookup, non-committed):
-        // Precedence: ENV → .tg.secrets.properties (root, untracked) → project -P props → default
+        // Precedence: ENV → .tg.secrets.properties → -P → default
         val secretsFile = File(rootDir, ".tg.secrets.properties")
         val secrets = Properties().apply {
             if (secretsFile.exists()) secretsFile.inputStream().use { load(it) }
@@ -74,16 +74,26 @@ android {
         buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
         buildConfigField("String", "TG_API_HASH", "\"${tgApiHashValue}\"")
 
-        // Default HTTP User-Agent (secret-injected, non-committed):
-        // Precedence: ENV HEADER → /.ua.secrets.properties HEADER → -P HEADER → default empty
+        // Default HTTP User-Agent (secret-injected)
         val uaSecretsFile = File(rootDir, ".ua.secrets.properties")
-        val uaSecrets = Properties().apply { if (uaSecretsFile.exists()) uaSecretsFile.inputStream().use { load(it) } }
+        val uaSecrets = Properties().apply {
+            if (uaSecretsFile.exists()) uaSecretsFile.inputStream().use { load(it) }
+        }
         fun uaProp(name: String): String? =
             System.getenv(name)
                 ?: (uaSecrets.getProperty(name))
                 ?: (project.findProperty(name)?.toString())
         val defaultUa = uaProp("HEADER").orEmpty()
         buildConfigField("String", "DEFAULT_UA", "\"${defaultUa}\"")
+
+        // ================================================================
+        // 🧩 Mirror-Only / OBX-Schalter – steuerbar per -PTG_OBX_ENABLED_DEFAULT
+        // oder CI-Input 'mirror_only' (wird im Workflow gemappt)
+        // ================================================================
+        val obxDefault = project.findProperty("TG_OBX_ENABLED_DEFAULT")
+            ?.toString()?.toBooleanStrictOrNull() ?: true
+        buildConfigField("boolean", "TG_OBX_ENABLED_DEFAULT", obxDefault.toString())
+        // ================================================================
 
         // Feature switches
         val showHeaderUi = (project.findProperty("SHOW_HEADER_UI")?.toString()?.toBooleanStrictOrNull()) ?: false
@@ -114,17 +124,17 @@ android {
             ?: true
         buildConfigField("boolean", "PLAYBACK_LAUNCHER_V1", playbackLauncherV1.toString())
 
-        // >>> Versionsübergabe vom Workflow (optional)
+        // Versionsübergabe vom Workflow (optional)
         (project.findProperty("versionCode") as String?)?.toIntOrNull()?.let { versionCode = it }
         (project.findProperty("versionName") as String?)?.let { versionName = it }
 
-        // >>> ndk.abiFilters NUR wenn Splits deaktiviert sind (lokale Einzelfall-Builds)
+        // ndk.abiFilters nur wenn Splits deaktiviert sind
         if (!useSplits && abiFiltersProp.isNotEmpty()) {
             ndk {
                 abiFiltersProp.forEach { abiFilters += it }
             }
         }
-    } // <<<<<< fehlte vorher
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -136,9 +146,6 @@ android {
         }
     }
 
-    /**
-     * Signing-Config "release" aus MYAPP_* (nur wenn Keystore vorhanden)
-     */
     signingConfigs {
         create("release") {
             if (hasKeystore) {
@@ -162,7 +169,7 @@ android {
             if (hasKeystore) {
                 signingConfig = signingConfigs.getByName("release")
             } else {
-                println("⚠️  Release wird UNSIGNIERT gebaut (kein Keystore in MYAPP_* gefunden).")
+                println("⚠️  Release wird UNSIGNIERT gebaut (kein Keystore gefunden).")
             }
         }
         debug {
@@ -174,9 +181,7 @@ android {
         compose = true
         buildConfig = true
     }
-    // Compose compiler is managed by the Kotlin Compose Gradle plugin.
 
-    // >>> Split-APKs pro ABI (per Property steuerbar); standardmäßig zwei Splits, keine Universal-APK
     splits {
         abi {
             isEnable = useSplits
@@ -184,7 +189,7 @@ android {
             include(*(if (abiFiltersProp.isNotEmpty())
                 abiFiltersProp.toTypedArray()
             else
-                arrayOf("arm64-v8a","armeabi-v7a")))
+                arrayOf("arm64-v8a", "armeabi-v7a")))
             isUniversalApk = universalApkProp
         }
     }
@@ -194,16 +199,11 @@ android {
             "META-INF/AL2.0",
             "META-INF/LGPL2.1",
             "META-INF/DEPENDENCIES",
-            "META-INF/LICENSE",
-            "META-INF/LICENSE.txt",
-            "META-INF/LICENSE.md",
-            "META-INF/NOTICE",
-            "META-INF/NOTICE.txt",
-            "META-INF/NOTICE.md",
+            "META-INF/LICENSE*",
+            "META-INF/NOTICE*",
             "META-INF/*.kotlin_module",
             "META-INF/INDEX.LIST"
         )
-        // Exclude heavy reference artifacts from packaging (kept in repo for reference only)
         resources.excludes += setOf("**/com/chris/m3usuite/reference/**")
         jniLibs {
             useLegacyPackaging = false
@@ -211,7 +211,6 @@ android {
         }
     }
 
-    // Keep reference APK dump in repo but exclude it from compilation so it doesn't interfere
     sourceSets {
         getByName("main") {
             java.srcDirs("src/main/java")
@@ -223,15 +222,11 @@ android {
     }
 }
 
-// Exclude reference sources from Kotlin/Java compilation tasks to avoid receiver ambiguities in sourceSets DSL
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     exclude("**/com/chris/m3usuite/reference/**")
-    // Live Literals für Debug
     if (name.contains("Debug", ignoreCase = true)) {
         compilerOptions.freeCompilerArgs.addAll(
-            listOf(
-                "-P", "plugin:androidx.compose.compiler.plugins.kotlin:liveLiteralsEnabled=true"
-            )
+            listOf("-P", "plugin:androidx.compose.compiler.plugins.kotlin:liveLiteralsEnabled=true")
         )
     }
 }
@@ -240,7 +235,6 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 dependencies {
-    // Compose UI (Release 08.10.2025)
     val compose = "1.9.3"
     implementation("androidx.compose.ui:ui:$compose")
     implementation("androidx.compose.material3:material3:1.3.1")
@@ -250,82 +244,57 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:$compose")
     debugImplementation("androidx.compose.ui:ui-test-manifest:$compose")
 
-    // AndroidX Core/Activity/Lifecycle/Navigation
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.activity:activity-compose:1.11.0")
     implementation("androidx.activity:activity-ktx:1.11.0")
     implementation("androidx.navigation:navigation-compose:2.9.5")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
 
-    // Material (Views)
     implementation("com.google.android.material:material:1.13.0")
 
-    // Media3 (ExoPlayer + UI + HLS)
     val media3 = "1.8.0"
     implementation("androidx.media3:media3-exoplayer:$media3")
     implementation("androidx.media3:media3-ui:$media3")
     implementation("androidx.media3:media3-exoplayer-hls:$media3")
-    // FFmpeg decoder bundle (prebuilt Jellyfin distribution, GPL-3.0)
     implementation("org.jellyfin.media3:media3-ffmpeg-decoder:1.8.0+1")
-    // Optional:
-    // implementation("androidx.media3:media3-ui-compose:$media3")
 
-    // Data / Work / Paging
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("androidx.work:work-runtime-ktx:2.10.5")
     implementation("androidx.paging:paging-runtime-ktx:3.3.6")
     implementation("androidx.paging:paging-compose:3.3.6")
 
-    // Coil 3 (+ OkHttp Backend)
     implementation("io.coil-kt.coil3:coil:3.3.0")
     implementation("io.coil-kt.coil3:coil-compose:3.3.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
     implementation("io.coil-kt.coil3:coil-network-core:3.3.0")
 
-    // Networking
     implementation("com.squareup.okhttp3:okhttp:5.2.1")
     implementation("com.squareup.okio:okio:3.16.1")
     implementation("com.github.junrar:junrar:7.5.5")
 
-    // Logging (SLF4J binding required by Junrar when running R8)
     implementation("org.slf4j:slf4j-android:1.7.36")
 
-    // JSON (Kotlin Serialization)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-
-    // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
-    // Firebase Cloud Messaging (optional; used for TDLib push integration)
     implementation(platform("com.google.firebase:firebase-bom:34.4.0"))
     implementation("com.google.firebase:firebase-messaging")
-
-    // Google Play Services – SMS User Consent API for Telegram auto-SMS retrieval
     implementation("com.google.android.gms:play-services-auth-api-phone:+")
 
-    // JankStats (performance diagnostics)
     implementation("androidx.metrics:metrics-performance:1.0.0-beta01")
-
-    // QR (ZXing core for QR bitmap generation)
     implementation("com.google.zxing:core:3.5.3")
-
-    // Compose for TV (Material)
     implementation("androidx.tv:tv-material:1.0.1")
 
-    // TDLib JNI & Java bindings (Projektmodul)
     implementation(project(":libtd"))
-    // Optional: falls ein AAR unter app/libs/tdlib.aar liegt
     val tdlibAar = File(projectDir, "libs/tdlib.aar")
     if (tdlibAar.exists()) {
         implementation(files(tdlibAar))
     }
 
-    // Tests
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 
-    // ObjectBox (5.x)
     implementation("io.objectbox:objectbox-android:5.0.1")
     implementation("io.objectbox:objectbox-kotlin:5.0.1")
     kapt("io.objectbox:objectbox-processor:5.0.1")
