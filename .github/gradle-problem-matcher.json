@@ -20,65 +20,84 @@
         }
       ]
     },
+
     {
-      "owner": "kotlin-paren",
+      "owner": "kotlin-paren-error",
+      "severity": "error",
       "pattern": [
         {
           "regexp": "^e:\\s+([\\w./\\\\-]+\\.(?:kt|kts)):\\s*\\((\\d+),\\s*(\\d+)\\):\\s*(.+)$",
           "file": 1,
           "line": 2,
           "column": 3,
-          "message": 4,
-          "severity": "error"
-        },
+          "message": 4
+        }
+      ]
+    },
+    {
+      "owner": "kotlin-paren-warning",
+      "severity": "warning",
+      "pattern": [
         {
           "regexp": "^w:\\s+([\\w./\\\\-]+\\.(?:kt|kts)):\\s*\\((\\d+),\\s*(\\d+)\\):\\s*(.+)$",
           "file": 1,
           "line": 2,
           "column": 3,
-          "message": 4,
-          "severity": "warning"
+          "message": 4
         }
       ]
     },
+
     {
-      "owner": "kapt-ksp",
+      "owner": "kapt-ksp-error",
+      "severity": "error",
       "pattern": [
         {
           "regexp": "^e:\\s+([\\w./\\\\-]+\\.(?:kt|java)):(\\d+):(\\d+):\\s*(.+)$",
           "file": 1,
           "line": 2,
           "column": 3,
-          "message": 4,
-          "severity": "error"
-        },
+          "message": 4
+        }
+      ]
+    },
+    {
+      "owner": "kapt-ksp-warning",
+      "severity": "warning",
+      "pattern": [
         {
           "regexp": "^w:\\s+([\\w./\\\\-]+\\.(?:kt|java)):(\\d+):(\\d+):\\s*(.+)$",
           "file": 1,
           "line": 2,
           "column": 3,
-          "message": 4,
-          "severity": "warning"
+          "message": 4
         }
       ]
     },
+
     {
-      "owner": "aapt2",
+      "owner": "aapt2-error",
+      "severity": "error",
       "pattern": [
         {
           "regexp": "^([\\w./\\\\-]+):\\s*error:\\s*(.+)$",
           "file": 1,
-          "message": 2,
-          "severity": "error"
-        },
-        {
-          "regexp": "^([\\w./\\\\-]+):\\s*warning:\\s*(.+)$",
-          "file": 1,
-          "message": 2,
-          "severity": "warning"
+          "message": 2
         }
       ]
     },
+    {
+      "owner": "aapt2-warning",
+      "severity": "warning",
+      "pattern": [
+        {
+          "regexp": "^([\\w./\\\\-]+):\\s*warning:\\s*(.+)$",
+          "file": 1,
+          "message": 2
+        }
+      ]
+    },
+
     {
       "owner": "android-lint",
       "pattern": [
