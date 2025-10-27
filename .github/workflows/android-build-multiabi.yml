@@ -15,6 +15,10 @@ on:
         description: "Optional: versionName (überschreibt Gradle)"
         required: false
         default: ""
+      mirror_only:
+        description: "Mirror-Modus (true/false) → setzt TG_OBX_ENABLED_DEFAULT entsprechend"
+        required: false
+        default: "false"
 
 permissions:
   contents: read
@@ -182,6 +186,15 @@ jobs:
             EXTRA_PROPS+=("-PversionName=${{ github.event.inputs.version_name }}")
           fi
 
+          # Mirror-Only Input → OBX Default (invertiert)
+          MIRROR="${{ github.event.inputs.mirror_only || 'false' }}"
+          if [[ "$MIRROR" == "true" ]]; then
+            OBX_DEFAULT=false   # Mirror-Only an  => OBX aus
+          else
+            OBX_DEFAULT=true    # Mirror-Only aus => OBX an
+          fi
+          EXTRA_PROPS+=("-PTG_OBX_ENABLED_DEFAULT=${OBX_DEFAULT}")
+
           ./gradlew ${{ steps.task.outputs.task }} \
             -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}" \
             -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}" \
@@ -219,16 +232,20 @@ jobs:
       - name: Upload APK (v7a)
         uses: actions/upload-artifact@v4
         with:
-          name: fishitplayer-${{ github.event_inputs.build_type || 'debug' }}-v7a
+          name: fishitplayer-${{ github.event.inputs.build_type || 'debug' }}-v7a
           path: |
             ${{ runner.temp }}/apk_v7a.txt
             app/build/outputs/apk/**/**/*armeabi-v7a*.apk
 
       - name: Build Kontext
         run: |
-          echo "Build type  : ${{ github.event.inputs.build_type || 'debug' }}"
-          echo "versionCode : ${{ github.event.inputs.version_code || '(unverändert)' }}"
-          echo "versionName : ${{ github.event.inputs.version_name || '(unverändert)' }}"
-          echo "ABI-Splits  : ${{ env.ORG_GRADLE_PROJECT_abiFilters }}"
-          echo "Universal   : ${{ env.ORG_GRADLE_PROJECT_universalApk }}"
-          echo "useSplits   : ${{ env.ORG_GRADLE_PROJECT_useSplits }}"
+          MIRROR="${{ github.event.inputs.mirror_only || 'false' }}"
+          if [[ "$MIRROR" == "true" ]]; then OBX_DEFAULT=false; else OBX_DEFAULT=true; fi
+          echo "Build type        : ${{ github.event.inputs.build_type || 'debug' }}"
+          echo "versionCode       : ${{ github.event.inputs.version_code || '(unverändert)' }}"
+          echo "versionName       : ${{ github.event.inputs.version_name || '(unverändert)' }}"
+          echo "Mirror-Only       : ${MIRROR}"
+          echo "TG_OBX_ENABLED_DEF: ${OBX_DEFAULT}   (Spiegel: mirror_only = !OBX)"
+          echo "ABI-Splits        : ${{ env.ORG_GRADLE_PROJECT_abiFilters }}"
+          echo "Universal         : ${{ env.ORG_GRADLE_PROJECT_universalApk }}"
+          echo "useSplits         : ${{ env.ORG_GRADLE_PROJECT_useSplits }}"
