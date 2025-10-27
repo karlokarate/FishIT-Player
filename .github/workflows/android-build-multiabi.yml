@@ -41,7 +41,6 @@ jobs:
     timeout-minutes: 90
 
     env:
-      # Gradle-Properties via ENV (ORG_GRADLE_PROJECT_* == -Pkey=value)
       ORG_GRADLE_PROJECT_abiFilters: arm64-v8a,armeabi-v7a
       ORG_GRADLE_PROJECT_universalApk: false
       ORG_GRADLE_PROJECT_useSplits: true
@@ -65,14 +64,19 @@ jobs:
 
       # SDK/NDK – ohne CMake (CMake kommt separat)
       - name: Set up Android SDK/NDK
-  uses: android-actions/setup-android@v3
-  with:
-    accept-android-sdk-licenses: true
-    packages: |
-      platform-tools
-      platforms;android-36
-      build-tools;36.0.0
-      ndk;26.3.11579264
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: |
+            platform-tools
+            platforms;android-36
+            build-tools;36.0.0
+            ndk;26.3.11579264
+
+      - name: Verify installed SDK packages
+        run: |
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --list | sed -n '1,120p' || true
+          ls -la "${ANDROID_SDK_ROOT}"/{platform-tools,build-tools,ndk} || true
 
       - name: Export ANDROID_NDK_HOME/ROOT
         run: |
@@ -175,7 +179,6 @@ jobs:
             tdlib-${{ runner.os }}-ndk26.3.11579264-cmake4.1-abi-arm64-v8a-armeabi-v7a-
             tdlib-${{ runner.os }}-ndk26.3.11579264-
 
-      # ---- Entscheiden, ob wir bauen müssen (Eingabe, Vollständigkeit, Meta) ----
       - name: Decide TDLib build
         id: tdlib-need
         run: |
@@ -195,7 +198,6 @@ jobs:
           echo "need_build=$need" >> "$GITHUB_OUTPUT"
           echo "TDLIB_NEED_BUILD=$need"
 
-      # ---- System-Deps nur bei Bedarf installieren ----
       - name: Install TDLib build deps (if needed)
         if: steps.tdlib-need.outputs.need_build == 'true'
         run: |
@@ -204,7 +206,6 @@ jobs:
             build-essential ninja-build gperf ccache pkg-config \
             zlib1g-dev libssl-dev python3 git ca-certificates ripgrep binutils
 
-      # ---- TDLib bauen (arm64+v7a) inkl. Java-Bindings ----
       - name: Build TDLib (arm64 + v7a) and Java bindings
         if: steps.tdlib-need.outputs.need_build == 'true'
         run: |
@@ -350,12 +351,11 @@ jobs:
             EXTRA_PROPS+=("-PversionName=${{ github.event.inputs.version_name }}")
           fi
 
-          # Mirror-Only Input → OBX Default (invertiert)
           MIRROR="${{ github.event.inputs.mirror_only || 'false' }}"
           if [[ "$MIRROR" == "true" ]]; then
-            OBX_DEFAULT=false   # Mirror-Only an  => OBX aus
+            OBX_DEFAULT=false
           else
-            OBX_DEFAULT=true    # Mirror-Only aus => OBX an
+            OBX_DEFAULT=true
           fi
           EXTRA_PROPS+=("-PTG_OBX_ENABLED_DEFAULT=${OBX_DEFAULT}")
 
