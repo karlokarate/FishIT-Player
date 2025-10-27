@@ -1,0 +1,62 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "gradle-kotlin-java",
+      "pattern": [
+        {
+          "regexp": "^([\\w./\\\\-]+\\.(?:kt|kts|java|groovy|gradle)):(\\d+):(\\d+):\\s*(error|warning):\\s*(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        },
+        {
+          "regexp": "^([\\w./\\\\-]+\\.(?:kt|kts|java|groovy|gradle)):(\\d+):\\s*(error|warning):\\s*(.*)$",
+          "file": 1,
+          "line": 2,
+          "severity": 3,
+          "message": 4
+        }
+      ]
+    },
+    {
+      "owner": "kapt-ksp",
+      "pattern": [
+        {
+          "regexp": "^e:\\s+([\\w./\\\\-]+\\.(?:kt|java)):(\\d+):(\\d+):\\s*(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4,
+          "severity": "error"
+        },
+        {
+          "regexp": "^w:\\s+([\\w./\\\\-]+\\.(?:kt|java)):(\\d+):(\\d+):\\s*(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4,
+          "severity": "warning"
+        }
+      ]
+    },
+    {
+      "owner": "aapt2",
+      "pattern": [
+        {
+          "regexp": "^([\\w./\\\\-]+):\\s*error:\\s*(.+)$",
+          "file": 1,
+          "message": 2,
+          "severity": "error"
+        },
+        {
+          "regexp": "^([\\w./\\\\-]+):\\s*warning:\\s*(.+)$",
+          "file": 1,
+          "message": 2,
+          "severity": "warning"
+        }
+      ]
+    }
+  ]
+}
