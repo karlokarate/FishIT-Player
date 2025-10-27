@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.chris.m3usuite.BuildConfig
+import com.chris.m3usuite.data.repo.TelegramAuthRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import com.chris.m3usuite.tg.TgGate
@@ -99,6 +100,9 @@ class TelegramSettingsViewModel(
 ) : ViewModel() {
     private val buildApiId = BuildConfig.TG_API_ID
     private val buildApiHash = BuildConfig.TG_API_HASH
+
+    private var authRepository: TelegramAuthRepository? = null
+    private var authRepositoryKey: Pair<Int, String>? = null
 
     private val _state = MutableStateFlow(TelegramUiState())
     val state: StateFlow<TelegramUiState> = _state.asStateFlow()
@@ -430,6 +434,7 @@ class TelegramSettingsViewModel(
         withContext(io) { store.setTgLogVerbosity(norm) }
         _state.update { it.copy(httpLogLevel = norm) }
         if (_state.value.enabled) ensureClientStarted()
+        ensureAuthRepository()?.setLogVerbosity(norm)
         runCatching { tg.setLogVerbosity(norm) }
             .onFailure { _effects.emit(TelegramEffect.Snackbar("Log-Level konnte nicht gesetzt werden: ${it.message ?: "Unbekannt"}")) }
     }
@@ -477,6 +482,21 @@ class TelegramSettingsViewModel(
         val effId = effectiveId(overrideId)
         val effHash = effectiveHash(overrideHash)
         return effId <= 0 || effHash.isBlank()
+    }
+
+    private fun ensureAuthRepository(): TelegramAuthRepository? {
+        val current = _state.value
+        val id = current.effectiveApiId
+        val hash = current.effectiveApiHash
+        if (id <= 0 || hash.isBlank()) return null
+        val key = id to hash
+        val cached = authRepositoryKey
+        val repo = authRepository
+        if (repo == null || cached != key) {
+            authRepository = TelegramAuthRepository(app.applicationContext, id, hash)
+            authRepositoryKey = key
+        }
+        return authRepository
     }
 
     private suspend fun ensureClientStarted(overrideId: Int? = null, overrideHash: String? = null): Boolean {
@@ -586,6 +606,7 @@ class TelegramSettingsViewModel(
     override fun onCleared() {
         super.onCleared()
         runCatching { tg.unbind() }
+        runCatching { authRepository?.unbindService() }
     }
 
     companion object {
