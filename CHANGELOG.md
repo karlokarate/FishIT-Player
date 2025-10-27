@@ -1,3 +1,9 @@
+2025-11-16
+- fix(ui/telegram): Guard Start row prefetchers against disposal races so
+  leaving Settings or switching routes no longer crashes the Telegram rows.
+- fix(ui/rows): Make the paged row prefetch collector cancellation-safe and
+  non-fatal, preventing crashes when list states dispose mid-collection.
+
 2025-11-15
 - fix(player/telegram): Treat `C.LENGTH_UNSET` as a `Long` when deriving
   Telegram random-access ranges so release builds compare like types again.

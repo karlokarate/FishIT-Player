@@ -104,11 +104,14 @@ import com.chris.m3usuite.ui.telemetry.AttachPagingTelemetry
 import com.chris.m3usuite.ui.theme.DesignTokens
 import com.chris.m3usuite.ui.util.AppImageLoader
 import com.chris.m3usuite.ui.util.rememberImageHeaders
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
@@ -1226,10 +1229,26 @@ private fun StartTelegramRow(
     val ctx = LocalContext.current
     val imageHeaders = rememberImageHeaders()
     val telegramPrefetcher: OnPrefetchPaged = remember(ctx, imageHeaders) {
-        { indices, items ->
-            val posters = indices.mapNotNull { idx -> items[idx]?.primaryTelegramPoster() }
-            if (posters.isNotEmpty()) {
-                AppImageLoader.preload(ctx, posters, imageHeaders)
+        prefetch@{ indices, items ->
+            try {
+                val cc = currentCoroutineContext()
+                val count = items.itemCount
+                if (count <= 0) return@prefetch
+                val posters = buildList {
+                    for (i in indices) {
+                        if (!cc.isActive) break
+                        if (i in 0 until count) {
+                            runCatching { items[i]?.primaryTelegramPoster() }
+                                .getOrNull()
+                                ?.let { add(it) }
+                        }
+                    }
+                }
+                if (posters.isNotEmpty()) {
+                    AppImageLoader.preload(ctx, posters, imageHeaders)
+                }
+            } catch (_: CancellationException) {
+                // Composable/Coroutine disposed while navigating away – benign
             }
         }
     }

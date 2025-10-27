@@ -1,5 +1,6 @@
 package com.chris.m3usuite.ui.focus
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,6 +24,7 @@ import com.chris.m3usuite.ui.fx.ShimmerBox
 import com.chris.m3usuite.ui.layout.LocalFishDimens
 import com.chris.m3usuite.ui.state.rememberRouteListState
 import com.chris.m3usuite.ui.home.LocalChromeRowFocusSetter
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 /** Configuration for FocusKit media rows. */
@@ -120,14 +122,20 @@ fun MediaRowCorePaged(
     val spacing = Arrangement.spacedBy(dims.tileSpacingDp)
     val setRowFocus = LocalChromeRowFocusSetter.current
 
-    if (onPrefetchPaged != null) {
-        LaunchedEffect(listState, items) {
-            snapshotFlow { listState.layoutInfo.visibleItemsInfo.map { it.index } }
-                .distinctUntilChanged()
-                .collect { indices ->
-                    if (indices.isNotEmpty()) onPrefetchPaged(indices, items)
+    LaunchedEffect(listState, items, onPrefetchPaged) {
+        if (onPrefetchPaged == null) return@LaunchedEffect
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.map { it.index } }
+            .distinctUntilChanged()
+            .collect { indices ->
+                if (indices.isEmpty()) return@collect
+                try {
+                    onPrefetchPaged(indices, items)
+                } catch (_: CancellationException) {
+                    // Row was disposed; ignore silently
+                } catch (t: Throwable) {
+                    Log.d("MediaRowCorePaged", "prefetch cancelled/failed: ${t.message}")
                 }
-        }
+            }
     }
 
     LazyRow(
