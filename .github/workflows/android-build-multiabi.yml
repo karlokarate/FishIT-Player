@@ -59,13 +59,6 @@ jobs:
           echo "ANDROID_NDK_HOME=$NDK_DIR"  >> $GITHUB_ENV
           echo "ANDROID_NDK_ROOT=$NDK_DIR"  >> $GITHUB_ENV
 
-      - name: System-Deps für TDLib
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends \
-            build-essential ninja-build gperf ccache pkg-config \
-            zlib1g-dev libssl-dev python3 git ca-certificates ripgrep
-
       - name: Gradle Cache
         uses: gradle/actions/setup-gradle@v3
 
@@ -73,7 +66,6 @@ jobs:
         run: chmod +x ./gradlew
 
       # === Secrets → Env (Signing + TG + HEADER) ===
-      # Robust: entfernt data:*;base64, Quotes/Backticks, Whitespaces; findet längsten b64-Substring; std+urlsafe mit Padding-Fix.
       - name: Decode & Setup Signing + App Secrets
         shell: bash
         run: |
@@ -103,7 +95,6 @@ jobs:
           candidates = [cand] if cand else []
 
           if not candidates or not try_decode(candidates[0]):
-              # längsten b64-ähnlichen Substring nehmen
               parts = re.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw or '')
               if parts:
                   candidates.append(normalize(max(parts, key=len)))
@@ -131,14 +122,13 @@ jobs:
             echo "::warning::Keystore-Secret ungültig/leer – fallback auf UNSIGNIERTEN Build."
           fi
 
-          # Telegram / Header (Gradle liest ENV → buildConfigFields)
           [[ -n "${{ secrets.TG_API_ID }}"   ]] && echo "TG_API_ID=${{ secrets.TG_API_ID }}"     >> $GITHUB_ENV
           [[ -n "${{ secrets.TG_API_HASH }}" ]] && echo "TG_API_HASH=${{ secrets.TG_API_HASH }}" >> $GITHUB_ENV
           [[ -n "${{ secrets.HEADER }}"     ]] && echo "HEADER=${{ secrets.HEADER }}"           >> $GITHUB_ENV
         env:
           KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
 
-      # ---- NEU: TDLib-Cache wiederherstellen
+      # ---- TDLib-Cache wiederherstellen (kommafreier Key)
       - name: Restore TDLib cache
         id: cache-tdlib
         uses: actions/cache@v4
@@ -147,13 +137,20 @@ jobs:
             libtd/src/main/jniLibs/arm64-v8a/libtdjni.so
             libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so
           key: >
-            tdlib-${{ runner.os }}-ndk26.3.11579264
-            -abi-${{ env.ORG_GRADLE_PROJECT_abiFilters }}
+            tdlib-${{ runner.os }}-ndk26.3.11579264-abi-arm64-v8a-armeabi-v7a
             -${{ hashFiles('scripts/tdlib-build-arm64.sh', 'scripts/**.sh', 'scripts/**.patch') }}
           restore-keys: |
-            tdlib-${{ runner.os }}-ndk26.3.11579264-
+            tdlib-${{ runner.os }}-ndk26.3.11579264-abi-arm64-v8a-armeabi-v7a-
 
-      # ---- TDLib: arm64 + v7a bauen; Script legt .so in libtd/src/main/jniLibs/... ab
+      - name: System-Deps für TDLib
+        if: steps.cache-tdlib.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+            build-essential ninja-build gperf ccache pkg-config \
+            zlib1g-dev libssl-dev python3 git ca-certificates ripgrep
+
+      # ---- TDLib bauen (nur bei Cache-Miss)
       - name: TDLib (arm64 + v7a) bauen
         if: steps.cache-tdlib.outputs.cache-hit != 'true'
         run: |
@@ -161,6 +158,7 @@ jobs:
           bash scripts/tdlib-build-arm64.sh
 
       - name: Sanity-Check TDLib Artefakte
+        if: steps.cache-tdlib.outputs.cache-hit != 'true'
         run: |
           ls -lah libtd/src/main/jniLibs/arm64-v8a/ || (echo "arm64-v8a fehlt" && exit 1)
           ls -lah libtd/src/main/jniLibs/armeabi-v7a/ || (echo "armeabi-v7a fehlt" && exit 1)
