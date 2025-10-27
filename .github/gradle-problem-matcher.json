@@ -4,7 +4,7 @@
       "owner": "gradle-kotlin-java",
       "pattern": [
         {
-          "regexp": "^([\\w./\\\\-]+\\.(?:kt|kts|java|groovy|gradle)):(\\d+):(\\d+):\\s*(error|warning):\\s*(.*)$",
+          "regexp": "^([\\w./\\\\-]+\\.(?:kt|kts|java|groovy|gradle)):(\\d+):(\\d+):\\s*(error|warning):\\s*(.+)$",
           "file": 1,
           "line": 2,
           "column": 3,
@@ -12,11 +12,32 @@
           "message": 5
         },
         {
-          "regexp": "^([\\w./\\\\-]+\\.(?:kt|kts|java|groovy|gradle)):(\\d+):\\s*(error|warning):\\s*(.*)$",
+          "regexp": "^([\\w./\\\\-]+\\.(?:kt|kts|java|groovy|gradle)):(\\d+):\\s*(error|warning):\\s*(.+)$",
           "file": 1,
           "line": 2,
           "severity": 3,
           "message": 4
+        }
+      ]
+    },
+    {
+      "owner": "kotlin-paren",
+      "pattern": [
+        {
+          "regexp": "^e:\\s+([\\w./\\\\-]+\\.(?:kt|kts)):\\s*\\((\\d+),\\s*(\\d+)\\):\\s*(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4,
+          "severity": "error"
+        },
+        {
+          "regexp": "^w:\\s+([\\w./\\\\-]+\\.(?:kt|kts)):\\s*\\((\\d+),\\s*(\\d+)\\):\\s*(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4,
+          "severity": "warning"
         }
       ]
     },
@@ -55,6 +76,19 @@
           "file": 1,
           "message": 2,
           "severity": "warning"
+        }
+      ]
+    },
+    {
+      "owner": "android-lint",
+      "pattern": [
+        {
+          "regexp": "^([\\w./\\\\-]+):(\\d+):(\\d+):\\s*(Warning|Error):\\s*(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
         }
       ]
     }
