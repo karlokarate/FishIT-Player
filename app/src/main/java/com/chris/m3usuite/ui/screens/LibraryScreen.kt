@@ -440,22 +440,22 @@ fun LibraryScreen(
                         media = media,
                         onOpenDetails = openTelegramDetail,
                         onPlay = { mi ->
-                            val chat = mi.tgChatId ?: return@TelegramFishTile
-                            val message = mi.tgMessageId ?: return@TelegramFishTile
-                            val tgUrl = runCatching {
-                                PlayUrlHelper.tgPlayUri(
-                                    chatId = chat,
-                                    messageId = message,
-                                    svc = telegramServiceClient
-                                ).toString()
-                            }.getOrElse { err ->
-                                android.util.Log.w(
-                                    "LibraryScreen",
-                                    "tgPlayUri failed chatId=$chat messageId=$message: ${err.message}"
-                                )
-                                return@launch
-                            }
                             scope.launch {
+                                val chat = mi.tgChatId ?: return@launch
+                                val message = mi.tgMessageId ?: return@launch
+                                val tgUrl = runCatching {
+                                    PlayUrlHelper.tgPlayUri(
+                                        chatId = chat,
+                                        messageId = message,
+                                        svc = telegramServiceClient
+                                    ).toString()
+                                }.getOrElse { err ->
+                                    android.util.Log.w(
+                                        "LibraryScreen",
+                                        "tgPlayUri failed chatId=$chat messageId=$message: ${err.message}"
+                                    )
+                                    return@launch
+                                }
                                 playbackLauncher.launch(
                                     com.chris.m3usuite.playback.PlayRequest(
                                         type = mi.type.ifBlank { "vod" },

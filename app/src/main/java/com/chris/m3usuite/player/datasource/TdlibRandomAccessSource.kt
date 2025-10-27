@@ -2,6 +2,7 @@ package com.chris.m3usuite.player.datasource
 
 import android.os.SystemClock
 import android.util.Log
+import androidx.media3.common.C
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.TransferListener
@@ -55,7 +56,7 @@ class TdlibRandomAccessSource(
         val file = runBlockingIo { service.getFile(fileId) }
         length = file.size.toLong()
         position = if (dataSpec.position >= 0) dataSpec.position else 0L
-        bytesRemaining = if (dataSpec.length == DataSpec.LENGTH_UNSET.toLong()) {
+        bytesRemaining = if (dataSpec.length == C.LENGTH_UNSET) {
             if (length > 0) length - position else -1L
         } else dataSpec.length
 
@@ -66,7 +67,7 @@ class TdlibRandomAccessSource(
         triggerDownload(position, max(chunkSize, bytesRemaining.takeIf { it > 0 } ?: readahead))
 
         opened = true
-        return if (dataSpec.length == DataSpec.LENGTH_UNSET.toLong()) length else dataSpec.length
+        return if (dataSpec.length == C.LENGTH_UNSET) length else dataSpec.length
     }
 
     @Throws(IOException::class)

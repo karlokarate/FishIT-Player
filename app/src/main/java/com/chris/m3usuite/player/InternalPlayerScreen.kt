@@ -72,7 +72,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
-import androidx.media3.common.SeekParameters
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.Tracks
@@ -80,6 +79,7 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
@@ -374,7 +374,7 @@ fun InternalPlayerScreen(
                 .build()
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
-            exoPlayer.seekParameters = SeekParameters.CLOSEST_SYNC
+            exoPlayer.setSeekParameters(SeekParameters.CLOSEST_SYNC)
             exoPlayer.playWhenReady = false // Phase 4: erst nach Screen-Time-Check starten
             startPositionMs?.let { exoPlayer.seekTo(it) }
             PlaybackSession.setSource(finalUrl)

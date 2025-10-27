@@ -1,3 +1,11 @@
+2025-11-14
+- fix(telegram/detail): Add a dedicated Telegram detail screen and refresh the
+  TDLib repository helpers (global search/message lookup, poster extraction)
+  so release builds resolve the new navigation route again.
+- fix(player): Update Media3 seek parameter usage, telegram data sources, and
+  gating defaults so Kotlin 2.0 release builds compile without the missing
+  constants or APIs.
+
 2025-11-13
 - fix(settings/telegram): Restore the proxy and auto-download settings blocks
   that disappeared during the auth refactor and import Compose

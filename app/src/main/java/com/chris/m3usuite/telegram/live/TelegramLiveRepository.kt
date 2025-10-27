@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
-import java.util.Locale
 
 /**
  * Mirror-only Telegram repository that pages media straight from TDLib.
@@ -42,6 +41,65 @@ class TelegramLiveRepository(context: Context) {
             config = PagingConfig(pageSize = PAGE_SIZE, prefetchDistance = 1, enablePlaceholders = false),
             pagingSourceFactory = { TelegramChatPagingSource(chatId) }
         )
+    }
+
+    suspend fun fetchMessageMediaItem(chatId: Long, messageId: Long): MediaItem? = withContext(Dispatchers.IO) {
+        if (!TgGate.mirrorOnly()) return@withContext null
+        val client = ensureClientReady() ?: return@withContext null
+        val fn = TdLibReflection.buildGetMessage(chatId, messageId) ?: return@withContext null
+        val result = TdLibReflection.sendForResultDetailed(
+            client,
+            fn,
+            timeoutMs = 2_000,
+            retries = 1,
+            traceTag = "TelegramLiveRepo:GetMessage[$chatId/$messageId]"
+        )
+        if (result.error != null) {
+            Log.w(
+                TAG,
+                "GetMessage failed chatId=$chatId messageId=$messageId code=${result.error.code} msg=${result.error.message}"
+            )
+            return@withContext null
+        }
+        val payload = result.payload as? TdApi.Message ?: return@withContext null
+        toMediaItem(client, chatId, payload)
+    }
+
+    suspend fun searchAllVideos(query: String, limit: Int): List<MediaItem> = withContext(Dispatchers.IO) {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return@withContext emptyList()
+        if (!TgGate.mirrorOnly()) return@withContext emptyList()
+        val client = ensureClientReady() ?: return@withContext emptyList()
+        val filter = TdLibReflection.buildSearchMessagesFilterVideo()
+        val chatList = TdLibReflection.buildChatListMain()
+        val fn = TdLibReflection.buildSearchMessages(
+            chatList = chatList,
+            query = trimmed,
+            sender = null,
+            fromMessageId = 0L,
+            offset = 0,
+            limit = limit.coerceIn(10, 120),
+            filter = filter
+        ) ?: return@withContext emptyList()
+        val result = TdLibReflection.sendForResultDetailed(
+            client,
+            fn,
+            timeoutMs = 5_000,
+            retries = 1,
+            traceTag = "TelegramLiveRepo:SearchAll"
+        )
+        if (result.error != null) {
+            Log.w(
+                TAG,
+                "Global search failed query=$trimmed code=${result.error.code} msg=${result.error.message}"
+            )
+            return@withContext emptyList()
+        }
+        val payload = result.payload ?: return@withContext emptyList()
+        TdLibReflection.extractMessagesArray(payload).mapNotNull { msgObj ->
+            val message = msgObj as? TdApi.Message ?: return@mapNotNull null
+            toMediaItem(client, message.chatId, message)
+        }
     }
 
     suspend fun chatTitle(chatId: Long): String? = withContext(Dispatchers.IO) {
@@ -106,7 +164,7 @@ class TelegramLiveRepository(context: Context) {
                         return@withContext LoadResult.Page(emptyList(), prevKey = null, nextKey = null)
                     }
 
-                    val mapped = rawMessages.mapNotNull { toMediaItem(chatId, it) }
+                    val mapped = rawMessages.mapNotNull { toMediaItem(client, chatId, it) }
                     if (mapped.isEmpty()) {
                         return@withContext LoadResult.Page(emptyList(), prevKey = null, nextKey = null)
                     }
@@ -137,7 +195,11 @@ class TelegramLiveRepository(context: Context) {
         return if (ready == TdLibReflection.AuthState.AUTHENTICATED) handle else null
     }
 
-    private fun toMediaItem(chatId: Long, messageObj: Any): MediaItem? {
+    private fun toMediaItem(
+        client: TdLibReflection.ClientHandle?,
+        chatId: Long,
+        messageObj: Any
+    ): MediaItem? {
         val message = messageObj as? TdApi.Message ?: return null
         val messageId = message.id
         if (messageId <= 0L) return null
@@ -185,28 +247,25 @@ class TelegramLiveRepository(context: Context) {
                 thumbIdFromPhoto != null && thumbIdFromPhoto > 0 -> thumbIdFromPhoto
                 else -> null
             }
-            if (thumbId != null) {
-                val client = ensureClientReady()
-                if (client != null) {
-                    // GetFile(thumbId) -> lokalen Pfad lesen
-                    val fn = TdLibReflection.buildGetFile(thumbId)
-                    val res = if (fn != null) TdLibReflection.sendForResultDetailed(
-                        client, fn, timeoutMs = 1_000, retries = 1,
-                        traceTag = "TelegramLiveRepo:GetThumbFile[$thumbId]"
-                    ) else null
-                    val fileInfo = res?.payload?.let { TdLibReflection.extractFileInfo(it) }
-                    val localPath = fileInfo?.localPath
-                    if (!localPath.isNullOrEmpty()) {
-                        poster = java.io.File(localPath).toURI().toString() // -> file://...
-                    } else {
-                        // Kein lokaler Pfad? Download anstoßen (best effort), ohne zu blockieren.
-                        val dl = TdLibReflection.buildDownloadFile(thumbId, /*priority*/8, /*offset*/0, /*limit*/0, /*sync*/false)
-                        if (dl != null) {
-                            TdLibReflection.sendForResult(
-                                client, dl, timeoutMs = 500, retries = 0,
-                                traceTag = "TelegramLiveRepo:DownloadThumb[$thumbId]"
-                            )
-                        }
+            if (thumbId != null && client != null) {
+                // GetFile(thumbId) -> lokalen Pfad lesen
+                val fn = TdLibReflection.buildGetFile(thumbId)
+                val res = if (fn != null) TdLibReflection.sendForResultDetailed(
+                    client, fn, timeoutMs = 1_000, retries = 1,
+                    traceTag = "TelegramLiveRepo:GetThumbFile[$thumbId]"
+                ) else null
+                val fileInfo = res?.payload?.let { TdLibReflection.extractFileInfo(it) }
+                val localPath = fileInfo?.localPath
+                if (!localPath.isNullOrEmpty()) {
+                    poster = java.io.File(localPath).toURI().toString() // -> file://...
+                } else {
+                    // Kein lokaler Pfad? Download anstoßen (best effort), ohne zu blockieren.
+                    val dl = TdLibReflection.buildDownloadFile(thumbId, /*priority*/8, /*offset*/0, /*limit*/0, /*sync*/false)
+                    if (dl != null) {
+                        TdLibReflection.sendForResult(
+                            client, dl, timeoutMs = 500, retries = 0,
+                            traceTag = "TelegramLiveRepo:DownloadThumb[$thumbId]"
+                        )
                     }
                 }
             }
