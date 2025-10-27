@@ -1,4 +1,4 @@
-name: Android – FishITPlayer (arm64 + v7a)
+name: Android – FishIT-Player (arm64 + v7a)
 
 on:
   workflow_dispatch:
@@ -17,6 +17,10 @@ on:
         default: ""
       mirror_only:
         description: "Mirror-Modus (true/false) → setzt TG_OBX_ENABLED_DEFAULT entsprechend"
+        required: false
+        default: "false"
+      rebuild_tdlib:
+        description: "TDLib neu bauen (true/false) – überschreibt Cache"
         required: false
         default: "false"
 
@@ -38,9 +42,9 @@ jobs:
       - name: Checkout (mit LFS & Submodules)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          lfs: true
-          submodules: recursive
+            fetch-depth: 0
+            lfs: true
+            submodules: recursive
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -77,7 +81,8 @@ jobs:
           import os, re, base64, binascii, pathlib
           raw = os.environ.get("KS_B64","")
 
-          def normalize(s:str)->str:
+          def norm(s):
+              if not s: return ""
               s = s.strip()
               if len(s)>=2 and s[0]==s[-1] and s[0] in "'\"`":
                   s = s[1:-1]
@@ -85,32 +90,27 @@ jobs:
                   s = s.split("base64,",1)[1]
               return "".join(s.split())
 
-          def try_decode(c:str):
-              for fn in (base64.b64decode, base64.urlsafe_b64decode):
+          def try_decode(c):
+              try:
+                  import base64
+                  pad = '=' * (-len(c) % 4)
+                  return base64.b64decode(c+pad)
+              except Exception:
                   try:
+                      import base64
                       pad = '=' * (-len(c) % 4)
-                      return fn(c + pad)
-                  except binascii.Error:
-                      pass
-              return None
+                      return base64.urlsafe_b64decode(c+pad)
+                  except Exception:
+                      return None
 
-          decoded = None
-          cand = normalize(raw)
-          candidates = [cand] if cand else []
-
-          if not candidates or not try_decode(candidates[0]):
+          cand = norm(raw)
+          d = try_decode(cand)
+          if not d:
               parts = re.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw or '')
               if parts:
-                  candidates.append(normalize(max(parts, key=len)))
-
-          for c in candidates:
-              d = try_decode(c)
-              if d:
-                  decoded = d
-                  break
-
-          if decoded:
-              pathlib.Path("release.keystore").write_bytes(decoded)
+                  d = try_decode(norm(max(parts, key=len)))
+          if d:
+              pathlib.Path("release.keystore").write_bytes(d)
               print("DECODE_OK")
           else:
               print("DECODE_FAIL")
@@ -132,7 +132,7 @@ jobs:
         env:
           KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
 
-      # ---- TDLib-Cache (JNI + Java-Bindings!) ----
+      # ---- TDLib-Cache (JNI + Java-Bindings + Meta) ----
       - name: Restore TDLib cache
         id: cache-tdlib
         uses: actions/cache@v4
@@ -142,45 +142,138 @@ jobs:
             libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so
             libtd/src/main/java/org/drinkless/tdlib/TdApi.java
             libtd/src/main/java/org/drinkless/tdlib/Client.java
+            libtd/.tdlib_meta
           key: >
-            tdlib-${{ runner.os }}-ndk26.3.11579264-abi-arm64-v8a-armeabi-v7a
-            -${{ hashFiles('scripts/tdlib-build-arm64.sh', 'scripts/**.sh', 'scripts/**.patch') }}
+            tdlib-${{ runner.os }}-ndk26.3.11579264-abi-arm64-v8a-armeabi-v7a-bindings-meta-v1-
+            ${{ hashFiles('scripts/tdlib-*.sh','scripts/**.sh','scripts/**.patch') }}
           restore-keys: |
             tdlib-${{ runner.os }}-ndk26.3.11579264-abi-arm64-v8a-armeabi-v7a-
 
-      - name: System-Deps für TDLib (nur falls Build nötig)
-        if: steps.cache-tdlib.outputs.cache-hit != 'true'
+      # ---- Entscheiden, ob wir bauen müssen (Eingabe, Vollständigkeit, Meta) ----
+      - name: Decide TDLib build
+        id: tdlib-need
+        shell: bash
+        run: |
+          set -euo pipefail
+          REBUILD="${{ github.event.inputs.rebuild_tdlib || 'false' }}"
+          need="$REBUILD"
+          # Dateien vorhanden?
+          for f in \
+            libtd/src/main/jniLibs/arm64-v8a/libtdjni.so \
+            libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so \
+            libtd/src/main/java/org/drinkless/tdlib/TdApi.java \
+            libtd/src/main/java/org/drinkless/tdlib/Client.java \
+            libtd/.tdlib_meta
+          do
+            if [[ ! -f "$f" ]]; then
+              echo "missing: $f"
+              need="true"
+            fi
+          done
+
+          echo "need_build=$need" >> "$GITHUB_OUTPUT"
+          echo "TDLIB_NEED_BUILD=$need"
+
+      # ---- System-Deps nur bei Bedarf installieren ----
+      - name: Install TDLib build deps (if needed)
+        if: steps.tdlib-need.outputs.need_build == 'true'
         run: |
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends \
             build-essential ninja-build gperf ccache pkg-config \
             zlib1g-dev libssl-dev python3 git ca-certificates ripgrep
 
-      # ---- Prüfen, ob TDLib vollständig vorliegt; sonst bauen ----
-      - name: Decide TDLib build
-        id: tdlib-need
-        shell: bash
-        run: |
-          need="false"
-          test -f libtd/src/main/jniLibs/arm64-v8a/libtdjni.so || need="true"
-          test -f libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so || need="true"
-          test -f libtd/src/main/java/org/drinkless/tdlib/TdApi.java || need="true"
-          test -f libtd/src/main/java/org/drinkless/tdlib/Client.java || need="true"
-          echo "need_build=$need" >> $GITHUB_OUTPUT
-          echo "TDLIB_NEED_BUILD=$need"
-
-      - name: TDLib (arm64 + v7a) bauen
+      # ---- TDLib bauen (arm64+v7a) inkl. Java-Bindings ----
+      - name: Build TDLib (arm64 + v7a) and Java bindings
         if: steps.tdlib-need.outputs.need_build == 'true'
         run: |
+          set -e
           chmod +x scripts/tdlib-build-arm64.sh
-          bash scripts/tdlib-build-arm64.sh
+          # optional: per secret/var Tag vorgeben, sonst Default im Script (z.B. v1.8.56)
+          if [[ -n "${{ secrets.TD_TAG }}" ]]; then
+            bash scripts/tdlib-build-arm64.sh --ref "${{ secrets.TD_TAG }}"
+          else
+            bash scripts/tdlib-build-arm64.sh
+          fi
 
+          # --- Meta schreiben (REF/COMMIT + SHA + NDK) ---
+          TD_DIR=".third_party/td"
+          REF="$(git -C "$TD_DIR" describe --tags --exact-match 2>/dev/null || true)"
+          COMMIT="$(git -C "$TD_DIR" rev-parse --verify HEAD)"
+          SHA_ARM64="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
+          SHA_V7A="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so   | awk '{print $1}')"
+          mkdir -p libtd
+          {
+            echo "REF=${REF}"
+            echo "COMMIT=${COMMIT}"
+            echo "SHA_ARM64=${SHA_ARM64}"
+            echo "SHA_V7A=${SHA_V7A}"
+            echo "NDK=${ANDROID_NDK_HOME}"
+            echo "BUILT_AT=$(date -u +%FT%TZ)"
+          } > libtd/.tdlib_meta
+
+      # ---- Meta validieren auch im Cache-Pfad; ggf. erzwungenen Neubau starten ----
+      - name: Validate TDLib meta (no-rebuild path)
+        id: tdlib-validate
+        if: steps.tdlib-need.outputs.need_build == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          force_build=false
+          if [[ ! -f libtd/.tdlib_meta ]]; then
+            echo "::warning::tdlib_meta fehlt – Neubau nötig"
+            force_build=true
+          else
+            source libtd/.tdlib_meta || { echo "::warning::Meta unlesbar"; force_build=true; }
+            [[ -n "${COMMIT:-}" ]] || { echo "::warning::COMMIT leer"; force_build=true; }
+            A="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
+            B="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so | awk '{print $1}')"
+            if [[ -n "${SHA_ARM64:-}" && "$A" != "$SHA_ARM64" ]]; then
+              echo "::warning::ARM64 SHA mismatch (cache vs meta)"; force_build=true;
+            fi
+            if [[ -n "${SHA_V7A:-}" && "$B" != "$SHA_V7A" ]]; then
+              echo "::warning::V7A   SHA mismatch (cache vs meta)"; force_build=true;
+            fi
+          fi
+          echo "force_build=$force_build" >> "$GITHUB_OUTPUT"
+
+      - name: Rebuild TDLib due to meta mismatch
+        if: steps.tdlib-validate.outputs.force_build == 'true'
+        run: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+            build-essential ninja-build gperf ccache pkg-config \
+            zlib1g-dev libssl-dev python3 git ca-certificates ripgrep
+          chmod +x scripts/tdlib-build-arm64.sh
+          if [[ -n "${{ secrets.TD_TAG }}" ]]; then
+            bash scripts/tdlib-build-arm64.sh --ref "${{ secrets.TD_TAG }}"
+          else
+            bash scripts/tdlib-build-arm64.sh
+          fi
+          TD_DIR=".third_party/td"
+          REF="$(git -C "$TD_DIR" describe --tags --exact-match 2>/dev/null || true)"
+          COMMIT="$(git -C "$TD_DIR" rev-parse --verify HEAD)"
+          SHA_ARM64="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
+          SHA_V7A="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so   | awk '{print $1}')"
+          {
+            echo "REF=${REF}"
+            echo "COMMIT=${COMMIT}"
+            echo "SHA_ARM64=${SHA_ARM64}"
+            echo "SHA_V7A=${SHA_V7A}"
+            echo "NDK=${ANDROID_NDK_HOME}"
+            echo "BUILT_AT=$(date -u +%FT%TZ)"
+          } > libtd/.tdlib_meta
+
+      # ---- Finaler Sanity-Check auf Artefakte & Commit-Hash in TdApi.java ----
       - name: Sanity-Check TDLib Artefakte
         run: |
           set -e
-          ls -lah libtd/src/main/jniLibs/arm64-v8a/libtdjni.so
-          ls -lah libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so
+          ls -lh libtd/src/main/jniLibs/arm64-v8a/libtdjni.so
+          ls -lh libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so
+          test -f libtd/src/main/java/org/drinkless/tdlib/Client.java
           grep -n "GIT_COMMIT_HASH" libtd/src/main/java/org/drinkless/tdlib/TdApi.java || (echo "TdApi.java ohne Commit-Hash!" && exit 1)
+          cat libtd/.tdlib_meta
 
       - name: Gradle Task bestimmen
         id: task
@@ -193,6 +286,7 @@ jobs:
 
       - name: Build (Split-APKs je ABI)
         run: |
+          set -e
           EXTRA_PROPS=()
           if [[ -n "${{ github.event.inputs.version_code }}" ]]; then
             EXTRA_PROPS+=("-PversionCode=${{ github.event.inputs.version_code }}")
@@ -224,17 +318,12 @@ jobs:
           set -euo pipefail
           mapfile -t ARM64 < <(find app -type f -path "*/build/outputs/apk/*/*" -name "*arm64-v8a*.apk" -print | sort)
           mapfile -t V7A   < <(find app -type f -path "*/build/outputs/apk/*/*" -name "*armeabi-v7a*.apk" -print | sort)
-
           [[ ${#ARM64[@]} -gt 0 ]] || { echo "::error::Keine arm64-APK gefunden"; exit 1; }
           [[ ${#V7A[@]}   -gt 0 ]] || { echo "::error::Keine v7a-APK gefunden";   exit 1; }
-
           printf '%s\n' "${ARM64[@]}" > "${{ runner.temp }}/apk_arm64.txt"
           printf '%s\n' "${V7A[@]}"   > "${{ runner.temp }}/apk_v7a.txt"
-
-          echo "Gefundene arm64 APKs:"
-          printf ' - %s\n' "${ARM64[@]}"
-          echo "Gefundene v7a APKs:"
-          printf ' - %s\n' "${V7A[@]}"
+          echo "Gefundene arm64 APKs:"; printf ' - %s\n' "${ARM64[@]}"
+          echo "Gefundene v7a APKs:";   printf ' - %s\n' "${V7A[@]}"
 
       - name: Upload APK (arm64)
         uses: actions/upload-artifact@v4
