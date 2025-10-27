@@ -1,2 +1,3 @@
-# No rules necessary. TDLib reflection is used in app; this module ships JNI only.
-
+# TDLib Java API & Client nicht wegoptimieren
+-keep class org.drinkless.tdlib.** { *; }
+-dontwarn org.drinkless.tdlib.**
