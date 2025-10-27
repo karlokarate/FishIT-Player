@@ -6,7 +6,7 @@ on:
       build_type:
         description: "Build-Variante (debug | release)"
         required: false
-        default: "debug"
+        default: "release"
       version_code:
         description: "Optional: versionCode (überschreibt Gradle)"
         required: false
@@ -18,11 +18,11 @@ on:
       mirror_only:
         description: "Mirror-Modus (true/false) → setzt TG_OBX_ENABLED_DEFAULT entsprechend"
         required: false
-        default: "false"
+        default: "true"
       rebuild_tdlib:
         description: "TDLib neu bauen (true/false) – überschreibt Cache"
         required: false
-        default: "false"
+        default: "true"
 
 permissions:
   contents: read
@@ -66,8 +66,8 @@ jobs:
       - name: Set up Android SDK/NDK
         uses: android-actions/setup-android@v3
         with:
-    accept-android-sdk-licenses: true
-    packages: platform-tools platforms;android-36 build-tools;36.0.0 ndk;26.3.11579264
+          accept-android-sdk-licenses: true
+          packages: platform-tools platforms;android-36 build-tools;36.0.0 ndk;26.3.11579264
 
       - name: Verify installed SDK packages
         run: |
