@@ -63,13 +63,15 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # SDK/NDK – ohne CMake (das installieren wir separat)
+      # SDK/NDK – ohne CMake (CMake kommt separat)
       - name: Set up Android SDK/NDK
         uses: android-actions/setup-android@v3
         with:
-          api-level: 36
-          build-tools: 36.0.0
-          ndk-version: 26.3.11579264
+          accept-android-sdk-licenses: true
+          packages: |
+            platforms;android-36
+            build-tools;36.0.0
+            ndk;26.3.11579264
 
       - name: Export ANDROID_NDK_HOME/ROOT
         run: |
@@ -167,7 +169,7 @@ jobs:
           key: >
             tdlib-${{ runner.os }}-ndk26.3.11579264-cmake4.1-abi-arm64-v8a-armeabi-v7a-v3-
             tag-${{ secrets.TD_TAG || 'none' }}-
-            ${{ hashFiles('scripts/build_tdlib_android.sh','scripts/**.patch') }}
+            ${{ hashFiles('scripts/build_tdlib_android.sh','scripts/**/*.patch') }}
           restore-keys: |
             tdlib-${{ runner.os }}-ndk26.3.11579264-cmake4.1-abi-arm64-v8a-armeabi-v7a-
             tdlib-${{ runner.os }}-ndk26.3.11579264-
