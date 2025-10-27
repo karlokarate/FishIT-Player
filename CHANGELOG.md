@@ -1,3 +1,8 @@
+2025-11-17
+- fix(settings/telegram): Ensure the TDLib log verbosity slider updates the
+  mirror-mode auth repository so log level changes apply even when the background
+  service is idle.
+
 2025-11-16
 - fix(ui/telegram): Guard Start row prefetchers against disposal races so
   leaving Settings or switching routes no longer crashes the Telegram rows.
