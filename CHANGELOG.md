@@ -1,3 +1,9 @@
+2025-11-15
+- fix(player/telegram): Treat `C.LENGTH_UNSET` as a `Long` when deriving
+  Telegram random-access ranges so release builds compare like types again.
+- fix(ui/telegram): Precompute the play action label so the Telegram detail
+  screen no longer calls `stringResource` from a non-composable context.
+
 2025-11-14
 - fix(telegram/detail): Add a dedicated Telegram detail screen and refresh the
   TDLib repository helpers (global search/message lookup, poster extraction)

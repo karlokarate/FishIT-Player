@@ -56,7 +56,8 @@ class TdlibRandomAccessSource(
         val file = runBlockingIo { service.getFile(fileId) }
         length = file.size.toLong()
         position = if (dataSpec.position >= 0) dataSpec.position else 0L
-        bytesRemaining = if (dataSpec.length == C.LENGTH_UNSET) {
+        val lengthUnset = C.LENGTH_UNSET.toLong()
+        bytesRemaining = if (dataSpec.length == lengthUnset) {
             if (length > 0) length - position else -1L
         } else dataSpec.length
 
@@ -67,7 +68,7 @@ class TdlibRandomAccessSource(
         triggerDownload(position, max(chunkSize, bytesRemaining.takeIf { it > 0 } ?: readahead))
 
         opened = true
-        return if (dataSpec.length == C.LENGTH_UNSET) length else dataSpec.length
+        return if (dataSpec.length == lengthUnset) length else dataSpec.length
     }
 
     @Throws(IOException::class)
