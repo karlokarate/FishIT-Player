@@ -71,8 +71,11 @@ jobs:
 
       - name: Verify installed SDK packages
         run: |
-          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --list | sed -n '1,120p' || true
-          ls -la "${ANDROID_SDK_ROOT}"/{platform-tools,build-tools,ndk} || true
+          SDKM="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          [[ -x "$SDKM" ]] || SDKM="$ANDROID_SDK_ROOT/cmdline-tools/16.0/bin/sdkmanager"
+          [[ -x "$SDKM" ]] || { echo "::warning::sdkmanager not found"; exit 0; }
+          "$SDKM" --list | sed -n '1,120p' || true
+          ls -la "$ANDROID_SDK_ROOT"/{platform-tools,build-tools,ndk} || true
 
       - name: Export ANDROID_NDK_HOME/ROOT
         run: |
