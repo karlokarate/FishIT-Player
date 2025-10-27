@@ -65,11 +65,12 @@ fun TelegramVideoDetailScreen(
         loading = false
     }
 
-    val playAction = remember(media) {
+    val playLabel = stringResource(R.string.action_play)
+    val playAction = remember(media, playLabel) {
         media?.let { item ->
             MediaAction(
                 id = MediaActionId.Play,
-                label = stringResource(R.string.action_play),
+                label = playLabel,
                 primary = true,
                 onClick = {
                     scope.launch {
