@@ -15,32 +15,6 @@ on:
         required: true
         default: "arm64+v7a"
         options: [arm64+v7a, arm64, v7a, universal]
-
-      # Toolchain (sichere Defaults)
-      sdk_api:
-        description: "SDK Platform (36 – AGP 8.12 unterstützt API 36)"
-        required: false
-        default: "36"
-      build_tools:
-        description: "Build-Tools (35.0.0 stabil; 36.x = EXPERIMENTAL, sinnvoll mit AGP ≥ 9)"
-        required: false
-        default: "35.0.0"
-      ndk_version:
-        description: "NDK (27.3.13750724 stabil/LTS; r29 = schneller, RISKY)"
-        required: false
-        default: "27.3.13750724"
-      cmake_version:
-        description: "CMake (z.B. 3.30.x; für NDK r29 empfehlenswert pinnen)"
-        required: false
-        default: "3.30.x"
-      jdk:
-        description: "JDK (21 LTS empfohlen)"
-        required: false
-        default: "21"
-
-      # App-Metadaten/Flags
-      version_code:   { description: "Optional: versionCode (override)", required: false, default: "" }
-      version_name:   { description: "Optional: versionName (override)", required: false, default: "" }
       mirror_only:
         description: "Mirror-Modus → setzt TG_OBX_ENABLED_DEFAULT (true = deaktiviert)"
         type: choice
@@ -51,8 +25,6 @@ on:
         type: choice
         default: "true"
         options: ["true","false"]
-
-      # TDLib – Build & Versionierung
       rebuild_tdlib:
         description: "TDLib neu bauen (Cache ignorieren)"
         type: choice
@@ -63,7 +35,7 @@ on:
         type: choice
         default: "default"
         options: [default, latest-tag, tag, commit, ref]
-      tdlib_value:
+      tdlib_ref:
         description: "Wert für 'tag' (z.B. v1.x.y), 'commit' (SHA) oder 'ref' (Branch). Für latest-tag leer lassen."
         required: false
         default: ""
@@ -72,41 +44,15 @@ on:
         type: choice
         default: "MinSizeRel"
         options: [MinSizeRel, Release]
-
-      # Risk Switches
-      use_gradle_9x:
-        description: "Gradle 9.x OVERRIDE (RISKY) – benötigt AGP ≥ 8.13 ODER AGP 9 Preview"
-        type: choice
-        default: "false"
-        options: ["false","true"]
-      gradle_9x_version:
-        description: "Gradle 9.x Version (wirksam nur wenn use_gradle_9x=true)"
-        required: false
-        default: "9.1.0"
-      agp_override:
-        description: "AGP Override (z.B. 8.13.0 oder 9.0.0-alphaXX) – bei Gradle 9.x mind. 8.13!"
-        required: false
-        default: ""
-      kotlin_override:
-        description: "Kotlin Override (z.B. 2.2.21) – Compose/Media3-Kompat. beachten"
-        required: false
-        default: ""
-
-      # Dev UX
-      pr_comment:
-        description: "PR-Kommentar (Artefakte/Checksums) posten"
-        type: choice
-        default: "false"
-        options: ["false","true"]
-      issue_number:
-        description: "PR/Issue-Nummer (optional)"
-        required: false
-        default: ""
       debug_tmate:
         description: "tmate-Debug bei Fehler"
         type: choice
         default: "false"
         options: ["false","true"]
+      config_json:
+        description: "JSON-Overrides (sdk_api, build_tools, ndk_version, cmake_version, jdk, version_code, version_name, use_gradle_9x, gradle_9x_version, agp_override, kotlin_override, pr_comment, issue_number)"
+        required: false
+        default: "{}"
 
 permissions:
   contents: read
@@ -140,11 +86,62 @@ jobs:
           lfs: true
           submodules: recursive
 
+      - name: Parse config overrides
+        id: cfg
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+
+          defaults = {
+              "sdk_api": "36",
+              "build_tools": "35.0.0",
+              "ndk_version": "27.3.13750724",
+              "cmake_version": "3.30.x",
+              "jdk": "21",
+              "version_code": "",
+              "version_name": "",
+              "use_gradle_9x": "false",
+              "gradle_9x_version": "9.1.0",
+              "agp_override": "",
+              "kotlin_override": "",
+              "pr_comment": "false",
+              "issue_number": "",
+          }
+
+          raw = os.environ.get("RAW_CONFIG", "").strip()
+          if not raw:
+              data = {}
+          else:
+              try:
+                  data = json.loads(raw)
+              except json.JSONDecodeError as exc:
+                  print(f"::error::config_json ist kein gültiges JSON ({exc})")
+                  sys.exit(1)
+
+          merged = {}
+          for key, default in defaults.items():
+              value = data.get(key, default)
+              if isinstance(value, bool):
+                  value = "true" if value else "false"
+              else:
+                  value = str(value)
+              merged[key] = value
+
+          env_path = os.environ["GITHUB_ENV"]
+          out_path = os.environ["GITHUB_OUTPUT"]
+          with open(env_path, "a", encoding="utf-8") as envf, open(out_path, "a", encoding="utf-8") as outf:
+              for key, value in merged.items():
+                  envf.write(f"{key}={value}\n")
+                  outf.write(f"{key}={value}\n")
+          PY
+        env:
+          RAW_CONFIG: ${{ github.event.inputs.config_json }}
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: ${{ github.event.inputs.jdk }}
+          java-version: ${{ steps.cfg.outputs.jdk }}
 
       - name: Setup Android SDK/NDK
         uses: android-actions/setup-android@v3
@@ -152,19 +149,19 @@ jobs:
           accept-android-sdk-licenses: true
           packages: |
             platform-tools
-            platforms;android-${{ github.event.inputs.sdk_api }}
-            build-tools;${{ github.event.inputs.build_tools }}
-            ndk;${{ github.event.inputs.ndk_version }}
+            platforms;android-${{ steps.cfg.outputs.sdk_api }}
+            build-tools;${{ steps.cfg.outputs.build_tools }}
+            ndk;${{ steps.cfg.outputs.ndk_version }}
 
       - name: Export ANDROID_NDK Vars
         run: |
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ github.event.inputs.ndk_version }}" >> $GITHUB_ENV
-          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/${{ github.event.inputs.ndk_version }}" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ steps.cfg.outputs.ndk_version }}" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/${{ steps.cfg.outputs.ndk_version }}" >> $GITHUB_ENV
 
       - name: Setup CMake
         uses: jwlawson/actions-setup-cmake@v2
         with:
-          cmake-version: ${{ github.event.inputs.cmake_version }}
+          cmake-version: ${{ steps.cfg.outputs.cmake_version }}
 
       - name: Setup Gradle (cache+wrapper validation)
         uses: gradle/actions/setup-gradle@v5
@@ -179,10 +176,10 @@ jobs:
 
       # Risk Switches
       - name: Optional – Gradle 9.x OVERRIDE (Guard prüft AGP)
-        if: ${{ github.event.inputs.use_gradle_9x == 'true' }}
+        if: ${{ steps.cfg.outputs.use_gradle_9x == 'true' }}
         run: |
           set -euo pipefail
-          V="${{ github.event.inputs.gradle_9x_version }}"
+          V="${{ steps.cfg.outputs.gradle_9x_version }}"
           [[ -f gradle/wrapper/gradle-wrapper.properties ]] || { echo "::error::gradle-wrapper.properties fehlt"; exit 1; }
           sed -i -E "s#distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-${V}-bin.zip#g" gradle/wrapper/gradle-wrapper.properties
           echo "Gradle Wrapper → ${V}"
@@ -194,7 +191,7 @@ jobs:
           fi
 
       - name: Optional – AGP/Kotlin Override (In-Place Patch nur für Run)
-        if: ${{ github.event.inputs.agp_override != '' || github.event.inputs.kotlin_override != '' }}
+        if: ${{ steps.cfg.outputs.agp_override != '' || steps.cfg.outputs.kotlin_override != '' }}
         run: |
           python3 - <<'PY'
           import re, pathlib, os
@@ -214,8 +211,8 @@ jobs:
             if s!=o: p.write_text(s,encoding="utf-8")
           PY
         env:
-          AGP_NEW: ${{ github.event.inputs.agp_override }}
-          KOTLIN_NEW: ${{ github.event.inputs.kotlin_override }}
+          AGP_NEW: ${{ steps.cfg.outputs.agp_override }}
+          KOTLIN_NEW: ${{ steps.cfg.outputs.kotlin_override }}
 
       # ABI / Splits
       - name: ABI / Splits konfigurieren
@@ -262,9 +259,9 @@ jobs:
           path: |
             ~/.cache/ccache
             ~/.ccache
-          key: ccache-${{ runner.os }}-ndk${{ github.event.inputs.ndk_version }}-sdk${{ github.event.inputs.sdk_api }}-bt${{ github.event.inputs.build_tools }}-${{ hashFiles('scripts/build_tdlib_android.sh') }}
+          key: ccache-${{ runner.os }}-ndk${{ steps.cfg.outputs.ndk_version }}-sdk${{ steps.cfg.outputs.sdk_api }}-bt${{ steps.cfg.outputs.build_tools }}-${{ hashFiles('scripts/build_tdlib_android.sh') }}
           restore-keys: |
-            ccache-${{ runner.os }}-ndk${{ github.event.inputs.ndk_version }}-
+            ccache-${{ runner.os }}-ndk${{ steps.cfg.outputs.ndk_version }}-
             ccache-${{ runner.os }}-
 
       - name: TDLib cache
@@ -277,9 +274,9 @@ jobs:
             libtd/src/main/java/org/drinkless/tdlib/Client.java
             libtd/.tdlib_meta
             libtd/TDLIB_VERSION.txt
-          key: tdlib-${{ runner.os }}-ndk${{ github.event.inputs.ndk_version }}-abi-${{ github.event.inputs.abis }}-${{ hashFiles('scripts/build_tdlib_android.sh', 'scripts/**/*.patch') }}
+          key: tdlib-${{ runner.os }}-ndk${{ steps.cfg.outputs.ndk_version }}-abi-${{ github.event.inputs.abis }}-${{ hashFiles('scripts/build_tdlib_android.sh', 'scripts/**/*.patch') }}
           restore-keys: |
-            tdlib-${{ runner.os }}-ndk${{ github.event.inputs.ndk_version }}-
+            tdlib-${{ runner.os }}-ndk${{ steps.cfg.outputs.ndk_version }}-
             tdlib-${{ runner.os }}-
 
       # Need TDLib?
@@ -335,15 +332,15 @@ jobs:
           # Versionierung / Ref
           case "${{ github.event.inputs.tdlib_mode }}" in
             default)
-              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --api-level=${{ github.event.inputs.sdk_api }}
+              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --api-level=${{ steps.cfg.outputs.sdk_api }}
               ;;
             latest-tag)
-              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --latest-tag --api-level=${{ github.event.inputs.sdk_api }}
+              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --latest-tag --api-level=${{ steps.cfg.outputs.sdk_api }}
               ;;
             tag|commit|ref)
-              REF="${{ github.event.inputs.tdlib_value }}"
-              if [[ -z "$REF" ]]; then echo "::error::tdlib_value ist leer"; exit 1; fi
-              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --ref "$REF" --api-level=${{ github.event.inputs.sdk_api }}
+              REF="${{ github.event.inputs.tdlib_ref }}"
+              if [[ -z "$REF" ]]; then echo "::error::tdlib_ref ist leer"; exit 1; fi
+              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --ref "$REF" --api-level=${{ steps.cfg.outputs.sdk_api }}
               ;;
           esac
 
@@ -364,9 +361,9 @@ jobs:
       - name: Build
         run: |
           EXTRA_PROPS=()
-          [[ -n "${{ github.event.inputs.version_code }}" ]] && EXTRA_PROPS+=("-PversionCode=${{ github.event.inputs.version_code }}")
-          [[ -n "${{ github.event.inputs.version_name }}" ]] && EXTRA_PROPS+=("-PversionName=${{ github.event.inputs.version_name }}")
-          MIRROR="${{ github.event.inputs.mirror_only || 'false' }}"
+          [[ -n "${{ steps.cfg.outputs.version_code }}" ]] && EXTRA_PROPS+=("-PversionCode=${{ steps.cfg.outputs.version_code }}")
+          [[ -n "${{ steps.cfg.outputs.version_name }}" ]] && EXTRA_PROPS+=("-PversionName=${{ steps.cfg.outputs.version_name }}")
+          MIRROR="${{ github.event.inputs.mirror_only }}"
           if [[ "$MIRROR" == "true" ]]; then OBX_DEFAULT=false; else OBX_DEFAULT=true; fi
 
           ./gradlew ${{ steps.task.outputs.task }} \
@@ -387,7 +384,7 @@ jobs:
           { find app/build/outputs/apk -type f -name "*.apk" -print0 | xargs -0 sha256sum || true; } > checksums.txt
           echo "Build type  : ${{ github.event.inputs.build_type }}"
           echo "ABIs        : ${{ env.ORG_GRADLE_PROJECT_abiFilters || 'universal' }}"
-          echo "API/BT/NDK  : ${{ github.event.inputs.sdk_api }}/${{ github.event.inputs.build_tools }}/${{ github.event.inputs.ndk_version }}"
+          echo "API/BT/NDK  : ${{ steps.cfg.outputs.sdk_api }}/${{ steps.cfg.outputs.build_tools }}/${{ steps.cfg.outputs.ndk_version }}"
           echo "TDLib mode  : ${{ github.event.inputs.tdlib_mode }}  (BT=${{ github.event.inputs.tdlib_build_type }})"
 
       - name: Artefakte hochladen (APK + mapping)
@@ -433,14 +430,18 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: PR-Kommentar (optional)
-        if: ${{ github.event.inputs.pr_comment == 'true' && (github.event_name == 'pull_request' || github.event.inputs.issue_number != '') }}
+        if: ${{ steps.cfg.outputs.pr_comment == 'true' && (github.event_name == 'pull_request' || steps.cfg.outputs.issue_number != '') }}
         uses: actions/github-script@v8
         with:
           script: |
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const body = ["### 📦 Android Build fertig", `**Run:** ${runUrl}`, "", "Artefakte: **Artifacts** & **Run Summary**."].join("\n");
-            const issue_number = context.payload.pull_request?.number || Number(core.getInput('issue_number'));
+            const override = process.env.ISSUE_NUMBER_OVERRIDE?.trim();
+            const parsed = override ? Number(override) : undefined;
+            const issue_number = context.payload.pull_request?.number ?? (Number.isFinite(parsed) ? parsed : undefined);
             if (issue_number) await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+        env:
+          ISSUE_NUMBER_OVERRIDE: ${{ steps.cfg.outputs.issue_number }}
 
       - name: tmate (on failure)
         if: ${{ failure() || github.event.inputs.debug_tmate == 'true' }}
