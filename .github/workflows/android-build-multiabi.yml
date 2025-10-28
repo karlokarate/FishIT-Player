@@ -44,6 +44,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 concurrency:
   group: android-fishitplayer-${{ github.workflow }}-${{ github.ref || github.run_id }}
