@@ -135,11 +135,16 @@ jobs:
       # Checkout & Tooling
       - name: Checkout (LFS & Submodules)
         uses: actions/checkout@v5
-        with: { fetch-depth: 0, lfs: true, submodules: recursive }
+        with:
+          fetch-depth: 0
+          lfs: true
+          submodules: recursive
 
       - name: Setup Java
         uses: actions/setup-java@v5
-        with: { distribution: temurin, java-version: ${{ github.event.inputs.jdk }} }
+        with:
+          distribution: temurin
+          java-version: ${{ github.event.inputs.jdk }}
 
       - name: Setup Android SDK/NDK
         uses: android-actions/setup-android@v3
@@ -158,7 +163,8 @@ jobs:
 
       - name: Setup CMake
         uses: jwlawson/actions-setup-cmake@v2
-        with: { cmake-version: ${{ github.event.inputs.cmake_version }} }
+        with:
+          cmake-version: ${{ github.event.inputs.cmake_version }}
 
       - name: Setup Gradle (cache+wrapper validation)
         uses: gradle/actions/setup-gradle@v5
@@ -439,4 +445,5 @@ jobs:
       - name: tmate (on failure)
         if: ${{ failure() || github.event.inputs.debug_tmate == 'true' }}
         uses: mxschmitt/action-tmate@v3
-        with: { limit-access-to-actor: true }
+        with:
+          limit-access-to-actor: true
