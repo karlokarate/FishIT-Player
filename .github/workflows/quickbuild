@@ -20,7 +20,6 @@ on:
       debug_tmate:
         description: "tmate-Debug"
         type: choice
-        required: false
         default: "false"
         options: ["false","true"]
 
@@ -36,33 +35,40 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
-        with: { fetch-depth: 1 } # schnell
-      - uses: gradle/actions/wrapper-validation@v3
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+      - name: Checkout
+        uses: actions/checkout@v5  # Node 24 runtime
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           accept-android-sdk-licenses: true
-          packages: platform-tools platforms;android-${{ github.event.inputs.sdk_api }} build-tools;${{ github.event.inputs.build_tools }}
-      - uses: gradle/actions/setup-gradle@v3
+          packages: >
+            platform-tools
+            platforms;android-${{ github.event.inputs.sdk_api }}
+            build-tools;${{ github.event.inputs.build_tools }}
+      - name: Gradle Cache
+        uses: gradle/actions/setup-gradle@v3  # automatisches Caching
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-      - name: ABI/Splits
+
+      - name: ABI / Splits
         run: |
           case "${{ github.event.inputs.abis }}" in
-            arm64+v7a) echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a,armeabi-v7a" >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=true" >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV;;
-            arm64)     echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a"             >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=true" >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV;;
-            v7a)       echo "ORG_GRADLE_PROJECT_abiFilters=armeabi-v7a"           >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=true" >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV;;
-            universal) echo "ORG_GRADLE_PROJECT_abiFilters="                      >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=false" >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=true" >> $GITHUB_ENV;;
+            arm64+v7a) echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a,armeabi-v7a" >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=true"  >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV;;
+            arm64)     echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a"             >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=true"  >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV;;
+            v7a)       echo "ORG_GRADLE_PROJECT_abiFilters=armeabi-v7a"           >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=true"  >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV;;
+            universal) echo "ORG_GRADLE_PROJECT_abiFilters="                      >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=false" >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=true"  >> $GITHUB_ENV;;
           esac
-      - name: Problem Matcher aktivieren
+
+      - name: Gradle Problem-Matcher aktivieren
         continue-on-error: true
         run: |
           [[ -f .github/gradle-problem-matcher.json ]] && echo "::add-matcher::.github/gradle-problem-matcher.json" || true
+
       - name: Assemble Debug (ohne Tests)
         run: |
           ./gradlew :app:assembleDebug \
@@ -71,6 +77,7 @@ jobs:
             -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}" \
             --configuration-cache --build-cache --parallel \
             --stacktrace --warning-mode all -x test
+
       - name: APKs hochladen
         uses: actions/upload-artifact@v4
         with:
@@ -78,7 +85,8 @@ jobs:
           path: app/build/outputs/apk/**/**/*.apk
           if-no-files-found: error
           retention-days: 7
-      - name: tmate
+
+      - name: Start tmate (on failure/explicit)
         if: ${{ failure() || github.event.inputs.debug_tmate == 'true' }}
         uses: mxschmitt/action-tmate@v3
         with: { limit-access-to-actor: true }
