@@ -21,7 +21,7 @@
       ]
     },
 
-    {
+    { 
       "owner": "kotlin-paren-error",
       "severity": "error",
       "pattern": [
@@ -34,7 +34,7 @@
         }
       ]
     },
-    {
+    { 
       "owner": "kotlin-paren-warning",
       "severity": "warning",
       "pattern": [
@@ -48,7 +48,7 @@
       ]
     },
 
-    {
+    { 
       "owner": "kapt-ksp-error",
       "severity": "error",
       "pattern": [
@@ -61,7 +61,7 @@
         }
       ]
     },
-    {
+    { 
       "owner": "kapt-ksp-warning",
       "severity": "warning",
       "pattern": [
@@ -99,15 +99,28 @@
     },
 
     {
-      "owner": "android-lint",
+      "owner": "android-lint-error",
+      "severity": "error",
       "pattern": [
         {
-          "regexp": "^([\\w./\\\\-]+):(\\d+):(\\d+):\\s*(Warning|Error):\\s*(.+)$",
+          "regexp": "^([\\w./\\\\-]+):(\\d+):(\\d+):\\s*Error:\\s*(.+)$",
           "file": 1,
           "line": 2,
           "column": 3,
-          "severity": 4,
-          "message": 5
+          "message": 4
+        }
+      ]
+    },
+    {
+      "owner": "android-lint-warning",
+      "severity": "warning",
+      "pattern": [
+        {
+          "regexp": "^([\\w./\\\\-]+):(\\d+):(\\d+):\\s*Warning:\\s*(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
         }
       ]
     }
