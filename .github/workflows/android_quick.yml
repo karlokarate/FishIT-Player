@@ -7,23 +7,34 @@ on:
         description: "Kompatibler Toolchain-Satz"
         type: choice
         default: "stable"
-        options: ["stable", "lts", "project"]
+        options:
+          - "stable"
+          - "lts"
+          - "project"
       abis:
         description: "ABIs (Splits/Universal)"
         type: choice
         required: true
         default: "arm64+v7a"
-        options: ["arm64+v7a", "arm64", "v7a", "universal"]
+        options:
+          - "arm64+v7a"
+          - "arm64"
+          - "v7a"
+          - "universal"
       debug_tmate:
         description: "tmate-Debug"
         type: choice
         default: "false"
-        options: ["false", "true"]
+        options:
+          - "false"
+          - "true"
       pr_annotations:
         description: "Reviewdog PR-Checks (detekt/ktlint/lint, falls Reports vorhanden)"
         type: choice
         default: "false"
-        options: ["false", "true"]
+        options:
+          - "false"
+          - "true"
       config_json:
         description: "JSON-Overrides (sdk_api, build_tools, jdk, gradle_version, agp_override, kotlin_override, pr_comment, issue_number)"
         required: false
@@ -180,27 +191,30 @@ jobs:
                    if p.is_file() and p.suffix in (".gradle",".kts",".toml")
                    and "build" not in p.parts]
           for p in paths:
-            s = p.read_text(encoding="utf-8", errors="ignore")
+            try:
+              s = p.read_text(encoding="utf-8")
+            except Exception:
+              continue
             o = s
             # --- Sanitizer für versehentliche \g<1>…\g<2>-Artefakte ---
-            s = re.sub(r'(version\\s+)(?:\\\\?g<1>)?([0-9]+\\.[0-9.]+)(?:\\\\?g<2>)', r'\\1"\\2"', s)
-            s = re.sub(r'(?m)^(\\s*agp\\s*=\\s*)(?:\\\\?g<1>)?([0-9]+\\.[0-9.]+)(?:\\\\?g<2>)\\s*$', r'\\1"\\2"', s)
-            s = re.sub(r'(?m)^(\\s*kotlin\\s*=\\s*)(?:\\\\?g<1>)?([0-9]+\\.[0-9.]+)(?:\\\\?g<2>)\\s*$', r'\\1"\\2"', s)
+            s = re.sub(r'(version\s+)(?:\\?g<1>)?([0-9]+\.[0-9.]+)(?:\\?g<2>)?', r'\1"\2"', s)
+            s = re.sub(r'(?m)^(\s*agp\s*=\s*)(?:\\?g<1>)?([0-9]+\.[0-9.]+)(?:\\?g<2>)?\s*$', r'\1"\2"', s)
+            s = re.sub(r'(?m)^(\s*kotlin\s*=\s*)(?:\\?g<1>)?([0-9]+\.[0-9.]+)(?:\\?g<2>)?\s*$', r'\1"\2"', s)
             # --- AGP ersetzen ---
             if agp:
-              s = re.sub(r'(com\\.android\\.tools\\.build:gradle:)([0-9]+\\.[0-9.]+)',
+              s = re.sub(r'(com\.android\.tools\.build:gradle:)([0-9]+\.[0-9.]+)',
                          lambda m: f'{m.group(1)}{agp}', s)
-              s = re.sub(r'(id\\(["\\']com\\.android\\.(?:application|library|test|dynamic-feature)["\\']\\)\\s+version\\s+")([^"]+)(")',
+              s = re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+")([^"]+)(")',
                          lambda m: f'{m.group(1)}{agp}{m.group(3)}', s)
-              s = re.sub(r'(?m)^(\\s*agp\\s*=\\s*")[^"]+(")',
+              s = re.sub(r'(?m)^(\s*agp\s*=\s*")[^"]+(")',
                          lambda m: f'{m.group(1)}{agp}{m.group(2)}', s)
             # --- Kotlin ersetzen ---
             if kt:
-              s = re.sub(r'(org\\.jetbrains\\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)([0-9]+\\.[0-9.]+)',
+              s = re.sub(r'(org\.jetbrains\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)([0-9]+\.[0-9.]+)',
                          lambda m: f'{m.group(1)}{kt}', s)
-              s = re.sub(r'(id\\(["\\']org\\.jetbrains\\.kotlin\\.(?:android|jvm|multiplatform)["\\']\\)\\s+version\\s+")([^"]+)(")',
+              s = re.sub(r'(id\(["\']org\.jetbrains\.kotlin\.(?:android|jvm|multiplatform)["\']\)\s+version\s+")([^"]+)(")',
                          lambda m: f'{m.group(1)}{kt}{m.group(3)}', s)
-              s = re.sub(r'(?m)^(\\s*kotlin\\s*=\\s*")[^"]+(")',
+              s = re.sub(r'(?m)^(\s*kotlin\s*=\s*")[^"]+(")',
                          lambda m: f'{m.group(1)}{kt}{m.group(2)}', s)
             if s != o:
               p.write_text(s, encoding="utf-8")
