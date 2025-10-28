@@ -103,7 +103,7 @@ jobs:
             SDK_API=34; BUILD_TOOLS="34.0.0"; NDK="26.3.11333136"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.22.1"; JDK=17; GRADLE="8.7"; AGP="8.5.2"
           else
             SDK_API=""; BUILD_TOOLS=""; NDK=""; CMAKE_REQ=""; CMAKE_FALLBACK="3.30.5"; JDK=""; GRADLE=""; AGP=""
-            python3 - <<'PY'
+            python3 - <<'PY' | tee inferred.json
             import re, pathlib, json, os
             out = {}
             globs = ["**/build.gradle", "**/build.gradle.kts", "**/gradle.properties"]
@@ -116,18 +116,17 @@ jobs:
                   texts.append(p.read_text(encoding="utf-8", errors="ignore"))
                 except Exception:
                   pass
-            blob = "\n".join(texts)
-            m = re.search(r"compileSdk\s*[=:\s]\s*(\d+)", blob)
+            blob = "\\n".join(texts)
+            m = re.search(r"compileSdk\\s*[=:\\s]\\s*(\\d+)", blob)
             if m: out["SDK_API"] = m.group(1)
-            m = re.search(r'buildToolsVersion\s*[=:\s]\s*["\']([^"\']+)["\']', blob)
+            m = re.search(r'buildToolsVersion\\s*[=:\\s]\\s*["\\']([^"\\']+)["\\']', blob)
             if m: out["BUILD_TOOLS"] = m.group(1)
-            m = re.search(r'ndkVersion\s*[=:\s]\s*["\']([^"\']+)["\']', blob)
+            m = re.search(r'ndkVersion\\s*[=:\\s]\\s*["\\']([^"\\']+)["\\']', blob)
             if m: out["NDK"] = m.group(1)
-            m = re.search(r'com\.android\.tools\.build:gradle:([0-9]+\.[0-9]+(?:\.[0-9]+)?)', blob)
+            m = re.search(r'com\\.android\\.tools\\.build:gradle:([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)', blob)
             if m: out["AGP"] = m.group(1)
             print(json.dumps(out))
             PY
-            | tee inferred.json
             SDK_API="$(jq -r '.SDK_API // empty' inferred.json || true)"
             BUILD_TOOLS="$(jq -r '.BUILD_TOOLS // empty' inferred.json || true)"
             NDK="$(jq -r '.NDK // empty' inferred.json || true)"
@@ -162,7 +161,7 @@ jobs:
           set -euo pipefail
           WRAP=gradle/wrapper/gradle-wrapper.properties
           [[ -f "$WRAP" ]] || { echo "::error::gradle-wrapper.properties fehlt"; exit 1; }
-          sed -i -E "s#distributionUrl=.*#distributionUrl=https\://services.gradle.org/distributions/gradle-${{ env.GRADLE_VER }}-bin.zip#g" "$WRAP"
+          sed -i -E "s#distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-${{ env.GRADLE_VER }}-bin.zip#g" "$WRAP"
           echo "Wrapper → Gradle ${{ env.GRADLE_VER }}"
 
       - name: Optional – Patch AGP (from Toolchain)
@@ -174,8 +173,8 @@ jobs:
           files=[p for p in pathlib.Path(".").rglob("*") if p.is_file() and p.suffix in (".gradle",".kts",".toml") and "build" not in p.parts]
           for p in files:
             s=p.read_text(encoding="utf-8",errors="ignore"); o=s
-            s=re.sub(r"(com\.android\.tools\.build:gradle:)\d+\.\d+(?:\.\d+)?", rf"\g<1>{agp}", s)
-            s=re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+")([^"]+)(")', rf"\1{agp}\3", s)
+            s=re.sub(r"(com\\.android\\.tools\\.build:gradle:)\\d+\\.\\d+(?:\\.\\d+)?", rf"\\g<1>{agp}", s)
+            s=re.sub(r'(id\\(["\\']com\\.android\\.(?:application|library|test|dynamic-feature)["\\']\\)\\s+version\\s+")([^"]+)(")', rf"\\1{agp}\\3", s)
             if s!=o: p.write_text(s,encoding="utf-8")
           print("AGP pinned to", agp)
           PY
@@ -290,7 +289,6 @@ jobs:
                       print(f"::warning::Verzeichnislöschen nicht erlaubt: {p}")
               except Exception as e:
                   print(f"::warning::Delete fehlgeschlagen für {p}: {e}")
-          # flags from config_json -> env (reduce inputs)
           envf = os.environ.get("GITHUB_ENV")
           if envf:
               with open(envf, "a", encoding="utf-8") as f:
@@ -322,7 +320,7 @@ jobs:
           import os, base64, pathlib
           s=os.environ.get("KS_B64","").strip()
           if s:
-            if "base64," in s: s=s.split("base64,",1)[1]
+            if "base64," in s: s=s.split("base64:",1)[-1]
             s="".join(s.split()); pad='='*(-len(s)%4)
             pathlib.Path("release.keystore").write_bytes(base64.b64decode(s+pad))
             print("DECODE_OK")
@@ -446,7 +444,8 @@ jobs:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set +e
-          (git ls-files | xargs -I{} grep -nH "TODO" "{}" || true)             | reviewdog -name="TODO Scanner" -f=grep -reporter=github-check -level=info -filter-mode=nofilter -fail-on-error=false
+          (git ls-files | xargs -I{} grep -nH "TODO" "{}" || true) \
+            | reviewdog -name="TODO Scanner" -f=grep -reporter=github-check -level=info -filter-mode=nofilter -fail-on-error=false
 
       - name: Task wählen
         id: task
@@ -465,7 +464,13 @@ jobs:
         run: |
           MIRROR="${{ github.event.inputs.mirror_only || 'false' }}"
           if [[ "$MIRROR" == "true" ]]; then OBX_DEFAULT=false; else OBX_DEFAULT=true; fi
-          ./gradlew ${{ steps.task.outputs.task }}             -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}"             -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}"             -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}"             -PTG_OBX_ENABLED_DEFAULT=${OBX_DEFAULT}             --configuration-cache --build-cache --parallel             --stacktrace --warning-mode all -x test
+          ./gradlew ${{ steps.task.outputs.task }} \
+            -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}" \
+            -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}" \
+            -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}" \
+            -PTG_OBX_ENABLED_DEFAULT=${OBX_DEFAULT} \
+            --configuration-cache --build-cache --parallel \
+            --stacktrace --warning-mode all -x test
 
       - name: apksigner verify (falls signiert)
         if: ${{ github.event.inputs.sign_apk == 'true' }}
