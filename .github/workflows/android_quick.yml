@@ -111,9 +111,7 @@ jobs:
           sed -i -E "s#distributionUrl=.*#distributionUrl=https://services.gradle.org/distributions/gradle-${V}-bin.zip#g" gradle/wrapper/gradle-wrapper.properties
           echo "Gradle Wrapper → ${V}"
           AGP="$(grep -RhoE 'com\.android\.tools\.build:gradle:([0-9]+\.[0-9]+(\.[0-9]+)?)' -n --include=*.gradle* --exclude-dir=**/build | head -1 | sed -E 's/.*:([0-9.]+).*/\1/')"
-          vergte() { [ "$1" = "$2" ] || [ "$(printf '%s
-%s
-' "$1" "$2" | sort -V | tail -n1)" = "$1" ]; }
+          vergte() { [ "$1" = "$2" ] || [ "$(printf '%s' "$1" "$2" | sort -V | tail -n1)" = "$1" ]; }
           if [[ -n "$AGP" ]] && ! vergte "$AGP" "8.13.0"; then
             echo "::error::Gradle 9.x erfordert AGP >= 8.13 ODER AGP 9 Preview. Setze 'agp_override' entsprechend."
             exit 2
