@@ -300,7 +300,7 @@ jobs:
                   flags |= getattr(re, f, 0)
               pat = r.get("pattern","")
               # Prevent catastrophic backtracking: limit certain constructs
-              if re.search(r"\(?![AbBdDsSwWZ\])", pat):
+              if re.search(r"\\(?![AbBdDsSwWZ\\])", pat):
                   print(f"::warning::Backslash-Leiche in Pattern: {pat[:40]}… – versuche Escape-Heilung")
                   pat = pat.encode("utf-8").decode("unicode_escape")
               try:
