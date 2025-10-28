@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       toolchain_bundle:
-        description: "Kompatibler Toolchain‑Satz"
+        description: "Kompatibler Toolchain-Satz"
         type: choice
         default: "stable"
         options: [stable, lts, project]
@@ -20,12 +20,12 @@ on:
         default: "false"
         options: ["false", "true"]
       pr_annotations:
-        description: "Reviewdog PR‑Checks (detekt/ktlint/lint, falls Reports vorhanden)"
+        description: "Reviewdog PR-Checks (detekt/ktlint/lint, falls Reports vorhanden)"
         type: choice
         default: "false"
         options: ["false", "true"]
       config_json:
-        description: "JSON‑Overrides (sdk_api, build_tools, jdk, gradle_version, agp_override, kotlin_override, pr_comment, issue_number)"
+        description: "JSON-Overrides (sdk_api, build_tools, jdk, gradle_version, agp_override, kotlin_override, pr_comment, issue_number)"
         required: false
         default: "{}"
 
@@ -58,18 +58,14 @@ jobs:
             python3 -m pip install -r .github/requirements.txt
           fi
 
-      - name: Toolchain‑Bundle auflösen + JSON‑Overrides mergen
+      - name: Toolchain-Bundle auflösen + JSON-Overrides mergen
         id: cfg
         run: |
           python3 - <<'PY'
           import json, os, sys
           bundle = os.environ.get("BUNDLE","stable").strip()
 
-          # Baselines für Bundles (konservativ & getestet)
-          # "stable": aktuelle stabile Toolchain (Gradle 8.13, JDK 21, AGP 8.12, SDK/BT 36/35)
-          # "lts":    konservativ (Gradle 8.7,  JDK 17, AGP 8.5,  SDK/BT 34/34)
-          # "project": keine Zwangs-Overrides (nimmt Defaults, nur JSON greift)
-          bases = {
+          bundles = {
             "stable": {
               "sdk_api": "36",
               "build_tools": "35.0.0",
@@ -102,7 +98,6 @@ jobs:
             }
           }
 
-          # JSON laden (Optional)
           raw = os.environ.get("RAW_CONFIG","").strip()
           user = {}
           if raw:
@@ -112,19 +107,15 @@ jobs:
               print(f"::error::config_json ist kein gültiges JSON ({exc})")
               sys.exit(1)
 
-          # Backwards-Compat: use_gradle_9x/gradle_9x_version → gradle_version
+          # Backcompat: use_gradle_9x → gradle_version
           if user.get("use_gradle_9x","false") in (True, "true"):
-            gv = str(user.get("gradle_9x_version","9.1.0"))
-            user["gradle_version"] = gv
+            user["gradle_version"] = str(user.get("gradle_9x_version","9.1.0"))
 
-          base = bases.get(bundle, bases["stable"]).copy()
-          base.update({ k:str(v) for k,v in user.items() })
+          base = bundles.get(bundle, bundles["stable"]).copy()
+          base.update({k: str(v) for k, v in user.items()})
 
-          # Outputs + ENV schreiben
-          env_path = os.environ["GITHUB_ENV"]
-          out_path = os.environ["GITHUB_OUTPUT"]
-          with open(env_path,"a",encoding="utf-8") as envf, open(out_path,"a",encoding="utf-8") as outf:
-            for k,v in base.items():
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as envf, open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as outf:
+            for k, v in base.items():
               envf.write(f"{k}={v}\n")
               outf.write(f"{k}={v}\n")
           PY
@@ -219,14 +210,18 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Reviewdog PR‑Checks (optional)
+      - name: Reviewdog Setup (optional)
         if: ${{ github.event.inputs.pr_annotations == 'true' }}
         uses: reviewdog/action-setup@v1
-      - if: ${{ github.event.inputs.pr_annotations == 'true' }}
-        name: Reviewdog – detekt/ktlint/lint aus Reports
+
+      - name: Reviewdog – detekt/ktlint/lint aus Reports (optional)
+        if: ${{ github.event.inputs.pr_annotations == 'true' }}
         run: |
           set -e
-          command -v reviewdog >/dev/null 2>&1 || { echo "::warning::reviewdog fehlt – Annotationen übersprungen"; exit 0; }
+          if ! command -v reviewdog >/dev/null 2>&1; then
+            echo "::warning::reviewdog fehlt – Annotationen übersprungen"
+            exit 0
+          fi
           if ls **/build/reports/detekt/detekt.xml >/dev/null 2>&1; then
             reviewdog -f=checkstyle -name="detekt" -reporter=github-pr-check -filter-mode=nofilter -fail-on-error=false < **/build/reports/detekt/detekt.xml
           fi
@@ -254,20 +249,6 @@ jobs:
             echo "### APKs"
             find app/build/outputs/apk -type f -name "*.apk" -maxdepth 3 | sed 's/^/- /' || echo "- (keine gefunden)"
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: PR-Kommentar (optional)
-        if: ${{ steps.cfg.outputs.pr_comment == 'true' && (github.event_name == 'pull_request' || steps.cfg.outputs.issue_number != '') }}
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const body = ["### ⚙️ Quick Debug fertig", `**Run:** ${runUrl}`, "", "Artefakte: siehe **Artifacts** und **Run Summary**."].join("\n");
-            const override = process.env.ISSUE_NUMBER_OVERRIDE?.trim();
-            const parsed = override ? Number(override) : undefined;
-            const issue_number = context.payload.pull_request?.number ?? (Number.isFinite(parsed) ? parsed : undefined);
-            if (issue_number) await github.rest.issues.createComment({ ...context.repo, issue_number, body });
-        env:
-          ISSUE_NUMBER_OVERRIDE: ${{ steps.cfg.outputs.issue_number }}
 
       - name: Start tmate (on failure/explicit)
         if: ${{ failure() || github.event.inputs.debug_tmate == 'true' }}
