@@ -64,27 +64,32 @@ jobs:
       ORG_GRADLE_PROJECT_useSplits: true
 
     steps:
+      # --- Checkout & Tooling -------------------------------------------------
       - name: Checkout (mit LFS & Submodules)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
           submodules: recursive
+      # Validierung: schlägt fehl, wenn Repo/Token fehlen.
 
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@v3
+      # Validierung: bricht ab, wenn Wrapper manipuliert/korrupt ist.
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+      # Validierung: stellt JAVA_HOME; kein Fail, außer Infra-Ausfall.
 
       - name: Set up Android SDK/NDK
         uses: android-actions/setup-android@v3
         with:
           accept-android-sdk-licenses: true
           packages: platform-tools platforms;android-36 build-tools;36.0.0 ndk;26.3.11579264
+      # Validierung: bricht, wenn Pakete/Channel nicht verfügbar.
 
       - name: Verify installed SDK packages
         run: |
@@ -93,17 +98,20 @@ jobs:
           [[ -x "$SDKM" ]] || { echo "::warning::sdkmanager not found"; exit 0; }
           "$SDKM" --list | sed -n '1,120p' || true
           ls -la "$ANDROID_SDK_ROOT"/{platform-tools,build-tools,ndk} || true
+      # Validierung: rein informativ; kein harter Fail.
 
       - name: Export ANDROID_NDK_HOME/ROOT
         run: |
           NDK_DIR="$ANDROID_SDK_ROOT/ndk/26.3.11579264"
           echo "ANDROID_NDK_HOME=$NDK_DIR"  >> $GITHUB_ENV
           echo "ANDROID_NDK_ROOT=$NDK_DIR"  >> $GITHUB_ENV
+      # Validierung: setzt Umgebungsvariable für CMake/NDK.
 
       - name: Setup CMake 4.1
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '4.1.x'
+      # Validierung: stellt cmake >= 3.25+ sicher; Fail bei Downloadproblem.
 
       - name: Show tool versions
         run: |
@@ -114,11 +122,12 @@ jobs:
 
       - name: Gradle Cache
         uses: gradle/actions/setup-gradle@v3
+      # Validierung: richtet Build-Cache; kein harter Fail.
 
       - name: Make gradlew ausführbar
         run: chmod +x ./gradlew
 
-      # --- ABI Picker ---
+      # --- ABI Picker ---------------------------------------------------------
       - name: Set ABI / Split-Konfiguration aus Picker
         run: |
           set -euo pipefail
@@ -145,38 +154,34 @@ jobs:
               ;;
           esac
           echo "ABI Picker angewendet: ${{ github.event.inputs.abis }}"
+      # Validierung: setzt korrekte Gradle -P Flags; Fail bei Tippfehler ausgeschlossen.
 
-      # === Secrets → Env (Signing + TG + HEADER) ===
+      # --- Secrets / Signing / TG --------------------------------------------
       - name: Decode & Setup Signing + App Secrets
         env:
           KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
         run: |
           python3 - <<'PY'
-          import os, re, base64, pathlib
+          import os, base64, pathlib, re
           raw = os.environ.get("KS_B64","")
           def norm(s):
               if not s: return ""
-              s = s.strip()
-              if len(s)>=2 and s[0]==s[-1] and s[0] in "'\"`":
-                  s = s[1:-1]
-              if "base64," in s:
-                  s = s.split("base64,",1)[1]
+              s=s.strip()
+              if len(s)>=2 and s[0]==s[-1] and s[0] in "'\"`": s=s[1:-1]
+              if "base64," in s: s=s.split("base64,",1)[1]
               return "".join(s.split())
-          def try_decode(c):
+          def try_dec(c):
               for fn in (base64.b64decode, base64.urlsafe_b64decode):
                   try:
-                      pad = '=' * (-len(c) % 4)
+                      pad='='*(-len(c)%4)
                       return fn(c+pad)
-                  except Exception:
-                      pass
+                  except Exception: pass
               return None
           cand = norm(raw)
-          d = try_decode(cand)
+          d = try_dec(cand)
           if not d:
-              import re as _r
-              parts = _r.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw or '')
-              if parts:
-                  d = try_decode(norm(max(parts, key=len)))
+              parts = re.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw or '')
+              if parts: d = try_dec(norm(max(parts, key=len)))
           if d:
               pathlib.Path("release.keystore").write_bytes(d)
               print("DECODE_OK")
@@ -197,8 +202,9 @@ jobs:
           [[ -n "${{ secrets.TG_API_ID }}"   ]] && echo "TG_API_ID=${{ secrets.TG_API_ID }}"     >> $GITHUB_ENV
           [[ -n "${{ secrets.TG_API_HASH }}" ]] && echo "TG_API_HASH=${{ secrets.TG_API_HASH }}" >> $GITHUB_ENV
           [[ -n "${{ secrets.HEADER }}"     ]] && echo "HEADER=${{ secrets.HEADER }}"           >> $GITHUB_ENV
+      # Validierung: schreibt Keystore, setzt Env; Warnung statt Fail wenn Secret fehlt.
 
-      # ---- ccache Cache (best-effort) ----
+      # --- Caches --------------------------------------------------------------
       - name: Restore ccache
         id: cache-ccache
         uses: actions/cache@v4
@@ -213,8 +219,8 @@ jobs:
           restore-keys: |
             ccache-${{ runner.os }}-ndk26.3.11579264-cmake4.1-
             ccache-${{ runner.os }}-
+      # Validierung: Cache warmstart; bei Miss kein Fail.
 
-      # ---- TDLib-Cache (JNI + Java-Bindings + Meta) ----
       - name: Restore TDLib cache
         id: cache-tdlib
         uses: actions/cache@v4
@@ -233,6 +239,7 @@ jobs:
           restore-keys: |
             tdlib-${{ runner.os }}-ndk26.3.11579264-cmake4.1-
             tdlib-${{ runner.os }}-ndk26.3.11579264-
+      # Validierung: findet ggf. fertige .so/.java; kein Fail.
 
       - name: Decide TDLib build
         id: tdlib-need
@@ -252,7 +259,9 @@ jobs:
           done
           echo "need_build=$need" >> "$GITHUB_OUTPUT"
           echo "TDLIB_NEED_BUILD=$need"
+      # Validierung: erzwingt Neubau wenn Artefakte fehlen/gewünscht sind.
 
+      # --- TDLib Build (on-demand) --------------------------------------------
       - name: Install TDLib build deps (if needed)
         if: steps.tdlib-need.outputs.need_build == 'true'
         run: |
@@ -260,6 +269,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential ninja-build gperf ccache pkg-config \
             zlib1g-dev libssl-dev python3 git ca-certificates ripgrep binutils
+      # Validierung: bricht bei Paketfehlern.
 
       - name: Build TDLib (arm64 + v7a) and Java bindings
         if: steps.tdlib-need.outputs.need_build == 'true'
@@ -292,7 +302,8 @@ jobs:
           META_TXT="libtd/TDLIB_VERSION.txt"
           [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
           td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
-          td_tag="$(sed -n 's/^tdlib_tag=//p' "$META_TXT")"
+          td_tag="$(sed -n 's/^tdlib_tag_exact=//p' "$META_TXT")"
+          [[ -n "$td_tag" ]] || td_tag="$(sed -n 's/^tdlib_tag_nearest=//p' "$META_TXT")"
           SHA_ARM64="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
           SHA_V7A="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so   | awk '{print $1}')"
           {
@@ -304,6 +315,7 @@ jobs:
             echo "BUILT_AT=$(sed -n 's/^built_utc=//p' "$META_TXT")"
             echo "CMAKE=$(cmake --version | head -1)"
           } > libtd/.tdlib_meta
+      # Validierung: erzeugt & prüft Artefakte + schreibt konsistente Meta.
 
       - name: Validate TDLib meta (no-rebuild path)
         id: tdlib-validate
@@ -326,6 +338,7 @@ jobs:
             [[ -n "${SHA_V7A:-}" && "$B" == "$SHA_V7A" ]]     || { echo "::warning::V7A   SHA mismatch"; force_build=true; }
           fi
           echo "force_build=$force_build" >> "$GITHUB_OUTPUT"
+      # Validierung: erkennt Cache-Drift über SHA und COMMIT; triggert Neubau.
 
       - name: Rebuild TDLib due to meta mismatch
         if: steps.tdlib-validate.outputs.force_build == 'true'
@@ -361,7 +374,8 @@ jobs:
           META_TXT="libtd/TDLIB_VERSION.txt"
           [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
           td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
-          td_tag="$(sed -n 's/^tdlib_tag=//p' "$META_TXT")"
+          td_tag="$(sed -n 's/^tdlib_tag_exact=//p' "$META_TXT")"
+          [[ -n "$td_tag" ]] || td_tag="$(sed -n 's/^tdlib_tag_nearest=//p' "$META_TXT")"
           SHA_ARM64="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
           SHA_V7A="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so   | awk '{print $1}')"
           {
@@ -373,14 +387,16 @@ jobs:
             echo "BUILT_AT=$(sed -n 's/^built_utc=//p' "$META_TXT")"
             echo "CMAKE=$(cmake --version | head -1)"
           } > libtd/.tdlib_meta
+      # Validierung: erzeugt frische Artefakte, konsistente Meta.
 
-      - name: Validate TDLib metadata (TDLIB_VERSION.txt)
+      - name: Validate TDLib metadata (TDLIB_VERSION.txt vs expected)
         run: |
           set -euo pipefail
           META_TXT="libtd/TDLIB_VERSION.txt"
           [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
           td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
-          td_tag="$(sed -n 's/^tdlib_tag=//p' "$META_TXT")"
+          td_tag="$(sed -n 's/^tdlib_tag_exact=//p' "$META_TXT")"
+          [[ -n "$td_tag" ]] || td_tag="$(sed -n 's/^tdlib_tag_nearest=//p' "$META_TXT")"
           echo "Built TDLib: commit=${td_commit:-<none>} tag=${td_tag:-<none>}"
           if [[ -n "${{ secrets.TD_TAG }}" ]]; then
             echo "Expected:    ${{ secrets.TD_TAG }}"
@@ -390,11 +406,13 @@ jobs:
               [[ -n "$td_commit" && "$td_commit" == "${{ secrets.TD_TAG }}"* ]] || { echo "::error::Commit mismatch"; exit 3; }
             fi
           fi
+      # Validierung: harte Prüfung gegen TD_TAG Secret (Tag/Commit); failt bei Drift.
 
       - name: Validate injected symbol in libtdjni.so (arm64 + v7a)
         run: |
           set -euo pipefail
           META_TXT="libtd/TDLIB_VERSION.txt"
+          [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
           td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
           check_so() {
             local so="$1"
@@ -414,7 +432,9 @@ jobs:
           if [[ -f libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so ]]; then
             check_so libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so
           fi
+      # Validierung: symbolische Prüfung + String-Match im .so, harte Fehler bei Abweichung.
 
+      # --- Gradle Build -------------------------------------------------------
       - name: Gradle Task bestimmen
         id: task
         run: |
@@ -422,10 +442,12 @@ jobs:
             release) echo "task=:app:assembleRelease" ;;
             *)       echo "task=:app:assembleDebug" ;;
           esac >> "$GITHUB_OUTPUT"
+      # Validierung: gibt Task aus; robust.
 
       - name: Aktivieren des Gradle Problem-Matchers
         continue-on-error: true
         run: echo "::add-matcher::.github/gradle-problem-matcher.json"
+      # Validierung: erleichtert Log-Pinning; kein Fail.
 
       - name: Build (Split-APKs je ABI)
         run: |
@@ -447,7 +469,9 @@ jobs:
             -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}" \
             "${EXTRA_PROPS[@]}" \
             -x test --no-daemon --stacktrace
+      # Validierung: Build bricht bei Compilefehlern/Deps/Signing; Props sauber gesetzt.
 
+      # --- Artefakte ----------------------------------------------------------
       - name: APKs finden (arm64 & v7a & universal)
         id: apks
         run: |
@@ -462,6 +486,7 @@ jobs:
           echo "Gefundene arm64 APKs:"; printf ' - %s\n' "${ARM64[@]}" || true
           echo "Gefundene v7a APKs:";   printf ' - %s\n' "${V7A[@]}"   || true
           echo "Gefundene universal APKs:"; printf ' - %s\n' "${UNI[@]}" || true
+      # Validierung: listet gefundene APKs; Warnung falls leer.
 
       - name: Upload TDLib build artifacts
         uses: actions/upload-artifact@v4
@@ -476,6 +501,7 @@ jobs:
           retention-days: 14
           if-no-files-found: error
           compression-level: 6
+      # Validierung: bricht wenn .so oder Java fehlen.
 
       - name: Upload APK (arm64)
         if: ${{ github.event.inputs.abis != 'universal' }}
@@ -527,7 +553,7 @@ jobs:
           echo "Universal         : ${{ env.ORG_GRADLE_PROJECT_universalApk }}"
           echo "useSplits         : ${{ env.ORG_GRADLE_PROJECT_useSplits }}"
 
-      # --- tmate Debug (bei Failure ODER wenn gewünscht) ---
+      # --- tmate Debug --------------------------------------------------------
       - name: Start tmate session
         if: ${{ failure() || github.event.inputs.debug_tmate == 'true' }}
         uses: mxschmitt/action-tmate@v3
