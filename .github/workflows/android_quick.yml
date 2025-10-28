@@ -7,13 +7,13 @@ on:
         description: "Kompatibler Toolchain-Satz"
         type: choice
         default: "stable"
-        options: [stable, lts, project]
+        options: ["stable", "lts", "project"]
       abis:
         description: "ABIs (Splits/Universal)"
         type: choice
         required: true
         default: "arm64+v7a"
-        options: [arm64+v7a, arm64, v7a, universal]
+        options: ["arm64+v7a", "arm64", "v7a", "universal"]
       debug_tmate:
         description: "tmate-Debug"
         type: choice
@@ -202,7 +202,7 @@ jobs:
             --configuration-cache --build-cache --parallel \
             --stacktrace --warning-mode all -x test
 
-      - name: Artefakt: APKs
+      - name: "Artefakt: APKs"
         uses: actions/upload-artifact@v4
         with:
           name: debug-${{ github.event.inputs.abis }}
@@ -247,7 +247,7 @@ jobs:
             echo "**Run:** https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
             echo ""
             echo "### APKs"
-            find app/build/outputs/apk -type f -name "*.apk" -maxdepth 3 | sed 's/^/- /' || echo "- (keine gefunden)"
+            find app/build/outputs/apk -maxdepth 3 -type f -name "*.apk" | sed 's/^/- /' || echo "- (keine gefunden)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Start tmate (on failure/explicit)
