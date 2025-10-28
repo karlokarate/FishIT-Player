@@ -64,60 +64,24 @@ jobs:
           python3 - <<'PY'
           import json, os, sys
           bundle = os.environ.get("BUNDLE","stable").strip()
-
           bundles = {
-            "stable": {
-              "sdk_api": "35",
-              "build_tools": "35.0.0",
-              "jdk": "21",
-              "gradle_version": "8.13",
-              "agp_override": "8.12.0",
-              "kotlin_override": "",
-              "pr_comment": "false",
-              "issue_number": ""
-            },
-            "lts": {
-              "sdk_api": "34",
-              "build_tools": "34.0.0",
-              "jdk": "17",
-              "gradle_version": "8.7",
-              "agp_override": "8.5.2",
-              "kotlin_override": "",
-              "pr_comment": "false",
-              "issue_number": ""
-            },
-            "project": {
-              "sdk_api": "35",
-              "build_tools": "35.0.0",
-              "jdk": "21",
-              "gradle_version": "",
-              "agp_override": "",
-              "kotlin_override": "",
-              "pr_comment": "false",
-              "issue_number": ""
-            }
+            "stable":  {"sdk_api":"35","build_tools":"35.0.0","jdk":"21","gradle_version":"8.13","agp_override":"8.12.0","kotlin_override":"","pr_comment":"false","issue_number":""},
+            "lts":     {"sdk_api":"34","build_tools":"34.0.0","jdk":"17","gradle_version":"8.7","agp_override":"8.5.2","kotlin_override":"","pr_comment":"false","issue_number":""},
+            "project": {"sdk_api":"35","build_tools":"35.0.0","jdk":"21","gradle_version":"","agp_override":"","kotlin_override":"","pr_comment":"false","issue_number":""}
           }
-
           raw = os.environ.get("RAW_CONFIG","").strip()
           user = {}
           if raw:
-            try:
-              user = json.loads(raw)
+            try: user = json.loads(raw)
             except json.JSONDecodeError as exc:
-              print(f"::error::config_json ist kein gültiges JSON ({exc})")
-              sys.exit(1)
-
-          # Backcompat: use_gradle_9x → gradle_version
+              print(f"::error::config_json ist kein gültiges JSON ({exc})"); sys.exit(1)
           if user.get("use_gradle_9x","false") in (True, "true"):
             user["gradle_version"] = str(user.get("gradle_9x_version","9.1.0"))
-
           base = bundles.get(bundle, bundles["stable"]).copy()
-          base.update({k: str(v) for k, v in user.items()})
-
+          base.update({k: str(v) for k,v in user.items()})
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as envf, open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as outf:
             for k, v in base.items():
-              envf.write(f"{k}={v}\n")
-              outf.write(f"{k}={v}\n")
+              envf.write(f"{k}={v}\n"); outf.write(f"{k}={v}\n")
           PY
         env:
           BUNDLE: ${{ github.event.inputs.toolchain_bundle }}
@@ -129,29 +93,24 @@ jobs:
           distribution: temurin
           java-version: ${{ steps.cfg.outputs.jdk }}
 
-      # --- SDK: robuste, manuelle Installation mit Fallback ---
+      # --- SDK: robuste, manuelle Installation mit Fallback & SIGPIPE-Schutz ---
       - name: Resolve Android platform/build-tools (graceful fallback)
         id: droid
         run: |
           set -euo pipefail
           WANT_API="${{ steps.cfg.outputs.sdk_api }}"
           WANT_BT="${{ steps.cfg.outputs.build_tools }}"
-
           SDKM="/usr/local/lib/android/sdk/cmdline-tools/*/bin/sdkmanager"
           SDKM=$(compgen -G "$SDKM" | head -n1 || true)
           [[ -x "$SDKM" ]] || { echo "::error::sdkmanager nicht gefunden"; exit 1; }
-
           "$SDKM" --list 1>/tmp/sdklist.txt 2>/dev/null || true
-
           has_platform(){ grep -E "^ +platforms;android-$1([[:space:]]|$)" -q /tmp/sdklist.txt; }
           has_bt(){ grep -E "^ +build-tools;$1([[:space:]]|$)" -q /tmp/sdklist.txt; }
-
           RES_API=""
           if   has_platform "$WANT_API"; then RES_API="$WANT_API"
           elif has_platform "35";        then RES_API="35"
           elif has_platform "34";        then RES_API="34"
           else echo "::error::Keine passende Android-Plattform (gesucht: $WANT_API/35/34)"; exit 2; fi
-
           RES_BT="$WANT_BT"
           if ! has_bt "$RES_BT"; then
             for cand in 35.0.0 34.0.0; do
@@ -162,25 +121,43 @@ jobs:
             RES_BT="$(grep -E "^ +build-tools;(35|34)\.[0-9.]+" /tmp/sdklist.txt | sed 's/^[[:space:]]*build-tools;//' | sort -V | tail -n1 || true)"
           fi
           [[ -n "$RES_BT" ]] || { echo "::error::Keine passenden Build-Tools (Familie 35.x/34.x)"; exit 3; }
+          echo "sdk_api_resolved=$RES_API"    >> $GITHUB_OUTPUT
+          echo "build_tools_resolved=$RES_BT" >> $GITHUB_OUTPUT
+          echo "SDK_API_RESOLVED=$RES_API"    >> $GITHUB_ENV
+          echo "BUILD_TOOLS_RESOLVED=$RES_BT" >> $GITHUB_ENV
 
-          echo "sdk_api_resolved=$RES_API"        >> $GITHUB_OUTPUT
-          echo "build_tools_resolved=$RES_BT"     >> $GITHUB_OUTPUT
-          echo "SDK_API_RESOLVED=$RES_API"        >> $GITHUB_ENV
-          echo "BUILD_TOOLS_RESOLVED=$RES_BT"     >> $GITHUB_ENV
-
-      - name: Install Android SDK packages (user-writable)
+      - name: Install Android SDK packages (user-writable, SIGPIPE-safe)
         run: |
-          set -euo pipefail
+          # kein -euo pipefail hier, wir behandeln Exitcodes manuell
+          set -u
           SDKM="/usr/local/lib/android/sdk/cmdline-tools/*/bin/sdkmanager"
           SDKM=$(compgen -G "$SDKM" | head -n1 || true)
-          [[ -x "$SDKM" ]] || { echo "::error::sdkmanager nicht gefunden"; exit 1; }
-
+          if [[ -z "$SDKM" || ! -x "$SDKM" ]]; then
+            echo "::error::sdkmanager nicht gefunden"; exit 1
+          fi
           export ANDROID_SDK_ROOT="$HOME/android-sdk"
           mkdir -p "$ANDROID_SDK_ROOT"
 
-          yes | "$SDKM" --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" \
-            "platforms;android-${{ steps.droid.outputs.sdk_api_resolved }}" \
-            "build-tools;${{ steps.droid.outputs.build_tools_resolved }}"
+          run_sm() {
+            # fängt Exit 0/141 (SIGPIPE) als Erfolg ab, andere Fehler brechen ab
+            set +e
+            "$SDKM" --sdk_root="$ANDROID_SDK_ROOT" "$@"
+            rc=$?
+            set -e
+            if [[ $rc -ne 0 && $rc -ne 141 ]]; then
+              echo "::error::sdkmanager exit $rc bei '$*'"
+              exit $rc
+            fi
+          }
+
+          # Lizenzen separat akzeptieren (kein 'yes |', vermeidet Broken pipe)
+          # Wir füttern 20x 'y' über stdin; reicht in der Praxis.
+          { for i in $(seq 1 20); do echo y; done; } | run_sm --licenses >/dev/null 2>&1 || true
+
+          # Pakete installieren (ohne Pipe)
+          run_sm "platform-tools"
+          run_sm "platforms;android-${{ steps.droid.outputs.sdk_api_resolved }}"
+          run_sm "build-tools;${{ steps.droid.outputs.build_tools_resolved }}"
 
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "$ANDROID_SDK_ROOT/platform-tools"   >> $GITHUB_PATH
