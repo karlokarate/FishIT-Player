@@ -1,561 +1,485 @@
 name: Android – FishIT-Player (arm64 + v7a)
 
-on:
-  workflow_dispatch:
-    inputs:
-      build_type:
-        description: "Build-Variante (debug | release)"
-        required: false
-        default: "release"
-        type: choice
-        options: [debug, release]
-      version_code:
-        description: "Optional: versionCode (überschreibt Gradle)"
-        required: false
-        default: ""
-      version_name:
-        description: "Optional: versionName (überschreibt Gradle)"
-        required: false
-        default: ""
-      abis:
-        description: "Welche Versionen kompilieren?"
-        required: true
-        default: "arm64+v7a"
-        type: choice
-        options: [arm64+v7a, arm64, v7a, universal]
-      mirror_only:
-        description: "Mirror-Modus (true/false) → setzt TG_OBX_ENABLED_DEFAULT entsprechend"
-        required: false
-        default: "true"
-        type: choice
-        options: ["true","false"]
-      rebuild_tdlib:
-        description: "TDLib neu bauen (true/false) – überschreibt Cache"
-        required: false
-        default: "true"
-        type: choice
-        options: ["true","false"]
-      debug_tmate:
-        description: "tmate-Debug aktivieren (true/false)"
-        required: false
-        default: "false"
-        type: choice
-        options: ["false","true"]
+on: workflow_dispatch: inputs: build_type: description: "Build-Variante (debug | release)" required: false default: "release" type: choice options: [debug, release] version_code: description: "Optional: versionCode (überschreibt Gradle)" required: false default: "" version_name: description: "Optional: versionName (überschreibt Gradle)" required: false default: "" abis: description: "Welche Versionen kompilieren?" required: true default: "arm64+v7a" type: choice options: [arm64+v7a, arm64, v7a, universal] mirror_only: description: "Mirror-Modus (true/false) → setzt TG_OBX_ENABLED_DEFAULT entsprechend" required: false default: "true" type: choice options: ["true","false"] rebuild_tdlib: description: "TDLib neu bauen (true/false) – überschreibt Cache" required: false default: "true" type: choice options: ["true","false"] debug_tmate: description: "tmate-Debug aktivieren (true/false)" required: false default: "false" type: choice options: ["false","true"]
 
-permissions:
-  contents: read
+permissions: contents: read
 
-concurrency:
-  group: android-fishitplayer-${{ github.workflow }}-${{ github.ref || github.run_id }}
-  cancel-in-progress: true
+concurrency: group: android-fishitplayer-${{ github.workflow }}-${{ github.ref || github.run_id }} cancel-in-progress: true
 
-defaults:
-  run:
-    shell: bash
+defaults: run: shell: bash
 
-jobs:
-  build-multiabi:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
+jobs: build-multiabi: runs-on: ubuntu-latest timeout-minutes: 90
 
+env:
+  ORG_GRADLE_PROJECT_abiFilters: arm64-v8a,armeabi-v7a
+  ORG_GRADLE_PROJECT_universalApk: false
+  ORG_GRADLE_PROJECT_useSplits: true
+
+steps:
+  # --- Checkout & Tooling -------------------------------------------------
+  - name: Checkout (mit LFS & Submodules)
+    uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+      lfs: true
+      submodules: recursive
+
+  - name: Validate Gradle Wrapper
+    uses: gradle/actions/wrapper-validation@v3
+
+  - name: Set up JDK 17
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: "17"
+
+  - name: Set up Android SDK/NDK
+    uses: android-actions/setup-android@v3
+    with:
+      accept-android-sdk-licenses: true
+      packages: platform-tools platforms;android-36 build-tools;36.0.0 ndk;26.3.11579264
+
+  - name: Verify installed SDK packages
+    run: |
+      SDKM="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+      [[ -x "$SDKM" ]] || SDKM="$ANDROID_SDK_ROOT/cmdline-tools/16.0/bin/sdkmanager"
+      [[ -x "$SDKM" ]] || { echo "::warning::sdkmanager not found"; exit 0; }
+      "$SDKM" --list | sed -n '1,120p' || true
+      ls -la "$ANDROID_SDK_ROOT"/{platform-tools,build-tools,ndk} || true
+
+  - name: Export ANDROID_NDK_HOME/ROOT
+    run: |
+      NDK_DIR="$ANDROID_SDK_ROOT/ndk/26.3.11579264"
+      echo "ANDROID_NDK_HOME=$NDK_DIR"  >> $GITHUB_ENV
+      echo "ANDROID_NDK_ROOT=$NDK_DIR"  >> $GITHUB_ENV
+
+  - name: Setup CMake 4.1
+    uses: jwlawson/actions-setup-cmake@v2
+    with:
+      cmake-version: '4.1.x'
+
+  - name: Show tool versions
+    run: |
+      type -a cmake || true
+      cmake --version
+      python3 --version
+      java -version
+
+  - name: Gradle Cache
+    uses: gradle/actions/setup-gradle@v3
+
+  - name: Make gradlew ausführbar
+    run: chmod +x ./gradlew
+
+  # --- ABI Picker ---------------------------------------------------------
+  - name: Set ABI / Split-Konfiguration aus Picker
+    run: |
+      set -euo pipefail
+      case "${{ github.event.inputs.abis }}" in
+        "arm64+v7a")
+          echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a,armeabi-v7a" >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_useSplits=true"                   >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_universalApk=false"               >> $GITHUB_ENV
+          ;;
+        "arm64")
+          echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a"             >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_useSplits=true"                   >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_universalApk=false"               >> $GITHUB_ENV
+          ;;
+        "v7a")
+          echo "ORG_GRADLE_PROJECT_abiFilters=armeabi-v7a"           >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_useSplits=true"                   >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_universalApk=false"               >> $GITHUB_ENV
+          ;;
+        "universal")
+          echo "ORG_GRADLE_PROJECT_abiFilters="                      >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_useSplits=false"                  >> $GITHUB_ENV
+          echo "ORG_GRADLE_PROJECT_universalApk=true"                >> $GITHUB_ENV
+          ;;
+      esac
+      echo "ABI Picker angewendet: ${{ github.event.inputs.abis }}"
+
+  # --- Secrets / Signing / TG --------------------------------------------
+  - name: Decode & Setup Signing + App Secrets
     env:
-      ORG_GRADLE_PROJECT_abiFilters: arm64-v8a,armeabi-v7a
-      ORG_GRADLE_PROJECT_universalApk: false
-      ORG_GRADLE_PROJECT_useSplits: true
+      KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+    run: |
+      python3 - <<'PY'
+      import os, base64, pathlib, re
+      raw = os.environ.get("KS_B64","")
+      def norm(s):
+          if not s: return ""
+          s=s.strip()
+          if len(s)>=2 and s[0]==s[-1] and s[0] in "'\"`": s=s[1:-1]
+          if "base64," in s: s=s.split("base64,",1)[1]
+          return "".join(s.split())
+      def try_dec(c):
+          for fn in (base64.b64decode, base64.urlsafe_b64decode):
+              try:
+                  pad='='*(-len(c)%4)
+                  return fn(c+pad)
+              except Exception: pass
+          return None
+      cand = norm(raw)
+      d = try_dec(cand)
+      if not d:
+          parts = re.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw or '')
+          if parts: d = try_dec(norm(max(parts, key=len)))
+      if d:
+          pathlib.Path("release.keystore").write_bytes(d)
+          print("DECODE_OK")
+      else:
+          print("DECODE_FAIL")
+      PY
+      if [[ -f "release.keystore" ]]; then
+        {
+          echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore"
+          echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}"
+          echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_SIGN_KEY_ALIAS || secrets.ANDROID_SIGNING_KEY_ALIAS }}"
+          echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}"
+        } >> $GITHUB_ENV
+        echo "Keystore: OK (signierte Releases möglich)"
+      else
+        echo "::warning::Keystore-Secret ungültig/leer – fallback auf UNSIGNIERTEN Build."
+      fi
+      [[ -n "${{ secrets.TG_API_ID }}"   ]] && echo "TG_API_ID=${{ secrets.TG_API_ID }}"     >> $GITHUB_ENV
+      [[ -n "${{ secrets.TG_API_HASH }}" ]] && echo "TG_API_HASH=${{ secrets.TG_API_HASH }}" >> $GITHUB_ENV
+      [[ -n "${{ secrets.HEADER }}"     ]] && echo "HEADER=${{ secrets.HEADER }}"           >> $GITHUB_ENV
 
-    steps:
-      # --- Checkout & Tooling -------------------------------------------------
-      - name: Checkout (mit LFS & Submodules)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
-          submodules: recursive
-      # Validierung: schlägt fehl, wenn Repo/Token fehlen.
+  # --- Caches -------------------------------------------------------------
+  - name: Restore ccache
+    id: cache-ccache
+    uses: actions/cache@v4
+    with:
+      path: |
+        ~/.cache/ccache
+        ~/.ccache
+      # single-line key to avoid accidental spaces; no commas here
+      key: ccache-${{ runner.os }}-ndk26.3.11579264-cmake4.1-td-${{ secrets.TD_TAG || 'HEAD' }}-${{ hashFiles('scripts/build_tdlib_android.sh') }}
+      restore-keys: |
+        ccache-${{ runner.os }}-ndk26.3.11579264-cmake4.1-
+        ccache-${{ runner.os }}-
 
-      - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v3
-      # Validierung: bricht ab, wenn Wrapper manipuliert/korrupt ist.
+  - name: Restore TDLib cache
+    id: cache-tdlib
+    uses: actions/cache@v4
+    with:
+      path: |
+        libtd/src/main/jniLibs/arm64-v8a/libtdjni.so
+        libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so
+        libtd/src/main/java/org/drinkless/tdlib/TdApi.java
+        libtd/src/main/java/org/drinkless/tdlib/Client.java
+        libtd/.tdlib_meta
+        libtd/TDLIB_VERSION.txt
+      # Avoid commas in the key: use the safe picker input instead of env.ORG_GRADLE_PROJECT_abiFilters
+      key: tdlib-${{ runner.os }}-ndk26.3.11579264-cmake4.1-abi-${{ github.event.inputs.abis }}-v3-tag-${{ secrets.TD_TAG || 'none' }}-${{ hashFiles('scripts/build_tdlib_android.sh', 'scripts/**/*.patch') }}
+      restore-keys: |
+        tdlib-${{ runner.os }}-ndk26.3.11579264-cmake4.1-
+        tdlib-${{ runner.os }}-ndk26.3.11579264-
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      # Validierung: stellt JAVA_HOME; kein Fail, außer Infra-Ausfall.
+  - name: Decide TDLib build
+    id: tdlib-need
+    run: |
+      set -euo pipefail
+      REBUILD="${{ github.event.inputs.rebuild_tdlib || 'false' }}"
+      need="$REBUILD"
+      for f in \
+        libtd/src/main/jniLibs/arm64-v8a/libtdjni.so \
+        libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so \
+        libtd/src/main/java/org/drinkless/tdlib/TdApi.java \
+        libtd/src/main/java/org/drinkless/tdlib/Client.java \
+        libtd/.tdlib_meta \
+        libtd/TDLIB_VERSION.txt
+      do
+        [[ -f "$f" ]] || { echo "missing: $f"; need="true"; }
+      done
+      echo "need_build=$need" >> "$GITHUB_OUTPUT"
+      echo "TDLIB_NEED_BUILD=$need"
 
-      - name: Set up Android SDK/NDK
-        uses: android-actions/setup-android@v3
-        with:
-          accept-android-sdk-licenses: true
-          packages: platform-tools platforms;android-36 build-tools;36.0.0 ndk;26.3.11579264
-      # Validierung: bricht, wenn Pakete/Channel nicht verfügbar.
+  # --- TDLib Build (on-demand) --------------------------------------------
+  - name: Install TDLib build deps (if needed)
+    if: steps.tdlib-need.outputs.need_build == 'true'
+    run: |
+      sudo apt-get update -y
+      sudo apt-get install -y --no-install-recommends \
+        build-essential ninja-build gperf ccache pkg-config \
+        zlib1g-dev libssl-dev python3 git ca-certificates ripgrep binutils
 
-      - name: Verify installed SDK packages
-        run: |
-          SDKM="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-          [[ -x "$SDKM" ]] || SDKM="$ANDROID_SDK_ROOT/cmdline-tools/16.0/bin/sdkmanager"
-          [[ -x "$SDKM" ]] || { echo "::warning::sdkmanager not found"; exit 0; }
-          "$SDKM" --list | sed -n '1,120p' || true
-          ls -la "$ANDROID_SDK_ROOT"/{platform-tools,build-tools,ndk} || true
-      # Validierung: rein informativ; kein harter Fail.
+  - name: Build TDLib (arm64 + v7a) and Java bindings
+    if: steps.tdlib-need.outputs.need_build == 'true'
+    env:
+      CCACHE_DIR: ~/.cache/ccache
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "1"
+      CCACHE_BASEDIR: ${{ github.workspace }}
+    run: |
+      set -euo pipefail
+      command -v ccache >/dev/null 2>&1 && {
+        mkdir -p "$CCACHE_DIR"
+        ccache --set-config=max_size=${CCACHE_MAXSIZE}
+        ccache --set-config=compression=true
+        echo "== ccache before =="; ccache -s || true
+        export CC="ccache clang"; export CXX="ccache clang++"
+        export CMAKE_C_COMPILER_LAUNCHER=ccache
+        export CMAKE_CXX_COMPILER_LAUNCHER=ccache
+      } || echo "::notice::ccache not found or not usable"
 
-      - name: Export ANDROID_NDK_HOME/ROOT
-        run: |
-          NDK_DIR="$ANDROID_SDK_ROOT/ndk/26.3.11579264"
-          echo "ANDROID_NDK_HOME=$NDK_DIR"  >> $GITHUB_ENV
-          echo "ANDROID_NDK_ROOT=$NDK_DIR"  >> $GITHUB_ENV
-      # Validierung: setzt Umgebungsvariable für CMake/NDK.
+      chmod +x scripts/build_tdlib_android.sh
+      if [[ -n "${{ secrets.TD_TAG }}" ]]; then
+        bash scripts/build_tdlib_android.sh --ref "${{ secrets.TD_TAG }}"
+      else
+        bash scripts/build_tdlib_android.sh
+      fi
 
-      - name: Setup CMake 4.1
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: '4.1.x'
-      # Validierung: stellt cmake >= 3.25+ sicher; Fail bei Downloadproblem.
+      command -v ccache >/dev/null 2>&1 && { echo "== ccache after =="; ccache -s || true; }
 
-      - name: Show tool versions
-        run: |
-          type -a cmake || true
-          cmake --version
-          python3 --version
-          java -version
+      META_TXT="libtd/TDLIB_VERSION.txt"
+      [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
+      td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
+      td_tag="$(sed -n 's/^tdlib_tag_exact=//p' "$META_TXT")"
+      [[ -n "$td_tag" ]] || td_tag="$(sed -n 's/^tdlib_tag_nearest=//p' "$META_TXT")"
+      SHA_ARM64="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
+      SHA_V7A="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so   | awk '{print $1}')"
+      {
+        [[ -n "$td_tag" ]]    && echo "REF=$td_tag" || true
+        [[ -n "$td_commit" ]] && echo "COMMIT=$td_commit" || true
+        echo "SHA_ARM64=${SHA_ARM64}"
+        echo "SHA_V7A=${SHA_V7A}"
+        echo "NDK=${ANDROID_NDK_HOME}"
+        echo "BUILT_AT=$(sed -n 's/^built_utc=//p' "$META_TXT")"
+        echo "CMAKE=$(cmake --version | head -1)"
+      } > libtd/.tdlib_meta
 
-      - name: Gradle Cache
-        uses: gradle/actions/setup-gradle@v3
-      # Validierung: richtet Build-Cache; kein harter Fail.
+  - name: Validate TDLib meta (no-rebuild path)
+    id: tdlib-validate
+    if: steps.tdlib-need.outputs.need_build == 'false'
+    run: |
+      set -euo pipefail
+      force_build=false
+      if [[ ! -f libtd/.tdlib_meta ]]; then
+        echo "::warning::.tdlib_meta fehlt – Neubau nötig"; force_build=true;
+      fi
+      if [[ ! -f libtd/TDLIB_VERSION.txt ]]; then
+        echo "::warning::TDLIB_VERSION.txt fehlt – Neubau nötig"; force_build=true;
+      fi
+      if [[ "$force_build" == "false" ]]; then
+        source libtd/.tdlib_meta || { echo "::warning::Meta unlesbar"; force_build=true; }
+        [[ -n "${COMMIT:-}" ]] || { echo "::warning::COMMIT leer"; force_build=true; }
+        A="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
+        B="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so | awk '{print $1}')"
+        [[ -n "${SHA_ARM64:-}" && "$A" == "$SHA_ARM64" ]] || { echo "::warning::ARM64 SHA mismatch"; force_build=true; }
+        [[ -n "${SHA_V7A:-}" && "$B" == "$SHA_V7A" ]]     || { echo "::warning::V7A   SHA mismatch"; force_build=true; }
+      fi
+      echo "force_build=$force_build" >> "$GITHUB_OUTPUT"
 
-      - name: Make gradlew ausführbar
-        run: chmod +x ./gradlew
+  - name: Rebuild TDLib due to meta mismatch
+    if: steps.tdlib-validate.outputs.force_build == 'true'
+    env:
+      CCACHE_DIR: ~/.cache/ccache
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "1"
+      CCACHE_BASEDIR: ${{ github.workspace }}
+    run: |
+      set -euo pipefail
+      sudo apt-get update -y
+      sudo apt-get install -y --no-install-recommends \
+        build-essential ninja-build gperf ccache pkg-config \
+        zlib1g-dev libssl-dev python3 git ca-certificates ripgrep binutils
+      command -v ccache >/dev/null 2>&1 && {
+        mkdir -p "$CCACHE_DIR"
+        ccache --set-config=max_size=${CCACHE_MAXSIZE}
+        ccache --set-config=compression=true
+        echo "== ccache before (rebuild) =="; ccache -s || true
+        export CC="ccache clang"; export CXX="ccache clang++"
+        export CMAKE_C_COMPILER_LAUNCHER=ccache
+        export CMAKE_CXX_COMPILER_LAUNCHER=ccache
+      } || echo "::notice::ccache not found or not usable"
 
-      # --- ABI Picker ---------------------------------------------------------
-      - name: Set ABI / Split-Konfiguration aus Picker
-        run: |
-          set -euo pipefail
-          case "${{ github.event.inputs.abis }}" in
-            "arm64+v7a")
-              echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a,armeabi-v7a" >> $GITHUB_ENV
-              echo "ORG_GRADLE_PROJECT_useSplits=true"                   >> $GITHUB_ENV
-              echo "ORG_GRADLE_PROJECT_universalApk=false"               >> $GITHUB_ENV
-              ;;
-            "arm64")
-              echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a"             >> $GITHUB_ENV
-              echo "ORG_GRADLE_PROJECT_useSplits=true"                   >> $GITHUB_ENV
-              echo "ORG_GRADLE_PROJECT_universalApk=false"               >> $GITHUB_ENV
-              ;;
-            "v7a")
-              echo "ORG_GRADLE_PROJECT_abiFilters=armeabi-v7a"           >> $GITHUB_ENV
-              echo "ORG_GRADLE_PROJECT_useSplits=true"                   >> $GITHUB_ENV
-              echo "ORG_GRADLE_PROJECT_universalApk=false"               >> $GITHUB_ENV
-              ;;
-            "universal")
-              echo "ORG_GRADLE_PROJECT_abiFilters="                      >> $GITHUB_ENV
-              echo "ORG_GRADLE_PROJECT_useSplits=false"                  >> $GITHUB_ENV
-              echo "ORG_GRADLE_PROJECT_universalApk=true"                >> $GITHUB_ENV
-              ;;
-          esac
-          echo "ABI Picker angewendet: ${{ github.event.inputs.abis }}"
-      # Validierung: setzt korrekte Gradle -P Flags; Fail bei Tippfehler ausgeschlossen.
+      chmod +x scripts/build_tdlib_android.sh
+      if [[ -n "${{ secrets.TD_TAG }}" ]]; then
+        bash scripts/build_tdlib_android.sh --ref "${{ secrets.TD_TAG }}"
+      else
+        bash scripts/build_tdlib_android.sh
+      fi
+      command -v ccache >/dev/null 2>&1 && { echo "== ccache after (rebuild) =="; ccache -s || true; }
 
-      # --- Secrets / Signing / TG --------------------------------------------
-      - name: Decode & Setup Signing + App Secrets
-        env:
-          KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
-        run: |
-          python3 - <<'PY'
-          import os, base64, pathlib, re
-          raw = os.environ.get("KS_B64","")
-          def norm(s):
-              if not s: return ""
-              s=s.strip()
-              if len(s)>=2 and s[0]==s[-1] and s[0] in "'\"`": s=s[1:-1]
-              if "base64," in s: s=s.split("base64,",1)[1]
-              return "".join(s.split())
-          def try_dec(c):
-              for fn in (base64.b64decode, base64.urlsafe_b64decode):
-                  try:
-                      pad='='*(-len(c)%4)
-                      return fn(c+pad)
-                  except Exception: pass
-              return None
-          cand = norm(raw)
-          d = try_dec(cand)
-          if not d:
-              parts = re.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw or '')
-              if parts: d = try_dec(norm(max(parts, key=len)))
-          if d:
-              pathlib.Path("release.keystore").write_bytes(d)
-              print("DECODE_OK")
-          else:
-              print("DECODE_FAIL")
-          PY
-          if [[ -f "release.keystore" ]]; then
-            {
-              echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore"
-              echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}"
-              echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}"
-              echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}"
-            } >> $GITHUB_ENV
-            echo "Keystore: OK (signierte Releases möglich)"
-          else
-            echo "::warning::Keystore-Secret ungültig/leer – fallback auf UNSIGNIERTEN Build."
-          fi
-          [[ -n "${{ secrets.TG_API_ID }}"   ]] && echo "TG_API_ID=${{ secrets.TG_API_ID }}"     >> $GITHUB_ENV
-          [[ -n "${{ secrets.TG_API_HASH }}" ]] && echo "TG_API_HASH=${{ secrets.TG_API_HASH }}" >> $GITHUB_ENV
-          [[ -n "${{ secrets.HEADER }}"     ]] && echo "HEADER=${{ secrets.HEADER }}"           >> $GITHUB_ENV
-      # Validierung: schreibt Keystore, setzt Env; Warnung statt Fail wenn Secret fehlt.
+      META_TXT="libtd/TDLIB_VERSION.txt"
+      [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
+      td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
+      td_tag="$(sed -n 's/^tdlib_tag_exact=//p' "$META_TXT")"
+      [[ -n "$td_tag" ]] || td_tag="$(sed -n 's/^tdlib_tag_nearest=//p' "$META_TXT")"
+      SHA_ARM64="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
+      SHA_V7A="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so   | awk '{print $1}')"
+      {
+        [[ -n "$td_tag" ]]    && echo "REF=$td_tag" || true
+        [[ -n "$td_commit" ]] && echo "COMMIT=$td_commit" || true
+        echo "SHA_ARM64=${SHA_ARM64}"
+        echo "SHA_V7A=${SHA_V7A}"
+        echo "NDK=${ANDROID_NDK_HOME}"
+        echo "BUILT_AT=$(sed -n 's/^built_utc=//p' "$META_TXT")"
+        echo "CMAKE=$(cmake --version | head -1)"
+      } > libtd/.tdlib_meta
 
-      # --- Caches --------------------------------------------------------------
-      - name: Restore ccache
-        id: cache-ccache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/ccache
-            ~/.ccache
-          key: >
-            ccache-${{ runner.os }}-ndk26.3.11579264-cmake4.1-
-            td-${{ secrets.TD_TAG || 'HEAD' }}-
-            ${{ hashFiles('scripts/build_tdlib_android.sh') }}
-          restore-keys: |
-            ccache-${{ runner.os }}-ndk26.3.11579264-cmake4.1-
-            ccache-${{ runner.os }}-
-      # Validierung: Cache warmstart; bei Miss kein Fail.
+  - name: Validate TDLib metadata (TDLIB_VERSION.txt vs expected)
+    run: |
+      set -euo pipefail
+      META_TXT="libtd/TDLIB_VERSION.txt"
+      [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
+      td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
+      td_tag="$(sed -n 's/^tdlib_tag_exact=//p' "$META_TXT")"
+      [[ -n "$td_tag" ]] || td_tag="$(sed -n 's/^tdlib_tag_nearest=//p' "$META_TXT")"
+      echo "Built TDLib: commit=${td_commit:-<none>} tag=${td_tag:-<none>}"
+      if [[ -n "${{ secrets.TD_TAG }}" ]]; then
+        echo "Expected:    ${{ secrets.TD_TAG }}"
+        if [[ "${{ secrets.TD_TAG }}" =~ ^v && -n "$td_tag" ]]; then
+          [[ "$td_tag" == "${{ secrets.TD_TAG }}" ]] || { echo "::error::Tag mismatch"; exit 2; }
+        else
+          [[ -n "$td_commit" && "$td_commit" == "${{ secrets.TD_TAG }}"* ]] || { echo "::error::Commit mismatch"; exit 3; }
+        fi
+      fi
 
-      - name: Restore TDLib cache
-        id: cache-tdlib
-        uses: actions/cache@v4
-        with:
-          path: |
-            libtd/src/main/jniLibs/arm64-v8a/libtdjni.so
-            libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so
-            libtd/src/main/java/org/drinkless/tdlib/TdApi.java
-            libtd/src/main/java/org/drinkless/tdlib/Client.java
-            libtd/.tdlib_meta
-            libtd/TDLIB_VERSION.txt
-          key: >
-            tdlib-${{ runner.os }}-ndk26.3.11579264-cmake4.1-abi${{ env.ORG_GRADLE_PROJECT_abiFilters || 'all' }}-v3-
-            tag-${{ secrets.TD_TAG || 'none' }}-
-            ${{ hashFiles('scripts/build_tdlib_android.sh','scripts/**/*.patch') }}
-          restore-keys: |
-            tdlib-${{ runner.os }}-ndk26.3.11579264-cmake4.1-
-            tdlib-${{ runner.os }}-ndk26.3.11579264-
-      # Validierung: findet ggf. fertige .so/.java; kein Fail.
+  - name: Validate injected symbol in libtdjni.so (arm64 + v7a)
+    run: |
+      set -euo pipefail
+      META_TXT="libtd/TDLIB_VERSION.txt"
+      [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
+      td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
+      check_so() {
+        local so="$1"
+        echo "Checking $so"
+        [[ -f "$so" ]] || { echo "::error::Missing $so"; exit 10; }
+        if command -v llvm-nm >/dev/null 2>&1; then
+          llvm-nm -D --defined-only "$so" | grep -q ' tdlib_android_commit$' || { echo "::error::tdlib_android_commit fehlt"; exit 11; }
+        else
+          nm -D --defined-only "$so" | grep -q ' tdlib_android_commit$' || { echo "::error::tdlib_android_commit fehlt"; exit 11; }
+        fi
+        if command -v strings >/dev/null 2>&1 && [[ -n "$td_commit" ]]; then
+          strings "$so" | grep -q "$td_commit" || { echo "::error::Commit-String $td_commit nicht im .so gefunden"; exit 12; }
+        fi
+        echo "OK: $so enthält tdlib_android_commit + Commit-String"
+      }
+      check_so libtd/src/main/jniLibs/arm64-v8a/libtdjni.so
+      if [[ -f libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so ]]; then
+        check_so libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so
+      fi
 
-      - name: Decide TDLib build
-        id: tdlib-need
-        run: |
-          set -euo pipefail
-          REBUILD="${{ github.event.inputs.rebuild_tdlib || 'false' }}"
-          need="$REBUILD"
-          for f in \
-            libtd/src/main/jniLibs/arm64-v8a/libtdjni.so \
-            libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so \
-            libtd/src/main/java/org/drinkless/tdlib/TdApi.java \
-            libtd/src/main/java/org/drinkless/tdlib/Client.java \
-            libtd/.tdlib_meta \
-            libtd/TDLIB_VERSION.txt
-          do
-            [[ -f "$f" ]] || { echo "missing: $f"; need="true"; }
-          done
-          echo "need_build=$need" >> "$GITHUB_OUTPUT"
-          echo "TDLIB_NEED_BUILD=$need"
-      # Validierung: erzwingt Neubau wenn Artefakte fehlen/gewünscht sind.
+  # --- Gradle Build -------------------------------------------------------
+  - name: Gradle Task bestimmen
+    id: task
+    run: |
+      case "${{ github.event.inputs.build_type }}" in
+        release) echo "task=:app:assembleRelease" ;;
+        *)       echo "task=:app:assembleDebug" ;;
+      esac >> "$GITHUB_OUTPUT"
 
-      # --- TDLib Build (on-demand) --------------------------------------------
-      - name: Install TDLib build deps (if needed)
-        if: steps.tdlib-need.outputs.need_build == 'true'
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends \
-            build-essential ninja-build gperf ccache pkg-config \
-            zlib1g-dev libssl-dev python3 git ca-certificates ripgrep binutils
-      # Validierung: bricht bei Paketfehlern.
+  - name: Aktivieren des Gradle Problem-Matchers
+    continue-on-error: true
+    run: echo "::add-matcher::.github/gradle-problem-matcher.json"
 
-      - name: Build TDLib (arm64 + v7a) and Java bindings
-        if: steps.tdlib-need.outputs.need_build == 'true'
-        env:
-          CCACHE_DIR: ~/.cache/ccache
-          CCACHE_MAXSIZE: 2G
-          CCACHE_COMPRESS: "1"
-          CCACHE_BASEDIR: ${{ github.workspace }}
-        run: |
-          set -euo pipefail
-          command -v ccache >/dev/null 2>&1 && {
-            mkdir -p "$CCACHE_DIR"
-            ccache --set-config=max_size=${CCACHE_MAXSIZE}
-            ccache --set-config=compression=true
-            echo "== ccache before =="; ccache -s || true
-            export CC="ccache clang"; export CXX="ccache clang++"
-            export CMAKE_C_COMPILER_LAUNCHER=ccache
-            export CMAKE_CXX_COMPILER_LAUNCHER=ccache
-          } || echo "::notice::ccache not found or not usable"
+  - name: Build (Split-APKs je ABI)
+    run: |
+      set -euo pipefail
+      EXTRA_PROPS=()
+      if [[ -n "${{ github.event.inputs.version_code }}" ]]; then
+        EXTRA_PROPS+=("-PversionCode=${{ github.event.inputs.version_code }}")
+      fi
+      if [[ -n "${{ github.event.inputs.version_name }}" ]]; then
+        EXTRA_PROPS+=("-PversionName=${{ github.event.inputs.version_name }}")
+      fi
+      MIRROR="${{ github.event.inputs.mirror_only || 'false' }}"
+      if [[ "$MIRROR" == "true" ]]; then OBX_DEFAULT=false; else OBX_DEFAULT=true; fi
+      EXTRA_PROPS+=("-PTG_OBX_ENABLED_DEFAULT=${OBX_DEFAULT}")
 
-          chmod +x scripts/build_tdlib_android.sh
-          if [[ -n "${{ secrets.TD_TAG }}" ]]; then
-            bash scripts/build_tdlib_android.sh --ref "${{ secrets.TD_TAG }}"
-          else
-            bash scripts/build_tdlib_android.sh
-          fi
+      ./gradlew ${{ steps.task.outputs.task }} \
+        -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}" \
+        -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}" \
+        -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}" \
+        "${EXTRA_PROPS[@]}" \
+        -x test --no-daemon --stacktrace
 
-          command -v ccache >/dev/null 2>&1 && { echo "== ccache after =="; ccache -s || true; }
+  # --- Artefakte ----------------------------------------------------------
+  - name: APKs finden (arm64 & v7a & universal)
+    id: apks
+    run: |
+      set -euo pipefail
+      mapfile -t ARM64 < <(find app -type f -path "*/build/outputs/apk/*/*" -name "*arm64-v8a*.apk" -print | sort || true)
+      mapfile -t V7A   < <(find app -type f -path "*/build/outputs/apk/*/*" -name "*armeabi-v7a*.apk" -print | sort || true)
+      mapfile -t UNI   < <(find app -type f -path "*/build/outputs/apk/*/*" -name "*universal*.apk" -print | sort || true)
+      [[ "${{ github.event.inputs.abis }}" == "universal" ]] || { [[ ${#ARM64[@]} -gt 0 ]] || echo "::warning::Keine arm64-APK gefunden"; [[ ${#V7A[@]} -gt 0 ]] || echo "::warning::Keine v7a-APK gefunden"; }
+      printf '%s\n' "${ARM64[@]}" > "${{ runner.temp }}/apk_arm64.txt"
+      printf '%s\n' "${V7A[@]}"   > "${{ runner.temp }}/apk_v7a.txt"
+      printf '%s\n' "${UNI[@]}"   > "${{ runner.temp }}/apk_universal.txt"
+      echo "Gefundene arm64 APKs:"; printf ' - %s\n' "${ARM64[@]}" || true
+      echo "Gefundene v7a APKs:";   printf ' - %s\n' "${V7A[@]}"   || true
+      echo "Gefundene universal APKs:"; printf ' - %s\n' "${UNI[@]}" || true
 
-          META_TXT="libtd/TDLIB_VERSION.txt"
-          [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
-          td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
-          td_tag="$(sed -n 's/^tdlib_tag_exact=//p' "$META_TXT")"
-          [[ -n "$td_tag" ]] || td_tag="$(sed -n 's/^tdlib_tag_nearest=//p' "$META_TXT")"
-          SHA_ARM64="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
-          SHA_V7A="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so   | awk '{print $1}')"
-          {
-            [[ -n "$td_tag" ]]    && echo "REF=$td_tag" || true
-            [[ -n "$td_commit" ]] && echo "COMMIT=$td_commit" || true
-            echo "SHA_ARM64=${SHA_ARM64}"
-            echo "SHA_V7A=${SHA_V7A}"
-            echo "NDK=${ANDROID_NDK_HOME}"
-            echo "BUILT_AT=$(sed -n 's/^built_utc=//p' "$META_TXT")"
-            echo "CMAKE=$(cmake --version | head -1)"
-          } > libtd/.tdlib_meta
-      # Validierung: erzeugt & prüft Artefakte + schreibt konsistente Meta.
+  - name: Upload TDLib build artifacts
+    uses: actions/upload-artifact@v4
+    with:
+      name: tdlib-build-${{ github.run_id }}
+      path: |
+        libtd/TDLIB_VERSION.txt
+        libtd/.tdlib_meta
+        libtd/src/main/jniLibs/**/libtdjni.so
+        libtd/src/main/java/org/drinkless/tdlib/TdApi.java
+        libtd/src/main/java/org/drinkless/tdlib/Client.java
+      retention-days: 14
+      if-no-files-found: error
+      compression-level: 6
 
-      - name: Validate TDLib meta (no-rebuild path)
-        id: tdlib-validate
-        if: steps.tdlib-need.outputs.need_build == 'false'
-        run: |
-          set -euo pipefail
-          force_build=false
-          if [[ ! -f libtd/.tdlib_meta ]]; then
-            echo "::warning::.tdlib_meta fehlt – Neubau nötig"; force_build=true;
-          fi
-          if [[ ! -f libtd/TDLIB_VERSION.txt ]]; then
-            echo "::warning::TDLIB_VERSION.txt fehlt – Neubau nötig"; force_build=true;
-          fi
-          if [[ "$force_build" == "false" ]]; then
-            source libtd/.tdlib_meta || { echo "::warning::Meta unlesbar"; force_build=true; }
-            [[ -n "${COMMIT:-}" ]] || { echo "::warning::COMMIT leer"; force_build=true; }
-            A="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
-            B="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so | awk '{print $1}')"
-            [[ -n "${SHA_ARM64:-}" && "$A" == "$SHA_ARM64" ]] || { echo "::warning::ARM64 SHA mismatch"; force_build=true; }
-            [[ -n "${SHA_V7A:-}" && "$B" == "$SHA_V7A" ]]     || { echo "::warning::V7A   SHA mismatch"; force_build=true; }
-          fi
-          echo "force_build=$force_build" >> "$GITHUB_OUTPUT"
-      # Validierung: erkennt Cache-Drift über SHA und COMMIT; triggert Neubau.
+  - name: Upload APK (arm64)
+    if: ${{ github.event.inputs.abis != 'universal' }}
+    uses: actions/upload-artifact@v4
+    with:
+      name: fishitplayer-${{ github.event.inputs.build_type || 'debug' }}-arm64
+      path: |
+        ${{ runner.temp }}/apk_arm64.txt
+        app/build/outputs/apk/**/**/*arm64-v8a*.apk
+      retention-days: 7
+      if-no-files-found: warn
+      compression-level: 6
 
-      - name: Rebuild TDLib due to meta mismatch
-        if: steps.tdlib-validate.outputs.force_build == 'true'
-        env:
-          CCACHE_DIR: ~/.cache/ccache
-          CCACHE_MAXSIZE: 2G
-          CCACHE_COMPRESS: "1"
-          CCACHE_BASEDIR: ${{ github.workspace }}
-        run: |
-          set -euo pipefail
-          sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends \
-            build-essential ninja-build gperf ccache pkg-config \
-            zlib1g-dev libssl-dev python3 git ca-certificates ripgrep binutils
-          command -v ccache >/dev/null 2>&1 && {
-            mkdir -p "$CCACHE_DIR"
-            ccache --set-config=max_size=${CCACHE_MAXSIZE}
-            ccache --set-config=compression=true
-            echo "== ccache before (rebuild) =="; ccache -s || true
-            export CC="ccache clang"; export CXX="ccache clang++"
-            export CMAKE_C_COMPILER_LAUNCHER=ccache
-            export CMAKE_CXX_COMPILER_LAUNCHER=ccache
-          } || echo "::notice::ccache not found or not usable"
+  - name: Upload APK (v7a)
+    if: ${{ github.event.inputs.abis != 'universal' }}
+    uses: actions/upload-artifact@v4
+    with:
+      name: fishitplayer-${{ github.event.inputs.build_type || 'debug' }}-v7a
+      path: |
+        ${{ runner.temp }}/apk_v7a.txt
+        app/build/outputs/apk/**/**/*armeabi-v7a*.apk
+      retention-days: 7
+      if-no-files-found: warn
+      compression-level: 6
 
-          chmod +x scripts/build_tdlib_android.sh
-          if [[ -n "${{ secrets.TD_TAG }}" ]]; then
-            bash scripts/build_tdlib_android.sh --ref "${{ secrets.TD_TAG }}"
-          else
-            bash scripts/build_tdlib_android.sh
-          fi
-          command -v ccache >/dev/null 2>&1 && { echo "== ccache after (rebuild) =="; ccache -s || true; }
+  - name: Upload APK (universal)
+    if: ${{ github.event.inputs.abis == 'universal' }}
+    uses: actions/upload-artifact@v4
+    with:
+      name: fishitplayer-${{ github.event.inputs.build_type || 'debug' }}-universal
+      path: |
+        ${{ runner.temp }}/apk_universal.txt
+        app/build/outputs/apk/**/**/*universal*.apk
+      retention-days: 7
+      if-no-files-found: error
+      compression-level: 6
 
-          META_TXT="libtd/TDLIB_VERSION.txt"
-          [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
-          td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
-          td_tag="$(sed -n 's/^tdlib_tag_exact=//p' "$META_TXT")"
-          [[ -n "$td_tag" ]] || td_tag="$(sed -n 's/^tdlib_tag_nearest=//p' "$META_TXT")"
-          SHA_ARM64="$(sha256sum libtd/src/main/jniLibs/arm64-v8a/libtdjni.so | awk '{print $1}')"
-          SHA_V7A="$(sha256sum libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so   | awk '{print $1}')"
-          {
-            [[ -n "$td_tag" ]]    && echo "REF=$td_tag" || true
-            [[ -n "$td_commit" ]] && echo "COMMIT=$td_commit" || true
-            echo "SHA_ARM64=${SHA_ARM64}"
-            echo "SHA_V7A=${SHA_V7A}"
-            echo "NDK=${ANDROID_NDK_HOME}"
-            echo "BUILT_AT=$(sed -n 's/^built_utc=//p' "$META_TXT")"
-            echo "CMAKE=$(cmake --version | head -1)"
-          } > libtd/.tdlib_meta
-      # Validierung: erzeugt frische Artefakte, konsistente Meta.
+  - name: Build Kontext
+    run: |
+      MIRROR="${{ github.event.inputs.mirror_only || 'false' }}"
+      if [[ "$MIRROR" == "true" ]]; then OBX_DEFAULT=false; else OBX_DEFAULT=true; fi
+      echo "Build type        : ${{ github.event.inputs.build_type || 'debug' }}"
+      echo "versionCode       : ${{ github.event.inputs.version_code || '(unverändert)' }}"
+      echo "versionName       : ${{ github.event.inputs.version_name || '(unverändert)' }}"
+      echo "Mirror-Only       : ${MIRROR}"
+      echo "TG_OBX_ENABLED_DEF: ${OBX_DEFAULT}"
+      echo "ABI Picker        : ${{ github.event.inputs.abis }}"
+      echo "ABI-Splits        : ${{ env.ORG_GRADLE_PROJECT_abiFilters }}"
+      echo "Universal         : ${{ env.ORG_GRADLE_PROJECT_universalApk }}"
+      echo "useSplits         : ${{ env.ORG_GRADLE_PROJECT_useSplits }}"
 
-      - name: Validate TDLib metadata (TDLIB_VERSION.txt vs expected)
-        run: |
-          set -euo pipefail
-          META_TXT="libtd/TDLIB_VERSION.txt"
-          [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
-          td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
-          td_tag="$(sed -n 's/^tdlib_tag_exact=//p' "$META_TXT")"
-          [[ -n "$td_tag" ]] || td_tag="$(sed -n 's/^tdlib_tag_nearest=//p' "$META_TXT")"
-          echo "Built TDLib: commit=${td_commit:-<none>} tag=${td_tag:-<none>}"
-          if [[ -n "${{ secrets.TD_TAG }}" ]]; then
-            echo "Expected:    ${{ secrets.TD_TAG }}"
-            if [[ "${{ secrets.TD_TAG }}" =~ ^v && -n "$td_tag" ]]; then
-              [[ "$td_tag" == "${{ secrets.TD_TAG }}" ]] || { echo "::error::Tag mismatch"; exit 2; }
-            else
-              [[ -n "$td_commit" && "$td_commit" == "${{ secrets.TD_TAG }}"* ]] || { echo "::error::Commit mismatch"; exit 3; }
-            fi
-          fi
-      # Validierung: harte Prüfung gegen TD_TAG Secret (Tag/Commit); failt bei Drift.
-
-      - name: Validate injected symbol in libtdjni.so (arm64 + v7a)
-        run: |
-          set -euo pipefail
-          META_TXT="libtd/TDLIB_VERSION.txt"
-          [[ -f "$META_TXT" ]] || { echo "::error::$META_TXT fehlt"; exit 1; }
-          td_commit="$(sed -n 's/^tdlib_commit=//p' "$META_TXT")"
-          check_so() {
-            local so="$1"
-            echo "Checking $so"
-            [[ -f "$so" ]] || { echo "::error::Missing $so"; exit 10; }
-            if command -v llvm-nm >/dev/null 2>&1; then
-              llvm-nm -D --defined-only "$so" | grep -q ' tdlib_android_commit$' || { echo "::error::tdlib_android_commit fehlt"; exit 11; }
-            else
-              nm -D --defined-only "$so" | grep -q ' tdlib_android_commit$' || { echo "::error::tdlib_android_commit fehlt"; exit 11; }
-            fi
-            if command -v strings >/dev/null 2>&1 && [[ -n "$td_commit" ]]; then
-              strings "$so" | grep -q "$td_commit" || { echo "::error::Commit-String $td_commit nicht im .so gefunden"; exit 12; }
-            fi
-            echo "OK: $so enthält tdlib_android_commit + Commit-String"
-          }
-          check_so libtd/src/main/jniLibs/arm64-v8a/libtdjni.so
-          if [[ -f libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so ]]; then
-            check_so libtd/src/main/jniLibs/armeabi-v7a/libtdjni.so
-          fi
-      # Validierung: symbolische Prüfung + String-Match im .so, harte Fehler bei Abweichung.
-
-      # --- Gradle Build -------------------------------------------------------
-      - name: Gradle Task bestimmen
-        id: task
-        run: |
-          case "${{ github.event.inputs.build_type }}" in
-            release) echo "task=:app:assembleRelease" ;;
-            *)       echo "task=:app:assembleDebug" ;;
-          esac >> "$GITHUB_OUTPUT"
-      # Validierung: gibt Task aus; robust.
-
-      - name: Aktivieren des Gradle Problem-Matchers
-        continue-on-error: true
-        run: echo "::add-matcher::.github/gradle-problem-matcher.json"
-      # Validierung: erleichtert Log-Pinning; kein Fail.
-
-      - name: Build (Split-APKs je ABI)
-        run: |
-          set -euo pipefail
-          EXTRA_PROPS=()
-          if [[ -n "${{ github.event.inputs.version_code }}" ]]; then
-            EXTRA_PROPS+=("-PversionCode=${{ github.event.inputs.version_code }}")
-          fi
-          if [[ -n "${{ github.event.inputs.version_name }}" ]]; then
-            EXTRA_PROPS+=("-PversionName=${{ github.event.inputs.version_name }}")
-          fi
-          MIRROR="${{ github.event.inputs.mirror_only || 'false' }}"
-          if [[ "$MIRROR" == "true" ]]; then OBX_DEFAULT=false; else OBX_DEFAULT=true; fi
-          EXTRA_PROPS+=("-PTG_OBX_ENABLED_DEFAULT=${OBX_DEFAULT}")
-
-          ./gradlew ${{ steps.task.outputs.task }} \
-            -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}" \
-            -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}" \
-            -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}" \
-            "${EXTRA_PROPS[@]}" \
-            -x test --no-daemon --stacktrace
-      # Validierung: Build bricht bei Compilefehlern/Deps/Signing; Props sauber gesetzt.
-
-      # --- Artefakte ----------------------------------------------------------
-      - name: APKs finden (arm64 & v7a & universal)
-        id: apks
-        run: |
-          set -euo pipefail
-          mapfile -t ARM64 < <(find app -type f -path "*/build/outputs/apk/*/*" -name "*arm64-v8a*.apk" -print | sort || true)
-          mapfile -t V7A   < <(find app -type f -path "*/build/outputs/apk/*/*" -name "*armeabi-v7a*.apk" -print | sort || true)
-          mapfile -t UNI   < <(find app -type f -path "*/build/outputs/apk/*/*" -name "*universal*.apk" -print | sort || true)
-          [[ "${{ github.event.inputs.abis }}" == "universal" ]] || { [[ ${#ARM64[@]} -gt 0 ]] || echo "::warning::Keine arm64-APK gefunden"; [[ ${#V7A[@]} -gt 0 ]] || echo "::warning::Keine v7a-APK gefunden"; }
-          printf '%s\n' "${ARM64[@]}" > "${{ runner.temp }}/apk_arm64.txt"
-          printf '%s\n' "${V7A[@]}"   > "${{ runner.temp }}/apk_v7a.txt"
-          printf '%s\n' "${UNI[@]}"   > "${{ runner.temp }}/apk_universal.txt"
-          echo "Gefundene arm64 APKs:"; printf ' - %s\n' "${ARM64[@]}" || true
-          echo "Gefundene v7a APKs:";   printf ' - %s\n' "${V7A[@]}"   || true
-          echo "Gefundene universal APKs:"; printf ' - %s\n' "${UNI[@]}" || true
-      # Validierung: listet gefundene APKs; Warnung falls leer.
-
-      - name: Upload TDLib build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: tdlib-build-${{ github.run_id }}
-          path: |
-            libtd/TDLIB_VERSION.txt
-            libtd/.tdlib_meta
-            libtd/src/main/jniLibs/**/libtdjni.so
-            libtd/src/main/java/org/drinkless/tdlib/TdApi.java
-            libtd/src/main/java/org/drinkless/tdlib/Client.java
-          retention-days: 14
-          if-no-files-found: error
-          compression-level: 6
-      # Validierung: bricht wenn .so oder Java fehlen.
-
-      - name: Upload APK (arm64)
-        if: ${{ github.event.inputs.abis != 'universal' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: fishitplayer-${{ github.event.inputs.build_type || 'debug' }}-arm64
-          path: |
-            ${{ runner.temp }}/apk_arm64.txt
-            app/build/outputs/apk/**/**/*arm64-v8a*.apk
-          retention-days: 7
-          if-no-files-found: warn
-          compression-level: 6
-
-      - name: Upload APK (v7a)
-        if: ${{ github.event.inputs.abis != 'universal' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: fishitplayer-${{ github.event.inputs.build_type || 'debug' }}-v7a
-          path: |
-            ${{ runner.temp }}/apk_v7a.txt
-            app/build/outputs/apk/**/**/*armeabi-v7a*.apk
-          retention-days: 7
-          if-no-files-found: warn
-          compression-level: 6
-
-      - name: Upload APK (universal)
-        if: ${{ github.event.inputs.abis == 'universal' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: fishitplayer-${{ github.event.inputs.build_type || 'debug' }}-universal
-          path: |
-            ${{ runner.temp }}/apk_universal.txt
-            app/build/outputs/apk/**/**/*universal*.apk
-          retention-days: 7
-          if-no-files-found: error
-          compression-level: 6
-
-      - name: Build Kontext
-        run: |
-          MIRROR="${{ github.event.inputs.mirror_only || 'false' }}"
-          if [[ "$MIRROR" == "true" ]]; then OBX_DEFAULT=false; else OBX_DEFAULT=true; fi
-          echo "Build type        : ${{ github.event.inputs.build_type || 'debug' }}"
-          echo "versionCode       : ${{ github.event.inputs.version_code || '(unverändert)' }}"
-          echo "versionName       : ${{ github.event.inputs.version_name || '(unverändert)' }}"
-          echo "Mirror-Only       : ${MIRROR}"
-          echo "TG_OBX_ENABLED_DEF: ${OBX_DEFAULT}"
-          echo "ABI Picker        : ${{ github.event.inputs.abis }}"
-          echo "ABI-Splits        : ${{ env.ORG_GRADLE_PROJECT_abiFilters }}"
-          echo "Universal         : ${{ env.ORG_GRADLE_PROJECT_universalApk }}"
-          echo "useSplits         : ${{ env.ORG_GRADLE_PROJECT_useSplits }}"
-
-      # --- tmate Debug --------------------------------------------------------
-      - name: Start tmate session
-        if: ${{ failure() || github.event.inputs.debug_tmate == 'true' }}
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: true
+  # --- tmate Debug --------------------------------------------------------
+  - name: Start tmate session
+    if: ${{ failure() || github.event.inputs.debug_tmate == 'true' }}
+    uses: mxschmitt/action-tmate@v3
+    with:
+      limit-access-to-actor: true
