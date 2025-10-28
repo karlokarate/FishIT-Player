@@ -3,80 +3,140 @@ name: Android – Quick Debug (fast/no-sign)
 on:
   workflow_dispatch:
     inputs:
+      toolchain_bundle:
+        description: "Kompatibler Toolchain‑Satz"
+        type: choice
+        default: "stable"
+        options: [stable, lts, project]
       abis:
         description: "ABIs (Splits/Universal)"
         type: choice
         required: true
         default: "arm64+v7a"
         options: [arm64+v7a, arm64, v7a, universal]
-      sdk_api:
-        description: "SDK Platform (36 = Android 16)"
-        required: false
-        default: "36"
-      build_tools:
-        description: "Build-Tools (35.0.0 stabil; 36.x = EXPERIMENTAL, sinnvoll mit AGP ≥ 9)"
-        required: false
-        default: "35.0.0"
-      jdk:
-        description: "JDK (21 LTS empfohlen; AGP 8.12+ voll kompatibel)"
-        required: false
-        default: "21"
-
-      # --- Risk Switches (optional) ---
-      use_gradle_9x:
-        description: "Gradle 9.x OVERRIDE (RISKY) – benötigt AGP ≥ 8.13 ODER AGP 9 Preview"
-        type: choice
-        default: "false"
-        options: ["false","true"]
-      gradle_9x_version:
-        description: "Gradle 9.x Version (wirksam nur wenn use_gradle_9x=true)"
-        required: false
-        default: "9.1.0"
-      agp_override:
-        description: "AGP Override (z.B. 8.13.0 oder 9.0.0-alphaXX) – bei Gradle 9.x mind. 8.13!"
-        required: false
-        default: ""
-      kotlin_override:
-        description: "Kotlin Override (z.B. 2.2.21) – Compose/Media3-Kompat. beachten"
-        required: false
-        default: ""
-
-      # Dev UX
-      pr_comment:
-        description: "PR-Kommentar posten (Artefakte/Run-Link)"
-        type: choice
-        default: "false"
-        options: ["false","true"]
-      issue_number:
-        description: "PR/Issue-Nummer (optional für workflow_dispatch)"
-        required: false
-        default: ""
       debug_tmate:
         description: "tmate-Debug"
         type: choice
         default: "false"
-        options: ["false","true"]
+        options: ["false", "true"]
+      pr_annotations:
+        description: "Reviewdog PR‑Checks (detekt/ktlint/lint, falls Reports vorhanden)"
+        type: choice
+        default: "false"
+        options: ["false", "true"]
+      config_json:
+        description: "JSON‑Overrides (sdk_api, build_tools, jdk, gradle_version, agp_override, kotlin_override, pr_comment, issue_number)"
+        required: false
+        default: "{}"
 
 permissions:
   contents: read
+  checks: write
+  pull-requests: write
 
 concurrency:
   group: android-fast-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   assemble-debug:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Optional – Python requirements
+        run: |
+          if [[ -f .github/requirements.txt ]]; then
+            python3 -m pip install --upgrade pip
+            python3 -m pip install -r .github/requirements.txt
+          fi
+
+      - name: Toolchain‑Bundle auflösen + JSON‑Overrides mergen
+        id: cfg
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          bundle = os.environ.get("BUNDLE","stable").strip()
+
+          # Baselines für Bundles (konservativ & getestet)
+          # "stable": aktuelle stabile Toolchain (Gradle 8.13, JDK 21, AGP 8.12, SDK/BT 36/35)
+          # "lts":    konservativ (Gradle 8.7,  JDK 17, AGP 8.5,  SDK/BT 34/34)
+          # "project": keine Zwangs-Overrides (nimmt Defaults, nur JSON greift)
+          bases = {
+            "stable": {
+              "sdk_api": "36",
+              "build_tools": "35.0.0",
+              "jdk": "21",
+              "gradle_version": "8.13",
+              "agp_override": "8.12.0",
+              "kotlin_override": "",
+              "pr_comment": "false",
+              "issue_number": ""
+            },
+            "lts": {
+              "sdk_api": "34",
+              "build_tools": "34.0.0",
+              "jdk": "17",
+              "gradle_version": "8.7",
+              "agp_override": "8.5.2",
+              "kotlin_override": "",
+              "pr_comment": "false",
+              "issue_number": ""
+            },
+            "project": {
+              "sdk_api": "36",
+              "build_tools": "35.0.0",
+              "jdk": "21",
+              "gradle_version": "",
+              "agp_override": "",
+              "kotlin_override": "",
+              "pr_comment": "false",
+              "issue_number": ""
+            }
+          }
+
+          # JSON laden (Optional)
+          raw = os.environ.get("RAW_CONFIG","").strip()
+          user = {}
+          if raw:
+            try:
+              user = json.loads(raw)
+            except json.JSONDecodeError as exc:
+              print(f"::error::config_json ist kein gültiges JSON ({exc})")
+              sys.exit(1)
+
+          # Backwards-Compat: use_gradle_9x/gradle_9x_version → gradle_version
+          if user.get("use_gradle_9x","false") in (True, "true"):
+            gv = str(user.get("gradle_9x_version","9.1.0"))
+            user["gradle_version"] = gv
+
+          base = bases.get(bundle, bases["stable"]).copy()
+          base.update({ k:str(v) for k,v in user.items() })
+
+          # Outputs + ENV schreiben
+          env_path = os.environ["GITHUB_ENV"]
+          out_path = os.environ["GITHUB_OUTPUT"]
+          with open(env_path,"a",encoding="utf-8") as envf, open(out_path,"a",encoding="utf-8") as outf:
+            for k,v in base.items():
+              envf.write(f"{k}={v}\n")
+              outf.write(f"{k}={v}\n")
+          PY
+        env:
+          BUNDLE: ${{ github.event.inputs.toolchain_bundle }}
+          RAW_CONFIG: ${{ github.event.inputs.config_json }}
+
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: ${{ github.event.inputs.jdk }}
+          java-version: ${{ steps.cfg.outputs.jdk }}
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -84,56 +144,50 @@ jobs:
           accept-android-sdk-licenses: true
           packages: |
             platform-tools
-            platforms;android-${{ github.event.inputs.sdk_api }}
-            build-tools;${{ github.event.inputs.build_tools }}
+            platforms;android-${{ steps.cfg.outputs.sdk_api }}
+            build-tools;${{ steps.cfg.outputs.build_tools }}
 
-      - name: Setup Gradle (cache+wrapper validation)
-        uses: gradle/actions/setup-gradle@v5
+      - name: Setup Gradle (cache + wrapper validation)
+        uses: gradle/actions/setup-gradle@v4.4.3
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # --- Optional: Gradle/AGP/Kotlin Overrides (nur für diesen Run) ---
-      - name: Optional – Gradle 9.x OVERRIDE (Guard prüft AGP)
-        if: ${{ github.event.inputs.use_gradle_9x == 'true' }}
+      - name: Optional – Gradle Override aus Bundle/JSON
+        if: ${{ steps.cfg.outputs.gradle_version != '' }}
         run: |
           set -euo pipefail
-          V="${{ github.event.inputs.gradle_9x_version }}"
-          [[ -f gradle/wrapper/gradle-wrapper.properties ]] || { echo "::error::gradle-wrapper.properties fehlt"; exit 1; }
+          V="${{ steps.cfg.outputs.gradle_version }}"
+          test -f gradle/wrapper/gradle-wrapper.properties || { echo "::error::gradle-wrapper.properties fehlt"; exit 1; }
           sed -i -E "s#distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-${V}-bin.zip#g" gradle/wrapper/gradle-wrapper.properties
           echo "Gradle Wrapper → ${V}"
-          AGP="$(grep -RhoE 'com\\.android\\.tools\\.build:gradle:([0-9]+\\.[0-9]+(\\.[0-9]+)?)' -n --include=*.gradle* --exclude-dir=**/build | head -1 | sed -E 's/.*:([0-9.]+).*/\\1/')"
-          vergte() { [ "$1" = "$2" ] || [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n1)" = "$1" ]; }
-          if [[ -n "$AGP" ]] && ! vergte "$AGP" "8.13.0"; then
-            echo "::error::Gradle 9.x erfordert AGP >= 8.13 ODER AGP 9 Preview. Setze 'agp_override' entsprechend."
-            exit 2
-          fi
 
-      - name: Optional – AGP/Kotlin Override (In-Place Patch nur für Run)
-        if: ${{ github.event.inputs.agp_override != '' || github.event.inputs.kotlin_override != '' }}
+      - name: Optional – AGP/Kotlin Override (nur für diesen Run)
+        if: ${{ steps.cfg.outputs.agp_override != '' || steps.cfg.outputs.kotlin_override != '' }}
         run: |
           python3 - <<'PY'
           import re, pathlib, os
           agp = os.environ.get("AGP_NEW","").strip()
           kt  = os.environ.get("KOTLIN_NEW","").strip()
-          files=[p for p in pathlib.Path(".").rglob("*") if p.is_file() and p.suffix in (".gradle",".kts",".toml") and "build" not in p.parts]
+          files=[p for p in pathlib.Path(".").rglob("*")
+                 if p.is_file() and p.suffix in (".gradle",".kts",".toml")
+                 and "build" not in p.parts]
           for p in files:
             s=p.read_text(encoding="utf-8",errors="ignore"); o=s
             if agp:
-              s=re.sub(r"(com\.android\.tools\.build:gradle:)\d+\.\d+(?:\.\d+)?", rf"\g<1>{agp}", s)
-              s=re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+")[^"]+(")', rf"\g<1>{agp}\g<2>", s)
-              s=re.sub(r'(?m)^(agp\s*=\s*")\d+\.\d+(?:\.\d+)?(")', rf"\g<1>{agp}\g<2>", s)
+              s=re.sub(r"(com\.android\.tools\.build:gradle:)\d+\.\d+(?:\.\d+)?", rf"\\g<1>{agp}", s)
+              s=re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+")[^"]+(")', rf"\\g<1>{agp}\\g<2>", s)
+              s=re.sub(r'(?m)^(agp\s*=\s*")\d+\.\d+(?:\.\d+)?(")', rf"\\g<1>{agp}\\g<2>", s)
             if kt:
-              s=re.sub(r'(org\.jetbrains\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)\d+\.\d+(?:\.\d+)?', rf"\g<1>{kt}", s)
-              s=re.sub(r'(id\(["\']org\.jetbrains\.kotlin\.(?:android|jvm|multiplatform)["\']\)\s+version\s+")[^"]+(")', rf"\g<1>{kt}\g<2>", s)
-              s=re.sub(r'(?m)^(kotlin\s*=\s*")\d+\.\d+(?:\.\d+)?(")', rf"\g<1>{kt}\g<2>", s)
+              s=re.sub(r'(org\.jetbrains\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)\d+\.\d+(?:\.\d+)?', rf"\\g<1>{kt}", s)
+              s=re.sub(r'(id\(["\']org\.jetbrains\.kotlin\.(?:android|jvm|multiplatform)["\']\)\s+version\s+")[^"]+(")', rf"\\g<1>{kt}\\g<2>", s)
+              s=re.sub(r'(?m)^(kotlin\s*=\s*")\d+\.\d+(?:\.\d+)?(")', rf"\\g<1>{kt}\\g<2>", s)
             if s!=o: p.write_text(s,encoding="utf-8")
           PY
         env:
-          AGP_NEW: ${{ github.event.inputs.agp_override }}
-          KOTLIN_NEW: ${{ github.event.inputs.kotlin_override }}
+          AGP_NEW: ${{ steps.cfg.outputs.agp_override }}
+          KOTLIN_NEW: ${{ steps.cfg.outputs.kotlin_override }}
 
-      # --- ABI / Splits ---
       - name: ABI / Splits konfigurieren
         run: |
           case "${{ github.event.inputs.abis }}" in
@@ -165,6 +219,30 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Reviewdog PR‑Checks (optional)
+        if: ${{ github.event.inputs.pr_annotations == 'true' }}
+        uses: reviewdog/action-setup@v1
+      - if: ${{ github.event.inputs.pr_annotations == 'true' }}
+        name: Reviewdog – detekt/ktlint/lint aus Reports
+        run: |
+          set -e
+          command -v reviewdog >/dev/null 2>&1 || { echo "::warning::reviewdog fehlt – Annotationen übersprungen"; exit 0; }
+          if ls **/build/reports/detekt/detekt.xml >/dev/null 2>&1; then
+            reviewdog -f=checkstyle -name="detekt" -reporter=github-pr-check -filter-mode=nofilter -fail-on-error=false < **/build/reports/detekt/detekt.xml
+          fi
+          if ls **/build/reports/ktlint/**/ktlint-checkstyle-report.xml >/dev/null 2>&1; then
+            for f in **/build/reports/ktlint/**/ktlint-checkstyle-report.xml; do
+              reviewdog -f=checkstyle -name="ktlint" -reporter=github-pr-check -filter-mode=nofilter -fail-on-error=false < "$f"
+            done
+          fi
+          if ls **/build/reports/lint-results*.xml >/dev/null 2>&1; then
+            for f in **/build/reports/lint-results*.xml; do
+              reviewdog -f=checkstyle -name="android-lint" -reporter=github-pr-check -filter-mode=nofilter -fail-on-error=false < "$f"
+            done
+          fi
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build Summary
         if: always()
         run: |
@@ -174,18 +252,22 @@ jobs:
             echo "**Run:** https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
             echo ""
             echo "### APKs"
-            find app/build/outputs/apk -type f -name "*.apk" | sed 's/^/- /' || echo "- (keine gefunden)"
+            find app/build/outputs/apk -type f -name "*.apk" -maxdepth 3 | sed 's/^/- /' || echo "- (keine gefunden)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: PR-Kommentar (optional)
-        if: ${{ github.event.inputs.pr_comment == 'true' && (github.event_name == 'pull_request' || github.event.inputs.issue_number != '') }}
-        uses: actions/github-script@v8
+        if: ${{ steps.cfg.outputs.pr_comment == 'true' && (github.event_name == 'pull_request' || steps.cfg.outputs.issue_number != '') }}
+        uses: actions/github-script@v7
         with:
           script: |
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const body = ["### ⚙️ Quick Debug fertig", `**Run:** ${runUrl}`, "", "Artefakte: siehe **Artifacts** und **Run Summary**."].join("\n");
-            const issue_number = context.payload.pull_request?.number || Number(core.getInput('issue_number'));
+            const override = process.env.ISSUE_NUMBER_OVERRIDE?.trim();
+            const parsed = override ? Number(override) : undefined;
+            const issue_number = context.payload.pull_request?.number ?? (Number.isFinite(parsed) ? parsed : undefined);
             if (issue_number) await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+        env:
+          ISSUE_NUMBER_OVERRIDE: ${{ steps.cfg.outputs.issue_number }}
 
       - name: Start tmate (on failure/explicit)
         if: ${{ failure() || github.event.inputs.debug_tmate == 'true' }}
