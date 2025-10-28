@@ -55,20 +55,8 @@ on:
         required: true
         default: "MinSizeRel"
         options: [MinSizeRel, Release]
-      debug_tmate:
-        description: "tmate-Debug (bei Fehler oder Opt-in)"
-        type: choice
-        required: true
-        default: "false"
-        options: ["false","true"]
-      pr_annotations:
-        description: "Reviewdog-Annotationen aktivieren (nicht blockierend)"
-        type: choice
-        required: true
-        default: "false"
-        options: ["false","true"]
       config_json:
-        description: "Sanitizer/Overrides als JSON (optional; kann base64:... sein)"
+        description: "Sanitizer/Overrides als JSON (optional; kann base64:... sein). Kann auch flags enthalten: pr_annotations, debug_tmate (bool)."
         required: false
         default: ""
 
@@ -97,7 +85,6 @@ jobs:
       ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
 
     steps:
-      # Checkout & Tooling
       - name: Checkout (LFS & Submodules)
         uses: actions/checkout@v5
         with:
@@ -105,19 +92,16 @@ jobs:
           lfs: true
           submodules: recursive
 
-      # Dispatch toolchain (stable/lts/project) → sets SDK/BT/NDK/CMake/JDK/Gradle/AGP
       - name: Toolchain-Dispatcher
         id: dispatch
         run: |
           set -euo pipefail
           BUNDLE="${{ github.event.inputs.toolchain_bundle }}"
-          # Defaults per bundle (CMAKE_REQ will be tried first; fallback used if unavailable)
           if [[ "$BUNDLE" == "stable" ]]; then
             SDK_API=35; BUILD_TOOLS="35.0.0"; NDK="27.3.13750724"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.30.5"; JDK=21; GRADLE="8.13"; AGP="8.12.0"
           elif [[ "$BUNDLE" == "lts" ]]; then
             SDK_API=34; BUILD_TOOLS="34.0.0"; NDK="26.3.11333136"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.22.1"; JDK=17; GRADLE="8.7"; AGP="8.5.2"
           else
-            # Attempt to infer from project files; graceful fallback to stable
             SDK_API=""; BUILD_TOOLS=""; NDK=""; CMAKE_REQ=""; CMAKE_FALLBACK="3.30.5"; JDK=""; GRADLE=""; AGP=""
             python3 - <<'PY'
             import re, pathlib, json, os
@@ -126,7 +110,7 @@ jobs:
             texts = []
             for g in globs:
               for p in pathlib.Path(".").rglob(g):
-                if "/build/" in str(p): 
+                if "/build/" in str(p):
                   continue
                 try:
                   texts.append(p.read_text(encoding="utf-8", errors="ignore"))
@@ -148,12 +132,10 @@ jobs:
             BUILD_TOOLS="$(jq -r '.BUILD_TOOLS // empty' inferred.json || true)"
             NDK="$(jq -r '.NDK // empty' inferred.json || true)"
             AGP="$(jq -r '.AGP // empty' inferred.json || true)"
-            # sensible fallbacks if inference failed
             [[ -z "$SDK_API" ]] && SDK_API=35
             [[ -z "$BUILD_TOOLS" ]] && BUILD_TOOLS="35.0.0"
             [[ -z "$NDK" ]] && NDK="27.3.13750724"
             CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.30.5"
-            # JDK/Gradle best-effort defaults for 'project'
             JDK=21; GRADLE="8.13"
           fi
           {
@@ -204,14 +186,12 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # Manual Android SDK install (no wrapper action) with graceful 35→34 fallback
       - name: Install Android SDK (manual)
         run: |
           set -euo pipefail
           SDK="${ANDROID_SDK_ROOT}"
           mkdir -p "$SDK"
           cd "$SDK"
-          # Download cmdline-tools
           URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
           curl -fsSL "$URL" -o cmdtools.zip
           rm -rf cmdline-tools || true
@@ -221,12 +201,10 @@ jobs:
           echo "$SDK/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$SDK/platform-tools" >> $GITHUB_PATH
           echo "$SDK/build-tools/${{ env.BUILD_TOOLS }}" >> $GITHUB_PATH
-          # Accept licenses (SIGPIPE-safe)
           set +o pipefail
           yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
           status=${PIPESTATUS[1]}; if [[ $status -ne 0 && $status -ne 141 ]]; then exit $status; fi
           set -o pipefail
-          # Try desired API/BT/NDK first
           P=("platform-tools" "platforms;android-${{ env.SDK_API }}" "build-tools;${{ env.BUILD_TOOLS }}" "ndk;${{ env.NDK_VER }}")
           "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "${P[@]}" || INSTALL_FAIL=1
           if [[ "${INSTALL_FAIL:-0}" == "1" && "${{ env.SDK_API }}" == "35" ]]; then
@@ -242,21 +220,19 @@ jobs:
           "$SDK/platform-tools/adb" version || true
           "$SDK/build-tools/${{ env.BUILD_TOOLS }}/apksigner" --version || true
 
-      # Setup CMake (try requested, then fallback to known-good)
       - name: Setup CMake (requested)
         continue-on-error: true
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: ${{ env.CMAKE_REQ }}
       - name: Setup CMake (fallback)
-        if: ${{ steps.dispatch.outputs.bundle != '' }} # always run; no-op if already present
+        if: ${{ steps.dispatch.outputs.bundle != '' }}
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: ${{ env.CMAKE_FALLBACK }}
       - name: CMake Version Info
         run: cmake --version || true
 
-      # Sanitizer + sichere Overrides via JSON (heilen → ersetzen; lambda-Regex; keine Backslash-Leichen)
       - name: Sanitizer/Overrides (config_json)
         if: ${{ github.event.inputs.config_json != '' }}
         run: |
@@ -265,7 +241,6 @@ jobs:
           raw = os.environ.get("CFG","").strip()
           if raw.startswith("base64:"):
               raw = base64.b64decode(raw.split(":",1)[1]).decode("utf-8","ignore")
-          # Heal common issues
           raw = raw.replace("\r\n","\n").replace("\r","\n").strip()
           if not raw:
               sys.exit(0)
@@ -274,21 +249,16 @@ jobs:
           except Exception as e:
               print("::warning::config_json ist kein valides JSON:", e)
               sys.exit(0)
-          # Structure: {"writes":[{"path":"file","content":"..."},...],
-          #             "replacements":[{"path":"file","pattern":"regex","repl":"text","flags":"MULTILINE|IGNORECASE"},...],
-          #             "deletes":["path1",...]}
           root = pathlib.Path(".").resolve()
           def safe_path(p):
               p = (root / p).resolve()
               if str(p).startswith(str(root)):
                   return p
               raise ValueError("Unsicherer Pfad")
-          # Writes
           for w in cfg.get("writes", []):
               p = safe_path(w["path"])
               p.parent.mkdir(parents=True, exist_ok=True)
               p.write_text(w.get("content",""), encoding="utf-8")
-          # Replacements
           for r in cfg.get("replacements", []):
               p = safe_path(r["path"])
               if not p.exists():
@@ -299,7 +269,6 @@ jobs:
                   f=f.strip().upper()
                   flags |= getattr(re, f, 0)
               pat = r.get("pattern","")
-              # Prevent catastrophic backtracking: limit certain constructs
               if re.search(r"\\(?![AbBdDsSwWZ\\])", pat):
                   print(f"::warning::Backslash-Leiche in Pattern: {pat[:40]}… – versuche Escape-Heilung")
                   pat = pat.encode("utf-8").decode("unicode_escape")
@@ -313,7 +282,6 @@ jobs:
               if n>0:
                   p.write_text(s2, encoding="utf-8")
                   print(f"::notice::{p} – {n} Ersetzungen")
-          # Deletes
           for d in cfg.get("deletes", []):
               p = safe_path(d)
               try:
@@ -322,11 +290,20 @@ jobs:
                       print(f"::warning::Verzeichnislöschen nicht erlaubt: {p}")
               except Exception as e:
                   print(f"::warning::Delete fehlgeschlagen für {p}: {e}")
+          # flags from config_json -> env (reduce inputs)
+          envf = os.environ.get("GITHUB_ENV")
+          if envf:
+              with open(envf, "a", encoding="utf-8") as f:
+                  v = cfg.get("pr_annotations")
+                  if isinstance(v, bool):
+                      f.write(f"PR_ANNOTATIONS={'true' if v else 'false'}\n")
+                  v = cfg.get("debug_tmate")
+                  if isinstance(v, bool):
+                      f.write(f"DEBUG_TMATE={'true' if v else 'false'}\n")
           PY
         env:
           CFG: ${{ github.event.inputs.config_json }}
 
-      # ABI / Splits
       - name: ABI / Splits konfigurieren
         run: |
           case "${{ github.event.inputs.abis }}" in
@@ -336,7 +313,6 @@ jobs:
             universal) echo "ORG_GRADLE_PROJECT_abiFilters="                      >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=false" >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=true"  >> $GITHUB_ENV;;
           esac
 
-      # Signing (optional)
       - name: Decode Keystore (optional)
         if: ${{ github.event.inputs.sign_apk == 'true' }}
         env:
@@ -364,7 +340,6 @@ jobs:
             echo "::warning::Keystore fehlt – Build läuft UNSIGNIERT."
           fi
 
-      # Caches
       - name: ccache (NDK)
         uses: actions/cache@v4
         with:
@@ -391,7 +366,6 @@ jobs:
             tdlib-${{ runner.os }}-ndk${{ env.NDK_VER }}-
             tdlib-${{ runner.os }}-
 
-      # Need TDLib?
       - name: Need TDLib?
         id: tdneed
         run: |
@@ -405,7 +379,7 @@ jobs:
         id: tdabi
         run: |
           case "${{ github.event.inputs.abis }}" in
-            arm64+v7a|universal) echo "flags="               >> $GITHUB_OUTPUT ;; # beide ABIs bauen
+            arm64+v7a|universal) echo "flags="               >> $GITHUB_OUTPUT ;;
             arm64)               echo "flags=--only-arm64"   >> $GITHUB_OUTPUT ;;
             v7a)                 echo "flags=--only-v7a"     >> $GITHUB_OUTPUT ;;
           esac
@@ -434,14 +408,12 @@ jobs:
 
           chmod +x scripts/build_tdlib_android.sh
 
-          # BuildType Flag fürs Script
           if [[ "${{ github.event.inputs.tdlib_build_type }}" == "Release" ]]; then
             BTFLAG="--release"
           else
             BTFLAG="--minsize"
           fi
 
-          # Versionierung / Ref
           case "${{ github.event.inputs.tdlib_mode }}" in
             default)
               bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --api-level=${{ env.SDK_API }}
@@ -456,9 +428,8 @@ jobs:
               ;;
           esac
 
-      # Optional lint + Reviewdog annotations
       - name: Android Lint (optional)
-        if: ${{ github.event.inputs.pr_annotations == 'true' }}
+        if: ${{ env.PR_ANNOTATIONS == 'true' }}
         run: |
           if [[ "${{ github.event.inputs.build_type }}" == "release" ]]; then
             ./gradlew :app:lintRelease --stacktrace || true
@@ -467,17 +438,16 @@ jobs:
           fi
 
       - name: Reviewdog (TODOs / Grep) – nicht blockierend
-        if: ${{ github.event.inputs.pr_annotations == 'true' }}
+        if: ${{ env.PR_ANNOTATIONS == 'true' }}
         uses: reviewdog/action-setup@v1
       - name: Reviewdog run
-        if: ${{ github.event.inputs.pr_annotations == 'true' }}
+        if: ${{ env.PR_ANNOTATIONS == 'true' }}
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set +e
           (git ls-files | xargs -I{} grep -nH "TODO" "{}" || true)             | reviewdog -name="TODO Scanner" -f=grep -reporter=github-check -level=info -filter-mode=nofilter -fail-on-error=false
 
-      # Gradle Task
       - name: Task wählen
         id: task
         run: |
@@ -493,10 +463,8 @@ jobs:
 
       - name: Build
         run: |
-          EXTRA_PROPS=()
           MIRROR="${{ github.event.inputs.mirror_only || 'false' }}"
           if [[ "$MIRROR" == "true" ]]; then OBX_DEFAULT=false; else OBX_DEFAULT=true; fi
-
           ./gradlew ${{ steps.task.outputs.task }}             -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}"             -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}"             -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}"             -PTG_OBX_ENABLED_DEFAULT=${OBX_DEFAULT}             --configuration-cache --build-cache --parallel             --stacktrace --warning-mode all -x test
 
       - name: apksigner verify (falls signiert)
@@ -555,7 +523,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: tmate (on failure or opt-in)
-        if: ${{ failure() || github.event.inputs.debug_tmate == 'true' }}
+        if: ${{ failure() || env.DEBUG_TMATE == 'true' }}
         uses: mxschmitt/action-tmate@v3
         with:
           limit-access-to-actor: false
