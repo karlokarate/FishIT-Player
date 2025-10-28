@@ -1,0 +1,84 @@
+name: Android – Quality Gate (picker)
+
+on:
+  workflow_dispatch:
+    inputs:
+      detekt:          { description: "Detekt",          type: choice, default: "true",  options: ["true","false"] }
+      ktlint:          { description: "Ktlint/Spotless", type: choice, default: "true",  options: ["true","false"] }
+      android_lint:    { description: "Android Lint",    type: choice, default: "true",  options: ["true","false"] }
+      unit_tests:      { description: "Unit-Tests",      type: choice, default: "true",  options: ["true","false"] }
+      coverage_kover:  { description: "Coverage (Kover)",type: choice, default: "false", options: ["true","false"] }
+      dep_check:       { description: "OWASP Dep-Check", type: choice, default: "false", options: ["true","false"] }
+      api_check:       { description: "API Check (metalava)", type: choice, default: "false", options: ["true","false"] }
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-quality-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
+      - uses: gradle/actions/wrapper-validation@v3
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: platform-tools platforms;android-35 build-tools;35.0.0
+      - uses: gradle/actions/setup-gradle@v3
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+      - name: Problem Matcher aktivieren
+        continue-on-error: true
+        run: |
+          [[ -f .github/gradle-problem-matcher.json ]] && echo "::add-matcher::.github/gradle-problem-matcher.json" || true
+
+      # --- Checks -------------------------------------------------------------
+      - name: Detekt
+        if: ${{ github.event.inputs.detekt == 'true' }}
+        run: ./gradlew detekt --stacktrace --configuration-cache --build-cache || { echo "::error::Detekt failed"; exit 1; }
+
+      - name: Ktlint/Spotless
+        if: ${{ github.event.inputs.ktlint == 'true' }}
+        run: |
+          ./gradlew ktlintCheck --stacktrace --configuration-cache --build-cache || \
+          ./gradlew spotlessCheck --stacktrace --configuration-cache --build-cache
+
+      - name: Android Lint (Debug + Vital Release)
+        if: ${{ github.event.inputs.android_lint == 'true' }}
+        run: ./gradlew lintDebug lintVitalRelease --stacktrace --configuration-cache --build-cache
+
+      - name: Unit-Tests (Debug)
+        if: ${{ github.event.inputs.unit_tests == 'true' }}
+        run: ./gradlew testDebugUnitTest --stacktrace --configuration-cache --build-cache
+
+      - name: Coverage (Kover XML)
+        if: ${{ github.event.inputs.coverage_kover == 'true' }}
+        run: ./gradlew koverXmlReport --stacktrace --configuration-cache --build-cache
+
+      - name: Dependency-Check (OWASP)
+        if: ${{ github.event.inputs.dep_check == 'true' }}
+        run: ./gradlew dependencyCheckAnalyze --stacktrace --configuration-cache --build-cache
+
+      - name: API Check (metalava)
+        if: ${{ github.event.inputs.api_check == 'true' }}
+        run: ./gradlew checkApi --stacktrace --configuration-cache --build-cache
+
+      # --- Reports/Artefakte --------------------------------------------------
+      - name: Reports hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-reports
+          path: |
+            **/build/reports/**
+            **/build/test-results/**
+            **/build/kover/**
+          retention-days: 7
+          if-no-files-found: warn
