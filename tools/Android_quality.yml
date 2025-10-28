@@ -3,19 +3,6 @@ name: Android – Quality Gate (Picker)
 on:
   workflow_dispatch:
     inputs:
-      sdk_api:
-        description: "SDK Platform (Default 36)"
-        required: false
-        default: "36"
-      build_tools:
-        description: "Build-Tools (35.0.0 stabil; 36.x = EXPERIMENTAL, sinnvoll mit AGP ≥ 9)"
-        required: false
-        default: "35.0.0"
-      jdk:
-        description: "JDK (21 LTS empfohlen)"
-        required: false
-        default: "21"
-
       detekt:
         description: "Detekt ausführen"
         type: choice
@@ -65,38 +52,10 @@ on:
         options:
           - "true"
           - "false"
-
-      use_gradle_9x:
-        description: "Gradle 9.x OVERRIDE (RISKY) – benötigt AGP ≥ 8.13 ODER AGP 9 Preview"
-        type: choice
-        default: "false"
-        options:
-          - "false"
-          - "true"
-      gradle_9x_version:
-        description: "Gradle 9.x Version (wirksam nur wenn use_gradle_9x=true)"
+      config_json:
+        description: "JSON-Overrides (sdk_api, build_tools, jdk, use_gradle_9x, gradle_9x_version, agp_override, kotlin_override, pr_comment, issue_number)"
         required: false
-        default: "9.1.0"
-      agp_override:
-        description: "AGP Override (z.B. 8.13.0 oder 9.0.0-alphaXX) – bei Gradle 9.x mind. 8.13!"
-        required: false
-        default: ""
-      kotlin_override:
-        description: "Kotlin Override (z.B. 2.2.21) – Compose/Media3-Kompat. beachten"
-        required: false
-        default: ""
-
-      pr_comment:
-        description: "PR-Kommentar mit Ergebnissen"
-        type: choice
-        default: "false"
-        options:
-          - "false"
-          - "true"
-      issue_number:
-        description: "PR/Issue-Nummer (optional)"
-        required: false
-        default: ""
+        default: "{}"
 
 permissions:
   contents: read
@@ -115,11 +74,58 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Parse config overrides
+        id: cfg
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+
+          defaults = {
+              "sdk_api": "36",
+              "build_tools": "35.0.0",
+              "jdk": "21",
+              "use_gradle_9x": "false",
+              "gradle_9x_version": "9.1.0",
+              "agp_override": "",
+              "kotlin_override": "",
+              "pr_comment": "false",
+              "issue_number": "",
+          }
+
+          raw = os.environ.get("RAW_CONFIG", "").strip()
+          if not raw:
+              data = {}
+          else:
+              try:
+                  data = json.loads(raw)
+              except json.JSONDecodeError as exc:
+                  print(f"::error::config_json ist kein gültiges JSON ({exc})")
+                  sys.exit(1)
+
+          merged = {}
+          for key, default in defaults.items():
+              value = data.get(key, default)
+              if isinstance(value, bool):
+                  value = "true" if value else "false"
+              else:
+                  value = str(value)
+              merged[key] = value
+
+          env_path = os.environ["GITHUB_ENV"]
+          out_path = os.environ["GITHUB_OUTPUT"]
+          with open(env_path, "a", encoding="utf-8") as envf, open(out_path, "a", encoding="utf-8") as outf:
+              for key, value in merged.items():
+                  envf.write(f"{key}={value}\n")
+                  outf.write(f"{key}={value}\n")
+          PY
+        env:
+          RAW_CONFIG: ${{ github.event.inputs.config_json }}
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: ${{ github.event.inputs.jdk }}
+          java-version: ${{ steps.cfg.outputs.jdk }}
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -127,8 +133,8 @@ jobs:
           accept-android-sdk-licenses: true
           packages: |
             platform-tools
-            platforms;android-${{ github.event.inputs.sdk_api }}
-            build-tools;${{ github.event.inputs.build_tools }}
+            platforms;android-${{ steps.cfg.outputs.sdk_api }}
+            build-tools;${{ steps.cfg.outputs.build_tools }}
 
       - name: Setup Gradle (cache+wrapper validation)
         uses: gradle/actions/setup-gradle@v5
@@ -138,10 +144,10 @@ jobs:
 
       # Risk Switches
       - name: Optional – Gradle 9.x OVERRIDE (Guard prüft AGP)
-        if: ${{ github.event.inputs.use_gradle_9x == 'true' }}
+        if: ${{ steps.cfg.outputs.use_gradle_9x == 'true' }}
         run: |
           set -euo pipefail
-          V="${{ github.event.inputs.gradle_9x_version }}"
+          V="${{ steps.cfg.outputs.gradle_9x_version }}"
           if [[ ! -f gradle/wrapper/gradle-wrapper.properties ]]; then
             echo "::error::gradle-wrapper.properties fehlt"
             exit 1
@@ -156,7 +162,7 @@ jobs:
           fi
 
       - name: Optional – AGP/Kotlin Override (In-Place Patch nur für Run)
-        if: ${{ github.event.inputs.agp_override != '' || github.event.inputs.kotlin_override != '' }}
+        if: ${{ steps.cfg.outputs.agp_override != '' || steps.cfg.outputs.kotlin_override != '' }}
         run: |
           python3 - <<'PY'
           import re, pathlib, os
@@ -176,8 +182,8 @@ jobs:
             if s!=o: p.write_text(s,encoding="utf-8")
           PY
         env:
-          AGP_NEW: ${{ github.event.inputs.agp_override }}
-          KOTLIN_NEW: ${{ github.event.inputs.kotlin_override }}
+          AGP_NEW: ${{ steps.cfg.outputs.agp_override }}
+          KOTLIN_NEW: ${{ steps.cfg.outputs.kotlin_override }}
 
       - name: Problem-Matcher
         continue-on-error: true
@@ -258,11 +264,15 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: PR-Kommentar (optional)
-        if: ${{ github.event.inputs.pr_comment == 'true' && (github.event_name == 'pull_request' || github.event.inputs.issue_number != '') }}
+        if: ${{ steps.cfg.outputs.pr_comment == 'true' && (github.event_name == 'pull_request' || steps.cfg.outputs.issue_number != '') }}
         uses: actions/github-script@v8
         with:
           script: |
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const body = ["### 🧪 Quality Gate fertig", `**Run:** ${runUrl}`, "", "Artefakte: **Artifacts** & **Run Summary**."].join("\n");
-            const issue_number = context.payload.pull_request?.number || Number(core.getInput('issue_number'));
+            const override = process.env.ISSUE_NUMBER_OVERRIDE?.trim();
+            const parsed = override ? Number(override) : undefined;
+            const issue_number = context.payload.pull_request?.number ?? (Number.isFinite(parsed) ? parsed : undefined);
             if (issue_number) await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+        env:
+          ISSUE_NUMBER_OVERRIDE: ${{ steps.cfg.outputs.issue_number }}
