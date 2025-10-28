@@ -67,7 +67,7 @@ jobs:
 
           bundles = {
             "stable": {
-              "sdk_api": "36",
+              "sdk_api": "35",
               "build_tools": "35.0.0",
               "jdk": "21",
               "gradle_version": "8.13",
@@ -87,7 +87,7 @@ jobs:
               "issue_number": ""
             },
             "project": {
-              "sdk_api": "36",
+              "sdk_api": "35",
               "build_tools": "35.0.0",
               "jdk": "21",
               "gradle_version": "",
