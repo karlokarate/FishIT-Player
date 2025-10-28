@@ -103,34 +103,15 @@ jobs:
             SDK_API=34; BUILD_TOOLS="34.0.0"; NDK="26.3.11333136"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.22.1"; JDK=17; GRADLE="8.7"; AGP="8.5.2"
           else
             SDK_API=""; BUILD_TOOLS=""; NDK=""; CMAKE_REQ=""; CMAKE_FALLBACK="3.30.5"; JDK=""; GRADLE=""; AGP=""
-            python3 - <<'PY' > inferred.json
-            import re, pathlib, json, os
-            out = {}
-            globs = ["**/build.gradle", "**/build.gradle.kts", "**/gradle.properties"]
-            texts = []
-            for g in globs:
-              for p in pathlib.Path(".").rglob(g):
-                if "/build/" in str(p):
-                  continue
-                try:
-                  texts.append(p.read_text(encoding="utf-8", errors="ignore"))
-                except Exception:
-                  pass
-            blob = "\\n".join(texts)
-            m = re.search(r"compileSdk\\s*[=:\\s]\\s*(\\d+)", blob)
-            if m: out["SDK_API"] = m.group(1)
-            m = re.search(r'buildToolsVersion\\s*[=:\\s]\\s*["\\']([^"\\']+)["\\']', blob)
-            if m: out["BUILD_TOOLS"] = m.group(1)
-            m = re.search(r'ndkVersion\\s*[=:\\s]\\s*["\\']([^"\\']+)["\\']', blob)
-            if m: out["NDK"] = m.group(1)
-            m = re.search(r'com\\.android\\.tools\\.build:gradle:([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)', blob)
-            if m: out["AGP"] = m.group(1)
-            print(json.dumps(out))
-            PY
-            SDK_API="$(jq -r '.SDK_API // empty' inferred.json || true)"
-            BUILD_TOOLS="$(jq -r '.BUILD_TOOLS // empty' inferred.json || true)"
-            NDK="$(jq -r '.NDK // empty' inferred.json || true)"
-            AGP="$(jq -r '.AGP // empty' inferred.json || true)"
+            FILES=$(git ls-files '**/build.gradle' '**/build.gradle.kts' '**/gradle.properties' 2>/dev/null | grep -v '/build/' || true)
+            BLOB=""
+            if [[ -n "$FILES" ]]; then
+              while IFS= read -r f; do BLOB+=$'\n'$(cat "$f"); done <<< "$FILES"
+            fi
+            SDK_API=$(printf '%s' "$BLOB" | sed -nE 's/.*compileSdk[ =:]*([0-9]+).*/\1/p' | head -1 || true)
+            BUILD_TOOLS=$(printf '%s' "$BLOB" | sed -nE 's/.*buildToolsVersion[ =:]*["'\"'"']?([^"'"'"' ]+).*/\1/p' | head -1 || true)
+            NDK=$(printf '%s' "$BLOB" | sed -nE 's/.*ndkVersion[ =:]*["'\"'"']?([^"'"'"' ]+).*/\1/p' | head -1 || true)
+            AGP=$(printf '%s' "$BLOB" | sed -nE 's/.*com\.android\.tools\.build:gradle:([0-9]+\.[0-9]+(\.[0-9]+)?).*/\1/p' | head -1 || true)
             [[ -z "$SDK_API" ]] && SDK_API=35
             [[ -z "$BUILD_TOOLS" ]] && BUILD_TOOLS="35.0.0"
             [[ -z "$NDK" ]] && NDK="27.3.13750724"
@@ -173,8 +154,8 @@ jobs:
           files=[p for p in pathlib.Path(".").rglob("*") if p.is_file() and p.suffix in (".gradle",".kts",".toml") and "build" not in p.parts]
           for p in files:
             s=p.read_text(encoding="utf-8",errors="ignore"); o=s
-            s=re.sub(r"(com\\.android\\.tools\\.build:gradle:)\\d+\\.\\d+(?:\\.\\d+)?", rf"\\g<1>{agp}", s)
-            s=re.sub(r'(id\\(["\\']com\\.android\\.(?:application|library|test|dynamic-feature)["\\']\\)\\s+version\\s+")([^"]+)(")', rf"\\1{agp}\\3", s)
+            s=re.sub(r"(com\.android\.tools\.build:gradle:)\d+\.\d+(?:\.\d+)?", rf"\g<1>{agp}", s)
+            s=re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+")([^"]+)(")', rf"\1{agp}\3", s)
             if s!=o: p.write_text(s,encoding="utf-8")
           print("AGP pinned to", agp)
           PY
