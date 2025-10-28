@@ -137,28 +137,19 @@ jobs:
           fi
           export ANDROID_SDK_ROOT="$HOME/android-sdk"
           mkdir -p "$ANDROID_SDK_ROOT"
-
           run_sm() {
-            # fängt Exit 0/141 (SIGPIPE) als Erfolg ab, andere Fehler brechen ab
             set +e
             "$SDKM" --sdk_root="$ANDROID_SDK_ROOT" "$@"
             rc=$?
             set -e
             if [[ $rc -ne 0 && $rc -ne 141 ]]; then
-              echo "::error::sdkmanager exit $rc bei '$*'"
-              exit $rc
+              echo "::error::sdkmanager exit $rc bei '$*'"; exit $rc
             fi
           }
-
-          # Lizenzen separat akzeptieren (kein 'yes |', vermeidet Broken pipe)
-          # Wir füttern 20x 'y' über stdin; reicht in der Praxis.
           { for i in $(seq 1 20); do echo y; done; } | run_sm --licenses >/dev/null 2>&1 || true
-
-          # Pakete installieren (ohne Pipe)
           run_sm "platform-tools"
           run_sm "platforms;android-${{ steps.droid.outputs.sdk_api_resolved }}"
           run_sm "build-tools;${{ steps.droid.outputs.build_tools_resolved }}"
-
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "$ANDROID_SDK_ROOT/platform-tools"   >> $GITHUB_PATH
           echo "$ANDROID_SDK_ROOT/build-tools/${{ steps.droid.outputs.build_tools_resolved }}" >> $GITHUB_PATH
@@ -178,27 +169,41 @@ jobs:
           sed -i -E "s#distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-${V}-bin.zip#g" gradle/wrapper/gradle-wrapper.properties
           echo "Gradle Wrapper → ${V}"
 
-      - name: Optional – AGP/Kotlin Override (nur für diesen Run)
+      - name: Optional – AGP/Kotlin Override (Safe + Sanitizer)
         if: ${{ steps.cfg.outputs.agp_override != '' || steps.cfg.outputs.kotlin_override != '' }}
         run: |
           python3 - <<'PY'
           import re, pathlib, os
           agp = os.environ.get("AGP_NEW","").strip()
           kt  = os.environ.get("KOTLIN_NEW","").strip()
-          files=[p for p in pathlib.Path(".").rglob("*")
-                 if p.is_file() and p.suffix in (".gradle",".kts",".toml")
-                 and "build" not in p.parts]
-          for p in files:
-            s=p.read_text(encoding="utf-8",errors="ignore"); o=s
+          paths = [p for p in pathlib.Path(".").rglob("*")
+                   if p.is_file() and p.suffix in (".gradle",".kts",".toml")
+                   and "build" not in p.parts]
+          for p in paths:
+            s = p.read_text(encoding="utf-8", errors="ignore")
+            o = s
+            # --- Sanitizer für versehentliche \g<1>…\g<2>-Artefakte ---
+            s = re.sub(r'(version\\s+)(?:\\\\?g<1>)?([0-9]+\\.[0-9.]+)(?:\\\\?g<2>)', r'\\1"\\2"', s)
+            s = re.sub(r'(?m)^(\\s*agp\\s*=\\s*)(?:\\\\?g<1>)?([0-9]+\\.[0-9.]+)(?:\\\\?g<2>)\\s*$', r'\\1"\\2"', s)
+            s = re.sub(r'(?m)^(\\s*kotlin\\s*=\\s*)(?:\\\\?g<1>)?([0-9]+\\.[0-9.]+)(?:\\\\?g<2>)\\s*$', r'\\1"\\2"', s)
+            # --- AGP ersetzen ---
             if agp:
-              s=re.sub(r"(com\.android\.tools\.build:gradle:)\d+\.\d+(?:\.\d+)?", rf"\\g<1>{agp}", s)
-              s=re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+")[^"]+(")', rf"\\g<1>{agp}\\g<2>", s)
-              s=re.sub(r'(?m)^(agp\s*=\s*")\d+\.\d+(?:\.\d+)?(")', rf"\\g<1>{agp}\\g<2>", s)
+              s = re.sub(r'(com\\.android\\.tools\\.build:gradle:)([0-9]+\\.[0-9.]+)',
+                         lambda m: f'{m.group(1)}{agp}', s)
+              s = re.sub(r'(id\\(["\\']com\\.android\\.(?:application|library|test|dynamic-feature)["\\']\\)\\s+version\\s+")([^"]+)(")',
+                         lambda m: f'{m.group(1)}{agp}{m.group(3)}', s)
+              s = re.sub(r'(?m)^(\\s*agp\\s*=\\s*")[^"]+(")',
+                         lambda m: f'{m.group(1)}{agp}{m.group(2)}', s)
+            # --- Kotlin ersetzen ---
             if kt:
-              s=re.sub(r'(org\.jetbrains\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)\d+\.\d+(?:\.\d+)?', rf"\\g<1>{kt}", s)
-              s=re.sub(r'(id\(["\']org\.jetbrains\.kotlin\.(?:android|jvm|multiplatform)["\']\)\s+version\s+")[^"]+(")', rf"\\g<1>{kt}\\g<2>", s)
-              s=re.sub(r'(?m)^(kotlin\s*=\s*")\d+\.\d+(?:\.\d+)?(")', rf"\\g<1>{kt}\\g<2>", s)
-            if s!=o: p.write_text(s,encoding="utf-8")
+              s = re.sub(r'(org\\.jetbrains\\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)([0-9]+\\.[0-9.]+)',
+                         lambda m: f'{m.group(1)}{kt}', s)
+              s = re.sub(r'(id\\(["\\']org\\.jetbrains\\.kotlin\\.(?:android|jvm|multiplatform)["\\']\\)\\s+version\\s+")([^"]+)(")',
+                         lambda m: f'{m.group(1)}{kt}{m.group(3)}', s)
+              s = re.sub(r'(?m)^(\\s*kotlin\\s*=\\s*")[^"]+(")',
+                         lambda m: f'{m.group(1)}{kt}{m.group(2)}', s)
+            if s != o:
+              p.write_text(s, encoding="utf-8")
           PY
         env:
           AGP_NEW: ${{ steps.cfg.outputs.agp_override }}
