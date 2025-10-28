@@ -22,11 +22,7 @@ on:
         required: true
         default: "arm64+v7a"
         type: choice
-        options:
-          - arm64+v7a
-          - arm64
-          - v7a
-          - universal
+        options: [arm64+v7a, arm64, v7a, universal]
       mirror_only:
         description: "Mirror-Modus (true/false) → setzt TG_OBX_ENABLED_DEFAULT entsprechend"
         required: false
@@ -63,7 +59,6 @@ jobs:
     timeout-minutes: 90
 
     env:
-      # Default (wird später per Picker überschrieben)
       ORG_GRADLE_PROJECT_abiFilters: arm64-v8a,armeabi-v7a
       ORG_GRADLE_PROJECT_universalApk: false
       ORG_GRADLE_PROJECT_useSplits: true
@@ -123,7 +118,7 @@ jobs:
       - name: Make gradlew ausführbar
         run: chmod +x ./gradlew
 
-      # --- ABI Picker anwenden ---
+      # --- ABI Picker ---
       - name: Set ABI / Split-Konfiguration aus Picker
         run: |
           set -euo pipefail
@@ -144,7 +139,6 @@ jobs:
               echo "ORG_GRADLE_PROJECT_universalApk=false"               >> $GITHUB_ENV
               ;;
             "universal")
-              # Universal APK ohne Splits
               echo "ORG_GRADLE_PROJECT_abiFilters="                      >> $GITHUB_ENV
               echo "ORG_GRADLE_PROJECT_useSplits=false"                  >> $GITHUB_ENV
               echo "ORG_GRADLE_PROJECT_universalApk=true"                >> $GITHUB_ENV
@@ -179,7 +173,8 @@ jobs:
           cand = norm(raw)
           d = try_decode(cand)
           if not d:
-              parts = re.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw or '')
+              import re as _r
+              parts = _r.findall(r'[A-Za-z0-9_/\+\-=]{64,}', raw or '')
               if parts:
                   d = try_decode(norm(max(parts, key=len)))
           if d:
@@ -269,39 +264,29 @@ jobs:
       - name: Build TDLib (arm64 + v7a) and Java bindings
         if: steps.tdlib-need.outputs.need_build == 'true'
         env:
-          # ccache Konfig – best effort
           CCACHE_DIR: ~/.cache/ccache
           CCACHE_MAXSIZE: 2G
           CCACHE_COMPRESS: "1"
           CCACHE_BASEDIR: ${{ github.workspace }}
         run: |
           set -euo pipefail
-
-          # ccache initialisieren (best effort)
           command -v ccache >/dev/null 2>&1 && {
             mkdir -p "$CCACHE_DIR"
             ccache --set-config=max_size=${CCACHE_MAXSIZE}
             ccache --set-config=compression=true
-            echo "== ccache before =="
-            ccache -s || true
-            export CC="ccache clang"
-            export CXX="ccache clang++"
+            echo "== ccache before =="; ccache -s || true
+            export CC="ccache clang"; export CXX="ccache clang++"
             export CMAKE_C_COMPILER_LAUNCHER=ccache
             export CMAKE_CXX_COMPILER_LAUNCHER=ccache
           } || echo "::notice::ccache not found or not usable"
 
           chmod +x scripts/build_tdlib_android.sh
-          export CMAKE_BIN="$(command -v cmake)"
-          echo "Using CMake at: $CMAKE_BIN"
-          cmake --version
-
           if [[ -n "${{ secrets.TD_TAG }}" ]]; then
             bash scripts/build_tdlib_android.sh --ref "${{ secrets.TD_TAG }}"
           else
             bash scripts/build_tdlib_android.sh
           fi
 
-          # ccache Stats nach dem Build
           command -v ccache >/dev/null 2>&1 && { echo "== ccache after =="; ccache -s || true; }
 
           META_TXT="libtd/TDLIB_VERSION.txt"
@@ -355,21 +340,17 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential ninja-build gperf ccache pkg-config \
             zlib1g-dev libssl-dev python3 git ca-certificates ripgrep binutils
-
           command -v ccache >/dev/null 2>&1 && {
             mkdir -p "$CCACHE_DIR"
             ccache --set-config=max_size=${CCACHE_MAXSIZE}
             ccache --set-config=compression=true
-            echo "== ccache before (rebuild) =="
-            ccache -s || true
-            export CC="ccache clang"
-            export CXX="ccache clang++"
+            echo "== ccache before (rebuild) =="; ccache -s || true
+            export CC="ccache clang"; export CXX="ccache clang++"
             export CMAKE_C_COMPILER_LAUNCHER=ccache
             export CMAKE_CXX_COMPILER_LAUNCHER=ccache
           } || echo "::notice::ccache not found or not usable"
 
           chmod +x scripts/build_tdlib_android.sh
-          export CMAKE_BIN="$(command -v cmake)"
           if [[ -n "${{ secrets.TD_TAG }}" ]]; then
             bash scripts/build_tdlib_android.sh --ref "${{ secrets.TD_TAG }}"
           else
