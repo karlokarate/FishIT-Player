@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# TDLib Android Builder — ALWAYS build latest upstream commit by default
-# - Default: latest commit from origin/main (fallback to origin/master)
-# - Optional: --ref <tag-or-commit> to pin exactly, or --latest-tag to build newest v* tag
-# - Injects commit/tag into libtdjni.so (tdlib_android_commit) and writes libtd/TDLIB_VERSION.txt
+# TDLib Android Builder
+# - Baut TDLib für arm64-v8a (und optional armeabi-v7a)
+# - Generiert Java-Bindings (TdApi.java, Client.java)
+# - Injiziert Commit in libtdjni.so (tdlib_android_commit)
+# - Schreibt libtd/TDLIB_VERSION.txt
 #
-# Outputs:
+# Ausgaben:
 #   libtd/src/main/jniLibs/{arm64-v8a,armeabi-v7a}/libtdjni.so
 #   libtd/src/main/java/org/drinkless/tdlib/{TdApi.java,Client.java}
 #   libtd/TDLIB_VERSION.txt
@@ -42,7 +43,6 @@ done
 # Helpers
 NPROC() { command -v nproc >/dev/null 2>&1 && nproc || (command -v sysctl >/dev/null 2>&1 && sysctl -n hw.ncpu) || echo 4; }
 HAS()   { command -v "$1" >/dev/null 2>&1; }
-RG()    { if HAS rg; then rg "$@"; else grep -R "$@"; fi; }
 
 # NDK detection
 NDK="${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}"
@@ -58,11 +58,10 @@ if [[ ! -d "$TD_DIR/.git" ]]; then
   echo "Cloning TDLib…"
   git clone --depth 1 https://github.com/tdlib/td.git "$TD_DIR"
 fi
-
 # Ensure tags exist
 (cd "$TD_DIR" && git fetch --tags --force --prune origin >/dev/null 2>&1 || true)
 
-# === Resolve the source to build ===
+# === Resolve source ===
 if [[ -n "$TD_REF_ARG" ]]; then
   echo "Checking out TDLib ref exactly: $TD_REF_ARG"
   (cd "$TD_DIR" && git fetch --depth 1 origin "$TD_REF_ARG") || { echo "ERROR: Ref '$TD_REF_ARG' not found." >&2; exit 7; }
@@ -93,24 +92,28 @@ TD_TAG_NEAREST="$(cd "$TD_DIR" && (git describe --tags --abbrev=0 2>/dev/null ||
 BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo "TDLib commit: ${TD_COMMIT_HASH} ${TD_TAG_EXACT:+(exact tag: $TD_TAG_EXACT)}"
 
-# BoringSSL clone if missing
+# --- Generate Java API deterministically (example/java build) ---
+JAVA_GEN_DIR="$TD_DIR/build-java-gen"
+rm -rf "$JAVA_GEN_DIR"
+mkdir -p "$JAVA_GEN_DIR"
+echo "Configuring example/java for TdApi.java generation…"
+cmake -S "$TD_DIR/example/java" -B "$JAVA_GEN_DIR" -DCMAKE_BUILD_TYPE=Release
+echo "Building target td_generate_java_api…"
+cmake --build "$JAVA_GEN_DIR" --target td_generate_java_api -j"$(NPROC)" || { echo "ERROR: Failed to generate TdApi.java"; exit 20; }
+
+# Verify and stage Java outputs
+SRC_JAVA_DIR="$TD_DIR/example/java/org/drinkless/tdlib"
+[[ -f "$SRC_JAVA_DIR/Client.java" ]] || { echo "ERROR: Client.java missing in example/java"; exit 21; }
+[[ -f "$SRC_JAVA_DIR/TdApi.java"  ]] || { echo "ERROR: TdApi.java was not generated"; exit 22; }
+mkdir -p "$JAVA_OUT_DIR"
+cp -f "$SRC_JAVA_DIR/TdApi.java"  "$JAVA_OUT_DIR/"
+cp -f "$SRC_JAVA_DIR/Client.java" "$JAVA_OUT_DIR/"
+echo "OK: Copied Java bindings -> $JAVA_OUT_DIR"
+
+# --- BoringSSL clone if missing ---
 if [[ ! -d "$BORING_DIR/.git" ]]; then
   echo "Cloning BoringSSL…"
   git clone --depth 1 https://boringssl.googlesource.com/boringssl "$BORING_DIR"
-fi
-
-# Host build to generate sources
-NATIVE_BUILD_DIR="$TD_DIR/build-native-gen"
-mkdir -p "$NATIVE_BUILD_DIR"
-cd "$NATIVE_BUILD_DIR"
-echo "Preparing TDLib generated sources (host)…"
-cmake -DCMAKE_BUILD_TYPE=Release -DTD_GENERATE_SOURCE_FILES=ON -DTD_ENABLE_JNI=ON "$TD_DIR"
-cmake --build . --target prepare_cross_compiling -j"$(NPROC)"
-
-# Generate Java API (best-effort)
-if RG -n "add_custom_target\\(td_generate_java_api" "$TD_DIR/example/java/CMakeLists.txt" >/dev/null 2>&1; then
-  echo "Generating Java API (TdApi.java)…"
-  cmake --build . --target td_generate_java_api -j"$(NPROC)" || true
 fi
 
 # Build BoringSSL for ABI
@@ -135,7 +138,7 @@ build_boringssl () {
   cmake --build . --target ssl crypto -j"$(NPROC)"
 }
 
-# Wrapper CMake (commit symbol injection)
+# Wrapper CMake for JNI (inject version)
 emit_wrapper_cmake () {
   local path="$1"
   cat > "$path" <<'EOF'
@@ -162,7 +165,6 @@ target_compile_definitions(tdjni PRIVATE PACKAGE_NAME="org/drinkless/tdlib")
 EOF
 }
 
-# Version stub (exported symbol)
 emit_version_stub () {
   local path="$1" commit="$2" exact_tag="$3"
   cat > "$path" <<EOF
@@ -175,7 +177,6 @@ const char* tdlib_android_commit() {
 EOF
 }
 
-# Find strip
 find_strip () {
   local STRIP_BIN=""
   for host in linux-x86_64 windows-x86_64 darwin-x86_64 darwin-aarch64; do
@@ -202,17 +203,15 @@ if (( BUILD_ARM64 == 1 )); then
   emit_version_stub "$JNI_BUILD_DIR/tdlib_version_stub.cpp" "$TD_COMMIT_HASH" "$TD_TAG_EXACT"
 
   cd "$JNI_BUILD_DIR"
-  GEN=""; HAS ninja && GEN="-G Ninja"
+  local GEN=""; HAS ninja && GEN="-G Ninja"
   echo "Configuring TDLib JNI (arm64-v8a)…"
   cmake \
     -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
     -DANDROID_ABI=arm64-v8a \
     -DANDROID_PLATFORM=android-24 \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
-    -DCMAKE_CXX_STANDARD=17 \
-    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
-    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
-    -DTD_ENABLE_LTO=ON \
+    -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DTD_ENABLE_LTO=ON \
     -DCMAKE_C_FLAGS_MINSIZEREL="-Os -ffunction-sections -fdata-sections" \
     -DCMAKE_CXX_FLAGS_MINSIZEREL="-Os -ffunction-sections -fdata-sections" \
     -DCMAKE_SHARED_LINKER_FLAGS_MINSIZEREL="-Wl,--gc-sections -Wl,--icf=all -Wl,--exclude-libs,ALL" \
@@ -262,17 +261,15 @@ if (( BUILD_V7A == 1 )); then
   emit_version_stub "$JNI_BUILD_DIR_32/tdlib_version_stub.cpp" "$TD_COMMIT_HASH" "$TD_TAG_EXACT"
 
   cd "$JNI_BUILD_DIR_32"
-  GEN=""; HAS ninja && GEN="-G Ninja"
+  local GEN=""; HAS ninja && GEN="-G Ninja"
   echo "Configuring TDLib JNI (armeabi-v7a)…"
   cmake \
     -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
     -DANDROID_ABI=armeabi-v7a \
     -DANDROID_PLATFORM=android-24 \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
-    -DCMAKE_CXX_STANDARD=17 \
-    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
-    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
-    -DTD_ENABLE_LTO=ON \
+    -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DTD_ENABLE_LTO=ON \
     -DCMAKE_C_FLAGS_MINSIZEREL="-Os -ffunction-sections -fdata-sections" \
     -DCMAKE_CXX_FLAGS_MINSIZEREL="-Os -ffunction-sections -fdata-sections" \
     -DCMAKE_SHARED_LINKER_FLAGS_MINSIZEREL="-Wl,--gc-sections -Wl,--icf=all -Wl,--exclude-libs,ALL" \
@@ -303,18 +300,6 @@ if (( BUILD_V7A == 1 )); then
     echo "Stripping unneeded symbols (v7a)…"
     "$STRIP_BIN" --strip-unneeded -x "$OUT_DIR32/libtdjni.so" || true
   fi
-fi
-
-# ===== Sync Java bindings =====
-echo "Copying Java bindings (TdApi.java, Client.java) from TDLib example/java…"
-SRC_JAVA_DIR="$TD_DIR/example/java/org/drinkless/tdlib"
-if [[ -f "$SRC_JAVA_DIR/TdApi.java" && -f "$SRC_JAVA_DIR/Client.java" ]]; then
-  mkdir -p "$JAVA_OUT_DIR"
-  cp -f "$SRC_JAVA_DIR/TdApi.java" "$JAVA_OUT_DIR/"
-  cp -f "$SRC_JAVA_DIR/Client.java" "$JAVA_OUT_DIR/"
-  echo "OK: Java bindings synchronized."
-else
-  echo "WARNING: TDLib example/java sources not found; skipping Java binding copy" >&2
 fi
 
 # ===== Write metadata =====
