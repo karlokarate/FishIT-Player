@@ -3,6 +3,12 @@ name: Android – Build (Release/Debug, signed, TDLib picker)
 on:
   workflow_dispatch:
     inputs:
+      toolchain_bundle:
+        description: "Toolchain-Dispatcher (stable | lts | project)"
+        type: choice
+        required: true
+        default: "stable"
+        options: [stable, lts, project]
       build_type:
         description: "Build-Typ"
         type: choice
@@ -15,98 +21,56 @@ on:
         required: true
         default: "arm64+v7a"
         options: [arm64+v7a, arm64, v7a, universal]
-
-      # Toolchain (sichere Defaults)
-      sdk_api:
-        description: "SDK Platform (36 – AGP 8.12 unterstützt API 36)"
-        required: false
-        default: "36"
-      build_tools:
-        description: "Build-Tools (35.0.0 stabil; 36.x = EXPERIMENTAL, sinnvoll mit AGP ≥ 9)"
-        required: false
-        default: "35.0.0"
-      ndk_version:
-        description: "NDK (27.3.13750724 stabil/LTS; r29 = schneller, RISKY)"
-        required: false
-        default: "27.3.13750724"
-      cmake_version:
-        description: "CMake (z.B. 3.30.x; für NDK r29 empfehlenswert pinnen)"
-        required: false
-        default: "3.30.x"
-      jdk:
-        description: "JDK (21 LTS empfohlen)"
-        required: false
-        default: "21"
-
-      # App-Metadaten/Flags
-      version_code:   { description: "Optional: versionCode (override)", required: false, default: "" }
-      version_name:   { description: "Optional: versionName (override)", required: false, default: "" }
       mirror_only:
         description: "Mirror-Modus → setzt TG_OBX_ENABLED_DEFAULT (true = deaktiviert)"
         type: choice
+        required: true
         default: "true"
         options: ["true","false"]
       sign_apk:
         description: "APK signieren (Secrets nötig)"
         type: choice
+        required: true
         default: "true"
         options: ["true","false"]
-
-      # TDLib – Build & Versionierung
       rebuild_tdlib:
         description: "TDLib neu bauen (Cache ignorieren)"
         type: choice
+        required: true
         default: "false"
         options: ["false","true"]
       tdlib_mode:
-        description: "TDLib-Version: default/cache | latest-tag | tag | commit | ref"
+        description: "TDLib-Version: default | latest-tag | ref"
         type: choice
+        required: true
         default: "default"
-        options: [default, latest-tag, tag, commit, ref]
-      tdlib_value:
-        description: "Wert für 'tag' (z.B. v1.x.y), 'commit' (SHA) oder 'ref' (Branch). Für latest-tag leer lassen."
+        options: [default, latest-tag, ref]
+      tdlib_ref:
+        description: "Wert für 'ref' (z.B. v1.x.y, SHA oder Branch). Für latest-tag leer lassen."
         required: false
         default: ""
       tdlib_build_type:
         description: "TDLib Build-Type (MinSizeRel=Default | Release)."
         type: choice
+        required: true
         default: "MinSizeRel"
         options: [MinSizeRel, Release]
-
-      # Risk Switches
-      use_gradle_9x:
-        description: "Gradle 9.x OVERRIDE (RISKY) – benötigt AGP ≥ 8.13 ODER AGP 9 Preview"
-        type: choice
-        default: "false"
-        options: ["false","true"]
-      gradle_9x_version:
-        description: "Gradle 9.x Version (wirksam nur wenn use_gradle_9x=true)"
-        required: false
-        default: "9.1.0"
-      agp_override:
-        description: "AGP Override (z.B. 8.13.0 oder 9.0.0-alphaXX) – bei Gradle 9.x mind. 8.13!"
-        required: false
-        default: ""
-      kotlin_override:
-        description: "Kotlin Override (z.B. 2.2.21) – Compose/Media3-Kompat. beachten"
-        required: false
-        default: ""
-
-      # Dev UX
-      pr_comment:
-        description: "PR-Kommentar (Artefakte/Checksums) posten"
-        type: choice
-        default: "false"
-        options: ["false","true"]
-      issue_number:
-        description: "PR/Issue-Nummer (optional)"
-        required: false
-        default: ""
       debug_tmate:
-        description: "tmate-Debug bei Fehler"
+        description: "tmate-Debug (bei Fehler oder Opt-in)"
         type: choice
+        required: true
         default: "false"
         options: ["false","true"]
+      pr_annotations:
+        description: "Reviewdog-Annotationen aktivieren (nicht blockierend)"
+        type: choice
+        required: true
+        default: "false"
+        options: ["false","true"]
+      config_json:
+        description: "Sanitizer/Overrides als JSON (optional; kann base64:... sein)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -130,6 +94,7 @@ jobs:
       ORG_GRADLE_PROJECT_abiFilters: arm64-v8a,armeabi-v7a
       ORG_GRADLE_PROJECT_universalApk: false
       ORG_GRADLE_PROJECT_useSplits: true
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
 
     steps:
       # Checkout & Tooling
@@ -140,82 +105,226 @@ jobs:
           lfs: true
           submodules: recursive
 
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ github.event.inputs.jdk }}
-
-      - name: Setup Android SDK/NDK
-        uses: android-actions/setup-android@v3
-        with:
-          accept-android-sdk-licenses: true
-          packages: |
-            platform-tools
-            platforms;android-${{ github.event.inputs.sdk_api }}
-            build-tools;${{ github.event.inputs.build_tools }}
-            ndk;${{ github.event.inputs.ndk_version }}
-
-      - name: Export ANDROID_NDK Vars
-        run: |
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ github.event.inputs.ndk_version }}" >> $GITHUB_ENV
-          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/${{ github.event.inputs.ndk_version }}" >> $GITHUB_ENV
-
-      - name: Setup CMake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: ${{ github.event.inputs.cmake_version }}
-
-      - name: Setup Gradle (cache+wrapper validation)
-        uses: gradle/actions/setup-gradle@v5
-
-      - name: Make gradlew ausführbar
-        run: chmod +x ./gradlew
-
-      - name: Tool Versions (Info)
-        run: |
-          java -version || true
-          cmake --version || true
-
-      # Risk Switches
-      - name: Optional – Gradle 9.x OVERRIDE (Guard prüft AGP)
-        if: ${{ github.event.inputs.use_gradle_9x == 'true' }}
+      # Dispatch toolchain (stable/lts/project) → sets SDK/BT/NDK/CMake/JDK/Gradle/AGP
+      - name: Toolchain-Dispatcher
+        id: dispatch
         run: |
           set -euo pipefail
-          V="${{ github.event.inputs.gradle_9x_version }}"
-          [[ -f gradle/wrapper/gradle-wrapper.properties ]] || { echo "::error::gradle-wrapper.properties fehlt"; exit 1; }
-          sed -i -E "s#distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-${V}-bin.zip#g" gradle/wrapper/gradle-wrapper.properties
-          echo "Gradle Wrapper → ${V}"
-          AGP="$(grep -RhoE 'com\\.android\\.tools\\.build:gradle:([0-9]+\\.[0-9]+(\\.[0-9]+)?)' -n --include=*.gradle* --exclude-dir=**/build | head -1 | sed -E 's/.*:([0-9.]+).*/\\1/')"
-          vergte() { [ "$1" = "$2" ] || [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n1)" = "$1" ]; }
-          if [[ -n "$AGP" ]] && ! vergte "$AGP" "8.13.0"; then
-            echo "::error::Gradle 9.x erfordert AGP >= 8.13 ODER AGP 9 Preview. Setze 'agp_override' entsprechend."
-            exit 2
+          BUNDLE="${{ github.event.inputs.toolchain_bundle }}"
+          # Defaults per bundle (CMAKE_REQ will be tried first; fallback used if unavailable)
+          if [[ "$BUNDLE" == "stable" ]]; then
+            SDK_API=35; BUILD_TOOLS="35.0.0"; NDK="27.3.13750724"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.30.5"; JDK=21; GRADLE="8.13"; AGP="8.12.0"
+          elif [[ "$BUNDLE" == "lts" ]]; then
+            SDK_API=34; BUILD_TOOLS="34.0.0"; NDK="26.3.11333136"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.22.1"; JDK=17; GRADLE="8.7"; AGP="8.5.2"
+          else
+            # Attempt to infer from project files; graceful fallback to stable
+            SDK_API=""; BUILD_TOOLS=""; NDK=""; CMAKE_REQ=""; CMAKE_FALLBACK="3.30.5"; JDK=""; GRADLE=""; AGP=""
+            python3 - <<'PY'
+            import re, pathlib, json, os
+            out = {}
+            globs = ["**/build.gradle", "**/build.gradle.kts", "**/gradle.properties"]
+            texts = []
+            for g in globs:
+              for p in pathlib.Path(".").rglob(g):
+                if "/build/" in str(p): 
+                  continue
+                try:
+                  texts.append(p.read_text(encoding="utf-8", errors="ignore"))
+                except Exception:
+                  pass
+            blob = "\n".join(texts)
+            m = re.search(r"compileSdk\s*[=:\s]\s*(\d+)", blob)
+            if m: out["SDK_API"] = m.group(1)
+            m = re.search(r'buildToolsVersion\s*[=:\s]\s*["\']([^"\']+)["\']', blob)
+            if m: out["BUILD_TOOLS"] = m.group(1)
+            m = re.search(r'ndkVersion\s*[=:\s]\s*["\']([^"\']+)["\']', blob)
+            if m: out["NDK"] = m.group(1)
+            m = re.search(r'com\.android\.tools\.build:gradle:([0-9]+\.[0-9]+(?:\.[0-9]+)?)', blob)
+            if m: out["AGP"] = m.group(1)
+            print(json.dumps(out))
+            PY
+            | tee inferred.json
+            SDK_API="$(jq -r '.SDK_API // empty' inferred.json || true)"
+            BUILD_TOOLS="$(jq -r '.BUILD_TOOLS // empty' inferred.json || true)"
+            NDK="$(jq -r '.NDK // empty' inferred.json || true)"
+            AGP="$(jq -r '.AGP // empty' inferred.json || true)"
+            # sensible fallbacks if inference failed
+            [[ -z "$SDK_API" ]] && SDK_API=35
+            [[ -z "$BUILD_TOOLS" ]] && BUILD_TOOLS="35.0.0"
+            [[ -z "$NDK" ]] && NDK="27.3.13750724"
+            CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.30.5"
+            # JDK/Gradle best-effort defaults for 'project'
+            JDK=21; GRADLE="8.13"
           fi
+          {
+            echo "SDK_API=$SDK_API"
+            echo "BUILD_TOOLS=$BUILD_TOOLS"
+            echo "NDK_VER=$NDK"
+            echo "CMAKE_REQ=$CMAKE_REQ"
+            echo "CMAKE_FALLBACK=$CMAKE_FALLBACK"
+            echo "JDK_VER=$JDK"
+            echo "GRADLE_VER=$GRADLE"
+            echo "AGP_VER=$AGP"
+          } >> $GITHUB_ENV
+          echo "bundle=$BUNDLE" >> $GITHUB_OUTPUT
 
-      - name: Optional – AGP/Kotlin Override (In-Place Patch nur für Run)
-        if: ${{ github.event.inputs.agp_override != '' || github.event.inputs.kotlin_override != '' }}
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JDK_VER }}
+
+      - name: Pin Gradle Wrapper (from Toolchain)
+        if: ${{ steps.dispatch.outputs.bundle != 'project' }}
+        run: |
+          set -euo pipefail
+          WRAP=gradle/wrapper/gradle-wrapper.properties
+          [[ -f "$WRAP" ]] || { echo "::error::gradle-wrapper.properties fehlt"; exit 1; }
+          sed -i -E "s#distributionUrl=.*#distributionUrl=https\://services.gradle.org/distributions/gradle-${{ env.GRADLE_VER }}-bin.zip#g" "$WRAP"
+          echo "Wrapper → Gradle ${{ env.GRADLE_VER }}"
+
+      - name: Optional – Patch AGP (from Toolchain)
+        if: ${{ steps.dispatch.outputs.bundle != 'project' && env.AGP_VER != '' }}
         run: |
           python3 - <<'PY'
           import re, pathlib, os
-          agp = os.environ.get("AGP_NEW","").strip()
-          kt  = os.environ.get("KOTLIN_NEW","").strip()
+          agp = os.environ.get("AGP_VER","").strip()
           files=[p for p in pathlib.Path(".").rglob("*") if p.is_file() and p.suffix in (".gradle",".kts",".toml") and "build" not in p.parts]
           for p in files:
             s=p.read_text(encoding="utf-8",errors="ignore"); o=s
-            if agp:
-              s=re.sub(r"(com\.android\.tools\.build:gradle:)\d+\.\d+(?:\.\d+)?", rf"\g<1>{agp}", s)
-              s=re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+")[^"]+(")', rf"\g<1>{agp}\g<2>", s)
-              s=re.sub(r'(?m)^(agp\s*=\s*")\d+\.\d+(?:\.\d+)?(")', rf"\g<1>{agp}\g<2>", s)
-            if kt:
-              s=re.sub(r'(org\.jetbrains\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)\d+\.\d+(?:\.\d+)?', rf"\g<1>{kt}", s)
-              s=re.sub(r'(id\(["\']org\.jetbrains\.kotlin\.(?:android|jvm|multiplatform)["\']\)\s+version\s+")[^"]+(")', rf"\g<1>{kt}\g<2>", s)
-              s=re.sub(r'(?m)^(kotlin\s*=\s*")\d+\.\d+(?:\.\d+)?(")', rf"\g<1>{kt}\g<2>", s)
+            s=re.sub(r"(com\.android\.tools\.build:gradle:)\d+\.\d+(?:\.\d+)?", rf"\g<1>{agp}", s)
+            s=re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+")([^"]+)(")', rf"\1{agp}\3", s)
             if s!=o: p.write_text(s,encoding="utf-8")
+          print("AGP pinned to", agp)
+          PY
+
+      - name: Setup Gradle (cache + wrapper validation)
+        uses: gradle/actions/setup-gradle@v4.4.3
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # Manual Android SDK install (no wrapper action) with graceful 35→34 fallback
+      - name: Install Android SDK (manual)
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_SDK_ROOT}"
+          mkdir -p "$SDK"
+          cd "$SDK"
+          # Download cmdline-tools
+          URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
+          curl -fsSL "$URL" -o cmdtools.zip
+          rm -rf cmdline-tools || true
+          unzip -q cmdtools.zip -d "$SDK"
+          mkdir -p "$SDK/cmdline-tools/latest"
+          mv "$SDK/cmdline-tools"/* "$SDK/cmdline-tools/latest/" || true
+          echo "$SDK/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$SDK/platform-tools" >> $GITHUB_PATH
+          echo "$SDK/build-tools/${{ env.BUILD_TOOLS }}" >> $GITHUB_PATH
+          # Accept licenses (SIGPIPE-safe)
+          set +o pipefail
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
+          status=${PIPESTATUS[1]}; if [[ $status -ne 0 && $status -ne 141 ]]; then exit $status; fi
+          set -o pipefail
+          # Try desired API/BT/NDK first
+          P=("platform-tools" "platforms;android-${{ env.SDK_API }}" "build-tools;${{ env.BUILD_TOOLS }}" "ndk;${{ env.NDK_VER }}")
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "${P[@]}" || INSTALL_FAIL=1
+          if [[ "${INSTALL_FAIL:-0}" == "1" && "${{ env.SDK_API }}" == "35" ]]; then
+            echo "::warning::Fallback auf API 34 / Build-Tools 34.0.0"
+            "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-34" "build-tools;34.0.0" || true
+            echo "SDK_API=34" >> $GITHUB_ENV
+            echo "BUILD_TOOLS=34.0.0" >> $GITHUB_ENV
+            echo "$SDK/build-tools/34.0.0" >> $GITHUB_PATH
+          fi
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ env.NDK_VER }}" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/${{ env.NDK_VER }}" >> $GITHUB_ENV
+          "$SDK/platform-tools/adb" version || true
+          "$SDK/build-tools/${{ env.BUILD_TOOLS }}/apksigner" --version || true
+
+      # Setup CMake (try requested, then fallback to known-good)
+      - name: Setup CMake (requested)
+        continue-on-error: true
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: ${{ env.CMAKE_REQ }}
+      - name: Setup CMake (fallback)
+        if: ${{ steps.dispatch.outputs.bundle != '' }} # always run; no-op if already present
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: ${{ env.CMAKE_FALLBACK }}
+      - name: CMake Version Info
+        run: cmake --version || true
+
+      # Sanitizer + sichere Overrides via JSON (heilen → ersetzen; lambda-Regex; keine Backslash-Leichen)
+      - name: Sanitizer/Overrides (config_json)
+        if: ${{ github.event.inputs.config_json != '' }}
+        run: |
+          python3 - <<'PY'
+          import os, sys, json, base64, re, pathlib
+          raw = os.environ.get("CFG","").strip()
+          if raw.startswith("base64:"):
+              raw = base64.b64decode(raw.split(":",1)[1]).decode("utf-8","ignore")
+          # Heal common issues
+          raw = raw.replace("\r\n","\n").replace("\r","\n").strip()
+          if not raw:
+              sys.exit(0)
+          try:
+              cfg = json.loads(raw)
+          except Exception as e:
+              print("::warning::config_json ist kein valides JSON:", e)
+              sys.exit(0)
+          # Structure: {"writes":[{"path":"file","content":"..."},...],
+          #             "replacements":[{"path":"file","pattern":"regex","repl":"text","flags":"MULTILINE|IGNORECASE"},...],
+          #             "deletes":["path1",...]}
+          root = pathlib.Path(".").resolve()
+          def safe_path(p):
+              p = (root / p).resolve()
+              if str(p).startswith(str(root)):
+                  return p
+              raise ValueError("Unsicherer Pfad")
+          # Writes
+          for w in cfg.get("writes", []):
+              p = safe_path(w["path"])
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_text(w.get("content",""), encoding="utf-8")
+          # Replacements
+          for r in cfg.get("replacements", []):
+              p = safe_path(r["path"])
+              if not p.exists():
+                  print(f"::notice::{p} existiert nicht – Überspringe Replacement"); continue
+              s = p.read_text(encoding="utf-8", errors="ignore")
+              flags = 0
+              for f in str(r.get("flags","")).split("|"):
+                  f=f.strip().upper()
+                  flags |= getattr(re, f, 0)
+              pat = r.get("pattern","")
+              # Prevent catastrophic backtracking: limit certain constructs
+              if re.search(r"\(?![AbBdDsSwWZ\])", pat):
+                  print(f"::warning::Backslash-Leiche in Pattern: {pat[:40]}… – versuche Escape-Heilung")
+                  pat = pat.encode("utf-8").decode("unicode_escape")
+              try:
+                  rx = re.compile(pat, flags)
+              except re.error as e:
+                  print(f"::warning::Ungültiges Regex: {e} – überspringe")
+                  continue
+              repl = r.get("repl","")
+              s2, n = rx.subn(repl, s)
+              if n>0:
+                  p.write_text(s2, encoding="utf-8")
+                  print(f"::notice::{p} – {n} Ersetzungen")
+          # Deletes
+          for d in cfg.get("deletes", []):
+              p = safe_path(d)
+              try:
+                  if p.is_file(): p.unlink()
+                  elif p.is_dir():
+                      print(f"::warning::Verzeichnislöschen nicht erlaubt: {p}")
+              except Exception as e:
+                  print(f"::warning::Delete fehlgeschlagen für {p}: {e}")
           PY
         env:
-          AGP_NEW: ${{ github.event.inputs.agp_override }}
-          KOTLIN_NEW: ${{ github.event.inputs.kotlin_override }}
+          CFG: ${{ github.event.inputs.config_json }}
 
       # ABI / Splits
       - name: ABI / Splits konfigurieren
@@ -262,9 +371,9 @@ jobs:
           path: |
             ~/.cache/ccache
             ~/.ccache
-          key: ccache-${{ runner.os }}-ndk${{ github.event.inputs.ndk_version }}-sdk${{ github.event.inputs.sdk_api }}-bt${{ github.event.inputs.build_tools }}-${{ hashFiles('scripts/build_tdlib_android.sh') }}
+          key: ccache-${{ runner.os }}-ndk${{ env.NDK_VER }}-sdk${{ env.SDK_API }}-bt${{ env.BUILD_TOOLS }}-${{ hashFiles('scripts/build_tdlib_android.sh') }}
           restore-keys: |
-            ccache-${{ runner.os }}-ndk${{ github.event.inputs.ndk_version }}-
+            ccache-${{ runner.os }}-ndk${{ env.NDK_VER }}-
             ccache-${{ runner.os }}-
 
       - name: TDLib cache
@@ -277,9 +386,9 @@ jobs:
             libtd/src/main/java/org/drinkless/tdlib/Client.java
             libtd/.tdlib_meta
             libtd/TDLIB_VERSION.txt
-          key: tdlib-${{ runner.os }}-ndk${{ github.event.inputs.ndk_version }}-abi-${{ github.event.inputs.abis }}-${{ hashFiles('scripts/build_tdlib_android.sh', 'scripts/**/*.patch') }}
+          key: tdlib-${{ runner.os }}-ndk${{ env.NDK_VER }}-abi-${{ github.event.inputs.abis }}-${{ hashFiles('scripts/build_tdlib_android.sh', 'scripts/**/*.patch') }}
           restore-keys: |
-            tdlib-${{ runner.os }}-ndk${{ github.event.inputs.ndk_version }}-
+            tdlib-${{ runner.os }}-ndk${{ env.NDK_VER }}-
             tdlib-${{ runner.os }}-
 
       # Need TDLib?
@@ -335,17 +444,38 @@ jobs:
           # Versionierung / Ref
           case "${{ github.event.inputs.tdlib_mode }}" in
             default)
-              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --api-level=${{ github.event.inputs.sdk_api }}
+              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --api-level=${{ env.SDK_API }}
               ;;
             latest-tag)
-              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --latest-tag --api-level=${{ github.event.inputs.sdk_api }}
+              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --latest-tag --api-level=${{ env.SDK_API }}
               ;;
-            tag|commit|ref)
-              REF="${{ github.event.inputs.tdlib_value }}"
-              if [[ -z "$REF" ]]; then echo "::error::tdlib_value ist leer"; exit 1; fi
-              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --ref "$REF" --api-level=${{ github.event.inputs.sdk_api }}
+            ref)
+              REF="${{ github.event.inputs.tdlib_ref }}"
+              if [[ -z "$REF" ]]; then echo "::error::tdlib_ref ist leer"; exit 1; fi
+              bash scripts/build_tdlib_android.sh ${{ steps.tdabi.outputs.flags }} $BTFLAG --ref "$REF" --api-level=${{ env.SDK_API }}
               ;;
           esac
+
+      # Optional lint + Reviewdog annotations
+      - name: Android Lint (optional)
+        if: ${{ github.event.inputs.pr_annotations == 'true' }}
+        run: |
+          if [[ "${{ github.event.inputs.build_type }}" == "release" ]]; then
+            ./gradlew :app:lintRelease --stacktrace || true
+          else
+            ./gradlew :app:lintDebug --stacktrace || true
+          fi
+
+      - name: Reviewdog (TODOs / Grep) – nicht blockierend
+        if: ${{ github.event.inputs.pr_annotations == 'true' }}
+        uses: reviewdog/action-setup@v1
+      - name: Reviewdog run
+        if: ${{ github.event.inputs.pr_annotations == 'true' }}
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          (git ls-files | xargs -I{} grep -nH "TODO" "{}" || true)             | reviewdog -name="TODO Scanner" -f=grep -reporter=github-check -level=info -filter-mode=nofilter -fail-on-error=false
 
       # Gradle Task
       - name: Task wählen
@@ -364,36 +494,28 @@ jobs:
       - name: Build
         run: |
           EXTRA_PROPS=()
-          [[ -n "${{ github.event.inputs.version_code }}" ]] && EXTRA_PROPS+=("-PversionCode=${{ github.event.inputs.version_code }}")
-          [[ -n "${{ github.event.inputs.version_name }}" ]] && EXTRA_PROPS+=("-PversionName=${{ github.event.inputs.version_name }}")
           MIRROR="${{ github.event.inputs.mirror_only || 'false' }}"
           if [[ "$MIRROR" == "true" ]]; then OBX_DEFAULT=false; else OBX_DEFAULT=true; fi
 
-          ./gradlew ${{ steps.task.outputs.task }} \
-            -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}" \
-            -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}" \
-            -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}" \
-            -PTG_OBX_ENABLED_DEFAULT=${OBX_DEFAULT} \
-            --configuration-cache --build-cache --parallel \
-            --stacktrace --warning-mode all -x test
+          ./gradlew ${{ steps.task.outputs.task }}             -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}"             -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}"             -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}"             -PTG_OBX_ENABLED_DEFAULT=${OBX_DEFAULT}             --configuration-cache --build-cache --parallel             --stacktrace --warning-mode all -x test
 
       - name: apksigner verify (falls signiert)
         if: ${{ github.event.inputs.sign_apk == 'true' }}
         run: |
-          find app/build/outputs/apk -type f -name "*.apk" -print0 | xargs -0 -I{} bash -c 'apksigner verify --verbose "{}" || true'
+          find app/build/outputs/apk -type f -name "*.apk" -print0 | xargs -0 -I{} bash -c '$ANDROID_SDK_ROOT/build-tools/${{ env.BUILD_TOOLS }}/apksigner verify --verbose "{}" || true'
 
       - name: Checksums & Kontext
         run: |
           { find app/build/outputs/apk -type f -name "*.apk" -print0 | xargs -0 sha256sum || true; } > checksums.txt
           echo "Build type  : ${{ github.event.inputs.build_type }}"
           echo "ABIs        : ${{ env.ORG_GRADLE_PROJECT_abiFilters || 'universal' }}"
-          echo "API/BT/NDK  : ${{ github.event.inputs.sdk_api }}/${{ github.event.inputs.build_tools }}/${{ github.event.inputs.ndk_version }}"
+          echo "API/BT/NDK  : ${{ env.SDK_API }}/${{ env.BUILD_TOOLS }}/${{ env.NDK_VER }}"
           echo "TDLib mode  : ${{ github.event.inputs.tdlib_mode }}  (BT=${{ github.event.inputs.tdlib_build_type }})"
 
       - name: Artefakte hochladen (APK + mapping)
         uses: actions/upload-artifact@v4
         with:
-          name: fishitplayer-${{ github.event.inputs.build_type }}-${{ github.event.inputs.abis }}
+          name: app-${{ github.event.inputs.build_type }}-${{ github.event.inputs.abis }}
           path: |
             app/build/outputs/apk/**/**/*.apk
             app/build/outputs/mapping/**/mapping.txt
@@ -432,18 +554,9 @@ jobs:
             sed 's/^/- /' checksums.txt || true
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: PR-Kommentar (optional)
-        if: ${{ github.event.inputs.pr_comment == 'true' && (github.event_name == 'pull_request' || github.event.inputs.issue_number != '') }}
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const body = ["### 📦 Android Build fertig", `**Run:** ${runUrl}`, "", "Artefakte: **Artifacts** & **Run Summary**."].join("\n");
-            const issue_number = context.payload.pull_request?.number || Number(core.getInput('issue_number'));
-            if (issue_number) await github.rest.issues.createComment({ ...context.repo, issue_number, body });
-
-      - name: tmate (on failure)
+      - name: tmate (on failure or opt-in)
         if: ${{ failure() || github.event.inputs.debug_tmate == 'true' }}
         uses: mxschmitt/action-tmate@v3
         with:
-          limit-access-to-actor: true
+          limit-access-to-actor: false
+          hostname: lon1.tmate.io
