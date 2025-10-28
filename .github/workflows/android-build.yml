@@ -103,7 +103,7 @@ jobs:
             SDK_API=34; BUILD_TOOLS="34.0.0"; NDK="26.3.11333136"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.22.1"; JDK=17; GRADLE="8.7"; AGP="8.5.2"
           else
             SDK_API=""; BUILD_TOOLS=""; NDK=""; CMAKE_REQ=""; CMAKE_FALLBACK="3.30.5"; JDK=""; GRADLE=""; AGP=""
-            python3 - <<'PY' | tee inferred.json
+            python3 - <<'PY' > inferred.json
             import re, pathlib, json, os
             out = {}
             globs = ["**/build.gradle", "**/build.gradle.kts", "**/gradle.properties"]
