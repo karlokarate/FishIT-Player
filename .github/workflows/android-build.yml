@@ -278,31 +278,38 @@ jobs:
           esac
 
       - name: Decode Keystore (optional)
-        if: ${{ github.event.inputs.sign_apk == 'true' }}
-        env:
-          KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
-        run: |
-          python3 - <<'PY_KS'
-          import os, base64, pathlib
-          s=os.environ.get("KS_B64","").strip()
-          if s:
-              if "base64:" in s or "base64," in s:
-                  s = s.split("base64:",1)[-1] if "base64:" in s else s.split("base64,",1)[-1]
-              s="".join(s.split()); pad='='*(-len(s)%4)
-              pathlib.Path("release.keystore").write_bytes(base64.b64decode(s+pad))
-              print("DECODE_OK")
-          else:
-              print("EMPTY_SECRET")PY_KS
-          if [[ -f release.keystore ]]; then
-            {
-              echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore"
-              echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}"
-              echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_SIGN_KEY_ALIAS || secrets.ANDROID_SIGNING_KEY_ALIAS }}"
-              echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}"
-            } >> $GITHUB_ENV
-          else
-            echo "::warning::Keystore fehlt – Build läuft UNSIGNIERT."
-          fi
+  if: ${{ github.event.inputs.sign_apk == 'true' }}
+  env:
+    KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+  run: |
+    set -euo pipefail
+    if [[ -z "${KS_B64:-}" ]]; then
+      echo "::warning::Keystore-Secret leer – überspringe Signatur"
+      exit 0
+    fi
+
+    # Prefixe entfernen und Whitespace killen
+    val="${KS_B64#base64:}"; val="${val#base64,}"
+    val="$(printf '%s' "$val" | tr -d ' \n\r\t')"
+
+    # Base64 -> Datei (GNU coreutils base64)
+    if printf '%s' "$val" | base64 -d > release.keystore 2>/dev/null; then
+      echo "DECODE_OK"
+    else
+      echo "::error::Ungültiges Base64 im Keystore-Secret"
+      exit 1
+    fi
+
+    if [[ -f release.keystore ]]; then
+      {
+        echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore"
+        echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}"
+        echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_SIGN_KEY_ALIAS || secrets.ANDROID_SIGNING_KEY_ALIAS }}"
+        echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}"
+      } >> "$GITHUB_ENV"
+    else
+      echo "::warning::Keystore fehlt – Build läuft UNSIGNIERT."
+    fi
 
       - name: ccache (NDK)
         uses: actions/cache@v4
