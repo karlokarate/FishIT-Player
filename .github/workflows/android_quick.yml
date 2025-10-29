@@ -56,7 +56,7 @@ defaults:
 jobs:
   assemble-debug:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
 
     steps:
       - name: Checkout
@@ -244,6 +244,13 @@ jobs:
         env:
           AGP_NEW: ${{ steps.cfg.outputs.agp_override }}
           KOTLIN_NEW: ${{ steps.cfg.outputs.kotlin_override }}
+
+      - name: Host-Build Prereqs (gperf, ninja, etc.) für TDLib
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+            gperf ninja-build pkg-config bison flex autoconf automake libtool make ccache
 
       - name: TDLib bauen (JNI) – optionaler --ref aus config_json (td_ref|tdlib_ref)
         run: |
