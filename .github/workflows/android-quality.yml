@@ -23,7 +23,7 @@ on:
           - "lint-only"
           - "custom"
       config_json:
-        description: "JSON-Overrides (Flags & Versionen), z.B.: {"detekt":true,"pr_annotations":true,"agp":"8.12.0"}"
+        description: 'JSON-Overrides (Flags & Versionen), z.B.: {"detekt":true,"pr_annotations":true,"agp":"8.12.0"}'
         required: false
         default: "{}"
 
@@ -63,8 +63,7 @@ jobs:
           out_path = os.environ.get("GITHUB_OUTPUT")
           def write_output(k, v):
             with open(out_path, "a", encoding="utf-8") as f:
-              f.write(f"{k}={v}
-")
+              f.write(f"{k}={v}")
           # Read inputs
           bundle = (os.environ.get("INPUT_TOOLCHAIN_BUNDLE") or "stable").strip().lower()
           profile = (os.environ.get("INPUT_CHECKS_PROFILE") or "full").strip().lower()
