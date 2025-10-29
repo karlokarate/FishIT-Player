@@ -98,9 +98,9 @@ jobs:
           set -euo pipefail
           BUNDLE="${{ github.event.inputs.toolchain_bundle }}"
           if [[ "$BUNDLE" == "stable" ]]; then
-            SDK_API=35; BUILD_TOOLS="35.0.0"; NDK="27.3.13750724"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.30.5"; JDK=21; GRADLE="8.13"; AGP="8.12.0"
+            SDK_API=36; BUILD_TOOLS="35.0.0"; NDK="27.3.13750724"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.30.5"; JDK=21; GRADLE="8.13"; AGP="8.13.0"
           elif [[ "$BUNDLE" == "lts" ]]; then
-            SDK_API=34; BUILD_TOOLS="34.0.0"; NDK="26.3.11333136"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.22.1"; JDK=17; GRADLE="8.7"; AGP="8.5.2"
+            SDK_API=34; BUILD_TOOLS="34.0.0"; NDK="26.3.11333136"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.22.1"; JDK=17; GRADLE="8.11.1"; AGP="8.10.0"
           else
             SDK_API=""; BUILD_TOOLS=""; NDK=""; CMAKE_REQ=""; CMAKE_FALLBACK="3.30.5"; JDK=""; GRADLE=""; AGP=""
             FILES=$(git ls-files '**/build.gradle' '**/build.gradle.kts' '**/gradle.properties' 2>/dev/null | grep -v '/build/' || true)
@@ -148,7 +148,7 @@ jobs:
       - name: Optional – Patch AGP (from Toolchain)
         if: ${{ steps.dispatch.outputs.bundle != 'project' && env.AGP_VER != '' }}
         run: |
-          python3 - <<'PY'
+          python3 - <<'PY_AGP'
           import re, pathlib, os
           agp = os.environ.get("AGP_VER","").strip()
           files=[p for p in pathlib.Path(".").rglob("*") if p.is_file() and p.suffix in (".gradle",".kts",".toml") and "build" not in p.parts]
@@ -158,8 +158,7 @@ jobs:
             s=re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+")([^"]+)(")', rf"\1{agp}\3", s)
             if s!=o: p.write_text(s,encoding="utf-8")
           print("AGP pinned to", agp)
-          PY
-
+PY_AGP
       - name: Setup Gradle (cache + wrapper validation)
         uses: gradle/actions/setup-gradle@v4.4.3
 
@@ -216,8 +215,7 @@ jobs:
       - name: Sanitizer/Overrides (config_json)
         if: ${{ github.event.inputs.config_json != '' }}
         run: |
-          python3 - <<'PY'
-          import os, sys, json, base64, re, pathlib
+          pytpython3 - <<'PY_CFG'        import os, sys, json, base64, re, pathlib
           raw = os.environ.get("CFG","").strip()
           if raw.startswith("base64:"):
               raw = base64.b64decode(raw.split(":",1)[1]).decode("utf-8","ignore")
@@ -279,7 +277,7 @@ jobs:
                   v = cfg.get("debug_tmate")
                   if isinstance(v, bool):
                       f.write(f"DEBUG_TMATE={'true' if v else 'false'}\n")
-          PY
+PY_CFG
         env:
           CFG: ${{ github.event.inputs.config_json }}
 
@@ -297,17 +295,17 @@ jobs:
         env:
           KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
         run: |
-          python3 - <<'PY'
-          import os, base64, pathlib
+          pythopython3 - <<'PY_KS'      import os, base64, pathlib
           s=os.environ.get("KS_B64","").strip()
           if s:
-            if "base64," in s: s=s.split("base64:",1)[-1]
+            if "base64:" in s or "base64," in s:
+            s = s.split("base64:",1)[-1] if "base64:" in s else s.split("base64,",1)[-1]
             s="".join(s.split()); pad='='*(-len(s)%4)
             pathlib.Path("release.keystore").write_bytes(base64.b64decode(s+pad))
             print("DECODE_OK")
           else:
             print("EMPTY_SECRET")
-          PY
+PY_KS
           if [[ -f release.keystore ]]; then
             {
               echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore"
