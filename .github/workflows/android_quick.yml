@@ -36,7 +36,7 @@ on:
           - "false"
           - "true"
       config_json:
-        description: "JSON-Overrides (sdk_api, build_tools, jdk, gradle_version, agp_override, kotlin_override, pr_comment, issue_number)"
+        description: "JSON-Overrides (sdk_api, build_tools, jdk, gradle_version, agp_override, kotlin_override, pr_comment, issue_number, td_ref|tdlib_ref)"
         required: false
         default: "{}"
 
@@ -56,7 +56,7 @@ defaults:
 jobs:
   assemble-debug:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -117,6 +117,8 @@ jobs:
           "$SDKM" --list 1>/tmp/sdklist.txt 2>/dev/null || true
           has_platform(){ grep -E "^ +platforms;android-$1([[:space:]]|$)" -q /tmp/sdklist.txt; }
           has_bt(){ grep -E "^ +build-tools;$1([[:space:]]|$)" -q /tmp/sdklist.txt; }
+          has_ndk(){ grep -E "^ +ndk;([0-9][0-9.]+)" -q /tmp/sdklist.txt; }
+          has_cmake(){ grep -E "^ +cmake;([0-9][0-9.]+)" -q /tmp/sdklist.txt; }
           RES_API=""
           if   has_platform "$WANT_API"; then RES_API="$WANT_API"
           elif has_platform "35";        then RES_API="35"
@@ -132,10 +134,20 @@ jobs:
             RES_BT="$(grep -E "^ +build-tools;(35|34)\.[0-9.]+" /tmp/sdklist.txt | sed 's/^[[:space:]]*build-tools;//' | sort -V | tail -n1 || true)"
           fi
           [[ -n "$RES_BT" ]] || { echo "::error::Keine passenden Build-Tools (Familie 35.x/34.x)"; exit 3; }
+          # Prefer NDK r27, fallback to r26
+          NDK_VER="$(grep -Eo '^ +ndk;27\.[0-9.]+' /tmp/sdklist.txt | tr -d ' ' | sed 's/^ndk;//' | sort -V | tail -n1)"
+          if [[ -z "$NDK_VER" ]]; then
+            NDK_VER="$(grep -Eo '^ +ndk;26\.[0-9.]+' /tmp/sdklist.txt | tr -d ' ' | sed 's/^ndk;//' | sort -V | tail -n1)"
+          fi
+          CMAKE_VER="$(grep -Eo '^ +cmake;3\.(26|25|22)\.[0-9]+' /tmp/sdklist.txt | tr -d ' ' | sed 's/^cmake;//' | sort -V | tail -n1)"
           echo "sdk_api_resolved=$RES_API"    >> $GITHUB_OUTPUT
           echo "build_tools_resolved=$RES_BT" >> $GITHUB_OUTPUT
+          echo "ndk_ver=$NDK_VER"             >> $GITHUB_OUTPUT
+          echo "cmake_ver=$CMAKE_VER"         >> $GITHUB_OUTPUT
           echo "SDK_API_RESOLVED=$RES_API"    >> $GITHUB_ENV
           echo "BUILD_TOOLS_RESOLVED=$RES_BT" >> $GITHUB_ENV
+          [[ -n "$NDK_VER" ]]   && echo "NDK_VER=$NDK_VER"       >> $GITHUB_ENV
+          [[ -n "$CMAKE_VER" ]] && echo "CMAKE_VER=$CMAKE_VER"   >> $GITHUB_ENV
 
       - name: Install Android SDK packages (user-writable, SIGPIPE-safe)
         run: |
@@ -161,6 +173,15 @@ jobs:
           run_sm "platform-tools"
           run_sm "platforms;android-${{ steps.droid.outputs.sdk_api_resolved }}"
           run_sm "build-tools;${{ steps.droid.outputs.build_tools_resolved }}"
+          if [[ -n "${{ steps.droid.outputs.ndk_ver }}" ]]; then
+            run_sm "ndk;${{ steps.droid.outputs.ndk_ver }}"
+            echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/${{ steps.droid.outputs.ndk_ver }}" >> $GITHUB_ENV
+            echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ steps.droid.outputs.ndk_ver }}" >> $GITHUB_ENV
+          fi
+          if [[ -n "${{ steps.droid.outputs.cmake_ver }}" ]]; then
+            run_sm "cmake;${{ steps.droid.outputs.cmake_ver }}"
+            echo "$ANDROID_SDK_ROOT/cmake/${{ steps.droid.outputs.cmake_ver }}/bin" >> $GITHUB_PATH
+          fi
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "ANDROID_HOME=$ANDROID_SDK_ROOT"     >> $GITHUB_ENV
           echo "$ANDROID_SDK_ROOT/platform-tools"   >> $GITHUB_PATH
@@ -223,6 +244,25 @@ jobs:
         env:
           AGP_NEW: ${{ steps.cfg.outputs.agp_override }}
           KOTLIN_NEW: ${{ steps.cfg.outputs.kotlin_override }}
+
+      - name: TDLib bauen (JNI) – optionaler --ref aus config_json (td_ref|tdlib_ref)
+        run: |
+          set -euo pipefail
+          if [[ -f scripts/build_tdlib_android.sh ]]; then
+            chmod +x scripts/build_tdlib_android.sh
+            REF="${{ steps.cfg.outputs.td_ref || steps.cfg.outputs.tdlib_ref }}"
+            if [[ -n "${REF}" ]]; then
+              echo "::group::TDLib Build (ref=${REF})"
+              bash scripts/build_tdlib_android.sh --ref "${REF}"
+              echo "::endgroup::"
+            else
+              echo "::group::TDLib Build (latest)"
+              bash scripts/build_tdlib_android.sh
+              echo "::endgroup::"
+            fi
+          else
+            echo "::notice::TDLib-Skript (scripts/build_tdlib_android.sh) nicht gefunden – Schritt übersprungen"
+          fi
 
       - name: ABI / Splits konfigurieren
         run: |
