@@ -257,8 +257,7 @@ jobs:
                       f.write(f"PR_ANNOTATIONS={'true' if v else 'false'}\n")
                   v = cfg.get("debug_tmate")
                   if isinstance(v, bool):
-                      f.write(f"DEBUG_TMATE={'true' if v else 'false'}\n")
-PY_CFG
+                      f.write(f"DEBUG_TMATE={'true' if v else 'false'}\n")PY_CFG
 
       - name: ABI / Splits konfigurieren
         run: |
