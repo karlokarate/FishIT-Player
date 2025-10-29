@@ -56,13 +56,14 @@ on:
         default: "MinSizeRel"
         options: [MinSizeRel, Release]
       config_json:
-        description: "Sanitizer/Overrides als JSON (optional; kann base64:... sein). Kann auch flags enthalten: pr_annotations, debug_tmate (bool)."
+        description: "Sanitizer/Overrides als JSON (optional; kann base64:... sein). Kann auch Flags enthalten: pr_annotations, debug_tmate (bool)."
         required: false
         default: ""
 
 permissions:
-  contents: read
-  actions: write
+  contents: write
+  actions: read
+  security-events: write
 
 concurrency:
   group: android-build-${{ github.ref || github.run_id }}
@@ -74,7 +75,7 @@ defaults:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
 
     env:
@@ -82,7 +83,6 @@ jobs:
       ORG_GRADLE_PROJECT_abiFilters: arm64-v8a,armeabi-v7a
       ORG_GRADLE_PROJECT_universalApk: false
       ORG_GRADLE_PROJECT_useSplits: true
-      ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
 
     steps:
       - name: Checkout (LFS & Submodules)
@@ -98,9 +98,9 @@ jobs:
           set -euo pipefail
           BUNDLE="${{ github.event.inputs.toolchain_bundle }}"
           if [[ "$BUNDLE" == "stable" ]]; then
-            SDK_API=36; BUILD_TOOLS="35.0.0"; NDK="27.3.13750724"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.30.5"; JDK=21; GRADLE="8.13"; AGP="8.13.0"
+            SDK_API=36; BUILD_TOOLS="35.0.0"; NDK="29.0.13846066"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.30.5"; JDK=21; GRADLE="8.13"; AGP="8.13.0"
           elif [[ "$BUNDLE" == "lts" ]]; then
-            SDK_API=34; BUILD_TOOLS="34.0.0"; NDK="26.3.11333136"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.22.1"; JDK=17; GRADLE="8.11.1"; AGP="8.10.0"
+            SDK_API=34; BUILD_TOOLS="34.0.0"; NDK="26.3.11579264"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.22.1"; JDK=17; GRADLE="8.11.1"; AGP="8.10.0"
           else
             SDK_API=""; BUILD_TOOLS=""; NDK=""; CMAKE_REQ=""; CMAKE_FALLBACK="3.30.5"; JDK=""; GRADLE=""; AGP=""
             FILES=$(git ls-files '**/build.gradle' '**/build.gradle.kts' '**/gradle.properties' 2>/dev/null | grep -v '/build/' || true)
@@ -114,7 +114,7 @@ jobs:
             AGP=$(printf '%s' "$BLOB" | sed -nE 's/.*com\.android\.tools\.build:gradle:([0-9]+\.[0-9]+(\.[0-9]+)?).*/\1/p' | head -1 || true)
             [[ -z "$SDK_API" ]] && SDK_API=35
             [[ -z "$BUILD_TOOLS" ]] && BUILD_TOOLS="35.0.0"
-            [[ -z "$NDK" ]] && NDK="27.3.13750724"
+            [[ -z "$NDK" ]] && NDK="27.0.12077973"
             CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.30.5"
             JDK=21; GRADLE="8.13"
           fi
@@ -131,91 +131,75 @@ jobs:
           echo "bundle=$BUNDLE" >> $GITHUB_OUTPUT
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: ${{ env.JDK_VER }}
+          cache: gradle
 
-      - name: Pin Gradle Wrapper (from Toolchain)
-        if: ${{ steps.dispatch.outputs.bundle != 'project' }}
-        run: |
-          set -euo pipefail
-          WRAP=gradle/wrapper/gradle-wrapper.properties
-          [[ -f "$WRAP" ]] || { echo "::error::gradle-wrapper.properties fehlt"; exit 1; }
-          sed -i -E "s#distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-${{ env.GRADLE_VER }}-bin.zip#g" "$WRAP"
-          echo "Wrapper → Gradle ${{ env.GRADLE_VER }}"
-
-      - name: Optional – Patch AGP (from Toolchain)
-        if: ${{ steps.dispatch.outputs.bundle != 'project' && env.AGP_VER != '' }}
-        run: |
-          python3 - <<'PY_AGP'
-          import re, pathlib, os
-          agp = os.environ.get("AGP_VER","").strip()
-          files=[p for p in pathlib.Path(".").rglob("*") if p.is_file() and p.suffix in (".gradle",".kts",".toml") and "build" not in p.parts]
-          for p in files:
-            s=p.read_text(encoding="utf-8",errors="ignore"); o=s
-            s=re.sub(r"(com\.android\.tools\.build:gradle:)\d+\.\d+(?:\.\d+)?", rf"\g<1>{agp}", s)
-            s=re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+")([^"]+)(")', rf"\1{agp}\3", s)
-            if s!=o: p.write_text(s,encoding="utf-8")
-          print("AGP pinned to", agp)
-PY_AGP
       - name: Setup Gradle (cache + wrapper validation)
-        uses: gradle/actions/setup-gradle@v4.4.3
+        uses: gradle/actions/setup-gradle@v5
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Android SDK einrichten
+        uses: android-actions/setup-android@v3.2.2
 
-      - name: Install Android SDK (manual)
+      - name: Android Pakete installieren
         run: |
-          set -euo pipefail
-          SDK="${ANDROID_SDK_ROOT}"
-          mkdir -p "$SDK"
-          cd "$SDK"
-          URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
-          curl -fsSL "$URL" -o cmdtools.zip
-          rm -rf cmdline-tools || true
-          unzip -q cmdtools.zip -d "$SDK"
-          mkdir -p "$SDK/cmdline-tools/latest"
-          mv "$SDK/cmdline-tools"/* "$SDK/cmdline-tools/latest/" || true
-          echo "$SDK/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$SDK/platform-tools" >> $GITHUB_PATH
-          echo "$SDK/build-tools/${{ env.BUILD_TOOLS }}" >> $GITHUB_PATH
-          set +o pipefail
-          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
-          status=${PIPESTATUS[1]}; if [[ $status -ne 0 && $status -ne 141 ]]; then exit $status; fi
-          set -o pipefail
-          P=("platform-tools" "platforms;android-${{ env.SDK_API }}" "build-tools;${{ env.BUILD_TOOLS }}" "ndk;${{ env.NDK_VER }}")
-          "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "${P[@]}" || INSTALL_FAIL=1
-          if [[ "${INSTALL_FAIL:-0}" == "1" && "${{ env.SDK_API }}" == "35" ]]; then
-            echo "::warning::Fallback auf API 34 / Build-Tools 34.0.0"
-            "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-34" "build-tools;34.0.0" || true
-            echo "SDK_API=34" >> $GITHUB_ENV
-            echo "BUILD_TOOLS=34.0.0" >> $GITHUB_ENV
-            echo "$SDK/build-tools/34.0.0" >> $GITHUB_PATH
-          fi
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ env.NDK_VER }}" >> $GITHUB_ENV
-          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/${{ env.NDK_VER }}" >> $GITHUB_ENV
-          "$SDK/platform-tools/adb" version || true
-          "$SDK/build-tools/${{ env.BUILD_TOOLS }}/apksigner" --version || true
+          set -euxo pipefail
+          yes | sdkmanager --licenses
+          sdkmanager "
+            platforms;android-${{ env.SDK_API }}
+            build-tools;${{ env.BUILD_TOOLS }}
+            platform-tools
+            ndk;${{ env.NDK_VER }}
+          " || true
+          echo "BUILD_TOOLS=${{ env.BUILD_TOOLS }}" >> $GITHUB_ENV
 
-      - name: Setup CMake (requested)
+      - name: CMake (requested)
         continue-on-error: true
-        uses: jwlawson/actions-setup-cmake@v2
+        uses: jwlawson/actions-setup-cmake@v1
         with:
           cmake-version: ${{ env.CMAKE_REQ }}
-      - name: Setup CMake (fallback)
-        if: ${{ steps.dispatch.outputs.bundle != '' }}
-        uses: jwlawson/actions-setup-cmake@v2
+      - name: CMake (fallback)
+        uses: jwlawson/actions-setup-cmake@v1
         with:
           cmake-version: ${{ env.CMAKE_FALLBACK }}
       - name: CMake Version Info
         run: cmake --version || true
 
+      - name: Optional: Remote Build Cache + Config Cache Key
+        env:
+          REMOTE_URL: ${{ secrets.GRADLE_CACHE_URL }}
+          REMOTE_USER: ${{ secrets.GRADLE_CACHE_USER }}
+          REMOTE_PASS: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+          CC_KEY: ${{ secrets.GRADLE_CONFIGURATION_CACHE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.gradle
+          {
+            echo "org.gradle.caching=true"
+            echo "org.gradle.configuration-cache=true"
+            [[ -n "${CC_KEY:-}" ]] && echo "org.gradle.configuration-cache.problems=warn"
+            if [[ -n "${REMOTE_URL:-}" ]]; then
+              echo "org.gradle.caching.remote.enabled=true"
+              echo "org.gradle.caching.remote.push=true"
+              echo "org.gradle.caching.remote.url=${REMOTE_URL}"
+              [[ -n "${REMOTE_USER:-}" ]] && echo "org.gradle.caching.remote.username=${REMOTE_USER}"
+              [[ -n "${REMOTE_PASS:-}" ]] && echo "org.gradle.caching.remote.password=${REMOTE_PASS}"
+            fi
+          } >> ~/.gradle/gradle.properties
+          if [[ -n "${CC_KEY:-}" ]]; then
+            echo "GRADLE_CONFIGURE_ON_DEMAND=false" >> $GITHUB_ENV
+            echo "GRADLE_KEY=${CC_KEY}" >> $GITHUB_ENV
+          fi
+
       - name: Sanitizer/Overrides (config_json)
         if: ${{ github.event.inputs.config_json != '' }}
+        env:
+          CFG: ${{ github.event.inputs.config_json }}
         run: |
-          pytpython3 - <<'PY_CFG'        import os, sys, json, base64, re, pathlib
+          python3 - <<'PY_CFG'
+          import os, sys, json, base64, re, pathlib
           raw = os.environ.get("CFG","").strip()
           if raw.startswith("base64:"):
               raw = base64.b64decode(raw.split(":",1)[1]).decode("utf-8","ignore")
@@ -247,9 +231,6 @@ PY_AGP
                   f=f.strip().upper()
                   flags |= getattr(re, f, 0)
               pat = r.get("pattern","")
-              if re.search(r"\\(?![AbBdDsSwWZ\\])", pat):
-                  print(f"::warning::Backslash-Leiche in Pattern: {pat[:40]}… – versuche Escape-Heilung")
-                  pat = pat.encode("utf-8").decode("unicode_escape")
               try:
                   rx = re.compile(pat, flags)
               except re.error as e:
@@ -278,8 +259,6 @@ PY_AGP
                   if isinstance(v, bool):
                       f.write(f"DEBUG_TMATE={'true' if v else 'false'}\n")
 PY_CFG
-        env:
-          CFG: ${{ github.event.inputs.config_json }}
 
       - name: ABI / Splits konfigurieren
         run: |
@@ -295,16 +274,17 @@ PY_CFG
         env:
           KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
         run: |
-          pythopython3 - <<'PY_KS'      import os, base64, pathlib
+          python3 - <<'PY_KS'
+          import os, base64, pathlib
           s=os.environ.get("KS_B64","").strip()
           if s:
-            if "base64:" in s or "base64," in s:
-            s = s.split("base64:",1)[-1] if "base64:" in s else s.split("base64,",1)[-1]
-            s="".join(s.split()); pad='='*(-len(s)%4)
-            pathlib.Path("release.keystore").write_bytes(base64.b64decode(s+pad))
-            print("DECODE_OK")
+              if "base64:" in s or "base64," in s:
+                  s = s.split("base64:",1)[-1] if "base64:" in s else s.split("base64,",1)[-1]
+              s="".join(s.split()); pad='='*(-len(s)%4)
+              pathlib.Path("release.keystore").write_bytes(base64.b64decode(s+pad))
+              print("DECODE_OK")
           else:
-            print("EMPTY_SECRET")
+              print("EMPTY_SECRET")
 PY_KS
           if [[ -f release.keystore ]]; then
             {
@@ -405,26 +385,10 @@ PY_KS
               ;;
           esac
 
-      - name: Android Lint (optional)
-        if: ${{ env.PR_ANNOTATIONS == 'true' }}
+      - name: Problem-Matcher
+        continue-on-error: true
         run: |
-          if [[ "${{ github.event.inputs.build_type }}" == "release" ]]; then
-            ./gradlew :app:lintRelease --stacktrace || true
-          else
-            ./gradlew :app:lintDebug --stacktrace || true
-          fi
-
-      - name: Reviewdog (TODOs / Grep) – nicht blockierend
-        if: ${{ env.PR_ANNOTATIONS == 'true' }}
-        uses: reviewdog/action-setup@v1
-      - name: Reviewdog run
-        if: ${{ env.PR_ANNOTATIONS == 'true' }}
-        env:
-          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set +e
-          (git ls-files | xargs -I{} grep -nH "TODO" "{}" || true) \
-            | reviewdog -name="TODO Scanner" -f=grep -reporter=github-check -level=info -filter-mode=nofilter -fail-on-error=false
+          [[ -f .github/gradle-problem-matcher.json ]] && echo "::add-matcher::.github/gradle-problem-matcher.json" || true
 
       - name: Task wählen
         id: task
@@ -433,11 +397,6 @@ PY_KS
             release) echo "task=:app:assembleRelease" >> $GITHUB_OUTPUT ;;
             *)       echo "task=:app:assembleDebug"   >> $GITHUB_OUTPUT ;;
           esac
-
-      - name: Problem-Matcher
-        continue-on-error: true
-        run: |
-          [[ -f .github/gradle-problem-matcher.json ]] && echo "::add-matcher::.github/gradle-problem-matcher.json" || true
 
       - name: Build
         run: |
@@ -451,10 +410,59 @@ PY_KS
             --configuration-cache --build-cache --parallel \
             --stacktrace --warning-mode all -x test
 
+      - name: Sign (APK) optional
+        if: ${{ github.event.inputs.sign_apk == 'true' && github.event.inputs.build_type == 'release' }}
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          alias: ${{ secrets.ANDROID_SIGN_KEY_ALIAS || secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+
       - name: apksigner verify (falls signiert)
         if: ${{ github.event.inputs.sign_apk == 'true' }}
         run: |
-          find app/build/outputs/apk -type f -name "*.apk" -print0 | xargs -0 -I{} bash -c '$ANDROID_SDK_ROOT/build-tools/${{ env.BUILD_TOOLS }}/apksigner verify --verbose "{}" || true'
+          find app/build/outputs/apk -type f -name "*.apk" -print0 | xargs -0 -I{} bash -c 'apksigner verify --verbose "{}" || true'
+
+      # --- Reviewdog PR-Annotations für Lint/Detekt ---
+      - name: Android Lint (XML)
+        run: |
+          if [[ "${{ github.event.inputs.build_type }}" == "release" ]]; then
+            ./gradlew :app:lintRelease --stacktrace || true
+          else
+            ./gradlew :app:lintDebug --stacktrace || true
+          fi
+
+      - name: Detekt (XML)
+        run: |
+          ./gradlew detekt || true
+
+      - name: Reviewdog setup
+        uses: reviewdog/action-setup@v1
+        if: always()
+
+      - name: Reviewdog – Android Lint
+        if: always()
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          XMLS=$(find . -path "*/build/reports/lint-results-*.xml" -o -path "*/build/reports/lint-results.xml" || true)
+          for x in $XMLS; do
+            cat "$x" | reviewdog -f=checkstyle -name="Android Lint" -reporter=github-pr-check -level=warning -fail-on-error=false || true
+          done
+
+      - name: Reviewdog – Detekt
+        if: always()
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          XMLS=$(find . -path "*/build/reports/detekt/detekt.xml" || true)
+          for x in $XMLS; do
+            cat "$x" | reviewdog -f=checkstyle -name="Detekt" -reporter=github-pr-check -level=warning -fail-on-error=false || true
+          done
 
       - name: Checksums & Kontext
         run: |
@@ -464,29 +472,21 @@ PY_KS
           echo "API/BT/NDK  : ${{ env.SDK_API }}/${{ env.BUILD_TOOLS }}/${{ env.NDK_VER }}"
           echo "TDLib mode  : ${{ github.event.inputs.tdlib_mode }}  (BT=${{ github.event.inputs.tdlib_build_type }})"
 
-      - name: Artefakte hochladen (APK + mapping)
+      - name: Artefakte hochladen (APK + mapping + Reports)
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ github.event.inputs.build_type }}-${{ github.event.inputs.abis }}
           path: |
             app/build/outputs/apk/**/**/*.apk
             app/build/outputs/mapping/**/mapping.txt
+            **/build/reports/**/*
             checksums.txt
           retention-days: 14
-          if-no-files-found: error
-
-      - name: TDLib Artefakte (wenn neu gebaut)
-        if: ${{ steps.tdneed.outputs.need == 'true' || steps.cache-tdlib.outputs.cache-hit != 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: tdlib-build-${{ github.run_id }}
-          path: |
-            libtd/TDLIB_VERSION.txt
-            libtd/.tdlib_meta
-            libtd/src/main/jniLibs/**/libtdjni.so
-            libtd/src/main/java/org/drinkless/tdlib/{TdApi.java,Client.java}
-          retention-days: 14
           if-no-files-found: warn
+
+      # --- Dependency Graph Submission ---
+      - name: Gradle Dependency Graph (submission)
+        uses: gradle/actions/dependency-submission@v5
 
       - name: Build Summary
         if: always()
@@ -502,13 +502,49 @@ PY_KS
             echo "### mapping.txt"
             find app/build/outputs/mapping -type f -name "mapping.txt" | sed 's/^/- /' || true
             echo ""
+            echo "### Reports"
+            find . -path "*/build/reports/*" | sed 's/^/- /' || true
+            echo ""
             echo "### Checksums"
             sed 's/^/- /' checksums.txt || true
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: tmate (on failure or opt-in)
-        if: ${{ failure() || env.DEBUG_TMATE == 'true' }}
-        uses: mxschmitt/action-tmate@v3
+  # --- Emulator Tests mit HW-Beschleunigung ---
+  instrumentation-tests:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v5
         with:
-          limit-access-to-actor: false
-          hostname: lon1.tmate.io
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - uses: gradle/actions/setup-gradle@v5
+      - uses: android-actions/setup-android@v3.2.2
+      - name: SDK/Tools
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+      - name: Start emulator & run connected tests
+        uses: ReactiveCircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: default
+          profile: pixel_6
+          script: ./gradlew --stacktrace connectedDebugAndroidTest
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-instrumentation-reports
+          path: |
+            **/build/reports/androidTests/*
+            **/build/outputs/androidTest-results/*
+          retention-days: 7
+          if-no-files-found: warn
