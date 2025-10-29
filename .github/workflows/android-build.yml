@@ -112,10 +112,10 @@ jobs:
                 BLOB+=$'\n'"$(cat "$f")"
               done <<< "$FILES"
             fi
-            SDK_API=$(printf '%s' "$BLOB" | sed -nE 's/.*compileSdk[ =:]*\([0-9]\+\).*/\1/p' | head -1 || true)
-            BUILD_TOOLS=$(printf '%s' "$BLOB" | sed -nE 's/.*buildToolsVersion[ =:]*["'\'']\?\([^"\'']\+\).*/\1/p' | head -1 || true)
-            NDK=$(printf '%s' "$BLOB" | sed -nE 's/.*ndkVersion[ =:]*["'\'']\?\([^"\'']\+\).*/\1/p' | head -1 || true)
-            AGP=$(printf '%s' "$BLOB" | sed -nE 's/.*com\.android\.tools\.build:gradle:\([0-9]\+\.[0-9]\+\(\.[0-9]\+\)\?\).*/\1/p' | head -1 || true)
+            SDK_API=$(printf '%s' "$BLOB" | sed -nE "s/.*compileSdk[ =:]*([0-9]+).*/\1/p" | head -1 || true)
+            BUILD_TOOLS=$(printf '%s' "$BLOB" | sed -nE "s/.*buildToolsVersion[ =:]*[\"']?([^\"' ]+).*/\1/p" | head -1 || true)
+            NDK=$(printf '%s' "$BLOB" | sed -nE "s/.*ndkVersion[ =:]*[\"']?([^\"' ]+).*/\1/p" | head -1 || true)
+            AGP=$(printf '%s' "$BLOB" | sed -nE "s/.*com\.android\.tools\.build:gradle:([0-9]+\.[0-9]+(\.[0-9]+)?).*/\1/p" | head -1 || true)
             [[ -z "$SDK_API" ]] && SDK_API=35
             [[ -z "$BUILD_TOOLS" ]] && BUILD_TOOLS="35.0.0"
             [[ -z "$NDK" ]] && NDK="27.0.12077973"
@@ -202,71 +202,88 @@ jobs:
             echo "GRADLE_KEY=${CC_KEY}" >> $GITHUB_ENV
           fi
 
-      - name: Sanitizer/Overrides (config_json)
+      - name: Sanitizer/Overrides (config_json, jq/bash)
         if: ${{ github.event.inputs.config_json != '' }}
         env:
           CFG: ${{ github.event.inputs.config_json }}
         run: |
-          python3 - <<'PY_CFG'
-          import os, sys, json, base64, re, pathlib
-          raw = os.environ.get("CFG","").strip()
-          if raw.startswith("base64:"):
-              raw = base64.b64decode(raw.split(":",1)[1]).decode("utf-8","ignore")
-          raw = raw.replace("\r\n","\n").replace("\r","\n").strip()
-          if not raw:
-              sys.exit(0)
-          try:
-              cfg = json.loads(raw)
-          except Exception as e:
-              print("::warning::config_json ist kein valides JSON:", e)
-              sys.exit(0)
-          root = pathlib.Path(".").resolve()
-          def safe_path(p):
-              p = (root / p).resolve()
-              if str(p).startswith(str(root)):
-                  return p
-              raise ValueError("Unsicherer Pfad")
-          for w in cfg.get("writes", []):
-              p = safe_path(w["path"])
-              p.parent.mkdir(parents=True, exist_ok=True)
-              p.write_text(w.get("content",""), encoding="utf-8")
-          for r in cfg.get("replacements", []):
-              p = safe_path(r["path"])
-              if not p.exists():
-                  print(f"::notice::{p} existiert nicht – Überspringe Replacement"); continue
-              s = p.read_text(encoding="utf-8", errors="ignore")
-              flags = 0
-              for f in str(r.get("flags","")).split("|"):
-                  f=f.strip().upper()
-                  flags |= getattr(re, f, 0)
-              pat = r.get("pattern","")
-              try:
-                  rx = re.compile(pat, flags)
-              except re.error as e:
-                  print(f"::warning::Ungültiges Regex: {e} – überspringe")
-                  continue
-              repl = r.get("repl","")
-              s2, n = rx.subn(repl, s)
-              if n>0:
-                  p.write_text(s2, encoding="utf-8")
-                  print(f"::notice::{p} – {n} Ersetzungen")
-          for d in cfg.get("deletes", []):
-              p = safe_path(d)
-              try:
-                  if p.is_file(): p.unlink()
-                  elif p.is_dir():
-                      print(f"::warning::Verzeichnislöschen nicht erlaubt: {p}")
-              except Exception as e:
-                  print(f"::warning::Delete fehlgeschlagen für {p}: {e}")
-          envf = os.environ.get("GITHUB_ENV")
-          if envf:
-              with open(envf, "a", encoding="utf-8") as f:
-                  v = cfg.get("pr_annotations")
-                  if isinstance(v, bool):
-                      f.write(f"PR_ANNOTATIONS={'true' if v else 'false'}\n")
-                  v = cfg.get("debug_tmate")
-                  if isinstance(v, bool):
-                      f.write(f"DEBUG_TMATE={'true' if v else 'false'}\n")PY_CFG
+          set -euo pipefail
+          sudo apt-get update -y >/dev/null 2>&1 || true
+          sudo apt-get install -y --no-install-recommends jq >/dev/null 2>&1 || true
+
+          RAW="$CFG"
+          if [[ "${RAW:-}" == base64:* ]]; then
+            RAW="$(printf '%s' "${RAW#base64:}" | tr -d ' \n\r\t' | base64 -d)"
+          fi
+
+          TMP="$(mktemp)"
+          printf '%s' "${RAW:-{}}" > "$TMP"
+          ROOT="$PWD"
+
+          # sichere Pfadauflösung ohne Python/Here-Doc
+          safe_path() {
+            local p="$1"
+            local full
+            full="$(realpath -m "$ROOT/$p")"
+            case "$full" in
+              "$ROOT"/*) printf '%s\n' "$full" ;;
+              *) printf '%s\n' "" ;;
+            esac
+          }
+
+          # writes
+          jq -r '.writes[]? | @base64' "$TMP" | while read -r line; do
+            obj="$(echo "$line" | base64 -d)"
+            path="$(echo "$obj" | jq -r '.path')"
+            content="$(echo "$obj" | jq -r '.content // ""')"
+            full="$(safe_path "$path")"
+            if [[ -z "$full" ]]; then echo "::warning::Unsicherer Pfad: $path"; continue; fi
+            mkdir -p "$(dirname "$full")"
+            printf '%s' "$content" > "$full"
+            echo "::notice::write $full"
+          done
+
+          # replacements
+          jq -r '.replacements[]? | @base64' "$TMP" | while read -r line; do
+            obj="$(echo "$line" | base64 -d)"
+            path="$(echo "$obj" | jq -r '.path')"
+            pattern="$(echo "$obj" | jq -r '.pattern')"
+            repl="$(echo "$obj" | jq -r '.repl // ""')"
+            flags="$(echo "$obj" | jq -r '.flags // ""')"
+            full="$(safe_path "$path")"
+            if [[ -z "$full" || ! -f "$full" ]]; then echo "::notice::$path fehlt – skip"; continue; fi
+
+            perl_flags=""
+            [[ "$flags" == *i* || "$flags" == *IGNORECASE* ]] && perl_flags="${perl_flags}i"
+            [[ "$flags" == *m* || "$flags" == *MULTILINE*  ]] && perl_flags="${perl_flags}m"
+            [[ "$flags" == *s* || "$flags" == *DOTALL*     ]] && perl_flags="${perl_flags}s"
+
+            pat_esc="${pattern//\//\\/}"
+            rep_esc="${repl//\//\\/}"
+
+            if perl -CS -0777 -pe "s/${pat_esc}/${rep_esc}/g${perl_flags}" "$full" > "$full.tmp" 2>/dev/null; then
+              mv "$full.tmp" "$full"
+              echo "::notice::replace $full"
+            else
+              rm -f "$full.tmp"
+              echo "::warning::Regex fehlgeschlagen in $full"
+            fi
+          done
+
+          # deletes
+          jq -r '.deletes[]? // empty' "$TMP" | while read -r p; do
+            [[ -z "$p" ]] && continue
+            full="$(safe_path "$p")"
+            if [[ -z "$full" ]]; then echo "::warning::Unsicherer Pfad: $p"; continue; fi
+            if [[ -f "$full" ]]; then rm -f "$full" && echo "::notice::delete $full"; else echo "::notice::$full nicht gefunden/kein File"; fi
+          done
+
+          # env flags
+          PR="$(jq -r '.pr_annotations // empty' "$TMP")"
+          [[ "$PR" == "true" || "$PR" == "false" ]] && echo "PR_ANNOTATIONS=$PR" >> "$GITHUB_ENV"
+
+          TM="$(jq -r '.debug_tmate // empty' "$TMP")"
+          [[ "$TM" == "true" || "$TM" == "false" ]] && echo "DEBUG_TMATE=$TM" >> "$GITHUB_ENV"
 
       - name: ABI / Splits konfigurieren
         run: |
@@ -280,7 +297,7 @@ jobs:
       - name: Decode Keystore (optional)
         if: ${{ github.event.inputs.sign_apk == 'true' }}
         env:
-         KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
           if [[ -z "${KS_B64:-}" ]]; then
@@ -288,11 +305,9 @@ jobs:
             exit 0
           fi
 
-          # Prefixe entfernen und Whitespace entfernen
           val="${KS_B64#base64:}"; val="${val#base64,}"
           val="$(printf '%s' "$val" | tr -d ' \n\r\t')"
 
-          # Base64 -> Datei (GNU coreutils base64)
           if printf '%s' "$val" | base64 -d > release.keystore 2>/dev/null; then
             echo "DECODE_OK"
           else
@@ -310,7 +325,6 @@ jobs:
           else
             echo "::warning::Keystore fehlt – Build läuft UNSIGNIERT."
           fi
-
 
       - name: ccache (NDK)
         uses: actions/cache@v4
@@ -403,7 +417,7 @@ jobs:
       - name: Problem-Matcher
         continue-on-error: true
         run: |
-          [[ -f .github/gradle-problem-matcher.json ]] && echo "::add-matcher::.github/gradle-problem-matcher.json" || true
+          [[ -f .github/gradle-problem-matcher.json ]] && echo "::add-matcher::.github/gradle-problem-matcher.json" | true
 
       - name: Task wählen
         id: task
@@ -543,8 +557,9 @@ jobs:
       - uses: android-actions/setup-android@v3.2.2
       - name: SDK/Tools
         run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          set -euxo pipefail
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" || true
       - name: Start emulator & run connected tests
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
