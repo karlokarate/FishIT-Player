@@ -283,8 +283,7 @@ jobs:
               pathlib.Path("release.keystore").write_bytes(base64.b64decode(s+pad))
               print("DECODE_OK")
           else:
-              print("EMPTY_SECRET")
-PY_KS
+              print("EMPTY_SECRET")PY_KS
           if [[ -f release.keystore ]]; then
             {
               echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore"
