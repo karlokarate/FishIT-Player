@@ -73,8 +73,7 @@ jobs:
           out_path = os.environ.get("GITHUB_OUTPUT")
           def write_output(k, v):
             with open(out_path, "a", encoding="utf-8") as f:
-              f.write(f"{k}={v}
-")
+              f.write(f"{k}={v}")
           bundle = (os.environ.get("INPUT_TOOLCHAIN_BUNDLE") or "stable").strip().lower()
           profile = (os.environ.get("INPUT_CHECKS_PROFILE") or "full").strip().lower()
           cfg_raw = os.environ.get("INPUT_CONFIG_JSON") or "{}"
