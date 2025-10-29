@@ -152,13 +152,16 @@ jobs:
       - name: Android Pakete installieren
         run: |
           set -euxo pipefail
-          yes | sdkmanager --licenses
-          sdkmanager "
-            platforms;android-${{ env.SDK_API }}
-            build-tools;${{ env.BUILD_TOOLS }}
-            platform-tools
-            ndk;${{ env.NDK_VER }}
-          " || true
+          echo ">>> Accepting SDK licenses..."
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          echo ">>> Installing SDK packages..."
+          sdkmanager --no_https --update || true
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-${{ env.SDK_API }}" \
+            "build-tools;${{ env.BUILD_TOOLS }}" \
+            "ndk;${{ env.NDK_VER }}" || true
+          echo "SDK-Installationen abgeschlossen."
           echo "BUILD_TOOLS=${{ env.BUILD_TOOLS }}" >> $GITHUB_ENV
 
       - name: CMake (requested)
