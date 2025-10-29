@@ -1,13 +1,11 @@
 # Android – Quality Gate (Profile)
-# Download: sandbox:/mnt/data/android_quality.yml
-# 
-# Hinweise (Upgrades & Tools):
-# - Action-Pins: actions/checkout@v5, actions/setup-java@v4, gradle/actions/setup-gradle@v4.4.3, actions/upload-artifact@v4
-#   -> Halte Minor/Patch aktuell (z. B. v4.x→v4.x+1), prüfe Release Notes vor Upgrade.
-# - Toolchain Bundles: stable (API 35 • BT 35.0.0 • JDK 21 • Gradle 8.13 • AGP 8.12.0), lts (API 34 • BT 34.0.0 • JDK 17 • Gradle 8.7 • AGP 8.5.2), project (keine Zwangs-Overrides).
-# - Externe Qualitätstools, die sich gut integrieren lassen: Reviewdog (PR-Annotationen), Detekt/Ktlint/Spotless,
-#   OWASP Dependency-Check, Kover (Coverage), Gradle Enterprise/Remote Build Cache, CodeQL (Java/Kotlin), Trivy/Grype.
-# - Gradle 9.x erfordert AGP ≥ 8.13 (Guard enthalten); bei Problemen AGP via config_json anheben.
+# Robust, validated against GitHub Actions docs
+# Notes:
+# - Pinned actions (stable): actions/checkout@v5, actions/setup-java@v4, gradle/actions/setup-gradle@v4.4.3, actions/upload-artifact@v4, reviewdog/action-setup@v1
+# - ANDROID_SDK_ROOT uses ${{ github.workspace }} to avoid context resolution issues
+# - setup-java gets a default (21) via || fallback to prevent empty-input errors
+# - Manual SDK install via sdkmanager with API fallback (35 → 34) and SIGPIPE tolerance
+
 name: Android – Quality Gate (Profile)
 
 on:
@@ -51,7 +49,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      # Use workspace path instead of runner.temp to avoid context resolution issues
       ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
     steps:
       - name: Checkout
@@ -73,7 +70,7 @@ jobs:
           out_path = os.environ.get("GITHUB_OUTPUT")
           def write_output(k, v):
             with open(out_path, "a", encoding="utf-8") as f:
-              f.write(f"{k}={v}")
+              f.write(f"{k}={v}\n")
           bundle = (os.environ.get("INPUT_TOOLCHAIN_BUNDLE") or "stable").strip().lower()
           profile = (os.environ.get("INPUT_CHECKS_PROFILE") or "full").strip().lower()
           cfg_raw = os.environ.get("INPUT_CONFIG_JSON") or "{}"
@@ -130,7 +127,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: ${{ steps.plan.outputs.jdk }}
+          java-version: ${{ steps.plan.outputs.jdk || '21' }}
 
       - name: Install Android SDK (manual, with fallback)
         id: sdk
@@ -198,14 +195,14 @@ jobs:
           sed -i -E "s#distributionUrl=.*#distributionUrl=https://services.gradle.org/distributions/gradle-${V}-bin.zip#g" gradle/wrapper/gradle-wrapper.properties
           echo "Gradle Wrapper patched → ${V}"
           if [[ "${V}" == 9.* ]]; then
-            AGP="$(grep -RhoE 'com\.android\.tools\.build:gradle:([0-9]+\.[0-9]+(\.[0-9]+)?)' -n --include=*.gradle* --exclude-dir=**/build | head -1 | sed -E 's/.*:([0-9.]+).*/\1/' || true)"
+            AGP="$(grep -RhoE 'com\\.android\\.tools\\.build:gradle:([0-9]+\\.[0-9]+(\\.[0-9]+)?)' -n --include=*.gradle* --exclude-dir=**/build | head -1 | sed -E 's/.*:([0-9.]+).*/\\1/' || true)"
             if [[ -z "$AGP" ]]; then
-              AGP="$(grep -RhoE 'id\(["'\''"]com\.android\.(?:application|library|test|dynamic-feature)["'\''"]\)\s+version\s+["'\''"]([^"'\''"]+)["'\''"]' -n --include=*.gradle*.kts --exclude-dir=**/build | head -1 | sed -E 's/.*version\s+["'\''"]([^"'\''"]+)["'\''"].*/\1/' || true)"
+              AGP="$(grep -RhoE 'id\\(["'\\''"]com\\.android\\.(?:application|library|test|dynamic-feature)["'\\''"]\\)\\s+version\\s+["'\\''"]([^"'\\''"]+)["'\\''"]' -n --include=*.gradle*.kts --exclude-dir=**/build | head -1 | sed -E 's/.*version\\s+["'\\''"]([^"'\\''"]+)["'\\''"].*/\\1/' || true)"
             fi
             if [[ -z "$AGP" ]]; then
-              AGP="$(grep -RhoE '^\s*agp\s*=\s*"[0-9]+\.[0-9]+(\.[0-9]+)?"' -n **/libs.versions.toml 2>/dev/null | head -1 | sed -E 's/.*"([0-9.]+)".*/\1/' || true)"
+              AGP="$(grep -RhoE '^\\s*agp\\s*=\\s*"[0-9]+\\.[0-9]+(\\.[0-9]+)?"' -n **/libs.versions.toml 2>/dev/null | head -1 | sed -E 's/.*"([0-9.]+)".*/\\1/' || true)"
             fi
-            vergte() { [ "$1" = "$2" ] || [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n1)" = "$1" ]; }
+            vergte() { [ "$1" = "$2" ] || [ "$(printf '%s\\n%s\\n' "$1" "$2" | sort -V | tail -n1)" = "$1" ]; }
             if [[ -n "$AGP" ]] && ! vergte "$AGP" "8.13.0"; then
               echo "::error::Gradle ${V} erfordert AGP >= 8.13 oder AGP 9 Preview. Setze 'config_json' mit {\"agp\":\"8.13.0\"}."
               exit 2
@@ -230,15 +227,15 @@ jobs:
             except Exception:
               continue
             orig = s
-            s = s.replace(r"\g<1>", "$1").replace(r"\g<2>", "$2")
+            s = s.replace(r"\\g<1>", "$1").replace(r"\\g<2>", "$2")
             if agp:
-              s = re.sub(r"(com\.android\.tools\.build:gradle:)\d+\.\d+(?:\.\d+)?", lambda m: f"{m.group(1)}{agp}", s)
-              s = re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+\")([^"]+)(\")', lambda m: f'{m.group(1)}{agp}{m.group(3)}', s)
-              s = re.sub(r'(?m)^(agp\s*=\s*\")\d+\.\d+(?:\.\d+)?(\")', lambda m: f'{m.group(1)}{agp}{m.group(2)}', s)
+              s = re.sub(r"(com\\.android\\.tools\\.build:gradle:)\\d+\\.\\d+(?:\\.\\d+)?", lambda m: f"{m.group(1)}{agp}", s)
+              s = re.sub(r'(id\(["\']com\\.android\\.(?:application|library|test|dynamic-feature)["\']\)\\s+version\\s+\")([^"]+)(\")', lambda m: f'{m.group(1)}{agp}{m.group(3)}', s)
+              s = re.sub(r'(?m)^(agp\\s*=\\s*\")\\d+\\.\\d+(?:\\.\\d+)?(\")', lambda m: f'{m.group(1)}{agp}{m.group(2)}', s)
             if kt:
-              s = re.sub(r'(org\.jetbrains\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)\d+\.\d+(?:\.\d+)?', lambda m: f"{m.group(1)}{kt}", s)
-              s = re.sub(r'(id\(["\']org\.jetbrains\.kotlin\.(?:android|jvm|multiplatform|plugin\.serialization)["\']\)\s+version\s+\")([^"]+)(\")', lambda m: f'{m.group(1)}{kt}{m.group(3)}', s)
-              s = re.sub(r'(?m)^(kotlin\s*=\s*\")\d+\.\d+(?:\.\d+)?(\")', lambda m: f'{m.group(1)}{kt}{m.group(2)}', s)
+              s = re.sub(r'(org\\.jetbrains\\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)\\d+\\.\\d+(?:\\.\\d+)?', lambda m: f"{m.group(1)}{kt}", s)
+              s = re.sub(r'(id\(["\']org\\.jetbrains\\.kotlin\\.(?:android|jvm|multiplatform|plugin\\.serialization)["\']\)\\s+version\\s+\")([^"]+)(\")', lambda m: f'{m.group(1)}{kt}{m.group(3)}', s)
+              s = re.sub(r'(?m)^(kotlin\\s*=\\s*\")\\d+\\.\\d+(?:\\.\\d+)?(\")', lambda m: f'{m.group(1)}{kt}{m.group(2)}', s)
             if s != orig:
               p.write_text(s, encoding="utf-8")
           PY
@@ -339,7 +336,7 @@ jobs:
           path: |
             **/build/reports/**
             **/build/test-results/**
-            **/build/kover/** 
+            **/build/kover/**
           if-no-files-found: warn
           retention-days: 7
 
@@ -354,7 +351,7 @@ jobs:
             echo ""
             echo "### Toolchain"
             echo "- Bundle: \`${{ steps.plan.outputs.bundle }}\`"
-            echo "- JDK: \`${{ steps.plan.outputs.jdk }}\`"
+            echo "- JDK: \`${{ steps.plan.outputs.jdk || '21' }}\`"
             echo "- Gradle: \`${{ steps.plan.outputs.gradle || 'project-default' }}\`"
             echo "- AGP override: \`${{ steps.plan.outputs.agp || 'none' }}\`"
             echo "- Kotlin override: \`${{ steps.plan.outputs.kotlin || 'none' }}\`"
