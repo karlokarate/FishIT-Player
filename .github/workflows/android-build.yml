@@ -94,9 +94,11 @@ jobs:
 
       - name: Toolchain-Dispatcher
         id: dispatch
+        shell: bash
         run: |
           set -euo pipefail
           BUNDLE="${{ github.event.inputs.toolchain_bundle }}"
+
           if [[ "$BUNDLE" == "stable" ]]; then
             SDK_API=36; BUILD_TOOLS="35.0.0"; NDK="29.0.13846066"; CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.30.5"; JDK=21; GRADLE="8.13"; AGP="8.13.0"
           elif [[ "$BUNDLE" == "lts" ]]; then
@@ -106,18 +108,21 @@ jobs:
             FILES=$(git ls-files '**/build.gradle' '**/build.gradle.kts' '**/gradle.properties' 2>/dev/null | grep -v '/build/' || true)
             BLOB=""
             if [[ -n "$FILES" ]]; then
-              while IFS= read -r f; do BLOB+=$'\n'$(cat "$f"); done <<< "$FILES"
+              while IFS= read -r f; do
+                BLOB+=$'\n'"$(cat "$f")"
+              done <<< "$FILES"
             fi
-            SDK_API=$(printf '%s' "$BLOB" | sed -nE 's/.*compileSdk[ =:]*([0-9]+).*/\1/p' | head -1 || true)
-            BUILD_TOOLS=$(printf '%s' "$BLOB" | sed -nE 's/.*buildToolsVersion[ =:]*["'\"'"']?([^"'"'"' ]+).*/\1/p' | head -1 || true)
-            NDK=$(printf '%s' "$BLOB" | sed -nE 's/.*ndkVersion[ =:]*["'\"'"']?([^"'"'"' ]+).*/\1/p' | head -1 || true)
-            AGP=$(printf '%s' "$BLOB" | sed -nE 's/.*com\.android\.tools\.build:gradle:([0-9]+\.[0-9]+(\.[0-9]+)?).*/\1/p' | head -1 || true)
+            SDK_API=$(printf '%s' "$BLOB" | sed -nE 's/.*compileSdk[ =:]*\([0-9]\+\).*/\1/p' | head -1 || true)
+            BUILD_TOOLS=$(printf '%s' "$BLOB" | sed -nE 's/.*buildToolsVersion[ =:]*["'\'']\?\([^"\'']\+\).*/\1/p' | head -1 || true)
+            NDK=$(printf '%s' "$BLOB" | sed -nE 's/.*ndkVersion[ =:]*["'\'']\?\([^"\'']\+\).*/\1/p' | head -1 || true)
+            AGP=$(printf '%s' "$BLOB" | sed -nE 's/.*com\.android\.tools\.build:gradle:\([0-9]\+\.[0-9]\+\(\.[0-9]\+\)\?\).*/\1/p' | head -1 || true)
             [[ -z "$SDK_API" ]] && SDK_API=35
             [[ -z "$BUILD_TOOLS" ]] && BUILD_TOOLS="35.0.0"
             [[ -z "$NDK" ]] && NDK="27.0.12077973"
             CMAKE_REQ="4.1.0"; CMAKE_FALLBACK="3.30.5"
             JDK=21; GRADLE="8.13"
           fi
+
           {
             echo "SDK_API=$SDK_API"
             echo "BUILD_TOOLS=$BUILD_TOOLS"
@@ -127,8 +132,9 @@ jobs:
             echo "JDK_VER=$JDK"
             echo "GRADLE_VER=$GRADLE"
             echo "AGP_VER=$AGP"
-          } >> $GITHUB_ENV
-          echo "bundle=$BUNDLE" >> $GITHUB_OUTPUT
+          } >> "$GITHUB_ENV"
+
+          echo "bundle=$BUNDLE" >> "$GITHUB_OUTPUT"
 
       - name: Setup Java
         uses: actions/setup-java@v5
