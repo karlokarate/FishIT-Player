@@ -167,7 +167,7 @@ jobs:
       - name: CMake Version Info
         run: cmake --version || true
 
-      - name: Optional: Remote Build Cache + Config Cache Key
+      - name: "Optional Remote Build Cache + Config Cache Key"
         env:
           REMOTE_URL: ${{ secrets.GRADLE_CACHE_URL }}
           REMOTE_USER: ${{ secrets.GRADLE_CACHE_USER }}
