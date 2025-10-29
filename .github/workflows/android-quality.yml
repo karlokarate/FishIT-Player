@@ -1,3 +1,13 @@
+# Android – Quality Gate (Profile)
+# Download: sandbox:/mnt/data/android_quality.yml
+# 
+# Hinweise (Upgrades & Tools):
+# - Action-Pins: actions/checkout@v5, actions/setup-java@v4, gradle/actions/setup-gradle@v4.4.3, actions/upload-artifact@v4
+#   -> Halte Minor/Patch aktuell (z. B. v4.x→v4.x+1), prüfe Release Notes vor Upgrade.
+# - Toolchain Bundles: stable (API 35 • BT 35.0.0 • JDK 21 • Gradle 8.13 • AGP 8.12.0), lts (API 34 • BT 34.0.0 • JDK 17 • Gradle 8.7 • AGP 8.5.2), project (keine Zwangs-Overrides).
+# - Externe Qualitätstools, die sich gut integrieren lassen: Reviewdog (PR-Annotationen), Detekt/Ktlint/Spotless,
+#   OWASP Dependency-Check, Kover (Coverage), Gradle Enterprise/Remote Build Cache, CodeQL (Java/Kotlin), Trivy/Grype.
+# - Gradle 9.x erfordert AGP ≥ 8.13 (Guard enthalten); bei Problemen AGP via config_json anheben.
 name: Android – Quality Gate (Profile)
 
 on:
@@ -41,14 +51,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
+      # Use workspace path instead of runner.temp to avoid context resolution issues
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      # --- Plan & Profile Derivation -----------------------------------------------------------
       - name: Derive plan from inputs (profile + overrides)
         id: plan
         shell: bash
@@ -63,8 +73,8 @@ jobs:
           out_path = os.environ.get("GITHUB_OUTPUT")
           def write_output(k, v):
             with open(out_path, "a", encoding="utf-8") as f:
-              f.write(f"{k}={v}")
-          # Read inputs
+              f.write(f"{k}={v}
+")
           bundle = (os.environ.get("INPUT_TOOLCHAIN_BUNDLE") or "stable").strip().lower()
           profile = (os.environ.get("INPUT_CHECKS_PROFILE") or "full").strip().lower()
           cfg_raw = os.environ.get("INPUT_CONFIG_JSON") or "{}"
@@ -73,18 +83,15 @@ jobs:
           except Exception as e:
             print(f"::warning::config_json ist kein valides JSON ({e}); verwende leere Overrides")
             cfg = {}
-          # Defaults per bundle
           toolchains = {
             "stable": {"sdk_api":"35","build_tools":"35.0.0","jdk":"21","gradle":"8.13","agp":"8.12.0"},
             "lts":    {"sdk_api":"34","build_tools":"34.0.0","jdk":"17","gradle":"8.7","agp":"8.5.2"},
             "project":{},
           }
           tc = toolchains.get(bundle, toolchains["stable"]).copy()
-          # Merge simple top-level overrides from JSON if provided
           for k in ("sdk_api","build_tools","jdk","gradle","agp","kotlin","pr_annotations"):
             if k in cfg and cfg[k] not in (None,""):
               tc[k] = str(cfg[k]) if k!="pr_annotations" else (str(cfg[k]).lower() in ("1","true","yes"))
-          # Resolve flags from profile
           base_flags = {
             "full":      dict(detekt=True, ktlint=True, android_lint=True, unit_tests=True, kover=True, dep_check=True, api_check=True, pr_annotations=True),
             "fast":      dict(detekt=True, ktlint=True, android_lint=True, unit_tests=False, kover=False, dep_check=False, api_check=False, pr_annotations=True),
@@ -92,26 +99,19 @@ jobs:
             "custom":    dict(detekt=False, ktlint=False, android_lint=False, unit_tests=False, kover=False, dep_check=False, api_check=False, pr_annotations=False),
           }
           flags = base_flags.get(profile, base_flags["full"]).copy()
-          # Allow overrides at top-level booleans
           for key in list(flags.keys()):
             if key in cfg and cfg[key] is not None:
               v = cfg[key]
-              if isinstance(v, bool):
-                flags[key] = v
-              else:
-                flags[key] = str(v).lower() in ("1","true","yes")
-          # Respect explicit pr_annotations override in tc
+              flags[key] = str(v).lower() in ("1","true","yes") if not isinstance(v,bool) else v
           if "pr_annotations" in tc:
             flags["pr_annotations"] = bool(tc["pr_annotations"])
-          # Set defaults for SDK if not provided
           sdk_api = str(tc.get("sdk_api","35"))
           build_tools = str(tc.get("build_tools","35.0.0"))
-          # Write outputs
           for k, v in [
               ("bundle", bundle),
               ("jdk", tc.get("jdk","21")),
-              ("gradle", tc.get("gradle","")),        # empty => don't patch wrapper
-              ("agp", tc.get("agp","")),              # empty => don't override AGP
+              ("gradle", tc.get("gradle","")),
+              ("agp", tc.get("agp","")),
               ("kotlin", tc.get("kotlin","")),
               ("sdk_api", sdk_api),
               ("build_tools", build_tools),
@@ -127,14 +127,12 @@ jobs:
               write_output(k, v)
           PY
 
-      # --- Java -------------------------------------------------------------------------------
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ steps.plan.outputs.jdk }}
 
-      # --- Android SDK (manual install via sdkmanager, with graceful fallback and SIGPIPE tolerance) ---
       - name: Install Android SDK (manual, with fallback)
         id: sdk
         shell: bash
@@ -144,16 +142,13 @@ jobs:
         run: |
           set -Eeuo pipefail
           echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
-          # Fetch command-line tools
           mkdir -p "${ANDROID_SDK_ROOT}"
           cd "${ANDROID_SDK_ROOT}"
-          CTL_VER="11076708" # stable known version; Google keeps older zips available
+          CTL_VER="11076708"
           URL="https://dl.google.com/android/repository/commandlinetools-linux-${CTL_VER}_latest.zip"
-          echo "Downloading commandline-tools: $URL"
           curl -fsSL "$URL" -o cmdline-tools.zip
           unzip -q cmdline-tools.zip -d .
           rm -f cmdline-tools.zip
-          # Place under cmdline-tools/latest
           if [[ -d "${ANDROID_SDK_ROOT}/cmdline-tools" ]]; then
             rm -rf "${ANDROID_SDK_ROOT}/cmdline-tools/latest" || true
             mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
@@ -163,7 +158,6 @@ jobs:
           fi
           echo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "${ANDROID_SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
-          # Pre-accept licenses (separate step; no 'yes |')
           mkdir -p "${ANDROID_SDK_ROOT}/licenses"
           cat > "${ANDROID_SDK_ROOT}/licenses/android-sdk-license" <<'LIC'
           24333f8a63b6825ea9c5514f83c2829b004d1fee
@@ -171,7 +165,6 @@ jobs:
           LIC
           echo "84831b9409646a918e30573bab4c9c91346d8abd" > "${ANDROID_SDK_ROOT}/licenses/android-sdk-preview-license"
           echo "33b6a2bcbfbf2fa05b5c38b3cb77cc80f1b1a1a9" > "${ANDROID_SDK_ROOT}/licenses/google-gdk-license"
-          # Install packages with graceful fallback (35 -> 34)
           pkgs_primary=( "platform-tools" "platforms;android-${SDK_API_PRIMARY}" "build-tools;${BUILD_TOOLS_PRIMARY}" )
           set +e
           "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_SDK_ROOT}" "${pkgs_primary[@]}"
@@ -187,14 +180,12 @@ jobs:
             echo "build_tools=${BUILD_TOOLS_PRIMARY}" >> "$GITHUB_OUTPUT"
           fi
 
-      # --- Gradle: cache+wrapper validation ---------------------------------------------------
       - name: Setup Gradle (cache + wrapper validation)
         uses: gradle/actions/setup-gradle@v4.4.3
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # --- Toolchain overrides (Gradle wrapper + AGP/Kotlin sanitizer) ------------------------
       - name: Toolchain override – Gradle wrapper (bundle != project)
         if: ${{ steps.plan.outputs.bundle != 'project' && steps.plan.outputs.gradle != '' }}
         shell: bash
@@ -208,7 +199,6 @@ jobs:
           sed -i -E "s#distributionUrl=.*#distributionUrl=https://services.gradle.org/distributions/gradle-${V}-bin.zip#g" gradle/wrapper/gradle-wrapper.properties
           echo "Gradle Wrapper patched → ${V}"
           if [[ "${V}" == 9.* ]]; then
-            # Guard: Gradle 9 requires AGP >= 8.13 or AGP 9 preview
             AGP="$(grep -RhoE 'com\.android\.tools\.build:gradle:([0-9]+\.[0-9]+(\.[0-9]+)?)' -n --include=*.gradle* --exclude-dir=**/build | head -1 | sed -E 's/.*:([0-9.]+).*/\1/' || true)"
             if [[ -z "$AGP" ]]; then
               AGP="$(grep -RhoE 'id\(["'\''"]com\.android\.(?:application|library|test|dynamic-feature)["'\''"]\)\s+version\s+["'\''"]([^"'\''"]+)["'\''"]' -n --include=*.gradle*.kts --exclude-dir=**/build | head -1 | sed -E 's/.*version\s+["'\''"]([^"'\''"]+)["'\''"].*/\1/' || true)"
@@ -218,12 +208,12 @@ jobs:
             fi
             vergte() { [ "$1" = "$2" ] || [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n1)" = "$1" ]; }
             if [[ -n "$AGP" ]] && ! vergte "$AGP" "8.13.0"; then
-              echo "::error::Gradle ${V} erfordert AGP >= 8.13 oder AGP 9 Preview. Setze 'config_json' mit {"agp":"8.13.0"} (oder höher)."
+              echo "::error::Gradle ${V} erfordert AGP >= 8.13 oder AGP 9 Preview. Setze 'config_json' mit {\"agp\":\"8.13.0\"}."
               exit 2
             fi
           fi
 
-      - name: Sanitizer & safe overrides (AGP/Kotlin + fix \g<1>/\g<2> artifacts)
+      - name: Sanitizer & safe overrides (AGP/Kotlin)
         shell: bash
         env:
           AGP_NEW: ${{ steps.plan.outputs.agp }}
@@ -234,43 +224,26 @@ jobs:
           import re, pathlib, os
           agp = (os.environ.get("AGP_NEW") or "").strip()
           kt  = (os.environ.get("KOTLIN_NEW") or "").strip()
-          # Collect candidate files (excluding build dirs)
-          files = [p for p in pathlib.Path(".").rglob("*") 
-                   if p.is_file() and "build" not in p.parts and (
-                      p.suffix in (".gradle",".kts",".toml") or p.name.endswith(".gradle.kts")
-                    )]
+          files = [p for p in pathlib.Path(".").rglob("*") if p.is_file() and "build" not in p.parts and (p.suffix in (".gradle",".kts",".toml") or p.name.endswith(".gradle.kts"))]
           for p in files:
             try:
               s = p.read_text(encoding="utf-8", errors="ignore")
             except Exception:
               continue
             orig = s
-            # 1) Repair stray \g<1>/\g<2> artifacts into Kotlin-style $1/$2
             s = s.replace(r"\g<1>", "$1").replace(r"\g<2>", "$2")
-            # 2) AGP overrides
             if agp:
-              # a) dependency notation com.android.tools.build:gradle:X.Y[.Z]
-              s = re.sub(r"(com\.android\.tools\.build:gradle:)\d+\.\d+(?:\.\d+)?",
-                         lambda m: f"{m.group(1)}{agp}", s)
-              # b) plugins { id("com.android.application") version "X" } in Kotlin DSL
-              s = re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+\")([^"]+)(\")',
-                         lambda m: f'{m.group(1)}{agp}{m.group(3)}', s)
-              # c) libs.versions.toml: agp = "X"
-              s = re.sub(r'(?m)^(agp\s*=\s*\")\d+\.\d+(?:\.\d+)?(\")',
-                         lambda m: f'{m.group(1)}{agp}{m.group(2)}', s)
-            # 3) Kotlin overrides
+              s = re.sub(r"(com\.android\.tools\.build:gradle:)\d+\.\d+(?:\.\d+)?", lambda m: f"{m.group(1)}{agp}", s)
+              s = re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+\")([^"]+)(\")', lambda m: f'{m.group(1)}{agp}{m.group(3)}', s)
+              s = re.sub(r'(?m)^(agp\s*=\s*\")\d+\.\d+(?:\.\d+)?(\")', lambda m: f'{m.group(1)}{agp}{m.group(2)}', s)
             if kt:
-              s = re.sub(r'(org\.jetbrains\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)\d+\.\d+(?:\.\d+)?',
-                         lambda m: f"{m.group(1)}{kt}", s)
-              s = re.sub(r'(id\(["\']org\.jetbrains\.kotlin\.(?:android|jvm|multiplatform|plugin\.serialization)["\']\)\s+version\s+\")([^"]+)(\")',
-                         lambda m: f'{m.group(1)}{kt}{m.group(3)}', s)
-              s = re.sub(r'(?m)^(kotlin\s*=\s*\")\d+\.\d+(?:\.\d+)?(\")',
-                         lambda m: f'{m.group(1)}{kt}{m.group(2)}', s)
+              s = re.sub(r'(org\.jetbrains\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)\d+\.\d+(?:\.\d+)?', lambda m: f"{m.group(1)}{kt}", s)
+              s = re.sub(r'(id\(["\']org\.jetbrains\.kotlin\.(?:android|jvm|multiplatform|plugin\.serialization)["\']\)\s+version\s+\")([^"]+)(\")', lambda m: f'{m.group(1)}{kt}{m.group(3)}', s)
+              s = re.sub(r'(?m)^(kotlin\s*=\s*\")\d+\.\d+(?:\.\d+)?(\")', lambda m: f'{m.group(1)}{kt}{m.group(2)}', s)
             if s != orig:
               p.write_text(s, encoding="utf-8")
           PY
 
-      # --- Problem matcher (optional) ----------------------------------------------------------
       - name: Problem-Matcher
         continue-on-error: true
         shell: bash
@@ -279,7 +252,6 @@ jobs:
             echo "::add-matcher::.github/gradle-problem-matcher.json"
           fi
 
-      # --- Helper script ----------------------------------------------------------------------
       - name: Helper – run-if-task-exists
         shell: bash
         run: |
@@ -297,7 +269,6 @@ jobs:
           SH
           chmod +x run-if-task-exists.sh
 
-      # --- Checks -----------------------------------------------------------------------------
       - name: Detekt
         if: ${{ steps.plan.outputs.detekt == 'true' }}
         run: ./run-if-task-exists.sh detekt
@@ -328,7 +299,6 @@ jobs:
         if: ${{ steps.plan.outputs.api_check == 'true' }}
         run: ./run-if-task-exists.sh checkApi
 
-      # --- Reviewdog annotations (optional, non-blocking) ------------------------------------
       - name: Setup reviewdog CLI
         if: ${{ steps.plan.outputs.pr_annotations == 'true' }}
         uses: reviewdog/action-setup@v1
@@ -344,13 +314,11 @@ jobs:
           rd() { reviewdog -reporter=github-check -fail-on-error=false -level=warning "$@"; }
           shopt -s nullglob globstar
 
-          # ktlint (checkstyle)
           for f in **/build/reports/ktlint/**/ktlint-checkstyle-report.xml **/build/reports/ktlint-checkstyle-report.xml; do
             echo "Annotate ktlint: $f"
             rd -name="ktlint" -f=checkstyle -tee < "$f"
           done
 
-          # detekt (prefer SARIF; fallback to checkstyle-like xml if present)
           for f in **/build/reports/detekt/*.sarif **/build/reports/detekt.sarif; do
             echo "Annotate detekt (SARIF): $f"
             rd -name="detekt" -f=sarif -tee < "$f"
@@ -360,13 +328,11 @@ jobs:
             rd -name="detekt" -f=checkstyle -tee < "$f"
           done
 
-          # Android Lint
           for f in **/build/reports/lint/lint-results*.xml **/build/reports/lint-results*.xml; do
             echo "Annotate Android Lint: $f"
             rd -name="android-lint" -f=android-lint -tee < "$f"
           done
 
-      # --- Artifacts --------------------------------------------------------------------------
       - name: Upload quality artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -378,7 +344,6 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      # --- Summary ----------------------------------------------------------------------------
       - name: Build Summary
         if: always()
         shell: bash
