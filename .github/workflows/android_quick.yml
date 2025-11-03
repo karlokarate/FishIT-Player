@@ -99,7 +99,7 @@ jobs:
           restore-keys: |
             android-sdk-${{ runner.os }}-
 
-      # ---------- Install SDK + accept licenses (fixed) ----------
+      # ---------- Install SDK + accept licenses (robust) ----------
       - name: Install Android cmdline-tools
         run: |
           set -euo pipefail
@@ -190,6 +190,29 @@ jobs:
           echo "USE_SPLITS=${USE_SPLITS}" >> $GITHUB_ENV
           echo "UNIVERSAL_APK=${UNIVERSAL_APK}" >> $GITHUB_ENV
 
+      # ---------- Sanitize parts for cache keys ----------
+      - name: Sanitize cache key parts
+        shell: bash
+        run: |
+          set -euo pipefail
+          SAFE_ABI="${ABI_FILTERS//,/+}"
+          SAFE_REF="${{ inputs.td_ref }}"
+          SAFE_REF="${SAFE_REF//,/+}"
+          echo "ABI_KEY=$SAFE_ABI" >> $GITHUB_ENV
+          echo "REF_KEY=$SAFE_REF" >> $GITHUB_ENV
+
+      # ---------- Include script hash to invalidate cache when script changes ----------
+      - name: Compute script hash
+        id: hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f scripts/build_tdlib_android.sh ]; then
+            echo "SCRIPT_SHA=$(sha256sum scripts/build_tdlib_android.sh | cut -d' ' -f1)" >> $GITHUB_ENV
+          else
+            echo "SCRIPT_SHA=noscript" >> $GITHUB_ENV
+          fi
+
       # ---------- Cache TDLib artifacts ----------
       - name: Cache TDLib artifacts
         id: cache-tdlib
@@ -206,11 +229,13 @@ jobs:
             .third_party/boringssl
             .third_party/openssl-config
           key: >
-            tdlib-${{ runner.os }}-ndk${{ inputs.ndk_version }}-cmake${{ inputs.cmake_version }}-abi${{ env.ABI_FILTERS }}-type${{ inputs.build_type }}-api${{ inputs.api_level }}-ref${{ inputs.td_ref }}
+            tdlib-${{ runner.os }}-ndk${{ inputs.ndk_version }}-cmake${{ inputs.cmake_version }}
+            -abi${{ env.ABI_KEY }}-type${{ inputs.build_type }}-api${{ inputs.api_level }}
+            -ref${{ env.REF_KEY }}-script${{ env.SCRIPT_SHA }}
           restore-keys: |
             tdlib-${{ runner.os }}-ndk${{ inputs.ndk_version }}-cmake${{ inputs.cmake_version }}-
 
-      # ---------- Build TDLib ----------
+      # ---------- Build TDLib (only if cache miss) ----------
       - name: Build TDLib (JNI + Java bindings)
         if: steps.cache-tdlib.outputs.cache-hit != 'true'
         env:
