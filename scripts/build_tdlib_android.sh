@@ -1,366 +1,245 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
-# TDLib Android Builder — JNI + Java Bindings
-# - Builds JNI (libtdjni.so) for arm64-v8a and optionally armeabi-v7a
-# - Generates Java bindings (TdApi.java, Client.java) via TDLib example/java (td_generate_java_api)
-# - Embeds commit/tag into tdlib_android_commit()
-# - Writes libtd/TDLIB_VERSION.txt and libtd/.tdlib_meta
+# TDLib Android Builder (WSL2/GitHub Actions/Local)
+# - Defaults to building TDLib from 'master' if no ref (tag/branch/commit) is provided
+# - Generates Java bindings (TdApi.java, Client.java, Log.java) via example/java -> target td_generate_java_api
+# - Builds libtdjni.so for arm64-v8a and optionally armeabi-v7a
+# - Copies outputs into ./libtd/src/main/jniLibs/<ABI>/ and ./libtd/src/main/java/org/drinkless/tdlib/
+# - Writes ./libtd/TDLIB_VERSION.txt and ./libtd/.tdlib_meta (JSON) for caching/diagnostics
 #
-# Defaults:
-#   * TDLib version: BRANCH HEAD (origin/master), unless TD_REF/--ref is set
-#   * ANDROID API: 24  (override with API_LEVEL)
-#   * Generator: Ninja if present; ccache if present
-#   * Crypto: BoringSSL built per-ABI; provided via OpenSSL CMake shim
+# Usage examples:
+#   bash scripts/build_tdlib_android.sh                 # build latest (master) for arm64-v8a
+#   bash scripts/build_tdlib_android.sh --ref v1.8.56   # build a specific tag
+#   bash scripts/build_tdlib_android.sh --abis arm64-v8a,armeabi-v7a --api-level 24 --build-type MinSizeRel
 #
-# Usage:
-#   scripts/build_tdlib_android.sh [--only-arm64|--only-v7a|--skip-v7a]
-#                                  [--ref <tag|commit|branch>]
-#                                  [--api-level=<21|24|...>]
-#                                  [--minsize|--release]
-#                                  [--no-ccache] [--no-ninja]
+# Requirements (auto-detected where possible):
+#   - Git, CMake (>=3.18), Ninja (optional), gperf (host), JDK 17, Python3, pkg-config
+#   - Android NDK (e.g., 26.3+) and ANDROID_NDK_HOME or ANDROID_NDK_ROOT set (or provide via --ndk)
+#   - On Ubuntu runners we attempt to install missing host deps (sudo apt-get) if available.
 #
-# Environment (CI-friendly):
-#   ANDROID_NDK_HOME / ANDROID_NDK_ROOT / ANDROID_HOME / ANDROID_SDK_ROOT
-#   TD_REF / TD_TAG / TD_COMMIT     # explicit ref (tag/commit/branch)
-#   BORING_REF / BORING_TAG / BORING_COMMIT
-#   API_LEVEL                       # default 24
-#   OFFLINE=1                       # disable network fetches
-#   LOCKFILE=.third_party/versions.lock   # optional key=value pins (TD_REF=..., BORING_REF=...)
-set -Eeuo pipefail
-umask 022
+set -euo pipefail
 
-# ---------- logging & helpers ----------
-LOG_TS() { date -u +'%Y-%m-%dT%H:%M:%SZ'; }
-note()  { printf '[%s] \033[1;34mNOTE\033[0m: %s\n'  "$(LOG_TS)" "$*" >&2; }
-warn()  { printf '[%s] \033[1;33mWARN\033[0m: %s\n'  "$(LOG_TS)" "$*" >&2; }
-die()   { printf '[%s] \033[1;31mERROR\033[0m: %s\n' "$(LOG_TS)" "$*" >&2; exit 1; }
-HAS()   { command -v "$1" >/dev/null 2>&1; }
-NPROC() { HAS nproc && nproc || (HAS sysctl && sysctl -n hw.ncpu) || echo 4; }
+#---------------------------
+# Defaults / Configuration
+#---------------------------
+TD_REMOTE="${TD_REMOTE:-https://github.com/tdlib/td.git}"
+TD_REF=""  # set via --ref; empty means "master"
+ANDROID_ABIS="arm64-v8a"  # comma separated; add armeabi-v7a if desired
+ANDROID_API="${ANDROID_API:-24}"
+BUILD_TYPE="${BUILD_TYPE:-MinSizeRel}"  # MinSizeRel or Release recommended
+NDK_PATH="${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}"
+USE_NINJA="${USE_NINJA:-1}"
+CLEAN="${CLEAN:-0}"
 
-trap 'ec=$?; [[ $ec -ne 0 ]] && warn "Build failed with exit code $ec"; exit $ec' ERR
+# Project-relative dirs
+WORK_ROOT="$(pwd)"
+THIRD_PARTY_DIR="${WORK_ROOT}/.third_party"
+TD_DIR="${THIRD_PARTY_DIR}/td"
+OUT_ROOT="${WORK_ROOT}/libtd"
+JAVA_DST="${OUT_ROOT}/src/main/java/org/drinkless/tdlib"
+JNI_ROOT="${OUT_ROOT}/src/main/jniLibs"
+META_TXT="${OUT_ROOT}/TDLIB_VERSION.txt"
+META_JSON="${OUT_ROOT}/.tdlib_meta"
 
-# ---------- layout ----------
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-THIRD="$REPO_DIR/.third_party"; mkdir -p "$THIRD"
-TD_DIR="$THIRD/td"
-BORING_DIR="$THIRD/boringssl"
-OPENSSL_CMAKE_DIR="$THIRD/openssl-config"
-OUT_DIR64="$REPO_DIR/libtd/src/main/jniLibs/arm64-v8a"
-OUT_DIR32="$REPO_DIR/libtd/src/main/jniLibs/armeabi-v7a"
-JAVA_OUT_DIR="$REPO_DIR/libtd/src/main/java/org/drinkless/tdlib"
-META_FILE="$REPO_DIR/libtd/TDLIB_VERSION.txt"
-META_BLOB="$REPO_DIR/libtd/.tdlib_meta"
+#---------------------------
+# Helpers
+#---------------------------
+msg() { echo -e "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
+die() { echo "ERROR: $*" >&2; exit 1; }
 
-# ---------- defaults & args ----------
-BUILD_ARM64=1; BUILD_V7A=1
-API_LEVEL="${API_LEVEL:-24}"
-BUILD_TYPE="MinSizeRel"
-USE_CCACHE=1; USE_NINJA=1
-OFFLINE="${OFFLINE:-0}"
-LOCKFILE_DEFAULT="$THIRD/versions.lock"; LOCKFILE="${LOCKFILE:-$LOCKFILE_DEFAULT}"
+have() { command -v "$1" >/dev/null 2>&1; }
 
-TD_REF_ENV="${TD_REF:-${TD_TAG:-${TD_COMMIT:-}}}"
-BORING_REF_ENV="${BORING_REF:-${BORING_TAG:-${BORING_COMMIT:-}}}"
-TD_REF_ARG=""
+# Parse args
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --only-arm64) BUILD_V7A=0 ;;
-    --only-v7a|--skip-v7a) BUILD_ARM64=0 ;;
-    --ref|--tag|--commit) shift; TD_REF_ARG="${1:-}" ;;
-    --api-level=*) API_LEVEL="${1#*=}" ;;
-    --release) BUILD_TYPE="Release" ;;
-    --minsize) BUILD_TYPE="MinSizeRel" ;;
-    --no-ccache) USE_CCACHE=0 ;;
-    --no-ninja)  USE_NINJA=0 ;;
-    -h|--help) sed -n '1,180p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    *) warn "Unbekanntes Argument ignoriert: $1" ;;
-  esac; shift || true
+    --ref)           TD_REF="${2:-}"; shift 2 ;;
+    --abis)          ANDROID_ABIS="${2:-}"; shift 2 ;;
+    --api-level)     ANDROID_API="${2:-}"; shift 2 ;;
+    --build-type)    BUILD_TYPE="${2:-}"; shift 2 ;;
+    --ndk)           NDK_PATH="${2:-}"; shift 2 ;;
+    --clean)         CLEAN=1; shift ;;
+    --help|-h)
+      cat <<-USAGE
+      Usage: $0 [--ref <tag|branch|commit>] [--abis <comma list>] [--api-level <N>] [--build-type <MinSizeRel|Release>]
+                   [--ndk </path/to/ndk>] [--clean]
+      USAGE
+      exit 0;;
+    *) die "Unknown argument: $1" ;;
+  esac
 done
 
-# Pins aus Lockfile (optional)
-if [[ -z "$TD_REF_ARG" && -z "$TD_REF_ENV" && -f "$LOCKFILE" ]]; then
-  note "Lade Pins aus $LOCKFILE"
-  # shellcheck disable=SC1090
-  . "$LOCKFILE" || true
-  TD_REF_ENV="${TD_REF_ENV:-${TD_REF:-}}"
-  BORING_REF_ENV="${BORING_REF_ENV:-${BORING_REF:-}}"
+# Default ref -> master (explicit as requested)
+if [[ -z "${TD_REF}" ]]; then
+  TD_REF="master"
 fi
-TD_SELECTED_REF="${TD_REF_ARG:-$TD_REF_ENV}"
 
-# ---------- tools ----------
-for t in git cmake awk sed; do HAS "$t" || die "Benötigtes Tool fehlt: $t"; done
-SHA256(){
-  if HAS sha256sum; then sha256sum "$1"|awk '{print $1}'
-  elif HAS shasum; then shasum -a 256 "$1"|awk '{print $1}'
-  else die "sha256sum/shasum fehlt"
+# Check NDK
+if [[ -z "${NDK_PATH}" ]]; then
+  # Try common GitHub Actions path
+  if [[ -d "${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}/ndk" ]]; then
+    NDK_PATH="$(ls -d ${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}/ndk/* | sort -V | tail -n1)"
   fi
-}
-
-CMAKE_CCACHE=()
-if (( USE_CCACHE==1 )) && HAS ccache; then
-  mkdir -p "${CCACHE_DIR:-$HOME/.cache/ccache}"
-  CMAKE_CCACHE=(-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache)
-  note "ccache aktiviert"
 fi
-GEN_ARGS=(); (( USE_NINJA==1 )) && HAS ninja && GEN_ARGS=(-G Ninja) && note "Ninja aktiviert"
+[[ -d "${NDK_PATH:-}" ]] || die "Android NDK not found. Set ANDROID_NDK_HOME/ANDROID_NDK_ROOT or pass --ndk."
 
-# ---------- NDK detection ----------
-detect_ndk(){
-  local ndk="${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}"
-  if [[ -z "$ndk" ]]; then
-    local sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
-    if [[ -n "$sdk" && -d "$sdk/ndk" ]]; then
-      local newest=""; while IFS= read -r -d '' d; do newest="$d"; done < <(find "$sdk/ndk" -mindepth 1 -maxdepth 1 -type d -print0 | sort -zV)
-      ndk="$newest"
-    fi
-  fi
-  [[ -n "$ndk" ]] || die "ANDROID_NDK_HOME/ROOT oder ANDROID_(HOME|SDK_ROOT)/ndk nicht gesetzt"
-  [[ -f "$ndk/build/cmake/android.toolchain.cmake" ]] || die "NDK toolchain fehlt: $ndk"
-  echo "$ndk"
-}
-NDK="$(detect_ndk)"; note "NDK: $NDK"; export ANDROID_NDK_HOME="$NDK"
+# Toolchain file
+TOOLCHAIN_FILE="${NDK_PATH}/build/cmake/android.toolchain.cmake"
+[[ -f "${TOOLCHAIN_FILE}" ]] || die "Toolchain file not found at ${TOOLCHAIN_FILE}"
 
-# ---------- TDLib fetch/checkout ----------
-if [[ ! -d "$TD_DIR/.git" ]]; then
-  [[ "$OFFLINE" == "1" ]] && die "OFFLINE=1 aber TDLib fehlt unter $TD_DIR"
-  note "Cloning TDLib…"
-  git clone --depth 1 https://github.com/tdlib/td.git "$TD_DIR"
-elif [[ "$OFFLINE" != "1" ]]; then
-  ( cd "$TD_DIR" && git fetch --tags --force --prune origin >/dev/null 2>&1 || true )
-  ( cd "$TD_DIR" && git fetch --force --prune origin >/dev/null 2>&1 || true )
+# Try to install host deps if possible (Ubuntu/GitHub runner)
+if have sudo && have apt-get; then
+  msg "::group::Installing host dependencies (if missing)"
+  sudo apt-get update -y || true
+  sudo apt-get install -y --no-install-recommends         git cmake ninja-build gperf pkg-config python3 python3-distutils         zlib1g-dev libssl-dev ca-certificates unzip >/dev/null || true
+  msg "::endgroup::"
 fi
 
-# Checkout-Strategie:
-# - expliziter Ref → genau der (Tag/Commit/Branch)
-# - sonst: HEAD von origin/master
-SOURCE_BRANCH=""
-if [[ -n "$TD_SELECTED_REF" ]]; then
-  note "TD_REF gesetzt: $TD_SELECTED_REF"
-  [[ "$OFFLINE" == "1" ]] || (cd "$TD_DIR" && git fetch --depth 1 origin "$TD_SELECTED_REF") || true
-  (cd "$TD_DIR" && git rev-parse --verify -q "$TD_SELECTED_REF" >/dev/null) \
-    || (cd "$TD_DIR" && git rev-parse --verify -q "origin/$TD_SELECTED_REF" >/dev/null) \
-    || die "TDLib Ref '$TD_SELECTED_REF' nicht vorhanden"
-  (cd "$TD_DIR" && git checkout --detach "$TD_SELECTED_REF" 2>/dev/null || git checkout --detach "origin/$TD_SELECTED_REF")
+have git    || die "git is required"
+have cmake  || die "cmake is required"
+have gperf  || die "gperf (host) is required"
+have python3 || die "python3 is required"
+
+# Prefer Ninja generator if requested
+CMAKE_GENERATOR=()
+if [[ "${USE_NINJA}" == "1" ]] && have ninja; then
+  CMAKE_GENERATOR+=("-G" "Ninja")
+fi
+
+# Enable ccache if present
+if have ccache; then
+  export CC="ccache clang"
+  export CXX="ccache clang++"
+  export CMAKE_C_COMPILER_LAUNCHER=ccache
+  export CMAKE_CXX_COMPILER_LAUNCHER=ccache
+  msg "::notice::ccache enabled"
+fi
+
+# Ensure output dirs
+mkdir -p "${THIRD_PARTY_DIR}" "${JNI_ROOT}" "${JAVA_DST}"
+
+# Clone / update TDLib
+if [[ ! -d "${TD_DIR}/.git" ]]; then
+  msg "Cloning TDLib: ${TD_REMOTE} -> ${TD_DIR}"
+  git clone --filter=blob:none --recurse-submodules "${TD_REMOTE}" "${TD_DIR}"
 else
-  note "Kein TD_REF angegeben — baue origin/master"
-  [[ "$OFFLINE" == "1" ]] || (cd "$TD_DIR" && git fetch --depth 1 origin master)
-  (cd "$TD_DIR" && git checkout --detach FETCH_HEAD 2>/dev/null || git checkout --detach "origin/master")
-  SOURCE_BRANCH="master"
+  msg "Updating TDLib repo"
+  (cd "${TD_DIR}" && git fetch --tags --prune)
 fi
 
-TD_COMMIT_HASH="$(cd "$TD_DIR" && git rev-parse --short=12 HEAD)"
-TD_TAG_EXACT="$(cd "$TD_DIR" && (git describe --tags --exact-match 2>/dev/null || true))"
-TD_TAG_NEAREST="$(cd "$TD_DIR" && (git describe --tags --abbrev=0 2>/dev/null || true))"
-BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-note "TDLib @ ${TD_COMMIT_HASH} ${TD_TAG_EXACT:+(exact $TD_TAG_EXACT)}"
+pushd "${TD_DIR}" >/dev/null
+  msg "Checking out ref: ${TD_REF}"
+  git checkout -f "${TD_REF}"
+  git submodule update --init --recursive
+  TD_COMMIT="$(git rev-parse HEAD)"
+  TD_DESCRIBE="$(git describe --always --long --tags || echo unknown)"
+popd >/dev/null
 
-# ---------- Generate Java API ----------
-HOST_BUILD_DIR="$TD_DIR/build-host"; rm -rf "$HOST_BUILD_DIR"; mkdir -p "$HOST_BUILD_DIR"
-cmake -S "$TD_DIR" -B "$HOST_BUILD_DIR" -DCMAKE_BUILD_TYPE=Release "${GEN_ARGS[@]}"
-cmake --build "$HOST_BUILD_DIR" -j"$(NPROC)"
-cmake --install "$HOST_BUILD_DIR" --prefix "$HOST_BUILD_DIR/install" || true
+msg "Build configuration:"
+echo "  Remote   : ${TD_REMOTE}"
+echo "  REF      : ${TD_REF}"
+echo "  Commit   : ${TD_COMMIT}"
+echo "  Describe : ${TD_DESCRIBE}"
+echo "  NDK      : ${NDK_PATH}"
+echo "  API      : ${ANDROID_API}"
+echo "  ABIs     : ${ANDROID_ABIS}"
+echo "  Type     : ${BUILD_TYPE}"
 
-JAVA_GEN_DIR="$TD_DIR/build-java-gen"; rm -rf "$JAVA_GEN_DIR"; mkdir -p "$JAVA_GEN_DIR"
-cmake -S "$TD_DIR/example/java" -B "$JAVA_GEN_DIR" \
-  -DTd_DIR="$HOST_BUILD_DIR/install" \
-  -DCMAKE_PREFIX_PATH="$HOST_BUILD_DIR/install" \
-  -DCMAKE_BUILD_TYPE=Release "${GEN_ARGS[@]}"
-cmake --build "$JAVA_GEN_DIR" --target td_generate_java_api -j"$(NPROC)"
-
-# ---------- BoringSSL ----------
-if [[ ! -d "$BORING_DIR/.git" ]]; then
-  [[ "$OFFLINE" == "1" ]] && die "OFFLINE=1 aber BoringSSL fehlt unter $BORING_DIR"
-  git clone --depth 1 https://boringssl.googlesource.com/boringssl "$BORING_DIR"
-elif [[ "$OFFLINE" != "1" ]]; then
-  ( cd "$BORING_DIR" && git fetch --force --prune origin >/dev/null 2>&1 || true )
-fi
-if [[ -n "$BORING_REF_ENV" ]]; then
-  [[ "$OFFLINE" == "1" ]] || (cd "$BORING_DIR" && git fetch --depth 1 origin "$BORING_REF_ENV") || true
-  (cd "$BORING_DIR" && git rev-parse --verify -q "$BORING_REF_ENV" >/dev/null) \
-    || (cd "$BORING_DIR" && git rev-parse --verify -q "origin/$BORING_REF_ENV" >/dev/null) \
-    || die "BoringSSL Ref '$BORING_REF_ENV' nicht vorhanden"
-  (cd "$BORING_DIR" && git checkout --detach "$BORING_REF_ENV" 2>/dev/null || git checkout --detach "origin/$BORING_REF_ENV")
+# Optional cleanup
+if [[ "${CLEAN}" == "1" ]]; then
+  msg "Cleaning previous TDLib builds"
+  rm -rf "${TD_DIR}/build-host" "${TD_DIR}/build-java-gen" "${TD_DIR}/build-android"* || true
 fi
 
-build_boringssl () {
-  local abi="$1" out="$2" N="${3:-$(NPROC)}"
-  mkdir -p "$out"; pushd "$out" >/dev/null
-  local GEN=(); HAS ninja && GEN=(-G Ninja)
-  cmake -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
-        -DANDROID_ABI="$abi" -DANDROID_PLATFORM="android-${API_LEVEL}" \
-        -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
-        "${GEN[@]}" "$BORING_DIR"
-  cmake --build . --target ssl crypto -j"$N"
+#------------------------------------------------------------------
+# 1) Generate Java API (td_generate_java_api) in example/java
+#------------------------------------------------------------------
+msg "::group::Generating Java API (td_generate_java_api)"
+JAVA_GEN_BUILD_DIR="${TD_DIR}/build-java-gen"
+mkdir -p "${JAVA_GEN_BUILD_DIR}"
+pushd "${JAVA_GEN_BUILD_DIR}" >/dev/null
+  cmake "${CMAKE_GENERATOR[@]}" -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_JNI=ON "${TD_DIR}/example/java"
+  cmake --build . --target td_generate_java_api -j"$(getconf _NPROCESSORS_ONLN)"
+popd >/dev/null
+
+# Locate generated Java files (TdApi.java, Client.java, Log.java)
+# TDLib typically places them in example/java/td/src/main/java/org/drinkless/tdlib/
+JAVA_SOURCE_BASE="${TD_DIR}/example/java/td/src/main/java/org/drinkless/tdlib"
+if [[ -f "${JAVA_SOURCE_BASE}/TdApi.java" && -f "${JAVA_SOURCE_BASE}/Client.java" && -f "${JAVA_SOURCE_BASE}/Log.java" ]]; then
+  msg "Copying generated Java bindings to ${JAVA_DST}"
+  mkdir -p "${JAVA_DST}"
+  cp -f "${JAVA_SOURCE_BASE}/TdApi.java" "${JAVA_SOURCE_BASE}/Client.java" "${JAVA_SOURCE_BASE}/Log.java" "${JAVA_DST}/"
+else
+  # Fallback: search for TdApi.java anywhere under example/java
+  FOUND_TDAPI="$(grep -Rsl --include='TdApi.java' '^package org\.drinkless\.tdlib;' "${TD_DIR}/example/java" || true)"
+  [[ -n "${FOUND_TDAPI}" ]] || die "Failed to locate generated TdApi.java. The td_generate_java_api step did not produce expected outputs."
+  msg "Found TdApi.java at: ${FOUND_TDAPI} (using fallback copy)"
+  mkdir -p "${JAVA_DST}"
+  cp -f "${FOUND_TDAPI}" "${JAVA_DST}/"
+  # Try to also copy Client.java/Log.java from the same tree if present
+  CLIENT_CANDIDATE="$(dirname "${FOUND_TDAPI}")/Client.java"
+  LOG_CANDIDATE="$(dirname "${FOUND_TDAPI}")/Log.java"
+  [[ -f "${CLIENT_CANDIDATE}" ]] && cp -f "${CLIENT_CANDIDATE}" "${JAVA_DST}/" || true
+  [[ -f "${LOG_CANDIDATE}" ]] && cp -f "${LOG_CANDIDATE}" "${JAVA_DST}/" || true
+fi
+msg "::endgroup::"
+
+#------------------------------------------------------------------
+# 2) Build libtdjni.so for requested ABIs
+#------------------------------------------------------------------
+IFS=',' read -r -a ABI_LIST <<< "${ANDROID_ABIS}"
+for ABI in "${ABI_LIST[@]}"; do
+  ABI_TRIM="$(echo "${ABI}" | xargs)"
+  [[ -n "${ABI_TRIM}" ]] || continue
+  BUILD_DIR="${TD_DIR}/build-android-${ABI_TRIM}"
+  msg "::group::Building libtdjni.so for ${ABI_TRIM}"
+  mkdir -p "${BUILD_DIR}"
+  pushd "${BUILD_DIR}" >/dev/null
+    cmake "${CMAKE_GENERATOR[@]}"           -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"           -DCMAKE_INSTALL_PREFIX="${BUILD_DIR}/install"           -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}"           -DANDROID_ABI="${ABI_TRIM}"           -DANDROID_PLATFORM="android-${ANDROID_API}"           -DANDROID_STL=c++_shared           -DTD_ENABLE_JNI=ON           -DOPENSSL_USE_STATIC_LIBS=ON           "${TD_DIR}"
+    cmake --build . -j"$(getconf _NPROCESSORS_ONLN)"
   popd >/dev/null
-}
 
-emit_openssl_config_for_boringssl () {
-  local dir="$1" inc="$2" ssl="$3" crypto="$4"
-  mkdir -p "$dir"
-  cat > "$dir/OpenSSLConfig.cmake" <<EOF
-# Auto-generated adapter to use BoringSSL with projects calling find_package(OpenSSL)
-set(OPENSSL_FOUND TRUE)
-set(OPENSSL_INCLUDE_DIR "${inc}")
-set(OPENSSL_CRYPTO_LIBRARY "${crypto}")
-set(OPENSSL_SSL_LIBRARY "${ssl}")
-if(NOT TARGET OpenSSL::Crypto)
-  add_library(OpenSSL::Crypto STATIC IMPORTED)
-  set_target_properties(OpenSSL::Crypto PROPERTIES IMPORTED_LOCATION "${crypto}")
-  target_include_directories(OpenSSL::Crypto INTERFACE "${inc}")
-endif()
-if(NOT TARGET OpenSSL::SSL)
-  add_library(OpenSSL::SSL STATIC IMPORTED)
-  set_target_properties(OpenSSL::SSL PROPERTIES IMPORTED_LOCATION "${ssl}")
-  target_link_libraries(OpenSSL::SSL INTERFACE OpenSSL::Crypto)
-  target_include_directories(OpenSSL::SSL INTERFACE "${inc}")
-endif()
-set(OPENSSL_VERSION "3.0.0")
-EOF
-  cat > "$dir/OpenSSLConfigVersion.cmake" <<'EOF'
-set(PACKAGE_VERSION "3.0.0")
-set(PACKAGE_VERSION_COMPATIBLE TRUE)
-EOF
-}
+  # Find libtdjni.so and copy to project jniLibs
+  JNI_LIB_SRC="$(find "${BUILD_DIR}" -name 'libtdjni.so' -type f | head -n1 || true)"
+  [[ -f "${JNI_LIB_SRC}" ]] || die "libtdjni.so not found for ABI ${ABI_TRIM}"
+  DEST_DIR="${JNI_ROOT}/${ABI_TRIM}"
+  mkdir -p "${DEST_DIR}"
+  cp -f "${JNI_LIB_SRC}" "${DEST_DIR}/libtdjni.so"
+  msg "::notice::Copied ${ABI_TRIM}/libtdjni.so -> ${DEST_DIR}"
+  msg "::endgroup::"
+done
 
-find_strip () {
-  local STRIP_BIN=""
-  for host in linux-x86_64 darwin-x86_64 darwin-aarch64 windows-x86_64; do
-    local cand="$NDK/toolchains/llvm/prebuilt/$host/bin/llvm-strip"
-    [[ -x "$cand" ]] && { STRIP_BIN="$cand"; break; }
-  done
-  [[ -z "$STRIP_BIN" ]] && STRIP_BIN="$(command -v llvm-strip || true)"
-  [[ -z "$STRIP_BIN" ]] && STRIP_BIN="$(command -v strip || true)"
-  echo "$STRIP_BIN"
-}
-
-find_libcxx_shared () {
-  local abi="$1" triple=""
-  case "$abi" in
-    arm64-v8a)    triple="aarch64-linux-android" ;;
-    armeabi-v7a)  triple="arm-linux-androideabi" ;;
-    x86)          triple="i686-linux-android" ;;
-    x86_64)       triple="x86_64-linux-android" ;;
-    *) return 1 ;;
-  esac
-  local p1="$NDK/sources/cxx-stl/llvm-libc++/libs/$abi/libc++_shared.so"; [[ -f "$p1" ]] && { echo "$p1"; return 0; }
-  for host in linux-x86_64 darwin-x86_64 darwin-aarch64 windows-x86_64; do
-    for api in "$API_LEVEL" 34 33 31 30 29 28 26 24 21; do
-      local p2="$NDK/toolchains/llvm/prebuilt/$host/sysroot/usr/lib/$triple/$api/libc++_shared.so"
-      [[ -f "$p2" ]] && { echo "$p2"; return 0; }
-    done
-    local p3="$NDK/toolchains/llvm/prebuilt/$host/sysroot/usr/lib/$triple/libc++_shared.so"
-    [[ -f "$p3" ]] && { echo "$p3"; return 0; }
-  done
-  return 1
-}
-
-emit_wrapper_cmake () {
-  local path="$1"
-  cat > "$path" <<'EOF'
-cmake_minimum_required(VERSION 3.10)
-project(tdjni_wrap LANGUAGES C CXX)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-if (NOT DEFINED TD_DIR)
-  message(FATAL_ERROR "TD_DIR must be provided via -DTD_DIR=... pointing to TDLib source directory")
-endif()
-add_subdirectory(${TD_DIR} td EXCLUDE_FROM_ALL)
-add_library(tdjni SHARED "${TD_DIR}/example/java/td_jni.cpp" "tdlib_version_stub.cpp")
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-  target_compile_options(tdjni PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
-endif()
-target_link_libraries(tdjni PRIVATE Td::TdStatic OpenSSL::SSL OpenSSL::Crypto)
-if (ANDROID AND ANDROID_ABI STREQUAL "armeabi-v7a")
-  target_link_libraries(tdjni PRIVATE atomic)
-endif()
-target_compile_definitions(tdjni PRIVATE PACKAGE_NAME="org/drinkless/tdlib")
-EOF
-}
-
-emit_version_stub () {
-  local path="$1" commit="$2" exact_tag="$3"
-  cat > "$path" <<EOF
-// Generated — do not edit.
-extern "C" __attribute__((visibility("default"))) const char* tdlib_android_commit() {
-  return "$commit${exact_tag:+ ($exact_tag)}";
-}
-EOF
-}
-
-build_abi () {
-  local abi="$1" out_dir="$2" jni_build_dir="$TD_DIR/build-android-${abi}-jni"
-  local boring_out="$BORING_DIR/build-android-${abi}" N="${3:-$(NPROC)}"
-  build_boringssl "$abi" "$boring_out" "$N"
-  local SSL_A="$boring_out/ssl/libssl.a"; [[ -f "$SSL_A" ]] || SSL_A="$boring_out/libssl.a"
-  local CRYPTO_A="$boring_out/crypto/libcrypto.a"; [[ -f "$CRYPTO_A" ]] || CRYPTO_A="$boring_out/libcrypto.a"
-  [[ -f "$SSL_A" && -f "$CRYPTO_A" ]] || die "BoringSSL libs fehlen ($abi)"
-  rm -rf "$jni_build_dir"; mkdir -p "$jni_build_dir"
-  emit_wrapper_cmake "$jni_build_dir/CMakeLists.txt"
-  emit_version_stub  "$jni_build_dir/tdlib_version_stub.cpp" "$TD_COMMIT_HASH" "$TD_TAG_EXACT"
-  emit_openssl_config_for_boringssl "$OPENSSL_CMAKE_DIR" "$BORING_DIR/include" "$SSL_A" "$CRYPTO_A"
-  pushd "$jni_build_dir" >/dev/null
-  local CMAKE_FLAGS=(
-    -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake"
-    -DANDROID_ABI="$abi"
-    -DANDROID_PLATFORM="android-${API_LEVEL}"
-    -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
-    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
-    -DANDROID_STL=c++_shared
-    -DTD_ENABLE_JNI=ON
-    -DTD_ENABLE_LTO=ON
-    -DTD_DIR="$TD_DIR"
-    -DOPENSSL_USE_STATIC_LIBS=TRUE
-    -DCMAKE_PREFIX_PATH="$OPENSSL_CMAKE_DIR"
-  )
-  cmake "${GEN_ARGS[@]}" "${CMAKE_CCACHE[@]}" "${CMAKE_FLAGS[@]}" "$jni_build_dir"
-  cmake --build . --target tdjni -j"$(NPROC)"
-  local LIB_PATH=""
-  for cand in "libtdjni.so" "./lib/libtdjni.so" "./jni/libtdjni.so"; do
-    [[ -f "$cand" ]] && { LIB_PATH="$cand"; break; }
-  done
-  [[ -n "$LIB_PATH" ]] || die "libtdjni.so ($abi) nicht gefunden"
-  mkdir -p "$out_dir"; cp -f "$LIB_PATH" "$out_dir/"
-  local STRIP_BIN; STRIP_BIN="$(find_strip)"
-  [[ -n "$STRIP_BIN" && -x "$STRIP_BIN" ]] && "$STRIP_BIN" --strip-unneeded -x "$out_dir/libtdjni.so" || true
-  local LIBCXX
-  if LIBCXX="$(find_libcxx_shared "$abi")"; then cp -f "$LIBCXX" "$out_dir/"; else warn "libc++_shared.so nicht gefunden"; fi
-  popd >/dev/null
-}
-
-# ---------- build ----------
-(( BUILD_ARM64 == 1 )) && build_abi "arm64-v8a" "$OUT_DIR64"
-(( BUILD_V7A   == 1 )) && build_abi "armeabi-v7a" "$OUT_DIR32"
-
-# ---------- metadata ----------
-mkdir -p "$(dirname "$META_FILE")"
+#------------------------------------------------------------------
+# 3) Metadata (helpful for caching and visibility in CI)
+#------------------------------------------------------------------
+mkdir -p "${OUT_ROOT}"
 {
-  echo "tdlib_commit=$TD_COMMIT_HASH"
-  [[ -n "$TD_TAG_EXACT"   ]] && echo "tdlib_tag_exact=$TD_TAG_EXACT" || true
-  [[ -n "$TD_TAG_NEAREST" ]] && echo "tdlib_tag_nearest=$TD_TAG_NEAREST" || true
-  echo "source_branch=${SOURCE_BRANCH:-}"
-  echo "built_utc=$BUILD_TIME"
-} > "$META_FILE"
+  echo "TDLib Remote : ${TD_REMOTE}"
+  echo "TDLib Ref    : ${TD_REF}"
+  echo "TDLib Commit : ${TD_COMMIT}"
+  echo "TDLib Describe: ${TD_DESCRIBE}"
+  echo "NDK          : ${NDK_PATH}"
+  echo "API Level    : ${ANDROID_API}"
+  echo "ABIs         : ${ANDROID_ABIS}"
+  echo "Build Type   : ${BUILD_TYPE}"
+  echo "Timestamp UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+} > "${META_TXT}"
 
-SHA_ARM64=""; [[ -f "$OUT_DIR64/libtdjni.so" ]] && SHA_ARM64="$(SHA256 "$OUT_DIR64/libtdjni.so")"
-SHA_V7A="";   [[ -f "$OUT_DIR32/libtdjni.so" ]] && SHA_V7A="$(SHA256 "$OUT_DIR32/libtdjni.so")"
+cat > "${META_JSON}" <<EOF
 {
-  [[ -n "$TD_TAG_EXACT"   ]] && echo "REF=$TD_TAG_EXACT" || true
-  [[ -n "$TD_COMMIT_HASH" ]] && echo "COMMIT=$TD_COMMIT_HASH" || true
-  echo "SHA_ARM64=${SHA_ARM64}"
-  echo "SHA_V7A=${SHA_V7A}"
-  echo "NDK=${NDK}"
-  echo "BUILT_AT=$BUILD_TIME"
-  echo "CMAKE=$(cmake --version | head -1)"
-} > "$META_BLOB"
+  "remote": "${TD_REMOTE}",
+  "ref": "${TD_REF}",
+  "commit": "${TD_COMMIT}",
+  "describe": "${TD_DESCRIBE}",
+  "ndk": "${NDK_PATH}",
+  "api_level": "${ANDROID_API}",
+  "abis": "${ANDROID_ABIS}",
+  "build_type": "${BUILD_TYPE}",
+  "timestamp_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+EOF
 
-# Optional: reproducible pins
-if [[ -n "${TD_SELECTED_REF:-}" || -n "${BORING_REF_ENV:-}" ]]; then
-  {
-    [[ -n "${TD_SELECTED_REF:-}" ]] && echo "TD_REF=$TD_SELECTED_REF" || true
-    [[ -n "${BORING_REF_ENV:-}"  ]] && echo "BORING_REF=$BORING_REF_ENV" || true
-  } > "$LOCKFILE"
-  note "Pins geschrieben -> $LOCKFILE"
-fi
-
-note "Done."
+msg "Build completed successfully."
+msg "Outputs:"
+echo "  - Java: ${JAVA_DST}/(TdApi.java, Client.java, Log.java)"
+echo "  - JNI : ${JNI_ROOT}/<ABI>/libtdjni.so"
+echo "  - Meta: ${META_TXT}, ${META_JSON}"
