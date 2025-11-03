@@ -6,25 +6,18 @@
 # - Builds libtdjni.so for arm64-v8a and optionally armeabi-v7a
 # - Copies outputs into ./libtd/src/main/jniLibs/<ABI>/ and ./libtd/src/main/java/org/drinkless/tdlib/
 # - Writes ./libtd/TDLIB_VERSION.txt and ./libtd/.tdlib_meta (JSON) for caching/diagnostics
-#
-# Usage examples:
-#   bash scripts/build_tdlib_android.sh                 # build latest (master) for arm64-v8a
-#   bash scripts/build_tdlib_android.sh --ref v1.8.56   # build a specific tag
-#   bash scripts/build_tdlib_android.sh --abis arm64-v8a,armeabi-v7a --api-level 24 --build-type MinSizeRel
-#
-# Requirements (auto-detected where possible):
-#   - Git, CMake (>=3.18), Ninja (optional), gperf (host), JDK 17, Python3, pkg-config
-#   - Android NDK (e.g., 26.3+) and ANDROID_NDK_HOME or ANDROID_NDK_ROOT set (or provide via --ndk)
-#   - On Ubuntu runners we attempt to install missing host deps (sudo apt-get) if available.
-#
+
 set -euo pipefail
+
+# Better diagnostics on failure
+trap 'code=$?; echo "ERROR: failed at ${BASH_SOURCE[0]}:${LINENO} (exit ${code})" >&2; exit "${code}"' ERR
 
 #---------------------------
 # Defaults / Configuration
 #---------------------------
 TD_REMOTE="${TD_REMOTE:-https://github.com/tdlib/td.git}"
-TD_REF=""  # set via --ref; empty means "master"
-ANDROID_ABIS="arm64-v8a"  # comma separated; add armeabi-v7a if desired
+TD_REF=""                         # set via --ref; empty => "master"
+ANDROID_ABIS="arm64-v8a"          # comma separated; add armeabi-v7a if desired
 ANDROID_API="${ANDROID_API:-24}"
 BUILD_TYPE="${BUILD_TYPE:-MinSizeRel}"  # MinSizeRel or Release recommended
 NDK_PATH="${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}"
@@ -46,29 +39,39 @@ META_JSON="${OUT_ROOT}/.tdlib_meta"
 #---------------------------
 msg() { echo -e "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
 die() { echo "ERROR: $*" >&2; exit 1; }
-
 have() { command -v "$1" >/dev/null 2>&1; }
 
 # Parse args
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --ref)           TD_REF="${2:-}"; shift 2 ;;
-    --abis)          ANDROID_ABIS="${2:-}"; shift 2 ;;
-    --api-level)     ANDROID_API="${2:-}"; shift 2 ;;
-    --build-type)    BUILD_TYPE="${2:-}"; shift 2 ;;
-    --ndk)           NDK_PATH="${2:-}"; shift 2 ;;
-    --clean)         CLEAN=1; shift ;;
+    --ref)        TD_REF="${2:-}"; shift 2 ;;
+    --abis)       ANDROID_ABIS="${2:-}"; shift 2 ;;
+    --api-level)  ANDROID_API="${2:-}"; shift 2 ;;
+    --build-type) BUILD_TYPE="${2:-}"; shift 2 ;;
+    --ndk)        NDK_PATH="${2:-}"; shift 2 ;;
+    --clean)      CLEAN=1; shift ;;
     --help|-h)
-      cat <<-USAGE
-      Usage: $0 [--ref <tag|branch|commit>] [--abis <comma list>] [--api-level <N>] [--build-type <MinSizeRel|Release>]
-                   [--ndk </path/to/ndk>] [--clean]
-      USAGE
-      exit 0;;
+cat <<'USAGE'
+Usage:
+  scripts/build_tdlib_android.sh
+    [--ref <tag|branch|commit>]          # default: master
+    [--abis <comma list>]                # e.g. arm64-v8a,armeabi-v7a
+    [--api-level <N>]                    # default: 24
+    [--build-type <MinSizeRel|Release>]  # default: MinSizeRel
+    [--ndk </path/to/ndk>]
+    [--clean]
+
+Examples:
+  bash scripts/build_tdlib_android.sh
+  bash scripts/build_tdlib_android.sh --ref v1.8.56
+  bash scripts/build_tdlib_android.sh --abis arm64-v8a,armeabi-v7a --api-level 36 --build-type Release
+USAGE
+      exit 0 ;;
     *) die "Unknown argument: $1" ;;
-  esac
+  endcase
 done
 
-# Default ref -> master (explicit as requested)
+# Default ref -> master (explicit)
 if [[ -z "${TD_REF}" ]]; then
   TD_REF="master"
 fi
@@ -77,7 +80,7 @@ fi
 if [[ -z "${NDK_PATH}" ]]; then
   # Try common GitHub Actions path
   if [[ -d "${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}/ndk" ]]; then
-    NDK_PATH="$(ls -d ${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}/ndk/* | sort -V | tail -n1)"
+    NDK_PATH="$(ls -d ${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}/ndk/* 2>/dev/null | sort -V | tail -n1 || true)"
   fi
 fi
 [[ -d "${NDK_PATH:-}" ]] || die "Android NDK not found. Set ANDROID_NDK_HOME/ANDROID_NDK_ROOT or pass --ndk."
@@ -90,13 +93,15 @@ TOOLCHAIN_FILE="${NDK_PATH}/build/cmake/android.toolchain.cmake"
 if have sudo && have apt-get; then
   msg "::group::Installing host dependencies (if missing)"
   sudo apt-get update -y || true
-  sudo apt-get install -y --no-install-recommends         git cmake ninja-build gperf pkg-config python3 python3-distutils         zlib1g-dev libssl-dev ca-certificates unzip >/dev/null || true
+  sudo apt-get install -y --no-install-recommends \
+    git cmake ninja-build gperf pkg-config python3 python3-distutils \
+    zlib1g-dev libssl-dev ca-certificates unzip >/dev/null || true
   msg "::endgroup::"
 fi
 
-have git    || die "git is required"
-have cmake  || die "cmake is required"
-have gperf  || die "gperf (host) is required"
+have git     || die "git is required"
+have cmake   || die "cmake is required"
+have gperf   || die "gperf (host) is required"
 have python3 || die "python3 is required"
 
 # Prefer Ninja generator if requested
@@ -161,25 +166,22 @@ pushd "${JAVA_GEN_BUILD_DIR}" >/dev/null
   cmake --build . --target td_generate_java_api -j"$(getconf _NPROCESSORS_ONLN)"
 popd >/dev/null
 
-# Locate generated Java files (TdApi.java, Client.java, Log.java)
-# TDLib typically places them in example/java/td/src/main/java/org/drinkless/tdlib/
+# Locate generated Java files
 JAVA_SOURCE_BASE="${TD_DIR}/example/java/td/src/main/java/org/drinkless/tdlib"
 if [[ -f "${JAVA_SOURCE_BASE}/TdApi.java" && -f "${JAVA_SOURCE_BASE}/Client.java" && -f "${JAVA_SOURCE_BASE}/Log.java" ]]; then
   msg "Copying generated Java bindings to ${JAVA_DST}"
   mkdir -p "${JAVA_DST}"
   cp -f "${JAVA_SOURCE_BASE}/TdApi.java" "${JAVA_SOURCE_BASE}/Client.java" "${JAVA_SOURCE_BASE}/Log.java" "${JAVA_DST}/"
 else
-  # Fallback: search for TdApi.java anywhere under example/java
   FOUND_TDAPI="$(grep -Rsl --include='TdApi.java' '^package org\.drinkless\.tdlib;' "${TD_DIR}/example/java" || true)"
-  [[ -n "${FOUND_TDAPI}" ]] || die "Failed to locate generated TdApi.java. The td_generate_java_api step did not produce expected outputs."
-  msg "Found TdApi.java at: ${FOUND_TDAPI} (using fallback copy)"
+  [[ -n "${FOUND_TDAPI}" ]] || die "Failed to locate generated TdApi.java. td_generate_java_api did not produce expected outputs."
+  msg "Found TdApi.java at: ${FOUND_TDAPI} (fallback copy)"
   mkdir -p "${JAVA_DST}"
   cp -f "${FOUND_TDAPI}" "${JAVA_DST}/"
-  # Try to also copy Client.java/Log.java from the same tree if present
   CLIENT_CANDIDATE="$(dirname "${FOUND_TDAPI}")/Client.java"
   LOG_CANDIDATE="$(dirname "${FOUND_TDAPI}")/Log.java"
   [[ -f "${CLIENT_CANDIDATE}" ]] && cp -f "${CLIENT_CANDIDATE}" "${JAVA_DST}/" || true
-  [[ -f "${LOG_CANDIDATE}" ]] && cp -f "${LOG_CANDIDATE}" "${JAVA_DST}/" || true
+  [[ -f "${LOG_CANDIDATE}"   ]] && cp -f "${LOG_CANDIDATE}"   "${JAVA_DST}/" || true
 fi
 msg "::endgroup::"
 
@@ -194,11 +196,19 @@ for ABI in "${ABI_LIST[@]}"; do
   msg "::group::Building libtdjni.so for ${ABI_TRIM}"
   mkdir -p "${BUILD_DIR}"
   pushd "${BUILD_DIR}" >/dev/null
-    cmake "${CMAKE_GENERATOR[@]}"           -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"           -DCMAKE_INSTALL_PREFIX="${BUILD_DIR}/install"           -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}"           -DANDROID_ABI="${ABI_TRIM}"           -DANDROID_PLATFORM="android-${ANDROID_API}"           -DANDROID_STL=c++_shared           -DTD_ENABLE_JNI=ON           -DOPENSSL_USE_STATIC_LIBS=ON           "${TD_DIR}"
+    cmake "${CMAKE_GENERATOR[@]}" \
+      -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+      -DCMAKE_INSTALL_PREFIX="${BUILD_DIR}/install" \
+      -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" \
+      -DANDROID_ABI="${ABI_TRIM}" \
+      -DANDROID_PLATFORM="android-${ANDROID_API}" \
+      -DANDROID_STL=c++_shared \
+      -DTD_ENABLE_JNI=ON \
+      -DOPENSSL_USE_STATIC_LIBS=ON \
+      "${TD_DIR}"
     cmake --build . -j"$(getconf _NPROCESSORS_ONLN)"
   popd >/dev/null
 
-  # Find libtdjni.so and copy to project jniLibs
   JNI_LIB_SRC="$(find "${BUILD_DIR}" -name 'libtdjni.so' -type f | head -n1 || true)"
   [[ -f "${JNI_LIB_SRC}" ]] || die "libtdjni.so not found for ABI ${ABI_TRIM}"
   DEST_DIR="${JNI_ROOT}/${ABI_TRIM}"
@@ -209,7 +219,7 @@ for ABI in "${ABI_LIST[@]}"; do
 done
 
 #------------------------------------------------------------------
-# 3) Metadata (helpful for caching and visibility in CI)
+# 3) Metadata
 #------------------------------------------------------------------
 mkdir -p "${OUT_ROOT}"
 {
