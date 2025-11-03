@@ -1,4 +1,4 @@
-name: Android – Build (cached, TDLib, robust)
+name: Android – Build (cached, TDLib, robust+licenses)
 
 on:
   workflow_dispatch:
@@ -235,18 +235,26 @@ jobs:
           restore-keys: |
             tdlib-${{ runner.os }}-ndk${{ inputs.ndk_version }}-cmake${{ inputs.cmake_version }}-
 
-      # ---------- Validate NDK (robust re-install if missing) ----------
+      # ---------- Validate NDK (robust re-install with licenses) ----------
       - name: Validate NDK installation
         run: |
           set -euo pipefail
           NDK_DIR="$ANDROID_SDK_ROOT/ndk/${{ inputs.ndk_version }}"
+          sdkmgr="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+
           if [ ! -f "$NDK_DIR/build/cmake/android.toolchain.cmake" ]; then
             echo "⚠️  NDK missing or incomplete at $NDK_DIR — reinstalling..."
-            "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" "ndk;${{ inputs.ndk_version }}"
-            if [ ! -f "$NDK_DIR/build/cmake/android.toolchain.cmake" ]; then
-              echo "❌ Still no toolchain after reinstall"; exit 1
-            fi
+            # accept licenses again (non-interactive) and reinstall
+            echo "y" | "$sdkmgr" --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
+            echo "y" | "$sdkmgr" --sdk_root="$ANDROID_SDK_ROOT" "ndk;${{ inputs.ndk_version }}" || true
           fi
+
+          if [ ! -f "$NDK_DIR/build/cmake/android.toolchain.cmake" ]; then
+            echo "❌ Still no toolchain after reinstall"
+            echo "Contents of $NDK_DIR:"; ls -la "$NDK_DIR" || true
+            exit 1
+          fi
+
           echo "✅ NDK toolchain OK: $NDK_DIR"
           ls -l "$NDK_DIR/build/cmake/android.toolchain.cmake"
 
