@@ -1,350 +1,110 @@
-name: Android – Quick Debug (fast/no-sign)
+name: Android – Quick (cached)
 
 on:
   workflow_dispatch:
-    inputs:
-      toolchain_bundle:
-        description: "Kompatibler Toolchain-Satz"
-        type: choice
-        default: "stable"
-        options:
-          - "stable"
-          - "lts"
-          - "project"
-      abis:
-        description: "ABIs (Splits/Universal)"
-        type: choice
-        required: true
-        default: "arm64+v7a"
-        options:
-          - "arm64+v7a"
-          - "arm64"
-          - "v7a"
-          - "universal"
-      debug_tmate:
-        description: "tmate-Debug"
-        type: choice
-        default: "false"
-        options:
-          - "false"
-          - "true"
-      pr_annotations:
-        description: "Reviewdog PR-Checks (detekt/ktlint/lint, falls Reports vorhanden)"
-        type: choice
-        default: "false"
-        options:
-          - "false"
-          - "true"
-      config_json:
-        description: "JSON-Overrides (sdk_api, build_tools, jdk, gradle_version, agp_override, kotlin_override, pr_comment, issue_number, td_ref|tdlib_ref)"
-        required: false
-        default: "{}"
-
-permissions:
-  contents: read
-  checks: write
-  pull-requests: write
 
 concurrency:
-  group: android-fast-${{ github.ref || github.run_id }}
-  cancel-in-progress: true
+  group: android-quick-${{ github.ref }}
+  cancel-in-progress: false
 
-defaults:
-  run:
-    shell: bash
+env:
+  ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
+  ANDROID_HOME: ${{ runner.temp }}/android-sdk
+  # ⇣⇣⇣ HIER ANPASSEN ⇣⇣⇣
+  ANDROID_API_LEVEL: "34"            # z.B. 34 (oder 24/28 je nach Projekt)
+  ANDROID_BUILD_TOOLS: "34.0.0"      # passend zum API-Level
+  ANDROID_NDK_VERSION: "26.3.11579264"  # z.B. 26.3.x (oder exakt, was du brauchst)
+  CMAKE_VERSION: "3.31.1"            # oder 3.22.1/3.30.x – was dein Projekt braucht
+  # ⇡⇡⇡ HIER ANPASSEN ⇡⇡⇡
 
 jobs:
-  assemble-debug:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
-      - name: Optional – Python requirements
-        run: |
-          if [[ -f .github/requirements.txt ]]; then
-            python3 -m pip install --upgrade pip
-            python3 -m pip install -r .github/requirements.txt
-          fi
-
-      - name: Toolchain-Bundle auflösen + JSON-Overrides mergen
-        id: cfg
-        run: |
-          python3 - <<'PY'
-          import json, os, sys
-          bundle = os.environ.get("BUNDLE","stable").strip()
-          bundles = {
-            "stable":  {"sdk_api":"35","build_tools":"35.0.0","jdk":"21","gradle_version":"8.13","agp_override":"8.12.0","kotlin_override":"","pr_comment":"false","issue_number":""},
-            "lts":     {"sdk_api":"34","build_tools":"34.0.0","jdk":"17","gradle_version":"8.7","agp_override":"8.5.2","kotlin_override":"","pr_comment":"false","issue_number":""},
-            "project": {"sdk_api":"35","build_tools":"35.0.0","jdk":"21","gradle_version":"","agp_override":"","kotlin_override":"","pr_comment":"false","issue_number":""}
-          }
-          raw = os.environ.get("RAW_CONFIG","").strip()
-          user = {}
-          if raw:
-            try: user = json.loads(raw)
-            except json.JSONDecodeError as exc:
-              print(f"::error::config_json ist kein gültiges JSON ({exc})"); sys.exit(1)
-          if user.get("use_gradle_9x","false") in (True, "true"):
-            user["gradle_version"] = str(user.get("gradle_9x_version","9.1.0"))
-          base = bundles.get(bundle, bundles["stable"]).copy()
-          base.update({k: str(v) for k,v in user.items()})
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as envf, open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as outf:
-            for k, v in base.items():
-              envf.write(f"{k}={v}\n"); outf.write(f"{k}={v}\n")
-          PY
-        env:
-          BUNDLE: ${{ github.event.inputs.toolchain_bundle }}
-          RAW_CONFIG: ${{ github.event.inputs.config_json }}
-
-      - name: Setup Java
+      - name: Set up Java (JDK 17)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: ${{ steps.cfg.outputs.jdk }}
+          java-version: "17"
 
-      # --- SDK: robuste, manuelle Installation mit Fallback & SIGPIPE-Schutz ---
-      - name: Resolve Android platform/build-tools (graceful fallback)
-        id: droid
+      # Gradle Wrapper + Dependency Cache (automatisch, sicher)
+      - name: Setup Gradle (caching)
+        uses: gradle/actions/setup-gradle@v4
+
+      # SDK/NDK/CMake Cache
+      - name: Cache Android SDK/NDK/CMake
+        id: cache-android
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.ANDROID_SDK_ROOT }}
+          key: >
+            android-sdk-${{ runner.os }}-sdk${{ env.ANDROID_API_LEVEL }}-bt${{ env.ANDROID_BUILD_TOOLS }}-ndk${{ env.ANDROID_NDK_VERSION }}-cmake${{ env.CMAKE_VERSION }}
+          restore-keys: |
+            android-sdk-${{ runner.os }}-
+
+      # SDK/NDK/CMake installieren (idempotent; nutzt Cache, wenn vorhanden)
+      - name: Install Android cmdline-tools
         run: |
           set -euo pipefail
-          WANT_API="${{ steps.cfg.outputs.sdk_api }}"
-          WANT_BT="${{ steps.cfg.outputs.build_tools }}"
-          SDKM="/usr/local/lib/android/sdk/cmdline-tools/*/bin/sdkmanager"
-          SDKM=$(compgen -G "$SDKM" | head -n1 || true)
-          [[ -x "$SDKM" ]] || { echo "::error::sdkmanager nicht gefunden"; exit 1; }
-          "$SDKM" --list 1>/tmp/sdklist.txt 2>/dev/null || true
-          has_platform(){ grep -E "^ +platforms;android-$1([[:space:]]|$)" -q /tmp/sdklist.txt; }
-          has_bt(){ grep -E "^ +build-tools;$1([[:space:]]|$)" -q /tmp/sdklist.txt; }
-          has_ndk(){ grep -E "^ +ndk;([0-9][0-9.]+)" -q /tmp/sdklist.txt; }
-          has_cmake(){ grep -E "^ +cmake;([0-9][0-9.]+)" -q /tmp/sdklist.txt; }
-          RES_API=""
-          if   has_platform "$WANT_API"; then RES_API="$WANT_API"
-          elif has_platform "35";        then RES_API="35"
-          elif has_platform "34";        then RES_API="34"
-          else echo "::error::Keine passende Android-Plattform (gesucht: $WANT_API/35/34)"; exit 2; fi
-          RES_BT="$WANT_BT"
-          if ! has_bt "$RES_BT"; then
-            for cand in 35.0.0 34.0.0; do
-              if has_bt "$cand"; then RES_BT="$cand"; break; fi
-            done
+          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+          if [ ! -d "$ANDROID_SDK_ROOT/cmdline-tools/latest" ]; then
+            TMP=$(mktemp -d)
+            cd "$TMP"
+            curl -sSLo sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q sdk.zip
+            mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+            mv cmdline-tools/* "$ANDROID_SDK_ROOT/cmdline-tools/latest"/
           fi
-          if ! has_bt "$RES_BT"; then
-            RES_BT="$(grep -E "^ +build-tools;(35|34)\.[0-9.]+" /tmp/sdklist.txt | sed 's/^[[:space:]]*build-tools;//' | sort -V | tail -n1 || true)"
-          fi
-          [[ -n "$RES_BT" ]] || { echo "::error::Keine passenden Build-Tools (Familie 35.x/34.x)"; exit 3; }
-          # Prefer NDK r27, fallback to r26
-          NDK_VER="$(grep -Eo '^ +ndk;27\.[0-9.]+' /tmp/sdklist.txt | tr -d ' ' | sed 's/^ndk;//' | sort -V | tail -n1)"
-          if [[ -z "$NDK_VER" ]]; then
-            NDK_VER="$(grep -Eo '^ +ndk;26\.[0-9.]+' /tmp/sdklist.txt | tr -d ' ' | sed 's/^ndk;//' | sort -V | tail -n1)"
-          fi
-          CMAKE_VER="$(grep -Eo '^ +cmake;3\.(26|25|22)\.[0-9]+' /tmp/sdklist.txt | tr -d ' ' | sed 's/^cmake;//' | sort -V | tail -n1)"
-          echo "sdk_api_resolved=$RES_API"    >> $GITHUB_OUTPUT
-          echo "build_tools_resolved=$RES_BT" >> $GITHUB_OUTPUT
-          echo "ndk_ver=$NDK_VER"             >> $GITHUB_OUTPUT
-          echo "cmake_ver=$CMAKE_VER"         >> $GITHUB_OUTPUT
-          echo "SDK_API_RESOLVED=$RES_API"    >> $GITHUB_ENV
-          echo "BUILD_TOOLS_RESOLVED=$RES_BT" >> $GITHUB_ENV
-          [[ -n "$NDK_VER" ]]   && echo "NDK_VER=$NDK_VER"       >> $GITHUB_ENV
-          [[ -n "$CMAKE_VER" ]] && echo "CMAKE_VER=$CMAKE_VER"   >> $GITHUB_ENV
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses
 
-      - name: Install Android SDK packages (user-writable, SIGPIPE-safe)
-        run: |
-          # kein -euo pipefail hier, wir behandeln Exitcodes manuell
-          set -u
-          SDKM="/usr/local/lib/android/sdk/cmdline-tools/*/bin/sdkmanager"
-          SDKM=$(compgen -G "$SDKM" | head -n1 || true)
-          if [[ -z "$SDKM" || ! -x "$SDKM" ]]; then
-            echo "::error::sdkmanager nicht gefunden"; exit 1
-          fi
-          export ANDROID_SDK_ROOT="$HOME/android-sdk"
-          mkdir -p "$ANDROID_SDK_ROOT"
-          run_sm() {
-            set +e
-            "$SDKM" --sdk_root="$ANDROID_SDK_ROOT" "$@"
-            rc=$?
-            set -e
-            if [[ $rc -ne 0 && $rc -ne 141 ]]; then
-              echo "::error::sdkmanager exit $rc bei '$*'"; exit $rc
-            fi
-          }
-          { for i in $(seq 1 20); do echo y; done; } | run_sm --licenses >/dev/null 2>&1 || true
-          run_sm "platform-tools"
-          run_sm "platforms;android-${{ steps.droid.outputs.sdk_api_resolved }}"
-          run_sm "build-tools;${{ steps.droid.outputs.build_tools_resolved }}"
-          if [[ -n "${{ steps.droid.outputs.ndk_ver }}" ]]; then
-            run_sm "ndk;${{ steps.droid.outputs.ndk_ver }}"
-            echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/${{ steps.droid.outputs.ndk_ver }}" >> $GITHUB_ENV
-            echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${{ steps.droid.outputs.ndk_ver }}" >> $GITHUB_ENV
-          fi
-          if [[ -n "${{ steps.droid.outputs.cmake_ver }}" ]]; then
-            run_sm "cmake;${{ steps.droid.outputs.cmake_ver }}"
-            echo "$ANDROID_SDK_ROOT/cmake/${{ steps.droid.outputs.cmake_ver }}/bin" >> $GITHUB_PATH
-          fi
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT"     >> $GITHUB_ENV
-          echo "$ANDROID_SDK_ROOT/platform-tools"   >> $GITHUB_PATH
-          echo "$ANDROID_SDK_ROOT/build-tools/${{ steps.droid.outputs.build_tools_resolved }}" >> $GITHUB_PATH
-
-      - name: Setup Gradle (cache + wrapper validation)
-        uses: gradle/actions/setup-gradle@v4.4.3
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Optional – Gradle Override aus Bundle/JSON
-        if: ${{ steps.cfg.outputs.gradle_version != '' }}
+      - name: Install SDK components (platforms, build-tools, NDK, CMake)
         run: |
           set -euo pipefail
-          V="${{ steps.cfg.outputs.gradle_version }}"
-          test -f gradle/wrapper/gradle-wrapper.properties || { echo "::error::gradle-wrapper.properties fehlt"; exit 1; }
-          sed -i -E "s#distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-${V}-bin.zip#g" gradle/wrapper/gradle-wrapper.properties
-          echo "Gradle Wrapper → ${V}"
+          sdk="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          "$sdk" "platforms;android-${ANDROID_API_LEVEL}"
+          "$sdk" "platform-tools"
+          "$sdk" "build-tools;${ANDROID_BUILD_TOOLS}"
+          "$sdk" "ndk;${ANDROID_NDK_VERSION}"
+          "$sdk" "cmake;${CMAKE_VERSION}"
+          echo "✅ SDK/NDK/CMake bereit"
 
-      - name: Optional – AGP/Kotlin Override (Safe + Sanitizer)
-        if: ${{ steps.cfg.outputs.agp_override != '' || steps.cfg.outputs.kotlin_override != '' }}
-        run: |
-          python3 - <<'PY'
-          import re, pathlib, os
-          agp = os.environ.get("AGP_NEW","").strip()
-          kt  = os.environ.get("KOTLIN_NEW","").strip()
-          paths = [p for p in pathlib.Path(".").rglob("*")
-                   if p.is_file() and p.suffix in (".gradle",".kts",".toml")
-                   and "build" not in p.parts]
-          for p in paths:
-            try:
-              s = p.read_text(encoding="utf-8")
-            except Exception:
-              continue
-            o = s
-            # --- Sanitizer für versehentliche \g<1>…\g<2>-Artefakte ---
-            s = re.sub(r'(version\s+)(?:\\?g<1>)?([0-9]+\.[0-9.]+)(?:\\?g<2>)?', r'\1"\2"', s)
-            s = re.sub(r'(?m)^(\s*agp\s*=\s*)(?:\\?g<1>)?([0-9]+\.[0-9.]+)(?:\\?g<2>)?\s*$', r'\1"\2"', s)
-            s = re.sub(r'(?m)^(\s*kotlin\s*=\s*)(?:\\?g<1>)?([0-9]+\.[0-9.]+)(?:\\?g<2>)?\s*$', r'\1"\2"', s)
-            # --- AGP ersetzen ---
-            if agp:
-              s = re.sub(r'(com\.android\.tools\.build:gradle:)([0-9]+\.[0-9.]+)',
-                         lambda m: f'{m.group(1)}{agp}', s)
-              s = re.sub(r'(id\(["\']com\.android\.(?:application|library|test|dynamic-feature)["\']\)\s+version\s+")([^"]+)(")',
-                         lambda m: f'{m.group(1)}{agp}{m.group(3)}', s)
-              s = re.sub(r'(?m)^(\s*agp\s*=\s*")[^"]+(")',
-                         lambda m: f'{m.group(1)}{agp}{m.group(2)}', s)
-            # --- Kotlin ersetzen ---
-            if kt:
-              s = re.sub(r'(org\.jetbrains\.kotlin:(?:kotlin-gradle-plugin|kotlin-stdlib)[^:]*:)([0-9]+\.[0-9.]+)',
-                         lambda m: f'{m.group(1)}{kt}', s)
-              s = re.sub(r'(id\(["\']org\.jetbrains\.kotlin\.(?:android|jvm|multiplatform)["\']\)\s+version\s+")([^"]+)(")',
-                         lambda m: f'{m.group(1)}{kt}{m.group(3)}', s)
-              s = re.sub(r'(?m)^(\s*kotlin\s*=\s*")[^"]+(")',
-                         lambda m: f'{m.group(1)}{kt}{m.group(2)}', s)
-            if s != o:
-              p.write_text(s, encoding="utf-8")
-          PY
-        env:
-          AGP_NEW: ${{ steps.cfg.outputs.agp_override }}
-          KOTLIN_NEW: ${{ steps.cfg.outputs.kotlin_override }}
-
-      - name: Host-Build Prereqs (gperf, ninja, etc.) für TDLib
+      # ccache für C/C++
+      - name: Enable ccache
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends \
-            gperf ninja-build pkg-config bison flex autoconf automake libtool make ccache
+          sudo apt-get install -y ccache
+          echo "max_size = 2.0G" > "$HOME/.ccache/ccache.conf"
+          echo "CC='ccache clang'" >> $GITHUB_ENV
+          echo "CXX='ccache clang++'" >> $GITHUB_ENV
+          echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "PATH=$PATH:/usr/lib/ccache" >> $GITHUB_ENV
+          ccache -s || true
 
-      - name: TDLib bauen (JNI) – optionaler --ref aus config_json (td_ref|tdlib_ref)
+      # Optional: GPerf/ninja/… für native Builds (TDLib etc.)
+      - name: Native toolchain helpers
         run: |
           set -euo pipefail
-          if [[ -f scripts/build_tdlib_android.sh ]]; then
-            chmod +x scripts/build_tdlib_android.sh
-            REF="${{ steps.cfg.outputs.td_ref || steps.cfg.outputs.tdlib_ref }}"
-            if [[ -n "${REF}" ]]; then
-              echo "::group::TDLib Build (ref=${REF})"
-              bash scripts/build_tdlib_android.sh --ref "${REF}"
-              echo "::endgroup::"
-            else
-              echo "::group::TDLib Build (latest)"
-              bash scripts/build_tdlib_android.sh
-              echo "::endgroup::"
-            fi
-          else
-            echo "::notice::TDLib-Skript (scripts/build_tdlib_android.sh) nicht gefunden – Schritt übersprungen"
-          fi
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build gperf pkg-config
 
-      - name: ABI / Splits konfigurieren
+      # Jetzt dein Build
+      - name: Build (Debug)
         run: |
-          case "${{ github.event.inputs.abis }}" in
-            "arm64+v7a") echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a,armeabi-v7a" >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=true"  >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV;;
-            "arm64")     echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a"             >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=true"  >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV;;
-            "v7a")       echo "ORG_GRADLE_PROJECT_abiFilters=armeabi-v7a"           >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=true"  >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV;;
-            "universal") echo "ORG_GRADLE_PROJECT_abiFilters="                      >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_useSplits=false" >> $GITHUB_ENV; echo "ORG_GRADLE_PROJECT_universalApk=true"  >> $GITHUB_ENV;;
-          esac
+          set -euo pipefail
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+          ./gradlew --no-daemon --stacktrace assembleDebug
 
-      - name: Gradle Problem-Matcher
-        continue-on-error: true
-        run: |
-          [[ -f .github/gradle-problem-matcher.json ]] && echo "::add-matcher::.github/gradle-problem-matcher.json" || true
-
-      - name: Assemble Debug (ohne Tests)
-        run: |
-          ./gradlew :app:assembleDebug \
-            -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}" \
-            -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}" \
-            -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}" \
-            --configuration-cache --build-cache --parallel \
-            --stacktrace --warning-mode all -x test
-
-      - name: "Artefakt: APKs"
+      - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-${{ github.event.inputs.abis }}
-          path: app/build/outputs/apk/**/**/*.apk
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Reviewdog Setup (optional)
-        if: ${{ github.event.inputs.pr_annotations == 'true' }}
-        uses: reviewdog/action-setup@v1
-
-      - name: Reviewdog – detekt/ktlint/lint aus Reports (optional)
-        if: ${{ github.event.inputs.pr_annotations == 'true' }}
-        run: |
-          set -e
-          if ! command -v reviewdog >/dev/null 2>&1; then
-            echo "::warning::reviewdog fehlt – Annotationen übersprungen"
-            exit 0
-          fi
-          if ls **/build/reports/detekt/detekt.xml >/dev/null 2>&1; then
-            reviewdog -f=checkstyle -name="detekt" -reporter=github-pr-check -filter-mode=nofilter -fail-on-error=false < **/build/reports/detekt/detekt.xml
-          fi
-          if ls **/build/reports/ktlint/**/ktlint-checkstyle-report.xml >/dev/null 2>&1; then
-            for f in **/build/reports/ktlint/**/ktlint-checkstyle-report.xml; do
-              reviewdog -f=checkstyle -name="ktlint" -reporter=github-pr-check -filter-mode=nofilter -fail-on-error=false < "$f"
-            done
-          fi
-          if ls **/build/reports/lint-results*.xml >/dev/null 2>&1; then
-            for f in **/build/reports/lint-results*.xml; do
-              reviewdog -f=checkstyle -name="android-lint" -reporter=github-pr-check -filter-mode=nofilter -fail-on-error=false < "$f"
-            done
-          fi
-        env:
-          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Summary
-        if: always()
-        run: |
-          {
-            echo "## Artefakte – Quick Debug"
-            echo ""
-            echo "**Run:** https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-            echo ""
-            echo "### APKs"
-            find app/build/outputs/apk -maxdepth 3 -type f -name "*.apk" | sed 's/^/- /' || echo "- (keine gefunden)"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Start tmate (on failure/explicit)
-        if: ${{ failure() || github.event.inputs.debug_tmate == 'true' }}
-        uses: mxschmitt/action-tmate@v3
-        with:
-          # Offen über Log-Link – kein Public SSH Key nötig
-          limit-access-to-actor: false
+          name: app-debug
+          path: |
+            **/build/outputs/apk/debug/*.apk
