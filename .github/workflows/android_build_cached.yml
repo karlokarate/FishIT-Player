@@ -1,4 +1,4 @@
-name: Android – Build (cached, TDLib)
+name: Android – Build (cached, TDLib, robust)
 
 on:
   workflow_dispatch:
@@ -99,7 +99,7 @@ jobs:
           restore-keys: |
             android-sdk-${{ runner.os }}-
 
-      # Install cmdline-tools & accept licenses
+      # ---------- Install SDK + accept licenses (robust) ----------
       - name: Install Android cmdline-tools
         run: |
           set -euo pipefail
@@ -112,7 +112,8 @@ jobs:
             mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools/latest"
             mv cmdline-tools/* "$ANDROID_SDK_ROOT/cmdline-tools/latest"/
           fi
-          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses
+          echo "y" | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" --update || true
 
       - name: Install SDK components
         run: |
@@ -124,7 +125,7 @@ jobs:
           "$sdk" "ndk;${{ inputs.ndk_version }}"
           "$sdk" "cmake;${{ inputs.cmake_version }}"
 
-      # ---------- ccache cache ----------
+      # ---------- Cache ccache ----------
       - name: Cache ccache
         id: cache-ccache
         uses: actions/cache@v4
@@ -148,14 +149,14 @@ jobs:
           echo "PATH=$PATH:/usr/lib/ccache" >> $GITHUB_ENV
           ccache -s || true
 
-      # ---------- Native helper tools for TDLib ----------
+      # ---------- Native helper tools ----------
       - name: Native toolchain helpers
         run: |
           set -euo pipefail
           sudo apt-get update -y
           sudo apt-get install -y ninja-build gperf pkg-config
 
-      # ---------- Compute ABI & flags ----------
+      # ---------- Prepare build vars ----------
       - name: Prepare build vars
         id: prep
         shell: bash
@@ -189,7 +190,30 @@ jobs:
           echo "USE_SPLITS=${USE_SPLITS}" >> $GITHUB_ENV
           echo "UNIVERSAL_APK=${UNIVERSAL_APK}" >> $GITHUB_ENV
 
-      # ---------- Cache TDLib outputs & metadata ----------
+      # ---------- Sanitize parts for cache keys ----------
+      - name: Sanitize cache key parts
+        shell: bash
+        run: |
+          set -euo pipefail
+          SAFE_ABI="${ABI_FILTERS//,/+}"
+          SAFE_REF="${{ inputs.td_ref }}"
+          SAFE_REF="${SAFE_REF//,/+}"
+          echo "ABI_KEY=$SAFE_ABI" >> $GITHUB_ENV
+          echo "REF_KEY=$SAFE_REF" >> $GITHUB_ENV
+
+      # ---------- Include script hash to invalidate cache when script changes ----------
+      - name: Compute script hash
+        id: hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f scripts/build_tdlib_android.sh ]; then
+            echo "SCRIPT_SHA=$(sha256sum scripts/build_tdlib_android.sh | cut -d' ' -f1)" >> $GITHUB_ENV
+          else
+            echo "SCRIPT_SHA=noscript" >> $GITHUB_ENV
+          fi
+
+      # ---------- Cache TDLib artifacts ----------
       - name: Cache TDLib artifacts
         id: cache-tdlib
         uses: actions/cache@v4
@@ -205,9 +229,26 @@ jobs:
             .third_party/boringssl
             .third_party/openssl-config
           key: >
-            tdlib-${{ runner.os }}-ndk${{ inputs.ndk_version }}-cmake${{ inputs.cmake_version }}-abi${{ env.ABI_FILTERS }}-type${{ inputs.build_type }}-api${{ inputs.api_level }}-ref${{ inputs.td_ref }}
+            tdlib-${{ runner.os }}-ndk${{ inputs.ndk_version }}-cmake${{ inputs.cmake_version }}
+            -abi${{ env.ABI_KEY }}-type${{ inputs.build_type }}-api${{ inputs.api_level }}
+            -ref${{ env.REF_KEY }}-script${{ env.SCRIPT_SHA }}
           restore-keys: |
             tdlib-${{ runner.os }}-ndk${{ inputs.ndk_version }}-cmake${{ inputs.cmake_version }}-
+
+      # ---------- Validate NDK (robust re-install if missing) ----------
+      - name: Validate NDK installation
+        run: |
+          set -euo pipefail
+          NDK_DIR="$ANDROID_SDK_ROOT/ndk/${{ inputs.ndk_version }}"
+          if [ ! -f "$NDK_DIR/build/cmake/android.toolchain.cmake" ]; then
+            echo "⚠️  NDK missing or incomplete at $NDK_DIR — reinstalling..."
+            "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" "ndk;${{ inputs.ndk_version }}"
+            if [ ! -f "$NDK_DIR/build/cmake/android.toolchain.cmake" ]; then
+              echo "❌ Still no toolchain after reinstall"; exit 1
+            fi
+          fi
+          echo "✅ NDK toolchain OK: $NDK_DIR"
+          ls -l "$NDK_DIR/build/cmake/android.toolchain.cmake"
 
       # ---------- Build TDLib (only if cache miss) ----------
       - name: Build TDLib (JNI + Java bindings)
@@ -229,17 +270,14 @@ jobs:
           echo ">> tdlib args: $ARGS"
           ./scripts/build_tdlib_android.sh $ARGS
 
-      # ---------- Verify TDLib deps (readelf) ----------
       - name: Verify tdlib JNI deps
         run: ./gradlew --no-daemon verifyTdlib || true
 
-      # ---------- local.properties for SDK dir ----------
       - name: Write local.properties
         run: |
           echo "sdk.dir=${{ env.ANDROID_SDK_ROOT }}" > local.properties
           cat local.properties
 
-      # ---------- (Optional) Signing via secrets → ~/.gradle/gradle.properties ----------
       - name: Inject signing secrets (optional)
         run: |
           set -euo pipefail
@@ -254,7 +292,6 @@ jobs:
           echo "== ~/.gradle/gradle.properties =="
           sed 's/=.*/=<redacted>/' "$GP" || true
 
-      # ---------- Build app ----------
       - name: Build app
         run: |
           set -euo pipefail
