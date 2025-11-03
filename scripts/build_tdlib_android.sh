@@ -53,13 +53,15 @@ while [[ $# -gt 0 ]]; do
     --help|-h)
 cat <<'USAGE'
 Usage:
-  scripts/build_tdlib_android.sh
-    [--ref <tag|branch|commit>]          # default: master
-    [--abis <comma list>]                # e.g. arm64-v8a,armeabi-v7a
-    [--api-level <N>]                    # default: 24
-    [--build-type <MinSizeRel|Release>]  # default: MinSizeRel
-    [--ndk </path/to/ndk>]
-    [--clean]
+  scripts/build_tdlib_android.sh [options]
+
+Options:
+  --ref <tag|branch|commit>          # default: master
+  --abis <comma list>                # e.g. arm64-v8a,armeabi-v7a
+  --api-level <N>                    # default: 24
+  --build-type <MinSizeRel|Release>  # default: MinSizeRel
+  --ndk </path/to/ndk>
+  --clean
 
 Examples:
   bash scripts/build_tdlib_android.sh
@@ -68,7 +70,7 @@ Examples:
 USAGE
       exit 0 ;;
     *) die "Unknown argument: $1" ;;
-  endcase
+  esac
 done
 
 # Default ref -> master (explicit)
@@ -93,9 +95,7 @@ TOOLCHAIN_FILE="${NDK_PATH}/build/cmake/android.toolchain.cmake"
 if have sudo && have apt-get; then
   msg "::group::Installing host dependencies (if missing)"
   sudo apt-get update -y || true
-  sudo apt-get install -y --no-install-recommends \
-    git cmake ninja-build gperf pkg-config python3 python3-distutils \
-    zlib1g-dev libssl-dev ca-certificates unzip >/dev/null || true
+  sudo apt-get install -y --no-install-recommends     git cmake ninja-build gperf pkg-config python3 python3-distutils     zlib1g-dev libssl-dev ca-certificates unzip >/dev/null || true
   msg "::endgroup::"
 fi
 
@@ -196,16 +196,7 @@ for ABI in "${ABI_LIST[@]}"; do
   msg "::group::Building libtdjni.so for ${ABI_TRIM}"
   mkdir -p "${BUILD_DIR}"
   pushd "${BUILD_DIR}" >/dev/null
-    cmake "${CMAKE_GENERATOR[@]}" \
-      -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-      -DCMAKE_INSTALL_PREFIX="${BUILD_DIR}/install" \
-      -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" \
-      -DANDROID_ABI="${ABI_TRIM}" \
-      -DANDROID_PLATFORM="android-${ANDROID_API}" \
-      -DANDROID_STL=c++_shared \
-      -DTD_ENABLE_JNI=ON \
-      -DOPENSSL_USE_STATIC_LIBS=ON \
-      "${TD_DIR}"
+    cmake "${CMAKE_GENERATOR[@]}"       -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"       -DCMAKE_INSTALL_PREFIX="${BUILD_DIR}/install"       -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}"       -DANDROID_ABI="${ABI_TRIM}"       -DANDROID_PLATFORM="android-${ANDROID_API}"       -DANDROID_STL=c++_shared       -DTD_ENABLE_JNI=ON       -DOPENSSL_USE_STATIC_LIBS=ON       "${TD_DIR}"
     cmake --build . -j"$(getconf _NPROCESSORS_ONLN)"
   popd >/dev/null
 
