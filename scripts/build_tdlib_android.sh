@@ -158,17 +158,15 @@ note "TDLib @ ${TD_COMMIT_HASH} ${TD_TAG_EXACT:+(exact $TD_TAG_EXACT)}"
 # ---------- Generate Java API ----------
 HOST_BUILD_DIR="$TD_DIR/build-host"; rm -rf "$HOST_BUILD_DIR"; mkdir -p "$HOST_BUILD_DIR"
 cmake -S "$TD_DIR" -B "$HOST_BUILD_DIR" -DCMAKE_BUILD_TYPE=Release "${GEN_ARGS[@]}"
+cmake --build "$HOST_BUILD_DIR" -j"$(NPROC)"
+cmake --install "$HOST_BUILD_DIR" --prefix "$HOST_BUILD_DIR/install" || true
+
 JAVA_GEN_DIR="$TD_DIR/build-java-gen"; rm -rf "$JAVA_GEN_DIR"; mkdir -p "$JAVA_GEN_DIR"
-cmake -S "$TD_DIR/example/java" -B "$JAVA_GEN_DIR" -DTd_DIR="$HOST_BUILD_DIR" -DCMAKE_BUILD_TYPE=Release "${GEN_ARGS[@]}"
+cmake -S "$TD_DIR/example/java" -B "$JAVA_GEN_DIR" \
+  -DTd_DIR="$HOST_BUILD_DIR/install" \
+  -DCMAKE_PREFIX_PATH="$HOST_BUILD_DIR/install" \
+  -DCMAKE_BUILD_TYPE=Release "${GEN_ARGS[@]}"
 cmake --build "$JAVA_GEN_DIR" --target td_generate_java_api -j"$(NPROC)"
-SRC_JAVA_DIR_BUILD="$JAVA_GEN_DIR/org/drinkless/tdlib"
-SRC_JAVA_DIR_SRC="$TD_DIR/example/java/org/drinkless/tdlib"
-SRC_JAVA_DIR=""
-[[ -f "$SRC_JAVA_DIR_BUILD/TdApi.java" && -f "$SRC_JAVA_DIR_BUILD/Client.java" ]] && SRC_JAVA_DIR="$SRC_JAVA_DIR_BUILD"
-[[ -z "$SRC_JAVA_DIR" && -f "$SRC_JAVA_DIR_SRC/TdApi.java" && -f "$SRC_JAVA_DIR_SRC/Client.java" ]] && SRC_JAVA_DIR="$SRC_JAVA_DIR_SRC"
-[[ -n "$SRC_JAVA_DIR" ]] || die "TdApi.java/Client.java nicht gefunden"
-mkdir -p "$JAVA_OUT_DIR"; cp -f "$SRC_JAVA_DIR/TdApi.java" "$JAVA_OUT_DIR/"; cp -f "$SRC_JAVA_DIR/Client.java" "$JAVA_OUT_DIR/"
-note "Java Bindings -> $JAVA_OUT_DIR"
 
 # ---------- BoringSSL ----------
 if [[ ! -d "$BORING_DIR/.git" ]]; then
