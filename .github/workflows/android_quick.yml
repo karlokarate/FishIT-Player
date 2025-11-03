@@ -1,4 +1,4 @@
-name: Android – Build (cached, TDLib)
+name: Android – Build (cached, TDLib, robust)
 
 on:
   workflow_dispatch:
@@ -234,6 +234,21 @@ jobs:
             -ref${{ env.REF_KEY }}-script${{ env.SCRIPT_SHA }}
           restore-keys: |
             tdlib-${{ runner.os }}-ndk${{ inputs.ndk_version }}-cmake${{ inputs.cmake_version }}-
+
+      # ---------- Validate NDK (robust re-install if missing) ----------
+      - name: Validate NDK installation
+        run: |
+          set -euo pipefail
+          NDK_DIR="$ANDROID_SDK_ROOT/ndk/${{ inputs.ndk_version }}"
+          if [ ! -f "$NDK_DIR/build/cmake/android.toolchain.cmake" ]; then
+            echo "⚠️  NDK missing or incomplete at $NDK_DIR — reinstalling..."
+            "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" "ndk;${{ inputs.ndk_version }}"
+            if [ ! -f "$NDK_DIR/build/cmake/android.toolchain.cmake" ]; then
+              echo "❌ Still no toolchain after reinstall"; exit 1
+            fi
+          fi
+          echo "✅ NDK toolchain OK: $NDK_DIR"
+          ls -l "$NDK_DIR/build/cmake/android.toolchain.cmake"
 
       # ---------- Build TDLib (only if cache miss) ----------
       - name: Build TDLib (JNI + Java bindings)
