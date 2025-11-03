@@ -1,49 +1,45 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
-# TDLib Android Builder — validated against official TDLib docs (example/java, -DTD_ENABLE_JNI=ON)
-# - Builds TDLib JNI (libtdjni.so) for arm64-v8a and optionally armeabi-v7a
-# - Generates Java bindings (TdApi.java, Client.java) via TDLib example/java (target: td_generate_java_api)
-# - Injects commit/tag string via tdlib_android_commit() symbol
+# TDLib Android Builder — JNI + Java Bindings
+# - Builds JNI (libtdjni.so) for arm64-v8a and optionally armeabi-v7a
+# - Generates Java bindings (TdApi.java, Client.java) via TDLib example/java (td_generate_java_api)
+# - Embeds commit/tag into tdlib_android_commit()
 # - Writes libtd/TDLIB_VERSION.txt and libtd/.tdlib_meta
 #
 # Defaults:
-#   * TDLib version: latest tag (v*), unless TD_REF/TD_TAG/TD_COMMIT is set by workflow
-#   * Android API: 24 (override with API_LEVEL)
+#   * TDLib version: BRANCH HEAD (origin/master), unless TD_REF/--ref is set
+#   * ANDROID API: 24  (override with API_LEVEL)
 #   * Generator: Ninja if present; ccache if present
-#   * Crypto: BoringSSL built per-ABI; provided to CMake via an OpenSSLConfig.cmake shim
+#   * Crypto: BoringSSL built per-ABI; provided via OpenSSL CMake shim
 #
 # Usage:
-#   scripts/build_tdlib_android.sh [--only-arm64|--only-v7a|--skip-v7a|--no-v7a]
-#                                  [--ref <tag-or-commit>]   # overrides default latest tag
-#                                  [--main=<branch>]         # only used if building branch head
-#                                  [--api-level=<21|24|...>] # default 24
-#                                  [--minsize|--release]     # MinSizeRel (default) or Release
+#   scripts/build_tdlib_android.sh [--only-arm64|--only-v7a|--skip-v7a]
+#                                  [--ref <tag|commit|branch>]
+#                                  [--api-level=<21|24|...>]
+#                                  [--minsize|--release]
 #                                  [--no-ccache] [--no-ninja]
 #
-# Environment (preferred in CI):
+# Environment (CI-friendly):
 #   ANDROID_NDK_HOME / ANDROID_NDK_ROOT / ANDROID_HOME / ANDROID_SDK_ROOT
-#   TD_REF / TD_TAG / TD_COMMIT   # exact TDLib ref to use (tag or commit)
-#   TD_LATEST_TAG (default 1)     # when 1 AND no TD_REF given -> use newest tag 'v*'
-#   TD_MAIN / TD_BRANCH           # default branch name if building branch head
-#   BORING_REF / BORING_TAG / BORING_COMMIT  # optional pin for BoringSSL
-#   API_LEVEL                     # Android platform level (default 24)
-#   OFFLINE=1                     # do not fetch from network; require local clones/refs
-#   LOCKFILE=.third_party/versions.lock  # optional key=value pins (TD_REF=..., BORING_REF=...)
-#
+#   TD_REF / TD_TAG / TD_COMMIT     # explicit ref (tag/commit/branch)
+#   BORING_REF / BORING_TAG / BORING_COMMIT
+#   API_LEVEL                       # default 24
+#   OFFLINE=1                       # disable network fetches
+#   LOCKFILE=.third_party/versions.lock   # optional key=value pins (TD_REF=..., BORING_REF=...)
 set -Eeuo pipefail
 umask 022
 
 # ---------- logging & helpers ----------
 LOG_TS() { date -u +'%Y-%m-%dT%H:%M:%SZ'; }
-note() { printf '[%s] \033[1;34mNOTE\033[0m: %s\n' "$(LOG_TS)" "$*" >&2; }
-warn() { printf '[%s] \033[1;33mWARN\033[0m: %s\n' "$(LOG_TS)" "$*" >&2; }
-die()  { printf '[%s] \033[1;31mERROR\033[0m: %s\n' "$(LOG_TS)" "$*" >&2; exit 1; }
-HAS()  { command -v "$1" >/dev/null 2>&1; }
-NPROC(){ HAS nproc && nproc || (HAS sysctl && sysctl -n hw.ncpu) || echo 4; }
+note()  { printf '[%s] \033[1;34mNOTE\033[0m: %s\n'  "$(LOG_TS)" "$*" >&2; }
+warn()  { printf '[%s] \033[1;33mWARN\033[0m: %s\n'  "$(LOG_TS)" "$*" >&2; }
+die()   { printf '[%s] \033[1;31mERROR\033[0m: %s\n' "$(LOG_TS)" "$*" >&2; exit 1; }
+HAS()   { command -v "$1" >/dev/null 2>&1; }
+NPROC() { HAS nproc && nproc || (HAS sysctl && sysctl -n hw.ncpu) || echo 4; }
 
 trap 'ec=$?; [[ $ec -ne 0 ]] && warn "Build failed with exit code $ec"; exit $ec' ERR
 
-# ---------- paths ----------
+# ---------- layout ----------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 THIRD="$REPO_DIR/.third_party"; mkdir -p "$THIRD"
@@ -64,31 +60,25 @@ USE_CCACHE=1; USE_NINJA=1
 OFFLINE="${OFFLINE:-0}"
 LOCKFILE_DEFAULT="$THIRD/versions.lock"; LOCKFILE="${LOCKFILE:-$LOCKFILE_DEFAULT}"
 
-# Prefer workflow-provided pins
 TD_REF_ENV="${TD_REF:-${TD_TAG:-${TD_COMMIT:-}}}"
-TD_LATEST_TAG_ENV="${TD_LATEST_TAG:-1}"     # default: ON
-MAIN_BRANCH="${TD_MAIN:-${TD_BRANCH:-main}}"
 BORING_REF_ENV="${BORING_REF:-${BORING_TAG:-${BORING_COMMIT:-}}}"
-
 TD_REF_ARG=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --only-arm64) BUILD_V7A=0 ;;
-    --only-v7a)   BUILD_ARM64=0 ;;
-    --skip-v7a|--no-v7a) BUILD_V7A=0 ;;
+    --only-v7a|--skip-v7a) BUILD_ARM64=0 ;;
     --ref|--tag|--commit) shift; TD_REF_ARG="${1:-}" ;;
-    --main=*|--branch=*) MAIN_BRANCH="${1#*=}" ;;
     --api-level=*) API_LEVEL="${1#*=}" ;;
     --release) BUILD_TYPE="Release" ;;
     --minsize) BUILD_TYPE="MinSizeRel" ;;
     --no-ccache) USE_CCACHE=0 ;;
     --no-ninja)  USE_NINJA=0 ;;
-    -h|--help) sed -n '1,120p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '1,180p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) warn "Unbekanntes Argument ignoriert: $1" ;;
   esac; shift || true
 done
 
-# Lockfile (fallback pins)
+# Pins aus Lockfile (optional)
 if [[ -z "$TD_REF_ARG" && -z "$TD_REF_ENV" && -f "$LOCKFILE" ]]; then
   note "Lade Pins aus $LOCKFILE"
   # shellcheck disable=SC1090
@@ -96,16 +86,16 @@ if [[ -z "$TD_REF_ARG" && -z "$TD_REF_ENV" && -f "$LOCKFILE" ]]; then
   TD_REF_ENV="${TD_REF_ENV:-${TD_REF:-}}"
   BORING_REF_ENV="${BORING_REF_ENV:-${BORING_REF:-}}"
 fi
-
-# Final selection: explicit > env > lockfile ; default to latest tag
 TD_SELECTED_REF="${TD_REF_ARG:-$TD_REF_ENV}"
-USE_LATEST=$TD_LATEST_TAG_ENV
-[[ -n "$TD_SELECTED_REF" ]] && USE_LATEST=0
 
-# ---------- tools & speedups ----------
+# ---------- tools ----------
 for t in git cmake awk sed; do HAS "$t" || die "Benötigtes Tool fehlt: $t"; done
-
-SHA256(){ HAS sha256sum && sha256sum "$1"|awk '{print $1}' || (HAS shasum && shasum -a 256 "$1"|awk '{print $1}') || die "sha256sum/shasum fehlt"; }
+SHA256(){
+  if HAS sha256sum; then sha256sum "$1"|awk '{print $1}'
+  elif HAS shasum; then shasum -a 256 "$1"|awk '{print $1}'
+  else die "sha256sum/shasum fehlt"
+  fi
+}
 
 CMAKE_CCACHE=()
 if (( USE_CCACHE==1 )) && HAS ccache; then
@@ -134,44 +124,29 @@ NDK="$(detect_ndk)"; note "NDK: $NDK"; export ANDROID_NDK_HOME="$NDK"
 # ---------- TDLib fetch/checkout ----------
 if [[ ! -d "$TD_DIR/.git" ]]; then
   [[ "$OFFLINE" == "1" ]] && die "OFFLINE=1 aber TDLib fehlt unter $TD_DIR"
-  note "Cloning TDLib…"; git clone --depth 1 https://github.com/tdlib/td.git "$TD_DIR"
+  note "Cloning TDLib…"
+  git clone --depth 1 https://github.com/tdlib/td.git "$TD_DIR"
 elif [[ "$OFFLINE" != "1" ]]; then
   ( cd "$TD_DIR" && git fetch --tags --force --prune origin >/dev/null 2>&1 || true )
+  ( cd "$TD_DIR" && git fetch --force --prune origin >/dev/null 2>&1 || true )
 fi
 
-get_latest_td_tag(){
-  # TDLib uses tags like v1.x.y (see official tags page). Prefer remote list, fallback to local.
-  local tag=""
-  if [[ "$OFFLINE" != "1" ]]; then
-    tag="$(cd "$TD_DIR" && git ls-remote --tags --refs origin 'v*' | awk -F/ '{print $3}' | sort -V | tail -1)"
-  fi
-  [[ -n "$tag" ]] || tag="$(cd "$TD_DIR" && git tag --list 'v*' | sort -V | tail -1)"
-  echo "$tag"
-}
-
+# Checkout-Strategie:
+# - expliziter Ref → genau der (Tag/Commit/Branch)
+# - sonst: HEAD von origin/master
 SOURCE_BRANCH=""
 if [[ -n "$TD_SELECTED_REF" ]]; then
+  note "TD_REF gesetzt: $TD_SELECTED_REF"
   [[ "$OFFLINE" == "1" ]] || (cd "$TD_DIR" && git fetch --depth 1 origin "$TD_SELECTED_REF") || true
-  (cd "$TD_DIR" && git rev-parse --verify -q "$TD_SELECTED_REF" >/dev/null) || (cd "$TD_DIR" && git rev-parse --verify -q "origin/$TD_SELECTED_REF" >/dev/null) || die "TDLib Ref '$TD_SELECTED_REF' nicht vorhanden"
+  (cd "$TD_DIR" && git rev-parse --verify -q "$TD_SELECTED_REF" >/dev/null) \
+    || (cd "$TD_DIR" && git rev-parse --verify -q "origin/$TD_SELECTED_REF" >/dev/null) \
+    || die "TDLib Ref '$TD_SELECTED_REF' nicht vorhanden"
   (cd "$TD_DIR" && git checkout --detach "$TD_SELECTED_REF" 2>/dev/null || git checkout --detach "origin/$TD_SELECTED_REF")
-elif (( USE_LATEST==1 )); then
-  [[ "$OFFLINE" == "1" ]] && die "OFFLINE=1 aber default=latest benötigt Netzwerk"
-  LATEST_TAG="$(get_latest_td_tag)"
-  [[ -n "$LATEST_TAG" ]] || die "Kein TDLib-Tag gefunden (v*)"
-  note "Baue neuestes TDLib-Tag: $LATEST_TAG"
-  (cd "$TD_DIR" && git fetch --depth 1 origin "refs/tags/$LATEST_TAG" && git checkout --detach FETCH_HEAD)
 else
-  if (cd "$TD_DIR" && git rev-parse --verify -q "origin/$MAIN_BRANCH" >/dev/null); then
-    [[ "$OFFLINE" == "1" ]] || (cd "$TD_DIR" && git fetch --depth 1 origin "$MAIN_BRANCH")
-    (cd "$TD_DIR" && git checkout --detach "FETCH_HEAD" 2>/dev/null || git checkout --detach "origin/$MAIN_BRANCH")
-    SOURCE_BRANCH="$MAIN_BRANCH"
-  elif (cd "$TD_DIR" && git rev-parse --verify -q origin/master >/dev/null); then
-    [[ "$OFFLINE" == "1" ]] || (cd "$TD_DIR" && git fetch --depth 1 origin master)
-    (cd "$TD_DIR" && git checkout --detach "FETCH_HEAD" 2>/dev/null || git checkout --detach "origin/master")
-    SOURCE_BRANCH="master"
-  else
-    die "Weder origin/$MAIN_BRANCH noch origin/master verfügbar"
-  fi
+  note "Kein TD_REF angegeben — baue origin/master"
+  [[ "$OFFLINE" == "1" ]] || (cd "$TD_DIR" && git fetch --depth 1 origin master)
+  (cd "$TD_DIR" && git checkout --detach FETCH_HEAD 2>/dev/null || git checkout --detach "origin/master")
+  SOURCE_BRANCH="master"
 fi
 
 TD_COMMIT_HASH="$(cd "$TD_DIR" && git rev-parse --short=12 HEAD)"
@@ -180,7 +155,7 @@ TD_TAG_NEAREST="$(cd "$TD_DIR" && (git describe --tags --abbrev=0 2>/dev/null ||
 BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 note "TDLib @ ${TD_COMMIT_HASH} ${TD_TAG_EXACT:+(exact $TD_TAG_EXACT)}"
 
-# ---------- Generate Java API (example/java -> td_generate_java_api) ----------
+# ---------- Generate Java API ----------
 HOST_BUILD_DIR="$TD_DIR/build-host"; rm -rf "$HOST_BUILD_DIR"; mkdir -p "$HOST_BUILD_DIR"
 cmake -S "$TD_DIR" -B "$HOST_BUILD_DIR" -DCMAKE_BUILD_TYPE=Release "${GEN_ARGS[@]}"
 JAVA_GEN_DIR="$TD_DIR/build-java-gen"; rm -rf "$JAVA_GEN_DIR"; mkdir -p "$JAVA_GEN_DIR"
@@ -195,7 +170,7 @@ SRC_JAVA_DIR=""
 mkdir -p "$JAVA_OUT_DIR"; cp -f "$SRC_JAVA_DIR/TdApi.java" "$JAVA_OUT_DIR/"; cp -f "$SRC_JAVA_DIR/Client.java" "$JAVA_OUT_DIR/"
 note "Java Bindings -> $JAVA_OUT_DIR"
 
-# ---------- BoringSSL: clone & optional pin ----------
+# ---------- BoringSSL ----------
 if [[ ! -d "$BORING_DIR/.git" ]]; then
   [[ "$OFFLINE" == "1" ]] && die "OFFLINE=1 aber BoringSSL fehlt unter $BORING_DIR"
   git clone --depth 1 https://boringssl.googlesource.com/boringssl "$BORING_DIR"
@@ -204,7 +179,9 @@ elif [[ "$OFFLINE" != "1" ]]; then
 fi
 if [[ -n "$BORING_REF_ENV" ]]; then
   [[ "$OFFLINE" == "1" ]] || (cd "$BORING_DIR" && git fetch --depth 1 origin "$BORING_REF_ENV") || true
-  (cd "$BORING_DIR" && git rev-parse --verify -q "$BORING_REF_ENV" >/dev/null) || (cd "$BORING_DIR" && git rev-parse --verify -q "origin/$BORING_REF_ENV" >/dev/null) || die "BoringSSL Ref '$BORING_REF_ENV' nicht vorhanden"
+  (cd "$BORING_DIR" && git rev-parse --verify -q "$BORING_REF_ENV" >/dev/null) \
+    || (cd "$BORING_DIR" && git rev-parse --verify -q "origin/$BORING_REF_ENV" >/dev/null) \
+    || die "BoringSSL Ref '$BORING_REF_ENV' nicht vorhanden"
   (cd "$BORING_DIR" && git checkout --detach "$BORING_REF_ENV" 2>/dev/null || git checkout --detach "origin/$BORING_REF_ENV")
 fi
 
@@ -339,24 +316,29 @@ build_abi () {
     -DCMAKE_PREFIX_PATH="$OPENSSL_CMAKE_DIR"
   )
   cmake "${GEN_ARGS[@]}" "${CMAKE_CCACHE[@]}" "${CMAKE_FLAGS[@]}" "$jni_build_dir"
-  cmake --build . --target tdjni -j"$N"
-  local LIB_PATH=""; for cand in "libtdjni.so" "./lib/libtdjni.so" "./jni/libtdjni.so"; do [[ -f "$cand" ]] && { LIB_PATH="$cand"; break; }; done
+  cmake --build . --target tdjni -j"$(NPROC)"
+  local LIB_PATH=""
+  for cand in "libtdjni.so" "./lib/libtdjni.so" "./jni/libtdjni.so"; do
+    [[ -f "$cand" ]] && { LIB_PATH="$cand"; break; }
+  done
   [[ -n "$LIB_PATH" ]] || die "libtdjni.so ($abi) nicht gefunden"
   mkdir -p "$out_dir"; cp -f "$LIB_PATH" "$out_dir/"
-  local STRIP_BIN; STRIP_BIN="$(find_strip)"; [[ -n "$STRIP_BIN" && -x "$STRIP_BIN" ]] && "$STRIP_BIN" --strip-unneeded -x "$out_dir/libtdjni.so" || true
-  local LIBCXX; if LIBCXX="$(find_libcxx_shared "$abi")"; then cp -f "$LIBCXX" "$out_dir/"; else warn "libc++_shared.so nicht gefunden"; fi
+  local STRIP_BIN; STRIP_BIN="$(find_strip)"
+  [[ -n "$STRIP_BIN" && -x "$STRIP_BIN" ]] && "$STRIP_BIN" --strip-unneeded -x "$out_dir/libtdjni.so" || true
+  local LIBCXX
+  if LIBCXX="$(find_libcxx_shared "$abi")"; then cp -f "$LIBCXX" "$out_dir/"; else warn "libc++_shared.so nicht gefunden"; fi
   popd >/dev/null
 }
 
-# Build
+# ---------- build ----------
 (( BUILD_ARM64 == 1 )) && build_abi "arm64-v8a" "$OUT_DIR64"
 (( BUILD_V7A   == 1 )) && build_abi "armeabi-v7a" "$OUT_DIR32"
 
-# Metadata
+# ---------- metadata ----------
 mkdir -p "$(dirname "$META_FILE")"
 {
   echo "tdlib_commit=$TD_COMMIT_HASH"
-  [[ -n "$TD_TAG_EXACT"   ]] && echo "tdlib_tag_exact=$TD_TAG_EXACT"   || true
+  [[ -n "$TD_TAG_EXACT"   ]] && echo "tdlib_tag_exact=$TD_TAG_EXACT" || true
   [[ -n "$TD_TAG_NEAREST" ]] && echo "tdlib_tag_nearest=$TD_TAG_NEAREST" || true
   echo "source_branch=${SOURCE_BRANCH:-}"
   echo "built_utc=$BUILD_TIME"
@@ -374,11 +356,11 @@ SHA_V7A="";   [[ -f "$OUT_DIR32/libtdjni.so" ]] && SHA_V7A="$(SHA256 "$OUT_DIR32
   echo "CMAKE=$(cmake --version | head -1)"
 } > "$META_BLOB"
 
-# Optional: write lockfile with used pins (reproducibility)
+# Optional: reproducible pins
 if [[ -n "${TD_SELECTED_REF:-}" || -n "${BORING_REF_ENV:-}" ]]; then
   {
     [[ -n "${TD_SELECTED_REF:-}" ]] && echo "TD_REF=$TD_SELECTED_REF" || true
-    [[ -n "${BORING_REF_ENV:-}" ]] && echo "BORING_REF=$BORING_REF_ENV" || true
+    [[ -n "${BORING_REF_ENV:-}"  ]] && echo "BORING_REF=$BORING_REF_ENV" || true
   } > "$LOCKFILE"
   note "Pins geschrieben -> $LOCKFILE"
 fi
