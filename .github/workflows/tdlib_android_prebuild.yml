@@ -84,7 +84,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y curl unzip gperf ninja-build pkg-config rsync jq zip unzip
+          sudo apt-get install -y curl unzip gperf ninja-build pkg-config rsync jq zip
 
       - name: "Android SDK manuell vorbereiten (cmdline-tools + platform-tools)"
         id: sdk
@@ -95,35 +95,34 @@ jobs:
           mkdir -p "${SDK_ROOT}"
           cd "${SDK_ROOT}"
 
-          # Frische Commandline-Tools holen (stabiler als Runner-Altversionen)
+          # Neueste Commandline-Tools in eigenen Pfad 'cmdline-tools/new' installieren (keine Kollisionen)
           CT_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
           echo "Lade: ${CT_URL}"
           curl -sSL "${CT_URL}" -o cmdline.zip
-          mkdir -p cmdline-tools/latest
-          unzip -q cmdline.zip -d cmdline-tools
-          # Einige Archive entpacken nach 'cmdline-tools'; wir verschieben nach 'latest' für saubere Pfade
-          if [ -d "cmdline-tools/cmdline-tools" ]; then
-            mv cmdline-tools/cmdline-tools/* cmdline-tools/latest/
-            rm -rf cmdline-tools/cmdline-tools
-          fi
+          rm -rf cmdline-tools/new
+          mkdir -p cmdline-tools/new
+          unzip -q cmdline.zip -d cmdline-tools/new
           rm -f cmdline.zip
 
           export ANDROID_SDK_ROOT="${SDK_ROOT}"
-          export PATH="${SDK_ROOT}/cmdline-tools/latest/bin:${SDK_ROOT}/platform-tools:${PATH}"
+          export PATH="${SDK_ROOT}/cmdline-tools/new/bin:${SDK_ROOT}/platform-tools:${PATH}"
 
-          yes | "${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${SDK_ROOT}" --licenses >/dev/null
+          # BONUS: Paket-Index aktualisieren (stabilisiert nachfolgende Installs)
+          yes | "${SDK_ROOT}/cmdline-tools/new/bin/sdkmanager" --sdk_root="${SDK_ROOT}" --update >/dev/null || true
 
-          # Zuerst platform-tools installieren (verhindert den bekannten Fehler)
-          yes | "${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${SDK_ROOT}" "platform-tools"
+          # Lizenzen + Basispaket
+          yes | "${SDK_ROOT}/cmdline-tools/new/bin/sdkmanager" --sdk_root="${SDK_ROOT}" --licenses >/dev/null
+          yes | "${SDK_ROOT}/cmdline-tools/new/bin/sdkmanager" --sdk_root="${SDK_ROOT}" "platform-tools"
           adb version
 
-          # Dann gewünschte Platform + NDK
-          yes | "${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${SDK_ROOT}" "platforms;android-${{ inputs.api_level }}"
-          yes | "${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${SDK_ROOT}" "ndk;${{ inputs.ndk_version }}"
+          # Gewünschte Platform + NDK installieren
+          yes | "${SDK_ROOT}/cmdline-tools/new/bin/sdkmanager" --sdk_root="${SDK_ROOT}" "platforms;android-${{ inputs.api_level }}"
+          yes | "${SDK_ROOT}/cmdline-tools/new/bin/sdkmanager" --sdk_root="${SDK_ROOT}" "ndk;${{ inputs.ndk_version }}"
 
+          # Für Folge-Steps exportieren
           echo "ANDROID_SDK_ROOT=${SDK_ROOT}" >> "$GITHUB_ENV"
           echo "ANDROID_NDK_HOME=${SDK_ROOT}/ndk/${{ inputs.ndk_version }}" >> "$GITHUB_ENV"
-          echo "PATH=${SDK_ROOT}/cmdline-tools/latest/bin:${SDK_ROOT}/platform-tools:${PATH}" >> "$GITHUB_ENV"
+          echo "PATH=${SDK_ROOT}/cmdline-tools/new/bin:${SDK_ROOT}/platform-tools:${PATH}" >> "$GITHUB_ENV"
 
       - name: "Java einrichten (Temurin 17)"
         uses: actions/setup-java@v4
@@ -153,10 +152,8 @@ jobs:
         id: build
         shell: bash
         env:
-          # aus SDK-Step gesetzt
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
-          # Script-ENV
           USE_CCACHE: ${{ inputs.use_cache }}
           CHANNEL: ${{ inputs.channel }}
           TD_REF: ${{ inputs.td_ref }}
