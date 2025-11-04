@@ -87,13 +87,30 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # Wichtig: neueste cmdline-tools erzwingen, damit sdkmanager 'platform-tools' zuverlässig findet
       - name: Android SDK + NDK installieren
         uses: android-actions/setup-android@v3
         with:
+          cmdline-tools-version: latest
           packages: |
             platform-tools
             platforms;android-${{ inputs.api_level }}
             ndk;${{ inputs.ndk_version }}
+
+      # Lizenzen vor jedem sdkmanager-Call akzeptieren (idempotent)
+      - name: SDK-Lizenzen akzeptieren
+        shell: bash
+        run: |
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_SDK_ROOT}" --licenses >/dev/null
+
+      # Fallback: 'platform-tools' zuverlässig nachinstallieren (Workaround für sporadische Index-/Mirror-Bugs)
+      - name: SDK-Fallback: platform-tools erzwingen
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "== Fallback: Installiere platform-tools falls noch nicht vorhanden =="
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_SDK_ROOT}" "platform-tools" || true
+          "${ANDROID_SDK_ROOT}/platform-tools/adb" version || (echo "platform-tools fehlen weiterhin" && exit 1)
 
       - name: sccache aktivieren (optional)
         if: ${{ inputs.use_cache == 'sccache' || inputs.use_cache == 'auto' }}
