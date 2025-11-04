@@ -10,31 +10,33 @@ API="${ANDROID_API:-24}"
 BUILD_TYPE="MinSizeRel"
 NDK="${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}"
 
-# Simple args
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --ref)        TD_REF="${2:-master}"; shift 2 ;;
-    --abis)       ABIS="${2:-$ABIS}"; shift 2 ;;
-    --api-level)  API="${2:-$API}"; shift 2 ;;
-    --build-type) BUILD_TYPE="${2:-$BUILD_TYPE}"; shift 2 ;;
-    --release)    BUILD_TYPE="Release"; shift ;;
-    --ndk)        NDK="${2:-}"; shift 2 ;;
-    --help|-h)
-      cat <<'USAGE'
+usage() {
+  cat <<'USAGE'
 TDLib Android Builder (minimal)
 Builds TDLib JNI (libtdjni.so) for arm64-v8a + armeabi-v7a and generates Java bindings.
 Defaults: ref=master, api=24, build_type=MinSizeRel
 
-Options:
-  --ref <tag|branch|commit>   (default: master)
-  --abis <comma list>         (default: arm64-v8a,armeabi-v7a)
-  --api-level <N>             (default: 24)
-  --build-type <T>            (MinSizeRel|Release)
-  --release                   (shorthand for --build-type Release)
+Options (accepts "--k v" and "--k=v"):
+  --ref <tag|branch|commit>
+  --abis <comma,list>
+  --api-level <N>
+  --build-type <MinSizeRel|Release>
+  --release                     # shorthand for --build-type=Release
   --ndk </path/to/ndk>
 USAGE
-      exit 0 ;;
-    *) echo "ERROR: Unknown argument: $1" >&2; exit 1 ;;
+}
+
+# Parse args: accept --key value and --key=value
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --help|-h) usage; exit 0 ;;
+    --release|--release=*) BUILD_TYPE="Release"; shift ;;
+    --ref|--ref=*)           v="${1#*=}"; [[ "$v" == "$1" ]] && { v="${2:-}"; shift; }; TD_REF="${v:-master}"; shift ;;
+    --abis|--abis=*)         v="${1#*=}"; [[ "$v" == "$1" ]] && { v="${2:-}"; shift; }; ABIS="${v:-$ABIS}"; shift ;;
+    --api-level|--api-level=*) v="${1#*=}"; [[ "$v" == "$1" ]] && { v="${2:-}"; shift; }; API="${v:-$API}"; shift ;;
+    --build-type|--build-type=*) v="${1#*=}"; [[ "$v" == "$1" ]] && { v="${2:-}"; shift; }; BUILD_TYPE="${v:-$BUILD_TYPE}"; shift ;;
+    --ndk|--ndk=*)           v="${1#*=}"; [[ "$v" == "$1" ]] && { v="${2:-}"; shift; }; NDK="${v:-}"; shift ;;
+    *) echo "ERROR: Unknown argument: $1" >&2; usage; exit 1 ;;
   esac
 done
 
@@ -62,10 +64,9 @@ JAVA_DST="$ROOT/libtd/src/main/java/org/drinkless/tdlib"
 JNI_DST="$ROOT/libtd/src/main/jniLibs"
 META_TXT="$ROOT/libtd/TDLIB_VERSION.txt"
 META_JSON="$ROOT/libtd/.tdlib_meta"
-
 mkdir -p "$TP" "$JAVA_DST" "$JNI_DST"
 
-# Clone/checkout
+# Clone/checkout (master by default)
 if [[ ! -d "$TD/.git" ]]; then
   git clone --filter=blob:none --recurse-submodules "$TD_REMOTE" "$TD"
 else
@@ -83,7 +84,8 @@ fi
 # Generate Java API
 BUILD_JAVA="$TD/build-java"
 mkdir -p "$BUILD_JAVA"
-cmake -S "$TD/example/java" -B "$BUILD_JAVA" -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_JNI=ON -G Ninja || cmake -S "$TD/example/java" -B "$BUILD_JAVA" -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_JNI=ON
+cmake -S "$TD/example/java" -B "$BUILD_JAVA" -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_JNI=ON -G Ninja \
+  || cmake -S "$TD/example/java" -B "$BUILD_JAVA" -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_JNI=ON
 cmake --build "$BUILD_JAVA" --target td_generate_java_api -j"$(getconf _NPROCESSORS_ONLN)"
 
 # Copy Java bindings
