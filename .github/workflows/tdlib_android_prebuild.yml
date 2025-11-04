@@ -92,37 +92,65 @@ jobs:
         run: |
           set -euo pipefail
           SDK_ROOT="/usr/local/lib/android/sdk"
-          mkdir -p "${SDK_ROOT}"
+          CT_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
+
+          echo "SDK_ROOT=${SDK_ROOT}"
+          sudo mkdir -p "${SDK_ROOT}"
+          sudo chown -R "$USER":"$USER" "${SDK_ROOT}"
           cd "${SDK_ROOT}"
 
-          # Neueste Commandline-Tools in eigenen Pfad 'cmdline-tools/new' installieren (keine Kollisionen)
-          CT_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
+          # clean + entpacken nach 'latest'
+          rm -rf cmdline-tools/latest cmdline-tools/temp
+          mkdir -p cmdline-tools/temp
           echo "Lade: ${CT_URL}"
           curl -sSL "${CT_URL}" -o cmdline.zip
-          rm -rf cmdline-tools/new
-          mkdir -p cmdline-tools/new
-          unzip -q cmdline.zip -d cmdline-tools/new
+          unzip -q cmdline.zip -d cmdline-tools/temp
           rm -f cmdline.zip
 
+          if [ -d "cmdline-tools/temp/cmdline-tools" ]; then
+            mkdir -p cmdline-tools
+            mv cmdline-tools/temp/cmdline-tools cmdline-tools/latest
+          else
+            mkdir -p cmdline-tools/latest
+            shopt -s dotglob nullglob
+            mv cmdline-tools/temp/* cmdline-tools/latest/ || true
+            shopt -u dotglob nullglob
+          fi
+          rm -rf cmdline-tools/temp
+
+          SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "${SDKMANAGER}" ] || { echo "sdkmanager nicht gefunden unter ${SDKMANAGER}" >&2; find "${SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager -print; exit 127; }
+
           export ANDROID_SDK_ROOT="${SDK_ROOT}"
-          export PATH="${SDK_ROOT}/cmdline-tools/new/bin:${SDK_ROOT}/platform-tools:${PATH}"
 
-          # BONUS: Paket-Index aktualisieren (stabilisiert nachfolgende Installs)
-          yes | "${SDK_ROOT}/cmdline-tools/new/bin/sdkmanager" --sdk_root="${SDK_ROOT}" --update >/dev/null || true
+          # PATH für diesen und Folge-Steps
+          {
+            echo "${SDK_ROOT}/cmdline-tools/latest/bin"
+            echo "${SDK_ROOT}/platform-tools"
+          } >> "$GITHUB_PATH"
+          export PATH="${SDK_ROOT}/cmdline-tools/latest/bin:${SDK_ROOT}/platform-tools:${PATH}"
 
-          # Lizenzen + Basispaket
-          yes | "${SDK_ROOT}/cmdline-tools/new/bin/sdkmanager" --sdk_root="${SDK_ROOT}" --licenses >/dev/null
-          yes | "${SDK_ROOT}/cmdline-tools/new/bin/sdkmanager" --sdk_root="${SDK_ROOT}" "platform-tools"
+          # Retry helper für flakey sdkmanager
+          retry() { n=0; until bash -lc "$*"; do n=$((n+1)); [ $n -ge 3 ] && return 1; echo "retry $n/3: $*"; sleep 2; done; }
+
+          # BONUS: Index aktualisieren
+          retry "${SDKMANAGER} --sdk_root='${SDK_ROOT}' --update >/dev/null || true"
+
+          # Lizenzen + platform-tools zuerst
+          retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' --licenses >/dev/null"
+          retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'platform-tools'"
           adb version
 
-          # Gewünschte Platform + NDK installieren
-          yes | "${SDK_ROOT}/cmdline-tools/new/bin/sdkmanager" --sdk_root="${SDK_ROOT}" "platforms;android-${{ inputs.api_level }}"
-          yes | "${SDK_ROOT}/cmdline-tools/new/bin/sdkmanager" --sdk_root="${SDK_ROOT}" "ndk;${{ inputs.ndk_version }}"
+          # gewünschte Platform + NDK
+          retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'platforms;android-${{ inputs.api_level }}'"
+          retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'ndk;${{ inputs.ndk_version }}'"
 
           # Für Folge-Steps exportieren
-          echo "ANDROID_SDK_ROOT=${SDK_ROOT}" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_HOME=${SDK_ROOT}/ndk/${{ inputs.ndk_version }}" >> "$GITHUB_ENV"
-          echo "PATH=${SDK_ROOT}/cmdline-tools/new/bin:${SDK_ROOT}/platform-tools:${PATH}" >> "$GITHUB_ENV"
+          {
+            echo "ANDROID_SDK_ROOT=${SDK_ROOT}"
+            echo "ANDROID_NDK_HOME=${SDK_ROOT}/ndk/${{ inputs.ndk_version }}"
+            echo "PATH=${SDK_ROOT}/cmdline-tools/latest/bin:${SDK_ROOT}/platform-tools:${PATH}"
+          } >> "$GITHUB_ENV"
 
       - name: "Java einrichten (Temurin 17)"
         uses: actions/setup-java@v4
