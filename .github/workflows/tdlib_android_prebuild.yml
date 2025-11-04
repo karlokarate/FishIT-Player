@@ -17,7 +17,7 @@ on:
         type: string
         default: "arm64-v8a"
       api_level:
-        description: "Android API-Level"
+        description: "Android API-Level (z.B. 24)"
         type: number
         default: 24
       build_type:
@@ -130,7 +130,7 @@ jobs:
           } >> "$GITHUB_PATH"
           export PATH="${SDK_ROOT}/cmdline-tools/latest/bin:${SDK_ROOT}/platform-tools:${PATH}"
 
-          # Retry helper für flakey sdkmanager
+          # retry helper
           retry() { n=0; until bash -lc "$*"; do n=$((n+1)); [ $n -ge 3 ] && return 1; echo "retry $n/3: $*"; sleep 2; done; }
 
           # BONUS: Index aktualisieren
@@ -141,8 +141,29 @@ jobs:
           retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'platform-tools'"
           adb version
 
-          # gewünschte Platform + NDK
-          retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'platforms;android-${{ inputs.api_level }}'"
+          # === API-Level robust sanitisieren: 24.0 -> 24; min 21
+          RAW_API="${{ inputs.api_level }}"
+          API_SAN=$(echo "${RAW_API}" | sed -E 's/[^0-9].*$//' )
+          if [ -z "${API_SAN}" ]; then API_SAN=24; fi
+          if [ "${API_SAN}" -lt 21 ]; then API_SAN=21; fi
+          echo "Gewünschte Plattform: platforms;android-${API_SAN}"
+
+          # Verfügbare Platform-IDs holen
+          AVAIL_PLATFORMS="$(${SDKMANAGER} --sdk_root='${SDK_ROOT}' --list | grep -Eo 'platforms;android-[0-9]+' | sort -V | uniq)"
+          echo "Verfügbar: $(echo "${AVAIL_PLATFORMS}" | tr '\n' ' ')"
+
+          # Erst Wunschversion versuchen …
+          if ! retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'platforms;android-${API_SAN}'"; then
+            echo "WARN: platforms;android-${API_SAN} nicht verfügbar – versuche neueste verfügbare Plattform."
+            LATEST_PLATFORM=$(echo "${AVAIL_PLATFORMS}" | tail -n1 || true)
+            if [ -n "${LATEST_PLATFORM}" ]; then
+              retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' '${LATEST_PLATFORM}'"
+            else
+              echo "ERROR: keine 'platforms;android-XX' im Index gefunden."; exit 1
+            fi
+          fi
+
+          # NDK
           retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'ndk;${{ inputs.ndk_version }}'"
 
           # Für Folge-Steps exportieren
