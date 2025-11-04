@@ -190,12 +190,37 @@ jobs:
           key: "tdlib-${{ inputs.channel }}-${{ inputs.td_ref }}-ndk${{ inputs.ndk_version }}-${{ inputs.abis }}-${{ inputs.build_type }}-${{ inputs.ssl }}"
           max-size: "1G"
 
-      - name: "Build-Skript ausführbar machen"
+      
+        - name: "Build-Skript lokalisieren & ausführbar machen"
+        id: script
         shell: bash
         run: |
           set -euo pipefail
-          test -f ./build-tdlib-android.sh || { echo "build-tdlib-android.sh fehlt im Repo-Root." >&2; exit 1; }
-          chmod +x ./build-tdlib-android.sh
+          # Kandidaten in üblicher Reihenfolge
+          CANDIDATES=(
+            "./scripts/build_tdlib_android.sh"
+            "./scripts/build-tdlib-android.sh"
+            "./build_tdlib_android.sh"
+            "./build-tdlib-android.sh"
+          )
+          SCRIPT=""
+
+          for c in "${CANDIDATES[@]}"; do
+            if [ -f "$c" ]; then SCRIPT="$c"; break; fi
+          done
+
+          if [ -z "$SCRIPT" ]; then
+            echo "❌ Build-Skript nicht gefunden. Verfügbare Dateien (Top 200):"
+            git ls-files | sed -n '1,200p'
+            exit 1
+          fi
+
+          # Windows-CRLF wegräumen, falls vorhanden
+          sed -i 's/\r$//' "$SCRIPT" || true
+          chmod +x "$SCRIPT"
+          echo "script_path=${SCRIPT}" >> "$GITHUB_OUTPUT"
+          echo "SCRIPT=${SCRIPT}" >> "$GITHUB_ENV"
+          echo "✅ Gefundenes Skript: $SCRIPT"
 
       - name: "Build starten"
         id: build
@@ -221,8 +246,9 @@ jobs:
           if [ "${{ inputs.make_jar }}" = "true" ]; then args+=( --jar ); fi
           if [ "${{ inputs.use_cache }}" = "off" ]; then args+=( --no-ccache ); fi
           if [ "${{ steps.adv.outputs.jobs }}" != "0" ]; then args+=( --jobs "${{ steps.adv.outputs.jobs }}" ); fi
-          echo ">> ./build-tdlib-android.sh ${args[*]}"
-          ./build-tdlib-android.sh "${args[@]}"
+
+          echo ">> $SCRIPT ${args[*]}"
+          "$SCRIPT" "${args[@]}"
 
       - name: "Metadaten extrahieren"
         id: meta
