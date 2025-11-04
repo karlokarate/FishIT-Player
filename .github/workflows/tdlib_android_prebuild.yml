@@ -12,15 +12,10 @@ on:
         description: "Fixe TDLib-Ref (Tag/Commit/Branch) – überschreibt channel"
         type: string
         default: ""
-      abis_preset:
-        description: "ABIs (Vorauswahl)"
-        type: choice
-        options: ["arm64-v8a", "arm64-v8a,armeabi-v7a", "custom"]
-        default: "arm64-v8a"
-      abis_custom:
-        description: "Nur wenn 'custom' – Komma-getrennt (z.B. arm64-v8a,x86_64)"
+      abis:
+        description: "ABIs: Komma-getrennt (z.B. arm64-v8a,armeabi-v7a)"
         type: string
-        default: ""
+        default: "arm64-v8a"
       api_level:
         description: "Android API-Level"
         type: number
@@ -44,137 +39,77 @@ on:
         description: "Java-Sources.jar erzeugen?"
         type: boolean
         default: false
-      plan:
-        description: "Dry-Run (nur Plan ausgeben)?"
-        type: boolean
-        default: false
-      jobs:
-        description: "Parallel-Jobs (-j)"
-        type: number
-        default: 0
-      out_dir:
-        description: "Output-Basisverzeichnis"
-        type: string
-        default: "out"
       ndk_version:
         description: "Android NDK-Version (SDK-Manager-Notation)"
         type: string
         default: "26.3.11579264"
-      publish_branch:
-        description: "Branch für Prebuilts (leer = kein Push)"
+      advanced:
+        description: "JSON: {\"plan\":false,\"jobs\":0,\"out_dir\":\"out\",\"publish_branch\":\"prebuilt/tdlib\",\"retention_days\":30}"
         type: string
-        default: "prebuilt/tdlib"
-      retention_days:
-        description: "Artifact-Aufbewahrungstage"
-        type: number
-        default: 30
-
-  workflow_call:
-    inputs:
-      channel: {type: string, default: "stable"}
-      td_ref: {type: string, default: ""}
-      abis_preset: {type: string, default: "arm64-v8a"}
-      abis_custom: {type: string, default: ""}
-      api_level: {type: number, default: 24}
-      build_type: {type: string, default: "MinSizeRel"}
-      ssl: {type: string, default: "boringssl"}
-      use_cache: {type: string, default: "auto"}
-      make_jar: {type: boolean, default: false}
-      plan: {type: boolean, default: false}
-      jobs: {type: number, default: 0}
-      out_dir: {type: string, default: "out"}
-      ndk_version: {type: string, default: "26.3.11579264"}
-      publish_branch: {type: string, default: "prebuilt/tdlib"}
-      retention_days: {type: number, default: 30}
-    outputs:
-      td_describe:
-        description: "Git-Describe der gebauten TDLib"
-        value: ${{ jobs.build.outputs.td_describe }}
-      td_commit:
-        description: "Commit-Hash der gebauten TDLib"
-        value: ${{ jobs.build.outputs.td_commit }}
-      publish_ref:
-        description: "Ref des Publish-Branches (falls gepusht)"
-        value: ${{ jobs.build.outputs.publish_ref }}
+        default: ""
 
 permissions:
-  contents: write   # notwendig, um in einen Branch pushen zu können (GITHUB_TOKEN)
+  contents: write
 
 jobs:
   build:
     name: Build TDLib Android
     runs-on: ubuntu-latest
-    outputs:
-      td_describe: ${{ steps.meta.outputs.td_describe }}
-      td_commit: ${{ steps.meta.outputs.td_commit }}
-      publish_ref: ${{ steps.publish.outputs.publish_ref }}
-
-    env:
-      # Inputs zusammenführen (dispatch oder call)
-      INPUT_CHANNEL: ${{ inputs.channel }}
-      INPUT_TD_REF: ${{ inputs.td_ref }}
-      INPUT_ABIS_PRESET: ${{ inputs.abis_preset }}
-      INPUT_ABIS_CUSTOM: ${{ inputs.abis_custom }}
-      INPUT_API: ${{ inputs.api_level }}
-      INPUT_BUILD_TYPE: ${{ inputs.build_type }}
-      INPUT_SSL: ${{ inputs.ssl }}
-      INPUT_USE_CACHE: ${{ inputs.use_cache }}
-      INPUT_MAKE_JAR: ${{ inputs.make_jar }}
-      INPUT_PLAN: ${{ inputs.plan }}
-      INPUT_JOBS: ${{ inputs.jobs }}
-      INPUT_OUT_DIR: ${{ inputs.out_dir }}
-      INPUT_NDK_VERSION: ${{ inputs.ndk_version }}
-      INPUT_PUBLISH_BRANCH: ${{ inputs.publish_branch }}
-      INPUT_RETENTION: ${{ inputs.retention_days }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Parse advanced JSON
+        id: adv
+        shell: bash
+        run: |
+          set -euo pipefail
+          ADV_RAW="${{ inputs.advanced }}"
+          if [ -z "${ADV_RAW}" ]; then ADV_RAW="{}"; fi
+          echo "$ADV_RAW" | jq -e '.' >/dev/null 2>&1 || { echo "Invalid JSON for 'advanced'."; exit 1; }
+
+          PLAN=$(echo "$ADV_RAW" | jq -r '.plan // false')
+          JOBS=$(echo "$ADV_RAW" | jq -r '.jobs // 0')
+          OUT_DIR=$(echo "$ADV_RAW" | jq -r '.out_dir // "out"')
+          PUBLISH_BRANCH=$(echo "$ADV_RAW" | jq -r '.publish_branch // "prebuilt/tdlib"')
+          RETENTION=$(echo "$ADV_RAW" | jq -r '.retention_days // 30')
+
+          echo "plan=${PLAN}" >> $GITHUB_OUTPUT
+          echo "jobs=${JOBS}" >> $GITHUB_OUTPUT
+          echo "out_dir=${OUT_DIR}" >> $GITHUB_OUTPUT
+          echo "publish_branch=${PUBLISH_BRANCH}" >> $GITHUB_OUTPUT
+          echo "retention=${RETENTION}" >> $GITHUB_OUTPUT
 
       - name: Java einrichten (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-      # Quelle: offizielles setup-java Repo.  [oai_citation:0‡GitHub](https://github.com/actions/setup-java?utm_source=chatgpt.com)
 
       - name: Android SDK + NDK installieren
         uses: android-actions/setup-android@v3
         with:
           packages: |
             platform-tools
-            platforms;android-${{ env.INPUT_API }}
-            ndk;${{ env.INPUT_NDK_VERSION }}
-      # Android SDK Setup-Action (installiert SDK-Pakete inkl. NDK).  [oai_citation:1‡GitHub](https://github.com/android-actions/setup-android?utm_source=chatgpt.com)
-
-      - name: ABIs auflösen
-        id: abis
-        run: |
-          if [ "${INPUT_ABIS_PRESET}" = "custom" ] && [ -n "${INPUT_ABIS_CUSTOM}" ]; then
-            echo "ABIS=${INPUT_ABIS_CUSTOM}" >> $GITHUB_ENV
-          else
-            echo "ABIS=${INPUT_ABIS_PRESET}" >> $GITHUB_ENV
-          fi
-          echo "ABIS_RESOLVED=${ABIS}" >> $GITHUB_OUTPUT
+            platforms;android-${{ inputs.api_level }}
+            ndk;${{ inputs.ndk_version }}
 
       - name: sccache aktivieren (optional)
-        if: ${{ env.INPUT_USE_CACHE == 'sccache' || env.INPUT_USE_CACHE == 'auto' }}
+        if: ${{ inputs.use_cache == 'sccache' || inputs.use_cache == 'auto' }}
         uses: Mozilla-Actions/sccache-action@v0.0.9
-      # sccache-Action – nutzt GitHub Actions Cache mit minimaler Config.  [oai_citation:2‡GitHub](https://github.com/Mozilla-Actions/sccache-action)
 
       - name: ccache aktivieren (optional)
-        if: ${{ env.INPUT_USE_CACHE == 'ccache' }}
+        if: ${{ inputs.use_cache == 'ccache' }}
         uses: hendrikmuhs/ccache-action@v1.2.19
         with:
-          key: tdlib-${{ env.INPUT_CHANNEL }}-${{ env.INPUT_TD_REF }}-ndk${{ env.INPUT_NDK_VERSION }}-${{ steps.abis.outputs.ABIS_RESOLVED }}-${{ env.INPUT_BUILD_TYPE }}-${{ env.INPUT_SSL }}
+          key: tdlib-${{ inputs.channel }}-${{ inputs.td_ref }}-ndk${{ inputs.ndk_version }}-${{ inputs.abis }}-${{ inputs.build_type }}-${{ inputs.ssl }}
           max-size: 1G
-      # ccache-Action (unterstützt ccache/sccache).  [oai_citation:3‡GitHub](https://github.com/hendrikmuhs/ccache-action?utm_source=chatgpt.com)
 
       - name: Build-Voraussetzungen installieren
         run: |
           sudo apt-get update
-          sudo apt-get install -y gperf ninja-build pkg-config rsync jq
-          # Runner haben cmake/git/python/zip/unzip/java bereits; fehlendes werden Skript-Preflight/Fehler abfangen.
+          sudo apt-get install -y gperf ninja-build pkg-config rsync jq zip unzip
 
       - name: Build-Skript ausführbar machen
         run: chmod +x ./build-tdlib-android.sh
@@ -183,33 +118,36 @@ jobs:
         id: build
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
-          ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.INPUT_NDK_VERSION }}
-          USE_CCACHE: ${{ env.INPUT_USE_CACHE }}
-          CHANNEL: ${{ env.INPUT_CHANNEL }}
-          TD_REF: ${{ env.INPUT_TD_REF }}
-          API_LEVEL: ${{ env.INPUT_API }}
-          ABIS: ${{ steps.abis.outputs.ABIS_RESOLVED }}
-          BUILD_TYPE: ${{ env.INPUT_BUILD_TYPE }}
-          TD_SSL: ${{ env.INPUT_SSL }}
-          OUT_DIR: ${{ env.INPUT_OUT_DIR }}
-          JOBS: ${{ env.INPUT_JOBS }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ inputs.ndk_version }}
+
+          # Script-ENV
+          USE_CCACHE: ${{ inputs.use_cache }}
+          CHANNEL: ${{ inputs.channel }}
+          TD_REF: ${{ inputs.td_ref }}
+          API_LEVEL: ${{ inputs.api_level }}
+          ABIS: ${{ inputs.abis }}
+          BUILD_TYPE: ${{ inputs.build_type }}
+          TD_SSL: ${{ inputs.ssl }}
+          OUT_DIR: ${{ steps.adv.outputs.out_dir }}
+          JOBS: ${{ steps.adv.outputs.jobs }}
         run: |
           set -euo pipefail
           args=()
-          [ -n "${TD_REF}" ] && args+=( --ref "${TD_REF}" ) || args+=( --channel "${CHANNEL}" )
+          if [ -n "${TD_REF}" ]; then args+=( --ref "${TD_REF}" ); else args+=( --channel "${CHANNEL}" ); fi
           args+=( --abis "${ABIS}" --api-level "${API_LEVEL}" --build-type "${BUILD_TYPE}" --ssl "${TD_SSL}" --out "${OUT_DIR}" )
-          [ "${INPUT_PLAN}" = "true" ] && args+=( --plan )
-          [ "${INPUT_MAKE_JAR}" = "true" ] && args+=( --jar )
-          [ "${JOBS}" != "0" ] && args+=( --jobs "${JOBS}" )
-          if [ "${INPUT_USE_CACHE}" = "off" ]; then args+=( --no-ccache ); fi
+          [ "${{ steps.adv.outputs.plan }}" = "true" ] && args+=( --plan )
+          [ "${{ inputs.make_jar }}" = "true" ] && args+=( --jar )
+          if [ "${{ inputs.use_cache }}" = "off" ]; then args+=( --no-ccache ); fi
+          if [ "${{ steps.adv.outputs.jobs }}" != "0" ]; then args+=( --jobs "${{ steps.adv.outputs.jobs }}" ); fi
+
           echo ">> ./build-tdlib-android.sh ${args[*]}"
           ./build-tdlib-android.sh "${args[@]}"
 
       - name: Metadaten extrahieren
         id: meta
         run: |
-          TD_DESCRIBE=$(jq -r '.td_describe' "${INPUT_OUT_DIR}/meta/report.json")
-          TD_COMMIT=$(jq -r '.td_commit'   "${INPUT_OUT_DIR}/meta/report.json")
+          TD_DESCRIBE=$(jq -r '.td_describe' "${{ steps.adv.outputs.out_dir }}/meta/report.json")
+          TD_COMMIT=$(jq -r '.td_commit'   "${{ steps.adv.outputs.out_dir }}/meta/report.json")
           echo "td_describe=${TD_DESCRIBE}" >> $GITHUB_OUTPUT
           echo "td_commit=${TD_COMMIT}"     >> $GITHUB_OUTPUT
 
@@ -217,23 +155,21 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tdlib-android-${{ steps.meta.outputs.td_describe }}
-          retention-days: ${{ env.INPUT_RETENTION }}
+          retention-days: ${{ steps.adv.outputs.retention }}
           if-no-files-found: error
           path: |
-            ${{ env.INPUT_OUT_DIR }}/android/**
-            ${{ env.INPUT_OUT_DIR }}/java/**
-            ${{ env.INPUT_OUT_DIR }}/meta/**
-      # Upload/Download-Artifacts v4.  [oai_citation:4‡GitHub](https://github.com/actions/upload-artifact?utm_source=chatgpt.com)
+            ${{ steps.adv.outputs.out_dir }}/android/**
+            ${{ steps.adv.outputs.out_dir }}/java/**
+            ${{ steps.adv.outputs.out_dir }}/meta/**
 
       - name: Prebuilts in Branch publishen (optional)
-        id: publish
-        if: ${{ env.INPUT_PUBLISH_BRANCH != '' }}
+        if: ${{ steps.adv.outputs.publish_branch != '' }}
         env:
-          PUBLISH_BRANCH: ${{ env.INPUT_PUBLISH_BRANCH }}
+          PUBLISH_BRANCH: ${{ steps.adv.outputs.publish_branch }}
         run: |
           set -euo pipefail
           git fetch origin "+refs/heads/${PUBLISH_BRANCH}:refs/remotes/origin/${PUBLISH_BRANCH}" || true
-          # Arbeitskopie für Publish
+
           mkdir -p .publish
           cd .publish
           if git ls-remote --exit-code origin "refs/heads/${PUBLISH_BRANCH}" >/dev/null 2>&1; then
@@ -247,23 +183,18 @@ jobs:
             git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
           fi
 
-          # Struktur: tdlib/<describe>/{android,java,meta}
           TD_DESCRIBE="${{ steps.meta.outputs.td_describe }}"
           DEST="tdlib/${TD_DESCRIBE}"
           rm -rf "${DEST}"
           mkdir -p "${DEST}"
-          rsync -a "${GITHUB_WORKSPACE}/${INPUT_OUT_DIR}/" "${DEST}/"
+          rsync -a "${GITHUB_WORKSPACE}/${{ steps.adv.outputs.out_dir }}/" "${DEST}/"
 
-          # Commit & Push
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then
-            echo "Nichts zu committen."
+            echo "Nothing to commit."
           else
             git commit -m "Publish TDLib prebuilts ${TD_DESCRIBE}"
             git push --set-upstream origin "${PUBLISH_BRANCH}"
           fi
-
-          echo "publish_ref=refs/heads/${PUBLISH_BRANCH}" >> $GITHUB_OUTPUT
-      # Für Push in Branch muss GITHUB_TOKEN 'contents: write' besitzen (workflow permissions).  [oai_citation:5‡GitHub Docs](https://docs.github.com/actions/security-guides/automatic-token-authentication?utm_source=chatgpt.com)
