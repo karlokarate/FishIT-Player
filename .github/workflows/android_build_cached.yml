@@ -183,6 +183,9 @@ jobs:
             TD_TYPE="--minsize"
             GRADLE_TASK="assembleDebug"
           fi
+          # --- minimal change: ABIS für das TDLib-Script bereitstellen ---
+          echo "ABIS=${ABI_FILTERS}" >> $GITHUB_ENV
+
           echo "ABI_FILTERS=${ABI_FILTERS}" >> $GITHUB_ENV
           echo "TD_FLAGS=${TD_FLAGS}" >> $GITHUB_ENV
           echo "TD_TYPE=${TD_TYPE}" >> $GITHUB_ENV
@@ -244,7 +247,6 @@ jobs:
 
           if [ ! -f "$NDK_DIR/build/cmake/android.toolchain.cmake" ]; then
             echo "⚠️  NDK missing or incomplete at $NDK_DIR — reinstalling..."
-            # accept licenses again (non-interactive) and reinstall
             echo "y" | "$sdkmgr" --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
             echo "y" | "$sdkmgr" --sdk_root="$ANDROID_SDK_ROOT" "ndk;${{ inputs.ndk_version }}" || true
           fi
@@ -258,7 +260,7 @@ jobs:
           echo "✅ NDK toolchain OK: $NDK_DIR"
           ls -l "$NDK_DIR/build/cmake/android.toolchain.cmake"
 
-      # ---------- Build TDLib (only if cache miss) ----------
+      # ---------- Build TDLib (JNI + Java bindings) ----------
       - name: Build TDLib (JNI + Java bindings)
         if: steps.cache-tdlib.outputs.cache-hit != 'true'
         env:
@@ -271,9 +273,10 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x scripts/build_tdlib_android.sh
-          ARGS="${TD_FLAGS} ${TD_TYPE} --api-level=${{ inputs.api_level }}"
+          # --- minimal change: ABIs direkt übergeben, Flags bleiben kompatibel ---
+          ARGS="${TD_TYPE} --api-level=${{ inputs.api_level }} --abis ${ABIS}"
           if [[ -n "${{ inputs.td_ref }}" ]]; then
-            ARGS="$ARGS --ref ${{ inputs.td_ref }}"
+            ARGS="$ARGS --ref=${{ inputs.td_ref }}"
           fi
           echo ">> tdlib args: $ARGS"
           ./scripts/build_tdlib_android.sh $ARGS
