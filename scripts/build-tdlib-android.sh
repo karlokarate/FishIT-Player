@@ -2,11 +2,16 @@
 set -Eeuo pipefail
 
 # ============ Styling ============
-if command -v tput >/dev/null 2>&1 && [ -n "${TERM-}" ]; then
+# Robust gegen fehlendes Terminal (CI): tput nur verwenden, wenn vorhanden & funktionsfähig
+if command -v tput >/dev/null 2>&1 && [ -n "${TERM-}" ] && tput colors >/dev/null 2>&1; then
   _c_red=$(tput setaf 1); _c_grn=$(tput setaf 2); _c_yel=$(tput setaf 3)
   _c_blu=$(tput setaf 4); _c_mag=$(tput setaf 5); _c_cyn=$(tput setaf 6)
   _c_bold=$(tput bold); _c_rst=$(tput sgr0)
-else _c_red=""; _c_grn=""; _c_yel=""; _c_blu=""; _c_mag=""; _c_cyn=""; _c_bold=""; _c_rst=""; fi
+else
+  _c_red=""; _c_grn=""; _c_yel=""; _c_blu=""; _c_mag=""; _c_cyn=""; _c_bold=""; _c_rst=""
+  # Stub, damit spätere tput-Aufrufe sicher sind
+  tput() { :; }
+fi
 log() { printf "%s[%s]%s %s\n" "$_c_blu" "${1}" "$_c_rst" "${2}"; }
 ok()  { printf "%s[%s]%s %s\n" "$_c_grn" "OK" "$_c_rst" "${1}"; }
 warn(){ printf "%s[%s]%s %s\n" "$_c_yel" "WARN" "$_c_rst" "${1}"; }
@@ -16,13 +21,12 @@ trap 'err "Abgebrochen (Zeile $LINENO). DEBUG=1 für set -x."' ERR
 [ "${DEBUG:-0}" = "1" ] && set -x
 
 # ============ Defaults ============
-# Kanal: stable = neuester Git-Tag; edge = HEAD des Default-Branch (empfohlen von TDLib-Maintainern, wenn keine frischen Tags existieren)
 CHANNEL="${CHANNEL:-stable}"                 # stable|edge
 TD_REF="${TD_REF:-}"                        # expliziter Tag/Commit/Branch > überschreibt CHANNEL
-API_LEVEL="${API_LEVEL:-24}"                # min. 21 für 64-bit
+API_LEVEL="${API_LEVEL:-24}"                # min. 21 für 64-bit (wird unten saniert)
 ABIS="${ABIS:-arm64-v8a}"                   # z.B. "arm64-v8a,armeabi-v7a"
 BUILD_TYPE="${BUILD_TYPE:-MinSizeRel}"      # MinSizeRel|Release
-TD_SSL="${TD_SSL:-boringssl}"               # boringssl|openssl  (default: boringssl)
+TD_SSL="${TD_SSL:-boringssl}"               # boringssl|openssl
 OUT_DIR="${OUT_DIR:-$PWD/out}"
 JOBS="${JOBS:-$( (command -v nproc >/dev/null && nproc) || sysctl -n hw.ncpu 2>/dev/null || echo 4 )}"
 USE_CCACHE="${USE_CCACHE:-auto}"            # auto|ccache|sccache|off
@@ -59,13 +63,6 @@ Wichtige Optionen:
   --deep-clean              Alles (inkl. Quellen/third_party) bereinigen
   --jar                     Zusätzlich tdlib-sources.jar erzeugen
   --help                    Diese Hilfe
-
-ENV-Variablen spiegeln Flags (CLI hat Vorrang), z.B. TD_REF, API_LEVEL, ABIS, BUILD_TYPE, TD_SSL, OUT_DIR, JOBS, CHANNEL, USE_CCACHE.
-
-Beispiele:
-  $(basename "$0") --channel stable --abis arm64-v8a --ssl boringssl
-  $(basename "$0") --edge --abis arm64-v8a,armeabi-v7a --build-type Release --use-sccache
-  TD_REF=v1.8.0 $(basename "$0") --abis arm64-v8a
 EOF
 }
 
@@ -94,11 +91,20 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# === Sanitize Inputs ===
+# ABIS: Whitespace killen
+ABIS="$(echo "$ABIS" | tr -d '[:space:]')"
+# API_LEVEL: "24.0" -> "24", min 21
+API_LEVEL_SAN="$(printf '%s' "$API_LEVEL" | sed -E 's/[^0-9].*$//' )"
+[ -z "$API_LEVEL_SAN" ] && API_LEVEL_SAN=24
+[ "$API_LEVEL_SAN" -lt 21 ] && API_LEVEL_SAN=21
+API_LEVEL="$API_LEVEL_SAN"
+
 # ============ Helpers ============
 need() { command -v "$1" >/dev/null 2>&1 || { err "Benötigtes Tool fehlt: $1"; return 1; }; }
 check_cmds() {
   log "CHECK" "Host-Abhängigkeiten prüfen…"
-  need git; need cmake; need ninja || need ninja-build; need gperf; need python3; need java; need javac; need jar; need unzip; need zip
+  need git; need cmake; need ninja || need ninja-build; need gperf; need php; need python3; need java; need javac; need jar; need unzip; need zip
   ok "Host-Tools vorhanden."
 }
 sha256() { command -v sha256sum >/dev/null 2>&1 && sha256sum "$1" | awk '{print $1}' || shasum -a256 "$1" | awk '{print $1}'; }
@@ -158,7 +164,7 @@ configure_cache_env() {
         export CMAKE_CXX_COMPILER_LAUNCHER=sccache
         ok "sccache aktiviert ($SCCACHE_DIR)."
       else warn "sccache nicht gefunden – ohne Cache."; fi ;;
-    auto|*) # bevorzugt sccache
+    auto|*)
       if command -v sccache >/dev/null 2>&1; then
         USE_CCACHE="sccache"; configure_cache_env
       elif command -v ccache >/dev/null 2>&1; then
@@ -210,7 +216,7 @@ TD_DESCRIBE="$(cd td && (git describe --tags --always --dirty || git rev-parse -
 TD_HASH="$(cd td && git rev-parse HEAD || echo unknown)"
 ok "TDLib @ ${TD_DESCRIBE} (${TD_HASH})"
 
-# Quelle: Git‑Zeit als SOURCE_DATE_EPOCH (sofern nicht manuell gesetzt)
+# Quelle: Git-Zeit als SOURCE_DATE_EPOCH (sofern nicht manuell gesetzt)
 if [ -z "${SOURCE_DATE_EPOCH:-}" ] || [ "${SOURCE_DATE_EPOCH}" = "" ]; then
   export SOURCE_DATE_EPOCH="$(cd td && git log -1 --pretty=%ct)"
 fi
@@ -264,7 +270,7 @@ if [ "$MAKE_JAR" = "1" ]; then
   pushd "$OUT_DIR/java" >/dev/null
     zip -rq tdlib-sources.jar org
   popd >/dev/null
-  ok "Sources‑JAR erzeugt: $OUT_DIR/java/tdlib-sources.jar"
+  ok "Sources-JAR erzeugt: $OUT_DIR/java/tdlib-sources.jar"
 fi
 
 # ============ TLS: BoringSSL für jede ABI bauen ============
@@ -283,7 +289,6 @@ build_boringssl() {
     -DCMAKE_C_FLAGS="$(common_flags) -fPIC" \
     -DCMAKE_CXX_FLAGS="$(common_flags) -fPIC"
   cmake --build "$bdir" -- -j"$JOBS"
-  # "Install" ist bei BoringSSL optional; wir kopieren Artefakte manuell:
   mkdir -p "$inst/include" "$inst/lib"
   rsync -a boringssl/include/ "$inst/include/"
   cp "$bdir/crypto/libcrypto.a" "$inst/lib/" || true
@@ -348,7 +353,7 @@ build_td_android() {
   if command -v file >/dev/null 2>&1; then file "$OUT_DIR/android/${abi}/libtdjni.so" || true; fi
   if command -v nm >/dev/null 2>&1; then
     if ! nm -D "$OUT_DIR/android/${abi}/libtdjni.so" | grep -q 'Java_org_drinkless_tdlib_Client_'; then
-      warn "JNI‑Symbole nicht gefunden? Prüfe Build/Flags."
+      warn "JNI-Symbole nicht gefunden? Prüfe Build/Flags."
     fi
   fi
 }
@@ -391,7 +396,7 @@ echo "${TD_DESCRIBE} (${TD_HASH})" >"$OUT_DIR/meta/TDLIB_VERSION.txt"
 # Lizenzen bündeln (TDLib + BoringSSL + zlib)
 {
   echo "TDLib: Boost Software License (siehe td/LICENSE_1_0.txt)"
-  echo "BoringSSL: ISC/BSD‑style (siehe boringssl/LICENSE)"
+  echo "BoringSSL: ISC/BSD-style (siehe boringssl/LICENSE)"
   echo "zlib: zlib-Lizenz"
 } >"$OUT_DIR/meta/NOTICE.txt"
 
@@ -401,7 +406,7 @@ log "OUT" "Bibliotheken:"
 for abi in "${_abis[@]}"; do
   echo "  - $OUT_DIR/android/${abi}/libtdjni.so"
 done
-log "OUT" "Java‑Sourcen: $OUT_DIR/java/org/drinkless/tdlib/ (optional Sources‑JAR: $OUT_DIR/java/tdlib-sources.jar)"
+log "OUT" "Java-Sourcen: $OUT_DIR/java/org/drinkless/tdlib/ (optional Sources-JAR: $OUT_DIR/java/tdlib-sources.jar)"
 log "OUT" "Metadaten: $OUT_DIR/meta/{.tdlib_meta,TDLIB_VERSION.txt,checksums.sha256,NOTICE.txt}"
 
 # Maschinenlesbarer Mini-Report
