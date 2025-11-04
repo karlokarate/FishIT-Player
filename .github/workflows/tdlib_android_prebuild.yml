@@ -94,12 +94,12 @@ jobs:
           SDK_ROOT="/usr/local/lib/android/sdk"
           CT_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
 
-          echo "SDK_ROOT=${SDK_ROOT}"
+          echo "📦 SDK_ROOT=${SDK_ROOT}"
           sudo mkdir -p "${SDK_ROOT}"
           sudo chown -R "$USER":"$USER" "${SDK_ROOT}"
           cd "${SDK_ROOT}"
 
-          # clean + entpacken nach 'latest'
+          # Alte Installation entfernen und frische cmdline-tools holen
           rm -rf cmdline-tools/latest cmdline-tools/temp
           mkdir -p cmdline-tools/temp
           echo "Lade: ${CT_URL}"
@@ -119,7 +119,7 @@ jobs:
           rm -rf cmdline-tools/temp
 
           SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
-          [ -x "${SDKMANAGER}" ] || { echo "sdkmanager nicht gefunden unter ${SDKMANAGER}" >&2; find "${SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager -print; exit 127; }
+          [ -x "${SDKMANAGER}" ] || { echo "❌ sdkmanager nicht gefunden."; find "${SDK_ROOT}/cmdline-tools" -type f -name sdkmanager; exit 127; }
 
           export ANDROID_SDK_ROOT="${SDK_ROOT}"
 
@@ -130,43 +130,36 @@ jobs:
           } >> "$GITHUB_PATH"
           export PATH="${SDK_ROOT}/cmdline-tools/latest/bin:${SDK_ROOT}/platform-tools:${PATH}"
 
-          # retry helper
+          # Retry helper
           retry() { n=0; until bash -lc "$*"; do n=$((n+1)); [ $n -ge 3 ] && return 1; echo "retry $n/3: $*"; sleep 2; done; }
 
-          # BONUS: Index aktualisieren
+          # Index & Lizenz
           retry "${SDKMANAGER} --sdk_root='${SDK_ROOT}' --update >/dev/null || true"
-
-          # Lizenzen + platform-tools zuerst
           retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' --licenses >/dev/null"
+
+          # platform-tools
           retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'platform-tools'"
           adb version
 
-          # === API-Level robust sanitisieren: 24.0 -> 24; min 21
+          # API-Level bereinigen (24.0 → 24)
           RAW_API="${{ inputs.api_level }}"
           API_SAN=$(echo "${RAW_API}" | sed -E 's/[^0-9].*$//' )
           if [ -z "${API_SAN}" ]; then API_SAN=24; fi
           if [ "${API_SAN}" -lt 21 ]; then API_SAN=21; fi
-          echo "Gewünschte Plattform: platforms;android-${API_SAN}"
+          echo "▶ Verwende API-Level ${API_SAN}"
 
-          # Verfügbare Platform-IDs holen
+          # Verfügbare Platformen prüfen
           AVAIL_PLATFORMS="$(${SDKMANAGER} --sdk_root='${SDK_ROOT}' --list | grep -Eo 'platforms;android-[0-9]+' | sort -V | uniq)"
-          echo "Verfügbar: $(echo "${AVAIL_PLATFORMS}" | tr '\n' ' ')"
-
-          # Erst Wunschversion versuchen …
           if ! retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'platforms;android-${API_SAN}'"; then
-            echo "WARN: platforms;android-${API_SAN} nicht verfügbar – versuche neueste verfügbare Plattform."
-            LATEST_PLATFORM=$(echo "${AVAIL_PLATFORMS}" | tail -n1 || true)
-            if [ -n "${LATEST_PLATFORM}" ]; then
-              retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' '${LATEST_PLATFORM}'"
-            else
-              echo "ERROR: keine 'platforms;android-XX' im Index gefunden."; exit 1
-            fi
+            echo "WARN: Plattform ${API_SAN} nicht verfügbar, fallback..."
+            LATEST=$(echo "${AVAIL_PLATFORMS}" | tail -n1)
+            retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' '${LATEST}'"
           fi
 
           # NDK
           retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'ndk;${{ inputs.ndk_version }}'"
 
-          # Für Folge-Steps exportieren
+          # Exportieren
           {
             echo "ANDROID_SDK_ROOT=${SDK_ROOT}"
             echo "ANDROID_NDK_HOME=${SDK_ROOT}/ndk/${{ inputs.ndk_version }}"
@@ -190,13 +183,12 @@ jobs:
           key: "tdlib-${{ inputs.channel }}-${{ inputs.td_ref }}-ndk${{ inputs.ndk_version }}-${{ inputs.abis }}-${{ inputs.build_type }}-${{ inputs.ssl }}"
           max-size: "1G"
 
-      
-        - name: "Build-Skript lokalisieren & ausführbar machen"
+      # ---- Fix: Script automatisch finden ----
+      - name: "Build-Skript lokalisieren & ausführbar machen"
         id: script
         shell: bash
         run: |
           set -euo pipefail
-          # Kandidaten in üblicher Reihenfolge
           CANDIDATES=(
             "./scripts/build_tdlib_android.sh"
             "./scripts/build-tdlib-android.sh"
@@ -204,18 +196,14 @@ jobs:
             "./build-tdlib-android.sh"
           )
           SCRIPT=""
-
           for c in "${CANDIDATES[@]}"; do
             if [ -f "$c" ]; then SCRIPT="$c"; break; fi
           done
-
           if [ -z "$SCRIPT" ]; then
             echo "❌ Build-Skript nicht gefunden. Verfügbare Dateien (Top 200):"
             git ls-files | sed -n '1,200p'
             exit 1
           fi
-
-          # Windows-CRLF wegräumen, falls vorhanden
           sed -i 's/\r$//' "$SCRIPT" || true
           chmod +x "$SCRIPT"
           echo "script_path=${SCRIPT}" >> "$GITHUB_OUTPUT"
@@ -246,7 +234,6 @@ jobs:
           if [ "${{ inputs.make_jar }}" = "true" ]; then args+=( --jar ); fi
           if [ "${{ inputs.use_cache }}" = "off" ]; then args+=( --no-ccache ); fi
           if [ "${{ steps.adv.outputs.jobs }}" != "0" ]; then args+=( --jobs "${{ steps.adv.outputs.jobs }}" ); fi
-
           echo ">> $SCRIPT ${args[*]}"
           "$SCRIPT" "${args[@]}"
 
@@ -279,9 +266,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin "+refs/heads/${PUBLISH_BRANCH}:refs/remotes/origin/${PUBLISH_BRANCH}" || true
-
-          mkdir -p .publish
-          cd .publish
+          mkdir -p .publish && cd .publish
           if git ls-remote --exit-code origin "refs/heads/${PUBLISH_BRANCH}" >/dev/null 2>&1; then
             git init
             git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
@@ -292,13 +277,11 @@ jobs:
             git checkout -b "${PUBLISH_BRANCH}"
             git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
           fi
-
           TD_DESCRIBE="${{ steps.meta.outputs.td_describe }}"
           DEST="tdlib/${TD_DESCRIBE}"
           rm -rf "${DEST}"
           mkdir -p "${DEST}"
           rsync -a "${GITHUB_WORKSPACE}/${{ steps.adv.outputs.out_dir }}/" "${DEST}/"
-
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
