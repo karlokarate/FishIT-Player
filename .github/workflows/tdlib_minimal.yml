@@ -1,0 +1,217 @@
+name: TDLib – Android JNI Prebuild (minimal, NDK r27)
+
+on:
+  workflow_dispatch:
+    inputs:
+      td_ref:
+        description: "TDLib Ref (Commit/Tag/Branch). Leer = master"
+        type: string
+        default: ""
+      abis:
+        description: "ABIs (CSV: arm64-v8a,armeabi-v7a)"
+        type: string
+        default: "arm64-v8a"
+      api_level:
+        description: "Android API-Level (>=21 für 64-bit)"
+        type: number
+        default: 24
+      java_api:
+        description: "Java-Bindings (TdApi.java/Client.java) generieren"
+        type: choice
+        options: ["false","true"]
+        default: "true"
+
+permissions:
+  contents: write
+
+jobs:
+  tdlib-prebuild:
+    name: Build TDLib JNI (NDK r27, no SDK)
+    runs-on: ubuntu-22.04
+
+    env:
+      TD_REPO: https://github.com/tdlib/td.git
+      TD_DIR:   ${{ github.workspace }}/td
+      BSSL_DIR: ${{ github.workspace }}/third-party/boringssl
+      OUT_DIR:  ${{ github.workspace }}/tdlib-out
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android NDK (r27)
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: "r27"
+
+      - name: Resolve TD_REF (default master)
+        id: ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          REF="${{ inputs.td_ref }}"
+          [ -z "$REF" ] && REF="master"
+          echo "td_ref=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Install build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y             git curl unzip cmake ninja-build pkg-config gperf             clang make rsync zlib1g-dev
+
+      - name: Fetch TDLib source
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d "$TD_DIR/.git" ]; then
+            git -C "$TD_DIR" fetch --tags --prune
+          else
+            git clone --no-tags --single-branch "$TD_REPO" "$TD_DIR"
+          fi
+          git -C "$TD_DIR" checkout -f "${{ steps.ref.outputs.td_ref }}"
+          git -C "$TD_DIR" reset --hard "${{ steps.ref.outputs.td_ref }}"
+          echo "TDLib HEAD: $(git -C "$TD_DIR" rev-parse HEAD)"
+
+      - name: Build BoringSSL per ABI
+        shell: bash
+        env:
+          ANDROID_NDK: ${{ env.ANDROID_NDK_ROOT }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -r -a ABIS <<< "${{ inputs.abis }}"
+          API="${{ inputs.api_level }}"
+          API="${API%.*}"
+          [ -z "$API" ] && API=24
+          [ "$API" -lt 21 ] && API=21
+          mkdir -p "$BSSL_DIR"
+
+          if [ ! -d boringssl ]; then
+            git clone https://boringssl.googlesource.com/boringssl boringssl
+          else
+            git -C boringssl fetch || true
+          fi
+
+          for ABI in "${ABIS[@]}"; do
+            ABI_TRIM="${ABI//[[:space:]]/}"
+            OUT_BASE="$BSSL_DIR/$ABI_TRIM"
+            if [ -f "$OUT_BASE/lib/libcrypto.a" ] && [ -f "$OUT_BASE/lib/libssl.a" ]; then
+              echo "BoringSSL for $ABI_TRIM present → skip"
+              continue
+            fi
+            BDIR="build-bssl-$ABI_TRIM"
+            rm -rf "$BDIR"
+            mkdir -p "$BDIR" "$OUT_BASE/lib"
+
+            cmake -S boringssl -B "$BDIR" -G Ninja               -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK/build/cmake/android.toolchain.cmake"               -DANDROID_ABI="$ABI_TRIM"               -DANDROID_PLATFORM=android-$API               -DCMAKE_BUILD_TYPE=Release               -DBUILD_SHARED_LIBS=OFF               -DBUILD_TESTING=OFF
+
+            cmake --build "$BDIR" -- -j"$(nproc)" || cmake --build "$BDIR"
+
+            rsync -a boringssl/include/ "$OUT_BASE/include/"
+
+            crypto_src=$(find "$BDIR" -maxdepth 3 -type f \( -name "libcrypto*.a" -o -name "libboringssl*.a" \) | head -n1 || true)
+            if [ -z "$crypto_src" ]; then
+              echo "No libcrypto*.a/libboringssl*.a found"
+              find "$BDIR" -name "lib*.a"
+              exit 1
+            fi
+            cp "$crypto_src" "$OUT_BASE/lib/libcrypto.a"
+
+            ssl_src=$(find "$BDIR" -maxdepth 3 -type f \( -name "libssl*.a" -o -name "libbssl*.a" \) | head -n1 || true)
+            if [ -z "$ssl_src" ]; then
+              echo "No libssl*.a/libbssl*.a found"
+              find "$BDIR" -name "lib*.a"
+              exit 1
+            fi
+            cp "$ssl_src" "$OUT_BASE/lib/libssl.a"
+          done
+
+      - name: Locate native build script (optional)
+        id: script
+        shell: bash
+        run: |
+          set -euo pipefail
+          for c in ./scripts/build-tdlib-boringssl.sh ./scripts/build_tdlib_boringssl.sh ./scripts/build_tdlib_android.sh; do
+            if [ -f "$c" ]; then
+              sed -i 's/
+$//' "$c" || true
+              chmod +x "$c"
+              echo "path=$c" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "path=" >> "$GITHUB_OUTPUT"
+
+      - name: Build TDLib via script
+        if: ${{ steps.script.outputs.path != '' }}
+        shell: bash
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_ROOT }}
+        run: |
+          set -euo pipefail
+          "$SCRIPT_PATH"
+        env:
+          SCRIPT_PATH: ${{ steps.script.outputs.path }}
+
+      - name: Build TDLib (inline fallback, JNI + optional Java)
+        if: ${{ steps.script.outputs.path == '' }}
+        shell: bash
+        env:
+          ANDROID_NDK: ${{ env.ANDROID_NDK_ROOT }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT_DIR/jniLibs" "$OUT_DIR/include"
+          API="${{ inputs.api_level }}"
+          API="${API%.*}"
+          [ -z "$API" ] && API=24
+          [ "$API" -lt 21 ] && API=21
+
+          IFS=',' read -r -a ABIS <<< "${{ inputs.abis }}"
+          for ABI in "${ABIS[@]}"; do
+            ABI_TRIM="${ABI//[[:space:]]/}"
+            OPENSSL_INC="$BSSL_DIR/$ABI_TRIM/include"
+            OPENSSL_LIB="$BSSL_DIR/$ABI_TRIM/lib"
+            [ -d "$OPENSSL_INC" ] && [ -f "$OPENSSL_LIB/libcrypto.a" ] && [ -f "$OPENSSL_LIB/libssl.a" ] || { echo "BoringSSL for $ABI_TRIM missing"; exit 1; }
+
+            BDIR="build-td-$ABI_TRIM"
+            rm -rf "$BDIR"
+            mkdir -p "$BDIR"
+
+            cmake -S "$TD_DIR" -B "$BDIR" -G Ninja               -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK/build/cmake/android.toolchain.cmake"               -DANDROID_ABI="$ABI_TRIM"               -DANDROID_PLATFORM=android-$API               -DCMAKE_BUILD_TYPE=Release               -DTD_ENABLE_JNI=ON               -DOPENSSL_ROOT_DIR="$OPENSSL_LIB/.."               -DOPENSSL_INCLUDE_DIR="$OPENSSL_INC"               -DOPENSSL_SSL_LIBRARY="$OPENSSL_LIB/libssl.a"               -DOPENSSL_CRYPTO_LIBRARY="$OPENSSL_LIB/libcrypto.a"
+
+            cmake --build "$BDIR" --target tdjni -- -j"$(nproc)" || cmake --build "$BDIR" --target tdjni
+
+            JNI_SO=$(find "$BDIR" -type f -name "libtdjni.so" | head -n1 || true)
+            [ -z "$JNI_SO" ] && { echo "libtdjni.so not found"; find "$BDIR" -name "libtdjni.so"; exit 1; }
+            mkdir -p "$OUT_DIR/jniLibs/$ABI_TRIM"
+            cp "$JNI_SO" "$OUT_DIR/jniLibs/$ABI_TRIM/"
+          done
+
+          if [ "${{ inputs.java_api }}" = "true" ]; then
+            BHOST="build-host"
+            rm -rf "$BHOST"
+            mkdir -p "$BHOST"
+            cmake -S "$TD_DIR" -B "$BHOST" -G Ninja -DCMAKE_BUILD_TYPE=Release
+            cmake --build "$BHOST" --target td_generate_java_api -- -j"$(nproc)" || cmake --build "$BHOST" --target td_generate_java_api
+            JDIR="$TD_DIR/example/java/org/drinkless/tdlib"
+            if [ -d "$JDIR" ]; then
+              rsync -a "$JDIR/" "$OUT_DIR/java/org/drinkless/tdlib/"
+            fi
+          fi
+
+          rsync -a "$TD_DIR/tdlib/" "$OUT_DIR/include/" || true
+
+      - name: Upload TDLib artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-android-${{ steps.ref.outputs.td_ref || 'master' }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            ${{ env.OUT_DIR }}/**
