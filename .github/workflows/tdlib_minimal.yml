@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       td_ref:
-        description: "TDLib Ref (Commit/Tag/Branch). Leer = master"
+        description: "TDLib Ref (Commit/Tag/Branch). Leer = master (oder neuester master-Commit via Atom)"
         type: string
         default: ""
       abis:
@@ -20,6 +20,16 @@ on:
         type: choice
         options: ["false","true"]
         default: "true"
+      android_stl:
+        description: "C++ STL (für Kompatibilität mit externem Skript)"
+        type: choice
+        options: ["c++_static","c++_shared"]
+        default: "c++_static"
+      td_iface:
+        description: "TDLib-Interface (für Kompatibilität mit externem Skript)"
+        type: choice
+        options: ["Java","JSON","JSONJava"]
+        default: "Java"
 
 permissions:
   contents: write
@@ -34,6 +44,7 @@ jobs:
       TD_DIR:   ${{ github.workspace }}/td
       BSSL_DIR: ${{ github.workspace }}/third-party/boringssl
       OUT_DIR:  ${{ github.workspace }}/tdlib-out
+      NDK_VERSION: "r27"
 
     steps:
       - name: Checkout
@@ -50,14 +61,32 @@ jobs:
         with:
           ndk-version: "r27"
 
-      - name: Resolve TD_REF (default master)
+      # Resolve latest master commit via Atom feed if td_ref is empty
+      - name: Resolve TD_REF via Atom feed (if empty)
         id: ref
         shell: bash
         run: |
           set -euo pipefail
-          REF="${{ inputs.td_ref }}"
-          [ -z "$REF" ] && REF="master"
-          echo "td_ref=$REF" >> "$GITHUB_OUTPUT"
+          REF_INPUT="${{ inputs.td_ref }}"
+          if [ -n "$REF_INPUT" ]; then
+            echo "td_ref=$REF_INPUT" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          FEED_URL="https://github.com/tdlib/td/commits/master.atom"
+          echo "Fetching latest commit from: $FEED_URL"
+          XML="$(curl -fsSL "$FEED_URL" || true)"
+          SHA=""
+          if [ -n "$XML" ]; then
+            SHA="$(printf '%s
+' "$XML" | grep -m1 -Eo 'https://github.com/tdlib/td/commit/[0-9a-f]+' | awk -F/ '{print $NF}')"
+          fi
+          if [ -z "$SHA" ]; then
+            echo "Atom empty -> fallback to ls-remote HEAD"
+            SHA="$(git ls-remote https://github.com/tdlib/td.git HEAD | awk '{print $1}')"
+          fi
+          [ -z "$SHA" ] && { echo "Failed to resolve TD_REF" >&2; exit 1; }
+          echo "td_ref=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Resolved TDLib ref: $SHA"
 
       - name: Install build tools
         shell: bash
@@ -102,7 +131,7 @@ jobs:
             ABI_TRIM="${ABI//[[:space:]]/}"
             OUT_BASE="$BSSL_DIR/$ABI_TRIM"
             if [ -f "$OUT_BASE/lib/libcrypto.a" ] && [ -f "$OUT_BASE/lib/libssl.a" ]; then
-              echo "BoringSSL for $ABI_TRIM present → skip"
+              echo "BoringSSL for $ABI_TRIM present -> skip"
               continue
             fi
             BDIR="build-bssl-$ABI_TRIM"
@@ -140,7 +169,8 @@ jobs:
           for c in ./scripts/build-tdlib-boringssl.sh ./scripts/build_tdlib_boringssl.sh ./scripts/build_tdlib_android.sh; do
             if [ -f "$c" ]; then
               tmpfile="$(mktemp)"
-              tr -d '\r' < "$c" > "$tmpfile" && mv "$tmpfile" "$c"
+              tr -d '
+' < "$c" > "$tmpfile" && mv "$tmpfile" "$c"
               chmod +x "$c"
               echo "path=$c" >> "$GITHUB_OUTPUT"
               exit 0
@@ -153,11 +183,24 @@ jobs:
         shell: bash
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_ROOT }}
+          SCRIPT_PATH: ${{ steps.script.outputs.path }}
+          BSSL_DIR: ${{ env.BSSL_DIR }}
+          TD_REF: ${{ steps.ref.outputs.td_ref }}
+          API_LEVEL: ${{ inputs.api_level }}
+          ABIS: ${{ inputs.abis }}
+          ANDROID_STL: ${{ inputs.android_stl }}
+          TD_IFACE: ${{ inputs.td_iface }}
+          OUT_DIR: ${{ env.OUT_DIR }}
+          NDK_VERSION: ${{ env.NDK_VERSION }}
         run: |
           set -euo pipefail
-          "$SCRIPT_PATH"
-        env:
-          SCRIPT_PATH: ${{ steps.script.outputs.path }}
+          # Versuche erst den bekannten Signatur-Aufruf (SDK leer), dann Fallback ohne Args
+          if "$SCRIPT_PATH" "" "$NDK_VERSION" "$BSSL_DIR" "$ANDROID_STL" "$TD_IFACE"; then
+            echo "Ran external script with args signature."
+          else
+            echo "Args signature not supported -> running script directly"
+            "$SCRIPT_PATH"
+          fi
 
       - name: Build TDLib (inline fallback, JNI + optional Java)
         if: ${{ steps.script.outputs.path == '' }}
