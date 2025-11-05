@@ -78,7 +78,7 @@ while [ $# -gt 0 ]; do
     --build-type) BUILD_TYPE="$2"; shift;;
     --ssl) TD_SSL="$2"; shift;;
     --out) OUT_DIR="$2"; shift;;
-    --jobs) JOBS="$2"; shift;;
+    --jobs) JOBS="$1"; shift;;
     --no-ccache) USE_CCACHE="off";;
     --use-ccache) USE_CCACHE="ccache";;
     --use-sccache) USE_CCACHE="sccache";;
@@ -328,7 +328,7 @@ build_td_android() {
     -DANDROID_STL=c++_shared \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
     -DTD_ENABLE_JNI=ON \
-    -DTD_ENABLE_LTO=ON \
+    -DTD_ENABLE_LTO=OFF \
     -DCMAKE_C_FLAGS="$(common_flags)" \
     -DCMAKE_CXX_FLAGS="$(common_flags)" \
     "${openssl_args[@]}"
