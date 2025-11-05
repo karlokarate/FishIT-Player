@@ -18,17 +18,24 @@ on:
       java_api:
         description: "Java-Bindings (TdApi.java/Client.java) generieren"
         type: choice
-        options: ["false","true"]
+        options:
+          - "false"
+          - "true"
         default: "true"
       android_stl:
         description: "C++ STL (für Kompatibilität mit externem Skript)"
         type: choice
-        options: ["c++_static","c++_shared"]
+        options:
+          - "c++_static"
+          - "c++_shared"
         default: "c++_static"
       td_iface:
         description: "TDLib-Interface (für Kompatibilität mit externem Skript)"
         type: choice
-        options: ["Java","JSON","JSONJava"]
+        options:
+          - "Java"
+          - "JSON"
+          - "JSONJava"
         default: "Java"
 
 permissions:
@@ -77,8 +84,7 @@ jobs:
           XML="$(curl -fsSL "$FEED_URL" || true)"
           SHA=""
           if [ -n "$XML" ]; then
-            SHA="$(printf '%s
-' "$XML" | grep -m1 -Eo 'https://github.com/tdlib/td/commit/[0-9a-f]+' | awk -F/ '{print $NF}')"
+            SHA="$(printf '%s\n' "$XML" | grep -m1 -Eo 'https://github.com/tdlib/td/commit/[0-9a-f]+' | awk -F/ '{print $NF}')"
           fi
           if [ -z "$SHA" ]; then
             echo "Atom empty -> fallback to ls-remote HEAD"
@@ -194,7 +200,6 @@ jobs:
           NDK_VERSION: ${{ env.NDK_VERSION }}
         run: |
           set -euo pipefail
-          # Versuche erst den bekannten Signatur-Aufruf (SDK leer), dann Fallback ohne Args
           if "$SCRIPT_PATH" "" "$NDK_VERSION" "$BSSL_DIR" "$ANDROID_STL" "$TD_IFACE"; then
             echo "Ran external script with args signature."
           else
