@@ -1,50 +1,46 @@
-name: TDLib Android Prebuild
+name: TDLib Android Prebuild (native boringssl)
 
 on:
   workflow_dispatch:
     inputs:
       channel:
-        description: "Quellkanal"
+        description: "Quellkanal (nur Fallback für Atom-Feed)"
         type: choice
         options: [stable, edge]
         default: stable
       td_ref:
-        description: "Fixe TDLib-Ref (Tag/Commit/Branch) – überschreibt channel"
+        description: "Fixe TDLib-Ref (Commit/Tag/Branch). Leer = neuester Commit aus Atom-Feed"
         type: string
         default: ""
       abis:
-        description: "ABIs: Komma-getrennt (z.B. arm64-v8a,armeabi-v7a)"
+        description: "ABIs (z. B. 'arm64-v8a,armeabi-v7a' oder 'arm64-v8a')"
         type: string
         default: "arm64-v8a"
       api_level:
-        description: "Android API-Level (z.B. 24)"
+        description: "Android API-Level (z. B. 24)"
         type: number
         default: 24
-      build_type:
-        description: "CMake BuildType"
+      android_stl:
+        description: "C++ STL für NDK"
         type: choice
-        options: [MinSizeRel, Release]
-        default: MinSizeRel
-      ssl:
-        description: "TLS/Krypto-Basis"
+        options: [c++_static, c++_shared]
+        default: c++_static
+      td_iface:
+        description: "TDLib-Interface (Script-Parameter)"
         type: choice
-        options: [boringssl, openssl]
-        default: boringssl
+        options: [Java, JSON, JSONJava]
+        default: Java
       use_cache:
         description: "Compiler-Cache"
         type: choice
         options: [auto, sccache, ccache, off]
         default: auto
-      make_jar:
-        description: "Java-Sources.jar erzeugen?"
-        type: boolean
-        default: false
       ndk_version:
         description: "Android NDK-Version (SDK-Manager-Notation)"
         type: string
         default: "26.3.11579264"
       advanced:
-        description: "JSON: {\"plan\":false,\"jobs\":0,\"out_dir\":\"out\",\"publish_branch\":\"prebuilt/tdlib\",\"retention_days\":30}"
+        description: "JSON: {\"out_dir\":\"out\",\"publish_branch\":\"\",\"retention_days\":30}"
         type: string
         default: ""
 
@@ -53,59 +49,84 @@ permissions:
 
 jobs:
   build:
-    name: "Build TDLib Android"
+    name: Build TDLib (boringssl)
     runs-on: ubuntu-latest
 
+    env:
+      TD_REPO: https://github.com/tdlib/td.git
+      BORINGSSL_DIR: ${{ github.workspace }}/third-party/boringssl
+      TD_DIR: ${{ github.workspace }}/td
+
     steps:
-      - name: "Checkout"
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: "Parse advanced JSON"
+      - name: Parse advanced JSON
         id: adv
         shell: bash
         run: |
-          set -euo pipefail
-          ADV_RAW="${{ inputs.advanced }}"
-          if [ -z "${ADV_RAW}" ]; then ADV_RAW="{}"; fi
-          echo "$ADV_RAW" | jq -e '.' >/dev/null 2>&1 || { echo "Invalid JSON for 'advanced'." >&2; exit 1; }
-          PLAN=$(echo "$ADV_RAW" | jq -r '.plan // false')
-          JOBS=$(echo "$ADV_RAW" | jq -r '.jobs // 0')
-          OUT_DIR=$(echo "$ADV_RAW" | jq -r '.out_dir // "out"')
-          PUBLISH_BRANCH=$(echo "$ADV_RAW" | jq -r '.publish_branch // "prebuilt/tdlib"')
-          RETENTION=$(echo "$ADV_RAW" | jq -r '.retention_days // 30')
-          echo "plan=${PLAN}" >> "$GITHUB_OUTPUT"
-          echo "jobs=${JOBS}" >> "$GITHUB_OUTPUT"
-          echo "out_dir=${OUT_DIR}" >> "$GITHUB_OUTPUT"
-          echo "publish_branch=${PUBLISH_BRANCH}" >> "$GITHUB_OUTPUT"
-          echo "retention=${RETENTION}" >> "$GITHUB_OUTPUT"
+            set -euo pipefail
+            RAW='${{ inputs.advanced }}'
+            [ -z "$RAW" ] && RAW='{}'
+            echo "$RAW" | jq -e . >/dev/null
+            OUT_DIR=$(echo "$RAW" | jq -r '.out_dir // "out"')
+            PUB=$(echo "$RAW" | jq -r '.publish_branch // ""')
+            KEEP=$(echo "$RAW" | jq -r '.retention_days // 30')
+            echo "out_dir=$OUT_DIR" >> $GITHUB_OUTPUT
+            echo "publish_branch=$PUB" >> $GITHUB_OUTPUT
+            echo "retention=$KEEP" >> $GITHUB_OUTPUT
 
-      - name: "Grund-Tools installieren"
+      # ---------- ATOM FEED: neuester Commit, falls td_ref leer ----------
+      - name: Resolve TD_REF via Atom feed (if needed)
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.td_ref }}" ]; then
+            echo "td_ref=${{ inputs.td_ref }}" >> $GITHUB_OUTPUT
+            echo "Resolved from input"
+            exit 0
+          fi
+          FEED="https://github.com/tdlib/td/commits/master.atom"
+          echo "Fetching Atom feed: $FEED"
+          XML="$(curl -fsSL "$FEED" || true)"
+          if [ -z "$XML" ]; then
+            echo "Atom fetch failed, fallback to ls-remote HEAD"
+            SHA="$(git ls-remote $TD_REPO HEAD | awk '{print $1}')"
+          else
+            SHA="$(printf '%s\n' "$XML" | grep -Eo 'https://github.com/tdlib/td/commit/[0-9a-f]+' | head -n1 | awk -F/ '{print $NF}')"
+            if [ -z "$SHA" ]; then
+              echo "Atom parse empty, fallback to ls-remote HEAD"
+              SHA="$(git ls-remote $TD_REPO HEAD | awk '{print $1}')"
+            fi
+          end_if=false
+          fi
+          [ -z "$SHA" ] && { echo "Failed to resolve TD_REF" >&2; exit 1; }
+          echo "td_ref=$SHA" >> $GITHUB_OUTPUT
+          echo "Resolved TD_REF=$SHA"
+
+      - name: Install base tools
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y curl unzip gperf ninja-build pkg-config rsync jq zip php-cli
+          sudo apt-get install -y curl unzip gperf ninja-build pkg-config rsync jq zip php-cli cmake git
 
-      - name: "Android SDK manuell vorbereiten (cmdline-tools + platform-tools)"
+      - name: Install Android SDK + NDK
         id: sdk
         shell: bash
         run: |
           set -euo pipefail
           SDK_ROOT="/usr/local/lib/android/sdk"
           CT_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
-
-          echo "SDK_ROOT=${SDK_ROOT}"
-          sudo mkdir -p "${SDK_ROOT}"
-          sudo chown -R "$USER":"$USER" "${SDK_ROOT}"
-          cd "${SDK_ROOT}"
-
+          sudo mkdir -p "$SDK_ROOT"
+          sudo chown -R "$USER":"$USER" "$SDK_ROOT"
+          cd "$SDK_ROOT"
           rm -rf cmdline-tools/latest cmdline-tools/temp
           mkdir -p cmdline-tools/temp
-          echo "Lade: ${CT_URL}"
-          curl -sSL "${CT_URL}" -o cmdline.zip
+          curl -sSL "$CT_URL" -o cmdline.zip
           unzip -q cmdline.zip -d cmdline-tools/temp
           rm -f cmdline.zip
-
           if [ -d "cmdline-tools/temp/cmdline-tools" ]; then
             mkdir -p cmdline-tools
             mv cmdline-tools/temp/cmdline-tools cmdline-tools/latest
@@ -117,137 +138,134 @@ jobs:
           fi
           rm -rf cmdline-tools/temp
 
-          SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
-          [ -x "${SDKMANAGER}" ] || { echo "sdkmanager nicht gefunden unter ${SDKMANAGER}" >&2; find "${SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager -print; exit 127; }
-
-          export ANDROID_SDK_ROOT="${SDK_ROOT}"
-          {
-            echo "${SDK_ROOT}/cmdline-tools/latest/bin"
-            echo "${SDK_ROOT}/platform-tools"
-          } >> "$GITHUB_PATH"
-          export PATH="${SDK_ROOT}/cmdline-tools/latest/bin:${SDK_ROOT}/platform-tools:${PATH}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SDKMANAGER" ] || { echo "sdkmanager not found"; exit 127; }
+          export ANDROID_SDK_ROOT="$SDK_ROOT"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
+          export PATH="$SDK_ROOT/cmdline-tools/latest/bin:$SDK_ROOT/platform-tools:$PATH"
 
           retry() { n=0; until bash -lc "$*"; do n=$((n+1)); [ $n -ge 3 ] && return 1; echo "retry $n/3: $*"; sleep 2; done; }
+          retry "$SDKMANAGER --sdk_root='$SDK_ROOT' --update >/dev/null || true"
+          retry "yes | $SDKMANAGER --sdk_root='$SDK_ROOT' --licenses >/dev/null"
+          retry "yes | $SDKMANAGER --sdk_root='$SDK_ROOT' 'platform-tools'"
 
-          retry "${SDKMANAGER} --sdk_root='${SDK_ROOT}' --update >/dev/null || true"
-          retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' --licenses >/dev/null"
-          retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'platform-tools'"
-          adb version
-
-          RAW_API="${{ inputs.api_level }}"
-          API_SAN=$(echo "${RAW_API}" | sed -E 's/[^0-9].*$//' )
-          if [ -z "${API_SAN}" ]; then API_SAN=24; fi
-          if [ "${API_SAN}" -lt 21 ]; then API_SAN=21; fi
-          echo "▶ Verwende API-Level ${API_SAN}"
-
-          AVAIL_PLATFORMS="$(${SDKMANAGER} --sdk_root='${SDK_ROOT}' --list | grep -Eo 'platforms;android-[0-9]+' | sort -V | uniq)"
-          if ! retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'platforms;android-${API_SAN}'"; then
-            echo "WARN: Plattform ${API_SAN} nicht verfügbar, fallback..."
-            LATEST=$(echo "${AVAIL_PLATFORMS}" | tail -n1)
-            retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' '${LATEST}'"
+          API="${{ inputs.api_level }}"; API="${API%.*}"; [ -z "$API" ] && API=24; [ "$API" -lt 21 ] && API=21
+          AVAIL="$($SDKMANAGER --sdk_root="$SDK_ROOT" --list | grep -Eo 'platforms;android-[0-9]+' | sort -V | uniq)"
+          if ! retry "yes | $SDKMANAGER --sdk_root='$SDK_ROOT' 'platforms;android-'$API"; then
+            LATEST=$(echo "$AVAIL" | tail -n1)
+            retry "yes | $SDKMANAGER --sdk_root='$SDK_ROOT' '$LATEST'"
           fi
-          retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'ndk;${{ inputs.ndk_version }}'"
+          retry "yes | $SDKMANAGER --sdk_root='$SDK_ROOT' 'ndk;${{ inputs.ndk_version }}'"
 
-          {
-            echo "ANDROID_SDK_ROOT=${SDK_ROOT}"
-            echo "ANDROID_NDK_HOME=${SDK_ROOT}/ndk/${{ inputs.ndk_version }}"
-            echo "PATH=${SDK_ROOT}/cmdline-tools/latest/bin:${SDK_ROOT}/platform-tools:${PATH}"
-          } >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/${{ inputs.ndk_version }}" >> $GITHUB_ENV
 
-      - name: "Java einrichten (Temurin 17)"
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
-
-      - name: "sccache aktivieren (optional)"
+      - name: Enable sccache (optional)
         if: ${{ inputs.use_cache == 'sccache' || inputs.use_cache == 'auto' }}
         uses: Mozilla-Actions/sccache-action@v0.0.9
 
-      - name: "ccache aktivieren (optional)"
+      - name: Enable ccache (optional)
         if: ${{ inputs.use_cache == 'ccache' }}
         uses: hendrikmuhs/ccache-action@v1.2.19
         with:
-          key: "tdlib-${{ inputs.channel }}-${{ inputs.td_ref }}-ndk${{ inputs.ndk_version }}-${{ inputs.abis }}-${{ inputs.build_type }}-${{ inputs.ssl }}"
+          key: "tdlib-${{ steps.resolve.outputs.td_ref }}-ndk${{ inputs.ndk_version }}-${{ inputs.abis }}-${{ inputs.android_stl }}-${{ inputs.td_iface }}"
           max-size: "1G"
 
-      - name: "Build-Skript lokalisieren & ausführbar machen"
+      # ---------- clone TD at resolved ref ----------
+      - name: Fetch TDLib source at resolved ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          REF='${{ steps.resolve.outputs.td_ref }}'
+          [ -z "$REF" ] && { echo "TD_REF missing"; exit 1; }
+          if [ -d "$TD_DIR/.git" ]; then
+            git -C "$TD_DIR" fetch --tags --prune
+            git -C "$TD_DIR" checkout -f "$REF"
+            git -C "$TD_DIR" reset --hard "$REF"
+          else
+            git clone --no-tags --single-branch "$TD_REPO" "$TD_DIR"
+            git -C "$TD_DIR" fetch --tags --prune
+            git -C "$TD_DIR" checkout -f "$REF"
+          fi
+          git -C "$TD_DIR" rev-parse HEAD
+
+      # ---------- build BoringSSL per ABI (only if not cached) ----------
+      - name: Build BoringSSL (per ABI)
+        shell: bash
+        run: |
+          set -euo pipefail
+          IFS=',' read -r -a ABIS <<< "${{ inputs.abis }}"
+          NDK="$ANDROID_NDK_HOME"
+          mkdir -p "$BORINGSSL_DIR"
+          if [ ! -d boringssl ]; then
+            git clone https://boringssl.googlesource.com/boringssl boringssl
+          else
+            git -C boringssl fetch || true
+          fi
+          for ABI in "${ABIS[@]}"; do
+            ABI_TRIM="${ABI//[[:space:]]/}"
+            OUT_BASE="$BORINGSSL_DIR/$ABI_TRIM"
+            if [ -f "$OUT_BASE/lib/libcrypto.a" ] && [ -f "$OUT_BASE/lib/libssl.a" ]; then
+              echo "BoringSSL for $ABI_TRIM already present → skip"
+              continue
+            fi
+            echo ">> Build BoringSSL for $ABI_TRIM"
+            BDIR="build-bssl-$ABI_TRIM"
+            rm -rf "$BDIR"; mkdir -p "$BDIR" "$OUT_BASE/lib"
+            cmake -S boringssl -B "$BDIR" -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+              -DANDROID_ABI="$ABI_TRIM" \
+              -DANDROID_PLATFORM=android-${{ inputs.api_level }} \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DBUILD_SHARED_LIBS=OFF
+            cmake --build "$BDIR" --target crypto ssl
+            rsync -a boringssl/include/ "$OUT_BASE/include/"
+            cp "$BDIR/crypto/libcrypto.a" "$OUT_BASE/lib/" 
+            cp "$BDIR/ssl/libssl.a" "$OUT_BASE/lib/"
+          done
+
+      - name: Locate native build script
         id: script
         shell: bash
         run: |
           set -euo pipefail
-          CANDIDATES=(
-            "./scripts/build_tdlib_android.sh"
-            "./scripts/build-tdlib-android.sh"
-            "./build_tdlib_android.sh"
-            "./build-tdlib-android.sh"
-          )
-          SCRIPT=""
-          for c in "${CANDIDATES[@]}"; do
-            if [ -f "$c" ]; then SCRIPT="$c"; break; fi
+          for c in ./scripts/build-tdlib-boringssl.sh ./scripts/build_tdlib_boringssl.sh; do
+            if [ -f "$c" ]; then
+              sed -i 's/\r$//' "$c" || true
+              chmod +x "$c"
+              echo "SCRIPT=$c" >> $GITHUB_ENV
+              echo "Using $c"
+              exit 0
+            fi
           done
-          if [ -z "$SCRIPT" ]; then
-            echo "❌ Build-Skript nicht gefunden. Verfügbare Dateien (Top 200):"
-            git ls-files | sed -n '1,200p'
-            exit 1
-          fi
-          sed -i 's/\r$//' "$SCRIPT" || true
-          chmod +x "$SCRIPT"
-          echo "script_path=${SCRIPT}" >> "$GITHUB_OUTPUT"
-          echo "SCRIPT=${SCRIPT}" >> "$GITHUB_ENV"
-          echo "✅ Gefundenes Skript: $SCRIPT"
+          echo "build-tdlib-boringssl.sh not found"; exit 1
 
-      - name: "Build starten"
+      - name: Build (native boringssl script)
         id: build
         shell: bash
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
-          USE_CCACHE: ${{ inputs.use_cache }}
-          CHANNEL: ${{ inputs.channel }}
-          TD_REF: ${{ inputs.td_ref }}
-          API_LEVEL: ${{ inputs.api_level }}
-          ABIS: ${{ inputs.abis }}
-          BUILD_TYPE: ${{ inputs.build_type }}
-          TD_SSL: ${{ inputs.ssl }}
-          OUT_DIR: ${{ steps.adv.outputs.out_dir }}
-          JOBS: ${{ steps.adv.outputs.jobs }}
-          TERM: xterm-256color
-          DEBUG: "1"
+          TD_REF: ${{ steps.resolve.outputs.td_ref }}
         run: |
           set -euo pipefail
-          args=()
-          if [ -n "${TD_REF}" ]; then args+=( --ref "${TD_REF}" ); else args+=( --channel "${CHANNEL}" ); fi
-          args+=( --abis "${ABIS}" --api-level "${API_LEVEL}" --build-type "${BUILD_TYPE}" --ssl "${TD_SSL}" --out "${OUT_DIR}" )
-          if [ "${{ steps.adv.outputs.plan }}" = "true" ]; then args+=( --plan ); fi
-          if [ "${{ inputs.make_jar }}" = "true" ]; then args+=( --jar ); fi
-          if [ "${{ inputs.use_cache }}" = "off" ]; then args+=( --no-ccache ); fi
-          if [ "${{ steps.adv.outputs.jobs }}" != "0" ]; then args+=( --jobs "${{ steps.adv.outputs.jobs }}" ); fi
-          echo ">> $SCRIPT ${args[*]}"
-          "$SCRIPT" "${args[@]}"
+          echo "TD commit: $TD_REF"
+          # Dein natives Script erwartet: ANDROID_SDK_ROOT  NDK_VERSION  BORINGSSL_DIR  ANDROID_STL  TDLIB_INTERFACE
+          # Es nutzt ./td als Quellordner (oben bereits auf TD_REF gecheckt) und third-party/boringssl/<abi>/...
+          "$SCRIPT" "$ANDROID_SDK_ROOT" "${{ inputs.ndk_version }}" "${{ env.BORINGSSL_DIR }}" "${{ inputs.android_stl }}" "${{ inputs.td_iface }}"
 
-      - name: "Metadaten extrahieren"
-        id: meta
-        shell: bash
-        run: |
-          set -euo pipefail
-          TD_DESCRIBE=$(jq -r '.td_describe' "${{ steps.adv.outputs.out_dir }}/meta/report.json")
-          TD_COMMIT=$(jq -r '.td_commit'   "${{ steps.adv.outputs.out_dir }}/meta/report.json")
-          echo "td_describe=${TD_DESCRIBE}" >> "$GITHUB_OUTPUT"
-          echo "td_commit=${TD_COMMIT}"     >> "$GITHUB_OUTPUT"
-
-      - name: "Artefakte hochladen (v4)"
+      - name: Upload artifacts (v4)
         uses: actions/upload-artifact@v4
         with:
-          name: "tdlib-android-${{ steps.meta.outputs.td_describe }}"
+          name: "tdlib-android-${{ steps.resolve.outputs.td_ref }}"
           retention-days: ${{ steps.adv.outputs.retention }}
-          if-no-files-found: error
+          if-no-files-found: warn
           path: |
-            ${{ steps.adv.outputs.out_dir }}/android/**
-            ${{ steps.adv.outputs.out_dir }}/java/**
-            ${{ steps.adv.outputs.out_dir }}/meta/**
+            tdlib/**
+            ${{ steps.adv.outputs.out_dir }}/**
 
-      - name: "Prebuilts in Branch publishen (optional)"
+      - name: Publish prebuilts to branch (optional)
         if: ${{ steps.adv.outputs.publish_branch != '' }}
         env:
           PUBLISH_BRANCH: ${{ steps.adv.outputs.publish_branch }}
@@ -266,17 +284,16 @@ jobs:
             git checkout -b "${PUBLISH_BRANCH}"
             git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
           fi
-          TD_DESCRIBE="${{ steps.meta.outputs.td_describe }}"
-          DEST="tdlib/${TD_DESCRIBE}"
-          rm -rf "${DEST}"
-          mkdir -p "${DEST}"
-          rsync -a "${GITHUB_WORKSPACE}/${{ steps.adv.outputs.out_dir }}/" "${DEST}/"
+          DEST="tdlib/${{ steps.resolve.outputs.td_ref }}"
+          rm -rf "$DEST"; mkdir -p "$DEST"
+          rsync -a "${GITHUB_WORKSPACE}/tdlib/" "$DEST/" || true
+          rsync -a "${GITHUB_WORKSPACE}/${{ steps.adv.outputs.out_dir }}/" "$DEST/${{ steps.adv.outputs.out_dir }}/" || true
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then
             echo "Nothing to commit."
           else
-            git commit -m "Publish TDLib prebuilts ${TD_DESCRIBE}"
+            git commit -m "Publish TDLib prebuilts ${{ steps.resolve.outputs.td_ref }}"
             git push --set-upstream origin "${PUBLISH_BRANCH}"
           fi
