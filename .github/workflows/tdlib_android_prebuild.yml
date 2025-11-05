@@ -84,7 +84,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y curl unzip gperf ninja-build pkg-config rsync jq zip
+          sudo apt-get install -y curl unzip gperf ninja-build pkg-config rsync jq zip php-cli
 
       - name: "Android SDK manuell vorbereiten (cmdline-tools + platform-tools)"
         id: sdk
@@ -94,12 +94,11 @@ jobs:
           SDK_ROOT="/usr/local/lib/android/sdk"
           CT_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
 
-          echo "📦 SDK_ROOT=${SDK_ROOT}"
+          echo "SDK_ROOT=${SDK_ROOT}"
           sudo mkdir -p "${SDK_ROOT}"
           sudo chown -R "$USER":"$USER" "${SDK_ROOT}"
           cd "${SDK_ROOT}"
 
-          # Alte Installation entfernen und frische cmdline-tools holen
           rm -rf cmdline-tools/latest cmdline-tools/temp
           mkdir -p cmdline-tools/temp
           echo "Lade: ${CT_URL}"
@@ -119,47 +118,36 @@ jobs:
           rm -rf cmdline-tools/temp
 
           SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
-          [ -x "${SDKMANAGER}" ] || { echo "❌ sdkmanager nicht gefunden."; find "${SDK_ROOT}/cmdline-tools" -type f -name sdkmanager; exit 127; }
+          [ -x "${SDKMANAGER}" ] || { echo "sdkmanager nicht gefunden unter ${SDKMANAGER}" >&2; find "${SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager -print; exit 127; }
 
           export ANDROID_SDK_ROOT="${SDK_ROOT}"
-
-          # PATH für diesen und Folge-Steps
           {
             echo "${SDK_ROOT}/cmdline-tools/latest/bin"
             echo "${SDK_ROOT}/platform-tools"
           } >> "$GITHUB_PATH"
           export PATH="${SDK_ROOT}/cmdline-tools/latest/bin:${SDK_ROOT}/platform-tools:${PATH}"
 
-          # Retry helper
           retry() { n=0; until bash -lc "$*"; do n=$((n+1)); [ $n -ge 3 ] && return 1; echo "retry $n/3: $*"; sleep 2; done; }
 
-          # Index & Lizenz
           retry "${SDKMANAGER} --sdk_root='${SDK_ROOT}' --update >/dev/null || true"
           retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' --licenses >/dev/null"
-
-          # platform-tools
           retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'platform-tools'"
           adb version
 
-          # API-Level bereinigen (24.0 → 24)
           RAW_API="${{ inputs.api_level }}"
           API_SAN=$(echo "${RAW_API}" | sed -E 's/[^0-9].*$//' )
           if [ -z "${API_SAN}" ]; then API_SAN=24; fi
           if [ "${API_SAN}" -lt 21 ]; then API_SAN=21; fi
           echo "▶ Verwende API-Level ${API_SAN}"
 
-          # Verfügbare Platformen prüfen
           AVAIL_PLATFORMS="$(${SDKMANAGER} --sdk_root='${SDK_ROOT}' --list | grep -Eo 'platforms;android-[0-9]+' | sort -V | uniq)"
           if ! retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'platforms;android-${API_SAN}'"; then
             echo "WARN: Plattform ${API_SAN} nicht verfügbar, fallback..."
             LATEST=$(echo "${AVAIL_PLATFORMS}" | tail -n1)
             retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' '${LATEST}'"
           fi
-
-          # NDK
           retry "yes | ${SDKMANAGER} --sdk_root='${SDK_ROOT}' 'ndk;${{ inputs.ndk_version }}'"
 
-          # Exportieren
           {
             echo "ANDROID_SDK_ROOT=${SDK_ROOT}"
             echo "ANDROID_NDK_HOME=${SDK_ROOT}/ndk/${{ inputs.ndk_version }}"
@@ -183,7 +171,6 @@ jobs:
           key: "tdlib-${{ inputs.channel }}-${{ inputs.td_ref }}-ndk${{ inputs.ndk_version }}-${{ inputs.abis }}-${{ inputs.build_type }}-${{ inputs.ssl }}"
           max-size: "1G"
 
-      # ---- Fix: Script automatisch finden ----
       - name: "Build-Skript lokalisieren & ausführbar machen"
         id: script
         shell: bash
@@ -225,6 +212,8 @@ jobs:
           TD_SSL: ${{ inputs.ssl }}
           OUT_DIR: ${{ steps.adv.outputs.out_dir }}
           JOBS: ${{ steps.adv.outputs.jobs }}
+          TERM: xterm-256color
+          DEBUG: "1"
         run: |
           set -euo pipefail
           args=()
