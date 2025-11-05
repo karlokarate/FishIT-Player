@@ -1,14 +1,375 @@
-- name: Start sccache daemon (optional)
-  if: ${{ inputs.use_cache == 'sccache' || inputs.use_cache == 'auto' }}
-  shell: bash
-  env:
-    # Aktiviert GitHub-Actions-Cache-Backend für sccache
-    SCCACHE_GHA_ENABLED: 'true'
-    # Optional: lokales Cache-Verzeichnis
-    SCCACHE_DIR: ${{ runner.temp }}/sccache
-  run: |
-    set -e
-    mkdir -p "$SCCACHE_DIR"
-    echo "sccache: starting server (cache dir: $SCCACHE_DIR)…"
-    sccache --start-server || true
-    sccache --show-stats || true
+name: TDLib Android Prebuild (native boringssl)
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Quellkanal (nur Fallback, wenn td_ref leer)"
+        type: choice
+        options: [stable, edge]
+        default: stable
+      td_ref:
+        description: "Fixe TDLib-Ref (Commit/Tag/Branch) – leer = neuester Commit via Atom-Feed"
+        type: string
+        default: ""
+      abis:
+        description: "ABIs (z. B. 'arm64-v8a,armeabi-v7a')"
+        type: string
+        default: "arm64-v8a"
+      api_level:
+        description: "Android API-Level (min. 21 für 64-bit)"
+        type: number
+        default: 24
+      android_stl:
+        description: "C++ STL"
+        type: choice
+        options: [c++_static, c++_shared]
+        default: c++_static
+      td_iface:
+        description: "TDLib-Interface"
+        type: choice
+        options: [Java, JSON, JSONJava]
+        default: Java
+      use_cache:
+        description: "Compiler-Cache"
+        type: choice
+        options: [auto, sccache, ccache, off]
+        default: auto
+      ndk_version:
+        description: "NDK-Version (SDK-Manager-Notation)"
+        type: string
+        default: "26.3.11579264"
+      advanced:
+        description: "JSON: {\"out_dir\":\"out\",\"publish_branch\":\"\",\"retention_days\":30,\"jobs\":4}"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build TDLib (boringssl)
+    runs-on: ubuntu-22.04
+
+    env:
+      TD_REPO: https://github.com/tdlib/td.git
+      TD_DIR:   ${{ github.workspace }}/td
+      BSSL_DIR: ${{ github.workspace }}/third-party/boringssl
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Parse advanced JSON
+        id: adv
+        shell: bash
+        run: |
+          set -euo pipefail
+          RAW='${{ inputs.advanced }}'; [ -z "$RAW" ] && RAW='{}'
+          echo "$RAW" | jq -e . >/dev/null
+          OUT_DIR=$(echo "$RAW"  | jq -r '.out_dir // "out"')
+          PUB=$(echo "$RAW"      | jq -r '.publish_branch // ""')
+          KEEP=$(echo "$RAW"     | jq -r '.retention_days // 30')
+          JOBS=$(echo "$RAW"     | jq -r '.jobs // 4')
+          echo "out_dir=$OUT_DIR"    >> "$GITHUB_OUTPUT"
+          echo "publish_branch=$PUB" >> "$GITHUB_OUTPUT"
+          echo "retention=$KEEP"     >> "$GITHUB_OUTPUT"
+          echo "jobs=$JOBS"          >> "$GITHUB_OUTPUT"
+
+      # ---- Atom-Feed: neuester Commit, falls td_ref leer ----
+      - name: Resolve TD_REF via Atom feed (if needed)
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.td_ref }}" ]; then
+            echo "td_ref=${{ inputs.td_ref }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          FEED="https://github.com/tdlib/td/commits/master.atom"
+          echo "Fetching $FEED"
+          XML="$(curl -fsSL "$FEED" || true)"
+          if [ -n "$XML" ]; then
+            SHA="$(printf '%s\n' "$XML" | grep -m1 -Eo 'https://github.com/tdlib/td/commit/[0-9a-f]+' | awk -F/ '{print $NF}')"
+          fi
+          if [ -z "${SHA:-}" ]; then
+            echo "Atom empty → fallback to ls-remote HEAD"
+            SHA="$(git ls-remote ${{ env.TD_REPO }} HEAD | awk '{print $1}')"
+          fi
+          [ -z "$SHA" ] && { echo "Failed to resolve TD_REF"; exit 1; }
+          echo "td_ref=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Resolved TD_REF=$SHA"
+
+      - name: Install base tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            curl unzip gperf ninja-build pkg-config rsync jq zip \
+            php-cli cmake git clang zlib1g-dev
+
+      - name: Install Android SDK + NDK (manual)
+        id: sdk
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="/usr/local/lib/android/sdk"
+          CT_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
+          sudo mkdir -p "$SDK_ROOT"; sudo chown -R "$USER":"$USER" "$SDK_ROOT"
+          cd "$SDK_ROOT"
+          rm -rf cmdline-tools/latest cmdline-tools/temp
+          mkdir -p cmdline-tools/temp
+          curl -sSL "$CT_URL" -o cmdline.zip
+          unzip -q cmdline.zip -d cmdline-tools/temp
+          rm -f cmdline.zip
+          if [ -d "cmdline-tools/temp/cmdline-tools" ]; then
+            mkdir -p cmdline-tools
+            mv cmdline-tools/temp/cmdline-tools cmdline-tools/latest
+          else
+            mkdir -p cmdline-tools/latest
+            shopt -s dotglob nullglob
+            mv cmdline-tools/temp/* cmdline-tools/latest/ || true
+            shopt -u dotglob nullglob
+          fi
+          rm -rf cmdline-tools/temp
+
+          SDKMAN="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SDKMAN" ] || { echo "sdkmanager not found"; exit 127; }
+          export ANDROID_SDK_ROOT="$SDK_ROOT"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$SDK_ROOT/platform-tools"          >> "$GITHUB_PATH"
+          export PATH="$SDK_ROOT/cmdline-tools/latest/bin:$SDK_ROOT/platform-tools:$PATH"
+
+          retry(){ n=0; until bash -lc "$*"; do n=$((n+1)); [ $n -ge 3 ] && return 1; echo "retry $n/3: $*"; sleep 2; done; }
+          retry "$SDKMAN --sdk_root='$SDK_ROOT' --update >/dev/null || true"
+          retry "yes | $SDKMAN --sdk_root='$SDK_ROOT' --licenses >/dev/null"
+          retry "yes | $SDKMAN --sdk_root='$SDK_ROOT' 'platform-tools'"
+
+          API="${{ inputs.api_level }}"; API="${API%.*}"; [ -z "$API" ] && API=24; [ "$API" -lt 21 ] && API=21
+          AVAIL="$($SDKMAN --sdk_root="$SDK_ROOT" --list | grep -Eo 'platforms;android-[0-9]+' | sort -V | uniq)"
+          if ! retry "yes | $SDKMAN --sdk_root='$SDK_ROOT' 'platforms;android-'$API"; then
+            LATEST=$(echo "$AVAIL" | tail -n1)
+            retry "yes | $SDKMAN --sdk_root='$SDK_ROOT' '$LATEST'"
+          fi
+          retry "yes | $SDKMAN --sdk_root='$SDK_ROOT' 'ndk;${{ inputs.ndk_version }}'"
+
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/${{ inputs.ndk_version }}" >> "$GITHUB_ENV"
+
+      # ---- sccache/ccache Control -------------------------------------------------
+      - name: Enable sccache (optional)
+        if: ${{ inputs.use_cache == 'sccache' || inputs.use_cache == 'auto' }}
+        uses: Mozilla-Actions/sccache-action@v0.0.9
+
+      - name: Start sccache daemon (optional)
+        if: ${{ inputs.use_cache == 'sccache' || inputs.use_cache == 'auto' }}
+        shell: bash
+        env:
+          SCCACHE_GHA_ENABLED: 'true'
+          SCCACHE_DIR: ${{ runner.temp }}/sccache
+        run: |
+          set -e
+          mkdir -p "$SCCACHE_DIR"
+          sccache --start-server || true
+          sccache --show-stats || true
+
+      - name: Cache ccache (optional)
+        if: ${{ inputs.use_cache == 'ccache' }}
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-ndk${{ inputs.ndk_version }}-abis${{ inputs.abis }}-${{ hashFiles('boringssl/**') }}
+          restore-keys: |
+            ccache-ndk${{ inputs.ndk_version }}-
+
+      - name: Enable ccache (optional)
+        if: ${{ inputs.use_cache == 'ccache' }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p .ccache
+          echo "CCACHE_DIR=$(pwd)/.ccache" >> "$GITHUB_ENV"
+          echo "CCACHE_BASEDIR=$(pwd)"     >> "$GITHUB_ENV"
+          echo "CCACHE_COMPILERCHECK=content" >> "$GITHUB_ENV"
+
+      # ---- TDLib-Quelle auf die ermittelte Ref setzen -----------------------------
+      - name: Fetch TDLib source at resolved ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          REF='${{ steps.resolve.outputs.td_ref }}'
+          [ -z "$REF" ] && { echo "TD_REF missing"; exit 1; }
+          if [ -d "$TD_DIR/.git" ]; then
+            git -C "$TD_DIR" fetch --tags --prune
+            git -C "$TD_DIR" checkout -f "$REF"
+            git -C "$TD_DIR" reset --hard "$REF"
+          else
+            git clone --no-tags --single-branch "$TD_REPO" "$TD_DIR"
+            git -C "$TD_DIR" fetch --tags --prune
+            git -C "$TD_DIR" checkout -f "$REF"
+          fi
+          echo "HEAD @ $(git -C "$TD_DIR" rev-parse HEAD)"
+
+      # ---- BoringSSL pro ABI bauen ------------------------------------------------
+      - name: Build BoringSSL (per ABI)
+        shell: bash
+        env:
+          JOBS: ${{ steps.adv.outputs.jobs }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -r -a ABIS <<< "${{ inputs.abis }}"
+          NDK="$ANDROID_NDK_HOME"
+          mkdir -p "$BSSL_DIR"
+
+          if [ ! -d boringssl ]; then
+            git clone https://boringssl.googlesource.com/boringssl boringssl
+          else
+            git -C boringssl fetch || true
+          fi
+
+          # min API 21 für 64-bit
+          API="${{ inputs.api_level }}"; API="${API%.*}"; [ -z "$API" ] && API=24; [ "$API" -lt 21 ] && API=21
+
+          CACHE_LAUNCHER=""
+          if { [ "${{ inputs.use_cache }}" = "sccache" ] || [ "${{ inputs.use_cache }}" = "auto" ]; } && command -v sccache >/dev/null; then
+            export SCCACHE_GHA_ENABLED=true
+            CACHE_LAUNCHER="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
+          elif [ "${{ inputs.use_cache }}" = "ccache" ] && command -v ccache >/dev/null; then
+            CACHE_LAUNCHER="-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+          fi
+
+          CFLAGS="-fdebug-prefix-map=${PWD}=. -ffile-prefix-map=${PWD}=."
+
+          for ABI in "${ABIS[@]}"; do
+            ABI_TRIM="${ABI//[[:space:]]/}"
+            OUT_BASE="$BSSL_DIR/$ABI_TRIM"
+            if [ -f "$OUT_BASE/lib/libcrypto.a" ] && [ -f "$OUT_BASE/lib/libssl.a" ]; then
+              echo "BoringSSL for $ABI_TRIM already present → skip"
+              continue
+            fi
+
+            echo ">> Build BSSL for $ABI_TRIM"
+            BDIR="build-bssl-$ABI_TRIM"
+            rm -rf "$BDIR"; mkdir -p "$BDIR" "$OUT_BASE/lib"
+
+            cmake -S boringssl -B "$BDIR" -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+              -DANDROID_ABI="$ABI_TRIM" \
+              -DANDROID_PLATFORM=android-$API \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DBUILD_SHARED_LIBS=OFF \
+              -DBUILD_TESTING=OFF \
+              -DCMAKE_C_FLAGS="$CFLAGS" \
+              -DCMAKE_CXX_FLAGS="$CFLAGS" \
+              $CACHE_LAUNCHER
+
+            cmake --build "$BDIR" -- -j"$JOBS" -l "$JOBS" || cmake --build "$BDIR"
+
+            rsync -a boringssl/include/ "$OUT_BASE/include/"
+
+            if   [ -f "$BDIR/crypto/libcrypto.a" ]; then
+              cp "$BDIR/crypto/libcrypto.a"         "$OUT_BASE/lib/"
+            elif [ -f "$BDIR/crypto/libcrypto_static.a" ]; then
+              cp "$BDIR/crypto/libcrypto_static.a"  "$OUT_BASE/lib/libcrypto.a"
+            elif [ -f "$BDIR/crypto/libboringssl.a" ]; then
+              cp "$BDIR/crypto/libboringssl.a"      "$OUT_BASE/lib/libcrypto.a"
+            else
+              echo "⚠️  Keine crypto-Static-Lib gefunden – Inhalte:" 
+              (find "$BDIR/crypto" -maxdepth 1 -type f -name 'lib*.a' -printf '%f\n' || true)
+              exit 1
+            fi
+
+            if [ -f "$BDIR/ssl/libssl.a" ]; then
+              cp "$BDIR/ssl/libssl.a" "$OUT_BASE/lib/"
+            else
+              echo "⚠️  libssl.a nicht gefunden – Inhalte:" 
+              (find "$BDIR/ssl" -maxdepth 1 -type f -name 'lib*.a' -printf '%f\n' || true)
+              exit 1
+            fi
+          done
+
+      - name: Locate native build script
+        id: script
+        shell: bash
+        run: |
+          set -euo pipefail
+          for c in ./scripts/build_tdlib_boringssl.sh ./scripts/build-tdlib-boringssl.sh ./scripts/build_tdlib_android.sh; do
+            if [ -f "$c" ]; then
+              sed -i 's/\r$//' "$c" || true
+              chmod +x "$c"
+              echo "SCRIPT=$c" >> "$GITHUB_ENV"
+              echo "Using $c"
+              exit 0
+            fi
+          done
+          echo "build_tdlib_boringssl.sh / build-tdlib-boringssl.sh / build_tdlib_android.sh nicht gefunden" >&2
+          exit 1
+
+      - name: Setup JDK (Temurin 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Build TDLib with native script (boringssl)
+        id: build
+        shell: bash
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+        run: |
+          set -euo pipefail
+          echo "Running: $SCRIPT $ANDROID_SDK_ROOT ${{ inputs.ndk_version }} $BSSL_DIR ${{ inputs.android_stl }} ${{ inputs.td_iface }}"
+          "$SCRIPT" "$ANDROID_SDK_ROOT" "${{ inputs.ndk_version }}" "$BSSL_DIR" "${{ inputs.android_stl }}" "${{ inputs.td_iface }}"
+
+      - name: Upload artifacts (v4)
+        uses: actions/upload-artifact@v4
+        with:
+          name: "tdlib-android-${{ steps.resolve.outputs.td_ref }}"
+          retention-days: ${{ steps.adv.outputs.retention }}
+          if-no-files-found: warn
+          path: |
+            tdlib/**
+            ${{ steps.adv.outputs.out_dir }}/**
+
+      - name: sccache stats (post)
+        if: ${{ always() && (inputs.use_cache == 'sccache' || inputs.use_cache == 'auto') }}
+        shell: bash
+        run: |
+          sccache --show-stats || true
+          sccache --stop-server || true
+
+      - name: Publish prebuilts to branch (optional)
+        if: ${{ steps.adv.outputs.publish_branch != '' }}
+        env:
+          PUBLISH_BRANCH: ${{ steps.adv.outputs.publish_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "+refs/heads/${PUBLISH_BRANCH}:refs/remotes/origin/${PUBLISH_BRANCH}" || true
+          mkdir -p .publish && cd .publish
+          if git ls-remote --exit-code origin "refs/heads/${PUBLISH_BRANCH}" >/dev/null 2>&1; then
+            git init
+            git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+            git fetch origin "${PUBLISH_BRANCH}"
+            git checkout -B "${PUBLISH_BRANCH}" "origin/${PUBLISH_BRANCH}"
+          else
+            git init
+            git checkout -b "${PUBLISH_BRANCH}"
+            git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          fi
+          DEST="tdlib/${{ steps.resolve.outputs.td_ref }}"
+          rm -rf "$DEST"; mkdir -p "$DEST"
+          rsync -a "${GITHUB_WORKSPACE}/tdlib/" "$DEST/" || true
+          rsync -a "${GITHUB_WORKSPACE}/${{ steps.adv.outputs.out_dir }}/" "$DEST/${{ steps.adv.outputs.out_dir }}/" || true
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "Publish TDLib prebuilts ${{ steps.resolve.outputs.td_ref }}"
+            git push --set-upstream origin "${PUBLISH_BRANCH}"
+          fi
