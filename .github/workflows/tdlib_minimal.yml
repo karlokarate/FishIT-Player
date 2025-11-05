@@ -1,4 +1,4 @@
-name: TDLib – Android JNI Prebuild (minimal, NDK r27)
+name: TDLib - Android JNI Prebuild (minimal, NDK r27)
 
 on:
   workflow_dispatch:
@@ -64,7 +64,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y             git curl unzip cmake ninja-build pkg-config gperf             clang make rsync zlib1g-dev
+          sudo apt-get install -y git curl unzip cmake ninja-build pkg-config gperf clang make rsync zlib1g-dev
 
       - name: Fetch TDLib source
         shell: bash
@@ -139,8 +139,8 @@ jobs:
           set -euo pipefail
           for c in ./scripts/build-tdlib-boringssl.sh ./scripts/build_tdlib_boringssl.sh ./scripts/build_tdlib_android.sh; do
             if [ -f "$c" ]; then
-              sed -i 's/
-$//' "$c" || true
+              tmpfile="$(mktemp)"
+              tr -d '\r' < "$c" > "$tmpfile" && mv "$tmpfile" "$c"
               chmod +x "$c"
               echo "path=$c" >> "$GITHUB_OUTPUT"
               exit 0
