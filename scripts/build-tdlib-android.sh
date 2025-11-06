@@ -78,22 +78,20 @@ echo "BoringSSL: $BORINGSSL_DIR"
 
 # --- 1) Java-Bindings generieren: TdApi.java ---
 echo "-- Generating Java sources (TdApi.java) ..."
-# FIX: Sicherstellen, dass das erwartete Ausgabeverzeichnis existiert
 mkdir -p org/drinkless/tdlib
 cmake -S . -B "build-native-java" -DTD_GENERATE_SOURCE_FILES=ON
 cmake --build "build-native-java" --target td_generate_java_api
 
-# Pfad bestimmen (Fallback, falls Generator in example/java schreibt)
-TDAPI_SRC="org/drinkless/tdlib/TdApi.java"
-if [[ ! -f "$TDAPI_SRC" ]]; then
-  ALT_TDAPI_SRC="example/java/org/drinkless/tdlib/TdApi.java"
-  [[ -f "$ALT_TDAPI_SRC" ]] && TDAPI_SRC="$ALT_TDAPI_SRC"
-fi
-[[ -f "$TDAPI_SRC" ]] || { echo "Generated org/drinkless/tdlib/TdApi.java not found"; exit 1; }
+# FIX: Datei befindet sich sicher im Build-Verzeichnis
+TDAPI_SRC="build-native-java/org/drinkless/tdlib/TdApi.java"
+[[ -f "$TDAPI_SRC" ]] || { echo "❌ $TDAPI_SRC not found"; exit 1; }
+
+mkdir -p "$JAVA_SRC_DIR/org/drinkless/tdlib"
+cp -f "$TDAPI_SRC" "$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java"
 
 # Optionales Post-Processing (Enum-IntDefs)
 if [[ -f "AddIntDef.php" ]]; then
-  php AddIntDef.php "$TDAPI_SRC"
+  php AddIntDef.php "$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java"
 fi
 
 # Pflicht-Quellen aus example/java aufnehmen: Client.java + Cache.java
@@ -102,8 +100,6 @@ CACHE_SRC="example/java/org/drinkless/tdlib/Cache.java"
 [[ -f "$CLIENT_SRC" ]] || { echo "Missing $CLIENT_SRC (TDLib repo expected)"; exit 1; }
 [[ -f "$CACHE_SRC"  ]] || { echo "Missing $CACHE_SRC (TDLib repo expected)"; exit 1; }
 
-mkdir -p "$JAVA_SRC_DIR/org/drinkless/tdlib"
-cp -f "$TDAPI_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java"
 cp -f "$CLIENT_SRC" "$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java"
 cp -f "$CACHE_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/Cache.java"
 
