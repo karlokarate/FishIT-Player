@@ -72,28 +72,36 @@ COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$COMMIT")"
 echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
-# (1) Install TD mit JNI in example/java/td (absoluter Prefix!)
+# ---------- (1) TD + JNI "installierbar" bauen ----------
+# WICHTIG: absoluter Install-Prefix, damit TdConfig.cmake unter .../lib/cmake/Td landet
 JAVA_TD_INSTALL_PREFIX="${TD_DIR}/example/java/td"
+
 cmake -S . -B build-java-install \
   -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX:PATH="${JAVA_TD_INSTALL_PREFIX}" \
   -DTD_ENABLE_JNI=ON \
-  -DTD_GENERATE_SOURCE_FILES=ON \
-  -DCMAKE_INSTALL_PREFIX:PATH="${JAVA_TD_INSTALL_PREFIX}"
+  -DTD_ENABLE_TESTS=OFF \
+  -DTD_ENABLE_TDJSON=ON \
+  -DTD_GENERATE_SOURCE_FILES=ON
+
+# Kernbibliotheken VOR dem Install bauen, damit Export/Package erzeugt wird
+cmake --build build-java-install --target tdjson tdclient tdtl tdactor tdutils
 cmake --build build-java-install --target install
 
-# (2) example/java bauen ⇒ generiert TdApi.java
+# ---------- (2) example/java bauen ⇒ generiert TdApi.java ----------
 mkdir -p example/java/build
 pushd example/java/build >/dev/null
 cmake -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH="${JAVA_TD_INSTALL_PREFIX}" \
   -DTd_DIR="${JAVA_TD_INSTALL_PREFIX}/lib/cmake/Td" \
   -DCMAKE_INSTALL_PREFIX:PATH="${TD_DIR}/example/java" \
   ..
 cmake --build . --target install
 popd >/dev/null
 
-# (3) Java-Sources einsammeln
+# ---------- (3) Java-Sources einsammeln ----------
 TDAPI_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/TdApi.java' | head -n1 || true)"
 CLIENT_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Client.java' | head -n1 || true)"
 CACHE_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Cache.java' | head -n1 || true)"
@@ -106,7 +114,7 @@ cp -f "$TDAPI_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java"
 cp -f "$CLIENT_SRC" "$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java"
 cp -f "$CACHE_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/Cache.java"
 
-# (4) JNI pro ABI
+# ---------- (4) JNI pro ABI ----------
 for ABI in "${ABI_ARR[@]}"; do
   ABI="$(echo "$ABI" | xargs)"
   BUILD_DIR="build-${ABI}-jni"
@@ -145,7 +153,7 @@ done
 
 popd >/dev/null
 
-# (5) Java → JAR
+# ---------- (5) Java → JAR ----------
 find "$JAVA_SRC_DIR" -name "*.java" > "$OUT_DIR/java-sources.list"
 javac --release 8 -d "$JAVA_CLASSES_DIR" @"$OUT_DIR/java-sources.list"
 
