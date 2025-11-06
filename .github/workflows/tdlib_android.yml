@@ -10,7 +10,7 @@ jobs:
       NDK_VERSION: r27b
       ANDROID_PLATFORM: android-21
       BORINGSSL_DIR: .third_party/boringssl
-      TD_BUILD_SCRIPT: scripts/build-tdlib-android.sh
+      TD_BUILD_SCRIPT: scripts/build-tdlib-android2.sh
       OUT_DIR: out
 
     steps:
