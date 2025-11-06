@@ -78,11 +78,18 @@ echo "BoringSSL: $BORINGSSL_DIR"
 
 # --- 1) Java-Bindings generieren: TdApi.java ---
 echo "-- Generating Java sources (TdApi.java) ..."
+# FIX: Sicherstellen, dass das erwartete Ausgabeverzeichnis existiert
+mkdir -p org/drinkless/tdlib
 cmake -S . -B "build-native-java" -DTD_GENERATE_SOURCE_FILES=ON
 cmake --build "build-native-java" --target td_generate_java_api
 
+# Pfad bestimmen (Fallback, falls Generator in example/java schreibt)
 TDAPI_SRC="org/drinkless/tdlib/TdApi.java"
-[[ -f "$TDAPI_SRC" ]] || { echo "Generated $TDAPI_SRC not found"; exit 1; }
+if [[ ! -f "$TDAPI_SRC" ]]; then
+  ALT_TDAPI_SRC="example/java/org/drinkless/tdlib/TdApi.java"
+  [[ -f "$ALT_TDAPI_SRC" ]] && TDAPI_SRC="$ALT_TDAPI_SRC"
+fi
+[[ -f "$TDAPI_SRC" ]] || { echo "Generated org/drinkless/tdlib/TdApi.java not found"; exit 1; }
 
 # Optionales Post-Processing (Enum-IntDefs)
 if [[ -f "AddIntDef.php" ]]; then
