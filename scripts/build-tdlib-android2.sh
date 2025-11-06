@@ -64,6 +64,7 @@ echo
 [[ -d "$TD_DIR" ]] || { echo "TD source dir not found: $TD_DIR"; exit 1; }
 pushd "$TD_DIR" >/dev/null
 
+# Optionaler Ref-Wechsel (Repo ist vom Workflow bereits ausgecheckt)
 if [[ -n "${TD_REF}" ]]; then
   git fetch --depth=1 origin "$TD_REF"
   git checkout -qf FETCH_HEAD
@@ -72,22 +73,19 @@ COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$COMMIT")"
 echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
-# ---------- (1) TD + JNI "installierbar" bauen ----------
-# WICHTIG: absoluter Install-Prefix, damit TdConfig.cmake unter .../lib/cmake/Td landet
+# ---------- (1) Host-Build ohne JNI → installiert TdConfig.cmake ----------
+# Wichtig: KEIN TD_ENABLE_JNI hier; nur reines Host-Install erzeugt das CMake-Package sauber.
 JAVA_TD_INSTALL_PREFIX="${TD_DIR}/example/java/td"
 
-cmake -S . -B build-java-install \
+cmake -S . -B build-host \
   -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX:PATH="${JAVA_TD_INSTALL_PREFIX}" \
-  -DTD_ENABLE_JNI=ON \
-  -DTD_ENABLE_TESTS=OFF \
-  -DTD_ENABLE_TDJSON=ON \
-  -DTD_GENERATE_SOURCE_FILES=ON
+  -DTD_ENABLE_TESTS=OFF
 
-# Kernbibliotheken VOR dem Install bauen, damit Export/Package erzeugt wird
-cmake --build build-java-install --target tdjson tdclient tdtl tdactor tdutils
-cmake --build build-java-install --target install
+# Build & Install ohne spezifische Targets (Targets variieren je nach Revision)
+cmake --build build-host
+cmake --build build-host --target install
 
 # ---------- (2) example/java bauen ⇒ generiert TdApi.java ----------
 mkdir -p example/java/build
@@ -114,7 +112,7 @@ cp -f "$TDAPI_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java"
 cp -f "$CLIENT_SRC" "$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java"
 cp -f "$CACHE_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/Cache.java"
 
-# ---------- (4) JNI pro ABI ----------
+# ---------- (4) JNI je ABI (Android) ----------
 for ABI in "${ABI_ARR[@]}"; do
   ABI="$(echo "$ABI" | xargs)"
   BUILD_DIR="build-${ABI}-jni"
