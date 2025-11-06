@@ -1,3 +1,4 @@
+# .github/workflows/tdlib_android.yml
 name: Ver 2 TDLib – SDK-free Build (NDK r27b, BoringSSL static, cached)
 
 on:
@@ -60,7 +61,7 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Install build deps (CMake, Ninja, PHP, rsync)
+      - name: Install build deps (CMake, Ninja, PHP, rsync, gperf)
         id: tools
         shell: bash
         run: |
@@ -73,8 +74,8 @@ jobs:
           echo "deb [signed-by=/etc/apt/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" \
             | sudo tee /etc/apt/sources.list.d/kitware.list
           sudo apt-get update -y
-          sudo apt-get install -y cmake ninja-build rsync
-          cmake --version; ninja --version; php -v
+          sudo apt-get install -y cmake ninja-build rsync gperf
+          cmake --version; ninja --version; php -v; gperf --version
 
       - name: Cache NDK
         uses: actions/cache@v4
