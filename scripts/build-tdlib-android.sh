@@ -82,6 +82,16 @@ mkdir -p org/drinkless/tdlib
 cmake -S . -B "build-native-java" -DTD_GENERATE_SOURCE_FILES=ON
 cmake --build "build-native-java" --target td_generate_java_api
 
+# OPTION A: Generator-Binary explizit ausführen (schreibt in build-native-java/…)
+(
+  set -e
+  cd build-native-java
+  mkdir -p org/drinkless/tdlib
+  GEN="$(find . -type f -perm -111 -path '*/td/generate/td_generate_java_api' -print -quit || true)"
+  [[ -n "$GEN" ]] || { echo "td_generate_java_api binary not found"; exit 1; }
+  "$GEN"
+)
+
 # FIX: Datei befindet sich sicher im Build-Verzeichnis
 TDAPI_SRC="build-native-java/org/drinkless/tdlib/TdApi.java"
 [[ -f "$TDAPI_SRC" ]] || { echo "❌ $TDAPI_SRC not found"; exit 1; }
