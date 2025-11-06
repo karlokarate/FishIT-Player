@@ -92,10 +92,11 @@ else
     GEN="$(find . -type f -perm -111 -path '*/td/generate/td_generate_java_api' -print -quit || true)"
     [[ -n "$GEN" ]] || { echo "td_generate_java_api binary not found"; exit 1; }
 
-    # Schema auto-finden (.tlo im Build bevorzugt, sonst .tl aus Source)
-    SCHEMA="$(find . -maxdepth 4 -path './td/telegram/td_api.tlo' -print -quit || true)"
-    [[ -n "$SCHEMA" ]] || SCHEMA="$(find .. -maxdepth 4 -path '../td/telegram/td_api.tl' -print -quit || true)"
+    # Schema auto-finden: bevorzugt .tlo im Build, sonst .tl im Source
+    SCHEMA="$(find .  -type f -name 'td_api.tlo' -print -quit || true)"
+    [[ -n "$SCHEMA" ]] || SCHEMA="$(find .. -type f -name 'td_api.tl'  -print -quit || true)"
     [[ -n "$SCHEMA" ]] || { echo "Unable to locate td_api schema (.tlo/.tl)"; exit 1; }
+    echo "Using schema: $SCHEMA"
 
     "$GEN" "$SCHEMA" org.drinkless.tdlib org/drinkless/tdlib/TdApi.java
   )
