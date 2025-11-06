@@ -116,7 +116,7 @@ jobs:
           git rev-parse HEAD | tee .TDLIB_COMMIT.txt
           git describe --tags --always --long --dirty=+ | tee .TDLIB_DESCRIBE.txt
 
-      # ---------- BoringSSL Cache (restore → optional build → save) ----------
+      # ---------- BoringSSL Cache ----------
       - name: Restore BoringSSL installs
         id: restore-bssl
         uses: actions/cache/restore@v4
