@@ -114,6 +114,16 @@ echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
 # ------------------------ 1) Java-Bindings ------------------------
 echo "-- Generating Java sources (TdApi.java) ..."
+
+# (A) Offizieller Weg: install-Target triggert die Generierung
+cmake -S . -B build-java-install \
+  -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX:PATH=example/java/td \
+  -DTD_ENABLE_JNI=ON
+cmake --build build-java-install --target install
+
+# Optional zusätzlich: Generator-Binary bauen
 cmake -S . -B build-native-java \
   -G Ninja \
   -DTD_ENABLE_JNI=OFF \
@@ -123,6 +133,23 @@ cmake -S . -B build-native-java \
   -DGPERF_EXECUTABLE:FILEPATH="$(command -v gperf)" \
   -DCMAKE_BUILD_TYPE=Release
 cmake --build build-native-java --target td_generate_java_api -- -v
+
+# (B) Fallback: Generator-Binary bei Bedarf direkt ausführen
+GEN_BIN=""
+for cand in \
+  "td/generate/td_generate_java_api" \
+  "build-native-java/td/generate/td_generate_java_api" \
+  "build-java-install/td/generate/td_generate_java_api"
+do
+  [[ -x "$cand" ]] && { GEN_BIN="$cand"; break; }
+done
+[[ -z "$GEN_BIN" ]] && GEN_BIN="$(command -v td_generate_java_api || true)"
+if [[ -x "$GEN_BIN" && -f "td/generate/scheme/td_api.tl" ]]; then
+  echo "-- Running generator binary: $GEN_BIN"
+  mkdir -p "generate/java"
+  "$GEN_BIN" -k java -o "generate/java" \
+    "td/generate/scheme/td_api.tl" "td/generate/scheme/td_api.tlo"
+fi
 
 echo "-- Searching for generated TdApi.java ..."
 TDAPI_SRC=""
