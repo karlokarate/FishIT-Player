@@ -123,7 +123,7 @@ cmake -S . -B build-java-install \
   -DTD_ENABLE_JNI=ON
 cmake --build build-java-install --target install
 
-# Optional zusätzlich: Generator-Binary bauen
+# Optional zusätzlich: Generator-Binary bauen (nicht direkt ausführen)
 cmake -S . -B build-native-java \
   -G Ninja \
   -DTD_ENABLE_JNI=OFF \
@@ -134,35 +134,20 @@ cmake -S . -B build-native-java \
   -DCMAKE_BUILD_TYPE=Release
 cmake --build build-native-java --target td_generate_java_api -- -v
 
-# (B) Fallback: Generator-Binary bei Bedarf direkt ausführen
-GEN_BIN=""
-for cand in \
-  "td/generate/td_generate_java_api" \
-  "build-native-java/td/generate/td_generate_java_api" \
-  "build-java-install/td/generate/td_generate_java_api"
-do
-  [[ -x "$cand" ]] && { GEN_BIN="$cand"; break; }
-done
-[[ -z "$GEN_BIN" ]] && GEN_BIN="$(command -v td_generate_java_api || true)"
-if [[ -x "$GEN_BIN" && -f "td/generate/scheme/td_api.tl" ]]; then
-  echo "-- Running generator binary: $GEN_BIN"
-  mkdir -p "generate/java"
-  "$GEN_BIN" -k java -o "generate/java" \
-    "td/generate/scheme/td_api.tl" "td/generate/scheme/td_api.tlo"
-fi
-
 echo "-- Searching for generated TdApi.java ..."
 TDAPI_SRC=""
 for candidate in \
+  "example/java/td/src/main/java/org/drinkless/tdlib/TdApi.java" \
+  "example/java/src/main/java/org/drinkless/tdlib/TdApi.java" \
   "build-native-java/td/generate/java/org/drinkless/tdlib/TdApi.java" \
   "td/generate/java/org/drinkless/tdlib/TdApi.java" \
   "generate/java/org/drinkless/tdlib/TdApi.java" \
-  "example/java/org/drinkless/tdlib/TdApi.java" \
   "tdlib/generate/java/org/drinkless/tdlib/TdApi.java"
 do
   [[ -f "$candidate" ]] && { TDAPI_SRC="$candidate"; break; }
 done
-[[ -z "$TDAPI_SRC" ]] && TDAPI_SRC="$(find . -type f -path '*/org/drinkless/tdlib/TdApi.java' | head -n1 || true)"
+[[ -z "${TDAPI_SRC}" ]] && TDAPI_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/TdApi.java' | head -n1 || true)"
+[[ -z "${TDAPI_SRC}" ]] && TDAPI_SRC="$(find . -type f -path '*/org/drinkless/tdlib/TdApi.java' | head -n1 || true)"
 [[ -n "$TDAPI_SRC" && -f "$TDAPI_SRC" ]] || { echo "❌ Could not locate generated TdApi.java"; exit 1; }
 echo "✅ Found TdApi.java at $TDAPI_SRC"
 
