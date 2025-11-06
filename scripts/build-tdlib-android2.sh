@@ -124,7 +124,7 @@ cmake -S . -B build-java-install \
   -DTD_GENERATE_SOURCE_FILES=ON
 cmake --build build-java-install --target install
 
-# Optional zusätzlich: Generator-Binary bauen (nicht direkt ausführen)
+# Optional zusätzlich: Generator-Binaries bauen
 cmake -S . -B build-native-java \
   -G Ninja \
   -DTD_ENABLE_JNI=OFF \
@@ -134,6 +134,7 @@ cmake -S . -B build-native-java \
   -DGPERF_EXECUTABLE:FILEPATH="$(command -v gperf)" \
   -DCMAKE_BUILD_TYPE=Release
 cmake --build build-native-java --target td_generate_java_api -- -v
+cmake --build build-java-install --target td_api_java -- -v || true
 
 # Diagnose: mögliche Generator-Ausgabeorte listen
 echo "-- Listing possible generator output roots:"
