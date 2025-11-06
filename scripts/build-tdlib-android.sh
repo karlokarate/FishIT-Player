@@ -81,7 +81,7 @@ echo "-- Generating Java sources (TdApi.java) ..."
 cmake -S . -B "build-native-java" -DTD_GENERATE_SOURCE_FILES=ON
 cmake --build "build-native-java" --target td_generate_java_api
 
-# Versuche das offizielle Target, falls vorhanden; sonst fallback auf Binary-Aufruf
+# Versuche offizielles Target; wenn nicht vorhanden, rufe Binary mit robustem Schema-Resolver auf
 if cmake --build "build-native-java" --target help | grep -q '\<tl_generate_java\>'; then
   cmake --build "build-native-java" --target tl_generate_java
 else
@@ -92,13 +92,26 @@ else
     GEN="$(find . -type f -perm -111 -path '*/td/generate/td_generate_java_api' -print -quit || true)"
     [[ -n "$GEN" ]] || { echo "td_generate_java_api binary not found"; exit 1; }
 
-    # Schema auto-finden: bevorzugt .tlo im Build, sonst .tl im Source
-    SCHEMA="$(find .  -type f -name 'td_api.tlo' -print -quit || true)"
-    [[ -n "$SCHEMA" ]] || SCHEMA="$(find .. -type f -name 'td_api.tl'  -print -quit || true)"
-    [[ -n "$SCHEMA" ]] || { echo "Unable to locate td_api schema (.tlo/.tl)"; exit 1; }
-    echo "Using schema: $SCHEMA"
+    # 1) bevorzugt .tlo im Build-Baum, 2) sonst .tl im Source-Baum (egal wo)
+    mapfile -t SCHEMAS < <( { find .  -type f -name 'td_api.tlo' -print; find .. -type f -name 'td_api.tl' -print; } | awk '!seen[$0]++' )
+    [[ "${#SCHEMAS[@]}" -gt 0 ]] || { echo "Unable to locate td_api schema (.tlo/.tl)"; exit 1; }
 
-    "$GEN" "$SCHEMA" org.drinkless.tdlib org/drinkless/tdlib/TdApi.java
+    echo "Schema candidates:"
+    for s in "${SCHEMAS[@]}"; do echo "  - $s"; done
+
+    try() {
+      "$GEN" "$1" org.drinkless.tdlib org/drinkless/tdlib/TdApi.java && [[ -f org/drinkless/tdlib/TdApi.java ]]
+    }
+    ok=0
+    for schema in "${SCHEMAS[@]}"; do
+      echo "Trying generator with: $schema"
+      if try "$schema"; then
+        echo "Generated TdApi.java using: $schema"
+        ok=1
+        break
+      fi
+    done
+    [[ $ok -eq 1 ]] || { echo "Failed to generate TdApi.java with available schemas."; exit 1; }
   )
 fi
 
