@@ -115,12 +115,13 @@ echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 # ------------------------ 1) Java-Bindings ------------------------
 echo "-- Generating Java sources (TdApi.java) ..."
 
-# (A) Offizieller Weg: install-Target triggert die Generierung
+# (A) Offizieller Weg: install-Target triggert die Generierung (inkl. Source-Files)
 cmake -S . -B build-java-install \
   -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX:PATH=example/java/td \
-  -DTD_ENABLE_JNI=ON
+  -DTD_ENABLE_JNI=ON \
+  -DTD_GENERATE_SOURCE_FILES=ON
 cmake --build build-java-install --target install
 
 # Optional zusätzlich: Generator-Binary bauen (nicht direkt ausführen)
@@ -133,6 +134,15 @@ cmake -S . -B build-native-java \
   -DGPERF_EXECUTABLE:FILEPATH="$(command -v gperf)" \
   -DCMAKE_BUILD_TYPE=Release
 cmake --build build-native-java --target td_generate_java_api -- -v
+
+# Diagnose: mögliche Generator-Ausgabeorte listen
+echo "-- Listing possible generator output roots:"
+for d in build-java-install build-native-java example/java td; do
+  if [[ -d "$d" ]]; then
+    echo "== $d ==";
+    find "$d" -maxdepth 6 -type f -path "*/org/drinkless/tdlib/TdApi.java" -print | sed 's/^/  /' || true
+  fi
+done
 
 echo "-- Searching for generated TdApi.java ..."
 TDAPI_SRC=""
