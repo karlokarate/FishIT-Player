@@ -73,19 +73,25 @@ COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$COMMIT")"
 echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
-# ---------- (1) Host-Build ohne JNI → installiert TdConfig.cmake ----------
-# Wichtig: KEIN TD_ENABLE_JNI hier; nur reines Host-Install erzeugt das CMake-Package sauber.
+# ---------- (1) Host-Build: installiert TdConfig.cmake + Generator ----------
+# WICHTIG: ohne JNI, aber MIT TD_GENERATE_SOURCE_FILES, damit td_generate_java_api gebaut/installiert wird.
 JAVA_TD_INSTALL_PREFIX="${TD_DIR}/example/java/td"
 
 cmake -S . -B build-host \
   -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX:PATH="${JAVA_TD_INSTALL_PREFIX}" \
-  -DTD_ENABLE_TESTS=OFF
+  -DTD_ENABLE_TESTS=OFF \
+  -DTD_GENERATE_SOURCE_FILES=ON
 
-# Build & Install ohne spezifische Targets (Targets variieren je nach Revision)
+# Erst bauen (alle Host-Targets inkl. Generator), dann installieren
 cmake --build build-host
+cmake --build build-host --target td_generate_java_api || true
 cmake --build build-host --target install
+
+# Sicherstellen, dass der Generator wirklich da ist (Pfad, den example/java erwartet)
+GEN_BIN="${JAVA_TD_INSTALL_PREFIX}/bin/td_generate_java_api"
+[[ -x "$GEN_BIN" ]] || { echo "❌ Missing generator: $GEN_BIN"; exit 1; }
 
 # ---------- (2) example/java bauen ⇒ generiert TdApi.java ----------
 mkdir -p example/java/build
