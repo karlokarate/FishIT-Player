@@ -10,7 +10,7 @@ jobs:
       NDK_VERSION: r27b
       ANDROID_PLATFORM: android-21
       BORINGSSL_DIR: .third_party/boringssl
-      TD_BUILD_SCRIPT: scripts/build-tdlib-android.sh   # Pfad in DEINEM Repo
+      TD_BUILD_SCRIPT: scripts/build-tdlib-android.sh
       OUT_DIR: out
 
     steps:
@@ -56,7 +56,8 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Install latest CMake & Ninja
+      # FIX: gperf (und rsync) für TDLib-Generator + Kopierschritt
+      - name: Install build deps (CMake, Ninja, gperf, rsync)
         id: tools
         shell: bash
         run: |
@@ -67,11 +68,13 @@ jobs:
           curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc | sudo gpg --dearmor -o /etc/apt/keyrings/kitware-archive-keyring.gpg
           echo "deb [signed-by=/etc/apt/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/kitware.list
           sudo apt-get update -y
-          sudo apt-get install -y cmake ninja-build
+          sudo apt-get install -y cmake ninja-build gperf rsync
           echo "cmake=$(cmake --version | head -1 | awk '{print $3}')" >> "$GITHUB_OUTPUT"
           echo "ninja=$(ninja --version)" >> "$GITHUB_OUTPUT"
           cmake --version
           ninja --version
+          gperf --version | head -1 || true
+          rsync --version | head -1 || true
           javac -version
 
       - name: Cache NDK r27b
@@ -166,7 +169,6 @@ jobs:
             cmake --build "$build_dir" --target crypto
             cmake --build "$build_dir" --target ssl
 
-            # Robust: beide Layouts unterstützen
             pick() { for p in "$@"; do [[ -f "$p" ]] && { echo "$p"; return; }; done; }
             crypto_lib="$(pick "$build_dir/crypto/libcrypto.a" "$build_dir/libcrypto.a")"
             ssl_lib="$(pick "$build_dir/ssl/libssl.a" "$build_dir/libssl.a")"
@@ -192,13 +194,11 @@ jobs:
             td/build-armeabi-v7a-jni
           key: td-build-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ steps.tdref.outputs.ref }}-${{ steps.tools.outputs.cmake }}-${{ steps.tools.outputs.ninja }}
 
-      # >>> FIX: Script in den TDLib-Root kopieren und dort ausführen
       - name: Build TDLib (JNI + Java) with BoringSSL
         shell: bash
         working-directory: td
         run: |
           set -euo pipefail
-          # Script in den TDLib-Root spiegeln, damit cmake -S . das richtige CMakeLists.txt findet
           cp -f "$GITHUB_WORKSPACE/${TD_BUILD_SCRIPT}" ./build-tdlib-android.sh
           chmod +x ./build-tdlib-android.sh
 
@@ -207,7 +207,6 @@ jobs:
             "$GITHUB_WORKSPACE/${BORINGSSL_DIR}" \
             "c++_static"
 
-          # Reuse-Struktur für APK-Build
           mkdir -p "$GITHUB_WORKSPACE/apk_inputs/jniLibs/arm64-v8a" \
                    "$GITHUB_WORKSPACE/apk_inputs/jniLibs/armeabi-v7a" \
                    "$GITHUB_WORKSPACE/apk_inputs/libs"
