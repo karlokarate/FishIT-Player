@@ -1,3 +1,4 @@
+# scripts/build-tdlib-android2.sh
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 # TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL, NDK r27b/r27c)
@@ -5,23 +6,6 @@
 # - Generiert Java-Bindings (TdApi.java, Client.java, Cache.java) aus TDLib-Quelle
 # - Packt tdlib-<describe>.jar (org/drinkless/tdlib/*)
 # - Läuft im Repo-Root, nutzt TD-Quellen unter ./td, schreibt Artefakte nach ./out
-#
-# Aufruf (neu, für deinen Workflow):
-#   ./scripts/build-tdlib-android2.sh \
-#       --ndk "<PATH_TO_NDK>" \
-#       --boringssl-dir ".third_party/boringssl" \
-#       --abis "arm64-v8a,armeabi-v7a" \
-#       --api-level "21" \
-#       [--stl c++_static|c++_shared] \
-#       [--ref <commit|tag|branch>]
-#
-# Rückwärtskompatibel (alt, Positionsargumente):
-#   ./scripts/build-tdlib-android2.sh <NDK> <BORINGSSL_DIR> [c++_static|c++_shared]
-#
-# Anforderungen:
-#   - CMake >= 3.29, Ninja >= 1.11, JDK (javac/jar), PHP (optional für AddIntDef.php)
-#   - Android NDK r27b/r27c
-#   - Kein Android SDK nötig
 
 set -euo pipefail
 
@@ -33,7 +17,7 @@ API_LEVEL="21"
 ANDROID_STL="c++_static"
 TD_REF="${TD_REF:-}"  # optional, Workflow checkt TD vorher aus
 
-# Flag-Parsing
+# Flag-Parsing + Positions-Compatibility
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --ndk)             NDK="$2"; shift 2 ;;
@@ -42,7 +26,6 @@ while [[ $# -gt 0 ]]; do
     --api-level)       API_LEVEL="$2"; shift 2 ;;
     --stl)             ANDROID_STL="$2"; shift 2 ;;
     --ref)             TD_REF="$2"; shift 2 ;;
-    # Rückwärtskompatible Positionsargumente:
     -*)
       echo "Unknown option: $1" >&2; exit 2 ;;
     *)
@@ -61,7 +44,7 @@ done
 
 # ------------------------ Sanity / Tools --------------------------
 need() { command -v "$1" >/dev/null 2>&1 || { echo "Missing tool: $1"; exit 1; }; }
-need cmake; need ninja; need javac; need jar
+need cmake; need ninja; need javac; need jar; need gperf
 command -v php >/dev/null 2>&1 || echo "Note: PHP not found (only needed if AddIntDef.php is present)"
 
 CMAKE_VER=$(cmake --version | head -1 | awk '{print $3}')
@@ -137,6 +120,7 @@ cmake -S . -B build-native-java \
   -DTD_ENABLE_TESTS=OFF \
   -DTD_ENABLE_TDJSON=OFF \
   -DTD_GENERATE_SOURCE_FILES=ON \
+  -DGPERF_EXECUTABLE:FILEPATH="$(command -v gperf)" \
   -DCMAKE_BUILD_TYPE=Release
 cmake --build build-native-java --target td_generate_java_api -- -v
 
