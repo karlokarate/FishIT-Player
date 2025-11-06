@@ -82,8 +82,26 @@ mkdir -p org/drinkless/tdlib
 cmake -S . -B "build-native-java" -DTD_GENERATE_SOURCE_FILES=ON
 cmake --build "build-native-java" --target td_generate_java_api
 
-# Generator über CMake-Target ausführen (setzt korrekte Args/Paths)
-cmake --build "build-native-java" --target tl_generate_java
+# Generator-Executable robust ausführen (neue Commits haben kein 'tl_generate_java'-Target)
+(
+  set -e
+  cd build-native-java
+  mkdir -p org/drinkless/tdlib
+  GEN="$(find . -type f -perm -111 -path '*/td/generate/td_generate_java_api' -print -quit || true)"
+  [[ -n "$GEN" ]] || { echo "td_generate_java_api binary not found"; exit 1; }
+
+  # Mehrere übliche Aufrufvarianten probieren, bis TdApi.java existiert.
+  # 1) <tlo> <package> <outputFile>
+  try_gen() { "$GEN" "$@" && [[ -f org/drinkless/tdlib/TdApi.java ]]; }
+  if ! try_gen td/td_api.tlo org.drinkless.tdlib org/drinkless/tdlib/TdApi.java; then
+    if ! try_gen td/telegram/td_api.tlo org.drinkless.tdlib org/drinkless/tdlib/TdApi.java; then
+      if ! try_gen ../td/td_api.tlo org.drinkless.tdlib org/drinkless/tdlib/TdApi.java; then
+        echo "Failed to generate TdApi.java with known argument patterns." >&2
+        exit 1
+      fi
+    fi
+  fi
+)
 
 # FIX: Datei befindet sich sicher im Build-Verzeichnis
 TDAPI_SRC="build-native-java/org/drinkless/tdlib/TdApi.java"
