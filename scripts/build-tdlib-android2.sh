@@ -191,7 +191,7 @@ for ABI in "${ABI_ARR[@]}"; do
 
   soPath="${BUILD_DIR}/libtdjni.so"
   [[ -f "$soPath" ]] || soPath="$(find "$BUILD_DIR" -maxdepth 3 -name 'libtdjni.so' | head -n1 || true)"
-  [[ -n "${soPath:-}" && -f "$soPath" ]] || { echo "❌ libtdjni.so not found for $ABI"; exit 1; }
+  [[ -n "${soPath:-}" && -f "${soPath}" ]] || { echo "❌ libtdjni.so not found for $ABI"; exit 1; }
 
   mkdir -p "$OUT_DIR/libs/${ABI}"
   cp -f "$soPath" "$OUT_DIR/libs/${ABI}/"
@@ -233,3 +233,4 @@ echo "  $OUT_DIR/libs/*/libtdjni.so"
 [[ "$ANDROID_STL" == "c++_shared" ]] && echo "  $OUT_DIR/libs/*/libc++_shared.so"
 echo "  $JAR_PATH"
 echo "  $OUT_DIR/TDLIB_VERSION.txt"
+```0
