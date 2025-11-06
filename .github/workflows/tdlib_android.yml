@@ -1,4 +1,4 @@
-name: TDLib – SDK-free Build (NDK r27b, BoringSSL static, cached)
+name: Ver 2 TDLib – SDK-free Build (NDK r27b, BoringSSL static, cached)
 
 on:
   workflow_dispatch:
@@ -10,14 +10,13 @@ jobs:
       NDK_VERSION: r27b
       ANDROID_PLATFORM: android-21
       BORINGSSL_DIR: .third_party/boringssl
-      TD_BUILD_SCRIPT: scripts/build-tdlib-android2.sh
+      TD_BUILD_SCRIPT: scripts/build-tdlib-android.sh  # <— Fix: konsistent zum aktualisierten Script
       OUT_DIR: out
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+        with: { fetch-depth: 1 }
 
       - name: Base tools
         shell: bash
@@ -33,10 +32,11 @@ jobs:
           set -euo pipefail
           feed_url="https://github.com/tdlib/td/commits/master.atom"
           html="$(curl -fsSL "$feed_url")"
-          ref="$(printf '%s' "$html" | grep -oE 'https://github.com/tdlib/td/commit/[0-9a-f]+' \
-                 | head -n1 | awk -F/ '{print $NF}')"
+          ref="$(printf '%s' "$html" \
+            | grep -oE 'https://github.com/tdlib/td/commit/[0-9a-f]+' \
+            | head -n1 | awk -F/ '{print $NF}')"
           if [[ -z "${ref:-}" ]]; then
-            echo "Feed parse failed. Fallback to master." >&2
+            echo "WARN: Feed parse failed. Fallback to master." >&2
             ref="master"
           fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
@@ -57,8 +57,7 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      # Install build dependencies: CMake, Ninja, gperf, etc.
-      - name: Install build deps (CMake, Ninja, gperf, rsync)
+      - name: Install build deps (CMake, Ninja, gperf, PHP, rsync)
         id: tools
         shell: bash
         run: |
@@ -68,19 +67,13 @@ jobs:
           sudo mkdir -p /etc/apt/keyrings
           curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc \
             | sudo gpg --dearmor -o /etc/apt/keyrings/kitware-archive-keyring.gpg
-          echo "deb [signed-by=/etc/apt/keyrings/kitware-archive-keyring.gpg] \
-                https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" \
-                | sudo tee /etc/apt/sources.list.d/kitware.list
+          echo "deb [signed-by=/etc/apt/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" \
+            | sudo tee /etc/apt/sources.list.d/kitware.list
           sudo apt-get update -y
           sudo apt-get install -y cmake ninja-build gperf rsync
-          # Output CMake and Ninja versions for caching key
           echo "cmake=$(cmake --version | head -1 | awk '{print $3}')" >> "$GITHUB_OUTPUT"
           echo "ninja=$(ninja --version)" >> "$GITHUB_OUTPUT"
-          cmake --version
-          ninja --version
-          gperf --version | head -1 || true
-          rsync --version | head -1 || true
-          javac -version
+          cmake --version; ninja --version; gperf --version | head -1 || true; php -v
 
       - name: Cache NDK r27b
         uses: actions/cache@v4
@@ -96,7 +89,6 @@ jobs:
           set -euo pipefail
           mkdir -p .ndk
           url="https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
-          echo "Fetching $url"
           curl -fSLo .ndk/ndk.zip "$url"
           unzip -q .ndk/ndk.zip -d .ndk
           rm .ndk/ndk.zip
@@ -108,7 +100,6 @@ jobs:
           set -euo pipefail
           ndk_dir="$(pwd)/.ndk/android-ndk-${NDK_VERSION}"
           echo "ndk_dir=$ndk_dir" >> "$GITHUB_OUTPUT"
-          # Print NDK version (not strictly needed, but for log)
           "$ndk_dir/ndk-build" -version || true
 
       - name: Fetch TDLib sources
@@ -121,7 +112,8 @@ jobs:
           git remote add origin https://github.com/tdlib/td.git
           git fetch --depth=1 origin "${{ steps.tdref.outputs.ref }}"
           git checkout FETCH_HEAD
-          echo "TDLIB_COMMIT=$(git rev-parse --short=12 HEAD)"
+          git rev-parse HEAD | tee .TDLIB_COMMIT.txt
+          git describe --tags --always --dirty=+ | tee .TDLIB_DESCRIBE.txt
 
       - name: Cache BoringSSL installs
         uses: actions/cache@v4
@@ -150,7 +142,6 @@ jobs:
           NDK="${{ steps.ndk.outputs.ndk_dir }}"
           rm -rf boringssl-src
           git clone --depth=1 https://boringssl.googlesource.com/boringssl boringssl-src
-
           mkdir -p "${BORINGSSL_DIR}"
 
           for ABI in arm64-v8a armeabi-v7a; do
@@ -175,11 +166,9 @@ jobs:
             cmake --build "$build_dir" --target crypto
             cmake --build "$build_dir" --target ssl
 
-            # Locate built libs (different subpaths in BoringSSL build)
             pick() { for p in "$@"; do [[ -f "$p" ]] && { echo "$p"; return; }; done; }
             crypto_lib="$(pick "$build_dir/crypto/libcrypto.a" "$build_dir/libcrypto.a")"
             ssl_lib="$(pick "$build_dir/ssl/libssl.a" "$build_dir/libssl.a")"
-
             if [[ -z "${crypto_lib:-}" || -z "${ssl_lib:-}" ]]; then
               echo "❌ Static libs not found in $build_dir" >&2
               find "$build_dir" -maxdepth 3 -name "*.a" -print || true
@@ -206,17 +195,20 @@ jobs:
         working-directory: td
         run: |
           set -euo pipefail
-          # Copy the build script from our repo into the TDLib source dir
           cp -f "$GITHUB_WORKSPACE/${TD_BUILD_SCRIPT}" ./build-tdlib-android.sh
           chmod +x ./build-tdlib-android.sh
 
-          # Run the TDLib build script with NDK path, BoringSSL path, and static STL
           ./build-tdlib-android.sh \
             "${{ steps.ndk.outputs.ndk_dir }}" \
-            "$GITHUB_WORKSPACE/${BORINGSSL_DIR}" \
+            "$GITHUB_WORKSPACE/${{ env.BORINGSSL_DIR }}" \
             "c++_static"
 
-          # Copy outputs to apk_inputs (to be used in Android app build)
+          # Meta beilegen
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp -f .TDLIB_COMMIT.txt "$GITHUB_WORKSPACE/out/TDLIB_COMMIT.txt"
+          cp -f .TDLIB_DESCRIBE.txt "$GITHUB_WORKSPACE/out/TDLIB_DESCRIBE.txt"
+
+          # Inputs für APK-Workflows
           mkdir -p "$GITHUB_WORKSPACE/apk_inputs/jniLibs/arm64-v8a" \
                    "$GITHUB_WORKSPACE/apk_inputs/jniLibs/armeabi-v7a" \
                    "$GITHUB_WORKSPACE/apk_inputs/libs"
@@ -232,5 +224,6 @@ jobs:
           path: |
             td/out/**
             apk_inputs/**
+            out/TDLIB_*.txt
           if-no-files-found: error
           retention-days: 14
