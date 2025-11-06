@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 # TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL, NDK r27b)
-# Builds JNI libs (libtdjni.so) for arm64-v8a + armeabi-v7a
-# Generates Java bindings (TdApi.java, Client.java, Cache.java)
-# Packages tdlib-<describe>.jar including org/drinkless/tdlib/*
+# Baut JNI (libtdjni.so) für arm64-v8a + armeabi-v7a
+# Generiert Java-Bindings (TdApi.java, Client.java, Cache.java)
+# Packt tdlib-<describe>.jar mit org/drinkless/tdlib/*
 #
-# Usage:
+# Aufrufe:
 #   ./build-tdlib-android.sh <ANDROID_NDK_ROOT> <BORINGSSL_DIR> [c++_static|c++_shared]
+#
+# Voraussetzungen:
+#   - CMake >= 3.29, Ninja >= 1.11, PHP, Java (JDK), NDK r27b
+#   - Kein Android SDK nötig
 
 set -euo pipefail
 
-ANDROID_NDK_ROOT=${1:? "Pass ANDROID_NDK_ROOT (e.g. /opt/android-ndk/r27b)"}
+ANDROID_NDK_ROOT=${1:? "Pass ANDROID_NDK_ROOT (z.B. /opt/android-ndk/r27b)"}
 BORINGSSL_DIR=${2:? "Pass BORINGSSL_DIR (prebuilt per ABI, siehe README)"}
 ANDROID_STL=${3:-c++_static}
 if [[ "$ANDROID_STL" != "c++_static" && "$ANDROID_STL" != "c++_shared" ]]; then
@@ -18,7 +22,7 @@ if [[ "$ANDROID_STL" != "c++_static" && "$ANDROID_STL" != "c++_shared" ]]; then
   exit 1
 fi
 
-# --- Tooling checks ---
+# --- Tooling Checks ---
 need() { command -v "$1" >/dev/null 2>&1 || { echo "Missing tool: $1"; exit 1; }; }
 need cmake; need ninja; need javac; need jar; need php
 
@@ -40,14 +44,14 @@ esac
 PREBUILT_DIR="${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/${HOST_OS}-${HOST_ARCH}"
 [[ -d "$PREBUILT_DIR" ]] || { echo "NDK prebuilt toolchain not found at $PREBUILT_DIR"; exit 1; }
 
-# --- BoringSSL layout check ---
+# --- BoringSSL Layout Check ---
 for abi in arm64-v8a armeabi-v7a; do
   [[ -d "$BORINGSSL_DIR/$abi/include" ]] || { echo "Missing $BORINGSSL_DIR/$abi/include"; exit 1; }
   [[ -f "$BORINGSSL_DIR/$abi/lib/libcrypto.a" && -f "$BORINGSSL_DIR/$abi/lib/libssl.a" ]] \
     || { echo "Missing libcrypto.a/libssl.a in $BORINGSSL_DIR/$abi/lib"; exit 1; }
 done
 
-# --- Build config ---
+# --- Build-Konfig ---
 BUILD_TYPE=RelWithDebInfo
 ABIS=("arm64-v8a" "armeabi-v7a")
 ANDROID_PLATFORM_ALL=android-21
@@ -55,7 +59,7 @@ OUT_DIR="out"
 JAVA_SRC_DIR="$OUT_DIR/java"
 JAVA_CLASSES_DIR="$OUT_DIR/classes"
 
-# --- Clean old output ---
+# --- Clean ---
 rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR/libs/arm64-v8a" "$OUT_DIR/libs/armeabi-v7a" "$JAVA_SRC_DIR" "$JAVA_CLASSES_DIR"
 
@@ -67,31 +71,58 @@ echo "STL     : $ANDROID_STL"
 echo "API     : $ANDROID_PLATFORM_ALL"
 echo "BoringSSL: $BORINGSSL_DIR"
 
-# --- 1) Java Bindings (TdApi.java) ---
+# --- 1) Java-Bindings (TdApi.java) generieren ---
 echo "-- Generating Java sources (TdApi.java) ..."
+
+# Sicherstellen, dass wir im TDLib-Root stehen (CMakeLists.txt im Root)
 if [[ ! -f "CMakeLists.txt" ]]; then
   cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 fi
 
+# Manche TDLib-Versionen erwarten, dass das Verzeichnis existiert
 mkdir -p org/drinkless/tdlib
+
+# Generator-Target ausführen
 cmake -S . -B "build-native-java" -DTD_GENERATE_SOURCE_FILES=ON
 cmake --build "build-native-java" --target td_generate_java_api
 
+# --- TdApi.java präzise und robust finden (alle bekannten Layouts) ---
 echo "-- Searching for generated TdApi.java ..."
-TDAPI_SRC=$(find . -type f -path "*/org/drinkless/tdlib/TdApi.java" | head -n1 || true)
+TDAPI_SRC=""
+
+# 1) Bevorzugte moderne Pfade
+for candidate in \
+  "build-native-java/td/generate/java/org/drinkless/tdlib/TdApi.java" \
+  "td/generate/java/org/drinkless/tdlib/TdApi.java" \
+  "generate/java/org/drinkless/tdlib/TdApi.java" \
+  "example/java/org/drinkless/tdlib/TdApi.java" \
+  "tdlib/generate/java/org/drinkless/tdlib/TdApi.java"
+do
+  if [[ -f "$candidate" ]]; then
+    TDAPI_SRC="$candidate"
+    break
+  fi
+done
+
+# 2) Fallback: rekursiv suchen (falls obige nicht treffen)
+if [[ -z "${TDAPI_SRC:-}" ]]; then
+  TDAPI_SRC=$(find . -type f -path "*/org/drinkless/tdlib/TdApi.java" | head -n1 || true)
+fi
+
 if [[ -z "${TDAPI_SRC:-}" || ! -f "$TDAPI_SRC" ]]; then
   echo "❌ Could not locate generated TdApi.java"
-  echo "Known .java files (depth≤4):"
-  find . -maxdepth 4 -type f -name "TdApi.java" || true
+  echo "Try manually: find . -type f -name TdApi.java"
   exit 1
 else
   echo "✅ Found TdApi.java at $TDAPI_SRC"
 fi
 
+# Optionales Post-Processing (z.B. @IntDef Injection)
 if [[ -f "AddIntDef.php" ]]; then
   php AddIntDef.php "$TDAPI_SRC"
 fi
 
+# Pflicht-Quellen aus example/java aufnehmen: Client.java + Cache.java
 CLIENT_SRC="example/java/org/drinkless/tdlib/Client.java"
 CACHE_SRC="example/java/org/drinkless/tdlib/Cache.java"
 if [[ ! -f "$CLIENT_SRC" || ! -f "$CACHE_SRC" ]]; then
@@ -107,7 +138,7 @@ cp -f "$TDAPI_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java"
 cp -f "$CLIENT_SRC" "$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java"
 cp -f "$CACHE_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/Cache.java"
 
-# --- 2) JNI build per ABI ---
+# --- 2) JNI pro ABI bauen ---
 for ABI in "${ABIS[@]}"; do
   BUILD_DIR="build-${ABI}-jni"
   echo "-- Configuring $ABI ..."
@@ -129,11 +160,12 @@ for ABI in "${ABIS[@]}"; do
   cmake --build "$BUILD_DIR" --target tdjni
 
   soPath="${BUILD_DIR}/libtdjni.so"
-  [[ -f "$soPath" ]] || soPath=$(find "$BUILD_DIR" -maxdepth 2 -name "libtdjni.so" | head -n1 || true)
+  [[ -f "$soPath" ]] || soPath=$(find "$BUILD_DIR" -maxdepth 3 -name "libtdjni.so" | head -n1 || true)
   [[ -n "${soPath:-}" && -f "$soPath" ]] || { echo "❌ libtdjni.so not found for $ABI"; exit 1; }
 
   cp -f "$soPath" "$OUT_DIR/libs/${ABI}/"
 
+  # Bei dynamischer STL: libc++_shared.so beilegen
   if [[ "$ANDROID_STL" == "c++_shared" ]]; then
     case "$ABI" in
       arm64-v8a)  TRIPLE="aarch64-linux-android" ;;
@@ -146,10 +178,11 @@ for ABI in "${ABIS[@]}"; do
     fi
   fi
 
+  # Strip (kleiner)
   "${PREBUILT_DIR}/bin/llvm-strip" --strip-unneeded "$OUT_DIR/libs/${ABI}/libtdjni.so" || true
 done
 
-# --- 3) Java -> .jar ---
+# --- 3) Java -> JAR ---
 echo "-- Compiling Java bindings to JAR ..."
 find "$JAVA_SRC_DIR" -name "*.java" > "$OUT_DIR/java-sources.list"
 javac --release 8 -d "$JAVA_CLASSES_DIR" @"$OUT_DIR/java-sources.list"
@@ -166,4 +199,4 @@ echo "Artifacts:"
 echo "  $OUT_DIR/libs/arm64-v8a/libtdjni.so"
 echo "  $OUT_DIR/libs/armeabi-v7a/libtdjni.so"
 echo "  $JAR_PATH"
-[[ "$ANDROID_STL" == "c++_shared" ]] && echo "  (+ libc++_shared.so for each ABI)"
+[[ "$ANDROID_STL" == "c++_shared" ]] && echo "  (+ libc++_shared.so jeweils)"
