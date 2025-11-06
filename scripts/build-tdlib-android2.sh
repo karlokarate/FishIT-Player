@@ -5,11 +5,12 @@
 # Generiert Java-Bindings (TdApi.java, Client.java, Cache.java)
 # Packt tdlib-<describe>.jar mit org/drinkless/tdlib/*
 #
-# Aufrufe:
+# Aufruf:
 #   ./build-tdlib-android.sh <ANDROID_NDK_ROOT> <BORINGSSL_DIR> [c++_static|c++_shared]
 #
-# Voraussetzungen:
-#   - CMake >= 3.29, Ninja >= 1.11, PHP, Java (JDK), NDK r27b
+# Anforderungen:
+#   - CMake >= 3.29, Ninja >= 1.11, Java (JDK), PHP (optional für AddIntDef.php)
+#   - Android NDK r27b
 #   - Kein Android SDK nötig
 
 set -euo pipefail
@@ -24,7 +25,8 @@ fi
 
 # --- Tooling Checks ---
 need() { command -v "$1" >/dev/null 2>&1 || { echo "Missing tool: $1"; exit 1; }; }
-need cmake; need ninja; need javac; need jar; need php
+need cmake; need ninja; need javac; need jar
+command -v php >/dev/null 2>&1 || echo "Note: PHP not found (only needed if AddIntDef.php is present)"
 
 CMAKE_VER=$(cmake --version | head -1 | awk '{print $3}')
 NINJA_VER=$(ninja --version)
@@ -71,26 +73,33 @@ echo "STL     : $ANDROID_STL"
 echo "API     : $ANDROID_PLATFORM_ALL"
 echo "BoringSSL: $BORINGSSL_DIR"
 
-# --- 1) Java-Bindings (TdApi.java) generieren ---
-echo "-- Generating Java sources (TdApi.java) ..."
+# -------------------------------------------------------------------------------------
+# 1) Java-Bindings (TdApi.java) — korrekt aus dem TDLib-Root generieren
+# -------------------------------------------------------------------------------------
 
-# Sicherstellen, dass wir im TDLib-Root stehen (CMakeLists.txt im Root)
+# In TDLib-Root wechseln und verifizieren (CMakeLists.txt + Kernmodule vorhanden)
 if [[ ! -f "CMakeLists.txt" ]]; then
   cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 fi
+[[ -f "CMakeLists.txt" && -d "td" && -d "tdutils" ]] || {
+  echo "❌ Not in TDLib source root — internal modules (td, tdutils, …) not visible."
+  pwd; ls -1
+  exit 1
+}
 
-# Manche TDLib-Versionen erwarten, dass das Verzeichnis existiert
-mkdir -p org/drinkless/tdlib
+echo "-- Generating Java sources (TdApi.java) from TDLib root ..."
+# Nur den Generator bauen (kein JNI, keine Tests/tdjson)
+cmake -S . -B "build-native-java" \
+  -DTD_ENABLE_JNI=OFF \
+  -DTD_ENABLE_TESTS=OFF \
+  -DTD_ENABLE_TDJSON=OFF \
+  -DTD_GENERATE_SOURCE_FILES=ON \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build "build-native-java" --target td_generate_java_api -- -v
 
-# Generator-Target ausführen
-cmake -S . -B "build-native-java" -DTD_GENERATE_SOURCE_FILES=ON
-cmake --build "build-native-java" --target td_generate_java_api
-
-# --- TdApi.java präzise und robust finden (alle bekannten Layouts) ---
+# TdApi.java präzise & robust finden (alle bekannten Layouts)
 echo "-- Searching for generated TdApi.java ..."
 TDAPI_SRC=""
-
-# 1) Bevorzugte moderne Pfade
 for candidate in \
   "build-native-java/td/generate/java/org/drinkless/tdlib/TdApi.java" \
   "td/generate/java/org/drinkless/tdlib/TdApi.java" \
@@ -103,23 +112,20 @@ do
     break
   fi
 done
-
-# 2) Fallback: rekursiv suchen (falls obige nicht treffen)
 if [[ -z "${TDAPI_SRC:-}" ]]; then
   TDAPI_SRC=$(find . -type f -path "*/org/drinkless/tdlib/TdApi.java" | head -n1 || true)
 fi
-
 if [[ -z "${TDAPI_SRC:-}" || ! -f "$TDAPI_SRC" ]]; then
   echo "❌ Could not locate generated TdApi.java"
-  echo "Try manually: find . -type f -name TdApi.java"
+  echo "Try: find . -type f -name TdApi.java"
   exit 1
 else
   echo "✅ Found TdApi.java at $TDAPI_SRC"
 fi
 
-# Optionales Post-Processing (z.B. @IntDef Injection)
-if [[ -f "AddIntDef.php" ]]; then
-  php AddIntDef.php "$TDAPI_SRC"
+# Optionales Post-Processing (nur falls vorhanden)
+if [[ -f "AddIntDef.php" && -x "$(command -v php)" ]]; then
+  php AddIntDef.php "$TDAPI_SRC" || true
 fi
 
 # Pflicht-Quellen aus example/java aufnehmen: Client.java + Cache.java
@@ -138,7 +144,9 @@ cp -f "$TDAPI_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java"
 cp -f "$CLIENT_SRC" "$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java"
 cp -f "$CACHE_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/Cache.java"
 
-# --- 2) JNI pro ABI bauen ---
+# -------------------------------------------------------------------------------------
+# 2) JNI pro ABI bauen (mit statischem BoringSSL)
+# -------------------------------------------------------------------------------------
 for ABI in "${ABIS[@]}"; do
   BUILD_DIR="build-${ABI}-jni"
   echo "-- Configuring $ABI ..."
@@ -163,6 +171,7 @@ for ABI in "${ABIS[@]}"; do
   [[ -f "$soPath" ]] || soPath=$(find "$BUILD_DIR" -maxdepth 3 -name "libtdjni.so" | head -n1 || true)
   [[ -n "${soPath:-}" && -f "$soPath" ]] || { echo "❌ libtdjni.so not found for $ABI"; exit 1; }
 
+  mkdir -p "$OUT_DIR/libs/${ABI}"
   cp -f "$soPath" "$OUT_DIR/libs/${ABI}/"
 
   # Bei dynamischer STL: libc++_shared.so beilegen
@@ -182,7 +191,9 @@ for ABI in "${ABIS[@]}"; do
   "${PREBUILT_DIR}/bin/llvm-strip" --strip-unneeded "$OUT_DIR/libs/${ABI}/libtdjni.so" || true
 done
 
-# --- 3) Java -> JAR ---
+# -------------------------------------------------------------------------------------
+# 3) Java -> JAR
+# -------------------------------------------------------------------------------------
 echo "-- Compiling Java bindings to JAR ..."
 find "$JAVA_SRC_DIR" -name "*.java" > "$OUT_DIR/java-sources.list"
 javac --release 8 -d "$JAVA_CLASSES_DIR" @"$OUT_DIR/java-sources.list"
