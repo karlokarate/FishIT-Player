@@ -56,7 +56,7 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      # FIX: gperf (und rsync) für TDLib-Generator + Kopierschritt
+      # Build-Tooling inkl. gperf (Generator) und rsync (Header-Kopie)
       - name: Install build deps (CMake, Ninja, gperf, rsync)
         id: tools
         shell: bash
@@ -117,6 +117,7 @@ jobs:
           git checkout FETCH_HEAD
           echo "TDLIB_COMMIT=$(git rev-parse --short=12 HEAD)"
 
+      # ======= HIER: Cache der BoringSSL-Install-Artefakte (wichtig) =======
       - name: Cache BoringSSL installs
         uses: actions/cache@v4
         id: cache-bssl-install
@@ -126,7 +127,8 @@ jobs:
             ${{ env.BORINGSSL_DIR }}/armeabi-v7a
           key: bssl-install-${{ runner.os }}-${{ steps.bsslref.outputs.ref }}-${{ env.NDK_VERSION }}-${{ steps.tools.outputs.cmake }}-${{ steps.tools.outputs.ninja }}
 
-      - name: Cache BoringSSL build dirs
+      # Optional: Cache der Build-Verzeichnisse (schneller, aber größer)
+      - name: Cache BoringSSL build dirs (optional)
         uses: actions/cache@v4
         id: cache-bssl-build
         with:
@@ -134,6 +136,7 @@ jobs:
             boringssl-build-arm64-v8a
             boringssl-build-armeabi-v7a
           key: bssl-build-${{ runner.os }}-${{ steps.bsslref.outputs.ref }}-${{ env.NDK_VERSION }}-${{ steps.tools.outputs.cmake }}-${{ steps.tools.outputs.ninja }}
+      # =====================================================================
 
       - name: Build BoringSSL (static) if missing
         if: steps.cache-bssl-install.outputs.cache-hit != 'true'
