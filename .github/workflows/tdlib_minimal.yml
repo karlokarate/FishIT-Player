@@ -117,15 +117,16 @@ jobs:
           git checkout FETCH_HEAD
           echo "TDLIB_COMMIT=$(git rev-parse --short=12 HEAD)"
 
-      # ======= HIER: Cache der BoringSSL-Install-Artefakte (wichtig) =======
-      - name: Cache BoringSSL installs
-        uses: actions/cache@v4
-        id: cache-bssl-install
+      # ======= BoringSSL Installs: explizit RESTORE vor dem Build =======
+      - name: Restore BoringSSL installs
+        id: restore-bssl-install
+        uses: actions/cache/restore@v4
         with:
           path: |
             ${{ env.BORINGSSL_DIR }}/arm64-v8a
             ${{ env.BORINGSSL_DIR }}/armeabi-v7a
           key: bssl-install-${{ runner.os }}-${{ steps.bsslref.outputs.ref }}-${{ env.NDK_VERSION }}-${{ steps.tools.outputs.cmake }}-${{ steps.tools.outputs.ninja }}
+      # ==================================================================
 
       # Optional: Cache der Build-Verzeichnisse (schneller, aber größer)
       - name: Cache BoringSSL build dirs (optional)
@@ -136,10 +137,9 @@ jobs:
             boringssl-build-arm64-v8a
             boringssl-build-armeabi-v7a
           key: bssl-build-${{ runner.os }}-${{ steps.bsslref.outputs.ref }}-${{ env.NDK_VERSION }}-${{ steps.tools.outputs.cmake }}-${{ steps.tools.outputs.ninja }}
-      # =====================================================================
 
       - name: Build BoringSSL (static) if missing
-        if: steps.cache-bssl-install.outputs.cache-hit != 'true'
+        if: steps.restore-bssl-install.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -186,6 +186,16 @@ jobs:
             cp -f "$ssl_lib"    "$install_dir/lib/libssl.a"
             rsync -a "$GITHUB_WORKSPACE/boringssl-src/include/" "$install_dir/include/"
           done
+
+      # >>> Nach erfolgreichem BSSL-Build sofort persistieren – auch bei späteren Fehlern
+      - name: Save BoringSSL installs
+        if: always() && steps.restore-bssl-install.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.BORINGSSL_DIR }}/arm64-v8a
+            ${{ env.BORINGSSL_DIR }}/armeabi-v7a
+          key: bssl-install-${{ runner.os }}-${{ steps.bsslref.outputs.ref }}-${{ env.NDK_VERSION }}-${{ steps.tools.outputs.cmake }}-${{ steps.tools.outputs.ninja }}
 
       - name: Cache TDLib build dirs
         uses: actions/cache@v4
