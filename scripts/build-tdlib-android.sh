@@ -78,9 +78,45 @@ echo "BoringSSL: $BORINGSSL_DIR"
 
 # --- 1) Java-Bindings generieren: TdApi.java ---
 echo "-- Generating Java sources (TdApi.java) ..."
-# Wichtig: Quelle auf example/java setzen – dort ist tl_generate_java definiert (wie upstream)
-cmake -S example/java -B build-native-java -DTD_GENERATE_SOURCE_FILES=ON
-cmake --build build-native-java --target tl_generate_java
+# Aus dem REPO-ROOT konfigurieren (example/java wird als Subdir eingebunden, Target entsteht dort)
+cmake -S . -B build-native-java -DTD_GENERATE_SOURCE_FILES=ON
+# sorgt u.a. für tdtl/ und Generator-Binary; Fehler hier sind tolerierbar für ältere Commits
+cmake --build build-native-java --target td_generate_source_files || true
+
+# Bevorzugt offizielles Target; falls nicht vorhanden → Fallback auf Binary mit Schema-Autodetektion
+if cmake --build build-native-java --target help | grep -q '\<tl_generate_java\>'; then
+  cmake --build build-native-java --target tl_generate_java
+else
+  (
+    set -e
+    cd build-native-java
+    mkdir -p org/drinkless/tdlib
+    GEN="$(find . -type f -perm -111 -path '*/td/generate/td_generate_java_api' -print -quit || true)"
+    [[ -n "$GEN" ]] || { echo "td_generate_java_api binary not found"; exit 1; }
+
+    # 1) bevorzugt .tlo im Build-Baum, 2) sonst .tl im Source-Baum (egal wo)
+    mapfile -t SCHEMAS < <( { find .  -type f -name 'td_api.tlo' -print
+                              find .. -type f -name 'td_api.tl'  -print; } | awk '!seen[$0]++' )
+    [[ "${#SCHEMAS[@]}" -gt 0 ]] || { echo "Unable to locate td_api schema (.tlo/.tl)"; exit 1; }
+
+    echo "Schema candidates:"
+    for s in "${SCHEMAS[@]}"; do echo "  - $s"; done
+
+    try() {
+      "$GEN" "$1" org.drinkless.tdlib org/drinkless/tdlib/TdApi.java && [[ -f org/drinkless/tdlib/TdApi.java ]]
+    }
+    ok=0
+    for schema in "${SCHEMAS[@]}"; do
+      echo "Trying generator with: $schema"
+      if try "$schema"; then
+        echo "Generated TdApi.java using: $schema"
+        ok=1
+        break
+      fi
+    done
+    [[ $ok -eq 1 ]] || { echo "Failed to generate TdApi.java with available schemas."; exit 1; }
+  )
+fi
 
 # TdApi.java aus Build- oder Repo-Root übernehmen
 TDAPI_CANDIDATES=(
@@ -91,7 +127,7 @@ TDAPI_SRC=""
 for f in "${TDAPI_CANDIDATES[@]}"; do
   [[ -f "$f" ]] && { TDAPI_SRC="$f"; break; }
 done
-[[ -n "$TDAPI_SRC" ]] || { echo "❌ TdApi.java nicht gefunden (tl_generate_java)."; exit 1; }
+[[ -n "$TDAPI_SRC" ]] || { echo "❌ TdApi.java nicht gefunden (Generatorlauf)."; exit 1; }
 
 mkdir -p "$JAVA_SRC_DIR/org/drinkless/tdlib"
 cp -f "$TDAPI_SRC" "$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java"
@@ -133,7 +169,7 @@ for ABI in "${ABIS[@]}"; do
 
   soPath="${BUILD_DIR}/libtdjni.so"
   [[ -f "$soPath" ]] || soPath=$(find "$BUILD_DIR" -maxdepth 2 -name "libtdjni.so" | head -n1 || true)
-  [[ -n "${soPath:-}" && -f "$soPath" ]] || { echo "libtdjni.so not found for $ABI"; exit 1; }
+  [[ -n "${soPath:-}" && -f "${soPath}" ]] || { echo "libtdjni.so not found for $ABI"; exit 1; }
 
   cp -f "$soPath" "$OUT_DIR/libs/${ABI}/"
 
