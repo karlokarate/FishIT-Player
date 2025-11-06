@@ -233,4 +233,3 @@ echo "  $OUT_DIR/libs/*/libtdjni.so"
 [[ "$ANDROID_STL" == "c++_shared" ]] && echo "  $OUT_DIR/libs/*/libc++_shared.so"
 echo "  $JAR_PATH"
 echo "  $OUT_DIR/TDLIB_VERSION.txt"
-```0
