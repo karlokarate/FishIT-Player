@@ -10,7 +10,7 @@ jobs:
       NDK_VERSION: r27b
       ANDROID_PLATFORM: android-21
       BORINGSSL_DIR: .third_party/boringssl
-      TD_BUILD_SCRIPT: scripts/build-tdlib-android.sh   # <— ggf. anpassen
+      TD_BUILD_SCRIPT: scripts/build-tdlib-android.sh   # Pfad in DEINEM Repo
       OUT_DIR: out
 
     steps:
@@ -19,7 +19,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      # Basis-Tools, bevor wir feeds/refs parsen
       - name: Base tools
         shell: bash
         run: |
@@ -27,7 +26,6 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y ca-certificates curl git
 
-      # 1) Neuesten TDLib-Ref via Atom-Feed bestimmen
       - name: Resolve latest TDLib ref (Atom feed)
         id: tdref
         shell: bash
@@ -43,21 +41,15 @@ jobs:
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "TD_REF=$ref"
 
-      # 1b) BoringSSL-HEAD ermitteln und für Cache-Keys nutzen
       - name: Resolve latest BoringSSL HEAD
         id: bsslref
         shell: bash
         run: |
           set -euo pipefail
           ref="$(git ls-remote https://boringssl.googlesource.com/boringssl HEAD | awk '{print $1}')"
-          if [[ -z "${ref:-}" ]]; then
-            echo "Failed to resolve BoringSSL HEAD" >&2
-            exit 1
-          fi
+          [[ -n "${ref:-}" ]] || { echo "Failed to resolve BoringSSL HEAD" >&2; exit 1; }
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
-          echo "BSSL_REF=$ref"
 
-      # 2) Java + neuestes CMake/Ninja (Kitware)
       - name: Setup Java (JDK 21)
         uses: actions/setup-java@v4
         with:
@@ -82,7 +74,6 @@ jobs:
           ninja --version
           javac -version
 
-      # 3) NDK r27b – Cache + Download (SDK-frei)
       - name: Cache NDK r27b
         uses: actions/cache@v4
         id: cache-ndk
@@ -111,7 +102,6 @@ jobs:
           echo "ndk_dir=$ndk_dir" >> "$GITHUB_OUTPUT"
           "$ndk_dir/ndk-build" -version || true
 
-      # 4) TDLib-Quellen – shallow, gewählte Ref
       - name: Fetch TDLib sources
         shell: bash
         run: |
@@ -124,7 +114,6 @@ jobs:
           git checkout FETCH_HEAD
           echo "TDLIB_COMMIT=$(git rev-parse --short=12 HEAD)"
 
-      # 5) BoringSSL – Cache (Install + Builds) mit BSSL_REF in Keys
       - name: Cache BoringSSL installs
         uses: actions/cache@v4
         id: cache-bssl-install
@@ -150,11 +139,8 @@ jobs:
           set -euo pipefail
           cd "$GITHUB_WORKSPACE"
           NDK="${{ steps.ndk.outputs.ndk_dir }}"
-
-          # Frische Quellen exakt auf BSSL_REF
           rm -rf boringssl-src
           git clone --depth=1 https://boringssl.googlesource.com/boringssl boringssl-src
-          (cd boringssl-src && git rev-parse HEAD && test "$(git rev-parse HEAD)" = "${{ steps.bsslref.outputs.ref }}" || true)
 
           mkdir -p "${BORINGSSL_DIR}"
 
@@ -163,7 +149,6 @@ jobs:
               arm64-v8a)  TRIPLE=aarch64-linux-android ;;
               armeabi-v7a) TRIPLE=armv7a-linux-androideabi ;;
             esac
-
             build_dir="$GITHUB_WORKSPACE/boringssl-build-$ABI"
             install_dir="$GITHUB_WORKSPACE/${BORINGSSL_DIR}/$ABI"
 
@@ -178,24 +163,16 @@ jobs:
               -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
               -DBUILD_SHARED_LIBS=OFF
 
-            # Getrennt bauen (robust gegen Race)
             cmake --build "$build_dir" --target crypto
             cmake --build "$build_dir" --target ssl
 
-            # Robust: beide möglichen Layouts akzeptieren (Root oder Unterordner)
-            CRYPTO_CANDIDATES=("$build_dir/crypto/libcrypto.a" "$build_dir/libcrypto.a")
-            SSL_CANDIDATES=("$build_dir/ssl/libssl.a" "$build_dir/libssl.a")
-
+            # Robust: beide Layouts unterstützen
             pick() { for p in "$@"; do [[ -f "$p" ]] && { echo "$p"; return; }; done; }
-
-            crypto_lib="$(pick "${CRYPTO_CANDIDATES[@]}")"
-            ssl_lib="$(pick "${SSL_CANDIDATES[@]}")"
+            crypto_lib="$(pick "$build_dir/crypto/libcrypto.a" "$build_dir/libcrypto.a")"
+            ssl_lib="$(pick "$build_dir/ssl/libssl.a" "$build_dir/libssl.a")"
 
             if [[ -z "${crypto_lib:-}" || -z "${ssl_lib:-}" ]]; then
               echo "❌ Static libs not found in $build_dir" >&2
-              echo "Checked:" >&2
-              printf ' - %s\n' "${CRYPTO_CANDIDATES[@]}" "${SSL_CANDIDATES[@]}" >&2
-              echo "Listing found *.a for debugging:" >&2
               find "$build_dir" -maxdepth 3 -name "*.a" -print || true
               exit 1
             fi
@@ -205,7 +182,6 @@ jobs:
             rsync -a "$GITHUB_WORKSPACE/boringssl-src/include/" "$install_dir/include/"
           done
 
-      # 6) TDLib – Cache der Build-Ordner
       - name: Cache TDLib build dirs
         uses: actions/cache@v4
         id: cache-td-build
@@ -216,19 +192,22 @@ jobs:
             td/build-armeabi-v7a-jni
           key: td-build-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ steps.tdref.outputs.ref }}-${{ steps.tools.outputs.cmake }}-${{ steps.tools.outputs.ninja }}
 
-      # 7) TDLib bauen (JNI + Java + JAR) – SDK-frei
+      # >>> FIX: Script in den TDLib-Root kopieren und dort ausführen
       - name: Build TDLib (JNI + Java) with BoringSSL
         shell: bash
         working-directory: td
         run: |
           set -euo pipefail
-          chmod +x "$GITHUB_WORKSPACE/${TD_BUILD_SCRIPT}"
-          "$GITHUB_WORKSPACE/${TD_BUILD_SCRIPT}" \
+          # Script in den TDLib-Root spiegeln, damit cmake -S . das richtige CMakeLists.txt findet
+          cp -f "$GITHUB_WORKSPACE/${TD_BUILD_SCRIPT}" ./build-tdlib-android.sh
+          chmod +x ./build-tdlib-android.sh
+
+          ./build-tdlib-android.sh \
             "${{ steps.ndk.outputs.ndk_dir }}" \
             "$GITHUB_WORKSPACE/${BORINGSSL_DIR}" \
             "c++_static"
 
-          # Reuse-Struktur für APK-Build (Workspace-sichere Pfade)
+          # Reuse-Struktur für APK-Build
           mkdir -p "$GITHUB_WORKSPACE/apk_inputs/jniLibs/arm64-v8a" \
                    "$GITHUB_WORKSPACE/apk_inputs/jniLibs/armeabi-v7a" \
                    "$GITHUB_WORKSPACE/apk_inputs/libs"
@@ -237,7 +216,6 @@ jobs:
           cp -f "$GITHUB_WORKSPACE/td/out/libs/armeabi-v7a/libtdjni.so" "$GITHUB_WORKSPACE/apk_inputs/jniLibs/armeabi-v7a/"
           cp -f "$GITHUB_WORKSPACE/td/out/tdlib-"*.jar                  "$GITHUB_WORKSPACE/apk_inputs/libs/"
 
-      # 8) Artefakte hochladen
       - name: Upload TDLib outputs
         uses: actions/upload-artifact@v4
         with:
