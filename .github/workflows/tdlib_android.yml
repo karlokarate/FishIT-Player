@@ -2,15 +2,28 @@ name: Ver 2 TDLib – SDK-free Build (NDK r27b, BoringSSL static, cached)
 
 on:
   workflow_dispatch:
+    inputs:
+      abis:
+        description: "ABIs (Komma-separiert)"
+        required: true
+        default: "arm64-v8a,armeabi-v7a"
+      api_level:
+        description: "Android API-Level"
+        required: true
+        default: "21"
+      td_ref:
+        description: "TDLib Ref (leer = Atom-Feed master)"
+        required: false
+        default: ""
 
 jobs:
   tdlib:
     runs-on: ubuntu-24.04
     env:
-      NDK_VERSION: r27b
+      NDK_VERSION: r27b              # Tipp: r27c ist stabiler
       ANDROID_PLATFORM: android-21
       BORINGSSL_DIR: .third_party/boringssl
-      TD_BUILD_SCRIPT: scripts/build-tdlib-android.sh  # <— Fix: konsistent zum aktualisierten Script
+      TD_BUILD_SCRIPT: scripts/build-tdlib-android2.sh
       OUT_DIR: out
 
     steps:
@@ -25,31 +38,21 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y ca-certificates curl git
 
-      - name: Resolve latest TDLib ref (Atom feed)
+      - name: Resolve latest TDLib ref (Atom feed if empty)
         id: tdref
         shell: bash
         run: |
           set -euo pipefail
-          feed_url="https://github.com/tdlib/td/commits/master.atom"
-          html="$(curl -fsSL "$feed_url")"
-          ref="$(printf '%s' "$html" \
-            | grep -oE 'https://github.com/tdlib/td/commit/[0-9a-f]+' \
-            | head -n1 | awk -F/ '{print $NF}')"
-          if [[ -z "${ref:-}" ]]; then
-            echo "WARN: Feed parse failed. Fallback to master." >&2
-            ref="master"
+          REF="${{ github.event.inputs.td_ref }}"
+          if [[ -z "${REF}" ]]; then
+            feed_url="https://github.com/tdlib/td/commits/master.atom"
+            html="$(curl -fsSL "$feed_url")"
+            REF="$(printf '%s' "$html" \
+              | grep -oE 'https://github.com/tdlib/td/commit/[0-9a-f]+' \
+              | head -n1 | awk -F/ '{print $NF}')"
+            [[ -n "$REF" ]] || REF="master"
           fi
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
-          echo "TD_REF=$ref"
-
-      - name: Resolve latest BoringSSL HEAD
-        id: bsslref
-        shell: bash
-        run: |
-          set -euo pipefail
-          ref="$(git ls-remote https://boringssl.googlesource.com/boringssl HEAD | awk '{print $1}')"
-          [[ -n "${ref:-}" ]] || { echo "Failed to resolve BoringSSL HEAD" >&2; exit 1; }
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
 
       - name: Setup Java (JDK 21)
         uses: actions/setup-java@v4
@@ -57,7 +60,7 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Install build deps (CMake, Ninja, gperf, PHP, rsync)
+      - name: Install build deps (CMake, Ninja, PHP, rsync)
         id: tools
         shell: bash
         run: |
@@ -70,19 +73,17 @@ jobs:
           echo "deb [signed-by=/etc/apt/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" \
             | sudo tee /etc/apt/sources.list.d/kitware.list
           sudo apt-get update -y
-          sudo apt-get install -y cmake ninja-build gperf rsync
-          echo "cmake=$(cmake --version | head -1 | awk '{print $3}')" >> "$GITHUB_OUTPUT"
-          echo "ninja=$(ninja --version)" >> "$GITHUB_OUTPUT"
-          cmake --version; ninja --version; gperf --version | head -1 || true; php -v
+          sudo apt-get install -y cmake ninja-build rsync
+          cmake --version; ninja --version; php -v
 
-      - name: Cache NDK r27b
+      - name: Cache NDK
         uses: actions/cache@v4
         id: cache-ndk
         with:
           path: .ndk/android-ndk-${{ env.NDK_VERSION }}
           key: ndk-${{ runner.os }}-${{ env.NDK_VERSION }}
 
-      - name: Download NDK r27b (if cache miss)
+      - name: Download NDK (if cache miss)
         if: steps.cache-ndk.outputs.cache-hit != 'true'
         shell: bash
         run: |
@@ -93,14 +94,12 @@ jobs:
           unzip -q .ndk/ndk.zip -d .ndk
           rm .ndk/ndk.zip
 
-      - name: Set NDK path output
+      - name: Set NDK path
         id: ndk
         shell: bash
         run: |
           set -euo pipefail
-          ndk_dir="$(pwd)/.ndk/android-ndk-${NDK_VERSION}"
-          echo "ndk_dir=$ndk_dir" >> "$GITHUB_OUTPUT"
-          "$ndk_dir/ndk-build" -version || true
+          echo "dir=$(pwd)/.ndk/android-ndk-${NDK_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Fetch TDLib sources
         shell: bash
@@ -111,10 +110,11 @@ jobs:
           cd td
           git remote add origin https://github.com/tdlib/td.git
           git fetch --depth=1 origin "${{ steps.tdref.outputs.ref }}"
-          git checkout FETCH_HEAD
+          git checkout -qf FETCH_HEAD
           git rev-parse HEAD | tee .TDLIB_COMMIT.txt
-          git describe --tags --always --dirty=+ | tee .TDLIB_DESCRIBE.txt
+          git describe --tags --always --long --dirty=+ | tee .TDLIB_DESCRIBE.txt
 
+      # -------- BoringSSL: build + cache (static) --------
       - name: Cache BoringSSL installs
         uses: actions/cache@v4
         id: cache-bssl-install
@@ -122,108 +122,80 @@ jobs:
           path: |
             ${{ env.BORINGSSL_DIR }}/arm64-v8a
             ${{ env.BORINGSSL_DIR }}/armeabi-v7a
-          key: bssl-install-${{ runner.os }}-${{ steps.bsslref.outputs.ref }}-${{ env.NDK_VERSION }}-${{ steps.tools.outputs.cmake }}-${{ steps.tools.outputs.ninja }}
-
-      - name: Cache BoringSSL build dirs
-        uses: actions/cache@v4
-        id: cache-bssl-build
-        with:
-          path: |
-            boringssl-build-arm64-v8a
-            boringssl-build-armeabi-v7a
-          key: bssl-build-${{ runner.os }}-${{ steps.bsslref.outputs.ref }}-${{ env.NDK_VERSION }}-${{ steps.tools.outputs.cmake }}-${{ steps.tools.outputs.ninja }}
+          key: bssl-install-${{ runner.os }}-${{ env.NDK_VERSION }}
 
       - name: Build BoringSSL (static) if missing
         if: steps.cache-bssl-install.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
-          cd "$GITHUB_WORKSPACE"
-          NDK="${{ steps.ndk.outputs.ndk_dir }}"
+          NDK="${{ steps.ndk.outputs.dir }}"
           rm -rf boringssl-src
           git clone --depth=1 https://boringssl.googlesource.com/boringssl boringssl-src
           mkdir -p "${BORINGSSL_DIR}"
-
           for ABI in arm64-v8a armeabi-v7a; do
             case "$ABI" in
               arm64-v8a)  TRIPLE=aarch64-linux-android ;;
               armeabi-v7a) TRIPLE=armv7a-linux-androideabi ;;
             esac
-            build_dir="$GITHUB_WORKSPACE/boringssl-build-$ABI"
-            install_dir="$GITHUB_WORKSPACE/${BORINGSSL_DIR}/$ABI"
-
-            rm -rf "$build_dir" "$install_dir"
-            mkdir -p "$build_dir" "$install_dir/lib" "$install_dir/include"
-
-            cmake -G Ninja -S "$GITHUB_WORKSPACE/boringssl-src" -B "$build_dir" \
+            BLD="boringssl-build-$ABI"
+            INST="${BORINGSSL_DIR}/$ABI"
+            rm -rf "$BLD" "$INST"; mkdir -p "$BLD" "$INST/lib" "$INST/include"
+            cmake -G Ninja -S boringssl-src -B "$BLD" \
               -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
               -DANDROID_ABI="$ABI" \
               -DANDROID_PLATFORM="${ANDROID_PLATFORM}" \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-              -DBUILD_SHARED_LIBS=OFF
-
-            cmake --build "$build_dir" --target crypto
-            cmake --build "$build_dir" --target ssl
-
-            pick() { for p in "$@"; do [[ -f "$p" ]] && { echo "$p"; return; }; done; }
-            crypto_lib="$(pick "$build_dir/crypto/libcrypto.a" "$build_dir/libcrypto.a")"
-            ssl_lib="$(pick "$build_dir/ssl/libssl.a" "$build_dir/libssl.a")"
-            if [[ -z "${crypto_lib:-}" || -z "${ssl_lib:-}" ]]; then
-              echo "❌ Static libs not found in $build_dir" >&2
-              find "$build_dir" -maxdepth 3 -name "*.a" -print || true
-              exit 1
-            fi
-
-            cp -f "$crypto_lib" "$install_dir/lib/libcrypto.a"
-            cp -f "$ssl_lib"    "$install_dir/lib/libssl.a"
-            rsync -a "$GITHUB_WORKSPACE/boringssl-src/include/" "$install_dir/include/"
+              -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF
+            cmake --build "$BLD" --target crypto ssl
+            # robust pick
+            cp -f $(find "$BLD" -name libcrypto.a | head -n1) "$INST/lib/libcrypto.a"
+            cp -f $(find "$BLD" -name libssl.a    | head -n1) "$INST/lib/libssl.a"
+            rsync -a boringssl-src/include/ "$INST/include/"
           done
 
-      - name: Cache TDLib build dirs
-        uses: actions/cache@v4
-        id: cache-td-build
-        with:
-          path: |
-            td/build-native-java
-            td/build-arm64-v8a-jni
-            td/build-armeabi-v7a-jni
-          key: td-build-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ steps.tdref.outputs.ref }}-${{ steps.tools.outputs.cmake }}-${{ steps.tools.outputs.ninja }}
-
-      - name: Build TDLib (JNI + Java) with BoringSSL
+      - name: Verify BoringSSL presence
         shell: bash
-        working-directory: td
         run: |
           set -euo pipefail
-          cp -f "$GITHUB_WORKSPACE/${TD_BUILD_SCRIPT}" ./build-tdlib-android.sh
-          chmod +x ./build-tdlib-android.sh
+          for abi in arm64-v8a armeabi-v7a; do
+            test -d "${BORINGSSL_DIR}/${abi}/include" || { echo "Missing include for ${abi}"; exit 1; }
+            test -f "${BORINGSSL_DIR}/${abi}/lib/libssl.a" || { echo "Missing libssl.a for ${abi}"; exit 1; }
+            test -f "${BORINGSSL_DIR}/${abi}/lib/libcrypto.a" || { echo "Missing libcrypto.a for ${abi}"; exit 1; }
+          done
 
-          ./build-tdlib-android.sh \
-            "${{ steps.ndk.outputs.ndk_dir }}" \
-            "$GITHUB_WORKSPACE/${{ env.BORINGSSL_DIR }}" \
-            "c++_static"
+      # -------- TDLib build via *richtigem* Script --------
+      - name: Make build script executable
+        run: chmod +x "${{ env.TD_BUILD_SCRIPT }}"
 
-          # Meta beilegen
-          mkdir -p "$GITHUB_WORKSPACE/out"
-          cp -f .TDLIB_COMMIT.txt "$GITHUB_WORKSPACE/out/TDLIB_COMMIT.txt"
-          cp -f .TDLIB_DESCRIBE.txt "$GITHUB_WORKSPACE/out/TDLIB_DESCRIBE.txt"
+      - name: Build TDLib (JNI + Java bindings)
+        shell: bash
+        env:
+          TD_REF: ${{ steps.tdref.outputs.ref }}
+          ABIS: ${{ github.event.inputs.abis }}
+          API_LEVEL: ${{ github.event.inputs.api_level }}
+        run: |
+          set -euo pipefail
+          bash "${TD_BUILD_SCRIPT}" \
+            --ref "${TD_REF:-}" \
+            --abis "${ABIS}" \
+            --api-level "${API_LEVEL}" \
+            --boringssl-dir "${BORINGSSL_DIR}" \
+            --ndk "${{ steps.ndk.outputs.dir }}"
 
-          # Inputs für APK-Workflows
-          mkdir -p "$GITHUB_WORKSPACE/apk_inputs/jniLibs/arm64-v8a" \
-                   "$GITHUB_WORKSPACE/apk_inputs/jniLibs/armeabi-v7a" \
-                   "$GITHUB_WORKSPACE/apk_inputs/libs"
-
-          cp -f "$GITHUB_WORKSPACE/td/out/libs/arm64-v8a/libtdjni.so"    "$GITHUB_WORKSPACE/apk_inputs/jniLibs/arm64-v8a/"
-          cp -f "$GITHUB_WORKSPACE/td/out/libs/armeabi-v7a/libtdjni.so" "$GITHUB_WORKSPACE/apk_inputs/jniLibs/armeabi-v7a/"
-          cp -f "$GITHUB_WORKSPACE/td/out/tdlib-"*.jar                  "$GITHUB_WORKSPACE/apk_inputs/libs/"
+          # Meta-Dateien aus td/ beilegen
+          mkdir -p out
+          cp -f td/.TDLIB_COMMIT.txt   out/TDLIB_COMMIT.txt
+          cp -f td/.TDLIB_DESCRIBE.txt out/TDLIB_DESCRIBE.txt
 
       - name: Upload TDLib outputs
         uses: actions/upload-artifact@v4
         with:
           name: tdlib-outputs
           path: |
-            td/out/**
-            apk_inputs/**
+            out/TDLIB_VERSION.txt
             out/TDLIB_*.txt
+            out/meta/**
+            out/java/*.jar
+            out/libs/**/libtdjni.so
           if-no-files-found: error
           retention-days: 14
