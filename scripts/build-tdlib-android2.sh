@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 # TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL)
-# Korrekturen ggü. Vorversion:
-#  • tl-parser robust (mehrere Syntax-Varianten) → td_api.tlo wird sicher erzeugt
+# Änderungen ggü. Vorversion:
+#  • tl-parser: .tlo via STDOUT (kein -e/-o)
+#  • OPENSSL_SSL_LIBRARY -> libcrypto.a (BoringSSL)
 #  • Host-Install → example/java/td (Generator + TdConfig.cmake)
-#  • Android-TDLib pro ABI → example/java/td-android-<abi> (liefert Android TdConfig)
+#  • Android-TDLib pro ABI → example/java/td-android-<abi>
 #  • tdjni je ABI aus example/java mit Td_DIR auf Android-Install
-#  • KEIN OPENSSL_SSL_LIBRARY (BoringSSL liefert nur libcrypto.a)
-#  • Robuste Schema-Ablage unter example/java/td/bin/td/generate/scheme
-#  • Soft-Fail + Summary
+#  • Robuste Schema-Ablage, Soft-Fail + Summary
 
 set -uo pipefail
 SOFT_FAIL="${SOFT_FAIL:-1}"      # 1=tolerant weiterbauen, 0=hart abbrechen
@@ -60,7 +59,7 @@ ensure() {
 # ninja heißt im Paketmanager "ninja-build"
 ensure cmake ninja gperf ccache || true
 
-# FALSCHER Pfad war die Ursache: hier korrigiert auf /dev/null
+# KORRIGIERT: /dev/null
 need(){ command -v "$1" >/dev/null 2>&1 || { echo "Missing tool: $1"; exit 1; }; }
 need cmake; need ninja; need javac; need jar; need gperf
 
@@ -196,7 +195,7 @@ else
   record_err "td_api.tl not found in repo or build-gen"
 fi
 
-# .tlo: Host-Build bevorzugen, sonst tl-parser Fallback (mehrere Dialekte)
+# .tlo: Host-Build bevorzugen, sonst tl-parser via STDOUT
 SRC_TLO_HOST="build-host/td/generate/scheme/td_api.tlo"
 SRC_TLO_GEN="$(find build-gen -type f -path '*/td/generate/scheme/td_api.tlo' | head -n1 || true)"
 if [[ -f "$SRC_TLO_HOST" ]]; then
@@ -204,19 +203,15 @@ if [[ -f "$SRC_TLO_HOST" ]]; then
 elif [[ -n "$SRC_TLO_GEN" && -f "$SRC_TLO_GEN" ]]; then
   run "copy-schema-tlo(gen)" cp -f "$SRC_TLO_GEN" "$SCHEME_DST_DIR/td_api.tlo"
 else
-  echo "[schema] td_api.tlo missing; generate via tl-parser ..."
+  echo "[schema] td_api.tlo missing; generate via tl-parser (stdout) ..."
   PARSER="$TD_DIR/build-host/td/generate/tl-parser/tl-parser"
   TL="$SCHEME_DST_DIR/td_api.tl"
   TLO="$SCHEME_DST_DIR/td_api.tlo"
-  run "gen-schema-tlo" bash -c '
-    PARSER="'"$PARSER"'"; TL="'"$TL"'"; TLO="'"$TLO"'"; ok=0;
-    if [[ -x "$PARSER" && -f "$TL" ]]; then
-      "$PARSER" -e "$TL" "$TLO" && ok=1
-      [[ $ok -eq 1 ]] || "$PARSER" -e "$TL" -o "$TLO" && ok=1
-      [[ $ok -eq 1 ]] || "$PARSER"    "$TL"    "$TLO" && ok=1
-    fi
-    [[ $ok -eq 1 ]] || { echo "[schema] tl-parser fallback failed"; exit 1; }
-  '
+  if [[ -x "$PARSER" && -f "$TL" ]]; then
+    run "gen-schema-tlo" bash -c '"$PARSER" "$TL" > "$TLO"'
+  else
+    record_err "gen-schema-tlo (parser or tl missing)"
+  fi
 fi
 
 # Sichtbarmachen des Generators (hilft CMake-Skripten in example/java)
@@ -279,6 +274,7 @@ for ABI in "${ABI_ARR[@]}"; do
     -DOPENSSL_USE_STATIC_LIBS=ON \
     -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
     -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
+    -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
     -DCMAKE_INSTALL_PREFIX:PATH="$ANDROID_PREFIX" \
     "${ANDROID_OPT[@]}" \
     "${CC_LAUNCH[@]}"
@@ -304,6 +300,7 @@ for ABI in "${ABI_ARR[@]}"; do
     -DOPENSSL_USE_STATIC_LIBS=ON \
     -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
     -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
+    -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
     "${ANDROID_OPT[@]}" \
     "${CC_LAUNCH[@]}"
   run "jni-$ABI-build-tdjni" cmake --build "$BDIR" --target tdjni "${NINJA_KEEP[@]}"
