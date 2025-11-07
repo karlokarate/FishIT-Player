@@ -2,13 +2,11 @@
 # -*- coding: utf-8 -*-
 # TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL)
 # Fixes:
-#  • Generator + PHP-Skripte nach example/java/td/bin/td/generate (richtige Struktur)
-#  • .tl/.tlo in …/td/bin/td/generate/scheme
-#  • FindJNI-Workaround beim Android-Cross-Compile (JVM nicht nötig)
-#  • CLI-Argumente (--ndk/--abis/--api-level/--boringssl-dir/--ref/--stl/--interpro)
-#  • ensure(): ninja -> ninja-build
-#  • korrekter Triple für armeabi-v7a bei libc++_shared.so (armv7a-linux-androideabi)
-#  • optional: ANDROID_NDK_ROOT/NDK aus Env oder CLI
+#  - Host-Build mit -DTD_ENABLE_JNI=ON => installiert Generator + Schemas
+#  - Android-Cross-Compile: stabiler JNI-Find-Workaround (NotNeeded + JNI_INCLUDE_DIRS)
+#  - Kommentare aus Backslash-Zeilen entfernt (verhindert "command not found")
+#  - Entfernt fragile tl-parser/TLO-Fallbacks (0-Byte-tlo)
+#  - Soft-Fail beibehalten, aber klarere Fehler-Summary
 
 set -uo pipefail
 SOFT_FAIL="${SOFT_FAIL:-1}"      # 1=tolerant weiterbauen, 0=hart abbrechen
@@ -37,23 +35,8 @@ run(){
 
 NINJA_KEEP=( -- -k 0 )
 
-# --- CLI ---------------------------------------------------------------------
-# Erlaubt Übergabe via --ndk/--abis/... zusätzlich zu ENV
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --ndk)            NDK="$2"; shift 2 ;;
-    --abis)           ABIS="$2"; shift 2 ;;
-    --api-level)      API_LEVEL="$2"; shift 2 ;;
-    --boringssl-dir)  BORINGSSL_DIR="$2"; shift 2 ;;
-    --ref|--td-ref)   TD_REF="$2"; shift 2 ;;
-    --stl)            ANDROID_STL="$2"; shift 2 ;;
-    --interpro)       CMAKE_INTERPRO="$2"; shift 2 ;;
-    *) echo "[warn] unknown arg: $1"; shift ;;
-  esac
-done
-
 # --- Eingaben / ENV ----------------------------------------------------------
-NDK="${NDK:-${ANDROID_NDK_ROOT:-${ANDROID_NDK_HOME:-}}}"
+NDK="${ANDROID_NDK_ROOT:-${NDK:-}}"
 BORINGSSL_DIR="${BORINGSSL_DIR:-.third_party/boringssl}"
 ABIS="${ABIS:-arm64-v8a,armeabi-v7a}"
 API_LEVEL="${API_LEVEL:-21}"
@@ -65,11 +48,9 @@ CMAKE_INTERPRO="${CMAKE_INTERPRO:-0}"  # 1 => LTO/IPO ON (Android-Teil)
 ensure() {
   if command -v apt-get >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
     for pkg in "$@"; do
-      local apt_pkg="$pkg"
-      [[ "$pkg" == "ninja" ]] && apt_pkg="ninja-build"
       if ! command -v "$pkg" >/dev/null 2>&1; then
-        echo "[ensure] installing $apt_pkg ..."
-        sudo apt-get update -y && sudo apt-get install -y "$apt_pkg"
+        echo "[ensure] installing $pkg ..."
+        sudo apt-get update -y && sudo apt-get install -y "$pkg"
       fi
     done
   fi
@@ -105,7 +86,7 @@ mkdir -p "$OUT_DIR/libs" "$JAVA_SRC_DIR" "$JAVA_CLASSES_DIR" "$LOG_DIR"
 # Globales Logging
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-[[ -n "${NDK:-}" && -d "$NDK" ]] || { echo "NDK not found at: ${NDK:-<empty>}"; exit 1; }
+[[ -n "$NDK" && -d "$NDK" ]] || { echo "NDK not found at: ${NDK:-<empty>}"; exit 1; }
 PREBUILT_DIR="${NDK}/toolchains/llvm/prebuilt/${HOST_OS}-${HOST_ARCH}"
 [[ -d "$PREBUILT_DIR" ]] || { echo "NDK prebuilt toolchain not found at $PREBUILT_DIR"; exit 1; }
 
@@ -129,7 +110,7 @@ else
 fi
 
 # IPO/LTO für Android-Builds (optional)
-if [[ "${CMAKE_INTERPRO}" == "1" ]]; then
+if [[ "$CMAKE_INTERPRO" == "1" ]]; then
   ANDROID_OPT=(-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON)
 else
   ANDROID_OPT=()
@@ -160,7 +141,8 @@ DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$
 echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
 # ---------------------------------------------------------------------------
-# (1) HOST-BUILD & INSTALL  (liefert lib + TdConfig.cmake)
+# (1) HOST-BUILD & INSTALL  (liefert tl-parser, td_generate_java_api, TdConfig, Schemas)
+#     WICHTIG: TD_ENABLE_JNI=ON => installiert Generator + PHP + td_api.tl/tlo
 # ---------------------------------------------------------------------------
 HOST_INSTALL_PREFIX="$TD_DIR/example/java/td"
 
@@ -171,6 +153,7 @@ run "host-configure" cmake -S . -B build-host -G Ninja \
   -DCMAKE_INSTALL_BINDIR="$INSTALL_BINDIR" \
   -DCMAKE_INSTALL_INCLUDEDIR="$INSTALL_INCLUDEDIR" \
   -DTD_ENABLE_TESTS=OFF \
+  -DTD_ENABLE_JNI=ON \
   "${CC_LAUNCH[@]}"
 
 run "host-build"   cmake --build build-host "${NINJA_KEEP[@]}"
@@ -179,83 +162,20 @@ run "host-install" cmake --build build-host --target install "${NINJA_KEEP[@]}"
 TD_HOST_CMAKE="$HOST_INSTALL_PREFIX/$CMAKEDIR_REL/TdConfig.cmake"
 [[ -f "$TD_HOST_CMAKE" ]] || record_err "Missing $TD_HOST_CMAKE"
 
-# ---------------------------------------------------------------------------
-# (1a) Generator separat bauen und korrekt ablegen
-# Erwartete Struktur von example/java:
-#   td/bin/td/generate/{td_generate_java_api, *.php, scheme/*.tl[o]}
-# ---------------------------------------------------------------------------
-run "gen-configure" cmake -S . -B build-gen -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DTD_ENABLE_JNI=OFF -DTD_ENABLE_TESTS=OFF -DTD_GENERATE_SOURCE_FILES=ON \
-  "${CC_LAUNCH[@]}"
-
-run "gen-prepare_cross_compiling" cmake --build build-gen --target prepare_cross_compiling "${NINJA_KEEP[@]}"
-run "gen-td_generate_java_api"     cmake --build build-gen --target td_generate_java_api "${NINJA_KEEP[@]}"
-
-GEN_SRC="$(find build-gen -type f -name 'td_generate_java_api' | head -n1 || true)"
-GEN_DST_DIR="$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate"
-if [[ -f "$GEN_SRC" ]]; then
-  run "stage-generator-exe" bash -c "mkdir -p '$GEN_DST_DIR' && cp -f '$GEN_SRC' '$GEN_DST_DIR/td_generate_java_api' && chmod +x '$GEN_DST_DIR/td_generate_java_api'"
-else
-  record_err "Could not build td_generate_java_api"
-fi
-
-# PHP-Helfer aus Repo in die erwartete Stelle spiegeln
-if [[ -d "td/generate" ]]; then
-  run "stage-generator-php" rsync -a --include='*/' --include='*.php' --exclude='*' "td/generate/" "$GEN_DST_DIR/"
-else
-  record_err "Missing td/generate PHP helpers"
-fi
-
-# ---------------------------------------------------------------------------
-# (1b) SCHEMATA bereitstellen (Pfad, den example/java erwartet)
-# ---------------------------------------------------------------------------
-SCHEME_DST_DIR="$GEN_DST_DIR/scheme"
-mkdir -p "$SCHEME_DST_DIR"
-
-SRC_TL_REPO="td/generate/scheme/td_api.tl"
-SRC_TL_GEN="$(find build-gen -type f -path '*/td/generate/scheme/td_api.tl' | head -n1 || true)"
-if [[ -f "$SRC_TL_REPO" ]]; then
-  run "copy-schema-tl" cp -f "$SRC_TL_REPO" "$SCHEME_DST_DIR/td_api.tl"
-elif [[ -n "$SRC_TL_GEN" && -f "$SRC_TL_GEN" ]]; then
-  run "copy-schema-tl(gen)" cp -f "$SRC_TL_GEN" "$SCHEME_DST_DIR/td_api.tl"
-else
-  record_err "td_api.tl not found in repo or build-gen"
-fi
-
-# .tlo: Host-Build bevorzugen, sonst tl-parser via STDOUT
-SRC_TLO_HOST="build-host/td/generate/scheme/td_api.tlo"
-SRC_TLO_GEN="$(find build-gen -type f -path '*/td/generate/scheme/td_api.tlo' | head -n1 || true)"
-if [[ -f "$SRC_TLO_HOST" ]]; then
-  run "copy-schema-tlo(host)" cp -f "$SRC_TLO_HOST" "$SCHEME_DST_DIR/td_api.tlo"
-elif [[ -n "$SRC_TLO_GEN" && -f "$SRC_TLO_GEN" ]]; then
-  run "copy-schema-tlo(gen)" cp -f "$SRC_TLO_GEN" "$SCHEME_DST_DIR/td_api.tlo"
-else
-  echo "[schema] td_api.tlo missing; generate via tl-parser (stdout) ..."
-  PARSER="$TD_DIR/build-host/td/generate/tl-parser/tl-parser"
-  TL="$SCHEME_DST_DIR/td_api.tl"
-  TLO="$SCHEME_DST_DIR/td_api.tlo"
-  if [[ -x "$PARSER" && -f "$TL" ]]; then
-    run "gen-schema-tlo" bash -lc "\"$PARSER\" \"$TL\" > \"$TLO\""
-  else
-    record_err "gen-schema-tlo (parser or tl missing)"
-  fi
-fi
-
-# Sichtbarmachen des Generators (falls CMake-Skripte PATH benutzen)
+# Sichtbarmachen des Generators (hilft CMake-Skripten in example/java)
 export PATH="$HOST_INSTALL_PREFIX/$INSTALL_BINDIR:$PATH"
 
 # Sanity-Listing
 for must in \
   "$HOST_INSTALL_PREFIX/$CMAKEDIR_REL/TdConfig.cmake" \
-  "$GEN_DST_DIR/td_generate_java_api" \
-  "$SCHEME_DST_DIR/td_api.tl" \
-  "$SCHEME_DST_DIR/td_api.tlo"; do
+  "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td_generate_java_api" \
+  "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate/scheme/td_api.tl" \
+  "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate/scheme/td_api.tlo"; do
   [[ -e "$must" ]] || record_err "missing $must"
 done
 ls -l "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR" || true
 ls -l "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate" || true
-ls -l "$SCHEME_DST_DIR" || true
+ls -l "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate/scheme" || true
 
 # ---------------------------------------------------------------------------
 # (2) example/java: Java-Install → erzeugt TdApi.java, Client.java, Log.java
@@ -266,13 +186,13 @@ run "java-configure" cmake -S example/java -B example/java/build -G Ninja \
   -DTd_DIR="$HOST_INSTALL_PREFIX/$CMAKEDIR_REL" \
   -DCMAKE_INSTALL_PREFIX:PATH="$TD_DIR/example/java" \
   "${CC_LAUNCH[@]}"
+
 run "java-install" cmake --build example/java/build --target install "${NINJA_KEEP[@]}"
 
 # Java-Sources einsammeln
 TDAPI_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/TdApi.java' | head -n1 || true)"
 CLIENT_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Client.java' | head -n1 || true)"
 LOG_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Log.java' | head -n1 || true)"
-
 [[ -f "$TDAPI_SRC"  ]] || record_err "Could not locate generated TdApi.java"
 [[ -f "$CLIENT_SRC" ]] || record_err "Missing Client.java"
 [[ -f "$LOG_SRC"    ]] || record_err "Missing Log.java"
@@ -294,7 +214,7 @@ for ABI in "${ABI_ARR[@]}"; do
 
   ANDROID_PREFIX="$TD_DIR/example/java/td-android-$ABI"
 
-  # (3a) Android-TDLib Core (liefert Android-kompatibles TdConfig.cmake)
+  # (3a) Android-TDLib Core
   run "core-$ABI-configure" cmake -S . -B "build-td-android-$ABI" -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -318,6 +238,19 @@ for ABI in "${ABI_ARR[@]}"; do
   # (3b) example/java — JNI tdjni für ABI (Td_DIR → Android-Install)
   pushd "$TD_DIR/example/java" >/dev/null
   BDIR="build-android-$ABI"
+
+  # Workaround: FindJNI bei Android (Cross) neutralisieren
+  JAVA_HOME_SAFE="${JAVA_HOME:-}"
+  JNI_INCLUDES=()
+  if [[ -n "$JAVA_HOME_SAFE" ]]; then
+    case "$HOST_OS" in
+      linux*)  JNI_INCLUDES=( "-DJNI_INCLUDE_DIRS=$JAVA_HOME_SAFE/include;$JAVA_HOME_SAFE/include/linux" ) ;;
+      darwin*) JNI_INCLUDES=( "-DJNI_INCLUDE_DIRS=$JAVA_HOME_SAFE/include;$JAVA_HOME_SAFE/include/darwin" ) ;;
+      msys*|mingw*|cygwin*) JNI_INCLUDES=( "-DJNI_INCLUDE_DIRS=$JAVA_HOME_SAFE/include;$JAVA_HOME_SAFE/include/win32" ) ;;
+      *) JNI_INCLUDES=( "-DJNI_INCLUDE_DIRS=$JAVA_HOME_SAFE/include" ) ;;
+    esac
+  fi
+
   run "jni-$ABI-configure" cmake -S . -B "$BDIR" -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -333,12 +266,12 @@ for ABI in "${ABI_ARR[@]}"; do
     -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
     -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
     -DOPENSSL_LIBRARIES="$BORINGSSL_DIR/$ABI/lib/libssl.a;$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    # Workaround: FindJNI will sonst nach libjvm suchen (für Android unnötig)
     -DJAVA_AWT_LIBRARY=NotNeeded \
     -DJAVA_JVM_LIBRARY=NotNeeded \
-    ${JAVA_HOME:+-DJAVA_HOME="$JAVA_HOME"} \
+    "${JNI_INCLUDES[@]}" \
     "${ANDROID_OPT[@]}" \
     "${CC_LAUNCH[@]}"
+
   run "jni-$ABI-build-tdjni" cmake --build "$BDIR" --target tdjni "${NINJA_KEEP[@]}"
 
   soPath="$(find "$BDIR" -name 'libtdjni.so' -print -quit || true)"
@@ -347,10 +280,8 @@ for ABI in "${ABI_ARR[@]}"; do
       '$PREBUILT_DIR/bin/llvm-strip' --strip-unneeded '$OUT_DIR/libs/$ABI/libtdjni.so' || true"
     if [[ "$ANDROID_STL" == "c++_shared" ]]; then
       case "$ABI" in
-        arm64-v8a)   TRIPLE="aarch64-linux-android" ;;
-        armeabi-v7a) TRIPLE="armv7a-linux-androideabi" ;;  # korrektes Triple
-        x86)         TRIPLE="i686-linux-android" ;;
-        x86_64)      TRIPLE="x86_64-linux-android" ;;
+        arm64-v8a)  TRIPLE="aarch64-linux-android" ;;
+        armeabi-v7a) TRIPLE="arm-linux-androideabi" ;;
       esac
       SHARED_STL="$PREBUILT_DIR/sysroot/usr/lib/$TRIPLE/libc++_shared.so"
       [[ -f "$SHARED_STL" ]] && run "jni-$ABI-copy-stl" cp -f "$SHARED_STL" "$OUT_DIR/libs/$ABI/"
