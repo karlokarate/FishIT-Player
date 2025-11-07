@@ -36,7 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y ca-certificates curl git
+          sudo apt-get install -y ca-certificates curl git unzip
 
       - name: Resolve latest TDLib ref (Atom feed if empty)
         id: tdref
@@ -60,13 +60,13 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Install build deps (CMake, Ninja, PHP, gperf)
+      - name: Install build deps (CMake, Ninja, PHP, gperf, rsync, OpenSSL, zlib)
         id: tools
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y gpg lsb-release software-properties-common php build-essential gperf
+          sudo apt-get install -y gpg lsb-release software-properties-common php build-essential gperf rsync libssl-dev zlib1g-dev
           sudo mkdir -p /etc/apt/keyrings
           curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc \
             | sudo gpg --dearmor -o /etc/apt/keyrings/kitware-archive-keyring.gpg
