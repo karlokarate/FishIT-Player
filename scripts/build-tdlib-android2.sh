@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL)
 # Änderungen ggü. Vorversion:
-#  • tl-parser: .tlo via STDOUT (kein -e/-o)
-#  • OPENSSL_SSL_LIBRARY -> libcrypto.a (BoringSSL)
+#  • tl-parser: .tlo via STDOUT (robustes Quoting mit bash -lc)
+#  • OPENSSL_SSL_LIBRARY -> libssl.a (zusammen mit libcrypto.a) + OPENSSL_LIBRARIES
 #  • Host-Install → example/java/td (Generator + TdConfig.cmake)
 #  • Android-TDLib pro ABI → example/java/td-android-<abi>
 #  • tdjni je ABI aus example/java mit Td_DIR auf Android-Install
@@ -59,7 +59,7 @@ ensure() {
 # ninja heißt im Paketmanager "ninja-build"
 ensure cmake ninja gperf ccache || true
 
-# KORRIGIERT: /dev/null
+# Tool-Checks
 need(){ command -v "$1" >/dev/null 2>&1 || { echo "Missing tool: $1"; exit 1; }; }
 need cmake; need ninja; need javac; need jar; need gperf
 
@@ -195,7 +195,7 @@ else
   record_err "td_api.tl not found in repo or build-gen"
 fi
 
-# .tlo: Host-Build bevorzugen, sonst tl-parser via STDOUT
+# .tlo: Host-Build bevorzugen, sonst tl-parser via STDOUT (Fix: korrektes Quoting)
 SRC_TLO_HOST="build-host/td/generate/scheme/td_api.tlo"
 SRC_TLO_GEN="$(find build-gen -type f -path '*/td/generate/scheme/td_api.tlo' | head -n1 || true)"
 if [[ -f "$SRC_TLO_HOST" ]]; then
@@ -208,7 +208,8 @@ else
   TL="$SCHEME_DST_DIR/td_api.tl"
   TLO="$SCHEME_DST_DIR/td_api.tlo"
   if [[ -x "$PARSER" && -f "$TL" ]]; then
-    run "gen-schema-tlo" bash -c '"$PARSER" "$TL" > "$TLO"'
+    # WICHTIG: Variablen müssen expandieren → bash -lc + escapte Quotes
+    run "gen-schema-tlo" bash -lc "\"$PARSER\" \"$TL\" > \"$TLO\""
   else
     record_err "gen-schema-tlo (parser or tl missing)"
   fi
@@ -261,6 +262,7 @@ for ABI in "${ABI_ARR[@]}"; do
   ABI="$(echo "$ABI" | xargs)"
   [[ -d "$BORINGSSL_DIR/$ABI/include" ]] || record_err "BoringSSL include missing for $ABI"
   [[ -f "$BORINGSSL_DIR/$ABI/lib/libcrypto.a" ]] || record_err "BoringSSL libcrypto.a missing for $ABI"
+  [[ -f "$BORINGSSL_DIR/$ABI/lib/libssl.a"    ]] || record_err "BoringSSL libssl.a missing for $ABI"
 
   ANDROID_PREFIX="$TD_DIR/example/java/td-android-$ABI"
 
@@ -273,8 +275,9 @@ for ABI in "${ABI_ARR[@]}"; do
     -DANDROID_PLATFORM="android-$API_LEVEL" \
     -DOPENSSL_USE_STATIC_LIBS=ON \
     -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
+    -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
     -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
+    -DOPENSSL_LIBRARIES="$BORINGSSL_DIR/$ABI/lib/libssl.a;$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
     -DCMAKE_INSTALL_PREFIX:PATH="$ANDROID_PREFIX" \
     "${ANDROID_OPT[@]}" \
     "${CC_LAUNCH[@]}"
@@ -299,8 +302,9 @@ for ABI in "${ABI_ARR[@]}"; do
     -DTD_ENABLE_JNI=ON \
     -DOPENSSL_USE_STATIC_LIBS=ON \
     -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
+    -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
     -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
+    -DOPENSSL_LIBRARIES="$BORINGSSL_DIR/$ABI/lib/libssl.a;$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
     "${ANDROID_OPT[@]}" \
     "${CC_LAUNCH[@]}"
   run "jni-$ABI-build-tdjni" cmake --build "$BDIR" --target tdjni "${NINJA_KEEP[@]}"
