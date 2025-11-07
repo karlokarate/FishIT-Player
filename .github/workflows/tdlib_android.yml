@@ -1,4 +1,4 @@
-name: Ver 2 TDLib – SDK-free Build (NDK r27b, BoringSSL static, cached)
+name: TDLib – SDK-free Build (Soft-Fail, ccache, BoringSSL static)
 
 on:
   workflow_dispatch:
@@ -15,16 +15,32 @@ on:
         description: "TDLib Ref (leer = Atom-Feed master)"
         required: false
         default: ""
+      soft_fail:
+        description: "Soft-Fail: weiterbauen trotz Fehler (1/0)"
+        required: true
+        default: "1"
+      final_exit:
+        description: "Exitcode 1 bei Fehlern (1=rot, 0=grün)"
+        required: true
+        default: "1"
+      ndk_version:
+        description: "NDK Version (r27b stabil; r27c empfohlen)"
+        required: true
+        default: "r27b"
 
 jobs:
   tdlib:
     runs-on: ubuntu-24.04
     env:
-      NDK_VERSION: r27b
+      NDK_VERSION: ${{ inputs.ndk_version }}
       ANDROID_PLATFORM: android-21
       BORINGSSL_DIR: .third_party/boringssl
       TD_BUILD_SCRIPT: scripts/build-tdlib-android2.sh
       OUT_DIR: out
+      # ccache Konfiguration (global)
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_MAXSIZE: 2G
 
     steps:
       - name: Checkout
@@ -60,13 +76,13 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Install build deps (CMake, Ninja, PHP, gperf, rsync, OpenSSL, zlib)
+      - name: Install build deps (CMake, Ninja, PHP, gperf, rsync, OpenSSL, zlib, ccache)
         id: tools
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y gpg lsb-release software-properties-common php build-essential gperf rsync libssl-dev zlib1g-dev
+          sudo apt-get install -y gpg lsb-release software-properties-common php build-essential gperf rsync libssl-dev zlib1g-dev ccache
           sudo mkdir -p /etc/apt/keyrings
           curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc \
             | sudo gpg --dearmor -o /etc/apt/keyrings/kitware-archive-keyring.gpg
@@ -74,10 +90,18 @@ jobs:
             | sudo tee /etc/apt/sources.list.d/kitware.list
           sudo apt-get update -y
           sudo apt-get install -y cmake ninja-build
-          cmake --version; ninja --version; php -v; gperf --version
+          cmake --version; ninja --version; php -v; gperf --version; ccache -V || true
+
+      # ---------- ccache Cache ----------
+      - name: Restore ccache
+        uses: actions/cache@v4
+        id: restore-ccache
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ steps.tdref.outputs.ref }}-v1
 
       # ---------- NDK Cache ----------
-      - name: Cache NDK
+      - name: Restore NDK
         uses: actions/cache@v4
         id: cache-ndk
         with:
@@ -119,14 +143,12 @@ jobs:
       # ---------- BoringSSL Cache ----------
       - name: Restore BoringSSL installs
         id: restore-bssl
-        uses: actions/cache/restore@v4
+        uses: actions/cache@v4
         with:
           path: |
             ${{ env.BORINGSSL_DIR }}/arm64-v8a
             ${{ env.BORINGSSL_DIR }}/armeabi-v7a
           key: bssl-install-${{ runner.os }}-${{ env.NDK_VERSION }}-v1
-          restore-keys: |
-            bssl-install-${{ runner.os }}-${{ env.NDK_VERSION }}-
 
       - name: Build BoringSSL (static) if missing
         if: steps.restore-bssl.outputs.cache-hit != 'true'
@@ -149,8 +171,9 @@ jobs:
               -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
               -DANDROID_ABI="$ABI" \
               -DANDROID_PLATFORM="${ANDROID_PLATFORM}" \
-              -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF
-            cmake --build "$BLD" --target crypto ssl
+              -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+            cmake --build "$BLD" --target crypto ssl -- -k 0
             cp -f $(find "$BLD" -name libcrypto.a | head -n1) "$INST/lib/libcrypto.a"
             cp -f $(find "$BLD" -name libssl.a    | head -n1) "$INST/lib/libssl.a"
             rsync -a boringssl-src/include/ "$INST/include/"
@@ -175,18 +198,20 @@ jobs:
             test -f "${BORINGSSL_DIR}/${abi}/lib/libcrypto.a" || { echo "Missing libcrypto.a for ${abi}"; exit 1; }
           done
 
-      # ---------- Build TDLib ----------
+      # ---------- Run Soft-Fail Script ----------
       - name: Make build script executable
         run: chmod +x "${{ env.TD_BUILD_SCRIPT }}"
 
-      - name: Build TDLib (JNI + Java bindings)
+      - name: Build TDLib (Soft-Fail, logs, summary)
         shell: bash
         env:
           TD_REF: ${{ steps.tdref.outputs.ref }}
-          ABIS: ${{ github.event.inputs.abis }}
-          API_LEVEL: ${{ github.event.inputs.api_level }}
+          ABIS: ${{ inputs.abis }}
+          API_LEVEL: ${{ inputs.api_level }}
+          SOFT_FAIL: ${{ inputs.soft_fail }}
+          FINAL_EXIT: ${{ inputs.final_exit }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           bash "${TD_BUILD_SCRIPT}" \
             --ref "${TD_REF:-}" \
             --abis "${ABIS}" \
@@ -194,11 +219,21 @@ jobs:
             --boringssl-dir "${BORINGSSL_DIR}" \
             --ndk "${{ steps.ndk.outputs.dir }}"
 
-          mkdir -p out
-          cp -f td/.TDLIB_COMMIT.txt   out/TDLIB_COMMIT.txt
-          cp -f td/.TDLIB_DESCRIBE.txt out/TDLIB_DESCRIBE.txt
+      # ---------- Upload Logs & Artefakte (immer) ----------
+      - name: Upload logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-logs
+          path: |
+            out/logs/build.log
+            out/logs/summary.txt
+            out/logs/summary.json
+          if-no-files-found: warn
+          retention-days: 14
 
-      - name: Upload TDLib outputs
+      - name: Upload outputs (always)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: tdlib-outputs
@@ -207,5 +242,11 @@ jobs:
             out/TDLIB_*.txt
             out/*.jar
             out/libs/**/libtdjni.so
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
+
+      - name: ccache stats (always)
+        if: always()
+        shell: bash
+        run: |
+          ccache -s || true
