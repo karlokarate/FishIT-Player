@@ -47,12 +47,11 @@ OUT_DIR="$ROOT/out"
 JAVA_SRC_DIR="$OUT_DIR/java_src"
 JAVA_CLASSES_DIR="$OUT_DIR/classes"
 
-# CMake-Layout laut TDLib:
-#   lib/, bin/, include/   +   lib/cmake/Td/TdConfig.cmake
+# CMake-Layout laut TDLib (Install-Defaults + CMake-Package)
 INSTALL_LIBDIR="lib"
 INSTALL_BINDIR="bin"
 INSTALL_INCLUDEDIR="include"
-CMAKEDIR_REL="${INSTALL_LIBDIR}/cmake/Td"
+CMAKEDIR_REL="${INSTALL_LIBDIR}/cmake/Td"   # -> TdConfig.cmake liegt hier  2
 
 IFS=',' read -ra ABI_ARR <<< "$ABIS"
 for abi in "${ABI_ARR[@]}"; do
@@ -88,8 +87,8 @@ echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
 # -----------------------------------------------------------------------------
 # (1) HOST-BUILD → vollständige Installation (TdConfig.cmake, Targets, Headers)
-#    WICHTIG: Kein TD_GENERATE_SOURCE_FILES (sonst return() und kein Install)
-#    Pfade gemäß CMakeLists: lib/bin/include & lib/cmake/Td/TdConfig.cmake
+#     Kein TD_GENERATE_SOURCE_FILES; wir wollen das volle Paket installiert bekommen.
+#     CMakeLists installiert Exports + TdConfig.cmake in ${lib}/cmake/Td.  3
 # -----------------------------------------------------------------------------
 JAVA_TD_INSTALL_PREFIX="${TD_DIR}/example/java/td"
 
@@ -105,13 +104,12 @@ cmake -S . -B build-host \
 cmake --build build-host
 cmake --build build-host --target install
 
-# Verifizieren, dass das CMake-Paket an der erwarteten Stelle liegt:
 TD_CMAKE_PACKAGE="${JAVA_TD_INSTALL_PREFIX}/${CMAKEDIR_REL}/TdConfig.cmake"
 [[ -f "$TD_CMAKE_PACKAGE" ]] || { echo "❌ Missing ${TD_CMAKE_PACKAGE}"; exit 1; }
 
 # -----------------------------------------------------------------------------
-# (1b) Java-API-Generator separat bauen und in ${prefix}/bin/ ablegen
-#      (Upstream installiert den Generator nicht automatisch.)
+# (1b) Generator + Schemas separat erzeugen und an erwartete Orte legen.
+#     laut CMake: Schemas/Generator kommen aus td/generate / prepare_cross_compiling. 4
 # -----------------------------------------------------------------------------
 cmake -S . -B build-gen \
   -G Ninja \
@@ -120,17 +118,44 @@ cmake -S . -B build-gen \
   -DTD_ENABLE_TESTS=OFF \
   -DTD_GENERATE_SOURCE_FILES=ON
 
+# Schemata erzeugen (td_api.tl/.tlo, JSON/Common/MTProto)
+cmake --build build-gen --target prepare_cross_compiling
+# Generator bauen
 cmake --build build-gen --target td_generate_java_api
+
+# Generator-Bin nach ${prefix}/bin
 GEN_SRC="$(find build-gen -type f -path '*/td/generate/td_generate_java_api' -o -name 'td_generate_java_api' | head -n1 || true)"
 [[ -n "$GEN_SRC" && -f "$GEN_SRC" ]] || { echo "❌ Could not build td_generate_java_api"; exit 1; }
+GEN_DST_DIR="${JAVA_TD_INSTALL_PREFIX}/${INSTALL_BINDIR}"
+mkdir -p "$GEN_DST_DIR"
+cp -f "$GEN_SRC" "${GEN_DST_DIR}/td_generate_java_api"
+chmod +x "${GEN_DST_DIR}/td_generate_java_api"
 
-mkdir -p "${JAVA_TD_INSTALL_PREFIX}/${INSTALL_BINDIR}"
-cp -f "$GEN_SRC" "${JAVA_TD_INSTALL_PREFIX}/${INSTALL_BINDIR}/td_generate_java_api"
-chmod +x "${JAVA_TD_INSTALL_PREFIX}/${INSTALL_BINDIR}/td_generate_java_api"
+# Schemas (.tl/.tlo) an exakt den Ort, den example/java erwartet:
+SCHEME_SRC_TL="$(find build-gen -type f -path '*/td/generate/scheme/td_api.tl'  | head -n1 || true)"
+SCHEME_SRC_TLO="$(find build-gen -type f -path '*/td/generate/scheme/td_api.tlo' | head -n1 || true)"
+[[ -f "$SCHEME_SRC_TL"  ]] || { echo "❌ Missing generated td_api.tl"; exit 1; }
+[[ -f "$SCHEME_SRC_TLO" ]] || { echo "❌ Missing generated td_api.tlo"; exit 1; }
+SCHEME_DST_DIR="${JAVA_TD_INSTALL_PREFIX}/${INSTALL_BINDIR}/td/generate/scheme"
+mkdir -p "$SCHEME_DST_DIR"
+cp -f "$SCHEME_SRC_TL"  "${SCHEME_DST_DIR}/td_api.tl"
+cp -f "$SCHEME_SRC_TLO" "${SCHEME_DST_DIR}/td_api.tlo"
+
+# PHP-Helper (Dokugen) in ${prefix}/bin/td/generate/
+GEN_HELPER_DST="${JAVA_TD_INSTALL_PREFIX}/${INSTALL_BINDIR}/td/generate"
+mkdir -p "$GEN_HELPER_DST"
+for f in JavadocTlDocumentationGenerator.php TlDocumentationGenerator.php; do
+  # übliches Upstream-Layout: td/generate/<file>
+  SRC_A="td/generate/${f}"
+  SRC_B="$(find td -type f -name "$f" | head -n1 || true)"
+  if [[ -f "$SRC_A" ]]; then cp -f "$SRC_A" "$GEN_HELPER_DST/"; \
+  elif [[ -f "$SRC_B" ]]; then cp -f "$SRC_B" "$GEN_HELPER_DST/"; \
+  else echo "❌ Missing PHP helper: $f"; exit 1; fi
+done
 
 # -----------------------------------------------------------------------------
 # (2) example/java bauen → generiert TdApi.java, Client.java, Log.java
-#     find_package(Td) via lib/cmake/Td (genau wie im Bauplan)
+#     find_package(Td) via ${prefix}/lib/cmake/Td wie im Bauplan. 5
 # -----------------------------------------------------------------------------
 mkdir -p example/java/build
 pushd example/java/build >/dev/null
@@ -144,7 +169,7 @@ cmake --build . --target install
 popd >/dev/null
 
 # -----------------------------------------------------------------------------
-# (3) Java-Sources einsammeln (exakt die offiziellen Dateien)
+# (3) Java-Sources einsammeln (offiziell: TdApi.java, Client.java, Log.java)
 # -----------------------------------------------------------------------------
 TDAPI_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/TdApi.java' | head -n1 || true)"
 CLIENT_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Client.java' | head -n1 || true)"
@@ -160,7 +185,7 @@ cp -f "$CLIENT_SRC" "$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java"
 cp -f "$LOG_SRC"    "$JAVA_SRC_DIR/org/drinkless/tdlib/Log.java"
 
 # -----------------------------------------------------------------------------
-# (4) JNI je ABI (Android) — Ziel 'tdjni' (von TD_ENABLE_JNI abhängig)
+# (4) JNI je ABI (Android) — Ziel 'tdjni' (OPENSSL = BoringSSL statisch)
 # -----------------------------------------------------------------------------
 for ABI in "${ABI_ARR[@]}"; do
   ABI="$(echo "$ABI" | xargs)"
