@@ -24,9 +24,9 @@ on:
         required: true
         default: "1"
       ndk_version:
-        description: "NDK Version (r27b stabil; r27c empfohlen)"
+        description: "NDK Version (r27c empfohlen)"
         required: true
-        default: "r27b"
+        default: "r27c"
 
 jobs:
   tdlib:
@@ -45,7 +45,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with: { fetch-depth: 1 }
+        with:
+          fetch-depth: 1
 
       - name: Base tools
         shell: bash
@@ -198,7 +199,6 @@ jobs:
             test -f "${BORINGSSL_DIR}/${abi}/lib/libcrypto.a" || { echo "Missing libcrypto.a for ${abi}"; exit 1; }
           done
 
-      # ---------- Run Soft-Fail Script ----------
       - name: Make build script executable
         run: chmod +x "${{ env.TD_BUILD_SCRIPT }}"
 
@@ -210,6 +210,9 @@ jobs:
           API_LEVEL: ${{ inputs.api_level }}
           SOFT_FAIL: ${{ inputs.soft_fail }}
           FINAL_EXIT: ${{ inputs.final_exit }}
+          # >>> WICHTIG: Skript erwartet NDK auch in ENV
+          ANDROID_NDK_ROOT: ${{ steps.ndk.outputs.dir }}
+          NDK: ${{ steps.ndk.outputs.dir }}
         run: |
           set -uo pipefail
           bash "${TD_BUILD_SCRIPT}" \
@@ -219,7 +222,6 @@ jobs:
             --boringssl-dir "${BORINGSSL_DIR}" \
             --ndk "${{ steps.ndk.outputs.dir }}"
 
-      # ---------- Upload Logs & Artefakte (immer) ----------
       - name: Upload logs (always)
         if: always()
         uses: actions/upload-artifact@v4
@@ -248,5 +250,4 @@ jobs:
       - name: ccache stats (always)
         if: always()
         shell: bash
-        run: |
-          ccache -s || true
+        run: ccache -s || true
