@@ -64,7 +64,7 @@ echo
 [[ -d "$TD_DIR" ]] || { echo "TD source dir not found: $TD_DIR"; exit 1; }
 pushd "$TD_DIR" >/dev/null
 
-# Optionaler Ref-Wechsel (Repo ist vom Workflow bereits ausgecheckt)
+# Ref optional
 if [[ -n "${TD_REF}" ]]; then
   git fetch --depth=1 origin "$TD_REF"
   git checkout -qf FETCH_HEAD
@@ -73,8 +73,7 @@ COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$COMMIT")"
 echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
-# ---------- (1) Host-Build: installiert TdConfig.cmake + Generator ----------
-# WICHTIG: ohne JNI, aber MIT TD_GENERATE_SOURCE_FILES, damit td_generate_java_api gebaut/installiert wird.
+# ---------- (1) Host-Install (ohne JNI) für TdConfig.cmake & Schemas ----------
 JAVA_TD_INSTALL_PREFIX="${TD_DIR}/example/java/td"
 
 cmake -S . -B build-host \
@@ -84,14 +83,26 @@ cmake -S . -B build-host \
   -DTD_ENABLE_TESTS=OFF \
   -DTD_GENERATE_SOURCE_FILES=ON
 
-# Erst bauen (alle Host-Targets inkl. Generator), dann installieren
 cmake --build build-host
-cmake --build build-host --target td_generate_java_api || true
 cmake --build build-host --target install
 
-# Sicherstellen, dass der Generator wirklich da ist (Pfad, den example/java erwartet)
-GEN_BIN="${JAVA_TD_INSTALL_PREFIX}/bin/td_generate_java_api"
-[[ -x "$GEN_BIN" ]] || { echo "❌ Missing generator: $GEN_BIN"; exit 1; }
+# ---------- (1b) Generator separat bauen & manuell installieren ----------
+# Einige Revs installieren td_generate_java_api NICHT. Wir bauen ihn getrennt und kopieren ihn.
+cmake -S . -B build-gen \
+  -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DTD_ENABLE_JNI=OFF \
+  -DTD_ENABLE_TESTS=OFF \
+  -DTD_GENERATE_SOURCE_FILES=ON
+
+cmake --build build-gen --target td_generate_java_api
+
+GEN_SRC="$(find build-gen -type f -path '*/td/generate/td_generate_java_api' -o -path '*/td_generate_java_api' | head -n1 || true)"
+[[ -n "$GEN_SRC" && -f "$GEN_SRC" ]] || { echo "❌ Could not build td_generate_java_api"; exit 1; }
+
+mkdir -p "${JAVA_TD_INSTALL_PREFIX}/bin"
+cp -f "$GEN_SRC" "${JAVA_TD_INSTALL_PREFIX}/bin/td_generate_java_api"
+chmod +x "${JAVA_TD_INSTALL_PREFIX}/bin/td_generate_java_api"
 
 # ---------- (2) example/java bauen ⇒ generiert TdApi.java ----------
 mkdir -p example/java/build
@@ -118,7 +129,7 @@ cp -f "$TDAPI_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java"
 cp -f "$CLIENT_SRC" "$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java"
 cp -f "$CACHE_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/Cache.java"
 
-# ---------- (4) JNI je ABI (Android) ----------
+# ---------- (4) JNI je ABI ----------
 for ABI in "${ABI_ARR[@]}"; do
   ABI="$(echo "$ABI" | xargs)"
   BUILD_DIR="build-${ABI}-jni"
