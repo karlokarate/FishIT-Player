@@ -46,7 +46,22 @@ ANDROID_STL="${ANDROID_STL:-c++_static}"
 TD_REF="${TD_REF:-}"                   # leer => master/HEAD
 CMAKE_INTERPRO="${CMAKE_INTERPRO:-0}"  # 1 => LTO/IPO ON (Android-Teil)
 
-need(){ command -v "$1" >/dev-null 2>&1 || { echo "Missing tool: $1"; exit 1; }; }
+# Optional: fehlende Tools auf Ubuntu-Runnern automatisch installieren
+ensure() {
+  if command -v apt-get >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
+    for pkg in "$@"; do
+      if ! command -v "$pkg" >/dev/null 2>&1; then
+        echo "[ensure] installing $pkg ..."
+        sudo apt-get update -y && sudo apt-get install -y "$pkg"
+      fi
+    done
+  fi
+}
+# ninja heißt im Paketmanager "ninja-build"
+ensure cmake ninja gperf ccache || true
+
+# FALSCHER Pfad war die Ursache: hier korrigiert auf /dev/null
+need(){ command -v "$1" >/dev/null 2>&1 || { echo "Missing tool: $1"; exit 1; }; }
 need cmake; need ninja; need javac; need jar; need gperf
 
 HOST_OS=$(uname | tr '[:upper:]' '[:lower:]')
@@ -193,24 +208,15 @@ else
   PARSER="$TD_DIR/build-host/td/generate/tl-parser/tl-parser"
   TL="$SCHEME_DST_DIR/td_api.tl"
   TLO="$SCHEME_DST_DIR/td_api.tlo"
-  gen_tlo() {
-    local ok=0
+  run "gen-schema-tlo" bash -c '
+    PARSER="'"$PARSER"'"; TL="'"$TL"'"; TLO="'"$TLO"'"; ok=0;
     if [[ -x "$PARSER" && -f "$TL" ]]; then
       "$PARSER" -e "$TL" "$TLO" && ok=1
       [[ $ok -eq 1 ]] || "$PARSER" -e "$TL" -o "$TLO" && ok=1
       [[ $ok -eq 1 ]] || "$PARSER"    "$TL"    "$TLO" && ok=1
     fi
-    [[ $ok -eq 1 ]] || { echo "[schema] tl-parser fallback failed"; return 1; }
-  }
-  run "gen-schema-tlo" bash -c 'gen_tlo() { 
-      local PARSER="'"$PARSER"'"; local TL="'"$TL"'"; local TLO="'"$TLO"'"; local ok=0;
-      if [[ -x "$PARSER" && -f "$TL" ]]; then
-        "$PARSER" -e "$TL" "$TLO" && ok=1
-        [[ $ok -eq 1 ]] || "$PARSER" -e "$TL" -o "$TLO" && ok=1
-        [[ $ok -eq 1 ]] || "$PARSER"    "$TL"    "$TLO" && ok=1
-      fi
-      [[ $ok -eq 1 ]]
-    }; gen_tlo'
+    [[ $ok -eq 1 ]] || { echo "[schema] tl-parser fallback failed"; exit 1; }
+  '
 fi
 
 # Sichtbarmachen des Generators (hilft CMake-Skripten in example/java)
