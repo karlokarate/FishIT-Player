@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 # TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL)
-# Fixes:
-#  - Host-Build mit -DTD_ENABLE_JNI=ON => installiert Generator + Schemas
-#  - Android-Cross-Compile: stabiler JNI-Find-Workaround (NotNeeded + JNI_INCLUDE_DIRS)
-#  - Kommentare aus Backslash-Zeilen entfernt (verhindert "command not found")
-#  - Entfernt fragile tl-parser/TLO-Fallbacks (0-Byte-tlo)
-#  - Soft-Fail beibehalten, aber klarere Fehler-Summary
+# Änderungen ggü. Vorversion:
+#  • tl-parser: .tlo via STDOUT (robustes Quoting mit bash -lc)
+#  • OPENSSL_SSL_LIBRARY -> libssl.a (zusammen mit libcrypto.a) + OPENSSL_LIBRARIES
+#  • Host-Install → example/java/td (Generator + TdConfig.cmake)
+#  • Android-TDLib pro ABI → example/java/td-android-<abi>
+#  • tdjni je ABI aus example/java mit Td_DIR auf Android-Install
+#  • Robuste Schema-Ablage, Soft-Fail + Summary
+#  • Fix JNI-Cross-Compile: setze JAVA_INCLUDE_PATH{,2} & Dummy-JVM/AWT (CMake FindJNI-Compat)
+#  • Entfernt: harte Abhängigkeit auf Log.java (seit Okt 2025 nicht mehr im example/java-CMakeLists)
 
 set -uo pipefail
 SOFT_FAIL="${SOFT_FAIL:-1}"      # 1=tolerant weiterbauen, 0=hart abbrechen
@@ -64,6 +67,23 @@ need cmake; need ninja; need javac; need jar; need gperf
 
 HOST_OS=$(uname | tr '[:upper:]' '[:lower:]')
 case "$(uname -m)" in x86_64|amd64) HOST_ARCH="x86_64" ;; arm64|aarch64) HOST_ARCH="arm64" ;; *) HOST_ARCH="x86_64" ;; esac
+
+# Java/JNI-Lage robust bestimmen (für Cross-Compile)
+if [[ -z "${JAVA_HOME:-}" ]]; then
+  if command -v javac >/dev/null 2>&1; then
+    JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+  fi
+fi
+if [[ -n "${JAVA_HOME:-}" ]]; then
+  case "$HOST_OS" in
+    linux*)  JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include/linux" ;;
+    darwin*) JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include/darwin" ;;
+    msys*|cygwin*|mingw*) JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include/win32" ;;
+    *)       JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include" ;;
+  esac
+else
+  JAVA_INCLUDE_PATH=""; JAVA_INCLUDE_PATH2=""
+fi
 
 ROOT="$(pwd)"
 TD_DIR="$ROOT/td"
@@ -126,6 +146,7 @@ BoringSSL : $BORINGSSL_DIR
 TD_DIR    : $TD_DIR
 OUT_DIR   : $OUT_DIR
 LOG_FILE  : $LOG_FILE
+JAVA_HOME : ${JAVA_HOME:-<unset>}
 EOF
 
 [[ -d "$TD_DIR" ]] || { echo "TD source dir not found: $TD_DIR"; exit 1; }
@@ -141,8 +162,7 @@ DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$
 echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
 # ---------------------------------------------------------------------------
-# (1) HOST-BUILD & INSTALL  (liefert tl-parser, td_generate_java_api, TdConfig, Schemas)
-#     WICHTIG: TD_ENABLE_JNI=ON => installiert Generator + PHP + td_api.tl/tlo
+# (1) HOST-BUILD & INSTALL  (liefert tl-parser, td_generate_java_api, TdConfig)
 # ---------------------------------------------------------------------------
 HOST_INSTALL_PREFIX="$TD_DIR/example/java/td"
 
@@ -153,7 +173,6 @@ run "host-configure" cmake -S . -B build-host -G Ninja \
   -DCMAKE_INSTALL_BINDIR="$INSTALL_BINDIR" \
   -DCMAKE_INSTALL_INCLUDEDIR="$INSTALL_INCLUDEDIR" \
   -DTD_ENABLE_TESTS=OFF \
-  -DTD_ENABLE_JNI=ON \
   "${CC_LAUNCH[@]}"
 
 run "host-build"   cmake --build build-host "${NINJA_KEEP[@]}"
@@ -162,6 +181,59 @@ run "host-install" cmake --build build-host --target install "${NINJA_KEEP[@]}"
 TD_HOST_CMAKE="$HOST_INSTALL_PREFIX/$CMAKEDIR_REL/TdConfig.cmake"
 [[ -f "$TD_HOST_CMAKE" ]] || record_err "Missing $TD_HOST_CMAKE"
 
+# Generator separat bauen
+run "gen-configure" cmake -S . -B build-gen -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DTD_ENABLE_JNI=OFF -DTD_ENABLE_TESTS=OFF -DTD_GENERATE_SOURCE_FILES=ON \
+  "${CC_LAUNCH[@]}"
+run "gen-prepare_cross_compiling" cmake --build build-gen --target prepare_cross_compiling "${NINJA_KEEP[@]}"
+run "gen-td_generate_java_api"   cmake --build build-gen --target td_generate_java_api "${NINJA_KEEP[@]}"
+
+# Generator-Bin kopieren
+GEN_SRC="$(find build-gen -type f -name 'td_generate_java_api' | head -n1 || true)"
+if [[ -f "$GEN_SRC" ]]; then
+  GEN_DST_DIR="$HOST_INSTALL_PREFIX/$INSTALL_BINDIR"
+  run "copy-generator" bash -c "mkdir -p '$GEN_DST_DIR' && cp -f '$GEN_SRC' '$GEN_DST_DIR/td_generate_java_api' && chmod +x '$GEN_DST_DIR/td_generate_java_api'"
+else
+  record_err "Could not build td_generate_java_api"
+fi
+
+# ---------------------------------------------------------------------------
+# (1b) SCHEMATA bereitstellen (Pfad, den example/java erwartet)
+# ---------------------------------------------------------------------------
+SCHEME_DST_DIR="$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate/scheme"
+mkdir -p "$SCHEME_DST_DIR"
+
+# .tl bevorzugt aus Repo
+SRC_TL_REPO="td/generate/scheme/td_api.tl"
+SRC_TL_GEN="$(find build-gen -type f -path '*/td/generate/scheme/td_api.tl' | head -n1 || true)"
+if [[ -f "$SRC_TL_REPO" ]]; then
+  run "copy-schema-tl" cp -f "$SRC_TL_REPO" "$SCHEME_DST_DIR/td_api.tl"
+elif [[ -n "$SRC_TL_GEN" && -f "$SRC_TL_GEN" ]]; then
+  run "copy-schema-tl(gen)" cp -f "$SRC_TL_GEN" "$SCHEME_DST_DIR/td_api.tl"
+else
+  record_err "td_api.tl not found in repo or build-gen"
+fi
+
+# .tlo: Host-Build bevorzugen, sonst tl-parser via STDOUT (Fix: korrektes Quoting)
+SRC_TLO_HOST="build-host/td/generate/scheme/td_api.tlo"
+SRC_TLO_GEN="$(find build-gen -type f -path '*/td/generate/scheme/td_api.tlo' | head -n1 || true)"
+if [[ -f "$SRC_TLO_HOST" ]]; then
+  run "copy-schema-tlo(host)" cp -f "$SRC_TLO_HOST" "$SCHEME_DST_DIR/td_api.tlo"
+elif [[ -n "$SRC_TLO_GEN" && -f "$SRC_TLO_GEN" ]]; then
+  run "copy-schema-tlo(gen)" cp -f "$SRC_TLO_GEN" "$SCHEME_DST_DIR/td_api.tlo"
+else
+  echo "[schema] td_api.tlo missing; generate via tl-parser (stdout) ..."
+  PARSER="$TD_DIR/build-host/td/generate/tl-parser/tl-parser"
+  TL="$SCHEME_DST_DIR/td_api.tl"
+  TLO="$SCHEME_DST_DIR/td_api.tlo"
+  if [[ -x "$PARSER" && -f "$TL" ]]; then
+    run "gen-schema-tlo" bash -lc "\"$PARSER\" \"$TL\" > \"$TLO\""
+  else
+    record_err "gen-schema-tlo (parser or tl missing)"
+  fi
+fi
+
 # Sichtbarmachen des Generators (hilft CMake-Skripten in example/java)
 export PATH="$HOST_INSTALL_PREFIX/$INSTALL_BINDIR:$PATH"
 
@@ -169,16 +241,16 @@ export PATH="$HOST_INSTALL_PREFIX/$INSTALL_BINDIR:$PATH"
 for must in \
   "$HOST_INSTALL_PREFIX/$CMAKEDIR_REL/TdConfig.cmake" \
   "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td_generate_java_api" \
-  "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate/scheme/td_api.tl" \
-  "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate/scheme/td_api.tlo"; do
+  "$SCHEME_DST_DIR/td_api.tl" \
+  "$SCHEME_DST_DIR/td_api.tlo"; do
   [[ -e "$must" ]] || record_err "missing $must"
 done
 ls -l "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR" || true
 ls -l "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate" || true
-ls -l "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate/scheme" || true
+ls -l "$SCHEME_DST_DIR" || true
 
 # ---------------------------------------------------------------------------
-# (2) example/java: Java-Install → erzeugt TdApi.java, Client.java, Log.java
+# (2) example/java: Java-Install → erzeugt TdApi.java, Client.java
 # ---------------------------------------------------------------------------
 run "java-configure" cmake -S example/java -B example/java/build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
@@ -186,21 +258,17 @@ run "java-configure" cmake -S example/java -B example/java/build -G Ninja \
   -DTd_DIR="$HOST_INSTALL_PREFIX/$CMAKEDIR_REL" \
   -DCMAKE_INSTALL_PREFIX:PATH="$TD_DIR/example/java" \
   "${CC_LAUNCH[@]}"
-
 run "java-install" cmake --build example/java/build --target install "${NINJA_KEEP[@]}"
 
-# Java-Sources einsammeln
+# Java-Sources einsammeln (nur was existiert; Log.java ist upstream entfallen)
 TDAPI_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/TdApi.java' | head -n1 || true)"
 CLIENT_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Client.java' | head -n1 || true)"
-LOG_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Log.java' | head -n1 || true)"
 [[ -f "$TDAPI_SRC"  ]] || record_err "Could not locate generated TdApi.java"
 [[ -f "$CLIENT_SRC" ]] || record_err "Missing Client.java"
-[[ -f "$LOG_SRC"    ]] || record_err "Missing Log.java"
 
 run "copy-java-sources" bash -c "mkdir -p '$JAVA_SRC_DIR/org/drinkless/tdlib' && \
   { [[ -f '$TDAPI_SRC'  ]] && cp -f '$TDAPI_SRC'  '$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java'  || true; } && \
-  { [[ -f '$CLIENT_SRC' ]] && cp -f '$CLIENT_SRC' '$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java' || true; } && \
-  { [[ -f '$LOG_SRC'    ]] && cp -f '$LOG_SRC'    '$JAVA_SRC_DIR/org/drinkless/tdlib/Log.java'    || true; }"
+  { [[ -f '$CLIENT_SRC' ]] && cp -f '$CLIENT_SRC' '$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java' || true; }"
 
 # ---------------------------------------------------------------------------
 # (3) PRO-ABI: Android-TDLib (Core) bauen & installieren
@@ -214,7 +282,7 @@ for ABI in "${ABI_ARR[@]}"; do
 
   ANDROID_PREFIX="$TD_DIR/example/java/td-android-$ABI"
 
-  # (3a) Android-TDLib Core
+  # (3a) Android-TDLib Core (liefert Android-kompatibles TdConfig.cmake)
   run "core-$ABI-configure" cmake -S . -B "build-td-android-$ABI" -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -239,16 +307,11 @@ for ABI in "${ABI_ARR[@]}"; do
   pushd "$TD_DIR/example/java" >/dev/null
   BDIR="build-android-$ABI"
 
-  # Workaround: FindJNI bei Android (Cross) neutralisieren
-  JAVA_HOME_SAFE="${JAVA_HOME:-}"
-  JNI_INCLUDES=()
-  if [[ -n "$JAVA_HOME_SAFE" ]]; then
-    case "$HOST_OS" in
-      linux*)  JNI_INCLUDES=( "-DJNI_INCLUDE_DIRS=$JAVA_HOME_SAFE/include;$JAVA_HOME_SAFE/include/linux" ) ;;
-      darwin*) JNI_INCLUDES=( "-DJNI_INCLUDE_DIRS=$JAVA_HOME_SAFE/include;$JAVA_HOME_SAFE/include/darwin" ) ;;
-      msys*|mingw*|cygwin*) JNI_INCLUDES=( "-DJNI_INCLUDE_DIRS=$JAVA_HOME_SAFE/include;$JAVA_HOME_SAFE/include/win32" ) ;;
-      *) JNI_INCLUDES=( "-DJNI_INCLUDE_DIRS=$JAVA_HOME_SAFE/include" ) ;;
-    esac
+  # Workaround für CMake FindJNI (JAVA_INCLUDE_PATH{,2}) bei Cross-Compile (Android)
+  JNI_FIX=()
+  if [[ -n "$JAVA_INCLUDE_PATH" && -n "$JAVA_INCLUDE_PATH2" ]]; then
+    JNI_FIX+=(-DJAVA_HOME="$JAVA_HOME" -DJAVA_INCLUDE_PATH="$JAVA_INCLUDE_PATH" -DJAVA_INCLUDE_PATH2="$JAVA_INCLUDE_PATH2")
+    JNI_FIX+=(-DJAVA_AWT_LIBRARY=NotNeeded -DJAVA_JVM_LIBRARY=NotNeeded)
   fi
 
   run "jni-$ABI-configure" cmake -S . -B "$BDIR" -G Ninja \
@@ -266,12 +329,9 @@ for ABI in "${ABI_ARR[@]}"; do
     -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
     -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
     -DOPENSSL_LIBRARIES="$BORINGSSL_DIR/$ABI/lib/libssl.a;$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    -DJAVA_AWT_LIBRARY=NotNeeded \
-    -DJAVA_JVM_LIBRARY=NotNeeded \
-    "${JNI_INCLUDES[@]}" \
+    "${JNI_FIX[@]}" \
     "${ANDROID_OPT[@]}" \
     "${CC_LAUNCH[@]}"
-
   run "jni-$ABI-build-tdjni" cmake --build "$BDIR" --target tdjni "${NINJA_KEEP[@]}"
 
   soPath="$(find "$BDIR" -name 'libtdjni.so' -print -quit || true)"
