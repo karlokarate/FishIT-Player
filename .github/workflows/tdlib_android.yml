@@ -12,7 +12,7 @@ on:
         required: true
         default: "21"
       td_ref:
-        description: "TDLib Ref (leer = Atom-Feed master)"
+        description: "TDLib Ref (leer = master)"
         required: false
         default: ""
       soft_fail:
@@ -45,8 +45,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+        with: { fetch-depth: 1 }
 
       - name: Base tools
         shell: bash
@@ -55,7 +54,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y ca-certificates curl git unzip
 
-      - name: Resolve latest TDLib ref (Atom feed if empty)
+      - name: Resolve TDLib ref (if empty, use master HEAD)
         id: tdref
         shell: bash
         run: |
@@ -71,7 +70,7 @@ jobs:
           fi
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Java (JDK 21)
+      - name: Setup Java (JDK 21 Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -199,6 +198,7 @@ jobs:
             test -f "${BORINGSSL_DIR}/${abi}/lib/libcrypto.a" || { echo "Missing libcrypto.a for ${abi}"; exit 1; }
           done
 
+      # ---------- Run Soft-Fail Script ----------
       - name: Make build script executable
         run: chmod +x "${{ env.TD_BUILD_SCRIPT }}"
 
@@ -210,18 +210,14 @@ jobs:
           API_LEVEL: ${{ inputs.api_level }}
           SOFT_FAIL: ${{ inputs.soft_fail }}
           FINAL_EXIT: ${{ inputs.final_exit }}
-          # >>> WICHTIG: Skript erwartet NDK auch in ENV
-          ANDROID_NDK_ROOT: ${{ steps.ndk.outputs.dir }}
-          NDK: ${{ steps.ndk.outputs.dir }}
         run: |
           set -uo pipefail
-          bash "${TD_BUILD_SCRIPT}" \
-            --ref "${TD_REF:-}" \
-            --abis "${ABIS}" \
-            --api-level "${API_LEVEL}" \
-            --boringssl-dir "${BORINGSSL_DIR}" \
-            --ndk "${{ steps.ndk.outputs.dir }}"
+          NDK_DIR="${{ steps.ndk.outputs.dir }}"
+          export ANDROID_NDK_ROOT="$NDK_DIR"
+          export NDK="$NDK_DIR"
+          bash "${TD_BUILD_SCRIPT}"
 
+      # ---------- Upload Logs & Artefakte (immer) ----------
       - name: Upload logs (always)
         if: always()
         uses: actions/upload-artifact@v4
@@ -241,7 +237,6 @@ jobs:
           name: tdlib-outputs
           path: |
             out/TDLIB_VERSION.txt
-            out/TDLIB_*.txt
             out/*.jar
             out/libs/**/libtdjni.so
           if-no-files-found: warn
