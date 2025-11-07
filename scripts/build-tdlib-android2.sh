@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 # TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL, NDK r27b/r27c)
+# Pfade & Dateinamen strikt gemäß TDLib CMakeLists:
+#  - INSTALL {lib,bin,include}
+#  - CMake-Package: lib/cmake/Td/TdConfig.cmake
+#  - Generator:     bin/td_generate_java_api
+#  - Java-Sources:  TdApi.java, Client.java, Log.java
 
 set -euo pipefail
 
@@ -11,6 +16,7 @@ API_LEVEL="21"
 ANDROID_STL="c++_static"
 TD_REF="${TD_REF:-}"
 
+# ---- CLI-Parsing -------------------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --ndk) NDK="$2"; shift 2 ;;
@@ -41,6 +47,13 @@ OUT_DIR="$ROOT/out"
 JAVA_SRC_DIR="$OUT_DIR/java_src"
 JAVA_CLASSES_DIR="$OUT_DIR/classes"
 
+# CMake-Layout laut TDLib:
+#   lib/, bin/, include/   +   lib/cmake/Td/TdConfig.cmake
+INSTALL_LIBDIR="lib"
+INSTALL_BINDIR="bin"
+INSTALL_INCLUDEDIR="include"
+CMAKEDIR_REL="${INSTALL_LIBDIR}/cmake/Td"
+
 IFS=',' read -ra ABI_ARR <<< "$ABIS"
 for abi in "${ABI_ARR[@]}"; do
   abi="$(echo "$abi" | xargs)"
@@ -64,7 +77,7 @@ echo
 [[ -d "$TD_DIR" ]] || { echo "TD source dir not found: $TD_DIR"; exit 1; }
 pushd "$TD_DIR" >/dev/null
 
-# Ref optional
+# Optionaler Ref-Wechsel (Repo ist vom Workflow bereits ausgecheckt)
 if [[ -n "${TD_REF}" ]]; then
   git fetch --depth=1 origin "$TD_REF"
   git checkout -qf FETCH_HEAD
@@ -73,21 +86,33 @@ COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$COMMIT")"
 echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
-# ---------- (1) Host-Install (ohne JNI) für TdConfig.cmake & Schemas ----------
+# -----------------------------------------------------------------------------
+# (1) HOST-BUILD → vollständige Installation (TdConfig.cmake, Targets, Headers)
+#    WICHTIG: Kein TD_GENERATE_SOURCE_FILES (sonst return() und kein Install)
+#    Pfade gemäß CMakeLists: lib/bin/include & lib/cmake/Td/TdConfig.cmake
+# -----------------------------------------------------------------------------
 JAVA_TD_INSTALL_PREFIX="${TD_DIR}/example/java/td"
 
 cmake -S . -B build-host \
   -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX:PATH="${JAVA_TD_INSTALL_PREFIX}" \
-  -DTD_ENABLE_TESTS=OFF \
-  -DTD_GENERATE_SOURCE_FILES=ON
+  -DCMAKE_INSTALL_LIBDIR="${INSTALL_LIBDIR}" \
+  -DCMAKE_INSTALL_BINDIR="${INSTALL_BINDIR}" \
+  -DCMAKE_INSTALL_INCLUDEDIR="${INSTALL_INCLUDEDIR}" \
+  -DTD_ENABLE_TESTS=OFF
 
 cmake --build build-host
 cmake --build build-host --target install
 
-# ---------- (1b) Generator separat bauen & manuell installieren ----------
-# Einige Revs installieren td_generate_java_api NICHT. Wir bauen ihn getrennt und kopieren ihn.
+# Verifizieren, dass das CMake-Paket an der erwarteten Stelle liegt:
+TD_CMAKE_PACKAGE="${JAVA_TD_INSTALL_PREFIX}/${CMAKEDIR_REL}/TdConfig.cmake"
+[[ -f "$TD_CMAKE_PACKAGE" ]] || { echo "❌ Missing ${TD_CMAKE_PACKAGE}"; exit 1; }
+
+# -----------------------------------------------------------------------------
+# (1b) Java-API-Generator separat bauen und in ${prefix}/bin/ ablegen
+#      (Upstream installiert den Generator nicht automatisch.)
+# -----------------------------------------------------------------------------
 cmake -S . -B build-gen \
   -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
@@ -96,40 +121,47 @@ cmake -S . -B build-gen \
   -DTD_GENERATE_SOURCE_FILES=ON
 
 cmake --build build-gen --target td_generate_java_api
-
-GEN_SRC="$(find build-gen -type f -path '*/td/generate/td_generate_java_api' -o -path '*/td_generate_java_api' | head -n1 || true)"
+GEN_SRC="$(find build-gen -type f -path '*/td/generate/td_generate_java_api' -o -name 'td_generate_java_api' | head -n1 || true)"
 [[ -n "$GEN_SRC" && -f "$GEN_SRC" ]] || { echo "❌ Could not build td_generate_java_api"; exit 1; }
 
-mkdir -p "${JAVA_TD_INSTALL_PREFIX}/bin"
-cp -f "$GEN_SRC" "${JAVA_TD_INSTALL_PREFIX}/bin/td_generate_java_api"
-chmod +x "${JAVA_TD_INSTALL_PREFIX}/bin/td_generate_java_api"
+mkdir -p "${JAVA_TD_INSTALL_PREFIX}/${INSTALL_BINDIR}"
+cp -f "$GEN_SRC" "${JAVA_TD_INSTALL_PREFIX}/${INSTALL_BINDIR}/td_generate_java_api"
+chmod +x "${JAVA_TD_INSTALL_PREFIX}/${INSTALL_BINDIR}/td_generate_java_api"
 
-# ---------- (2) example/java bauen ⇒ generiert TdApi.java ----------
+# -----------------------------------------------------------------------------
+# (2) example/java bauen → generiert TdApi.java, Client.java, Log.java
+#     find_package(Td) via lib/cmake/Td (genau wie im Bauplan)
+# -----------------------------------------------------------------------------
 mkdir -p example/java/build
 pushd example/java/build >/dev/null
 cmake -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_PREFIX_PATH="${JAVA_TD_INSTALL_PREFIX}" \
-  -DTd_DIR="${JAVA_TD_INSTALL_PREFIX}/lib/cmake/Td" \
+  -DTd_DIR="${JAVA_TD_INSTALL_PREFIX}/${CMAKEDIR_REL}" \
   -DCMAKE_INSTALL_PREFIX:PATH="${TD_DIR}/example/java" \
   ..
 cmake --build . --target install
 popd >/dev/null
 
-# ---------- (3) Java-Sources einsammeln ----------
+# -----------------------------------------------------------------------------
+# (3) Java-Sources einsammeln (exakt die offiziellen Dateien)
+# -----------------------------------------------------------------------------
 TDAPI_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/TdApi.java' | head -n1 || true)"
 CLIENT_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Client.java' | head -n1 || true)"
-CACHE_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Cache.java' | head -n1 || true)"
+LOG_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Log.java' | head -n1 || true)"
+
 [[ -n "$TDAPI_SRC" && -f "$TDAPI_SRC" ]] || { echo "❌ Could not locate generated TdApi.java"; exit 1; }
 [[ -n "$CLIENT_SRC" && -f "$CLIENT_SRC" ]] || { echo "❌ Missing Client.java"; exit 1; }
-[[ -n "$CACHE_SRC"  && -f "$CACHE_SRC"  ]] || { echo "❌ Missing Cache.java"; exit 1; }
+[[ -n "$LOG_SRC"    && -f "$LOG_SRC"    ]] || { echo "❌ Missing Log.java"; exit 1; }
 
 mkdir -p "$JAVA_SRC_DIR/org/drinkless/tdlib"
 cp -f "$TDAPI_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java"
 cp -f "$CLIENT_SRC" "$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java"
-cp -f "$CACHE_SRC"  "$JAVA_SRC_DIR/org/drinkless/tdlib/Cache.java"
+cp -f "$LOG_SRC"    "$JAVA_SRC_DIR/org/drinkless/tdlib/Log.java"
 
-# ---------- (4) JNI je ABI ----------
+# -----------------------------------------------------------------------------
+# (4) JNI je ABI (Android) — Ziel 'tdjni' (von TD_ENABLE_JNI abhängig)
+# -----------------------------------------------------------------------------
 for ABI in "${ABI_ARR[@]}"; do
   ABI="$(echo "$ABI" | xargs)"
   BUILD_DIR="build-${ABI}-jni"
@@ -168,7 +200,9 @@ done
 
 popd >/dev/null
 
-# ---------- (5) Java → JAR ----------
+# -----------------------------------------------------------------------------
+# (5) Java → JAR
+# -----------------------------------------------------------------------------
 find "$JAVA_SRC_DIR" -name "*.java" > "$OUT_DIR/java-sources.list"
 javac --release 8 -d "$JAVA_CLASSES_DIR" @"$OUT_DIR/java-sources.list"
 
