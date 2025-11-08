@@ -9,8 +9,8 @@
 #  • Gentle OpenSSL header check for local runs
 
 set -uo pipefail
-SOFT_FAIL="${SOFT_FAIL:-1}"      # 1=tolerant weiterbauen, 0=hart abbrechen
-FINAL_EXIT="${FINAL_EXIT:-1}"    # 1=roter Exit bei Fehlern, 0=grün trotz Fehlern
+SOFT_FAIL="${SOFT_FAIL:-1}"
+FINAL_EXIT="${FINAL_EXIT:-1}"
 
 declare -a BUILD_ERRORS=()
 record_err(){ BUILD_ERRORS+=("$1"); }
@@ -80,22 +80,6 @@ need cmake; need ninja; need javac; need jar; need gperf
 HOST_OS=$(uname | tr '[:upper:]' '[:lower:]')
 case "$(uname -m)" in x86_64|amd64) HOST_ARCH="x86_64" ;; arm64|aarch64) HOST_ARCH="arm64" ;; *) HOST_ARCH="x86_64" ;; esac
 
-# Java/JNI include locations (used by FindJNI on host; Android doesn't need JVM)  # CMakeLists: TD_ENABLE_JNI AND NOT ANDROID
-if [[ -z "${JAVA_HOME:-}" ]]; then
-  if command -v javac >/dev/null 2>&1; then
-    JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
-  fi
-fi
-JAVA_INCLUDE_PATH=""; JAVA_INCLUDE_PATH2=""
-if [[ -n "${JAVA_HOME:-}" ]]; then
-  case "$HOST_OS" in
-    linux*)  JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include/linux" ;;
-    darwin*) JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include/darwin" ;;
-    msys*|mingw*|cygwin*) JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include/win32" ;;
-    *)       JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include" ;;
-  esac
-fi
-
 ROOT="$(pwd)"
 TD_DIR="$ROOT/td"
 OUT_DIR="$ROOT/out"
@@ -121,7 +105,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 PREBUILT_DIR="${NDK}/toolchains/llvm/prebuilt/${HOST_OS}-${HOST_ARCH}"
 [[ -d "$PREBUILT_DIR" ]] || { echo "NDK prebuilt toolchain not found at $PREBUILT_DIR"; exit 1; }
 
-# BoringSSL absolut machen (stabil gegen cwd-Wechsel)
+# BoringSSL absolut machen
 if [[ -d "$BORINGSSL_DIR" ]]; then BORINGSSL_DIR="$(cd "$BORINGSSL_DIR" && pwd)"; fi
 
 IFS=',' read -ra ABI_ARR <<< "$ABIS"
@@ -155,7 +139,6 @@ BoringSSL : $BORINGSSL_DIR
 TD_DIR    : $TD_DIR
 OUT_DIR   : $OUT_DIR
 LOG_FILE  : $LOG_FILE
-JAVA_HOME : ${JAVA_HOME:-<unset>}
 EOF
 
 [[ -d "$TD_DIR" ]] || { echo "TD source dir not found: $TD_DIR"; exit 1; }
@@ -170,12 +153,12 @@ COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$COMMIT")"
 echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
-# Host-Compiler vs. OpenSSL Header (nur Hinweis für lokale Runs)
+# Host: kleiner Header-Check (lokale Runs)
 echo '#include <openssl/ssl.h>' | (cc -E - >/dev/null 2>&1 || echo "[warn] Host OpenSSL headers not visible; ensure libssl-dev is installed")
 
 # ---------------------------------------------------------------------------
 # (1) HOST-BUILD & INSTALL   (liefert tl-parser, td_generate_java_api, TdConfig)
-#     Wichtig: prepare_cross_compiling (Upstream-Target) VOR install → .tlo sicher
+#     prepare_cross_compiling (Upstream-Target) VOR install → .tlo sicher
 # ---------------------------------------------------------------------------
 HOST_INSTALL_PREFIX="$TD_DIR/example/java/td"
 run "host-clean-install-prefix" bash -lc "rm -rf '$HOST_INSTALL_PREFIX'"
@@ -198,12 +181,11 @@ run "host-install" cmake --build build-host --target install "${NINJA_KEEP[@]}"
 TD_HOST_CMAKE="$HOST_INSTALL_PREFIX/$CMAKEDIR_REL/TdConfig.cmake"
 [[ -f "$TD_HOST_CMAKE" ]] || record_err "Missing $TD_HOST_CMAKE"
 
-# Pfade, die example/java erwartet
 GEN_DIR="$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate"
 SCHEME_DST_DIR="$GEN_DIR/scheme"
 mkdir -p "$GEN_DIR" "$SCHEME_DST_DIR"
 
-# Fallbacks: falls Install diese Dateien (abhängig von TDLib-Version) nicht gelegt hat
+# Fallbacks: falls Install bestimmte Files nicht gelegt hat
 if [[ ! -x "$GEN_DIR/td_generate_java_api" ]]; then
   SRC_BIN="$(find build-host -type f -path '*/td/generate/td_generate_java_api' | head -n1 || true)"
   if [[ -n "$SRC_BIN" && -f "$SRC_BIN" ]]; then
@@ -215,14 +197,14 @@ if [[ -x "$GEN_DIR/td_generate_java_api" && ! -x "$HOST_INSTALL_PREFIX/$INSTALL_
   run "compat-copy-tdgen-root" cp -f "$GEN_DIR/td_generate_java_api" "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td_generate_java_api"
 fi
 
-# PHP-Generatoren sicherstellen (einige Upstream-Versionen installieren sie nicht)
+# PHP-Generatoren sicherstellen
 if [[ ! -f "$GEN_DIR/TlDocumentationGenerator.php" || ! -f "$GEN_DIR/JavadocTlDocumentationGenerator.php" ]]; then
   if [[ -d "td/generate" ]]; then
     run "copy-php-generators" rsync -a --include='*/' --include='*.php' --exclude='*' "td/generate/" "$GEN_DIR/"
   fi
 fi
 
-# Schema (tl/tlo) aus Host-Build übernehmen (prepare_cross_compiling erzeugt .tlo)
+# Schema (tl/tlo) aus Host-Build übernehmen
 for f in td_api.tl td_api.tlo; do
   if [[ ! -s "$SCHEME_DST_DIR/$f" ]]; then
     SRC="$(find build-host -type f -path "*/td/generate/scheme/$f" | head -n1 || true)"
@@ -256,7 +238,6 @@ run "java-configure" cmake -S example/java -B example/java/build -G Ninja \
   "${CC_LAUNCH[@]}"
 run "java-install" cmake --build example/java/build --target install "${NINJA_KEEP[@]}"
 
-# Java-Sources einsammeln
 TDAPI_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/TdApi.java' | head -n1 || true)"
 CLIENT_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Client.java' | head -n1 || true)"
 [[ -f "$TDAPI_SRC"  ]] || record_err "Could not locate generated TdApi.java"
