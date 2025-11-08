@@ -12,7 +12,7 @@ on:
         required: true
         default: "21"
       td_ref:
-        description: "TDLib Ref (leer = Atom-Feed master)"
+        description: "TDLib Ref (leer = master HEAD)"
         required: false
         default: ""
       soft_fail:
@@ -54,7 +54,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y ca-certificates curl git unzip
 
-      - name: Resolve latest TDLib ref (Atom feed if empty)
+      - name: Resolve TDLib ref (if empty, use master HEAD)
         id: tdref
         shell: bash
         run: |
@@ -98,7 +98,7 @@ jobs:
         id: restore-ccache
         with:
           path: .ccache
-          key: ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ steps.tdref.outputs.ref }}-v1
+          key: ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ steps.tdref.outputs.ref }}-v2
 
       # ---------- NDK Cache ----------
       - name: Restore NDK
@@ -212,12 +212,15 @@ jobs:
           FINAL_EXIT: ${{ inputs.final_exit }}
         run: |
           set -uo pipefail
+          NDK_DIR="${{ steps.ndk.outputs.dir }}"
+          export ANDROID_NDK_ROOT="$NDK_DIR"
+          export NDK="$NDK_DIR"
           bash "${TD_BUILD_SCRIPT}" \
             --ref "${TD_REF:-}" \
             --abis "${ABIS}" \
             --api-level "${API_LEVEL}" \
             --boringssl-dir "${BORINGSSL_DIR}" \
-            --ndk "${{ steps.ndk.outputs.dir }}"
+            --ndk "${NDK_DIR}"
 
       # ---------- Upload Logs & Artefakte (immer) ----------
       - name: Upload logs (always)
@@ -239,7 +242,6 @@ jobs:
           name: tdlib-outputs
           path: |
             out/TDLIB_VERSION.txt
-            out/TDLIB_*.txt
             out/*.jar
             out/libs/**/libtdjni.so
           if-no-files-found: warn
@@ -248,5 +250,4 @@ jobs:
       - name: ccache stats (always)
         if: always()
         shell: bash
-        run: |
-          ccache -s || true
+        run: ccache -s || true
