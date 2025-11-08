@@ -37,7 +37,6 @@ jobs:
       BORINGSSL_DIR: .third_party/boringssl
       TD_BUILD_SCRIPT: scripts/build-tdlib-android2.sh
       OUT_DIR: out
-      # ccache Konfiguration (global)
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_MAXSIZE: 2G
@@ -64,9 +63,7 @@ jobs:
           if [[ -z "${REF}" ]]; then
             feed_url="https://github.com/tdlib/td/commits/master.atom"
             html="$(curl -fsSL "$feed_url")"
-            REF="$(printf '%s' "$html" \
-              | grep -oE 'https://github.com/tdlib/td/commit/[0-9a-f]+' \
-              | head -n1 | awk -F/ '{print $NF}')"
+            REF="$(printf '%s' "$html" | grep -oE 'https://github.com/tdlib/td/commit/[0-9a-f]+' | head -n1 | awk -F/ '{print $NF}')"
             [[ -n "$REF" ]] || REF="master"
           fi
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
@@ -92,7 +89,6 @@ jobs:
           sudo apt-get install -y cmake ninja-build
           cmake --version; ninja --version; php -v; gperf --version; ccache -V || true
 
-      # ---------- ccache Cache ----------
       - name: Restore ccache
         id: restore-ccache
         uses: actions/cache/restore@v4
@@ -100,7 +96,6 @@ jobs:
           path: .ccache
           key: ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ inputs.api_level }}-${{ inputs.abis }}-${{ steps.tdref.outputs.ref }}-v3
 
-      # ---------- NDK Cache ----------
       - name: Restore NDK
         id: cache-ndk
         uses: actions/cache/restore@v4
@@ -109,7 +104,7 @@ jobs:
           key: ndk-${{ runner.os }}-${{ env.NDK_VERSION }}
 
       - name: Download NDK (if cache miss)
-        if: steps.cache-ndk.outputs.cache-hit != 'true'
+        if: ${{ steps.cache-ndk.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -126,7 +121,6 @@ jobs:
           set -euo pipefail
           echo "dir=$(pwd)/.ndk/android-ndk-${NDK_VERSION}" >> "$GITHUB_OUTPUT"
 
-      # ---------- TDLib Source ----------
       - name: Fetch TDLib sources
         shell: bash
         run: |
@@ -140,7 +134,6 @@ jobs:
           git rev-parse HEAD | tee .TDLIB_COMMIT.txt
           git describe --tags --always --long --dirty=+ | tee .TDLIB_DESCRIBE.txt
 
-      # ---------- BoringSSL Cache ----------
       - name: Restore BoringSSL installs
         id: restore-bssl
         uses: actions/cache/restore@v4
@@ -184,7 +177,7 @@ jobs:
           echo "rebuild=$mismatch" >> "$GITHUB_OUTPUT"
 
       - name: Build BoringSSL (static) if missing or stale
-        if: steps.restore-bssl.outputs.cache-hit != 'true' || steps.check-bssl.outputs.rebuild == '1'
+        if: ${{ steps.restore-bssl.outputs.cache-hit != 'true' || steps.check-bssl.outputs.rebuild == '1' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -207,16 +200,25 @@ jobs:
               -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
               -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
             cmake --build "$BLD" --target crypto ssl -- -k 0
-            cp -f $(find "$BLD" -name libcrypto.a | head -n1) "$INST/lib/libcrypto.a"
-            cp -f $(find "$BLD" -name libssl.a    | head -n1) "$INST/lib/libssl.a"
+            cp -f "$(find "$BLD" -name libcrypto.a | head -n1)" "$INST/lib/libcrypto.a"
+            cp -f "$(find "$BLD" -name libssl.a    | head -n1)" "$INST/lib/libssl.a"
             rsync -a boringssl-src/include/ "$INST/include/"
-            cat > "$INST/stamp.json" <<JSON
-{"abi":"$ABI","android_platform":"${ANDROID_PLATFORM}","ndk":"$(basename "$NDK")"}
-JSON
+            cat > "$INST/stamp.json" <<'EOF'
+            {
+              "abi": "__ABI__",
+              "android_platform": "__ANDROID_PLATFORM__",
+              "ndk": "__NDK__"
+            }
+EOF
+            sed -i \
+              -e "s/__ABI__/$ABI/" \
+              -e "s#__ANDROID_PLATFORM__#${ANDROID_PLATFORM}#" \
+              -e "s#__NDK__#$(basename "$NDK")#" \
+              "$INST/stamp.json"
           done
 
       - name: Save BoringSSL installs
-        if: steps.restore-bssl.outputs.cache-hit != 'true' || steps.check-bssl.outputs.rebuild == '1'
+        if: ${{ steps.restore-bssl.outputs.cache-hit != 'true' || steps.check-bssl.outputs.rebuild == '1' }}
         uses: actions/cache/save@v4
         with:
           path: |
@@ -235,7 +237,6 @@ JSON
             test -f "${BORINGSSL_DIR}/${abi}/stamp.json" || { echo "Missing stamp for ${abi}"; exit 1; }
           done
 
-      # ---------- Run Soft-Fail Script ----------
       - name: Make build script executable
         run: chmod +x "${{ env.TD_BUILD_SCRIPT }}"
 
@@ -259,7 +260,6 @@ JSON
             --boringssl-dir "${BORINGSSL_DIR}" \
             --ndk "${NDK_DIR}"
 
-      # ---------- Upload Logs & Artefakte (immer) ----------
       - name: Upload logs (always)
         if: always()
         uses: actions/upload-artifact@v4
