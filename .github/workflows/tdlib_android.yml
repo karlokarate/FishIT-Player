@@ -89,13 +89,27 @@ jobs:
           sudo apt-get install -y cmake ninja-build
           cmake --version; ninja --version; php -v; gperf --version; ccache -V || true
 
+      # ---- Cache-Key-Teile sanitisieren (keine Kommas) ----
+      - name: Sanitize cache-key parts
+        id: ckey
+        shell: bash
+        env:
+          ABIS: ${{ inputs.abis }}
+        run: |
+          set -euo pipefail
+          # Kommas -> Minus; Leerzeichen entfernen
+          ABIS_SAN="${ABIS//,/ -}"        # erst Komma durch " -" ersetzen, um versehentliche Joiner zu vermeiden
+          ABIS_SAN="${ABIS_SAN// /}"       # Leerzeichen raus
+          ABIS_SAN="${ABIS_SAN//-/\-}"     # stabil, falls Doppel-Minus entstehen
+          echo "abis=${ABIS_SAN}" >> "$GITHUB_OUTPUT"
+
       - name: Restore ccache
         id: restore-ccache
         uses: actions/cache/restore@v4
         with:
           path: .ccache
           key: >
-            ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ inputs.api_level }}-${{ replace(inputs.abis, ',', '-') }}-${{ steps.tdref.outputs.ref }}-v3
+            ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ inputs.api_level }}-${{ steps.ckey.outputs.abis }}-${{ steps.tdref.outputs.ref }}-v3
 
       - name: Restore NDK
         id: cache-ndk
