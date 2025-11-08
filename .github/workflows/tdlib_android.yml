@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       NDK_VERSION: ${{ inputs.ndk_version }}
-      ANDROID_PLATFORM: android-21
+      ANDROID_PLATFORM: android-${{ inputs.api_level }}
       BORINGSSL_DIR: .third_party/boringssl
       TD_BUILD_SCRIPT: scripts/build-tdlib-android2.sh
       OUT_DIR: out
@@ -98,7 +98,7 @@ jobs:
         id: restore-ccache
         with:
           path: .ccache
-          key: ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ steps.tdref.outputs.ref }}-v2
+          key: ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ inputs.api_level }}-${{ inputs.abis }}-${{ steps.tdref.outputs.ref }}-v3
 
       # ---------- NDK Cache ----------
       - name: Restore NDK
@@ -148,10 +148,43 @@ jobs:
           path: |
             ${{ env.BORINGSSL_DIR }}/arm64-v8a
             ${{ env.BORINGSSL_DIR }}/armeabi-v7a
-          key: bssl-install-${{ runner.os }}-${{ env.NDK_VERSION }}-v1
+          key: bssl-install-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ inputs.api_level }}-${{ inputs.abis }}-v2
 
-      - name: Build BoringSSL (static) if missing
-        if: steps.restore-bssl.outputs.cache-hit != 'true'
+      - name: Check BoringSSL stamp & purge if stale
+        id: check-bssl
+        shell: bash
+        run: |
+          set -euo pipefail
+          mismatch=0
+          ABIS="${{ inputs.abis }}"
+          ANDROID_PLATFORM="${{ env.ANDROID_PLATFORM }}"
+          NDK_DIR="${{ steps.ndk.outputs.dir }}"
+          ndk_base="$(basename "$NDK_DIR")"
+          IFS=',' read -ra arr <<< "$ABIS"
+          for abi in "${arr[@]}"; do
+            abi="$(echo "$abi" | xargs)"
+            inst="${BORINGSSL_DIR}/${abi}"
+            if [[ -d "$inst" ]]; then
+              stamp="$inst/stamp.json"
+              if [[ -f "$stamp" ]]; then
+                ap="$(grep -o '"android_platform":[^,]*' "$stamp" | cut -d':' -f2 | tr -d ' "')" || true
+                ndk="$(grep -o '"ndk":[^,]*' "$stamp" | cut -d':' -f2 | tr -d ' "')" || true
+                if [[ "$ap" != "$ANDROID_PLATFORM" || "$ndk" != "$ndk_base" ]]; then
+                  echo "Stale BoringSSL for $abi (want $ANDROID_PLATFORM/$ndk_base, have ${ap:-?}/${ndk:-?})"
+                  rm -rf "$inst"
+                  mismatch=1
+                fi
+              else
+                echo "Missing stamp for $abi → purge"
+                rm -rf "$inst"
+                mismatch=1
+              fi
+            fi
+          done
+          echo "rebuild=$mismatch" >> "$GITHUB_OUTPUT"
+
+      - name: Build BoringSSL (static) if missing or stale
+        if: steps.restore-bssl.outputs.cache-hit != 'true' || steps.check-bssl.outputs.rebuild == '1'
         shell: bash
         run: |
           set -euo pipefail
@@ -177,16 +210,19 @@ jobs:
             cp -f $(find "$BLD" -name libcrypto.a | head -n1) "$INST/lib/libcrypto.a"
             cp -f $(find "$BLD" -name libssl.a    | head -n1) "$INST/lib/libssl.a"
             rsync -a boringssl-src/include/ "$INST/include/"
+            cat > "$INST/stamp.json" <<JSON
+{"abi":"$ABI","android_platform":"${ANDROID_PLATFORM}","ndk":"$(basename "$NDK")"}
+JSON
           done
 
       - name: Save BoringSSL installs
-        if: steps.restore-bssl.outputs.cache-hit != 'true'
+        if: steps.restore-bssl.outputs.cache-hit != 'true' || steps.check-bssl.outputs.rebuild == '1'
         uses: actions/cache/save@v4
         with:
           path: |
             ${{ env.BORINGSSL_DIR }}/arm64-v8a
             ${{ env.BORINGSSL_DIR }}/armeabi-v7a
-          key: bssl-install-${{ runner.os }}-${{ env.NDK_VERSION }}-v1
+          key: bssl-install-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ inputs.api_level }}-${{ inputs.abis }}-v2
 
       - name: Verify BoringSSL presence
         shell: bash
@@ -196,6 +232,7 @@ jobs:
             test -d "${BORINGSSL_DIR}/${abi}/include" || { echo "Missing include for ${abi}"; exit 1; }
             test -f "${BORINGSSL_DIR}/${abi}/lib/libssl.a" || { echo "Missing libssl.a for ${abi}"; exit 1; }
             test -f "${BORINGSSL_DIR}/${abi}/lib/libcrypto.a" || { echo "Missing libcrypto.a for ${abi}"; exit 1; }
+            test -f "${BORINGSSL_DIR}/${abi}/stamp.json" || { echo "Missing stamp for ${abi}"; exit 1; }
           done
 
       # ---------- Run Soft-Fail Script ----------
