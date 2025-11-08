@@ -1,430 +1,290 @@
-#!/usr/bin/env bash
-# -*- coding: utf-8 -*-
-# TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL)
-# Consolidated fixes based on latest logs:
-#  • Ensure Java generator & PHP helpers are installed to example/java/td/bin/td/generate
-#  • Generate non-empty td_api.tlo via host 'prepare_cross_compiling' (before install)
-#  • Robust Android JNI configure (no JVM needed): pass NotNeeded libs + JAVA_INCLUDE_PATH{,2}
-#  • Accept CLI args (--ndk/--abis/--api-level/--boringssl-dir/--ref/--stl/--interpro)
-#  • Correct apt package name for Ninja (ninja-build), correct armv7a triple when copying c++_shared
+name: TDLib – SDK-free Build (Soft-Fail, ccache, BoringSSL static)
 
-set -uo pipefail
-SOFT_FAIL="${SOFT_FAIL:-1}"      # 1=tolerant weiterbauen, 0=hart abbrechen
-FINAL_EXIT="${FINAL_EXIT:-1}"    # 1=roter Exit bei Fehlern, 0=grün trotz Fehlern
+on:
+  workflow_dispatch:
+    inputs:
+      abis:
+        description: "ABIs (Komma-separiert)"
+        required: true
+        default: "arm64-v8a,armeabi-v7a"
+      api_level:
+        description: "Android API-Level"
+        required: true
+        default: "21"
+      td_ref:
+        description: "TDLib Ref (leer = master HEAD)"
+        required: false
+        default: ""
+      soft_fail:
+        description: "Soft-Fail: weiterbauen trotz Fehler (1/0)"
+        required: true
+        default: "1"
+      final_exit:
+        description: "Exitcode 1 bei Fehlern (1=rot, 0=grün)"
+        required: true
+        default: "1"
+      ndk_version:
+        description: "NDK Version (r27c empfohlen)"
+        required: true
+        default: "r27c"
 
-declare -a BUILD_ERRORS=()
-record_err(){ BUILD_ERRORS+=("$1"); }
+jobs:
+  tdlib:
+    runs-on: ubuntu-24.04
+    env:
+      NDK_VERSION: ${{ inputs.ndk_version }}
+      ANDROID_PLATFORM: android-${{ inputs.api_level }}
+      BORINGSSL_DIR: .third_party/boringssl
+      TD_BUILD_SCRIPT: scripts/build-tdlib-android2.sh
+      OUT_DIR: out
+      # ccache Konfiguration (global)
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_MAXSIZE: 2G
 
-group(){ echo "::group::$1"; }
-endgroup(){ echo "::endgroup::"; }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
 
-run(){
-  local what="$1"; shift
-  group "$what"
-  echo "> $what"
-  if "$@"; then
-    echo "[ok] $what"
-  else
-    local rc=$?
-    echo "[fail:$rc] $what"
-    record_err "$what (exit=$rc)"
-    if [[ "$SOFT_FAIL" != "1" ]]; then endgroup; return $rc; fi
-  fi
-  endgroup
-}
+      - name: Base tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y ca-certificates curl git unzip
 
-NINJA_KEEP=( -- -k 0 )
+      - name: Resolve TDLib ref (if empty, use master HEAD)
+        id: tdref
+        shell: bash
+        run: |
+          set -euo pipefail
+          REF="${{ github.event.inputs.td_ref }}"
+          if [[ -z "${REF}" ]]; then
+            feed_url="https://github.com/tdlib/td/commits/master.atom"
+            html="$(curl -fsSL "$feed_url")"
+            REF="$(printf '%s' "$html" \
+              | grep -oE 'https://github.com/tdlib/td/commit/[0-9a-f]+' \
+              | head -n1 | awk -F/ '{print $NF}')"
+            [[ -n "$REF" ]] || REF="master"
+          fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
 
-# --- CLI ---------------------------------------------------------------------
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --ndk)            NDK="$2"; shift 2 ;;
-    --abis)           ABIS="$2"; shift 2 ;;
-    --api-level)      API_LEVEL="$2"; shift 2 ;;
-    --boringssl-dir)  BORINGSSL_DIR="$2"; shift 2 ;;
-    --ref|--td-ref)   TD_REF="$2"; shift 2 ;;
-    --stl)            ANDROID_STL="$2"; shift 2 ;;
-    --interpro)       CMAKE_INTERPRO="$2"; shift 2 ;;
-    *) echo "[warn] unknown arg: $1"; shift ;;
-  esac
-done
+      - name: Setup Java (JDK 21)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
 
-# --- Eingaben / ENV ----------------------------------------------------------
-NDK="${NDK:-${ANDROID_NDK_ROOT:-${ANDROID_NDK_HOME:-}}}"
-BORINGSSL_DIR="${BORINGSSL_DIR:-.third_party/boringssl}"
-ABIS="${ABIS:-arm64-v8a,armeabi-v7a}"
-API_LEVEL="${API_LEVEL:-21}"
-ANDROID_STL="${ANDROID_STL:-c++_static}"
-TD_REF="${TD_REF:-}"
-CMAKE_INTERPRO="${CMAKE_INTERPRO:-0}"
+      - name: Install build deps (CMake, Ninja, PHP, gperf, rsync, OpenSSL, zlib, ccache)
+        id: tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y gpg lsb-release software-properties-common php build-essential gperf rsync libssl-dev zlib1g-dev ccache
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc \
+            | sudo gpg --dearmor -o /etc/apt/keyrings/kitware-archive-keyring.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" \
+            | sudo tee /etc/apt/sources.list.d/kitware.list
+          sudo apt-get update -y
+          sudo apt-get install -y cmake ninja-build
+          cmake --version; ninja --version; php -v; gperf --version; ccache -V || true
 
-# Optional: fehlende Tools auf Ubuntu-Runnern automatisch installieren
-ensure() {
-  if command -v apt-get >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
-    for pkg in "$@"; do
-      local apt_pkg="$pkg"
-      [[ "$pkg" == "ninja" ]] && apt_pkg="ninja-build"
-      if ! command -v "$pkg" >/dev/null 2>&1; then
-        echo "[ensure] installing $apt_pkg ..."
-        sudo apt-get update -y && sudo apt-get install -y "$apt_pkg"
-      fi
-    done
-  fi
-}
-ensure cmake ninja gperf ccache || true
+      # ---------- ccache Cache ----------
+      - name: Restore ccache
+        uses: actions/cache@v4
+        id: restore-ccache
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ inputs.api_level }}-${{ inputs.abis }}-${{ steps.tdref.outputs.ref }}-v3
 
-# Tool-Checks
-need(){ command -v "$1" >/dev/null 2>&1 || { echo "Missing tool: $1"; exit 1; }; }
-need cmake; need ninja; need javac; need jar; need gperf
+      # ---------- NDK Cache ----------
+      - name: Restore NDK
+        uses: actions/cache@v4
+        id: cache-ndk
+        with:
+          path: .ndk/android-ndk-${{ env.NDK_VERSION }}
+          key: ndk-${{ runner.os }}-${{ env.NDK_VERSION }}
 
-HOST_OS=$(uname | tr '[:upper:]' '[:lower:]')
-case "$(uname -m)" in x86_64|amd64) HOST_ARCH="x86_64" ;; arm64|aarch64) HOST_ARCH="arm64" ;; *) HOST_ARCH="x86_64" ;; esac
+      - name: Download NDK (if cache miss)
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .ndk
+          url="https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
+          curl -fSLo .ndk/ndk.zip "$url"
+          unzip -q .ndk/ndk.zip -d .ndk
+          rm .ndk/ndk.zip
 
-# Java/JNI include locations (for FindJNI compatibility)
-if [[ -z "${JAVA_HOME:-}" ]]; then
-  if command -v javac >/dev/null 2>&1; then
-    JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
-  fi
-fi
-JAVA_INCLUDE_PATH=""; JAVA_INCLUDE_PATH2=""
-if [[ -n "${JAVA_HOME:-}" ]]; then
-  case "$HOST_OS" in
-    linux*)  JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include/linux" ;;
-    darwin*) JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include/darwin" ;;
-    msys*|mingw*|cygwin*) JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include/win32" ;;
-    *)       JAVA_INCLUDE_PATH="$JAVA_HOME/include"; JAVA_INCLUDE_PATH2="$JAVA_HOME/include" ;;
-  esac
-fi
+      - name: Set NDK path
+        id: ndk
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "dir=$(pwd)/.ndk/android-ndk-${NDK_VERSION}" >> "$GITHUB_OUTPUT"
 
-ROOT="$(pwd)"
-TD_DIR="$ROOT/td"
-OUT_DIR="$ROOT/out"
-JAVA_SRC_DIR="$OUT_DIR/java_src"
-JAVA_CLASSES_DIR="$OUT_DIR/classes"
-LOG_DIR="$OUT_DIR/logs"
-LOG_FILE="$LOG_DIR/build.log"
-REPORT_TXT="$LOG_DIR/summary.txt"
-REPORT_JSON="$LOG_DIR/summary.json"
+      # ---------- TDLib Source ----------
+      - name: Fetch TDLib sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf td && mkdir -p td
+          git init td
+          cd td
+          git remote add origin https://github.com/tdlib/td.git
+          git fetch --depth=1 origin "${{ steps.tdref.outputs.ref }}"
+          git checkout -qf FETCH_HEAD
+          git rev-parse HEAD | tee .TDLIB_COMMIT.txt
+          git describe --tags --always --long --dirty=+ | tee .TDLIB_DESCRIBE.txt
 
-INSTALL_LIBDIR="lib"
-INSTALL_BINDIR="bin"
-INSTALL_INCLUDEDIR="include"
-CMAKEDIR_REL="${INSTALL_LIBDIR}/cmake/Td"
+      # ---------- BoringSSL Cache ----------
+      - name: Restore BoringSSL installs
+        id: restore-bssl
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.BORINGSSL_DIR }}/arm64-v8a
+            ${{ env.BORINGSSL_DIR }}/armeabi-v7a
+          key: bssl-install-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ inputs.api_level }}-${{ inputs.abis }}-v2
 
-rm -rf "$OUT_DIR"
-mkdir -p "$OUT_DIR/libs" "$JAVA_SRC_DIR" "$JAVA_CLASSES_DIR" "$LOG_DIR"
+      - name: Check BoringSSL stamp & purge if stale
+        id: check-bssl
+        shell: bash
+        run: |
+          set -euo pipefail
+          mismatch=0
+          ABIS="${{ inputs.abis }}"
+          ANDROID_PLATFORM="${{ env.ANDROID_PLATFORM }}"
+          NDK_DIR="${{ steps.ndk.outputs.dir }}"
+          ndk_base="$(basename "$NDK_DIR")"
+          IFS=',' read -ra arr <<< "$ABIS"
+          for abi in "${arr[@]}"; do
+            abi="$(echo "$abi" | xargs)"
+            inst="${BORINGSSL_DIR}/${abi}"
+            if [[ -d "$inst" ]]; then
+              stamp="$inst/stamp.json"
+              if [[ -f "$stamp" ]]; then
+                ap="$(grep -o '"android_platform":[^,]*' "$stamp" | cut -d':' -f2 | tr -d ' "')" || true
+                ndk="$(grep -o '"ndk":[^,]*' "$stamp" | cut -d':' -f2 | tr -d ' "')" || true
+                if [[ "$ap" != "$ANDROID_PLATFORM" || "$ndk" != "$ndk_base" ]]; then
+                  echo "Stale BoringSSL for $abi (want $ANDROID_PLATFORM/$ndk_base, have ${ap:-?}/${ndk:-?})"
+                  rm -rf "$inst"
+                  mismatch=1
+                fi
+              else
+                echo "Missing stamp for $abi → purge"
+                rm -rf "$inst"
+                mismatch=1
+              fi
+            fi
+          done
+          echo "rebuild=$mismatch" >> "$GITHUB_OUTPUT"
 
-# Globales Logging
-exec > >(tee -a "$LOG_FILE") 2>&1
+      - name: Build BoringSSL (static) if missing or stale
+        if: steps.restore-bssl.outputs.cache-hit != 'true' || steps.check-bssl.outputs.rebuild == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          NDK="${{ steps.ndk.outputs.dir }}"
+          rm -rf boringssl-src
+          git clone --depth=1 https://boringssl.googlesource.com/boringssl boringssl-src
+          mkdir -p "${BORINGSSL_DIR}"
+          for ABI in arm64-v8a armeabi-v7a; do
+            case "$ABI" in
+              arm64-v8a)  TRIPLE=aarch64-linux-android ;;
+              armeabi-v7a) TRIPLE=armv7a-linux-androideabi ;;
+            esac
+            BLD="boringssl-build-$ABI"
+            INST="${BORINGSSL_DIR}/$ABI"
+            rm -rf "$BLD" "$INST"; mkdir -p "$BLD" "$INST/lib" "$INST/include"
+            cmake -G Ninja -S boringssl-src -B "$BLD" \
+              -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+              -DANDROID_ABI="$ABI" \
+              -DANDROID_PLATFORM="${ANDROID_PLATFORM}" \
+              -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+            cmake --build "$BLD" --target crypto ssl -- -k 0
+            cp -f $(find "$BLD" -name libcrypto.a | head -n1) "$INST/lib/libcrypto.a"
+            cp -f $(find "$BLD" -name libssl.a    | head -n1) "$INST/lib/libssl.a"
+            rsync -a boringssl-src/include/ "$INST/include/"
+            cat > "$INST/stamp.json" <<JSON
+{"abi":"$ABI","android_platform":"${ANDROID_PLATFORM}","ndk":"$(basename "$NDK")"}
+JSON
+          done
 
-[[ -n "$NDK" && -d "$NDK" ]] || { echo "NDK not found at: ${NDK:-<empty>}"; exit 1; }
-PREBUILT_DIR="${NDK}/toolchains/llvm/prebuilt/${HOST_OS}-${HOST_ARCH}"
-[[ -d "$PREBUILT_DIR" ]] || { echo "NDK prebuilt toolchain not found at $PREBUILT_DIR"; exit 1; }
+      - name: Save BoringSSL installs
+        if: steps.restore-bssl.outputs.cache-hit != 'true' || steps.check-bssl.outputs.rebuild == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.BORINGSSL_DIR }}/arm64-v8a
+            ${{ env.BORINGSSL_DIR }}/armeabi-v7a
+          key: bssl-install-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ inputs.api_level }}-${{ inputs.abis }}-v2
 
-# BoringSSL absolut machen (stabil gegen cwd-Wechsel)
-if [[ -d "$BORINGSSL_DIR" ]]; then
-  BORINGSSL_DIR="$(cd "$BORINGSSL_DIR" && pwd)"
-fi
+      - name: Verify BoringSSL presence
+        shell: bash
+        run: |
+          set -euo pipefail
+          for abi in arm64-v8a armeabi-v7a; do
+            test -d "${BORINGSSL_DIR}/${abi}/include" || { echo "Missing include for ${abi}"; exit 1; }
+            test -f "${BORINGSSL_DIR}/${abi}/lib/libssl.a" || { echo "Missing libssl.a for ${abi}"; exit 1; }
+            test -f "${BORINGSSL_DIR}/${abi}/lib/libcrypto.a" || { echo "Missing libcrypto.a for ${abi}"; exit 1; }
+            test -f "${BORINGSSL_DIR}/${abi}/stamp.json" || { echo "Missing stamp for ${abi}"; exit 1; }
+          done
 
-IFS=',' read -ra ABI_ARR <<< "$ABIS"
+      # ---------- Run Soft-Fail Script ----------
+      - name: Make build script executable
+        run: chmod +x "${{ env.TD_BUILD_SCRIPT }}"
 
-# ccache (optional)
-if command -v ccache >/dev/null 2>&1; then
-  export CCACHE_DIR="${CCACHE_DIR:-$ROOT/.ccache}"
-  export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$ROOT}"
-  export CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-2G}"
-  echo "[ccache] dir=$CCACHE_DIR basedir=$CCACHE_BASEDIR max=$CCACHE_MAXSIZE"
-  CC_LAUNCH=( -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache )
-else
-  CC_LAUNCH=()
-  echo "[ccache] not found (ok)"
-fi
+      - name: Build TDLib (Soft-Fail, logs, summary)
+        shell: bash
+        env:
+          TD_REF: ${{ steps.tdref.outputs.ref }}
+          ABIS: ${{ inputs.abis }}
+          API_LEVEL: ${{ inputs.api_level }}
+          SOFT_FAIL: ${{ inputs.soft_fail }}
+          FINAL_EXIT: ${{ inputs.final_exit }}
+        run: |
+          set -uo pipefail
+          NDK_DIR="${{ steps.ndk.outputs.dir }}"
+          export ANDROID_NDK_ROOT="$NDK_DIR"
+          export NDK="$NDK_DIR"
+          bash "${TD_BUILD_SCRIPT}" \
+            --ref "${TD_REF:-}" \
+            --abis "${ABIS}" \
+            --api-level "${API_LEVEL}" \
+            --boringssl-dir "${BORINGSSL_DIR}" \
+            --ndk "${NDK_DIR}"
 
-# IPO/LTO für Android-Builds (optional)
-if [[ "$CMAKE_INTERPRO" == "1" ]]; then
-  ANDROID_OPT=(-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON)
-else
-  ANDROID_OPT=()
-fi
+      # ---------- Upload Logs & Artefakte (immer) ----------
+      - name: Upload logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-logs
+          path: |
+            out/logs/build.log
+            out/logs/summary.txt
+            out/logs/summary.json
+          if-no-files-found: warn
+          retention-days: 14
 
-cat <<EOF
-== TDLib build: JNI + Java bindings (SDK-free) ==
-NDK       : $NDK
-STL       : $ANDROID_STL
-API-Level : android-$API_LEVEL
-ABIs      : $ABIS
-BoringSSL : $BORINGSSL_DIR
-TD_DIR    : $TD_DIR
-OUT_DIR   : $OUT_DIR
-LOG_FILE  : $LOG_FILE
-JAVA_HOME : ${JAVA_HOME:-<unset>}
-EOF
+      - name: Upload outputs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-outputs
+          path: |
+            out/TDLIB_VERSION.txt
+            out/*.jar
+            out/libs/**/libtdjni.so
+          if-no-files-found: warn
+          retention-days: 14
 
-[[ -d "$TD_DIR" ]] || { echo "TD source dir not found: $TD_DIR"; exit 1; }
-pushd "$TD_DIR" >/dev/null
-
-# Optional: auf bestimmten Ref bauen
-if [[ -n "$TD_REF" ]]; then
-  run "git-fetch-ref" git fetch --depth=1 origin "$TD_REF"
-  run "git-checkout-ref" git checkout -qf FETCH_HEAD
-fi
-COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
-DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$COMMIT")"
-echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
-
-# ---------------------------------------------------------------------------
-# (1) HOST-BUILD & INSTALL
-#     Wichtig: 'prepare_cross_compiling' vor 'install' → erzeugt td_api.tlo im Buildbaum
-#     TD_ENABLE_JNI=ON sorgt dafür, dass Generator + PHP + Schemas zur Install kommen.
-# ---------------------------------------------------------------------------
-HOST_INSTALL_PREFIX="$TD_DIR/example/java/td"
-
-run "host-configure" cmake -S . -B build-host -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX:PATH="$HOST_INSTALL_PREFIX" \
-  -DCMAKE_INSTALL_LIBDIR="$INSTALL_LIBDIR" \
-  -DCMAKE_INSTALL_BINDIR="$INSTALL_BINDIR" \
-  -DCMAKE_INSTALL_INCLUDEDIR="$INSTALL_INCLUDEDIR" \
-  -DTD_ENABLE_TESTS=OFF \
-  -DTD_ENABLE_JNI=ON \
-  "${CC_LAUNCH[@]}"
-
-run "host-build" cmake --build build-host "${NINJA_KEEP[@]}"
-# erzeugt u.a. td/generate/scheme/td_api.tlo im Buildbaum
-run "host-prepare_cross_compiling" cmake --build build-host --target prepare_cross_compiling "${NINJA_KEEP[@]}"
-run "host-install" cmake --build build-host --target install "${NINJA_KEEP[@]}"
-
-TD_HOST_CMAKE="$HOST_INSTALL_PREFIX/$CMAKEDIR_REL/TdConfig.cmake"
-[[ -f "$TD_HOST_CMAKE" ]] || record_err "Missing $TD_HOST_CMAKE"
-
-# Pfade, die example/java erwartet
-GEN_DIR="$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate"
-SCHEME_DST_DIR="$GEN_DIR/scheme"
-mkdir -p "$GEN_DIR" "$SCHEME_DST_DIR"
-
-# Fallbacks: falls Install die Dateien nicht gelegt hat (abweichende TDLib-Versionen)
-if [[ ! -x "$GEN_DIR/td_generate_java_api" ]]; then
-  SRC_BIN="$(find build-host -type f -path '*/td/generate/td_generate_java_api' | head -n1 || true)"
-  if [[ -n "$SRC_BIN" && -f "$SRC_BIN" ]]; then
-    run "fallback-copy-tdgen" cp -f "$SRC_BIN" "$GEN_DIR/td_generate_java_api"
-    chmod +x "$GEN_DIR/td_generate_java_api" || true
-  fi
-fi
-# Binärfile auch direkt unter bin/ bereitstellen (manche Skripte referenzieren ohne /td/generate)
-if [[ -x "$GEN_DIR/td_generate_java_api" && ! -x "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td_generate_java_api" ]]; then
-  run "compat-copy-tdgen-root" cp -f "$GEN_DIR/td_generate_java_api" "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td_generate_java_api"
-fi
-
-# PHP-Generatoren sicherstellen
-if [[ ! -f "$GEN_DIR/TlDocumentationGenerator.php" || ! -f "$GEN_DIR/JavadocTlDocumentationGenerator.php" ]]; then
-  if [[ -d "td/generate" ]]; then
-    run "copy-php-generators" rsync -a --include='*/' --include='*.php' --exclude='*' "td/generate/" "$GEN_DIR/"
-  fi
-fi
-
-# Schema (tl/tlo) sicherstellen
-if [[ ! -f "$SCHEME_DST_DIR/td_api.tl" ]]; then
-  if [[ -f "td/generate/scheme/td_api.tl" ]]; then
-    run "copy-schema-tl" cp -f "td/generate/scheme/td_api.tl" "$SCHEME_DST_DIR/td_api.tl"
-  else
-    SRC_TL="$(find build-host -type f -path '*/td/generate/scheme/td_api.tl' | head -n1 || true)"
-    [[ -n "$SRC_TL" && -f "$SRC_TL" ]] && run "copy-schema-tl(host)" cp -f "$SRC_TL" "$SCHEME_DST_DIR/td_api.tl"
-  fi
-fi
-
-# tlo aus dem Host-Build kopieren (nicht leer!)
-if [[ ! -s "$SCHEME_DST_DIR/td_api.tlo" ]]; then
-  SRC_TLO="$(find build-host -type f -path '*/td/generate/scheme/td_api.tlo' | head -n1 || true)"
-  if [[ -n "$SRC_TLO" && -f "$SRC_TLO" ]]; then
-    run "copy-schema-tlo(host)" cp -f "$SRC_TLO" "$SCHEME_DST_DIR/td_api.tlo"
-  else
-    # letzter Fallback: falls vorhanden aus build-gen
-    SRC_TLO_GEN="$(find build-gen -type f -path '*/td/generate/scheme/td_api.tlo' | head -n1 || true)"
-    [[ -n "$SRC_TLO_GEN" && -f "$SRC_TLO_GEN" ]] && run "copy-schema-tlo(gen)" cp -f "$SRC_TLO_GEN" "$SCHEME_DST_DIR/td_api.tlo"
-  fi
-fi
-
-# Sichtbarmachen des Generators
-export PATH="$HOST_INSTALL_PREFIX/$INSTALL_BINDIR:$PATH"
-
-# Sanity-Listing (hilft Debug)
-for must in \
-  "$HOST_INSTALL_PREFIX/$CMAKEDIR_REL/TdConfig.cmake" \
-  "$GEN_DIR/td_generate_java_api" \
-  "$GEN_DIR/TlDocumentationGenerator.php" \
-  "$SCHEME_DST_DIR/td_api.tl" \
-  "$SCHEME_DST_DIR/td_api.tlo"; do
-  [[ -e "$must" ]] || record_err "missing $must"
-done
-ls -l "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR" || true
-ls -l "$GEN_DIR" || true
-ls -l "$SCHEME_DST_DIR" || true
-
-# ---------------------------------------------------------------------------
-# (2) example/java: Java-Install → erzeugt TdApi.java, Client.java
-# ---------------------------------------------------------------------------
-run "java-configure" cmake -S example/java -B example/java/build -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_PREFIX_PATH="$HOST_INSTALL_PREFIX" \
-  -DTd_DIR="$HOST_INSTALL_PREFIX/$CMAKEDIR_REL" \
-  -DCMAKE_INSTALL_PREFIX:PATH="$TD_DIR/example/java" \
-  "${CC_LAUNCH[@]}"
-
-run "java-install" cmake --build example/java/build --target install "${NINJA_KEEP[@]}"
-
-# Java-Sources einsammeln (Log.java ggf. nicht mehr vorhanden)
-TDAPI_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/TdApi.java' | head -n1 || true)"
-CLIENT_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Client.java' | head -n1 || true)"
-[[ -f "$TDAPI_SRC"  ]] || record_err "Could not locate generated TdApi.java"
-[[ -f "$CLIENT_SRC" ]] || record_err "Missing Client.java"
-
-run "copy-java-sources" bash -c "mkdir -p '$JAVA_SRC_DIR/org/drinkless/tdlib' && \
-  { [[ -f '$TDAPI_SRC'  ]] && cp -f '$TDAPI_SRC'  '$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java'  || true; } && \
-  { [[ -f '$CLIENT_SRC' ]] && cp -f '$CLIENT_SRC' '$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java' || true; }"
-
-# ---------------------------------------------------------------------------
-# (3) PRO-ABI: Android-TDLib (Core) bauen & installieren, danach tdjni je ABI
-# ---------------------------------------------------------------------------
-for ABI in "${ABI_ARR[@]}"; do
-  ABI="$(echo "$ABI" | xargs)"
-  [[ -d "$BORINGSSL_DIR/$ABI/include" ]] || record_err "BoringSSL include missing for $ABI"
-  [[ -f "$BORINGSSL_DIR/$ABI/lib/libcrypto.a" ]] || record_err "BoringSSL libcrypto.a missing for $ABI"
-  [[ -f "$BORINGSSL_DIR/$ABI/lib/libssl.a"    ]] || record_err "BoringSSL libssl.a missing for $ABI"
-
-  ANDROID_PREFIX="$TD_DIR/example/java/td-android-$ABI"
-
-  run "core-$ABI-configure" cmake -S . -B "build-td-android-$ABI" -G Ninja \
-    -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DANDROID_ABI="$ABI" \
-    -DANDROID_PLATFORM="android-$API_LEVEL" \
-    -DOPENSSL_USE_STATIC_LIBS=ON \
-    -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
-    -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
-    -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    -DOPENSSL_LIBRARIES="$BORINGSSL_DIR/$ABI/lib/libssl.a;$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    -DCMAKE_INSTALL_PREFIX:PATH="$ANDROID_PREFIX" \
-    "${ANDROID_OPT[@]}" \
-    "${CC_LAUNCH[@]}"
-
-  run "core-$ABI-build" cmake --build "build-td-android-$ABI" "${NINJA_KEEP[@]}"
-  run "core-$ABI-install" cmake --build "build-td-android-$ABI" --target install "${NINJA_KEEP[@]}"
-
-  ANDROID_TD_CMAKE_DIR="$ANDROID_PREFIX/$CMAKEDIR_REL"
-  [[ -f "$ANDROID_TD_CMAKE_DIR/TdConfig.cmake" ]] || record_err "Missing Android TdConfig for $ABI"
-
-  pushd "$TD_DIR/example/java" >/dev/null
-  BDIR="build-android-$ABI"
-
-  JNI_FIX=()
-  if [[ -n "$JAVA_INCLUDE_PATH" && -n "$JAVA_INCLUDE_PATH2" ]]; then
-    JNI_FIX+=(-DJAVA_HOME="$JAVA_HOME" -DJAVA_INCLUDE_PATH="$JAVA_INCLUDE_PATH" -DJAVA_INCLUDE_PATH2="$JAVA_INCLUDE_PATH2")
-    JNI_FIX+=(-DJAVA_AWT_LIBRARY=NotNeeded -DJAVA_JVM_LIBRARY=NotNeeded)
-  fi
-
-  run "jni-$ABI-configure" cmake -S . -B "$BDIR" -G Ninja \
-    -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DANDROID_ABI="$ABI" \
-    -DANDROID_PLATFORM="android-$API_LEVEL" \
-    -DANDROID_STL="$ANDROID_STL" \
-    -DTd_DIR="$ANDROID_TD_CMAKE_DIR" \
-    -DCMAKE_PREFIX_PATH="$ANDROID_PREFIX" \
-    -DTD_ENABLE_JNI=ON \
-    -DOPENSSL_USE_STATIC_LIBS=ON \
-    -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
-    -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
-    -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    -DOPENSSL_LIBRARIES="$BORINGSSL_DIR/$ABI/lib/libssl.a;$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    "${JNI_FIX[@]}" \
-    "${ANDROID_OPT[@]}" \
-    "${CC_LAUNCH[@]}"
-
-  run "jni-$ABI-build-tdjni" cmake --build "$BDIR" --target tdjni "${NINJA_KEEP[@]}"
-
-  soPath="$(find "$BDIR" -name 'libtdjni.so' -print -quit || true)"
-  if [[ -f "$soPath" ]]; then
-    run "jni-$ABI-copy-so" bash -c "mkdir -p '$OUT_DIR/libs/$ABI' && cp -f '$soPath' '$OUT_DIR/libs/$ABI/' && \
-      '$PREBUILT_DIR/bin/llvm-strip' --strip-unneeded '$OUT_DIR/libs/$ABI/libtdjni.so' || true"
-    if [[ "$ANDROID_STL" == "c++_shared" ]]; then
-      case "$ABI" in
-        arm64-v8a)  TRIPLE="aarch64-linux-android" ;;
-        armeabi-v7a) TRIPLE="armv7a-linux-androideabi" ;;
-        x86)         TRIPLE="i686-linux-android" ;;
-        x86_64)      TRIPLE="x86_64-linux-android" ;;
-      esac
-      SHARED_STL="$PREBUILT_DIR/sysroot/usr/lib/$TRIPLE/libc++_shared.so"
-      [[ -f "$SHARED_STL" ]] && run "jni-$ABI-copy-stl" cp -f "$SHARED_STL" "$OUT_DIR/libs/$ABI/"
-    fi
-  else
-    record_err "libtdjni.so not found for $ABI"
-  fi
-  popd >/dev/null
-done
-
-popd >/dev/null  # aus $TD_DIR
-
-# ---------------------------------------------------------------------------
-# (4) Optional: Java → JAR packen (nur wenn Quellen vorhanden)
-# ---------------------------------------------------------------------------
-run "java-jar-sources-list" bash -c "find '$JAVA_SRC_DIR' -name '*.java' > '$OUT_DIR/java-sources.list' || true"
-if [[ -s "$OUT_DIR/java-sources.list" ]]; then
-  run "java-javac" javac --release 8 -d "$JAVA_CLASSES_DIR" @"$OUT_DIR/java-sources.list"
-  DESC="local"; if [[ -d "$TD_DIR/.git" ]]; then DESC="$(git -C "$TD_DIR" describe --tags --always --long --dirty=+ 2>/dev/null || git -C "$TD_DIR" rev-parse --short HEAD)"; fi
-  JAR_PATH="$OUT_DIR/tdlib-${DESC}.jar"
-  run "java-jar-pack" jar cf "$JAR_PATH" -C "$JAVA_CLASSES_DIR" .
-else
-  record_err "TdApi.java not generated; skip javac/jar"
-fi
-
-# ---------------------------------------------------------------------------
-# (5) Zusammenfassung
-# ---------------------------------------------------------------------------
-ERR_COUNT=${#BUILD_ERRORS[@]}
-{
-  echo "==== Build Summary ===="
-  echo "Date: $(date -Iseconds)"
-  echo "TD Commit: $DESCRIBE"
-  echo "NDK: $NDK"
-  echo "ABIs: $ABIS"
-  echo "Errors: $ERR_COUNT"
-  if ((ERR_COUNT)); then
-    printf ' - %s\n' "${BUILD_ERRORS[@]}"
-  else
-    echo "No errors recorded."
-  fi
-} | tee "$REPORT_TXT"
-
-{
-  echo '{'
-  printf '  "date": "%s",\n' "$(date -Iseconds)"
-  printf '  "td_commit": "%s",\n' "$DESCRIBE"
-  printf '  "ndk": "%s",\n' "$NDK"
-  printf '  "abis": "%s",\n' "$ABIS"
-  printf '  "errors": ['
-  if ((ERR_COUNT)); then
-    for i in "${!BUILD_ERRORS[@]}"; do
-      printf '%s{"msg": %q}' "$([[ $i -gt 0 ]] && echo ',')" "${BUILD_ERRORS[$i]}"
-    done
-  fi
-  echo ']'
-  echo '}'
-} > "$REPORT_JSON"
-
-cat <<EOF
-== Artifacts ==
-$OUT_DIR/TDLIB_VERSION.txt
-$OUT_DIR/libs/*/libtdjni.so
-$OUT_DIR/tdlib-*.jar
-$OUT_DIR/logs/build.log
-$OUT_DIR/logs/summary.txt
-$OUT_DIR/logs/summary.json
-EOF
-
-if ((ERR_COUNT)) && [[ "$FINAL_EXIT" != "0" ]]; then
-  exit 1
-else
-  exit 0
-fi
+      - name: ccache stats (always)
+        if: always()
+        shell: bash
+        run: ccache -s || true
