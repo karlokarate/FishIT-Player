@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 # TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL)
-# Hardened vs. cache & CMake upstream:
-#  • Clean host install prefix to avoid stale generators/schemas
-#  • Host: prepare_cross_compiling BEFORE install (guaranteed non-empty .tlo)
-#  • Android: link BoringSSL via OPENSSL_*; host uses system OpenSSL
-#  • LTO knobs: TD_ENABLE_LTO=ON when CMAKE_INTERPRO=1 (upstream option)
-#  • Gentle OpenSSL header check for local runs
+# Validated against upstream CMakeLists requirements:
+#   - Host requires OpenSSL + Zlib; early return otherwise (we ensure via apt). 
+#   - prepare_cross_compiling must run BEFORE install so td_api.tlo exists.
+#   - For Android, we link BoringSSL using OPENSSL_* variables.
+#   - LTO: use TD_ENABLE_LTO when requested.
+# See upstream CMake for details. 
 
 set -uo pipefail
-SOFT_FAIL="${SOFT_FAIL:-1}"
-FINAL_EXIT="${FINAL_EXIT:-1}"
+SOFT_FAIL="${SOFT_FAIL:-1}"      # 1=tolerant weiterbauen, 0=hart abbrechen
+FINAL_EXIT="${FINAL_EXIT:-1}"    # 1=roter Exit bei Fehlern, 0=grün trotz Fehlern
 
 declare -a BUILD_ERRORS=()
 record_err(){ BUILD_ERRORS+=("$1"); }
@@ -58,7 +58,7 @@ ANDROID_STL="${ANDROID_STL:-c++_static}"
 TD_REF="${TD_REF:-}"
 CMAKE_INTERPRO="${CMAKE_INTERPRO:-0}"
 
-# Optional: fehlende Tools auf Ubuntu-Runnern automatisch installieren
+# Optional: fehlende Tools automatisch installieren
 ensure() {
   if command -v apt-get >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
     for pkg in "$@"; do
@@ -153,7 +153,7 @@ COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$COMMIT")"
 echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
-# Host: kleiner Header-Check (lokale Runs)
+# Host: kleiner Header-Check
 echo '#include <openssl/ssl.h>' | (cc -E - >/dev/null 2>&1 || echo "[warn] Host OpenSSL headers not visible; ensure libssl-dev is installed")
 
 # ---------------------------------------------------------------------------
@@ -293,7 +293,7 @@ for ABI in "${ABI_ARR[@]}"; do
     -DTd_DIR="$ANDROID_TD_CMAKE_DIR" \
     -DCMAKE_PREFIX_PATH="$ANDROID_PREFIX" \
     -DTD_ENABLE_JNI=ON \
-    -DOPENSSL_USE_STATIC_LIBS=ON \
+    -DOPENSSL_USE_STATIC_LIBRARIES=ON \
     -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
     -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
     -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
