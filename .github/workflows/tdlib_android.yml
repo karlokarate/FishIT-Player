@@ -210,10 +210,8 @@ jobs:
             cp -f "$(find "$BLD" -name libcrypto.a | head -n1)" "$INST/lib/libcrypto.a"
             cp -f "$(find "$BLD" -name libssl.a | head -n1)" "$INST/lib/libssl.a"
             rsync -a boringssl-src/include/ "$INST/include/"
-            cat > "$INST/stamp.json" <<'EOF'
-            { "abi": "__ABI__", "android_platform": "__ANDROID_PLATFORM__", "ndk": "__NDK__" }
-EOF
-            sed -i -e "s/__ABI__/$ABI/" -e "s#__ANDROID_PLATFORM__#${ANDROID_PLATFORM}#" -e "s#__NDK__#$(basename "$NDK")#" "$INST/stamp.json"
+            printf '{"abi":"%s","android_platform":"%s","ndk":"%s"}
+' "$ABI" "${ANDROID_PLATFORM}" "$(basename "$NDK")" > "$INST/stamp.json"
           done
 
       - name: Save BoringSSL installs
@@ -267,6 +265,14 @@ EOF
             out/libs/**/libtdjni.so
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Save ccache (always)
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: >
+            ccache-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ inputs.api_level }}-${{ steps.ckey.outputs.abis }}-${{ steps.tdref.outputs.ref }}-v3
 
       - name: ccache stats (always)
         if: always()
