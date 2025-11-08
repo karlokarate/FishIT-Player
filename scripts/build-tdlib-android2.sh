@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 # TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL)
-# Validated against upstream CMakeLists requirements:
-#   - Host requires OpenSSL + Zlib; early return otherwise (we ensure via apt). 
-#   - prepare_cross_compiling must run BEFORE install so td_api.tlo exists.
-#   - For Android, we link BoringSSL using OPENSSL_* variables.
-#   - LTO: use TD_ENABLE_LTO when requested.
-# See upstream CMake for details. 
+# Validated vs upstream CMake (OpenSSL+Zlib, prepare_cross_compiling before install).
 
 set -uo pipefail
 SOFT_FAIL="${SOFT_FAIL:-1}"      # 1=tolerant weiterbauen, 0=hart abbrechen
@@ -293,7 +288,7 @@ for ABI in "${ABI_ARR[@]}"; do
     -DTd_DIR="$ANDROID_TD_CMAKE_DIR" \
     -DCMAKE_PREFIX_PATH="$ANDROID_PREFIX" \
     -DTD_ENABLE_JNI=ON \
-    -DOPENSSL_USE_STATIC_LIBRARIES=ON \
+    -DOPENSSL_USE_STATIC_LIBS=ON \
     -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
     -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
     -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
