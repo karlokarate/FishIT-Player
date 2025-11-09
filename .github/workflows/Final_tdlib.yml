@@ -480,6 +480,17 @@ jobs:
     outputs:
       base64_subjects: ${{ steps.merge.outputs.base64_subjects }}
     steps:
+      - name: Setup Java (JDK 21)
+        uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+
+      - name: Install Maven
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y maven jq
+
       - name: Download all ABI subjects
         uses: actions/download-artifact@v4
         with:
@@ -520,7 +531,7 @@ jobs:
         run: |
           set -euo pipefail
           DESC="$(tr -d '\n\r' < _dl/TDLIB_VERSION.txt)"
-          AAR="tdlib-android-${DESC}-android${{ inputs.api_level }}.aar"
+          AAR="fishit-tdlib-android-${DESC}-android${{ inputs.api_level }}.aar"
           mkdir -p aar/jni/arm64-v8a aar/jni/armeabi-v7a
           cat > aar/AndroidManifest.xml <<'XML'
           <manifest package="org.drinkless.tdlib.aar"/>
@@ -549,7 +560,7 @@ jobs:
             ${{ steps.buildaar.outputs.aar }}
             tdlib-android.aar.spdx.json
 
-      # Maven Publish (GitHub Packages)
+      # Maven Publish (GitHub Packages) mit eigenem POM
       - name: Prepare Maven settings.xml
         shell: bash
         env:
@@ -571,22 +582,58 @@ jobs:
           XML
           echo "::add-mask::${GH_TOKEN}"
 
-      - name: Publish AAR to GitHub Packages (Maven)
+      - name: Publish AAR to GitHub Packages (Maven, with POM)
         shell: bash
+        env:
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          TAG="${{ steps.tagread.outputs.tag }}"          # z.B. tdlib-v1.8.56-...-android24-ndk-r27c
-          VER="${TAG#tdlib-}"                             # Maven-Version ohne Präfix
+          TAG="${{ steps.tagread.outputs.tag }}"     # z.B. tdlib-v1.8.56-...-android24-ndk-r27c
+          VER="${TAG#tdlib-}"                        # Maven-Version ohne Präfix
           AAR="${{ steps.buildaar.outputs.aar }}"
-          GROUP_ID="com.github.${{ github.repository_owner }}"   # bei Bedarf anpassen (z.B. de.fishit)
-          ARTIFACT_ID="tdlib-android"
+          GROUP_ID="com.github.${OWNER}"
+          ARTIFACT_ID="fishit-tdlib-android"
+
+          cat > pom.xml <<POM
+          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>${GROUP_ID}</groupId>
+            <artifactId>${ARTIFACT_ID}</artifactId>
+            <version>${VER}</version>
+            <packaging>aar</packaging>
+            <name>FishIT TDLib Android</name>
+            <description>Prebuilt TDLib JNI + Java bindings for Android (API 24+, ABIs arm64-v8a/armeabi-v7a).</description>
+            <url>https://github.com/${REPO}</url>
+            <licenses>
+              <license>
+                <name>MIT License</name>
+                <url>https://opensource.org/licenses/MIT</url>
+                <distribution>repo</distribution>
+              </license>
+            </licenses>
+            <scm>
+              <url>https://github.com/${REPO}</url>
+              <connection>scm:git:https://github.com/${REPO}.git</connection>
+              <developerConnection>scm:git:ssh://git@github.com/${REPO}.git</developerConnection>
+              <tag>${TAG}</tag>
+            </scm>
+            <developers>
+              <developer>
+                <id>${OWNER}</id>
+                <name>${OWNER}</name>
+                <url>https://github.com/${OWNER}</url>
+              </developer>
+            </developers>
+          </project>
+          POM
+
           mvn -B deploy:deploy-file \
             -Dfile="${AAR}" \
             -DrepositoryId=github \
-            -Durl="https://maven.pkg.github.com/${{ github.repository }}" \
-            -DgroupId="${GROUP_ID}" \
-            -DartifactId="${ARTIFACT_ID}" \
-            -Dversion="${VER}" \
+            -Durl="https://maven.pkg.github.com/${REPO}" \
+            -DpomFile=pom.xml \
             -Dpackaging=aar
 
       - name: Merge subjects (+ AAR)
@@ -608,18 +655,16 @@ jobs:
     name: SLSA provenance (BoringSSL)
     needs: [boringssl]
     permissions: { actions: read, id-token: write, contents: write }
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: "${{ needs.boringssl.outputs.bssl_subjects_b64 }}"
       upload-assets: true
-      attestation-name: "boringssl-provenance.intoto.jsonl"
 
   provenance-tdlib:
     name: SLSA provenance (TDLib incl. AAR)
     needs: [gather-tdlib-subjects]
     permissions: { actions: read, id-token: write, contents: write }
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: "${{ needs.gather-tdlib-subjects.outputs.base64_subjects }}"
       upload-assets: true
-      attestation-name: "tdlib-provenance.intoto.jsonl"
