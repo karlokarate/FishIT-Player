@@ -1,194 +1,338 @@
-name: TDLib Android AAR (master, OpenSSL, official scripts)
+name: TDLib Android AAR (master, OpenSSL 3.3.5, NDK r29, matrix)
 
 on:
   workflow_dispatch:
     inputs:
       android_api:
-        description: "Android API level (min für NDK)"
+        description: "Android API-Level (min für NDK/Zlib)"
         required: true
         default: "21"
       ndk_version:
         description: "NDK Version"
         required: true
-        default: "r27c"
-      td_ref:
-        description: "TDLib Ref (leer = master)"
-        required: false
-        default: ""
+        default: "r29"
       openssl_ver:
-        description: "OpenSSL Version (Tag)"
+        description: "OpenSSL Tag/Version (z.B. openssl-3.3.5 oder LTS: openssl-3.0.18)"
         required: true
-        default: "openssl-3.3.2"
+        default: "openssl-3.3.5"
       release_tag:
-        description: "Release-Tag (z.B. tdlib-android-<date>)"
+        description: "Release-Tag"
         required: true
-        default: "tdlib-android-$(date +%Y%m%d-%H%M)"
+        default: "tdlib-android-${{ github.run_id }}"
+      publish_to_gpr:
+        description: "Auch nach GitHub Packages (Maven) veröffentlichen?"
+        required: true
+        default: "false"
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-24.04
+    outputs:
+      td_commit: ${{ steps.commit.outputs.td_commit }}
+      android_api: ${{ env.ANDROID_API }}
     env:
       ANDROID_API: ${{ github.event.inputs.android_api }}
       NDK_VERSION: ${{ github.event.inputs.ndk_version }}
-      TD_REF: ${{ github.event.inputs.td_ref }}
       OPENSSL_VER: ${{ github.event.inputs.openssl_ver }}
-      RELEASE_TAG: ${{ github.event.inputs.release_tag }}
-      # Pfade
       WORKDIR: ${{ github.workspace }}
       TD_SRC: ${{ github.workspace }}/td
-      OPENSSL_SRC: ${{ github.workspace }}/openssl
+      OPENSSL_SRC: ${{ github.workspace }}/openssl-src
       OPENSSL_OUT: ${{ github.workspace }}/openssl-out
-      AAR_OUT: ${{ github.workspace }}/dist
+      OUTDIR: ${{ github.workspace }}/dist
     steps:
-      - name: Checkout (empty repo to host artifacts)
-        uses: actions/checkout@v4
-        with: { fetch-depth: 1 }
+      - name: Checkout host repo
+        uses: actions/checkout@v5
 
-      - name: Checkout TDLib (master or ref)
+      - name: Ensure build host tools (gperf)
         run: |
-          set -euo pipefail
-          git clone --depth 1 https://github.com/tdlib/td.git "$TD_SRC"
-          if [ -n "${TD_REF:-}" ]; then
-            cd "$TD_SRC"
-            git fetch origin "$TD_REF" --depth 1
-            git checkout "$TD_REF"
-          fi
-          echo "TD checked out at:"; cd "$TD_SRC" && git rev-parse --short HEAD
+          sudo apt-get update
+          sudo apt-get install -y gperf
 
-      - name: Set up JDK (needed for generating/compiling Java)
+      - name: Setup Java (JDK 21)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
-      - name: Set up CMake & Ninja
-        uses: lukka/get-cmake@v3.30.3
+      - name: Setup CMake 4.1.2 & Ninja 1.13.1
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: '4.1.2'
+          ninjaVersion: '1.13.1'
 
-      - name: Set up Android NDK
+      - name: Setup Android NDK (r29)
+        id: ndk
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: ${{ env.NDK_VERSION }}
-        id: ndk
-      - name: Export NDK vars
+
+      - name: Export NDK to PATH
         run: |
           echo "ANDROID_NDK_ROOT=${{ steps.ndk.outputs.ndk-path }}" >> $GITHUB_ENV
-          echo "NDK=${{ steps.ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+          echo "${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
 
-      - name: Fetch & unpack OpenSSL
+      - name: Tool versions
+        run: |
+          cmake --version
+          ninja --version
+          javac -version
+
+      - name: Clone TDLib (master)
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/tdlib/td.git "$TD_SRC"
+
+      - name: Capture TD commit
+        id: commit
+        working-directory: ${{ env.TD_SRC }}
+        run: echo "td_commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      # -------- OpenSSL (statisch) für beide ABIs mit Cache --------
+      - name: Download OpenSSL source
         run: |
           set -euo pipefail
           mkdir -p "$OPENSSL_SRC"
           curl -fsSL "https://www.openssl.org/source/${OPENSSL_VER}.tar.gz" -o "$OPENSSL_VER.tar.gz"
           tar -xzf "$OPENSSL_VER.tar.gz" -C "$OPENSSL_SRC" --strip-components=1
 
-      - name: Build OpenSSL for Android (arm64-v8a)
-        run: |
-          set -euo pipefail
-          export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT}"
-          export PATH="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
-          cd "$OPENSSL_SRC"
-          ./Configure android-arm64 no-shared --prefix="$OPENSSL_OUT/arm64-v8a" --openssldir="$OPENSSL_OUT/arm64-v8a/ssl"
-          make -j$(nproc)
-          make install_sw
-          make clean
+      - name: Cache OpenSSL arm64-v8a
+        id: cache-ssl-arm64
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.OPENSSL_OUT }}/arm64-v8a
+          key: ${{ runner.os }}-openssl-${{ env.OPENSSL_VER }}-arm64-v8a-${{ env.NDK_VERSION }}
 
-      - name: Build OpenSSL for Android (armeabi-v7a)
+      - name: Build OpenSSL (arm64-v8a)
+        if: steps.cache-ssl-arm64.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          export ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT}"
-          export PATH="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
           cd "$OPENSSL_SRC"
-          ./Configure android-arm no-shared --prefix="$OPENSSL_OUT/armeabi-v7a" --openssldir="$OPENSSL_OUT/armeabi-v7a/ssl"
-          make -j$(nproc)
+          make distclean || true
+          ./Configure android-arm64 no-shared no-tests \
+            --prefix="$OPENSSL_OUT/arm64-v8a" \
+            --openssldir="$OPENSSL_OUT/arm64-v8a/ssl"
+          make -j"$(nproc)"
           make install_sw
 
-      - name: Configure & build TDLib (arm64-v8a, JNI)
+      - name: Cache OpenSSL armeabi-v7a
+        id: cache-ssl-v7a
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.OPENSSL_OUT }}/armeabi-v7a
+          key: ${{ runner.os }}-openssl-${{ env.OPENSSL_VER }}-armeabi-v7a-${{ env.NDK_VERSION }}
+
+      - name: Build OpenSSL (armeabi-v7a)
+        if: steps.cache-ssl-v7a.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          cmake -S "$TD_SRC" -B "$TD_SRC/build-arm64" \
+          cd "$OPENSSL_SRC"
+          make distclean || true
+          ./Configure android-arm no-shared no-tests \
+            --prefix="$OPENSSL_OUT/armeabi-v7a" \
+            --openssldir="$OPENSSL_OUT/armeabi-v7a/ssl"
+          make -j"$(nproc)"
+          make install_sw
+
+      # -------- Host-Build nur für td_generate_java_api (offiziell) --------
+      - name: Configure TDLib (host generator)
+        run: cmake -S "$TD_SRC" -B "$TD_SRC/build-host" -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build td_generate_java_api (Host)
+        run: cmake --build "$TD_SRC/build-host" --target td_generate_java_api -- -j"$(nproc)"
+
+      - name: Upload generator & metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-host-java
+          path: |
+            ${{ env.TD_SRC }}/example/java/src/main/java/org/drinkless/tdlib/TdApi.java
+            ${{ env.TD_SRC }}/example/java/src/main/java/org/drinkless/tdlib/Client.java
+            ${{ env.TD_SRC }}/example/java/src/main/java/org/drinkless/tdlib/Log.java
+            ${{ env.TD_SRC }}/td/telegram/td_api.tl
+
+  build-abi:
+    runs-on: ubuntu-24.04
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a]
+    env:
+      ANDROID_API: ${{ needs.prepare.outputs.android_api }}
+      TD_SRC: ${{ github.workspace }}/td
+      OPENSSL_SRC: ${{ github.workspace }}/openssl-src
+      OPENSSL_OUT: ${{ github.workspace }}/openssl-out
+      OPENSSL_VER: ${{ github.event.inputs.openssl_ver }}
+      NDK_VERSION: ${{ github.event.inputs.ndk_version }}
+    steps:
+      - name: Checkout host repo
+        uses: actions/checkout@v5
+
+      - name: Setup Java (JDK 21)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup CMake 4.1.2 & Ninja 1.13.1
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: '4.1.2'
+          ninjaVersion: '1.13.1'
+
+      - name: Setup Android NDK (r29)
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: ${{ env.NDK_VERSION }}
+        id: ndk
+
+      - name: Export NDK
+        run: |
+          echo "ANDROID_NDK_ROOT=${{ steps.ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+          echo "${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+
+      - name: Restore TD sources
+        run: git clone --depth 1 https://github.com/tdlib/td.git "$TD_SRC"
+
+      # ---- OpenSSL: Restore Cache oder (Fallback) Build pro ABI ----
+      - name: Restore OpenSSL cache (${{ matrix.abi }})
+        id: restore-ssl
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.OPENSSL_OUT }}/${{ matrix.abi }}
+          key: ${{ runner.os }}-openssl-${{ env.OPENSSL_VER }}-${{ matrix.abi }}-${{ env.NDK_VERSION }}
+
+      - name: Download OpenSSL source (fallback)
+        if: steps.restore-ssl.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p "$OPENSSL_SRC"
+          curl -fsSL "https://www.openssl.org/source/${OPENSSL_VER}.tar.gz" -o "${OPENSSL_VER}.tar.gz"
+          tar -xzf "${OPENSSL_VER}.tar.gz" -C "$OPENSSL_SRC" --strip-components=1
+
+      - name: Build OpenSSL (fallback, ${{ matrix.abi }})
+        if: steps.restore-ssl.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          cd "$OPENSSL_SRC"
+          make distclean || true
+          if [ "${{ matrix.abi }}" = "arm64-v8a" ]; then
+            ./Configure android-arm64 no-shared no-tests \
+              --prefix="$OPENSSL_OUT/arm64-v8a" \
+              --openssldir="$OPENSSL_OUT/arm64-v8a/ssl"
+          else
+            ./Configure android-arm no-shared no-tests \
+              --prefix="$OPENSSL_OUT/armeabi-v7a" \
+              --openssldir="$OPENSSL_OUT/armeabi-v7a/ssl"
+          fi
+          make -j"$(nproc)"
+          make install_sw
+
+      - name: Configure TDLib (${{ matrix.abi }}, JNI)
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.abi }}" = "arm64-v8a" ]; then
+            TRIPLE="aarch64-linux-android"
+            SSL_PREFIX="$OPENSSL_OUT/arm64-v8a"
+          else
+            TRIPLE="arm-linux-androideabi"
+            SSL_PREFIX="$OPENSSL_OUT/armeabi-v7a"
+          fi
+          ZINC="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include"
+          ZLIB="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${TRIPLE}/${ANDROID_API}/libz.a"
+
+          cmake -S "$TD_SRC" -B "$TD_SRC/build-${{ matrix.abi }}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DTD_ENABLE_JNI=ON \
             -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake" \
-            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_ABI=${{ matrix.abi }} \
             -DANDROID_PLATFORM=android-${ANDROID_API} \
-            -DOPENSSL_ROOT_DIR="$OPENSSL_OUT/arm64-v8a" \
-            -DOPENSSL_USE_STATIC_LIBS=ON
-          cmake --build "$TD_SRC/build-arm64" -- -j$(nproc)
+            -DOPENSSL_ROOT_DIR="$SSL_PREFIX" \
+            -DOPENSSL_USE_STATIC_LIBS=ON \
+            -DOPENSSL_INCLUDE_DIR="$SSL_PREFIX/include" \
+            -DOPENSSL_CRYPTO_LIBRARY="$SSL_PREFIX/lib/libcrypto.a" \
+            -DOPENSSL_SSL_LIBRARY="$SSL_PREFIX/lib/libssl.a" \
+            -DZLIB_ROOT="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr" \
+            -DZLIB_INCLUDE_DIR="$ZINC" \
+            -DZLIB_LIBRARY="$ZLIB"
 
-      - name: Configure & build TDLib (armeabi-v7a, JNI)
+      - name: Build TDLib (${{ matrix.abi }}, JNI)
+        run: cmake --build "$TD_SRC/build-${{ matrix.abi }}" -- -j"$(nproc)"
+
+      - name: Upload libtdjni.so (${{ matrix.abi }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: libtdjni-${{ matrix.abi }}
+          path: ${{ env.TD_SRC }}/build-${{ matrix.abi }}/**/libtdjni.so
+
+  package:
+    runs-on: ubuntu-24.04
+    needs: [prepare, build-abi]
+    env:
+      OUTDIR: ${{ github.workspace }}/dist
+      RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+      ANDROID_API: ${{ github.event.inputs.android_api }}
+      TD_COMMIT: ${{ needs.prepare.outputs.td_commit }}
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Prepare AAR workspace
         run: |
           set -euo pipefail
-          cmake -S "$TD_SRC" -B "$TD_SRC/build-v7a" \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DTD_ENABLE_JNI=ON \
-            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake" \
-            -DANDROID_ABI=armeabi-v7a \
-            -DANDROID_PLATFORM=android-${ANDROID_API} \
-            -DOPENSSL_ROOT_DIR="$OPENSSL_OUT/armeabi-v7a" \
-            -DOPENSSL_USE_STATIC_LIBS=ON
-          cmake --build "$TD_SRC/build-v7a" -- -j$(nproc)
-
-      # Offizielles Java-API-Target ausführen (generiert TdApi.java)
-      - name: Generate Java API (official target)
-        run: |
-          set -euo pipefail
-          cmake --build "$TD_SRC/build-arm64" --target td_generate_java_api
-
-      - name: Collect JNI + Java sources
-        run: |
-          set -euo pipefail
-          mkdir -p "$AAR_OUT/work/src/main/jniLibs/arm64-v8a" \
-                   "$AAR_OUT/work/src/main/jniLibs/armeabi-v7a" \
-                   "$AAR_OUT/work/src/main/java/org/drinkless/tdlib" \
-                   "$AAR_OUT/release"
-
-          # libtdjni.so (aus beiden Builds)
-          find "$TD_SRC/build-arm64" -name libtdjni.so -exec cp {} "$AAR_OUT/work/src/main/jniLibs/arm64-v8a/" \;
-          find "$TD_SRC/build-v7a"   -name libtdjni.so -exec cp {} "$AAR_OUT/work/src/main/jniLibs/armeabi-v7a/" \;
-
-          # Java-Dateien (Client.java, Log.java sind in example/java, TdApi.java wird generiert)
-          # Standardpfade des Repos:
-          cp "$TD_SRC/example/java/src/main/java/org/drinkless/tdlib/Client.java" "$AAR_OUT/work/src/main/java/org/drinkless/tdlib/"
-          cp "$TD_SRC/example/java/src/main/java/org/drinkless/tdlib/Log.java"    "$AAR_OUT/work/src/main/java/org/drinkless/tdlib/"
-          # Der Generator schreibt TdApi.java in example/java/src/main/java/org/drinkless/tdlib/
-          cp "$TD_SRC/example/java/src/main/java/org/drinkless/tdlib/TdApi.java" "$AAR_OUT/work/src/main/java/org/drinkless/tdlib/"
-
-          # Minimales Manifest
-          cat > "$AAR_OUT/work/AndroidManifest.xml" <<'XML'
+          mkdir -p "$OUTDIR/work/src/main/jniLibs/arm64-v8a" \
+                   "$OUTDIR/work/src/main/jniLibs/armeabi-v7a" \
+                   "$OUTDIR/work/src/main/java/org/drinkless/tdlib" \
+                   "$OUTDIR/release"
+          # JNI
+          find artifacts/libtdjni-arm64-v8a -name libtdjni.so -exec cp {} "$OUTDIR/work/src/main/jniLibs/arm64-v8a/" \;
+          find artifacts/libtdjni-armeabi-v7a -name libtdjni.so -exec cp {} "$OUTDIR/work/src/main/jniLibs/armeabi-v7a/" \;
+          # Java aus Host-Generator
+          cp artifacts/tdlib-host-java/TdApi.java "$OUTDIR/work/src/main/java/org/drinkless/tdlib/"
+          cp artifacts/tdlib-host-java/Client.java "$OUTDIR/work/src/main/java/org/drinkless/tdlib/"
+          cp artifacts/tdlib-host-java/Log.java    "$OUTDIR/work/src/main/java/org/drinkless/tdlib/"
+          cp artifacts/tdlib-host-java/td_api.tl   "$OUTDIR/release/td_api.tl"
+          # Manifest
+          cat > "$OUTDIR/work/AndroidManifest.xml" <<'XML'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.drinkless.tdlib">
-              <uses-sdk android:minSdkVersion="21" />
+            <uses-sdk android:minSdkVersion="21" />
           </manifest>
           XML
 
-      - name: Compile Java → classes.jar (no Android SDK needed)
+      - name: Compile Java → classes.jar (Bytecode 8)
         run: |
           set -euo pipefail
-          mkdir -p "$AAR_OUT/work/classes"
-          find "$AAR_OUT/work/src/main/java" -name "*.java" > "$AAR_OUT/sources.list"
-          javac -source 8 -target 8 -d "$AAR_OUT/work/classes" @"$AAR_OUT/sources.list"
-          (cd "$AAR_OUT/work/classes" && jar cf "$AAR_OUT/work/classes.jar" .)
+          mkdir -p "$OUTDIR/work/classes"
+          find "$OUTDIR/work/src/main/java" -name "*.java" > "$OUTDIR/sources.list"
+          javac -source 8 -target 8 -d "$OUTDIR/work/classes" @"$OUTDIR/sources.list"
+          (cd "$OUTDIR/work/classes" && jar cf "$OUTDIR/work/classes.jar" .)
 
       - name: Assemble AAR
         run: |
           set -euo pipefail
-          cd "$AAR_OUT/work"
+          cd "$OUTDIR/work"
           mkdir -p jni/arm64-v8a jni/armeabi-v7a
-          # AAR erwartet 'jni/<abi>/*.so'
           cp src/main/jniLibs/arm64-v8a/libtdjni.so jni/arm64-v8a/
           cp src/main/jniLibs/armeabi-v7a/libtdjni.so jni/armeabi-v7a/
-          # optionale metadata
-          echo "POM_NAME=tdlib-android" > properties.txt
-          # AAR packen
-          zip -r "$AAR_OUT/release/tdlib-android.aar" AndroidManifest.xml classes.jar jni properties.txt
+          zip -r "$OUTDIR/release/tdlib-android.aar" AndroidManifest.xml classes.jar jni
 
-      - name: Export companion artifacts
+      - name: Write BUILD_INFO
         run: |
-          set -euo pipefail
-          # Nützliche Beifiles für Debug/Transparenz
-          cp "$TD_SRC/td/telegram/td_api.tl" "$AAR_OUT/release/td_api.tl"
-          echo "TD_COMMIT=$(cd "$TD_SRC" && git rev-parse HEAD)" | tee "$AAR_OUT/release/BUILD_INFO.txt"
-          echo "OpenSSL=${OPENSSL_VER}, ANDROID_API=${ANDROID_API}, NDK=${NDK_VERSION}" >> "$AAR_OUT/release/BUILD_INFO.txt"
-          ls -R "$AAR_OUT/release"
+          {
+            echo "TD_COMMIT=${TD_COMMIT}"
+            echo "ANDROID_API=${ANDROID_API}"
+            echo "OPENSSL=${{ github.event.inputs.openssl_ver }}"
+            echo "NDK=${{ github.event.inputs.ndk_version }}"
+            echo "CMAKE=4.1.2"
+            echo "NINJA=1.13.1"
+            echo "JDK=21"
+          } | tee "$OUTDIR/release/BUILD_INFO.txt"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -209,3 +353,32 @@ jobs:
             dist/release/tdlib-android.aar
             dist/release/td_api.tl
             dist/release/BUILD_INFO.txt
+
+      - name: Publish to GitHub Packages (Maven)
+        if: ${{ github.event.inputs.publish_to_gpr == 'true' }}
+        env:
+          USERNAME: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          GROUP_ID="org.drinkless"
+          ARTIFACT_ID="tdlib-android"
+          VERSION="${RELEASE_TAG}"
+          PKGDIR="$OUTDIR/maven/${GROUP_ID//./\/}/${ARTIFACT_ID}/${VERSION}"
+          mkdir -p "$PKGDIR"
+          cp "$OUTDIR/release/tdlib-android.aar" "$PKGDIR/${ARTIFACT_ID}-${VERSION}.aar"
+          cat > "$PKGDIR/${ARTIFACT_ID}-${VERSION}.pom" <<POM
+          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>${GROUP_ID}</groupId>
+            <artifactId>${ARTIFACT_ID}</artifactId>
+            <version>${VERSION}</version>
+            <packaging>aar</packaging>
+            <name>TDLib Android (AAR)</name>
+            <description>Official TDLib JNI + Java bindings packaged for Android</description>
+          </project>
+          POM
+          curl -u "${USERNAME}:${TOKEN}" -H "Content-Type: application/octet-stream" --data-binary @"$PKGDIR/${ARTIFACT_ID}-${VERSION}.aar" \
+            "https://maven.pkg.github.com/${{ github.repository }}/$(echo ${GROUP_ID} | tr '.' '/')/${ARTIFACT_ID}/${VERSION}/${ARTIFACT_ID}-${VERSION}.aar"
+          curl -u "${USERNAME}:${TOKEN}" -H "Content-Type: application/octet-stream" --data-binary @"$PKGDIR/${ARTIFACT_ID}-${VERSION}.pom" \
+            "https://maven.pkg.github.com/${{ github.repository }}/$(echo ${GROUP_ID} | tr '.' '/')/${ARTIFACT_ID}/${VERSION}/${ARTIFACT_ID}-${VERSION}.pom"
