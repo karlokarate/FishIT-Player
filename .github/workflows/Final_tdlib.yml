@@ -589,8 +589,8 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          TAG="${{ steps.tagread.outputs.tag }}"     # z.B. tdlib-v1.8.56-...-android24-ndk-r27c
-          VER="${TAG#tdlib-}"                        # Maven-Version ohne Präfix
+          TAG="${{ steps.tagread.outputs.tag }}"
+          VER="${TAG#tdlib-}"
           AAR="${{ steps.buildaar.outputs.aar }}"
           GROUP_ID="com.github.${OWNER}"
           ARTIFACT_ID="fishit-tdlib-android"
@@ -650,6 +650,7 @@ jobs:
 
   # --------------------------------------------------------------------------
   # 4) SLSA Provenance für BoringSSL & TDLib (inkl. AAR)
+  #    Generator erzeugt nur Attestation; Upload an Releases in Attach-Jobs
   # --------------------------------------------------------------------------
   provenance-boringssl:
     name: SLSA provenance (BoringSSL)
@@ -658,7 +659,8 @@ jobs:
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: "${{ needs.boringssl.outputs.bssl_subjects_b64 }}"
-      upload-assets: true
+      upload-assets: false
+    continue-on-error: true
 
   provenance-tdlib:
     name: SLSA provenance (TDLib incl. AAR)
@@ -667,4 +669,48 @@ jobs:
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: "${{ needs.gather-tdlib-subjects.outputs.base64_subjects }}"
-      upload-assets: true
+      upload-assets: false
+    continue-on-error: true
+
+  attach-boringssl-provenance:
+    name: Attach SLSA attestation to BoringSSL release
+    needs: [boringssl, provenance-boringssl]
+    runs-on: ubuntu-24.04
+    permissions: { contents: write }
+    steps:
+      - name: Download provenance artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: _prov
+          merge-multiple: true
+      - name: Upload attestation to BoringSSL release
+        uses: softprops/action-gh-release@v2.4.2
+        with:
+          tag_name: ${{ needs.boringssl.outputs.bssl_tag }}
+          files: _prov/**.intoto.jsonl
+
+  attach-tdlib-provenance:
+    name: Attach SLSA attestation to TDLib release
+    needs: [gather-tdlib-subjects, provenance-tdlib]
+    runs-on: ubuntu-24.04
+    permissions: { contents: write }
+    steps:
+      - name: Download provenance artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: _prov
+          merge-multiple: true
+      - name: Download TDLib tag artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tdlib-tag
+          path: _meta
+      - name: Read tag
+        id: tag
+        shell: bash
+        run: echo "tag=$(cat _meta/tag.txt)" >> "$GITHUB_OUTPUT"
+      - name: Upload attestation to TDLib release
+        uses: softprops/action-gh-release@v2.4.2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: _prov/**.intoto.jsonl
