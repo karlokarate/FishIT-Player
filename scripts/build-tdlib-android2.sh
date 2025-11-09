@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 # TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL)
-# Validated vs upstream CMake (OpenSSL+Zlib, prepare_cross_compiling before install).
+# Changelog (dieser Stand):
+#  • ANDROID: OpenSSL-Erkennung robust -> zusätzlich OPENSSL_ROOT_DIR je ABI
+#  • ANDROID: Zlib explizit verdrahtet (Include + libz.a aus NDK-Sysroot)
+#  • BoringSSL: PIC erzwungen (CMAKE_POSITION_INDEPENDENT_CODE=ON)
+#  • Build-Verzeichnisse pro ABI frisch angelegt (Stale-CMakeCache vermeiden)
+#  • prepare_cross_compiling VOR install (Upstream-Vorgabe)
+#  • Host: TD_ENABLE_JNI=ON, LTO optional via TD_ENABLE_LTO (Upstream)
+#  • Ausführliche Fehlererfassung + Soft-Fail beibehalten
+set -euo pipefail
 
-set -uo pipefail
-SOFT_FAIL="${SOFT_FAIL:-1}"      # 1=tolerant weiterbauen, 0=hart abbrechen
-FINAL_EXIT="${FINAL_EXIT:-1}"    # 1=roter Exit bei Fehlern, 0=grün trotz Fehlern
+SOFT_FAIL="${SOFT_FAIL:-1}"
+FINAL_EXIT="${FINAL_EXIT:-1}"
 
 declare -a BUILD_ERRORS=()
 record_err(){ BUILD_ERRORS+=("$1"); }
@@ -53,7 +60,7 @@ ANDROID_STL="${ANDROID_STL:-c++_static}"
 TD_REF="${TD_REF:-}"
 CMAKE_INTERPRO="${CMAKE_INTERPRO:-0}"
 
-# Optional: fehlende Tools automatisch installieren
+# Optional: fehlende Tools auf Ubuntu-Runnern automatisch installieren
 ensure() {
   if command -v apt-get >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
     for pkg in "$@"; do
@@ -148,12 +155,12 @@ COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$COMMIT")"
 echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
 
-# Host: kleiner Header-Check
+# Host: kleiner Header-Check (lokale Runs)
 echo '#include <openssl/ssl.h>' | (cc -E - >/dev/null 2>&1 || echo "[warn] Host OpenSSL headers not visible; ensure libssl-dev is installed")
 
 # ---------------------------------------------------------------------------
-# (1) HOST-BUILD & INSTALL   (liefert tl-parser, td_generate_java_api, TdConfig)
-#     prepare_cross_compiling (Upstream-Target) VOR install → .tlo sicher
+# (1) HOST-BUILD & INSTALL (Upstream-konform)
+#    prepare_cross_compiling vor install -> .tlo garantiert (siehe CMakeLists). 
 # ---------------------------------------------------------------------------
 HOST_INSTALL_PREFIX="$TD_DIR/example/java/td"
 run "host-clean-install-prefix" bash -lc "rm -rf '$HOST_INSTALL_PREFIX'"
@@ -222,6 +229,17 @@ ls -l "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR" || true
 ls -l "$GEN_DIR" || true
 ls -l "$SCHEME_DST_DIR" || true
 
+# Hilfsfunktion: Triple für ABI
+triple_for_abi() {
+  case "$1" in
+    arm64-v8a)  echo "aarch64-linux-android" ;;
+    armeabi-v7a) echo "arm-linux-androideabi" ;;  # für Sysroot-Pfade
+    x86)        echo "i686-linux-android" ;;
+    x86_64)     echo "x86_64-linux-android" ;;
+    *)          echo "" ;;
+  esac
+}
+
 # ---------------------------------------------------------------------------
 # (2) example/java: Java-Install → erzeugt TdApi.java, Client.java
 # ---------------------------------------------------------------------------
@@ -247,23 +265,34 @@ run "copy-java-sources" bash -c "mkdir -p '$JAVA_SRC_DIR/org/drinkless/tdlib' &&
 # ---------------------------------------------------------------------------
 for ABI in "${ABI_ARR[@]}"; do
   ABI="$(echo "$ABI" | xargs)"
+
   [[ -d "$BORINGSSL_DIR/$ABI/include" ]] || record_err "BoringSSL include missing for $ABI"
   [[ -f "$BORINGSSL_DIR/$ABI/lib/libcrypto.a" ]] || record_err "BoringSSL libcrypto.a missing for $ABI"
   [[ -f "$BORINGSSL_DIR/$ABI/lib/libssl.a"    ]] || record_err "BoringSSL libssl.a missing for $ABI"
 
   ANDROID_PREFIX="$TD_DIR/example/java/td-android-$ABI"
+  TRIPLE="$(triple_for_abi "$ABI")"
+  ZLIB_INC="$PREBUILT_DIR/sysroot/usr/include"
+  ZLIB_LIB="$PREBUILT_DIR/sysroot/usr/lib/$TRIPLE/libz.a"
+
+  # Frisches Build-Verzeichnis (keine alten CMakeCache.txt übernehmen)
+  rm -rf "build-td-android-$ABI"
 
   run "core-$ABI-configure" cmake -S . -B "build-td-android-$ABI" -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DANDROID_ABI="$ABI" \
+    -DANDROID_STL="$ANDROID_STL" \
     -DANDROID_PLATFORM="android-$API_LEVEL" \
     -DOPENSSL_USE_STATIC_LIBS=ON \
+    -DOPENSSL_ROOT_DIR="$BORINGSSL_DIR/$ABI" \
     -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
     -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
     -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
     -DOPENSSL_LIBRARIES="$BORINGSSL_DIR/$ABI/lib/libssl.a;$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
+    -DZLIB_INCLUDE_DIR="$ZLIB_INC" \
+    -DZLIB_LIBRARY="$ZLIB_LIB" \
     -DCMAKE_INSTALL_PREFIX:PATH="$ANDROID_PREFIX" \
     "${ANDROID_OPT[@]}" \
     "${TD_LTO[@]}" \
@@ -277,6 +306,7 @@ for ABI in "${ABI_ARR[@]}"; do
 
   pushd "$TD_DIR/example/java" >/dev/null
   BDIR="build-android-$ABI"
+  rm -rf "$BDIR"
 
   run "jni-$ABI-configure" cmake -S . -B "$BDIR" -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
@@ -289,10 +319,13 @@ for ABI in "${ABI_ARR[@]}"; do
     -DCMAKE_PREFIX_PATH="$ANDROID_PREFIX" \
     -DTD_ENABLE_JNI=ON \
     -DOPENSSL_USE_STATIC_LIBS=ON \
+    -DOPENSSL_ROOT_DIR="$BORINGSSL_DIR/$ABI" \
     -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
     -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
     -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
     -DOPENSSL_LIBRARIES="$BORINGSSL_DIR/$ABI/lib/libssl.a;$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
+    -DZLIB_INCLUDE_DIR="$ZLIB_INC" \
+    -DZLIB_LIBRARY="$ZLIB_LIB" \
     "${ANDROID_OPT[@]}" \
     "${TD_LTO[@]}" \
     "${CC_LAUNCH[@]}"
@@ -305,12 +338,12 @@ for ABI in "${ABI_ARR[@]}"; do
       '$PREBUILT_DIR/bin/llvm-strip' --strip-unneeded '$OUT_DIR/libs/$ABI/libtdjni.so' || true"
     if [[ "$ANDROID_STL" == "c++_shared" ]]; then
       case "$ABI" in
-        arm64-v8a)  TRIPLE="aarch64-linux-android" ;;
-        armeabi-v7a) TRIPLE="arm-linux-androideabi" ;;
-        x86)         TRIPLE="i686-linux-android" ;;
-        x86_64)      TRIPLE="x86_64-linux-android" ;;
+        arm64-v8a)  TRIPLE_SO="aarch64-linux-android" ;;
+        armeabi-v7a) TRIPLE_SO="arm-linux-androideabi" ;;
+        x86)         TRIPLE_SO="i686-linux-android" ;;
+        x86_64)      TRIPLE_SO="x86_64-linux-android" ;;
       esac
-      SHARED_STL="$PREBUILT_DIR/sysroot/usr/lib/$TRIPLE/libc++_shared.so"
+      SHARED_STL="$PREBUILT_DIR/sysroot/usr/lib/$TRIPLE_SO/libc++_shared.so"
       [[ -f "$SHARED_STL" ]] && run "jni-$ABI-copy-stl" cp -f "$SHARED_STL" "$OUT_DIR/libs/$ABI/"
     fi
   else
