@@ -50,7 +50,7 @@ jobs:
       - name: Checkout host repo
         uses: actions/checkout@v5
 
-      - name: Ensure host tools (gperf)
+      - name: Host-Build-Tools (gperf)
         run: |
           sudo apt-get update
           sudo apt-get install -y gperf
@@ -73,15 +73,14 @@ jobs:
         with:
           ndk-version: ${{ env.NDK_VERSION }}
 
-      - name: Export NDK to PATH
+      - name: Export NDK to PATH & print tool versions
         run: |
           echo "ANDROID_NDK_ROOT=${{ steps.ndk.outputs.ndk-path }}" >> $GITHUB_ENV
           echo "${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
           cmake --version && ninja --version && javac -version
 
       - name: Clone TDLib (master)
-        run: |
-          git clone --depth 1 https://github.com/tdlib/td.git "$TD_SRC"
+        run: git clone --depth 1 https://github.com/tdlib/td.git "$TD_SRC"
 
       - name: Capture TD commit
         id: commit
