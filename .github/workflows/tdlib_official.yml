@@ -1,10 +1,10 @@
-name: TDLib Android AAR (master, OpenSSL 3.3.5, NDK r29, matrix)
+name: TDLib Android AAR (official, master, OpenSSL, matrix)
 
 on:
   workflow_dispatch:
     inputs:
       android_api:
-        description: "Android API-Level (min für NDK/Zlib)"
+        description: "Android API-Level (für NDK/zlib)"
         required: true
         default: "21"
       ndk_version:
@@ -12,7 +12,7 @@ on:
         required: true
         default: "r29"
       openssl_ver:
-        description: "OpenSSL Tag/Version (z.B. openssl-3.3.5 oder LTS: openssl-3.0.18)"
+        description: "OpenSSL Version (z.B. openssl-3.3.5 oder LTS: openssl-3.0.18)"
         required: true
         default: "openssl-3.3.5"
       release_tag:
@@ -20,7 +20,7 @@ on:
         required: true
         default: "tdlib-android-${{ github.run_id }}"
       publish_to_gpr:
-        description: "Auch nach GitHub Packages (Maven) veröffentlichen?"
+        description: "Zusätzlich nach GitHub Packages (Maven) veröffentlichen?"
         required: true
         default: "false"
 
@@ -28,32 +28,35 @@ permissions:
   contents: write
   packages: write
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   prepare:
     runs-on: ubuntu-24.04
-    outputs:
-      td_commit: ${{ steps.commit.outputs.td_commit }}
-      android_api: ${{ env.ANDROID_API }}
     env:
       ANDROID_API: ${{ github.event.inputs.android_api }}
       NDK_VERSION: ${{ github.event.inputs.ndk_version }}
       OPENSSL_VER: ${{ github.event.inputs.openssl_ver }}
-      WORKDIR: ${{ github.workspace }}
       TD_SRC: ${{ github.workspace }}/td
       OPENSSL_SRC: ${{ github.workspace }}/openssl-src
       OPENSSL_OUT: ${{ github.workspace }}/openssl-out
       OUTDIR: ${{ github.workspace }}/dist
+    outputs:
+      td_commit: ${{ steps.commit.outputs.td_commit }}
+      android_api: ${{ env.ANDROID_API }}
     steps:
       - name: Checkout host repo
         uses: actions/checkout@v5
 
-      - name: Ensure build host tools (gperf)
+      - name: Ensure host tools (gperf)
         run: |
           sudo apt-get update
           sudo apt-get install -y gperf
 
       - name: Setup Java (JDK 21)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -74,16 +77,10 @@ jobs:
         run: |
           echo "ANDROID_NDK_ROOT=${{ steps.ndk.outputs.ndk-path }}" >> $GITHUB_ENV
           echo "${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
-
-      - name: Tool versions
-        run: |
-          cmake --version
-          ninja --version
-          javac -version
+          cmake --version && ninja --version && javac -version
 
       - name: Clone TDLib (master)
         run: |
-          set -euo pipefail
           git clone --depth 1 https://github.com/tdlib/td.git "$TD_SRC"
 
       - name: Capture TD commit
@@ -94,7 +91,6 @@ jobs:
       # -------- OpenSSL (statisch) für beide ABIs mit Cache --------
       - name: Download OpenSSL source
         run: |
-          set -euo pipefail
           mkdir -p "$OPENSSL_SRC"
           curl -fsSL "https://www.openssl.org/source/${OPENSSL_VER}.tar.gz" -o "$OPENSSL_VER.tar.gz"
           tar -xzf "$OPENSSL_VER.tar.gz" -C "$OPENSSL_SRC" --strip-components=1
@@ -109,7 +105,7 @@ jobs:
       - name: Build OpenSSL (arm64-v8a)
         if: steps.cache-ssl-arm64.outputs.cache-hit != 'true'
         run: |
-          set -euo pipefail
+          set -e
           cd "$OPENSSL_SRC"
           make distclean || true
           ./Configure android-arm64 no-shared no-tests \
@@ -128,7 +124,7 @@ jobs:
       - name: Build OpenSSL (armeabi-v7a)
         if: steps.cache-ssl-v7a.outputs.cache-hit != 'true'
         run: |
-          set -euo pipefail
+          set -e
           cd "$OPENSSL_SRC"
           make distclean || true
           ./Configure android-arm no-shared no-tests \
@@ -137,14 +133,14 @@ jobs:
           make -j"$(nproc)"
           make install_sw
 
-      # -------- Host-Build nur für td_generate_java_api (offiziell) --------
+      # -------- Host-Build für offiziellen Java-Generator --------
       - name: Configure TDLib (host generator)
         run: cmake -S "$TD_SRC" -B "$TD_SRC/build-host" -DCMAKE_BUILD_TYPE=Release
 
       - name: Build td_generate_java_api (Host)
         run: cmake --build "$TD_SRC/build-host" --target td_generate_java_api -- -j"$(nproc)"
 
-      - name: Upload generator & metadata
+      - name: Upload Java sources + schema
         uses: actions/upload-artifact@v4
         with:
           name: tdlib-host-java
@@ -164,16 +160,15 @@ jobs:
     env:
       ANDROID_API: ${{ needs.prepare.outputs.android_api }}
       TD_SRC: ${{ github.workspace }}/td
-      OPENSSL_SRC: ${{ github.workspace }}/openssl-src
       OPENSSL_OUT: ${{ github.workspace }}/openssl-out
-      OPENSSL_VER: ${{ github.event.inputs.openssl_ver }}
       NDK_VERSION: ${{ github.event.inputs.ndk_version }}
+      OPENSSL_VER: ${{ github.event.inputs.openssl_ver }}
     steps:
       - name: Checkout host repo
         uses: actions/checkout@v5
 
       - name: Setup Java (JDK 21)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -198,7 +193,6 @@ jobs:
       - name: Restore TD sources
         run: git clone --depth 1 https://github.com/tdlib/td.git "$TD_SRC"
 
-      # ---- OpenSSL: Restore Cache oder (Fallback) Build pro ABI ----
       - name: Restore OpenSSL cache (${{ matrix.abi }})
         id: restore-ssl
         uses: actions/cache@v4
@@ -206,35 +200,9 @@ jobs:
           path: ${{ env.OPENSSL_OUT }}/${{ matrix.abi }}
           key: ${{ runner.os }}-openssl-${{ env.OPENSSL_VER }}-${{ matrix.abi }}-${{ env.NDK_VERSION }}
 
-      - name: Download OpenSSL source (fallback)
-        if: steps.restore-ssl.outputs.cache-hit != 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$OPENSSL_SRC"
-          curl -fsSL "https://www.openssl.org/source/${OPENSSL_VER}.tar.gz" -o "${OPENSSL_VER}.tar.gz"
-          tar -xzf "${OPENSSL_VER}.tar.gz" -C "$OPENSSL_SRC" --strip-components=1
-
-      - name: Build OpenSSL (fallback, ${{ matrix.abi }})
-        if: steps.restore-ssl.outputs.cache-hit != 'true'
-        run: |
-          set -euo pipefail
-          cd "$OPENSSL_SRC"
-          make distclean || true
-          if [ "${{ matrix.abi }}" = "arm64-v8a" ]; then
-            ./Configure android-arm64 no-shared no-tests \
-              --prefix="$OPENSSL_OUT/arm64-v8a" \
-              --openssldir="$OPENSSL_OUT/arm64-v8a/ssl"
-          else
-            ./Configure android-arm no-shared no-tests \
-              --prefix="$OPENSSL_OUT/armeabi-v7a" \
-              --openssldir="$OPENSSL_OUT/armeabi-v7a/ssl"
-          fi
-          make -j"$(nproc)"
-          make install_sw
-
       - name: Configure TDLib (${{ matrix.abi }}, JNI)
         run: |
-          set -euo pipefail
+          set -e
           if [ "${{ matrix.abi }}" = "arm64-v8a" ]; then
             TRIPLE="aarch64-linux-android"
             SSL_PREFIX="$OPENSSL_OUT/arm64-v8a"
@@ -285,7 +253,7 @@ jobs:
 
       - name: Prepare AAR workspace
         run: |
-          set -euo pipefail
+          set -e
           mkdir -p "$OUTDIR/work/src/main/jniLibs/arm64-v8a" \
                    "$OUTDIR/work/src/main/jniLibs/armeabi-v7a" \
                    "$OUTDIR/work/src/main/java/org/drinkless/tdlib" \
@@ -293,12 +261,12 @@ jobs:
           # JNI
           find artifacts/libtdjni-arm64-v8a -name libtdjni.so -exec cp {} "$OUTDIR/work/src/main/jniLibs/arm64-v8a/" \;
           find artifacts/libtdjni-armeabi-v7a -name libtdjni.so -exec cp {} "$OUTDIR/work/src/main/jniLibs/armeabi-v7a/" \;
-          # Java aus Host-Generator
+          # Java (offizieller Generator-Output + example/java)
           cp artifacts/tdlib-host-java/TdApi.java "$OUTDIR/work/src/main/java/org/drinkless/tdlib/"
           cp artifacts/tdlib-host-java/Client.java "$OUTDIR/work/src/main/java/org/drinkless/tdlib/"
           cp artifacts/tdlib-host-java/Log.java    "$OUTDIR/work/src/main/java/org/drinkless/tdlib/"
           cp artifacts/tdlib-host-java/td_api.tl   "$OUTDIR/release/td_api.tl"
-          # Manifest
+          # Manifest minimal
           cat > "$OUTDIR/work/AndroidManifest.xml" <<'XML'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.drinkless.tdlib">
             <uses-sdk android:minSdkVersion="21" />
@@ -307,7 +275,7 @@ jobs:
 
       - name: Compile Java → classes.jar (Bytecode 8)
         run: |
-          set -euo pipefail
+          set -e
           mkdir -p "$OUTDIR/work/classes"
           find "$OUTDIR/work/src/main/java" -name "*.java" > "$OUTDIR/sources.list"
           javac -source 8 -target 8 -d "$OUTDIR/work/classes" @"$OUTDIR/sources.list"
@@ -315,7 +283,7 @@ jobs:
 
       - name: Assemble AAR
         run: |
-          set -euo pipefail
+          set -e
           cd "$OUTDIR/work"
           mkdir -p jni/arm64-v8a jni/armeabi-v7a
           cp src/main/jniLibs/arm64-v8a/libtdjni.so jni/arm64-v8a/
@@ -360,7 +328,7 @@ jobs:
           USERNAME: ${{ github.actor }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -euo pipefail
+          set -e
           GROUP_ID="org.drinkless"
           ARTIFACT_ID="tdlib-android"
           VERSION="${RELEASE_TAG}"
@@ -368,7 +336,8 @@ jobs:
           mkdir -p "$PKGDIR"
           cp "$OUTDIR/release/tdlib-android.aar" "$PKGDIR/${ARTIFACT_ID}-${VERSION}.aar"
           cat > "$PKGDIR/${ARTIFACT_ID}-${VERSION}.pom" <<POM
-          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
             <modelVersion>4.0.0</modelVersion>
             <groupId>${GROUP_ID}</groupId>
             <artifactId>${ARTIFACT_ID}</artifactId>
