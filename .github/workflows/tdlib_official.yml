@@ -16,9 +16,9 @@ on:
         required: true
         default: "openssl-3.3.5"
       release_tag:
-        description: "Release-Tag"
-        required: true
-        default: "tdlib-android-${{ github.run_id }}"
+        description: "Release-Tag (leer = automatisch)"
+        required: false
+        default: ""
       publish_to_gpr:
         description: "Zusätzlich nach GitHub Packages (Maven) veröffentlichen?"
         required: true
@@ -46,6 +46,7 @@ jobs:
     outputs:
       td_commit: ${{ steps.commit.outputs.td_commit }}
       android_api: ${{ env.ANDROID_API }}
+      release_tag: ${{ steps.tag.outputs.value }}
     steps:
       - name: Checkout host repo
         uses: actions/checkout@v5
@@ -86,6 +87,17 @@ jobs:
         id: commit
         working-directory: ${{ env.TD_SRC }}
         run: echo "td_commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Derive RELEASE_TAG
+        id: tag
+        run: |
+          TD_COMMIT="${{ steps.commit.outputs.td_commit }}"
+          SHORT="${TD_COMMIT:0:8}"
+          if [ -z "${{ github.event.inputs.release_tag }}" ]; then
+            echo "value=tdlib-android-${SHORT}-${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ github.event.inputs.release_tag }}" >> $GITHUB_OUTPUT
+          fi
 
       # -------- OpenSSL (statisch) für beide ABIs mit Cache --------
       - name: Download OpenSSL source
@@ -241,7 +253,7 @@ jobs:
     needs: [prepare, build-abi]
     env:
       OUTDIR: ${{ github.workspace }}/dist
-      RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+      RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
       ANDROID_API: ${{ github.event.inputs.android_api }}
       TD_COMMIT: ${{ needs.prepare.outputs.td_commit }}
     steps:
