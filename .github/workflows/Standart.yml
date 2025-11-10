@@ -71,15 +71,17 @@ jobs:
           set -euo pipefail
           git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-      # ==== Lade & entpacke das passende BoringSSL-Prebuild (robuste SHA-Prüfung) ====
-      - name: Download prebuilt BoringSSL (${{ matrix.abi }})
+      # ==== Lade, prüfe und normalisiere das BoringSSL-Prebuild in .third_party/boringssl/<ABI> ====
+      - name: Download + stage prebuilt BoringSSL (${{ matrix.abi }})
         run: |
           set -euo pipefail
-          mkdir -p .third_party/boringssl && cd .third_party/boringssl
+          mkdir -p .third_party && cd .third_party
           BASE_URL="https://github.com/${REPO}/releases/download/${BORINGSSL_TAG}"
           ASSET="${{ matrix.asset }}"
           SHA_FILE="${{ matrix.sha }}"
+          TMPDIR=".boringssl_tmp"
 
+          mkdir -p "$TMPDIR" && cd "$TMPDIR"
           echo "Downloading ${BASE_URL}/${ASSET}"
           CODE=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${ASSET}")
           if [ "$CODE" != "200" ]; then
@@ -87,7 +89,7 @@ jobs:
           fi
           curl -fL "${BASE_URL}/${ASSET}" -o "${ASSET}"
 
-          # SHA robust prüfen: Hash extrahieren und mit lokaler Datei vergleichen
+          # SHA robust prüfen (Hash extrahieren, gegen lokale Datei vergleichen)
           CODE_SHA=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${SHA_FILE}")
           if [ "$CODE_SHA" = "200" ]; then
             echo "Verifying SHA256 for ${ASSET} ..."
@@ -110,38 +112,55 @@ jobs:
           NAME="${ASSET%.tar.zst}"
           mkdir -p "${NAME}"
           tar --use-compress-program=unzstd -xf "${ASSET}" -C "${NAME}"
-          echo "BORINGSSL_DIR=$PWD/${NAME}" >> $GITHUB_ENV
-          echo "== BoringSSL tree ==" && ls -R "${NAME}"
 
-      # ==== Validierung: ELF/ABI der Prebuild-Libs prüfen (AArch64/ARM, ELF64/ELF32) ====
+          # ---- Normalisierung in festen Pfad: .third_party/boringssl/<ABI> ----
+          ABI_DIR="$GITHUB_WORKSPACE/.third_party/boringssl/${{ matrix.abi }}"
+          rm -rf "$ABI_DIR"
+          mkdir -p "$ABI_DIR" "$ABI_DIR/lib"
+
+          # include rekursiv finden, libs rekursiv finden
+          INC_DIR="$(find "${NAME}" -type d -name include -print -quit)"
+          SSL_LIB="$(find "${NAME}" -type f -name 'libssl.a' -print -quit)"
+          CRYPTO_LIB="$(find "${NAME}" -type f -name 'libcrypto.a' -print -quit)"
+
+          if [ -z "$INC_DIR" ] || [ -z "$SSL_LIB" ] || [ -z "$CRYPTO_LIB" ]; then
+            echo "::group::Extracted tree"; ls -R "${NAME}"; echo "::endgroup::"
+            echo "::error ::Missing include/ or libssl.a/libcrypto.a in prebuilt asset"
+            exit 11
+          fi
+
+          rsync -a "$INC_DIR/" "$ABI_DIR/include/"
+          cp -f "$SSL_LIB" "$ABI_DIR/libssl.a"
+          cp -f "$CRYPTO_LIB" "$ABI_DIR/libcrypto.a"
+          # optional: Kompat-Symlinks unter lib/
+          ln -sf ../libssl.a  "$ABI_DIR/lib/libssl.a"
+          ln -sf ../libcrypto.a "$ABI_DIR/lib/libcrypto.a"
+
+          echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
+          echo "== Staged BoringSSL at =="
+          ls -R "$ABI_DIR"
+
+      # ==== Validierung: ELF/ABI direkt gegen den Normalisierungs-Pfad ====
       - name: Validate prebuilt BoringSSL ABI (${{ matrix.abi }})
         run: |
           set -euo pipefail
           SSL_DIR="${BORINGSSL_DIR}"
           test -d "$SSL_DIR/include" || { echo "::error ::Missing include/ in $SSL_DIR"; exit 3; }
-
-          # Robust Lib-Find (egal ob im Root oder unter lib/)
-          SSL_LIB="$(find "$SSL_DIR" -type f -name 'libssl.a' -print -quit)"
-          CRYPTO_LIB="$(find "$SSL_DIR" -type f -name 'libcrypto.a' -print -quit)"
-          if [ -z "$SSL_LIB" ] || [ -z "$CRYPTO_LIB" ]; then
-            echo "::group::BoringSSL tree"; ls -R "$SSL_DIR"; echo "::endgroup::"
-            echo "::error ::libssl.a/libcrypto.a not found under $SSL_DIR"; exit 4
-          fi
+          test -f "$SSL_DIR/libssl.a" || { echo "::error ::Missing libssl.a in $SSL_DIR"; exit 4; }
+          test -f "$SSL_DIR/libcrypto.a" || { echo "::error ::Missing libcrypto.a in $SSL_DIR"; exit 4; }
 
           AR="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
           READELF="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
 
-          OBJ_SSL="$($AR t "$SSL_LIB" | head -n1)"
-          $AR p "$SSL_LIB" "$OBJ_SSL" > first_ssl.o
+          OBJ_SSL="$($AR t "$SSL_DIR/libssl.a" | head -n1)"; $AR p "$SSL_DIR/libssl.a" "$OBJ_SSL" > first_ssl.o
           HDR_SSL="$($READELF -h first_ssl.o)"
           echo "$HDR_SSL" | grep -q "Machine:\s*${{ matrix.expect_machine }}" || { echo "::error ::Unexpected Machine in libssl.a: expected ${{ matrix.expect_machine }}"; echo "$HDR_SSL"; exit 6; }
-          echo "$HDR_SSL" | grep -q "Class:\s*${{ matrix.expect_class }}" || { echo "::error ::Unexpected Class in libssl.a: expected ${{ matrix.expect_class }}"; echo "$HDR_SSL"; exit 7; }
+          echo "$HDR_SSL" | grep -q "Class:\s*${{ matrix.expect_class }}"   || { echo "::error ::Unexpected Class in libssl.a: expected ${{ matrix.expect_class }}";   echo "$HDR_SSL"; exit 7; }
 
-          OBJ_CRY="$($AR t "$CRYPTO_LIB" | head -n1)"
-          $AR p "$CRYPTO_LIB" "$OBJ_CRY" > first_crypto.o
+          OBJ_CRY="$($AR t "$SSL_DIR/libcrypto.a" | head -n1)"; $AR p "$SSL_DIR/libcrypto.a" "$OBJ_CRY" > first_crypto.o
           HDR_CRY="$($READELF -h first_crypto.o)"
           echo "$HDR_CRY" | grep -q "Machine:\s*${{ matrix.expect_machine }}" || { echo "::error ::Unexpected Machine in libcrypto.a: expected ${{ matrix.expect_machine }}"; echo "$HDR_CRY"; exit 8; }
-          echo "$HDR_CRY" | grep -q "Class:\s*${{ matrix.expect_class }}" || { echo "::error ::Unexpected Class in libcrypto.a: expected ${{ matrix.expect_class }}"; echo "$HDR_CRY"; exit 9; }
+          echo "$HDR_CRY" | grep -q "Class:\s*${{ matrix.expect_class }}"   || { echo "::error ::Unexpected Class in libcrypto.a: expected ${{ matrix.expect_class }}";   echo "$HDR_CRY"; exit 9; }
 
           echo "ABI/ELF validation passed for ${{ matrix.abi }} ✅"
 
@@ -155,10 +174,6 @@ jobs:
 
           mkdir -p "$BUILD_DIR" && cd "$BUILD_DIR"
 
-          # Nochmals robuste Lib-Pfade (für cmake)
-          SSL_LIB="$(find "$SSL_DIR" -type f -name 'libssl.a' -print -quit)"
-          CRYPTO_LIB="$(find "$SSL_DIR" -type f -name 'libcrypto.a' -print -quit)"
-
           cmake -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
             -DANDROID_ABI="${ABI}" \
@@ -169,8 +184,8 @@ jobs:
             -DTD_ENABLE_JAVA=ON \
             -DOPENSSL_ROOT_DIR="$SSL_DIR" \
             -DOPENSSL_INCLUDE_DIR="$SSL_DIR/include" \
-            -DOPENSSL_SSL_LIBRARY="$SSL_LIB" \
-            -DOPENSSL_CRYPTO_LIBRARY="$CRYPTO_LIB" \
+            -DOPENSSL_SSL_LIBRARY="$SSL_DIR/libssl.a" \
+            -DOPENSSL_CRYPTO_LIBRARY="$SSL_DIR/libcrypto.a" \
             -DOPENSSL_USE_STATIC_LIBS=ON \
             -DCMAKE_FIND_DEBUG_MODE=ON \
             "../${TD_SRC_DIR}"
@@ -179,7 +194,7 @@ jobs:
           ninja install
           echo "TDLib ${ABI} install → $(pwd)/install"
 
-      # ==== CMake-Logs bei jedem Run mitschicken (Debug-Erleichterung) ====
+      # ==== CMake-Logs bei jedem Run mitschicken ====
       - name: Upload CMake logs (${{ matrix.abi }})
         if: always()
         uses: actions/upload-artifact@v4
