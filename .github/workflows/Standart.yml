@@ -129,12 +129,12 @@ jobs:
             exit 11
           fi
 
-          # Kein rsync nötig: nur Standard-Tools verwenden
+          # nur Standard-Tools verwenden
           mkdir -p "$ABI_DIR/include"
           cp -a "$INC_DIR/." "$ABI_DIR/include/"
           cp -f "$SSL_LIB" "$ABI_DIR/libssl.a"
           cp -f "$CRYPTO_LIB" "$ABI_DIR/libcrypto.a"
-          # optionale Kompat-Kopien unter lib/
+          # optionale Kompat-Symlinks unter lib/
           ln -sf ../libssl.a   "$ABI_DIR/lib/libssl.a"
           ln -sf ../libcrypto.a "$ABI_DIR/lib/libcrypto.a"
 
@@ -149,49 +149,39 @@ jobs:
           trap 'rc=$?; echo "::error ::Validation failed at line ${LINENO} (rc=${rc}). Last cmd: ${BASH_COMMAND}"; exit ${rc}' ERR
 
           SSL_DIR="${BORINGSSL_DIR}"
-
-          # Pflichtdateien prüfen
-          if [ ! -d "$SSL_DIR/include" ]; then
-            echo "::error ::Missing include/ in $SSL_DIR"
-            exit 3
-          fi
-          if [ ! -f "$SSL_DIR/libssl.a" ]; then
-            echo "::error ::Missing libssl.a in $SSL_DIR"
-            exit 4
-          fi
-          if [ ! -f "$SSL_DIR/libcrypto.a" ]; then
-            echo "::error ::Missing libcrypto.a in $SSL_DIR"
-            exit 4
-          fi
+          if [ ! -d "$SSL_DIR/include" ]; then echo "::error ::Missing include/ in $SSL_DIR"; exit 3; fi
+          if [ ! -f "$SSL_DIR/libssl.a" ]; then echo "::error ::Missing libssl.a in $SSL_DIR"; exit 4; fi
+          if [ ! -f "$SSL_DIR/libcrypto.a" ]; then echo "::error ::Missing libcrypto.a in $SSL_DIR"; exit 4; fi
 
           AR="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
           READELF="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
 
-          # 1) libssl.a
-          OBJ_SSL="$($AR t "$SSL_DIR/libssl.a" | head -n1)"
-          $AR p "$SSL_DIR/libssl.a" "$OBJ_SSL" > first_ssl.o
-          HDR_SSL="$($READELF -h first_ssl.o)"
-          if ! grep -Eq 'Machine:\s*${{ matrix.expect_machine }}' <<< "$HDR_SSL"; then
-            echo "::error ::Unexpected Machine in libssl.a. Expected ${{ matrix.expect_machine }}"; echo "$HDR_SSL"
-            exit 6
-          fi
-          if ! grep -Eq 'Class:\s*${{ matrix.expect_class }}' <<< "$HDR_SSL"; then
-            echo "::error ::Unexpected Class in libssl.a. Expected ${{ matrix.expect_class }}"; echo "$HDR_SSL"
-            exit 7
-          fi
+          check_archive () {
+            local ARCHIVE="$1" EXPECT_MACHINE="$2" EXPECT_CLASS="$3" LABEL="$4"
+            local HDR=""
+            # 1) Direkt auf das Archiv lesen (llvm-readelf kann Archive inspizieren)
+            if HDR="$($READELF -h "$ARCHIVE" 2>/dev/null)"; then
+              :
+            else
+              HDR=""
+            fi
+            # 2) Fallback: ersten Member extrahieren (ohne fragile Pipes)
+            if [ -z "$HDR" ]; then
+              mapfile -t MEMBERS < <("$AR" t "$ARCHIVE")
+              if [ "${#MEMBERS[@]}" -eq 0 ]; then
+                echo "::error ::No members found in $LABEL ($ARCHIVE)"
+                exit 12
+              fi
+              local FIRST="${MEMBERS[0]}"
+              "$AR" p "$ARCHIVE" "$FIRST" > "first_${LABEL}.o"
+              HDR="$($READELF -h "first_${LABEL}.o")"
+            fi
+            echo "$HDR" | grep -Eq "Machine:\s*${EXPECT_MACHINE}" || { echo "::error ::Unexpected Machine in $LABEL. Expected ${EXPECT_MACHINE}"; echo "$HDR"; exit 13; }
+            echo "$HDR" | grep -Eq "Class:\s*${EXPECT_CLASS}"     || { echo "::error ::Unexpected Class in $LABEL. Expected ${EXPECT_CLASS}";   echo "$HDR"; exit 14; }
+          }
 
-          # 2) libcrypto.a
-          OBJ_CRY="$($AR t "$SSL_DIR/libcrypto.a" | head -n1)"
-          $AR p "$SSL_DIR/libcrypto.a" "$OBJ_CRY" > first_crypto.o
-          HDR_CRY="$($READELF -h first_crypto.o)"
-          if ! grep -Eq 'Machine:\s*${{ matrix.expect_machine }}' <<< "$HDR_CRY"; then
-            echo "::error ::Unexpected Machine in libcrypto.a. Expected ${{ matrix.expect_machine }}"; echo "$HDR_CRY"
-            exit 8
-          fi
-          if ! grep -Eq 'Class:\s*${{ matrix.expect_class }}' <<< "$HDR_CRY"; then
-            echo "::error ::Unexpected Class in libcrypto.a. Expected ${{ matrix.expect_class }}"; echo "$HDR_CRY"
-            exit 9
-          fi
+          check_archive "$SSL_DIR/libssl.a"    "${{ matrix.expect_machine }}" "${{ matrix.expect_class }}" "libssl.a"
+          check_archive "$SSL_DIR/libcrypto.a" "${{ matrix.expect_machine }}" "${{ matrix.expect_class }}" "libcrypto.a"
 
           echo "ABI/ELF validation passed for ${{ matrix.abi }} ✅"
           exit 0
