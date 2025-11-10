@@ -140,12 +140,15 @@ jobs:
           echo "BORINGSSL_ASSET=$ASSET" >> $GITHUB_ENV
           echo "== Staged BoringSSL at ==" && ls -R "$ABI_DIR"
 
-      # ==== PRE-FLIGHT: Link-Test (PIC- und Symbol-Sanity) ====
+      # ==== PRE-FLIGHT: Link-Test (PIC-/Symbols-Sanity) ====
       - name: Preflight link check (${{ matrix.abi }})
         run: |
           set -euo pipefail
           ABI="${{ matrix.abi }}"
           SSL_DIR="${BORINGSSL_DIR}"
+
+          # API-Level aus ANDROID_PLATFORM (z.B. android-24 -> 24)
+          API_LEVEL="${ANDROID_PLATFORM#android-}"
 
           # Toolchain-CC je ABI
           if [ "$ABI" = "arm64-v8a" ]; then
@@ -153,9 +156,18 @@ jobs:
           else
             TRIPLE="armv7a-linux-androideabi"
           fi
-          CC="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/${TRIPLE}${ANDROID_PLATFORM}-clang"
+          CC="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/${TRIPLE}${API_LEVEL}-clang"
 
-          # v7a: konservative Flags
+          # Sanity: Compiler vorhanden?
+          if [ ! -x "$CC" ]; then
+            echo "::error ::Compiler not found: $CC"
+            echo "::group::Available toolchain bins"
+            ls -1 "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin" || true
+            echo "::endgroup::"
+            exit 127
+          fi
+
+          # Flags
           CFLAGS="-fPIC"
           LDFLAGS="-Wl,--start-group ${SSL_DIR}/libssl.a ${SSL_DIR}/libcrypto.a -Wl,--end-group -llog -landroid -ldl -latomic -lz"
           if [ "$ABI" = "armeabi-v7a" ]; then
@@ -167,7 +179,7 @@ jobs:
           #include <openssl/ssl.h>
           int main(){ return 0; }
           EOF
-          # Versuch, minimale Shared-Objekt zu linken -> PIC-/Symptom-Check
+
           "$CC" -shared preflight.c -o libpreflight.so -fPIC $CFLAGS $LDFLAGS
           echo "Preflight link passed for ${ABI}"
 
