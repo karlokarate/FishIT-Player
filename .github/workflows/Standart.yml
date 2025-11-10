@@ -1,10 +1,25 @@
-name: TDLib – Android Java (prebuilt BoringSSL via curl, multi-ABI)
+name: TDLib – Android Java (prebuilt BoringSSL, validated, doc-conform)
 
 on:
   workflow_dispatch:
 
 jobs:
+  # 1) Schnelle YAML/Actions-Validierung vor dem Build
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: actionlint (latest)
+        uses: reviewdog/action-actionlint@v1
+        with:
+          actionlint_flags: "--color always"
+
+  # 2) TDLib-Build (läuft nach bestandenem Lint)
   tdlib:
+    needs: lint
     runs-on: ubuntu-24.04
     env:
       ANDROID_PLATFORM: android-24
@@ -12,7 +27,6 @@ jobs:
       TD_SRC_DIR: td
       REPO: karlokarate/FishIT-Player
       BORINGSSL_TAG: boringssl-28efc83e86dc-android24-ndk-r27c
-
     strategy:
       fail-fast: false
       matrix:
@@ -20,9 +34,13 @@ jobs:
           - abi: arm64-v8a
             asset: boringssl-28efc83e86dc-android24-ndk-r27c-arm64-v8a.tar.zst
             sha:   boringssl-28efc83e86dc-android24-ndk-r27c-arm64-v8a.sha256
+            expect_machine: "AArch64"
+            expect_class: "ELF64"
           - abi: armeabi-v7a
             asset: boringssl-28efc83e86dc-android24-ndk-r27c-armeabi-v7a.tar.zst
             sha:   boringssl-28efc83e86dc-android24-ndk-r27c-armeabi-v7a.sha256
+            expect_machine: "ARM"
+            expect_class: "ELF32"
 
     steps:
       - name: Checkout
@@ -31,15 +49,15 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - name: Install build deps (JDK, zstd, Ninja, CMake)
+      - name: Install build deps (lean & doc-conform)
         run: |
+          set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y ninja-build cmake git curl unzip tar zstd \
-                                  autoconf automake libtool openjdk-17-jdk \
-                                  gperf pkg-config zlib1g-dev
+          # TDLib-Docs: cmake/ninja/jdk/gperf + Helfer
+          sudo apt-get install -y ninja-build cmake git curl unzip tar zstd openjdk-17-jdk gperf
           echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))" >> $GITHUB_ENV
 
-      - name: Prepare Android NDK
+      - name: Prepare Android NDK ${{ env.NDK_VERSION }}
         run: |
           set -euo pipefail
           mkdir -p .ndk && cd .ndk
@@ -49,23 +67,30 @@ jobs:
           echo "NDK_PATH=$PWD/android-ndk" >> $GITHUB_ENV
 
       - name: Clone TDLib (official)
-        run: git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
+        run: |
+          set -euo pipefail
+          git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-      # ==== Download & extract the exact BoringSSL asset for this ABI (no gh, no token) ====
-      - name: Download prebuilt BoringSSL (matrix ABI)
+      # ==== Lade & entpacke das passende BoringSSL-Prebuild für diese ABI ====
+      - name: Download prebuilt BoringSSL (${{ matrix.abi }})
         run: |
           set -euo pipefail
           mkdir -p .third_party/boringssl && cd .third_party/boringssl
+          BASE_URL="https://github.com/${REPO}/releases/download/${BORINGSSL_TAG}"
           ASSET="${{ matrix.asset }}"
           SHA="${{ matrix.sha }}"
-          BASE_URL="https://github.com/${REPO}/releases/download/${BORINGSSL_TAG}"
 
           echo "Downloading ${BASE_URL}/${ASSET}"
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${ASSET}")
+          if [ "$CODE" != "200" ]; then
+            echo "::error ::Asset not found ${BASE_URL}/${ASSET} (HTTP $CODE)"; exit 5
+          fi
           curl -fL "${BASE_URL}/${ASSET}" -o "${ASSET}"
 
-          # optional: verify if sha256 file exists in the release
-          if curl -fILs "${BASE_URL}/${SHA}" >/dev/null; then
-            echo "Downloading SHA256 and verifying..."
+          # Optional: SHA-Check, wenn Datei vorhanden
+          CODE_SHA=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${SHA}")
+          if [ "$CODE_SHA" = "200" ]; then
+            echo "Verifying SHA256 for ${ASSET} ..."
             curl -fL "${BASE_URL}/${SHA}" -o "${SHA}"
             sha256sum -c "${SHA}"
           else
@@ -76,23 +101,53 @@ jobs:
           mkdir -p "${NAME}"
           tar --use-compress-program=unzstd -xf "${ASSET}" -C "${NAME}"
           echo "BORINGSSL_DIR=$PWD/${NAME}" >> $GITHUB_ENV
-          echo "== BoringSSL tree =="
-          ls -R "${NAME}"
+          echo "== BoringSSL tree ==" && ls -R "${NAME}"
 
-      # ==== Configure & build TDLib for this ABI ====
+      # ==== Validierung: ELF/ABI der Prebuild-Libs prüfen (AArch64/ARM, ELF64/ELF32) ====
+      - name: Validate prebuilt BoringSSL ABI (${{ matrix.abi }})
+        run: |
+          set -euo pipefail
+          SSL_DIR="${BORINGSSL_DIR}"
+          test -d "$SSL_DIR/include" || { echo "::error ::Missing include/ in $SSL_DIR"; exit 3; }
+
+          # Robust Lib-Find (egal ob im Root oder unter lib/)
+          SSL_LIB="$(find "$SSL_DIR" -type f -name 'libssl.a' -print -quit)"
+          CRYPTO_LIB="$(find "$SSL_DIR" -type f -name 'libcrypto.a' -print -quit)"
+          if [ -z "$SSL_LIB" ] || [ -z "$CRYPTO_LIB" ]; then
+            echo "::group::BoringSSL tree"; ls -R "$SSL_DIR"; echo "::endgroup::"
+            echo "::error ::libssl.a/libcrypto.a not found under $SSL_DIR"; exit 4
+          fi
+
+          AR="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+          READELF="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+
+          OBJ_SSL="$($AR t "$SSL_LIB" | head -n1)"
+          $AR p "$SSL_LIB" "$OBJ_SSL" > first_ssl.o
+          HDR_SSL="$($READELF -h first_ssl.o)"
+          echo "$HDR_SSL" | grep -q "Machine:\s*${{ matrix.expect_machine }}" || { echo "::error ::Unexpected Machine in libssl.a: expected ${{ matrix.expect_machine }}"; echo "$HDR_SSL"; exit 6; }
+          echo "$HDR_SSL" | grep -q "Class:\s*${{ matrix.expect_class }}" || { echo "::error ::Unexpected Class in libssl.a: expected ${{ matrix.expect_class }}"; echo "$HDR_SSL"; exit 7; }
+
+          OBJ_CRY="$($AR t "$CRYPTO_LIB" | head -n1)"
+          $AR p "$CRYPTO_LIB" "$OBJ_CRY" > first_crypto.o
+          HDR_CRY="$($READELF -h first_crypto.o)"
+          echo "$HDR_CRY" | grep -q "Machine:\s*${{ matrix.expect_machine }}" || { echo "::error ::Unexpected Machine in libcrypto.a: expected ${{ matrix.expect_machine }}"; echo "$HDR_CRY"; exit 8; }
+          echo "$HDR_CRY" | grep -q "Class:\s*${{ matrix.expect_class }}" || { echo "::error ::Unexpected Class in libcrypto.a: expected ${{ matrix.expect_class }}"; echo "$HDR_CRY"; exit 9; }
+
+          echo "ABI/ELF validation passed for ${{ matrix.abi }} ✅"
+
+      # ==== TDLib konfigurieren & bauen (laut TDLib-Doku, Java/JNI + install) ====
       - name: Build TDLib (${{ matrix.abi }})
         run: |
           set -euo pipefail
           ABI="${{ matrix.abi }}"
+          BUILD_DIR="build-${ABI}"
           SSL_DIR="${BORINGSSL_DIR}"
 
-          test -d "$SSL_DIR/include" || { echo "include/ missing in $SSL_DIR"; exit 3; }
-          SSL_LIB="$SSL_DIR/libssl.a";   [ -f "$SSL_LIB" ]   || SSL_LIB="$SSL_DIR/lib/libssl.a"
-          CRYPTO_LIB="$SSL_DIR/libcrypto.a"; [ -f "$CRYPTO_LIB" ] || CRYPTO_LIB="$SSL_DIR/lib/libcrypto.a"
-          test -f "$SSL_LIB" && test -f "$CRYPTO_LIB" || { echo "libssl.a or libcrypto.a missing under $SSL_DIR"; exit 4; }
-
-          BUILD_DIR="build-${ABI}"
           mkdir -p "$BUILD_DIR" && cd "$BUILD_DIR"
+
+          # Nochmals robuste Lib-Pfade (für cmake)
+          SSL_LIB="$(find "$SSL_DIR" -type f -name 'libssl.a' -print -quit)"
+          CRYPTO_LIB="$(find "$SSL_DIR" -type f -name 'libcrypto.a' -print -quit)"
 
           cmake -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
@@ -107,17 +162,28 @@ jobs:
             -DOPENSSL_SSL_LIBRARY="$SSL_LIB" \
             -DOPENSSL_CRYPTO_LIBRARY="$CRYPTO_LIB" \
             -DOPENSSL_USE_STATIC_LIBS=ON \
+            -DCMAKE_FIND_DEBUG_MODE=ON \
             "../${TD_SRC_DIR}"
 
           ninja -v
           ninja install
           echo "TDLib ${ABI} install → $(pwd)/install"
 
-      - name: Upload TDLib artifacts (both ABIs)
+      # ==== CMake-Logs bei jedem Run mitschicken (Debug-Erleichterung) ====
+      - name: Upload CMake logs (${{ matrix.abi }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tdlib-android-multiabi-boringssl-prebuilt
+          name: cmake-logs-${{ matrix.abi }}
           path: |
-            build-arm64-v8a/install/
-            build-armeabi-v7a/install/
+            build-${{ matrix.abi }}/CMakeFiles/CMakeError.log
+            build-${{ matrix.abi }}/CMakeFiles/CMakeOutput.log
+          if-no-files-found: ignore
+
+      # ==== TDLib-Install-Bäume je ABI als Artefakt ====
+      - name: Upload TDLib artifacts (${{ matrix.abi }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-android-${{ matrix.abi }}-boringssl-prebuilt
+          path: build-${{ matrix.abi }}/install/
+          if-no-files-found: error
