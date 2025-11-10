@@ -81,7 +81,7 @@ jobs:
             curl -fsSLO "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
             unzip -q "android-ndk-${NDK_VERSION}-linux.zip"
           fi
-          # Wichtig: lokal setzen UND ins GITHUB_ENV schreiben
+          # setzen für diesen Step + export für spätere Steps
           export NDK_PATH="$PWD/android-ndk-${NDK_VERSION}"
           echo "NDK_PATH=$NDK_PATH" >> $GITHUB_ENV
           test -x "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" || { echo "::error ::NDK toolchain clang++ missing"; exit 2; }
@@ -154,7 +154,6 @@ jobs:
               if [ -f "$ABI_DIR/include/openssl/ssl.h" ] && [ -f "$ABI_DIR/libssl.a" ] && [ -f "$ABI_DIR/libcrypto.a" ]; then
                 valid=true
                 echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
-                # lokal setzen, damit dieser Step weiterarbeiten kann (falls nötig)
                 export BORINGSSL_DIR="$ABI_DIR"
                 echo "BORINGSSL_ASSET=$ASSET" >> $GITHUB_ENV
               fi
@@ -204,7 +203,6 @@ jobs:
             echo "::error ::BORINGSSL_DIR is unset (staging and fallback failed)"
             exit 50
           fi
-
           test -d "$SSL_DIR/include" && test -f "$SSL_DIR/libssl.a" && test -f "$SSL_DIR/libcrypto.a"
 
           AR="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
@@ -253,13 +251,15 @@ jobs:
           fi
           CXX="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/${TRIPLE}${API_LEVEL}-clang++"
 
-          CXXFLAGS= -fPIC -I\"$SSL_DIR/include\"
-          LDFLAGS="-Wl,--start-group ${SSL_DIR}/libssl.a ${SSL_DIR}/libcrypto.a -Wl,--end-group -llog -landroid -ldl -latomic -lz -static-libstdc++"
+          # Flags als Bash-Arrays (keine Quote-/Splitting-Fallen)
+          CXXFLAGS=( -fPIC -I"$SSL_DIR/include" )
+          LDFLAGS=( -Wl,--start-group "$SSL_DIR/libssl.a" "$SSL_DIR/libcrypto.a" -Wl,--end-group -llog -landroid -ldl -latomic -lz -static-libstdc++ )
           if [ "$ABI" = "armeabi-v7a" ]; then
-            CXXFLAGS="$CXXFLAGS -march=armv7-a -mfpu=neon -mfloat-abi=softfp"
-            LDFLAGS="$LDFLAGS -Wl,--fix-cortex-a8"
+            CXXFLAGS+=( -march=armv7-a -mfpu=neon -mfloat-abi=softfp )
+            LDFLAGS+=( -Wl,--fix-cortex-a8 )
           fi
 
+          # Sanity: Header und Libs vorhanden
           test -f "$SSL_DIR/include/openssl/ssl.h" || { echo "::error ::missing $SSL_DIR/include/openssl/ssl.h"; exit 12; }
           test -f "$SSL_DIR/libssl.a" || { echo "::error ::missing $SSL_DIR/libssl.a"; exit 12; }
           test -f "$SSL_DIR/libcrypto.a" || { echo "::error ::missing $SSL_DIR/libcrypto.a"; exit 12; }
@@ -269,7 +269,12 @@ jobs:
           int main(){ return 0; }
           EOF
 
-          "$CXX" -shared preflight.cc -o libpreflight.so $CXXFLAGS $LDFLAGS
+          # Sichtbarkeit: effektive Argumente
+          printf 'CXX: %s\n' "$CXX"
+          printf 'CXXFLAGS:'; printf ' %q' "${CXXFLAGS[@]}"; echo
+          printf 'LDFLAGS:';  printf ' %q' "${LDFLAGS[@]}";  echo
+
+          "$CXX" -shared preflight.cc -o libpreflight.so "${CXXFLAGS[@]}" "${LDFLAGS[@]}"
           file -L libpreflight.so || true
           echo "Preflight link passed for ${ABI}"
 
