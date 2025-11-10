@@ -81,7 +81,9 @@ jobs:
             curl -fsSLO "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
             unzip -q "android-ndk-${NDK_VERSION}-linux.zip"
           fi
-          echo "NDK_PATH=$PWD/android-ndk-${NDK_VERSION}" >> $GITHUB_ENV
+          # Wichtig: lokal setzen UND ins GITHUB_ENV schreiben
+          export NDK_PATH="$PWD/android-ndk-${NDK_VERSION}"
+          echo "NDK_PATH=$NDK_PATH" >> $GITHUB_ENV
           test -x "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" || { echo "::error ::NDK toolchain clang++ missing"; exit 2; }
 
       - name: Clone TDLib (official)
@@ -152,6 +154,8 @@ jobs:
               if [ -f "$ABI_DIR/include/openssl/ssl.h" ] && [ -f "$ABI_DIR/libssl.a" ] && [ -f "$ABI_DIR/libcrypto.a" ]; then
                 valid=true
                 echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
+                # lokal setzen, damit dieser Step weiterarbeiten kann (falls nötig)
+                export BORINGSSL_DIR="$ABI_DIR"
                 echo "BORINGSSL_ASSET=$ASSET" >> $GITHUB_ENV
               fi
             else
@@ -188,13 +192,19 @@ jobs:
           ln -sf ../libssl.a    "$ABI_DIR/lib/libssl.a"
           ln -sf ../libcrypto.a "$ABI_DIR/lib/libcrypto.a"
           test -f "$ABI_DIR/include/openssl/ssl.h" && test -f "$ABI_DIR/libssl.a" && test -f "$ABI_DIR/libcrypto.a"
+          export BORINGSSL_DIR="$ABI_DIR"
           echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
           echo "BORINGSSL_ASSET=built-from-source" >> $GITHUB_ENV
 
       - name: Validate prebuilt or fallback BoringSSL ABI (${{ matrix.abi }})
         run: |
           set -Eeuo pipefail
-          SSL_DIR="${BORINGSSL_DIR}"
+          SSL_DIR="${BORINGSSL_DIR:-}"
+          if [ -z "$SSL_DIR" ]; then
+            echo "::error ::BORINGSSL_DIR is unset (staging and fallback failed)"
+            exit 50
+          fi
+
           test -d "$SSL_DIR/include" && test -f "$SSL_DIR/libssl.a" && test -f "$SSL_DIR/libcrypto.a"
 
           AR="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
@@ -229,7 +239,11 @@ jobs:
         run: |
           set -euo pipefail
           ABI="${{ matrix.abi }}"
-          SSL_DIR="${BORINGSSL_DIR}"
+          SSL_DIR="${BORINGSSL_DIR:-}"
+          if [ -z "$SSL_DIR" ]; then
+            echo "::error ::BORINGSSL_DIR is unset before preflight"
+            exit 51
+          fi
           API_LEVEL="${ANDROID_PLATFORM#android-}"
 
           if [ "$ABI" = "arm64-v8a" ]; then
@@ -264,7 +278,12 @@ jobs:
           set -euo pipefail
           ABI="${{ matrix.abi }}"
           BUILD_DIR="build-${ABI}"
-          SSL_DIR="${BORINGSSL_DIR}"
+          SSL_DIR="${BORINGSSL_DIR:-}"
+          if [ -z "$SSL_DIR" ]; then
+            echo "::error ::BORINGSSL_DIR is unset before configure"
+            exit 52
+          fi
+
           mkdir -p "$BUILD_DIR"
           cd "$BUILD_DIR"
 
