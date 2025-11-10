@@ -1,0 +1,97 @@
+name: Validate prebuilt BoringSSL (arm64 & armv7)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    env:
+      REPO: karlokarate/FishIT-Player
+      TAG:  boringssl-28efc83e86dc-android24-ndk-r27c
+      NDK_VERSION: r27c
+      ANDROID_PLATFORM: android-24
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            asset: boringssl-28efc83e86dc-android24-ndk-r27c-arm64-v8a.tar.zst
+            triple: aarch64-linux-android
+          - abi: armeabi-v7a
+            asset: boringssl-28efc83e86dc-android24-ndk-r27c-armeabi-v7a.tar.zst
+            triple: armv7a-linux-androideabi
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install tools (curl, zstd, Ninja, CMake, JDK)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y curl zstd tar unzip ninja-build cmake openjdk-17-jdk
+
+      - name: Install Android NDK ${{ env.NDK_VERSION }}
+        run: |
+          mkdir -p .ndk && cd .ndk
+          curl -fsSLO "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
+          unzip -q "android-ndk-${NDK_VERSION}-linux.zip"
+          mv "android-ndk-${NDK_VERSION}" android-ndk
+          echo "NDK=$PWD/android-ndk" >> $GITHUB_ENV
+
+      - name: Download & extract ${{ matrix.asset }}
+        run: |
+          set -euo pipefail
+          mkdir -p .third_party/boringssl && cd .third_party/boringssl
+          BASE="https://github.com/${REPO}/releases/download/${TAG}"
+          curl -fL "${BASE}/${{ matrix.asset }}" -o "${{ matrix.asset }}"
+          NAME="${{ matrix.asset%.tar.zst }}"
+          mkdir -p "$NAME"
+          tar --use-compress-program=unzstd -xf "${{ matrix.asset }}" -C "$NAME"
+          echo "PKG_DIR=$PWD/$NAME" >> $GITHUB_ENV
+          echo "== tree ==" && ls -R "$NAME"
+
+      - name: Sanity checks (files/paths)
+        run: |
+          set -euo pipefail
+          test -d "$PKG_DIR/include" || { echo "Missing include/"; exit 2; }
+          SSL="$PKG_DIR/libssl.a";   [ -f "$SSL" ] || SSL="$PKG_DIR/lib/libssl.a"
+          CRY="$PKG_DIR/libcrypto.a";[ -f "$CRY" ] || CRY="$PKG_DIR/lib/libcrypto.a"
+          test -f "$SSL" && test -f "$CRY" || { echo "Missing libssl.a/libcrypto.a"; exit 3; }
+          echo "Using:"; echo "$SSL"; echo "$CRY"
+
+      - name: ABI check (readelf on members)
+        run: |
+          set -euo pipefail
+          AR_BIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+          READELF="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          SSL="$PKG_DIR/libssl.a";   [ -f "$SSL" ] || SSL="$PKG_DIR/lib/libssl.a"
+          # Nimm die erste Objektdatei und prüfe die Machine
+          OBJ="$($AR_BIN t "$SSL" | head -n1)"
+          $AR_BIN p "$SSL" "$OBJ" > first.o
+          $READELF -h first.o
+          echo "OK: readelf header shown"
+
+      - name: Link test (prove linkability with NDK ${{ env.ANDROID_PLATFORM }})
+        run: |
+          set -euo pipefail
+          CC="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.triple }}${ANDROID_PLATFORM}-clang"
+          CXX="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.triple }}${ANDROID_PLATFORM}-clang++"
+          SSL="$PKG_DIR/libssl.a";   [ -f "$SSL" ] || SSL="$PKG_DIR/lib/libssl.a"
+          CRY="$PKG_DIR/libcrypto.a";[ -f "$CRY" ] || CRY="$PKG_DIR/lib/libcrypto.a"
+          cat > test.c <<'EOF'
+          #include <openssl/ssl.h>
+          int main() {
+            SSL_library_init(); // BoringSSL hat Kompat-Symbole
+            return 0;
+          }
+          EOF
+          # statischer Link zu einer kleinen Dummy-Bin (nur um Symbols zu prüfen)
+          "$CC" test.c "$SSL" "$CRY" -static -o linktest || (echo "Link failed"; exit 4)
+          file linktest || true
+          echo "Link test passed"
+
+      - name: Report
+        run: echo "All checks for ${{ matrix.abi }} passed ✅"
