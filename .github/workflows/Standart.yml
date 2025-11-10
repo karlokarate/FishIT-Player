@@ -1,4 +1,4 @@
-name: TDLib – Android Java (prebuilt BoringSSL, multi-ABI, hardened)
+name: TDLib – Android Java (prebuilt BoringSSL via curl, multi-ABI)
 
 on:
   workflow_dispatch:
@@ -10,8 +10,19 @@ jobs:
       ANDROID_PLATFORM: android-24
       NDK_VERSION: r27c
       TD_SRC_DIR: td
-      BORINGSSL_TAG: boringssl-28efc83e86dc-android24-ndk-r27c
       REPO: karlokarate/FishIT-Player
+      BORINGSSL_TAG: boringssl-28efc83e86dc-android24-ndk-r27c
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            asset: boringssl-28efc83e86dc-android24-ndk-r27c-arm64-v8a.tar.zst
+            sha:   boringssl-28efc83e86dc-android24-ndk-r27c-arm64-v8a.sha256
+          - abi: armeabi-v7a
+            asset: boringssl-28efc83e86dc-android24-ndk-r27c-armeabi-v7a.tar.zst
+            sha:   boringssl-28efc83e86dc-android24-ndk-r27c-armeabi-v7a.sha256
 
     steps:
       - name: Checkout
@@ -20,77 +31,73 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - name: Install build deps (incl. JDK, zstd, gh)
+      - name: Install build deps (JDK, zstd, Ninja, CMake)
         run: |
-          set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y ninja-build cmake git curl unzip tar zstd autoconf automake libtool \
-                                  openjdk-17-jdk gperf pkg-config zlib1g-dev
-          # GitHub CLI (gh) – falls nicht vorinstalliert:
-          if ! command -v gh >/dev/null 2>&1; then
-            type -p curl >/dev/null || sudo apt-get install -y curl
-            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-            sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list
-            sudo apt-get update -qq && sudo apt-get install -y gh
-          fi
+          sudo apt-get install -y ninja-build cmake git curl unzip tar zstd \
+                                  autoconf automake libtool openjdk-17-jdk \
+                                  gperf pkg-config zlib1g-dev
           echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))" >> $GITHUB_ENV
-          gh --version || true
-
-      - name: Auth GitHub CLI
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          echo "${GH_TOKEN}" | gh auth login --with-token
-          gh auth status
 
       - name: Prepare Android NDK
         run: |
           set -euo pipefail
           mkdir -p .ndk && cd .ndk
-          curl -fsSLO https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip
-          unzip -q android-ndk-${NDK_VERSION}-linux.zip
-          mv android-ndk-${NDK_VERSION} android-ndk
+          curl -fsSLO "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
+          unzip -q "android-ndk-${NDK_VERSION}-linux.zip"
+          mv "android-ndk-${NDK_VERSION}" android-ndk
           echo "NDK_PATH=$PWD/android-ndk" >> $GITHUB_ENV
 
       - name: Clone TDLib (official)
         run: git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-      # ===== Download & extract prebuilt BoringSSL packages =====
-      - name: Download prebuilt BoringSSL (arm64 + armv7)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # ==== Download & extract the exact BoringSSL asset for this ABI (no gh, no token) ====
+      - name: Download prebuilt BoringSSL (matrix ABI)
         run: |
           set -euo pipefail
           mkdir -p .third_party/boringssl && cd .third_party/boringssl
-          gh release download "$BORINGSSL_TAG" -R "$REPO" --pattern '*.tar.zst' --clobber
-          ls -al
-          for f in *.tar.zst; do
-            [ -f "$f" ] || { echo "No .tar.zst assets found for $BORINGSSL_TAG"; exit 2; }
-            name="${f%.tar.zst}"
-            mkdir -p "$name"
-            tar --use-compress-program=unzstd -xf "$f" -C "$name"
-          done
-          echo "BORINGSSL_DIR=$PWD" >> $GITHUB_ENV
-          echo "== BoringSSL tree ==" && ls -R .
+          ASSET="${{ matrix.asset }}"
+          SHA="${{ matrix.sha }}"
+          BASE_URL="https://github.com/${REPO}/releases/download/${BORINGSSL_TAG}"
 
-      # ===== Build TDLib for arm64-v8a =====
-      - name: Build TDLib (arm64-v8a)
+          echo "Downloading ${BASE_URL}/${ASSET}"
+          curl -fL "${BASE_URL}/${ASSET}" -o "${ASSET}"
+
+          # optional: verify if sha256 file exists in the release
+          if curl -fILs "${BASE_URL}/${SHA}" >/dev/null; then
+            echo "Downloading SHA256 and verifying..."
+            curl -fL "${BASE_URL}/${SHA}" -o "${SHA}"
+            sha256sum -c "${SHA}"
+          else
+            echo "No SHA256 file present for ${ASSET}; skipping verification."
+          fi
+
+          NAME="${ASSET%.tar.zst}"
+          mkdir -p "${NAME}"
+          tar --use-compress-program=unzstd -xf "${ASSET}" -C "${NAME}"
+          echo "BORINGSSL_DIR=$PWD/${NAME}" >> $GITHUB_ENV
+          echo "== BoringSSL tree =="
+          ls -R "${NAME}"
+
+      # ==== Configure & build TDLib for this ABI ====
+      - name: Build TDLib (${{ matrix.abi }})
         run: |
           set -euo pipefail
-          mkdir -p build-arm64 && cd build-arm64
-          SSL_DIR="$GITHUB_WORKSPACE/${BORINGSSL_DIR}/boringssl-28efc83e86dc-android24-ndk-r27c-arm64-v8a"
+          ABI="${{ matrix.abi }}"
+          SSL_DIR="${BORINGSSL_DIR}"
+
           test -d "$SSL_DIR/include" || { echo "include/ missing in $SSL_DIR"; exit 3; }
-          # Libs können je nach Paket im Root oder in lib/ liegen:
-          SSL_LIB="$SSL_DIR/libssl.a"; [ -f "$SSL_LIB" ] || SSL_LIB="$SSL_DIR/lib/libssl.a"
+          SSL_LIB="$SSL_DIR/libssl.a";   [ -f "$SSL_LIB" ]   || SSL_LIB="$SSL_DIR/lib/libssl.a"
           CRYPTO_LIB="$SSL_DIR/libcrypto.a"; [ -f "$CRYPTO_LIB" ] || CRYPTO_LIB="$SSL_DIR/lib/libcrypto.a"
           test -f "$SSL_LIB" && test -f "$CRYPTO_LIB" || { echo "libssl.a or libcrypto.a missing under $SSL_DIR"; exit 4; }
 
+          BUILD_DIR="build-${ABI}"
+          mkdir -p "$BUILD_DIR" && cd "$BUILD_DIR"
+
           cmake -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
-            -DANDROID_ABI=arm64-v8a \
-            -DANDROID_PLATFORM=${ANDROID_PLATFORM} \
+            -DANDROID_ABI="${ABI}" \
+            -DANDROID_PLATFORM="${ANDROID_PLATFORM}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$PWD/install" \
             -DTD_ENABLE_JNI=ON \
@@ -101,43 +108,16 @@ jobs:
             -DOPENSSL_CRYPTO_LIBRARY="$CRYPTO_LIB" \
             -DOPENSSL_USE_STATIC_LIBS=ON \
             "../${TD_SRC_DIR}"
+
           ninja -v
           ninja install
-          echo "TDLib arm64 install → $(pwd)/install"
-
-      # ===== Build TDLib for armeabi-v7a =====
-      - name: Build TDLib (armeabi-v7a)
-        run: |
-          set -euo pipefail
-          mkdir -p build-armv7 && cd build-armv7
-          SSL_DIR="$GITHUB_WORKSPACE/${BORINGSSL_DIR}/boringssl-28efc83e86dc-android24-ndk-r27c-armeabi-v7a"
-          test -d "$SSL_DIR/include" || { echo "include/ missing in $SSL_DIR"; exit 3; }
-          SSL_LIB="$SSL_DIR/libssl.a"; [ -f "$SSL_LIB" ] || SSL_LIB="$SSL_DIR/lib/libssl.a"
-          CRYPTO_LIB="$SSL_DIR/libcrypto.a"; [ -f "$CRYPTO_LIB" ] || CRYPTO_LIB="$SSL_DIR/lib/libcrypto.a"
-          test -f "$SSL_LIB" && test -f "$CRYPTO_LIB" || { echo "libssl.a or libcrypto.a missing under $SSL_DIR"; exit 4; }
-
-          cmake -G Ninja \
-            -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
-            -DANDROID_ABI=armeabi-v7a \
-            -DANDROID_PLATFORM=${ANDROID_PLATFORM} \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="$PWD/install" \
-            -DTD_ENABLE_JNI=ON \
-            -DTD_ENABLE_JAVA=ON \
-            -DOPENSSL_ROOT_DIR="$SSL_DIR" \
-            -DOPENSSL_INCLUDE_DIR="$SSL_DIR/include" \
-            -DOPENSSL_SSL_LIBRARY="$SSL_LIB" \
-            -DOPENSSL_CRYPTO_LIBRARY="$CRYPTO_LIB" \
-            -DOPENSSL_USE_STATIC_LIBS=ON \
-            "../${TD_SRC_DIR}"
-          ninja -v
-          ninja install
-          echo "TDLib armv7 install → $(pwd)/install"
+          echo "TDLib ${ABI} install → $(pwd)/install"
 
       - name: Upload TDLib artifacts (both ABIs)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: tdlib-android-multiabi-boringssl-prebuilt
           path: |
-            build-arm64/install/
-            build-armv7/install/
+            build-arm64-v8a/install/
+            build-armeabi-v7a/install/
