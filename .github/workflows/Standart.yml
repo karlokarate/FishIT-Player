@@ -62,7 +62,7 @@ jobs:
           set -euo pipefail
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get update -qq
-          sudo apt-get install -y ninja-build cmake git curl unzip tar zstd openjdk-17-jdk gperf file
+          sudo apt-get install -y ninja-build cmake git curl unzip tar zstd openjdk-17-jdk gperf file python3
           echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))" >> $GITHUB_ENV
 
       - name: Cache NDK ${{ env.NDK_VERSION }}
@@ -89,6 +89,17 @@ jobs:
         run: |
           set -euo pipefail
           git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
+
+      - name: Pre-generate tdutils auto sources (mime types)
+        run: |
+          set -euo pipefail
+          cd "${TD_SRC_DIR}/tdutils/generate"
+          mkdir -p auto
+          python3 generate_mime_types.py
+          test -f auto/mime_type_to_extension.cpp || { echo "::error ::missing auto/mime_type_to_extension.cpp after generation"; exit 91; }
+          test -f auto/extension_to_mime_type.cpp || { echo "::error ::missing auto/extension_to_mime_type.cpp after generation"; exit 92; }
+          echo "Generated tdutils auto sources:"
+          ls -l auto | sed 's/^/  /'
 
       - name: Prepare logs directory (${{ matrix.abi }})
         run: |
@@ -280,7 +291,6 @@ jobs:
             echo "::error ::BORINGSSL_DIR is unset before configure"
             exit 52
           fi
-          API_LEVEL="${ANDROID_PLATFORM#android-}"
 
           mkdir -p "$BUILD_DIR"
           cd "$BUILD_DIR"
@@ -299,15 +309,13 @@ jobs:
             -DOPENSSL_SSL_LIBRARY="$SSL_DIR/libssl.a" \
             -DOPENSSL_CRYPTO_LIBRARY="$SSL_DIR/libcrypto.a" \
             -DOPENSSL_USE_STATIC_LIBS=ON \
-            -DCMAKE_C_STANDARD=11 \
-            -DCMAKE_C_STANDARD_REQUIRED=ON \
-            -DCMAKE_CXX_STANDARD=17 \
-            -DCMAKE_CXX_STANDARD_REQUIRED=ON \
-            -DCMAKE_C_FLAGS="-D__ANDROID_API__=${API_LEVEL} -D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64" \
-            -DCMAKE_CXX_FLAGS="-D__ANDROID_API__=${API_LEVEL} -D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64" \
+            -DCMAKE_C_STANDARD=11 -DCMAKE_C_STANDARD_REQUIRED=ON \
+            -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON \
             -DCMAKE_FIND_DEBUG_MODE=ON \
             "../${TD_SRC_DIR}" 2>&1 | tee "../logs-${ABI}/cmake-configure.log"
           rc=${PIPESTATUS[0]}
+          (cp CMakeCache.txt ../logs-${ABI}/CMakeCache.txt || true)
+          (cmake -LA -N . > ../logs-${ABI}/CMakeVars.txt 2>&1 || true)
           set -e
           exit $rc
 
@@ -318,21 +326,24 @@ jobs:
           cd "build-${ABI}"
 
           set +e
-          ninja -v 2>&1 | tee "../logs-${ABI}/ninja-build.log"
+          NINJA_STATUS="[%r processes | %f/%t | %es]" ninja -j 1 -v 2>&1 | tee "../logs-${ABI}}/ninja-build.log"
           rc=${PIPESTATUS[0]}
           set -e
 
+          (cp compile_commands.json ../logs-${ABI}/compile_commands.json || true)
+
           if [ $rc -ne 0 ]; then
-            echo "::group::ninja error context (first error with 80 lines of context)"
-            first_err_line="$(grep -n -E '(^|[[:space:]])(error:|undefined reference|No such file or directory|ld: error|fatal error:)' "../logs-${ABI}/ninja-build.log" | head -n1 | cut -d: -f1 || true)"
+            echo "::group::ninja error context (first error with 120 lines of context)"
+            first_err_line="$(grep -n -E '(^|[[:space:]])(error:|fatal error:|undefined reference|No such file or directory|does not name a type|no member named|no type named|static assertion failed|unknown type name|unresolved external|ld: error|linker command failed)' "../logs-${ABI}}/ninja-build.log" | head -n1 | cut -d: -f1 || true)"
             if [ -n "$first_err_line" ]; then
-              start=$(( first_err_line>40 ? first_err_line-40 : 1 ))
-              end=$(( first_err_line+40 ))
-              nl -ba "../logs-${ABI}/ninja-build.log" | sed -n "${start},${end}p"
+              start=$(( first_err_line>60 ? first_err_line-60 : 1 ))
+              end=$(( first_err_line+60 ))
+              nl -ba "../logs-${ABI}}/ninja-build.log" | sed -n "${start},${end}p"
             else
-              tail -n 300 "../logs-${ABI}/ninja-build.log"
+              tail -n 400 "../logs-${ABI}}/ninja-build.log"
             fi
             echo "::endgroup::"
+            (find . -type f -name '*.o' | sort > "../logs-${ABI}/objects.list" || true)
           fi
 
           exit $rc
@@ -360,7 +371,6 @@ jobs:
             logs-${{ matrix.abi }}/
             build-${{ matrix.abi }}/CMakeFiles/CMakeError.log
             build-${{ matrix.abi }}/CMakeFiles/CMakeOutput.log
-            build-${{ matrix.abi }}/compile_commands.json
           if-no-files-found: warn
           retention-days: 14
 
