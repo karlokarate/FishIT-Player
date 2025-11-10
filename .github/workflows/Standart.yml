@@ -1,44 +1,74 @@
-name: TDLib – Standard Build (Official Style)
+name: TDLib – Android Java (uses prebuilt BoringSSL)
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-tdlib:
+  tdlib:
     runs-on: ubuntu-24.04
     env:
-      ANDROID_PLATFORM: android-21
-      NDK_VERSION: r27c
+      ANDROID_PLATFORM: android-24          # zu deinem Release passend
+      NDK_VERSION: r27c                     # zu deinem Release passend
       TD_SRC_DIR: td
-      OUT_DIR: out
+      BORINGSSL_TAG: boringssl-28efc83e86dc-android24-ndk-r27c
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+        with: { fetch-depth: 1 }
 
       - name: Install build deps (incl. JDK)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ninja-build cmake git curl unzip autoconf automake libtool \
+          sudo apt-get install -y ninja-build cmake git curl unzip tar autoconf automake libtool \
                                   openjdk-17-jdk gperf pkg-config zlib1g-dev
           echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))" >> $GITHUB_ENV
 
       - name: Prepare Android NDK
         run: |
-          mkdir -p .ndk
-          cd .ndk
+          mkdir -p .ndk && cd .ndk
           curl -fsSLO https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip
           unzip -q android-ndk-${NDK_VERSION}-linux.zip
           mv android-ndk-${NDK_VERSION} android-ndk
           echo "NDK_PATH=$PWD/android-ndk" >> $GITHUB_ENV
 
-      - name: Clone official TDLib
-        run: |
-          git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
+      - name: Clone TDLib (official)
+        run: git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-      - name: Build TDLib (Android, Java)
+      # === BoringSSL aus deinem Release ziehen ===
+      - name: Download prebuilt BoringSSL assets
+        env: { GH_TOKEN: ${{ github.token }} }
+        run: |
+          set -euo pipefail
+          mkdir -p .third_party/boringssl-prebuilt && cd .third_party/boringssl-prebuilt
+          # Alle Assets des Tags holen; für Public reicht das Default-Token
+          gh release download "$BORINGSSL_TAG" -R "karlokarate/FishIT-Player" --clobber
+          # Entpacken aller zips/tars in diesen Ordner
+          shopt -s nullglob
+          for f in *.zip; do unzip -q "$f"; done
+          for f in *.tar.gz *.tgz; do tar -xzf "$f"; done
+          echo "PREBUILT_DIR=$PWD" >> $GITHUB_ENV
+
+      - name: Locate includes and static libs
+        run: |
+          set -euo pipefail
+          # Versuche generisch, um nicht von Ordnernamen abzuhängen:
+          INC="$(fd -HI -td -g include "$PREBUILT_DIR" | head -n1 || true)"
+          [ -n "$INC" ] || INC="$(fd -HI -g '**/include' "$PREBUILT_DIR" | head -n1)"
+          SSL="$(fd -HI -g '**/libssl.a' "$PREBUILT_DIR" | head -n1)"
+          CRYPTO="$(fd -HI -g '**/libcrypto.a' "$PREBUILT_DIR" | head -n1)"
+          # Fallback ohne fd:
+          if [ -z "$INC" ]; then INC="$(find "$PREBUILT_DIR" -type d -name include | head -n1)"; fi
+          if [ -z "$SSL" ]; then SSL="$(find "$PREBUILT_DIR" -name libssl.a | head -n1)"; fi
+          if [ -z "$CRYPTO" ]; then CRYPTO="$(find "$PREBUILT_DIR" -name libcrypto.a | head -n1)"; fi
+          echo "OPENSSL_INCLUDE_DIR=$INC" >> $GITHUB_ENV
+          echo "OPENSSL_SSL_LIBRARY=$SSL" >> $GITHUB_ENV
+          echo "OPENSSL_CRYPTO_LIBRARY=$CRYPTO" >> $GITHUB_ENV
+          echo "Using include: $INC"
+          echo "Using ssl:     $SSL"
+          echo "Using crypto:  $CRYPTO"
+
+      - name: Build TDLib (Android, Java, arm64)
         run: |
           set -euo pipefail
           mkdir -p build && cd build
@@ -50,13 +80,15 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="$PWD/install" \
             -DTD_ENABLE_JNI=ON \
             -DTD_ENABLE_JAVA=ON \
+            -DOPENSSL_INCLUDE_DIR="$OPENSSL_INCLUDE_DIR" \
+            -DOPENSSL_SSL_LIBRARY="$OPENSSL_SSL_LIBRARY" \
+            -DOPENSSL_CRYPTO_LIBRARY="$OPENSSL_CRYPTO_LIBRARY" \
             "../${TD_SRC_DIR}"
-          ninja
+          ninja -v
           ninja install
-          echo "Install tree at: $(pwd)/install"
 
-      - name: Upload build artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tdlib-android-arm64
+          name: tdlib-android-arm64-boringssl-prebuilt
           path: build/install/
