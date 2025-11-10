@@ -129,40 +129,72 @@ jobs:
             exit 11
           fi
 
-          rsync -a "$INC_DIR/" "$ABI_DIR/include/"
+          # Kein rsync nötig: nur Standard-Tools verwenden
+          mkdir -p "$ABI_DIR/include"
+          cp -a "$INC_DIR/." "$ABI_DIR/include/"
           cp -f "$SSL_LIB" "$ABI_DIR/libssl.a"
           cp -f "$CRYPTO_LIB" "$ABI_DIR/libcrypto.a"
-          # optional: Kompat-Symlinks unter lib/
-          ln -sf ../libssl.a  "$ABI_DIR/lib/libssl.a"
+          # optionale Kompat-Kopien unter lib/
+          ln -sf ../libssl.a   "$ABI_DIR/lib/libssl.a"
           ln -sf ../libcrypto.a "$ABI_DIR/lib/libcrypto.a"
 
           echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
           echo "== Staged BoringSSL at =="
           ls -R "$ABI_DIR"
 
-      # ==== Validierung: ELF/ABI direkt gegen den Normalisierungs-Pfad ====
+      # ==== Validierung: ELF/ABI direkt gegen den Normalisierungs-Pfad (pipefail-fix) ====
       - name: Validate prebuilt BoringSSL ABI (${{ matrix.abi }})
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
+          trap 'rc=$?; echo "::error ::Validation failed at line ${LINENO} (rc=${rc}). Last cmd: ${BASH_COMMAND}"; exit ${rc}' ERR
+
           SSL_DIR="${BORINGSSL_DIR}"
-          test -d "$SSL_DIR/include" || { echo "::error ::Missing include/ in $SSL_DIR"; exit 3; }
-          test -f "$SSL_DIR/libssl.a" || { echo "::error ::Missing libssl.a in $SSL_DIR"; exit 4; }
-          test -f "$SSL_DIR/libcrypto.a" || { echo "::error ::Missing libcrypto.a in $SSL_DIR"; exit 4; }
+
+          # Pflichtdateien prüfen
+          if [ ! -d "$SSL_DIR/include" ]; then
+            echo "::error ::Missing include/ in $SSL_DIR"
+            exit 3
+          fi
+          if [ ! -f "$SSL_DIR/libssl.a" ]; then
+            echo "::error ::Missing libssl.a in $SSL_DIR"
+            exit 4
+          fi
+          if [ ! -f "$SSL_DIR/libcrypto.a" ]; then
+            echo "::error ::Missing libcrypto.a in $SSL_DIR"
+            exit 4
+          fi
 
           AR="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
           READELF="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
 
-          OBJ_SSL="$($AR t "$SSL_DIR/libssl.a" | head -n1)"; $AR p "$SSL_DIR/libssl.a" "$OBJ_SSL" > first_ssl.o
+          # 1) libssl.a
+          OBJ_SSL="$($AR t "$SSL_DIR/libssl.a" | head -n1)"
+          $AR p "$SSL_DIR/libssl.a" "$OBJ_SSL" > first_ssl.o
           HDR_SSL="$($READELF -h first_ssl.o)"
-          echo "$HDR_SSL" | grep -q "Machine:\s*${{ matrix.expect_machine }}" || { echo "::error ::Unexpected Machine in libssl.a: expected ${{ matrix.expect_machine }}"; echo "$HDR_SSL"; exit 6; }
-          echo "$HDR_SSL" | grep -q "Class:\s*${{ matrix.expect_class }}"   || { echo "::error ::Unexpected Class in libssl.a: expected ${{ matrix.expect_class }}";   echo "$HDR_SSL"; exit 7; }
+          if ! grep -Eq 'Machine:\s*${{ matrix.expect_machine }}' <<< "$HDR_SSL"; then
+            echo "::error ::Unexpected Machine in libssl.a. Expected ${{ matrix.expect_machine }}"; echo "$HDR_SSL"
+            exit 6
+          fi
+          if ! grep -Eq 'Class:\s*${{ matrix.expect_class }}' <<< "$HDR_SSL"; then
+            echo "::error ::Unexpected Class in libssl.a. Expected ${{ matrix.expect_class }}"; echo "$HDR_SSL"
+            exit 7
+          fi
 
-          OBJ_CRY="$($AR t "$SSL_DIR/libcrypto.a" | head -n1)"; $AR p "$SSL_DIR/libcrypto.a" "$OBJ_CRY" > first_crypto.o
+          # 2) libcrypto.a
+          OBJ_CRY="$($AR t "$SSL_DIR/libcrypto.a" | head -n1)"
+          $AR p "$SSL_DIR/libcrypto.a" "$OBJ_CRY" > first_crypto.o
           HDR_CRY="$($READELF -h first_crypto.o)"
-          echo "$HDR_CRY" | grep -q "Machine:\s*${{ matrix.expect_machine }}" || { echo "::error ::Unexpected Machine in libcrypto.a: expected ${{ matrix.expect_machine }}"; echo "$HDR_CRY"; exit 8; }
-          echo "$HDR_CRY" | grep -q "Class:\s*${{ matrix.expect_class }}"   || { echo "::error ::Unexpected Class in libcrypto.a: expected ${{ matrix.expect_class }}";   echo "$HDR_CRY"; exit 9; }
+          if ! grep -Eq 'Machine:\s*${{ matrix.expect_machine }}' <<< "$HDR_CRY"; then
+            echo "::error ::Unexpected Machine in libcrypto.a. Expected ${{ matrix.expect_machine }}"; echo "$HDR_CRY"
+            exit 8
+          fi
+          if ! grep -Eq 'Class:\s*${{ matrix.expect_class }}' <<< "$HDR_CRY"; then
+            echo "::error ::Unexpected Class in libcrypto.a. Expected ${{ matrix.expect_class }}"; echo "$HDR_CRY"
+            exit 9
+          fi
 
           echo "ABI/ELF validation passed for ${{ matrix.abi }} ✅"
+          exit 0
 
       # ==== TDLib konfigurieren & bauen (laut TDLib-Doku, Java/JNI + install) ====
       - name: Build TDLib (${{ matrix.abi }})
