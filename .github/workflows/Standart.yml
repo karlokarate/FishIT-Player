@@ -1,4 +1,4 @@
-name: TDLib – Android Java (uses prebuilt BoringSSL)
+name: TDLib – Android Java (prebuilt BoringSSL, multi-ABI)
 
 on:
   workflow_dispatch:
@@ -7,20 +7,23 @@ jobs:
   tdlib:
     runs-on: ubuntu-24.04
     env:
-      ANDROID_PLATFORM: android-24          # zu deinem Release passend
-      NDK_VERSION: r27c                     # zu deinem Release passend
+      ANDROID_PLATFORM: android-24
+      NDK_VERSION: r27c
       TD_SRC_DIR: td
       BORINGSSL_TAG: boringssl-28efc83e86dc-android24-ndk-r27c
+      REPO: karlokarate/FishIT-Player
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with: { fetch-depth: 1 }
+        with:
+          fetch-depth: 1
+          submodules: recursive
 
-      - name: Install build deps (incl. JDK)
+      - name: Install build deps (incl. JDK, zstd)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ninja-build cmake git curl unzip tar autoconf automake libtool \
+          sudo apt-get install -y ninja-build cmake git curl unzip tar zstd autoconf automake libtool \
                                   openjdk-17-jdk gperf pkg-config zlib1g-dev
           echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))" >> $GITHUB_ENV
 
@@ -35,43 +38,31 @@ jobs:
       - name: Clone TDLib (official)
         run: git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-      # === BoringSSL aus deinem Release ziehen ===
-      - name: Download prebuilt BoringSSL assets
+      # =====================================================
+      # === Download & extract prebuilt BoringSSL packages ===
+      # =====================================================
+      - name: Download prebuilt BoringSSL (arm64 + armv7)
         env: { GH_TOKEN: ${{ github.token }} }
         run: |
           set -euo pipefail
-          mkdir -p .third_party/boringssl-prebuilt && cd .third_party/boringssl-prebuilt
-          # Alle Assets des Tags holen; für Public reicht das Default-Token
-          gh release download "$BORINGSSL_TAG" -R "karlokarate/FishIT-Player" --clobber
-          # Entpacken aller zips/tars in diesen Ordner
-          shopt -s nullglob
-          for f in *.zip; do unzip -q "$f"; done
-          for f in *.tar.gz *.tgz; do tar -xzf "$f"; done
-          echo "PREBUILT_DIR=$PWD" >> $GITHUB_ENV
+          mkdir -p .third_party/boringssl && cd .third_party/boringssl
+          gh release download "$BORINGSSL_TAG" -R "$REPO" --pattern '*.tar.zst' --clobber
+          for f in *.tar.zst; do
+            name="${f%.tar.zst}"
+            mkdir -p "$name"
+            tar --use-compress-program=unzstd -xf "$f" -C "$name"
+          done
+          echo "BORINGSSL_DIR=$PWD" >> $GITHUB_ENV
+          ls -R .
 
-      - name: Locate includes and static libs
+      # =====================================================
+      # === Build TDLib for arm64-v8a ===
+      # =====================================================
+      - name: Build TDLib (arm64-v8a)
         run: |
           set -euo pipefail
-          # Versuche generisch, um nicht von Ordnernamen abzuhängen:
-          INC="$(fd -HI -td -g include "$PREBUILT_DIR" | head -n1 || true)"
-          [ -n "$INC" ] || INC="$(fd -HI -g '**/include' "$PREBUILT_DIR" | head -n1)"
-          SSL="$(fd -HI -g '**/libssl.a' "$PREBUILT_DIR" | head -n1)"
-          CRYPTO="$(fd -HI -g '**/libcrypto.a' "$PREBUILT_DIR" | head -n1)"
-          # Fallback ohne fd:
-          if [ -z "$INC" ]; then INC="$(find "$PREBUILT_DIR" -type d -name include | head -n1)"; fi
-          if [ -z "$SSL" ]; then SSL="$(find "$PREBUILT_DIR" -name libssl.a | head -n1)"; fi
-          if [ -z "$CRYPTO" ]; then CRYPTO="$(find "$PREBUILT_DIR" -name libcrypto.a | head -n1)"; fi
-          echo "OPENSSL_INCLUDE_DIR=$INC" >> $GITHUB_ENV
-          echo "OPENSSL_SSL_LIBRARY=$SSL" >> $GITHUB_ENV
-          echo "OPENSSL_CRYPTO_LIBRARY=$CRYPTO" >> $GITHUB_ENV
-          echo "Using include: $INC"
-          echo "Using ssl:     $SSL"
-          echo "Using crypto:  $CRYPTO"
-
-      - name: Build TDLib (Android, Java, arm64)
-        run: |
-          set -euo pipefail
-          mkdir -p build && cd build
+          mkdir -p build-arm64 && cd build-arm64
+          SSL_DIR="$GITHUB_WORKSPACE/${BORINGSSL_DIR}/boringssl-28efc83e86dc-android24-ndk-r27c-arm64-v8a"
           cmake -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
             -DANDROID_ABI=arm64-v8a \
@@ -80,15 +71,45 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="$PWD/install" \
             -DTD_ENABLE_JNI=ON \
             -DTD_ENABLE_JAVA=ON \
-            -DOPENSSL_INCLUDE_DIR="$OPENSSL_INCLUDE_DIR" \
-            -DOPENSSL_SSL_LIBRARY="$OPENSSL_SSL_LIBRARY" \
-            -DOPENSSL_CRYPTO_LIBRARY="$OPENSSL_CRYPTO_LIBRARY" \
+            -DOPENSSL_INCLUDE_DIR="$SSL_DIR/include" \
+            -DOPENSSL_SSL_LIBRARY="$SSL_DIR/libssl.a" \
+            -DOPENSSL_CRYPTO_LIBRARY="$SSL_DIR/libcrypto.a" \
             "../${TD_SRC_DIR}"
           ninja -v
           ninja install
+          echo "TDLib arm64 install → $(pwd)/install"
 
-      - name: Upload artifacts
+      # =====================================================
+      # === Build TDLib for armeabi-v7a ===
+      # =====================================================
+      - name: Build TDLib (armeabi-v7a)
+        run: |
+          set -euo pipefail
+          mkdir -p build-armv7 && cd build-armv7
+          SSL_DIR="$GITHUB_WORKSPACE/${BORINGSSL_DIR}/boringssl-28efc83e86dc-android24-ndk-r27c-armeabi-v7a"
+          cmake -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=armeabi-v7a \
+            -DANDROID_PLATFORM=${ANDROID_PLATFORM} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+            -DTD_ENABLE_JNI=ON \
+            -DTD_ENABLE_JAVA=ON \
+            -DOPENSSL_INCLUDE_DIR="$SSL_DIR/include" \
+            -DOPENSSL_SSL_LIBRARY="$SSL_DIR/libssl.a" \
+            -DOPENSSL_CRYPTO_LIBRARY="$SSL_DIR/libcrypto.a" \
+            "../${TD_SRC_DIR}"
+          ninja -v
+          ninja install
+          echo "TDLib armv7 install → $(pwd)/install"
+
+      # =====================================================
+      # === Upload artifacts for both ABIs ===
+      # =====================================================
+      - name: Upload TDLib artifacts (both ABIs)
         uses: actions/upload-artifact@v4
         with:
-          name: tdlib-android-arm64-boringssl-prebuilt
-          path: build/install/
+          name: tdlib-android-multiabi-boringssl-prebuilt
+          path: |
+            build-arm64/install/
+            build-armv7/install/
