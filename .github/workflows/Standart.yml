@@ -27,6 +27,7 @@ jobs:
       TD_SRC_DIR: td
       REPO: karlokarate/FishIT-Player
       BORINGSSL_TAG: boringssl-28efc83e86dc-android24-ndk-r27c
+
     strategy:
       fail-fast: false
       matrix:
@@ -53,7 +54,6 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          # TDLib-Docs: cmake/ninja/jdk/gperf + Helfer
           sudo apt-get install -y ninja-build cmake git curl unzip tar zstd openjdk-17-jdk gperf
           echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))" >> $GITHUB_ENV
 
@@ -71,14 +71,14 @@ jobs:
           set -euo pipefail
           git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-      # ==== Lade & entpacke das passende BoringSSL-Prebuild für diese ABI ====
+      # ==== Lade & entpacke das passende BoringSSL-Prebuild (robuste SHA-Prüfung) ====
       - name: Download prebuilt BoringSSL (${{ matrix.abi }})
         run: |
           set -euo pipefail
           mkdir -p .third_party/boringssl && cd .third_party/boringssl
           BASE_URL="https://github.com/${REPO}/releases/download/${BORINGSSL_TAG}"
           ASSET="${{ matrix.asset }}"
-          SHA="${{ matrix.sha }}"
+          SHA_FILE="${{ matrix.sha }}"
 
           echo "Downloading ${BASE_URL}/${ASSET}"
           CODE=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${ASSET}")
@@ -87,12 +87,22 @@ jobs:
           fi
           curl -fL "${BASE_URL}/${ASSET}" -o "${ASSET}"
 
-          # Optional: SHA-Check, wenn Datei vorhanden
-          CODE_SHA=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${SHA}")
+          # SHA robust prüfen: Hash extrahieren und mit lokaler Datei vergleichen
+          CODE_SHA=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${SHA_FILE}")
           if [ "$CODE_SHA" = "200" ]; then
             echo "Verifying SHA256 for ${ASSET} ..."
-            curl -fL "${BASE_URL}/${SHA}" -o "${SHA}"
-            sha256sum -c "${SHA}"
+            curl -fL "${BASE_URL}/${SHA_FILE}" -o "${SHA_FILE}"
+            EXPECTED=$(sed -E 's/^([0-9a-fA-F]{64}).*$/\1/' "${SHA_FILE}" | head -n1)
+            if [ -z "$EXPECTED" ]; then
+              echo "::warning ::SHA file present but no digest found; skipping verification."
+            else
+              ACTUAL=$(sha256sum "${ASSET}" | awk '{print $1}')
+              if [ "$EXPECTED" != "$ACTUAL" ]; then
+                echo "::error ::SHA256 mismatch for ${ASSET}. expected=$EXPECTED actual=$ACTUAL"
+                exit 10
+              fi
+              echo "SHA256 OK (${ACTUAL})"
+            fi
           else
             echo "No SHA256 file present for ${ASSET}; skipping verification."
           fi
