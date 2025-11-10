@@ -161,7 +161,6 @@ jobs:
             TMP="$(mktemp -d)"
             DIR="$TMP/${LABEL%.a}"
             mkdir -p "$DIR"
-            # robust: vollständiges Extrahieren vermeidet 't|head' & Thin-Edgecases
             (cd "$DIR" && "$AR" x "$ARCHIVE")
             F="$(find "$DIR" -type f -name '*.o' -print -quit)"
             if [ -z "$F" ]; then
@@ -184,13 +183,26 @@ jobs:
           echo "ABI/ELF validation passed for ${{ matrix.abi }} ✅"
           exit 0
 
-      # ==== TDLib konfigurieren & bauen (laut TDLib-Doku, Java/JNI + install) ====
+      # ==== TDLib konfigurieren & bauen (mit stabilen Linker-Flags) ====
       - name: Build TDLib (${{ matrix.abi }})
         run: |
           set -euo pipefail
           ABI="${{ matrix.abi }}"
           BUILD_DIR="build-${ABI}"
           SSL_DIR="${BORINGSSL_DIR}"
+
+          # Gemeinsame Flags
+          EXTRA_CFLAGS="-fPIC"
+          EXTRA_LDFLAGS_BASE="-Wl,--start-group ${SSL_DIR}/libssl.a ${SSL_DIR}/libcrypto.a -Wl,--end-group -llog -landroid -ldl -latomic"
+          EXTRA_LDFLAGS=""
+          EXTRA_CMAKE=""
+
+          # Spezielle Behandlung für armeabi-v7a
+          if [ "$ABI" = "armeabi-v7a" ]; then
+            EXTRA_CFLAGS="${EXTRA_CFLAGS} -march=armv7-a -mfpu=neon -mfloat-abi=softfp"
+            EXTRA_LDFLAGS="${EXTRA_LDFLAGS} -Wl,--fix-cortex-a8"
+            EXTRA_CMAKE="-DANDROID_ARM_NEON=ON"
+          fi
 
           mkdir -p "$BUILD_DIR" && cd "$BUILD_DIR"
 
@@ -199,6 +211,7 @@ jobs:
             -DANDROID_ABI="${ABI}" \
             -DANDROID_PLATFORM="${ANDROID_PLATFORM}" \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
             -DCMAKE_INSTALL_PREFIX="$PWD/install" \
             -DTD_ENABLE_JNI=ON \
             -DTD_ENABLE_JAVA=ON \
@@ -207,6 +220,11 @@ jobs:
             -DOPENSSL_SSL_LIBRARY="$SSL_DIR/libssl.a" \
             -DOPENSSL_CRYPTO_LIBRARY="$SSL_DIR/libcrypto.a" \
             -DOPENSSL_USE_STATIC_LIBS=ON \
+            ${EXTRA_CMAKE} \
+            -DCMAKE_C_FLAGS="${EXTRA_CFLAGS}" \
+            -DCMAKE_CXX_FLAGS="${EXTRA_CFLAGS}" \
+            -DCMAKE_SHARED_LINKER_FLAGS="${EXTRA_LDFLAGS_BASE} ${EXTRA_LDFLAGS}" \
+            -DCMAKE_EXE_LINKER_FLAGS="${EXTRA_LDFLAGS_BASE} ${EXTRA_LDFLAGS}" \
             -DCMAKE_FIND_DEBUG_MODE=ON \
             "../${TD_SRC_DIR}"
 
