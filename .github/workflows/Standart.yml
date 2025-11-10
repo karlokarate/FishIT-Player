@@ -6,11 +6,9 @@ on:
 jobs:
   build-tdlib:
     runs-on: ubuntu-24.04
-
     env:
       ANDROID_PLATFORM: android-21
       NDK_VERSION: r27c
-      BORINGSSL_DIR: .third_party/boringssl
       TD_SRC_DIR: td
       OUT_DIR: out
 
@@ -20,10 +18,12 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Install dependencies
+      - name: Install build deps (incl. JDK)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ninja-build cmake git curl unzip autoconf automake libtool
+          sudo apt-get install -y ninja-build cmake git curl unzip autoconf automake libtool \
+                                  openjdk-17-jdk gperf pkg-config zlib1g-dev
+          echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))" >> $GITHUB_ENV
 
       - name: Prepare Android NDK
         run: |
@@ -32,30 +32,31 @@ jobs:
           curl -fsSLO https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip
           unzip -q android-ndk-${NDK_VERSION}-linux.zip
           mv android-ndk-${NDK_VERSION} android-ndk
-          echo "NDK ready at $(pwd)/android-ndk"
+          echo "NDK_PATH=$PWD/android-ndk" >> $GITHUB_ENV
 
       - name: Clone official TDLib
         run: |
-          git clone --depth=1 https://github.com/tdlib/td.git ${TD_SRC_DIR}
+          git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
       - name: Build TDLib (Android, Java)
         run: |
           set -euo pipefail
-          export NDK_PATH="$PWD/.ndk/android-ndk"
-          export PATH="$NDK_PATH:$PATH"
-          mkdir -p build
-          cd build
-          cmake -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
-                -DANDROID_ABI="arm64-v8a" \
-                -DANDROID_PLATFORM=${ANDROID_PLATFORM} \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DTD_ENABLE_JNI=ON \
-                -DTD_ENABLE_JAVA=ON \
-                -GNinja ../${TD_SRC_DIR}
+          mkdir -p build && cd build
+          cmake -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=${ANDROID_PLATFORM} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+            -DTD_ENABLE_JNI=ON \
+            -DTD_ENABLE_JAVA=ON \
+            "../${TD_SRC_DIR}"
+          ninja
           ninja install
+          echo "Install tree at: $(pwd)/install"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tdlib-android
-          path: build/
+          name: tdlib-android-arm64
+          path: build/install/
