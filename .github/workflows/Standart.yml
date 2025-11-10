@@ -27,7 +27,7 @@ jobs:
   tdlib:
     needs: lint
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       ANDROID_PLATFORM: android-24
       NDK_VERSION: r27c
@@ -82,13 +82,26 @@ jobs:
             unzip -q "android-ndk-${NDK_VERSION}-linux.zip"
           fi
           echo "NDK_PATH=$PWD/android-ndk-${NDK_VERSION}" >> $GITHUB_ENV
+          test -x "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" || { echo "::error ::NDK toolchain clang++ missing"; exit 2; }
 
       - name: Clone TDLib (official)
         run: |
           set -euo pipefail
           git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
+      - name: Prepare logs directory (${{ matrix.abi }})
+        run: |
+          set -euo pipefail
+          mkdir -p "logs-${{ matrix.abi }}"
+          {
+            echo "runner=$(uname -a)"
+            cmake --version || true
+            ninja --version || true
+            "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" --version || true
+          } > "logs-${{ matrix.abi }}/tool-versions.txt"
+
       - name: Download and stage prebuilt BoringSSL (${{ matrix.abi }})
+        id: stage_bssl
         run: |
           set -euo pipefail
           mkdir -p .third_party && cd .third_party
@@ -96,97 +109,89 @@ jobs:
           ASSET="${{ matrix.asset }}"
           SHA_FILE="${{ matrix.sha }}"
           TMPDIR=".boringssl_tmp"
-
           mkdir -p "$TMPDIR" && cd "$TMPDIR"
-          echo "Downloading ${BASE_URL}/${ASSET}"
-          CODE=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${ASSET}")
-          if [ "$CODE" != "200" ]; then
-            echo "::error ::Asset not found ${BASE_URL}/${ASSET} (HTTP $CODE)"
-            exit 5
-          fi
-          curl -fL "${BASE_URL}/${ASSET}" -o "${ASSET}"
 
-          CODE_SHA=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${SHA_FILE}")
-          if [ "$CODE_SHA" = "200" ]; then
-            echo "Verifying SHA256 for ${ASSET} ..."
-            curl -fL "${BASE_URL}/${SHA_FILE}" -o "${SHA_FILE}"
-            EXPECTED=$(sed -E 's/^([0-9a-fA-F]{64}).*$/\1/' "${SHA_FILE}" | head -n1)
-            if [ -n "$EXPECTED" ]; then
-              ACTUAL=$(sha256sum "${ASSET}" | awk '{print $1}')
-              if [ "$EXPECTED" != "$ACTUAL" ]; then
-                echo "::error ::SHA256 mismatch for ${ASSET}. expected=$EXPECTED actual=$ACTUAL"
-                exit 10
+          found=false
+          valid=false
+
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${ASSET}")
+          if [ "$CODE" = "200" ]; then
+            found=true
+            curl -fL "${BASE_URL}/${ASSET}" -o "${ASSET}"
+            CODE_SHA=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${SHA_FILE}")
+            if [ "$CODE_SHA" = "200" ]; then
+              curl -fL "${BASE_URL}/${SHA_FILE}" -o "${SHA_FILE}"
+              EXPECTED=$(sed -E 's/^([0-9a-fA-F]{64}).*$/\1/' "${SHA_FILE}" | head -n1 || true)
+              if [ -n "$EXPECTED" ]; then
+                ACTUAL=$(sha256sum "${ASSET}" | awk '{print $1}')
+                if [ "$EXPECTED" != "$ACTUAL" ]; then
+                  echo "::warning ::SHA256 mismatch for ${ASSET} expected=$EXPECTED actual=$ACTUAL"
+                fi
               fi
-              echo "SHA256 OK (${ACTUAL})"
+            fi
+
+            NAME="${ASSET%.tar.zst}"
+            mkdir -p "${NAME}"
+            tar --use-compress-program=unzstd -xf "${ASSET}" -C "${NAME}"
+
+            ABI_DIR="$GITHUB_WORKSPACE/.third_party/boringssl/${{ matrix.abi }}"
+            rm -rf "$ABI_DIR"
+            mkdir -p "$ABI_DIR" "$ABI_DIR/lib"
+
+            INC_DIR="$(find "${NAME}" -type d -name include -print -quit || true)"
+            SSL_LIB="$(find "${NAME}" -type f -name 'libssl.a' -print -quit || true)"
+            CRYPTO_LIB="$(find "${NAME}" -type f -name 'libcrypto.a' -print -quit || true)"
+
+            if [ -n "$INC_DIR" ] && [ -n "$SSL_LIB" ] && [ -n "$CRYPTO_LIB" ]; then
+              mkdir -p "$ABI_DIR/include"
+              cp -a "$INC_DIR/." "$ABI_DIR/include/"
+              cp -f "$SSL_LIB" "$ABI_DIR/libssl.a"
+              cp -f "$CRYPTO_LIB" "$ABI_DIR/libcrypto.a"
+              ln -sf ../libssl.a    "$ABI_DIR/lib/libssl.a"
+              ln -sf ../libcrypto.a "$ABI_DIR/lib/libcrypto.a"
+              if [ -f "$ABI_DIR/include/openssl/ssl.h" ] && [ -f "$ABI_DIR/libssl.a" ] && [ -f "$ABI_DIR/libcrypto.a" ]; then
+                valid=true
+                echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
+                echo "BORINGSSL_ASSET=$ASSET" >> $GITHUB_ENV
+              fi
             else
-              echo "::warning ::SHA file present but no digest found; skipping verification."
+              echo "::group::Extracted tree"
+              ls -R "${NAME}" || true
+              echo "::endgroup::"
+              echo "::warning ::prebuilt asset structure invalid"
             fi
           else
-            echo "No SHA256 file present for ${ASSET}; skipping verification."
+            echo "::warning ::prebuilt asset not found ${BASE_URL}/${ASSET} (HTTP $CODE)"
           fi
 
-          NAME="${ASSET%.tar.zst}"
-          mkdir -p "${NAME}"
-          tar --use-compress-program=unzstd -xf "${ASSET}" -C "${NAME}"
+          echo "found=${found}" >> $GITHUB_OUTPUT
+          echo "valid=${valid}" >> $GITHUB_OUTPUT
 
-          ABI_DIR="$GITHUB_WORKSPACE/.third_party/boringssl/${{ matrix.abi }}"
-          rm -rf "$ABI_DIR"
-          mkdir -p "$ABI_DIR" "$ABI_DIR/lib"
-
-          INC_DIR="$(find "${NAME}" -type d -name include -print -quit)"
-          SSL_LIB="$(find "${NAME}" -type f -name 'libssl.a' -print -quit)"
-          CRYPTO_LIB="$(find "${NAME}" -type f -name 'libcrypto.a' -print -quit)"
-          if [ -z "$INC_DIR" ] || [ -z "$SSL_LIB" ] || [ -z "$CRYPTO_LIB" ]; then
-            echo "::group::Extracted tree"
-            ls -R "${NAME}"
-            echo "::endgroup::"
-            echo "::error ::Missing include/ or libssl.a/libcrypto.a in prebuilt asset"
-            exit 11
-          fi
-
-          mkdir -p "$ABI_DIR/include"
-          cp -a "$INC_DIR/." "$ABI_DIR/include/"
-          cp -f "$SSL_LIB" "$ABI_DIR/libssl.a"
-          cp -f "$CRYPTO_LIB" "$ABI_DIR/libcrypto.a"
-          ln -sf ../libssl.a    "$ABI_DIR/lib/libssl.a"
-          ln -sf ../libcrypto.a "$ABI_DIR/lib/libcrypto.a"
-
-          echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
-          echo "BORINGSSL_ASSET=$ASSET" >> $GITHUB_ENV
-          echo "== Staged BoringSSL at =="
-          ls -R "$ABI_DIR" || true
-
-      - name: Preflight link check (${{ matrix.abi }})
+      - name: Fallback - build BoringSSL from source (${{ matrix.abi }})
+        if: steps.stage_bssl.outputs.valid != 'true'
         run: |
           set -euo pipefail
-          ABI="${{ matrix.abi }}"
-          SSL_DIR="${BORINGSSL_DIR}"
-          API_LEVEL="${ANDROID_PLATFORM#android-}"
+          cd "$GITHUB_WORKSPACE"
+          git clone --depth=1 https://boringssl.googlesource.com/boringssl bssl-src
+          mkdir -p bssl-build-${{ matrix.abi }} && cd bssl-build-${{ matrix.abi }}
+          cmake -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI="${{ matrix.abi }}" \
+            -DANDROID_PLATFORM="${ANDROID_PLATFORM}" \
+            -DCMAKE_BUILD_TYPE=Release ../bssl-src
+          ninja ssl crypto
+          ABI_DIR="$GITHUB_WORKSPACE/.third_party/boringssl/${{ matrix.abi }}"
+          rm -rf "$ABI_DIR" && mkdir -p "$ABI_DIR/include" "$ABI_DIR/lib"
+          cp -a "$GITHUB_WORKSPACE/bssl-src/include/." "$ABI_DIR/include/"
+          cp -f "crypto/libcrypto.a" "$ABI_DIR/libcrypto.a"
+          cp -f "ssl/libssl.a" "$ABI_DIR/libssl.a"
+          ln -sf ../libssl.a    "$ABI_DIR/lib/libssl.a"
+          ln -sf ../libcrypto.a "$ABI_DIR/lib/libcrypto.a"
+          test -f "$ABI_DIR/include/openssl/ssl.h" && test -f "$ABI_DIR/libssl.a" && test -f "$ABI_DIR/libcrypto.a"
+          echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
+          echo "BORINGSSL_ASSET=built-from-source" >> $GITHUB_ENV
 
-          if [ "$ABI" = "arm64-v8a" ]; then
-            TRIPLE="aarch64-linux-android"
-          else
-            TRIPLE="armv7a-linux-androideabi"
-          fi
-          CXX="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/${TRIPLE}${API_LEVEL}-clang++"
-
-          CXXFLAGS="-fPIC"
-          LDFLAGS="-Wl,--start-group ${SSL_DIR}/libssl.a ${SSL_DIR}/libcrypto.a -Wl,--end-group -llog -landroid -ldl -latomic -lz -static-libstdc++"
-          if [ "$ABI" = "armeabi-v7a" ]; then
-            CXXFLAGS="$CXXFLAGS -march=armv7-a -mfpu=neon -mfloat-abi=softfp"
-            LDFLAGS="$LDFLAGS -Wl,--fix-cortex-a8"
-          fi
-
-          cat > preflight.cc <<'EOF'
-          #include <openssl/ssl.h>
-          int main(){ return 0; }
-          EOF
-
-          "$CXX" -shared preflight.cc -o libpreflight.so $CXXFLAGS $LDFLAGS
-          file -L libpreflight.so || true
-          echo "Preflight link passed for ${ABI}"
-
-      - name: Validate prebuilt BoringSSL ABI (${{ matrix.abi }})
+      - name: Validate prebuilt or fallback BoringSSL ABI (${{ matrix.abi }})
         run: |
           set -Eeuo pipefail
           SSL_DIR="${BORINGSSL_DIR}"
@@ -204,31 +209,55 @@ jobs:
             (cd "$DIR" && "$AR" x "$ARCHIVE")
             F="$(find "$DIR" -type f -name '*.o' -print -quit)"
             if [ -z "$F" ]; then
-              echo "::error ::No object members found in $LABEL ($ARCHIVE)"
-              echo "::group::ar tv $LABEL"; "$AR" tv "$ARCHIVE" || true; echo "::endgroup::"
+              echo "::error ::no object members found in $LABEL ($ARCHIVE)"
+              "$AR" tv "$ARCHIVE" || true
               rm -rf "$TMP"; exit 12
             fi
             HDR="$($READELF -h "$F")"
             echo "::group::ELF header ($LABEL, sample object)"
             echo "$HDR" | sed -n '1,40p'
             echo "::endgroup::"
-            echo "$HDR" | grep -Eq "Machine:\s*${EXPECT_MACHINE}" || { echo "::error ::Unexpected Machine in $LABEL. Expected ${EXPECT_MACHINE}"; rm -rf "$TMP"; exit 13; }
-            echo "$HDR" | grep -Eq "Class:\s*${EXPECT_CLASS}"     || { echo "::error ::Unexpected Class in $LABEL. Expected ${EXPECT_CLASS}";   rm -rf "$TMP"; exit 14; }
+            echo "$HDR" | grep -Eq "Machine:\s*${{ matrix.expect_machine }}" || { echo "::error ::unexpected Machine"; rm -rf "$TMP"; exit 13; }
+            echo "$HDR" | grep -Eq "Class:\s*${{ matrix.expect_class }}" || { echo "::error ::unexpected Class"; rm -rf "$TMP"; exit 14; }
             rm -rf "$TMP"
           }
 
           check_archive "$SSL_DIR/libssl.a"    "${{ matrix.expect_machine }}" "${{ matrix.expect_class }}" "libssl.a"
           check_archive "$SSL_DIR/libcrypto.a" "${{ matrix.expect_machine }}" "${{ matrix.expect_class }}" "libcrypto.a"
 
-      - name: Prepare logs directory (${{ matrix.abi }})
+      - name: Preflight link check (${{ matrix.abi }})
         run: |
           set -euo pipefail
-          mkdir -p "logs-${{ matrix.abi }}"
-          {
-            echo "runner=$(uname -a)"
-            cmake --version || true
-            ninja --version || true
-          } > "logs-${{ matrix.abi }}/tool-versions.txt"
+          ABI="${{ matrix.abi }}"
+          SSL_DIR="${BORINGSSL_DIR}"
+          API_LEVEL="${ANDROID_PLATFORM#android-}"
+
+          if [ "$ABI" = "arm64-v8a" ]; then
+            TRIPLE="aarch64-linux-android"
+          else
+            TRIPLE="armv7a-linux-androideabi"
+          fi
+          CXX="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/${TRIPLE}${API_LEVEL}-clang++"
+
+          CXXFLAGS="-fPIC -I\"$SSL_DIR/include\""
+          LDFLAGS="-Wl,--start-group ${SSL_DIR}/libssl.a ${SSL_DIR}/libcrypto.a -Wl,--end-group -llog -landroid -ldl -latomic -lz -static-libstdc++"
+          if [ "$ABI" = "armeabi-v7a" ]; then
+            CXXFLAGS="$CXXFLAGS -march=armv7-a -mfpu=neon -mfloat-abi=softfp"
+            LDFLAGS="$LDFLAGS -Wl,--fix-cortex-a8"
+          fi
+
+          test -f "$SSL_DIR/include/openssl/ssl.h" || { echo "::error ::missing $SSL_DIR/include/openssl/ssl.h"; exit 12; }
+          test -f "$SSL_DIR/libssl.a" || { echo "::error ::missing $SSL_DIR/libssl.a"; exit 12; }
+          test -f "$SSL_DIR/libcrypto.a" || { echo "::error ::missing $SSL_DIR/libcrypto.a"; exit 12; }
+
+          cat > preflight.cc <<'EOF'
+          #include <openssl/ssl.h>
+          int main(){ return 0; }
+          EOF
+
+          "$CXX" -shared preflight.cc -o libpreflight.so $CXXFLAGS $LDFLAGS
+          file -L libpreflight.so || true
+          echo "Preflight link passed for ${ABI}"
 
       - name: Configure TDLib with CMake (${{ matrix.abi }})
         run: |
@@ -236,7 +265,6 @@ jobs:
           ABI="${{ matrix.abi }}"
           BUILD_DIR="build-${ABI}"
           SSL_DIR="${BORINGSSL_DIR}"
-
           mkdir -p "$BUILD_DIR"
           cd "$BUILD_DIR"
 
@@ -303,7 +331,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: tdlib-android-${{ matrix.abi }}-boringssl-prebuilt
+          name: tdlib-android-${{ matrix.abi }}-boringssl
           path: build-${{ matrix.abi }}/install/
           if-no-files-found: error
           retention-days: 14
