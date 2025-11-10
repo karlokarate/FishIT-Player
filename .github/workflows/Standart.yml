@@ -253,7 +253,7 @@ jobs:
           fi
           CXX="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/${TRIPLE}${API_LEVEL}-clang++"
 
-          CXXFLAGS="-fPIC -I\"$SSL_DIR/include\""
+          CXXFLAGS= -fPIC -I\"$SSL_DIR/include\"
           LDFLAGS="-Wl,--start-group ${SSL_DIR}/libssl.a ${SSL_DIR}/libcrypto.a -Wl,--end-group -llog -landroid -ldl -latomic -lz -static-libstdc++"
           if [ "$ABI" = "armeabi-v7a" ]; then
             CXXFLAGS="$CXXFLAGS -march=armv7-a -mfpu=neon -mfloat-abi=softfp"
