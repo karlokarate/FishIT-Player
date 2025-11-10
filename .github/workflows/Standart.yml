@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  # 1) YAML/Actions-Lint vor dem Build
+  # 1) Schnelle YAML/Actions-Validierung vor dem Build
   lint:
     runs-on: ubuntu-24.04
     steps:
@@ -17,7 +17,7 @@ jobs:
         with:
           actionlint_flags: "--color always"
 
-  # 2) TDLib-Build
+  # 2) TDLib-Build (läuft nach bestandenem Lint)
   tdlib:
     needs: lint
     runs-on: ubuntu-24.04
@@ -50,7 +50,7 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - name: Install build deps (lean)
+      - name: Install build deps (lean & doc-conform)
         run: |
           set -euo pipefail
           sudo apt-get update -qq
@@ -71,7 +71,7 @@ jobs:
           set -euo pipefail
           git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-      # ==== Prebuilt BoringSSL laden, prüfen, normalisieren ====
+      # ==== Lade, prüfe und normalisiere das BoringSSL-Prebuild in .third_party/boringssl/<ABI> ====
       - name: Download + stage prebuilt BoringSSL (${{ matrix.abi }})
         run: |
           set -euo pipefail
@@ -89,7 +89,7 @@ jobs:
           fi
           curl -fL "${BASE_URL}/${ASSET}" -o "${ASSET}"
 
-          # SHA: Hash extrahieren und gegen lokale Datei prüfen (pfadunabhängig)
+          # SHA robust prüfen (Hash extrahieren, gegen lokale Datei vergleichen)
           CODE_SHA=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${SHA_FILE}")
           if [ "$CODE_SHA" = "200" ]; then
             echo "Verifying SHA256 for ${ASSET} ..."
@@ -113,7 +113,7 @@ jobs:
           mkdir -p "${NAME}"
           tar --use-compress-program=unzstd -xf "${ASSET}" -C "${NAME}"
 
-          # Normalisierung in festen Pfad: .third_party/boringssl/<ABI>
+          # ---- Normalisierung in festen Pfad: .third_party/boringssl/<ABI> ----
           ABI_DIR="$GITHUB_WORKSPACE/.third_party/boringssl/${{ matrix.abi }}"
           rm -rf "$ABI_DIR"
           mkdir -p "$ABI_DIR" "$ABI_DIR/lib"
@@ -131,20 +131,23 @@ jobs:
           cp -a "$INC_DIR/." "$ABI_DIR/include/"
           cp -f "$SSL_LIB" "$ABI_DIR/libssl.a"
           cp -f "$CRYPTO_LIB" "$ABI_DIR/libcrypto.a"
-          # Kompat-Symlinks unter lib/
+          # optionale Kompat-Symlinks unter lib/
           ln -sf ../libssl.a    "$ABI_DIR/lib/libssl.a"
           ln -sf ../libcrypto.a "$ABI_DIR/lib/libcrypto.a"
 
+          # Debug/Transparenz
           echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
+          echo "BORINGSSL_ASSET=$ASSET" >> $GITHUB_ENV
           echo "== Staged BoringSSL at ==" && ls -R "$ABI_DIR"
 
-      # ==== ABI/ELF-Validierung (pipefail-sicher, ohne fragile Pipes) ====
+      # ==== Validierung: ELF/ABI direkt am extrahierten Objekt (pipefail-sicher) ====
       - name: Validate prebuilt BoringSSL ABI (${{ matrix.abi }})
         run: |
           set -Eeuo pipefail
           trap 'rc=$?; echo "::error ::Validation failed at line ${LINENO} (rc=${rc}). Last cmd: ${BASH_COMMAND}"; exit ${rc}' ERR
 
           SSL_DIR="${BORINGSSL_DIR}"
+          echo "Asset: ${BORINGSSL_ASSET:-unknown}"
           if [ ! -d "$SSL_DIR/include" ]; then echo "::error ::Missing include/ in $SSL_DIR"; exit 3; fi
           if [ ! -f "$SSL_DIR/libssl.a" ]; then echo "::error ::Missing libssl.a in $SSL_DIR"; exit 4; fi
           if [ ! -f "$SSL_DIR/libcrypto.a" ]; then echo "::error ::Missing libcrypto.a in $SSL_DIR"; exit 4; fi
@@ -154,21 +157,25 @@ jobs:
 
           check_archive () {
             local ARCHIVE="$1" EXPECT_MACHINE="$2" EXPECT_CLASS="$3" LABEL="$4"
-            local HDR=""
-            # 1) llvm-readelf direkt auf das Archiv
-            HDR="$($READELF -h "$ARCHIVE" 2>/dev/null || true)"
-            # 2) Fallback: ersten Member extrahieren
-            if [ -z "$HDR" ]; then
-              mapfile -t MEMBERS < <("$AR" t "$ARCHIVE")
-              if [ "${#MEMBERS[@]}" -eq 0 ]; then
-                echo "::error ::No members found in $LABEL ($ARCHIVE)"
-                exit 12
-              fi
-              "$AR" p "$ARCHIVE" "${MEMBERS[0]}" > "first_${LABEL}.o"
-              HDR="$($READELF -h "first_${LABEL}.o")"
+            local TMP DIR F HDR
+            TMP="$(mktemp -d)"
+            DIR="$TMP/${LABEL%.a}"
+            mkdir -p "$DIR"
+            # robust: vollständiges Extrahieren vermeidet 't|head' & Thin-Edgecases
+            (cd "$DIR" && "$AR" x "$ARCHIVE")
+            F="$(find "$DIR" -type f -name '*.o' -print -quit)"
+            if [ -z "$F" ]; then
+              echo "::error ::No object members found in $LABEL ($ARCHIVE)"
+              echo "::group::ar tv $LABEL"; "$AR" tv "$ARCHIVE" || true; echo "::endgroup::"
+              rm -rf "$TMP"; exit 12
             fi
-            echo "$HDR" | grep -Eq "Machine:\s*${EXPECT_MACHINE}" || { echo "::error ::Unexpected Machine in $LABEL. Expected ${EXPECT_MACHINE}"; echo "$HDR"; exit 13; }
-            echo "$HDR" | grep -Eq "Class:\s*${EXPECT_CLASS}"     || { echo "::error ::Unexpected Class in $LABEL. Expected ${EXPECT_CLASS}";   echo "$HDR"; exit 14; }
+            HDR="$($READELF -h "$F")"
+            echo "::group::ELF header ($LABEL, sample object)"
+            echo "$HDR" | sed -n '1,40p'
+            echo "::endgroup::"
+            echo "$HDR" | grep -Eq "Machine:\s*${EXPECT_MACHINE}" || { echo "::error ::Unexpected Machine in $LABEL. Expected ${EXPECT_MACHINE}"; rm -rf "$TMP"; exit 13; }
+            echo "$HDR" | grep -Eq "Class:\s*${EXPECT_CLASS}"     || { echo "::error ::Unexpected Class in $LABEL. Expected ${EXPECT_CLASS}";   rm -rf "$TMP"; exit 14; }
+            rm -rf "$TMP"
           }
 
           check_archive "$SSL_DIR/libssl.a"    "${{ matrix.expect_machine }}" "${{ matrix.expect_class }}" "libssl.a"
@@ -177,7 +184,7 @@ jobs:
           echo "ABI/ELF validation passed for ${{ matrix.abi }} ✅"
           exit 0
 
-      # ==== TDLib (JNI/Java) konfigurieren & bauen ====
+      # ==== TDLib konfigurieren & bauen (laut TDLib-Doku, Java/JNI + install) ====
       - name: Build TDLib (${{ matrix.abi }})
         run: |
           set -euo pipefail
@@ -207,7 +214,7 @@ jobs:
           ninja install
           echo "TDLib ${ABI} install → $(pwd)/install"
 
-      # ==== Logs & Artefakte ====
+      # ==== CMake-Logs bei jedem Run mitschicken (Debug-Erleichterung) ====
       - name: Upload CMake logs (${{ matrix.abi }})
         if: always()
         uses: actions/upload-artifact@v4
@@ -218,6 +225,7 @@ jobs:
             build-${{ matrix.abi }}/CMakeFiles/CMakeOutput.log
           if-no-files-found: ignore
 
+      # ==== TDLib-Install-Bäume je ABI als Artefakt ====
       - name: Upload TDLib artifacts (${{ matrix.abi }})
         uses: actions/upload-artifact@v4
         with:
