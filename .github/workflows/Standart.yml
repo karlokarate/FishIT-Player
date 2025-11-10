@@ -42,16 +42,26 @@ jobs:
       # === Download & extract prebuilt BoringSSL packages ===
       # =====================================================
       - name: Download prebuilt BoringSSL (arm64 + armv7)
-        env: { GH_TOKEN: ${{ github.token }} }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p .third_party/boringssl && cd .third_party/boringssl
           gh release download "$BORINGSSL_TAG" -R "$REPO" --pattern '*.tar.zst' --clobber
+
+          # optional: Integrität prüfen, falls *.sha256 vorhanden
+          for f in *.tar.zst; do
+            if [ -f "${f}.sha256" ]; then
+              sha256sum -c "${f}.sha256"
+            fi
+          done
+
           for f in *.tar.zst; do
             name="${f%.tar.zst}"
             mkdir -p "$name"
             tar --use-compress-program=unzstd -xf "$f" -C "$name"
           done
+
           echo "BORINGSSL_DIR=$PWD" >> $GITHUB_ENV
           ls -R .
 
