@@ -1,3 +1,8 @@
+2025-11-24
+- fix(ci): Standart workflow runs a host `prepare_cross_compiling` pass to
+  emit the TDLib `td_api_*.cpp` auto-sources before the Android builds start,
+  stopping clang++ from failing on missing `td_api_0.cpp`.
+
 2025-11-23
 - fix(ci): Force the Standart workflow's tdutils pre-generation CMake run to
   enable `TDUTILS_MIME_TYPE`, so the `tdmime_auto` target exists and gperf can

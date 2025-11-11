@@ -3,6 +3,10 @@
 
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-11-24: Standart-Workflow führt den hostseitigen
+  `prepare_cross_compiling`-Lauf wieder explizit aus, damit die TDLib
+  `td_api_*.cpp`-Autos vor dem Android-Matrix-Build entstehen und clang++
+  nicht mehr auf fehlende Dateien läuft.
 - Maintenance 2025-11-23: Standart-Workflow setzt beim tdutils MIME-Generator
   `TDUTILS_MIME_TYPE=ON`, damit die gperf-Targets (`tdmime_auto`) auf dem Host
   entstehen und der Android-Matrix-Lauf wieder startet.
