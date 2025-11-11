@@ -1,3 +1,9 @@
+2025-11-18
+- fix(ci): Teach `Standart.yml` to install native build tools and run a host
+  `prepare_cross_compiling` pass so TDLib TL auto-sources exist before the
+  Android matrix builds. The workflow now produces the expected artifacts
+  again.
+
 2025-11-17
 - fix(settings/telegram): Ensure the TDLib log verbosity slider updates the
   mirror-mode auth repository so log level changes apply even when the background
