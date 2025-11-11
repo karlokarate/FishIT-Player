@@ -3,6 +3,9 @@
 
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-11-23: Standart-Workflow setzt beim tdutils MIME-Generator
+  `TDUTILS_MIME_TYPE=ON`, damit die gperf-Targets (`tdmime_auto`) auf dem Host
+  entstehen und der Android-Matrix-Lauf wieder startet.
 - Maintenance 2025-11-22: Standart-Workflow sammelt die CMake-Konfig-
   Logs vor dem Upload ins Logs-Bundle, damit das Artefakt auch ohne
   optionale CMake-Dateien entsteht.

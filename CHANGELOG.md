@@ -1,3 +1,8 @@
+2025-11-23
+- fix(ci): Force the Standart workflow's tdutils pre-generation CMake run to
+  enable `TDUTILS_MIME_TYPE`, so the `tdmime_auto` target exists and gperf can
+  emit the MIME auto-sources before the Android matrix starts.
+
 2025-11-22
 - fix(ci): Collect CMake configure logs inside the Standart workflow's
   logs bundle and upload only that directory so log artifacts are always
