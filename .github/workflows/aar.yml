@@ -17,14 +17,14 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       TDLIB_VERSION: ${{ github.event.inputs.version }}
-      PRODUCER_RUN_ID: "19267929354"   # exakt dein Run
+      PRODUCER_RUN_ID: "19267929354"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with: { fetch-depth: 1 }
 
-      # --- Exakte Artefakt-Namen/Run-ID ---
+      # Cross-run Download mit EXAKTEN Artefakt-Namen
       - name: Download tdlib-java-bindings
         uses: dawidd6/action-download-artifact@v3
         with:
@@ -49,15 +49,18 @@ jobs:
           path: .artifacts/armeabi-v7a
           if_no_artifact_found: fail
 
-      # --- AAR-Modul befüllen ---
+      # AAR-Modul befüllen (portabel: find statt fd)
       - name: Prepare tdlib-android module layout
+        shell: bash
         run: |
           set -euo pipefail
           mkdir -p tdlib-android/src/main/jniLibs/arm64-v8a
           mkdir -p tdlib-android/src/main/jniLibs/armeabi-v7a
           mkdir -p tdlib-android/src/main/java
+          mkdir -p /tmp/a64 /tmp/v7a /tmp/tdjava
 
-          # Entpacke native Bundles (.tar.zst/.tar.gz/.zip)
+          # Entpacke native Bundles (.tar.zst/.tar.gz/.tar/.zip)
+          shopt -s nullglob
           for f in .artifacts/arm64/*; do
             case "$f" in
               *.tar.zst|*.tar.gz|*.tar) tar -xf "$f" -C /tmp/a64 ;;
@@ -71,13 +74,20 @@ jobs:
             esac
           done
 
-          # libtdjni.so herausziehen
-          A64=$(fd -a -H -t f "^libtdjni\.so$" /tmp/a64 | head -n1)
-          V7A=$(fd -a -H -t f "^libtdjni\.so$" /tmp/v7a | head -n1)
-          cp -v "$A64" tdlib-android/src/main/jniLibs/arm64-v8a/libtdjni.so
-          cp -v "$V7A" tdlib-android/src/main/jniLibs/armeabi-v7a/libtdjni.so
+          # libtdjni.so finden (portabel)
+          A64="$(find /tmp/a64 -type f -name 'libtdjni.so' | head -n1 || true)"
+          V7A="$(find /tmp/v7a -type f -name 'libtdjni.so' | head -n1 || true)"
+          if [[ -z "${A64}" || -z "${V7A}" ]]; then
+            echo "::error ::libtdjni.so not found in extracted artifacts"
+            echo "Listing extracted files for debugging:"
+            find /tmp/a64 -type f | sed 's/^/  a64: /' || true
+            find /tmp/v7a -type f | sed 's/^/  v7a: /' || true
+            exit 1
+          fi
+          cp -v "${A64}" tdlib-android/src/main/jniLibs/arm64-v8a/libtdjni.so
+          cp -v "${V7A}" tdlib-android/src/main/jniLibs/armeabi-v7a/libtdjni.so
 
-          # Java-Bindings extrahieren
+          # Java-Bindings extrahieren (zip oder Ordner)
           if ls .artifacts/java/*.zip >/dev/null 2>&1; then
             unzip -q .artifacts/java/*.zip -d /tmp/tdjava
             rsync -a /tmp/tdjava/org tdlib-android/src/main/java/
