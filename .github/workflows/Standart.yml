@@ -54,7 +54,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0            # robuster für Submodule/Refs
+          fetch-depth: 0
           submodules: recursive
 
       - name: Install build deps
@@ -90,23 +90,20 @@ jobs:
           set -euo pipefail
           git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-      # Falls vorhanden, tdutils-Generator ausführen (sonst übernimmt CMake).
+      # 1) Vorab-Generierung der tdutils-Autoquellen (robust).
       - name: Pre-generate tdutils auto sources (if generator present)
         run: |
           set -euo pipefail
-          cd "${TD_SRC_DIR}"
-          script="$(find tdutils -type f -name 'generate_mime_types.py' -print -quit || true)"
-          if [ -n "$script" ]; then
-            echo "Found generator: $script"
-            cd "$(dirname "$script")"
+          cd "${TD_SRC_DIR}/tdutils/generate" || { echo "::group::Layout"; find "${GITHUB_WORKSPACE}/${TD_SRC_DIR}" -maxdepth 3 -type d; echo "::endgroup::"; exit 90; }
+          if [ -f "generate_mime_types.py" ]; then
             mkdir -p auto
-            python3 "$(basename "$script")"
+            python3 generate_mime_types.py
             test -f auto/mime_type_to_extension.cpp || { echo "::error ::missing auto/mime_type_to_extension.cpp after generation"; exit 91; }
-            test -f auto/extension_to_mime_type.cpp || { echo "::error ::missing auto/extension_to_mime_type.cpp after generation"; exit 92; }
-            echo "Generated tdutils auto sources:"
+            test -f auto/extension_to_mime_type.cpp   || { echo "::error ::missing auto/extension_to_mime_type.cpp after generation"; exit 92; }
+            echo "Generated:"
             ls -l auto | sed 's/^/  /'
           else
-            echo "No generate_mime_types.py found in tdutils; will rely on CMake to generate."
+            echo "::warning ::generate_mime_types.py not found; CMake will attempt generation"
           fi
 
       - name: Prepare logs directory (${{ matrix.abi }})
@@ -225,6 +222,19 @@ jobs:
           echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
           echo "BORINGSSL_ASSET=built-from-source" >> $GITHUB_ENV
 
+      # 2) Sicherheit: Sind die Auto-Dateien wirklich da?
+      - name: Ensure tdutils auto sources exist
+        run: |
+          set -euo pipefail
+          GEN_DIR="${TD_SRC_DIR}/tdutils/generate"
+          if [ ! -f "${GEN_DIR}/auto/mime_type_to_extension.cpp" ] || [ ! -f "${GEN_DIR}/auto/extension_to_mime_type.cpp" ]; then
+            echo "::warning ::auto/* missing before configure; generating now"
+            cd "$GEN_DIR"
+            python3 generate_mime_types.py
+          fi
+          test -f "${GEN_DIR}/auto/mime_type_to_extension.cpp"
+          test -f "${GEN_DIR}/auto/extension_to_mime_type.cpp"
+
       - name: Validate prebuilt or fallback BoringSSL ABI (${{ matrix.abi }})
         run: |
           set -Eeuo pipefail
@@ -246,18 +256,17 @@ jobs:
             mkdir -p "$DIR"
             (cd "$DIR" && "$AR" x "$ARCHIVE")
             F="$(find "$DIR" -type f -name '*.o' -print -quit)"
-            if [ -n "$F" ]; then
-              HDR="$($READELF -h "$F")"
-              echo "::group::ELF header ($LABEL, sample object)"
-              echo "$HDR" | sed -n '1,40p'
-              echo "::endgroup::"
-              echo "$HDR" | grep -Eq "Machine:\s*${{ matrix.expect_machine }}" || { echo "::error ::unexpected Machine"; rm -rf "$TMP"; exit 13; }
-              echo "$HDR" | grep -Eq "Class:\s*${{ matrix.expect_class }}" || { echo "::error ::unexpected Class"; rm -rf "$TMP"; exit 14; }
-            else
+            if [ -z "$F" ]; then
               echo "::error ::no object members found in $LABEL ($ARCHIVE)"
               "$AR" tv "$ARCHIVE" || true
               rm -rf "$TMP"; exit 12
             fi
+            HDR="$($READELF -h "$F")"
+            echo "::group::ELF header ($LABEL, sample object)"
+            echo "$HDR" | sed -n '1,40p'
+            echo "::endgroup::"
+            echo "$HDR" | grep -Eq "Machine:\s*${{ matrix.expect_machine }}" || { echo "::error ::unexpected Machine"; rm -rf "$TMP"; exit 13; }
+            echo "$HDR" | grep -Eq "Class:\s*${{ matrix.expect_class }}" || { echo "::error ::unexpected Class"; rm -rf "$TMP"; exit 14; }
             rm -rf "$TMP"
           }
 
@@ -313,6 +322,11 @@ jobs:
             exit 52
           fi
 
+          # Zusätzliche Sicherheit: Auto-Dateien vor Configure erneut prüfen
+          GEN_DIR="${TD_SRC_DIR}/tdutils/generate"
+          test -f "${GEN_DIR}/auto/mime_type_to_extension.cpp"
+          test -f "${GEN_DIR}/auto/extension_to_mime_type.cpp"
+
           mkdir -p "$BUILD_DIR"
           cd "$BUILD_DIR"
 
@@ -358,7 +372,7 @@ jobs:
 
           if [ $rc -ne 0 ]; then
             echo "::group::ninja error context (first error with 120 lines of context)"
-            first_err_line="$(grep -n -E '(^|[[:space:]])(error:|fatal error:|undefined reference|No such file or directory|does not name a type|no member named|no type named|static assertion failed|unknown type name|unresolved external|ld: error|linker command failed)' "../logs-${ABI}}/ninja-build.log" | head -n1 | cut -d: -f1 || true)"
+            first_err_line="$(grep -n -E '(^|[[:space:]])(error:|fatal error:|undefined reference|No such file or directory|does not name a type|no member named|no type named|static assertion failed|unknown type name|unresolved external|ld: error|linker command failed)' "../logs-${ABI}/ninja-build.log" | head -n1 | cut -d: -f1 || true)"
             if [ -n "$first_err_line" ]; then
               start=$(( first_err_line>60 ? first_err_line-60 : 1 ))
               end=$(( first_err_line+60 ))
