@@ -3,6 +3,10 @@
 
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-11-18: CI Standart workflow führt vor den Android-Matrix-
+  Builds einen nativen `prepare_cross_compiling`-Lauf aus und installiert die
+  fehlenden Host-Build-Tools, damit die TL-Autoquellen rechtzeitig entstehen
+  und Artefakt-Uploads wieder funktionieren.
 - Maintenance 2025-11-16: Telegram Start/FishRow prefetcher guards prevent
   disposal races so leaving Settings or switching tabs stops crashing Start.
 - Maintenance 2025-11-13: Telegram-Settings zeigen wieder Proxy- und

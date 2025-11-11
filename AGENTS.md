@@ -44,6 +44,10 @@ Codex – Operating Rules (override)
 - Pragmatic alternatives: If a request is technically not feasible, Codex proposes the best alternative solution and requests approval where appropriate.
 - Respectful scope: Codex does not change/trim/expand modules or files without instruction, except where necessary to uphold these rules or maintain architectural integrity. Existing flows (EPG/Xtream, player paths, list/detail) must be preserved unless requested.
 - Ongoing hygiene: Codex periodically tidies the repo, highlights obsolete files/code to the user, and removes uncritical leftovers (e.g., stale *.old files). Never touch `.gradle/`, `.idea/`, or `app/build/` artifacts, and avoid dependency upgrades unless fixing builds.
+- CI guard: `.github/workflows/Standart.yml` führt vor den Android-Matrix-Builds
+  einen nativen Host-Lauf (`prepare_cross_compiling`) aus und benötigt die
+  systemseitigen Build-Essentials. Beim Anpassen des Workflows darf dieser
+  Schritt nicht entfallen, sonst fehlen TL-Autoquellen und Artefakte.
 - TV focus/DPAD audit: `tools/audit_tv_focus.sh` enforces rules (TvFocusRow for horizontal containers, tvClickable for interactives, no ad‑hoc DPAD). Wired into CI (`.github/workflows/ci.yml`) and fails PRs on violations.
 - Central facade: Use `com.chris.m3usuite.ui.focus.FocusKit` as the single entry point for focus across all UIs (TV/phone/tablet). It provides primitives (`tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, `focusBringIntoViewOnFocus`), unified row wrappers (`TvRowLight` → `TvFocusRow`, `TvRowMedia`/`TvRowPaged` → FocusKit’s row engine), DPAD helpers (`onDpadAdjustLeftRight/UpDown`), grid neighbors (`focusNeighbors`), and re‑exports of `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton`). Avoid importing row engines or skin primitives directly in screens.
 
