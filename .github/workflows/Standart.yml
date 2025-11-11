@@ -237,7 +237,9 @@ jobs:
             command -v gperf >/dev/null 2>&1 || { echo "::error ::gperf missing for tdutils auto generation"; exit 93; }
             mkdir -p "$gen_dir/auto"
             build_dir="$PWD/.tdmime-host"
-            cmake -G Ninja -S "$gen_dir" -B "$build_dir" -DCMAKE_BUILD_TYPE=Release
+            cmake -G Ninja -S "$gen_dir" -B "$build_dir" \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DTDUTILS_MIME_TYPE=ON
             cmake --build "$build_dir" --target tdmime_auto -- -j 2
           else
             echo "::notice ::No tdutils MIME generator detected; relying on CMake custom commands."
@@ -394,7 +396,9 @@ jobs:
               command -v gperf >/dev/null 2>&1 || { echo "::warning ::gperf unavailable; tdutils auto files may be missing"; exit 0; }
               mkdir -p "$gen_dir/auto"
               build_dir="$PWD/.tdmime-host"
-              cmake -G Ninja -S "$gen_dir" -B "$build_dir" -DCMAKE_BUILD_TYPE=Release
+              cmake -G Ninja -S "$gen_dir" -B "$build_dir" \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DTDUTILS_MIME_TYPE=ON
               cmake --build "$build_dir" --target tdmime_auto -- -j 2
             fi
           else

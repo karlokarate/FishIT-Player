@@ -53,10 +53,10 @@ Codex – Operating Rules (override)
   im Step "Fallback - build BoringSSL" beibehalten, damit der aktive Commit im
   Artefakt-Log ersichtlich bleibt. TDLib >1.8 nutzt einen gperf-basierten
   Generator (`generate_mime_types_gperf.cpp`) für `tdutils/generate/auto/*`; die
-  Standart-Workflow-Hosts müssen deshalb `gperf` installiert haben und den
-  `tdmime_auto`-Build (CMake/Ninja) vor dem Android-Matrix-Lauf ausführen, damit
-  `mime_type_to_extension.cpp` und `extension_to_mime_type.cpp` im Source-Tree
-  bereitstehen.
+  Standart-Workflow-Hosts müssen deshalb `gperf` installiert haben, beim CMake-
+  Aufruf `TDUTILS_MIME_TYPE=ON` setzen und den `tdmime_auto`-Build (CMake/Ninja)
+  vor dem Android-Matrix-Lauf ausführen, damit `mime_type_to_extension.cpp` und
+  `extension_to_mime_type.cpp` im Source-Tree bereitstehen.
 - TV focus/DPAD audit: `tools/audit_tv_focus.sh` enforces rules (TvFocusRow for horizontal containers, tvClickable for interactives, no ad‑hoc DPAD). Wired into CI (`.github/workflows/ci.yml`) and fails PRs on violations.
 - Central facade: Use `com.chris.m3usuite.ui.focus.FocusKit` as the single entry point for focus across all UIs (TV/phone/tablet). It provides primitives (`tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, `focusBringIntoViewOnFocus`), unified row wrappers (`TvRowLight` → `TvFocusRow`, `TvRowMedia`/`TvRowPaged` → FocusKit’s row engine), DPAD helpers (`onDpadAdjustLeftRight/UpDown`), grid neighbors (`focusNeighbors`), and re‑exports of `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton`). Avoid importing row engines or skin primitives directly in screens.
 
