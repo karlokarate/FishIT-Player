@@ -17,14 +17,14 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       TDLIB_VERSION: ${{ github.event.inputs.version }}
-      PRODUCER_RUN_ID: "19267929354"
+      PRODUCER_RUN_ID: "19267929354"   # dein Run mit den 3 Artefakten
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with: { fetch-depth: 1 }
 
-      # Cross-run Download mit EXAKTEN Artefakt-Namen
+      # --- Cross-run Download: EXAKTE Artefakt-Namen aus deinem Screenshot ---
       - name: Download tdlib-java-bindings
         uses: dawidd6/action-download-artifact@v3
         with:
@@ -49,7 +49,7 @@ jobs:
           path: .artifacts/armeabi-v7a
           if_no_artifact_found: fail
 
-      # AAR-Modul befüllen (portabel: find statt fd)
+      # --- Modul befüllen, robustes Finden + Debug-Dump ---
       - name: Prepare tdlib-android module layout
         shell: bash
         run: |
@@ -59,41 +59,50 @@ jobs:
           mkdir -p tdlib-android/src/main/java
           mkdir -p /tmp/a64 /tmp/v7a /tmp/tdjava
 
-          # Entpacke native Bundles (.tar.zst/.tar.gz/.tar/.zip)
+          echo "::group::Entpacke native Bundles"
           shopt -s nullglob
           for f in .artifacts/arm64/*; do
             case "$f" in
-              *.tar.zst|*.tar.gz|*.tar) tar -xf "$f" -C /tmp/a64 ;;
-              *.zip) unzip -q "$f" -d /tmp/a64 ;;
+              *.tar.zst|*.tar.gz|*.tar) echo "Extracting $f"; tar -xf "$f" -C /tmp/a64 ;;
+              *.zip) echo "Unzipping $f"; unzip -q "$f" -d /tmp/a64 ;;
             esac
           done
           for f in .artifacts/armeabi-v7a/*; do
             case "$f" in
-              *.tar.zst|*.tar.gz|*.tar) tar -xf "$f" -C /tmp/v7a ;;
-              *.zip) unzip -q "$f" -d /tmp/v7a ;;
+              *.tar.zst|*.tar.gz|*.tar) echo "Extracting $f"; tar -xf "$f" -C /tmp/v7a ;;
+              *.zip) echo "Unzipping $f"; unzip -q "$f" -d /tmp/v7a ;;
             esac
           done
+          echo "::endgroup::"
 
-          # libtdjni.so finden (portabel)
+          echo "::group::Suche nach libtdjni.so"
+          find /tmp/a64 /tmp/v7a -type f -name "libtdjni.so" -print || true
+          echo "::endgroup::"
+
+          # tolerant finden
           A64="$(find /tmp/a64 -type f -name 'libtdjni.so' | head -n1 || true)"
           V7A="$(find /tmp/v7a -type f -name 'libtdjni.so' | head -n1 || true)"
+
           if [[ -z "${A64}" || -z "${V7A}" ]]; then
             echo "::error ::libtdjni.so not found in extracted artifacts"
-            echo "Listing extracted files for debugging:"
-            find /tmp/a64 -type f | sed 's/^/  a64: /' || true
-            find /tmp/v7a -type f | sed 's/^/  v7a: /' || true
+            echo "----- Dump of /tmp/a64 (maxdepth 4) -----"
+            find /tmp/a64 -maxdepth 4 -type f | sed 's/^/  /' || true
+            echo "----- Dump of /tmp/v7a (maxdepth 4) -----"
+            find /tmp/v7a -maxdepth 4 -type f | sed 's/^/  /' || true
             exit 1
           fi
+
           cp -v "${A64}" tdlib-android/src/main/jniLibs/arm64-v8a/libtdjni.so
           cp -v "${V7A}" tdlib-android/src/main/jniLibs/armeabi-v7a/libtdjni.so
 
-          # Java-Bindings extrahieren (zip oder Ordner)
+          echo "::group::Extrahiere Java-Bindings"
           if ls .artifacts/java/*.zip >/dev/null 2>&1; then
             unzip -q .artifacts/java/*.zip -d /tmp/tdjava
             rsync -a /tmp/tdjava/org tdlib-android/src/main/java/
           else
             rsync -a .artifacts/java/org tdlib-android/src/main/java/ || true
           fi
+          echo "::endgroup::"
 
           # Sanity-Checks
           test -s tdlib-android/src/main/jniLibs/arm64-v8a/libtdjni.so
