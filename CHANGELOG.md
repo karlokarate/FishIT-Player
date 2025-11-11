@@ -1,3 +1,8 @@
+2025-11-20
+- fix(ci): Make the Standart workflow resilient when the pinned BoringSSL
+  commit is missing from upstream so fallback builds continue and `.so`
+  artifacts stay available.
+
 2025-11-19
 - chore(ci): Standart workflow now generates the TDLib Java bindings and
   publishes them as a dedicated artifact so TdApi.java accompanies the
