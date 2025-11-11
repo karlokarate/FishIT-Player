@@ -54,15 +54,13 @@ jobs:
             git checkout "$TD_REF" || true
           fi
 
-      - name: Build generator & prepare cross-compiling
+      - name: Build generator (host)
         id: gen
         run: |
           set -euo pipefail
           cmake -G Ninja -S "$TD_SRC_DIR" -B build-host \
             -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_TESTS=OFF -DTD_ENABLE_JNI=OFF -DTD_ENABLE_JAVA=OFF
           cmake --build build-host --target td_generate_java_api -- -j 2
-          # wichtig: erzeugt u.a. td_api.tlo in neueren Layouts
-          cmake --build build-host --target generate -- -j 2
 
           GEN_BIN=""
           for p in build-host/td/bin/td_generate_java_api build-host/td/generate/td_generate_java_api; do
@@ -81,36 +79,49 @@ jobs:
         run: |
           set -euo pipefail
           GEN_BIN="${{ steps.gen.outputs.gen_bin }}"
+          PACKAGE="org/drinkless/tdlib"
+          OUT_ROOT="build-host/java-bindings"
+          OUT_DIR="$OUT_ROOT/$PACKAGE"
+          mkdir -p "$OUT_DIR"
 
-          # 1) breite Suche im Build-Tree
+          # Suche Schema (.tl bevorzugt), Fallback .tlo
+          TL_FILE="$(find "$TD_SRC_DIR" -type f -path '*/td/generate/scheme/td_api.tl' -print -quit || true)"
           TLO_FILE="$(find build-host -type f -name 'td_api.tlo' -print -quit || true)"
-          # 2) notfalls generate-Target nochmal triggern
-          if [ -z "$TLO_FILE" ]; then
-            cmake --build build-host --target generate -- -j 2
-            TLO_FILE="$(find build-host -type f -name 'td_api.tlo' -print -quit || true)"
-          fi
-          # 3) Fallback: Source-Tree durchsuchen
-          if [ -z "$TLO_FILE" ]; then
-            TLO_FILE="$(find "$TD_SRC_DIR" -type f -name 'td_api.tlo' -print -quit || true)"
+          SCHEMA=""
+          if [ -n "$TL_FILE" ]; then
+            SCHEMA="$TL_FILE"
+          elif [ -n "$TLO_FILE" ]; then
+            SCHEMA="$TLO_FILE"
           fi
 
-          if [ -z "$TLO_FILE" ]; then
-            echo "::group::debug-locate-tlo"
-            find build-host -maxdepth 6 -type d -name auto -print -exec ls -l {} \; || true
+          if [ -z "$SCHEMA" ]; then
+            echo "::group::debug-locate-schema"
+            find build-host -type f -name 'td_api.*' -maxdepth 6 -print || true
+            find "$TD_SRC_DIR" -type f -name 'td_api.*' -maxdepth 6 -print || true
             echo "::endgroup::"
-            echo "::error ::td_api.tlo not found (after generate)"
+            echo "::error ::No td_api.tl/.tlo schema found"
             exit 61
           fi
 
-          OUT_DIR="build-host/java-bindings/org/drinkless/tdlib"
-          mkdir -p "$OUT_DIR"
-          "$GEN_BIN" TdApi "$TLO_FILE" "build-host/java-bindings" "org/drinkless/tdlib"
+          # Versuche zuerst mit .tl, bei Fehler optional mit .tlo
+          set +e
+          "$GEN_BIN" TdApi "$SCHEMA" "$OUT_ROOT" "$PACKAGE"
+          rc=$?
+          if [ $rc -ne 0 ] && [ -n "$TL_FILE" ] && [ -n "$TLO_FILE" ]; then
+            "$GEN_BIN" TdApi "$TLO_FILE" "$OUT_ROOT" "$PACKAGE"
+            rc=$?
+          fi
+          set -e
+          if [ $rc -ne 0 ]; then
+            echo "::error ::td_generate_java_api failed (schema=$SCHEMA)"
+            exit 63
+          fi
 
-          TL_FILE="$(find "$TD_SRC_DIR" -type f -path '*/td/generate/scheme/td_api.tl' -print -quit || true)"
-          JDOC_PHP="$(find "$TD_SRC_DIR" -type f -name 'JavadocTlDocumentationGenerator.php' -print -quit || true)"
+          # Optional Javadoc
           JAVA_FILE="$OUT_DIR/TdApi.java"
-          if command -v php >/dev/null 2>&1 && [ -n "$JDOC_PHP" ] && [ -f "$TL_FILE" ] && [ -f "$JAVA_FILE" ]; then
-            php "$JDOC_PHP" "$TL_FILE" "$JAVA_FILE"
+          JDOC_PHP="$(find "$TD_SRC_DIR" -type f -name 'JavadocTlDocumentationGenerator.php' -print -quit || true)"
+          if command -v php >/dev/null 2>&1 && [ -n "$TL_FILE" ] && [ -f "$JAVA_FILE" ] && [ -f "$JDOC_PHP" ]; then
+            php "$JDOC_PHP" "$TL_FILE" "$JAVA_FILE" || echo "::notice ::Javadoc generation skipped (php error)"
           else
             echo "::notice ::Skipping TdApi Javadoc (php or script missing)"
           fi
