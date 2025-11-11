@@ -90,20 +90,24 @@ jobs:
           set -euo pipefail
           git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-      # 1) Vorab-Generierung der tdutils-Autoquellen (robust).
+      # Optional: Vorab-Generierung nur wenn der Generator existiert (robuste Suche).
       - name: Pre-generate tdutils auto sources (if generator present)
         run: |
           set -euo pipefail
-          cd "${TD_SRC_DIR}/tdutils/generate" || { echo "::group::Layout"; find "${GITHUB_WORKSPACE}/${TD_SRC_DIR}" -maxdepth 3 -type d; echo "::endgroup::"; exit 90; }
-          if [ -f "generate_mime_types.py" ]; then
-            mkdir -p auto
-            python3 generate_mime_types.py
-            test -f auto/mime_type_to_extension.cpp || { echo "::error ::missing auto/mime_type_to_extension.cpp after generation"; exit 91; }
-            test -f auto/extension_to_mime_type.cpp   || { echo "::error ::missing auto/extension_to_mime_type.cpp after generation"; exit 92; }
+          cd "${TD_SRC_DIR}"
+          gen_py="$(git ls-files | grep -E '(^|/)tdutils/.*/generate_mime_types\.py$' | head -n1 || true)"
+          if [ -n "$gen_py" ]; then
+            gen_dir="$(dirname "$gen_py")"
+            echo "Found generator: $gen_py"
+            mkdir -p "$gen_dir/auto"
+            (cd "$gen_dir" && python3 generate_mime_types.py)
+            # Nur prüfen, wenn der Generator existiert
+            test -f "$gen_dir/auto/mime_type_to_extension.cpp" || { echo "::error ::missing auto/mime_type_to_extension.cpp after generation"; exit 91; }
+            test -f "$gen_dir/auto/extension_to_mime_type.cpp"   || { echo "::error ::missing auto/extension_to_mime_type.cpp after generation"; exit 92; }
             echo "Generated:"
-            ls -l auto | sed 's/^/  /'
+            ls -l "$gen_dir/auto" | sed 's/^/  /'
           else
-            echo "::warning ::generate_mime_types.py not found; CMake will attempt generation"
+            echo "::notice ::No generate_mime_types.py in this TDLib revision; CMake will handle generation."
           fi
 
       - name: Prepare logs directory (${{ matrix.abi }})
@@ -222,18 +226,24 @@ jobs:
           echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
           echo "BORINGSSL_ASSET=built-from-source" >> $GITHUB_ENV
 
-      # 2) Sicherheit: Sind die Auto-Dateien wirklich da?
-      - name: Ensure tdutils auto sources exist
+      # Sicherheit: NICHT erzwingen, wenn kein Generator existiert.
+      - name: Ensure tdutils auto sources exist (non-fatal)
         run: |
           set -euo pipefail
-          GEN_DIR="${TD_SRC_DIR}/tdutils/generate"
-          if [ ! -f "${GEN_DIR}/auto/mime_type_to_extension.cpp" ] || [ ! -f "${GEN_DIR}/auto/extension_to_mime_type.cpp" ]; then
-            echo "::warning ::auto/* missing before configure; generating now"
-            cd "$GEN_DIR"
-            python3 generate_mime_types.py
+          cd "${TD_SRC_DIR}"
+          gen_py="$(git ls-files | grep -E '(^|/)tdutils/.*/generate_mime_types\.py$' | head -n1 || true)"
+          if [ -n "$gen_py" ]; then
+            gen_dir="$(dirname "$gen_py")"
+            if [ ! -f "$gen_dir/auto/mime_type_to_extension.cpp" ] || [ ! -f "$gen_dir/auto/extension_to_mime_type.cpp" ]; then
+              echo "::notice ::auto/* missing before configure; generating now via $gen_py"
+              mkdir -p "$gen_dir/auto"
+              (cd "$gen_dir" && python3 generate_mime_types.py)
+              test -f "$gen_dir/auto/mime_type_to_extension.cpp"
+              test -f "$gen_dir/auto/extension_to_mime_type.cpp"
+            fi
+          else
+            echo "::notice ::No generator present; relying on CMake custom commands."
           fi
-          test -f "${GEN_DIR}/auto/mime_type_to_extension.cpp"
-          test -f "${GEN_DIR}/auto/extension_to_mime_type.cpp"
 
       - name: Validate prebuilt or fallback BoringSSL ABI (${{ matrix.abi }})
         run: |
@@ -321,11 +331,6 @@ jobs:
             echo "::error ::BORINGSSL_DIR is unset before configure"
             exit 52
           fi
-
-          # Zusätzliche Sicherheit: Auto-Dateien vor Configure erneut prüfen
-          GEN_DIR="${TD_SRC_DIR}/tdutils/generate"
-          test -f "${GEN_DIR}/auto/mime_type_to_extension.cpp"
-          test -f "${GEN_DIR}/auto/extension_to_mime_type.cpp"
 
           mkdir -p "$BUILD_DIR"
           cd "$BUILD_DIR"
