@@ -24,8 +24,91 @@ jobs:
         with:
           actionlint_flags: "--color always"
 
+
+java_bindings:
+  runs-on: ubuntu-24.04
+  timeout-minutes: 15
+  permissions:
+    contents: read
+  env:
+    TD_SRC_DIR: td
+    TD_REF: ${{ env.TD_REF }}
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+
+    - name: Host toolchain (cmake/ninja/php)
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build cmake git curl unzip zstd openjdk-17-jdk gperf file python3 php-cli build-essential
+
+      - name: Fetch TDLib sources
+      run: |
+        set -euo pipefail
+        git clone --depth=1 https://github.com/tdlib/td.git "$TD_SRC_DIR"
+        if [ -n "${TD_REF:-}" ] && [ "${TD_REF}" != "master" ]; then
+          cd "$TD_SRC_DIR"
+          git fetch origin "$TD_REF" --depth 1 || true
+          git checkout "$TD_REF" || true
+        fi
+
+    - name: Build generator & prepare cross-compiling
+      id: gen
+      run: |
+        set -euo pipefail
+        cmake -G Ninja -S "$TD_SRC_DIR" -B build-host             -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_TESTS=OFF -DTD_ENABLE_JNI=OFF -DTD_ENABLE_JAVA=OFF
+        cmake --build build-host --target td_generate_java_api -- -j 2
+        cmake --build build-host --target prepare_cross_compiling -- -j 2
+
+        GEN_BIN=""
+        for p in build-host/td/bin/td_generate_java_api build-host/td/generate/td_generate_java_api; do
+          [ -x "$p" ] && GEN_BIN="$p" && break
+        done
+        [ -z "$GEN_BIN" ] && GEN_BIN="$(find build-host -type f -perm -111 -name td_generate_java_api -print -quit || true)"
+        if [ -z "$GEN_BIN" ]; then
+          echo "::group::targets"; ninja -C build-host -t targets all || true; echo "::endgroup::"
+          echo "::group::tree"; ls -R build-host | sed 's/^/  /'; echo "::endgroup::"
+          echo "::error ::td_generate_java_api not found after build"
+          exit 60
+        fi
+        echo "gen_bin=$GEN_BIN" >> "$GITHUB_OUTPUT"
+
+    - name: Generate TdApi.java
+      run: |
+        set -euo pipefail
+        GEN_BIN="${{ steps.gen.outputs.gen_bin }}"
+        TLO_FILE="$(find build-host -type f -path '*/td/generate/auto/tlo/td_api.tlo' -print -quit)"
+        test -x "$GEN_BIN" || { echo "::error ::td_generate_java_api missing"; exit 60; }
+        test -n "$TLO_FILE" && test -f "$TLO_FILE" || { echo "::error ::td_api.tlo not found"; exit 61; }
+
+        OUT_DIR="build-host/java-bindings/org/drinkless/tdlib"
+        mkdir -p "$OUT_DIR"
+        "$GEN_BIN" TdApi "$TLO_FILE" "build-host/java-bindings" "org/drinkless/tdlib"
+
+        TL_FILE="$(find "$TD_SRC_DIR" -type f -path '*/td/generate/scheme/td_api.tl' -print -quit || true)"
+        JDOC_PHP="$(find "$TD_SRC_DIR" -type f -name 'JavadocTlDocumentationGenerator.php' -print -quit || true)"
+        JAVA_FILE="$OUT_DIR/TdApi.java"
+        if command -v php >/dev/null 2>&1 && [ -n "$JDOC_PHP" ] && [ -f "$TL_FILE" ] && [ -f "$JAVA_FILE" ]; then
+          php "$JDOC_PHP" "$TL_FILE" "$JAVA_FILE"
+        else
+          echo "::notice ::Skipping TdApi Javadoc (php or script missing)"
+        fi
+
+        test -s "$JAVA_FILE" || { echo "::error ::TdApi.java not created"; exit 62; }
+        echo "Generated $JAVA_FILE"
+
+    - name: Upload TdApi.java
+      uses: actions/upload-artifact@v4
+      with:
+        name: tdlib-java-bindings
+        path: build-host/java-bindings/org/drinkless/tdlib/TdApi.java
+        if-no-files-found: error
+        retention-days: 14
   tdlib:
-    needs: lint
+    needs: [lint, java_bindings]
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
@@ -251,48 +334,6 @@ jobs:
             echo "::notice ::No generator present; relying on CMake custom commands."
           fi
 
-      - name: Generate TDLib TL sources for cross compilation
-        run: |
-          set -euo pipefail
-          HOST_BUILD_DIR="build-host"
-          cmake -G Ninja \
-            -S "${TD_SRC_DIR}" \
-            -B "$HOST_BUILD_DIR" \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DTD_ENABLE_JNI=ON \
-            -DTD_ENABLE_JAVA=ON \
-            -DTD_ENABLE_TESTS=OFF
-          cmake --build "$HOST_BUILD_DIR" --target prepare_cross_compiling -- -j 2
-
-      - name: Generate TDLib Java bindings (host)
-        if: matrix.abi == 'arm64-v8a'
-        run: |
-          set -euo pipefail
-          HOST_BUILD_DIR="build-host"
-          BIN_DIR="$HOST_BUILD_DIR/td/bin"
-          JAVA_OUT_DIR="$HOST_BUILD_DIR/java-bindings"
-          PACKAGE_PATH="org/drinkless/tdlib"
-
-          cmake --build "$HOST_BUILD_DIR" --target td_generate_java_api -- -j 2
-
-          GEN_BIN="$BIN_DIR/td_generate_java_api"
-          TLO_FILE="$BIN_DIR/td/generate/scheme/td_api.tlo"
-          TL_FILE="$BIN_DIR/td/generate/scheme/td_api.tl"
-
-          test -x "$GEN_BIN" || { echo "::error ::td_generate_java_api is missing"; exit 60; }
-          test -f "$TLO_FILE" || { echo "::error ::td_api.tlo not found"; exit 61; }
-
-          mkdir -p "$JAVA_OUT_DIR"
-          "$GEN_BIN" TdApi "$TLO_FILE" "$JAVA_OUT_DIR" "$PACKAGE_PATH"
-
-          if command -v php >/dev/null 2>&1 && [ -f "$TL_FILE" ] && [ -f "$BIN_DIR/td/generate/JavadocTlDocumentationGenerator.php" ]; then
-            php "$BIN_DIR/td/generate/JavadocTlDocumentationGenerator.php" "$TL_FILE" "$JAVA_OUT_DIR/$PACKAGE_PATH/TdApi.java"
-          else
-            echo "::notice ::Skipping TdApi Javadoc generation (php or generator script missing)"
-          fi
-
-          find "$JAVA_OUT_DIR" -type f -name '*.java' -print | sed 's/^/  /'
-
       - name: Validate prebuilt or fallback BoringSSL ABI (${{ matrix.abi }})
         run: |
           set -Eeuo pipefail
@@ -474,11 +515,3 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload TDLib Java bindings
-        if: success() && matrix.abi == 'arm64-v8a'
-        uses: actions/upload-artifact@v4
-        with:
-          name: tdlib-java-bindings
-          path: build-host/java-bindings/
-          if-no-files-found: error
-          retention-days: 14
