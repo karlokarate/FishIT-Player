@@ -1,3 +1,8 @@
+2025-11-19
+- chore(ci): Standart workflow now generates the TDLib Java bindings and
+  publishes them as a dedicated artifact so TdApi.java accompanies the
+  prebuilt `.so` libraries.
+
 2025-11-18
 - fix(ci): Teach `Standart.yml` to install native build tools and run a host
   `prepare_cross_compiling` pass so TDLib TL auto-sources exist before the

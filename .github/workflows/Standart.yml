@@ -62,7 +62,7 @@ jobs:
           set -euo pipefail
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get update -qq
-          sudo apt-get install -y ninja-build cmake git curl unzip tar zstd openjdk-17-jdk gperf file python3 build-essential
+          sudo apt-get install -y ninja-build cmake git curl unzip tar zstd openjdk-17-jdk gperf file python3 php-cli build-essential
           echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))" >> $GITHUB_ENV
 
       - name: Cache NDK ${{ env.NDK_VERSION }}
@@ -258,6 +258,35 @@ jobs:
             -DTD_ENABLE_TESTS=OFF
           cmake --build "$HOST_BUILD_DIR" --target prepare_cross_compiling -- -j 2
 
+      - name: Generate TDLib Java bindings (host)
+        if: matrix.abi == 'arm64-v8a'
+        run: |
+          set -euo pipefail
+          HOST_BUILD_DIR="build-host"
+          BIN_DIR="$HOST_BUILD_DIR/td/bin"
+          JAVA_OUT_DIR="$HOST_BUILD_DIR/java-bindings"
+          PACKAGE_PATH="org/drinkless/tdlib"
+
+          cmake --build "$HOST_BUILD_DIR" --target td_generate_java_api -- -j 2
+
+          GEN_BIN="$BIN_DIR/td_generate_java_api"
+          TLO_FILE="$BIN_DIR/td/generate/scheme/td_api.tlo"
+          TL_FILE="$BIN_DIR/td/generate/scheme/td_api.tl"
+
+          test -x "$GEN_BIN" || { echo "::error ::td_generate_java_api is missing"; exit 60; }
+          test -f "$TLO_FILE" || { echo "::error ::td_api.tlo not found"; exit 61; }
+
+          mkdir -p "$JAVA_OUT_DIR"
+          "$GEN_BIN" TdApi "$TLO_FILE" "$JAVA_OUT_DIR" "$PACKAGE_PATH"
+
+          if command -v php >/dev/null 2>&1 && [ -f "$TL_FILE" ] && [ -f "$BIN_DIR/td/generate/JavadocTlDocumentationGenerator.php" ]; then
+            php "$BIN_DIR/td/generate/JavadocTlDocumentationGenerator.php" "$TL_FILE" "$JAVA_OUT_DIR/$PACKAGE_PATH/TdApi.java"
+          else
+            echo "::notice ::Skipping TdApi Javadoc generation (php or generator script missing)"
+          fi
+
+          find "$JAVA_OUT_DIR" -type f -name '*.java' -print | sed 's/^/  /'
+
       - name: Validate prebuilt or fallback BoringSSL ABI (${{ matrix.abi }})
         run: |
           set -Eeuo pipefail
@@ -436,5 +465,14 @@ jobs:
         with:
           name: tdlib-android-${{ matrix.abi }}-boringssl
           path: build-${{ matrix.abi }}/install/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload TDLib Java bindings
+        if: success() && matrix.abi == 'arm64-v8a'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-java-bindings
+          path: build-host/java-bindings/
           if-no-files-found: error
           retention-days: 14
