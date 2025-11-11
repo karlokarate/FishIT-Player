@@ -3,6 +3,9 @@
 
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-11-22: Standart-Workflow sammelt die CMake-Konfig-
+  Logs vor dem Upload ins Logs-Bundle, damit das Artefakt auch ohne
+  optionale CMake-Dateien entsteht.
 - Maintenance 2025-11-21: Standart-Workflow baut die tdutils MIME-Autos mit
   dem neuen gperf-Generator vor dem Android-Matrix-Lauf, damit TDLib auch nach
   Upstream-Änderungen fehlerfrei für arm64/v7a kompiliert.

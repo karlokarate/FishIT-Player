@@ -92,6 +92,9 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
   `.github/workflows/Standart.yml` konfigurierte `BORINGSSL_TAG` beim Fetch,
   setzt der Workflow den Fallback automatisch auf den aktuellen BoringSSL-HEAD
   und protokolliert den tatsächlichen Commit im Artefakt-Log.
+  - Logs: Die Workflow-Stufe bündelt alle Build-/Konfig-Logs in `logs-<abi>`
+    (inkl. CMakeError/Output), bevor `actions/upload-artifact` läuft, damit das
+    Logs-Artefakt auch ohne optionale Dateien zuverlässig entsteht.
   - arm64: `scripts/tdlib-build-arm64.sh` (Phase‑2: LTO/GC‑sections/strip‑unneeded zur Größenreduktion)
  - Cache: `TelegramCacheCleanupWorker` trimmt lokale TD‑Dateien täglich auf `TG_CACHE_LIMIT_GB` (GB) – best‑effort Datei‑System‑Trim.
  - Reflection: `TdLibReflection.extractBestPhotoSizeFileId(...)` liefert die größte Photo-Größe als File-ID; `extractThumbFileId(...)` nutzt das gleiche Hilfswerk. `TgGate` fällt ohne BuildConfig-Override standardmäßig auf Mirror-Only (`false`) zurück, sodass OBX erst nach explizitem Opt-In aktiviert wird.

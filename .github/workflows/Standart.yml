@@ -518,6 +518,27 @@ jobs:
           set -e
           exit $rc
 
+      - name: Collect configure diagnostics (${{ matrix.abi }})
+        if: always()
+        run: |
+          set -euo pipefail
+          ABI="${{ matrix.abi }}"
+          SRC_DIR="build-${ABI}/CMakeFiles"
+          DEST_DIR="logs-${ABI}"
+          mkdir -p "$DEST_DIR"
+
+          if [ -d "$SRC_DIR" ]; then
+            for f in CMakeError.log CMakeOutput.log; do
+              if [ -f "$SRC_DIR/$f" ]; then
+                cp "$SRC_DIR/$f" "$DEST_DIR/$f"
+              else
+                echo "::notice ::$SRC_DIR/$f missing"
+              fi
+            done
+          else
+            echo "::notice ::$SRC_DIR missing"
+          fi
+
       - name: Build TDLib with Ninja (${{ matrix.abi }})
         run: |
           set -euo pipefail
@@ -566,10 +587,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: logs-${{ matrix.abi }}
-          path: |
-            logs-${{ matrix.abi }}/
-            build-${{ matrix.abi }}/CMakeFiles/CMakeError.log
-            build-${{ matrix.abi }}/CMakeFiles/CMakeOutput.log
+          path: logs-${{ matrix.abi }}/
           if-no-files-found: warn
           retention-days: 14
 

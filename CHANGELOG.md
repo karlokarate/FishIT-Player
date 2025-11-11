@@ -1,3 +1,8 @@
+2025-11-22
+- fix(ci): Collect CMake configure logs inside the Standart workflow's
+  logs bundle and upload only that directory so log artifacts are always
+  published even when CMake's optional files are absent.
+
 2025-11-21
 - fix(ci): Teach Standart TDLib build to run the new gperf-based tdutils
   generator on the host so `mime_type_to_extension.cpp` exists before the
