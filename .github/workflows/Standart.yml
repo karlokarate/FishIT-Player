@@ -24,89 +24,90 @@ jobs:
         with:
           actionlint_flags: "--color always"
 
+  java_bindings:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      TD_SRC_DIR: td
+      TD_REF: ${{ env.TD_REF }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-java_bindings:
-  runs-on: ubuntu-24.04
-  timeout-minutes: 15
-  permissions:
-    contents: read
-  env:
-    TD_SRC_DIR: td
-    TD_REF: ${{ env.TD_REF }}
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 1
-
-    - name: Host toolchain (cmake/ninja/php)
+      - name: Host toolchain (cmake/ninja/php)
         run: |
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y ninja-build cmake git curl unzip zstd openjdk-17-jdk gperf file python3 php-cli build-essential
 
       - name: Fetch TDLib sources
-      run: |
-        set -euo pipefail
-        git clone --depth=1 https://github.com/tdlib/td.git "$TD_SRC_DIR"
-        if [ -n "${TD_REF:-}" ] && [ "${TD_REF}" != "master" ]; then
-          cd "$TD_SRC_DIR"
-          git fetch origin "$TD_REF" --depth 1 || true
-          git checkout "$TD_REF" || true
-        fi
+        run: |
+          set -euo pipefail
+          git clone --depth=1 https://github.com/tdlib/td.git "$TD_SRC_DIR"
+          if [ -n "${TD_REF:-}" ] && [ "${TD_REF}" != "master" ]; then
+            cd "$TD_SRC_DIR"
+            git fetch origin "$TD_REF" --depth 1 || true
+            git checkout "$TD_REF" || true
+          fi
 
-    - name: Build generator & prepare cross-compiling
-      id: gen
-      run: |
-        set -euo pipefail
-        cmake -G Ninja -S "$TD_SRC_DIR" -B build-host             -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_TESTS=OFF -DTD_ENABLE_JNI=OFF -DTD_ENABLE_JAVA=OFF
-        cmake --build build-host --target td_generate_java_api -- -j 2
-        cmake --build build-host --target prepare_cross_compiling -- -j 2
+      - name: Build generator & prepare cross-compiling
+        id: gen
+        run: |
+          set -euo pipefail
+          cmake -G Ninja -S "$TD_SRC_DIR" -B build-host \
+            -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_TESTS=OFF -DTD_ENABLE_JNI=OFF -DTD_ENABLE_JAVA=OFF
+          cmake --build build-host --target td_generate_java_api -- -j 2
+          cmake --build build-host --target prepare_cross_compiling -- -j 2
 
-        GEN_BIN=""
-        for p in build-host/td/bin/td_generate_java_api build-host/td/generate/td_generate_java_api; do
-          [ -x "$p" ] && GEN_BIN="$p" && break
-        done
-        [ -z "$GEN_BIN" ] && GEN_BIN="$(find build-host -type f -perm -111 -name td_generate_java_api -print -quit || true)"
-        if [ -z "$GEN_BIN" ]; then
-          echo "::group::targets"; ninja -C build-host -t targets all || true; echo "::endgroup::"
-          echo "::group::tree"; ls -R build-host | sed 's/^/  /'; echo "::endgroup::"
-          echo "::error ::td_generate_java_api not found after build"
-          exit 60
-        fi
-        echo "gen_bin=$GEN_BIN" >> "$GITHUB_OUTPUT"
+          GEN_BIN=""
+          for p in build-host/td/bin/td_generate_java_api build-host/td/generate/td_generate_java_api; do
+            [ -x "$p" ] && GEN_BIN="$p" && break
+          done
+          [ -z "$GEN_BIN" ] && GEN_BIN="$(find build-host -type f -perm -111 -name td_generate_java_api -print -quit || true)"
+          if [ -z "$GEN_BIN" ]; then
+            echo "::group::targets"; ninja -C build-host -t targets all || true; echo "::endgroup::"
+            echo "::group::tree"; ls -R build-host | sed 's/^/  /'; echo "::endgroup::"
+            echo "::error ::td_generate_java_api not found after build"
+            exit 60
+          fi
+          echo "gen_bin=$GEN_BIN" >> "$GITHUB_OUTPUT"
 
-    - name: Generate TdApi.java
-      run: |
-        set -euo pipefail
-        GEN_BIN="${{ steps.gen.outputs.gen_bin }}"
-        TLO_FILE="$(find build-host -type f -path '*/td/generate/auto/tlo/td_api.tlo' -print -quit)"
-        test -x "$GEN_BIN" || { echo "::error ::td_generate_java_api missing"; exit 60; }
-        test -n "$TLO_FILE" && test -f "$TLO_FILE" || { echo "::error ::td_api.tlo not found"; exit 61; }
+      - name: Generate TdApi.java
+        run: |
+          set -euo pipefail
+          GEN_BIN="${{ steps.gen.outputs.gen_bin }}"
+          TLO_FILE="$(find build-host -type f -path '*/td/generate/auto/tlo/td_api.tlo' -print -quit)"
+          test -x "$GEN_BIN" || { echo "::error ::td_generate_java_api missing"; exit 60; }
+          test -n "$TLO_FILE" && test -f "$TLO_FILE" || { echo "::error ::td_api.tlo not found"; exit 61; }
 
-        OUT_DIR="build-host/java-bindings/org/drinkless/tdlib"
-        mkdir -p "$OUT_DIR"
-        "$GEN_BIN" TdApi "$TLO_FILE" "build-host/java-bindings" "org/drinkless/tdlib"
+          OUT_DIR="build-host/java-bindings/org/drinkless/tdlib"
+          mkdir -p "$OUT_DIR"
+          "$GEN_BIN" TdApi "$TLO_FILE" "build-host/java-bindings" "org/drinkless/tdlib"
 
-        TL_FILE="$(find "$TD_SRC_DIR" -type f -path '*/td/generate/scheme/td_api.tl' -print -quit || true)"
-        JDOC_PHP="$(find "$TD_SRC_DIR" -type f -name 'JavadocTlDocumentationGenerator.php' -print -quit || true)"
-        JAVA_FILE="$OUT_DIR/TdApi.java"
-        if command -v php >/dev/null 2>&1 && [ -n "$JDOC_PHP" ] && [ -f "$TL_FILE" ] && [ -f "$JAVA_FILE" ]; then
-          php "$JDOC_PHP" "$TL_FILE" "$JAVA_FILE"
-        else
-          echo "::notice ::Skipping TdApi Javadoc (php or script missing)"
-        fi
+          TL_FILE="$(find "$TD_SRC_DIR" -type f -path '*/td/generate/scheme/td_api.tl' -print -quit || true)"
+          JDOC_PHP="$(find "$TD_SRC_DIR" -type f -name 'JavadocTlDocumentationGenerator.php' -print -quit || true)"
+          JAVA_FILE="$OUT_DIR/TdApi.java"
+          if command -v php >/dev/null 2>&1 && [ -n "$JDOC_PHP" ] && [ -f "$TL_FILE" ] && [ -f "$JAVA_FILE" ]; then
+            php "$JDOC_PHP" "$TL_FILE" "$JAVA_FILE"
+          else
+            echo "::notice ::Skipping TdApi Javadoc (php or script missing)"
+          fi
 
-        test -s "$JAVA_FILE" || { echo "::error ::TdApi.java not created"; exit 62; }
-        echo "Generated $JAVA_FILE"
+          test -s "$JAVA_FILE" || { echo "::error ::TdApi.java not created"; exit 62; }
+          echo "Generated $JAVA_FILE"
 
-    - name: Upload TdApi.java
-      uses: actions/upload-artifact@v4
-      with:
-        name: tdlib-java-bindings
-        path: build-host/java-bindings/org/drinkless/tdlib/TdApi.java
-        if-no-files-found: error
-        retention-days: 14
+      - name: Upload TdApi.java
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-java-bindings
+          path: build-host/java-bindings/org/drinkless/tdlib/TdApi.java
+          if-no-files-found: error
+          retention-days: 14
+
   tdlib:
     needs: [lint, java_bindings]
     runs-on: ubuntu-24.04
@@ -173,7 +174,6 @@ java_bindings:
           set -euo pipefail
           git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-      # Optional: Vorab-Generierung nur wenn der Generator existiert (robuste Suche).
       - name: Pre-generate tdutils auto sources (if generator present)
         run: |
           set -euo pipefail
@@ -184,7 +184,6 @@ java_bindings:
             echo "Found generator: $gen_py"
             mkdir -p "$gen_dir/auto"
             (cd "$gen_dir" && python3 generate_mime_types.py)
-            # Nur prüfen, wenn der Generator existiert
             test -f "$gen_dir/auto/mime_type_to_extension.cpp" || { echo "::error ::missing auto/mime_type_to_extension.cpp after generation"; exit 91; }
             test -f "$gen_dir/auto/extension_to_mime_type.cpp"   || { echo "::error ::missing auto/extension_to_mime_type.cpp after generation"; exit 92; }
             echo "Generated:"
@@ -315,7 +314,6 @@ java_bindings:
           echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
           echo "BORINGSSL_ASSET=built-from-source" >> $GITHUB_ENV
 
-      # Sicherheit: NICHT erzwingen, wenn kein Generator existiert.
       - name: Ensure tdutils auto sources exist (non-fatal)
         run: |
           set -euo pipefail
@@ -514,4 +512,3 @@ java_bindings:
           path: build-${{ matrix.abi }}/install/
           if-no-files-found: error
           retention-days: 14
-
