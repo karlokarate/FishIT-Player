@@ -405,6 +405,44 @@ jobs:
             echo "::notice ::No generator present; relying on CMake custom commands."
           fi
 
+      - name: Prepare TDLib TL auto sources on host
+        run: |
+          set -euo pipefail
+          HOST_BUILD_DIR="build-host"
+          cmake -G Ninja -S "${TD_SRC_DIR}" -B "$HOST_BUILD_DIR" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DTD_ENABLE_TESTS=OFF \
+            -DTD_ENABLE_JNI=OFF \
+            -DTD_ENABLE_JAVA=OFF
+
+          targets="$(ninja -C "$HOST_BUILD_DIR" -t targets || true)"
+          echo "::group::available host targets"
+          printf '%s\n' "$targets" | sed 's/^/  /'
+          echo "::endgroup::"
+
+          ran_target=false
+          for target in prepare_cross_compiling tl_generate_c generate_c; do
+            if printf '%s\n' "$targets" | grep -q "^${target}:"; then
+              cmake --build "$HOST_BUILD_DIR" --target "$target" -- -j 2
+              ran_target=true
+              break
+            fi
+          done
+
+          if [ "$ran_target" = false ]; then
+            echo "::notice ::prepare_cross_compiling target missing; running td_generate_java_api as best-effort fallback"
+            cmake --build "$HOST_BUILD_DIR" --target td_generate_java_api -- -j 2 || true
+          fi
+
+          TD_API_CPP="$(find "${TD_SRC_DIR}" -path '*/td/generate/auto/td/telegram/td_api_0.cpp' -print -quit || true)"
+          if [ -z "$TD_API_CPP" ]; then
+            echo "::group::debug-td-api-auto"
+            find "${TD_SRC_DIR}/td" -maxdepth 6 -path '*td_api*.cpp' -print || true
+            echo "::endgroup::"
+            echo "::error ::td_api_0.cpp missing after prepare_cross_compiling"
+            exit 94
+          fi
+
       - name: Validate prebuilt or fallback BoringSSL ABI (${{ matrix.abi }})
         run: |
           set -Eeuo pipefail
