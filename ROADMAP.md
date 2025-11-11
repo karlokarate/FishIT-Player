@@ -3,6 +3,9 @@
 
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-11-21: Standart-Workflow baut die tdutils MIME-Autos mit
+  dem neuen gperf-Generator vor dem Android-Matrix-Lauf, damit TDLib auch nach
+  Upstream-Änderungen fehlerfrei für arm64/v7a kompiliert.
 - Maintenance 2025-11-20: Standart-Workflow fällt bei fehlendem BoringSSL-
   Commit sauber auf den aktuellen HEAD zurück, sodass die `.so`-Artefakte
   weiterhin gebaut werden.

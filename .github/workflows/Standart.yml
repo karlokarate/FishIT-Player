@@ -223,17 +223,31 @@ jobs:
           set -euo pipefail
           cd "${TD_SRC_DIR}"
           gen_py="$(git ls-files | grep -E '(^|/)tdutils/.*/generate_mime_types\.py$' | head -n1 || true)"
+          gen_cpp="$(git ls-files | grep -E '(^|/)tdutils/generate/generate_mime_types_gperf\.cpp$' | head -n1 || true)"
+          gen_dir=""
+
           if [ -n "$gen_py" ]; then
             gen_dir="$(dirname "$gen_py")"
-            echo "Found generator: $gen_py"
+            echo "Found Python generator: $gen_py"
             mkdir -p "$gen_dir/auto"
             (cd "$gen_dir" && python3 generate_mime_types.py)
+          elif [ -n "$gen_cpp" ]; then
+            gen_dir="$(dirname "$gen_cpp")"
+            echo "Found CMake/gperf generator: $gen_cpp"
+            command -v gperf >/dev/null 2>&1 || { echo "::error ::gperf missing for tdutils auto generation"; exit 93; }
+            mkdir -p "$gen_dir/auto"
+            build_dir="$PWD/.tdmime-host"
+            cmake -G Ninja -S "$gen_dir" -B "$build_dir" -DCMAKE_BUILD_TYPE=Release
+            cmake --build "$build_dir" --target tdmime_auto -- -j 2
+          else
+            echo "::notice ::No tdutils MIME generator detected; relying on CMake custom commands."
+          fi
+
+          if [ -n "$gen_dir" ]; then
             test -f "$gen_dir/auto/mime_type_to_extension.cpp" || { echo "::error ::missing auto/mime_type_to_extension.cpp after generation"; exit 91; }
             test -f "$gen_dir/auto/extension_to_mime_type.cpp"   || { echo "::error ::missing auto/extension_to_mime_type.cpp after generation"; exit 92; }
             echo "Generated:"
             ls -l "$gen_dir/auto" | sed 's/^/  /'
-          else
-            echo "::notice ::No generate_mime_types.py in this TDLib revision; CMake will handle generation."
           fi
 
       - name: Prepare logs directory (${{ matrix.abi }})
@@ -363,14 +377,25 @@ jobs:
           set -euo pipefail
           cd "${TD_SRC_DIR}"
           gen_py="$(git ls-files | grep -E '(^|/)tdutils/.*/generate_mime_types\.py$' | head -n1 || true)"
+          gen_cpp="$(git ls-files | grep -E '(^|/)tdutils/generate/generate_mime_types_gperf\.cpp$' | head -n1 || true)"
+          gen_dir=""
+
           if [ -n "$gen_py" ]; then
             gen_dir="$(dirname "$gen_py")"
             if [ ! -f "$gen_dir/auto/mime_type_to_extension.cpp" ] || [ ! -f "$gen_dir/auto/extension_to_mime_type.cpp" ]; then
               echo "::notice ::auto/* missing before configure; generating now via $gen_py"
               mkdir -p "$gen_dir/auto"
               (cd "$gen_dir" && python3 generate_mime_types.py)
-              test -f "$gen_dir/auto/mime_type_to_extension.cpp"
-              test -f "$gen_dir/auto/extension_to_mime_type.cpp"
+            fi
+          elif [ -n "$gen_cpp" ]; then
+            gen_dir="$(dirname "$gen_cpp")"
+            if [ ! -f "$gen_dir/auto/mime_type_to_extension.cpp" ] || [ ! -f "$gen_dir/auto/extension_to_mime_type.cpp" ]; then
+              echo "::notice ::auto/* missing before configure; generating now via CMake/gperf"
+              command -v gperf >/dev/null 2>&1 || { echo "::warning ::gperf unavailable; tdutils auto files may be missing"; exit 0; }
+              mkdir -p "$gen_dir/auto"
+              build_dir="$PWD/.tdmime-host"
+              cmake -G Ninja -S "$gen_dir" -B "$build_dir" -DCMAKE_BUILD_TYPE=Release
+              cmake --build "$build_dir" --target tdmime_auto -- -j 2
             fi
           else
             echo "::notice ::No generator present; relying on CMake custom commands."
