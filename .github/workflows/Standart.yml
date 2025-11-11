@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: tdlib-${{ github.workflow }}-${{ github.ref }}
+  group: "tdlib-${{ github.workflow }}-${{ github.ref_name }}"
   cancel-in-progress: true
 
 jobs:
@@ -54,7 +54,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0            # robuster für Submodule/Refs
           submodules: recursive
 
       - name: Install build deps
@@ -90,8 +90,7 @@ jobs:
           set -euo pipefail
           git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-      # Robust: Generator-Script dynamisch finden und ausführen, falls vorhanden.
-      # Falls kein Script existiert, wird CMake die Generierung übernehmen.
+      # Falls vorhanden, tdutils-Generator ausführen (sonst übernimmt CMake).
       - name: Pre-generate tdutils auto sources (if generator present)
         run: |
           set -euo pipefail
@@ -195,12 +194,24 @@ jobs:
           set -euo pipefail
           cd "$GITHUB_WORKSPACE"
           git clone --depth=1 https://boringssl.googlesource.com/boringssl bssl-src
+
+          # Commit aus BORINGSSL_TAG extrahieren und exakt pinnen
+          COMMIT="$(printf '%s\n' "$BORINGSSL_TAG" | sed -E 's/^boringssl-([0-9a-fA-F]+)-.*/\1/')"
+          if [ -n "$COMMIT" ]; then
+            cd bssl-src
+            git fetch --depth=1 origin $COMMIT || git fetch origin $COMMIT
+            git checkout $COMMIT || { echo "::warning ::Could not checkout $COMMIT, using HEAD"; }
+            cd ..
+          fi
+
           mkdir -p bssl-build-${{ matrix.abi }} && cd bssl-build-${{ matrix.abi }}
           cmake -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
             -DANDROID_ABI="${{ matrix.abi }}" \
             -DANDROID_PLATFORM="${ANDROID_PLATFORM}" \
-            -DCMAKE_BUILD_TYPE=Release ../bssl-src
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+            ../bssl-src
           ninja ssl crypto
           ABI_DIR="$GITHUB_WORKSPACE/.third_party/boringssl/${{ matrix.abi }}"
           rm -rf "$ABI_DIR" && mkdir -p "$ABI_DIR/include" "$ABI_DIR/lib"
@@ -235,17 +246,18 @@ jobs:
             mkdir -p "$DIR"
             (cd "$DIR" && "$AR" x "$ARCHIVE")
             F="$(find "$DIR" -type f -name '*.o' -print -quit)"
-            if [ -z "$F" ]; then
+            if [ -n "$F" ]; then
+              HDR="$($READELF -h "$F")"
+              echo "::group::ELF header ($LABEL, sample object)"
+              echo "$HDR" | sed -n '1,40p'
+              echo "::endgroup::"
+              echo "$HDR" | grep -Eq "Machine:\s*${{ matrix.expect_machine }}" || { echo "::error ::unexpected Machine"; rm -rf "$TMP"; exit 13; }
+              echo "$HDR" | grep -Eq "Class:\s*${{ matrix.expect_class }}" || { echo "::error ::unexpected Class"; rm -rf "$TMP"; exit 14; }
+            else
               echo "::error ::no object members found in $LABEL ($ARCHIVE)"
               "$AR" tv "$ARCHIVE" || true
               rm -rf "$TMP"; exit 12
             fi
-            HDR="$($READELF -h "$F")"
-            echo "::group::ELF header ($LABEL, sample object)"
-            echo "$HDR" | sed -n '1,40p'
-            echo "::endgroup::"
-            echo "$HDR" | grep -Eq "Machine:\s*${{ matrix.expect_machine }}" || { echo "::error ::unexpected Machine"; rm -rf "$TMP"; exit 13; }
-            echo "$HDR" | grep -Eq "Class:\s*${{ matrix.expect_class }}" || { echo "::error ::unexpected Class"; rm -rf "$TMP"; exit 14; }
             rm -rf "$TMP"
           }
 
@@ -346,7 +358,7 @@ jobs:
 
           if [ $rc -ne 0 ]; then
             echo "::group::ninja error context (first error with 120 lines of context)"
-            first_err_line="$(grep -n -E '(^|[[:space:]])(error:|fatal error:|undefined reference|No such file or directory|does not name a type|no member named|no type named|static assertion failed|unknown type name|unresolved external|ld: error|linker command failed)' "../logs-${ABI}/ninja-build.log" | head -n1 | cut -d: -f1 || true)"
+            first_err_line="$(grep -n -E '(^|[[:space:]])(error:|fatal error:|undefined reference|No such file or directory|does not name a type|no member named|no type named|static assertion failed|unknown type name|unresolved external|ld: error|linker command failed)' "../logs-${ABI}}/ninja-build.log" | head -n1 | cut -d: -f1 || true)"
             if [ -n "$first_err_line" ]; then
               start=$(( first_err_line>60 ? first_err_line-60 : 1 ))
               end=$(( first_err_line+60 ))
