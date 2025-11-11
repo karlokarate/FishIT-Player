@@ -1,3 +1,9 @@
+2025-11-21
+- fix(ci): Teach Standart TDLib build to run the new gperf-based tdutils
+  generator on the host so `mime_type_to_extension.cpp` exists before the
+  Android matrix starts. Arm64/v7 builds now pass again with the upstream
+  TDLib layout.
+
 2025-11-20
 - fix(ci): Make the Standart workflow resilient when the pinned BoringSSL
   commit is missing from upstream so fallback builds continue and `.so`
