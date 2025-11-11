@@ -3,6 +3,10 @@
 
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-11-19: CI Standart workflow erzeugt jetzt die TDLib-Java-
+  Bindings (`TdApi.java`) und lädt sie als separates Artefakt hoch, damit die
+  Android-Pipeline neben den `.so`-Bibliotheken auch die Java-API konsumieren
+  kann.
 - Maintenance 2025-11-18: CI Standart workflow führt vor den Android-Matrix-
   Builds einen nativen `prepare_cross_compiling`-Lauf aus und installiert die
   fehlenden Host-Build-Tools, damit die TL-Autoquellen rechtzeitig entstehen
