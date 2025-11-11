@@ -1,0 +1,99 @@
+name: Pack TDLib AAR from artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "AAR Version (z.B. 1.8.56-<shortsha>)"
+        default: "1.8.56-local"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  pack-aar:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      # ↓ Diese Namen müssen zu DEINEN Artefaktnamen passen (Screenshot)
+      - name: Download arm64-v8a artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tdlib-android-arm64-v8a-boringssl
+          path: .artifacts/arm64
+
+      - name: Download armeabi-v7a artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tdlib-android-armeabi-v7a-boringssl
+          path: .artifacts/armeabi-v7a
+
+      - name: Download Java bindings
+        uses: actions/download-artifact@v4
+        with:
+          name: tdlib-java-bindings
+          path: .artifacts/java
+
+      - name: Prepare module layout
+        run: |
+          set -euo pipefail
+          mkdir -p tdlib-android/src/main/jniLibs/arm64-v8a
+          mkdir -p tdlib-android/src/main/jniLibs/armeabi-v7a
+          mkdir -p tdlib-android/src/main/java
+
+          # Entpacke native Bundles (akzeptiert .tar.zst/.tar.gz/.zip)
+          find .artifacts/arm64 -type f -name "*.tar.*" -print -exec sh -c 'mkdir -p /tmp/a64 && tar -xf "$1" -C /tmp/a64' sh {} \;
+          find .artifacts/armeabi-v7a -type f -name "*.tar.*" -print -exec sh -c 'mkdir -p /tmp/v7a && tar -xf "$1" -C /tmp/v7a' sh {} \;
+
+          # kopiere libtdjni.so
+          cp -v $(fd -a -H -t f "libtdjni.so" /tmp/a64) tdlib-android/src/main/jniLibs/arm64-v8a/libtdjni.so
+          cp -v $(fd -a -H -t f "libtdjni.so" /tmp/v7a) tdlib-android/src/main/jniLibs/armeabi-v7a/libtdjni.so
+
+          # Java-Bindings (.zip oder Ordner)
+          if ls .artifacts/java/*.zip >/dev/null 2>&1; then
+            unzip -q .artifacts/java/*.zip -d /tmp/tdjava
+            rsync -a /tmp/tdjava/org tdlib-android/src/main/java/
+          else
+            rsync -a .artifacts/java/org tdlib-android/src/main/java/ || true
+          fi
+
+          # Sanity
+          test -s tdlib-android/src/main/jniLibs/arm64-v8a/libtdjni.so
+          test -s tdlib-android/src/main/jniLibs/armeabi-v7a/libtdjni.so
+          test -s tdlib-android/src/main/java/org/drinkless/tdlib/TdApi.java
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set Gradle config
+        run: |
+          echo "org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8" >> gradle.properties
+          echo "android.useAndroidX=true" >> gradle.properties
+          echo "android.nonTransitiveRClass=true" >> gradle.properties
+
+      - name: Build AAR
+        env:
+          TDLIB_VERSION: ${{ github.event.inputs.version }}
+        run: ./gradlew :tdlib-android:assembleRelease
+
+      - name: Upload AAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-android-aar
+          path: tdlib-android/build/outputs/aar/tdlib-android-release.aar
+
+      - name: Publish to GitHub Packages
+        if: ${{ github.ref == 'refs/heads/main' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TDLIB_VERSION: ${{ github.event.inputs.version }}
+        run: ./gradlew :tdlib-android:publish
