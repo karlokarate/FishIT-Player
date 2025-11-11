@@ -200,8 +200,14 @@ jobs:
           COMMIT="$(printf '%s\n' "$BORINGSSL_TAG" | sed -E 's/^boringssl-([0-9a-fA-F]+)-.*/\1/')"
           if [ -n "$COMMIT" ]; then
             cd bssl-src
-            git fetch --depth=1 origin $COMMIT || git fetch origin $COMMIT
-            git checkout $COMMIT || { echo "::warning ::Could not checkout $COMMIT, using HEAD"; }
+            if git cat-file -e "$COMMIT^{commit}" 2>/dev/null; then
+              git checkout "$COMMIT"
+            elif git fetch --depth=1 origin "$COMMIT" || git fetch origin "$COMMIT"; then
+              git checkout "$COMMIT"
+            else
+              echo "::warning ::Could not resolve BoringSSL commit $COMMIT from $BORINGSSL_TAG; building from repository HEAD instead"
+            fi
+            echo "::notice ::BoringSSL source commit -> $(git rev-parse HEAD)"
             cd ..
           fi
 

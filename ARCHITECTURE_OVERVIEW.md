@@ -88,7 +88,10 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
   50–200-MiB-Ringbuffer im Cache-Verzeichnis.
 - Build: `TG_API_ID`/`TG_API_HASH` als BuildConfig via sichere Lookup‑Kette (ohne Secrets im Repo). Reihenfolge: ENV → `/.tg.secrets.properties` (root, untracked) → `-P` Gradle‑Props → Default 0/leer. Runtime‑Fallback: Ist BuildConfig leer, liest der app‑seitige TDLib‑Client (Player‑DataSource) die Keys aus den Settings (`tg_api_id`, `tg_api_hash`). Packaging: TDLib (arm64‑v8a), ProGuard‑Keep für `org.drinkless.td.libcore.telegram.**`. Die JNI‑Lib `libtdjni.so` wird durch einen statischen Initializer in `org.drinkless.tdlib.Client` automatisch geladen.
 - Packaging: `:libtd` Android‑Library mit `jniLibs` (`arm64-v8a/libtdjni.so`). App hängt an `:libtd`, sodass TDLib zur Laufzeit vorhanden ist; BuildConfig `TG_API_ID`/`TG_API_HASH` kommen aus `gradle.properties`.
-- Build TDLib/JNI: Single‑ABI arm64‑v8a wird mit statisch gelinktem BoringSSL gebaut und ins Modul kopiert.
+- Build TDLib/JNI: Single‑ABI arm64‑v8a wird mit statisch gelinktem BoringSSL gebaut und ins Modul kopiert. Scheitert der in
+  `.github/workflows/Standart.yml` konfigurierte `BORINGSSL_TAG` beim Fetch,
+  setzt der Workflow den Fallback automatisch auf den aktuellen BoringSSL-HEAD
+  und protokolliert den tatsächlichen Commit im Artefakt-Log.
   - arm64: `scripts/tdlib-build-arm64.sh` (Phase‑2: LTO/GC‑sections/strip‑unneeded zur Größenreduktion)
  - Cache: `TelegramCacheCleanupWorker` trimmt lokale TD‑Dateien täglich auf `TG_CACHE_LIMIT_GB` (GB) – best‑effort Datei‑System‑Trim.
  - Reflection: `TdLibReflection.extractBestPhotoSizeFileId(...)` liefert die größte Photo-Größe als File-ID; `extractThumbFileId(...)` nutzt das gleiche Hilfswerk. `TgGate` fällt ohne BuildConfig-Override standardmäßig auf Mirror-Only (`false`) zurück, sodass OBX erst nach explizitem Opt-In aktiviert wird.

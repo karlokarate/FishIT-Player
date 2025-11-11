@@ -47,7 +47,11 @@ Codex – Operating Rules (override)
 - CI guard: `.github/workflows/Standart.yml` führt vor den Android-Matrix-Builds
   einen nativen Host-Lauf (`prepare_cross_compiling`) aus und benötigt die
   systemseitigen Build-Essentials. Beim Anpassen des Workflows darf dieser
-  Schritt nicht entfallen, sonst fehlen TL-Autoquellen und Artefakte.
+  Schritt nicht entfallen, sonst fehlen TL-Autoquellen und Artefakte. Fehlt
+  der in `BORINGSSL_TAG` referenzierte Commit upstream, fällt der Fallback-Build
+  jetzt automatisch auf den aktuellen BoringSSL-HEAD zurück – bitte das Logging
+  im Step "Fallback - build BoringSSL" beibehalten, damit der aktive Commit im
+  Artefakt-Log ersichtlich bleibt.
 - TV focus/DPAD audit: `tools/audit_tv_focus.sh` enforces rules (TvFocusRow for horizontal containers, tvClickable for interactives, no ad‑hoc DPAD). Wired into CI (`.github/workflows/ci.yml`) and fails PRs on violations.
 - Central facade: Use `com.chris.m3usuite.ui.focus.FocusKit` as the single entry point for focus across all UIs (TV/phone/tablet). It provides primitives (`tvClickable`, `tvFocusFrame`, `tvFocusableItem`, `focusGroup`, `focusBringIntoViewOnFocus`), unified row wrappers (`TvRowLight` → `TvFocusRow`, `TvRowMedia`/`TvRowPaged` → FocusKit’s row engine), DPAD helpers (`onDpadAdjustLeftRight/UpDown`), grid neighbors (`focusNeighbors`), and re‑exports of `TvButton`/`TvTextButton`/`TvOutlinedButton`/`TvIconButton`). Avoid importing row engines or skin primitives directly in screens.
 
