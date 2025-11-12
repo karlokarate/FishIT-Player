@@ -60,7 +60,8 @@ jobs:
         id: gen
         run: |
           set -euo pipefail
-          cmake -G Ninja -S "$TD_SRC_DIR" -B build-host             -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_TESTS=OFF -DTD_ENABLE_JNI=OFF -DTD_ENABLE_JAVA=OFF
+          cmake -G Ninja -S "$TD_SRC_DIR" -B build-host \
+            -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_TESTS=OFF -DTD_ENABLE_JNI=OFF -DTD_ENABLE_JAVA=OFF
           cmake --build build-host --target td_generate_java_api -- -j 2
 
           GEN_BIN=""
@@ -74,7 +75,6 @@ jobs:
             echo "::error ::td_generate_java_api not found after build"
             exit 60
           fi
-
           ninja -C build-host -t targets all | sed 's/^/  /' || true
           if ninja -C build-host -t targets | grep -q '^tl_generate_c:'; then
             cmake --build build-host --target tl_generate_c -- -j 2 || true
@@ -83,7 +83,6 @@ jobs:
           elif ninja -C build-host -t targets | grep -q '^prepare_cross_compiling:'; then
             cmake --build build-host --target prepare_cross_compiling -- -j 2 || true
           fi
-
           echo "gen_bin=$GEN_BIN" >> "$GITHUB_OUTPUT"
 
       - name: Generate TdApi.java
@@ -95,16 +94,16 @@ jobs:
           OUT_DIR="$OUT_ROOT/$PACKAGE"
           mkdir -p "$OUT_DIR"
 
-          TLO_FILE="$(find build-host -type f -name 'td_api.tlo' -print -quit || true)"
-          [ -z "$TLO_FILE" ] && TLO_FILE="$(find "$TD_SRC_DIR" -type f -name 'td_api.tlo' -print -quit || true)"
+          TLO_FILE="$(find build-host -maxdepth 6 -type f -name 'td_api.tlo' -print -quit || true)"
+          [ -z "$TLO_FILE" ] && TLO_FILE="$(find "$TD_SRC_DIR" -maxdepth 6 -type f -name 'td_api.tlo' -print -quit || true)"
           TL_FILE="$(find "$TD_SRC_DIR" -type f -path '*/td/generate/scheme/td_api.tl' -print -quit || true)"
 
           SCHEMA=""
           if [ -n "$TLO_FILE" ]; then SCHEMA="$TLO_FILE"; elif [ -n "$TL_FILE" ]; then SCHEMA="$TL_FILE"; fi
           if [ -z "$SCHEMA" ]; then
             echo "::group::debug-locate-schema"
-            find build-host -type f -name 'td_api.*' -maxdepth 6 -print || true
-            find "$TD_SRC_DIR" -type f -name 'td_api.*' -maxdepth 6 -print || true
+            find build-host -maxdepth 6 -type f -name 'td_api.*' -print || true
+            find "$TD_SRC_DIR" -maxdepth 6 -type f -name 'td_api.*' -print || true
             echo "::endgroup::"
             echo "::error ::No td_api.tlo/.tl schema found"
             exit 61
@@ -231,7 +230,7 @@ jobs:
             command -v gperf >/dev/null 2>&1 || { echo "::error ::gperf missing for tdutils auto generation"; exit 93; }
             mkdir -p "$gen_dir/auto"
             build_dir="$PWD/.tdmime-host"
-            cmake -G Ninja -S "$gen_dir" -B "$build_dir"               -DCMAKE_BUILD_TYPE=Release               -DTDUTILS_MIME_TYPE=ON
+            cmake -G Ninja -S "$gen_dir" -B "$build_dir" -DCMAKE_BUILD_TYPE=Release -DTDUTILS_MIME_TYPE=ON
             cmake --build "$build_dir" --target tdmime_auto -- -j 2
           else
             echo "::notice ::No tdutils MIME generator detected; relying on CMake custom commands."
@@ -239,7 +238,7 @@ jobs:
 
           if [ -n "$gen_dir" ]; then
             test -f "$gen_dir/auto/mime_type_to_extension.cpp" || { echo "::error ::missing auto/mime_type_to_extension.cpp after generation"; exit 91; }
-            test -f "$gen_dir/auto/extension_to_mime_type.cpp"   || { echo "::error ::missing auto/extension_to_mime_type.cpp after generation"; exit 92; }
+            test -f "$gen_dir/auto/extension_to_mime_type.cpp" || { echo "::error ::missing auto/extension_to_mime_type.cpp after generation"; exit 92; }
             echo "Generated:"
             ls -l "$gen_dir/auto" | sed 's/^/  /'
           fi
@@ -276,7 +275,7 @@ jobs:
             CODE_SHA=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${SHA_FILE}")
             if [ "$CODE_SHA" = "200" ]; then
               curl -fL "${BASE_URL}/${SHA_FILE}" -o "${SHA_FILE}"
-              EXPECTED=$(sed -E 's/^([0-9a-fA-F]{64}).*$//' "${SHA_FILE}" | head -n1 || true)
+              EXPECTED=$(sed -E 's/^([0-9a-fA-F]{64}).*$/\1/' "${SHA_FILE}" | head -n1 || true)
               if [ -n "$EXPECTED" ]; then
                 ACTUAL=$(sha256sum "${ASSET}" | awk '{print $1}')
                 if [ "$EXPECTED" != "$ACTUAL" ]; then
@@ -323,12 +322,37 @@ jobs:
           echo "found=${found}" >> $GITHUB_OUTPUT
           echo "valid=${valid}" >> $GITHUB_OUTPUT
 
+      - name: Configure & build TDLib core (${{ matrix.abi }})
+        run: |
+          set -euo pipefail
+          ABI="${{ matrix.abi }}"
+          TD_BUILD_DIR="build-${ABI}"
+          TD_INSTALL="$GITHUB_WORKSPACE/build-${ABI}/install"
+          cmake -G Ninja -S "${TD_SRC_DIR}" -B "${TD_BUILD_DIR}" \
+            -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI="${ABI}" \
+            -DANDROID_PLATFORM="${ANDROID_PLATFORM}" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOPENSSL_ROOT_DIR="${BORINGSSL_DIR}" \
+            -DOPENSSL_USE_STATIC_LIBS=ON \
+            -DTD_ENABLE_JNI=OFF \
+            -DTD_ENABLE_TESTS=OFF
+          cmake --build "${TD_BUILD_DIR}" --target tdjson_static -- -j 2
+          cmake --install "${TD_BUILD_DIR}" --prefix "${TD_INSTALL}"
+
       - name: Configure tdjni from example/java (${{ matrix.abi }})
         run: |
           set -euo pipefail
           ABI="${{ matrix.abi }}"
           TD_INSTALL="$GITHUB_WORKSPACE/build-${ABI}/install"
-          cmake -G Ninja             -S "${TD_SRC_DIR}/example/java"             -B "build-${ABI}-jni"             -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake"             -DANDROID_ABI="${ABI}"             -DANDROID_PLATFORM="${ANDROID_PLATFORM}"             -DCMAKE_BUILD_TYPE=Release             -DTd_DIR="${TD_INSTALL}/lib/cmake/Td"             -DOPENSSL_ROOT_DIR="${BORINGSSL_DIR}"             -DOPENSSL_USE_STATIC_LIBS=ON
+          cmake -G Ninja -S "${TD_SRC_DIR}/example/java" -B "build-${ABI}-jni" \
+            -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI="${ABI}" \
+            -DANDROID_PLATFORM="${ANDROID_PLATFORM}" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DTd_DIR="${TD_INSTALL}/lib/cmake/Td" \
+            -DOPENSSL_ROOT_DIR="${BORINGSSL_DIR}" \
+            -DOPENSSL_USE_STATIC_LIBS=ON
 
       - name: Build & stage libtdjni.so (${{ matrix.abi }})
         run: |
@@ -353,11 +377,9 @@ jobs:
         run: |
           set -euo pipefail
           ABI="${{ matrix.abi }}"
-
           PKG_DIR="aar-${ABI}"
           MOD_DIR="${PKG_DIR}/tdlib-android"
           mkdir -p "${MOD_DIR}/src/main/jniLibs/${ABI}" "${MOD_DIR}/src/main/java"
-
           cp -v "out-jni-${ABI}/libtdjni.so" "${MOD_DIR}/src/main/jniLibs/${ABI}/libtdjni.so"
 
       - name: Download tdlib-java-bindings (same run)
@@ -373,11 +395,15 @@ jobs:
           PKG_DIR="aar-${ABI}"
           MOD_DIR="${PKG_DIR}/tdlib-android"
 
+          # 1) Beispiel-Java-Sourcen (Client.java, Log.java, etc.)
+          rsync -a "${TD_SRC_DIR}/example/java/org" "${MOD_DIR}/src/main/java/"
+
+          # 2) Generiertes TdApi.java überlagern
           if ls .artifacts/java/*.zip >/dev/null 2>&1; then
             unzip -q .artifacts/java/*.zip -d /tmp/tdjava
-            rsync -a /tmp/tdjava/org "${MOD_DIR}/src/main/java/"
+            rsync -a /tmp/tdjava/org/ "${MOD_DIR}/src/main/java/org/"
           else
-            rsync -a .artifacts/java/org "${MOD_DIR}/src/main/java/" || true
+            rsync -a .artifacts/java/org/ "${MOD_DIR}/src/main/java/org/" || true
           fi
 
           cat > "${MOD_DIR}/src/main/AndroidManifest.xml" <<'XML'
@@ -543,5 +569,5 @@ jobs:
           draft: false
           prerelease: false
           make_latest: true
-          files:
+          files: |
             aar-${{ matrix.abi }}/tdlib-android-${{ matrix.abi }}-raw.aar
