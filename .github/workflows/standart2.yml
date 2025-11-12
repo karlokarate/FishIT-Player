@@ -501,7 +501,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Fallback: raw AAR zip (${{ matrix.abi }})
+      - name: "Fallback: raw AAR zip (${{ matrix.abi }})"
         if: ${{ hashFiles('gradlew') == '' && hashFiles('**/gradlew') == '' }}
         run: |
           set -euo pipefail
