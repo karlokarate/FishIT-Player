@@ -497,13 +497,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tdlib-android-${{ matrix.abi }}-aar
-          path: |
-            aar-${{ matrix.abi }}/tdlib-android/build/outputs/aar/tdlib-android-release.aar
+          path: aar-${{ matrix.abi }}/tdlib-android/build/outputs/aar/tdlib-android-release.aar
           if-no-files-found: warn
           retention-days: 14
 
       - name: Fallback: raw AAR zip (${{ matrix.abi }})
-        if: ${{ !(hashFiles('gradlew') != '' || hashFiles('**/gradlew') != '') }}
+        if: ${{ hashFiles('gradlew') == '' && hashFiles('**/gradlew') == '' }}
         run: |
           set -euo pipefail
           ABI="${{ matrix.abi }}"
@@ -524,6 +523,7 @@ jobs:
           cp -v "${PKG_DIR}/classes.jar" "${PKG_DIR}/aar/classes.jar"
           (cd "${PKG_DIR}/aar" && zip -r ../tdlib-android-${ABI}-raw.aar .)
           echo "Raw AAR created at ${PKG_DIR}/tdlib-android-${ABI}-raw.aar"
+
 
       - name: Derive base version for Release tag (${{ matrix.abi }})
         run: |
