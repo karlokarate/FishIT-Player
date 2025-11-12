@@ -1,418 +1,547 @@
-#!/usr/bin/env bash
-# -*- coding: utf-8 -*-
-# TDLib Android Builder — JNI + Java Bindings (SDK-free, static BoringSSL)
-# Changelog (dieser Stand):
-#  • ANDROID: OpenSSL-Erkennung robust -> zusätzlich OPENSSL_ROOT_DIR je ABI
-#  • ANDROID: Zlib explizit verdrahtet (Include + libz.a aus NDK-Sysroot)
-#  • BoringSSL: PIC erzwungen (CMAKE_POSITION_INDEPENDENT_CODE=ON)
-#  • Build-Verzeichnisse pro ABI frisch angelegt (Stale-CMakeCache vermeiden)
-#  • prepare_cross_compiling VOR install (Upstream-Vorgabe)
-#  • Host: TD_ENABLE_JNI=ON, LTO optional via TD_ENABLE_LTO (Upstream)
-#  • Ausführliche Fehlererfassung + Soft-Fail beibehalten
-set -euo pipefail
+name: aaaTDLib - Android Java (prebuilt BoringSSL, validated, doc-conform)
 
-SOFT_FAIL="${SOFT_FAIL:-1}"
-FINAL_EXIT="${FINAL_EXIT:-1}"
+on:
+  workflow_dispatch:
 
-declare -a BUILD_ERRORS=()
-record_err(){ BUILD_ERRORS+=("$1"); }
+permissions:
+  contents: read
 
-group(){ echo "::group::$1"; }
-endgroup(){ echo "::endgroup::"; }
+concurrency:
+  group: "tdlib-${{ github.workflow }}-${{ github.ref_name }}"
+  cancel-in-progress: true
 
-run(){
-  local what="$1"; shift
-  group "$what"
-  echo "> $what"
-  if "$@"; then
-    echo "[ok] $what"
-  else
-    local rc=$?
-    echo "[fail:$rc] $what"
-    record_err "$what (exit=$rc)"
-    if [[ "$SOFT_FAIL" != "1" ]]; then endgroup; return $rc; fi
-  fi
-  endgroup
-}
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: actionlint
+        uses: reviewdog/action-actionlint@v1
+        with:
+          actionlint_flags: "--color always"
 
-NINJA_KEEP=( -- -k 0 )
+  java_bindings:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    env:
+      TD_SRC_DIR: td
+      TD_REF: ""
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-# --- CLI ---------------------------------------------------------------------
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --ndk)            NDK="$2"; shift 2 ;;
-    --abis)           ABIS="$2"; shift 2 ;;
-    --api-level)      API_LEVEL="$2"; shift 2 ;;
-    --boringssl-dir)  BORINGSSL_DIR="$2"; shift 2 ;;
-    --ref|--td-ref)   TD_REF="$2"; shift 2 ;;
-    --stl)            ANDROID_STL="$2"; shift 2 ;;
-    --interpro)       CMAKE_INTERPRO="$2"; shift 2 ;;
-    *) echo "[warn] unknown arg: $1"; shift ;;
-  esac
-done
+      - name: Host toolchain (cmake/ninja/php)
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build cmake git curl unzip zstd openjdk-17-jdk gperf file python3 php-cli build-essential
 
-# --- Eingaben / ENV ----------------------------------------------------------
-NDK="${NDK:-${ANDROID_NDK_ROOT:-${ANDROID_NDK_HOME:-}}}"
-BORINGSSL_DIR="${BORINGSSL_DIR:-.third_party/boringssl}"
-ABIS="${ABIS:-arm64-v8a,armeabi-v7a}"
-API_LEVEL="${API_LEVEL:-21}"
-ANDROID_STL="${ANDROID_STL:-c++_static}"
-TD_REF="${TD_REF:-}"
-CMAKE_INTERPRO="${CMAKE_INTERPRO:-0}"
+      - name: Fetch TDLib sources
+        run: |
+          set -euo pipefail
+          git clone --depth=1 https://github.com/tdlib/td.git "$TD_SRC_DIR"
+          if [ -n "${TD_REF:-}" ] && [ "${TD_REF}" != "master" ]; then
+            cd "$TD_SRC_DIR"
+            git fetch origin "$TD_REF" --depth 1 || true
+            git checkout "$TD_REF" || true
+          fi
 
-# Optional: fehlende Tools auf Ubuntu-Runnern automatisch installieren
-ensure() {
-  if command -v apt-get >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
-    for pkg in "$@"; do
-      local apt_pkg="$pkg"
-      [[ "$pkg" == "ninja" ]] && apt_pkg="ninja-build"
-      if ! command -v "$pkg" >/dev/null 2>&1; then
-        echo "[ensure] installing $apt_pkg ..."
-        sudo apt-get update -y && sudo apt-get install -y "$apt_pkg"
-      fi
-    done
-  fi
-}
-ensure cmake ninja gperf ccache || true
+      - name: Build generator (host)
+        id: gen
+        run: |
+          set -euo pipefail
+          cmake -G Ninja -S "$TD_SRC_DIR" -B build-host             -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_TESTS=OFF -DTD_ENABLE_JNI=OFF -DTD_ENABLE_JAVA=OFF
+          cmake --build build-host --target td_generate_java_api -- -j 2
 
-# Tool-Checks
-need(){ command -v "$1" >/dev/null 2>&1 || { echo "Missing tool: $1"; exit 1; }; }
-need cmake; need ninja; need javac; need jar; need gperf
+          GEN_BIN=""
+          for p in build-host/td/bin/td_generate_java_api build-host/td/generate/td_generate_java_api; do
+            [ -x "$p" ] && GEN_BIN="$p" && break
+          done
+          [ -z "$GEN_BIN" ] && GEN_BIN="$(find build-host -type f -perm -111 -name td_generate_java_api -print -quit || true)"
+          if [ -z "$GEN_BIN" ]; then
+            echo "::group::targets"; ninja -C build-host -t targets all || true; echo "::endgroup::"
+            echo "::group::tree"; ls -R build-host | sed 's/^/  /'; echo "::endgroup::"
+            echo "::error ::td_generate_java_api not found after build"
+            exit 60
+          fi
 
-HOST_OS=$(uname | tr '[:upper:]' '[:lower:]')
-case "$(uname -m)" in x86_64|amd64) HOST_ARCH="x86_64" ;; arm64|aarch64) HOST_ARCH="arm64" ;; *) HOST_ARCH="x86_64" ;; esac
+          ninja -C build-host -t targets all | sed 's/^/  /' || true
+          if ninja -C build-host -t targets | grep -q '^tl_generate_c:'; then
+            cmake --build build-host --target tl_generate_c -- -j 2 || true
+          elif ninja -C build-host -t targets | grep -q '^generate_c:'; then
+            cmake --build build-host --target generate_c -- -j 2 || true
+          elif ninja -C build-host -t targets | grep -q '^prepare_cross_compiling:'; then
+            cmake --build build-host --target prepare_cross_compiling -- -j 2 || true
+          fi
 
-ROOT="$(pwd)"
-TD_DIR="$ROOT/td"
-OUT_DIR="$ROOT/out"
-JAVA_SRC_DIR="$OUT_DIR/java_src"
-JAVA_CLASSES_DIR="$OUT_DIR/classes"
-LOG_DIR="$OUT_DIR/logs"
-LOG_FILE="$LOG_DIR/build.log"
-REPORT_TXT="$LOG_DIR/summary.txt"
-REPORT_JSON="$LOG_DIR/summary.json"
+          echo "gen_bin=$GEN_BIN" >> "$GITHUB_OUTPUT"
 
-INSTALL_LIBDIR="lib"
-INSTALL_BINDIR="bin"
-INSTALL_INCLUDEDIR="include"
-CMAKEDIR_REL="${INSTALL_LIBDIR}/cmake/Td"
+      - name: Generate TdApi.java
+        run: |
+          set -euo pipefail
+          GEN_BIN="${{ steps.gen.outputs.gen_bin }}"
+          PACKAGE="org/drinkless/tdlib"
+          OUT_ROOT="build-host/java-bindings"
+          OUT_DIR="$OUT_ROOT/$PACKAGE"
+          mkdir -p "$OUT_DIR"
 
-rm -rf "$OUT_DIR"
-mkdir -p "$OUT_DIR/libs" "$JAVA_SRC_DIR" "$JAVA_CLASSES_DIR" "$LOG_DIR"
+          TLO_FILE="$(find build-host -type f -name 'td_api.tlo' -print -quit || true)"
+          [ -z "$TLO_FILE" ] && TLO_FILE="$(find "$TD_SRC_DIR" -type f -name 'td_api.tlo' -print -quit || true)"
+          TL_FILE="$(find "$TD_SRC_DIR" -type f -path '*/td/generate/scheme/td_api.tl' -print -quit || true)"
 
-# Globales Logging
-exec > >(tee -a "$LOG_FILE") 2>&1
+          SCHEMA=""
+          if [ -n "$TLO_FILE" ]; then SCHEMA="$TLO_FILE"; elif [ -n "$TL_FILE" ]; then SCHEMA="$TL_FILE"; fi
+          if [ -z "$SCHEMA" ]; then
+            echo "::group::debug-locate-schema"
+            find build-host -type f -name 'td_api.*' -maxdepth 6 -print || true
+            find "$TD_SRC_DIR" -type f -name 'td_api.*' -maxdepth 6 -print || true
+            echo "::endgroup::"
+            echo "::error ::No td_api.tlo/.tl schema found"
+            exit 61
+          fi
 
-[[ -n "$NDK" && -d "$NDK" ]] || { echo "NDK not found at: ${NDK:-<empty>}"; exit 1; }
-PREBUILT_DIR="${NDK}/toolchains/llvm/prebuilt/${HOST_OS}-${HOST_ARCH}"
-[[ -d "$PREBUILT_DIR" ]] || { echo "NDK prebuilt toolchain not found at $PREBUILT_DIR"; exit 1; }
+          set +e
+          "$GEN_BIN" TdApi "$SCHEMA" "$OUT_ROOT" "$PACKAGE"
+          rc=$?
+          if [ $rc -ne 0 ] && [ "$SCHEMA" = "$TL_FILE" ] && [ -n "$TLO_FILE" ]; then
+            "$GEN_BIN" TdApi "$TLO_FILE" "$OUT_ROOT" "$PACKAGE"
+            rc=$?
+          fi
+          set -e
+          if [ $rc -ne 0 ]; then
+            echo "::error ::td_generate_java_api failed (schema=$SCHEMA)"
+            exit 63
+          fi
 
-# BoringSSL absolut machen
-if [[ -d "$BORINGSSL_DIR" ]]; then BORINGSSL_DIR="$(cd "$BORINGSSL_DIR" && pwd)"; fi
+          JAVA_FILE="$OUT_DIR/TdApi.java"
+          JDOC_PHP="$(find "$TD_SRC_DIR" -type f -name 'JavadocTlDocumentationGenerator.php' -print -quit || true)"
+          if command -v php >/dev/null 2>&1 && [ -n "$TL_FILE" ] && [ -f "$JAVA_FILE" ] && [ -f "$JDOC_PHP" ]; then
+            php "$JDOC_PHP" "$TL_FILE" "$JAVA_FILE" || echo "::notice ::Javadoc generation skipped (php error)"
+          else
+            echo "::notice ::Skipping TdApi Javadoc (php or script missing)"
+          fi
 
-IFS=',' read -ra ABI_ARR <<< "$ABIS"
+          test -s "$JAVA_FILE" || { echo "::error ::TdApi.java not created"; exit 62; }
+          echo "Generated $JAVA_FILE"
 
-# ccache (optional)
-if command -v ccache >/dev/null 2>&1; then
-  export CCACHE_DIR="${CCACHE_DIR:-$ROOT/.ccache}"
-  export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$ROOT}"
-  export CCACHE_MAXSIZE="${CCACHE_MAXSIZE:-2G}"
-  echo "[ccache] dir=$CCACHE_DIR basedir=$CCACHE_BASEDIR max=$CCACHE_MAXSIZE"
-  CC_LAUNCH=( -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache )
-else
-  CC_LAUNCH=(); echo "[ccache] not found (ok)"
-fi
+      - name: Upload TdApi.java
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-java-bindings
+          path: build-host/java-bindings/org/drinkless/tdlib/TdApi.java
+          if-no-files-found: error
+          retention-days: 14
 
-# IPO/LTO knobs
-if [[ "$CMAKE_INTERPRO" == "1" ]]; then
-  ANDROID_OPT=(-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON)
-  TD_LTO=(-DTD_ENABLE_LTO=ON)   # upstream option
-else
-  ANDROID_OPT=(); TD_LTO=()
-fi
+  tdlib:
+    needs: [lint, java_bindings]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    env:
+      ANDROID_PLATFORM: android-24
+      NDK_VERSION: r27c
+      TD_SRC_DIR: td
+      REPO: karlokarate/FishIT-Player
+      BORINGSSL_TAG: boringssl-28efc83e86dc-android24-ndk-r27c
 
-cat <<EOF
-== TDLib build: JNI + Java bindings (SDK-free) ==
-NDK       : $NDK
-STL       : $ANDROID_STL
-API-Level : android-$API_LEVEL
-ABIs      : $ABIS
-BoringSSL : $BORINGSSL_DIR
-TD_DIR    : $TD_DIR
-OUT_DIR   : $OUT_DIR
-LOG_FILE  : $LOG_FILE
-EOF
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            asset: boringssl-28efc83e86dc-android24-ndk-r27c-arm64-v8a.tar.zst
+            sha:   boringssl-28efc83e86dc-android24-ndk-r27c-arm64-v8a.sha256
+            expect_machine: "AArch64"
+            expect_class: "ELF64"
+          - abi: armeabi-v7a
+            asset: boringssl-28efc83e86dc-android24-ndk-r27c-armeabi-v7a.tar.zst
+            sha:   boringssl-28efc83e86dc-android24-ndk-r27c-armeabi-v7a.sha256
+            expect_machine: "ARM"
+            expect_class: "ELF32"
 
-[[ -d "$TD_DIR" ]] || { echo "TD source dir not found: $TD_DIR"; exit 1; }
-pushd "$TD_DIR" >/dev/null
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
 
-# Optional: bestimmter TD-Ref
-if [[ -n "$TD_REF" ]]; then
-  run "git-fetch-ref" git fetch --depth=1 origin "$TD_REF"
-  run "git-checkout-ref" git checkout -qf FETCH_HEAD
-fi
-COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
-DESCRIBE="$(git describe --tags --always --long --dirty=+ 2>/dev/null || echo "$COMMIT")"
-echo "$DESCRIBE" > "$OUT_DIR/TDLIB_VERSION.txt"
+      - name: Install build deps
+        run: |
+          set -euo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build cmake git curl unzip tar zstd openjdk-17-jdk gperf file python3 php-cli build-essential
+          echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))" >> $GITHUB_ENV
 
-# Host: kleiner Header-Check (lokale Runs)
-echo '#include <openssl/ssl.h>' | (cc -E - >/dev/null 2>&1 || echo "[warn] Host OpenSSL headers not visible; ensure libssl-dev is installed")
+      - name: Cache NDK ${{ env.NDK_VERSION }}
+        uses: actions/cache@v4
+        with:
+          key: ndk-${{ runner.os }}-${{ env.NDK_VERSION }}
+          restore-keys: |
+            ndk-${{ runner.os }}-
+          path: .ndk/android-ndk-${{ env.NDK_VERSION }}
 
-# ---------------------------------------------------------------------------
-# (1) HOST-BUILD & INSTALL (Upstream-konform)
-#    prepare_cross_compiling vor install -> .tlo garantiert (siehe CMakeLists). 
-# ---------------------------------------------------------------------------
-HOST_INSTALL_PREFIX="$TD_DIR/example/java/td"
-run "host-clean-install-prefix" bash -lc "rm -rf '$HOST_INSTALL_PREFIX'"
+      - name: Prepare Android NDK ${{ env.NDK_VERSION }}
+        run: |
+          set -euo pipefail
+          mkdir -p .ndk && cd .ndk
+          if [ ! -d "android-ndk-${NDK_VERSION}" ]; then
+            curl -fsSLO "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip"
+            unzip -q "android-ndk-${NDK_VERSION}-linux.zip"
+          fi
+          export NDK_PATH="$PWD/android-ndk-${NDK_VERSION}"
+          echo "NDK_PATH=$NDK_PATH" >> $GITHUB_ENV
+          test -x "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" || { echo "::error ::NDK toolchain clang++ missing"; exit 2; }
 
-run "host-configure" cmake -S . -B build-host -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX:PATH="$HOST_INSTALL_PREFIX" \
-  -DCMAKE_INSTALL_LIBDIR="$INSTALL_LIBDIR" \
-  -DCMAKE_INSTALL_BINDIR="$INSTALL_BINDIR" \
-  -DCMAKE_INSTALL_INCLUDEDIR="$INSTALL_INCLUDEDIR" \
-  -DTD_ENABLE_TESTS=OFF \
-  -DTD_ENABLE_JNI=ON \
-  "${TD_LTO[@]}" \
-  "${CC_LAUNCH[@]}"
+      - name: Clone TDLib (official)
+        run: |
+          set -euo pipefail
+          git clone --depth=1 https://github.com/tdlib/td.git "${TD_SRC_DIR}"
 
-run "host-build" cmake --build build-host "${NINJA_KEEP[@]}"
-run "host-prepare_cross_compiling" cmake --build build-host --target prepare_cross_compiling "${NINJA_KEEP[@]}"
-run "host-install" cmake --build build-host --target install "${NINJA_KEEP[@]}"
+      - name: Pre-generate tdutils auto sources (if generator present)
+        run: |
+          set -euo pipefail
+          cd "${TD_SRC_DIR}"
+          gen_py="$(git ls-files | grep -E '(^|/)tdutils/.*/generate_mime_types\.py$' | head -n1 || true)"
+          gen_cpp="$(git ls-files | grep -E '(^|/)tdutils/generate/generate_mime_types_gperf\.cpp$' | head -n1 || true)"
+          gen_dir=""
 
-TD_HOST_CMAKE="$HOST_INSTALL_PREFIX/$CMAKEDIR_REL/TdConfig.cmake"
-[[ -f "$TD_HOST_CMAKE" ]] || record_err "Missing $TD_HOST_CMAKE"
+          if [ -n "$gen_py" ]; then
+            gen_dir="$(dirname "$gen_py")"
+            echo "Found Python generator: $gen_py"
+            mkdir -p "$gen_dir/auto"
+            (cd "$gen_dir" && python3 generate_mime_types.py)
+          elif [ -n "$gen_cpp" ]; then
+            gen_dir="$(dirname "$gen_cpp")"
+            echo "Found CMake/gperf generator: $gen_cpp"
+            command -v gperf >/dev/null 2>&1 || { echo "::error ::gperf missing for tdutils auto generation"; exit 93; }
+            mkdir -p "$gen_dir/auto"
+            build_dir="$PWD/.tdmime-host"
+            cmake -G Ninja -S "$gen_dir" -B "$build_dir"               -DCMAKE_BUILD_TYPE=Release               -DTDUTILS_MIME_TYPE=ON
+            cmake --build "$build_dir" --target tdmime_auto -- -j 2
+          else
+            echo "::notice ::No tdutils MIME generator detected; relying on CMake custom commands."
+          fi
 
-GEN_DIR="$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td/generate"
-SCHEME_DST_DIR="$GEN_DIR/scheme"
-mkdir -p "$GEN_DIR" "$SCHEME_DST_DIR"
+          if [ -n "$gen_dir" ]; then
+            test -f "$gen_dir/auto/mime_type_to_extension.cpp" || { echo "::error ::missing auto/mime_type_to_extension.cpp after generation"; exit 91; }
+            test -f "$gen_dir/auto/extension_to_mime_type.cpp"   || { echo "::error ::missing auto/extension_to_mime_type.cpp after generation"; exit 92; }
+            echo "Generated:"
+            ls -l "$gen_dir/auto" | sed 's/^/  /'
+          fi
 
-# Fallbacks: falls Install bestimmte Files nicht gelegt hat
-if [[ ! -x "$GEN_DIR/td_generate_java_api" ]]; then
-  SRC_BIN="$(find build-host -type f -path '*/td/generate/td_generate_java_api' | head -n1 || true)"
-  if [[ -n "$SRC_BIN" && -f "$SRC_BIN" ]]; then
-    run "fallback-copy-tdgen" cp -f "$SRC_BIN" "$GEN_DIR/td_generate_java_api"
-    chmod +x "$GEN_DIR/td_generate_java_api" || true
-  fi
-fi
-if [[ -x "$GEN_DIR/td_generate_java_api" && ! -x "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td_generate_java_api" ]]; then
-  run "compat-copy-tdgen-root" cp -f "$GEN_DIR/td_generate_java_api" "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR/td_generate_java_api"
-fi
+      - name: Prepare logs directory (${{ matrix.abi }})
+        run: |
+          set -euo pipefail
+          mkdir -p "logs-${{ matrix.abi }}"
+          {
+            echo "runner=$(uname -a)"
+            cmake --version || true
+            ninja --version || true
+            "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" --version || true
+          } > "logs-${{ matrix.abi }}/tool-versions.txt"
 
-# PHP-Generatoren sicherstellen
-if [[ ! -f "$GEN_DIR/TlDocumentationGenerator.php" || ! -f "$GEN_DIR/JavadocTlDocumentationGenerator.php" ]]; then
-  if [[ -d "td/generate" ]]; then
-    run "copy-php-generators" rsync -a --include='*/' --include='*.php' --exclude='*' "td/generate/" "$GEN_DIR/"
-  fi
-fi
+      - name: Download and stage prebuilt BoringSSL (${{ matrix.abi }})
+        id: stage_bssl
+        run: |
+          set -euo pipefail
+          mkdir -p .third_party && cd .third_party
+          BASE_URL="https://github.com/${REPO}/releases/download/${BORINGSSL_TAG}"
+          ASSET="${{ matrix.asset }}"
+          SHA_FILE="${{ matrix.sha }}"
+          TMPDIR=".boringssl_tmp"
+          mkdir -p "$TMPDIR" && cd "$TMPDIR"
 
-# Schema (tl/tlo) aus Host-Build übernehmen
-for f in td_api.tl td_api.tlo; do
-  if [[ ! -s "$SCHEME_DST_DIR/$f" ]]; then
-    SRC="$(find build-host -type f -path "*/td/generate/scheme/$f" | head -n1 || true)"
-    [[ -n "$SRC" && -f "$SRC" ]] && run "copy-schema-$f" cp -f "$SRC" "$SCHEME_DST_DIR/$f"
-  fi
-done
+          found=false
+          valid=false
 
-# PATH für Generator
-export PATH="$HOST_INSTALL_PREFIX/$INSTALL_BINDIR:$PATH"
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${ASSET}")
+          if [ "$CODE" = "200" ]; then
+            found=true
+            curl -fL "${BASE_URL}/${ASSET}" -o "${ASSET}"
+            CODE_SHA=$(curl -s -o /dev/null -w "%{http_code}" -L "${BASE_URL}/${SHA_FILE}")
+            if [ "$CODE_SHA" = "200" ]; then
+              curl -fL "${BASE_URL}/${SHA_FILE}" -o "${SHA_FILE}"
+              EXPECTED=$(sed -E 's/^([0-9a-fA-F]{64}).*$//' "${SHA_FILE}" | head -n1 || true)
+              if [ -n "$EXPECTED" ]; then
+                ACTUAL=$(sha256sum "${ASSET}" | awk '{print $1}')
+                if [ "$EXPECTED" != "$ACTUAL" ]; then
+                  echo "::warning ::SHA256 mismatch for ${ASSET} expected=$EXPECTED actual=$ACTUAL"
+                fi
+              fi
+            fi
 
-# Sanity-Listing
-for must in \
-  "$HOST_INSTALL_PREFIX/$CMAKEDIR_REL/TdConfig.cmake" \
-  "$GEN_DIR/td_generate_java_api" \
-  "$SCHEME_DST_DIR/td_api.tl" \
-  "$SCHEME_DST_DIR/td_api.tlo"; do
-  [[ -e "$must" ]] || record_err "missing $must"
-done
-ls -l "$HOST_INSTALL_PREFIX/$INSTALL_BINDIR" || true
-ls -l "$GEN_DIR" || true
-ls -l "$SCHEME_DST_DIR" || true
+            NAME="${ASSET%.tar.zst}"
+            mkdir -p "${NAME}"
+            tar --use-compress-program=unzstd -xf "${ASSET}" -C "${NAME}"
 
-# Hilfsfunktion: Triple für ABI
-triple_for_abi() {
-  case "$1" in
-    arm64-v8a)  echo "aarch64-linux-android" ;;
-    armeabi-v7a) echo "arm-linux-androideabi" ;;  # für Sysroot-Pfade
-    x86)        echo "i686-linux-android" ;;
-    x86_64)     echo "x86_64-linux-android" ;;
-    *)          echo "" ;;
-  esac
-}
+            ABI_DIR="$GITHUB_WORKSPACE/.third_party/boringssl/${{ matrix.abi }}"
+            rm -rf "$ABI_DIR"
+            mkdir -p "$ABI_DIR" "$ABI_DIR/lib"
 
-# ---------------------------------------------------------------------------
-# (2) example/java: Java-Install → erzeugt TdApi.java, Client.java
-# ---------------------------------------------------------------------------
-run "java-configure" cmake -S example/java -B example/java/build -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_PREFIX_PATH="$HOST_INSTALL_PREFIX" \
-  -DTd_DIR="$HOST_INSTALL_PREFIX/$CMAKEDIR_REL" \
-  -DCMAKE_INSTALL_PREFIX:PATH="$TD_DIR/example/java" \
-  "${CC_LAUNCH[@]}"
-run "java-install" cmake --build example/java/build --target install "${NINJA_KEEP[@]}"
+            INC_DIR="$(find "${NAME}" -type d -name include -print -quit || true)"
+            SSL_LIB="$(find "${NAME}" -type f -name 'libssl.a' -print -quit || true)"
+            CRYPTO_LIB="$(find "${NAME}" -type f -name 'libcrypto.a' -print -quit || true)"
 
-TDAPI_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/TdApi.java' | head -n1 || true)"
-CLIENT_SRC="$(find example/java -type f -path '*/org/drinkless/tdlib/Client.java' | head -n1 || true)"
-[[ -f "$TDAPI_SRC"  ]] || record_err "Could not locate generated TdApi.java"
-[[ -f "$CLIENT_SRC" ]] || record_err "Missing Client.java"
+            if [ -n "$INC_DIR" ] && [ -n "$SSL_LIB" ] && [ -n "$CRYPTO_LIB" ]; then
+              mkdir -p "$ABI_DIR/include"
+              cp -a "$INC_DIR/." "$ABI_DIR/include/"
+              cp -f "$SSL_LIB" "$ABI_DIR/libssl.a"
+              cp -f "$CRYPTO_LIB" "$ABI_DIR/libcrypto.a"
+              ln -sf ../libssl.a    "$ABI_DIR/lib/libssl.a"
+              ln -sf ../libcrypto.a "$ABI_DIR/lib/libcrypto.a"
+              if [ -f "$ABI_DIR/include/openssl/ssl.h" ] && [ -f "$ABI_DIR/libssl.a" ] && [ -f "$ABI_DIR/libcrypto.a" ]; then
+                valid=true
+                echo "BORINGSSL_DIR=$ABI_DIR" >> $GITHUB_ENV
+                export BORINGSSL_DIR="$ABI_DIR"
+                echo "BORINGSSL_ASSET=$ASSET" >> $GITHUB_ENV
+              fi
+            else
+              echo "::group::Extracted tree"
+              ls -R "${NAME}" || true
+              echo "::endgroup::"
+              echo "::warning ::prebuilt asset structure invalid"
+            fi
+          else
+            echo "::warning ::prebuilt asset not found ${BASE_URL}/${ASSET} (HTTP $CODE)"
+          fi
 
-run "copy-java-sources" bash -c "mkdir -p '$JAVA_SRC_DIR/org/drinkless/tdlib' && \
-  { [[ -f '$TDAPI_SRC'  ]] && cp -f '$TDAPI_SRC'  '$JAVA_SRC_DIR/org/drinkless/tdlib/TdApi.java'  || true; } && \
-  { [[ -f '$CLIENT_SRC' ]] && cp -f '$CLIENT_SRC' '$JAVA_SRC_DIR/org/drinkless/tdlib/Client.java' || true; }"
+          echo "found=${found}" >> $GITHUB_OUTPUT
+          echo "valid=${valid}" >> $GITHUB_OUTPUT
 
-# ---------------------------------------------------------------------------
-# (3) PRO-ABI: Android-TDLib (Core) bauen & installieren → tdjni je ABI
-# ---------------------------------------------------------------------------
-for ABI in "${ABI_ARR[@]}"; do
-  ABI="$(echo "$ABI" | xargs)"
+      - name: Configure tdjni from example/java (${{ matrix.abi }})
+        run: |
+          set -euo pipefail
+          ABI="${{ matrix.abi }}"
+          TD_INSTALL="$GITHUB_WORKSPACE/build-${ABI}/install"
+          cmake -G Ninja             -S "${TD_SRC_DIR}/example/java"             -B "build-${ABI}-jni"             -DCMAKE_TOOLCHAIN_FILE="$NDK_PATH/build/cmake/android.toolchain.cmake"             -DANDROID_ABI="${ABI}"             -DANDROID_PLATFORM="${ANDROID_PLATFORM}"             -DCMAKE_BUILD_TYPE=Release             -DTd_DIR="${TD_INSTALL}/lib/cmake/Td"             -DOPENSSL_ROOT_DIR="${BORINGSSL_DIR}"             -DOPENSSL_USE_STATIC_LIBS=ON
 
-  [[ -d "$BORINGSSL_DIR/$ABI/include" ]] || record_err "BoringSSL include missing for $ABI"
-  [[ -f "$BORINGSSL_DIR/$ABI/lib/libcrypto.a" ]] || record_err "BoringSSL libcrypto.a missing for $ABI"
-  [[ -f "$BORINGSSL_DIR/$ABI/lib/libssl.a"    ]] || record_err "BoringSSL libssl.a missing for $ABI"
+      - name: Build & stage libtdjni.so (${{ matrix.abi }})
+        run: |
+          set -euo pipefail
+          ABI="${{ matrix.abi }}"
+          ninja -C "build-${ABI}-jni" -v tdjni
+          OUT_DIR="out-jni-${ABI}"
+          mkdir -p "$OUT_DIR"
+          SO="$(find "build-${ABI}-jni" -type f -name 'libtdjni.so' | head -n1 || true)"
+          if [ -z "$SO" ]; then
+            echo "::group::jni-search-dump"
+            find "build-${ABI}-jni" -maxdepth 5 -type f | sed 's/^/  /' || true
+            echo "::endgroup::"
+            echo "::error ::libtdjni.so not found after building tdjni"
+            exit 71
+          fi
+          cp -v "$SO" "$OUT_DIR/libtdjni.so"
 
-  ANDROID_PREFIX="$TD_DIR/example/java/td-android-$ABI"
-  TRIPLE="$(triple_for_abi "$ABI")"
-  ZLIB_INC="$PREBUILT_DIR/sysroot/usr/include"
-  ZLIB_LIB="$PREBUILT_DIR/sysroot/usr/lib/$TRIPLE/libz.a"
+      - name: Pack tdlib AAR (${{ matrix.abi }})
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ABI="${{ matrix.abi }}"
 
-  # Frisches Build-Verzeichnis (keine alten CMakeCache.txt übernehmen)
-  rm -rf "build-td-android-$ABI"
+          PKG_DIR="aar-${ABI}"
+          MOD_DIR="${PKG_DIR}/tdlib-android"
+          mkdir -p "${MOD_DIR}/src/main/jniLibs/${ABI}" "${MOD_DIR}/src/main/java"
 
-  run "core-$ABI-configure" cmake -S . -B "build-td-android-$ABI" -G Ninja \
-    -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DANDROID_ABI="$ABI" \
-    -DANDROID_STL="$ANDROID_STL" \
-    -DANDROID_PLATFORM="android-$API_LEVEL" \
-    -DOPENSSL_USE_STATIC_LIBS=ON \
-    -DOPENSSL_ROOT_DIR="$BORINGSSL_DIR/$ABI" \
-    -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
-    -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
-    -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    -DOPENSSL_LIBRARIES="$BORINGSSL_DIR/$ABI/lib/libssl.a;$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    -DZLIB_INCLUDE_DIR="$ZLIB_INC" \
-    -DZLIB_LIBRARY="$ZLIB_LIB" \
-    -DCMAKE_INSTALL_PREFIX:PATH="$ANDROID_PREFIX" \
-    "${ANDROID_OPT[@]}" \
-    "${TD_LTO[@]}" \
-    "${CC_LAUNCH[@]}"
+          cp -v "out-jni-${ABI}/libtdjni.so" "${MOD_DIR}/src/main/jniLibs/${ABI}/libtdjni.so"
 
-  run "core-$ABI-build"   cmake --build "build-td-android-$ABI" "${NINJA_KEEP[@]}"
-  run "core-$ABI-install" cmake --build "build-td-android-$ABI" --target install "${NINJA_KEEP[@]}"
+      - name: Download tdlib-java-bindings (same run)
+        uses: actions/download-artifact@v4
+        with:
+          name: tdlib-java-bindings
+          path: .artifacts/java
 
-  ANDROID_TD_CMAKE_DIR="$ANDROID_PREFIX/$CMAKEDIR_REL"
-  [[ -f "$ANDROID_TD_CMAKE_DIR/TdConfig.cmake" ]] || record_err "Missing Android TdConfig for $ABI"
+      - name: Stage sources into module (${{ matrix.abi }})
+        run: |
+          set -euo pipefail
+          ABI="${{ matrix.abi }}"
+          PKG_DIR="aar-${ABI}"
+          MOD_DIR="${PKG_DIR}/tdlib-android"
 
-  pushd "$TD_DIR/example/java" >/dev/null
-  BDIR="build-android-$ABI"
-  rm -rf "$BDIR"
+          if ls .artifacts/java/*.zip >/dev/null 2>&1; then
+            unzip -q .artifacts/java/*.zip -d /tmp/tdjava
+            rsync -a /tmp/tdjava/org "${MOD_DIR}/src/main/java/"
+          else
+            rsync -a .artifacts/java/org "${MOD_DIR}/src/main/java/" || true
+          fi
 
-  run "jni-$ABI-configure" cmake -S . -B "$BDIR" -G Ninja \
-    -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DANDROID_ABI="$ABI" \
-    -DANDROID_PLATFORM="android-$API_LEVEL" \
-    -DANDROID_STL="$ANDROID_STL" \
-    -DTd_DIR="$ANDROID_TD_CMAKE_DIR" \
-    -DCMAKE_PREFIX_PATH="$ANDROID_PREFIX" \
-    -DTD_ENABLE_JNI=ON \
-    -DOPENSSL_USE_STATIC_LIBS=ON \
-    -DOPENSSL_ROOT_DIR="$BORINGSSL_DIR/$ABI" \
-    -DOPENSSL_INCLUDE_DIR="$BORINGSSL_DIR/$ABI/include" \
-    -DOPENSSL_SSL_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libssl.a" \
-    -DOPENSSL_CRYPTO_LIBRARY="$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    -DOPENSSL_LIBRARIES="$BORINGSSL_DIR/$ABI/lib/libssl.a;$BORINGSSL_DIR/$ABI/lib/libcrypto.a" \
-    -DZLIB_INCLUDE_DIR="$ZLIB_INC" \
-    -DZLIB_LIBRARY="$ZLIB_LIB" \
-    "${ANDROID_OPT[@]}" \
-    "${TD_LTO[@]}" \
-    "${CC_LAUNCH[@]}"
+          cat > "${MOD_DIR}/src/main/AndroidManifest.xml" <<'XML'
+          <manifest package="org.drinkless.tdlib.android"/>
+          XML
 
-  run "jni-$ABI-build-tdjni" cmake --build "$BDIR" --target tdjni "${NINJA_KEEP[@]}"
+          cat > "${MOD_DIR}/consumer-rules.pro" <<'PRO'
+          -keep class org.drinkless.tdlib.** { *; }
+          -keepclasseswithmembers,includedescriptorclasses class * { native <methods>; }
+          -dontwarn org.drinkless.tdlib.**
+          PRO
 
-  soPath="$(find "$BDIR" -name 'libtdjni.so' -print -quit || true)"
-  if [[ -f "$soPath" ]]; then
-    run "jni-$ABI-copy-so" bash -c "mkdir -p '$OUT_DIR/libs/$ABI' && cp -f '$soPath' '$OUT_DIR/libs/$ABI/' && \
-      '$PREBUILT_DIR/bin/llvm-strip' --strip-unneeded '$OUT_DIR/libs/$ABI/libtdjni.so' || true"
-    if [[ "$ANDROID_STL" == "c++_shared" ]]; then
-      case "$ABI" in
-        arm64-v8a)  TRIPLE_SO="aarch64-linux-android" ;;
-        armeabi-v7a) TRIPLE_SO="arm-linux-androideabi" ;;
-        x86)         TRIPLE_SO="i686-linux-android" ;;
-        x86_64)      TRIPLE_SO="x86_64-linux-android" ;;
-      esac
-      SHARED_STL="$PREBUILT_DIR/sysroot/usr/lib/$TRIPLE_SO/libc++_shared.so"
-      [[ -f "$SHARED_STL" ]] && run "jni-$ABI-copy-stl" cp -f "$SHARED_STL" "$OUT_DIR/libs/$ABI/"
-    fi
-  else
-    record_err "libtdjni.so not found for $ABI"
-  fi
-  popd >/dev/null
-done
+          cat > "${PKG_DIR}/settings.gradle.kts" <<'KTS'
+          rootProject.name = "tdlib-android-root"
+          include(":tdlib-android")
+          KTS
 
-popd >/dev/null  # aus $TD_DIR
+          cat > "${PKG_DIR}/build.gradle.kts" <<'KTS'
+          // root placeholder
+          KTS
 
-# ---------------------------------------------------------------------------
-# (4) Optional: Java → JAR packen
-# ---------------------------------------------------------------------------
-run "java-jar-sources-list" bash -c "find '$JAVA_SRC_DIR' -name '*.java' > '$OUT_DIR/java-sources.list' || true"
-if [[ -s "$OUT_DIR/java-sources.list" ]]; then
-  run "java-javac" javac --release 8 -d "$JAVA_CLASSES_DIR" @"$OUT_DIR/java-sources.list"
-  DESC="local"; if [[ -d "$TD_DIR/.git" ]]; then DESC="$(git -C "$TD_DIR" describe --tags --always --long --dirty=+ 2>/dev/null || git -C "$TD_DIR" rev-parse --short HEAD)"; fi
-  JAR_PATH="$OUT_DIR/tdlib-${DESC}.jar"
-  run "java-jar-pack" jar cf "$JAR_PATH" -C "$JAVA_CLASSES_DIR" .
-else
-  record_err "TdApi.java not generated; skip javac/jar"
-fi
+          cat > "${MOD_DIR}/build.gradle.kts" <<'KTS'
+          plugins {
+            id("com.android.library")
+            id("maven-publish")
+          }
+          android {
+            namespace = "org.drinkless.tdlib.android"
+            compileSdk = 35
+            defaultConfig {
+              minSdk = 21
+              consumerProguardFiles("consumer-rules.pro")
+            }
+            buildTypes {
+              release { isMinifyEnabled = false }
+              debug   { isMinifyEnabled = false }
+            }
+            packaging { jniLibs.keepDebugSymbols += listOf("**/libtdjni.so") }
+            publishing { singleVariant("release") { withSourcesJar() } }
+          }
+          publishing {
+            publications {
+              create<MavenPublication>("release") {
+                from(components["release"])
+                groupId = "com.fishit.tdlib"
+                artifactId = "tdlib-android"
+                version = System.getenv("AAR_VERSION") ?: "local-${System.getenv("ABI") ?: "unknown"}"
+                pom {
+                  name.set("TDLib Android (AAR)")
+                  description.set("TDLib JNI + Java bindings packaged for Android")
+                  licenses { license { name.set("BSD-like"); url.set("https://github.com/tdlib/td") } }
+                }
+              }
+            }
+            repositories {
+              maven {
+                name = "github"
+                url = uri("https://maven.pkg.github.com/${System.getenv("GITHUB_REPOSITORY") ?: "<owner>/<repo>"}")
+                credentials {
+                  username = System.getenv("GITHUB_ACTOR")
+                  password = System.getenv("GITHUB_TOKEN")
+                }
+              }
+            }
+          }
+          KTS
 
-# ---------------------------------------------------------------------------
-# (5) Zusammenfassung
-# ---------------------------------------------------------------------------
-ERR_COUNT=${#BUILD_ERRORS[@]}
-{
-  echo "==== Build Summary ===="
-  echo "Date: $(date -Iseconds)"
-  echo "TD Commit: $DESCRIBE"
-  echo "NDK: $NDK"
-  echo "ABIs: $ABIS"
-  echo "Errors: $ERR_COUNT"
-  if ((ERR_COUNT)); then
-    printf ' - %s\n' "${BUILD_ERRORS[@]}"
-  else
-    echo "No errors recorded."
-  fi
-} | tee "$REPORT_TXT"
+          cat > "${PKG_DIR}/gradle.properties" <<'PROPS'
+          org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          PROPS
 
-{
-  echo '{'
-  printf '  "date": "%s",\n' "$(date -Iseconds)"
-  printf '  "td_commit": "%s",\n' "$DESCRIBE"
-  printf '  "ndk": "%s",\n' "$NDK"
-  printf '  "abis": "%s",\n' "$ABIS"
-  printf '  "errors": ['
-  if ((ERR_COUNT)); then
-    for i in "${!BUILD_ERRORS[@]}"; do
-      printf '%s{"msg": %q}' "$([[ $i -gt 0 ]] && echo ',')" "${BUILD_ERRORS[$i]}"
-    done
-  fi
-  echo ']'
-  echo '}'
-} > "$REPORT_JSON"
+          if [ -f "./gradlew" ] && [ -d "./gradle/wrapper" ]; then
+            cp -a ./gradlew ./gradle "${PKG_DIR}/"
+            chmod +x "${PKG_DIR}/gradlew"
+          fi
 
-cat <<EOF
-== Artifacts ==
-$OUT_DIR/TDLIB_VERSION.txt
-$OUT_DIR/libs/*/libtdjni.so
-$OUT_DIR/tdlib-*.jar
-$OUT_DIR/logs/build.log
-$OUT_DIR/logs/summary.txt
-$OUT_DIR/logs/summary.json
-EOF
+          TDLIB_SHA="$(git -C td rev-parse --short=12 HEAD || echo unknown)"
+          echo "AAR_VERSION=1.8.${TDLIB_SHA}-${ABI}" >> "${GITHUB_ENV}"
+          echo "ABI=${ABI}" >> "${GITHUB_ENV}"
 
-if ((ERR_COUNT)) && [[ "$FINAL_EXIT" != "0" ]]; then
-  exit 1
-else
-  exit 0
-fi
+      - name: Build AAR (${{ matrix.abi }})
+        if: ${{ hashFiles('gradlew') != '' || hashFiles('**/gradlew') != '' }}
+        working-directory: aar-${{ matrix.abi }}
+        run: |
+          set -euo pipefail
+          ./gradlew :tdlib-android:assembleRelease -x lint -x test
+
+      - name: Upload packed AAR artifact (${{ matrix.abi }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-android-${{ matrix.abi }}-aar
+          path: |
+            aar-${{ matrix.abi }}/tdlib-android/build/outputs/aar/tdlib-android-release.aar
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Fallback: raw AAR zip (${{ matrix.abi }})
+        if: ${{ !(hashFiles('gradlew') != '' || hashFiles('**/gradlew') != '') }}
+        run: |
+          set -euo pipefail
+          ABI="${{ matrix.abi }}"
+          PKG_DIR="aar-${ABI}"
+          MOD_DIR="${PKG_DIR}/tdlib-android"
+          if command -v javac >/dev/null 2>&1; then
+            mkdir -p "${PKG_DIR}/classes"
+            find "${MOD_DIR}/src/main/java" -name "*.java" > "${PKG_DIR}/sources.list"
+            if [ -s "${PKG_DIR}/sources.list" ]; then
+              javac -source 8 -target 8 -d "${PKG_DIR}/classes" @"${PKG_DIR}/sources.list" || true
+            fi
+            (cd "${PKG_DIR}/classes" && jar cf ../classes.jar .) || true
+          fi
+          mkdir -p "${PKG_DIR}/aar/jni/${ABI}"
+          cp -v "${MOD_DIR}/src/main/jniLibs/${ABI}/libtdjni.so" "${PKG_DIR}/aar/jni/${ABI}/" || true
+          cp -v "${MOD_DIR}/src/main/AndroidManifest.xml" "${PKG_DIR}/aar/AndroidManifest.xml"
+          [ -f "${PKG_DIR}/classes.jar" ] || touch "${PKG_DIR}/classes.jar"
+          cp -v "${PKG_DIR}/classes.jar" "${PKG_DIR}/aar/classes.jar"
+          (cd "${PKG_DIR}/aar" && zip -r ../tdlib-android-${ABI}-raw.aar .)
+          echo "Raw AAR created at ${PKG_DIR}/tdlib-android-${ABI}-raw.aar"
+
+      - name: Derive base version for Release tag (${{ matrix.abi }})
+        run: |
+          set -euo pipefail
+          if [ -z "${AAR_VERSION_BASE:-}" ]; then
+            TDLIB_SHA="$(git -C td rev-parse --short=12 HEAD || echo unknown)"
+            echo "AAR_VERSION_BASE=1.8.${TDLIB_SHA}" >> "$GITHUB_ENV"
+          fi
+          echo "AAR_VERSION_BASE=${AAR_VERSION_BASE:-unset}"
+
+      - name: Upload AAR to GitHub Release (${{ matrix.abi }})
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: tdlib-android-${{ env.AAR_VERSION_BASE }}
+          name: TDLib Android ${{ env.AAR_VERSION_BASE }}
+          body: |
+            TDLib Android AAR (JNI + Java Bindings)
+            - ABI: ${{ matrix.abi }}
+            - BoringSSL: ${{ env.BORINGSSL_ASSET }}
+            - Built from: ${{ github.sha }}
+          draft: false
+          prerelease: false
+          make_latest: true
+          files: |
+            aar-${{ matrix.abi }}/tdlib-android/build/outputs/aar/tdlib-android-release.aar
+
+      - name: Upload RAW AAR to GitHub Release (fallback) (${{ matrix.abi }})
+        if: ${{ github.ref == 'refs/heads/main' && !(hashFiles('gradlew') != '' || hashFiles('**/gradlew') != '') }}
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: tdlib-android-${{ env.AAR_VERSION_BASE }}
+          name: TDLib Android ${{ env.AAR_VERSION_BASE }}
+          body: |
+            TDLib Android AAR (RAW fallback)
+            - ABI: ${{ matrix.abi }}
+            - BoringSSL: ${{ env.BORINGSSL_ASSET }}
+            - Built from: ${{ github.sha }}
+          draft: false
+          prerelease: false
+          make_latest: true
+          files:
+            aar-${{ matrix.abi }}/tdlib-android-${{ matrix.abi }}-raw.aar
