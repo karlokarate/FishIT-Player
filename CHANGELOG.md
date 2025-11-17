@@ -1,3 +1,15 @@
+2025-11-17
+- **BREAKING**: Removed TDLib (Telegram Database Library) and all related artifacts.
+  - Deleted `libtd` module and all TDLib native libraries
+  - Removed TDLib Java/Kotlin source files from `b/` directory
+  - Removed TDLib build workflows and scripts
+  - Removed TDLib module dependency from `app/build.gradle.kts`
+  - Added minimal TdApi stub classes to maintain compilation compatibility
+  - **Note**: Telegram-related features are now non-operational. The app retains
+    Telegram UI/logic for potential future re-integration with an alternative library,
+    but TdLibReflection.available() will return false and all Telegram operations
+    will be disabled at runtime.
+
 2025-11-24
 - fix(ci): Standart workflow runs a host `prepare_cross_compiling` pass to
   emit the TDLib `td_api_*.cpp` auto-sources before the Android builds start,

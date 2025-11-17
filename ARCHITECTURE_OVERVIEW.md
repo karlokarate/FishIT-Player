@@ -1,5 +1,10 @@
 # FishIT Player – Architecture Overview (derived from AGENTS.md)
 
+**IMPORTANT NOTE (2025-11-17):** TDLib (Telegram Database Library) has been **removed** from this project.
+All references to TDLib, Telegram integration, and related functionality in this document are now **historical**.
+The codebase retains Telegram-related UI and logic structures for potential future re-integration with an
+alternative library, but all TDLib-specific features are currently non-operational.
+
 Deep‑Dive Update: 2025‑09‑23
 - Build, networking, images and playback updated to reflect current code.
 - Lifecycle/Performance: `collectAsStateWithLifecycle` breit eingesetzt; JankStats in MainActivity aktiv.
@@ -18,7 +23,8 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
 > - DataStore Preferences, WorkManager  
 > - OkHttp (HTTP), Coil 3 (Bilder), Media3/ExoPlayer (Video)  
 > - Persistenz: ObjectBox (OBX) als Primär‑Store  
-> - Module: `app` (Haupt‑App) + `libtd` (TDLib JNI/Java)
+> - Module: `app` (Haupt‑App)
+> - **Note**: The `libtd` TDLib module has been removed as of 2025-11-17
 
 ---
 
