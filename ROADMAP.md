@@ -1,6 +1,12 @@
 #
 # FishIT Player — Roadmap (Q4 2025)
 
+**IMPORTANT - TDLib Removed (2025-11-17):**
+TDLib (Telegram Database Library) has been completely removed from this project. Any roadmap items 
+below referencing TDLib, Telegram integration, or related features are now obsolete.
+
+---
+
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
 - Maintenance 2025-11-24: Standart-Workflow führt den hostseitigen

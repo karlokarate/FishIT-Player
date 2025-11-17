@@ -7,6 +7,13 @@ Android Build Policy (WSL override)
 - Ignore local.properties Windows sdk.dir warnings under WSL; the build uses ANDROID_HOME/ANDROID_SDK_ROOT from ~/.codex/android.env.
 - Never modify project files to embed WSL- specific SDK/JDK/NDK paths. Windows Android Studio remains untouched.
 
+**IMPORTANT - TDLib Removed (2025-11-17):**
+TDLib (Telegram Database Library) and all related artifacts have been completely removed from this project:
+- The `:libtd` module, native libraries, Java bindings, build scripts, and CI workflows are deleted.
+- All references to `org.drinkless.tdlib` packages are no longer available.
+- Telegram integration code that depended on TDLib (TelegramServiceClient, TdlibRandomAccessSource, etc.) will not compile.
+- Historical documentation below may reference TDLib features - these are now obsolete and kept for historical context only.
+
 # FishIT Player – Agents & Architecture Guide (consolidated)
 
 TV/DPAD: ProfileGate + PIN/Numpad focus visuals fixed (tvClickable/tvFocusableItem + focusGroup, deterministic initial FocusRequester). See CHANGELOG 2025-10-03.

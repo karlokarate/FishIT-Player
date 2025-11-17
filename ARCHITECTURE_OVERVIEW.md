@@ -1,4 +1,11 @@
-# FishIT Player – Architecture Overview (derived from AGENTS.md)
+# FishIT Player – Architecture Overview
+
+**IMPORTANT - TDLib Removed (2025-11-17):**
+TDLib (Telegram Database Library) has been completely removed from this project. All references to TDLib, 
+the `:libtd` module, native JNI libraries, and Telegram integration code are now obsolete. This document 
+may contain historical references to these features - they are kept for context but are no longer functional.
+
+--- (derived from AGENTS.md)
 
 Deep‑Dive Update: 2025‑09‑23
 - Build, networking, images and playback updated to reflect current code.

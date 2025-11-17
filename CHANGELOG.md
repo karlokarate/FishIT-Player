@@ -1,3 +1,14 @@
+2025-11-17 (TDLib Removal)
+- **BREAKING**: Removed TDLib integration entirely from the project:
+  - Deleted `:libtd` module and all native libraries (`libtdjni.so`)
+  - Removed TDLib dependency from `app/build.gradle.kts`
+  - Removed all TDLib Java bindings (`org.drinkless.tdlib` package)
+  - Removed TDLib-related CI workflows (Final_tdlib.yml, tdlib_android.yml, etc.)
+  - Removed TDLib build scripts from `scripts/` directory
+  - **Note**: Telegram functionality that depends on TDLib (TelegramServiceClient, 
+    TdlibRandomAccessSource, TelegramLiveRepository, etc.) will no longer compile.
+    This is a cleanup operation to remove TDLib artifacts from the codebase.
+
 2025-11-24
 - fix(ci): Standart workflow runs a host `prepare_cross_compiling` pass to
   emit the TDLib `td_api_*.cpp` auto-sources before the Android builds start,
