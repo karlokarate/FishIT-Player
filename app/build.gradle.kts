@@ -285,19 +285,6 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
     implementation("androidx.tv:tv-material:1.0.1")
 
-    // --- TDLib: EINE Quelle – Modul bevorzugt, AAR nur als Fallback ---
-    val libtdModuleDir = File(rootDir, "libtd")
-    val tdlibAar = File(projectDir, "libs/tdlib.aar")
-    if (libtdModuleDir.exists()) {
-        implementation(project(":libtd"))
-    } else if (tdlibAar.exists()) {
-        implementation(files(tdlibAar))
-        logger.lifecycle("Using tdlib.aar fallback (libtd module folder not found).")
-    } else {
-        logger.warn("No TDLib found: neither :libtd module nor app/libs/tdlib.aar. Build will fail when referencing TdApi.")
-    }
-    // ---------------------------------------------------------------
-
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
