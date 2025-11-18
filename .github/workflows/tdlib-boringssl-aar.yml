@@ -1,0 +1,337 @@
+name: TDLib BoringSSL AAR Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag (leave empty for auto-generation)"
+        required: false
+        default: ""
+  workflow_run:
+    workflows: ["TDLib - Android Java (prebuilt BoringSSL, validated, doc-conform)"]
+    types:
+      - completed
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-aar:
+    runs-on: ubuntu-24.04
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+
+      - name: Download TDLib artifacts (workflow_dispatch mode)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/download-artifact@v4
+        with:
+          path: .artifacts
+          pattern: tdlib-*
+          merge-multiple: false
+
+      - name: Download TDLib artifacts (workflow_run mode)
+        if: github.event_name == 'workflow_run'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          path: .artifacts
+          name_is_regexp: true
+          name: tdlib-.*
+          if_no_artifact_found: fail
+
+      - name: Prepare libtd module structure
+        run: |
+          set -euo pipefail
+          
+          # Create directory structure
+          mkdir -p libtd/src/main/java/org/drinkless/tdlib
+          mkdir -p libtd/src/main/jniLibs/arm64-v8a
+          mkdir -p libtd/src/main/jniLibs/armeabi-v7a
+          
+          # Debug: show downloaded artifacts structure
+          echo "::group::Downloaded artifacts structure"
+          find .artifacts -type f | sort | head -50
+          echo "::endgroup::"
+          
+          # Copy Java bindings
+          echo "::group::Copy Java bindings"
+          TDAPI_JAVA=$(find .artifacts -name 'TdApi.java' -type f | head -n1)
+          if [ -n "$TDAPI_JAVA" ]; then
+            cp "$TDAPI_JAVA" libtd/src/main/java/org/drinkless/tdlib/
+            echo "Copied TdApi.java from: $TDAPI_JAVA"
+          else
+            echo "::error ::TdApi.java not found"
+            exit 1
+          fi
+          
+          # Copy example Java files from artifacts if they exist
+          for java_file in Client.java Log.java; do
+            JAVA_PATH=$(find .artifacts -name "$java_file" -type f | head -n1)
+            if [ -n "$JAVA_PATH" ]; then
+              cp "$JAVA_PATH" libtd/src/main/java/org/drinkless/tdlib/
+              echo "Copied $java_file from: $JAVA_PATH"
+            else
+              echo "::warning ::$java_file not found in artifacts, will fetch from TDLib repository"
+            fi
+          done
+          echo "::endgroup::"
+          
+          # Find and copy libtdjni.so for arm64-v8a
+          echo "::group::Copy arm64-v8a library"
+          ARM64_SO=$(find .artifacts -path "*/tdlib-android-arm64-v8a-boringssl/*" -name 'libtdjni.so' -type f | head -n1)
+          if [ -z "$ARM64_SO" ]; then
+            ARM64_SO=$(find .artifacts -name 'libtdjni.so' -type f | grep -i arm64 | head -n1)
+          fi
+          if [ -n "$ARM64_SO" ]; then
+            cp "$ARM64_SO" libtd/src/main/jniLibs/arm64-v8a/
+            echo "Copied arm64-v8a: $ARM64_SO"
+          else
+            echo "::error ::libtdjni.so not found for arm64-v8a"
+            find .artifacts -type f -name "*.so" || true
+            exit 1
+          fi
+          echo "::endgroup::"
+          
+          # Find and copy libtdjni.so for armeabi-v7a
+          echo "::group::Copy armeabi-v7a library"
+          V7A_SO=$(find .artifacts -path "*/tdlib-android-armeabi-v7a-boringssl/*" -name 'libtdjni.so' -type f | head -n1)
+          if [ -z "$V7A_SO" ]; then
+            V7A_SO=$(find .artifacts -name 'libtdjni.so' -type f | grep -i v7a | head -n1)
+          fi
+          if [ -n "$V7A_SO" ]; then
+            cp "$V7A_SO" libtd/src/main/jniLibs/armeabi-v7a/
+            echo "Copied armeabi-v7a: $V7A_SO"
+          else
+            echo "::error ::libtdjni.so not found for armeabi-v7a"
+            find .artifacts -type f -name "*.so" || true
+            exit 1
+          fi
+          echo "::endgroup::"
+          
+          # Verify all files are in place
+          echo "::group::Verify structure"
+          ls -lh libtd/src/main/java/org/drinkless/tdlib/
+          ls -lh libtd/src/main/jniLibs/arm64-v8a/
+          ls -lh libtd/src/main/jniLibs/armeabi-v7a/
+          echo "::endgroup::"
+
+      - name: Fetch TDLib example Java files if needed
+        run: |
+          set -euo pipefail
+          
+          # Check if Client.java and Log.java are missing
+          if [ ! -f "libtd/src/main/java/org/drinkless/tdlib/Client.java" ] || \
+             [ ! -f "libtd/src/main/java/org/drinkless/tdlib/Log.java" ]; then
+            echo "Fetching missing Java files from TDLib repository..."
+            
+            # Clone TDLib repository (shallow)
+            git clone --depth=1 https://github.com/tdlib/td.git /tmp/td
+            
+            # Copy example Java files
+            if [ ! -f "libtd/src/main/java/org/drinkless/tdlib/Client.java" ]; then
+              cp /tmp/td/example/java/org/drinkless/tdlib/Client.java \
+                 libtd/src/main/java/org/drinkless/tdlib/
+              echo "Copied Client.java from TDLib repository"
+            fi
+            
+            if [ ! -f "libtd/src/main/java/org/drinkless/tdlib/Log.java" ]; then
+              cp /tmp/td/example/java/org/drinkless/tdlib/Log.java \
+                 libtd/src/main/java/org/drinkless/tdlib/
+              echo "Copied Log.java from TDLib repository"
+            fi
+            
+            # Cleanup
+            rm -rf /tmp/td
+          fi
+
+      - name: Build AAR
+        run: |
+          set -euo pipefail
+          ./gradlew :libtd:assembleRelease --no-daemon --stacktrace
+          
+          # Verify AAR was created
+          if [ ! -f "libtd/build/outputs/aar/libtd-release.aar" ]; then
+            echo "::error ::AAR was not created"
+            find libtd/build -name "*.aar" || true
+            exit 1
+          fi
+          
+          echo "AAR created successfully"
+          ls -lh libtd/build/outputs/aar/
+
+      - name: Generate release tag
+        id: release_tag
+        run: |
+          if [ -z "$RELEASE_TAG" ]; then
+            TD_COMMIT=$(git ls-remote https://github.com/tdlib/td.git HEAD | cut -f1 | cut -c1-8)
+            RELEASE_TAG="tdlib-boringssl-${TD_COMMIT}-${GITHUB_RUN_ID}"
+          fi
+          echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+          echo "Release tag: $RELEASE_TAG"
+
+      - name: Prepare release artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts
+          
+          # Copy AAR
+          cp libtd/build/outputs/aar/libtd-release.aar \
+             release-artifacts/tdlib-android-boringssl.aar
+          
+          # Create build info
+          cat > release-artifacts/BUILD_INFO.txt <<EOF
+          TDLib Android AAR with BoringSSL
+          ================================
+          
+          Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          GitHub Run: ${{ github.run_id }}
+          Repository: ${{ github.repository }}
+          
+          Configuration:
+          - Architecture: arm64-v8a, armeabi-v7a
+          - SSL Library: BoringSSL (statically linked)
+          - Min SDK: 24
+          - Target SDK: 36
+          - Java Version: 17
+          
+          TDLib Commit: $(git ls-remote https://github.com/tdlib/td.git HEAD | cut -f1)
+          BoringSSL: Pinned from workflow tag
+          
+          Usage:
+          Add to your app/build.gradle:
+          
+          dependencies {
+              implementation files('libs/tdlib-android-boringssl.aar')
+              // or use from GitHub Releases
+          }
+          
+          Native Libraries Included:
+          - arm64-v8a/libtdjni.so
+          - armeabi-v7a/libtdjni.so
+          
+          Java Packages:
+          - org.drinkless.tdlib.TdApi
+          - org.drinkless.tdlib.Client
+          - org.drinkless.tdlib.Log
+          EOF
+          
+          # Create README
+          cat > release-artifacts/README.md <<'EOF'
+          # TDLib Android AAR with BoringSSL
+          
+          This AAR package contains TDLib (Telegram Database Library) compiled with BoringSSL
+          for Android, supporting arm64-v8a and armeabi-v7a architectures.
+          
+          ## Features
+          
+          - **Official TDLib master branch**
+          - **BoringSSL** statically linked (no OpenSSL dependencies)
+          - **Native libraries** for arm64-v8a and armeabi-v7a
+          - **Java bindings** included (org.drinkless.tdlib.*)
+          - **Minimum SDK 24** (Android 7.0)
+          
+          ## Integration
+          
+          ### Gradle
+          
+          1. Download `tdlib-android-boringssl.aar` from this release
+          2. Place it in your app's `libs` directory
+          3. Add to your `app/build.gradle.kts`:
+          
+          ```kotlin
+          dependencies {
+              implementation(files("libs/tdlib-android-boringssl.aar"))
+          }
+          ```
+          
+          ### Usage
+          
+          ```java
+          import org.drinkless.tdlib.Client;
+          import org.drinkless.tdlib.TdApi;
+          
+          Client client = Client.create(updateHandler, null, null);
+          ```
+          
+          ## Documentation
+          
+          - [TDLib Official Documentation](https://core.telegram.org/tdlib)
+          - [TDLib GitHub Repository](https://github.com/tdlib/td)
+          
+          ## License
+          
+          TDLib is licensed under the Boost Software License 1.0.
+          This AAR package follows the same license terms.
+          EOF
+          
+          ls -lh release-artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: TDLib Android AAR (BoringSSL) - ${{ steps.release_tag.outputs.tag }}
+          draft: false
+          prerelease: false
+          body: |
+            # TDLib Android AAR with BoringSSL
+            
+            This release contains TDLib compiled with BoringSSL for Android.
+            
+            ## What's Included
+            
+            - ✅ **Native libraries** for arm64-v8a and armeabi-v7a
+            - ✅ **Java bindings** (TdApi, Client, Log)
+            - ✅ **BoringSSL** statically linked (no external SSL dependencies)
+            - ✅ **Min SDK 24** (Android 7.0+)
+            
+            ## Quick Start
+            
+            1. Download `tdlib-android-boringssl.aar`
+            2. Add to your Android project's `libs/` folder
+            3. Add to `build.gradle.kts`:
+               ```kotlin
+               dependencies {
+                   implementation(files("libs/tdlib-android-boringssl.aar"))
+               }
+               ```
+            
+            ## Documentation
+            
+            See `README.md` and `BUILD_INFO.txt` for detailed information.
+            
+            **TDLib Version**: Latest from master branch
+            **Build Date**: $(date -u +"%Y-%m-%d")
+          files: |
+            release-artifacts/tdlib-android-boringssl.aar
+            release-artifacts/BUILD_INFO.txt
+            release-artifacts/README.md
+
+      - name: Upload AAR as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-android-boringssl-aar
+          path: release-artifacts/
+          if-no-files-found: error
+          retention-days: 90

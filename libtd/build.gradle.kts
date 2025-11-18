@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.chris.m3usuite.libtd" // darf sich von Java-Package unterscheiden
+    namespace = "org.drinkless.tdlib" // Must match AndroidManifest package
     compileSdk = 36
 
     defaultConfig {
-        minSdk = 24 // 23 geht auch; nimm >= App-minSdk
+        minSdk = 24 // Min SDK as per requirements
 
         // WICHTIG: ABI-Filter NICHT hier setzen! Sonst beschneidest du das AAR.
         // Die ABI-Auswahl machst du im App-Modul (splits) bzw. im Workflow.
