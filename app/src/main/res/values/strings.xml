@@ -11,7 +11,4 @@
     <string name="no_link_available">Kein Link verfügbar</string>
     <string name="empty_default">Keine Inhalte verfügbar</string>
     <string name="action_retry">Erneut versuchen</string>
-    <string name="notification_channel_telegram_sync">Telegram Sync</string>
-    <string name="notification_telegram_sync_title">Telegram Sync</string>
-    <string name="notification_telegram_sync_text">Synchronisiere ausgewählte Chats …</string>
 </resources>

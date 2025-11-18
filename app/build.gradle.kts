@@ -57,23 +57,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Telegram API credentials (secure lookup, non-committed):
-        // Precedence: ENV → .tg.secrets.properties → -P → default
-        val secretsFile = File(rootDir, ".tg.secrets.properties")
-        val secrets = Properties().apply {
-            if (secretsFile.exists()) secretsFile.inputStream().use { load(it) }
-        }
-        fun prop(name: String): String? =
-            System.getenv(name)
-                ?: (secrets.getProperty(name))
-                ?: (project.findProperty(name)?.toString())
-
-        val tgApiIdValue = prop("TG_API_ID")?.toIntOrNull() ?: 0
-        val tgApiHashValue = prop("TG_API_HASH") ?: ""
-
-        buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
-        buildConfigField("String", "TG_API_HASH", "\"${tgApiHashValue}\"")
-
         // Default HTTP User-Agent (secret-injected)
         val uaSecretsFile = File(rootDir, ".ua.secrets.properties")
         val uaSecrets = Properties().apply {
@@ -85,15 +68,6 @@ android {
                 ?: (project.findProperty(name)?.toString())
         val defaultUa = uaProp("HEADER").orEmpty()
         buildConfigField("String", "DEFAULT_UA", "\"${defaultUa}\"")
-
-        // ================================================================
-        // 🧩 Mirror-Only / OBX-Schalter – steuerbar per -PTG_OBX_ENABLED_DEFAULT
-        // oder CI-Input 'mirror_only' (wird im Workflow gemappt)
-        // ================================================================
-        val obxDefault = project.findProperty("TG_OBX_ENABLED_DEFAULT")
-            ?.toString()?.toBooleanStrictOrNull() ?: true
-        buildConfigField("boolean", "TG_OBX_ENABLED_DEFAULT", obxDefault.toString())
-        // ================================================================
 
         // Feature switches
         val showHeaderUi = (project.findProperty("SHOW_HEADER_UI")?.toString()?.toBooleanStrictOrNull()) ?: false
@@ -277,26 +251,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
-    implementation(platform("com.google.firebase:firebase-bom:34.4.0"))
-    implementation("com.google.firebase:firebase-messaging")
-    implementation("com.google.android.gms:play-services-auth-api-phone:+")
-
     implementation("androidx.metrics:metrics-performance:1.0.0-beta01")
     implementation("com.google.zxing:core:3.5.3")
     implementation("androidx.tv:tv-material:1.0.1")
-
-    // --- TDLib: EINE Quelle – Modul bevorzugt, AAR nur als Fallback ---
-    val libtdModuleDir = File(rootDir, "libtd")
-    val tdlibAar = File(projectDir, "libs/tdlib.aar")
-    if (libtdModuleDir.exists()) {
-        implementation(project(":libtd"))
-    } else if (tdlibAar.exists()) {
-        implementation(files(tdlibAar))
-        logger.lifecycle("Using tdlib.aar fallback (libtd module folder not found).")
-    } else {
-        logger.warn("No TDLib found: neither :libtd module nor app/libs/tdlib.aar. Build will fail when referencing TdApi.")
-    }
-    // ---------------------------------------------------------------
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")

@@ -14,48 +14,19 @@ import com.chris.m3usuite.data.obx.ObxVod
 import com.chris.m3usuite.data.obx.ObxVod_
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.telegram.service.TelegramServiceClient
-import com.chris.m3usuite.tg.TgGate
 import io.objectbox.kotlin.boxFor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import org.drinkless.tdlib.TdApi
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 /**
  * Gemeinsamer URL-/Header-Aufbau für Live & VOD.
- * - Beachtet Telegram-Quelle (tg://)
  * - Nutzt vorhandene URL oder baut Xtream-URLs (inkl. Port/Scheme)
  * - Liefert optionale Header (User-Agent, Referer)
  */
 object PlayUrlHelper {
-
-    /**
-     * Erzwingt Mirror-Only: ermittelt fileId direkt per TDLib (Reflect)
-     * und liefert eine tg://file/<fileId>-URI für den Player.
-     */
-    suspend fun tgPlayUri(chatId: Long, messageId: Long, svc: TelegramServiceClient): Uri {
-        // Mirror-Only erzwingen: kein tg://message, keine OBX-Auflösung
-        check(TgGate.mirrorOnly()) { "tgPlayUri wird nur im Mirror-Only-Modus verwendet." }
-        val msg: TdApi.Message = svc.getMessage(chatId, messageId)
-        val fileId = extractPrimaryFileId(msg)
-        require(fileId != null && fileId > 0) { "Konnte fileId aus TDLib.Message nicht extrahieren." }
-        return Uri.parse("tg://file/$fileId")
-    }
-
-    private fun extractPrimaryFileId(msg: TdApi.Message): Int? {
-        return when (val c = msg.content) {
-            is TdApi.MessageVideo -> c.video?.video?.id
-            is TdApi.MessageAudio -> c.audio?.audio?.id
-            is TdApi.MessageDocument -> c.document?.document?.id
-            is TdApi.MessageAnimation -> c.animation?.animation?.id
-            is TdApi.MessageVoiceNote -> c.voiceNote?.voice?.id
-            is TdApi.MessagePhoto -> c.photo?.sizes?.maxByOrNull { it.photo?.expectedSize ?: 0 }?.photo?.id
-            else -> null
-        }
-    }
 
     data class PlayRequest(
         val url: String,
@@ -127,32 +98,6 @@ object PlayUrlHelper {
     ): PlayRequest? {
         var resolvedContainerExt = item.containerExt
         val url = when {
-            item.source == "TG" && item.tgChatId != null && item.tgMessageId != null -> {
-                val svc = TelegramServiceClient(context.applicationContext)
-                if (TgGate.mirrorOnly()) {
-                    runCatching {
-                        tgPlayUri(item.tgChatId, item.tgMessageId, svc).toString()
-                    }.onFailure {
-                        android.util.Log.w(
-                            "PlayUrlHelper",
-                            "TG mirror failed for chatId=${item.tgChatId} messageId=${item.tgMessageId}: ${it.message}",
-                            it
-                        )
-                    }.getOrNull()
-                } else {
-                    runCatching {
-                        tgPlayUri(item.tgChatId, item.tgMessageId, svc).toString()
-                    }.getOrElse {
-                        android.util.Log.w(
-                            "PlayUrlHelper",
-                            "Fallback to tg://message for chatId=${item.tgChatId} messageId=${item.tgMessageId}: ${it.message}",
-                            it
-                        )
-                        "tg://message?chatId=${item.tgChatId}&messageId=${item.tgMessageId}"
-                    }
-                }
-            }
-
             // VOD with pre-set URL (e.g., from list/detail). If it's an Xtream movie URL, adjust extension to match known container.
             item.url != null -> {
                 val raw = item.url!!

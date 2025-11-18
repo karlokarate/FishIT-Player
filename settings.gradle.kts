@@ -37,4 +37,3 @@ rootProject.name = "FishITPlayer"
 
 // Modules
 include(":app")
-include(":libtd")

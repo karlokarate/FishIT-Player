@@ -6,7 +6,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.TransferListener
-import com.chris.m3usuite.tg.TgGate
 import java.io.IOException
 import java.util.Locale
 
@@ -14,16 +13,14 @@ import java.util.Locale
 class DelegatingDataSourceFactory(
     private val context: Context,
     private val fallback: DataSource.Factory,
-    private val telegramSourceFactory: () -> TelegramDataSource,
 ) : DataSource.Factory {
-    override fun createDataSource(): DataSource = DelegatingDataSource(context, fallback, telegramSourceFactory)
+    override fun createDataSource(): DataSource = DelegatingDataSource(context, fallback)
 }
 
 @UnstableApi
 private class DelegatingDataSource(
     private val context: Context,
     private val fallback: DataSource.Factory,
-    private val telegramSourceFactory: () -> TelegramDataSource,
 ) : DataSource {
 
     private var delegate: DataSource? = null
@@ -37,11 +34,6 @@ private class DelegatingDataSource(
     override fun open(dataSpec: DataSpec): Long {
         val scheme = dataSpec.uri.scheme?.lowercase(Locale.US)
         val target: DataSource = when {
-            scheme == "tg" -> {
-                require(TgGate.mirrorOnly()) { "tg:// Playback nur im Mirror-Only-Modus erlaubt." }
-                require(dataSpec.uri.host.equals("file", true)) { "Nur tg://file/<fileId> wird unterstützt." }
-                telegramSourceFactory.invoke()
-            }
             scheme == "rar" -> RarDataSource(context)
             else -> fallback.createDataSource()
         }

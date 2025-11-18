@@ -27,12 +27,6 @@ import com.chris.m3usuite.ui.screens.XtreamSettingsViewModel
 import com.chris.m3usuite.ui.screens.EpgSettingsViewModel
 import com.chris.m3usuite.ui.screens.GeneralSettingsViewModel
 
-// --- NEU: Entkoppelter Telegram-Block (MVVM) ---
-import com.chris.m3usuite.ui.models.telegram.TelegramSettingsViewModel as TgViewModel
-import com.chris.m3usuite.ui.models.telegram.TelegramProxyViewModel as TgProxyViewModel
-import com.chris.m3usuite.ui.models.telegram.TelegramAutoDownloadViewModel as TgAutoViewModel
-import com.chris.m3usuite.ui.models.telegram.TelegramSettingsSection
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -51,11 +45,6 @@ fun SettingsScreen(
     val xtreamVm: XtreamSettingsViewModel = viewModel(factory = XtreamSettingsViewModel.factory(app))
     val epgVm: EpgSettingsViewModel = viewModel(factory = EpgSettingsViewModel.factory(app))
     val generalVm: GeneralSettingsViewModel = viewModel(factory = GeneralSettingsViewModel.factory(app))
-
-    // --- Telegram VMs (NEU, entkoppelt) ---
-    val tgVm: TgViewModel = viewModel(factory = TgViewModel.Factory(app))
-    val tgProxyVm: TgProxyViewModel = viewModel(factory = TgProxyViewModel.Factory(app))
-    val tgAutoVm: TgAutoViewModel = viewModel(factory = TgAutoViewModel.Factory(app))
 
     // --- States (bestehend) ---
     val playerState by playerVm.state.collectAsStateWithLifecycle()
@@ -261,15 +250,6 @@ fun SettingsScreen(
                         onCheckedChange = { value -> generalVm.onToggleShowAdults(value) }
                     )
                 }
-            }
-
-            // --- Telegram (NEU: MVVM-Section komplett) ---
-            SettingsCard(title = "Telegram") {
-                TelegramSettingsSection(
-                    vm = tgVm,
-                    proxyVm = tgProxyVm,
-                    autoVm = tgAutoVm
-                )
             }
 
             Spacer(Modifier.height(24.dp))

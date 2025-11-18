@@ -38,7 +38,6 @@ import com.chris.m3usuite.ui.screens.SettingsScreen
 import com.chris.m3usuite.ui.screens.LiveDetailScreen
 import com.chris.m3usuite.ui.screens.PlaylistSetupScreen
 import com.chris.m3usuite.ui.screens.SeriesDetailScreen
-import com.chris.m3usuite.ui.screens.TelegramVideoDetailScreen
 import com.chris.m3usuite.ui.screens.XtreamPortalCheckScreen
 import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.auth.ProfileGate
@@ -297,35 +296,6 @@ class MainActivity : ComponentActivity() {
                                 if (current != "settings") {
                                     nav.navigate("settings") { launchSingleTop = true }
                                 }
-                            }
-                        )
-                    }
-
-                    composable("telegram/{chatId}/{messageId}") { back ->
-                        val chatId = back.arguments?.getString("chatId")?.toLongOrNull() ?: return@composable
-                        val messageId = back.arguments?.getString("messageId")?.toLongOrNull() ?: return@composable
-                        val mediaEncoded = abs((chatId shl 32) xor messageId) and Long.MAX_VALUE + 5_500_000_000_000L
-                        TelegramVideoDetailScreen(
-                            chatId = chatId,
-                            messageId = messageId,
-                            onLogo = {
-                                val current = nav.currentBackStackEntry?.destination?.route
-                                if (current != "library") {
-                                    nav.navigateTopLevel("library?q=&qs=")
-                                }
-                            },
-                            onOpenSearch = { nav.navigateTopLevel("library?qs=show") },
-                            onOpenSettings = {
-                                val current = nav.currentBackStackEntry?.destination?.route
-                                if (current != "settings") {
-                                    nav.navigate("settings") { launchSingleTop = true }
-                                }
-                            },
-                            openInternal = { url, startMs, mime ->
-                                val encoded = Uri.encode(url)
-                                val start = startMs ?: -1L
-                                val mimeArg = mime?.let { Uri.encode(it) } ?: ""
-                                nav.navigate("player?url=$encoded&type=vod&mediaId=$mediaEncoded&startMs=$start&mime=$mimeArg")
                             }
                         )
                     }

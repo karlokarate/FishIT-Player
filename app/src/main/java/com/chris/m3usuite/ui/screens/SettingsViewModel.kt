@@ -8,7 +8,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import com.chris.m3usuite.work.TelegramSyncWorker
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
