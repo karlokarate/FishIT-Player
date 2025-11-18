@@ -6,8 +6,8 @@ pluginManagement {
     }
     plugins {
         // --- Platform: pin plugin versions project-wide ---
-        id("com.android.application") version "8.7.3" apply false
-        id("com.android.library") version "8.7.3" apply false
+        id("com.android.application") version "8.5.2" apply false
+        id("com.android.library") version "8.5.2" apply false
 
         // Kotlin Gradle plugins (align with Kotlin 2.0.21 / Compose 1.9.x)
         kotlin("android") version "2.0.21" apply false
