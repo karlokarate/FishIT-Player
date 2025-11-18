@@ -301,6 +301,14 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    // Telegram Library - Dedicated screen for all Telegram content
+                    composable("telegram_library") {
+                        com.chris.m3usuite.ui.screens.TelegramLibraryScreen(
+                            navController = nav,
+                            onBack = { nav.popBackStack() }
+                        )
+                    }
+
                     composable("telegram/{chatId}/{messageId}") { back ->
                         val chatId = back.arguments?.getString("chatId")?.toLongOrNull() ?: return@composable
                         val messageId = back.arguments?.getString("messageId")?.toLongOrNull() ?: return@composable
@@ -429,6 +437,7 @@ class MainActivity : ComponentActivity() {
                             onGlobalSearch = {
                                 nav.navigateTopLevel("library?qs=show")
                             },
+                            onOpenTelegramLibrary = { nav.navigate("telegram_library") },
                             onOpenPortalCheck = { nav.navigate("xt_cfcheck") }
                         )
                     }

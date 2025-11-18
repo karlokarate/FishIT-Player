@@ -42,6 +42,7 @@ fun SettingsScreen(
     onOpenGate: (() -> Unit)? = null,
     onOpenXtreamCfCheck: (() -> Unit)? = null,
     onGlobalSearch: (() -> Unit)? = null,
+    onOpenTelegramLibrary: (() -> Unit)? = null,          // Navigation to Telegram Library
     app: Application = LocalContext.current.applicationContext as Application,
     onOpenPortalCheck: (() -> Unit)? = null,             // navigiert zu XtreamPortalCheckScreen
 ) {
@@ -80,6 +81,9 @@ fun SettingsScreen(
                     {}
                 },
                 actions = {
+                    onOpenTelegramLibrary?.let { handler ->
+                        TextButton(onClick = handler) { Text("Telegram") }
+                    }
                     onOpenProfiles?.let { handler ->
                         TextButton(onClick = handler) { Text("Profile") }
                     }
