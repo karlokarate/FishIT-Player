@@ -1,0 +1,195 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: "Build Type"
+        type: choice
+        required: true
+        default: "release"
+        options: [debug, release]
+      abis:
+        description: "Target ABIs"
+        type: choice
+        required: true
+        default: "both"
+        options: [both, arm64-v8a, armeabi-v7a]
+      sign_apk:
+        description: "Sign APK"
+        type: boolean
+        required: true
+        default: true
+      mirror_only:
+        description: "Mirror Mode (disables ObjectBox)"
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: build-apk-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:+UseParallelGC'"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          lfs: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3.2.2
+
+      - name: Install Android SDK packages
+        run: |
+          set -euxo pipefail
+          echo ">>> Accepting SDK licenses..."
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          echo ">>> Installing SDK packages..."
+          sdkmanager --no_https --update || true
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;35.0.0" || true
+          echo "SDK installation complete."
+
+      - name: Configure ABI splits
+        run: |
+          case "${{ github.event.inputs.abis }}" in
+            both)
+              echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a,armeabi-v7a" >> $GITHUB_ENV
+              echo "ORG_GRADLE_PROJECT_useSplits=true" >> $GITHUB_ENV
+              echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV
+              ;;
+            arm64-v8a)
+              echo "ORG_GRADLE_PROJECT_abiFilters=arm64-v8a" >> $GITHUB_ENV
+              echo "ORG_GRADLE_PROJECT_useSplits=true" >> $GITHUB_ENV
+              echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV
+              ;;
+            armeabi-v7a)
+              echo "ORG_GRADLE_PROJECT_abiFilters=armeabi-v7a" >> $GITHUB_ENV
+              echo "ORG_GRADLE_PROJECT_useSplits=true" >> $GITHUB_ENV
+              echo "ORG_GRADLE_PROJECT_universalApk=false" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: Decode Keystore
+        if: ${{ github.event.inputs.sign_apk == 'true' }}
+        env:
+          KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${KS_B64:-}" ]]; then
+            echo "::warning::Keystore secret is empty – skipping signing"
+            exit 0
+          fi
+
+          val="${KS_B64#base64:}"; val="${val#base64,}"
+          val="$(printf '%s' "$val" | tr -d ' \n\r\t')"
+
+          if printf '%s' "$val" | base64 -d > release.keystore 2>/dev/null; then
+            echo "Keystore decoded successfully"
+          else
+            echo "::error::Invalid Base64 in keystore secret"
+            exit 1
+          fi
+
+          if [[ -f release.keystore ]]; then
+            {
+              echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore"
+              echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}"
+              echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_SIGN_KEY_ALIAS || secrets.ANDROID_SIGNING_KEY_ALIAS }}"
+              echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}"
+            } >> "$GITHUB_ENV"
+          else
+            echo "::warning::Keystore not found – build will be UNSIGNED."
+          fi
+
+      - name: Configure Mirror Mode
+        run: |
+          if [[ "${{ github.event.inputs.mirror_only }}" == "true" ]]; then
+            echo "ORG_GRADLE_PROJECT_TG_OBX_ENABLED_DEFAULT=false" >> $GITHUB_ENV
+          else
+            echo "ORG_GRADLE_PROJECT_TG_OBX_ENABLED_DEFAULT=true" >> $GITHUB_ENV
+          fi
+
+      - name: Build APK
+        run: |
+          TASK=":app:assemble${{ github.event.inputs.build_type == 'release' && 'Release' || 'Debug' }}"
+          
+          ./gradlew $TASK \
+            -PabiFilters="${{ env.ORG_GRADLE_PROJECT_abiFilters }}" \
+            -PuniversalApk="${{ env.ORG_GRADLE_PROJECT_universalApk }}" \
+            -PuseSplits="${{ env.ORG_GRADLE_PROJECT_useSplits }}" \
+            -PTG_OBX_ENABLED_DEFAULT=${{ env.ORG_GRADLE_PROJECT_TG_OBX_ENABLED_DEFAULT }} \
+            --configuration-cache --build-cache --parallel \
+            --stacktrace --warning-mode all -x test
+
+      - name: Verify APK Signature
+        if: ${{ github.event.inputs.sign_apk == 'true' }}
+        run: |
+          find app/build/outputs/apk -type f -name "*.apk" -print0 | \
+            xargs -0 -I{} bash -c 'apksigner verify --verbose "{}" || true'
+
+      - name: Generate Checksums
+        run: |
+          find app/build/outputs/apk -type f -name "*.apk" -print0 | \
+            xargs -0 sha256sum > checksums.txt || true
+          echo "Build type: ${{ github.event.inputs.build_type }}"
+          echo "ABIs: ${{ github.event.inputs.abis }}"
+          echo "Signed: ${{ github.event.inputs.sign_apk }}"
+
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: FishIT-Player-${{ github.event.inputs.build_type }}-${{ github.event.inputs.abis }}
+          path: |
+            app/build/outputs/apk/**/*.apk
+            app/build/outputs/mapping/**/mapping.txt
+            checksums.txt
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Build Summary
+        if: always()
+        run: |
+          {
+            echo "## Build Summary"
+            echo ""
+            echo "**Build Type:** ${{ github.event.inputs.build_type }}"
+            echo "**ABIs:** ${{ github.event.inputs.abis }}"
+            echo "**Signed:** ${{ github.event.inputs.sign_apk }}"
+            echo "**Mirror Mode:** ${{ github.event.inputs.mirror_only }}"
+            echo ""
+            echo "### APKs"
+            find app/build/outputs/apk -type f -name "*.apk" | sed 's/^/- /' || echo "- (none found)"
+            echo ""
+            echo "### Checksums"
+            cat checksums.txt | sed 's/^/- /' || true
+          } >> "$GITHUB_STEP_SUMMARY"
