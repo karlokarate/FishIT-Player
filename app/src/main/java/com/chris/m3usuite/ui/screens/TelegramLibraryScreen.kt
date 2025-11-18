@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.chris.m3usuite.core.http.RequestHeadersProvider
 import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.data.obx.toMediaItem
@@ -275,10 +276,10 @@ private fun TelegramChatMovieRow(
                 // Get chat title
                 telegramRepo.chatTitle(chatId)?.let { chatTitle = it }
                 
-                // Load movies from this chat
-                val pager = telegramRepo.pagerForChat(chatId)
-                // For now, load first page
-                items = pager.flow.first().map { it.toMediaItem(ctx) }
+                // Load movies from this chat (load first batch directly from search)
+                items = telegramRepo.searchAllVideos("", limit = 60)
+                    .filter { it.tgChatId == chatId }
+                    .map { it.toMediaItem(ctx) }
             } catch (t: Throwable) {
                 com.chris.m3usuite.core.debug.GlobalDebug.log("TgLibrary", "Failed to load chat $chatId: ${t.message}")
             } finally {
