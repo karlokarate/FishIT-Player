@@ -7,13 +7,10 @@ on:
         description: "Release tag (leave empty for auto-generation)"
         required: false
         default: ""
-  workflow_run:
-    workflows: ["TDLib - Android Java (prebuilt BoringSSL, validated, doc-conform)"]
-    types:
-      - completed
-    branches:
-      - main
-      - master
+      standart_run_id:
+        description: "Run ID from Standart.yml workflow (leave empty to use latest)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -22,10 +19,10 @@ permissions:
 jobs:
   build-aar:
     runs-on: ubuntu-24.04
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     timeout-minutes: 30
     env:
       RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+      STANDART_RUN_ID: ${{ github.event.inputs.standart_run_id }}
       
     steps:
       - name: Checkout repository
@@ -42,22 +39,41 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v3
 
-      - name: Download TDLib artifacts (workflow_dispatch mode)
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/download-artifact@v4
-        with:
-          path: .artifacts
-          pattern: tdlib-*
-          merge-multiple: false
+      - name: Determine Standart.yml run ID
+        id: determine_run
+        run: |
+          set -euo pipefail
+          
+          if [ -n "${{ env.STANDART_RUN_ID }}" ]; then
+            RUN_ID="${{ env.STANDART_RUN_ID }}"
+            echo "Using provided run ID: $RUN_ID"
+          else
+            echo "Fetching latest successful Standart.yml run..."
+            RUN_ID=$(gh run list \
+              --workflow "Standart.yml" \
+              --status success \
+              --limit 1 \
+              --json databaseId \
+              --jq '.[0].databaseId')
+            
+            if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+              echo "::error ::No successful Standart.yml run found"
+              exit 1
+            fi
+            echo "Found latest run ID: $RUN_ID"
+          fi
+          
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download TDLib artifacts (workflow_run mode)
-        if: github.event_name == 'workflow_run'
+      - name: Download TDLib artifacts from Standart.yml run
         uses: dawidd6/action-download-artifact@v6
         with:
-          run_id: ${{ github.event.workflow_run.id }}
+          run_id: ${{ steps.determine_run.outputs.run_id }}
           path: .artifacts
           name_is_regexp: true
-          name: tdlib-.*
+          name: "tdlib-.*"
           if_no_artifact_found: fail
 
       - name: Prepare libtd module structure
