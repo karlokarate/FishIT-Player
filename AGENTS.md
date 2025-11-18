@@ -91,7 +91,7 @@ Codex – Operating Rules (override)
 - Cross‑platform builds: Codex uses Linux/WSL for builds/tests via Gradle wrapper while keeping settings compatible with Windows. Ensure no corruption of Windows‑side project files.
  - WSL build files: Projektstamm enthält Linux‑spezifische Ordner für Build/Tests: `.wsl-android-sdk`, `.wsl-gradle`, `.wsl-java-17`. Optional: `.wsl-cmake` (portable CMake), `.wsl-gperf` (portable gperf). Codex verwendet diese Ordner unter WSL; Windows‑seitige Einstellungen bleiben kompatibel.
 - Tooling upgrades: If Codex needs additional tools or configuration to work better, it informs the user and, where possible, sets them up itself; otherwise it provides clear, copy‑pastable step‑by‑step commands for the user to establish the optimal environment.
-- TDLib pinning: TDLib (JNI + Java bindings) is pinned to a specific upstream tag for reproducibility. The build script `scripts/tdlib-build-arm64.sh` checks out the tag and copies `TdApi.java`/`Client.java` from TDLib’s `example/java` into `libtd/src/main/java/org/drinkless/tdlib/`. Default pin: `v1.8.0` (the latest upstream tag as of now; override via env `TD_TAG`/`TD_COMMIT` or CLI `--ref <tag|commit>`). `Log.java` stays local to match JNI signatures.
+- TDLib integration (2025-11-18): The project now uses `dev.g000sha256:tdl-coroutines:5.0.0` from Maven Central, which bundles TDLib v1.8.56 with Kotlin Coroutine support for Android. The libtd module and all TDLib build scripts have been removed. CI uses a single build-apk.yml workflow instead of 12 TDLib build variants.
 
 Sandbox/WSL – Agent Execution Rules (Best Effort)
 - Repo‑local tools only: never use `sudo` or modify system config. Install portable binaries under `.wsl-*` and prefer them in `PATH`.

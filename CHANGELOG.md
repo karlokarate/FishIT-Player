@@ -1,3 +1,21 @@
+2025-11-18 (tdl-coroutines integration)
+- feat(deps): Migrate from custom TDLib builds to tdl-coroutines library v5.0.0
+  from Maven Central, which bundles TDLib v1.8.56 with Kotlin Coroutine support
+  for Android (arm64-v8a, armeabi-v7a). This eliminates the need for custom
+  TDLib compilation and simplifies dependency management.
+- chore(build): Remove libtd module and all TDLib build scripts
+  (build-tdlib-*.sh, tdlib-*.sh, setup-wsl-*.sh). The project now uses
+  tdl-coroutines directly from Maven Central.
+- chore(ci): Replace 12 TDLib build workflows (tdlib_android.yml,
+  tdlib_official.yml, Final_tdlib.yml, aar.yml, android-build*.yml, etc.) with
+  a single simple build-apk.yml workflow that builds signed APKs for arm64-v8a,
+  armeabi-v7a, or both architectures on demand.
+- chore(ci): Keep only essential workflows: build-apk.yml (main build),
+  codex-*.yml (3 files), android-quality.yml, and validate.yml.
+- fix(build): Update to AGP 8.5.2 and Kotlin 2.0.21 for stability and
+  compatibility with Gradle 8.13.
+- chore(build): Remove obsolete verifyTdlib gradle task from root build.gradle.kts.
+
 2025-11-24
 - fix(ci): Standart workflow runs a host `prepare_cross_compiling` pass to
   emit the TDLib `td_api_*.cpp` auto-sources before the Android builds start,

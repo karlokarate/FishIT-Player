@@ -3,6 +3,12 @@
 
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-11-18 (tdl-coroutines): TDLib wird jetzt über die
+  tdl-coroutines-Bibliothek (v5.0.0) aus Maven Central integriert, die
+  TDLib v1.8.56 mit Kotlin-Coroutine-Support bündelt. Der libtd-Modul und
+  alle TDLib-Build-Workflows wurden entfernt. Ein neuer, einfacher
+  build-apk.yml-Workflow ersetzt 12 alte Build-Varianten und baut signierte
+  APKs für arm64-v8a, armeabi-v7a oder beide Architekturen.
 - Maintenance 2025-11-24: Standart-Workflow führt den hostseitigen
   `prepare_cross_compiling`-Lauf wieder explizit aus, damit die TDLib
   `td_api_*.cpp`-Autos vor dem Android-Matrix-Build entstehen und clang++
