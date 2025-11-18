@@ -106,8 +106,6 @@ import android.widget.Toast
 import android.os.Build
 import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
-import com.chris.m3usuite.player.datasource.TelegramDataSource
-import com.chris.m3usuite.telegram.service.TelegramServiceClient
 
 /**
  * Interner Player (Media3) mit:
@@ -233,18 +231,15 @@ fun InternalPlayerScreen(
         }
         baseFactory
     }
-    // Detect telegram early and prepare a low-RAM allocator (shared with player listeners below)
-    val isTelegramContent = remember(url) { url.startsWith("tg://", ignoreCase = true) }
+    // Use smaller allocator for 32-bit devices
     val is32BitDevice = remember { try { Build.SUPPORTED_64_BIT_ABIS.isEmpty() } catch (_: Throwable) { true } }
-    val allocator = remember(isTelegramContent, is32BitDevice) {
-        androidx.media3.exoplayer.upstream.DefaultAllocator(/* trimOnReset = */ true, /* segmentSize = */ if (isTelegramContent || is32BitDevice) 16 * 1024 else 64 * 1024)
+    val allocator = remember(is32BitDevice) {
+        androidx.media3.exoplayer.upstream.DefaultAllocator(/* trimOnReset = */ true, /* segmentSize = */ if (is32BitDevice) 16 * 1024 else 64 * 1024)
     }
 
-    val telegramServiceClient = remember(ctx) { TelegramServiceClient(ctx.applicationContext) }
-
-    val dataSourceFactory = remember(httpFactory, ctx, telegramServiceClient) {
+    val dataSourceFactory = remember(httpFactory, ctx) {
         val base = DefaultDataSource.Factory(ctx, httpFactory)
-        DelegatingDataSourceFactory(ctx, base) { TelegramDataSource(telegramServiceClient) }
+        DelegatingDataSourceFactory(ctx, base)
     }
 
     val preferredVideoMimeTypes = remember {
@@ -292,20 +287,7 @@ fun InternalPlayerScreen(
     val session = remember(url, headers, dataSourceFactory, mimeType, trackSelector) {
         val renderers = PlayerComponents.renderersFactory(ctx)
 
-        val loadControl = if (isTelegramContent) {
-            // Keep RAM small; rely on TDLib on-disk caching while downloading
-            DefaultLoadControl.Builder()
-                .setAllocator(allocator)
-                .setBufferDurationsMs(
-                    /* minBufferMs = */ 2_000,
-                    /* maxBufferMs = */ 5_000,
-                    /* bufferForPlaybackMs = */ 1_000,
-                    /* bufferForPlaybackAfterRebufferMs = */ 2_000
-                )
-                .setTargetBufferBytes(2 * 1024 * 1024) // ~2 MiB target buffer
-                .setBackBuffer(0, false)
-                .build()
-        } else DefaultLoadControl.Builder()
+        val loadControl = DefaultLoadControl.Builder()
             .setAllocator(allocator)
             .setTargetBufferBytes(6 * 1024 * 1024) // small target to avoid large pools on low-RAM devices
             .build()

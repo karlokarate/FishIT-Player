@@ -4,43 +4,18 @@ import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
-import com.chris.m3usuite.tg.TgGate
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
-import androidx.work.ExistingPeriodicWorkPolicy
 
 /**
  * Central gateway for app background scheduling.
  * Ensures unique names, consistent policies, and simple entry points.
  */
 object SchedulingGateway {
-    data class TelegramSyncResult(
-        val moviesAdded: Int,
-        val seriesAdded: Int,
-        val episodesAdded: Int
-    )
-
-    sealed class TelegramSyncState {
-        object Idle : TelegramSyncState()
-        data class Running(val mode: String, val processedChats: Int, val totalChats: Int) : TelegramSyncState()
-        data class Success(val mode: String, val result: TelegramSyncResult) : TelegramSyncState()
-        data class Failure(val mode: String, val error: String) : TelegramSyncState()
-    }
-
     const val NAME_XTREAM_REFRESH = "xtream_refresh"
     const val NAME_XTREAM_ENRICH  = "xtream_enrich"
     const val NAME_EPG_REFRESH    = "epg_refresh"
     const val NAME_SCREEN_RESET   = "screen_time_daily_reset_once"
-    const val NAME_TG_SYNC_VOD    = "tg_sync_vod"
-    const val NAME_TG_SYNC_SERIES = "tg_sync_series"
-    const val NAME_TG_SYNC_ALL    = "tg_sync_all"
     const val NAME_XTREAM_DELTA   = "xtream_delta_import"
-
-    private val telegramSyncStateInternal = MutableStateFlow<TelegramSyncState>(TelegramSyncState.Idle)
-    val telegramSyncState: StateFlow<TelegramSyncState> = telegramSyncStateInternal.asStateFlow()
 
     fun scheduleAll(ctx: Context) {
         // Intentionally do NOT schedule Xtream delta periodic.
@@ -48,11 +23,6 @@ object SchedulingGateway {
         cancelXtreamWork(ctx)
         // EPG periodic refresh removed; lazy on-demand prefetch handles freshness
         scheduleScreenTimeReset(ctx)
-        if (TgGate.mirrorOnly()) {
-            cancelTelegramWork(ctx)
-        } else {
-            TelegramCacheCleanupWorker.schedule(ctx)
-        }
         ObxKeyBackfillWorker.scheduleOnce(ctx)
     }
 
@@ -96,8 +66,6 @@ object SchedulingGateway {
         val wm = WorkManager.getInstance(ctx)
         // Xtream related
         cancelXtreamWork(ctx)
-        // Telegram cleanup/sync (safe to cancel and re-schedule later)
-        cancelTelegramWork(ctx)
         // Screen time daily reset (safe to re-schedule)
         runCatching { wm.cancelUniqueWork(NAME_SCREEN_RESET) }
         // OBX key backfill (safe to re-run later)
@@ -105,13 +73,8 @@ object SchedulingGateway {
     }
 
     fun resumeSafeBackgroundWork(ctx: Context) {
-        // Resume daily reset, Telegram cleanup, and OBX backfill as one-shots/periodic
+        // Resume daily reset and OBX backfill as one-shots/periodic
         runCatching { ScreenTimeResetWorker.schedule(ctx) }
-        if (TgGate.mirrorOnly()) {
-            cancelTelegramWork(ctx)
-        } else {
-            runCatching { TelegramCacheCleanupWorker.schedule(ctx) }
-        }
         runCatching { ObxKeyBackfillWorker.scheduleOnce(ctx) }
         // Xtream seeding is coordinated via XtreamSeeder; no periodic work scheduled here
     }
@@ -123,63 +86,6 @@ object SchedulingGateway {
         policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE
     ) {
         WorkManager.getInstance(ctx).enqueueUniqueWork(uniqueName, policy, req)
-    }
-
-    fun scheduleTelegramSync(ctx: Context, mode: String, refreshHome: Boolean = false) {
-        if (TgGate.mirrorOnly()) {
-            cancelTelegramWork(ctx)
-            notifyTelegramSyncIdle()
-        } else {
-            TelegramSyncWorker.scheduleNow(ctx, mode, refreshHome)
-        }
-    }
-
-    fun onTelegramSyncCompleted(ctx: Context, refreshHomeChrome: Boolean) {
-        if (TgGate.mirrorOnly()) {
-            cancelTelegramWork(ctx)
-        } else {
-            runCatching { TelegramCacheCleanupWorker.schedule(ctx) }
-        }
-        runCatching { ObxKeyBackfillWorker.scheduleOnce(ctx) }
-        if (refreshHomeChrome) {
-            scheduleAll(ctx)
-        }
-    }
-
-    fun notifyTelegramSyncStarted(mode: String, totalChats: Int) {
-        telegramSyncStateInternal.value = TelegramSyncState.Running(mode, 0, totalChats)
-    }
-
-    fun notifyTelegramSyncProgress(mode: String, processedChats: Int, totalChats: Int) {
-        val clamped = processedChats.coerceAtLeast(0)
-        telegramSyncStateInternal.value = TelegramSyncState.Running(mode, clamped, totalChats)
-    }
-
-    fun notifyTelegramSyncCompleted(mode: String, result: TelegramSyncResult) {
-        telegramSyncStateInternal.value = TelegramSyncState.Success(mode, result)
-    }
-
-    fun notifyTelegramSyncFailed(mode: String, error: String) {
-        telegramSyncStateInternal.value = TelegramSyncState.Failure(mode, error)
-    }
-
-    fun notifyTelegramSyncIdle() {
-        telegramSyncStateInternal.value = TelegramSyncState.Idle
-    }
-
-    fun acknowledgeTelegramSync() {
-        val state = telegramSyncStateInternal.value
-        if (state !is TelegramSyncState.Running) {
-            telegramSyncStateInternal.value = TelegramSyncState.Idle
-        }
-    }
-
-    fun cancelTelegramWork(ctx: Context) {
-        val wm = WorkManager.getInstance(ctx)
-        runCatching { TelegramCacheCleanupWorker.cancel(ctx) }
-        runCatching { wm.cancelUniqueWork(NAME_TG_SYNC_VOD) }
-        runCatching { wm.cancelUniqueWork(NAME_TG_SYNC_SERIES) }
-        runCatching { wm.cancelUniqueWork(NAME_TG_SYNC_ALL) }
     }
 
     suspend fun refreshFavoritesEpgNow(ctx: Context, aggressive: Boolean = false): Boolean {
