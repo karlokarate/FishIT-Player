@@ -38,3 +38,4 @@ rootProject.name = "FishITPlayer"
 // Modules
 include(":app")
 include(":libtd")
+include(":telegram-core")
