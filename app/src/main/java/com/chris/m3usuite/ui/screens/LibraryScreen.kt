@@ -50,11 +50,7 @@ import com.chris.m3usuite.ui.layout.FishRow
 import com.chris.m3usuite.ui.layout.FishRowPaged
 import com.chris.m3usuite.ui.layout.LiveFishTile
 import com.chris.m3usuite.ui.layout.SeriesFishTile
-import com.chris.m3usuite.ui.layout.TelegramFishTile
 import com.chris.m3usuite.ui.layout.VodFishTile
-import com.chris.m3usuite.ui.layout.primaryTelegramPoster
-import com.chris.m3usuite.telegram.live.TelegramLiveRepository
-import com.chris.m3usuite.telegram.service.TelegramServiceClient
 import com.chris.m3usuite.ui.util.AppImageLoader
 import com.chris.m3usuite.ui.util.rememberImageHeaders
 import kotlinx.coroutines.Dispatchers
@@ -97,9 +93,6 @@ fun LibraryScreen(
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
     val repo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
-    val telegramLiveRepo = remember { TelegramLiveRepository(ctx) }
-    val telegramServiceClient = remember { TelegramServiceClient(ctx.applicationContext) }
-    val tgChatsCsv by store.tgSelectedChatsCsv.collectAsStateWithLifecycle(initialValue = "")
     val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
     val resumeRepo = remember { com.chris.m3usuite.data.repo.ResumeRepository(ctx) }
     val permRepo = remember { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
@@ -134,23 +127,6 @@ fun LibraryScreen(
             }
         }
     )
-    val telegramHeaders = remember { com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store) }
-    val openTelegramDetail: (MediaItem) -> Unit = remember(navController, openVod, openSeries) {
-        { item ->
-            val normalizedType = item.type.lowercase(Locale.getDefault())
-            when (normalizedType) {
-                "series" -> openSeries(item.id)
-                "vod" -> openVod(item.id)
-                else -> {
-                    val chat = item.tgChatId
-                    val message = item.tgMessageId
-                    if (chat != null && message != null) {
-                        navController.navigate("telegram/$chat/$message")
-                    }
-                }
-            }
-        }
-    }
 
     // UiState for library content (combined): Loading until first load; Empty when no groups/rows; Success otherwise
     var uiState by remember { mutableStateOf<com.chris.m3usuite.ui.state.UiState<Unit>>(com.chris.m3usuite.ui.state.UiState.Loading) }
@@ -386,128 +362,6 @@ fun LibraryScreen(
         }
     }
 
-    // --- Telegram Rows (extra, per chat) ---
-    @Composable
-    fun TelegramSection(tab: ContentTab) {
-        val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
-        if (!tgEnabled) return
-        val chatIds = remember(tab, tgEnabled, tgChatsCsv) {
-            if (!tgEnabled) emptyList()
-            else tgChatsCsv.split(',').mapNotNull { it.trim().toLongOrNull() }.distinct()
-        }
-        if (chatIds.isEmpty()) return
-
-        val ctx = LocalContext.current
-        val imageHeaders = rememberImageHeaders()
-        val telegramPrefetcher: OnPrefetchPaged = remember(ctx, imageHeaders) {
-            { indices, items ->
-                val posters = indices.mapNotNull { idx -> items[idx]?.primaryTelegramPoster() }
-                if (posters.isNotEmpty()) {
-                    AppImageLoader.preload(ctx, posters, imageHeaders)
-                }
-            }
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            chatIds.forEachIndexed { index, chatId ->
-                val pager = remember(chatId) { telegramLiveRepo.pagerForChat(chatId) }
-                val pagingItems = pager.flow.collectAsLazyPagingItems()
-                val refreshState = pagingItems.loadState.refresh
-                val isRefreshing = refreshState is LoadState.Loading
-                if (!isRefreshing && pagingItems.itemCount == 0) return@forEachIndexed
-
-                var chatTitle by remember(chatId) { mutableStateOf("Telegram ${chatId}") }
-                LaunchedEffect(chatId, tgEnabled) {
-                    if (tgEnabled) {
-                        telegramLiveRepo.chatTitle(chatId)?.let { chatTitle = it }
-                    }
-                }
-
-                val stateKey = "lib:tg:${tab.name.lowercase(Locale.getDefault())}:$chatId"
-                FishRowPaged(
-                    items = pagingItems,
-                    stateKey = stateKey,
-                    edgeLeftExpandChrome = false,
-                    onPrefetchPaged = telegramPrefetcher,
-                    header = FishHeaderData.Text(
-                        anchorKey = stateKey,
-                        text = "Telegram – ${chatTitle}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White
-                    )
-                ) { _, media ->
-                    TelegramFishTile(
-                        media = media,
-                        onOpenDetails = openTelegramDetail,
-                        onPlay = { mi ->
-                            scope.launch {
-                                val chat = mi.tgChatId ?: return@launch
-                                val message = mi.tgMessageId ?: return@launch
-                                val tgUrl = runCatching {
-                                    PlayUrlHelper.tgPlayUri(
-                                        chatId = chat,
-                                        messageId = message,
-                                        svc = telegramServiceClient
-                                    ).toString()
-                                }.getOrElse { err ->
-                                    android.util.Log.w(
-                                        "LibraryScreen",
-                                        "tgPlayUri failed chatId=$chat messageId=$message: ${err.message}"
-                                    )
-                                    return@launch
-                                }
-                                playbackLauncher.launch(
-                                    com.chris.m3usuite.playback.PlayRequest(
-                                        type = mi.type.ifBlank { "vod" },
-                                        mediaId = mi.id,
-                                        url = tgUrl,
-                                        headers = telegramHeaders,
-                                        title = mi.name
-                                    )
-                                )
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun TelegramAggregatedSeriesSection(
-        onOpenDetails: (MediaItem) -> Unit,
-        onPlayDirect: (MediaItem) -> Unit,
-        onAssignToKid: ((MediaItem) -> Unit)?
-    ) {
-        val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
-        if (!tgEnabled) return
-        var items by remember(tgEnabled, resumeTick, cacheVersion) { mutableStateOf<List<MediaItem>>(emptyList()) }
-        LaunchedEffect(tgEnabled, resumeTick, cacheVersion) {
-            if (!tgEnabled) return@LaunchedEffect
-            items = withContext(Dispatchers.IO) {
-                repo.seriesByProviderKeyNewest("telegram", 0, 120).map { it.toMediaItem(ctx) }
-            }
-        }
-        if (items.isEmpty()) return
-        val stateKey = "lib:tg:series:aggregated"
-        libraryMediaRow(
-            tab = ContentTab.Series,
-            items = items,
-            stateKey = stateKey,
-            edgeLeftExpandChrome = false,
-            initialFocusEligible = true,
-            allowAssign = canEditWhitelist,
-            header = FishHeaderData.Text(
-                anchorKey = stateKey,
-                text = "Telegram Serien",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White
-            ),
-            onOpenDetails = onOpenDetails,
-            onPlayDirect = onPlayDirect,
-            onAssignToKid = onAssignToKid
-        )
-    }
 
     suspend fun loadItemsForGenre(tab: ContentTab, key: String): List<MediaItem> = withContext(Dispatchers.IO) {
         genreCache[key] ?: run {
@@ -1382,24 +1236,6 @@ fun LibraryScreen(
                             },
                             showAssign = canEditWhitelist && selectedTab != ContentTab.Live
                         )
-                    }
-                }
-
-                // Telegram aggregated series row (built from OBX), only on Series tab and outside search
-                if (query.text.isBlank() && selectedTab == ContentTab.Series) {
-                    item {
-                        TelegramAggregatedSeriesSection(
-                            onOpenDetails = onOpen,
-                            onPlayDirect = onPlay,
-                            onAssignToKid = onAssignSeries
-                        )
-                    }
-                }
-
-                // Telegram extra rows (per selected chat) only for VOD; Series uses a single aggregated row
-                if (query.text.isBlank() && selectedTab == ContentTab.Vod) {
-                    item {
-                        TelegramSection(selectedTab)
                     }
                 }
             }
