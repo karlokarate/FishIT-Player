@@ -26,12 +26,13 @@ jobs:
 
   java_bindings:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: read
     env:
       TD_SRC_DIR: td
       TD_REF: ""
+      TD_HOST_PREFIX: td-host
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,7 +43,9 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y ninja-build cmake git curl unzip zstd openjdk-17-jdk gperf file python3 php-cli build-essential
+          sudo apt-get install -y \
+            ninja-build cmake git curl unzip zstd \
+            openjdk-17-jdk gperf file python3 php-cli build-essential
 
       - name: Fetch TDLib sources
         run: |
@@ -54,101 +57,82 @@ jobs:
             git checkout "$TD_REF" || true
           fi
 
-      - name: Build generator (host)
-        id: gen
+      - name: Build & install host TDLib (generator + schema)
+        id: host
         run: |
           set -euo pipefail
-          cmake -G Ninja -S "$TD_SRC_DIR" -B build-host \
-            -DCMAKE_BUILD_TYPE=Release -DTD_ENABLE_TESTS=OFF -DTD_ENABLE_JNI=OFF -DTD_ENABLE_JAVA=OFF
-          cmake --build build-host --target td_generate_java_api -- -j 2
 
-          GEN_BIN=""
-          for p in build-host/td/bin/td_generate_java_api build-host/td/generate/td_generate_java_api; do
-            [ -x "$p" ] && GEN_BIN="$p" && break
-          done
-          [ -z "$GEN_BIN" ] && GEN_BIN="$(find build-host -type f -perm -111 -name td_generate_java_api -print -quit || true)"
-          if [ -z "$GEN_BIN" ]; then
-            echo "::group::targets"; ninja -C build-host -t targets all || true; echo "::endgroup::"
-            echo "::group::tree"; ls -R build-host | sed 's/^/  /'; echo "::endgroup::"
-            echo "::error ::td_generate_java_api not found after build"
+          PREFIX="$GITHUB_WORKSPACE/$TD_HOST_PREFIX"
+          BUILD_DIR="$GITHUB_WORKSPACE/build-host"
+
+          cmake -G Ninja -S "$TD_SRC_DIR" -B "$BUILD_DIR" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+            -DTD_ENABLE_TESTS=OFF \
+            -DTD_ENABLE_JNI=OFF \
+            -DTD_ENABLE_JAVA=OFF
+
+          cmake --build "$BUILD_DIR" -- -j"$(nproc)"
+          cmake --install "$BUILD_DIR"
+
+          GEN_BIN="$PREFIX/bin/td_generate_java_api"
+          SCHEMA="$PREFIX/bin/td/generate/scheme/td_api.tlo"
+
+          if [ ! -x "$GEN_BIN" ]; then
+            echo "::error ::td_generate_java_api not found at $GEN_BIN"
             exit 60
           fi
-
-          # Versuche .tlo zu erzeugen: tl_generate_c -> generate_c -> prepare_cross_compiling
-          ninja -C build-host -t targets all | sed 's/^/  /' || true
-          if ninja -C build-host -t targets | grep -q '^tl_generate_c:'; then
-            cmake --build build-host --target tl_generate_c -- -j 2 || true
-          elif ninja -C build-host -t targets | grep -q '^generate_c:'; then
-            cmake --build build-host --target generate_c -- -j 2 || true
-          elif ninja -C build-host -t targets | grep -q '^prepare_cross_compiling:'; then
-            cmake --build build-host --target prepare_cross_compiling -- -j 2 || true
-          fi
-
-          echo "gen_bin=$GEN_BIN" >> "$GITHUB_OUTPUT"
-
-      - name: Generate TdApi.java
-        run: |
-          set -euo pipefail
-          GEN_BIN="${{ steps.gen.outputs.gen_bin }}"
-          PACKAGE="org/drinkless/tdlib"
-          OUT_ROOT="build-host/java-bindings"
-          OUT_DIR="$OUT_ROOT/$PACKAGE"
-          mkdir -p "$OUT_DIR"
-
-          # 1) .tlo bevorzugen
-          TLO_FILE="$(find build-host -type f -name 'td_api.tlo' -print -quit || true)"
-          # 2) Fallback: Source-Tree (selten)
-          [ -z "$TLO_FILE" ] && TLO_FILE="$(find "$TD_SRC_DIR" -type f -name 'td_api.tlo' -print -quit || true)"
-          # 3) .tl als allerletzter Fallback (kann mit manchen Generatoren scheitern)
-          TL_FILE="$(find "$TD_SRC_DIR" -type f -path '*/td/generate/scheme/td_api.tl' -print -quit || true)"
-
-          SCHEMA=""
-          if [ -n "$TLO_FILE" ]; then
-            SCHEMA="$TLO_FILE"
-          elif [ -n "$TL_FILE" ]; then
-            SCHEMA="$TL_FILE"
-          fi
-
-          if [ -z "$SCHEMA" ]; then
-            echo "::group::debug-locate-schema"
-            find build-host -type f -name 'td_api.*' -maxdepth 6 -print || true
-            find "$TD_SRC_DIR" -type f -name 'td_api.*' -maxdepth 6 -print || true
+          if [ ! -f "$SCHEMA" ]; then
+            echo "::error ::td_api.tlo not found at $SCHEMA"
+            echo "::group::debug-schema"
+            find "$PREFIX" -maxdepth 6 -type f -name 'td_api.tlo' -print || true
             echo "::endgroup::"
-            echo "::error ::No td_api.tlo/.tl schema found"
             exit 61
           fi
 
-          set +e
+          echo "gen_bin=$GEN_BIN"   >> "$GITHUB_OUTPUT"
+          echo "schema=$SCHEMA"     >> "$GITHUB_OUTPUT"
+          echo "host_prefix=$PREFIX" >> "$GITHUB_OUTPUT"
+
+      - name: Generate TdApi.java (official generator)
+        run: |
+          set -euo pipefail
+
+          GEN_BIN="${{ steps.host.outputs.gen_bin }}"
+          SCHEMA="${{ steps.host.outputs.schema }}"
+          HOST_PREFIX="${{ steps.host.outputs.host_prefix }}"
+
+          PACKAGE="org/drinkless/tdlib"
+          OUT_ROOT="$HOST_PREFIX/java-bindings"
+          OUT_DIR="$OUT_ROOT/$PACKAGE"
+
+          # Erwartete Struktur vorab anlegen (aus deinem Ubuntu-Fehler gelernt)
+          mkdir -p "$OUT_DIR"
+
+          echo "Using generator: $GEN_BIN"
+          echo "Using schema:   $SCHEMA"
+          echo "JAVA_ROOT:      $OUT_ROOT"
+          echo "PACKAGE:        $PACKAGE"
+
+          # Generator wird aus dem TDLib-Source-Root aufgerufen
+          cd "$TD_SRC_DIR"
+
           "$GEN_BIN" TdApi "$SCHEMA" "$OUT_ROOT" "$PACKAGE"
-          rc=$?
-          # Wenn mit .tl gescheitert aber .tlo vorhanden ist: nochmal mit .tlo
-          if [ $rc -ne 0 ] && [ "$SCHEMA" = "$TL_FILE" ] && [ -n "$TLO_FILE" ]; then
-            "$GEN_BIN" TdApi "$TLO_FILE" "$OUT_ROOT" "$PACKAGE"
-            rc=$?
-          fi
-          set -e
-          if [ $rc -ne 0 ]; then
-            echo "::error ::td_generate_java_api failed (schema=$SCHEMA)"
-            exit 63
-          fi
 
-          # Optional Javadoc
           JAVA_FILE="$OUT_DIR/TdApi.java"
-          JDOC_PHP="$(find "$TD_SRC_DIR" -type f -name 'JavadocTlDocumentationGenerator.php' -print -quit || true)"
-          if command -v php >/dev/null 2>&1 && [ -n "$TL_FILE" ] && [ -f "$JAVA_FILE" ] && [ -f "$JDOC_PHP" ]; then
-            php "$JDOC_PHP" "$TL_FILE" "$JAVA_FILE" || echo "::notice ::Javadoc generation skipped (php error)"
-          else
-            echo "::notice ::Skipping TdApi Javadoc (php or script missing)"
+          if [ ! -s "$JAVA_FILE" ]; then
+            echo "::error ::TdApi.java was not created at $JAVA_FILE"
+            ls -la "$OUT_DIR" || true
+            exit 62
           fi
 
-          test -s "$JAVA_FILE" || { echo "::error ::TdApi.java not created"; exit 62; }
-          echo "Generated $JAVA_FILE"
+          echo "Generated TdApi.java at $JAVA_FILE"
 
       - name: Upload TdApi.java
         uses: actions/upload-artifact@v4
         with:
           name: tdlib-java-bindings
-          path: build-host/java-bindings/org/drinkless/tdlib/TdApi.java
+          path: ${{ steps.host.outputs.host_prefix }}/java-bindings/org/drinkless/tdlib/TdApi.java
           if-no-files-found: error
           retention-days: 14
 
