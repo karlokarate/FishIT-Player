@@ -78,12 +78,23 @@ jobs:
       - name: Document quality & diagnostics tasks for Copilot
         run: |
           echo "Available Gradle quality tasks Copilot should use, e.g.:"           >  COPILOT_TASK_HINTS.md
-          echo "- ./gradlew lintDebug"                                            >> COPILOT_TASK_HINTS.md
-          echo "- ./gradlew detekt"                                               >> COPILOT_TASK_HINTS.md
-          echo "- ./gradlew ktlintCheck"                                          >> COPILOT_TASK_HINTS.md
-          echo "- ./gradlew testDebugUnitTest"                                    >> COPILOT_TASK_HINTS.md
-          echo "- ./gradlew connectedDebugAndroidTest (falls Device/Emu verfügbar)" >> COPILOT_TASK_HINTS.md
-          echo "- ./gradlew :app:compileDebugAndroidTestSources"                  >> COPILOT_TASK_HINTS.md
-          echo "- ./gradlew :app:assembleDebug"                                   >> COPILOT_TASK_HINTS.md
-          echo "For TDLib builds use the existing TDLib workflows/scripts."       >> COPILOT_TASK_HINTS.md
+          echo ""                                                                   >> COPILOT_TASK_HINTS.md
+          echo "## Build Tasks"                                                     >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew :app:assembleDebug          # Build debug APK"         >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew :app:assembleRelease        # Build release APK"       >> COPILOT_TASK_HINTS.md
+          echo ""                                                                   >> COPILOT_TASK_HINTS.md
+          echo "## Quality & Linting Tasks"                                         >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew lintDebug                   # Android Lint (TV checks)">> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew detekt                      # Kotlin code smells"      >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew ktlintCheck                 # Kotlin code style"       >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew ktlintFormat                # Auto-format Kotlin"      >> COPILOT_TASK_HINTS.md
+          echo ""                                                                   >> COPILOT_TASK_HINTS.md
+          echo "## Testing Tasks"                                                   >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew testDebugUnitTest           # Unit tests"              >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew connectedDebugAndroidTest   # Instrumented tests"      >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew :app:compileDebugAndroidTestSources  # Compile tests"  >> COPILOT_TASK_HINTS.md
+          echo ""                                                                   >> COPILOT_TASK_HINTS.md
+          echo "## Notes"                                                           >> COPILOT_TASK_HINTS.md
+          echo "- For TDLib builds use the existing TDLib workflows/scripts."      >> COPILOT_TASK_HINTS.md
+          echo "- See DEVELOPER_GUIDE.md for detailed usage and best practices."   >> COPILOT_TASK_HINTS.md
           cat COPILOT_TASK_HINTS.md

@@ -106,6 +106,8 @@ import android.widget.Toast
 import android.os.Build
 import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
+import com.chris.m3usuite.diagnostics.DiagnosticsLogger
+import com.chris.m3usuite.diagnostics.PerformanceMonitor
 
 /**
  * Interner Player (Media3) mit:
@@ -360,6 +362,12 @@ fun InternalPlayerScreen(
             exoPlayer.playWhenReady = false // Phase 4: erst nach Screen-Time-Check starten
             startPositionMs?.let { exoPlayer.seekTo(it) }
             PlaybackSession.setSource(finalUrl)
+            
+            // Log playback start
+            DiagnosticsLogger.Media3.logPlaybackStart(
+                screen = "internal_player",
+                mediaType = type
+            )
         }
     }
 
@@ -1112,6 +1120,9 @@ fun InternalPlayerScreen(
             }
         }
 
+        // TV Key Debouncer to prevent endless scrubbing on Fire TV
+        val keyDebouncer = remember { TvKeyDebouncer(scope, debounceMs = 300L) }
+
         val playerModifier = Modifier.fillMaxSize()
 
 
@@ -1227,7 +1238,8 @@ fun InternalPlayerScreen(
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
                                 if (type != "live" && !canSeek) return@setOnKeyListener false
-                                if (isDown && event.repeatCount == 0) {
+                                // Use debouncer to prevent endless scrubbing on Fire TV
+                                keyDebouncer.handleKeyEventRateLimited(keyCode, event) { _, _ ->
                                     com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("screen" to "player", "type" to type))
                                     stopTrickplay(resume = false)
                                     if (type == "live") {
@@ -1238,13 +1250,15 @@ fun InternalPlayerScreen(
                                         exoPlayer.seekTo(target)
                                         showSeekPreview(current, target)
                                         controlsVisible = true; controlsTick++
+                                        DiagnosticsLogger.Media3.logSeekOperation("internal_player", current, target)
                                     }
+                                    true
                                 }
-                                true
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                 if (type != "live" && !canSeek) return@setOnKeyListener false
-                                if (isDown && event.repeatCount == 0) {
+                                // Use debouncer to prevent endless scrubbing on Fire TV
+                                keyDebouncer.handleKeyEventRateLimited(keyCode, event) { _, _ ->
                                     com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("screen" to "player", "type" to type))
                                     stopTrickplay(resume = false)
                                     if (type == "live") {
@@ -1256,9 +1270,10 @@ fun InternalPlayerScreen(
                                         exoPlayer.seekTo(target)
                                         showSeekPreview(current, target)
                                         controlsVisible = true; controlsTick++
+                                        DiagnosticsLogger.Media3.logSeekOperation("internal_player", current, target)
                                     }
+                                    true
                                 }
-                                true
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_UP -> {
                                 if (isDown) {
