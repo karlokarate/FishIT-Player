@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application") apply false
     id("org.jetbrains.kotlin.android") apply false
-    id("org.jetbrains.kotlin.kapt") apply false
+    id("com.google.devtools.ksp") apply false
     id("org.jetbrains.kotlin.plugin.serialization") apply false
     id("org.jetbrains.kotlin.plugin.compose") apply false
     id("io.gitlab.arturbosch.detekt") version "1.23.7" apply false
