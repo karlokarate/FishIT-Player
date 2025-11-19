@@ -30,18 +30,21 @@ val keystoreKeyPassword: String? =
 val hasKeystore = !keystorePath.isNullOrBlank()
 
 // >>> ABI/Splits per -P (CI: arm64-v8a,armeabi-v7a; lokal optional Universal-APK)
-val abiFiltersProp = (project.findProperty("abiFilters") as String?)
-    ?.split(",")
-    ?.map { it.trim() }
-    ?.filter { it.isNotEmpty() }
-    .orEmpty()
+val abiFiltersProp =
+    (project.findProperty("abiFilters") as String?)
+        ?.split(",")
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        .orEmpty()
 
-val universalApkProp = (project.findProperty("universalApk") as String?)
-    ?.toBooleanStrictOrNull() ?: false   // CI: false, lokal ggf. true
+val universalApkProp =
+    (project.findProperty("universalApk") as String?)
+        ?.toBooleanStrictOrNull() ?: false // CI: false, lokal ggf. true
 
 // WICHTIG: useSplits oben definieren (Scope!), damit unten in splits sichtbar
-val useSplits = (project.findProperty("useSplits") as String?)
-    ?.toBooleanStrictOrNull() ?: true    // CI: true → nur Splits verwenden
+val useSplits =
+    (project.findProperty("useSplits") as String?)
+        ?.toBooleanStrictOrNull() ?: true // CI: true → nur Splits verwenden
 
 android {
     namespace = "com.chris.m3usuite"
@@ -59,9 +62,11 @@ android {
 
         // Default HTTP User-Agent (secret-injected)
         val uaSecretsFile = File(rootDir, ".ua.secrets.properties")
-        val uaSecrets = Properties().apply {
-            if (uaSecretsFile.exists()) uaSecretsFile.inputStream().use { load(it) }
-        }
+        val uaSecrets =
+            Properties().apply {
+                if (uaSecretsFile.exists()) uaSecretsFile.inputStream().use { load(it) }
+            }
+
         fun uaProp(name: String): String? =
             System.getenv(name)
                 ?: (uaSecrets.getProperty(name))
@@ -70,32 +75,38 @@ android {
         buildConfigField("String", "DEFAULT_UA", "\"${defaultUa}\"")
 
         // Feature switches
-        val showHeaderUi = (project.findProperty("SHOW_HEADER_UI")?.toString()?.toBooleanStrictOrNull()) ?: false
+        val showHeaderUi =
+            (project.findProperty("SHOW_HEADER_UI")?.toString()?.toBooleanStrictOrNull()) ?: false
         buildConfigField("boolean", "SHOW_HEADER_UI", showHeaderUi.toString())
 
-        val tvFormsV1 = (project.findProperty("feature.tv_forms_v1")?.toString()?.toBooleanStrictOrNull())
-            ?: (project.findProperty("TV_FORMS_V1")?.toString()?.toBooleanStrictOrNull())
-            ?: true
+        val tvFormsV1 =
+            (project.findProperty("feature.tv_forms_v1")?.toString()?.toBooleanStrictOrNull())
+                ?: (project.findProperty("TV_FORMS_V1")?.toString()?.toBooleanStrictOrNull())
+                ?: true
         buildConfigField("boolean", "TV_FORMS_V1", tvFormsV1.toString())
 
-        val mediaActionsV1 = (project.findProperty("feature.media_actionbar_v1")?.toString()?.toBooleanStrictOrNull())
-            ?: (project.findProperty("MEDIA_ACTIONBAR_V1")?.toString()?.toBooleanStrictOrNull())
-            ?: true
+        val mediaActionsV1 =
+            (project.findProperty("feature.media_actionbar_v1")?.toString()?.toBooleanStrictOrNull())
+                ?: (project.findProperty("MEDIA_ACTIONBAR_V1")?.toString()?.toBooleanStrictOrNull())
+                ?: true
         buildConfigField("boolean", "MEDIA_ACTIONBAR_V1", mediaActionsV1.toString())
 
-        val detailScaffoldV1 = (project.findProperty("feature.detail_scaffold_v1")?.toString()?.toBooleanStrictOrNull())
-            ?: (project.findProperty("DETAIL_SCAFFOLD_V1")?.toString()?.toBooleanStrictOrNull())
-            ?: true
+        val detailScaffoldV1 =
+            (project.findProperty("feature.detail_scaffold_v1")?.toString()?.toBooleanStrictOrNull())
+                ?: (project.findProperty("DETAIL_SCAFFOLD_V1")?.toString()?.toBooleanStrictOrNull())
+                ?: true
         buildConfigField("boolean", "DETAIL_SCAFFOLD_V1", detailScaffoldV1.toString())
 
-        val uiStateV1 = (project.findProperty("feature.ui_state_v1")?.toString()?.toBooleanStrictOrNull())
-            ?: (project.findProperty("UI_STATE_V1")?.toString()?.toBooleanStrictOrNull())
-            ?: true
+        val uiStateV1 =
+            (project.findProperty("feature.ui_state_v1")?.toString()?.toBooleanStrictOrNull())
+                ?: (project.findProperty("UI_STATE_V1")?.toString()?.toBooleanStrictOrNull())
+                ?: true
         buildConfigField("boolean", "UI_STATE_V1", uiStateV1.toString())
 
-        val playbackLauncherV1 = (project.findProperty("feature.playback_launcher_v1")?.toString()?.toBooleanStrictOrNull())
-            ?: (project.findProperty("PLAYBACK_LAUNCHER_V1")?.toString()?.toBooleanStrictOrNull())
-            ?: true
+        val playbackLauncherV1 =
+            (project.findProperty("feature.playback_launcher_v1")?.toString()?.toBooleanStrictOrNull())
+                ?: (project.findProperty("PLAYBACK_LAUNCHER_V1")?.toString()?.toBooleanStrictOrNull())
+                ?: true
         buildConfigField("boolean", "PLAYBACK_LAUNCHER_V1", playbackLauncherV1.toString())
 
         // Versionsübergabe vom Workflow (optional)
@@ -138,7 +149,7 @@ android {
             isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
             if (hasKeystore) {
                 signingConfig = signingConfigs.getByName("release")
@@ -160,10 +171,15 @@ android {
         abi {
             isEnable = useSplits
             reset()
-            include(*(if (abiFiltersProp.isNotEmpty())
-                abiFiltersProp.toTypedArray()
-            else
-                arrayOf("arm64-v8a", "armeabi-v7a")))
+            include(
+                *(
+                    if (abiFiltersProp.isNotEmpty()) {
+                        abiFiltersProp.toTypedArray()
+                    } else {
+                        arrayOf("arm64-v8a", "armeabi-v7a")
+                    }
+                ),
+            )
             isUniversalApk = universalApkProp
         }
     }
@@ -176,7 +192,7 @@ android {
             "META-INF/LICENSE*",
             "META-INF/NOTICE*",
             "META-INF/*.kotlin_module",
-            "META-INF/INDEX.LIST"
+            "META-INF/INDEX.LIST",
         )
         resources.excludes += setOf("**/com/chris/m3usuite/reference/**")
         jniLibs {
@@ -207,7 +223,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     exclude("**/com/chris/m3usuite/reference/**")
     if (name.contains("Debug", ignoreCase = true)) {
         compilerOptions.freeCompilerArgs.addAll(
-            listOf("-P", "plugin:androidx.compose.compiler.plugins.kotlin:liveLiteralsEnabled=true")
+            listOf("-P", "plugin:androidx.compose.compiler.plugins.kotlin:liveLiteralsEnabled=true"),
         )
     }
 }
