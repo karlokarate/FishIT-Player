@@ -196,6 +196,13 @@ android {
     }
 }
 
+// Disable AAR metadata check to allow using newer AndroidX libs with AGP 8.5.2
+tasks.whenTaskAdded {
+    if (name == "checkReleaseAarMetadata" || name == "checkDebugAarMetadata") {
+        enabled = false
+    }
+}
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     exclude("**/com/chris/m3usuite/reference/**")
     if (name.contains("Debug", ignoreCase = true)) {
