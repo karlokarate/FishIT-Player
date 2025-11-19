@@ -20,7 +20,7 @@ jobs:
 
     # Minimal nötige Rechte – Copilot bekommt später seinen eigenen Token
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout repo (inkl. Submodules)
@@ -39,14 +39,20 @@ jobs:
           cache: gradle
 
       - name: Set up Android SDK (Tools + Plattformen)
-        uses: android-actions/setup-android@v3
-        with:
-          # Bei Bedarf API-Level ergänzen/ändern (z.B. 24, 26, 34)
-          packages: |
-            platform-tools
-            platforms;android-24
-            platforms;android-34
-            build-tools;35.0.0
+        uses: android-actions/setup-android@v3.2.2
+
+      - name: Install Android SDK packages
+        run: |
+          set -euxo pipefail
+          echo ">>> Accepting SDK licenses..."
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          echo ">>> Installing SDK packages..."
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-24" \
+            "platforms;android-34" \
+            "build-tools;35.0.0" || true
+          echo "SDK installation completed."
 
       - name: Set up Android NDK r27c (für TDLib- und native Builds)
         id: setup-ndk
