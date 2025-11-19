@@ -118,7 +118,6 @@ jobs:
             -PuniversalApk=false \
             -PversionCode=${{ github.event.inputs.version_code }} \
             -PversionName=${{ github.event.inputs.version_name }} \
-            --configuration-cache \
             --build-cache \
             --parallel \
             --stacktrace \

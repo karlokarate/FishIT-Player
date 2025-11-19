@@ -257,7 +257,7 @@ jobs:
           TASK="$1"; shift || true
           if ./gradlew -q tasks --all | grep -E "^[[:space:]]*$TASK[[:space:]]" >/dev/null; then
             echo "::group::Run $TASK"
-            ./gradlew "$TASK" "$@" --configuration-cache --build-cache --stacktrace
+            ./gradlew "$TASK" "$@" --build-cache --stacktrace
             echo "::endgroup::"
           else
             echo "::notice::Gradle task '$TASK' nicht vorhanden – übersprungen."
