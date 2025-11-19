@@ -26,6 +26,7 @@ import com.chris.m3usuite.ui.screens.NetworkSettingsViewModel
 import com.chris.m3usuite.ui.screens.XtreamSettingsViewModel
 import com.chris.m3usuite.ui.screens.EpgSettingsViewModel
 import com.chris.m3usuite.ui.screens.GeneralSettingsViewModel
+import com.chris.m3usuite.ui.screens.TelegramSettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +46,7 @@ fun SettingsScreen(
     val xtreamVm: XtreamSettingsViewModel = viewModel(factory = XtreamSettingsViewModel.factory(app))
     val epgVm: EpgSettingsViewModel = viewModel(factory = EpgSettingsViewModel.factory(app))
     val generalVm: GeneralSettingsViewModel = viewModel(factory = GeneralSettingsViewModel.factory(app))
+    val telegramVm: TelegramSettingsViewModel = viewModel(factory = TelegramSettingsViewModel.factory(app))
 
     // --- States (bestehend) ---
     val playerState by playerVm.state.collectAsStateWithLifecycle()
@@ -52,6 +54,7 @@ fun SettingsScreen(
     val xtreamState by xtreamVm.state.collectAsStateWithLifecycle()
     val epgState by epgVm.state.collectAsStateWithLifecycle()
     val generalState by generalVm.state.collectAsStateWithLifecycle()
+    val telegramState by telegramVm.state.collectAsStateWithLifecycle()
 
     val scroll = rememberScrollState()
 
@@ -238,6 +241,20 @@ fun SettingsScreen(
                 ) { Text(if (epgState.isRefreshing) "Aktualisiere …" else "Favoriten-EPG jetzt aktualisieren") }
             }
 
+            // --- Telegram ---
+            TelegramSettingsSection(
+                state = telegramState,
+                onToggleEnabled = telegramVm::onToggleEnabled,
+                onUpdateCredentials = telegramVm::onUpdateCredentials,
+                onConnectWithPhone = telegramVm::onConnectWithPhone,
+                onSendCode = telegramVm::onSendCode,
+                onSendPassword = telegramVm::onSendPassword,
+                onLoadChats = telegramVm::onLoadChats,
+                onUpdateSelectedChats = telegramVm::onUpdateSelectedChats,
+                onUpdateCacheLimit = telegramVm::onUpdateCacheLimit,
+                onDisconnect = telegramVm::onDisconnect
+            )
+
             // --- Allgemein ---
             SettingsCard(title = "Allgemein") {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -268,4 +285,335 @@ private fun SettingsCard(
             content()
         }
     }
+}
+
+/**
+ * Telegram settings section with login, chat selection, and configuration.
+ */
+@Composable
+private fun TelegramSettingsSection(
+    state: TelegramSettingsState,
+    onToggleEnabled: (Boolean) -> Unit,
+    onUpdateCredentials: (String, String) -> Unit,
+    onConnectWithPhone: (String) -> Unit,
+    onSendCode: (String) -> Unit,
+    onSendPassword: (String) -> Unit,
+    onLoadChats: () -> Unit,
+    onUpdateSelectedChats: (List<String>) -> Unit,
+    onUpdateCacheLimit: (Int) -> Unit,
+    onDisconnect: () -> Unit
+) {
+    var showChatPicker by remember { mutableStateOf(false) }
+    var phoneNumber by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    SettingsCard(title = "Telegram Integration") {
+        // Enable/Disable Toggle
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Telegram aktivieren")
+            Switch(
+                checked = state.enabled,
+                onCheckedChange = onToggleEnabled
+            )
+        }
+
+        if (state.enabled) {
+            HorizontalDivider()
+
+            // API Credentials
+            if (state.authState == TelegramAuthState.DISCONNECTED) {
+                Text(
+                    "API Zugangsdaten",
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = state.apiId,
+                        onValueChange = { onUpdateCredentials(it, state.apiHash) },
+                        label = { Text("API ID") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = state.apiHash,
+                        onValueChange = { onUpdateCredentials(state.apiId, it) },
+                        label = { Text("API Hash") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            // Connection Status
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Status: ${state.authState.name}")
+                if (state.authState == TelegramAuthState.READY) {
+                    Button(onClick = onDisconnect) {
+                        Text("Trennen")
+                    }
+                }
+            }
+
+            // Error Message
+            if (state.errorMessage != null) {
+                Text(
+                    text = state.errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            // Authentication Flow
+            when (state.authState) {
+                TelegramAuthState.DISCONNECTED -> {
+                    OutlinedTextField(
+                        value = phoneNumber,
+                        onValueChange = { phoneNumber = it },
+                        label = { Text("Telefonnummer (+49...)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Button(
+                        onClick = { onConnectWithPhone(phoneNumber) },
+                        enabled = phoneNumber.isNotBlank() && !state.isConnecting,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (state.isConnecting) "Verbinde..." else "Mit Telegram verbinden")
+                    }
+                }
+
+                TelegramAuthState.WAITING_FOR_CODE -> {
+                    OutlinedTextField(
+                        value = code,
+                        onValueChange = { code = it },
+                        label = { Text("Verifizierungscode") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Button(
+                        onClick = { onSendCode(code) },
+                        enabled = code.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Code senden")
+                    }
+                }
+
+                TelegramAuthState.WAITING_FOR_PASSWORD -> {
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("2FA Passwort") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Button(
+                        onClick = { onSendPassword(password) },
+                        enabled = password.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Passwort senden")
+                    }
+                }
+
+                TelegramAuthState.READY -> {
+                    HorizontalDivider()
+
+                    // Chat Selection
+                    Text(
+                        "Ausgewählte Chats (${state.selectedChats.size})",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    
+                    if (state.selectedChats.isNotEmpty()) {
+                        Text(
+                            state.selectedChats.joinToString(", "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Button(
+                        onClick = { showChatPicker = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Chats auswählen")
+                    }
+
+                    // Cache Limit
+                    HorizontalDivider()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Cache-Limit")
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("${state.cacheLimitGb} GB")
+                            Button(
+                                onClick = { onUpdateCacheLimit((state.cacheLimitGb - 1).coerceAtLeast(1)) }
+                            ) {
+                                Text("-")
+                            }
+                            Button(
+                                onClick = { onUpdateCacheLimit((state.cacheLimitGb + 1).coerceAtMost(20)) }
+                            ) {
+                                Text("+")
+                            }
+                        }
+                    }
+                }
+
+                else -> {
+                    // Other states handled by status display
+                }
+            }
+        }
+    }
+
+    // Chat Picker Dialog
+    if (showChatPicker) {
+        TelegramChatPickerDialog(
+            availableChats = state.availableChats,
+            selectedChatIds = state.selectedChats,
+            isLoading = state.isLoadingChats,
+            onLoadChats = onLoadChats,
+            onConfirm = { selected ->
+                onUpdateSelectedChats(selected)
+                showChatPicker = false
+            },
+            onDismiss = { showChatPicker = false }
+        )
+    }
+}
+
+/**
+ * Dialog for selecting Telegram chats to parse for content.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TelegramChatPickerDialog(
+    availableChats: List<ChatInfo>,
+    selectedChatIds: List<String>,
+    isLoading: Boolean,
+    onLoadChats: () -> Unit,
+    onConfirm: (List<String>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selection by remember { mutableStateOf(selectedChatIds.toSet()) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        if (availableChats.isEmpty() && !isLoading) {
+            onLoadChats()
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Chats auswählen") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Search Field
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Suchen...") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    val filteredChats = availableChats.filter { chat ->
+                        searchQuery.isBlank() || chat.title.contains(searchQuery, ignoreCase = true)
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        filteredChats.forEach { chat ->
+                            val chatIdStr = chat.id.toString()
+                            val isSelected = selection.contains(chatIdStr)
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = chat.title,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Text(
+                                        text = chat.type,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Checkbox(
+                                    checked = isSelected,
+                                    onCheckedChange = { checked ->
+                                        selection = if (checked) {
+                                            selection + chatIdStr
+                                        } else {
+                                            selection - chatIdStr
+                                        }
+                                    }
+                                )
+                            }
+                        }
+
+                        if (filteredChats.isEmpty()) {
+                            Text(
+                                text = "Keine Chats gefunden",
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(selection.toList()) },
+                enabled = !isLoading
+            ) {
+                Text("Übernehmen (${selection.size})")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Abbrechen")
+            }
+        }
+    )
 }
