@@ -58,41 +58,31 @@ class TelegramContentRepository(
                 is com.chris.m3usuite.telegram.models.ParsedItem.Media -> {
                     val mediaInfo = parsed.info
                     
-                    // Extract file metadata from TDLib message content
-                    val content = message.content
-                    val fileId = when (content) {
-                        is dev.g000sha256.tdl.dto.message.content.MessageVideo -> content.video.video.id
-                        is dev.g000sha256.tdl.dto.message.content.MessageDocument -> content.document.document.id
-                        is dev.g000sha256.tdl.dto.message.content.MessageAudio -> content.audio.audio.id
-                        else -> null
-                    }
-                    val fileUniqueId = when (content) {
-                        is dev.g000sha256.tdl.dto.message.content.MessageVideo -> content.video.video.remote.uniqueId
-                        is dev.g000sha256.tdl.dto.message.content.MessageDocument -> content.document.document.remote.uniqueId
-                        is dev.g000sha256.tdl.dto.message.content.MessageAudio -> content.audio.audio.remote.uniqueId
-                        else -> null
-                    }
-                    val durationSecs = when (content) {
-                        is dev.g000sha256.tdl.dto.message.content.MessageVideo -> content.video.duration
-                        is dev.g000sha256.tdl.dto.message.content.MessageAudio -> content.audio.duration
-                        else -> null
-                    }
-                    val width = when (content) {
-                        is dev.g000sha256.tdl.dto.message.content.MessageVideo -> content.video.width
-                        else -> null
-                    }
-                    val height = when (content) {
-                        is dev.g000sha256.tdl.dto.message.content.MessageVideo -> content.video.height
-                        else -> null
-                    }
-                    val language = when (content) {
-                        is dev.g000sha256.tdl.dto.message.content.MessageAudio -> content.audio.performer ?: content.audio.title
-                        else -> null
-                    }
+                    // TODO: Extract file metadata from TDLib message content
+                    // These fields are not available in MediaInfo and require direct TDLib access
+                    val fileId: Int? = null
+                    val fileUniqueId: String? = null
+                    val durationSecs: Int? = mediaInfo.durationMinutes?.times(60)
+                    val width: Int? = null
+                    val height: Int? = null
+                    val language: String? = null
                     
                     val obxMessage = ObxTelegramMessage(
                         chatId = chatId,
                         messageId = message.id,
+                        fileId = fileId,
+                        fileUniqueId = fileUniqueId,
+                        caption = mediaInfo.title,
+                        captionLower = mediaInfo.title?.lowercase(),
+                        date = message.date.toLong(),
+                        fileName = mediaInfo.fileName,
+                        durationSecs = durationSecs,
+                        mimeType = mediaInfo.mimeType,
+                        sizeBytes = mediaInfo.sizeBytes,
+                        width = width,
+                        height = height,
+                        language = language
+                    )
                         fileId = fileId,
                         fileUniqueId = fileUniqueId,
                         caption = mediaInfo.title,
