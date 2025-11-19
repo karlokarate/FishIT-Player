@@ -6,6 +6,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose") apply false
     id("io.gitlab.arturbosch.detekt") version "1.23.7" apply false
     id("org.jlleitschuh.gradle.ktlint") version "12.1.2" apply false
+    id("com.github.ben-manes.versions") version "0.51.0" apply true
 }
 
 // Apply quality plugins to all subprojects
@@ -32,4 +33,24 @@ subprojects {
             exclude("**/reference/**")
         }
     }
+}
+
+// Configure dependency updates plugin
+tasks.named<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask>("dependencyUpdates").configure {
+    // Reject all non stable versions
+    rejectVersionIf {
+        isNonStable(candidate.version)
+    }
+    
+    // Optional: report in multiple formats
+    outputFormatter = "json,html,txt"
+    outputDir = "build/dependencyUpdates"
+    reportfileName = "report"
+}
+
+fun isNonStable(version: String): Boolean {
+    val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
+    val regex = "^[0-9,.v-]+(-r)?$".toRegex()
+    val isStable = stableKeyword || regex.matches(version)
+    return isStable.not()
 }

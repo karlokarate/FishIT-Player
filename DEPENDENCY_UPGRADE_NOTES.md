@@ -1,6 +1,45 @@
 # Dependency Upgrade Notes
 
-## Date: November 19, 2025
+## Date: November 19, 2025 (Update 2)
+
+### Critical Fix: Kotlin Binary Incompatibility
+
+**Issue**: Build failure due to Kotlin binary incompatibility
+- Dependencies (Coil 3.3.0, OkHttp 5.2.1, Okio 3.16.1, kotlinx-serialization 1.9.0) compiled with Kotlin 2.2.0
+- Project was using Kotlin 2.0.21
+- Error: "Module was compiled with an incompatible version of Kotlin. The binary version of its metadata is 2.2.0, expected version is 2.0.0"
+
+**Solution Applied**:
+1. **Kotlin**: 2.0.21 → **2.1.0**
+   - Better forward compatibility with Kotlin 2.2.0-compiled libraries
+   - Kotlin 2.2.0 tested but KSP support not yet available
+   
+2. **KSP**: 2.0.21-1.0.28 → **2.1.0-1.0.29**
+   - Aligned with Kotlin 2.1.0
+   - Required for ObjectBox and other annotation processors
+
+### New Dependency Management Tools Added
+
+1. **Ben Manes Versions Plugin** (`build.gradle.kts`)
+   - Automatically checks for dependency updates
+   - Usage: `./gradlew dependencyUpdates`
+   - Generates reports in JSON, HTML, TXT formats
+   - Configured to reject unstable versions
+
+2. **Dependency Checker Script** (`scripts/check_dependencies.sh`)
+   - Quick health check of all dependencies
+   - Validates Kotlin/KSP compatibility
+   - Lists current versions
+   - Identifies known issues
+   - Provides actionable recommendations
+
+3. **Comprehensive Documentation** (`tools/README.md`)
+   - Complete guide to dependency management
+   - Compatibility checking procedures
+   - Common issues and solutions
+   - Update process best practices
+
+## Date: November 19, 2025 (Update 1)
 
 ## Upgrades Applied
 
@@ -31,8 +70,8 @@ Added to `gradle.properties`:
 ## Versions Kept (Already Optimal)
 
 - **Gradle Wrapper**: 8.13 (latest stable)
-- **Kotlin**: 2.0.21 (latest stable)
-- **KSP**: 2.0.21-1.0.28 (aligned with Kotlin)
+- **Kotlin**: 2.1.0 (upgraded for compatibility)
+- **KSP**: 2.1.0-1.0.29 (aligned with Kotlin)
 - **Detekt**: 1.23.7 (latest)
 - **Ktlint Plugin**: 12.1.2 (latest)
 - **JUnit**: 4.13.2 (latest)
@@ -85,6 +124,13 @@ Many dependencies in this repository appear to have version numbers from late 20
 4. Build failure is due to network issues, not version problems
 
 ## Recommendations for Future Updates
+
+### Priority: Upgrade to Kotlin 2.2.0
+
+When KSP 2.2.0-1.0.x becomes available in Maven repositories:
+1. Update Kotlin to 2.2.0 in `settings.gradle.kts`
+2. Update KSP to matching 2.2.0-1.0.x version
+3. This will provide perfect binary compatibility with all current dependencies
 
 ### When Network Access is Restored
 
@@ -182,3 +228,64 @@ When network is available:
 - This prevents downloading dependencies from Maven repositories
 - All version changes are theoretical until network access is restored and build succeeds
 - Repository appears to be from November 2025, significantly ahead of available knowledge base (late 2024)
+
+## Using the New Dependency Management Tools
+
+### Quick Health Check
+
+Run the dependency checker script for an instant overview:
+```bash
+./scripts/check_dependencies.sh
+```
+
+This provides:
+- Current Kotlin and KSP versions with compatibility check
+- All major dependency versions
+- Known compatibility issues
+- Actionable recommendations
+
+### Check for Dependency Updates
+
+Use the Gradle Versions Plugin:
+```bash
+# Run the dependency update checker
+./gradlew dependencyUpdates
+
+# View the HTML report
+open build/dependencyUpdates/report.html
+```
+
+The plugin will show:
+- Dependencies with available updates
+- Current vs. available versions
+- Grouped by category (build tools, AndroidX, third-party)
+
+### View Dependency Tree
+
+To understand dependency relationships:
+```bash
+# Full dependency tree
+./gradlew :app:dependencies
+
+# Specific configuration (e.g., release runtime)
+./gradlew :app:dependencies --configuration releaseRuntimeClasspath
+
+# Show why a specific version is used
+./gradlew :app:dependencyInsight --dependency androidx.core:core-ktx
+```
+
+### Regular Maintenance Schedule
+
+**Weekly**: Run `./scripts/check_dependencies.sh` for quick health check
+
+**Monthly**: 
+1. Run `./gradlew dependencyUpdates`
+2. Review and plan updates
+3. Update non-breaking dependencies
+
+**Quarterly**:
+1. Major updates (Kotlin, AGP, AndroidX)
+2. Full regression testing
+3. Update documentation
+
+For complete documentation, see `tools/README.md`.
