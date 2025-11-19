@@ -34,6 +34,11 @@ private class DelegatingDataSource(
     override fun open(dataSpec: DataSpec): Long {
         val scheme = dataSpec.uri.scheme?.lowercase(Locale.US)
         val target: DataSource = when {
+            scheme == "tg" -> {
+                // For Telegram files, we need TelegramSession
+                // For now, create a placeholder that will be replaced with proper implementation
+                throw IOException("Telegram playback requires TelegramSession - not yet wired")
+            }
             scheme == "rar" -> RarDataSource(context)
             else -> fallback.createDataSource()
         }

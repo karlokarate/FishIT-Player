@@ -115,4 +115,20 @@ class ResumeRepository(private val context: Context) {
         b.query(ObxResumeMark_.type.equal("vod").and(ObxResumeMark_.mediaEncodedId.equal(mediaId)))
             .build().findFirst()?.positionSecs
     }
+    
+    /**
+     * Set resume position for Telegram video.
+     * Telegram IDs are in the range 4e12-5e12.
+     */
+    suspend fun setTelegramResume(mediaId: Long, positionSecs: Int) = withContext(Dispatchers.IO) {
+        // Reuse VOD resume logic since Telegram videos behave like VOD
+        setVodResume(mediaId, positionSecs)
+    }
+    
+    /**
+     * Get resume position for Telegram video.
+     */
+    suspend fun getTelegramResume(mediaId: Long): Int? = withContext(Dispatchers.IO) {
+        getVodResume(mediaId)
+    }
 }
