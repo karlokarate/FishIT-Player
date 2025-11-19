@@ -95,7 +95,7 @@ Dieses Dokument bietet den vollständigen, detaillierten Überblick über Module
   - Logs: Die Workflow-Stufe bündelt alle Build-/Konfig-Logs in `logs-<abi>`
     (inkl. CMakeError/Output), bevor `actions/upload-artifact` läuft, damit das
     Logs-Artefakt auch ohne optionale Dateien zuverlässig entsteht.
-  - arm64: `scripts/tdlib-build-arm64.sh` (Phase‑2: LTO/GC‑sections/strip‑unneeded zur Größenreduktion)
+  - TDLib dependency: Uses Maven AAR `dev.g000sha256:tdl-coroutines-android:5.0.0` with native libs for arm64-v8a and armeabi-v7a
  - Cache: `TelegramCacheCleanupWorker` trimmt lokale TD‑Dateien täglich auf `TG_CACHE_LIMIT_GB` (GB) – best‑effort Datei‑System‑Trim.
  - Reflection: `TdLibReflection.extractBestPhotoSizeFileId(...)` liefert die größte Photo-Größe als File-ID; `extractThumbFileId(...)` nutzt das gleiche Hilfswerk. `TgGate` fällt ohne BuildConfig-Override standardmäßig auf Mirror-Only (`false`) zurück, sodass OBX erst nach explizitem Opt-In aktiviert wird.
 
