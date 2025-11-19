@@ -138,11 +138,14 @@ class TelegramDataSource(
         }
         
         currentUri = null
+        val spec = currentDataSpec
         currentDataSpec = null
         fileId = null
         position = 0
         bytesRemaining = C.LENGTH_UNSET.toLong()
         totalSize = C.LENGTH_UNSET.toLong()
-        transferListener?.onTransferEnd(this, currentDataSpec, true)
+        if (spec != null) {
+            transferListener?.onTransferEnd(this, spec, true)
+        }
     }
 }

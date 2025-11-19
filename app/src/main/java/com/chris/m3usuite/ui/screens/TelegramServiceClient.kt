@@ -1,9 +1,13 @@
 package com.chris.m3usuite.ui.screens
 
 import android.content.Context
+import android.net.Uri
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Placeholder service client for Telegram functionality.
@@ -26,8 +30,22 @@ class TelegramServiceClient(private val context: Context) {
         data class Error(val message: String) : AuthEvent()
     }
     
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
+    val authState: StateFlow<AuthState> = _authState.asStateFlow()
+    
     private val _authEvents = MutableSharedFlow<AuthEvent>()
     val authEvents: Flow<AuthEvent> = _authEvents.asSharedFlow()
+    
+    private val _resendInSec = MutableStateFlow(0)
+    val resendInSec: StateFlow<Int> = _resendInSec.asStateFlow()
+    
+    suspend fun bind() {
+        // TODO: Implement
+    }
+    
+    suspend fun persistTreePermission(uri: Uri) {
+        // TODO: Implement
+    }
     
     suspend fun start(apiId: String, apiHash: String) {
         // TODO: Implement

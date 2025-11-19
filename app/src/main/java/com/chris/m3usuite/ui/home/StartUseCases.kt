@@ -43,7 +43,9 @@ class StartUseCases(
         else mediaRepo.pagingByTypeFilteredFlow("live", provider)
 
     suspend fun telegramSearchAllChats(query: String, limit: Int): List<MediaItem> =
-        withContext(Dispatchers.IO) { telegramRepo.searchAllChats(query, limit) }
+        withContext(Dispatchers.IO) {
+            telegramRepo.searchTelegramContent(query).first().take(limit)
+        }
 
     suspend fun computeSeriesMixed(recent: List<MediaItem>, newest: List<MediaItem>, showAdults: Boolean, kid: Boolean): Pair<List<MediaItem>, Set<Long>> =
         withContext(Dispatchers.Default) {

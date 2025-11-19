@@ -464,7 +464,9 @@ fun SeriesDetailScreen(
             }
             val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
 
-            // Telegram bevorzugen, wenn Referenzen existieren
+            // TODO: Telegram playback not yet implemented
+            val tgUrl: String? = null
+            /*
             val tgUrl = if (e.tgChatId != null && e.tgMessageId != null) {
                 runCatching {
                     PlayUrlHelper.tgPlayUri(
@@ -480,6 +482,7 @@ fun SeriesDetailScreen(
                     null
                 }
             } else null
+            */
 
             val headers = com.chris.m3usuite.core.http.RequestHeadersProvider.defaultHeadersBlocking(store)
             // Bevorzugt: direkte Episode-URL über XtreamUrlFactory/OBX (kein Client-Init, keine Redirect-Probe)

@@ -15,6 +15,7 @@ import dev.g000sha256.tdl.dto.Message
 import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
 import io.objectbox.kotlin.query
+import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -31,7 +32,7 @@ class TelegramContentRepository(
     private val store: SettingsStore
 ) {
 
-    private val obxStore = ObxStore.getInstance(context)
+    private val obxStore = ObxStore.get(context)
     private val messageBox: Box<ObxTelegramMessage> = obxStore.boxFor()
 
     /**
@@ -56,21 +57,54 @@ class TelegramContentRepository(
             when (parsed) {
                 is com.chris.m3usuite.telegram.models.ParsedItem.Media -> {
                     val mediaInfo = parsed.info
+                    
+                    // Extract file metadata from TDLib message content
+                    val content = message.content
+                    val fileId = when (content) {
+                        is dev.g000sha256.tdl.dto.message.content.MessageVideo -> content.video.video.id
+                        is dev.g000sha256.tdl.dto.message.content.MessageDocument -> content.document.document.id
+                        is dev.g000sha256.tdl.dto.message.content.MessageAudio -> content.audio.audio.id
+                        else -> null
+                    }
+                    val fileUniqueId = when (content) {
+                        is dev.g000sha256.tdl.dto.message.content.MessageVideo -> content.video.video.remote.uniqueId
+                        is dev.g000sha256.tdl.dto.message.content.MessageDocument -> content.document.document.remote.uniqueId
+                        is dev.g000sha256.tdl.dto.message.content.MessageAudio -> content.audio.audio.remote.uniqueId
+                        else -> null
+                    }
+                    val durationSecs = when (content) {
+                        is dev.g000sha256.tdl.dto.message.content.MessageVideo -> content.video.duration
+                        is dev.g000sha256.tdl.dto.message.content.MessageAudio -> content.audio.duration
+                        else -> null
+                    }
+                    val width = when (content) {
+                        is dev.g000sha256.tdl.dto.message.content.MessageVideo -> content.video.width
+                        else -> null
+                    }
+                    val height = when (content) {
+                        is dev.g000sha256.tdl.dto.message.content.MessageVideo -> content.video.height
+                        else -> null
+                    }
+                    val language = when (content) {
+                        is dev.g000sha256.tdl.dto.message.content.MessageAudio -> content.audio.performer ?: content.audio.title
+                        else -> null
+                    }
+                    
                     val obxMessage = ObxTelegramMessage(
                         chatId = chatId,
                         messageId = message.id,
-                        fileId = mediaInfo.fileId,
-                        fileUniqueId = mediaInfo.fileUniqueId,
+                        fileId = fileId,
+                        fileUniqueId = fileUniqueId,
                         caption = mediaInfo.title,
                         captionLower = mediaInfo.title?.lowercase(),
                         date = message.date.toLong(),
                         fileName = mediaInfo.fileName,
-                        durationSecs = mediaInfo.durationSeconds,
+                        durationSecs = durationSecs,
                         mimeType = mediaInfo.mimeType,
                         sizeBytes = mediaInfo.sizeBytes,
-                        width = mediaInfo.width,
-                        height = mediaInfo.height,
-                        language = mediaInfo.language
+                        width = width,
+                        height = height,
+                        language = language
                     )
                     
                     // Check if already exists
@@ -130,16 +164,14 @@ class TelegramContentRepository(
                     name = obxMsg.caption ?: "Untitled",
                     type = "vod", // Default to VOD, can be refined based on metadata
                     url = "tg://file/${obxMsg.fileId}",
-                    icon = null,
                     poster = obxMsg.thumbLocalPath,
                     plot = null,
                     rating = null,
                     year = null,
-                    duration = obxMsg.durationSecs,
-                    added = obxMsg.date,
+                    durationSecs = obxMsg.durationSecs,
                     categoryName = "Telegram",
-                    providerName = "Telegram",
-                    source = "telegram"
+                    source = "telegram",
+                    providerKey = "Telegram"
                 )
             }
         }
@@ -160,16 +192,14 @@ class TelegramContentRepository(
                     name = obxMsg.caption ?: "Untitled",
                     type = "vod",
                     url = "tg://file/${obxMsg.fileId}",
-                    icon = null,
                     poster = obxMsg.thumbLocalPath,
                     plot = null,
                     rating = null,
                     year = null,
-                    duration = obxMsg.durationSecs,
-                    added = obxMsg.date,
+                    durationSecs = obxMsg.durationSecs,
                     categoryName = "Telegram - Chat $chatId",
-                    providerName = "Telegram",
-                    source = "telegram"
+                    source = "telegram",
+                    providerKey = "Telegram"
                 )
             })
         }.flowOn(Dispatchers.IO)
@@ -181,7 +211,7 @@ class TelegramContentRepository(
     fun searchTelegramContent(query: String): Flow<List<MediaItem>> {
         return kotlinx.coroutines.flow.flow {
             val messages = messageBox.query {
-                contains(ObxTelegramMessage_.captionLower, query.lowercase())
+                contains(ObxTelegramMessage_.captionLower, query.lowercase(), StringOrder.CASE_INSENSITIVE)
                 orderDesc(ObxTelegramMessage_.date)
             }.find()
 
@@ -191,16 +221,14 @@ class TelegramContentRepository(
                     name = obxMsg.caption ?: "Untitled",
                     type = "vod",
                     url = "tg://file/${obxMsg.fileId}",
-                    icon = null,
                     poster = obxMsg.thumbLocalPath,
                     plot = null,
                     rating = null,
                     year = null,
-                    duration = obxMsg.durationSecs,
-                    added = obxMsg.date,
+                    durationSecs = obxMsg.durationSecs,
                     categoryName = "Telegram",
-                    providerName = "Telegram",
-                    source = "telegram"
+                    source = "telegram",
+                    providerKey = "Telegram"
                 )
             })
         }.flowOn(Dispatchers.IO)

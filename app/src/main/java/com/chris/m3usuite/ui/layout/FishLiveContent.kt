@@ -114,8 +114,10 @@ fun buildLiveTileContent(
         )
     }
 
-    val topEndBadge: (@Composable () -> Unit)? = if (media.isTelegramItem()) {
-        { FishTelegramBadge() }
+    val topEndBadge: (@Composable () -> Unit)? = if (TelegramContentRepository.isTelegramItem(media.id)) {
+        // TODO: FishTelegramBadge composable not yet implemented
+        null
+        // { FishTelegramBadge() }
     } else null
 
     val onFocusChanged: (Boolean) -> Unit = { focused ->
