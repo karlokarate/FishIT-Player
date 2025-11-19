@@ -1,3 +1,8 @@
+2025-11-19 (Workflow Cleanup)
+- chore(ci): Remove all TDLib build workflows and scripts. App now uses TDLib coroutines AAR from Maven Central (`dev.g000sha256:tdl-coroutines-android:5.0.0`) which includes native libraries for arm64-v8a and armeabi-v7a with all Java bindings.
+- feat(ci): Add new `release-build.yml` workflow for building and releasing APKs with automatic GitHub release creation. Builds both arm64-v8a and armeabi-v7a variants in parallel.
+- chore(build): Remove obsolete `verifyTdlib` task from build.gradle.kts.
+
 2025-11-24
 - fix(ci): Standart workflow runs a host `prepare_cross_compiling` pass to
   emit the TDLib `td_api_*.cpp` auto-sources before the Android builds start,

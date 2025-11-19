@@ -188,11 +188,7 @@ Short bullet summary (current highlights)
  - Default UA (secret): HTTP `User-Agent` is injected as `BuildConfig.DEFAULT_UA`.
    - Precedence: ENV var `HEADER` → root `/.ua.secrets.properties` (not tracked) → `-P HEADER` → empty.
    - Neither the repo nor the compiled APK contain the literal UA; app fallbacks read `DEFAULT_UA`.
-- TDLib native packaging: Primary ABI (arm64‑v8a) with static BoringSSL linking for a self‑contained JNI lib; optional `armeabi‑v7a` output for legacy devices.
-  - arm64: `scripts/tdlib-build-arm64.sh [--only-arm64|--ref <tag>]` builds `libtdjni.so` for `arm64-v8a` to `libtd/src/main/jniLibs/arm64-v8a/` and syncs Java bindings.
-  - v7a (optional): `scripts/tdlib-build-arm64.sh --only-v7a` builds `libtdjni.so` for `armeabi-v7a` to `libtd/src/main/jniLibs/armeabi-v7a/`.
-  - One‑shot rebuild helper: `scripts/tdlib-rebuild-latest.sh` cleans old artifacts, sets envs (repo‑local), auto‑detects latest upstream tag (or use `--ref`), builds both ABIs, syncs Java, and verifies the outputs.
-  - Size hygiene: Stripping enabled; Phase‑2 adds LTO/GC‑sections/strip‑unneeded to further reduce size.
+- TDLib packaging: The app uses the TDLib coroutines AAR from Maven Central, which includes native libraries for both arm64-v8a and armeabi-v7a with static BoringSSL linking.
 - Start/Home shows Serien, Filme, TV; Kids get filtered content (MediaQueryRepository), no settings/bottom bar, read‑only favorites.
 - Library grouping/filter: VOD/Serien gruppieren primär nach Provider (normalisiert: Apple TV+, Netflix, Disney+, Amazon Prime, Paramount+, Max, …). Reihenfolge: Zuletzt gesehen → Neu → 2025–2024 → Anbieter‑Rows. Live gruppiert nach Provider/Genre. Textfilter pro Typ. Fallback für nicht zuordenbare Inhalte: serverseitige Kategorien (optional).
   - Aggregatindizes: Provider/Genre/Jahr werden beim Xtream-Kopfimport (`XtreamSeeder`) in `ObxIndex*` Tabellen persisted (keine Vollscans). Library liest Gruppen aus `ObxIndexProvider/Year/Genre` (Live: Provider/Genre; VOD/Series: Provider/Genre/Jahr optional), nicht mehr per `distinct()` auf den Haupttabellen.
