@@ -251,6 +251,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
+    // TDLib Kotlin Coroutines Client (Android)
+    implementation("dev.g000sha256:tdl-coroutines-android:5.0.0")
+
     implementation("androidx.metrics:metrics-performance:1.0.0-beta01")
     implementation("com.google.zxing:core:3.5.3")
     implementation("androidx.tv:tv-material:1.0.1")
