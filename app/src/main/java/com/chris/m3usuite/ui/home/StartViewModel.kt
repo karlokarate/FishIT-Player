@@ -13,6 +13,7 @@ import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.KidContentRepository
 import com.chris.m3usuite.data.repo.PermissionRepository
 import com.chris.m3usuite.data.repo.ProfileObxRepository
+import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.data.repo.XtreamObxRepository
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
@@ -33,6 +34,7 @@ class StartViewModel(
     private val permRepo: PermissionRepository = PermissionRepository(appContext, store),
     private val profileRepo: ProfileObxRepository = ProfileObxRepository(appContext),
     private val kidRepo: KidContentRepository = KidContentRepository(appContext),
+    private val tgRepo: TelegramContentRepository = TelegramContentRepository(appContext, store),
     private val use: StartUseCases = StartUseCases(appContext, store),
 ) : ViewModel() {
 
@@ -96,6 +98,10 @@ class StartViewModel(
     private val _favLive = MutableStateFlow<List<MediaItem>>(emptyList())
     val favLive: StateFlow<List<MediaItem>> = _favLive
 
+    // Telegram content
+    private val _telegramContent = MutableStateFlow<List<MediaItem>>(emptyList())
+    val telegramContent: StateFlow<List<MediaItem>> = _telegramContent
+
     // Telegram enabled?
     val tgEnabled: StateFlow<Boolean> = combine(
         store.tgEnabled, store.tgSelectedChatsCsv
@@ -128,6 +134,7 @@ class StartViewModel(
         viewModelScope.launch { observeObxChanges() }
         viewModelScope.launch { observeDeltaImport() }
         viewModelScope.launch { observeFavoritesCsv() }
+        viewModelScope.launch { observeTelegramContent() }
         viewModelScope.launch { observeQuery() }
     }
 
@@ -237,6 +244,13 @@ class StartViewModel(
             val map = allAllowed.associateBy { it.id }
             _favLive.value = translated.mapNotNull { map[it] }.distinctBy { it.id }
         }
+    }
+
+    private fun observeTelegramContent() = viewModelScope.launch {
+        tgRepo.getAllTelegramContent()
+            .collectLatest { items ->
+                _telegramContent.value = items.take(120) // Limit to 120 for Start screen
+            }
     }
 
     fun onReorderFavorites(newOrderIds: List<Long>) = viewModelScope.launch(Dispatchers.IO) {

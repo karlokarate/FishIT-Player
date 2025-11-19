@@ -157,6 +157,8 @@ fun StartScreen(
     val seriesNewIds by vm.seriesNewIds.collectAsStateWithLifecycle(emptySet())
     val vodNewIds by vm.vodNewIds.collectAsStateWithLifecycle(emptySet())
     val favLive by vm.favLive.collectAsStateWithLifecycle(emptyList())
+    val telegramContent by vm.telegramContent.collectAsStateWithLifecycle(emptyList())
+    val tgEnabled by vm.tgEnabled.collectAsStateWithLifecycle(false)
 
     // Header: Tab aus Store-Index
     val headerLibraryTab = remember(libraryTabIndex) {
@@ -623,6 +625,35 @@ fun StartScreen(
                             onAssignToKid = onVodAssign
                         )
                     }
+                }
+            }
+
+            // Telegram content row (when enabled and content available)
+            if (tgEnabled && telegramContent.isNotEmpty()) {
+                item("start_telegram_row") {
+                    val onTelegramClick: (MediaItem) -> Unit = { media ->
+                        scope.launch {
+                            // For Telegram items, we need to handle playback via TDLib
+                            // The URL is in format: tg://file/<fileId>
+                            playbackLauncher.launch(
+                                com.chris.m3usuite.playback.PlayRequest(
+                                    type = "vod",
+                                    mediaId = media.id,
+                                    url = media.url ?: "",
+                                    headers = emptyMap(),
+                                    mimeType = null, // Will be detected
+                                    title = media.name
+                                )
+                            )
+                        }
+                    }
+                    com.chris.m3usuite.ui.layout.FishTelegramRow(
+                        items = telegramContent,
+                        stateKey = "start_telegram",
+                        title = "Telegram",
+                        modifier = Modifier,
+                        onItemClick = onTelegramClick
+                    )
                 }
             }
 

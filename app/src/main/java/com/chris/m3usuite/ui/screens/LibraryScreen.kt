@@ -94,6 +94,7 @@ fun LibraryScreen(
     val store = remember { SettingsStore(ctx) }
     val repo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
     val mediaRepo = remember { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
+    val tgRepo = remember { com.chris.m3usuite.data.repo.TelegramContentRepository(ctx, store) }
     val resumeRepo = remember { com.chris.m3usuite.data.repo.ResumeRepository(ctx) }
     val permRepo = remember { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
     val providerLabelStore = remember(ctx) { ProviderLabelStore.get(ctx) }
@@ -183,6 +184,10 @@ fun LibraryScreen(
     var recentRow by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var newestRow by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var topYearsRow by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+    
+    // Telegram content
+    var telegramContent by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+    val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
 
     var liveCategoryLabels by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     LaunchedEffect(selectedTab, groupKeys) {
@@ -444,7 +449,8 @@ fun LibraryScreen(
             run {
                 val hasGroups = groupKeys.providers.isNotEmpty() || groupKeys.genres.isNotEmpty() || groupKeys.years.isNotEmpty() || groupKeys.categories.isNotEmpty()
                 val hasRows = recentRow.isNotEmpty() || newestRow.isNotEmpty() || topYearsRow.isNotEmpty()
-                uiState = if (hasGroups || hasRows) com.chris.m3usuite.ui.state.UiState.Success(Unit) else com.chris.m3usuite.ui.state.UiState.Empty
+                val hasTelegram = tgEnabled && telegramContent.isNotEmpty()
+                uiState = if (hasGroups || hasRows || hasTelegram) com.chris.m3usuite.ui.state.UiState.Success(Unit) else com.chris.m3usuite.ui.state.UiState.Empty
             }
         } else {
             if (groupKeys != GroupKeys()) {
@@ -575,6 +581,17 @@ fun LibraryScreen(
                     invalidateCaches()
                 }
             }
+    }
+
+    // Load Telegram content when enabled
+    LaunchedEffect(tgEnabled, resumeTick) {
+        if (tgEnabled) {
+            tgRepo.getAllTelegramContent().collect { items ->
+                telegramContent = items
+            }
+        } else {
+            telegramContent = emptyList()
+        }
     }
 
     // Routing-Handler je Tab
@@ -921,6 +938,33 @@ fun LibraryScreen(
                                 }
                             )
                         }
+                    }
+                }
+                
+                // Telegram content row (when enabled and available)
+                if (tgEnabled && telegramContent.isNotEmpty() && selectedTab == ContentTab.Vod) {
+                    item {
+                        val onTelegramClick: (MediaItem) -> Unit = { media ->
+                            scope.launch {
+                                playbackLauncher.launch(
+                                    com.chris.m3usuite.playback.PlayRequest(
+                                        type = "vod",
+                                        mediaId = media.id,
+                                        url = media.url ?: "",
+                                        headers = emptyMap(),
+                                        mimeType = null,
+                                        title = media.name
+                                    )
+                                )
+                            }
+                        }
+                        com.chris.m3usuite.ui.layout.FishTelegramRow(
+                            items = telegramContent.take(120),
+                            stateKey = "library:${selectedTabKey}:telegram",
+                            title = "Telegram",
+                            modifier = Modifier,
+                            onItemClick = onTelegramClick
+                        )
                     }
                 }
                 // Live: Kategorien (aus API), keine Provider/Genre-Buckets
