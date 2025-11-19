@@ -4,6 +4,7 @@ import java.util.Properties
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    kotlin("kapt") // Required for ObjectBox code generation
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -212,6 +213,23 @@ android {
     }
 }
 
+// Configure KAPT with Kotlin 1.9 language version for better compatibility
+// This fixes KAPT stub generation issues with Kotlin 2.1.0 and older dependencies
+tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask>().configureEach {
+    compilerOptions {
+        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
+    }
+}
+
+kapt {
+    correctErrorTypes = false
+    useBuildCache = true
+    mapDiagnosticLocations = false
+    includeCompileClasspath = false
+    showProcessorStats = false
+}
+
 // Disable AAR metadata check to allow using newer AndroidX libs with AGP 8.5.2
 tasks.whenTaskAdded {
     if (name == "checkReleaseAarMetadata" || name == "checkDebugAarMetadata") {
@@ -287,5 +305,6 @@ dependencies {
 
     implementation("io.objectbox:objectbox-android:5.0.1")
     implementation("io.objectbox:objectbox-kotlin:5.0.1")
-    ksp("io.objectbox:objectbox-processor:5.0.1")
+    // Note: objectbox-processor is NOT needed when using the ObjectBox Gradle plugin.
+    // The plugin handles code generation via bytecode transformation.
 }
