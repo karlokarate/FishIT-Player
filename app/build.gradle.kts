@@ -4,7 +4,7 @@ import java.util.Properties
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.kapt")
+    id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.kotlin.plugin.compose")
     id("io.objectbox") version "5.0.1"
@@ -287,5 +287,5 @@ dependencies {
 
     implementation("io.objectbox:objectbox-android:5.0.1")
     implementation("io.objectbox:objectbox-kotlin:5.0.1")
-    kapt("io.objectbox:objectbox-processor:5.0.1")
+    ksp("io.objectbox:objectbox-processor:5.0.1")
 }
