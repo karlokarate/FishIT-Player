@@ -13,7 +13,10 @@ import kotlinx.coroutines.launch
 
 /**
  * Extension function to convert TdlResult to value or throw exception.
+ * @JvmSynthetic prevents KAPT from generating Java stubs for this function
+ * (avoids stub generation issues with R8-minified TdlResult generics)
  */
+@JvmSynthetic
 fun <T> TdlResult<T>.getOrThrow(): T = when (this) {
     is TdlResult.Success -> result
     is TdlResult.Failure -> throw RuntimeException("TDLib error $code: $message")
