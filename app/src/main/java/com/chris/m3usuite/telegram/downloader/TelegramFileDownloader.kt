@@ -2,12 +2,29 @@ package com.chris.m3usuite.telegram.downloader
 
 import android.content.Context
 import com.chris.m3usuite.telegram.session.TelegramSession
-import dev.g000sha256.tdl.dto.DownloadFile
 import dev.g000sha256.tdl.dto.File
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.RandomAccessFile
 import kotlin.math.min
+
+/**
+ * Download progress information for a file.
+ */
+data class DownloadProgress(
+    val fileId: Int,
+    val downloadedBytes: Long,
+    val totalBytes: Long,
+    val isComplete: Boolean
+) {
+    val progressPercent: Int
+        get() = if (totalBytes > 0) {
+            ((downloadedBytes * 100) / totalBytes).toInt()
+        } else 0
+}
 
 /**
  * Handles file downloads from Telegram using TDLib.
@@ -16,6 +33,7 @@ import kotlin.math.min
  * - Uses downloadFile API with priority and offset support
  * - Implements proper caching to prevent bloat
  * - Manages concurrent downloads efficiently
+ * - Provides real-time download progress tracking
  */
 class TelegramFileDownloader(
     private val context: Context,
@@ -66,20 +84,12 @@ class TelegramFileDownloader(
         if (downloadedSize < endPosition) {
             // Need to download more data
             // Download with higher priority for streaming
-            val downloadRequest = DownloadFile(
+            val result = session.client.downloadFile(
                 fileId = fileIdInt,
                 priority = 16, // High priority for streaming
-                offset = position.toInt().coerceAtLeast(0),
-                limit = 0, // 0 means download from offset to end
+                offset = position.coerceAtLeast(0L),
+                limit = 0L, // 0 means download from offset to end
                 synchronous = true // Wait for completion
-            )
-            
-            val result = session.client.downloadFile(
-                downloadRequest.fileId,
-                downloadRequest.priority,
-                downloadRequest.offset,
-                downloadRequest.limit,
-                downloadRequest.synchronous
             )
             
             when (result) {
@@ -130,6 +140,74 @@ class TelegramFileDownloader(
                 )
             }
             activeDownloads.remove(fileIdInt)
+        }
+    }
+    
+    /**
+     * Observe download progress for a specific file.
+     * Returns a Flow that emits progress updates.
+     * 
+     * Based on tdlib-coroutines documentation for file updates.
+     * 
+     * @param fileId TDLib file ID
+     * @return Flow of download progress
+     */
+    fun observeDownloadProgress(fileId: Int): Flow<DownloadProgress> {
+        return session.client.fileUpdates
+            .filter { update -> update.file.id == fileId }
+            .map { update ->
+                val file = update.file
+                val downloaded = file.local?.downloadedSize?.toLong() ?: 0L
+                val total = file.expectedSize?.toLong() ?: 0L
+                val isComplete = file.local?.isDownloadingCompleted ?: false
+                
+                DownloadProgress(
+                    fileId = fileId,
+                    downloadedBytes = downloaded,
+                    totalBytes = total,
+                    isComplete = isComplete
+                )
+            }
+    }
+    
+    /**
+     * Start downloading a file and return immediately.
+     * Use observeDownloadProgress() to track progress.
+     * 
+     * @param fileId TDLib file ID
+     * @param priority Download priority (1-32, higher = more important)
+     * @return true if download started successfully
+     */
+    suspend fun startDownload(
+        fileId: Int,
+        priority: Int = 16
+    ): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
+            activeDownloads.add(fileId)
+            
+            val result = session.client.downloadFile(
+                fileId = fileId,
+                priority = priority,
+                offset = 0L,
+                limit = 0L,  // Download entire file
+                synchronous = false  // Async download
+            )
+            
+            when (result) {
+                is dev.g000sha256.tdl.TdlResult.Success -> {
+                    fileInfoCache[fileId.toString()] = result.result
+                    true
+                }
+                is dev.g000sha256.tdl.TdlResult.Failure -> {
+                    activeDownloads.remove(fileId)
+                    println("[TelegramFileDownloader] Download start failed: ${result.message}")
+                    false
+                }
+            }
+        } catch (e: Exception) {
+            activeDownloads.remove(fileId)
+            println("[TelegramFileDownloader] Download start error: ${e.message}")
+            false
         }
     }
     

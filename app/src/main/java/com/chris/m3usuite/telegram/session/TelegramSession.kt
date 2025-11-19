@@ -96,59 +96,110 @@ class TelegramSession(
     /**
      * Send phone number for authentication.
      * Call this when in AuthorizationStateWaitPhoneNumber.
+     * 
+     * @param phoneNumber Phone number in international format (e.g., +491234567890)
+     * @param retries Number of retry attempts on failure (default 3)
      */
-    suspend fun sendPhoneNumber(phoneNumber: String) {
+    suspend fun sendPhoneNumber(phoneNumber: String, retries: Int = 3) {
         println("[TelegramSession] Sending phone number...")
-        try {
-            val settings = PhoneNumberAuthenticationSettings(
-                allowFlashCall = false,
-                allowMissedCall = false,
-                allowSmsRetrieverApi = false,
-                hasUnknownPhoneNumber = false,
-                isCurrentPhoneNumber = false,
-                firebaseAuthenticationSettings = null,
-                authenticationTokens = emptyArray()
-            )
+        var lastError: Exception? = null
+        
+        repeat(retries) { attempt ->
+            try {
+                val settings = PhoneNumberAuthenticationSettings(
+                    allowFlashCall = false,
+                    allowMissedCall = false,
+                    allowSmsRetrieverApi = false,
+                    hasUnknownPhoneNumber = false,
+                    isCurrentPhoneNumber = false,
+                    firebaseAuthenticationSettings = null,
+                    authenticationTokens = emptyArray()
+                )
 
-            client.setAuthenticationPhoneNumber(phoneNumber, settings).getOrThrow()
-            println("[TelegramSession] Phone number submitted")
-        } catch (e: Exception) {
-            println("[TelegramSession] Error sending phone: ${e.message}")
-            _authEvents.emit(AuthEvent.Error("Failed to send phone number: ${e.message}"))
-            throw e
+                client.setAuthenticationPhoneNumber(phoneNumber, settings).getOrThrow()
+                println("[TelegramSession] Phone number submitted successfully")
+                return  // Success, exit
+            } catch (e: Exception) {
+                lastError = e
+                println("[TelegramSession] Error sending phone (attempt ${attempt + 1}/$retries): ${e.message}")
+                
+                if (attempt < retries - 1) {
+                    kotlinx.coroutines.delay(1000L * (attempt + 1))  // Exponential backoff
+                }
+            }
         }
+        
+        // All retries failed
+        val errorMsg = "Failed to send phone number after $retries attempts: ${lastError?.message}"
+        println("[TelegramSession] $errorMsg")
+        _authEvents.emit(AuthEvent.Error(errorMsg))
+        throw lastError ?: Exception(errorMsg)
     }
 
     /**
      * Send authentication code received via SMS or Telegram.
      * Call this when in AuthorizationStateWaitCode.
+     * 
+     * @param code Verification code
+     * @param retries Number of retry attempts on failure (default 2)
      */
-    suspend fun sendCode(code: String) {
+    suspend fun sendCode(code: String, retries: Int = 2) {
         println("[TelegramSession] Sending code...")
-        try {
-            client.checkAuthenticationCode(code).getOrThrow()
-            println("[TelegramSession] Code submitted")
-        } catch (e: Exception) {
-            println("[TelegramSession] Error sending code: ${e.message}")
-            _authEvents.emit(AuthEvent.Error("Failed to send code: ${e.message}"))
-            throw e
+        var lastError: Exception? = null
+        
+        repeat(retries) { attempt ->
+            try {
+                client.checkAuthenticationCode(code).getOrThrow()
+                println("[TelegramSession] Code submitted successfully")
+                return  // Success, exit
+            } catch (e: Exception) {
+                lastError = e
+                println("[TelegramSession] Error sending code (attempt ${attempt + 1}/$retries): ${e.message}")
+                
+                if (attempt < retries - 1) {
+                    kotlinx.coroutines.delay(500L)
+                }
+            }
         }
+        
+        // All retries failed
+        val errorMsg = "Failed to send code after $retries attempts: ${lastError?.message}"
+        println("[TelegramSession] $errorMsg")
+        _authEvents.emit(AuthEvent.Error(errorMsg))
+        throw lastError ?: Exception(errorMsg)
     }
 
     /**
      * Send 2FA password.
      * Call this when in AuthorizationStateWaitPassword.
+     * 
+     * @param password 2FA password
+     * @param retries Number of retry attempts on failure (default 2)
      */
-    suspend fun sendPassword(password: String) {
+    suspend fun sendPassword(password: String, retries: Int = 2) {
         println("[TelegramSession] Sending password...")
-        try {
-            client.checkAuthenticationPassword(password).getOrThrow()
-            println("[TelegramSession] Password submitted")
-        } catch (e: Exception) {
-            println("[TelegramSession] Error sending password: ${e.message}")
-            _authEvents.emit(AuthEvent.Error("Failed to send password: ${e.message}"))
-            throw e
+        var lastError: Exception? = null
+        
+        repeat(retries) { attempt ->
+            try {
+                client.checkAuthenticationPassword(password).getOrThrow()
+                println("[TelegramSession] Password submitted successfully")
+                return  // Success, exit
+            } catch (e: Exception) {
+                lastError = e
+                println("[TelegramSession] Error sending password (attempt ${attempt + 1}/$retries): ${e.message}")
+                
+                if (attempt < retries - 1) {
+                    kotlinx.coroutines.delay(500L)
+                }
+            }
         }
+        
+        // All retries failed
+        val errorMsg = "Failed to send password after $retries attempts: ${lastError?.message}"
+        println("[TelegramSession] $errorMsg")
+        _authEvents.emit(AuthEvent.Error(errorMsg))
+        throw lastError ?: Exception(errorMsg)
     }
 
     /**
