@@ -269,7 +269,7 @@ dependencies {
     implementation("com.squareup.okio:okio:3.16.1")
     implementation("com.github.junrar:junrar:7.5.5")
 
-    implementation("org.slf4j:slf4j-android:2.0.16")
+    implementation("org.slf4j:slf4j-api:2.0.16")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
