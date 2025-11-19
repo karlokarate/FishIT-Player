@@ -1,0 +1,89 @@
+name: "Copilot Setup Steps"
+
+on:
+  # Manuell zum Testen
+  workflow_dispatch:
+  # Lint/Validierung, wenn du das Setup änderst
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  # WICHTIG: Name darf NICHT geändert werden
+  copilot-setup-steps:
+    # Wenn du größere Runner konfiguriert hast, z.B. ubuntu-4-core verwenden
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # Minimal nötige Rechte – Copilot bekommt später seinen eigenen Token
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repo (inkl. Submodules)
+        uses: actions/checkout@v5
+        with:
+          # fetch-depth wird von Copilot intern überschrieben
+          submodules: recursive
+
+      - name: Set up JDK (für AGP 8.x / moderne Gradle-Versionen)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # Für AGP >= 8.6 ist Java 21 empfohlen; falls dein Build
+          # noch strikt auf 17 besteht, kannst du hier auf '17' zurückstellen.
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Android SDK (Tools + Plattformen)
+        uses: android-actions/setup-android@v3
+        with:
+          # Bei Bedarf API-Level ergänzen/ändern (z.B. 24, 26, 34)
+          packages: |
+            platform-tools
+            platforms;android-24
+            platforms;android-34
+            build-tools;35.0.0
+
+      - name: Set up Android NDK r27c (für TDLib- und native Builds)
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27c
+          link-to-sdk: true
+          local-cache: true
+
+      - name: Export ANDROID_NDK_* environment variables
+        run: |
+          echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=${{ steps.setup-ndk.outputs.ndk-path }}" >> "$GITHUB_ENV"
+
+      - name: Verify toolchain (Gradle, Java, Android SDK/NDK)
+        run: |
+          java -version || true
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-not-set}"
+          echo "ANDROID_NDK_HOME=${ANDROID_NDK_HOME:-not-set}"
+          chmod +x ./gradlew
+          ./gradlew --version
+
+      - name: Warm up Gradle wrapper & dependencies
+        run: |
+          # minimaler „Warmstart“, damit Copilot später schneller Builds,
+          # Tests, Lint, Detekt, ktlint, etc. ausführen kann.
+          ./gradlew --no-daemon -q help
+
+      - name: Document quality & diagnostics tasks for Copilot
+        run: |
+          echo "Available Gradle quality tasks Copilot should use, e.g.:"           >  COPILOT_TASK_HINTS.md
+          echo "- ./gradlew lintDebug"                                            >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew detekt"                                               >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew ktlintCheck"                                          >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew testDebugUnitTest"                                    >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew connectedDebugAndroidTest (falls Device/Emu verfügbar)" >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew :app:compileDebugAndroidTestSources"                  >> COPILOT_TASK_HINTS.md
+          echo "- ./gradlew :app:assembleDebug"                                   >> COPILOT_TASK_HINTS.md
+          echo "For TDLib builds use the existing TDLib workflows/scripts."       >> COPILOT_TASK_HINTS.md
+          cat COPILOT_TASK_HINTS.md
