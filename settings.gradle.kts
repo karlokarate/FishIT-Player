@@ -16,7 +16,7 @@ pluginManagement {
         id("com.google.devtools.ksp") version "2.1.0-1.0.29" apply false
         
         // Quality tools
-        id("io.gitlab.arturbosch.detekt") version "1.23.7" apply false
+        id("io.gitlab.arturbosch.detekt") version "1.23.8" apply false
         id("org.jlleitschuh.gradle.ktlint") version "12.1.2" apply false
     }
     resolutionStrategy {
