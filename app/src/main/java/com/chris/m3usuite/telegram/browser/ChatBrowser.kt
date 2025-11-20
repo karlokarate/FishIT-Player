@@ -1,5 +1,8 @@
 package com.chris.m3usuite.telegram.browser
 
+// LEGACY/UNUSED - This file is deprecated and only kept for reference.
+// DO NOT USE - Use T_ChatBrowser from telegram.core package instead.
+
 import com.chris.m3usuite.telegram.session.TelegramSession
 import com.chris.m3usuite.telegram.session.getOrThrow
 import dev.g000sha256.tdl.dto.*

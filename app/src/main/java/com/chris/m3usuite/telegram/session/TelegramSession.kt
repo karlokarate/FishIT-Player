@@ -1,5 +1,8 @@
 package com.chris.m3usuite.telegram.session
 
+// LEGACY/UNUSED - This file is deprecated and only kept for reference.
+// DO NOT USE - Use T_TelegramSession from telegram.core package instead.
+
 import com.chris.m3usuite.telegram.config.AppConfig
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult

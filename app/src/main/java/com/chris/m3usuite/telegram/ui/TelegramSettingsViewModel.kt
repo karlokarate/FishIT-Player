@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.*
+import com.chris.m3usuite.work.SchedulingGateway
 import dev.g000sha256.tdl.dto.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -90,16 +91,29 @@ class TelegramSettingsViewModel(
 
     /**
      * Toggle Telegram integration on/off.
+     * Triggers an initial full sync when enabled for the first time.
      */
     fun onToggleEnabled(enabled: Boolean) {
         viewModelScope.launch {
+            val wasEnabled = _state.value.enabled
             store.setTgEnabled(enabled)
             _state.update { it.copy(enabled = enabled) }
 
             if (!enabled) {
                 serviceClient.shutdown()
+            } else if (!wasEnabled && enabled) {
+                // First activation - trigger initial full sync if chats are selected
+                val selectedChats = store.tgSelectedChatsCsv.first()
+                if (selectedChats.isNotBlank() && _state.value.authState == TelegramAuthState.READY) {
+                    SchedulingGateway.scheduleTelegramSync(
+                        ctx = app,
+                        mode = "all",
+                        refreshHome = true
+                    )
+                }
             }
         }
+    }
     }
 
     /**
@@ -254,12 +268,22 @@ class TelegramSettingsViewModel(
 
     /**
      * Update selected chats for content parsing.
+     * Triggers a sync with MODE_SELECTION_CHANGED after updating settings.
      */
     fun onUpdateSelectedChats(chatIds: List<String>) {
         viewModelScope.launch {
             val csv = chatIds.joinToString(",")
             store.setTgSelectedChatsCsv(csv)
             _state.update { it.copy(selectedChats = chatIds) }
+            
+            // Trigger sync after chat selection changes
+            if (chatIds.isNotEmpty() && _state.value.enabled) {
+                SchedulingGateway.scheduleTelegramSync(
+                    ctx = app,
+                    mode = "selection_changed",
+                    refreshHome = true
+                )
+            }
         }
     }
 

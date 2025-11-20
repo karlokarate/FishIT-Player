@@ -8,6 +8,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.TransferListener
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
+import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
 
@@ -94,6 +95,13 @@ class TelegramDataSource(
         }
 
         fileId = segments[0]
+        
+        // Log stream start
+        TelegramLogRepository.logStreamingActivity(
+            fileId = fileId!!.toIntOrNull() ?: 0,
+            action = "opening",
+            details = mapOf("uri" to uri.toString())
+        )
 
         // Extract chatId and messageId from query parameters
         try {
@@ -112,6 +120,11 @@ class TelegramDataSource(
             messageId = messageIdStr.toLongOrNull()
                 ?: throw IOException("Invalid messageId parameter in Telegram URI: $uri")
         } catch (e: Exception) {
+            TelegramLogRepository.error(
+                source = "TelegramDataSource",
+                message = "Failed to parse Telegram URI",
+                exception = e
+            )
             throw IOException("Failed to parse Telegram URI parameters: $uri - ${e.message}", e)
         }
 
@@ -127,6 +140,12 @@ class TelegramDataSource(
             try {
                 downloader.getFileSize(fileId!!)
             } catch (e: Exception) {
+                TelegramLogRepository.error(
+                    source = "TelegramDataSource",
+                    message = "Failed to get file size",
+                    exception = e,
+                    details = mapOf("fileId" to fileId!!)
+                )
                 throw IOException("Failed to get file size for fileId=$fileId: ${e.message}", e)
             }
         }
@@ -143,6 +162,16 @@ class TelegramDataSource(
 
         // Notify transfer listener that transfer has started
         transferListener?.onTransferStart(this, dataSpec, true)
+        
+        // Log successful open
+        TelegramLogRepository.logStreamingActivity(
+            fileId = fileId!!.toIntOrNull() ?: 0,
+            action = "opened",
+            details = mapOf(
+                "size" to totalSize.toString(),
+                "position" to position.toString()
+            )
+        )
 
         return if (bytesRemaining >= 0) bytesRemaining else C.LENGTH_UNSET.toLong()
     }
@@ -232,6 +261,7 @@ class TelegramDataSource(
     override fun close() {
         if (!opened) return
 
+        val closingFileId = fileId
         opened = false
 
         // Cancel any ongoing downloads
@@ -258,6 +288,15 @@ class TelegramDataSource(
         // Notify transfer listener that transfer has ended
         if (spec != null) {
             transferListener?.onTransferEnd(this, spec, true)
+        }
+        
+        // Log stream close
+        closingFileId?.let { fid ->
+            TelegramLogRepository.logStreamingActivity(
+                fileId = fid.toIntOrNull() ?: 0,
+                action = "closed",
+                details = null
+            )
         }
     }
 }
