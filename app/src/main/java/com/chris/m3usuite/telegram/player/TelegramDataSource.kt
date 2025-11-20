@@ -148,7 +148,7 @@ class TelegramDataSource(
     ): Int {
         if (readLength == 0) return 0
         if (!opened) {
-            throw IOException("DataSource not opened")
+            throw IOException("TelegramDataSource.read() called when data source is not open (likely before open() or after close())")
         }
 
         val fid = fileId ?: throw IOException("No file ID available")
