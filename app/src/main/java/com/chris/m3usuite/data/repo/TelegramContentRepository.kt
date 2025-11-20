@@ -83,19 +83,6 @@ class TelegramContentRepository(
                         height = height,
                         language = language
                     )
-                        fileId = fileId,
-                        fileUniqueId = fileUniqueId,
-                        caption = mediaInfo.title,
-                        captionLower = mediaInfo.title?.lowercase(),
-                        date = message.date.toLong(),
-                        fileName = mediaInfo.fileName,
-                        durationSecs = durationSecs,
-                        mimeType = mediaInfo.mimeType,
-                        sizeBytes = mediaInfo.sizeBytes,
-                        width = width,
-                        height = height,
-                        language = language
-                    )
                     
                     // Check if already exists
                     val existing = messageBox.query {
