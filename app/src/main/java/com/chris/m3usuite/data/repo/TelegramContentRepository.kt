@@ -308,7 +308,8 @@ class TelegramContentRepository(
         chatId: Long,
         messageId: Long,
     ): String {
-        val baseUrl = "tg://file/${fileId ?: 0}"
+        requireNotNull(fileId) { "fileId must not be null when building Telegram URL" }
+        val baseUrl = "tg://file/$fileId"
         return "$baseUrl?chatId=$chatId&messageId=$messageId"
     }
 
