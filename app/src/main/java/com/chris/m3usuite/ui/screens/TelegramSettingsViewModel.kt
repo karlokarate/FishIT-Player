@@ -74,8 +74,8 @@ class TelegramSettingsViewModel(
     fun onUpdateCredentials(apiId: String, apiHash: String) {
         viewModelScope.launch {
             val idInt = apiId.toIntOrNull() ?: 0
-            store.setTgApiId(idInt)
-            store.setTgApiHash(apiHash)
+            store.setTelegramApiId(idInt)
+            store.setTelegramApiHash(apiHash)
             _state.update { it.copy(apiId = apiId, apiHash = apiHash) }
         }
     }

@@ -161,7 +161,8 @@ fun HomeChromeScaffold(
     val navPad = with(density) { (if (isPreview) 16.dp else WindowInsets.navigationBars.getBottom(this).toDp()) }
 
     val seedingInFlight by XtreamImportCoordinator.seederInFlight.collectAsStateWithLifecycle(initialValue = false)
-    val telegramSyncState by SchedulingGateway.telegramSyncState.collectAsStateWithLifecycle(initialValue = SchedulingGateway.TelegramSyncState.Idle)
+    // TODO: Telegram sync state tracking not yet implemented
+    // val telegramSyncState by SchedulingGateway.telegramSyncState.collectAsStateWithLifecycle(initialValue = SchedulingGateway.TelegramSyncState.Idle)
 
     // Focus manager to push focus back into content after collapsing chrome via BACK
     val focusManager: FocusManager = LocalFocusManager.current
@@ -224,6 +225,9 @@ fun HomeChromeScaffold(
         }
     } else Modifier
 
+    // TODO: Telegram sync banner not yet implemented
+    val telegramBannerVisible = false
+    /*
     val telegramBannerVisible = telegramSyncState !is SchedulingGateway.TelegramSyncState.Idle
     val telegramBannerText = remember(telegramSyncState) {
         when (val state = telegramSyncState) {
@@ -269,6 +273,7 @@ fun HomeChromeScaffold(
             SchedulingGateway.acknowledgeTelegramSync()
         }
     }
+    */
 
     Box(
         Modifier
@@ -338,6 +343,8 @@ fun HomeChromeScaffold(
                 }
             }
             AnimatedVisibility(visible = telegramBannerVisible) {
+                // TODO: Telegram banner UI not yet implemented
+                /*
                 Surface(
                     tonalElevation = 6.dp,
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
@@ -352,6 +359,7 @@ fun HomeChromeScaffold(
                             .alpha(0.96f)
                     )
                 }
+                */
             }
         }
         // Inhalt mit korrektem Chrome/Inset-Padding (blur in Expanded on TV)

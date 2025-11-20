@@ -657,6 +657,10 @@ class SettingsStore(private val context: Context) {
     suspend fun setTgAutoRoamingPreloadStories(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_ROAM_PRELOAD_STORIES] = value } }
     suspend fun setTgAutoRoamingLessDataCalls(value: Boolean) { context.dataStore.edit { it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] = value } }
     suspend fun setTgEnabled(value: Boolean) = setTelegramEnabled(value)
+    suspend fun setTgApiId(value: Int) = setTelegramApiId(value)
+    suspend fun setTgApiHash(value: String) = setTelegramApiHash(value)
+    suspend fun setTgSelectedChatsCsv(value: String) = setTelegramSelectedChatsCsv(value)
+    suspend fun setTgCacheLimitGb(value: Int) = setTelegramCacheLimitGb(value)
     suspend fun setTgLogVerbosity(value: Int) = setTelegramLogVerbosity(value)
     suspend fun setLogDirTreeUri(value: String) { context.dataStore.edit { it[Keys.LOG_DIR_TREE_URI] = value } }
 

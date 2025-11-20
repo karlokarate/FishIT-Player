@@ -122,7 +122,8 @@ fun TelegramFishTile(
     onOpenDetails: (MediaItem) -> Unit,
     onPlay: ((MediaItem) -> Unit)? = null
 ) {
-    val content = buildTelegramTileContent(
+    // TODO: buildTelegramTileContent not yet implemented, using buildVodTileContent as fallback
+    val content = buildVodTileContent(
         media = media,
         onOpenDetails = { onOpenDetails(media) },
         onPlay = onPlay?.let { handler -> { handler(media) } }

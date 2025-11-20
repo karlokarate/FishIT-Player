@@ -176,7 +176,7 @@ object DiagnosticsLogger {
      * Get recent events for debugging/export.
      */
     fun getRecentEvents(limit: Int = 100): List<DiagnosticEvent> {
-        return eventQueue.takeLast(limit)
+        return eventQueue.toList().takeLast(limit)
     }
     
     /**

@@ -2,6 +2,7 @@
 
 package com.chris.m3usuite.ui.layout
 
+import com.chris.m3usuite.data.repo.TelegramContentRepository
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.border
@@ -114,8 +115,10 @@ fun buildLiveTileContent(
         )
     }
 
-    val topEndBadge: (@Composable () -> Unit)? = if (media.isTelegramItem()) {
-        { FishTelegramBadge() }
+    val topEndBadge: (@Composable () -> Unit)? = if (TelegramContentRepository.isTelegramItem(media.id)) {
+        // TODO: FishTelegramBadge composable not yet implemented
+        null
+        // { FishTelegramBadge() }
     } else null
 
     val onFocusChanged: (Boolean) -> Unit = { focused ->

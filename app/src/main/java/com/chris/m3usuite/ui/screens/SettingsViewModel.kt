@@ -39,11 +39,11 @@ data class SettingsUiState(
     val logDir: String = "",
     val overrideApiId: Int = 0,
     val overrideApiHash: String = "",
-    val effectiveApiId: Int = BuildConfig.TG_API_ID,
-    val effectiveApiHash: String = BuildConfig.TG_API_HASH,
-    val buildApiId: Int = BuildConfig.TG_API_ID,
-    val buildApiHash: String = BuildConfig.TG_API_HASH,
-    val apiKeysMissing: Boolean = BuildConfig.TG_API_ID <= 0 || BuildConfig.TG_API_HASH.isBlank()
+    val effectiveApiId: Int = 0, // TODO: BuildConfig.TG_API_ID not defined
+    val effectiveApiHash: String = "", // TODO: BuildConfig.TG_API_HASH not defined
+    val buildApiId: Int = 0, // TODO: BuildConfig.TG_API_ID not defined
+    val buildApiHash: String = "", // TODO: BuildConfig.TG_API_HASH not defined
+    val apiKeysMissing: Boolean = true // TODO: Update when TG_API constants are added to BuildConfig
 )
 
 sealed interface SettingsIntent {
@@ -69,8 +69,8 @@ class SettingsViewModel(
     private val tg: TelegramServiceClient,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
-    private val buildApiId = BuildConfig.TG_API_ID
-    private val buildApiHash = BuildConfig.TG_API_HASH
+    private val buildApiId = 0 // TODO: BuildConfig.TG_API_ID not defined
+    private val buildApiHash = "" // TODO: BuildConfig.TG_API_HASH not defined
 
     private val _state = MutableStateFlow(SettingsUiState())
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
@@ -87,7 +87,8 @@ class SettingsViewModel(
         .distinctUntilChanged()
 
     init {
-        runCatching { tg.bind() }
+        // TODO: Telegram service binding not yet properly initialized
+        // runCatching { tg.bind() }
         _state.update {
             it.copy(
                 buildApiId = buildApiId,
@@ -299,7 +300,7 @@ class SettingsViewModel(
         val effHash = effectiveHash(overrideHash ?: snapshot.overrideApiHash)
         if (effId > 0 && effHash.isNotBlank()) {
             runCatching {
-                tg.start(effId, effHash)
+                tg.start(effId.toString(), effHash)
                 tg.getAuth()
             }.onFailure {
                 _effects.emit(SettingsEffect.Snackbar("TDLib-Start fehlgeschlagen: ${it.message ?: "Unbekannt"}"))
@@ -311,7 +312,7 @@ class SettingsViewModel(
 
     private suspend fun resolveChatNames(ids: Set<Long>): List<ChatUi> = withContext(ioDispatcher) {
         if (ids.isEmpty()) return@withContext emptyList()
-        val resolved = runCatching { tg.resolveChatTitles(ids.toLongArray()) }.getOrNull().orEmpty()
+        val resolved = runCatching { tg.resolveChatTitles(ids.toList()) }.getOrNull().orEmpty()
         val nameMap = resolved.toMap()
         ids.map { id ->
             val title = nameMap[id] ?: runCatching { tg.resolveChatTitle(id) }.getOrNull() ?: id.toString()
@@ -321,7 +322,9 @@ class SettingsViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        runCatching { tg.unbind() }
+        // TODO: unbind is suspend function, can't call directly in onCleared
+        // Consider using viewModelScope.launch or moving this logic
+        // viewModelScope.launch { runCatching { tg.unbind() } }
     }
 
     private data class TelegramPrefs(

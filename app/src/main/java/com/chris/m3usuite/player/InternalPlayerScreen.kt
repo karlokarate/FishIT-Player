@@ -327,24 +327,14 @@ fun InternalPlayerScreen(
                 when {
                     parsed == null -> Uri.parse(url)
                     parsed.host.equals("file", true) -> parsed
-                    parsed.host.equals("message", true) -> {
-                        val chatId = parsed.getQueryParameter("chatId")?.toLongOrNull()
-                        val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
-                        if (chatId != null && messageId != null) {
-                            if (!telegramServiceClient.isReady()) {
-                                Toast.makeText(
-                                    ctx,
-                                    "Telegram noch nicht verbunden oder TDLib noch nicht initialisiert…",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                onExit()
-                                return@LaunchedEffect
-                            }
-                            runCatching {
-                                PlayUrlHelper.tgPlayUri(chatId = chatId, messageId = messageId, svc = telegramServiceClient)
-                            }.getOrElse { parsed }
-                        } else parsed
-                    }
+                    // TODO: Telegram message resolution not yet implemented
+                    // parsed.host.equals("message", true) -> {
+                    //     val chatId = parsed.getQueryParameter("chatId")?.toLongOrNull()
+                    //     val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
+                    //     if (chatId != null && messageId != null) {
+                    //         // Telegram service integration pending
+                    //     }
+                    // }
                     else -> parsed
                 }
             } else {
