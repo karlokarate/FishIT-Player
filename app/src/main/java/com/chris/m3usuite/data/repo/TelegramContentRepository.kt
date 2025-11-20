@@ -6,8 +6,13 @@ import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.models.MediaInfo
+import com.chris.m3usuite.telegram.models.MediaKind
 import com.chris.m3usuite.telegram.parser.MediaParser
+import com.chris.m3usuite.telegram.parser.TgContentHeuristics
 import dev.g000sha256.tdl.dto.Message
+import dev.g000sha256.tdl.dto.MessageVideo
+import dev.g000sha256.tdl.dto.MessageDocument
 import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
 import io.objectbox.kotlin.query
@@ -30,13 +35,21 @@ class TelegramContentRepository(
     private val messageBox: Box<ObxTelegramMessage> = obxStore.boxFor()
 
     /**
-     * Index messages from a specific chat.
-     * Parses metadata and stores in ObjectBox with reusable keys.
+     * Index messages from a specific chat with enhanced metadata extraction.
+     * Parses metadata using MediaParser + TgContentHeuristics and stores in ObjectBox.
+     * Extracts file metadata directly from TDLib message content.
+     *
+     * @param chatId Chat ID
+     * @param chatTitle Chat title for context-based classification
+     * @param messages List of messages to index
+     * @param chatType Type of chat for filtering: "vod", "series", or "feed"
+     * @return Number of messages indexed
      */
     suspend fun indexChatMessages(
         chatId: Long,
         chatTitle: String,
         messages: List<Message>,
+        chatType: String = "vod",
     ): Int =
         withContext(Dispatchers.IO) {
             var indexed = 0
@@ -54,14 +67,46 @@ class TelegramContentRepository(
                     is com.chris.m3usuite.telegram.models.ParsedItem.Media -> {
                         val mediaInfo = parsed.info
 
-                        // TODO: Extract file metadata from TDLib message content
-                        // These fields are not available in MediaInfo and require direct TDLib access
-                        val fileId: Int? = null
-                        val fileUniqueId: String? = null
-                        val durationSecs: Int? = mediaInfo.durationMinutes?.times(60)
-                        val width: Int? = null
-                        val height: Int? = null
-                        val language: String? = null
+                        // Apply heuristics for better classification
+                        val heuristic = TgContentHeuristics.classify(mediaInfo, chatTitle)
+
+                        // Extract file metadata from TDLib message content
+                        val fileId: Int?
+                        val fileUniqueId: String?
+                        val durationSecs: Int?
+                        val width: Int?
+                        val height: Int?
+                        val supportsStreaming: Boolean?
+
+                        when (val content = message.content) {
+                            is MessageVideo -> {
+                                fileId = content.video.video?.id
+                                fileUniqueId = content.video.video?.remote?.uniqueId
+                                durationSecs = content.video.duration
+                                width = content.video.width
+                                height = content.video.height
+                                supportsStreaming = content.video.supportsStreaming
+                            }
+                            is MessageDocument -> {
+                                fileId = content.document.document?.id
+                                fileUniqueId = content.document.document?.remote?.uniqueId
+                                durationSecs = mediaInfo.durationMinutes?.times(60)
+                                width = null
+                                height = null
+                                supportsStreaming = null
+                            }
+                            else -> {
+                                fileId = null
+                                fileUniqueId = null
+                                durationSecs = mediaInfo.durationMinutes?.times(60)
+                                width = null
+                                height = null
+                                supportsStreaming = null
+                            }
+                        }
+
+                        // Detect language from heuristics
+                        val language = heuristic.detectedLanguages.firstOrNull()
 
                         val obxMessage =
                             ObxTelegramMessage(
@@ -69,8 +114,9 @@ class TelegramContentRepository(
                                 messageId = message.id,
                                 fileId = fileId,
                                 fileUniqueId = fileUniqueId,
-                                caption = mediaInfo.title,
-                                captionLower = mediaInfo.title?.lowercase(),
+                                supportsStreaming = supportsStreaming,
+                                caption = mediaInfo.title ?: mediaInfo.fileName,
+                                captionLower = (mediaInfo.title ?: mediaInfo.fileName)?.lowercase(),
                                 date = message.date.toLong(),
                                 fileName = mediaInfo.fileName,
                                 durationSecs = durationSecs,
@@ -81,7 +127,7 @@ class TelegramContentRepository(
                                 language = language,
                             )
 
-                        // Check if already exists
+                        // Upsert logic: check if already exists
                         val existing =
                             messageBox
                                 .query {
@@ -93,13 +139,13 @@ class TelegramContentRepository(
                             messageBox.put(obxMessage)
                             indexed++
                         } else {
-                            // Update existing
+                            // Update existing with new metadata
                             obxMessage.id = existing.id
                             messageBox.put(obxMessage)
                         }
                     }
                     else -> {
-                        // Skip non-media items
+                        // Skip non-media items (SubChat, Invite, None)
                     }
                 }
             }
@@ -123,9 +169,66 @@ class TelegramContentRepository(
             }.flowOn(Dispatchers.IO)
 
     /**
-     * Get Telegram content for specific chats.
+     * Get Telegram VOD content (movies).
+     * Filters by VOD-specific chat selection from settings.
      */
-    private suspend fun getTelegramContentByChatIds(chatIds: List<Long>): List<MediaItem> =
+    fun getTelegramVod(): Flow<List<MediaItem>> =
+        store.tgSelectedVodChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyList()
+                } else {
+                    getTelegramContentByChatIds(chatIds, "vod")
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Get Telegram Series content (TV shows/series).
+     * Filters by Series-specific chat selection from settings.
+     */
+    fun getTelegramSeries(): Flow<List<MediaItem>> =
+        store.tgSelectedSeriesChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyList()
+                } else {
+                    getTelegramContentByChatIds(chatIds, "series")
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Get Telegram Feed items (latest activity).
+     * Returns recent items from all selected chats, sorted by date.
+     */
+    fun getTelegramFeedItems(): Flow<List<MediaItem>> =
+        store.tgSelectedChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyList()
+                } else {
+                    // Get recent items (last 100) for activity feed
+                    getTelegramRecentContent(chatIds, limit = 100)
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Parse comma-separated chat IDs from settings string.
+     */
+    private fun parseChatIdsCsv(csv: String): List<Long> = csv.split(",").mapNotNull { it.trim().toLongOrNull() }
+
+    /**
+     * Get Telegram content for specific chats.
+     *
+     * @param chatIds List of chat IDs to query
+     * @param contentType Optional content type filter ("vod", "series", "feed")
+     */
+    private suspend fun getTelegramContentByChatIds(
+        chatIds: List<Long>,
+        contentType: String? = null,
+    ): List<MediaItem> =
         withContext(Dispatchers.IO) {
             val messages =
                 messageBox
@@ -135,22 +238,75 @@ class TelegramContentRepository(
                     }.find()
 
             messages.map { obxMsg ->
-                MediaItem(
-                    id = encodeTelegramId(obxMsg.messageId),
-                    name = obxMsg.caption ?: "Untitled",
-                    type = "vod", // Default to VOD, can be refined based on metadata
-                    url = "tg://file/${obxMsg.fileId}",
-                    poster = obxMsg.thumbLocalPath,
-                    plot = null,
-                    rating = null,
-                    year = null,
-                    durationSecs = obxMsg.durationSecs,
-                    categoryName = "Telegram",
-                    source = "telegram",
-                    providerKey = "Telegram",
-                )
+                toMediaItem(obxMsg, contentType)
             }
         }
+
+    /**
+     * Get recent Telegram content (for activity feed).
+     */
+    private suspend fun getTelegramRecentContent(
+        chatIds: List<Long>,
+        limit: Int = 100,
+    ): List<MediaItem> =
+        withContext(Dispatchers.IO) {
+            val messages =
+                messageBox
+                    .query {
+                        `in`(ObxTelegramMessage_.chatId, chatIds.toLongArray())
+                        orderDesc(ObxTelegramMessage_.date)
+                    }.find(0, limit.toLong())
+
+            messages.map { obxMsg ->
+                toMediaItem(obxMsg, "feed")
+            }
+        }
+
+    /**
+     * Convert ObxTelegramMessage to MediaItem with proper URL format.
+     */
+    private fun toMediaItem(
+        obxMsg: ObxTelegramMessage,
+        contentType: String? = null,
+    ): MediaItem {
+        // Generate proper tg:// URL with chatId and messageId
+        val url = buildTelegramUrl(obxMsg.fileId, obxMsg.chatId, obxMsg.messageId)
+
+        // Determine type based on content
+        val type =
+            when (contentType) {
+                "series" -> "series"
+                "vod" -> "vod"
+                else -> "vod" // Default to VOD
+            }
+
+        return MediaItem(
+            id = encodeTelegramId(obxMsg.messageId),
+            name = obxMsg.caption ?: obxMsg.fileName ?: "Untitled",
+            type = type,
+            url = url,
+            poster = obxMsg.thumbLocalPath,
+            plot = null,
+            rating = null,
+            year = null,
+            durationSecs = obxMsg.durationSecs,
+            categoryName = "Telegram",
+            source = "telegram",
+            providerKey = "Telegram",
+        )
+    }
+
+    /**
+     * Build Telegram URL with proper format: tg://file/<fileId>?chatId=...&messageId=...
+     */
+    private fun buildTelegramUrl(
+        fileId: Int?,
+        chatId: Long,
+        messageId: Long,
+    ): String {
+        val baseUrl = "tg://file/${fileId ?: 0}"
+        return "$baseUrl?chatId=$chatId&messageId=$messageId"
+    }
 
     /**
      * Get Telegram content for a specific chat.
@@ -167,19 +323,8 @@ class TelegramContentRepository(
 
                 emit(
                     messages.map { obxMsg ->
-                        MediaItem(
-                            id = encodeTelegramId(obxMsg.messageId),
-                            name = obxMsg.caption ?: "Untitled",
-                            type = "vod",
-                            url = "tg://file/${obxMsg.fileId}",
-                            poster = obxMsg.thumbLocalPath,
-                            plot = null,
-                            rating = null,
-                            year = null,
-                            durationSecs = obxMsg.durationSecs,
+                        toMediaItem(obxMsg).copy(
                             categoryName = "Telegram - Chat $chatId",
-                            source = "telegram",
-                            providerKey = "Telegram",
                         )
                     },
                 )
@@ -200,20 +345,7 @@ class TelegramContentRepository(
 
                 emit(
                     messages.map { obxMsg ->
-                        MediaItem(
-                            id = encodeTelegramId(obxMsg.messageId),
-                            name = obxMsg.caption ?: "Untitled",
-                            type = "vod",
-                            url = "tg://file/${obxMsg.fileId}",
-                            poster = obxMsg.thumbLocalPath,
-                            plot = null,
-                            rating = null,
-                            year = null,
-                            durationSecs = obxMsg.durationSecs,
-                            categoryName = "Telegram",
-                            source = "telegram",
-                            providerKey = "Telegram",
-                        )
+                        toMediaItem(obxMsg)
                     },
                 )
             }.flowOn(Dispatchers.IO)
