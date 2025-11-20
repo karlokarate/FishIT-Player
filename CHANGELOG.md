@@ -1,3 +1,15 @@
+2025-11-20 (Legacy Cleanup & TDLib Priority)
+- **feat(roadmap)**: Set TDLib integration enhancement as Priority 1. `.github/tdlibAgent.md` is now the Single Source of Truth for all Telegram/TDLib work.
+- **chore(cleanup)**: Remove `b/` directory containing 180KB of legacy backup code (PlayerLauncher, Cards, MediaMeta, MetaMappers, FocusToolkit, etc.)
+- **chore(cleanup)**: Remove old traffic log file `traffic-20250915.jsonl` from source tree
+- **chore(docs)**: Create `docs/archive/` and move historical documentation:
+  - `IMPLEMENTATION_SUMMARY.md`, `IMPLEMENTATION_SUMMARY_TV_UX.md`, `PHASE3_IMPLEMENTATION_SUMMARY.md`
+  - `TV_UX_INTEGRATION_GUIDE.md`, `COPILOT_TASK_HINTS.md`
+  - `docs/PHASE3_TELEGRAM_INTEGRATION.md`, `docs/TELEGRAM_INTEGRATION_IMPLEMENTATION.md`
+- **docs(roadmap)**: Renumber priorities: TDLib (Prio 1), Tiles/Rows (Prio 2), FocusKit (Prio 3), Kids/Gast (Prio 4), MVVM (Prio 5), Projektstruktur (Prio 6)
+- **docs(architecture)**: Add prominent note about TDLib priority in AGENTS.md and ARCHITECTURE_OVERVIEW.md
+- **note**: Preserved `tools/tdlib_coroutines_doku.md` as upstream API reference (as requested)
+
 2025-11-19 (Workflow Cleanup)
 - chore(ci): Remove all TDLib build workflows and scripts. App now uses TDLib coroutines AAR from Maven Central (`dev.g000sha256:tdl-coroutines-android:5.0.0`) which includes native libraries for arm64-v8a and armeabi-v7a with all Java bindings.
 - feat(ci): Add new `release-build.yml` workflow for building and releasing APKs with automatic GitHub release creation. Builds both arm64-v8a and armeabi-v7a variants in parallel.
