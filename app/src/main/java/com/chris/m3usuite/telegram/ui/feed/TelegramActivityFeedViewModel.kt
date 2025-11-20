@@ -42,15 +42,40 @@ class TelegramActivityFeedViewModel(
     init {
         // Collect activity events from service client
         viewModelScope.launch {
-            serviceClient.activityEvents.collect { event ->
-                handleActivityEvent(event)
+            try {
+                serviceClient.activityEvents.collect { event ->
+                    handleActivityEvent(event)
+                }
+            } catch (e: Exception) {
+                _feedState.update { 
+                    it.copy(
+                        errorMessage = "Fehler beim Laden der Aktivitäten: ${e.message}",
+                        isLoading = false
+                    ) 
+                }
             }
         }
 
         // Load initial feed items
         viewModelScope.launch {
-            repository.getTelegramFeedItems().collect { items ->
-                _feedState.update { it.copy(feedItems = items) }
+            _feedState.update { it.copy(isLoading = true) }
+            try {
+                repository.getTelegramFeedItems().collect { items ->
+                    _feedState.update { 
+                        it.copy(
+                            feedItems = items, 
+                            isLoading = false,
+                            errorMessage = null
+                        ) 
+                    }
+                }
+            } catch (e: Exception) {
+                _feedState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Fehler beim Laden der Medien: ${e.message}"
+                    ) 
+                }
             }
         }
     }
@@ -126,8 +151,18 @@ class TelegramActivityFeedViewModel(
      */
     fun refreshFeed() {
         viewModelScope.launch {
-            repository.getTelegramFeedItems().first().let { items ->
-                _feedState.update { it.copy(feedItems = items) }
+            _feedState.update { it.copy(isLoading = true, errorMessage = null) }
+            try {
+                repository.getTelegramFeedItems().first().let { items ->
+                    _feedState.update { it.copy(feedItems = items, isLoading = false) }
+                }
+            } catch (e: Exception) {
+                _feedState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Fehler beim Aktualisieren: ${e.message}"
+                    ) 
+                }
             }
         }
     }
@@ -152,6 +187,8 @@ data class FeedState(
     val feedItems: List<MediaItem> = emptyList(),
     val lastActivityTimestamp: Long = 0,
     val hasNewActivity: Boolean = false,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
 )
 
 /**
