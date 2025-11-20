@@ -126,9 +126,9 @@ class TelegramSyncWorker(
 
                 // Retry on failure
                 if (runAttemptCount < 3) {
-                    Result.retry()
+                    return Result.retry()
                 } else {
-                    Result.failure(
+                    return Result.failure(
                         workDataOf(
                             "error" to (e.message ?: "Unknown error"),
                         ),
