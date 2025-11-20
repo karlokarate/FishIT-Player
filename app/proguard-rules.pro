@@ -26,3 +26,14 @@
 
 # Coroutines Debug ausschließen (nur debugImplementation zulassen)
 -dontwarn kotlinx.coroutines.debug.**
+
+# TDLib (tdl-coroutines-android) - Keep DTO classes and native bindings
+-keep class dev.g000sha256.tdl.dto.** { *; }
+-keep class dev.g000sha256.tdl.TdlClient { *; }
+-keep class dev.g000sha256.tdl.** { *; }
+-keepclassmembers class dev.g000sha256.tdl.** {
+    native <methods>;
+}
+
+# LeakCanary - Only for debug builds, but add rules to be safe
+-dontwarn com.squareup.leakcanary.**

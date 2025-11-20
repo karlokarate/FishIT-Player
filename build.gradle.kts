@@ -7,6 +7,7 @@ plugins {
     id("io.gitlab.arturbosch.detekt") version "1.23.8" apply false
     id("org.jlleitschuh.gradle.ktlint") version "12.1.2" apply false
     id("com.github.ben-manes.versions") version "0.51.0" apply true
+    id("org.jetbrains.kotlinx.kover") version "0.8.3" apply true
 }
 
 // Apply quality plugins to all subprojects
@@ -53,4 +54,29 @@ fun isNonStable(version: String): Boolean {
     val regex = "^[0-9,.v-]+(-r)?$".toRegex()
     val isStable = stableKeyword || regex.matches(version)
     return isStable.not()
+}
+
+// Configure Kover for test coverage
+kover {
+    reports {
+        filters {
+            // Exclude generated code and tests
+            excludes {
+                classes(
+                    "**/BuildConfig",
+                    "**/R",
+                    "**/R\$*",
+                    "**/Manifest",
+                    "**/Manifest\$*",
+                    "**/*Test*",
+                    "**/*\$*",
+                    "**/reference/**",
+                )
+                packages(
+                    "*.generated.*",
+                    "*.build.*",
+                )
+            }
+        }
+    }
 }
