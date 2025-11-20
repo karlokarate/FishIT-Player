@@ -255,7 +255,7 @@ PRIO‑4: Kids/Gast Whitelist – Actions + Multi‑Select (Q4 2025)
 
 Status: Backend helpers + selection scaffold landed; detail actions and UI wiring follow next.
 
-PRIO‑5: Start/Settings MVVM Completion
+PRIO-5: Start/Settings MVVM Completion
 - StartScreen läuft jetzt über StartViewModel + StartUseCases (Serien/VOD/Live Flows, Favoriten, Suchpaging, Permissions, Events). Compose hält vorerst KidSelectSheet, Live-Favoriten-Picker und Telegram-Service-Bindung eigenständig.
 - SettingsScreen bindet dedizierte ViewModels pro Abschnitt (Network/Player/Xtream/EPG + Telegram Trio); Diagnose/Backup/Quick-Import-Blöcke liegen weiterhin im Backup-Screen.
 - TODO:
