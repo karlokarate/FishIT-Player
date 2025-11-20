@@ -135,7 +135,19 @@ Hinweis
   Wir binden Jellyfins `media3-ffmpeg-decoder` 1.8.0+1 ein, halten die restlichen
   Media3-Module auf 1.8.0 und behalten die bisherigen ABI-Splits bei.
 
-Prio 1 — Tiles/Rows Centralization (ON)
+**PRIO 1 — TDLib Integration Enhancement (NEW - 2025-11-20)**
+- **Single Source of Truth**: `.github/tdlibAgent.md` ist die maßgebliche Referenz für alle Arbeiten an der Telegram‑Integration
+- **Ziel**: Unified Telegram Engine, Zero‑Copy Streaming, intelligenter Heuristik‑Layer, Turbo‑Sync‑Modus, Telegram Activity Feed
+- **Vorbereitung abgeschlossen**: Legacy Code aufgeräumt, Dokumentation aktualisiert
+- **Status**: Bereit für Implementierung in kommenden Aufträgen
+- **Nächste Schritte**: 
+  - Umstrukturierung der Telegram-Module gemäß tdlibAgent.md Struktur
+  - Implementierung T_TelegramServiceClient (Unified Telegram Engine)
+  - Migration zu neuer Package-Struktur (telegram/core, telegram/ui, telegram/work, etc.)
+  - Zero-Copy Streaming-Implementierung
+  - Siehe `.github/tdlibAgent.md` für vollständige Details
+
+Prio 2 — Tiles/Rows Centralization (ON)
 - Ziel: UI‑Layout vollständig zentralisieren (Tokens + Tile + Row + Content), damit Screens nur noch `FishRow` + `FishTile` verdrahten.
 - Module (Stand): `ui/layout/FishTheme`, `FishTile`, `FishRow(Light/Media/Paged)`, `FishVodContent` (VOD), `FishSeriesContent`/`FishLiveContent` (Basis), `FishMeta`, `FishActions`, `FishLogging`, `FishResumeTile`.
 - Maßnahmen:
@@ -150,7 +162,7 @@ Prio 1 — Tiles/Rows Centralization (ON)
   - TODO 2025-10-16: FishHeader overlay needs gradient/badge polish and accent exposure.
   - TODO 2025-10-16: FishMediaTiles must reintroduce resume/assign states and Telegram play vs. detail handling.
 
-Prio 2 — FocusKit Migration (ON, blockiert durch Prio 1)
+Prio 3 — FocusKit Migration (ON, blockiert durch Prio 2)
 - Here’s a fresh repo-wide audit of focus usages and a precise list of modules to migrate to the new FocusKit facade. Grouped by what needs changing to plan the rollout.
 
 - Rows → FocusKit.TvRowXXX
@@ -199,7 +211,7 @@ Prio 2 — FocusKit Migration (ON, blockiert durch Prio 1)
   - ui/tv/TvFocusRow.kt, ui/focus/FocusRowEngine.kt, ui/skin/TvModifiers.kt stay; FocusKit fronts them in screens.
   - ✅ StartScreen Telegram-Suche nutzt bereits FocusKit.TvRowLight (stateKey `start_tg_search`).
 
-Prio 1 — Globale Zentralisierung Fokus/TV‑Darstellung (OFF)
+HISTORICAL (moved to Changelog) — Globale Zentralisierung Fokus/TV‑Darstellung
 - Ziel: Einheitliche, zentral gesteuerte Fokusdarstellung und -navigation (DPAD) in allen UIs; keine verstreuten Implementierungen mehr.
 - Leitfaden: `tools/Zentralisierung.txt` (kanonisch). Fokus-/TV‑Änderungen erfolgen ausschließlich dort bzw. in den dort benannten Modulen.
 - Aufgaben:
@@ -230,7 +242,7 @@ Completed (moved to Changelog)
 
 ---
 
-PRIO‑1: Kids/Gast Whitelist – Actions + Multi‑Select (Q4 2025)
+PRIO‑4: Kids/Gast Whitelist – Actions + Multi‑Select (Q4 2025)
 - Fix filtering reliability for kid/guest profiles (effective allow = item allows ∪ category allows − item blocks; guests treated like kids).
 - Detail actions: Re-enable "Für Kinder freigeben" / "Freigabe entfernen" in MediaActionBar on Live/VOD/Series details (gated by canEditWhitelist). Open profile picker and call KidContentRepository allow/disallow.
 - Multi‑Select (phase 1 = Allow only):
@@ -243,7 +255,7 @@ PRIO‑1: Kids/Gast Whitelist – Actions + Multi‑Select (Q4 2025)
 
 Status: Backend helpers + selection scaffold landed; detail actions and UI wiring follow next.
 
-PRIO‑1: Start/Settings MVVM Completion
+PRIO-5: Start/Settings MVVM Completion
 - StartScreen läuft jetzt über StartViewModel + StartUseCases (Serien/VOD/Live Flows, Favoriten, Suchpaging, Permissions, Events). Compose hält vorerst KidSelectSheet, Live-Favoriten-Picker und Telegram-Service-Bindung eigenständig.
 - SettingsScreen bindet dedizierte ViewModels pro Abschnitt (Network/Player/Xtream/EPG + Telegram Trio); Diagnose/Backup/Quick-Import-Blöcke liegen weiterhin im Backup-Screen.
 - TODO:
@@ -254,7 +266,7 @@ PRIO‑1: Start/Settings MVVM Completion
 
 Status: Basis-VMs stehen; nächste Iteration zieht verbleibende Compose-Seitenlogik/Backups in MVVM und räumt Backup-Screen aus.
 
-PRIO‑1: Projektstruktur – Feature-Slices & klare Artefakt-Gruppierung
+PRIO‑6: Projektstruktur – Feature-Slices & klare Artefakt-Gruppierung
 - Zielstruktur (oberste Ebene schlank, sofort ersichtlich wo etwas liegt):
   ```
   ui/

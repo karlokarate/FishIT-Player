@@ -1,6 +1,13 @@
 # FishIT Player – Architecture Overview (derived from AGENTS.md)
 
-Deep‑Dive Update: 2025‑09‑23
+**IMPORTANT**: TDLib integration enhancement is now **Priority 1**. See `.github/tdlibAgent.md` for the single source of truth for all Telegram-related work going forward. Legacy Telegram documentation has been archived.
+
+Deep‑Dive Update: 2025-11-20
+- **TDLib Priority**: `.github/tdlibAgent.md` ist ab sofort die maßgebliche Referenz für die Telegram-Integration
+- **Legacy Cleanup**: b/ directory, old logs, and outdated implementation summaries archived
+- **Documentation**: Historical docs moved to `docs/archive/` for reference
+
+Deep‑Dive Update: 2025-09-23
 - Build, networking, images and playback updated to reflect current code.
 - Lifecycle/Performance: `collectAsStateWithLifecycle` breit eingesetzt; JankStats in MainActivity aktiv.
 - Global Debug: per Settings schaltbar (Reiter „Import & Diagnose“). Loggt Navigationsschritte (NavController‑Listener), DPAD‑Eingaben (UP/DOWN/LEFT/RIGHT/CENTER/BACK inkl. Player‑Tasten), Tile‑Focus (inkl. OBX‑Titel in Klammern) und OBX‑Key‑Updates (Backfill der sort/provider/genre/year Keys) unter Logcat‑Tag `GlobalDebug`. Die Kern‑Row‑Engines (MediaRowCore/Paged) emittieren Tile‑Focus für alle Kacheln.

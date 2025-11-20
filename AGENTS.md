@@ -9,6 +9,8 @@ Android Build Policy (WSL override)
 
 # FishIT Player – Agents & Architecture Guide (consolidated)
 
+**⚡ IMPORTANT - TDLib Integration (Priority 1)**: As of 2025-11-20, `.github/tdlibAgent.md` is the **Single Source of Truth** for all Telegram/TDLib integration work. **Note:** This file is not yet present in the repository; it will be added in an upcoming PR. All new Telegram features must follow this document once available. Legacy Telegram docs have been archived to `docs/archive/`.
+
 TV/DPAD: ProfileGate + PIN/Numpad focus visuals fixed (tvClickable/tvFocusableItem + focusGroup, deterministic initial FocusRequester). See CHANGELOG 2025-10-03.
 This file is the single source of truth for contributors (Codex + humans). It supersedes split/older variants and always provides a complete overview.
 
