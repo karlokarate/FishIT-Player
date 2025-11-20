@@ -192,7 +192,7 @@ class T_TelegramFileDownloader(
                         TelegramLogRepository.logFileDownload(
                             fileId = fileId,
                             progress = 0,
-                            total = result.result.expectedSize ?: 0,
+                            total = (result.result.expectedSize ?: 0).toInt(),
                             status = "started"
                         )
                         true

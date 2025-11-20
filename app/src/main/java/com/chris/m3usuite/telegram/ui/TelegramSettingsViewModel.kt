@@ -114,7 +114,6 @@ class TelegramSettingsViewModel(
             }
         }
     }
-    }
 
     /**
      * Update API credentials.

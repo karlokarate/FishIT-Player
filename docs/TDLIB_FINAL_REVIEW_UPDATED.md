@@ -175,7 +175,7 @@ Fehlt:
 - [ ] Repository-Tests (`TelegramContentRepository`)
 - [ ] Worker-Tests (`TelegramSyncWorker`)
 - [ ] DataSource-Tests (`TelegramDataSource`)
-- [ ] Logging-Tests
+- [x] Logging-Tests (TelegramLogRepositoryTest hinzugefügt)
 - [ ] UI-Smoketests (Compose)
 - [ ] Fehlerpfad-Tests (Auth, Network, Parsing-Errors)
 
