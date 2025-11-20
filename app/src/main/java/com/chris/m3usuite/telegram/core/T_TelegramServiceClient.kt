@@ -1,9 +1,6 @@
 package com.chris.m3usuite.telegram.core
 
 import android.content.Context
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.config.AppConfig
 import com.chris.m3usuite.telegram.config.ConfigLoader
@@ -74,7 +71,7 @@ sealed class TgActivityEvent {
  */
 class T_TelegramServiceClient private constructor(
     private val applicationContext: Context
-) : DefaultLifecycleObserver {
+) {
 
     // Single TdlClient instance for the entire process
     private var client: TdlClient? = null
@@ -106,11 +103,6 @@ class T_TelegramServiceClient private constructor(
     
     private val _activityEvents = MutableSharedFlow<TgActivityEvent>(replay = 10)
     val activityEvents: SharedFlow<TgActivityEvent> = _activityEvents.asSharedFlow()
-
-    init {
-        // Register lifecycle observer
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-    }
 
     /**
      * Ensure the service is started and ready.
@@ -293,27 +285,19 @@ class T_TelegramServiceClient private constructor(
     private fun startUpdateDistribution() {
         val currentClient = client ?: return
         
-        // Distribute general updates
+        // Distribute new message updates
         serviceScope.launch {
             try {
-                currentClient.updates.collect { update ->
-                    // Handle general updates
-                    when (update) {
-                        is UpdateNewMessage -> {
-                            _activityEvents.emit(
-                                TgActivityEvent.NewMessage(
-                                    chatId = update.message.chatId,
-                                    messageId = update.message.id
-                                )
-                            )
-                        }
-                        else -> {
-                            // Other updates are handled by specific components
-                        }
-                    }
+                currentClient.newMessageUpdates.collect { update ->
+                    _activityEvents.emit(
+                        TgActivityEvent.NewMessage(
+                            chatId = update.message.chatId,
+                            messageId = update.message.id
+                        )
+                    )
                 }
             } catch (e: Exception) {
-                println("[T_TelegramServiceClient] Error in updates flow: ${e.message}")
+                println("[T_TelegramServiceClient] Error in newMessageUpdates flow: ${e.message}")
             }
         }
         
@@ -409,15 +393,6 @@ class T_TelegramServiceClient private constructor(
         _syncState.value = TgSyncState.Idle
         
         println("[T_TelegramServiceClient] Shutdown complete")
-    }
-
-    // Lifecycle callbacks
-    override fun onStart(owner: LifecycleOwner) {
-        println("[T_TelegramServiceClient] App moved to foreground")
-    }
-
-    override fun onStop(owner: LifecycleOwner) {
-        println("[T_TelegramServiceClient] App moved to background")
     }
 
     companion object {

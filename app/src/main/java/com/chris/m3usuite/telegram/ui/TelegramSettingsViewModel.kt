@@ -45,27 +45,44 @@ class TelegramSettingsViewModel(
     init {
         // Load initial state from settings and wire to ServiceClient
         viewModelScope.launch {
-            combine(
-                store.tgEnabled,
-                store.tgApiId,
-                store.tgApiHash,
-                store.tgSelectedChatsCsv,
-                store.tgCacheLimitGb,
-                serviceClient.authState,
-                serviceClient.connectionState,
-            ) { enabled, apiId, apiHash, chats, cacheLimit, authState, connState ->
-                _state.update { current ->
-                    current.copy(
-                        enabled = enabled,
-                        apiId = apiId.toString(),
-                        apiHash = apiHash,
-                        selectedChats = chats.split(",").filter { it.isNotBlank() },
-                        cacheLimitGb = cacheLimit,
-                        authState = mapCoreAuthStateToUI(authState),
-                        connectionState = connState,
-                    )
+            // Collect settings
+            launch {
+                combine(
+                    store.tgEnabled,
+                    store.tgApiId,
+                    store.tgApiHash,
+                    store.tgSelectedChatsCsv,
+                    store.tgCacheLimitGb,
+                ) { enabled, apiId, apiHash, chats, cacheLimit ->
+                    _state.update { current ->
+                        current.copy(
+                            enabled = enabled,
+                            apiId = apiId.toString(),
+                            apiHash = apiHash,
+                            selectedChats = chats.split(",").filter { it.isNotBlank() },
+                            cacheLimitGb = cacheLimit,
+                        )
+                    }
+                }.collect()
+            }
+            
+            // Collect auth state
+            launch {
+                serviceClient.authState.collect { authState ->
+                    _state.update { current ->
+                        current.copy(authState = mapCoreAuthStateToUI(authState))
+                    }
                 }
-            }.collect()
+            }
+            
+            // Collect connection state
+            launch {
+                serviceClient.connectionState.collect { connState ->
+                    _state.update { current ->
+                        current.copy(connectionState = connState)
+                    }
+                }
+            }
         }
     }
 

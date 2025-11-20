@@ -25,6 +25,9 @@ import com.chris.m3usuite.ui.screens.XtreamSettingsViewModel
 import com.chris.m3usuite.ui.screens.EpgSettingsViewModel
 import com.chris.m3usuite.ui.screens.GeneralSettingsViewModel
 import com.chris.m3usuite.telegram.ui.TelegramSettingsViewModel
+import com.chris.m3usuite.telegram.ui.TelegramSettingsState
+import com.chris.m3usuite.telegram.ui.TelegramAuthState
+import com.chris.m3usuite.telegram.ui.ChatInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
