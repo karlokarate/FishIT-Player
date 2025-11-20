@@ -9,6 +9,7 @@ import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.model.isAdultCategory
 
