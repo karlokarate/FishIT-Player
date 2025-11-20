@@ -52,6 +52,11 @@ class TelegramSyncWorker(
 
                 // Get sync mode from input data
                 val mode = inputData.getString(KEY_MODE) ?: MODE_ALL
+                val validModes = setOf(MODE_ALL, MODE_SELECTION_CHANGED, MODE_BACKFILL_SERIES)
+                if (mode !in validModes) {
+                    println("[TelegramSyncWorker] Invalid sync mode: $mode. Failing job.")
+                    return@withContext Result.failure()
+                }
                 val refreshHome = inputData.getBoolean(KEY_REFRESH_HOME, false)
 
                 println("[TelegramSyncWorker] Sync mode: $mode, refreshHome: $refreshHome")
