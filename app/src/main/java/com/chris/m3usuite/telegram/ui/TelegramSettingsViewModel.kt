@@ -43,6 +43,9 @@ class TelegramSettingsViewModel(
 
     init {
         // Load initial state from settings and wire to ServiceClient
+        // Note: These collectors run in viewModelScope which automatically cancels
+        // when the ViewModel is cleared, preventing memory leaks. The singleton
+        // ServiceClient properly handles multiple collectors from different ViewModels.
         viewModelScope.launch {
             // Collect settings
             launch {
@@ -95,7 +98,8 @@ class TelegramSettingsViewModel(
 
             if (!enabled) {
                 serviceClient.shutdown()
-                T_TelegramServiceClient.resetInstance()
+                // Note: Singleton instance is retained but marked as stopped.
+                // Next ensureStarted() call will restart it with a fresh scope.
             }
         }
     }

@@ -5,6 +5,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Browser for navigating Telegram chats and messages.
@@ -28,8 +29,8 @@ class T_ChatBrowser(
 ) {
     private val client get() = session.client
 
-    // Cache for chat metadata to reduce API calls
-    private val chatCache = mutableMapOf<Long, Chat>()
+    // Cache for chat metadata to reduce API calls - thread-safe
+    private val chatCache = ConcurrentHashMap<Long, Chat>()
 
     /**
      * Get top chats from the main chat list.
