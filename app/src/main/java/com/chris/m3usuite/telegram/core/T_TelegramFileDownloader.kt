@@ -1,6 +1,7 @@
 package com.chris.m3usuite.telegram.core
 
 import android.content.Context
+import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import dev.g000sha256.tdl.dto.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -170,6 +171,12 @@ class T_TelegramFileDownloader(
             return@withContext try {
                 activeDownloads.add(fileId)
 
+                TelegramLogRepository.debug(
+                    source = "T_TelegramFileDownloader",
+                    message = "Starting download",
+                    details = mapOf("fileId" to fileId.toString(), "priority" to priority.toString())
+                )
+
                 val result =
                     client.downloadFile(
                         fileId = fileId,
@@ -182,17 +189,32 @@ class T_TelegramFileDownloader(
                 when (result) {
                     is dev.g000sha256.tdl.TdlResult.Success -> {
                         fileInfoCache[fileId.toString()] = result.result
+                        TelegramLogRepository.logFileDownload(
+                            fileId = fileId,
+                            progress = 0,
+                            total = (result.result.expectedSize ?: 0).toInt(),
+                            status = "started"
+                        )
                         true
                     }
                     is dev.g000sha256.tdl.TdlResult.Failure -> {
                         activeDownloads.remove(fileId)
-                        println("[T_TelegramFileDownloader] Download start failed: ${result.message}")
+                        TelegramLogRepository.error(
+                            source = "T_TelegramFileDownloader",
+                            message = "Download start failed",
+                            details = mapOf("fileId" to fileId.toString(), "error" to result.message)
+                        )
                         false
                     }
                 }
             } catch (e: Exception) {
                 activeDownloads.remove(fileId)
-                println("[T_TelegramFileDownloader] Download start error: ${e.message}")
+                TelegramLogRepository.error(
+                    source = "T_TelegramFileDownloader",
+                    message = "Download start error",
+                    exception = e,
+                    details = mapOf("fileId" to fileId.toString())
+                )
                 false
             }
         }
@@ -215,7 +237,11 @@ class T_TelegramFileDownloader(
                     )
                 }
                 activeDownloads.remove(fileIdInt)
-                println("[T_TelegramFileDownloader] Cancelled download for file $fileId")
+                TelegramLogRepository.debug(
+                    source = "T_TelegramFileDownloader",
+                    message = "Cancelled download",
+                    details = mapOf("fileId" to fileId)
+                )
             }
         }
 

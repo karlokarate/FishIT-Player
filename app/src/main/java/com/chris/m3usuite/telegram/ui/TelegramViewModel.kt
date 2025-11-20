@@ -1,5 +1,8 @@
 package com.chris.m3usuite.telegram.ui
 
+// LEGACY/UNUSED - This file is deprecated and only kept for reference.
+// DO NOT USE - Use TelegramSettingsViewModel from telegram.ui package instead.
+
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

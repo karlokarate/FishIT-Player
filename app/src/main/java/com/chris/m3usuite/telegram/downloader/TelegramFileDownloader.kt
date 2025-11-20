@@ -1,5 +1,8 @@
 package com.chris.m3usuite.telegram.downloader
 
+// LEGACY/UNUSED - This file is deprecated and only kept for reference.
+// DO NOT USE - Use T_TelegramFileDownloader from telegram.core package instead.
+
 import android.content.Context
 import com.chris.m3usuite.telegram.session.TelegramSession
 import dev.g000sha256.tdl.dto.File
