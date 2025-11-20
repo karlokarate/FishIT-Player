@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Extension function to convert TdlResult to value or throw exception.
@@ -64,8 +67,8 @@ class T_TelegramSession(
     @Volatile
     private var currentState: AuthorizationState? = null
 
-    private var collectorStarted = false
-    private var tdParamsSet = false
+    private val collectorStarted = AtomicBoolean(false)
+    private val tdParamsSet = AtomicBoolean(false)
 
     private val _authEvents = MutableSharedFlow<AuthEvent>(replay = 1)
     val authEvents: SharedFlow<AuthEvent> = _authEvents.asSharedFlow()
@@ -83,6 +86,8 @@ class T_TelegramSession(
      * For interactive steps (code, password), the caller must:
      * - Listen to authEvents for state changes
      * - Call sendCode() or sendPassword() when appropriate
+     *
+     * @throws TimeoutCancellationException if authentication doesn't complete within 5 minutes
      */
     suspend fun login() {
         println("[T_TelegramSession] Login flow starting...")
@@ -97,29 +102,38 @@ class T_TelegramSession(
         // Wait for ready state or handle initial state
         handleAuthState(initial)
 
-        // Wait loop for ready state
-        while (true) {
-            when (val s = currentState) {
-                is AuthorizationStateReady -> {
-                    println("[T_TelegramSession] Ready ✅")
-                    _authEvents.emit(AuthEvent.Ready)
-                    return
-                }
+        // Wait loop for ready state with timeout (5 minutes)
+        try {
+            withTimeout(300_000L) {
+                while (true) {
+                    when (val s = currentState) {
+                        is AuthorizationStateReady -> {
+                            println("[T_TelegramSession] Ready ✅")
+                            _authEvents.emit(AuthEvent.Ready)
+                            return@withTimeout
+                        }
 
-                is AuthorizationStateClosing,
-                is AuthorizationStateClosed,
-                is AuthorizationStateLoggingOut,
-                -> {
-                    val error = "Fatal state: ${s::class.simpleName}"
-                    println("[T_TelegramSession] $error")
-                    _authEvents.emit(AuthEvent.Error(error))
-                    throw RuntimeException(error)
-                }
+                        is AuthorizationStateClosing,
+                        is AuthorizationStateClosed,
+                        is AuthorizationStateLoggingOut,
+                        -> {
+                            val error = "Fatal state: ${s::class.simpleName}"
+                            println("[T_TelegramSession] $error")
+                            _authEvents.emit(AuthEvent.Error(error))
+                            throw RuntimeException(error)
+                        }
 
-                else -> {
-                    delay(200)
+                        else -> {
+                            delay(200)
+                        }
+                    }
                 }
             }
+        } catch (e: TimeoutCancellationException) {
+            val error = "Login timeout - no response from TDLib after 5 minutes"
+            println("[T_TelegramSession] $error")
+            _authEvents.emit(AuthEvent.Error(error))
+            throw RuntimeException(error, e)
         }
     }
 
@@ -260,8 +274,7 @@ class T_TelegramSession(
      * This runs in the ServiceClient's scope.
      */
     private fun startAuthCollectorIfNeeded() {
-        if (collectorStarted) return
-        collectorStarted = true
+        if (!collectorStarted.compareAndSet(false, true)) return
 
         println("[T_TelegramSession] Starting auth state flow collector...")
 
@@ -312,11 +325,10 @@ class T_TelegramSession(
     private suspend fun onWaitTdlibParameters() {
         println("[T_TelegramSession] Setting TdlibParameters...")
 
-        if (tdParamsSet) {
+        if (!tdParamsSet.compareAndSet(false, true)) {
             println("[T_TelegramSession] TdlibParameters already set, skipping")
             return
         }
-        tdParamsSet = true
 
         try {
             client

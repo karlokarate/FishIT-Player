@@ -121,8 +121,8 @@ class T_TelegramServiceClient private constructor(
     // Configuration
     private var config: AppConfig? = null
 
-    // Coroutine scope with supervisor job
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // Coroutine scope with supervisor job - mutable to allow recreation after shutdown
+    private var serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // State tracking
     private val isStarted = AtomicBoolean(false)
@@ -167,6 +167,12 @@ class T_TelegramServiceClient private constructor(
         }
 
         try {
+            // Recreate serviceScope if it was cancelled (e.g., after shutdown)
+            if (!serviceScope.isActive) {
+                println("[T_TelegramServiceClient] Recreating cancelled serviceScope...")
+                serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            }
+
             println("[T_TelegramServiceClient] Starting Unified Telegram Engine...")
             _connectionState.value = TgConnectionState.Connecting
 
@@ -426,8 +432,20 @@ class T_TelegramServiceClient private constructor(
     fun shutdown() {
         println("[T_TelegramServiceClient] Shutting down...")
 
+        // Cancel scope and wait for coroutines to finish
         serviceScope.cancel()
+        
+        // Close TdlClient to release native resources
+        runBlocking {
+            try {
+                client?.close()
+                println("[T_TelegramServiceClient] TdlClient closed")
+            } catch (e: Exception) {
+                println("[T_TelegramServiceClient] Error closing TdlClient: ${e.message}")
+            }
+        }
 
+        // Null out references after scope is cancelled
         downloader = null
         browser = null
         session = null
@@ -440,7 +458,6 @@ class T_TelegramServiceClient private constructor(
         _syncState.value = TgSyncState.Idle
 
         println("[T_TelegramServiceClient] Shutdown complete")
-        T_TelegramServiceClient.INSTANCE = null
     }
 
     companion object {
