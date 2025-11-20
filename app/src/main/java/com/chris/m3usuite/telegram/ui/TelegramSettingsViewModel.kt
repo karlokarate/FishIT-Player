@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 /**
  * ViewModel for Telegram settings section.
- * 
+ *
  * Completely wired to T_TelegramServiceClient (Core layer).
  * No direct TdlClient access - all operations go through ServiceClient.
  *
@@ -34,10 +34,9 @@ class TelegramSettingsViewModel(
     private val app: Application,
     private val store: SettingsStore,
 ) : ViewModel() {
-    
     // Service client - single source of truth
     private val serviceClient = T_TelegramServiceClient.getInstance(app)
-    
+
     // State flows
     private val _state = MutableStateFlow(TelegramSettingsState())
     val state: StateFlow<TelegramSettingsState> = _state.asStateFlow()
@@ -65,7 +64,7 @@ class TelegramSettingsViewModel(
                     }
                 }.collect()
             }
-            
+
             // Collect auth state
             launch {
                 serviceClient.authState.collect { authState ->
@@ -74,7 +73,7 @@ class TelegramSettingsViewModel(
                     }
                 }
             }
-            
+
             // Collect connection state
             launch {
                 serviceClient.connectionState.collect { connState ->
@@ -93,7 +92,7 @@ class TelegramSettingsViewModel(
         viewModelScope.launch {
             store.setTgEnabled(enabled)
             _state.update { it.copy(enabled = enabled) }
-            
+
             if (!enabled) {
                 serviceClient.shutdown()
             }
@@ -122,13 +121,13 @@ class TelegramSettingsViewModel(
         viewModelScope.launch {
             try {
                 _state.update { it.copy(isConnecting = true, errorMessage = null) }
-                
+
                 // Ensure service is started
                 serviceClient.ensureStarted(app, store)
-                
+
                 // Start login flow
                 serviceClient.login()
-                
+
                 _state.update { it.copy(isConnecting = false) }
             } catch (e: Exception) {
                 _state.update {
@@ -164,10 +163,10 @@ class TelegramSettingsViewModel(
 
                 // Ensure service is started
                 serviceClient.ensureStarted(app, store)
-                
+
                 // Submit phone number
                 serviceClient.login(phone = phoneNumber)
-                
+
                 _state.update { it.copy(isConnecting = false) }
             } catch (e: Exception) {
                 _state.update {
@@ -215,10 +214,10 @@ class TelegramSettingsViewModel(
         viewModelScope.launch {
             try {
                 _state.update { it.copy(isLoadingChats = true) }
-                
+
                 // Get chats from ServiceClient
                 val chats = serviceClient.listChats(app, limit = 200)
-                
+
                 _state.update {
                     it.copy(
                         isLoadingChats = false,
@@ -293,8 +292,8 @@ class TelegramSettingsViewModel(
     /**
      * Map core auth state to UI auth state.
      */
-    private fun mapCoreAuthStateToUI(coreState: com.chris.m3usuite.telegram.core.TelegramAuthState): TelegramAuthState {
-        return when (coreState) {
+    private fun mapCoreAuthStateToUI(coreState: com.chris.m3usuite.telegram.core.TelegramAuthState): TelegramAuthState =
+        when (coreState) {
             is com.chris.m3usuite.telegram.core.TelegramAuthState.Idle -> TelegramAuthState.DISCONNECTED
             is com.chris.m3usuite.telegram.core.TelegramAuthState.Connecting -> TelegramAuthState.DISCONNECTED
             is com.chris.m3usuite.telegram.core.TelegramAuthState.WaitingForPhone -> TelegramAuthState.WAITING_FOR_PHONE
@@ -303,7 +302,6 @@ class TelegramSettingsViewModel(
             is com.chris.m3usuite.telegram.core.TelegramAuthState.Ready -> TelegramAuthState.READY
             is com.chris.m3usuite.telegram.core.TelegramAuthState.Error -> TelegramAuthState.DISCONNECTED
         }
-    }
 
     override fun onCleared() {
         super.onCleared()

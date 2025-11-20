@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.map
 
 /**
  * Browser for navigating Telegram chats and messages.
- * 
+ *
  * This class DOES NOT create its own TdlClient - it receives an injected session
  * from T_TelegramServiceClient. All operations use the ServiceClient's scope.
  *

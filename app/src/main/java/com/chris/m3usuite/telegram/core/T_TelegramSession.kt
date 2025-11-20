@@ -41,7 +41,7 @@ sealed class AuthEvent {
 
 /**
  * Manages TDLib authentication session with Flow-based events.
- * 
+ *
  * This class DOES NOT create its own TdlClient - it receives an injected client
  * from T_TelegramServiceClient. This ensures single TdlClient instance per process.
  *
@@ -72,7 +72,7 @@ class T_TelegramSession(
 
     /**
      * Start the login flow.
-     * 
+     *
      * This will:
      * 1. Monitor authorization state updates
      * 2. Automatically handle TdlibParameters setup
