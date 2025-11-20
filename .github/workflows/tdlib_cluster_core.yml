@@ -1,0 +1,165 @@
+name: TDLib Cluster A - Core/Engine
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (just analyze, no implementation)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  cluster-core-engine:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      
+      - name: Display Cluster Information
+        run: |
+          echo "=================================================="
+          echo "TDLib Cluster A: Core / Engine"
+          echo "=================================================="
+          echo ""
+          echo "📋 CLUSTER SCOPE:"
+          echo "  Package: telegram/core, telegram/config"
+          echo "  Focus: Fundamental Telegram infrastructure and unified engine"
+          echo ""
+          echo "📦 AFFECTED MODULES:"
+          echo "  - app/src/main/java/com/chris/m3usuite/telegram/core/"
+          echo "  - app/src/main/java/com/chris/m3usuite/telegram/config/"
+          echo ""
+          echo "🎯 TASKS IN THIS CLUSTER (from docs/TDLIB_TASK_GROUPING.md):"
+          echo ""
+          echo "  Migration Tasks (1-4):"
+          echo "    ✓ Move TelegramServiceClient.kt to telegram/core → T_TelegramServiceClient"
+          echo "    ✓ Move TelegramSession.kt to telegram/core → T_TelegramSession"
+          echo "    ✓ Move ChatBrowser.kt to telegram/core → T_ChatBrowser"
+          echo "    ✓ Move TelegramFileDownloader.kt to telegram/core → T_TelegramFileDownloader"
+          echo ""
+          echo "  T_TelegramServiceClient Tasks (11-19):"
+          echo "    ✓ Implement T_TelegramServiceClient with CoroutineScope"
+          echo "    ✓ Create single TdlClient instance"
+          echo "    ✓ Create instances of T_TelegramSession, T_ChatBrowser, T_TelegramFileDownloader"
+          echo "    ✓ Implement StateFlow/SharedFlow APIs (authState, connectionState, syncState, activityEvents)"
+          echo "    ✓ Implement methods: ensureStarted, login, listChats, resolveChatTitle, downloader()"
+          echo "    ✓ Configure TdlClient using ConfigLoader"
+          echo "    ✓ Distribute TDLib update flows"
+          echo "    ✓ Implement Engine-Supervisor with restart/reconnect logic"
+          echo "    ✓ Integrate with ProcessLifecycleOwner"
+          echo ""
+          echo "  T_TelegramSession Tasks (20-25):"
+          echo "    ✓ Adjust constructor to inject TdlClient"
+          echo "    ✓ Use authorizationStateUpdates from tdl-coroutines"
+          echo "    ✓ Implement auth functions in ServiceClient scope"
+          echo "    ✓ Map AuthorizationState to AuthEvent"
+          echo "    ✓ Use TelegramLogRepository for logging"
+          echo ""
+          echo "  T_ChatBrowser Tasks (26-29):"
+          echo "    ✓ Rename to T_ChatBrowser in telegram/core"
+          echo "    ✓ Adjust constructor for DI"
+          echo "    ✓ Consolidate public API"
+          echo "    ✓ Use ServiceClient scope"
+          echo ""
+          echo "📐 IMPLEMENTATION ORDER:"
+          echo "  1. Create telegram/core package structure"
+          echo "  2. Move and rename T_TelegramSession (foundation)"
+          echo "  3. Move and rename T_ChatBrowser"
+          echo "  4. Move and rename T_TelegramFileDownloader"
+          echo "  5. Implement T_TelegramServiceClient (orchestrator)"
+          echo "  6. Wire up update flows and lifecycle"
+          echo ""
+          echo "⚠️  CRITICAL NOTES:"
+          echo "  - This is the FOUNDATION cluster - must be completed first"
+          echo "  - Establishes API contracts for other clusters"
+          echo "  - Zero overlap with other cluster files"
+          echo "  - All other clusters depend on this one"
+          echo ""
+          echo "=================================================="
+      
+      - name: Verify tdlibAgent.md Exists
+        run: |
+          if [ ! -f .github/tdlibAgent.md ]; then
+            echo "❌ ERROR: .github/tdlibAgent.md not found!"
+            exit 1
+          fi
+          echo "✅ tdlibAgent.md found"
+          echo ""
+          echo "📄 File size: $(wc -l < .github/tdlibAgent.md) lines"
+      
+      - name: Verify TDLIB_TASK_GROUPING.md Exists
+        run: |
+          if [ ! -f docs/TDLIB_TASK_GROUPING.md ]; then
+            echo "❌ ERROR: docs/TDLIB_TASK_GROUPING.md not found!"
+            exit 1
+          fi
+          echo "✅ TDLIB_TASK_GROUPING.md found"
+          echo ""
+          echo "📊 Cluster A section:"
+          grep -A 30 "### Cluster A: Core / Engine" docs/TDLIB_TASK_GROUPING.md || echo "Section not found"
+      
+      - name: Check Current File Structure
+        run: |
+          echo "📁 Current Telegram file structure:"
+          echo ""
+          find app/src/main/java/com/chris/m3usuite -path "*telegram*" -o -path "*Telegram*" | grep -E "\.(kt|java)$" | sort || echo "No Telegram files found"
+          echo ""
+          echo "📁 Target structure (telegram/core should be created):"
+          echo "  app/src/main/java/com/chris/m3usuite/telegram/core/"
+          echo "    - T_TelegramServiceClient.kt (new)"
+          echo "    - T_TelegramSession.kt (moved from session/)"
+          echo "    - T_ChatBrowser.kt (moved from browser/)"
+          echo "    - T_TelegramFileDownloader.kt (moved from downloader/)"
+      
+      - name: Validate Build Before Changes
+        run: |
+          echo "🔨 Testing current build state..."
+          ./gradlew assembleDebug --no-daemon --stacktrace || echo "⚠️ Build has pre-existing issues"
+      
+      - name: Implementation Placeholder
+        if: ${{ github.event.inputs.dry_run == 'false' }}
+        run: |
+          echo "🚧 IMPLEMENTATION MODE ENABLED"
+          echo ""
+          echo "This workflow would now:"
+          echo "  1. Create telegram/core package structure"
+          echo "  2. Move and refactor core components with T_ prefix"
+          echo "  3. Implement T_TelegramServiceClient"
+          echo "  4. Wire up all dependencies"
+          echo "  5. Update import paths throughout codebase"
+          echo "  6. Run tests and validation"
+          echo ""
+          echo "⚠️  This is a placeholder - actual implementation will be triggered by Copilot agent"
+      
+      - name: Summary
+        run: |
+          echo ""
+          echo "=================================================="
+          echo "✅ Cluster A Analysis Complete"
+          echo "=================================================="
+          echo ""
+          echo "Next Steps:"
+          echo "  1. Review docs/TDLIB_TASK_GROUPING.md for full task list"
+          echo "  2. Implement tasks in recommended order"
+          echo "  3. Create stable API contracts for dependent clusters"
+          echo "  4. Run tests and validation"
+          echo ""
+          echo "Once Cluster A is stable, these clusters can proceed in parallel:"
+          echo "  - Cluster B: Sync/Worker/Repository"
+          echo "  - Cluster C: Streaming/DataSource"
+          echo "  - Cluster D: UI/Activity Feed"
+          echo "  - Cluster E: Logging/Quality"
