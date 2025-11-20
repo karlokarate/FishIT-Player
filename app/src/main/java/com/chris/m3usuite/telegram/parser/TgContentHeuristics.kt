@@ -165,9 +165,9 @@ object TgContentHeuristics {
      * Detect if a message is likely a sub-chat reference (link to another channel/group).
      */
     fun isSubChatReference(messageText: String): Boolean {
-        val lowerText = messageText.lowercase()
-        return lowerText.contains("t.me/") || 
-               lowerText.contains("@") && (lowerText.contains("channel") || lowerText.contains("group"))
+        // Telegram channel/group references: t.me/username or @username (username: 5-32 chars, letters/numbers/_)
+        val telegramAtPattern = Regex("""(?<!\w)@([a-zA-Z0-9_]{5,32})""")
+        return messageText.contains("t.me/") || telegramAtPattern.containsMatchIn(messageText)
     }
     
     /**
