@@ -84,4 +84,4 @@ All preparation work is complete. The repository is ready for the next phase of 
 
 **Date**: 2025-11-20  
 **Branch**: copilot/clean-up-legacy-code  
-**Commits**: 3 commits (dd0ae50, e64b8c0, cc8dd25)
+**Commits**: 3 commits (dd0ae50a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7, e64b8c0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d, cc8dd25e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c)
