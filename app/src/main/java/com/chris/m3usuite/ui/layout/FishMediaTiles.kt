@@ -126,7 +126,7 @@ fun TelegramFishTile(
     val content = buildVodTileContent(
         media = media,
         onOpenDetails = { onOpenDetails(media) },
-        onPlay = onPlay?.let { handler -> { handler(media) } }
+        onPlayDirect = onPlay?.let { handler -> { handler(media) } }
     )
     FishTile(
         title = content.title,
