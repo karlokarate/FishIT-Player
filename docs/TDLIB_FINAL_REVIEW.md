@@ -272,11 +272,11 @@ This document tracks all tasks required to fully implement the TDLib integration
 
 ### Unit Tests (Section 6.3)
 
-- [ ] 18.1 MediaParser tests: SxxEyy parsing
-- [ ] 18.2 MediaParser tests: "Episode 4" parsing
-- [ ] 18.3 MediaParser tests: Language tag detection
-- [ ] 18.4 TgContentHeuristics tests: Classification accuracy
-- [ ] 18.5 TgContentHeuristics tests: Confidence scoring
+- [x] 18.1 MediaParser tests: SxxEyy parsing
+- [x] 18.2 MediaParser tests: "Episode 4" parsing
+- [x] 18.3 MediaParser tests: Language tag detection
+- [x] 18.4 TgContentHeuristics tests: Classification accuracy
+- [x] 18.5 TgContentHeuristics tests: Confidence scoring
 - [ ] 18.6 TelegramContentRepository tests: ID mapping
 - [ ] 18.7 TelegramContentRepository tests: URL generation
 - [ ] 18.8 T_TelegramSession tests: Auth state mapping
