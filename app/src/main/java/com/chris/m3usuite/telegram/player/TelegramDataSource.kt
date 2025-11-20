@@ -8,7 +8,6 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.TransferListener
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
-import kotlinx.coroutines.runBlocking
 import java.io.IOException
 
 /**
