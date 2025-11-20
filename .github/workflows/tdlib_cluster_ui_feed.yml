@@ -1,0 +1,195 @@
+name: TDLib Cluster D - UI/Activity Feed/Rows
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (just analyze, no implementation)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  cluster-ui-feed:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      
+      - name: Display Cluster Information
+        run: |
+          echo "=================================================="
+          echo "TDLib Cluster D: UI / Activity Feed / Rows"
+          echo "=================================================="
+          echo ""
+          echo "📋 CLUSTER SCOPE:"
+          echo "  Package: telegram/ui, telegram/ui/feed, ui/layout"
+          echo "  Focus: User interface, settings, activity feed, and visual components"
+          echo ""
+          echo "📦 AFFECTED MODULES:"
+          echo "  - app/src/main/java/com/chris/m3usuite/telegram/ui/"
+          echo "  - app/src/main/java/com/chris/m3usuite/telegram/ui/feed/"
+          echo "  - app/src/main/java/com/chris/m3usuite/ui/layout/FishTelegramContent.kt"
+          echo "  - app/src/main/java/com/chris/m3usuite/ui/screens/ (migration source)"
+          echo ""
+          echo "🎯 TASKS IN THIS CLUSTER (from docs/TDLIB_TASK_GROUPING.md):"
+          echo ""
+          echo "  Migration (7, 9):"
+          echo "    ✓ Move TelegramSettingsViewModel to telegram/ui"
+          echo "    ✓ Create TelegramActivityFeedViewModel"
+          echo "    ✓ Create TelegramActivityFeedScreen"
+          echo ""
+          echo "  TelegramSettingsViewModel Integration (30-36):"
+          echo "    ✓ Rebuild constructor to inject T_TelegramServiceClient + SettingsStore"
+          echo "    ✓ Remove direct TdlClient creation"
+          echo "    ✓ Build TelegramSettingsState using ServiceClient.authState"
+          echo "    ✓ Implement isLoadingChats, availableChats, selectedChats"
+          echo "    ✓ Delegate login actions to serviceClient.login"
+          echo "    ✓ Implement chat picker using serviceClient.listChats"
+          echo "    ✓ Write selection to SettingsStore (TG_SELECTED_*_CHATS_CSV)"
+          echo ""
+          echo "  Activity Feed Implementation (70-77):"
+          echo "    ✓ Define TgActivityEvent (NewMovie, NewEpisode, NewArchive, ChatUpdated)"
+          echo "    ✓ T_TelegramServiceClient emits TgActivityEvent to activityEvents"
+          echo "    ✓ TelegramActivityFeedViewModel listens to activityEvents"
+          echo "    ✓ Use TelegramContentRepository to load MediaItems"
+          echo "    ✓ Provide StateFlow<FeedState> for UI"
+          echo "    ✓ Create TelegramActivityFeedScreen with feed list (TV-focusable, Touch)"
+          echo "    ✓ Enable direct play/call of items"
+          echo "    ✓ Add menu access from Start/Library/Settings"
+          echo ""
+          echo "  UX Enhancements (88-91):"
+          echo "    ✓ Implement Compose Drag/Reorder lists for chat picker"
+          echo "    ✓ Make reordering DPAD-compatible (TV) and Touch-friendly"
+          echo "    ✓ Create Jetpack Glance Widgets for 'New Telegram Films'/'Series'"
+          echo "    ✓ Widget uses TelegramContentRepository.getTelegramFeedItems()"
+          echo ""
+          echo "  Instrumented Tests (95-97):"
+          echo "    ✓ TV navigation: StartScreen → Telegram Row → Playback"
+          echo "    ✓ Library: Telegram tab 'Films'/'Series'"
+          echo "    ✓ Activity Feed navigation + playback"
+          echo ""
+          echo "📐 IMPLEMENTATION ORDER:"
+          echo "  1. Move TelegramSettingsViewModel to telegram/ui"
+          echo "  2. Integrate with T_TelegramServiceClient"
+          echo "  3. Implement chat picker with SettingsStore integration"
+          echo "  4. Create TelegramActivityFeedViewModel"
+          echo "  5. Create TelegramActivityFeedScreen"
+          echo "  6. Add chat reordering UI"
+          echo "  7. Create Glance widgets"
+          echo "  8. Add instrumented UI tests"
+          echo ""
+          echo "⚠️  DEPENDENCIES:"
+          echo "  - Requires Cluster A (Core) APIs to be stable"
+          echo "  - Requires Cluster B (Repository) APIs for data access"
+          echo "  - Uses: T_TelegramServiceClient, TelegramContentRepository"
+          echo "  - Can work in parallel with: Clusters C, E"
+          echo ""
+          echo "🎯 KEY FEATURES:"
+          echo "  • Settings: Complete Telegram configuration UI"
+          echo "  • Activity Feed: Real-time content updates visualization"
+          echo "  • Chat Management: Drag-to-reorder with TV/Touch support"
+          echo "  • Widgets: Home screen integration"
+          echo ""
+          echo "=================================================="
+      
+      - name: Verify Documentation
+        run: |
+          echo "📄 Verifying required documentation..."
+          if [ ! -f .github/tdlibAgent.md ]; then
+            echo "❌ ERROR: .github/tdlibAgent.md not found!"
+            exit 1
+          fi
+          if [ ! -f docs/TDLIB_TASK_GROUPING.md ]; then
+            echo "❌ ERROR: docs/TDLIB_TASK_GROUPING.md not found!"
+            exit 1
+          fi
+          echo "✅ All documentation found"
+          echo ""
+          echo "📊 Cluster D details:"
+          grep -A 30 "### Cluster D: UI / Activity Feed / Rows" docs/TDLIB_TASK_GROUPING.md || echo "Section not found"
+      
+      - name: Check Current File Structure
+        run: |
+          echo "📁 Current UI files:"
+          echo ""
+          echo "Settings ViewModel:"
+          find app/src/main/java/com/chris/m3usuite/ui/screens -name "*TelegramSettings*" 2>/dev/null || echo "  (none found)"
+          echo ""
+          echo "Existing Telegram UI:"
+          find app/src/main/java/com/chris/m3usuite/telegram/ui -name "*.kt" 2>/dev/null || echo "  (none found)"
+          echo ""
+          echo "Layout Components:"
+          find app/src/main/java/com/chris/m3usuite/ui/layout -name "*Telegram*" 2>/dev/null || echo "  (none found)"
+          echo ""
+          echo "📁 Target structure:"
+          echo "  telegram/ui/TelegramSettingsViewModel.kt (moved and enhanced)"
+          echo "  telegram/ui/feed/TelegramActivityFeedViewModel.kt (new)"
+          echo "  telegram/ui/feed/TelegramActivityFeedScreen.kt (new)"
+          echo "  ui/layout/FishTelegramContent.kt (enhanced)"
+      
+      - name: Check Glance Dependency
+        run: |
+          echo "📦 Checking for Jetpack Glance in build.gradle.kts..."
+          grep -i "glance" app/build.gradle.kts || echo "  ⚠️ Glance not found - will need to be added"
+          echo ""
+          echo "Target: Jetpack Glance for home screen widgets"
+      
+      - name: Validate Build Before Changes
+        run: |
+          echo "🔨 Testing current build state..."
+          ./gradlew assembleDebug --no-daemon --stacktrace || echo "⚠️ Build has pre-existing issues"
+      
+      - name: Implementation Placeholder
+        if: ${{ github.event.inputs.dry_run == 'false' }}
+        run: |
+          echo "🚧 IMPLEMENTATION MODE ENABLED"
+          echo ""
+          echo "This workflow would now:"
+          echo "  1. Move and refactor TelegramSettingsViewModel"
+          echo "  2. Implement chat picker with drag-to-reorder"
+          echo "  3. Create Activity Feed ViewModel and Screen"
+          echo "  4. Add Telegram menu entries to navigation"
+          echo "  5. Create Glance widgets for home screen"
+          echo "  6. Implement TV Focus handling throughout"
+          echo "  7. Add comprehensive instrumented tests"
+          echo ""
+          echo "⚠️  This is a placeholder - actual implementation will be triggered by Copilot agent"
+      
+      - name: Summary
+        run: |
+          echo ""
+          echo "=================================================="
+          echo "✅ Cluster D Analysis Complete"
+          echo "=================================================="
+          echo ""
+          echo "Key Features to Implement:"
+          echo "  • Telegram Settings: Login, chat picker, configuration"
+          echo "  • Activity Feed: Visual timeline of new content"
+          echo "  • Drag-to-Reorder: Intuitive chat prioritization"
+          echo "  • Home Screen Widgets: Quick access to new content"
+          echo "  • TV Optimization: Full DPAD navigation support"
+          echo ""
+          echo "User Experience Benefits:"
+          echo "  • One-time login with persistent session"
+          echo "  • Visual feedback for new content"
+          echo "  • Customizable content sources"
+          echo "  • Seamless TV and mobile experience"
+          echo ""
+          echo "Integration Points:"
+          echo "  • Depends on Cluster A: T_TelegramServiceClient"
+          echo "  • Depends on Cluster B: TelegramContentRepository"
+          echo "  • Can be developed in parallel with Clusters C, E"

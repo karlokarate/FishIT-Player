@@ -1,0 +1,203 @@
+name: TDLib Cluster E - Logging/Diagnostics/Quality
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (just analyze, no implementation)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  cluster-logging-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      
+      - name: Display Cluster Information
+        run: |
+          echo "=================================================="
+          echo "TDLib Cluster E: Logging / Diagnostics / Quality"
+          echo "=================================================="
+          echo ""
+          echo "📋 CLUSTER SCOPE:"
+          echo "  Package: telegram/logging, debug tools, test infrastructure"
+          echo "  Focus: Logging, diagnostics, quality assurance, and developer tools"
+          echo ""
+          echo "📦 AFFECTED MODULES:"
+          echo "  - app/src/main/java/com/chris/m3usuite/telegram/logging/"
+          echo "  - app/src/main/java/com/chris/m3usuite/diagnostics/ (integration)"
+          echo "  - Build configuration (build.gradle.kts, ProGuard rules)"
+          echo "  - Lint/Detekt configuration"
+          echo ""
+          echo "🎯 TASKS IN THIS CLUSTER (from docs/TDLIB_TASK_GROUPING.md):"
+          echo ""
+          echo "  Logging Infrastructure (9, 61-69):"
+          echo "    ✓ Create telegram/logging/TelegramLogRepository.kt"
+          echo "    ✓ Create TelegramLogViewModel.kt"
+          echo "    ✓ Define TgLogEntry data class (timestamp, level, source, message, details)"
+          echo "    ✓ Implement in-memory ringbuffer (500 entries)"
+          echo "    ✓ Provide StateFlow<List<TgLogEntry>> and SharedFlow<TgLogEntry>"
+          echo "    ✓ Use DiagnosticsLogger internally for logcat/file"
+          echo "    ✓ Instrument all Telegram components to call TelegramLogRepository.log"
+          echo "    ✓ Create Log Screen UI (Compose) with level/source filter"
+          echo "    ✓ Make DPAD-compatible for TV"
+          echo "    ✓ Add export option (share intent)"
+          echo "    ✓ Implement short overlays (Snackbar/Toast for WARN+)"
+          echo ""
+          echo "  Quality & Debug Tools (78-84):"
+          echo "    ✓ Ensure tdl-coroutines-android native libs (arm64-v8a, armeabi-v7a)"
+          echo "    ✓ Verify b/libtd not in classpath (no custom libtdjni.so)"
+          echo "    ✓ Add R8/ProGuard rules for dev.g000sha256.tdl.dto.*"
+          echo "    ✓ Add leakcanary-android for Telegram scopes"
+          echo "    ✓ Add kotlinx-coroutines-debug (kotlinx.coroutines.debug property)"
+          echo "    ✓ Add androidx.profileinstaller for startup optimization"
+          echo "    ✓ Add JetBrains Kover Gradle plugin for test coverage"
+          echo ""
+          echo "  Lint & Code Quality (98-99):"
+          echo "    ✓ Custom lint/detekt rule: No direct TdlClient access outside telegram.core"
+          echo "    ✓ Custom lint/detekt rule: No monster methods (> 100 LOC) in Telegram files"
+          echo "    ✓ Custom lint/detekt rule: Clear Flow naming conventions (*State, *Events)"
+          echo ""
+          echo "📐 IMPLEMENTATION ORDER:"
+          echo "  1. Create TelegramLogRepository with ringbuffer"
+          echo "  2. Integrate DiagnosticsLogger"
+          echo "  3. Create TelegramLogViewModel and Log Screen UI"
+          echo "  4. Instrument all Telegram components for logging"
+          echo "  5. Add short overlays for warnings"
+          echo "  6. Add LeakCanary, coroutines debug, profileinstaller"
+          echo "  7. Add Kover for test coverage"
+          echo "  8. Create custom lint/detekt rules"
+          echo ""
+          echo "⚠️  DEPENDENCIES:"
+          echo "  - Minimal dependencies (DiagnosticsLogger already exists)"
+          echo "  - Integrates with ALL other clusters (instrumentation)"
+          echo "  - Can be developed in parallel with: All clusters (A, B, C, D)"
+          echo ""
+          echo "🎯 KEY FEATURES:"
+          echo "  • Comprehensive Logging: In-app log viewer with filtering"
+          echo "  • Memory Leak Detection: LeakCanary integration"
+          echo "  • Coroutine Debugging: Enhanced debugging for async code"
+          echo "  • Test Coverage: Kover for measuring code coverage"
+          echo "  • Code Quality: Custom lint rules for TDLib patterns"
+          echo ""
+          echo "=================================================="
+      
+      - name: Verify Documentation
+        run: |
+          echo "📄 Verifying required documentation..."
+          if [ ! -f .github/tdlibAgent.md ]; then
+            echo "❌ ERROR: .github/tdlibAgent.md not found!"
+            exit 1
+          fi
+          if [ ! -f docs/TDLIB_TASK_GROUPING.md ]; then
+            echo "❌ ERROR: docs/TDLIB_TASK_GROUPING.md not found!"
+            exit 1
+          fi
+          echo "✅ All documentation found"
+          echo ""
+          echo "📊 Cluster E details:"
+          grep -A 30 "### Cluster E: Logging / Diagnostics / Quality" docs/TDLIB_TASK_GROUPING.md || echo "Section not found"
+      
+      - name: Check Current Infrastructure
+        run: |
+          echo "📁 Current diagnostics infrastructure:"
+          echo ""
+          echo "DiagnosticsLogger:"
+          find app/src/main/java/com/chris/m3usuite/diagnostics -name "*.kt" 2>/dev/null | head -5 || echo "  (none found)"
+          echo ""
+          echo "ProGuard rules:"
+          find . -name "proguard-rules.pro" -o -name "consumer-rules.pro" 2>/dev/null || echo "  (none found)"
+          echo ""
+          echo "Detekt config:"
+          ls -la detekt-config.yml 2>/dev/null || echo "  (not found)"
+          echo ""
+          echo "📁 Target structure:"
+          echo "  telegram/logging/TelegramLogRepository.kt (new)"
+          echo "  telegram/ui/TelegramLogViewModel.kt (new)"
+          echo "  Build dependencies updated with quality tools"
+      
+      - name: Check Existing Dependencies
+        run: |
+          echo "📦 Checking for quality tools in build.gradle.kts..."
+          echo ""
+          echo "LeakCanary:"
+          grep -i "leakcanary" app/build.gradle.kts || echo "  ⚠️ Not found - will be added"
+          echo ""
+          echo "Coroutines Debug:"
+          grep -i "kotlinx-coroutines-debug" app/build.gradle.kts || echo "  ⚠️ Not found - will be added"
+          echo ""
+          echo "Kover:"
+          grep -i "kover" build.gradle.kts app/build.gradle.kts || echo "  ⚠️ Not found - will be added"
+          echo ""
+          echo "ProfileInstaller:"
+          grep -i "profileinstaller" app/build.gradle.kts || echo "  ⚠️ Not found - will be added"
+      
+      - name: Validate Build Before Changes
+        run: |
+          echo "🔨 Testing current build state..."
+          ./gradlew assembleDebug --no-daemon --stacktrace || echo "⚠️ Build has pre-existing issues"
+      
+      - name: Implementation Placeholder
+        if: ${{ github.event.inputs.dry_run == 'false' }}
+        run: |
+          echo "🚧 IMPLEMENTATION MODE ENABLED"
+          echo ""
+          echo "This workflow would now:"
+          echo "  1. Create TelegramLogRepository with advanced filtering"
+          echo "  2. Build comprehensive Log Screen UI"
+          echo "  3. Add LeakCanary for memory leak detection"
+          echo "  4. Enable coroutine debugging"
+          echo "  5. Integrate ProfileInstaller for startup optimization"
+          echo "  6. Add Kover for test coverage metrics"
+          echo "  7. Create custom lint/detekt rules for TDLib patterns"
+          echo "  8. Instrument all Telegram components"
+          echo ""
+          echo "⚠️  This is a placeholder - actual implementation will be triggered by Copilot agent"
+      
+      - name: Summary
+        run: |
+          echo ""
+          echo "=================================================="
+          echo "✅ Cluster E Analysis Complete"
+          echo "=================================================="
+          echo ""
+          echo "Key Features to Implement:"
+          echo "  • Logging Infrastructure: Comprehensive in-app logging"
+          echo "  • Memory Profiling: LeakCanary integration"
+          echo "  • Debug Support: Enhanced coroutine debugging"
+          echo "  • Performance Monitoring: Startup time optimization"
+          echo "  • Test Coverage: Kover metrics and reporting"
+          echo "  • Code Quality: Custom lint rules for best practices"
+          echo ""
+          echo "Developer Benefits:"
+          echo "  • Real-time log viewing on device"
+          echo "  • Early detection of memory leaks"
+          echo "  • Better debugging of async code"
+          echo "  • Measurable test coverage"
+          echo "  • Enforced code quality standards"
+          echo ""
+          echo "Integration Points:"
+          echo "  • Minimal dependencies (mostly standalone)"
+          echo "  • Instruments ALL other clusters"
+          echo "  • Can be developed in parallel with all clusters"
+          echo ""
+          echo "Quality Assurance:"
+          echo "  • Prevents direct TdlClient access violations"
+          echo "  • Enforces method size limits"
+          echo "  • Ensures consistent Flow naming"
