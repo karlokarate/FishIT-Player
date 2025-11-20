@@ -293,8 +293,27 @@ class TelegramSession(
     }
 
     private suspend fun onWaitPhoneNumber() {
-        println("[TelegramSession] Waiting for phone number...")
-        // UI should call sendPhoneNumber() when ready
+        println("[TelegramSession] → AuthorizationStateWaitPhoneNumber")
+        
+        // Automatically send phone number from config (as per documentation)
+        try {
+            val settings = PhoneNumberAuthenticationSettings(
+                allowFlashCall = false,
+                allowMissedCall = false,
+                allowSmsRetrieverApi = false,
+                hasUnknownPhoneNumber = false,
+                isCurrentPhoneNumber = false,
+                firebaseAuthenticationSettings = null,
+                authenticationTokens = emptyArray()
+            )
+
+            client.setAuthenticationPhoneNumber(config.phoneNumber, settings).getOrThrow()
+            println("[TelegramSession] Phone number submitted to TDLib: ${config.phoneNumber}")
+        } catch (e: Exception) {
+            println("[TelegramSession] Error submitting phone number: ${e.message}")
+            _authEvents.emit(AuthEvent.Error("Failed to submit phone number: ${e.message}"))
+            throw e
+        }
     }
 
     private suspend fun onWaitCode() {

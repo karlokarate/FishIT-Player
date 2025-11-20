@@ -307,6 +307,20 @@ private fun TelegramSettingsSection(
     var phoneNumber by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    
+    // Local state for API credentials to allow smooth typing
+    var apiIdLocal by remember { mutableStateOf(state.apiId) }
+    var apiHashLocal by remember { mutableStateOf(state.apiHash) }
+    
+    // Sync local state with incoming state (but don't overwrite while user is typing)
+    LaunchedEffect(state.apiId, state.apiHash) {
+        if (apiIdLocal.isEmpty() && state.apiId.isNotEmpty()) {
+            apiIdLocal = state.apiId
+        }
+        if (apiHashLocal.isEmpty() && state.apiHash.isNotEmpty()) {
+            apiHashLocal = state.apiHash
+        }
+    }
 
     SettingsCard(title = "Telegram Integration") {
         // Enable/Disable Toggle
@@ -336,14 +350,14 @@ private fun TelegramSettingsSection(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedTextField(
-                        value = state.apiId,
-                        onValueChange = { onUpdateCredentials(it, state.apiHash) },
+                        value = apiIdLocal,
+                        onValueChange = { apiIdLocal = it },
                         label = { Text("API ID") },
                         modifier = Modifier.weight(1f)
                     )
                     OutlinedTextField(
-                        value = state.apiHash,
-                        onValueChange = { onUpdateCredentials(state.apiId, it) },
+                        value = apiHashLocal,
+                        onValueChange = { apiHashLocal = it },
                         label = { Text("API Hash") },
                         modifier = Modifier.weight(1f)
                     )
@@ -383,7 +397,11 @@ private fun TelegramSettingsSection(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Button(
-                        onClick = { onConnectWithPhone(phoneNumber) },
+                        onClick = {
+                            // Save credentials before connecting
+                            onUpdateCredentials(apiIdLocal, apiHashLocal)
+                            onConnectWithPhone(phoneNumber)
+                        },
                         enabled = phoneNumber.isNotBlank() && !state.isConnecting,
                         modifier = Modifier.fillMaxWidth()
                     ) {
