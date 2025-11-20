@@ -12,10 +12,10 @@ This document tracks the implementation status of the TDLib Final Review checkli
 2. **Logging Infrastructure** - Created TelegramLogRepository with full integration
 3. **Build Verification** - All changes compile successfully
 4. **ServiceClient Logging** - T_TelegramServiceClient now uses structured logging
+5. TelegramDataSource migration to telegram/player package
 
 ### In Progress 🟡
-1. TelegramDataSource migration to telegram/player package
-2. Logging integration into remaining core components
+1. Logging integration into remaining core components
 
 ### Not Started ❌
 1. Settings ↔ Sync wiring via SchedulingGateway
