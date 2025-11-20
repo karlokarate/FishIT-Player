@@ -18,6 +18,18 @@ import com.chris.m3usuite.model.MediaItem
 /**
  * Renders a Telegram media item with the blue "T" badge.
  * Conforms to existing FishTile pattern for UI consistency.
+ *
+ * Supports all Telegram MediaKinds:
+ * - Movie (VOD)
+ * - Series
+ * - Episode
+ * - Clip
+ * - Archive
+ *
+ * Features:
+ * - Thumbnail/cover display (when available)
+ * - DPAD/TV focus support
+ * - Consistent size and animations
  */
 @Composable
 fun FishTelegramContent(
@@ -29,17 +41,51 @@ fun FishTelegramContent(
     onAssign: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
-    FishTile(
-        title = mediaItem.name,
-        poster = mediaItem.poster,
-        modifier = modifier,
-        showNew = showNew,
-        resumeFraction = resumeFraction,
-        topStartBadge = {
-            TelegramBadge()
-        },
-        onClick = onClick,
-    )
+    // Determine tile style based on media type
+    when (mediaItem.type) {
+        "series" -> {
+            // Use SeriesFishTile style for series content
+            FishTile(
+                title = mediaItem.name,
+                poster = mediaItem.poster,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = resumeFraction,
+                topStartBadge = {
+                    TelegramBadge()
+                },
+                onClick = onClick,
+            )
+        }
+        "episode" -> {
+            // Use standard tile with episode indicator
+            FishTile(
+                title = mediaItem.name,
+                poster = mediaItem.poster,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = resumeFraction,
+                topStartBadge = {
+                    TelegramBadge()
+                },
+                onClick = onClick,
+            )
+        }
+        else -> {
+            // Default VOD/Movie/Clip/Archive style
+            FishTile(
+                title = mediaItem.name,
+                poster = mediaItem.poster,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = resumeFraction,
+                topStartBadge = {
+                    TelegramBadge()
+                },
+                onClick = onClick,
+            )
+        }
+    }
 }
 
 /**

@@ -9,6 +9,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.kotlin.plugin.compose")
     id("io.objectbox") version "5.0.1"
+    id("org.jetbrains.kotlinx.kover")
     // id("com.google.gms.google-services") // enable if google-services.json is configured
 }
 
@@ -308,4 +309,9 @@ dependencies {
     implementation("io.objectbox:objectbox-kotlin:5.0.1")
     // Note: objectbox-processor is NOT needed when using the ObjectBox Gradle plugin.
     // The plugin handles code generation via bytecode transformation.
+
+    // TDLib Logging/Tools Cluster - Quality & Debug Tools
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+    debugImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.10.2")
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 }
