@@ -10,6 +10,7 @@ import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TgSyncState
+import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -41,12 +42,12 @@ class TelegramSyncWorker(
     override suspend fun doWork(): Result =
         withContext(Dispatchers.IO) {
             try {
-                println("[TelegramSyncWorker] Starting sync...")
+                TelegramLogRepository.info("TelegramSyncWorker", "Starting sync...")
 
                 // Load settings
                 val enabled = settingsStore.tgEnabled.first()
                 if (!enabled) {
-                    println("[TelegramSyncWorker] Telegram not enabled, skipping sync")
+                    TelegramLogRepository.info("TelegramSyncWorker", "Telegram not enabled, skipping sync")
                     return@withContext Result.success()
                 }
 
@@ -54,12 +55,12 @@ class TelegramSyncWorker(
                 val mode = inputData.getString(KEY_MODE) ?: MODE_ALL
                 val validModes = setOf(MODE_ALL, MODE_SELECTION_CHANGED, MODE_BACKFILL_SERIES)
                 if (mode !in validModes) {
-                    println("[TelegramSyncWorker] Invalid sync mode: $mode. Failing job.")
+                    TelegramLogRepository.info("TelegramSyncWorker", "Invalid sync mode: $mode. Failing job.")
                     return@withContext Result.failure()
                 }
                 val refreshHome = inputData.getBoolean(KEY_REFRESH_HOME, false)
 
-                println("[TelegramSyncWorker] Sync mode: $mode, refreshHome: $refreshHome")
+                TelegramLogRepository.info("TelegramSyncWorker", "Sync mode: $mode, refreshHome: $refreshHome")
 
                 // Ensure Telegram service is started
                 val serviceClient = T_TelegramServiceClient.getInstance(applicationContext)
@@ -72,16 +73,16 @@ class TelegramSyncWorker(
                 val chatsToSync = determineChatIdsToSync(mode)
 
                 if (chatsToSync.isEmpty()) {
-                    println("[TelegramSyncWorker] No chats selected for sync")
+                    TelegramLogRepository.info("TelegramSyncWorker", "No chats selected for sync")
                     serviceClient.updateSyncState(TgSyncState.Completed(0))
                     return@withContext Result.success()
                 }
 
-                println("[TelegramSyncWorker] Syncing ${chatsToSync.size} chats")
+                TelegramLogRepository.info("TelegramSyncWorker", "Syncing ${chatsToSync.size} chats")
 
                 // Calculate adaptive parallelism based on device profile
                 val parallelism = calculateParallelism()
-                println("[TelegramSyncWorker] Using parallelism: $parallelism")
+                TelegramLogRepository.info("TelegramSyncWorker", "Using parallelism: $parallelism")
 
                 // Sync chats in parallel
                 var totalProcessed = 0
@@ -106,7 +107,7 @@ class TelegramSyncWorker(
                 // Sum up results
                 totalProcessed = results.sum()
 
-                println("[TelegramSyncWorker] Sync completed: $totalProcessed items processed")
+                TelegramLogRepository.info("TelegramSyncWorker", "Sync completed: $totalProcessed items processed")
 
                 // Update sync state to Completed
                 serviceClient.updateSyncState(TgSyncState.Completed(totalProcessed))
@@ -118,7 +119,7 @@ class TelegramSyncWorker(
                     ),
                 )
             } catch (e: Exception) {
-                println("[TelegramSyncWorker] Sync failed: ${e.message}")
+                TelegramLogRepository.info("TelegramSyncWorker", "Sync failed: ${e.message}")
                 e.printStackTrace()
 
                 // Update sync state to Failed
@@ -155,7 +156,7 @@ class TelegramSyncWorker(
             var itemsProcessed = 0
 
             try {
-                println("[TelegramSyncWorker] Syncing chat $chatId (type: $chatType, mode: $mode)")
+                TelegramLogRepository.info("TelegramSyncWorker", "Syncing chat $chatId (type: $chatType, mode: $mode)")
 
                 // Resolve chat title for context
                 val chatTitle = serviceClient.resolveChatTitle(chatId)
@@ -191,11 +192,11 @@ class TelegramSyncWorker(
                     }
 
                 if (messages.isEmpty()) {
-                    println("[TelegramSyncWorker] No messages found in chat $chatId")
+                    TelegramLogRepository.info("TelegramSyncWorker", "No messages found in chat $chatId")
                     return@withContext 0
                 }
 
-                println("[TelegramSyncWorker] Processing ${messages.size} messages from chat $chatId")
+                TelegramLogRepository.info("TelegramSyncWorker", "Processing ${messages.size} messages from chat $chatId")
 
                 // Index messages using repository
                 itemsProcessed =
@@ -206,9 +207,9 @@ class TelegramSyncWorker(
                         chatType = chatType,
                     )
 
-                println("[TelegramSyncWorker] Chat $chatId: indexed $itemsProcessed items")
+                TelegramLogRepository.info("TelegramSyncWorker", "Chat $chatId: indexed $itemsProcessed items")
             } catch (e: Exception) {
-                println("[TelegramSyncWorker] Error syncing chat $chatId: ${e.message}")
+                TelegramLogRepository.info("TelegramSyncWorker", "Error syncing chat $chatId: ${e.message}")
                 e.printStackTrace()
                 // Continue with other chats even if one fails
             }
@@ -325,7 +326,7 @@ class TelegramSyncWorker(
                     ).build()
 
             WorkManager.getInstance(context).enqueue(request)
-            println("[TelegramSyncWorker] Scheduled sync with mode: $mode")
+            TelegramLogRepository.info("TelegramSyncWorker", "Scheduled sync with mode: $mode")
         }
     }
 }
