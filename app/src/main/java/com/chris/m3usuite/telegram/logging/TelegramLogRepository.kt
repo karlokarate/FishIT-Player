@@ -269,10 +269,11 @@ object TelegramLogRepository {
         source: String? = null,
     ): String {
         val filteredEntries = getEntries(level, source)
+        val exportTimeFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         return buildString {
             appendLine("=== Telegram Log Export ===")
             appendLine("Total Entries: ${filteredEntries.size}")
-            appendLine("Export Time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())}")
+            appendLine("Export Time: ${exportTimeFormatter.format(Date())}")
             appendLine()
 
             filteredEntries.forEach { entry ->
