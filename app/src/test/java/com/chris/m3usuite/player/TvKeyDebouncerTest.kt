@@ -10,6 +10,9 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -21,6 +24,8 @@ import java.util.concurrent.atomic.AtomicInteger
  * 3. Presses after debounce period are processed
  * 4. Different keys are debounced independently
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class TvKeyDebouncerTest {
     private lateinit var scope: CoroutineScope
     private lateinit var debouncer: TvKeyDebouncer

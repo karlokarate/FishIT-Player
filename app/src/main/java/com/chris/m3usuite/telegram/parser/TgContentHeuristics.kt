@@ -51,14 +51,14 @@ object TgContentHeuristics {
     // Series indicators in chat titles
     private val seriesIndicators =
         listOf(
-            Regex("""\b(series|serien|show|staffel|season)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\b(series|serien|shows?|staffel|seasons?)\b""", RegexOption.IGNORE_CASE),
             Regex("""\b(episodes?|folgen?)\b""", RegexOption.IGNORE_CASE),
         )
 
     // Movie indicators
     private val movieIndicators =
         listOf(
-            Regex("""\b(film|movie|kino|cinema)\b""", RegexOption.IGNORE_CASE),
+            Regex("""\b(films?|movies?|kino|cinema)\b""", RegexOption.IGNORE_CASE),
             Regex("""\b(vod|video)\b""", RegexOption.IGNORE_CASE),
         )
 
