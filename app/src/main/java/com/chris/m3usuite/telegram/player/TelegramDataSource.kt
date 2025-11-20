@@ -8,6 +8,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.TransferListener
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
+import kotlinx.coroutines.runBlocking
 import java.io.IOException
 
 /**
@@ -42,7 +43,8 @@ class TelegramDataSource(
     private var bytesRemaining: Long = C.LENGTH_UNSET.toLong()
     private var totalSize: Long = C.LENGTH_UNSET.toLong()
     private var fileId: String? = null
-    // chatId and messageId are parsed in open() for validation only; not stored as state.
+    private var chatId: Long? = null
+    private var messageId: Long? = null
     private var opened = false
     private var transferListener: TransferListener? = null
 
@@ -189,7 +191,7 @@ class TelegramDataSource(
         }
 
         // Update position and remaining bytes
-        position += bytesRead
+        position += bytesRead.toLong()
         if (bytesRemaining != C.LENGTH_UNSET.toLong()) {
             bytesRemaining = (bytesRemaining - bytesRead).coerceAtLeast(0)
         }
