@@ -136,7 +136,7 @@ fun TelegramLogScreen(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(state.filteredEntries, key = { it.timestamp }) { entry ->
+                    items(state.filteredEntries, key = { "${it.timestamp}_${it.hashCode()}" }) { entry ->
                         LogEntryCard(
                             entry = entry,
                             modifier =
