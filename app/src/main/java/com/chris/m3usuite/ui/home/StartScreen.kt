@@ -42,7 +42,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -74,9 +73,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.filter
-import com.chris.m3usuite.core.http.RequestHeadersProvider
 import com.chris.m3usuite.core.playback.PlayUrlHelper
-import com.chris.m3usuite.data.obx.toMediaItem
 import com.chris.m3usuite.data.repo.MediaQueryRepository
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.navigation.navigateTopLevel
@@ -86,7 +83,6 @@ import com.chris.m3usuite.ui.common.AppIconButton
 import com.chris.m3usuite.ui.components.rows.LiveAddTile
 import com.chris.m3usuite.ui.components.rows.ReorderableLiveRow
 import com.chris.m3usuite.ui.focus.FocusKit
-import com.chris.m3usuite.ui.focus.OnPrefetchPaged
 import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import com.chris.m3usuite.ui.fx.tvFocusGlow
 import com.chris.m3usuite.ui.layout.FishHeaderData
@@ -98,18 +94,11 @@ import com.chris.m3usuite.ui.layout.SeriesFishTile
 import com.chris.m3usuite.ui.layout.VodFishTile
 import com.chris.m3usuite.ui.telemetry.AttachPagingTelemetry
 import com.chris.m3usuite.ui.theme.DesignTokens
-import com.chris.m3usuite.ui.util.AppImageLoader
-import com.chris.m3usuite.ui.util.rememberImageHeaders
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withContext
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
 @Composable
@@ -119,7 +108,7 @@ fun StartScreen(
     openVod: (Long) -> Unit,
     openSeries: (Long) -> Unit,
     initialSearch: String? = null,
-    openSearchOnStart: Boolean = false
+    openSearchOnStart: Boolean = false,
 ) {
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
@@ -161,29 +150,41 @@ fun StartScreen(
     val tgEnabled by vm.tgEnabled.collectAsStateWithLifecycle(false)
 
     // Header: Tab aus Store-Index
-    val headerLibraryTab = remember(libraryTabIndex) {
-        when (libraryTabIndex) {
-            0 -> LibraryTab.Live
-            1 -> LibraryTab.Vod
-            else -> LibraryTab.Series
-        }
-    }
-
-    // Playback-Launcher bleibt reines UI-Wiring
-    val playbackLauncher = com.chris.m3usuite.playback.rememberPlaybackLauncher(
-        onOpenInternal = { pr ->
-            val encoded = PlayUrlHelper.encodeUrl(pr.url)
-            val mimeArg = pr.mimeType?.let { Uri.encode(it) } ?: ""
-            when (pr.type) {
-                "vod" -> navController.navigate("player?url=$encoded&type=vod&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
-                "live" -> navController.navigate("player?url=$encoded&type=live&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
-                "series" -> navController.navigate("player?url=$encoded&type=series&seriesId=${pr.seriesId ?: -1}&season=${pr.season ?: -1}&episodeNum=${pr.episodeNum ?: -1}&episodeId=${pr.episodeId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg")
+    val headerLibraryTab =
+        remember(libraryTabIndex) {
+            when (libraryTabIndex) {
+                0 -> LibraryTab.Live
+                1 -> LibraryTab.Vod
+                else -> LibraryTab.Series
             }
         }
-    )
+
+    // Playback-Launcher bleibt reines UI-Wiring
+    val playbackLauncher =
+        com.chris.m3usuite.playback.rememberPlaybackLauncher(
+            onOpenInternal = { pr ->
+                val encoded = PlayUrlHelper.encodeUrl(pr.url)
+                val mimeArg = pr.mimeType?.let { Uri.encode(it) } ?: ""
+                when (pr.type) {
+                    "vod" ->
+                        navController.navigate(
+                            "player?url=$encoded&type=vod&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg",
+                        )
+                    "live" ->
+                        navController.navigate(
+                            "player?url=$encoded&type=live&mediaId=${pr.mediaId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg",
+                        )
+                    "series" ->
+                        navController.navigate(
+                            "player?url=$encoded&type=series&seriesId=${pr.seriesId ?: -1}&season=${pr.season ?: -1}&episodeNum=${pr.episodeNum ?: -1}&episodeId=${pr.episodeId ?: -1}&startMs=${pr.startPositionMs ?: -1}&mime=$mimeArg",
+                        )
+                }
+            },
+        )
 
     // TV-only: Global Loading Overlay bleibt
-    val loading by com.chris.m3usuite.ui.fx.FishSpin.isLoading.collectAsState(initial = false)
+    val loading by com.chris.m3usuite.ui.fx.FishSpin.isLoading
+        .collectAsState(initial = false)
 
     // --- gebündelter Auswahlszustand ---
     var assignState by remember { mutableStateOf(AssignState()) }
@@ -196,7 +197,9 @@ fun StartScreen(
     var showLivePicker by rememberSaveable("start:livePicker:visible") { mutableStateOf(false) }
 
     // Liste & Chrome
-    val listState = com.chris.m3usuite.ui.state.rememberRouteListState("start:main")
+    val listState =
+        com.chris.m3usuite.ui.state
+            .rememberRouteListState("start:main")
     val preferSettingsFocus = remember(ui.loading) { false } // Loading-Flag aus VM; Empty behandeln wir unten
 
     // Initiale Query aus DeepLink übernehmen
@@ -216,14 +219,17 @@ fun StartScreen(
                 }
             }
         },
-        onSettings = if (!canEditWhitelist && isKid) null else {
-            {
-                val current = navController.currentBackStackEntry?.destination?.route
-                if (current != "settings") {
-                    navController.navigate("settings") { launchSingleTop = true }
+        onSettings =
+            if (!canEditWhitelist && isKid) {
+                null
+            } else {
+                {
+                    val current = navController.currentBackStackEntry?.destination?.route
+                    if (current != "settings") {
+                        navController.navigate("settings") { launchSingleTop = true }
+                    }
                 }
-            }
-        },
+            },
         listState = listState,
         onLogo = {
             val current = navController.currentBackStackEntry?.destination?.route
@@ -231,22 +237,24 @@ fun StartScreen(
                 navController.navigateTopLevel("library?q=&qs=")
             }
         },
-        libraryNav = LibraryNavConfig(
-            selected = headerLibraryTab,
-            onSelect = { tab ->
-                val idx = when (tab) {
-                    LibraryTab.Live -> 0
-                    LibraryTab.Vod -> 1
-                    LibraryTab.Series -> 2
-                }
-                scope.launch { store.setLibraryTabIndex(idx) }
-                val current = navController.currentBackStackEntry?.destination?.route
-                if (current != "browse") {
-                    navController.navigateTopLevel("browse")
-                }
-            }
-        ),
-        preferSettingsFirstFocus = preferSettingsFocus
+        libraryNav =
+            LibraryNavConfig(
+                selected = headerLibraryTab,
+                onSelect = { tab ->
+                    val idx =
+                        when (tab) {
+                            LibraryTab.Live -> 0
+                            LibraryTab.Vod -> 1
+                            LibraryTab.Series -> 2
+                        }
+                    scope.launch { store.setLibraryTabIndex(idx) }
+                    val current = navController.currentBackStackEntry?.destination?.route
+                    if (current != "browse") {
+                        navController.navigateTopLevel("browse")
+                    }
+                },
+            ),
+        preferSettingsFirstFocus = preferSettingsFocus,
     ) { pads: PaddingValues ->
 
         // Hintergrund/Glow wie gehabt
@@ -257,9 +265,9 @@ fun StartScreen(
                     .background(
                         Brush.verticalGradient(
                             0f to MaterialTheme.colorScheme.background,
-                            1f to MaterialTheme.colorScheme.surface
-                        )
-                    )
+                            1f to MaterialTheme.colorScheme.surface,
+                        ),
+                    ),
             )
             val accent = if (isKid) DesignTokens.KidAccent else DesignTokens.Accent
             Box(
@@ -268,41 +276,45 @@ fun StartScreen(
                     .background(
                         Brush.radialGradient(
                             colors = listOf(accent.copy(alpha = if (isKid) 0.22f else 0.14f), Color.Transparent),
-                            radius = with(LocalDensity.current) { 680.dp.toPx() }
-                        )
-                    )
+                            radius = with(LocalDensity.current) { 680.dp.toPx() },
+                        ),
+                    ),
             )
             com.chris.m3usuite.ui.fx.FishBackground(
                 modifier = Modifier.align(Alignment.Center).size(560.dp),
                 alpha = 0.05f,
-                neutralizeUnderlay = true
+                neutralizeUnderlay = true,
             )
         }
 
         // Globaler Loading-Blur (unverändert)
         if (loading) {
             Box(Modifier.fillMaxSize()) {
-                Box(Modifier.fillMaxSize().graphicsLayer {
-                    try {
-                        if (Build.VERSION.SDK_INT >= 31) {
-                            renderEffect = RenderEffect
-                                .createBlurEffect(28f, 28f, Shader.TileMode.CLAMP)
-                                .asComposeRenderEffect()
+                Box(
+                    Modifier.fillMaxSize().graphicsLayer {
+                        try {
+                            if (Build.VERSION.SDK_INT >= 31) {
+                                renderEffect =
+                                    RenderEffect
+                                        .createBlurEffect(28f, 28f, Shader.TileMode.CLAMP)
+                                        .asComposeRenderEffect()
+                            }
+                        } catch (_: Throwable) {
                         }
-                    } catch (_: Throwable) {}
-                })
+                    },
+                )
                 val size = 220.dp
                 val infinity = rememberInfiniteTransition(label = "fish-rotate")
                 val angle by infinity.animateFloat(
                     initialValue = 0f,
                     targetValue = 360f,
                     animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
-                    label = "angle"
+                    label = "angle",
                 )
                 Image(
                     painter = painterResource(id = com.chris.m3usuite.R.drawable.fisch_bg),
                     contentDescription = null,
-                    modifier = Modifier.align(Alignment.Center).size(size).graphicsLayer { rotationZ = angle }
+                    modifier = Modifier.align(Alignment.Center).size(size).graphicsLayer { rotationZ = angle },
                 )
             }
         }
@@ -318,7 +330,7 @@ fun StartScreen(
                         onValueChange = { searchInput = it },
                         singleLine = true,
                         label = { Text("Suchbegriff") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 },
                 confirmButton = {
@@ -329,7 +341,7 @@ fun StartScreen(
                 },
                 dismissButton = {
                     TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { showSearch = false }) { Text("Abbrechen") }
-                }
+                },
             )
         }
 
@@ -340,15 +352,16 @@ fun StartScreen(
                 Box(Modifier.fillMaxSize()) {
                     FloatingActionButton(
                         onClick = { /* unten via KidSelectSheet */ },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(end = 20.dp, bottom = 20.dp)
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 20.dp, bottom = 20.dp),
                     ) {
                         AppIconButton(
                             icon = AppIcon.AddKid,
                             contentDescription = "In Profile zuordnen",
                             onClick = { /* unten via KidSelectSheet */ },
-                            size = 28.dp
+                            size = 28.dp,
                         )
                     }
                 }
@@ -365,17 +378,30 @@ fun StartScreen(
             val seriesItemsG = seriesFlowG.collectAsLazyPagingItems().also { AttachPagingTelemetry(tag = "home.series", items = it) }
             val vodItemsG = vodFlowG.collectAsLazyPagingItems().also { AttachPagingTelemetry(tag = "home.vod", items = it) }
             val liveItemsG = liveFlowG.collectAsLazyPagingItems().also { AttachPagingTelemetry(tag = "home.live", items = it) }
-            val countFlow = remember(seriesItemsG, vodItemsG, liveItemsG) {
-                com.chris.m3usuite.ui.state.combinedPagingCountFlow(seriesItemsG, vodItemsG, liveItemsG)
-            }
-            val searchUi by com.chris.m3usuite.ui.state.collectAsUiState(countFlow) { total -> total == 0 }
+            val countFlow =
+                remember(seriesItemsG, vodItemsG, liveItemsG) {
+                    com.chris.m3usuite.ui.state
+                        .combinedPagingCountFlow(seriesItemsG, vodItemsG, liveItemsG)
+                }
+            val searchUi by com.chris.m3usuite.ui.state
+                .collectAsUiState(countFlow) { total -> total == 0 }
 
             when (val s = searchUi) {
-                is com.chris.m3usuite.ui.state.UiState.Loading -> { com.chris.m3usuite.ui.state.LoadingState(); return@HomeChromeScaffold }
-                is com.chris.m3usuite.ui.state.UiState.Empty -> { com.chris.m3usuite.ui.state.EmptyState(); return@HomeChromeScaffold }
+                is com.chris.m3usuite.ui.state.UiState.Loading -> {
+                    com.chris.m3usuite.ui.state
+                        .LoadingState()
+                    return@HomeChromeScaffold
+                }
+                is com.chris.m3usuite.ui.state.UiState.Empty -> {
+                    com.chris.m3usuite.ui.state
+                        .EmptyState()
+                    return@HomeChromeScaffold
+                }
                 is com.chris.m3usuite.ui.state.UiState.Error -> {
                     com.chris.m3usuite.ui.state.ErrorState(text = s.message, onRetry = {
-                        seriesItemsG.retry(); vodItemsG.retry(); liveItemsG.retry()
+                        seriesItemsG.retry()
+                        vodItemsG.retry()
+                        liveItemsG.retry()
                     })
                     return@HomeChromeScaffold
                 }
@@ -384,24 +410,26 @@ fun StartScreen(
 
             // Suche: Reihen-Ausgabe unverändert (nur Handler teils via VM)
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(pads),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(pads),
                 state = listState,
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
+                verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 item("start_series_search_row") {
                     FishRowPaged(
                         items = seriesItemsG,
                         stateKey = "start_series_search",
                         edgeLeftExpandChrome = true,
-                        header = FishHeaderData.Text(
-                            anchorKey = "start_series_search",
-                            text = "Serien – Suchtreffer",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
+                        header =
+                            FishHeaderData.Text(
+                                anchorKey = "start_series_search",
+                                text = "Serien – Suchtreffer",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            ),
                     ) { _, media ->
                         val onSeriesPlayDirect: (MediaItem) -> Unit = { item ->
                             scope.launch { openSeries(item.id) }
@@ -409,12 +437,15 @@ fun StartScreen(
                         val onSeriesAssign: (MediaItem) -> Unit = { item ->
                             if (canEditWhitelist) {
                                 if (assignState.active) {
-                                    assignState = assignState.copy(
-                                        selSeries = if (item.id in assignState.selSeries)
-                                            assignState.selSeries - item.id
-                                        else
-                                            assignState.selSeries + item.id
-                                    )
+                                    assignState =
+                                        assignState.copy(
+                                            selSeries =
+                                                if (item.id in assignState.selSeries) {
+                                                    assignState.selSeries - item.id
+                                                } else {
+                                                    assignState.selSeries + item.id
+                                                },
+                                        )
                                 } else {
                                     vm.allowForAllKids("series", item.id)
                                 }
@@ -426,7 +457,7 @@ fun StartScreen(
                             allowAssign = canEditWhitelist,
                             onOpenDetails = { item -> openSeries(item.id) },
                             onPlayDirect = onSeriesPlayDirect,
-                            onAssignToKid = onSeriesAssign
+                            onAssignToKid = onSeriesAssign,
                         )
                     }
                 }
@@ -436,12 +467,13 @@ fun StartScreen(
                         items = vodItemsG,
                         stateKey = "start_vod_search",
                         edgeLeftExpandChrome = true,
-                        header = FishHeaderData.Text(
-                            anchorKey = "start_vod_search",
-                            text = "Filme – Suchtreffer",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
+                        header =
+                            FishHeaderData.Text(
+                                anchorKey = "start_vod_search",
+                                text = "Filme – Suchtreffer",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            ),
                     ) { _, media ->
                         val onVodPlayDirect: (MediaItem) -> Unit = { item ->
                             scope.launch {
@@ -453,20 +485,23 @@ fun StartScreen(
                                         url = req.url,
                                         headers = req.headers,
                                         mimeType = req.mimeType,
-                                        title = item.name
-                                    )
+                                        title = item.name,
+                                    ),
                                 )
                             }
                         }
                         val onVodAssign: (MediaItem) -> Unit = { item ->
                             if (canEditWhitelist) {
                                 if (assignState.active) {
-                                    assignState = assignState.copy(
-                                        selVod = if (item.id in assignState.selVod)
-                                            assignState.selVod - item.id
-                                        else
-                                            assignState.selVod + item.id
-                                    )
+                                    assignState =
+                                        assignState.copy(
+                                            selVod =
+                                                if (item.id in assignState.selVod) {
+                                                    assignState.selVod - item.id
+                                                } else {
+                                                    assignState.selVod + item.id
+                                                },
+                                        )
                                 } else {
                                     vm.allowForAllKids("vod", item.id)
                                 }
@@ -478,7 +513,7 @@ fun StartScreen(
                             allowAssign = canEditWhitelist,
                             onOpenDetails = { item -> openVod(item.id) },
                             onPlayDirect = onVodPlayDirect,
-                            onAssignToKid = onVodAssign
+                            onAssignToKid = onVodAssign,
                         )
                     }
                 }
@@ -488,12 +523,13 @@ fun StartScreen(
                         items = liveItemsG,
                         stateKey = "start_live_search",
                         edgeLeftExpandChrome = true,
-                        header = FishHeaderData.Text(
-                            anchorKey = "start_live_search",
-                            text = "LiveTV – Suchtreffer",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
+                        header =
+                            FishHeaderData.Text(
+                                anchorKey = "start_live_search",
+                                text = "LiveTV – Suchtreffer",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            ),
                     ) { _, media ->
                         val onLivePlayDirect: (MediaItem) -> Unit = { item ->
                             scope.launch {
@@ -505,15 +541,15 @@ fun StartScreen(
                                         url = req.url,
                                         headers = req.headers,
                                         mimeType = req.mimeType,
-                                        title = item.name
-                                    )
+                                        title = item.name,
+                                    ),
                                 )
                             }
                         }
                         LiveFishTile(
                             media = media,
                             onOpenDetails = { item -> openLive(item.id) },
-                            onPlayDirect = onLivePlayDirect
+                            onPlayDirect = onLivePlayDirect,
                         )
                     }
                 }
@@ -523,15 +559,20 @@ fun StartScreen(
         }
 
         // Nicht-Suchmodus: identisches Layout, Daten aus VM
-        val obxRepo = remember { com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store) }
+        val obxRepo =
+            remember {
+                com.chris.m3usuite.data.repo
+                    .XtreamObxRepository(ctx, store)
+            }
 
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(pads),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(pads),
             state = listState,
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             if (seriesMixed.isNotEmpty()) {
                 item("start_series_row") {
@@ -539,12 +580,15 @@ fun StartScreen(
                     val onSeriesAssign: (MediaItem) -> Unit = { media ->
                         if (canEditWhitelist) {
                             if (assignState.active) {
-                                assignState = assignState.copy(
-                                    selSeries = if (media.id in assignState.selSeries)
-                                        assignState.selSeries - media.id
-                                    else
-                                        assignState.selSeries + media.id
-                                )
+                                assignState =
+                                    assignState.copy(
+                                        selSeries =
+                                            if (media.id in assignState.selSeries) {
+                                                assignState.selSeries - media.id
+                                            } else {
+                                                assignState.selSeries + media.id
+                                            },
+                                    )
                             } else {
                                 vm.allowForAllKids("series", media.id)
                             }
@@ -554,12 +598,13 @@ fun StartScreen(
                         items = seriesMixed,
                         stateKey = "start_series",
                         edgeLeftExpandChrome = true,
-                        header = FishHeaderData.Text(
-                            anchorKey = "start_series",
-                            text = "Serien",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
+                        header =
+                            FishHeaderData.Text(
+                                anchorKey = "start_series",
+                                text = "Serien",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            ),
                     ) { media ->
                         SeriesFishTile(
                             media = media,
@@ -567,7 +612,7 @@ fun StartScreen(
                             allowAssign = canEditWhitelist,
                             onOpenDetails = { item -> openSeries(item.id) },
                             onPlayDirect = onSeriesPlayDirect,
-                            onAssignToKid = onSeriesAssign
+                            onAssignToKid = onSeriesAssign,
                         )
                     }
                 }
@@ -585,20 +630,23 @@ fun StartScreen(
                                     url = req.url,
                                     headers = req.headers,
                                     mimeType = req.mimeType,
-                                    title = media.name
-                                )
+                                    title = media.name,
+                                ),
                             )
                         }
                     }
                     val onVodAssign: (MediaItem) -> Unit = { media ->
                         if (canEditWhitelist) {
                             if (assignState.active) {
-                                assignState = assignState.copy(
-                                    selVod = if (media.id in assignState.selVod)
-                                        assignState.selVod - media.id
-                                    else
-                                        assignState.selVod + media.id
-                                )
+                                assignState =
+                                    assignState.copy(
+                                        selVod =
+                                            if (media.id in assignState.selVod) {
+                                                assignState.selVod - media.id
+                                            } else {
+                                                assignState.selVod + media.id
+                                            },
+                                    )
                             } else {
                                 vm.allowForAllKids("vod", media.id)
                             }
@@ -609,12 +657,13 @@ fun StartScreen(
                         stateKey = "start_vod",
                         edgeLeftExpandChrome = true,
                         initialFocusEligible = false,
-                        header = FishHeaderData.Text(
-                            anchorKey = "start_vod",
-                            text = "Filme",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
+                        header =
+                            FishHeaderData.Text(
+                                anchorKey = "start_vod",
+                                text = "Filme",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            ),
                     ) { media ->
                         VodFishTile(
                             media = media,
@@ -622,7 +671,7 @@ fun StartScreen(
                             allowAssign = canEditWhitelist,
                             onOpenDetails = { item -> openVod(item.id) },
                             onPlayDirect = onVodPlayDirect,
-                            onAssignToKid = onVodAssign
+                            onAssignToKid = onVodAssign,
                         )
                     }
                 }
@@ -642,8 +691,8 @@ fun StartScreen(
                                     url = media.url ?: "",
                                     headers = emptyMap(),
                                     mimeType = null, // Will be detected
-                                    title = media.name
-                                )
+                                    title = media.name,
+                                ),
                             )
                         }
                     }
@@ -652,7 +701,7 @@ fun StartScreen(
                         stateKey = "start_telegram",
                         title = "Telegram",
                         modifier = Modifier,
-                        onItemClick = onTelegramClick
+                        onItemClick = onTelegramClick,
                     )
                 }
             }
@@ -663,15 +712,17 @@ fun StartScreen(
                 if (favoritesAvailable) {
                     item("start_live_epg") {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.End
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.End,
                         ) {
                             TextButton(onClick = {
                                 scope.launch {
                                     val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-                                    com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive)
+                                    com.chris.m3usuite.work.SchedulingGateway
+                                        .refreshFavoritesEpgNow(ctx, aggressive = aggressive)
                                 }
                             }) { Text("Jetzt EPG aktualisieren") }
                         }
@@ -694,8 +745,8 @@ fun StartScreen(
                                                 url = req.url,
                                                 headers = req.headers,
                                                 mimeType = req.mimeType,
-                                                title = mi.name
-                                            )
+                                                title = mi.name,
+                                            ),
                                         )
                                     }
                                 },
@@ -705,12 +756,13 @@ fun StartScreen(
                                 stateKey = "start_live_reorder",
                                 initialFocusEligible = false,
                                 edgeLeftExpandChrome = true,
-                                header = FishHeaderData.Text(
-                                    anchorKey = "start_live",
-                                    text = "LiveTV",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
+                                header =
+                                    FishHeaderData.Text(
+                                        anchorKey = "start_live",
+                                        text = "LiveTV",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                    ),
                             )
                         }
                         canEditFavorites -> {
@@ -722,24 +774,26 @@ fun StartScreen(
                                 leading = {
                                     LiveAddTile(
                                         requestInitialFocus = defaultLiveItems.isEmpty(),
-                                        onClick = { showLivePicker = true }
+                                        onClick = { showLivePicker = true },
                                     )
                                 },
                                 onPrefetchKeys = { keys ->
                                     val base = 1_000_000_000_000L
-                                    val sids = keys
-                                        .filter { it >= base && it < 2_000_000_000_000L }
-                                        .map { (it - base).toInt() }
+                                    val sids =
+                                        keys
+                                            .filter { it >= base && it < 2_000_000_000_000L }
+                                            .map { (it - base).toInt() }
                                     if (sids.isNotEmpty()) {
                                         obxRepo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
                                     }
                                 },
-                                header = FishHeaderData.Text(
-                                    anchorKey = "start_live",
-                                    text = "LiveTV",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
+                                header =
+                                    FishHeaderData.Text(
+                                        anchorKey = "start_live",
+                                        text = "LiveTV",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                    ),
                             ) { media ->
                                 val onLivePlayDirect: (MediaItem) -> Unit = { item ->
                                     scope.launch {
@@ -751,15 +805,15 @@ fun StartScreen(
                                                 url = req.url,
                                                 headers = req.headers,
                                                 mimeType = req.mimeType,
-                                                title = item.name
-                                            )
+                                                title = item.name,
+                                            ),
                                         )
                                     }
                                 }
                                 LiveFishTile(
                                     media = media,
                                     onOpenDetails = { item -> openLive(item.id) },
-                                    onPlayDirect = onLivePlayDirect
+                                    onPlayDirect = onLivePlayDirect,
                                 )
                             }
                         }
@@ -771,19 +825,21 @@ fun StartScreen(
                                 initialFocusEligible = false,
                                 onPrefetchKeys = { keys ->
                                     val base = 1_000_000_000_000L
-                                    val sids = keys
-                                        .filter { it >= base && it < 2_000_000_000_000L }
-                                        .map { (it - base).toInt() }
+                                    val sids =
+                                        keys
+                                            .filter { it >= base && it < 2_000_000_000_000L }
+                                            .map { (it - base).toInt() }
                                     if (sids.isNotEmpty()) {
                                         obxRepo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
                                     }
                                 },
-                                header = FishHeaderData.Text(
-                                    anchorKey = "start_live",
-                                    text = "LiveTV",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
+                                header =
+                                    FishHeaderData.Text(
+                                        anchorKey = "start_live",
+                                        text = "LiveTV",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                    ),
                             ) { media ->
                                 val onLivePlayDirect: (MediaItem) -> Unit = { item ->
                                     scope.launch {
@@ -795,15 +851,15 @@ fun StartScreen(
                                                 url = req.url,
                                                 headers = req.headers,
                                                 mimeType = req.mimeType,
-                                                title = item.name
-                                            )
+                                                title = item.name,
+                                            ),
                                         )
                                     }
                                 }
                                 LiveFishTile(
                                     media = media,
                                     onOpenDetails = { item -> openLive(item.id) },
-                                    onPlayDirect = onLivePlayDirect
+                                    onPlayDirect = onLivePlayDirect,
                                 )
                             }
                         }
@@ -815,19 +871,21 @@ fun StartScreen(
                                 initialFocusEligible = false,
                                 onPrefetchKeys = { keys ->
                                     val base = 1_000_000_000_000L
-                                    val sids = keys
-                                        .filter { it >= base && it < 2_000_000_000_000L }
-                                        .map { (it - base).toInt() }
+                                    val sids =
+                                        keys
+                                            .filter { it >= base && it < 2_000_000_000_000L }
+                                            .map { (it - base).toInt() }
                                     if (sids.isNotEmpty()) {
                                         obxRepo.prefetchEpgForVisible(sids, perStreamLimit = 2, parallelism = 4)
                                     }
                                 },
-                                header = FishHeaderData.Text(
-                                    anchorKey = "start_live",
-                                    text = "LiveTV",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
+                                header =
+                                    FishHeaderData.Text(
+                                        anchorKey = "start_live",
+                                        text = "LiveTV",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                    ),
                             ) { media ->
                                 val onLivePlayDirect: (MediaItem) -> Unit = { item ->
                                     scope.launch {
@@ -839,15 +897,15 @@ fun StartScreen(
                                                 url = req.url,
                                                 headers = req.headers,
                                                 mimeType = req.mimeType,
-                                                title = item.name
-                                            )
+                                                title = item.name,
+                                            ),
                                         )
                                     }
                                 }
                                 LiveFishTile(
                                     media = media,
                                     onOpenDetails = { item -> openLive(item.id) },
-                                    onPlayDirect = onLivePlayDirect
+                                    onPlayDirect = onLivePlayDirect,
                                 )
                             }
                         }
@@ -866,7 +924,9 @@ fun StartScreen(
             com.chris.m3usuite.ui.components.sheets.KidSelectSheet(
                 onConfirm = { kidIds ->
                     scope.launch(Dispatchers.IO) {
-                        val repo = com.chris.m3usuite.data.repo.KidContentRepository(ctx)
+                        val repo =
+                            com.chris.m3usuite.data.repo
+                                .KidContentRepository(ctx)
                         kidIds.forEach { kid ->
                             if (assignState.selVod.isNotEmpty()) repo.allowBulk(kid, "vod", assignState.selVod)
                             if (assignState.selSeries.isNotEmpty()) repo.allowBulk(kid, "series", assignState.selSeries)
@@ -874,18 +934,24 @@ fun StartScreen(
                         }
                     }
                     scope.launch {
-                        Toast.makeText(ctx, "Freigegeben (${assignState.selVod.size + assignState.selSeries.size + assignState.selLive.size})", Toast.LENGTH_SHORT).show()
+                        Toast
+                            .makeText(
+                                ctx,
+                                "Freigegeben (${assignState.selVod.size + assignState.selSeries.size + assignState.selLive.size})",
+                                Toast.LENGTH_SHORT,
+                            ).show()
                         showAssignSheet = false
                         // Selektion leeren
-                        assignState = assignState.copy(
-                            active = false,
-                            selVod = emptySet(),
-                            selSeries = emptySet(),
-                            selLive = emptySet()
-                        )
+                        assignState =
+                            assignState.copy(
+                                active = false,
+                                selVod = emptySet(),
+                                selSeries = emptySet(),
+                                selLive = emptySet(),
+                            )
                     }
                 },
-                onDismiss = { showAssignSheet = false }
+                onDismiss = { showAssignSheet = false },
             )
         }
 
@@ -896,26 +962,32 @@ fun StartScreen(
             val mediaRepo = remember { MediaQueryRepository(ctx, store) }
             var selected by remember { mutableStateOf(favLive.map { it.id }.toSet()) }
             var provider by rememberSaveable("start:livePicker:provider") { mutableStateOf<String?>(null) }
-            val pagingFlow = remember(query, provider) {
-                when {
-                    query.isNotBlank() -> mediaRepo.pagingSearchFilteredFlow("live", query)
-                        .map { data ->
-                            data.filter { mi ->
-                                mi.type == "live" && (provider?.let { p ->
-                                    (mi.categoryName ?: "").contains(p, ignoreCase = true)
-                                } ?: true)
-                            }
-                        }
-                    else -> mediaRepo.pagingByTypeFilteredFlow("live", provider)
+            val pagingFlow =
+                remember(query, provider) {
+                    when {
+                        query.isNotBlank() ->
+                            mediaRepo
+                                .pagingSearchFilteredFlow("live", query)
+                                .map { data ->
+                                    data.filter { mi ->
+                                        mi.type == "live" &&
+                                            (
+                                                provider?.let { p ->
+                                                    (mi.categoryName ?: "").contains(p, ignoreCase = true)
+                                                } ?: true
+                                            )
+                                    }
+                                }
+                        else -> mediaRepo.pagingByTypeFilteredFlow("live", provider)
+                    }
                 }
-            }
             val liveItems = pagingFlow.collectAsLazyPagingItems()
             ModalBottomSheet(onDismissRequest = { showLivePicker = false }) {
                 val addReq = remember { FocusRequester() }
                 Box(Modifier.fillMaxWidth()) {
                     Column(
                         Modifier.fillMaxWidth().padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text("Sender auswählen", style = MaterialTheme.typography.titleMedium)
                         OutlinedTextField(
@@ -923,56 +995,64 @@ fun StartScreen(
                             onValueChange = { query = it },
                             label = { Text("Suche (TV)") },
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
-                        val providers = remember(liveItems.itemCount) {
-                            val set = linkedSetOf<String>()
-                            for (i in 0 until minOf(liveItems.itemCount, 100)) {
-                                val it = liveItems[i]
-                                val c = it?.categoryName?.trim()
-                                if (!c.isNullOrEmpty()) set += c
+                        val providers =
+                            remember(liveItems.itemCount) {
+                                val set = linkedSetOf<String>()
+                                for (i in 0 until minOf(liveItems.itemCount, 100)) {
+                                    val it = liveItems[i]
+                                    val c = it?.categoryName?.trim()
+                                    if (!c.isNullOrEmpty()) set += c
+                                }
+                                set.toList().sorted()
                             }
-                            set.toList().sorted()
-                        }
                         FocusKit.TvRowLight(
                             stateKey = "start_live_picker_providers",
                             itemCount = providers.size + 1,
                             itemKey = { idx -> if (idx == 0) "__all__" else providers[idx - 1] },
                             itemSpacing = 8.dp,
-                            contentPadding = PaddingValues(horizontal = 4.dp)
+                            contentPadding = PaddingValues(horizontal = 4.dp),
                         ) { idx ->
                             if (idx == 0) {
                                 FilterChip(
-                                    modifier = Modifier
-                                        .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
-                                        .then(FocusKit.run { Modifier.tvClickable { provider = null } }),
+                                    modifier =
+                                        Modifier
+                                            .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
+                                            .then(FocusKit.run { Modifier.tvClickable { provider = null } }),
                                     selected = provider == null,
                                     onClick = { provider = null },
-                                    label = { Text("Alle") }
+                                    label = { Text("Alle") },
                                 )
                             } else {
                                 val p = providers[idx - 1]
                                 FilterChip(
-                                    modifier = Modifier
-                                        .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
-                                        .then(FocusKit.run { Modifier.tvClickable { provider = if (provider == p) null else p } }),
+                                    modifier =
+                                        Modifier
+                                            .graphicsLayer(alpha = DesignTokens.BadgeAlpha)
+                                            .then(FocusKit.run { Modifier.tvClickable { provider = if (provider == p) null else p } }),
                                     selected = provider == p,
                                     onClick = { provider = if (provider == p) null else p },
-                                    label = { Text(p) }
+                                    label = { Text(p) },
                                 )
                             }
                         }
-                        val gridState = com.chris.m3usuite.ui.state.rememberRouteGridState("start:livePicker")
+                        val gridState =
+                            com.chris.m3usuite.ui.state
+                                .rememberRouteGridState("start:livePicker")
                         LazyVerticalGrid(
                             state = gridState,
                             columns = GridCells.Adaptive(minSize = 180.dp),
                             contentPadding = PaddingValues(bottom = 80.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             val refreshing = liveItems.loadState.refresh is androidx.paging.LoadState.Loading && liveItems.itemCount == 0
                             if (refreshing) {
-                                items(12) { _ -> com.chris.m3usuite.ui.fx.ShimmerBox(modifier = Modifier.size(180.dp)) }
+                                items(12) { _ ->
+                                    com.chris.m3usuite.ui.fx
+                                        .ShimmerBox(modifier = Modifier.size(180.dp))
+                                }
                             }
                             items(liveItems.itemCount, key = { idx -> liveItems[idx]?.id ?: idx.toLong() }) { idx ->
                                 val mi = liveItems[idx] ?: return@items
@@ -983,12 +1063,15 @@ fun StartScreen(
                                     onToggle = {
                                         selected = if (isSel) selected - mi.id else selected + mi.id
                                     },
-                                    focusRight = addReq
+                                    focusRight = addReq,
                                 )
                             }
                             val appending = liveItems.loadState.append is androidx.paging.LoadState.Loading
                             if (appending) {
-                                items(6) { _ -> com.chris.m3usuite.ui.fx.ShimmerBox(modifier = Modifier.size(180.dp)) }
+                                items(6) { _ ->
+                                    com.chris.m3usuite.ui.fx
+                                        .ShimmerBox(modifier = Modifier.size(180.dp))
+                                }
                             }
                         }
                     }
@@ -999,11 +1082,12 @@ fun StartScreen(
                                 showLivePicker = false
                             }
                         },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 16.dp)
-                            .focusRequester(addReq)
-                            .focusable(true)
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 16.dp)
+                                .focusRequester(addReq)
+                                .focusable(true),
                     ) {
                         AppIconButton(
                             icon = AppIcon.BookmarkAdd,
@@ -1014,7 +1098,7 @@ fun StartScreen(
                                     showLivePicker = false
                                 }
                             },
-                            size = 28.dp
+                            size = 28.dp,
                         )
                     }
                 }
@@ -1030,7 +1114,7 @@ fun ChannelPickTile(
     item: MediaItem,
     selected: Boolean,
     onToggle: () -> Unit,
-    focusRight: FocusRequester
+    focusRight: FocusRequester,
 ) {
     val shape = RoundedCornerShape(14.dp)
     val borderBrush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent))
@@ -1038,33 +1122,38 @@ fun ChannelPickTile(
     Card(
         onClick = onToggle,
         shape = shape,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surface
-        ),
-        modifier = Modifier
-            .focusable(true)
-            .onFocusEvent { focused = it.isFocused || it.hasFocus }
-            .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
-            .focusProperties { right = focusRight }
-            .border(1.dp, borderBrush, shape)
-            .drawWithContent {
-                drawContent()
-                val grad = Brush.verticalGradient(
-                    0f to Color.White.copy(alpha = 0.10f),
-                    1f to Color.Transparent
-                )
-                drawRect(brush = grad)
-            }
-            .tvFocusGlow(focused = focused, shape = shape)
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (selected) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+            ),
+        modifier =
+            Modifier
+                .focusable(true)
+                .onFocusEvent { focused = it.isFocused || it.hasFocus }
+                .focusScaleOnTv(focusedScale = 1.12f, pressedScale = 1.12f)
+                .focusProperties { right = focusRight }
+                .border(1.dp, borderBrush, shape)
+                .drawWithContent {
+                    drawContent()
+                    val grad =
+                        Brush.verticalGradient(
+                            0f to Color.White.copy(alpha = 0.10f),
+                            1f to Color.Transparent,
+                        )
+                    drawRect(brush = grad)
+                }.tvFocusGlow(focused = focused, shape = shape),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             val sz = 77.dp
             val url = item.logo ?: item.poster
@@ -1072,11 +1161,12 @@ fun ChannelPickTile(
                 com.chris.m3usuite.ui.util.AppPosterImage(
                     url = url,
                     contentDescription = item.name,
-                    modifier = Modifier
-                        .size(sz)
-                        .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape),
+                    modifier =
+                        Modifier
+                            .size(sz)
+                            .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape),
                     contentScale = ContentScale.Fit,
-                    crossfade = false
+                    crossfade = false,
                 )
             }
             Spacer(Modifier.size(12.dp))
@@ -1085,34 +1175,39 @@ fun ChannelPickTile(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
     }
 }
 
-
 // Preview beibehalten
 @Composable
-private fun previewMediaList(type: String, count: Int = 10): List<MediaItem> = List(count) { idx ->
-    val baseId = when (type) {
-        "live" -> 1_000_000_000_000L
-        "vod" -> 2_000_000_000_000L
-        "series" -> 3_000_000_000_000L
-        else -> 9_000_000_000_000L
+private fun previewMediaList(
+    type: String,
+    count: Int = 10,
+): List<MediaItem> =
+    List(count) { idx ->
+        val baseId =
+            when (type) {
+                "live" -> 1_000_000_000_000L
+                "vod" -> 2_000_000_000_000L
+                "series" -> 3_000_000_000_000L
+                else -> 9_000_000_000_000L
+            }
+        MediaItem(
+            id = baseId + idx + 1,
+            type = type,
+            name =
+                when (type) {
+                    "live" -> "Sender ${idx + 1}"
+                    "vod" -> "Film ${idx + 1}"
+                    "series" -> "Serie ${idx + 1}"
+                    else -> "Item ${idx + 1}"
+                },
+            year = 2024,
+        )
     }
-    MediaItem(
-        id = baseId + idx + 1,
-        type = type,
-        name = when (type) {
-            "live" -> "Sender ${idx + 1}"
-            "vod" -> "Film ${idx + 1}"
-            "series" -> "Serie ${idx + 1}"
-            else -> "Item ${idx + 1}"
-        },
-        year = 2024
-    )
-}
 
 @Preview(showBackground = true, backgroundColor = 0xFF101010, name = "Start Full (Loaded)")
 @Composable
@@ -1126,7 +1221,7 @@ fun StartScreenPreview_FullLoaded() {
             onSettings = {},
             listState = listState,
             onLogo = {},
-            preferSettingsFirstFocus = false
+            preferSettingsFirstFocus = false,
         ) { pads: PaddingValues ->
             val series = previewMediaList("series", 12)
             val vod = previewMediaList("vod", 12)
@@ -1139,9 +1234,9 @@ fun StartScreenPreview_FullLoaded() {
                         .background(
                             Brush.verticalGradient(
                                 0f to MaterialTheme.colorScheme.background,
-                                1f to MaterialTheme.colorScheme.surface
-                            )
-                        )
+                                1f to MaterialTheme.colorScheme.surface,
+                            ),
+                        ),
                 )
                 Box(
                     Modifier
@@ -1149,42 +1244,44 @@ fun StartScreenPreview_FullLoaded() {
                         .background(
                             Brush.radialGradient(
                                 colors = listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f), Color.Transparent),
-                                radius = with(LocalDensity.current) { 680.dp.toPx() }
-                            )
-                        )
+                                radius = with(LocalDensity.current) { 680.dp.toPx() },
+                            ),
+                        ),
                 )
                 com.chris.m3usuite.ui.fx.FishBackground(
                     modifier = Modifier.align(Alignment.Center).size(560.dp),
                     alpha = 0.05f,
-                    neutralizeUnderlay = true
+                    neutralizeUnderlay = true,
                 )
             }
 
             FishHeaderHost(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(pads),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(pads),
                     contentPadding = PaddingValues(vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
                     item("preview_series_row") {
                         FishRow(
                             items = series,
                             stateKey = "preview_series",
                             edgeLeftExpandChrome = true,
-                            header = FishHeaderData.Text(
-                                anchorKey = "preview_series",
-                                text = "Serien",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
+                            header =
+                                FishHeaderData.Text(
+                                    anchorKey = "preview_series",
+                                    text = "Serien",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                ),
                         ) { mi ->
                             com.chris.m3usuite.ui.layout.FishTile(
                                 title = mi.name,
                                 poster = com.chris.m3usuite.R.drawable.fisch_bg,
                                 contentScale = ContentScale.Fit,
-                                onClick = {}
+                                onClick = {},
                             )
                         }
                     }
@@ -1193,18 +1290,19 @@ fun StartScreenPreview_FullLoaded() {
                             items = vod,
                             stateKey = "preview_vod",
                             edgeLeftExpandChrome = true,
-                            header = FishHeaderData.Text(
-                                anchorKey = "preview_vod",
-                                text = "Filme",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
+                            header =
+                                FishHeaderData.Text(
+                                    anchorKey = "preview_vod",
+                                    text = "Filme",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                ),
                         ) { mi ->
                             com.chris.m3usuite.ui.layout.FishTile(
                                 title = mi.name,
                                 poster = com.chris.m3usuite.R.drawable.fisch_bg,
                                 contentScale = ContentScale.Fit,
-                                onClick = {}
+                                onClick = {},
                             )
                         }
                     }
@@ -1213,18 +1311,19 @@ fun StartScreenPreview_FullLoaded() {
                             items = live,
                             stateKey = "preview_live",
                             edgeLeftExpandChrome = true,
-                            header = FishHeaderData.Text(
-                                anchorKey = "preview_live",
-                                text = "LiveTV",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
+                            header =
+                                FishHeaderData.Text(
+                                    anchorKey = "preview_live",
+                                    text = "LiveTV",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                ),
                         ) { mi ->
                             com.chris.m3usuite.ui.layout.FishTile(
                                 title = mi.name,
                                 poster = com.chris.m3usuite.R.drawable.fisch_bg,
                                 contentScale = ContentScale.Fit,
-                                onClick = {}
+                                onClick = {},
                             )
                         }
                     }

@@ -16,19 +16,20 @@ import kotlinx.coroutines.launch
 data class EpgSettingsState(
     val useXtreamForFavorites: Boolean = true,
     val skipXmltvIfXtreamOk: Boolean = false,
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
 )
 
 class EpgSettingsViewModel(
     app: Application,
     private val repo: SettingsRepository,
-    private val scheduleRefresh: ScheduleEpgRefresh
+    private val scheduleRefresh: ScheduleEpgRefresh,
 ) : AndroidViewModel(app) {
-
     private val _state = MutableStateFlow(EpgSettingsState())
     val state: StateFlow<EpgSettingsState> = _state
 
-    init { observe() }
+    init {
+        observe()
+    }
 
     private fun observe() {
         viewModelScope.launch {
@@ -38,19 +39,22 @@ class EpgSettingsViewModel(
         }
     }
 
-    fun onToggleUseXtream(value: Boolean) = viewModelScope.launch {
-        repo.setEpgFavUseXtream(value)
-    }
+    fun onToggleUseXtream(value: Boolean) =
+        viewModelScope.launch {
+            repo.setEpgFavUseXtream(value)
+        }
 
-    fun onToggleSkipXmltv(value: Boolean) = viewModelScope.launch {
-        repo.setEpgFavSkipXmltvIfXtreamOk(value)
-    }
+    fun onToggleSkipXmltv(value: Boolean) =
+        viewModelScope.launch {
+            repo.setEpgFavSkipXmltvIfXtreamOk(value)
+        }
 
-    fun onRefreshFavoritesNow() = viewModelScope.launch {
-        _state.value = _state.value.copy(isRefreshing = true)
-        runCatching { scheduleRefresh(_state.value.skipXmltvIfXtreamOk) }
-        _state.value = _state.value.copy(isRefreshing = false)
-    }
+    fun onRefreshFavoritesNow() =
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isRefreshing = true)
+            runCatching { scheduleRefresh(_state.value.skipXmltvIfXtreamOk) }
+            _state.value = _state.value.copy(isRefreshing = false)
+        }
 
     companion object {
         fun factory(app: Application): ViewModelProvider.Factory {

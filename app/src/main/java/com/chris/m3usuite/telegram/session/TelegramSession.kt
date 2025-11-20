@@ -17,17 +17,25 @@ import kotlinx.coroutines.launch
  * (avoids stub generation issues with R8-minified TdlResult generics)
  */
 @JvmSynthetic
-fun <T> TdlResult<T>.getOrThrow(): T = when (this) {
-    is TdlResult.Success -> result
-    is TdlResult.Failure -> throw RuntimeException("TDLib error $code: $message")
-}
+fun <T> TdlResult<T>.getOrThrow(): T =
+    when (this) {
+        is TdlResult.Success -> result
+        is TdlResult.Failure -> throw RuntimeException("TDLib error $code: $message")
+    }
 
 /**
  * Authentication state events emitted during login flow.
  */
 sealed class AuthEvent {
-    data class StateChanged(val state: AuthorizationState) : AuthEvent()
-    data class Error(val message: String, val code: Int? = null) : AuthEvent()
+    data class StateChanged(
+        val state: AuthorizationState,
+    ) : AuthEvent()
+
+    data class Error(
+        val message: String,
+        val code: Int? = null,
+    ) : AuthEvent()
+
     object Ready : AuthEvent()
 }
 
@@ -38,9 +46,8 @@ sealed class AuthEvent {
 class TelegramSession(
     val client: TdlClient,
     val config: AppConfig,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
 ) {
-
     @Volatile
     private var currentState: AuthorizationState? = null
 
@@ -53,7 +60,7 @@ class TelegramSession(
     /**
      * Start the login flow. This will monitor authorization state updates
      * and automatically handle initial setup (TdlibParameters).
-     * 
+     *
      * For interactive steps (phone, code, password), the caller must:
      * - Listen to authEvents for state changes
      * - Call sendPhoneNumber(), sendCode(), or sendPassword() accordingly
@@ -79,7 +86,8 @@ class TelegramSession(
 
                 is AuthorizationStateClosing,
                 is AuthorizationStateClosed,
-                is AuthorizationStateLoggingOut -> {
+                is AuthorizationStateLoggingOut,
+                -> {
                     val error = "Fatal state: ${s::class.simpleName}"
                     println("[TelegramSession] $error")
                     _authEvents.emit(AuthEvent.Error(error))
@@ -96,39 +104,43 @@ class TelegramSession(
     /**
      * Send phone number for authentication.
      * Call this when in AuthorizationStateWaitPhoneNumber.
-     * 
+     *
      * @param phoneNumber Phone number in international format (e.g., +491234567890)
      * @param retries Number of retry attempts on failure (default 3)
      */
-    suspend fun sendPhoneNumber(phoneNumber: String, retries: Int = 3) {
+    suspend fun sendPhoneNumber(
+        phoneNumber: String,
+        retries: Int = 3,
+    ) {
         println("[TelegramSession] Sending phone number...")
         var lastError: Exception? = null
-        
+
         repeat(retries) { attempt ->
             try {
-                val settings = PhoneNumberAuthenticationSettings(
-                    allowFlashCall = false,
-                    allowMissedCall = false,
-                    allowSmsRetrieverApi = false,
-                    hasUnknownPhoneNumber = false,
-                    isCurrentPhoneNumber = false,
-                    firebaseAuthenticationSettings = null,
-                    authenticationTokens = emptyArray()
-                )
+                val settings =
+                    PhoneNumberAuthenticationSettings(
+                        allowFlashCall = false,
+                        allowMissedCall = false,
+                        allowSmsRetrieverApi = false,
+                        hasUnknownPhoneNumber = false,
+                        isCurrentPhoneNumber = false,
+                        firebaseAuthenticationSettings = null,
+                        authenticationTokens = emptyArray(),
+                    )
 
                 client.setAuthenticationPhoneNumber(phoneNumber, settings).getOrThrow()
                 println("[TelegramSession] Phone number submitted successfully")
-                return  // Success, exit
+                return // Success, exit
             } catch (e: Exception) {
                 lastError = e
                 println("[TelegramSession] Error sending phone (attempt ${attempt + 1}/$retries): ${e.message}")
-                
+
                 if (attempt < retries - 1) {
-                    kotlinx.coroutines.delay(1000L * (attempt + 1))  // Exponential backoff
+                    kotlinx.coroutines.delay(1000L * (attempt + 1)) // Exponential backoff
                 }
             }
         }
-        
+
         // All retries failed
         val errorMsg = "Failed to send phone number after $retries attempts: ${lastError?.message}"
         println("[TelegramSession] $errorMsg")
@@ -139,29 +151,32 @@ class TelegramSession(
     /**
      * Send authentication code received via SMS or Telegram.
      * Call this when in AuthorizationStateWaitCode.
-     * 
+     *
      * @param code Verification code
      * @param retries Number of retry attempts on failure (default 2)
      */
-    suspend fun sendCode(code: String, retries: Int = 2) {
+    suspend fun sendCode(
+        code: String,
+        retries: Int = 2,
+    ) {
         println("[TelegramSession] Sending code...")
         var lastError: Exception? = null
-        
+
         repeat(retries) { attempt ->
             try {
                 client.checkAuthenticationCode(code).getOrThrow()
                 println("[TelegramSession] Code submitted successfully")
-                return  // Success, exit
+                return // Success, exit
             } catch (e: Exception) {
                 lastError = e
                 println("[TelegramSession] Error sending code (attempt ${attempt + 1}/$retries): ${e.message}")
-                
+
                 if (attempt < retries - 1) {
                     kotlinx.coroutines.delay(500L)
                 }
             }
         }
-        
+
         // All retries failed
         val errorMsg = "Failed to send code after $retries attempts: ${lastError?.message}"
         println("[TelegramSession] $errorMsg")
@@ -172,29 +187,32 @@ class TelegramSession(
     /**
      * Send 2FA password.
      * Call this when in AuthorizationStateWaitPassword.
-     * 
+     *
      * @param password 2FA password
      * @param retries Number of retry attempts on failure (default 2)
      */
-    suspend fun sendPassword(password: String, retries: Int = 2) {
+    suspend fun sendPassword(
+        password: String,
+        retries: Int = 2,
+    ) {
         println("[TelegramSession] Sending password...")
         var lastError: Exception? = null
-        
+
         repeat(retries) { attempt ->
             try {
                 client.checkAuthenticationPassword(password).getOrThrow()
                 println("[TelegramSession] Password submitted successfully")
-                return  // Success, exit
+                return // Success, exit
             } catch (e: Exception) {
                 lastError = e
                 println("[TelegramSession] Error sending password (attempt ${attempt + 1}/$retries): ${e.message}")
-                
+
                 if (attempt < retries - 1) {
                     kotlinx.coroutines.delay(500L)
                 }
             }
         }
-        
+
         // All retries failed
         val errorMsg = "Failed to send password after $retries attempts: ${lastError?.message}"
         println("[TelegramSession] $errorMsg")
@@ -240,15 +258,16 @@ class TelegramSession(
     private suspend fun handleAuthState(state: AuthorizationState) {
         when (state) {
             is AuthorizationStateWaitTdlibParameters -> onWaitTdlibParameters()
-            is AuthorizationStateWaitPhoneNumber     -> onWaitPhoneNumber()
-            is AuthorizationStateWaitCode            -> onWaitCode()
-            is AuthorizationStateWaitPassword        -> onWaitPassword()
-            is AuthorizationStateReady               -> {
+            is AuthorizationStateWaitPhoneNumber -> onWaitPhoneNumber()
+            is AuthorizationStateWaitCode -> onWaitCode()
+            is AuthorizationStateWaitPassword -> onWaitPassword()
+            is AuthorizationStateReady -> {
                 println("[TelegramSession] Ready state received")
             }
             is AuthorizationStateLoggingOut,
             is AuthorizationStateClosing,
-            is AuthorizationStateClosed -> {
+            is AuthorizationStateClosed,
+            -> {
                 println("[TelegramSession] Terminal state: ${state::class.simpleName}")
             }
             else -> {
@@ -267,22 +286,23 @@ class TelegramSession(
         tdParamsSet = true
 
         try {
-            client.setTdlibParameters(
-                useTestDc = false,
-                databaseDirectory = config.dbDir,
-                filesDirectory = config.filesDir,
-                databaseEncryptionKey = ByteArray(0),
-                useFileDatabase = true,
-                useChatInfoDatabase = true,
-                useMessageDatabase = true,
-                useSecretChats = false,
-                apiId = config.apiId,
-                apiHash = config.apiHash,
-                systemLanguageCode = "de",
-                deviceModel = android.os.Build.MODEL,
-                systemVersion = "Android ${android.os.Build.VERSION.RELEASE}",
-                applicationVersion = "FishIT-Player-1.0"
-            ).getOrThrow()
+            client
+                .setTdlibParameters(
+                    useTestDc = false,
+                    databaseDirectory = config.dbDir,
+                    filesDirectory = config.filesDir,
+                    databaseEncryptionKey = ByteArray(0),
+                    useFileDatabase = true,
+                    useChatInfoDatabase = true,
+                    useMessageDatabase = true,
+                    useSecretChats = false,
+                    apiId = config.apiId,
+                    apiHash = config.apiHash,
+                    systemLanguageCode = "de",
+                    deviceModel = android.os.Build.MODEL,
+                    systemVersion = "Android ${android.os.Build.VERSION.RELEASE}",
+                    applicationVersion = "FishIT-Player-1.0",
+                ).getOrThrow()
 
             println("[TelegramSession] TdlibParameters set successfully")
         } catch (e: Exception) {
@@ -294,18 +314,19 @@ class TelegramSession(
 
     private suspend fun onWaitPhoneNumber() {
         println("[TelegramSession] → AuthorizationStateWaitPhoneNumber")
-        
+
         // Automatically send phone number from config (as per documentation)
         try {
-            val settings = PhoneNumberAuthenticationSettings(
-                allowFlashCall = false,
-                allowMissedCall = false,
-                allowSmsRetrieverApi = false,
-                hasUnknownPhoneNumber = false,
-                isCurrentPhoneNumber = false,
-                firebaseAuthenticationSettings = null,
-                authenticationTokens = emptyArray()
-            )
+            val settings =
+                PhoneNumberAuthenticationSettings(
+                    allowFlashCall = false,
+                    allowMissedCall = false,
+                    allowSmsRetrieverApi = false,
+                    hasUnknownPhoneNumber = false,
+                    isCurrentPhoneNumber = false,
+                    firebaseAuthenticationSettings = null,
+                    authenticationTokens = emptyArray(),
+                )
 
             client.setAuthenticationPhoneNumber(config.phoneNumber, settings).getOrThrow()
             println("[TelegramSession] Phone number submitted to TDLib: ${config.phoneNumber}")

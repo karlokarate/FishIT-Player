@@ -8,8 +8,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
@@ -18,14 +18,18 @@ import com.chris.m3usuite.ui.focus.FocusKit
 /** Shared action builders for Fish tiles. */
 object FishActions {
     @Composable
-    fun AssignBadge(selected: Boolean, onToggle: () -> Unit) {
+    fun AssignBadge(
+        selected: Boolean,
+        onToggle: () -> Unit,
+    ) {
         Surface(
             color = Color.Black.copy(alpha = 0.55f),
             contentColor = Color.White,
             shape = CircleShape,
-            modifier = FocusKit.run {
-                Modifier.tvClickable(focusBorderWidth = 0.dp, onClick = onToggle)
-            }
+            modifier =
+                FocusKit.run {
+                    Modifier.tvClickable(focusBorderWidth = 0.dp, onClick = onToggle)
+                },
         ) {
             val label = if (selected) "✓" else "+"
             Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
@@ -33,27 +37,33 @@ object FishActions {
     }
 
     @Composable
-    fun RowScope.VodBottomActions(onPlay: (() -> Unit)?, enabled: Boolean = true) {
+    fun RowScope.VodBottomActions(
+        onPlay: (() -> Unit)?,
+        enabled: Boolean = true,
+    ) {
         if (enabled && onPlay != null) {
             AppIconButton(
                 icon = AppIcon.PlayCircle,
                 contentDescription = "Abspielen",
                 onClick = onPlay,
                 size = 24.dp,
-                modifier = Modifier.focusProperties { canFocus = false }
+                modifier = Modifier.focusProperties { canFocus = false },
             )
         }
     }
 
     @Composable
-    fun RowScope.AssignBottomAction(onAssign: (() -> Unit)?, enabled: Boolean = true) {
+    fun RowScope.AssignBottomAction(
+        onAssign: (() -> Unit)?,
+        enabled: Boolean = true,
+    ) {
         if (enabled && onAssign != null) {
             AppIconButton(
                 icon = AppIcon.BookmarkAdd,
                 contentDescription = "Für Kinder freigeben",
                 onClick = onAssign,
                 size = 24.dp,
-                modifier = Modifier.focusProperties { canFocus = false }
+                modifier = Modifier.focusProperties { canFocus = false },
             )
         }
     }
@@ -61,7 +71,7 @@ object FishActions {
     @Composable
     fun RowScope.LiveBottomActions(
         onPlay: (() -> Unit)? = null,
-        onOpenDetails: (() -> Unit)? = null
+        onOpenDetails: (() -> Unit)? = null,
     ) {
         if (onPlay != null) {
             AppIconButton(
@@ -69,7 +79,7 @@ object FishActions {
                 contentDescription = "Abspielen",
                 onClick = onPlay,
                 size = 24.dp,
-                modifier = Modifier.focusProperties { canFocus = false }
+                modifier = Modifier.focusProperties { canFocus = false },
             )
         }
         if (onOpenDetails != null) {
@@ -78,7 +88,7 @@ object FishActions {
                 contentDescription = "Details",
                 onClick = onOpenDetails,
                 size = 24.dp,
-                modifier = Modifier.focusProperties { canFocus = false }
+                modifier = Modifier.focusProperties { canFocus = false },
             )
         }
     }

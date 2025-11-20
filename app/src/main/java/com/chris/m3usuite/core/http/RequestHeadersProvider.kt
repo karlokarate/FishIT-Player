@@ -22,14 +22,24 @@ object RequestHeadersProvider {
      * Start observing SettingsStore to keep an in-memory snapshot for headers.
      * Safe to call multiple times; subsequent calls will simply update the snapshot.
      */
-    fun start(scope: CoroutineScope, store: SettingsStore) {
+    fun start(
+        scope: CoroutineScope,
+        store: SettingsStore,
+    ) {
         scope.launch {
             combine(store.userAgent, store.referer, store.extraHeadersJson) { ua, ref, extrasJson ->
-                val base = buildMap<String, String> {
-                    val fallbackUa = com.chris.m3usuite.BuildConfig.DEFAULT_UA.ifBlank { "IBOPlayer/1.4 (Android)" }
-                    if (ua.isNotBlank()) put("User-Agent", ua) else if (fallbackUa.isNotBlank()) put("User-Agent", fallbackUa)
-                    if (ref.isNotBlank()) put("Referer", ref)
-                }
+                val base =
+                    buildMap<String, String> {
+                        val fallbackUa =
+                            com.chris.m3usuite.BuildConfig.DEFAULT_UA
+                                .ifBlank { "IBOPlayer/1.4 (Android)" }
+                        if (ua.isNotBlank()) {
+                            put("User-Agent", ua)
+                        } else if (fallbackUa.isNotBlank()) {
+                            put("User-Agent", fallbackUa)
+                        }
+                        if (ref.isNotBlank()) put("Referer", ref)
+                    }
                 merge(base, parseExtraHeaders(extrasJson))
             }.collect { snap ->
                 atomic.set(snap)
@@ -43,11 +53,16 @@ object RequestHeadersProvider {
      */
     suspend fun collect(store: SettingsStore) {
         combine(store.userAgent, store.referer, store.extraHeadersJson) { ua, ref, extrasJson ->
-            val base = buildMap<String, String> {
-                val fallbackUa = "IBOPlayer/1.4 (Android)"
-                if (ua.isNotBlank()) put("User-Agent", ua) else if (fallbackUa.isNotBlank()) put("User-Agent", fallbackUa)
-                if (ref.isNotBlank()) put("Referer", ref)
-            }
+            val base =
+                buildMap<String, String> {
+                    val fallbackUa = "IBOPlayer/1.4 (Android)"
+                    if (ua.isNotBlank()) {
+                        put("User-Agent", ua)
+                    } else if (fallbackUa.isNotBlank()) {
+                        put("User-Agent", fallbackUa)
+                    }
+                    if (ref.isNotBlank()) put("Referer", ref)
+                }
             merge(base, parseExtraHeaders(extrasJson))
         }.collect { snap ->
             atomic.set(snap)
@@ -70,25 +85,30 @@ object RequestHeadersProvider {
 
     suspend fun defaultHeaders(store: SettingsStore): Map<String, String> {
         val storedUa = store.userAgent.first()
-        val fallbackUa = com.chris.m3usuite.BuildConfig.DEFAULT_UA.ifBlank { "IBOPlayer/1.4 (Android)" }
+        val fallbackUa =
+            com.chris.m3usuite.BuildConfig.DEFAULT_UA
+                .ifBlank { "IBOPlayer/1.4 (Android)" }
         val ua = if (storedUa.isNotBlank()) storedUa else fallbackUa
         val ref = store.referer.first()
         val extrasJson = store.extraHeadersJson.first()
-        val base = buildMap {
-            if (ua.isNotBlank()) put("User-Agent", ua)
-            if (ref.isNotBlank()) put("Referer", ref)
-        }
+        val base =
+            buildMap {
+                if (ua.isNotBlank()) put("User-Agent", ua)
+                if (ref.isNotBlank()) put("Referer", ref)
+            }
         return merge(base, parseExtraHeaders(extrasJson))
     }
 
-    fun defaultHeadersBlocking(store: SettingsStore): Map<String, String> =
-        runBlocking { defaultHeaders(store) }
+    fun defaultHeadersBlocking(store: SettingsStore): Map<String, String> = runBlocking { defaultHeaders(store) }
 
-    fun parseExtraHeaders(json: String): Map<String, String> = runCatching {
-        val node = Json.parseToJsonElement(json).jsonObject
-        node.mapValues { it.value.jsonPrimitive.content }
-    }.getOrElse { emptyMap() }
+    fun parseExtraHeaders(json: String): Map<String, String> =
+        runCatching {
+            val node = Json.parseToJsonElement(json).jsonObject
+            node.mapValues { it.value.jsonPrimitive.content }
+        }.getOrElse { emptyMap() }
 
-    fun merge(a: Map<String, String>, b: Map<String, String>): Map<String, String> =
-        (a.toMutableMap().apply { putAll(b) }).toMap()
+    fun merge(
+        a: Map<String, String>,
+        b: Map<String, String>,
+    ): Map<String, String> = (a.toMutableMap().apply { putAll(b) }).toMap()
 }

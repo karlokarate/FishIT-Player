@@ -2,9 +2,9 @@ package com.chris.m3usuite.data.obx
 
 import android.content.Context
 import android.net.Uri
-import com.chris.m3usuite.core.xtream.XtreamConfig
 import com.chris.m3usuite.core.xtream.PathKinds
 import com.chris.m3usuite.core.xtream.ProviderCapabilityStore
+import com.chris.m3usuite.core.xtream.XtreamConfig
 import com.chris.m3usuite.model.Episode
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
@@ -38,7 +38,11 @@ private object XtreamUrlFactory {
             val port = store.xtPort.first()
             val user = store.xtUser.first().trim()
             val pass = store.xtPass.first().trim()
-            val output = store.xtOutput.first().trim().lowercase()
+            val output =
+                store.xtOutput
+                    .first()
+                    .trim()
+                    .lowercase()
             if (host.isBlank() || user.isBlank() || pass.isBlank() || port <= 0) return@runBlocking null
 
             val schemeDefault = if (port == 443) "https" else "http"
@@ -46,42 +50,51 @@ private object XtreamUrlFactory {
             val capsStore = ProviderCapabilityStore(ctx)
             val caps = capsStore.findByEndpoint(schemeDefault, host, port, user)
             val resolvedUri = caps?.baseUrl?.let { runCatching { Uri.parse(it) }.getOrNull() }
-            val resolvedScheme = resolvedUri?.scheme?.takeIf { !it.isNullOrBlank() }?.lowercase()
-                ?: schemeDefault
+            val resolvedScheme =
+                resolvedUri?.scheme?.takeIf { !it.isNullOrBlank() }?.lowercase()
+                    ?: schemeDefault
             val resolvedHost = resolvedUri?.host?.takeIf { !it.isNullOrBlank() } ?: host
             val resolvedPort = resolvedUri?.port?.takeIf { it > 0 } ?: port
             val resolvedBasePath = resolvedUri?.path?.takeIf { !it.isNullOrBlank() && it != "/" }
-            val resolvedVodKind = caps?.resolvedAliases?.vodKind
-                ?.trim()
-                ?.takeUnless { it.isEmpty() }
+            val resolvedVodKind =
+                caps
+                    ?.resolvedAliases
+                    ?.vodKind
+                    ?.trim()
+                    ?.takeUnless { it.isEmpty() }
 
-            val livePrefs = when (output) {
-                "hls" -> listOf("m3u8", "ts")
-                "m3u8" -> listOf("m3u8", "ts")
-                "ts" -> listOf("ts", "m3u8")
-                else -> listOf("m3u8", "ts")
-            }
+            val livePrefs =
+                when (output) {
+                    "hls" -> listOf("m3u8", "ts")
+                    "m3u8" -> listOf("m3u8", "ts")
+                    "ts" -> listOf("ts", "m3u8")
+                    else -> listOf("m3u8", "ts")
+                }
 
-            val cfg = XtreamConfig(
-                scheme = resolvedScheme,
-                host = resolvedHost,
-                port = resolvedPort,
-                username = user,
-                password = pass,
-                pathKinds = PathKinds(
-                    liveKind = "live",
-                    vodKind = resolvedVodKind ?: "movie",
-                    seriesKind = "series"
-                ),
-                basePath = resolvedBasePath,
-                liveExtPrefs = livePrefs
-            )
+            val cfg =
+                XtreamConfig(
+                    scheme = resolvedScheme,
+                    host = resolvedHost,
+                    port = resolvedPort,
+                    username = user,
+                    password = pass,
+                    pathKinds =
+                        PathKinds(
+                            liveKind = "live",
+                            vodKind = resolvedVodKind ?: "movie",
+                            seriesKind = "series",
+                        ),
+                    basePath = resolvedBasePath,
+                    liveExtPrefs = livePrefs,
+                )
             ref.set(cfg)
             cfg
         }
     }
 
-    fun invalidate() { ref.set(null) }
+    fun invalidate() {
+        ref.set(null)
+    }
 }
 
 /** Von außen aufrufbar, z. B. nach Login/Discovery. */
@@ -119,7 +132,7 @@ fun ObxLive.toMediaItem(ctx: Context): MediaItem {
         extraJson = null,
         source = "XTREAM",
         providerKey = this.providerKey,
-        genreKey = this.genreKey
+        genreKey = this.genreKey,
     )
 }
 
@@ -130,11 +143,12 @@ fun ObxLive.toMediaItem(ctx: Context): MediaItem {
  */
 fun ObxVod.toMediaItem(ctx: Context): MediaItem {
     val encodedId = 2_000_000_000_000L + this.vodId.toLong()
-    val images: List<String> = runCatching {
-        this.imagesJson?.let { j ->
-            Json.parseToJsonElement(j).jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull }
-        }
-    }.getOrNull() ?: emptyList()
+    val images: List<String> =
+        runCatching {
+            this.imagesJson?.let { j ->
+                Json.parseToJsonElement(j).jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull }
+            }
+        }.getOrNull() ?: emptyList()
 
     val cfg = XtreamUrlFactory.getOrNull(ctx)
     val playUrl = cfg?.vodUrl(this.vodId, this.containerExt)
@@ -169,7 +183,7 @@ fun ObxVod.toMediaItem(ctx: Context): MediaItem {
         genre = this.genre,
         containerExt = this.containerExt,
         providerKey = this.providerKey,
-        genreKey = this.genreKey
+        genreKey = this.genreKey,
     )
 }
 
@@ -180,11 +194,12 @@ fun ObxVod.toMediaItem(ctx: Context): MediaItem {
  */
 fun ObxSeries.toMediaItem(ctx: Context): MediaItem {
     val encodedId = 3_000_000_000_000L + this.seriesId.toLong()
-    val images: List<String> = runCatching {
-        this.imagesJson?.let { j ->
-            Json.parseToJsonElement(j).jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull }
-        }
-    }.getOrNull() ?: emptyList()
+    val images: List<String> =
+        runCatching {
+            this.imagesJson?.let { j ->
+                Json.parseToJsonElement(j).jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull }
+            }
+        }.getOrNull() ?: emptyList()
 
     return MediaItem(
         id = encodedId,
@@ -215,7 +230,7 @@ fun ObxSeries.toMediaItem(ctx: Context): MediaItem {
         country = this.country,
         releaseDate = this.releaseDate,
         providerKey = this.providerKey,
-        genreKey = this.genreKey
+        genreKey = this.genreKey,
     )
 }
 
@@ -224,29 +239,30 @@ fun ObxSeries.toMediaItem(ctx: Context): MediaItem {
  * - Beinhaltet containerExt, damit die UI später gezielt die Episode-URL bauen kann
  * - Optionaler Helper (siehe unten) zum direkten Play-URL-Bauen
  */
-fun ObxEpisode.toEpisode(): Episode = Episode(
-    // id bleibt 0L – Episoden sind in OBX über (seriesId, season, episodeNum) identifizierbar
-    seriesStreamId = this.seriesId,
-    episodeId = this.episodeId,
-    season = this.season,
-    episodeNum = this.episodeNum,
-    title = this.title,
-    plot = this.plot,
-    durationSecs = this.durationSecs,
-    rating = this.rating,
-    airDate = this.airDate,
-    containerExt = this.playExt,
-    poster = this.imageUrl,
-    tgChatId = this.tgChatId,
-    tgMessageId = this.tgMessageId,
-    tgFileId = this.tgFileId,
-    mimeType = this.mimeType,
-    width = this.width,
-    height = this.height,
-    sizeBytes = this.sizeBytes,
-    supportsStreaming = this.supportsStreaming,
-    language = this.language
-)
+fun ObxEpisode.toEpisode(): Episode =
+    Episode(
+        // id bleibt 0L – Episoden sind in OBX über (seriesId, season, episodeNum) identifizierbar
+        seriesStreamId = this.seriesId,
+        episodeId = this.episodeId,
+        season = this.season,
+        episodeNum = this.episodeNum,
+        title = this.title,
+        plot = this.plot,
+        durationSecs = this.durationSecs,
+        rating = this.rating,
+        airDate = this.airDate,
+        containerExt = this.playExt,
+        poster = this.imageUrl,
+        tgChatId = this.tgChatId,
+        tgMessageId = this.tgMessageId,
+        tgFileId = this.tgFileId,
+        mimeType = this.mimeType,
+        width = this.width,
+        height = this.height,
+        sizeBytes = this.sizeBytes,
+        supportsStreaming = this.supportsStreaming,
+        language = this.language,
+    )
 
 // ---------------------------------------------------------
 // Optional Helpers: Episode-Play-URL
@@ -262,7 +278,7 @@ fun buildEpisodePlayUrl(
     season: Int,
     episodeNum: Int,
     episodeExt: String?,
-    episodeId: Int? = null
+    episodeId: Int? = null,
 ): String? {
     val cfg = XtreamUrlFactory.getOrNull(ctx) ?: return null
     val legacyEpisodeId = episodeId?.takeIf { it > 0 }

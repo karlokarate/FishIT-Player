@@ -2,14 +2,16 @@ package com.chris.m3usuite.core.xtream
 
 import android.content.Context
 import androidx.core.content.edit
-import org.json.JSONObject
 import com.chris.m3usuite.core.util.CategoryNormalizer
+import org.json.JSONObject
 
 /**
  * Derives friendly provider display labels from API data (category names, titles).
  * Stores a persistent mapping providerKey -> bestLabel in SharedPreferences.
  */
-class ProviderLabelStore private constructor(ctx: Context) {
+class ProviderLabelStore private constructor(
+    ctx: Context,
+) {
     private val prefs = ctx.applicationContext.getSharedPreferences("provider_labels", Context.MODE_PRIVATE)
 
     fun labelFor(key: String?): String {
@@ -22,7 +24,10 @@ class ProviderLabelStore private constructor(ctx: Context) {
     }
 
     /** Update mapping if the candidate seems better (longer, contains '+', or nothing saved yet). */
-    fun learn(key: String?, candidateRaw: String?) {
+    fun learn(
+        key: String?,
+        candidateRaw: String?,
+    ) {
         val k = key?.trim()?.lowercase()?.replace(' ', '_') ?: return
         if (k.isEmpty()) return
         // Derive a stable display label from the candidate by normalizing to key and mapping to canonical label
@@ -31,12 +36,13 @@ class ProviderLabelStore private constructor(ctx: Context) {
         if (cand.isEmpty()) return
         val map = load().toMutableMap()
         val current = map[k]
-        val better = when {
-            current == null -> true
-            cand.length > current.length -> true
-            !current.contains("+") && cand.contains("+") -> true
-            else -> false
-        }
+        val better =
+            when {
+                current == null -> true
+                cand.length > current.length -> true
+                !current.contains("+") && cand.contains("+") -> true
+                else -> false
+            }
         if (better) {
             map[k] = cand
             save(map)
@@ -87,6 +93,7 @@ class ProviderLabelStore private constructor(ctx: Context) {
 
     companion object {
         @Volatile private var inst: ProviderLabelStore? = null
+
         fun get(context: Context): ProviderLabelStore {
             val cur = inst
             if (cur != null) return cur

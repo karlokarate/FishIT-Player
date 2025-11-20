@@ -8,8 +8,6 @@ import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import com.chris.m3usuite.core.http.HttpClientFactory
-import com.chris.m3usuite.prefs.SettingsStore
 import okio.Path.Companion.toPath
 
 /**
@@ -30,22 +28,28 @@ object AppImageLoader {
         val app = context.applicationContext
 
         val imageCacheDir = java.io.File(app.cacheDir, "image_cache").apply { mkdirs() }
-        val disk = DiskCache.Builder()
-            .directory(imageCacheDir.absolutePath.toPath())
-            .maxSizeBytes(computeCoilDiskCacheSizeBytes(app, imageCacheDir))
-            .build()
+        val disk =
+            DiskCache
+                .Builder()
+                .directory(imageCacheDir.absolutePath.toPath())
+                .maxSizeBytes(computeCoilDiskCacheSizeBytes(app, imageCacheDir))
+                .build()
 
-        val mem = MemoryCache.Builder()
-            .maxSizePercent(app, 0.25) // ~25% of available memory
-            .build()
+        val mem =
+            MemoryCache
+                .Builder()
+                .maxSizePercent(app, 0.25) // ~25% of available memory
+                .build()
 
-        val loader = ImageLoader.Builder(app)
-            // Memory & disk caches
-            .memoryCache { mem }
-            .diskCache { disk }
-            // Prefer hardware bitmaps globally unless a request opts out
-            .apply { /* Request-level allowHardware(true) is set in Images.kt */ }
-            .build()
+        val loader =
+            ImageLoader
+                .Builder(app)
+                // Memory & disk caches
+                .memoryCache { mem }
+                .diskCache { disk }
+                // Prefer hardware bitmaps globally unless a request opts out
+                .apply { /* Request-level allowHardware(true) is set in Images.kt */ }
+                .build()
 
         cached = loader
         return loader
@@ -55,28 +59,31 @@ object AppImageLoader {
         context: Context,
         urls: Collection<Any?>,
         headers: ImageHeaders? = null,
-        limit: Int = 8
+        limit: Int = 8,
     ) {
         if (urls.isEmpty()) return
         val app = context.applicationContext
         val loader = get(app)
-        val candidates = urls.asSequence()
-            .mapNotNull { candidate -> normalizePreloadCandidate(candidate) }
-            .distinct()
-            .take(limit)
-            .toList()
+        val candidates =
+            urls
+                .asSequence()
+                .mapNotNull { candidate -> normalizePreloadCandidate(candidate) }
+                .distinct()
+                .take(limit)
+                .toList()
         if (candidates.isEmpty()) return
 
         withContext(Dispatchers.IO) {
             for (data in candidates) {
                 runCatching {
-                    val request = buildImageRequest(
-                        ctx = app,
-                        url = data,
-                        crossfade = false,
-                        headers = headers,
-                        preferRgb565 = true
-                    )
+                    val request =
+                        buildImageRequest(
+                            ctx = app,
+                            url = data,
+                            crossfade = false,
+                            headers = headers,
+                            preferRgb565 = true,
+                        )
                     loader.execute(request)
                 }
             }
@@ -111,9 +118,17 @@ object AppImageLoader {
     }
 }
 
-private fun computeCoilDiskCacheSizeBytes(context: Context, dir: java.io.File): Long {
+private fun computeCoilDiskCacheSizeBytes(
+    context: Context,
+    dir: java.io.File,
+): Long {
     val MB = 1024L * 1024L
-    val is64 = try { Build.SUPPORTED_64_BIT_ABIS.isNotEmpty() } catch (_: Throwable) { false }
+    val is64 =
+        try {
+            Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()
+        } catch (_: Throwable) {
+            false
+        }
     // Base and caps tuned for image workloads
     val baseMiB = if (is64) 512 else 256
     val capMiB = if (is64) 768 else 384

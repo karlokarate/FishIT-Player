@@ -9,5 +9,5 @@ data class AppConfig(
     val apiHash: String,
     val phoneNumber: String,
     val dbDir: String,
-    val filesDir: String
+    val filesDir: String,
 )

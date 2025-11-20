@@ -25,13 +25,13 @@ val LocalFishDimens = compositionLocalOf { FishDimens() }
 @Composable
 fun FishTheme(
     dimens: FishDimens = FishDimens(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(LocalFishDimens provides dimens) {
         MaterialTheme(
             colorScheme = MaterialTheme.colorScheme,
             typography = MaterialTheme.typography,
-            content = content
+            content = content,
         )
     }
 }

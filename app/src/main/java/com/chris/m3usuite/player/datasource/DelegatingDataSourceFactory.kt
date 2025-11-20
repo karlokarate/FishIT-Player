@@ -22,7 +22,6 @@ private class DelegatingDataSource(
     private val context: Context,
     private val fallback: DataSource.Factory,
 ) : DataSource {
-
     private var delegate: DataSource? = null
     private var transferListener: TransferListener? = null
 
@@ -33,21 +32,26 @@ private class DelegatingDataSource(
     @Throws(IOException::class)
     override fun open(dataSpec: DataSpec): Long {
         val scheme = dataSpec.uri.scheme?.lowercase(Locale.US)
-        val target: DataSource = when {
-            scheme == "tg" -> {
-                // For Telegram files, we need TelegramSession
-                // For now, create a placeholder that will be replaced with proper implementation
-                throw IOException("Telegram playback requires TelegramSession - not yet wired")
+        val target: DataSource =
+            when {
+                scheme == "tg" -> {
+                    // For Telegram files, we need TelegramSession
+                    // For now, create a placeholder that will be replaced with proper implementation
+                    throw IOException("Telegram playback requires TelegramSession - not yet wired")
+                }
+                scheme == "rar" -> RarDataSource(context)
+                else -> fallback.createDataSource()
             }
-            scheme == "rar" -> RarDataSource(context)
-            else -> fallback.createDataSource()
-        }
         delegate = target
         transferListener?.let { target.addTransferListener(it) }
         return target.open(dataSpec)
     }
 
-    override fun read(buffer: ByteArray, offset: Int, readLength: Int): Int {
+    override fun read(
+        buffer: ByteArray,
+        offset: Int,
+        readLength: Int,
+    ): Int {
         val d = delegate ?: return C.RESULT_END_OF_INPUT
         return d.read(buffer, offset, readLength)
     }

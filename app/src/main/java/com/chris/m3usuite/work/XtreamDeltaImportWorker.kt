@@ -1,27 +1,30 @@
 package com.chris.m3usuite.work
 
 import android.content.Context
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import androidx.work.Constraints
-import androidx.work.BackoffPolicy
-import androidx.work.OutOfQuotaPolicy
 import androidx.work.workDataOf
-import java.util.concurrent.TimeUnit
-import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.data.repo.XtreamObxRepository
-import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.core.xtream.XtreamImportCoordinator
 import com.chris.m3usuite.core.xtream.XtreamSeeder
+import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.data.repo.XtreamObxRepository
+import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.flow.first
+import java.util.concurrent.TimeUnit
 
-class XtreamDeltaImportWorker(appContext: Context, params: WorkerParameters): CoroutineWorker(appContext, params) {
+class XtreamDeltaImportWorker(
+    appContext: Context,
+    params: WorkerParameters,
+) : CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
         val ctx = applicationContext
         val store = SettingsStore(ctx)
@@ -37,13 +40,14 @@ class XtreamDeltaImportWorker(appContext: Context, params: WorkerParameters): Co
             val vodLimit: Int = inputData.getInt("vod_limit", 0)
             val seriesLimit: Int = inputData.getInt("series_limit", 0)
             // Ensure heads are present once (no-op if already there)
-            val seedResult = XtreamSeeder.ensureSeeded(
-                context = ctx,
-                store = store,
-                reason = "worker",
-                force = false,
-                forceDiscovery = false
-            )
+            val seedResult =
+                XtreamSeeder.ensureSeeded(
+                    context = ctx,
+                    store = store,
+                    reason = "worker",
+                    force = false,
+                    forceDiscovery = false,
+                )
             // Delta across full lists to update provider/genre keys and indexes even without details
             val delta = repo.importDelta(deleteOrphans = false, includeLive = includeLive)
             // Then refresh a chunk of details to enrich posters/plots etc.
@@ -68,7 +72,9 @@ class XtreamDeltaImportWorker(appContext: Context, params: WorkerParameters): Co
                     SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive)
                 }
                 Result.success()
-            } else Result.retry()
+            } else {
+                Result.retry()
+            }
         } catch (_: Throwable) {
             Result.retry()
         }
@@ -78,55 +84,77 @@ class XtreamDeltaImportWorker(appContext: Context, params: WorkerParameters): Co
         private const val UNIQUE = "xtream_delta_import"
 
         fun schedulePeriodic(context: Context) {
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .setRequiresBatteryNotLow(true)
-                .build()
-            val req = PeriodicWorkRequestBuilder<XtreamDeltaImportWorker>(6, TimeUnit.HOURS)
-                .setConstraints(constraints)
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
-                .build()
-            WorkManager.getInstance(context)
+            val constraints =
+                Constraints
+                    .Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .setRequiresBatteryNotLow(true)
+                    .build()
+            val req =
+                PeriodicWorkRequestBuilder<XtreamDeltaImportWorker>(6, TimeUnit.HOURS)
+                    .setConstraints(constraints)
+                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                    .build()
+            WorkManager
+                .getInstance(context)
                 .enqueueUniquePeriodicWork(UNIQUE, ExistingPeriodicWorkPolicy.UPDATE, req)
         }
 
-        fun triggerOnce(context: Context, includeLive: Boolean = false, vodLimit: Int = 0, seriesLimit: Int = 0) {
+        fun triggerOnce(
+            context: Context,
+            includeLive: Boolean = false,
+            vodLimit: Int = 0,
+            seriesLimit: Int = 0,
+        ) {
             XtreamImportCoordinator.enqueueWork {
-                val constraints = Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
-                val req = OneTimeWorkRequestBuilder<XtreamDeltaImportWorker>()
-                    .setConstraints(constraints)
-                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
-                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                    .setInputData(workDataOf(
-                        "include_live" to includeLive,
-                        "vod_limit" to vodLimit,
-                        "series_limit" to seriesLimit
-                    ))
-                    .build()
-                WorkManager.getInstance(context)
+                val constraints =
+                    Constraints
+                        .Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                val req =
+                    OneTimeWorkRequestBuilder<XtreamDeltaImportWorker>()
+                        .setConstraints(constraints)
+                        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
+                        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                        .setInputData(
+                            workDataOf(
+                                "include_live" to includeLive,
+                                "vod_limit" to vodLimit,
+                                "series_limit" to seriesLimit,
+                            ),
+                        ).build()
+                WorkManager
+                    .getInstance(context)
                     .enqueueUniqueWork("${UNIQUE}_once", ExistingWorkPolicy.REPLACE, req)
             }
         }
 
-        fun triggerOnceDelayedLive(context: Context, delayMinutes: Long = 5) {
+        fun triggerOnceDelayedLive(
+            context: Context,
+            delayMinutes: Long = 5,
+        ) {
             XtreamImportCoordinator.enqueueWork {
-                val constraints = Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
-                val req = OneTimeWorkRequestBuilder<XtreamDeltaImportWorker>()
-                    .setConstraints(constraints)
-                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
-                    // Delayed jobs cannot be expedited; schedule as regular one-shot with delay
-                    .setInitialDelay(delayMinutes, TimeUnit.MINUTES)
-                    .setInputData(workDataOf(
-                        "include_live" to true,
-                        "vod_limit" to 0,
-                        "series_limit" to 0
-                    ))
-                    .build()
-                WorkManager.getInstance(context)
+                val constraints =
+                    Constraints
+                        .Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                val req =
+                    OneTimeWorkRequestBuilder<XtreamDeltaImportWorker>()
+                        .setConstraints(constraints)
+                        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
+                        // Delayed jobs cannot be expedited; schedule as regular one-shot with delay
+                        .setInitialDelay(delayMinutes, TimeUnit.MINUTES)
+                        .setInputData(
+                            workDataOf(
+                                "include_live" to true,
+                                "vod_limit" to 0,
+                                "series_limit" to 0,
+                            ),
+                        ).build()
+                WorkManager
+                    .getInstance(context)
                     .enqueueUniqueWork("${UNIQUE}_once_live_delay", ExistingWorkPolicy.REPLACE, req)
             }
         }

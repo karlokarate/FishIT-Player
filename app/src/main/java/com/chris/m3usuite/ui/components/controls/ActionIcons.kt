@@ -20,7 +20,7 @@ import com.chris.m3usuite.ui.focus.focusScaleOnTv
 fun GrantIconButton(
     modifier: Modifier = Modifier,
     tint: Color = Color(0xFF2ECC71),
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     IconButton(
         onClick = onClick,
@@ -32,7 +32,7 @@ fun GrantIconButton(
             imageVector = Icons.Rounded.AddCircle,
             contentDescription = "Freigeben",
             modifier = Modifier.size(28.dp),
-            tint = tint
+            tint = tint,
         )
     }
 }
@@ -44,7 +44,7 @@ fun GrantIconButton(
 fun RemoveIconButton(
     modifier: Modifier = Modifier,
     tint: Color = Color(0xFFE74C3C),
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     IconButton(
         onClick = onClick,
@@ -56,7 +56,7 @@ fun RemoveIconButton(
             imageVector = Icons.Rounded.RemoveCircle,
             contentDescription = "Entfernen",
             modifier = Modifier.size(28.dp),
-            tint = tint
+            tint = tint,
         )
     }
 }

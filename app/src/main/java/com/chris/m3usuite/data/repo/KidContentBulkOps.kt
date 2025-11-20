@@ -21,10 +21,13 @@ object KidContentBulkOps {
 
     enum class Kind { LIVE, VOD, SERIES }
 
-    data class Decoded(val kind: Kind, val id: Long)
+    data class Decoded(
+        val kind: Kind,
+        val id: Long,
+    )
 
-    fun decode(encodedId: Long): Decoded {
-        return when {
+    fun decode(encodedId: Long): Decoded =
+        when {
             encodedId >= SERIES_BASE -> Decoded(Kind.SERIES, encodedId - SERIES_BASE)
             encodedId >= VOD_BASE -> Decoded(Kind.VOD, encodedId - VOD_BASE)
             encodedId >= LIVE_BASE -> Decoded(Kind.LIVE, encodedId - LIVE_BASE)
@@ -34,7 +37,6 @@ object KidContentBulkOps {
                 Decoded(Kind.VOD, abs(encodedId))
             }
         }
-    }
 }
 
 /**
@@ -45,7 +47,10 @@ object KidContentBulkOps {
  *  - prefer allowVod/allowSeries/allowLive if found
  *  - else prefer allow(profileId: Long, kind: String, id: Long)
  */
-fun KidContentRepository.allowManyEncoded(profileId: Long, encodedIds: Collection<Long>) {
+fun KidContentRepository.allowManyEncoded(
+    profileId: Long,
+    encodedIds: Collection<Long>,
+) {
     if (encodedIds.isEmpty()) return
     val live = ArrayList<Long>()
     val vod = ArrayList<Long>()
@@ -63,10 +68,12 @@ fun KidContentRepository.allowManyEncoded(profileId: Long, encodedIds: Collectio
     val allowVodBulk = clazz.methods.firstOrNull { it.name == "allowManyVod" && it.parameterTypes.size == 2 }
     val allowSeriesBulk = clazz.methods.firstOrNull { it.name == "allowManySeries" && it.parameterTypes.size == 2 }
     val allowLiveBulk = clazz.methods.firstOrNull { it.name == "allowManyLive" && it.parameterTypes.size == 2 }
-    val allowGeneric = clazz.methods.firstOrNull { m ->
-        m.name == "allow" && m.parameterTypes.size == 3 &&
-            (m.parameterTypes[1] == String::class.java || m.parameterTypes[1] == java.lang.String::class.java)
-    }
+    val allowGeneric =
+        clazz.methods.firstOrNull { m ->
+            m.name == "allow" &&
+                m.parameterTypes.size == 3 &&
+                (m.parameterTypes[1] == String::class.java || m.parameterTypes[1] == java.lang.String::class.java)
+        }
     // Invoke bulk if available
     if (vod.isNotEmpty()) {
         if (allowVodBulk != null) {
@@ -119,7 +126,10 @@ fun KidContentRepository.allowManyEncoded(profileId: Long, encodedIds: Collectio
  *
  * Mirrors [allowManyEncoded] with disallow fallbacks.
  */
-fun KidContentRepository.disallowManyEncoded(profileId: Long, encodedIds: Collection<Long>) {
+fun KidContentRepository.disallowManyEncoded(
+    profileId: Long,
+    encodedIds: Collection<Long>,
+) {
     if (encodedIds.isEmpty()) return
     val live = ArrayList<Long>()
     val vod = ArrayList<Long>()
@@ -136,10 +146,12 @@ fun KidContentRepository.disallowManyEncoded(profileId: Long, encodedIds: Collec
     val disallowVodBulk = clazz.methods.firstOrNull { it.name == "disallowManyVod" && it.parameterTypes.size == 2 }
     val disallowSeriesBulk = clazz.methods.firstOrNull { it.name == "disallowManySeries" && it.parameterTypes.size == 2 }
     val disallowLiveBulk = clazz.methods.firstOrNull { it.name == "disallowManyLive" && it.parameterTypes.size == 2 }
-    val disallowGeneric = clazz.methods.firstOrNull { m ->
-        m.name == "disallow" && m.parameterTypes.size == 3 &&
-            (m.parameterTypes[1] == String::class.java || m.parameterTypes[1] == java.lang.String::class.java)
-    }
+    val disallowGeneric =
+        clazz.methods.firstOrNull { m ->
+            m.name == "disallow" &&
+                m.parameterTypes.size == 3 &&
+                (m.parameterTypes[1] == String::class.java || m.parameterTypes[1] == java.lang.String::class.java)
+        }
     if (vod.isNotEmpty()) {
         if (disallowVodBulk != null) {
             disallowVodBulk.invoke(this, profileId, vod)

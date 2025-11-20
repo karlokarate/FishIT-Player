@@ -1,9 +1,13 @@
 package com.chris.m3usuite.player
 
 import android.app.Activity
+import android.app.PictureInPictureParams
 import android.content.pm.ActivityInfo
-import android.view.LayoutInflater
 import android.net.Uri
+import android.os.Build
+import android.util.Rational
+import android.view.LayoutInflater
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -11,7 +15,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,14 +24,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
@@ -38,7 +44,6 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,27 +51,22 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.size
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import android.app.PictureInPictureParams
-import android.util.Rational
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -77,37 +77,34 @@ import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.Tracks
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.chris.m3usuite.R
-import com.chris.m3usuite.data.repo.ResumeRepository
+import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.data.repo.ResumeRepository
 import com.chris.m3usuite.data.repo.ScreenTimeRepository
+import com.chris.m3usuite.diagnostics.DiagnosticsLogger
+import com.chris.m3usuite.playback.PlaybackSession
+import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.ui.focus.FocusKit
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
+import com.chris.m3usuite.ui.home.MiniPlayerDescriptor
+import com.chris.m3usuite.ui.home.MiniPlayerState
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import com.chris.m3usuite.core.playback.PlayUrlHelper
-import com.chris.m3usuite.ui.focus.FocusKit
-import com.chris.m3usuite.ui.home.MiniPlayerDescriptor
-import com.chris.m3usuite.ui.home.MiniPlayerState
-import com.chris.m3usuite.ui.focus.focusScaleOnTv
-import android.widget.Toast
-import android.os.Build
-import com.chris.m3usuite.playback.PlaybackSession
-import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
-import com.chris.m3usuite.diagnostics.DiagnosticsLogger
-import com.chris.m3usuite.diagnostics.PerformanceMonitor
 
 /**
  * Interner Player (Media3) mit:
@@ -122,10 +119,10 @@ import com.chris.m3usuite.diagnostics.PerformanceMonitor
 @Composable
 fun InternalPlayerScreen(
     url: String,
-    type: String,                 // "vod" | "series" | "live"
-    mediaId: Long? = null,        // VOD
-    episodeId: Int? = null,       // Series (legacy id)
-    seriesId: Int? = null,        // Series composite
+    type: String, // "vod" | "series" | "live"
+    mediaId: Long? = null, // VOD
+    episodeId: Int? = null, // Series (legacy id)
+    seriesId: Int? = null, // Series composite
     season: Int? = null,
     episodeNum: Int? = null,
     startPositionMs: Long? = null,
@@ -135,21 +132,25 @@ fun InternalPlayerScreen(
     // Live-TV context hints for navigation & lists
     originLiveLibrary: Boolean = false,
     liveCategoryHint: String? = null,
-    liveProviderHint: String? = null
+    liveProviderHint: String? = null,
 ) {
     LaunchedEffect(type, mediaId, seriesId, episodeId) {
-        com.chris.m3usuite.metrics.RouteTag.set("player")
-        val node = when (type) {
-            "live" -> "player:live"
-            "vod" -> "player:vod"
-            "series" -> "player:series"
-            else -> "player:?"
-        }
-        val idNode = when (type) {
-            "series" -> "tile:${seriesId ?: mediaId}"
-            else -> "tile:${mediaId ?: -1}"
-        }
-        com.chris.m3usuite.core.debug.GlobalDebug.logTree(node, idNode)
+        com.chris.m3usuite.metrics.RouteTag
+            .set("player")
+        val node =
+            when (type) {
+                "live" -> "player:live"
+                "vod" -> "player:vod"
+                "series" -> "player:series"
+                else -> "player:?"
+            }
+        val idNode =
+            when (type) {
+                "series" -> "tile:${seriesId ?: mediaId}"
+                else -> "tile:${mediaId ?: -1}"
+            }
+        com.chris.m3usuite.core.debug.GlobalDebug
+            .logTree(node, idNode)
     }
     val ctx = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -161,9 +162,17 @@ fun InternalPlayerScreen(
     val obxStore = remember(ctx) { ObxStore.get(ctx) }
     val resumeRepo = remember(ctx) { ResumeRepository(ctx) }
     val store = remember(ctx) { SettingsStore(ctx) }
-    val mediaRepo = remember(ctx) { com.chris.m3usuite.data.repo.MediaQueryRepository(ctx, store) }
+    val mediaRepo =
+        remember(ctx) {
+            com.chris.m3usuite.data.repo
+                .MediaQueryRepository(ctx, store)
+        }
     val screenTimeRepo = remember(ctx) { ScreenTimeRepository(ctx) }
-    val epgRepo = remember(ctx) { com.chris.m3usuite.data.repo.EpgRepository(ctx, store) }
+    val epgRepo =
+        remember(ctx) {
+            com.chris.m3usuite.data.repo
+                .EpgRepository(ctx, store)
+        }
 
     // Pause seeding workers during playback; restore afterwards if they were enabled
     DisposableEffect(Unit) {
@@ -175,10 +184,14 @@ fun InternalPlayerScreen(
                 if (originallyEnabled == true) {
                     store.setM3uWorkersEnabled(false)
                 }
-            } catch (_: Throwable) {}
+            } catch (_: Throwable) {
+            }
         }
         // Best-effort: cancel active Xtream jobs so they don't compete during playback
-        runCatching { com.chris.m3usuite.work.SchedulingGateway.cancelXtreamWork(ctx) }
+        runCatching {
+            com.chris.m3usuite.work.SchedulingGateway
+                .cancelXtreamWork(ctx)
+        }
         onDispose {
             // Restore only if we paused it here (keep user-chosen OFF intact)
             val shouldRestore = (originallyEnabled == true)
@@ -199,86 +212,115 @@ fun InternalPlayerScreen(
 
     // HTTP Factory mit Headern
     val extraJson by store.extraHeadersJson.collectAsStateWithLifecycle(initialValue = "")
-    val mergedHeaders = remember(headers, extraJson) {
-        val extras = com.chris.m3usuite.core.http.RequestHeadersProvider.parseExtraHeaders(extraJson)
-        com.chris.m3usuite.core.http.RequestHeadersProvider.merge(headers, extras)
-    }
-    val httpFactory = remember(mergedHeaders, url, type) {
-        val ua = mergedHeaders["User-Agent"] ?: "IBOPlayer/1.4 (Android)"
-        val props = HashMap<String, String>(mergedHeaders)
-        if (!props.containsKey("Accept")) props["Accept"] = "*/*"
-        if (!props.containsKey("Connection")) props["Connection"] = "keep-alive"
-        // For Xtream VOD/progressive MP4 some panels behave better with identity encoding
-        if (!props.containsKey("Accept-Encoding")) props["Accept-Encoding"] = "identity"
+    val mergedHeaders =
+        remember(headers, extraJson) {
+            val extras =
+                com.chris.m3usuite.core.http.RequestHeadersProvider
+                    .parseExtraHeaders(extraJson)
+            com.chris.m3usuite.core.http.RequestHeadersProvider
+                .merge(headers, extras)
+        }
+    val httpFactory =
+        remember(mergedHeaders, url, type) {
+            val ua = mergedHeaders["User-Agent"] ?: "IBOPlayer/1.4 (Android)"
+            val props = HashMap<String, String>(mergedHeaders)
+            if (!props.containsKey("Accept")) props["Accept"] = "*/*"
+            if (!props.containsKey("Connection")) props["Connection"] = "keep-alive"
+            // For Xtream VOD/progressive MP4 some panels behave better with identity encoding
+            if (!props.containsKey("Accept-Encoding")) props["Accept-Encoding"] = "identity"
 
-        // Lightweight diagnostics
-        runCatching {
-            android.util.Log.d(
-                "PlayerHTTP",
-                "prepare ua=\"${ua}\" ref=\"${props["Referer"] ?: ""}\" accept=\"${props["Accept"]}\""
+            // Lightweight diagnostics
+            runCatching {
+                android.util.Log.d(
+                    "PlayerHTTP",
+                    "prepare ua=\"${ua}\" ref=\"${props["Referer"] ?: ""}\" accept=\"${props["Accept"]}\"",
+                )
+            }
+
+            val baseFactory =
+                DefaultHttpDataSource
+                    .Factory()
+                    .apply { if (ua.isNotBlank()) setUserAgent(ua) }
+                    .setAllowCrossProtocolRedirects(true)
+                    .apply { if (props.isNotEmpty()) setDefaultRequestProperties(props) }
+
+            // VOD hardening: extend timeouts for movie URLs only
+            val isVod = type == "vod" || url.contains("/movie/")
+            if (isVod) {
+                // 20s connect, 30s read to avoid premature timeouts on slow panels
+                baseFactory.setConnectTimeoutMs(20_000)
+                baseFactory.setReadTimeoutMs(30_000)
+            }
+            baseFactory
+        }
+    // Use smaller allocator for 32-bit devices
+    val is32BitDevice =
+        remember {
+            try {
+                Build.SUPPORTED_64_BIT_ABIS.isEmpty()
+            } catch (_: Throwable) {
+                true
+            }
+        }
+    val allocator =
+        remember(is32BitDevice) {
+            androidx.media3.exoplayer.upstream.DefaultAllocator(
+                // trimOnReset =
+                true, // segmentSize =
+                if (is32BitDevice) {
+                    16 * 1024
+                } else {
+                    64 *
+                        1024
+                },
             )
         }
 
-        val baseFactory = DefaultHttpDataSource.Factory()
-            .apply { if (ua.isNotBlank()) setUserAgent(ua) }
-            .setAllowCrossProtocolRedirects(true)
-            .apply { if (props.isNotEmpty()) setDefaultRequestProperties(props) }
-
-        // VOD hardening: extend timeouts for movie URLs only
-        val isVod = type == "vod" || url.contains("/movie/")
-        if (isVod) {
-            // 20s connect, 30s read to avoid premature timeouts on slow panels
-            baseFactory.setConnectTimeoutMs(20_000)
-            baseFactory.setReadTimeoutMs(30_000)
+    val dataSourceFactory =
+        remember(httpFactory, ctx) {
+            val base = DefaultDataSource.Factory(ctx, httpFactory)
+            DelegatingDataSourceFactory(ctx, base)
         }
-        baseFactory
-    }
-    // Use smaller allocator for 32-bit devices
-    val is32BitDevice = remember { try { Build.SUPPORTED_64_BIT_ABIS.isEmpty() } catch (_: Throwable) { true } }
-    val allocator = remember(is32BitDevice) {
-        androidx.media3.exoplayer.upstream.DefaultAllocator(/* trimOnReset = */ true, /* segmentSize = */ if (is32BitDevice) 16 * 1024 else 64 * 1024)
-    }
 
-    val dataSourceFactory = remember(httpFactory, ctx) {
-        val base = DefaultDataSource.Factory(ctx, httpFactory)
-        DelegatingDataSourceFactory(ctx, base)
-    }
-
-    val preferredVideoMimeTypes = remember {
-        arrayOf(
-            MimeTypes.VIDEO_DOLBY_VISION,
-            MimeTypes.VIDEO_H265,
-            MimeTypes.VIDEO_AV1,
-            MimeTypes.VIDEO_VP9,
-            MimeTypes.VIDEO_H264,
-            MimeTypes.VIDEO_VP8
-        )
-    }
-    val preferredAudioMimeTypes = remember {
-        arrayOf(
-            MimeTypes.AUDIO_E_AC3_JOC,
-            MimeTypes.AUDIO_TRUEHD,
-            MimeTypes.AUDIO_E_AC3,
-            MimeTypes.AUDIO_AC4,
-            MimeTypes.AUDIO_AC3,
-            MimeTypes.AUDIO_DTS_HD,
-            MimeTypes.AUDIO_DTS,
-            MimeTypes.AUDIO_FLAC,
-            MimeTypes.AUDIO_OPUS,
-            MimeTypes.AUDIO_AAC,
-            MimeTypes.AUDIO_MPEG,
-            MimeTypes.AUDIO_MPEG_L2,
-            MimeTypes.AUDIO_MPEG_L1,
-            MimeTypes.AUDIO_VORBIS
-        )
-    }
-    val trackSelectionParameters = remember {
-        TrackSelectionParameters.Builder()
-            .setForceHighestSupportedBitrate(true)
-            .setPreferredVideoMimeTypes(*preferredVideoMimeTypes)
-            .setPreferredAudioMimeTypes(*preferredAudioMimeTypes)
-            .build()
-    }
+    val preferredVideoMimeTypes =
+        remember {
+            arrayOf(
+                MimeTypes.VIDEO_DOLBY_VISION,
+                MimeTypes.VIDEO_H265,
+                MimeTypes.VIDEO_AV1,
+                MimeTypes.VIDEO_VP9,
+                MimeTypes.VIDEO_H264,
+                MimeTypes.VIDEO_VP8,
+            )
+        }
+    val preferredAudioMimeTypes =
+        remember {
+            arrayOf(
+                MimeTypes.AUDIO_E_AC3_JOC,
+                MimeTypes.AUDIO_TRUEHD,
+                MimeTypes.AUDIO_E_AC3,
+                MimeTypes.AUDIO_AC4,
+                MimeTypes.AUDIO_AC3,
+                MimeTypes.AUDIO_DTS_HD,
+                MimeTypes.AUDIO_DTS,
+                MimeTypes.AUDIO_FLAC,
+                MimeTypes.AUDIO_OPUS,
+                MimeTypes.AUDIO_AAC,
+                MimeTypes.AUDIO_MPEG,
+                MimeTypes.AUDIO_MPEG_L2,
+                MimeTypes.AUDIO_MPEG_L1,
+                MimeTypes.AUDIO_VORBIS,
+            )
+        }
+    val trackSelectionParameters =
+        remember {
+            TrackSelectionParameters
+                .Builder()
+                .setForceHighestSupportedBitrate(true)
+                .setPreferredVideoMimeTypes(*preferredVideoMimeTypes)
+                .setPreferredAudioMimeTypes(*preferredAudioMimeTypes)
+                .build()
+        }
     val trackSelector = remember(ctx) { DefaultTrackSelector(ctx) }
     DisposableEffect(trackSelector) {
         trackSelector.setParameters(trackSelectionParameters)
@@ -286,30 +328,34 @@ fun InternalPlayerScreen(
     }
 
     // Player (shared via PlaybackSession so mini player can attach after leaving screen)
-    val session = remember(url, headers, dataSourceFactory, mimeType, trackSelector) {
-        val renderers = PlayerComponents.renderersFactory(ctx)
+    val session =
+        remember(url, headers, dataSourceFactory, mimeType, trackSelector) {
+            val renderers = PlayerComponents.renderersFactory(ctx)
 
-        val loadControl = DefaultLoadControl.Builder()
-            .setAllocator(allocator)
-            .setTargetBufferBytes(6 * 1024 * 1024) // small target to avoid large pools on low-RAM devices
-            .build()
+            val loadControl =
+                DefaultLoadControl
+                    .Builder()
+                    .setAllocator(allocator)
+                    .setTargetBufferBytes(6 * 1024 * 1024) // small target to avoid large pools on low-RAM devices
+                    .build()
 
-        // Align button-based seek increments (also used by PlayerView controller buttons)
-        val seekIncrementMs = 10_000L
+            // Align button-based seek increments (also used by PlayerView controller buttons)
+            val seekIncrementMs = 10_000L
 
-        PlaybackSession.acquire(ctx) {
-            ExoPlayer.Builder(ctx)
-                .setRenderersFactory(renderers)
-                .setTrackSelector(trackSelector)
-                .setMediaSourceFactory(
-                    androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
-                )
-                .setSeekBackIncrementMs(seekIncrementMs)
-                .setSeekForwardIncrementMs(seekIncrementMs)
-                .setLoadControl(loadControl)
-                .build()
+            PlaybackSession.acquire(ctx) {
+                ExoPlayer
+                    .Builder(ctx)
+                    .setRenderersFactory(renderers)
+                    .setTrackSelector(trackSelector)
+                    .setMediaSourceFactory(
+                        androidx.media3.exoplayer.source
+                            .DefaultMediaSourceFactory(dataSourceFactory),
+                    ).setSeekBackIncrementMs(seekIncrementMs)
+                    .setSeekForwardIncrementMs(seekIncrementMs)
+                    .setLoadControl(loadControl)
+                    .build()
+            }
         }
-    }
     val exoPlayer = session.player
 
     LaunchedEffect(exoPlayer, trackSelectionParameters) {
@@ -321,42 +367,45 @@ fun InternalPlayerScreen(
     LaunchedEffect(session.isNew, url, mimeType, startPositionMs) {
         val needsConfig = session.isNew || PlaybackSession.currentSource() != url
         if (needsConfig) {
-            android.util.Log.d("ExoSetup", "setMediaItem url=${url}")
-            val resolvedUri = if (url.startsWith("tg://", ignoreCase = true)) {
-                val parsed = runCatching { Uri.parse(url) }.getOrNull()
-                when {
-                    parsed == null -> Uri.parse(url)
-                    parsed.host.equals("file", true) -> parsed
-                    // TODO: Telegram message resolution not yet implemented
-                    // parsed.host.equals("message", true) -> {
-                    //     val chatId = parsed.getQueryParameter("chatId")?.toLongOrNull()
-                    //     val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
-                    //     if (chatId != null && messageId != null) {
-                    //         // Telegram service integration pending
-                    //     }
-                    // }
-                    else -> parsed
+            android.util.Log.d("ExoSetup", "setMediaItem url=$url")
+            val resolvedUri =
+                if (url.startsWith("tg://", ignoreCase = true)) {
+                    val parsed = runCatching { Uri.parse(url) }.getOrNull()
+                    when {
+                        parsed == null -> Uri.parse(url)
+                        parsed.host.equals("file", true) -> parsed
+                        // TODO: Telegram message resolution not yet implemented
+                        // parsed.host.equals("message", true) -> {
+                        //     val chatId = parsed.getQueryParameter("chatId")?.toLongOrNull()
+                        //     val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
+                        //     if (chatId != null && messageId != null) {
+                        //         // Telegram service integration pending
+                        //     }
+                        // }
+                        else -> parsed
+                    }
+                } else {
+                    Uri.parse(url)
                 }
-            } else {
-                Uri.parse(url)
-            }
             val finalUrl = resolvedUri.toString()
             val inferredMime = mimeType ?: PlayUrlHelper.guessMimeType(finalUrl, null)
-            val mediaItem = MediaItem.Builder()
-                .setUri(resolvedUri)
-                .also { builder -> inferredMime?.let { builder.setMimeType(it) } }
-                .build()
+            val mediaItem =
+                MediaItem
+                    .Builder()
+                    .setUri(resolvedUri)
+                    .also { builder -> inferredMime?.let { builder.setMimeType(it) } }
+                    .build()
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
             exoPlayer.setSeekParameters(SeekParameters.CLOSEST_SYNC)
             exoPlayer.playWhenReady = false // Phase 4: erst nach Screen-Time-Check starten
             startPositionMs?.let { exoPlayer.seekTo(it) }
             PlaybackSession.setSource(finalUrl)
-            
+
             // Log playback start
             DiagnosticsLogger.Media3.logPlaybackStart(
                 screen = "internal_player",
-                mediaType = type
+                mediaType = type,
             )
         }
     }
@@ -388,14 +437,32 @@ fun InternalPlayerScreen(
 
     // resume: load (seek to saved position if available and >10s)
     LaunchedEffect(type, mediaId, episodeId, seriesId, season, episodeNum, exoPlayer) {
-        if ((type == "vod" && mediaId != null) || (type == "series" && (episodeId != null || (seriesId != null && season != null && episodeNum != null)))) {
+        if ((type == "vod" && mediaId != null) ||
+            (type == "series" && (episodeId != null || (seriesId != null && season != null && episodeNum != null)))
+        ) {
             try {
                 if (startPositionMs == null) {
-                    val posSecs = withContext(Dispatchers.IO) {
-                        if (type == "vod") resumeRepo.recentVod(1).firstOrNull { it.mediaId == mediaId }?.positionSecs else if (seriesId != null && season != null && episodeNum != null) {
-                            resumeRepo.recentEpisodes(50).firstOrNull { it.seriesId == seriesId && it.season == season && it.episodeNum == episodeNum }?.positionSecs
-                        } else null
-                    }
+                    val posSecs =
+                        withContext(Dispatchers.IO) {
+                            if (type ==
+                                "vod"
+                            ) {
+                                resumeRepo.recentVod(1).firstOrNull { it.mediaId == mediaId }?.positionSecs
+                            } else if (seriesId != null &&
+                                season != null &&
+                                episodeNum != null
+                            ) {
+                                resumeRepo
+                                    .recentEpisodes(50)
+                                    .firstOrNull {
+                                        it.seriesId == seriesId &&
+                                            it.season == season &&
+                                            it.episodeNum == episodeNum
+                                    }?.positionSecs
+                            } else {
+                                null
+                            }
+                        }
                     val p = (posSecs ?: 0)
                     if (p > 10) {
                         exoPlayer.seekTo(p.toLong() * 1000L)
@@ -409,52 +476,67 @@ fun InternalPlayerScreen(
 
     // Lifecycle: Pause/Resume/Release + resume: clear/save on destroy
     DisposableEffect(lifecycleOwner, exoPlayer) {
-        val obs = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> {
-                    // Don't pause when entering Picture-in-Picture (guard by SDK)
-                    val act = ctx as? Activity
-                    val inPip = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        act?.isInPictureInPictureMode == true
-                    } else false
-                    if (!inPip) {
-                        exoPlayer.playWhenReady = false
-                    }
-                    // Free up pooled buffer segments when pausing (TV v7a)
-                    try { allocator.trim() } catch (_: Throwable) {}
-                }
-                Lifecycle.Event.ON_RESUME -> exoPlayer.playWhenReady = true
-                Lifecycle.Event.ON_DESTROY -> {
-                    // resume: clear if near end (<10s), otherwise save
-                    runBlocking {
+        val obs =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_PAUSE -> {
+                        // Don't pause when entering Picture-in-Picture (guard by SDK)
+                        val act = ctx as? Activity
+                        val inPip =
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                act?.isInPictureInPictureMode == true
+                            } else {
+                                false
+                            }
+                        if (!inPip) {
+                            exoPlayer.playWhenReady = false
+                        }
+                        // Free up pooled buffer segments when pausing (TV v7a)
                         try {
-                            if (type != "live") {
-                                val dur = exoPlayer.duration
-                                val pos = exoPlayer.currentPosition
-                                val remaining = if (dur > 0) dur - pos else Long.MAX_VALUE
-                                if ((type == "vod" && mediaId != null) || (type == "series" && (seriesId != null && season != null && episodeNum != null))) {
-                                    if (dur > 0 && remaining in 0..9999) {
-                                        withContext(Dispatchers.IO) {
-                                            if (type == "vod") resumeRepo.clearVod(mediaId!!) else Unit
-                                        }
-                                    } else {
-                                        withContext(Dispatchers.IO) {
-                                            val posSecs = (pos / 1000L).toInt().coerceAtLeast(0)
-                                            if (type == "vod" && mediaId != null) resumeRepo.setVodResume(mediaId, posSecs) else if (type == "series" && (seriesId != null && season != null && episodeNum != null)) {
-                                                resumeRepo.setSeriesResume(seriesId, season, episodeNum, posSecs)
+                            allocator.trim()
+                        } catch (_: Throwable) {
+                        }
+                    }
+                    Lifecycle.Event.ON_RESUME -> exoPlayer.playWhenReady = true
+                    Lifecycle.Event.ON_DESTROY -> {
+                        // resume: clear if near end (<10s), otherwise save
+                        runBlocking {
+                            try {
+                                if (type != "live") {
+                                    val dur = exoPlayer.duration
+                                    val pos = exoPlayer.currentPosition
+                                    val remaining = if (dur > 0) dur - pos else Long.MAX_VALUE
+                                    if ((type == "vod" && mediaId != null) ||
+                                        (type == "series" && (seriesId != null && season != null && episodeNum != null))
+                                    ) {
+                                        if (dur > 0 && remaining in 0..9999) {
+                                            withContext(Dispatchers.IO) {
+                                                if (type == "vod") resumeRepo.clearVod(mediaId!!) else Unit
+                                            }
+                                        } else {
+                                            withContext(Dispatchers.IO) {
+                                                val posSecs = (pos / 1000L).toInt().coerceAtLeast(0)
+                                                if (type == "vod" &&
+                                                    mediaId != null
+                                                ) {
+                                                    resumeRepo.setVodResume(mediaId, posSecs)
+                                                } else if (type == "series" &&
+                                                    (seriesId != null && season != null && episodeNum != null)
+                                                ) {
+                                                    resumeRepo.setSeriesResume(seriesId, season, episodeNum, posSecs)
+                                                }
                                             }
                                         }
                                     }
                                 }
+                            } catch (_: Throwable) {
                             }
-                        } catch (_: Throwable) {
                         }
+                        exoPlayer.release()
                     }
-                    exoPlayer.release()
+                    else -> Unit
                 }
-                else -> Unit
             }
-        }
         lifecycleOwner.lifecycle.addObserver(obs)
         onDispose { lifecycleOwner.lifecycle.removeObserver(obs) }
     }
@@ -484,12 +566,24 @@ fun InternalPlayerScreen(
                     val remaining = if (dur > 0) dur - pos else Long.MAX_VALUE
                     if (dur > 0 && remaining in 0..9999) {
                         withContext(Dispatchers.IO) {
-                            if (type == "vod") resumeRepo.clearVod(mediaId!!) else resumeRepo.clearSeriesResume(seriesId!!, season!!, episodeNum!!)
+                            if (type ==
+                                "vod"
+                            ) {
+                                resumeRepo.clearVod(mediaId!!)
+                            } else {
+                                resumeRepo.clearSeriesResume(seriesId!!, season!!, episodeNum!!)
+                            }
                         }
                     } else if (type != "live") {
                         val posSecs = (pos / 1000L).toInt().coerceAtLeast(0)
                         withContext(Dispatchers.IO) {
-                            if (type == "vod" && mediaId != null) resumeRepo.setVodResume(mediaId, posSecs) else resumeRepo.setSeriesResume(seriesId!!, season!!, episodeNum!!, posSecs)
+                            if (type == "vod" &&
+                                mediaId != null
+                            ) {
+                                resumeRepo.setVodResume(mediaId, posSecs)
+                            } else {
+                                resumeRepo.setSeriesResume(seriesId!!, season!!, episodeNum!!, posSecs)
+                            }
                         }
                     }
                 }
@@ -522,59 +616,81 @@ fun InternalPlayerScreen(
 
     // errors + resume: clear on playback ended
     DisposableEffect(exoPlayer, type, mediaId, episodeId) {
-        val listener = object : Player.Listener {
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                android.util.Log.e(
-                    "ExoErr",
-                    "playback_error type=${type} code=${error.errorCode} cause=${error.cause?.javaClass?.simpleName}: ${error.message}"
-                )
-                try { Toast.makeText(ctx, "Wiedergabefehler: ${error.errorCodeName}", Toast.LENGTH_LONG).show() } catch (_: Throwable) {}
-            }
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_ENDED) {
-                    if ((type == "vod" && mediaId != null) || (type == "series" && seriesId != null && season != null && episodeNum != null)) {
-                        scope.launch(Dispatchers.IO) {
-                            try {
-                                if (type == "vod") resumeRepo.clearVod(mediaId!!) else resumeRepo.clearSeriesResume(seriesId!!, season!!, episodeNum!!)
-                            } catch (_: Throwable) {}
-                        }
+        val listener =
+            object : Player.Listener {
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    android.util.Log.e(
+                        "ExoErr",
+                        "playback_error type=$type code=${error.errorCode} cause=${error.cause?.javaClass?.simpleName}: ${error.message}",
+                    )
+                    try {
+                        Toast.makeText(ctx, "Wiedergabefehler: ${error.errorCodeName}", Toast.LENGTH_LONG).show()
+                    } catch (_: Throwable) {
                     }
-                    // Phase 5: autoplay next for series
-                    if (type == "series" && (seriesId != null && season != null && episodeNum != null) && autoplayNext) {
-                        scope.launch(Dispatchers.IO) {
-                            try {
-                                val box = obxStore.boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
-                                val curSeason = season
-                                val curEp = episodeNum
-                                val q = box.query(
-                                    com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(seriesId.toLong())
-                                ).build()
-                                val list = q.find().sortedWith(compareBy<com.chris.m3usuite.data.obx.ObxEpisode> { it.season }.thenBy { it.episodeNum })
-                                val idx = list.indexOfFirst { it.season == curSeason && it.episodeNum == curEp }
-                                val next = if (idx >= 0 && idx + 1 < list.size) list[idx + 1] else null
-                                if (next != null) {
-                                    val nextUrl = com.chris.m3usuite.data.obx.buildEpisodePlayUrl(
-                                        ctx = ctx,
-                                        seriesStreamId = seriesId,
-                                        season = next.season,
-                                        episodeNum = next.episodeNum,
-                                        episodeExt = next.playExt,
-                                        episodeId = next.episodeId.takeIf { it > 0 }
-                                    )
-                                    if (!nextUrl.isNullOrBlank()) {
-                                        withContext(Dispatchers.Main) {
-                                            exoPlayer.setMediaItem(MediaItem.fromUri(nextUrl))
-                                            exoPlayer.prepare()
-                                            exoPlayer.playWhenReady = true
+                }
+
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_ENDED) {
+                        if ((type == "vod" && mediaId != null) ||
+                            (type == "series" && seriesId != null && season != null && episodeNum != null)
+                        ) {
+                            scope.launch(Dispatchers.IO) {
+                                try {
+                                    if (type ==
+                                        "vod"
+                                    ) {
+                                        resumeRepo.clearVod(mediaId!!)
+                                    } else {
+                                        resumeRepo.clearSeriesResume(seriesId!!, season!!, episodeNum!!)
+                                    }
+                                } catch (_: Throwable) {
+                                }
+                            }
+                        }
+                        // Phase 5: autoplay next for series
+                        if (type == "series" && (seriesId != null && season != null && episodeNum != null) && autoplayNext) {
+                            scope.launch(Dispatchers.IO) {
+                                try {
+                                    val box = obxStore.boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
+                                    val curSeason = season
+                                    val curEp = episodeNum
+                                    val q =
+                                        box
+                                            .query(
+                                                com.chris.m3usuite.data.obx.ObxEpisode_.seriesId
+                                                    .equal(seriesId.toLong()),
+                                            ).build()
+                                    val list =
+                                        q.find().sortedWith(
+                                            compareBy<com.chris.m3usuite.data.obx.ObxEpisode> { it.season }.thenBy { it.episodeNum },
+                                        )
+                                    val idx = list.indexOfFirst { it.season == curSeason && it.episodeNum == curEp }
+                                    val next = if (idx >= 0 && idx + 1 < list.size) list[idx + 1] else null
+                                    if (next != null) {
+                                        val nextUrl =
+                                            com.chris.m3usuite.data.obx.buildEpisodePlayUrl(
+                                                ctx = ctx,
+                                                seriesStreamId = seriesId,
+                                                season = next.season,
+                                                episodeNum = next.episodeNum,
+                                                episodeExt = next.playExt,
+                                                episodeId = next.episodeId.takeIf { it > 0 },
+                                            )
+                                        if (!nextUrl.isNullOrBlank()) {
+                                            withContext(Dispatchers.Main) {
+                                                exoPlayer.setMediaItem(MediaItem.fromUri(nextUrl))
+                                                exoPlayer.prepare()
+                                                exoPlayer.playWhenReady = true
+                                            }
                                         }
                                     }
+                                } catch (_: Throwable) {
                                 }
-                            } catch (_: Throwable) {}
+                            }
                         }
                     }
                 }
             }
-        }
         exoPlayer.addListener(listener)
         onDispose { exoPlayer.removeListener(listener) }
     }
@@ -599,70 +715,126 @@ fun InternalPlayerScreen(
                 when (type) {
                     "live" -> {
                         val id = currentLiveId ?: mediaId ?: return@withContext "Live"
-                        store.boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
-                            .query(com.chris.m3usuite.data.obx.ObxLive_.streamId.equal((id - 1_000_000_000_000L).toInt().toLong()))
-                            .build().findFirst()?.name ?: "Live"
+                        store
+                            .boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
+                            .query(
+                                com.chris.m3usuite.data.obx.ObxLive_.streamId
+                                    .equal((id - 1_000_000_000_000L).toInt().toLong()),
+                            ).build()
+                            .findFirst()
+                            ?.name ?: "Live"
                     }
                     "vod" -> {
                         val id = mediaId ?: return@withContext "Film"
-                        store.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
-                            .query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal((id - 2_000_000_000_000L).toInt().toLong()))
-                            .build().findFirst()?.name ?: "Film"
+                        store
+                            .boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
+                            .query(
+                                com.chris.m3usuite.data.obx.ObxVod_.vodId
+                                    .equal((id - 2_000_000_000_000L).toInt().toLong()),
+                            ).build()
+                            .findFirst()
+                            ?.name ?: "Film"
                     }
                     else -> { // series
                         val epBox = store.boxFor(com.chris.m3usuite.data.obx.ObxEpisode::class.java)
-                        val epi = when {
-                            episodeId != null && episodeId > 0 -> epBox.query(
-                                com.chris.m3usuite.data.obx.ObxEpisode_.episodeId.equal(episodeId.toLong())
-                            ).build().findFirst()
-                            seriesId != null && season != null && episodeNum != null -> epBox.query(
-                                com.chris.m3usuite.data.obx.ObxEpisode_.seriesId.equal(seriesId.toLong())
-                                    .and(com.chris.m3usuite.data.obx.ObxEpisode_.season.equal(season.toLong()))
-                                    .and(com.chris.m3usuite.data.obx.ObxEpisode_.episodeNum.equal(episodeNum.toLong()))
-                            ).build().findFirst()
-                            else -> null
-                        }
+                        val epi =
+                            when {
+                                episodeId != null && episodeId > 0 ->
+                                    epBox
+                                        .query(
+                                            com.chris.m3usuite.data.obx.ObxEpisode_.episodeId
+                                                .equal(episodeId.toLong()),
+                                        ).build()
+                                        .findFirst()
+                                seriesId != null && season != null && episodeNum != null ->
+                                    epBox
+                                        .query(
+                                            com.chris.m3usuite.data.obx.ObxEpisode_.seriesId
+                                                .equal(seriesId.toLong())
+                                                .and(
+                                                    com.chris.m3usuite.data.obx.ObxEpisode_.season
+                                                        .equal(season.toLong()),
+                                                ).and(
+                                                    com.chris.m3usuite.data.obx.ObxEpisode_.episodeNum
+                                                        .equal(episodeNum.toLong()),
+                                                ),
+                                        ).build()
+                                        .findFirst()
+                                else -> null
+                            }
 
                         // Resolve series name either from mediaId or from the episode’s seriesId
-                        val seriesNameFromMediaId = mediaId?.let { mId ->
-                            store.boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
-                                .query(com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal((mId - 3_000_000_000_000L).toInt().toLong()))
-                                .build().findFirst()?.name
-                        }
-                        val seriesName = seriesNameFromMediaId ?: run {
-                            val sid = epi?.seriesId
-                            if (sid != null && sid > 0) store.boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
-                                .query(com.chris.m3usuite.data.obx.ObxSeries_.seriesId.equal(sid.toLong()))
-                                .build().findFirst()?.name else null
-                        }
+                        val seriesNameFromMediaId =
+                            mediaId?.let { mId ->
+                                store
+                                    .boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
+                                    .query(
+                                        com.chris.m3usuite.data.obx.ObxSeries_.seriesId
+                                            .equal((mId - 3_000_000_000_000L).toInt().toLong()),
+                                    ).build()
+                                    .findFirst()
+                                    ?.name
+                            }
+                        val seriesName =
+                            seriesNameFromMediaId ?: run {
+                                val sid = epi?.seriesId
+                                if (sid != null && sid > 0) {
+                                    store
+                                        .boxFor(com.chris.m3usuite.data.obx.ObxSeries::class.java)
+                                        .query(
+                                            com.chris.m3usuite.data.obx.ObxSeries_.seriesId
+                                                .equal(sid.toLong()),
+                                        ).build()
+                                        .findFirst()
+                                        ?.name
+                                } else {
+                                    null
+                                }
+                            }
 
                         if (epi != null) {
                             val s = epi.season
                             val e = epi.episodeNum
                             val epTitle = epi.title?.takeIf { it.isNotBlank() } ?: "Episode $e"
                             val sName = seriesName ?: "Serie"
-                            "$sName – S${s}E${e} $epTitle"
+                            "$sName – S${s}E$e $epTitle"
                         } else {
                             seriesName ?: "Serie"
                         }
                     }
                 }
-            } catch (_: Throwable) { null }
-        } ?: when (type) { "live" -> "Live"; "series" -> "Serie"; else -> "Film" }
+            } catch (_: Throwable) {
+                null
+            }
+        } ?: when (type) {
+            "live" -> "Live"
+            "series" -> "Serie"
+            else -> "Film"
+        }
     }
 
     // Aggressively trim allocator on state changes / pauses (TV v7a low-RAM safety)
     DisposableEffect(exoPlayer) {
-        val listener = object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_IDLE || playbackState == Player.STATE_ENDED || !exoPlayer.playWhenReady) {
-                    try { allocator.trim() } catch (_: Throwable) {}
+        val listener =
+            object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_IDLE || playbackState == Player.STATE_ENDED || !exoPlayer.playWhenReady) {
+                        try {
+                            allocator.trim()
+                        } catch (_: Throwable) {
+                        }
+                    }
+                }
+
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    if (!isPlaying) {
+                        try {
+                            allocator.trim()
+                        } catch (_: Throwable) {
+                        }
+                    }
                 }
             }
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                if (!isPlaying) { try { allocator.trim() } catch (_: Throwable) {} }
-            }
-        }
         exoPlayer.addListener(listener)
         onDispose { exoPlayer.removeListener(listener) }
     }
@@ -677,7 +849,8 @@ fun InternalPlayerScreen(
             epgNow = first?.title.orEmpty()
             epgNext = second?.title.orEmpty()
         } catch (_: Throwable) {
-            epgNow = ""; epgNext = ""
+            epgNow = ""
+            epgNext = ""
         }
     }
 
@@ -687,17 +860,22 @@ fun InternalPlayerScreen(
         category: String?,
         seasonValue: Int?,
         episodeValue: Int?,
-        mime: String?
-    ): String? = when (type) {
-        "live" -> listOfNotNull(
-            provider?.takeIf { it.isNotBlank() },
-            category?.takeIf { it.isNotBlank() }
-        ).joinToString(" • ").takeIf { it.isNotBlank() }
-        "series" -> if (seasonValue != null && seasonValue > 0 && episodeValue != null && episodeValue > 0) {
-            "Staffel $seasonValue Folge $episodeValue"
-        } else null
-        else -> mime?.takeIf { it.isNotBlank() }
-    }
+        mime: String?,
+    ): String? =
+        when (type) {
+            "live" ->
+                listOfNotNull(
+                    provider?.takeIf { it.isNotBlank() },
+                    category?.takeIf { it.isNotBlank() },
+                ).joinToString(" • ").takeIf { it.isNotBlank() }
+            "series" ->
+                if (seasonValue != null && seasonValue > 0 && episodeValue != null && episodeValue > 0) {
+                    "Staffel $seasonValue Folge $episodeValue"
+                } else {
+                    null
+                }
+            else -> mime?.takeIf { it.isNotBlank() }
+        }
 
     LaunchedEffect(
         type,
@@ -711,50 +889,65 @@ fun InternalPlayerScreen(
         mimeType,
         activeLiveCategory,
         activeLiveProvider,
-        originLiveLibrary
+        originLiveLibrary,
     ) {
         val resolvedTitle = computeOverlayTitle()
         val resolvedMediaId = if (type == "live") currentLiveId ?: mediaId else mediaId
-        val descriptor = MiniPlayerDescriptor(
-            type = type,
-            url = url,
-            mediaId = resolvedMediaId,
-            seriesId = seriesId,
-            season = season,
-            episodeNum = episodeNum,
-            episodeId = episodeId,
-            mimeType = mimeType,
-            origin = if (originLiveLibrary) "lib" else null,
-            liveCategory = activeLiveCategory,
-            liveProvider = activeLiveProvider,
-            title = resolvedTitle,
-            subtitle = miniSubtitle(type, activeLiveProvider, activeLiveCategory, season, episodeNum, mimeType)
-        )
+        val descriptor =
+            MiniPlayerDescriptor(
+                type = type,
+                url = url,
+                mediaId = resolvedMediaId,
+                seriesId = seriesId,
+                season = season,
+                episodeNum = episodeNum,
+                episodeId = episodeId,
+                mimeType = mimeType,
+                origin = if (originLiveLibrary) "lib" else null,
+                liveCategory = activeLiveCategory,
+                liveProvider = activeLiveProvider,
+                title = resolvedTitle,
+                subtitle = miniSubtitle(type, activeLiveProvider, activeLiveCategory, season, episodeNum, mimeType),
+            )
         MiniPlayerState.setDescriptor(descriptor)
     }
 
-    fun scheduleAutoHide(overTitleMs: Long = 4000L, epgMs: Long = 3000L) {
-        if (showOverlayTitle) scope.launch { delay(overTitleMs); showOverlayTitle = false }
-        if (showEpgOverlay) scope.launch { delay(epgMs); showEpgOverlay = false }
+    fun scheduleAutoHide(
+        overTitleMs: Long = 4000L,
+        epgMs: Long = 3000L,
+    ) {
+        if (showOverlayTitle) {
+            scope.launch {
+                delay(overTitleMs)
+                showOverlayTitle = false
+            }
+        }
+        if (showEpgOverlay) {
+            scope.launch {
+                delay(epgMs)
+                showEpgOverlay = false
+            }
+        }
     }
 
     // Show overlays on initial READY
     DisposableEffect(exoPlayer, type, mediaId) {
-        val listener = object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) {
-                    scope.launch {
-                        overlayTitle = computeOverlayTitle()
-                        showOverlayTitle = true
-                        if (type == "live") {
-                            refreshEpgOverlayForLive(currentLiveId ?: mediaId)
-                            showEpgOverlay = true
+        val listener =
+            object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_READY) {
+                        scope.launch {
+                            overlayTitle = computeOverlayTitle()
+                            showOverlayTitle = true
+                            if (type == "live") {
+                                refreshEpgOverlayForLive(currentLiveId ?: mediaId)
+                                showEpgOverlay = true
+                            }
+                            scheduleAutoHide()
                         }
-                        scheduleAutoHide()
                     }
                 }
             }
-        }
         exoPlayer.addListener(listener)
         onDispose { exoPlayer.removeListener(listener) }
     }
@@ -774,13 +967,21 @@ fun InternalPlayerScreen(
             var base = allowed
             if (!liveCategoryHint.isNullOrBlank()) {
                 // attach category labels for filter
-                val catMap = withContext(Dispatchers.IO) {
-                    val box = ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxCategory::class.java)
-                    box.query(com.chris.m3usuite.data.obx.ObxCategory_.kind.equal("live")).build().find()
-                        .associate { it.categoryId to it.categoryName }
-                }
-                base = base.map { mi -> mi.copy(categoryName = catMap[mi.categoryId]) }
-                    .filter { it.categoryName == liveCategoryHint }
+                val catMap =
+                    withContext(Dispatchers.IO) {
+                        val box = ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxCategory::class.java)
+                        box
+                            .query(
+                                com.chris.m3usuite.data.obx.ObxCategory_.kind
+                                    .equal("live"),
+                            ).build()
+                            .find()
+                            .associate { it.categoryId to it.categoryName }
+                    }
+                base =
+                    base
+                        .map { mi -> mi.copy(categoryName = catMap[mi.categoryId]) }
+                        .filter { it.categoryName == liveCategoryHint }
             }
             libraryLive = base
         }
@@ -799,9 +1000,10 @@ fun InternalPlayerScreen(
         }
         // Build URL and switch asynchronously (suspend call)
         scope.launch {
-            val nextUrl = mi.url ?: runCatching {
-                PlayUrlHelper.forLive(ctx, store, mi)?.url
-            }.getOrNull()
+            val nextUrl =
+                mi.url ?: runCatching {
+                    PlayUrlHelper.forLive(ctx, store, mi)?.url
+                }.getOrNull()
             if (!nextUrl.isNullOrBlank()) {
                 exoPlayer.setMediaItem(MediaItem.fromUri(nextUrl))
                 exoPlayer.prepare()
@@ -838,7 +1040,8 @@ fun InternalPlayerScreen(
                         if (type == "vod" && mediaId != null) resumeRepo.setVodResume(mediaId, posSecs)
                     }
                 }
-            } catch (_: Throwable) {}
+            } catch (_: Throwable) {
+            }
             withContext(Dispatchers.Main) {
                 val keepForMini = isTv && MiniPlayerState.visible.value
                 if (!keepForMini) {
@@ -857,15 +1060,18 @@ fun InternalPlayerScreen(
     val pipFocusRequester = remember { FocusRequester() }
     val ccFocusRequester = remember { FocusRequester() }
     val resizeFocusRequester = remember { FocusRequester() }
+
     fun requestPictureInPicture() {
         val act = ctx as? Activity ?: return
         if (isTv) {
             MiniPlayerState.show()
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val params = PictureInPictureParams.Builder()
-                    .setAspectRatio(Rational(16, 9))
-                    .build()
+                val params =
+                    PictureInPictureParams
+                        .Builder()
+                        .setAspectRatio(Rational(16, 9))
+                        .build()
                 act.enterPictureInPictureMode(params)
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 @Suppress("DEPRECATION")
@@ -889,19 +1095,30 @@ fun InternalPlayerScreen(
     var localBgOpacity by remember { mutableStateOf<Int?>(null) }
 
     fun effectiveScale(): Float = localScale ?: subScale
+
     fun effectiveFg(): Int = localFg ?: subFg
+
     fun effectiveBg(): Int = localBg ?: subBg
+
     fun effectiveFgOpacity(): Int = localFgOpacity ?: subFgOpacity
+
     fun effectiveBgOpacity(): Int = localBgOpacity ?: subBgOpacity
 
-    data class SubOpt(val label: String, val groupIndex: Int?, val trackIndex: Int?)
+    data class SubOpt(
+        val label: String,
+        val groupIndex: Int?,
+        val trackIndex: Int?,
+    )
     var subOptions by remember { mutableStateOf(listOf<SubOpt>()) }
     var selectedSub by remember { mutableStateOf<SubOpt?>(null) }
-    data class AudioOpt(val label: String, val groupIndex: Int?, val trackIndex: Int?)
+
+    data class AudioOpt(
+        val label: String,
+        val groupIndex: Int?,
+        val trackIndex: Int?,
+    )
     var audioOptions by remember { mutableStateOf(listOf<AudioOpt>()) }
     var selectedAudio by remember { mutableStateOf<AudioOpt?>(null) }
-
-    
 
     fun refreshSubtitleOptions() {
         val tracks: Tracks = exoPlayer.currentTracks
@@ -913,7 +1130,7 @@ fun InternalPlayerScreen(
                 for (ti in 0 until g.length) {
                     val fmt = g.getTrackFormat(ti)
                     val lang = fmt.language?.uppercase() ?: ""
-                    val base = fmt.label ?: (if (lang.isNotBlank()) "Untertitel $lang" else "Untertitel ${gi}-${ti}")
+                    val base = fmt.label ?: (if (lang.isNotBlank()) "Untertitel $lang" else "Untertitel $gi-$ti")
                     val label = if (lang.isNotBlank() && !base.contains("[$lang]")) "$base [$lang]" else base
                     val opt = SubOpt(label, gi, ti)
                     opts += opt
@@ -936,8 +1153,8 @@ fun InternalPlayerScreen(
                     val fmt = g.getTrackFormat(ti)
                     val lang = fmt.language?.uppercase() ?: ""
                     val ch = if (fmt.channelCount != androidx.media3.common.Format.NO_VALUE) "${fmt.channelCount}ch" else ""
-                    val br = if (fmt.averageBitrate != androidx.media3.common.Format.NO_VALUE) "${fmt.averageBitrate/1000}kbps" else ""
-                    val base0 = fmt.label ?: (if (lang.isNotBlank()) "Audio $lang" else "Audio ${gi}-${ti}")
+                    val br = if (fmt.averageBitrate != androidx.media3.common.Format.NO_VALUE) "${fmt.averageBitrate / 1000}kbps" else ""
+                    val base0 = fmt.label ?: (if (lang.isNotBlank()) "Audio $lang" else "Audio $gi-$ti")
                     val base = if (lang.isNotBlank() && !base0.contains("[$lang]")) "$base0 [$lang]" else base0
                     val meta = listOf(ch, br).filter { it.isNotBlank() }.joinToString(" · ")
                     val label = if (meta.isNotBlank()) "$base ($meta)" else base
@@ -952,12 +1169,13 @@ fun InternalPlayerScreen(
     }
 
     DisposableEffect(exoPlayer) {
-        val listener = object : Player.Listener {
-            override fun onTracksChanged(tracks: Tracks) {
-                refreshSubtitleOptions()
-                refreshAudioOptions()
+        val listener =
+            object : Player.Listener {
+                override fun onTracksChanged(tracks: Tracks) {
+                    refreshSubtitleOptions()
+                    refreshAudioOptions()
+                }
             }
-        }
         exoPlayer.addListener(listener)
         refreshSubtitleOptions()
         refreshAudioOptions()
@@ -992,11 +1210,12 @@ fun InternalPlayerScreen(
 
     fun cycleResize() {
         customScaleEnabled = false
-        resizeMode = when (resizeMode) {
-            AspectRatioFrameLayout.RESIZE_MODE_FIT -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-            AspectRatioFrameLayout.RESIZE_MODE_ZOOM -> AspectRatioFrameLayout.RESIZE_MODE_FILL
-            else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
-        }
+        resizeMode =
+            when (resizeMode) {
+                AspectRatioFrameLayout.RESIZE_MODE_FIT -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                AspectRatioFrameLayout.RESIZE_MODE_ZOOM -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+                else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+            }
     }
 
     fun togglePlayPause() {
@@ -1014,9 +1233,16 @@ fun InternalPlayerScreen(
                 localBgOpacity?.let { scope.launch { store.setSubtitleBgOpacityPct(it) } }
                 showCcMenu = false
             }
-            showAspectMenu -> { showAspectMenu = false }
-            quickActionsVisible -> { quickActionsVisible = false; quickActionsFocusActive = false }
-            controlsVisible -> { controlsVisible = false }
+            showAspectMenu -> {
+                showAspectMenu = false
+            }
+            quickActionsVisible -> {
+                quickActionsVisible = false
+                quickActionsFocusActive = false
+            }
+            controlsVisible -> {
+                controlsVisible = false
+            }
             else -> finishAndRelease()
         }
     }
@@ -1024,17 +1250,26 @@ fun InternalPlayerScreen(
     // Update seekability from player (handles live/dynamic cases correctly)
     DisposableEffect(exoPlayer) {
         canSeek = exoPlayer.isCurrentMediaItemSeekable
-        val listener = object : Player.Listener {
-            override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
-                canSeek = exoPlayer.isCurrentMediaItemSeekable
+        val listener =
+            object : Player.Listener {
+                override fun onTimelineChanged(
+                    timeline: androidx.media3.common.Timeline,
+                    reason: Int,
+                ) {
+                    canSeek = exoPlayer.isCurrentMediaItemSeekable
+                }
+
+                override fun onMediaItemTransition(
+                    mediaItem: MediaItem?,
+                    reason: Int,
+                ) {
+                    canSeek = exoPlayer.isCurrentMediaItemSeekable
+                }
+
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    canSeek = exoPlayer.isCurrentMediaItemSeekable
+                }
             }
-            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                canSeek = exoPlayer.isCurrentMediaItemSeekable
-            }
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                canSeek = exoPlayer.isCurrentMediaItemSeekable
-            }
-        }
         exoPlayer.addListener(listener)
         onDispose { exoPlayer.removeListener(listener) }
     }
@@ -1053,7 +1288,6 @@ fun InternalPlayerScreen(
             controlsVisible = false
         }
     }
-    
 
     Box(Modifier.fillMaxSize()) {
         // Live list sheet state must be declared before key handlers
@@ -1064,8 +1298,10 @@ fun InternalPlayerScreen(
         var seekPreviewBaseMs by remember { mutableStateOf(0L) }
         val seekPreviewAlpha by androidx.compose.animation.core.animateFloatAsState(
             targetValue = if (seekPreviewVisible) 1f else 0f,
-            animationSpec = androidx.compose.animation.core.tween(180),
-            label = "seekPreviewAlpha"
+            animationSpec =
+                androidx.compose.animation.core
+                    .tween(180),
+            label = "seekPreviewAlpha",
         )
         val trickplaySpeeds = remember { floatArrayOf(2f, 3f, 5f) }
         var ffStage by remember { mutableStateOf(0) }
@@ -1076,8 +1312,10 @@ fun InternalPlayerScreen(
         fun stopTrickplay(resume: Boolean) {
             ffStage = 0
             rwStage = 0
-            rwJob?.cancel(); rwJob = null
-            seekPreviewHideJob?.cancel(); seekPreviewHideJob = null
+            rwJob?.cancel()
+            rwJob = null
+            seekPreviewHideJob?.cancel()
+            seekPreviewHideJob = null
             seekPreviewVisible = false
             seekPreviewTargetMs = null
             exoPlayer.playbackParameters = PlaybackParameters(1f)
@@ -1087,17 +1325,22 @@ fun InternalPlayerScreen(
             }
         }
 
-        fun showSeekPreview(base: Long, target: Long, autoHide: Boolean = true) {
+        fun showSeekPreview(
+            base: Long,
+            target: Long,
+            autoHide: Boolean = true,
+        ) {
             seekPreviewBaseMs = base
             seekPreviewTargetMs = target
             seekPreviewVisible = true
             seekPreviewHideJob?.cancel()
             if (autoHide) {
-                seekPreviewHideJob = scope.launch {
-                    delay(900)
-                    seekPreviewVisible = false
-                    seekPreviewTargetMs = null
-                }
+                seekPreviewHideJob =
+                    scope.launch {
+                        delay(900)
+                        seekPreviewVisible = false
+                        seekPreviewTargetMs = null
+                    }
             } else {
                 seekPreviewHideJob = null
             }
@@ -1115,15 +1358,15 @@ fun InternalPlayerScreen(
 
         val playerModifier = Modifier.fillMaxSize()
 
-
         AndroidView(
-            modifier = playerModifier
-                .graphicsLayer {
-                    if (customScaleEnabled) {
-                        scaleX = customScaleX.coerceIn(0.5f, 2.0f)
-                        scaleY = customScaleY.coerceIn(0.5f, 2.0f)
-                    }
-                },
+            modifier =
+                playerModifier
+                    .graphicsLayer {
+                        if (customScaleEnabled) {
+                            scaleX = customScaleX.coerceIn(0.5f, 2.0f)
+                            scaleY = customScaleY.coerceIn(0.5f, 2.0f)
+                        }
+                    },
             factory = { LayoutInflater.from(ctx).inflate(R.layout.compose_player_view, null, false) as PlayerView },
             update = { view ->
                 view.player = exoPlayer
@@ -1144,25 +1387,38 @@ fun InternalPlayerScreen(
                             android.view.KeyEvent.KEYCODE_DPAD_CENTER,
                             android.view.KeyEvent.KEYCODE_MEDIA_PLAY,
                             android.view.KeyEvent.KEYCODE_MEDIA_PAUSE,
-                            android.view.KeyEvent.KEYCODE_ENTER -> {
+                            android.view.KeyEvent.KEYCODE_ENTER,
+                            -> {
                                 if (isDown) {
-                                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("CENTER/PLAY_PAUSE", mapOf("screen" to "player", "type" to type))
-                                    val trickplayActive = ffStage > 0 || rwStage > 0 || rwJob != null || exoPlayer.playbackParameters.speed != 1f
+                                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad(
+                                        "CENTER/PLAY_PAUSE",
+                                        mapOf(
+                                            "screen" to "player",
+                                            "type" to type,
+                                        ),
+                                    )
+                                    val trickplayActive =
+                                        ffStage > 0 || rwStage > 0 || rwJob != null || exoPlayer.playbackParameters.speed != 1f
                                     if (type == "live") {
                                         stopTrickplay(resume = true)
                                         return@setOnKeyListener if (!quickActionsVisible) {
-                                            quickActionsVisible = true; quickActionsFocusActive = false; true
+                                            quickActionsVisible = true
+                                            quickActionsFocusActive = false
+                                            true
                                         } else if (quickActionsFocusActive) {
                                             false
                                         } else {
-                                            quickActionsVisible = false; true
+                                            quickActionsVisible = false
+                                            true
                                         }
                                     } else {
                                         if (trickplayActive) {
                                             stopTrickplay(resume = true)
-                                            controlsVisible = true; controlsTick++
+                                            controlsVisible = true
+                                            controlsTick++
                                         } else {
-                                            controlsVisible = true; controlsTick++
+                                            controlsVisible = true
+                                            controlsTick++
                                             togglePlayPause()
                                         }
                                     }
@@ -1170,12 +1426,15 @@ fun InternalPlayerScreen(
                                 true
                             }
                             android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
-                            android.view.KeyEvent.KEYCODE_BUTTON_R1 -> {
+                            android.view.KeyEvent.KEYCODE_BUTTON_R1,
+                            -> {
                                 if (!isDown) return@setOnKeyListener true
-                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("FFWD", mapOf("screen" to "player", "type" to type))
+                                com.chris.m3usuite.core.debug.GlobalDebug
+                                    .logDpad("FFWD", mapOf("screen" to "player", "type" to type))
                                 if (!canSeek || type == "live") return@setOnKeyListener false
                                 rwStage = 0
-                                rwJob?.cancel(); rwJob = null
+                                rwJob?.cancel()
+                                rwJob = null
                                 seekPreviewHideJob?.cancel()
                                 seekPreviewVisible = false
                                 seekPreviewTargetMs = null
@@ -1185,23 +1444,27 @@ fun InternalPlayerScreen(
                                     exoPlayer.playbackParameters = PlaybackParameters(speed)
                                     exoPlayer.playWhenReady = true
                                     runCatching { exoPlayer.play() }
-                                    controlsVisible = true; controlsTick++
+                                    controlsVisible = true
+                                    controlsTick++
                                 } else {
                                     stopTrickplay(resume = false)
                                 }
                                 true
                             }
                             android.view.KeyEvent.KEYCODE_MEDIA_REWIND,
-                            android.view.KeyEvent.KEYCODE_BUTTON_L1 -> {
+                            android.view.KeyEvent.KEYCODE_BUTTON_L1,
+                            -> {
                                 if (!isDown) return@setOnKeyListener true
-                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("REW", mapOf("screen" to "player", "type" to type))
+                                com.chris.m3usuite.core.debug.GlobalDebug
+                                    .logDpad("REW", mapOf("screen" to "player", "type" to type))
                                 if (!canSeek || type == "live") return@setOnKeyListener false
                                 ffStage = 0
                                 exoPlayer.playbackParameters = PlaybackParameters(1f)
                                 exoPlayer.playWhenReady = false
                                 val nextStage = (rwStage + 1) % (trickplaySpeeds.size + 1)
                                 rwStage = nextStage
-                                rwJob?.cancel(); rwJob = null
+                                rwJob?.cancel()
+                                rwJob = null
                                 if (nextStage in trickplaySpeeds.indices) {
                                     val speed = trickplaySpeeds[nextStage]
                                     val stepMs = 2_000L
@@ -1211,16 +1474,18 @@ fun InternalPlayerScreen(
                                     seekPreviewTargetMs = base
                                     seekPreviewVisible = true
                                     seekPreviewHideJob?.cancel()
-                                    rwJob = scope.launch {
-                                        while (isActive) {
-                                            val cur = exoPlayer.currentPosition
-                                            val target = (cur - stepMs).coerceAtLeast(0L)
-                                            exoPlayer.seekTo(target)
-                                            seekPreviewTargetMs = target
-                                            controlsVisible = true; controlsTick++
-                                            delay(interval)
+                                    rwJob =
+                                        scope.launch {
+                                            while (isActive) {
+                                                val cur = exoPlayer.currentPosition
+                                                val target = (cur - stepMs).coerceAtLeast(0L)
+                                                exoPlayer.seekTo(target)
+                                                seekPreviewTargetMs = target
+                                                controlsVisible = true
+                                                controlsTick++
+                                                delay(interval)
+                                            }
                                         }
-                                    }
                                 } else {
                                     stopTrickplay(resume = false)
                                 }
@@ -1230,7 +1495,8 @@ fun InternalPlayerScreen(
                                 if (type != "live" && !canSeek) return@setOnKeyListener false
                                 // Use debouncer to prevent endless scrubbing on Fire TV
                                 keyDebouncer.handleKeyEventRateLimited(keyCode, event) { _, _ ->
-                                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("LEFT", mapOf("screen" to "player", "type" to type))
+                                    com.chris.m3usuite.core.debug.GlobalDebug
+                                        .logDpad("LEFT", mapOf("screen" to "player", "type" to type))
                                     stopTrickplay(resume = false)
                                     if (type == "live") {
                                         jumpLive(-1)
@@ -1239,7 +1505,8 @@ fun InternalPlayerScreen(
                                         val target = (current - 10_000L).coerceAtLeast(0L)
                                         exoPlayer.seekTo(target)
                                         showSeekPreview(current, target)
-                                        controlsVisible = true; controlsTick++
+                                        controlsVisible = true
+                                        controlsTick++
                                         DiagnosticsLogger.Media3.logSeekOperation("internal_player", current, target)
                                     }
                                     true
@@ -1249,7 +1516,8 @@ fun InternalPlayerScreen(
                                 if (type != "live" && !canSeek) return@setOnKeyListener false
                                 // Use debouncer to prevent endless scrubbing on Fire TV
                                 keyDebouncer.handleKeyEventRateLimited(keyCode, event) { _, _ ->
-                                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("RIGHT", mapOf("screen" to "player", "type" to type))
+                                    com.chris.m3usuite.core.debug.GlobalDebug
+                                        .logDpad("RIGHT", mapOf("screen" to "player", "type" to type))
                                     stopTrickplay(resume = false)
                                     if (type == "live") {
                                         jumpLive(+1)
@@ -1259,7 +1527,8 @@ fun InternalPlayerScreen(
                                         val target = (current + 10_000L).coerceAtMost(max)
                                         exoPlayer.seekTo(target)
                                         showSeekPreview(current, target)
-                                        controlsVisible = true; controlsTick++
+                                        controlsVisible = true
+                                        controlsTick++
                                         DiagnosticsLogger.Media3.logSeekOperation("internal_player", current, target)
                                     }
                                     true
@@ -1267,12 +1536,14 @@ fun InternalPlayerScreen(
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_UP -> {
                                 if (isDown) {
-                                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("UP", mapOf("screen" to "player", "type" to type))
+                                    com.chris.m3usuite.core.debug.GlobalDebug
+                                        .logDpad("UP", mapOf("screen" to "player", "type" to type))
                                     stopTrickplay(resume = false)
                                     if (type == "live") {
                                         showLiveListSheet = true
                                     } else {
-                                        controlsVisible = true; controlsTick++
+                                        controlsVisible = true
+                                        controlsTick++
                                         sliderFocus.requestFocus()
                                     }
                                 }
@@ -1280,11 +1551,15 @@ fun InternalPlayerScreen(
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
                                 if (!isDown) return@setOnKeyListener (type == "live")
-                                com.chris.m3usuite.core.debug.GlobalDebug.logDpad("DOWN", mapOf("screen" to "player", "type" to type))
+                                com.chris.m3usuite.core.debug.GlobalDebug
+                                    .logDpad("DOWN", mapOf("screen" to "player", "type" to type))
                                 stopTrickplay(resume = false)
                                 if (type == "live") {
                                     if (quickActionsVisible) {
-                                        try { quickPipFocus.requestFocus() } catch (_: Throwable) {}
+                                        try {
+                                            quickPipFocus.requestFocus()
+                                        } catch (_: Throwable) {
+                                        }
                                         quickActionsFocusActive = true
                                     } else {
                                         scope.launch { refreshEpgOverlayForLive(currentLiveId ?: mediaId) }
@@ -1292,11 +1567,14 @@ fun InternalPlayerScreen(
                                         scheduleAutoHide(overTitleMs = 0L, epgMs = 3000L)
                                     }
                                     true
-                                } else false
+                                } else {
+                                    false
+                                }
                             }
                             android.view.KeyEvent.KEYCODE_BACK -> {
                                 if (isDown) {
-                                    com.chris.m3usuite.core.debug.GlobalDebug.logDpad("BACK", mapOf("screen" to "player"))
+                                    com.chris.m3usuite.core.debug.GlobalDebug
+                                        .logDpad("BACK", mapOf("screen" to "player"))
                                     stopTrickplay(resume = false)
                                 }
                                 true
@@ -1304,7 +1582,8 @@ fun InternalPlayerScreen(
                             else -> false
                         }
                     }
-                } catch (_: Throwable) {}
+                } catch (_: Throwable) {
+                }
                 view.subtitleView?.apply {
                     setApplyEmbeddedStyles(true)
                     setApplyEmbeddedFontSizes(true)
@@ -1312,17 +1591,19 @@ fun InternalPlayerScreen(
 
                     val fg = withOpacity(effectiveFg(), effectiveFgOpacity())
                     val bg = withOpacity(effectiveBg(), effectiveBgOpacity())
-                    val style = CaptionStyleCompat(
-                        fg,
-                        bg,
-                        0x00000000, // windowColor transparent
-                        CaptionStyleCompat.EDGE_TYPE_NONE,
-                        0x00000000,
-                        /* typeface = */ null
-                    )
+                    val style =
+                        CaptionStyleCompat(
+                            fg,
+                            bg,
+                            0x00000000, // windowColor transparent
+                            CaptionStyleCompat.EDGE_TYPE_NONE,
+                            0x00000000,
+                            // typeface =
+                            null,
+                        )
                     setStyle(style)
                 }
-            }
+            },
         )
 
         // Seek preview overlay (shows absolute position and delta while seeking)
@@ -1330,6 +1611,7 @@ fun InternalPlayerScreen(
             val tgt = seekPreviewTargetMs ?: 0L
             val base = seekPreviewBaseMs
             val delta = tgt - base
+
             fun fmt(ms: Long): String {
                 val total = (ms / 1000).toInt()
                 val h = total / 3600
@@ -1337,33 +1619,44 @@ fun InternalPlayerScreen(
                 val s = total % 60
                 return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%02d:%02d".format(m, s)
             }
-            val deltaStr = when {
-                delta > 0 -> "+${delta / 1000}s"
-                delta < 0 -> "-${(-delta) / 1000}s"
-                else -> "0s"
-            }
+            val deltaStr =
+                when {
+                    delta > 0 -> "+${delta / 1000}s"
+                    delta < 0 -> "-${(-delta) / 1000}s"
+                    else -> "0s"
+                }
             androidx.compose.material3.Surface(
                 color = Color.Black.copy(alpha = 0.65f),
                 contentColor = Color.White,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .graphicsLayer { alpha = seekPreviewAlpha }
+                shape =
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(50),
+                modifier =
+                    Modifier
+                        .align(Alignment.Center)
+                        .graphicsLayer { alpha = seekPreviewAlpha },
             ) {
-                Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
                     // Tiny progress arc
-                    val prog = run {
-                        val dur = exoPlayer.duration.takeIf { it > 0 } ?: 0L
-                        if (dur > 0) (tgt.toFloat() / dur.toFloat()).coerceIn(0f, 1f) else 0f
-                    }
+                    val prog =
+                        run {
+                            val dur = exoPlayer.duration.takeIf { it > 0 } ?: 0L
+                            if (dur > 0) (tgt.toFloat() / dur.toFloat()).coerceIn(0f, 1f) else 0f
+                        }
                     androidx.compose.foundation.Canvas(Modifier.size(18.dp)) {
-                        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f)
+                        val stroke =
+                            androidx.compose.ui.graphics.drawscope
+                                .Stroke(width = 3f)
                         drawArc(
                             color = Color.White.copy(alpha = 0.8f),
                             startAngle = -90f,
                             sweepAngle = 360f * prog,
                             useCenter = false,
-                            style = stroke
+                            style = stroke,
                         )
                     }
                     Text(text = fmt(tgt), style = MaterialTheme.typography.titleMedium)
@@ -1374,41 +1667,56 @@ fun InternalPlayerScreen(
 
         // Touch: tap toggles controls; swipe left/right switches live channel; swipe up/down opens list/EPG
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = { controlsVisible = !controlsVisible; if (controlsVisible) controlsTick++ })
-                }
-                .pointerInput(type, originLiveLibrary) {
-                    if (type != "live") return@pointerInput
-                    val threshold = 60f
-                    var dx = 0f
-                    var dy = 0f
-                    detectDragGestures(
-                        onDrag = { _, dragAmount ->
-                            dx += dragAmount.x; dy += dragAmount.y
-                        },
-                        onDragEnd = {
-                            if (kotlin.math.abs(dx) > kotlin.math.abs(dy) && kotlin.math.abs(dx) > threshold) {
-                                if (dx < 0) jumpLive(+1) else jumpLive(-1)
-                            } else if (kotlin.math.abs(dy) > threshold) {
-                                if (dy < 0) { showLiveListSheet = true } else { scope.launch { refreshEpgOverlayForLive(currentLiveId ?: mediaId) }; showEpgOverlay = true; scheduleAutoHide(overTitleMs = 0L, epgMs = 3000L) }
-                            }
-                            dx = 0f; dy = 0f
-                        }
-                    )
-                }
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = {
+                            controlsVisible = !controlsVisible
+                            if (controlsVisible) controlsTick++
+                        })
+                    }.pointerInput(type, originLiveLibrary) {
+                        if (type != "live") return@pointerInput
+                        val threshold = 60f
+                        var dx = 0f
+                        var dy = 0f
+                        detectDragGestures(
+                            onDrag = { _, dragAmount ->
+                                dx += dragAmount.x
+                                dy += dragAmount.y
+                            },
+                            onDragEnd = {
+                                if (kotlin.math.abs(dx) > kotlin.math.abs(dy) && kotlin.math.abs(dx) > threshold) {
+                                    if (dx < 0) jumpLive(+1) else jumpLive(-1)
+                                } else if (kotlin.math.abs(dy) > threshold) {
+                                    if (dy <
+                                        0
+                                    ) {
+                                        showLiveListSheet = true
+                                    } else {
+                                        scope.launch { refreshEpgOverlayForLive(currentLiveId ?: mediaId) }
+                                        showEpgOverlay =
+                                            true
+                                        scheduleAutoHide(overTitleMs = 0L, epgMs = 3000L)
+                                    }
+                                }
+                                dx = 0f
+                                dy = 0f
+                            },
+                        )
+                    },
         )
 
         // Title/Episode/Channel overlay (top-left)
         if (showOverlayTitle && overlayTitle.isNotBlank()) {
             Box(Modifier.fillMaxSize()) {
                 Row(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .statusBarsPadding()
-                        .padding(start = 12.dp, top = 8.dp)
-                        .graphicsLayer { }
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .statusBarsPadding()
+                            .padding(start = 12.dp, top = 8.dp)
+                            .graphicsLayer { },
                 ) {
                     Text(text = overlayTitle, color = Color.White, style = MaterialTheme.typography.titleSmall)
                 }
@@ -1419,17 +1727,30 @@ fun InternalPlayerScreen(
         if (type == "live" && showEpgOverlay && (epgNow.isNotBlank() || epgNext.isNotBlank())) {
             Box(Modifier.fillMaxSize()) {
                 Column(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .statusBarsPadding()
-                        .padding(start = 12.dp, top = if (showOverlayTitle) 30.dp else 8.dp)
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .statusBarsPadding()
+                            .padding(start = 12.dp, top = if (showOverlayTitle) 30.dp else 8.dp),
                 ) {
-                    if (epgNow.isNotBlank()) Text(text = epgNow, color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.labelLarge)
-                    if (epgNext.isNotBlank()) Text(text = epgNext, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
+                    if (epgNow.isNotBlank()) {
+                        Text(
+                            text = epgNow,
+                            color = Color.White.copy(alpha = 0.9f),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
+                    if (epgNext.isNotBlank()) {
+                        Text(
+                            text = epgNext,
+                            color = Color.White.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
                 }
             }
         }
-        
+
         // Live list sheets (favorites/global) inside player Box
         if (type == "live" && showLiveListSheet) {
             ModalBottomSheet(onDismissRequest = { showLiveListSheet = false }) {
@@ -1437,14 +1758,21 @@ fun InternalPlayerScreen(
                     Text(if (originLiveLibrary) "Senderliste" else "Favoriten", style = MaterialTheme.typography.titleMedium)
                     if (originLiveLibrary) {
                         // Nur Kategorien (keine Provider-Chips)
-                        val itemsWithCats = remember(libraryLive) {
-                            val catMap = runCatching {
-                                val box = ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxCategory::class.java)
-                                box.query(com.chris.m3usuite.data.obx.ObxCategory_.kind.equal("live")).build().find()
-                                    .associate { it.categoryId to it.categoryName }
-                            }.getOrNull() ?: emptyMap()
-                            libraryLive.map { it.copy(categoryName = catMap[it.categoryId]) }
-                        }
+                        val itemsWithCats =
+                            remember(libraryLive) {
+                                val catMap =
+                                    runCatching {
+                                        val box = ObxStore.get(ctx).boxFor(com.chris.m3usuite.data.obx.ObxCategory::class.java)
+                                        box
+                                            .query(
+                                                com.chris.m3usuite.data.obx.ObxCategory_.kind
+                                                    .equal("live"),
+                                            ).build()
+                                            .find()
+                                            .associate { it.categoryId to it.categoryName }
+                                    }.getOrNull() ?: emptyMap()
+                                libraryLive.map { it.copy(categoryName = catMap[it.categoryId]) }
+                            }
                         var selCat by remember { mutableStateOf(liveCategoryHint) }
                         val cats = remember(itemsWithCats) { itemsWithCats.mapNotNull { it.categoryName }.distinct().sorted() }
                         // Category chips (TV-friendly focus/scroll)
@@ -1453,42 +1781,51 @@ fun InternalPlayerScreen(
                                 stateKey = "live_list_chip_row",
                                 itemSpacing = 8.dp,
                                 itemCount = cats.size + 1,
-                                itemKey = { idx -> if (idx == 0) "__all__" else cats[idx - 1] }
+                                itemKey = { idx -> if (idx == 0) "__all__" else cats[idx - 1] },
                             ) { idx ->
                                 if (idx == 0) {
                                     androidx.compose.material3.FilterChip(
-                                        modifier = FocusKit.run {
-                                            Modifier.tvClickable { selCat = null }
-                                        },
+                                        modifier =
+                                            FocusKit.run {
+                                                Modifier.tvClickable { selCat = null }
+                                            },
                                         selected = selCat == null,
                                         onClick = { selCat = null },
-                                        label = { Text("Alle Kategorien") }
+                                        label = { Text("Alle Kategorien") },
                                     )
                                 } else {
                                     val c = cats[idx - 1]
                                     androidx.compose.material3.FilterChip(
-                                        modifier = FocusKit.run {
-                                            Modifier.tvClickable { selCat = c }
-                                        },
+                                        modifier =
+                                            FocusKit.run {
+                                                Modifier.tvClickable { selCat = c }
+                                            },
                                         selected = selCat == c,
                                         onClick = { selCat = c },
-                                        label = { Text(c) }
+                                        label = { Text(c) },
                                     )
                                 }
                             }
                         }
-                        val list = remember(itemsWithCats, selCat) {
-                            itemsWithCats.filter { selCat == null || it.categoryName == selCat }
-                        }
+                        val list =
+                            remember(itemsWithCats, selCat) {
+                                itemsWithCats.filter { selCat == null || it.categoryName == selCat }
+                            }
                         androidx.compose.foundation.lazy.LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             items(list.size, key = { idx -> list[idx].id }) { idx ->
                                 val mi = list[idx]
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
-                                        .then(FocusKit.run { Modifier.tvClickable(onClick = { showLiveListSheet = false; switchToLive(mi) }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) })
-                                        .padding(horizontal = 8.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .then(
+                                            FocusKit.run {
+                                                Modifier.tvClickable(onClick = {
+                                                    showLiveListSheet = false
+                                                    switchToLive(mi)
+                                                }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false)
+                                            },
+                                        ).padding(horizontal = 8.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(text = mi.name, color = Color.White, style = MaterialTheme.typography.bodyLarge)
                                 }
@@ -1502,9 +1839,15 @@ fun InternalPlayerScreen(
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
-                                        .then(FocusKit.run { Modifier.tvClickable(onClick = { showLiveListSheet = false; switchToLive(mi) }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false) })
-                                        .padding(horizontal = 8.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .then(
+                                            FocusKit.run {
+                                                Modifier.tvClickable(onClick = {
+                                                    showLiveListSheet = false
+                                                    switchToLive(mi)
+                                                }, scaleFocused = 1f, scalePressed = 1f, brightenContent = false)
+                                            },
+                                        ).padding(horizontal = 8.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(text = mi.name, color = Color.White, style = MaterialTheme.typography.bodyLarge)
                                 }
@@ -1519,173 +1862,229 @@ fun InternalPlayerScreen(
         }
 
         // Controls overlay (focusable on TV)
-        if (controlsVisible) Popup(
-            alignment = Alignment.Center,
-            properties = PopupProperties(focusable = true, dismissOnBackPress = false, usePlatformDefaultWidth = false)
-        ) {
-            Box(Modifier
-                .fillMaxSize()
-                .then(FocusKit.run { Modifier.focusGroup() })
-                // Any key activity within the overlay resets the auto-hide timer
-                .onPreviewKeyEvent {
-                    controlsTick++
-                    false
-                }
+        if (controlsVisible) {
+            Popup(
+                alignment = Alignment.Center,
+                properties = PopupProperties(focusable = true, dismissOnBackPress = false, usePlatformDefaultWidth = false),
             ) {
-                // When controls open, request focus to center control (TV)
-                LaunchedEffect(Unit) { centerFocus.requestFocus() }
-                // Top seekbar + close (80% opacity)
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .then(FocusKit.run { Modifier.focusGroup() })
+                        // Any key activity within the overlay resets the auto-hide timer
+                        .onPreviewKeyEvent {
+                            controlsTick++
+                            false
+                        },
                 ) {
-                    FocusKit.TvIconButton(onClick = { controlsTick++; finishAndRelease() }) {
-                        Icon(
-                            painter = painterResource(android.R.drawable.ic_menu_close_clear_cancel),
-                            contentDescription = "Schließen",
-                            tint = Color.White.copy(alpha = 0.8f)
-                        )
-                    }
-                    if (canSeek) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            LaunchedEffect(Unit) {
-                                while (true) {
-                                    durationMs = exoPlayer.duration.coerceAtLeast(0)
-                                    positionMs = exoPlayer.currentPosition.coerceAtLeast(0)
-                                    if (!isSeeking && durationMs > 0) sliderValue = (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
-                                    delay(250)
-                                }
-                            }
-                            androidx.compose.material3.Slider(
-                                value = sliderValue,
-                                onValueChange = { isSeeking = true; sliderValue = it; controlsTick++ },
-                                onValueChangeFinished = {
-                                    val target = (sliderValue * durationMs).toLong().coerceIn(0L, durationMs)
-                                    exoPlayer.seekTo(target)
-                                    isSeeking = false
-                                    controlsTick++
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(sliderFocus)
+                    // When controls open, request focus to center control (TV)
+                    LaunchedEffect(Unit) { centerFocus.requestFocus() }
+                    // Top seekbar + close (80% opacity)
+                    Row(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .fillMaxWidth()
+                                .statusBarsPadding()
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FocusKit.TvIconButton(onClick = {
+                            controlsTick++
+                            finishAndRelease()
+                        }) {
+                            Icon(
+                                painter = painterResource(android.R.drawable.ic_menu_close_clear_cancel),
+                                contentDescription = "Schließen",
+                                tint = Color.White.copy(alpha = 0.8f),
                             )
-                            // Elapsed and remaining time (VOD/Series only)
-                            if (type != "live") {
-                                val elapsedText = formatTime(positionMs)
-                                val remainMs = (durationMs - positionMs).coerceAtLeast(0L)
-                                val remainingText = "-" + formatTime(remainMs)
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 2.dp, start = 4.dp, end = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(elapsedText, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.90f))
-                                    Text(remainingText, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.90f))
+                        }
+                        if (canSeek) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                LaunchedEffect(Unit) {
+                                    while (true) {
+                                        durationMs = exoPlayer.duration.coerceAtLeast(0)
+                                        positionMs = exoPlayer.currentPosition.coerceAtLeast(0)
+                                        if (!isSeeking &&
+                                            durationMs > 0
+                                        ) {
+                                            sliderValue = (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                                        }
+                                        delay(250)
+                                    }
+                                }
+                                androidx.compose.material3.Slider(
+                                    value = sliderValue,
+                                    onValueChange = {
+                                        isSeeking = true
+                                        sliderValue = it
+                                        controlsTick++
+                                    },
+                                    onValueChangeFinished = {
+                                        val target = (sliderValue * durationMs).toLong().coerceIn(0L, durationMs)
+                                        exoPlayer.seekTo(target)
+                                        isSeeking = false
+                                        controlsTick++
+                                    },
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .focusRequester(sliderFocus),
+                                )
+                                // Elapsed and remaining time (VOD/Series only)
+                                if (type != "live") {
+                                    val elapsedText = formatTime(positionMs)
+                                    val remainMs = (durationMs - positionMs).coerceAtLeast(0L)
+                                    val remainingText = "-" + formatTime(remainMs)
+                                    Row(
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 2.dp, start = 4.dp, end = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            elapsedText,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color.White.copy(alpha = 0.90f),
+                                        )
+                                        Text(
+                                            remainingText,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color.White.copy(alpha = 0.90f),
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                // Center controls (transparent container)
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FocusKit.TvIconButton(modifier = Modifier.focusRequester(centerFocus), onClick = {
-                        controlsTick++
-                        val pos = exoPlayer.currentPosition
-                        exoPlayer.seekTo((pos - 10_000L).coerceAtLeast(0L))
-                    }) { Icon(painter = painterResource(android.R.drawable.ic_media_rew), contentDescription = "-10s", tint = Color.White.copy(alpha = 0.8f)) }
-                    FocusKit.TvIconButton(onClick = { controlsTick++; val playing = exoPlayer.playWhenReady && exoPlayer.isPlaying; exoPlayer.playWhenReady = !playing }) {
-                        val icon = if (exoPlayer.playWhenReady && exoPlayer.isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
-                        Icon(painter = painterResource(icon), contentDescription = "Play/Pause", tint = Color.White.copy(alpha = 0.8f))
+                    // Center controls (transparent container)
+                    Row(
+                        modifier =
+                            Modifier
+                                .align(Alignment.Center)
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(18.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        FocusKit.TvIconButton(modifier = Modifier.focusRequester(centerFocus), onClick = {
+                            controlsTick++
+                            val pos = exoPlayer.currentPosition
+                            exoPlayer.seekTo((pos - 10_000L).coerceAtLeast(0L))
+                        }) {
+                            Icon(
+                                painter = painterResource(android.R.drawable.ic_media_rew),
+                                contentDescription = "-10s",
+                                tint = Color.White.copy(alpha = 0.8f),
+                            )
+                        }
+                        FocusKit.TvIconButton(onClick = {
+                            controlsTick++
+                            val playing =
+                                exoPlayer.playWhenReady && exoPlayer.isPlaying
+                            exoPlayer.playWhenReady = !playing
+                        }) {
+                            val icon =
+                                if (exoPlayer.playWhenReady &&
+                                    exoPlayer.isPlaying
+                                ) {
+                                    android.R.drawable.ic_media_pause
+                                } else {
+                                    android.R.drawable.ic_media_play
+                                }
+                            Icon(painter = painterResource(icon), contentDescription = "Play/Pause", tint = Color.White.copy(alpha = 0.8f))
+                        }
+                        FocusKit.TvIconButton(onClick = {
+                            controlsTick++
+                            val pos = exoPlayer.currentPosition
+                            val dur = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
+                            exoPlayer.seekTo((pos + 10_000L).coerceAtMost(dur))
+                        }) {
+                            Icon(
+                                painter = painterResource(android.R.drawable.ic_media_ff),
+                                contentDescription = "+10s",
+                                tint = Color.White.copy(alpha = 0.8f),
+                            )
+                        }
                     }
-                    FocusKit.TvIconButton(onClick = {
-                        controlsTick++
-                        val pos = exoPlayer.currentPosition
-                        val dur = exoPlayer.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
-                        exoPlayer.seekTo((pos + 10_000L).coerceAtMost(dur))
-                    }) { Icon(painter = painterResource(android.R.drawable.ic_media_ff), contentDescription = "+10s", tint = Color.White.copy(alpha = 0.8f)) }
-                }
 
-                // Bottom-right icon-only tiles (70% opacity, colored)
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(16.dp)
-                        .navigationBarsPadding(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                OverlayIconButton(
-                    modifier = Modifier.focusRequester(pipFocusRequester),
-                    iconRes = android.R.drawable.ic_menu_slideshow,
-                    containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
-                    contentColor = Color.White
-                ) {
-                    controlsTick++
-                    requestPictureInPicture()
-                }
-                OverlayIconButton(
-                    modifier = Modifier.focusRequester(ccFocusRequester),
-                    iconRes = android.R.drawable.ic_menu_sort_by_size,
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                    contentColor = Color.White
-                ) {
-                    controlsTick++
-                    if (!showCcMenu) {
-                        localScale = effectiveScale(); localFg = effectiveFg(); localBg = effectiveBg()
-                        localFgOpacity = effectiveFgOpacity(); localBgOpacity = effectiveBgOpacity()
-                        refreshSubtitleOptions()
-                    }
-                    showCcMenu = true
-                }
-                OverlayIconButton(
-                    modifier = Modifier.focusRequester(resizeFocusRequester),
-                    iconRes = android.R.drawable.ic_menu_crop,
-                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
-                    contentColor = Color.White,
-                    onLongClick = { showAspectMenu = true }
-                ) {
-                        controlsTick++
-                        customScaleEnabled = false
-                        cycleResize()
+                    // Bottom-right icon-only tiles (70% opacity, colored)
+                    Row(
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(16.dp)
+                                .navigationBarsPadding(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        OverlayIconButton(
+                            modifier = Modifier.focusRequester(pipFocusRequester),
+                            iconRes = android.R.drawable.ic_menu_slideshow,
+                            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
+                            contentColor = Color.White,
+                        ) {
+                            controlsTick++
+                            requestPictureInPicture()
+                        }
+                        OverlayIconButton(
+                            modifier = Modifier.focusRequester(ccFocusRequester),
+                            iconRes = android.R.drawable.ic_menu_sort_by_size,
+                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                            contentColor = Color.White,
+                        ) {
+                            controlsTick++
+                            if (!showCcMenu) {
+                                localScale = effectiveScale()
+                                localFg = effectiveFg()
+                                localBg = effectiveBg()
+                                localFgOpacity = effectiveFgOpacity()
+                                localBgOpacity = effectiveBgOpacity()
+                                refreshSubtitleOptions()
+                            }
+                            showCcMenu = true
+                        }
+                        OverlayIconButton(
+                            modifier = Modifier.focusRequester(resizeFocusRequester),
+                            iconRes = android.R.drawable.ic_menu_crop,
+                            containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
+                            contentColor = Color.White,
+                            onLongClick = { showAspectMenu = true },
+                        ) {
+                            controlsTick++
+                            customScaleEnabled = false
+                            cycleResize()
+                        }
                     }
                 }
             }
         }
-        }
+    }
 
-        // Quick actions popup: bottom-right buttons only, persistent until toggled off
-        if (type == "live" && quickActionsVisible) {
-            Box(Modifier
+    // Quick actions popup: bottom-right buttons only, persistent until toggled off
+    if (type == "live" && quickActionsVisible) {
+        Box(
+            Modifier
                 .fillMaxSize()
-                .then(FocusKit.run { Modifier.focusGroup() })
-            ) {
+                .then(FocusKit.run { Modifier.focusGroup() }),
+        ) {
             Row(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-                    .navigationBarsPadding(),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                        .navigationBarsPadding(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 OverlayIconButton(
                     modifier = Modifier.focusRequester(quickPipFocus),
                     iconRes = android.R.drawable.ic_menu_slideshow,
                     containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f),
-                    contentColor = Color.White
+                    contentColor = Color.White,
                 ) {
                     requestPictureInPicture()
                 }
@@ -1693,11 +2092,14 @@ fun InternalPlayerScreen(
                     modifier = Modifier.focusRequester(quickCcFocus),
                     iconRes = android.R.drawable.ic_menu_sort_by_size,
                     containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                    contentColor = Color.White
+                    contentColor = Color.White,
                 ) {
                     if (!showCcMenu) {
-                        localScale = effectiveScale(); localFg = effectiveFg(); localBg = effectiveBg()
-                        localFgOpacity = effectiveFgOpacity(); localBgOpacity = effectiveBgOpacity()
+                        localScale = effectiveScale()
+                        localFg = effectiveFg()
+                        localBg = effectiveBg()
+                        localFgOpacity = effectiveFgOpacity()
+                        localBgOpacity = effectiveBgOpacity()
                         refreshSubtitleOptions()
                     }
                     showCcMenu = true
@@ -1707,160 +2109,213 @@ fun InternalPlayerScreen(
                     iconRes = android.R.drawable.ic_menu_crop,
                     containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
                     contentColor = Color.White,
-                    onLongClick = { showAspectMenu = true }
+                    onLongClick = { showAspectMenu = true },
                 ) {
                     customScaleEnabled = false
                     cycleResize()
                 }
             }
-            }
         }
+    }
 
-        if (kidBlocked && kidActive) {
-                    AlertDialog(
-                        onDismissRequest = { /* block */ },
-                        title = { Text("Limit erreicht") },
-                        text = { Text("Das Screen-Time-Limit für heute ist aufgebraucht.") },
-                        confirmButton = {
-                            TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { finishAndRelease() }) { Text("OK") }
+    if (kidBlocked && kidActive) {
+        AlertDialog(
+            onDismissRequest = { /* block */ },
+            title = { Text("Limit erreicht") },
+            text = { Text("Das Screen-Time-Limit für heute ist aufgebraucht.") },
+            confirmButton = {
+                TextButton(modifier = Modifier.focusScaleOnTv(), onClick = { finishAndRelease() }) { Text("OK") }
+            },
+        )
+    }
+    // No exit confirmation; resume is always auto-saved/cleared per logic above
+
+    if (showCcMenu && isAdult) {
+        ModalBottomSheet(onDismissRequest = { showCcMenu = false }) {
+            // Audio + Subtitle options + live style controls (scrollable)
+            Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
+                Text("Audio")
+                Spacer(Modifier.padding(4.dp))
+                audioOptions.forEach { opt ->
+                    val selected = selectedAudio == opt
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                        selectedAudio = opt
+                        val builder = exoPlayer.trackSelectionParameters.buildUpon()
+                        builder.clearOverridesOfType(C.TRACK_TYPE_AUDIO)
+                        builder.setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
+                        if (opt.groupIndex != null && opt.trackIndex != null) {
+                            val group = exoPlayer.currentTracks.groups[opt.groupIndex]
+                            val override = TrackSelectionOverride(group.mediaTrackGroup, listOf(opt.trackIndex))
+                            builder.addOverride(override)
                         }
-                    )
-        }
-        // No exit confirmation; resume is always auto-saved/cleared per logic above
+                        exoPlayer.trackSelectionParameters = builder.build()
+                    }) { Text((if (selected) "• " else "") + opt.label) }
+                    Spacer(Modifier.padding(2.dp))
+                }
 
-        if (showCcMenu && isAdult) {
-                    ModalBottomSheet(onDismissRequest = { showCcMenu = false }) {
-                        // Audio + Subtitle options + live style controls (scrollable)
-                        Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
-                            Text("Audio")
-                            Spacer(Modifier.padding(4.dp))
-                            audioOptions.forEach { opt ->
-                                val selected = selectedAudio == opt
-                                Button(modifier = Modifier.focusScaleOnTv(), onClick = {
-                                    selectedAudio = opt
-                                    val builder = exoPlayer.trackSelectionParameters.buildUpon()
-                                    builder.clearOverridesOfType(C.TRACK_TYPE_AUDIO)
-                                    builder.setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
-                                    if (opt.groupIndex != null && opt.trackIndex != null) {
-                                        val group = exoPlayer.currentTracks.groups[opt.groupIndex]
-                                        val override = TrackSelectionOverride(group.mediaTrackGroup, listOf(opt.trackIndex))
-                                        builder.addOverride(override)
-                                    }
-                                    exoPlayer.trackSelectionParameters = builder.build()
-                                }) { Text((if (selected) "• " else "") + opt.label) }
-                                Spacer(Modifier.padding(2.dp))
-                            }
+                Spacer(Modifier.padding(8.dp))
+                HorizontalDivider()
+                Spacer(Modifier.padding(8.dp))
 
-                            Spacer(Modifier.padding(8.dp))
-                            HorizontalDivider()
-                            Spacer(Modifier.padding(8.dp))
+                Text("Untertitel")
+                Spacer(Modifier.padding(4.dp))
+                // Track selection
+                subOptions.forEach { opt ->
+                    val selected = selectedSub == opt
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                        selectedSub = opt
+                        val builder = exoPlayer.trackSelectionParameters.buildUpon()
+                        if (opt.groupIndex == null) {
+                            builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+                            builder.clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                        } else {
+                            builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                            builder.clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                            val group = exoPlayer.currentTracks.groups[opt.groupIndex]
+                            val override = TrackSelectionOverride(group.mediaTrackGroup, listOf(opt.trackIndex!!))
+                            builder.addOverride(override)
+                        }
+                        exoPlayer.trackSelectionParameters = builder.build()
+                    }, enabled = true) {
+                        Text((if (selected) "• " else "") + (opt.label))
+                    }
+                    Spacer(Modifier.padding(2.dp))
+                }
 
-                            Text("Untertitel",)
-                            Spacer(Modifier.padding(4.dp))
-                            // Track selection
-                            subOptions.forEach { opt ->
-                                val selected = selectedSub == opt
-                                Button(modifier = Modifier.focusScaleOnTv(), onClick = {
-                                    selectedSub = opt
-                                    val builder = exoPlayer.trackSelectionParameters.buildUpon()
-                                    if (opt.groupIndex == null) {
-                                        builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
-                                        builder.clearOverridesOfType(C.TRACK_TYPE_TEXT)
-                                    } else {
-                                        builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
-                                        builder.clearOverridesOfType(C.TRACK_TYPE_TEXT)
-                                        val group = exoPlayer.currentTracks.groups[opt.groupIndex]
-                                        val override = TrackSelectionOverride(group.mediaTrackGroup, listOf(opt.trackIndex!!))
-                                        builder.addOverride(override)
-                                    }
-                                    exoPlayer.trackSelectionParameters = builder.build()
-                                }, enabled = true) {
-                                    Text((if (selected) "• " else "") + (opt.label))
-                                }
-                                Spacer(Modifier.padding(2.dp))
-                            }
+                Spacer(Modifier.padding(8.dp))
+                Text("Größe: ${String.format("%.2f", effectiveScale())}")
+                Slider(value = effectiveScale(), onValueChange = { v -> localScale = v }, valueRange = 0.04f..0.12f, steps = 8)
 
-                            Spacer(Modifier.padding(8.dp))
-                            Text("Größe: ${String.format("%.2f", effectiveScale())}")
-                            Slider(value = effectiveScale(), onValueChange = { v -> localScale = v }, valueRange = 0.04f..0.12f, steps = 8)
+                Text("Text-Deckkraft: ${effectiveFgOpacity()}%")
+                Slider(
+                    value = effectiveFgOpacity().toFloat(),
+                    onValueChange = { v ->
+                        localFgOpacity = v.toInt().coerceIn(0, 100)
+                    },
+                    valueRange =
+                        0f..100f,
+                    steps = 10,
+                )
 
-                            Text("Text-Deckkraft: ${effectiveFgOpacity()}%")
-                            Slider(value = effectiveFgOpacity().toFloat(), onValueChange = { v -> localFgOpacity = v.toInt().coerceIn(0,100) }, valueRange = 0f..100f, steps = 10)
+                Text("Hintergrund-Deckkraft: ${effectiveBgOpacity()}%")
+                Slider(
+                    value = effectiveBgOpacity().toFloat(),
+                    onValueChange = { v ->
+                        localBgOpacity = v.toInt().coerceIn(0, 100)
+                    },
+                    valueRange =
+                        0f..100f,
+                    steps = 10,
+                )
 
-                            Text("Hintergrund-Deckkraft: ${effectiveBgOpacity()}%")
-                            Slider(value = effectiveBgOpacity().toFloat(), onValueChange = { v -> localBgOpacity = v.toInt().coerceIn(0,100) }, valueRange = 0f..100f, steps = 10)
+                Spacer(Modifier.padding(8.dp))
+                // Quick presets
+                Text("Presets")
+                Row {
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = { localScale = 0.05f }) { Text("Klein") }
+                    Spacer(Modifier.padding(4.dp))
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = { localScale = 0.06f }) { Text("Standard") }
+                    Spacer(Modifier.padding(4.dp))
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = { localScale = 0.08f }) { Text("Groß") }
+                }
+                Spacer(Modifier.padding(4.dp))
+                Row {
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                        localFg = 0xFFFFFFFF.toInt()
+                        localBg =
+                            0x66000000
+                    }) { Text("Hell auf dunkel") }
+                    ; Spacer(Modifier.padding(4.dp))
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                        localFg =
+                            0xFF000000.toInt()
+                        ; localBg = 0x66FFFFFF
+                    }) { Text("Dunkel auf hell") }
+                }
+                Spacer(Modifier.padding(4.dp))
+                Row {
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = { localBg = 0x66000000 }) { Text("BG Schwarz") }
+                    Spacer(Modifier.padding(4.dp))
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                        localBg =
+                            0x66FFFFFF
+                    }) { Text("BG Weiß") }
+                }
 
-                            Spacer(Modifier.padding(8.dp))
-                            // Quick presets
-                            Text("Presets")
-                            Row { 
-                                Button(modifier = Modifier.focusScaleOnTv(), onClick = { localScale = 0.05f }) { Text("Klein") }
-                                Spacer(Modifier.padding(4.dp))
-                                Button(modifier = Modifier.focusScaleOnTv(), onClick = { localScale = 0.06f }) { Text("Standard") }
-                                Spacer(Modifier.padding(4.dp))
-                                Button(modifier = Modifier.focusScaleOnTv(), onClick = { localScale = 0.08f }) { Text("Groß") }
-                            }
-                            Spacer(Modifier.padding(4.dp))
-                            Row { Button(modifier = Modifier.focusScaleOnTv(), onClick = { localFg = 0xFFFFFFFF.toInt(); localBg = 0x66000000 }) { Text("Hell auf dunkel") }; Spacer(Modifier.padding(4.dp)); Button(modifier = Modifier.focusScaleOnTv(), onClick = { localFg = 0xFF000000.toInt(); localBg = 0x66FFFFFF }) { Text("Dunkel auf hell") } }
-                            Spacer(Modifier.padding(4.dp))
-                            Row { Button(modifier = Modifier.focusScaleOnTv(), onClick = { localBg = 0x66000000 }) { Text("BG Schwarz") }; Spacer(Modifier.padding(4.dp)); Button(modifier = Modifier.focusScaleOnTv(), onClick = { localBg = 0x66FFFFFF }) { Text("BG Weiß") } }
-
-                            Spacer(Modifier.padding(8.dp))
-                            Row {
-                                Button(modifier = Modifier.focusScaleOnTv(), onClick = { showCcMenu = false }) { Text("Schließen") }
-                                Spacer(Modifier.padding(8.dp))
-                                Button(modifier = Modifier.focusScaleOnTv(), onClick = {
-                                    // Persist as default
-                                    localScale?.let { scope.launch { store.setFloat(com.chris.m3usuite.prefs.Keys.SUB_SCALE, it) } }
-                                    localFg?.let { scope.launch { store.setInt(com.chris.m3usuite.prefs.Keys.SUB_FG, it) } }
-                                    localBg?.let { scope.launch { store.setInt(com.chris.m3usuite.prefs.Keys.SUB_BG, it) } }
-                                    localFgOpacity?.let { scope.launch { store.setSubtitleFgOpacityPct(it) } }
-                                    localBgOpacity?.let { scope.launch { store.setSubtitleBgOpacityPct(it) } }
-                                    showCcMenu = false
-                                }) { Text("Als Standard speichern") }
-                            }
+                Spacer(Modifier.padding(8.dp))
+                Row {
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = { showCcMenu = false }) { Text("Schließen") }
+                    Spacer(Modifier.padding(8.dp))
+                    Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                        // Persist as default
+                        localScale?.let { scope.launch { store.setFloat(com.chris.m3usuite.prefs.Keys.SUB_SCALE, it) } }
+                        localFg?.let { scope.launch { store.setInt(com.chris.m3usuite.prefs.Keys.SUB_FG, it) } }
+                        localBg?.let { scope.launch { store.setInt(com.chris.m3usuite.prefs.Keys.SUB_BG, it) } }
+                        localFgOpacity?.let { scope.launch { store.setSubtitleFgOpacityPct(it) } }
+                        localBgOpacity?.let { scope.launch { store.setSubtitleBgOpacityPct(it) } }
+                        showCcMenu = false
+                    }) { Text("Als Standard speichern") }
                 }
             }
-            // Bottom controls now rendered inside the consolidated popup above
+        }
+        // Bottom controls now rendered inside the consolidated popup above
 
-            if (showAspectMenu) {
-                ModalBottomSheet(onDismissRequest = { showAspectMenu = false }) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Bildformat", style = MaterialTheme.typography.titleMedium)
+        if (showAspectMenu) {
+            ModalBottomSheet(onDismissRequest = { showAspectMenu = false }) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Bildformat", style = MaterialTheme.typography.titleMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                            customScaleEnabled =
+                                false
+                        }) { Text("Original") }
+                        Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                            customScaleEnabled =
+                                false
+                        }) { Text("Vollbild") }
+                        Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+                            customScaleEnabled =
+                                false
+                        }) { Text("Stretch") }
+                    }
+                    Spacer(Modifier.padding(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Custom")
+                        androidx.compose.material3.Switch(checked = customScaleEnabled, onCheckedChange = { enabled ->
+                            customScaleEnabled = enabled
+                            if (enabled) resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        })
+                    }
+                    if (customScaleEnabled) {
+                        Text("Horizontal: ${String.format("%.2f", customScaleX)}x")
+                        Slider(value = customScaleX, onValueChange = { customScaleX = it }, valueRange = 0.5f..2.0f, steps = 10)
+                        Text("Vertikal: ${String.format("%.2f", customScaleY)}x")
+                        Slider(value = customScaleY, onValueChange = { customScaleY = it }, valueRange = 0.5f..2.0f, steps = 10)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(modifier = Modifier.focusScaleOnTv(), onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT; customScaleEnabled = false }) { Text("Original") }
-                            Button(modifier = Modifier.focusScaleOnTv(), onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM; customScaleEnabled = false }) { Text("Vollbild") }
-                            Button(modifier = Modifier.focusScaleOnTv(), onClick = { resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL; customScaleEnabled = false }) { Text("Stretch") }
+                            Button(modifier = Modifier.focusScaleOnTv(), onClick = {
+                                customScaleX = 1f
+                                customScaleY = 1f
+                            }) { Text("Reset") }
                         }
-                        Spacer(Modifier.padding(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Custom")
-                            androidx.compose.material3.Switch(checked = customScaleEnabled, onCheckedChange = { enabled ->
-                                customScaleEnabled = enabled
-                                if (enabled) resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                            })
-                        }
-                        if (customScaleEnabled) {
-                            Text("Horizontal: ${String.format("%.2f", customScaleX)}x")
-                            Slider(value = customScaleX, onValueChange = { customScaleX = it }, valueRange = 0.5f..2.0f, steps = 10)
-                            Text("Vertikal: ${String.format("%.2f", customScaleY)}x")
-                            Slider(value = customScaleY, onValueChange = { customScaleY = it }, valueRange = 0.5f..2.0f, steps = 10)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(modifier = Modifier.focusScaleOnTv(), onClick = { customScaleX = 1f; customScaleY = 1f }) { Text("Reset") }
-                            }
-                        }
-                        Row(Modifier.padding(top = 8.dp)) {
-                            Button(modifier = Modifier.focusScaleOnTv(), onClick = { showAspectMenu = false }) { Text("Schließen") }
-                        }
+                    }
+                    Row(Modifier.padding(top = 8.dp)) {
+                        Button(modifier = Modifier.focusScaleOnTv(), onClick = { showAspectMenu = false }) { Text("Schließen") }
                     }
                 }
             }
         }
     }
+}
 
-    // (moved) Live list sheets are rendered inside the player Box above
+// (moved) Live list sheets are rendered inside the player Box above
 // helper: apply opacity to ARGB color
-private fun withOpacity(argb: Int, percent: Int): Int {
+private fun withOpacity(
+    argb: Int,
+    percent: Int,
+): Int {
     val p = percent.coerceIn(0, 100)
     val a = (p / 100f * 255f).toInt().coerceIn(0, 255)
     val rgb = argb and 0x00FFFFFF
@@ -1881,21 +2336,22 @@ private fun formatTime(ms: Long): String {
 private fun OverlayActionTile(
     @DrawableRes iconRes: Int,
     label: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     ElevatedCard(
         onClick = onClick,
         shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.elevatedCardElevation(),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-            contentColor = contentColorFor(MaterialTheme.colorScheme.surface)
-        )
+        colors =
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                contentColor = contentColorFor(MaterialTheme.colorScheme.surface),
+            ),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Icon(painter = painterResource(iconRes), contentDescription = null)
             Text(label, style = MaterialTheme.typography.labelLarge)
@@ -1911,21 +2367,23 @@ private fun OverlayIconButton(
     containerColor: Color,
     contentColor: Color,
     onLongClick: (() -> Unit)? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val shape = MaterialTheme.shapes.large
-    val clickableModifier = if (onLongClick != null) {
-        modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
-    } else {
-        modifier.then(FocusKit.run { Modifier.tvClickable(onClick = onClick) })
-    }
+    val clickableModifier =
+        if (onLongClick != null) {
+            modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        } else {
+            modifier.then(FocusKit.run { Modifier.tvClickable(onClick = onClick) })
+        }
     ElevatedCard(
         shape = shape,
         elevation = CardDefaults.elevatedCardElevation(),
         colors = CardDefaults.elevatedCardColors(containerColor = containerColor, contentColor = contentColor),
-        modifier = clickableModifier
-            .focusable()
-            .focusScaleOnTv()
+        modifier =
+            clickableModifier
+                .focusable()
+                .focusScaleOnTv(),
     ) {
         Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(painter = painterResource(iconRes), contentDescription = null, tint = contentColor)

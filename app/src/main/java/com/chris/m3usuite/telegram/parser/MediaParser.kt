@@ -9,41 +9,47 @@ import dev.g000sha256.tdl.dto.*
  * Uses pattern matching on filenames and message captions to extract metadata.
  */
 object MediaParser {
+    private val reTitle =
+        Regex(
+            """Titel:\s*([^T\n]+?)(?=(?:Originaltitel:|Erscheinungsjahr:|L[aä]nge:|Produktionsland:|FSK:|Filmreihe:|Regie:|TMDbRating:|Genres:|Episoden:|$))""",
+            RegexOption.IGNORE_CASE,
+        )
 
-    private val reTitle = Regex(
-        """Titel:\s*([^T\n]+?)(?=(?:Originaltitel:|Erscheinungsjahr:|L[aä]nge:|Produktionsland:|FSK:|Filmreihe:|Regie:|TMDbRating:|Genres:|Episoden:|$))""",
-        RegexOption.IGNORE_CASE
-    )
-
-    private val reOriginalTitle = Regex(
-        """Originaltitel:\s*([^O\n]+?)(?=(?:Erscheinungsjahr:|L[aä]nge:|Produktionsland:|FSK:|Filmreihe:|Regie:|TMDbRating:|Genres:|Episoden:|$))""",
-        RegexOption.IGNORE_CASE
-    )
+    private val reOriginalTitle =
+        Regex(
+            """Originaltitel:\s*([^O\n]+?)(?=(?:Erscheinungsjahr:|L[aä]nge:|Produktionsland:|FSK:|Filmreihe:|Regie:|TMDbRating:|Genres:|Episoden:|$))""",
+            RegexOption.IGNORE_CASE,
+        )
 
     private val reYear = Regex("""Erscheinungsjahr:\s*(\d{4})""", RegexOption.IGNORE_CASE)
     private val reLengthMinutes = Regex("""L[aä]nge:\s*(\d+)\s*Minuten""", RegexOption.IGNORE_CASE)
-    private val reCountry = Regex(
-        """Produktionsland:\s*([^F\n]+?)(?=(?:FSK:|Filmreihe:|Regie:|TMDbRating:|Genres:|Episoden:|$))""",
-        RegexOption.IGNORE_CASE
-    )
+    private val reCountry =
+        Regex(
+            """Produktionsland:\s*([^F\n]+?)(?=(?:FSK:|Filmreihe:|Regie:|TMDbRating:|Genres:|Episoden:|$))""",
+            RegexOption.IGNORE_CASE,
+        )
     private val reFsk = Regex("""FSK:\s*(\d{1,2})""", RegexOption.IGNORE_CASE)
-    private val reCollection = Regex(
-        """Filmreihe:\s*([^F\n]+?)(?=(?:Regie:|TMDbRating:|Genres:|Episoden:|$))""",
-        RegexOption.IGNORE_CASE
-    )
-    private val reDirector = Regex(
-        """Regie:\s*([^T\n]+?)(?=(?:TMDbRating:|Genres:|Episoden:|$))""",
-        RegexOption.IGNORE_CASE
-    )
-    private val reTmdbRating = Regex(
-        """TMDbRating:\s*([\d.,]+)(?:\s+bei\s+(\d+)\s+Stimmen)?""",
-        RegexOption.IGNORE_CASE
-    )
+    private val reCollection =
+        Regex(
+            """Filmreihe:\s*([^F\n]+?)(?=(?:Regie:|TMDbRating:|Genres:|Episoden:|$))""",
+            RegexOption.IGNORE_CASE,
+        )
+    private val reDirector =
+        Regex(
+            """Regie:\s*([^T\n]+?)(?=(?:TMDbRating:|Genres:|Episoden:|$))""",
+            RegexOption.IGNORE_CASE,
+        )
+    private val reTmdbRating =
+        Regex(
+            """TMDbRating:\s*([\d.,]+)(?:\s+bei\s+(\d+)\s+Stimmen)?""",
+            RegexOption.IGNORE_CASE,
+        )
     private val reGenres = Regex("""Genres:\s*(.+)$""", RegexOption.IGNORE_CASE)
-    private val reEpisodes = Regex(
-        """Episoden:\s*(\d+)\s+Episoden(?:\s+in\s+(\d+)\s+Staffeln)?""",
-        RegexOption.IGNORE_CASE
-    )
+    private val reEpisodes =
+        Regex(
+            """Episoden:\s*(\d+)\s+Episoden(?:\s+in\s+(\d+)\s+Staffeln)?""",
+            RegexOption.IGNORE_CASE,
+        )
     private val reInvite = Regex("""https?://t\.me/\S+|t\.me/\S+""", RegexOption.IGNORE_CASE)
     private val reSeasonEpisode = Regex("""[Ss](\d{1,2})\s*[Ee](\d{1,2})""")
     private val reAdultWords = Regex("""\b(porn|sex|xxx|18\+|🔞|creampie|anal|bds[mn])\b""", RegexOption.IGNORE_CASE)
@@ -55,7 +61,7 @@ object MediaParser {
         chatId: Long,
         chatTitle: String?,
         message: Message,
-        recentMessages: List<Message> = emptyList()
+        recentMessages: List<Message> = emptyList(),
     ): ParsedItem {
         parseMedia(chatId, chatTitle, message, recentMessages)?.let { return ParsedItem.Media(it) }
         parseSubChatRef(chatId, chatTitle, message)?.let { return ParsedItem.SubChat(it) }
@@ -67,7 +73,7 @@ object MediaParser {
         chatId: Long,
         chatTitle: String?,
         message: Message,
-        recentMessages: List<Message>
+        recentMessages: List<Message>,
     ): MediaInfo? {
         val content = message.content
 
@@ -76,25 +82,29 @@ object MediaParser {
                 val video = content.video
                 val name = video.fileName?.takeIf { it.isNotBlank() }
                 val metaFromName = parseMediaFromFileName(name)
-                val kind = if (isAdultChannel(chatTitle, content.caption?.text)) MediaKind.ADULT else {
-                    if (metaFromName?.seasonNumber != null) MediaKind.EPISODE else MediaKind.MOVIE
-                }
+                val kind =
+                    if (isAdultChannel(chatTitle, content.caption?.text)) {
+                        MediaKind.ADULT
+                    } else {
+                        if (metaFromName?.seasonNumber != null) MediaKind.EPISODE else MediaKind.MOVIE
+                    }
 
                 val metaFromText = parseMetaFromText(content.caption?.text.orEmpty())
-                val base = metaFromName?.copy(
-                    kind = kind,
-                    chatId = chatId,
-                    messageId = message.id,
-                    chatTitle = chatTitle
-                ) ?: MediaInfo(
-                    chatId = chatId,
-                    messageId = message.id,
-                    kind = kind,
-                    chatTitle = chatTitle,
-                    fileName = name,
-                    mimeType = video.mimeType,
-                    sizeBytes = video.video?.size?.toLong()
-                )
+                val base =
+                    metaFromName?.copy(
+                        kind = kind,
+                        chatId = chatId,
+                        messageId = message.id,
+                        chatTitle = chatTitle,
+                    ) ?: MediaInfo(
+                        chatId = chatId,
+                        messageId = message.id,
+                        kind = kind,
+                        chatTitle = chatTitle,
+                        fileName = name,
+                        mimeType = video.mimeType,
+                        sizeBytes = video.video?.size?.toLong(),
+                    )
 
                 mergeMeta(base, metaFromText)
             }
@@ -103,28 +113,30 @@ object MediaParser {
                 val doc = content.document
                 val name = doc.fileName?.takeIf { it.isNotBlank() }
                 val isArchive = name?.matches(Regex(""".*\.(rar|zip|7z|tar|gz|bz2)$""", RegexOption.IGNORE_CASE)) == true
-                val kind = when {
-                    isArchive -> MediaKind.RAR_ARCHIVE
-                    isAdultChannel(chatTitle, content.caption?.text) -> MediaKind.ADULT
-                    else -> MediaKind.MOVIE
-                }
+                val kind =
+                    when {
+                        isArchive -> MediaKind.RAR_ARCHIVE
+                        isAdultChannel(chatTitle, content.caption?.text) -> MediaKind.ADULT
+                        else -> MediaKind.MOVIE
+                    }
 
                 val metaFromName = parseMediaFromFileName(name)
                 val metaFromText = parseMetaFromText(content.caption?.text.orEmpty())
-                val base = metaFromName?.copy(
-                    kind = if (isArchive) MediaKind.RAR_ARCHIVE else kind,
-                    chatId = chatId,
-                    messageId = message.id,
-                    chatTitle = chatTitle
-                ) ?: MediaInfo(
-                    chatId = chatId,
-                    messageId = message.id,
-                    kind = kind,
-                    chatTitle = chatTitle,
-                    fileName = name,
-                    mimeType = doc.mimeType,
-                    sizeBytes = doc.document?.size?.toLong()
-                )
+                val base =
+                    metaFromName?.copy(
+                        kind = if (isArchive) MediaKind.RAR_ARCHIVE else kind,
+                        chatId = chatId,
+                        messageId = message.id,
+                        chatTitle = chatTitle,
+                    ) ?: MediaInfo(
+                        chatId = chatId,
+                        messageId = message.id,
+                        kind = kind,
+                        chatTitle = chatTitle,
+                        fileName = name,
+                        mimeType = doc.mimeType,
+                        sizeBytes = doc.document?.size?.toLong(),
+                    )
 
                 mergeMeta(base, metaFromText)
             }
@@ -138,7 +150,12 @@ object MediaParser {
                     chatTitle = chatTitle,
                     fileName = null,
                     mimeType = null,
-                    sizeBytes = photo.sizes?.maxByOrNull { it.width }?.photo?.size?.toLong()
+                    sizeBytes =
+                        photo.sizes
+                            ?.maxByOrNull { it.width }
+                            ?.photo
+                            ?.size
+                            ?.toLong(),
                 )
             }
 
@@ -146,17 +163,18 @@ object MediaParser {
                 val text = content.text?.text.orEmpty()
                 val meta = parseMetaFromText(text) ?: return null
 
-                val kind = when {
-                    meta.totalEpisodes != null || meta.totalSeasons != null -> MediaKind.SERIES
-                    isAdultChannel(chatTitle, text) -> MediaKind.ADULT
-                    else -> MediaKind.TEXT_ONLY
-                }
+                val kind =
+                    when {
+                        meta.totalEpisodes != null || meta.totalSeasons != null -> MediaKind.SERIES
+                        isAdultChannel(chatTitle, text) -> MediaKind.ADULT
+                        else -> MediaKind.TEXT_ONLY
+                    }
 
                 meta.copy(
                     chatId = chatId,
                     messageId = message.id,
                     kind = kind,
-                    chatTitle = chatTitle
+                    chatTitle = chatTitle,
                 )
             }
 
@@ -176,7 +194,12 @@ object MediaParser {
 
         val t = text.replace('\u202f', ' ').replace('\u00A0', ' ')
 
-        fun grab(re: Regex): String? = re.find(t)?.groupValues?.getOrNull(1)?.trim()
+        fun grab(re: Regex): String? =
+            re
+                .find(t)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.trim()
 
         val title = grab(reTitle)
         val orig = grab(reOriginalTitle)
@@ -188,15 +211,21 @@ object MediaParser {
         val director = grab(reDirector)
 
         val ratingMatch = reTmdbRating.find(t)
-        val rating = ratingMatch?.groupValues?.getOrNull(1)?.replace(',', '.')?.toDoubleOrNull()
+        val rating =
+            ratingMatch
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.replace(',', '.')
+                ?.toDoubleOrNull()
         val votes = ratingMatch?.groupValues?.getOrNull(2)?.toIntOrNull()
 
         val genresText = grab(reGenres)
-        val genres = genresText
-            ?.split(',', '/', '|')
-            ?.map { it.trim() }
-            ?.filter { it.isNotEmpty() }
-            ?: emptyList()
+        val genres =
+            genresText
+                ?.split(',', '/', '|')
+                ?.map { it.trim() }
+                ?.filter { it.isNotEmpty() }
+                ?: emptyList()
 
         val epsMatch = reEpisodes.find(t)
         val totalEps = epsMatch?.groupValues?.getOrNull(1)?.toIntOrNull()
@@ -223,9 +252,12 @@ object MediaParser {
             tmdbVotes = votes,
             totalEpisodes = totalEps,
             totalSeasons = totalSeasons,
-            extraInfo = if (t.contains("Weitere Infos", ignoreCase = true)) {
-                t.substringAfter("Weitere Infos", "").trim().ifEmpty { null }
-            } else null
+            extraInfo =
+                if (t.contains("Weitere Infos", ignoreCase = true)) {
+                    t.substringAfter("Weitere Infos", "").trim().ifEmpty { null }
+                } else {
+                    null
+                },
         )
     }
 
@@ -259,11 +291,14 @@ object MediaParser {
             year = year,
             seasonNumber = season,
             episodeNumber = episode,
-            fileName = fileName
+            fileName = fileName,
         )
     }
 
-    private fun mergeMeta(base: MediaInfo, add: MediaInfo?): MediaInfo {
+    private fun mergeMeta(
+        base: MediaInfo,
+        add: MediaInfo?,
+    ): MediaInfo {
         if (add == null) return base
         return base.copy(
             title = add.title ?: base.title,
@@ -281,11 +316,14 @@ object MediaParser {
             totalSeasons = add.totalSeasons ?: base.totalSeasons,
             seasonNumber = add.seasonNumber ?: base.seasonNumber,
             episodeNumber = add.episodeNumber ?: base.episodeNumber,
-            extraInfo = add.extraInfo ?: base.extraInfo
+            extraInfo = add.extraInfo ?: base.extraInfo,
         )
     }
 
-    private fun isAdultChannel(chatTitle: String?, text: String?): Boolean {
+    private fun isAdultChannel(
+        chatTitle: String?,
+        text: String?,
+    ): Boolean {
         val t = (chatTitle.orEmpty() + " " + text.orEmpty())
         return reAdultWords.containsMatchIn(t)
     }
@@ -293,14 +331,15 @@ object MediaParser {
     private fun parseSubChatRef(
         chatId: Long,
         chatTitle: String?,
-        message: Message
+        message: Message,
     ): SubChatRef? {
         val content = message.content
 
         if (content is MessageText) {
             val text = content.text?.text?.trim()
             if (!text.isNullOrEmpty()) {
-                val isDirectoryLike = chatTitle?.contains("Serien", ignoreCase = true) == true ||
+                val isDirectoryLike =
+                    chatTitle?.contains("Serien", ignoreCase = true) == true ||
                         chatTitle?.contains("Staffel", ignoreCase = true) == true
 
                 if (isDirectoryLike && !text.contains("Titel:", ignoreCase = true)) {
@@ -310,7 +349,7 @@ object MediaParser {
                         parentMessageId = message.id,
                         label = text,
                         linkedChatId = null,
-                        inviteLinks = extractInviteLinksFromText(text)
+                        inviteLinks = extractInviteLinksFromText(text),
                     )
                 }
             }
@@ -318,38 +357,47 @@ object MediaParser {
 
         val invite = parseInvite(chatId, message)
         if (invite != null) {
-            val label = when (val c = content) {
-                is MessageText -> c.text?.text?.trim().orEmpty()
-                else -> "(Invite)"
-            }
+            val label =
+                when (val c = content) {
+                    is MessageText ->
+                        c.text
+                            ?.text
+                            ?.trim()
+                            .orEmpty()
+                    else -> "(Invite)"
+                }
             return SubChatRef(
                 parentChatId = chatId,
                 parentChatTitle = chatTitle,
                 parentMessageId = message.id,
                 label = label,
                 linkedChatId = null,
-                inviteLinks = listOf(invite.url)
+                inviteLinks = listOf(invite.url),
             )
         }
 
         return null
     }
 
-    private fun parseInvite(chatId: Long, message: Message): InviteLink? {
-        val text = when (val c = message.content) {
-            is MessageText -> c.text?.text
-            is MessageVideo -> c.caption?.text
-            is MessageDocument -> c.caption?.text
-            is MessagePhoto -> c.caption?.text
-            else -> null
-        } ?: return null
+    private fun parseInvite(
+        chatId: Long,
+        message: Message,
+    ): InviteLink? {
+        val text =
+            when (val c = message.content) {
+                is MessageText -> c.text?.text
+                is MessageVideo -> c.caption?.text
+                is MessageDocument -> c.caption?.text
+                is MessagePhoto -> c.caption?.text
+                else -> null
+            } ?: return null
 
         val m = reInvite.find(text) ?: return null
         val url = m.value
         return InviteLink(
             chatId = chatId,
             messageId = message.id,
-            url = url
+            url = url,
         )
     }
 

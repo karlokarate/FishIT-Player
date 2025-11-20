@@ -5,9 +5,7 @@ import android.content.Context
 import android.content.Context.UI_MODE_SERVICE
 import android.content.res.Configuration
 import androidx.compose.animation.core.animateFloatAsState
-import com.chris.m3usuite.ui.focus.tvClickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,6 +18,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.chris.m3usuite.ui.focus.tvClickable
 
 fun isTv(context: Context): Boolean {
     val uiModeManager = context.getSystemService(UI_MODE_SERVICE) as UiModeManager
@@ -30,7 +29,7 @@ fun isTv(context: Context): Boolean {
 fun FocusableCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val ctx = LocalContext.current
     val tv = isTv(ctx)
@@ -38,21 +37,22 @@ fun FocusableCard(
     val scale by animateFloatAsState(targetValue = if (tv && focused) 1.05f else 1f, label = "focus-scale")
 
     Card(
-        modifier = modifier
-            .scale(scale)
-            .focusable(tv)
-            .onFocusEvent { focused = it.isFocused }
-            .tvClickable(
-                scaleFocused = 1f,
-                scalePressed = 1f,
-                brightenContent = false,
-                onClick = onClick
-            )
-            .fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (focused) 8.dp else 2.dp)
+        modifier =
+            modifier
+                .scale(scale)
+                .focusable(tv)
+                .onFocusEvent { focused = it.isFocused }
+                .tvClickable(
+                    scaleFocused = 1f,
+                    scalePressed = 1f,
+                    brightenContent = false,
+                    onClick = onClick,
+                ).fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (focused) 8.dp else 2.dp),
     ) {
         Box(Modifier.padding(8.dp)) { content() }
     }

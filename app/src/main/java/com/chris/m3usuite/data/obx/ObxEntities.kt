@@ -5,7 +5,7 @@ import io.objectbox.annotation.*
 @Entity
 data class ObxCategory(
     @Id var id: Long = 0,
-    @Index var kind: String = "",            // live|vod|series
+    @Index var kind: String = "", // live|vod|series
     @Index var categoryId: String = "",
     var categoryName: String? = null,
 )
@@ -222,7 +222,7 @@ data class ObxTelegramMessage(
 @Entity
 data class ObxIndexProvider(
     @Id var id: Long = 0,
-    @Index var kind: String = "",  // live|vod|series
+    @Index var kind: String = "", // live|vod|series
     @Index var key: String = "",
     var count: Long = 0,
 )

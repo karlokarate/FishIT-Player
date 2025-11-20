@@ -1,25 +1,30 @@
 package com.chris.m3usuite.core.epg
 
 import android.content.Context
+import android.util.Log
 import android.util.Xml
 import com.chris.m3usuite.core.http.HttpClientFactory
 import com.chris.m3usuite.prefs.SettingsStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import okhttp3.Request
-import android.util.Log
 import org.xmlpull.v1.XmlPullParser
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
-data class XmlTvProg(val title: String?, val startMs: Long, val stopMs: Long)
+data class XmlTvProg(
+    val title: String?,
+    val startMs: Long,
+    val stopMs: Long,
+)
 
 object XmlTv {
-    private val fmt = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }
+    private val fmt =
+        SimpleDateFormat("yyyyMMddHHmmss Z", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
 
     private fun parseTime(attr: String?): Long? = runCatching { if (attr.isNullOrBlank()) null else fmt.parse(attr)?.time }.getOrNull()
 
@@ -27,7 +32,11 @@ object XmlTv {
      * Stream-parse XMLTV and return current + next programme for the given channel id.
      * Stops parsing as soon as we have both entries to avoid loading entire file.
      */
-    suspend fun currentNext(context: Context, settings: SettingsStore, channelId: String): Pair<XmlTvProg?, XmlTvProg?> =
+    suspend fun currentNext(
+        context: Context,
+        settings: SettingsStore,
+        channelId: String,
+    ): Pair<XmlTvProg?, XmlTvProg?> =
         withContext(Dispatchers.IO) {
             val url = settings.epgUrl.first()
             if (url.isBlank()) return@withContext null to null
@@ -35,11 +44,12 @@ object XmlTv {
             val req = Request.Builder().url(url).build()
             try {
                 val uaVal = settings.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
-                Log.d("XmlTv", "currentNext url=\"${url}\" chan=${channelId} ua=\"${uaVal}\"")
-            } catch (_: Throwable) {}
+                Log.d("XmlTv", "currentNext url=\"${url}\" chan=$channelId ua=\"${uaVal}\"")
+            } catch (_: Throwable) {
+            }
             client.newCall(req).execute().use { res ->
                 if (!res.isSuccessful) {
-                    Log.w("XmlTv", "status=${res.code} chan=${channelId}")
+                    Log.w("XmlTv", "status=${res.code} chan=$channelId")
                     return@withContext null to null
                 }
                 val body = res.body ?: return@withContext null to null
@@ -65,9 +75,15 @@ object XmlTv {
                                     curStop = parseTime(parser.getAttributeValue(null, "stop"))
                                     curTitle = null
                                 }
-                                "title" -> if (inProgramme) {
-                                    curTitle = try { parser.nextText() } catch (_: Throwable) { null }
-                                }
+                                "title" ->
+                                    if (inProgramme) {
+                                        curTitle =
+                                            try {
+                                                parser.nextText()
+                                            } catch (_: Throwable) {
+                                                null
+                                            }
+                                    }
                             }
                         }
                         XmlPullParser.END_TAG -> {
@@ -82,7 +98,10 @@ object XmlTv {
                                     if (nowProg != null && nextProg != null) break
                                 }
                                 inProgramme = false
-                                curChan = null; curTitle = null; curStart = null; curStop = null
+                                curChan = null
+                                curTitle = null
+                                curStart = null
+                                curStop = null
                             }
                         }
                     }
@@ -96,7 +115,11 @@ object XmlTv {
      * Build a Now/Next index for a set of channel ids from a single XMLTV scan.
      * Returns map channelId -> Pair(now, next). Stops early if all channels resolved.
      */
-    suspend fun indexNowNext(context: Context, settings: SettingsStore, channelIds: Set<String>): Map<String, Pair<XmlTvProg?, XmlTvProg?>> =
+    suspend fun indexNowNext(
+        context: Context,
+        settings: SettingsStore,
+        channelIds: Set<String>,
+    ): Map<String, Pair<XmlTvProg?, XmlTvProg?>> =
         withContext(Dispatchers.IO) {
             if (channelIds.isEmpty()) return@withContext emptyMap()
             val url = settings.epgUrl.first()
@@ -106,7 +129,8 @@ object XmlTv {
             try {
                 val uaVal = settings.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
                 Log.d("XmlTv", "index url=\"${url}\" chans=${channelIds.size} ua=\"${uaVal}\"")
-            } catch (_: Throwable) {}
+            } catch (_: Throwable) {
+            }
             client.newCall(req).execute().use { res ->
                 if (!res.isSuccessful) {
                     Log.w("XmlTv", "status=${res.code} chans=${channelIds.size}")
@@ -143,9 +167,15 @@ object XmlTv {
                                     curStop = parseTime(parser.getAttributeValue(null, "stop"))
                                     curTitle = null
                                 }
-                                "title" -> if (inProgramme && curChan != null) {
-                                    curTitle = try { parser.nextText() } catch (_: Throwable) { null }
-                                }
+                                "title" ->
+                                    if (inProgramme && curChan != null) {
+                                        curTitle =
+                                            try {
+                                                parser.nextText()
+                                            } catch (_: Throwable) {
+                                                null
+                                            }
+                                    }
                             }
                         }
                         XmlPullParser.END_TAG -> {
@@ -160,7 +190,10 @@ object XmlTv {
                                     }
                                 }
                                 inProgramme = false
-                                curChan = null; curTitle = null; curStart = null; curStop = null
+                                curChan = null
+                                curTitle = null
+                                curStart = null
+                                curStop = null
                                 if (doneForAll()) break
                             }
                         }

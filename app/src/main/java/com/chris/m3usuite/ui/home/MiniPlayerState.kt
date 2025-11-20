@@ -26,14 +26,14 @@ data class MiniPlayerDescriptor(
     val liveCategory: String? = null,
     val liveProvider: String? = null,
     val title: String? = null,
-    val subtitle: String? = null
+    val subtitle: String? = null,
 )
 
 @Immutable
 data class MiniPlayerSnapshot(
     val descriptor: MiniPlayerDescriptor,
     val positionMs: Long,
-    val durationMs: Long
+    val durationMs: Long,
 )
 
 val LocalMiniPlayerResume = compositionLocalOf<((MiniPlayerSnapshot) -> Unit)?> { null }

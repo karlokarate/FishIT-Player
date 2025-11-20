@@ -38,7 +38,7 @@ fun FishRowLight(
     modifier: Modifier = Modifier,
     title: String? = null,
     headerAction: (@Composable () -> Unit)? = null,
-    itemContent: @Composable (index: Int) -> Unit
+    itemContent: @Composable (index: Int) -> Unit,
 ) {
     val d = LocalFishDimens.current
     val contentPadding = PaddingValues(horizontal = d.contentPaddingHorizontalDp)
@@ -48,7 +48,7 @@ fun FishRowLight(
             itemCount = itemCount,
             itemKey = itemKey,
             itemSpacing = d.tileSpacingDp,
-            contentPadding = contentPadding
+            contentPadding = contentPadding,
         ) { idx -> itemContent(idx) }
     }
     if (title == null && headerAction == null) {
@@ -57,7 +57,7 @@ fun FishRowLight(
         Column(modifier) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = d.contentPaddingHorizontalDp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = d.contentPaddingHorizontalDp, vertical = 8.dp),
             ) {
                 title?.let { Text(text = it, style = MaterialTheme.typography.titleLarge) }
                 Spacer(Modifier.weight(1f))
@@ -83,17 +83,24 @@ fun FishRow(
     debugKey: String? = null,
     itemKey: (MediaItem) -> Long = { it.id },
     header: FishHeaderData? = null,
-    itemModifier: @Composable (index: Int, absoluteIndex: Int, media: MediaItem, base: Modifier, state: androidx.compose.foundation.lazy.LazyListState) -> Modifier = { _, _, _, base, _ -> base },
-    itemContent: @Composable (MediaItem) -> Unit
+    itemModifier: @Composable (
+        index: Int,
+        absoluteIndex: Int,
+        media: MediaItem,
+        base: Modifier,
+        state: androidx.compose.foundation.lazy.LazyListState,
+    ) -> Modifier = { _, _, _, base, _ -> base },
+    itemContent: @Composable (MediaItem) -> Unit,
 ) {
     val d = LocalFishDimens.current
-    val config = RowConfig(
-        stateKey = stateKey,
-        debugKey = debugKey ?: stateKey,
-        contentPadding = PaddingValues(horizontal = d.contentPaddingHorizontalDp),
-        initialFocusEligible = initialFocusEligible,
-        edgeLeftExpandChrome = edgeLeftExpandChrome
-    )
+    val config =
+        RowConfig(
+            stateKey = stateKey,
+            debugKey = debugKey ?: stateKey,
+            contentPadding = PaddingValues(horizontal = d.contentPaddingHorizontalDp),
+            initialFocusEligible = initialFocusEligible,
+            edgeLeftExpandChrome = edgeLeftExpandChrome,
+        )
     val rowBody: @Composable () -> Unit = {
         val headerController = LocalFishHeaderController.current
         val headerFocusCounter = remember(header?.anchorKey) { mutableStateOf(0) }
@@ -116,23 +123,24 @@ fun FishRow(
                             }
                         }
                     }
-                    decorated = decorated.onFocusEvent { st ->
-                        val focused = st.hasFocus || st.isFocused
-                        if (focused != itemHasFocus) {
-                            itemHasFocus = focused
-                            if (focused) {
-                                val wasZero = headerFocusCounter.value == 0
-                                headerFocusCounter.value += 1
-                                if (wasZero) headerController.activate(header)
-                            } else {
-                                headerFocusCounter.value = (headerFocusCounter.value - 1).coerceAtLeast(0)
-                                if (headerFocusCounter.value == 0) headerController.deactivate(header)
+                    decorated =
+                        decorated.onFocusEvent { st ->
+                            val focused = st.hasFocus || st.isFocused
+                            if (focused != itemHasFocus) {
+                                itemHasFocus = focused
+                                if (focused) {
+                                    val wasZero = headerFocusCounter.value == 0
+                                    headerFocusCounter.value += 1
+                                    if (wasZero) headerController.activate(header)
+                                } else {
+                                    headerFocusCounter.value = (headerFocusCounter.value - 1).coerceAtLeast(0)
+                                    if (headerFocusCounter.value == 0) headerController.deactivate(header)
+                                }
                             }
                         }
-                    }
                 }
                 decorated
-            }
+            },
         ) { m -> itemContent(m) }
     }
     if (title == null && headerAction == null) {
@@ -141,7 +149,7 @@ fun FishRow(
         Column(modifier) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = d.contentPaddingHorizontalDp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = d.contentPaddingHorizontalDp, vertical = 8.dp),
             ) {
                 title?.let { Text(text = it, style = MaterialTheme.typography.titleLarge) }
                 Spacer(Modifier.weight(1f))
@@ -166,15 +174,16 @@ fun FishRowPaged(
     debugKey: String? = null,
     itemKey: (index: Int) -> Long = { idx -> items[idx]?.id ?: idx.toLong() },
     header: FishHeaderData? = null,
-    itemContent: @Composable (index: Int, MediaItem) -> Unit
+    itemContent: @Composable (index: Int, MediaItem) -> Unit,
 ) {
     val d = LocalFishDimens.current
-    val config = RowConfig(
-        stateKey = stateKey,
-        debugKey = debugKey ?: stateKey,
-        contentPadding = PaddingValues(horizontal = d.contentPaddingHorizontalDp),
-        edgeLeftExpandChrome = edgeLeftExpandChrome
-    )
+    val config =
+        RowConfig(
+            stateKey = stateKey,
+            debugKey = debugKey ?: stateKey,
+            contentPadding = PaddingValues(horizontal = d.contentPaddingHorizontalDp),
+            edgeLeftExpandChrome = edgeLeftExpandChrome,
+        )
     val rowBody: @Composable () -> Unit = {
         val headerController = LocalFishHeaderController.current
         val headerFocusCounter = remember(header?.anchorKey) { mutableStateOf(0) }
@@ -197,23 +206,24 @@ fun FishRowPaged(
                             }
                         }
                     }
-                    decorated = decorated.onFocusEvent { st ->
-                        val focused = st.hasFocus || st.isFocused
-                        if (focused != itemHasFocus) {
-                            itemHasFocus = focused
-                            if (focused) {
-                                val wasZero = headerFocusCounter.value == 0
-                                headerFocusCounter.value += 1
-                                if (wasZero) headerController.activate(header)
-                            } else {
-                                headerFocusCounter.value = (headerFocusCounter.value - 1).coerceAtLeast(0)
-                                if (headerFocusCounter.value == 0) headerController.deactivate(header)
+                    decorated =
+                        decorated.onFocusEvent { st ->
+                            val focused = st.hasFocus || st.isFocused
+                            if (focused != itemHasFocus) {
+                                itemHasFocus = focused
+                                if (focused) {
+                                    val wasZero = headerFocusCounter.value == 0
+                                    headerFocusCounter.value += 1
+                                    if (wasZero) headerController.activate(header)
+                                } else {
+                                    headerFocusCounter.value = (headerFocusCounter.value - 1).coerceAtLeast(0)
+                                    if (headerFocusCounter.value == 0) headerController.deactivate(header)
+                                }
                             }
                         }
-                    }
                 }
                 decorated
-            }
+            },
         ) { idx, mi -> itemContent(idx, mi) }
     }
     if (title == null && headerAction == null) {
@@ -222,7 +232,7 @@ fun FishRowPaged(
         Column(modifier) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = d.contentPaddingHorizontalDp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = d.contentPaddingHorizontalDp, vertical = 8.dp),
             ) {
                 title?.let { Text(text = it, style = MaterialTheme.typography.titleLarge) }
                 Spacer(Modifier.weight(1f))

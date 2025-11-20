@@ -1,9 +1,9 @@
 package com.chris.m3usuite.ui.home
 
-import android.app.Application
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.work.WorkInfo
@@ -17,14 +17,12 @@ import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.data.repo.XtreamObxRepository
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
-import androidx.lifecycle.asFlow
 
 @OptIn(FlowPreview::class)
 class StartViewModel(
@@ -37,14 +35,14 @@ class StartViewModel(
     private val tgRepo: TelegramContentRepository = TelegramContentRepository(appContext, store),
     private val use: StartUseCases = StartUseCases(appContext, store),
 ) : ViewModel() {
-
     // --- Query handling (kept compatible with current StartScreen) ---
     val query = MutableStateFlow("")
-    val debouncedQuery = query
-        .map { it.trimStart() }
-        .distinctUntilChanged()
-        .debounce(300)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+    val debouncedQuery =
+        query
+            .map { it.trimStart() }
+            .distinctUntilChanged()
+            .debounce(300)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
     // --- Basic settings / header ---
     val showAdults = store.showAdults.stateIn(viewModelScope, SharingStarted.Eagerly, false)
@@ -53,23 +51,29 @@ class StartViewModel(
     // --- Permissions & Profile derived state ---
     private val currentProfileId = store.currentProfileId.stateIn(viewModelScope, SharingStarted.Eagerly, -1L)
 
-    val isKid: StateFlow<Boolean> = currentProfileId
-        .map { id ->
-            if (id <= 0) false
-            else withContext(Dispatchers.IO) {
-                val box = ObxStore.get(appContext).boxFor(ObxProfile::class.java)
-                val p = box.get(id)
-                p?.type == "kid"
-            }
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val isKid: StateFlow<Boolean> =
+        currentProfileId
+            .map { id ->
+                if (id <= 0) {
+                    false
+                } else {
+                    withContext(Dispatchers.IO) {
+                        val box = ObxStore.get(appContext).boxFor(ObxProfile::class.java)
+                        val p = box.get(id)
+                        p?.type == "kid"
+                    }
+                }
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    val canEditFavorites: StateFlow<Boolean> = flow {
-        emit(permRepo.current().canEditFavorites)
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val canEditFavorites: StateFlow<Boolean> =
+        flow {
+            emit(permRepo.current().canEditFavorites)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
-    val canEditWhitelist: StateFlow<Boolean> = flow {
-        emit(permRepo.current().canEditWhitelist)
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val canEditWhitelist: StateFlow<Boolean> =
+        flow {
+            emit(permRepo.current().canEditWhitelist)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     // --- Home lists ---
     private val _series = MutableStateFlow<List<MediaItem>>(emptyList())
@@ -103,10 +107,12 @@ class StartViewModel(
     val telegramContent: StateFlow<List<MediaItem>> = _telegramContent
 
     // Telegram enabled?
-    val tgEnabled: StateFlow<Boolean> = combine(
-        store.tgEnabled, store.tgSelectedChatsCsv
-    ) { enabled, chatCsv -> enabled && chatCsv.isNotBlank() }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val tgEnabled: StateFlow<Boolean> =
+        combine(
+            store.tgEnabled,
+            store.tgSelectedChatsCsv,
+        ) { enabled, chatCsv -> enabled && chatCsv.isNotBlank() }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // Paging for search
     private val _seriesPaging = MutableStateFlow<PagingData<MediaItem>?>(null)
@@ -144,29 +150,32 @@ class StartViewModel(
             _ui.update { it.copy(query = q, isSearchMode = isSearch) }
 
             if (isSearch) {
-                _seriesPaging.value = use.pagingSearchSeries(q)
-                    .stateIn(
-                        viewModelScope,
-                        SharingStarted.Lazily,
-                        PagingData.empty<MediaItem>()
-                    )
-                    .value
+                _seriesPaging.value =
+                    use
+                        .pagingSearchSeries(q)
+                        .stateIn(
+                            viewModelScope,
+                            SharingStarted.Lazily,
+                            PagingData.empty<MediaItem>(),
+                        ).value
 
-                _vodPaging.value = use.pagingSearchVod(q)
-                    .stateIn(
-                        viewModelScope,
-                        SharingStarted.Lazily,
-                        PagingData.empty<MediaItem>()
-                    )
-                    .value
+                _vodPaging.value =
+                    use
+                        .pagingSearchVod(q)
+                        .stateIn(
+                            viewModelScope,
+                            SharingStarted.Lazily,
+                            PagingData.empty<MediaItem>(),
+                        ).value
 
-                _livePaging.value = use.pagingSearchLive(q)
-                    .stateIn(
-                        viewModelScope,
-                        SharingStarted.Lazily,
-                        PagingData.empty<MediaItem>()
-                    )
-                    .value
+                _livePaging.value =
+                    use
+                        .pagingSearchLive(q)
+                        .stateIn(
+                            viewModelScope,
+                            SharingStarted.Lazily,
+                            PagingData.empty<MediaItem>(),
+                        ).value
             } else {
                 _seriesPaging.value = null
                 _vodPaging.value = null
@@ -175,8 +184,9 @@ class StartViewModel(
         }
     }
 
-
-    fun setQuery(q: String) { query.value = q }
+    fun setQuery(q: String) {
+        query.value = q
+    }
 
     suspend fun reloadFromObx() {
         _ui.update { it.copy(loading = true) }
@@ -199,111 +209,149 @@ class StartViewModel(
                 isKid = isKidNow,
                 showAdults = showAdultsNow,
                 canEditFavorites = canEditFavorites.value,
-                canEditWhitelist = canEditWhitelist.value
+                canEditWhitelist = canEditWhitelist.value,
             )
         }
     }
 
-    private fun observeObxChanges() = viewModelScope.launch {
-        merge(
-            obxRepo.liveChanges().map { "live" },
-            obxRepo.vodChanges().map { "vod" },
-            obxRepo.seriesChanges().map { "series" }
-        ).debounce(350).collectLatest { kind ->
-            when (kind) {
-                "live" -> _live.value = use.listByTypeFiltered("live", 600, 0).distinctBy { it.id }
-                "vod" -> {
-                    _movies.value = use.sortVod(use.listByTypeFiltered("vod", 600, 0))
-                    recomputeMixedRows(isKid.value, showAdults.value)
-                }
-                "series" -> {
-                    _series.value = use.sortSeries(use.listByTypeFiltered("series", 600, 0))
-                    recomputeMixedRows(isKid.value, showAdults.value)
+    private fun observeObxChanges() =
+        viewModelScope.launch {
+            merge(
+                obxRepo.liveChanges().map { "live" },
+                obxRepo.vodChanges().map { "vod" },
+                obxRepo.seriesChanges().map { "series" },
+            ).debounce(350).collectLatest { kind ->
+                when (kind) {
+                    "live" -> _live.value = use.listByTypeFiltered("live", 600, 0).distinctBy { it.id }
+                    "vod" -> {
+                        _movies.value = use.sortVod(use.listByTypeFiltered("vod", 600, 0))
+                        recomputeMixedRows(isKid.value, showAdults.value)
+                    }
+                    "series" -> {
+                        _series.value = use.sortSeries(use.listByTypeFiltered("series", 600, 0))
+                        recomputeMixedRows(isKid.value, showAdults.value)
+                    }
                 }
             }
         }
-    }
 
-    private fun observeDeltaImport() = viewModelScope.launch {
-        WorkManager.getInstance(appContext)
-            .getWorkInfosForUniqueWorkLiveData("xtream_delta_import_once")
-            .asFlow()
-            .map { infos -> infos.firstOrNull { it.state == WorkInfo.State.SUCCEEDED }?.id }
-            .distinctUntilChanged()
-            .collect { if (it != null) reloadFromObx() }
-    }
-
-    private fun observeFavoritesCsv() = viewModelScope.launch {
-        favCsv.collectLatest { csv ->
-            if (csv.isBlank()) { _favLive.value = emptyList(); return@collectLatest }
-            val rawIds = csv.split(',').mapNotNull { it.toLongOrNull() }.distinct()
-            if (rawIds.isEmpty()) { _favLive.value = emptyList(); return@collectLatest }
-            val allAllowed = use.listByTypeFiltered("live", 6000, 0)
-            if (allAllowed.isEmpty()) { _favLive.value = emptyList(); return@collectLatest }
-            val translated = rawIds.filter { it >= 1_000_000_000_000L }
-            val map = allAllowed.associateBy { it.id }
-            _favLive.value = translated.mapNotNull { map[it] }.distinctBy { it.id }
+    private fun observeDeltaImport() =
+        viewModelScope.launch {
+            WorkManager
+                .getInstance(appContext)
+                .getWorkInfosForUniqueWorkLiveData("xtream_delta_import_once")
+                .asFlow()
+                .map { infos -> infos.firstOrNull { it.state == WorkInfo.State.SUCCEEDED }?.id }
+                .distinctUntilChanged()
+                .collect { if (it != null) reloadFromObx() }
         }
-    }
 
-    private fun observeTelegramContent() = viewModelScope.launch {
-        tgRepo.getAllTelegramContent()
-            .collectLatest { items ->
-                _telegramContent.value = items.take(120) // Limit to 120 for Start screen
+    private fun observeFavoritesCsv() =
+        viewModelScope.launch {
+            favCsv.collectLatest { csv ->
+                if (csv.isBlank()) {
+                    _favLive.value = emptyList()
+                    return@collectLatest
+                }
+                val rawIds = csv.split(',').mapNotNull { it.toLongOrNull() }.distinct()
+                if (rawIds.isEmpty()) {
+                    _favLive.value = emptyList()
+                    return@collectLatest
+                }
+                val allAllowed = use.listByTypeFiltered("live", 6000, 0)
+                if (allAllowed.isEmpty()) {
+                    _favLive.value = emptyList()
+                    return@collectLatest
+                }
+                val translated = rawIds.filter { it >= 1_000_000_000_000L }
+                val map = allAllowed.associateBy { it.id }
+                _favLive.value = translated.mapNotNull { map[it] }.distinctBy { it.id }
             }
-    }
+        }
 
-    fun onReorderFavorites(newOrderIds: List<Long>) = viewModelScope.launch(Dispatchers.IO) {
-        store.setFavoriteLiveIdsCsv(newOrderIds.joinToString(","))
-        val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-        runCatching { com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(appContext, aggressive) }
-    }
+    private fun observeTelegramContent() =
+        viewModelScope.launch {
+            tgRepo
+                .getAllTelegramContent()
+                .collectLatest { items ->
+                    _telegramContent.value = items.take(120) // Limit to 120 for Start screen
+                }
+        }
 
-    fun onFavoritesRemove(removeIds: List<Long>) = viewModelScope.launch(Dispatchers.IO) {
-        val current = store.favoriteLiveIdsCsv.first().split(',').mapNotNull { it.toLongOrNull() }.toMutableList()
-        current.removeAll(removeIds.toSet())
-        store.setFavoriteLiveIdsCsv(current.joinToString(","))
-        val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-        runCatching { com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(appContext, aggressive) }
-    }
+    fun onReorderFavorites(newOrderIds: List<Long>) =
+        viewModelScope.launch(Dispatchers.IO) {
+            store.setFavoriteLiveIdsCsv(newOrderIds.joinToString(","))
+            val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+            runCatching {
+                com.chris.m3usuite.work.SchedulingGateway
+                    .refreshFavoritesEpgNow(appContext, aggressive)
+            }
+        }
 
-    fun setFavoritesCsv(csv: String) = viewModelScope.launch(Dispatchers.IO) {
-        store.setFavoriteLiveIdsCsv(csv)
-        val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
-        runCatching { com.chris.m3usuite.work.SchedulingGateway.refreshFavoritesEpgNow(appContext, aggressive) }
-    }
+    fun onFavoritesRemove(removeIds: List<Long>) =
+        viewModelScope.launch(Dispatchers.IO) {
+            val current =
+                store.favoriteLiveIdsCsv
+                    .first()
+                    .split(',')
+                    .mapNotNull { it.toLongOrNull() }
+                    .toMutableList()
+            current.removeAll(removeIds.toSet())
+            store.setFavoriteLiveIdsCsv(current.joinToString(","))
+            val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+            runCatching {
+                com.chris.m3usuite.work.SchedulingGateway
+                    .refreshFavoritesEpgNow(appContext, aggressive)
+            }
+        }
 
-    private fun recomputeMixedRows(isKid: Boolean, showAdults: Boolean) {
+    fun setFavoritesCsv(csv: String) =
+        viewModelScope.launch(Dispatchers.IO) {
+            store.setFavoriteLiveIdsCsv(csv)
+            val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
+            runCatching {
+                com.chris.m3usuite.work.SchedulingGateway
+                    .refreshFavoritesEpgNow(appContext, aggressive)
+            }
+        }
+
+    private fun recomputeMixedRows(
+        isKid: Boolean,
+        showAdults: Boolean,
+    ) {
         recomputeJob?.cancel()
-        recomputeJob = viewModelScope.launch(Dispatchers.Default) {
-            // series
-            val recentSeries = _series.value.take(36)
-            val newestSeries = _series.value.take(64)
-            val (mixedSeries, newIdsSeries) = use.computeSeriesMixed(recentSeries, newestSeries, showAdults, isKid)
-            _seriesMixed.value = mixedSeries
-            _seriesNewIds.value = newIdsSeries
+        recomputeJob =
+            viewModelScope.launch(Dispatchers.Default) {
+                // series
+                val recentSeries = _series.value.take(36)
+                val newestSeries = _series.value.take(64)
+                val (mixedSeries, newIdsSeries) = use.computeSeriesMixed(recentSeries, newestSeries, showAdults, isKid)
+                _seriesMixed.value = mixedSeries
+                _seriesNewIds.value = newIdsSeries
 
-            // vod
-            val recentVod = _movies.value.take(36)
-            val newestVod = _movies.value.take(64)
-            val (mixedVod, newIdsVod) = use.computeVodMixed(recentVod, newestVod, showAdults)
-            _vodMixed.value = mixedVod
-            _vodNewIds.value = newIdsVod
-        }
+                // vod
+                val recentVod = _movies.value.take(36)
+                val newestVod = _movies.value.take(64)
+                val (mixedVod, newIdsVod) = use.computeVodMixed(recentVod, newestVod, showAdults)
+                _vodMixed.value = mixedVod
+                _vodNewIds.value = newIdsVod
+            }
     }
 
-    fun allowForAllKids(type: String, id: Long) = viewModelScope.launch(Dispatchers.IO) {
+    fun allowForAllKids(
+        type: String,
+        id: Long,
+    ) = viewModelScope.launch(Dispatchers.IO) {
         val kids = profileRepo.all().filter { it.type == "kid" }
         kids.forEach { kidRepo.allow(it.id, type, id) }
         _events.emit(StartEvent.Toast("Für Kinder freigegeben"))
     }
 
     companion object {
-        fun Factory(ctx: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return StartViewModel(ctx.applicationContext) as T
+        fun Factory(ctx: Context): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T = StartViewModel(ctx.applicationContext) as T
             }
-        }
     }
 }

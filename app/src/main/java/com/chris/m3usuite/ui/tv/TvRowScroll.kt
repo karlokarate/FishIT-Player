@@ -16,21 +16,25 @@ suspend fun LazyListState.centerItemSafely(index: Int) {
         val left = visible.offset
         val right = visible.offset + visible.size
         if (left >= 0 && right <= viewport) {
-            com.chris.m3usuite.core.debug.GlobalDebug.logRowScrollPlan(index, 0, reason = "skip:fullyVisible")
+            com.chris.m3usuite.core.debug.GlobalDebug
+                .logRowScrollPlan(index, 0, reason = "skip:fullyVisible")
             return
         }
         // Otherwise, minimally adjust to bring the item fully into view.
-        val desired = when {
-            left < 0 -> 0
-            right > viewport -> (viewport - visible.size).coerceAtLeast(0)
-            else -> left
-        }
-        com.chris.m3usuite.core.debug.GlobalDebug.logRowScrollPlan(index, desired, reason = "adjust:clip")
+        val desired =
+            when {
+                left < 0 -> 0
+                right > viewport -> (viewport - visible.size).coerceAtLeast(0)
+                else -> left
+            }
+        com.chris.m3usuite.core.debug.GlobalDebug
+            .logRowScrollPlan(index, desired, reason = "adjust:clip")
         animateScrollToItem(index, desired)
     } else {
         // Item not visible yet – still attempt to place it near center.
         val approxOffset = (viewport / 3).coerceAtLeast(0)
-        com.chris.m3usuite.core.debug.GlobalDebug.logRowScrollPlan(index, approxOffset, reason = "approx:notVisible")
+        com.chris.m3usuite.core.debug.GlobalDebug
+            .logRowScrollPlan(index, approxOffset, reason = "approx:notVisible")
         scrollToItem(index, approxOffset)
     }
 }

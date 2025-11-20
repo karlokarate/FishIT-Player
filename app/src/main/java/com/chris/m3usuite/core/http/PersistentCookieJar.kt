@@ -6,7 +6,6 @@ import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import java.net.HttpCookie
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -14,11 +13,16 @@ import java.util.concurrent.atomic.AtomicBoolean
  * - Merges by (name, domain, path)
  * - Removes expired cookies on save/load
  */
-class PersistentCookieJar private constructor(private val appContext: Context) : CookieJar {
+class PersistentCookieJar private constructor(
+    private val appContext: Context,
+) : CookieJar {
     private val prefs by lazy { appContext.getSharedPreferences("cookies_v1", Context.MODE_PRIVATE) }
     private val saving = AtomicBoolean(false)
 
-    override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+    override fun saveFromResponse(
+        url: HttpUrl,
+        cookies: List<Cookie>,
+    ) {
         val now = System.currentTimeMillis()
         val all = loadAll().toMutableList()
         // remove expired
@@ -38,8 +42,8 @@ class PersistentCookieJar private constructor(private val appContext: Context) :
         val all = loadAll().filter { it.expiresAt >= now }
         return all.filter { c ->
             (!c.secure || https) &&
-            (host.equals(c.domain, true) || host.endsWith("." + c.domain, true)) &&
-            path.startsWith(c.path)
+                (host.equals(c.domain, true) || host.endsWith("." + c.domain, true)) &&
+                path.startsWith(c.path)
         }
     }
 
@@ -51,17 +55,18 @@ class PersistentCookieJar private constructor(private val appContext: Context) :
                 val now = System.currentTimeMillis()
                 for (i in 0 until arr.length()) {
                     val o = arr.getJSONObject(i)
-                    val c = Cookie.Builder()
-                        .name(o.getString("name"))
-                        .value(o.getString("value"))
-                        .domain(o.getString("domain"))
-                        .path(o.optString("path", "/"))
-                        .apply {
-                            if (o.optBoolean("secure", false)) secure()
-                            if (o.optBoolean("hostOnly", false)) hostOnlyDomain(o.getString("domain"))
-                        }
-                        .expiresAt(o.optLong("expiresAt", now + 7L*24*60*60*1000))
-                        .build()
+                    val c =
+                        Cookie
+                            .Builder()
+                            .name(o.getString("name"))
+                            .value(o.getString("value"))
+                            .domain(o.getString("domain"))
+                            .path(o.optString("path", "/"))
+                            .apply {
+                                if (o.optBoolean("secure", false)) secure()
+                                if (o.optBoolean("hostOnly", false)) hostOnlyDomain(o.getString("domain"))
+                            }.expiresAt(o.optLong("expiresAt", now + 7L * 24 * 60 * 60 * 1000))
+                            .build()
                     add(c)
                 }
             }
@@ -103,14 +108,16 @@ class PersistentCookieJar private constructor(private val appContext: Context) :
             val name = p.substring(0, idx)
             val value = p.substring(idx + 1)
             // Session cookies: give them a short lifetime (3 days) to persist clearance
-            val c = Cookie.Builder()
-                .name(name)
-                .value(value)
-                .domain(u.host)
-                .path("/")
-                .apply { if (https) secure() }
-                .expiresAt(now + 3L*24*60*60*1000)
-                .build()
+            val c =
+                Cookie
+                    .Builder()
+                    .name(name)
+                    .value(value)
+                    .domain(u.host)
+                    .path("/")
+                    .apply { if (https) secure() }
+                    .expiresAt(now + 3L * 24 * 60 * 60 * 1000)
+                    .build()
             imported.add(c)
         }
         if (imported.isNotEmpty()) saveFromResponse(u, imported)
@@ -118,6 +125,7 @@ class PersistentCookieJar private constructor(private val appContext: Context) :
 
     companion object {
         @Volatile private var instance: PersistentCookieJar? = null
+
         fun get(context: Context): PersistentCookieJar {
             val cur = instance
             if (cur != null) return cur
@@ -129,7 +137,10 @@ class PersistentCookieJar private constructor(private val appContext: Context) :
 }
 
 object CookieBridge {
-    fun importFromWebView(context: Context, portalBase: String) {
+    fun importFromWebView(
+        context: Context,
+        portalBase: String,
+    ) {
         PersistentCookieJar.get(context).importFromWebView(portalBase)
     }
 }

@@ -37,7 +37,7 @@ fun FocusTitleOverlay(
     focused: Boolean,
     modifier: Modifier = Modifier,
     delayMs: Long = 220L,
-    maxLines: Int = 2
+    maxLines: Int = 2,
 ) {
     if (title.isNullOrBlank()) return
     var visible by remember { mutableStateOf(false) }
@@ -57,28 +57,29 @@ fun FocusTitleOverlay(
     val alpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
         animationSpec = tween(durationMillis = 150),
-        label = "focusTitleAlpha"
+        label = "focusTitleAlpha",
     )
 
     if (alpha <= 0f) return
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .alpha(alpha)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color.Black.copy(alpha = 0.72f))
-                .padding(horizontal = 18.dp, vertical = 12.dp),
+            modifier =
+                Modifier
+                    .align(Alignment.Center)
+                    .alpha(alpha)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.Black.copy(alpha = 0.72f))
+                    .padding(horizontal = 18.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall.copy(color = Color.White),
                 textAlign = TextAlign.Center,
                 maxLines = maxLines,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

@@ -9,4 +9,3 @@ import androidx.compose.ui.focus.focusProperties
  * across Compose versions and to centralize future adjustments.
  */
 fun Modifier.focusGroup(): Modifier = this.focusProperties { }
-

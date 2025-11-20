@@ -12,8 +12,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,7 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,8 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
@@ -48,8 +45,8 @@ import com.chris.m3usuite.ui.focus.focusScaleOnTv
 private fun isYoutubeUrl(url: String): Boolean =
     url.contains("youtube.com", ignoreCase = true) || url.contains("youtu.be", ignoreCase = true)
 
-private fun youtubeIdFromUrl(url: String): String? {
-    return runCatching {
+private fun youtubeIdFromUrl(url: String): String? =
+    runCatching {
         val u = Uri.parse(url)
         when {
             u.host?.contains("youtu.be", true) == true -> u.lastPathSegment
@@ -57,7 +54,6 @@ private fun youtubeIdFromUrl(url: String): String? {
             else -> null
         }
     }.getOrNull()
-}
 
 private fun youtubeEmbedUrl(url: String): String? {
     val id = youtubeIdFromUrl(url) ?: return null
@@ -70,7 +66,7 @@ fun TrailerBox(
     url: String,
     headers: Map<String, String> = emptyMap(),
     expanded: MutableState<Boolean>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val isYt = remember(url) { isYoutubeUrl(url) }
 
@@ -78,14 +74,15 @@ fun TrailerBox(
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = shape,
-        modifier = modifier
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), shape)
-            .clip(shape)
+        modifier =
+            modifier
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), shape)
+                .clip(shape),
     ) {
         Box(
             Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f)),
         ) {
             if (isYt) {
                 val embed = remember(url) { youtubeEmbedUrl(url) }
@@ -99,12 +96,13 @@ fun TrailerBox(
             }
             IconButton(onClick = { expanded.value = true }, modifier = Modifier.align(Alignment.TopEnd).focusScaleOnTv()) {
                 val requested = AppIcon.PlayCircle.resId()
-                val resolved = if (requested != 0) {
-                    requested
-                } else {
-                    Log.w("TrailerBox", "Missing drawable for AppIcon.PlayCircle – using fallback icon")
-                    R.drawable.ic_play_circle_primary
-                }
+                val resolved =
+                    if (requested != 0) {
+                        requested
+                    } else {
+                        Log.w("TrailerBox", "Missing drawable for AppIcon.PlayCircle – using fallback icon")
+                        R.drawable.ic_play_circle_primary
+                    }
                 Icon(painter = safePainter(resolved, label = "TrailerBox"), contentDescription = "Vollbild", tint = Color.White)
             }
         }
@@ -128,30 +126,37 @@ private fun YoutubeWebView(embedUrl: String) {
                 loadUrl(embedUrl)
             }
         },
-        update = { it.loadUrl(embedUrl) }
+        update = { it.loadUrl(embedUrl) },
     )
 }
 
 @UnstableApi
 @Composable
-private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
+private fun SimpleVideoBox(
+    url: String,
+    headers: Map<String, String>,
+) {
     val context = LocalContext.current
-    val player = remember {
-        // Media3 official pattern: Build a player once per composition, release in DisposableEffect
-        val trackSelector = DefaultTrackSelector(context)
-        val httpFactory = DefaultHttpDataSource.Factory()
-            .setAllowCrossProtocolRedirects(true)
-            .setConnectTimeoutMs(10_000)
-            .setReadTimeoutMs(15_000)
-        if (headers.isNotEmpty()) httpFactory.setDefaultRequestProperties(headers)
-        val mediaSourceFactory = DefaultMediaSourceFactory(context).setDataSourceFactory(httpFactory)
-        val renderers = PlayerComponents.renderersFactory(context)
-        ExoPlayer.Builder(context)
-            .setRenderersFactory(renderers)
-            .setTrackSelector(trackSelector)
-            .setMediaSourceFactory(mediaSourceFactory)
-            .build()
-    }
+    val player =
+        remember {
+            // Media3 official pattern: Build a player once per composition, release in DisposableEffect
+            val trackSelector = DefaultTrackSelector(context)
+            val httpFactory =
+                DefaultHttpDataSource
+                    .Factory()
+                    .setAllowCrossProtocolRedirects(true)
+                    .setConnectTimeoutMs(10_000)
+                    .setReadTimeoutMs(15_000)
+            if (headers.isNotEmpty()) httpFactory.setDefaultRequestProperties(headers)
+            val mediaSourceFactory = DefaultMediaSourceFactory(context).setDataSourceFactory(httpFactory)
+            val renderers = PlayerComponents.renderersFactory(context)
+            ExoPlayer
+                .Builder(context)
+                .setRenderersFactory(renderers)
+                .setTrackSelector(trackSelector)
+                .setMediaSourceFactory(mediaSourceFactory)
+                .build()
+        }
 
     DisposableEffect(url) {
         val item = MediaItem.fromUri(url)
@@ -172,6 +177,6 @@ private fun SimpleVideoBox(url: String, headers: Map<String, String>) {
                 this.player = player
             }
         },
-        update = { view -> view.player = player }
+        update = { view -> view.player = player },
     )
 }

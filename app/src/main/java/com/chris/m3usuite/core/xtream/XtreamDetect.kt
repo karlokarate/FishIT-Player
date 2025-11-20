@@ -15,7 +15,6 @@ import java.nio.charset.StandardCharsets
  * Keine externen Abhängigkeiten (nur java.net.URI).
  */
 object XtreamDetect {
-
     // ---------------------------------
     // Public API
     // ---------------------------------
@@ -37,38 +36,58 @@ object XtreamDetect {
      * Deckt ab: /.../12345, /.../12345.ts, /.../12345.m3u8, sowie optionale Query-Enden.
      */
     fun parseStreamId(url: String): Int? =
-        ID_TAIL.find(url)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        ID_TAIL
+            .find(url)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.toIntOrNull()
 
     // ---------------------------------
     // Internals
     // ---------------------------------
 
-    private fun detectFromQuery(anyUrl: String): XtreamCreds? = runCatching {
-        val uri = URI(anyUrl)
-        val scheme = (uri.scheme ?: "http").lowercase()
-        val host = uri.host ?: return null
-        val port = if (uri.port > 0) uri.port else if (scheme == "https") 443 else 80
-        val query = uri.rawQuery.orEmpty()
-        if (query.isEmpty()) return null
-        val qp = parseQuery(query)
-        val user = qp["username"] ?: return null
-        val pass = qp["password"] ?: return null
-        val out = (qp["output"] ?: qp["container"] ?: "m3u8").lowercase()
-        XtreamCreds(host, port, user, pass, out)
-    }.getOrNull()
+    private fun detectFromQuery(anyUrl: String): XtreamCreds? =
+        runCatching {
+            val uri = URI(anyUrl)
+            val scheme = (uri.scheme ?: "http").lowercase()
+            val host = uri.host ?: return null
+            val port =
+                if (uri.port > 0) {
+                    uri.port
+                } else if (scheme == "https") {
+                    443
+                } else {
+                    80
+                }
+            val query = uri.rawQuery.orEmpty()
+            if (query.isEmpty()) return null
+            val qp = parseQuery(query)
+            val user = qp["username"] ?: return null
+            val pass = qp["password"] ?: return null
+            val out = (qp["output"] ?: qp["container"] ?: "m3u8").lowercase()
+            XtreamCreds(host, port, user, pass, out)
+        }.getOrNull()
 
-    private fun detectFromPath(anyUrl: String): XtreamCreds? = runCatching {
-        val uri = URI(anyUrl)
-        val scheme = (uri.scheme ?: "http").lowercase()
-        val host = uri.host ?: return null
-        val port = if (uri.port > 0) uri.port else if (scheme == "https") 443 else 80
-        val path = uri.path ?: return null
-        // Erwartete Muster: /live/{u}/{p}/..., /movie|movies|vod/{u}/{p}/..., /series/{u}/{p}/...
-        val m = CREDS_PATH.find(path) ?: return null
-        val u = urlDecode(m.groupValues[1])
-        val p = urlDecode(m.groupValues[2])
-        XtreamCreds(host, port, u, p, output = "m3u8")
-    }.getOrNull()
+    private fun detectFromPath(anyUrl: String): XtreamCreds? =
+        runCatching {
+            val uri = URI(anyUrl)
+            val scheme = (uri.scheme ?: "http").lowercase()
+            val host = uri.host ?: return null
+            val port =
+                if (uri.port > 0) {
+                    uri.port
+                } else if (scheme == "https") {
+                    443
+                } else {
+                    80
+                }
+            val path = uri.path ?: return null
+            // Erwartete Muster: /live/{u}/{p}/..., /movie|movies|vod/{u}/{p}/..., /series/{u}/{p}/...
+            val m = CREDS_PATH.find(path) ?: return null
+            val u = urlDecode(m.groupValues[1])
+            val p = urlDecode(m.groupValues[2])
+            XtreamCreds(host, port, u, p, output = "m3u8")
+        }.getOrNull()
 
     private fun parseQuery(q: String): Map<String, String> {
         if (q.isBlank()) return emptyMap()
@@ -83,9 +102,12 @@ object XtreamDetect {
         return map
     }
 
-    private fun urlDecode(s: String): String = try {
-        URLDecoder.decode(s, StandardCharsets.UTF_8.name())
-    } catch (_: Throwable) { s }
+    private fun urlDecode(s: String): String =
+        try {
+            URLDecoder.decode(s, StandardCharsets.UTF_8.name())
+        } catch (_: Throwable) {
+            s
+        }
 
     // ---- Regexe ----
     private val CREDS_PATH = Regex("/(?:live|movie|movies|vod|series)/([^/]+)/([^/]+)/", RegexOption.IGNORE_CASE)
@@ -101,5 +123,5 @@ data class XtreamCreds(
     val port: Int,
     val username: String,
     val password: String,
-    val output: String = "m3u8"
+    val output: String = "m3u8",
 )

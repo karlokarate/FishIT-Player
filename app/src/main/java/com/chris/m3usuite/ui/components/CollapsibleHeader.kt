@@ -9,17 +9,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
-import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import com.chris.m3usuite.ui.debug.safePainter
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.ui.debug.safePainter
+import com.chris.m3usuite.ui.focus.focusScaleOnTv
 import kotlinx.coroutines.launch
+
 /**
  * Einklappbarer Header mit Pfeil. Default in Landscape = eingeklappt (aus Settings).
  */
@@ -28,7 +29,7 @@ fun CollapsibleHeader(
     store: SettingsStore,
     title: @Composable () -> Unit,
     headerContent: @Composable () -> Unit,
-    contentBelow: @Composable (collapsed: Boolean) -> Unit
+    contentBelow: @Composable (collapsed: Boolean) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -63,7 +64,7 @@ fun CollapsibleHeader(
         AnimatedVisibility(
             visible = !collapsed,
             enter = expandVertically(),
-            exit = shrinkVertically()
+            exit = shrinkVertically(),
         ) {
             Column(Modifier.padding(top = 8.dp)) {
                 headerContent()

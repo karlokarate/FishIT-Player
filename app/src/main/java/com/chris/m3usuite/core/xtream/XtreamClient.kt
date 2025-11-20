@@ -1,21 +1,20 @@
 package com.chris.m3usuite.core.xtream
 
-import android.net.Uri
-import android.util.Log
 import android.os.SystemClock
-import kotlinx.coroutines.delay
+import android.util.Log
+import androidx.core.net.toUri
+import com.chris.m3usuite.core.debug.GlobalDebug
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import androidx.core.net.toUri
-import com.chris.m3usuite.core.debug.GlobalDebug
 
 /**
  * XtreamClient – API‑first Client für Xtream Codes Panels.
@@ -30,18 +29,23 @@ import com.chris.m3usuite.core.debug.GlobalDebug
 class XtreamClient(
     private val http: OkHttpClient,
     private val json: Json = Json { ignoreUnknownKeys = true },
-    private val io: CoroutineDispatcher = Dispatchers.IO
+    private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     companion object {
         private val rateMutex = Mutex()
         private var lastCallAt = 0L
         private const val MIN_INTERVAL_MS = 120L
 
-        private data class CacheEntry(val at: Long, val body: String)
+        private data class CacheEntry(
+            val at: Long,
+            val body: String,
+        )
+
         private val cacheLock = Mutex()
-        private val cache = object : LinkedHashMap<String, CacheEntry>(512, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CacheEntry>?): Boolean = size > 512
-        }
+        private val cache =
+            object : LinkedHashMap<String, CacheEntry>(512, 0.75f, true) {
+                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CacheEntry>?): Boolean = size > 512
+            }
         private const val CACHE_TTL_MS = 60_000L
         private const val EPG_CACHE_TTL_MS = 15_000L
 
@@ -56,17 +60,25 @@ class XtreamClient(
             }
         }
 
-        private suspend fun readCache(url: String, isEpg: Boolean): String? {
+        private suspend fun readCache(
+            url: String,
+            isEpg: Boolean,
+        ): String? {
             val ttl = if (isEpg) EPG_CACHE_TTL_MS else CACHE_TTL_MS
             return cacheLock.withLock {
                 val e = cache[url] ?: return@withLock null
                 if ((SystemClock.elapsedRealtime() - e.at) <= ttl) e.body else null
             }
         }
-        private suspend fun writeCache(url: String, body: String) {
+
+        private suspend fun writeCache(
+            url: String,
+            body: String,
+        ) {
             cacheLock.withLock { cache[url] = CacheEntry(SystemClock.elapsedRealtime(), body) }
         }
     }
+
     private lateinit var cfg: XtreamConfig
     private lateinit var caps: XtreamCapabilities
     private var vodKind: String = "vod"
@@ -78,9 +90,14 @@ class XtreamClient(
     private val epgSemaphore = Semaphore(4)
 
     private fun redact(url: String): String =
-        url.replace(Regex("(?i)(password)=([^&]*)"), "${'$'}1=***")
-           .replace(Regex("(?i)(username)=([^&]*)"), "${'$'}1=***")
-    private fun snippet(s: String, n: Int = 200): String = s.replace("\n", " ").replace("\r", " ").take(n)
+        url
+            .replace(Regex("(?i)(password)=([^&]*)"), "${'$'}1=***")
+            .replace(Regex("(?i)(username)=([^&]*)"), "${'$'}1=***")
+
+    private fun snippet(
+        s: String,
+        n: Int = 200,
+    ): String = s.replace("\n", " ").replace("\r", " ").take(n)
 
     /**
      * Discovery (Port/Aliasse) → finale XtreamConfig erzeugen.
@@ -92,42 +109,45 @@ class XtreamClient(
         password: String,
         basePath: String? = null,
         livePrefs: List<String> = listOf("m3u8", "ts"),
-        vodPrefs: List<String>  = listOf("mp4", "mkv", "avi"),
+        vodPrefs: List<String> = listOf("mp4", "mkv", "avi"),
         seriesPrefs: List<String> = listOf("mp4", "mkv", "avi"),
         store: ProviderCapabilityStore,
         portStore: EndpointPortStore,
         forceRefreshDiscovery: Boolean = false,
         portOverride: Int? = null,
     ) = withContext(io) {
-        val discoverer = CapabilityDiscoverer(
-            http = http,
-            store = store,
-            portStore = portStore,
-            json = json
-        )
-        caps = if ((portOverride ?: 0) > 0) {
-            val cfgExplicit = XtreamConfig(
-                scheme = scheme,
-                host = host,
-                port = portOverride!!,
-                username = username,
-                password = password,
-                basePath = basePath,
-                liveExtPrefs = livePrefs,
-                vodExtPrefs = vodPrefs,
-                seriesExtPrefs = seriesPrefs,
+        val discoverer =
+            CapabilityDiscoverer(
+                http = http,
+                store = store,
+                portStore = portStore,
+                json = json,
             )
-            discoverer.discover(cfgExplicit, forceRefresh = forceRefreshDiscovery)
-        } else {
-            discoverer.discoverAuto(
-                scheme = scheme,
-                host = host,
-                username = username,
-                password = password,
-                basePath = basePath,
-                forceRefresh = forceRefreshDiscovery,
-            )
-        }
+        caps =
+            if ((portOverride ?: 0) > 0) {
+                val cfgExplicit =
+                    XtreamConfig(
+                        scheme = scheme,
+                        host = host,
+                        port = portOverride!!,
+                        username = username,
+                        password = password,
+                        basePath = basePath,
+                        liveExtPrefs = livePrefs,
+                        vodExtPrefs = vodPrefs,
+                        seriesExtPrefs = seriesPrefs,
+                    )
+                discoverer.discover(cfgExplicit, forceRefresh = forceRefreshDiscovery)
+            } else {
+                discoverer.discoverAuto(
+                    scheme = scheme,
+                    host = host,
+                    username = username,
+                    password = password,
+                    basePath = basePath,
+                    forceRefresh = forceRefreshDiscovery,
+                )
+            }
 
         val u = caps.baseUrl.toUri()
         val resolvedScheme = (u.scheme ?: scheme).lowercase()
@@ -136,23 +156,26 @@ class XtreamClient(
         val resolvedBasePath = u.path?.takeIf { it.isNotBlank() && it != "/" }
         vodKind = caps.resolvedAliases.vodKind ?: "vod"
 
-        cfg = XtreamConfig(
-            scheme = resolvedScheme,
-            host = resolvedHost,
-            port = resolvedPort,
-            username = username,
-            password = password,
-            pathKinds = PathKinds(liveKind = "live", vodKind = vodKind, seriesKind = "series"),
-            basePath = resolvedBasePath ?: basePath,
-            liveExtPrefs = livePrefs,
-            vodExtPrefs = vodPrefs,
-            seriesExtPrefs = seriesPrefs,
-        )
+        cfg =
+            XtreamConfig(
+                scheme = resolvedScheme,
+                host = resolvedHost,
+                port = resolvedPort,
+                username = username,
+                password = password,
+                pathKinds = PathKinds(liveKind = "live", vodKind = vodKind, seriesKind = "series"),
+                basePath = resolvedBasePath ?: basePath,
+                liveExtPrefs = livePrefs,
+                vodExtPrefs = vodPrefs,
+                seriesExtPrefs = seriesPrefs,
+            )
 
-        httpClient = http.newBuilder()
-            .followRedirects(true)
-            .followSslRedirects(false)
-            .build()
+        httpClient =
+            http
+                .newBuilder()
+                .followRedirects(true)
+                .followSslRedirects(false)
+                .build()
     }
 
     // ------------------------------------------------------------
@@ -179,12 +202,13 @@ class XtreamClient(
         val order = listOf(vodKind, "vod", "movie", "movies").filter { it.isNotBlank() }
         for (alias in order) {
             if (!tried.add(alias)) continue
-            val res = apiArray("get_${alias}_categories") { obj ->
-                RawCategory(
-                    category_id = obj["category_id"]?.asString(),
-                    category_name = obj["category_name"]?.asString(),
-                )
-            }
+            val res =
+                apiArray("get_${alias}_categories") { obj ->
+                    RawCategory(
+                        category_id = obj["category_id"]?.asString(),
+                        category_name = obj["category_name"]?.asString(),
+                    )
+                }
             if (res.isNotEmpty()) {
                 vodKind = alias
                 return res
@@ -196,7 +220,11 @@ class XtreamClient(
     // ------------------------------------------------------------
     // Streams (Bulk → Client‑Slicing)
     // ------------------------------------------------------------
-    suspend fun getLiveStreams(categoryId: String? = null, offset: Int, limit: Int): List<RawLiveStream> =
+    suspend fun getLiveStreams(
+        categoryId: String? = null,
+        offset: Int,
+        limit: Int,
+    ): List<RawLiveStream> =
         sliceArray("get_live_streams", categoryId, offset, limit) { obj ->
             RawLiveStream(
                 num = obj["num"]?.asIntOrNull(),
@@ -209,7 +237,11 @@ class XtreamClient(
             )
         }
 
-    suspend fun getSeries(categoryId: String? = null, offset: Int, limit: Int): List<RawSeries> =
+    suspend fun getSeries(
+        categoryId: String? = null,
+        offset: Int,
+        limit: Int,
+    ): List<RawSeries> =
         sliceArray("get_series", categoryId, offset, limit) { obj ->
             RawSeries(
                 num = obj["num"]?.asIntOrNull(),
@@ -220,26 +252,33 @@ class XtreamClient(
             )
         }
 
-    suspend fun getVodStreams(categoryId: String? = null, offset: Int, limit: Int): List<RawVod> {
+    suspend fun getVodStreams(
+        categoryId: String? = null,
+        offset: Int,
+        limit: Int,
+    ): List<RawVod> {
         val tried = linkedSetOf<String>()
         val order = listOf(vodKind, "vod", "movie", "movies").filter { it.isNotBlank() }
         for (alias in order) {
             if (!tried.add(alias)) continue
-            val res = sliceArray("get_${alias}_streams", categoryId, offset, limit) { obj ->
-                val resolvedId = (obj["vod_id"]
-                    ?: obj["movie_id"]
-                    ?: obj["id"]
-                    ?: obj["stream_id"]
-                )?.asIntOrNull()
-                RawVod(
-                    num = obj["num"]?.asIntOrNull(),
-                    name = obj["name"]?.asString(),
-                    vod_id = resolvedId,
-                    stream_icon = obj["stream_icon"]?.asString(),
-                    category_id = obj["category_id"]?.asString(),
-                    container_extension = obj["container_extension"]?.asString(),
-                )
-            }
+            val res =
+                sliceArray("get_${alias}_streams", categoryId, offset, limit) { obj ->
+                    val resolvedId =
+                        (
+                            obj["vod_id"]
+                                ?: obj["movie_id"]
+                                ?: obj["id"]
+                                ?: obj["stream_id"]
+                        )?.asIntOrNull()
+                    RawVod(
+                        num = obj["num"]?.asIntOrNull(),
+                        name = obj["name"]?.asString(),
+                        vod_id = resolvedId,
+                        stream_icon = obj["stream_icon"]?.asString(),
+                        category_id = obj["category_id"]?.asString(),
+                        container_extension = obj["container_extension"]?.asString(),
+                    )
+                }
             if (res.isNotEmpty()) {
                 vodKind = alias
                 return res
@@ -260,14 +299,19 @@ class XtreamClient(
         outer@ for (alias in aliasOrder) {
             for (idField in idFields) {
                 infoObj = apiObject("get_${alias}_info", extra = "&$idField=$vodId")
-                if (infoObj != null) { vodKind = alias; break@outer }
+                if (infoObj != null) {
+                    vodKind = alias
+                    break@outer
+                }
             }
         }
         infoObj ?: return null
         // Prefer info{} for rich metadata; movie_data{} holds stream/container bits
         val info = infoObj["info"]?.jsonObject
         val movieData = infoObj["movie_data"]?.jsonObject
+
         fun pickStr(key: String): String? = info?.get(key)?.asString() ?: movieData?.get(key)?.asString() ?: infoObj[key]?.asString()
+
         fun pickArray(key: String): List<String> {
             val el = info?.get(key) ?: movieData?.get(key) ?: infoObj[key]
             return when {
@@ -282,41 +326,49 @@ class XtreamClient(
         val backdrops = pickArray("backdrop_path")
         val container = sanitizeContainerExt(movieData?.get("container_extension")?.asString() ?: pickStr("container_extension"))
         val durationSecs = parseDurationSeconds(pickStr("duration")) ?: pickStr("duration_secs")?.toIntOrNull()
-        val images = buildList {
-            if (poster != null) add(poster)
-            if (cover != null) add(cover)
-            backdrops.forEach { b -> if (!contains(b)) add(b) }
-        }
+        val images =
+            buildList {
+                if (poster != null) add(poster)
+                if (cover != null) add(cover)
+                backdrops.forEach { b -> if (!contains(b)) add(b) }
+            }
 
-        val plotText = listOf("plot", "description", "plot_outline", "overview").firstNotNullOfOrNull { k -> pickStr(k) }?.trim()?.takeIf { it.isNotEmpty() }
-        val trailerText = listOf("youtube_trailer", "trailer", "trailer_url", "youtube", "yt_trailer").firstNotNullOfOrNull { k -> pickStr(k) }
+        val plotText =
+            listOf("plot", "description", "plot_outline", "overview").firstNotNullOfOrNull { k -> pickStr(k) }?.trim()?.takeIf {
+                it.isNotEmpty()
+            }
+        val trailerText =
+            listOf("youtube_trailer", "trailer", "trailer_url", "youtube", "yt_trailer").firstNotNullOfOrNull { k ->
+                pickStr(k)
+            }
 
-        val detail = NormalizedVodDetail(
-            vodId = vodId,
-            name = pickStr("name").orEmpty(),
-            year = pickStr("year")?.toIntOrNull(),
-            rating = pickStr("rating")?.toDoubleOrNull(),
-            plot = plotText,
-            genre = (pickStr("genre") ?: pickStr("genres"))?.takeIf { it.isNotBlank() },
-            director = pickStr("director"),
-            cast = pickStr("cast") ?: pickStr("actors"),
-            country = pickStr("country"),
-            releaseDate = pickStr("releasedate") ?: pickStr("releaseDate"),
-            imdbId = pickStr("imdb_id"),
-            tmdbId = pickStr("tmdb_id"),
-            images = images.distinct(),
-            trailer = trailerText,
-            containerExt = container,
-            durationSecs = durationSecs,
-            audio = pickStr("audio"),
-            video = pickStr("video"),
-            bitrate = pickStr("bitrate"),
-            mpaaRating = pickStr("mpaa_rating"),
-            age = pickStr("age"),
-            tmdbUrl = pickStr("tmdb_url"),
-            oName = pickStr("o_name"),
-            coverBig = pickStr("cover_big"),
-        )
+        val detail =
+            NormalizedVodDetail(
+                vodId = vodId,
+                name = pickStr("name").orEmpty(),
+                year = pickStr("year")?.toIntOrNull(),
+                rating = pickStr("rating")?.toDoubleOrNull(),
+                plot = plotText,
+                genre = (pickStr("genre") ?: pickStr("genres"))?.takeIf { it.isNotBlank() },
+                director = pickStr("director"),
+                cast = pickStr("cast") ?: pickStr("actors"),
+                country = pickStr("country"),
+                releaseDate = pickStr("releasedate") ?: pickStr("releaseDate"),
+                imdbId = pickStr("imdb_id"),
+                tmdbId = pickStr("tmdb_id"),
+                images = images.distinct(),
+                trailer = trailerText,
+                containerExt = container,
+                durationSecs = durationSecs,
+                audio = pickStr("audio"),
+                video = pickStr("video"),
+                bitrate = pickStr("bitrate"),
+                mpaaRating = pickStr("mpaa_rating"),
+                age = pickStr("age"),
+                tmdbUrl = pickStr("tmdb_url"),
+                oName = pickStr("o_name"),
+                coverBig = pickStr("cover_big"),
+            )
         if (GlobalDebug.isEnabled()) {
             logVodDebug(vodId, infoObj, info, movieData, detail)
         }
@@ -328,9 +380,10 @@ class XtreamClient(
         root: Map<String, JsonElement>,
         info: JsonObject?,
         movieData: JsonObject?,
-        detail: NormalizedVodDetail
+        detail: NormalizedVodDetail,
     ) {
         val tag = "XtreamDetail"
+
         fun sanitised(value: String?): String? {
             if (value.isNullOrEmpty()) return value
             var out = value.replace('\n', ' ').replace('\r', ' ')
@@ -341,35 +394,37 @@ class XtreamClient(
             return out
         }
 
-        val imagesStr = detail.images
-            .mapNotNull { sanitised(it)?.takeIf { s -> s.isNotBlank() } }
-            .joinToString(prefix = "[", postfix = "]")
+        val imagesStr =
+            detail.images
+                .mapNotNull { sanitised(it)?.takeIf { s -> s.isNotBlank() } }
+                .joinToString(prefix = "[", postfix = "]")
 
-        val detailParts = buildList {
-            sanitised(detail.name)?.takeIf { it.isNotBlank() }?.let { add("name=$it") }
-            detail.year?.toString()?.let { add("year=$it") }
-            detail.rating?.toString()?.let { add("rating=$it") }
-            sanitised(detail.plot)?.takeIf { it.isNotBlank() }?.let { add("plot=$it") }
-            sanitised(detail.genre)?.takeIf { it.isNotBlank() }?.let { add("genre=$it") }
-            sanitised(detail.director)?.takeIf { it.isNotBlank() }?.let { add("director=$it") }
-            sanitised(detail.cast)?.takeIf { it.isNotBlank() }?.let { add("cast=$it") }
-            sanitised(detail.country)?.takeIf { it.isNotBlank() }?.let { add("country=$it") }
-            sanitised(detail.releaseDate)?.takeIf { it.isNotBlank() }?.let { add("releaseDate=$it") }
-            sanitised(detail.imdbId)?.takeIf { it.isNotBlank() }?.let { add("imdbId=$it") }
-            sanitised(detail.tmdbId)?.takeIf { it.isNotBlank() }?.let { add("tmdbId=$it") }
-            sanitised(detail.trailer)?.takeIf { it.isNotBlank() }?.let { add("trailer=$it") }
-            sanitised(detail.containerExt)?.takeIf { it.isNotBlank() }?.let { add("containerExt=$it") }
-            detail.durationSecs?.let { add("durationSecs=$it") }
-            sanitised(detail.audio)?.takeIf { it.isNotBlank() }?.let { add("audio=$it") }
-            sanitised(detail.video)?.takeIf { it.isNotBlank() }?.let { add("video=$it") }
-            sanitised(detail.bitrate)?.takeIf { it.isNotBlank() }?.let { add("bitrate=$it") }
-            sanitised(detail.mpaaRating)?.takeIf { it.isNotBlank() }?.let { add("mpaaRating=$it") }
-            sanitised(detail.age)?.takeIf { it.isNotBlank() }?.let { add("age=$it") }
-            sanitised(detail.tmdbUrl)?.takeIf { it.isNotBlank() }?.let { add("tmdbUrl=$it") }
-            sanitised(detail.oName)?.takeIf { it.isNotBlank() }?.let { add("oName=$it") }
-            sanitised(detail.coverBig)?.takeIf { it.isNotBlank() }?.let { add("coverBig=$it") }
-            if (imagesStr.isNotBlank()) add("images=$imagesStr")
-        }.joinToString(", ")
+        val detailParts =
+            buildList {
+                sanitised(detail.name)?.takeIf { it.isNotBlank() }?.let { add("name=$it") }
+                detail.year?.toString()?.let { add("year=$it") }
+                detail.rating?.toString()?.let { add("rating=$it") }
+                sanitised(detail.plot)?.takeIf { it.isNotBlank() }?.let { add("plot=$it") }
+                sanitised(detail.genre)?.takeIf { it.isNotBlank() }?.let { add("genre=$it") }
+                sanitised(detail.director)?.takeIf { it.isNotBlank() }?.let { add("director=$it") }
+                sanitised(detail.cast)?.takeIf { it.isNotBlank() }?.let { add("cast=$it") }
+                sanitised(detail.country)?.takeIf { it.isNotBlank() }?.let { add("country=$it") }
+                sanitised(detail.releaseDate)?.takeIf { it.isNotBlank() }?.let { add("releaseDate=$it") }
+                sanitised(detail.imdbId)?.takeIf { it.isNotBlank() }?.let { add("imdbId=$it") }
+                sanitised(detail.tmdbId)?.takeIf { it.isNotBlank() }?.let { add("tmdbId=$it") }
+                sanitised(detail.trailer)?.takeIf { it.isNotBlank() }?.let { add("trailer=$it") }
+                sanitised(detail.containerExt)?.takeIf { it.isNotBlank() }?.let { add("containerExt=$it") }
+                detail.durationSecs?.let { add("durationSecs=$it") }
+                sanitised(detail.audio)?.takeIf { it.isNotBlank() }?.let { add("audio=$it") }
+                sanitised(detail.video)?.takeIf { it.isNotBlank() }?.let { add("video=$it") }
+                sanitised(detail.bitrate)?.takeIf { it.isNotBlank() }?.let { add("bitrate=$it") }
+                sanitised(detail.mpaaRating)?.takeIf { it.isNotBlank() }?.let { add("mpaaRating=$it") }
+                sanitised(detail.age)?.takeIf { it.isNotBlank() }?.let { add("age=$it") }
+                sanitised(detail.tmdbUrl)?.takeIf { it.isNotBlank() }?.let { add("tmdbUrl=$it") }
+                sanitised(detail.oName)?.takeIf { it.isNotBlank() }?.let { add("oName=$it") }
+                sanitised(detail.coverBig)?.takeIf { it.isNotBlank() }?.let { add("coverBig=$it") }
+                if (imagesStr.isNotBlank()) add("images=$imagesStr")
+            }.joinToString(", ")
 
         Log.i(tag, "vod:$vodId detail { $detailParts }")
 
@@ -389,13 +444,17 @@ class XtreamClient(
         val seasonsArr = root["seasons"]?.jsonArray ?: JsonArray(emptyList())
         val episodesMap = root["episodes"]?.jsonObject ?: JsonObject(emptyMap())
 
-        val images = buildList {
-            info?.get("poster_path")?.asString()?.let { add(it) }
-            info?.get("cover")?.asString()?.let { if (!contains(it)) add(it) }
-            val b = info?.get("backdrop_path")
-            if (b?.isJsonArray() == true) b.jsonArray.forEach { el -> el.asString()?.let { if (!contains(it)) add(it) } }
-            else b?.asString()?.let { if (!contains(it)) add(it) }
-        }
+        val images =
+            buildList {
+                info?.get("poster_path")?.asString()?.let { add(it) }
+                info?.get("cover")?.asString()?.let { if (!contains(it)) add(it) }
+                val b = info?.get("backdrop_path")
+                if (b?.isJsonArray() == true) {
+                    b.jsonArray.forEach { el -> el.asString()?.let { if (!contains(it)) add(it) } }
+                } else {
+                    b?.asString()?.let { if (!contains(it)) add(it) }
+                }
+            }
 
         val normalizedSeasons = mutableListOf<NormalizedSeason>()
         val seasonNumbersFromSeasons = seasonsArr.mapNotNull { it.jsonObject["season_number"]?.asIntOrNull() }
@@ -405,38 +464,42 @@ class XtreamClient(
         for (seasonNumber in seasonNumbers) {
             val key = seasonNumber.toString()
             val episodeList = episodesMap[key]?.jsonArray ?: JsonArray(emptyList())
-            val normalizedEpisodes = episodeList.mapNotNull { epEl ->
-                val epObj = epEl.jsonObject
-                val infoObj = epObj["info"]?.jsonObject
-                val poster = runCatching {
-                    infoObj?.get("movie_image")?.asString()
-                        ?: infoObj?.get("cover")?.asString()
-                        ?: infoObj?.get("poster_path")?.asString()
-                        ?: infoObj?.get("thumbnail")?.asString()
-                        ?: infoObj?.get("img")?.asString()
-                        ?: infoObj?.get("still_path")?.asString()
-                }.getOrNull()
-                NormalizedEpisode(
-                    episodeId = epObj["id"]?.asIntOrNull(),
-                    episodeNum = epObj["episode_num"]?.asIntOrNull() ?: epObj["id"]?.asIntOrNull() ?: return@mapNotNull null,
-                    title = epObj["title"]?.asString(),
-                    durationSecs = infoObj?.get("duration")?.asIntFromDuration(),
-                    rating = infoObj?.get("rating")?.asDoubleOrNull(),
-                    plot = infoObj?.get("plot")?.asString(),
-                    airDate = infoObj?.get("releasedate")?.asString(),
-                    playExt = sanitizeContainerExt(epObj["container_extension"]?.asString()),
-                    posterUrl = poster,
+            val normalizedEpisodes =
+                episodeList.mapNotNull { epEl ->
+                    val epObj = epEl.jsonObject
+                    val infoObj = epObj["info"]?.jsonObject
+                    val poster =
+                        runCatching {
+                            infoObj?.get("movie_image")?.asString()
+                                ?: infoObj?.get("cover")?.asString()
+                                ?: infoObj?.get("poster_path")?.asString()
+                                ?: infoObj?.get("thumbnail")?.asString()
+                                ?: infoObj?.get("img")?.asString()
+                                ?: infoObj?.get("still_path")?.asString()
+                        }.getOrNull()
+                    NormalizedEpisode(
+                        episodeId = epObj["id"]?.asIntOrNull(),
+                        episodeNum = epObj["episode_num"]?.asIntOrNull() ?: epObj["id"]?.asIntOrNull() ?: return@mapNotNull null,
+                        title = epObj["title"]?.asString(),
+                        durationSecs = infoObj?.get("duration")?.asIntFromDuration(),
+                        rating = infoObj?.get("rating")?.asDoubleOrNull(),
+                        plot = infoObj?.get("plot")?.asString(),
+                        airDate = infoObj?.get("releasedate")?.asString(),
+                        playExt = sanitizeContainerExt(epObj["container_extension"]?.asString()),
+                        posterUrl = poster,
+                    )
+                }
+            normalizedSeasons +=
+                NormalizedSeason(
+                    seasonNumber = seasonNumber,
+                    episodes = normalizedEpisodes,
                 )
-            }
-            normalizedSeasons += NormalizedSeason(
-                seasonNumber = seasonNumber,
-                episodes = normalizedEpisodes,
-            )
         }
 
         // Trailer synonyms for series
-        val trailerTextSer = listOf("youtube_trailer", "trailer", "trailer_url", "youtube", "yt_trailer")
-            .firstNotNullOfOrNull { key -> info?.get(key)?.asString() }
+        val trailerTextSer =
+            listOf("youtube_trailer", "trailer", "trailer_url", "youtube", "yt_trailer")
+                .firstNotNullOfOrNull { key -> info?.get(key)?.asString() }
 
         return NormalizedSeriesDetail(
             seriesId = seriesId,
@@ -460,15 +523,20 @@ class XtreamClient(
     // ------------------------------------------------------------
     // EPG – On‑Demand (sichtbare IDs)
     // ------------------------------------------------------------
-    suspend fun fetchShortEpg(streamId: Int, limit: Int = 20): String? =
-        apiRaw("get_short_epg", "&stream_id=$streamId&limit=$limit")
+    suspend fun fetchShortEpg(
+        streamId: Int,
+        limit: Int = 20,
+    ): String? = apiRaw("get_short_epg", "&stream_id=$streamId&limit=$limit")
 
     /**
      * Veraltet: nutze stattdessen EpgRepository.prefetchNowNext(...),
      * damit Cache & Persist gepflegt werden.
      */
     @Deprecated("Use EpgRepository.prefetchNowNext(...) for caching/persistence")
-    suspend fun prefetchEpgForVisible(streamIds: List<Int>, perStreamLimit: Int = 10) = withContext(io) {
+    suspend fun prefetchEpgForVisible(
+        streamIds: List<Int>,
+        perStreamLimit: Int = 10,
+    ) = withContext(io) {
         streamIds.distinct().forEach { id ->
             epgSemaphore.withPermit {
                 fetchShortEpg(id, perStreamLimit) // fire‑and‑forget (kein Persist)
@@ -479,18 +547,22 @@ class XtreamClient(
     // ------------------------------------------------------------
     // Play‑URLs
     // ------------------------------------------------------------
-    fun buildLivePlayUrl(streamId: Int, extOverride: String? = null): String =
-        cfg.liveUrl(streamId, extOverride)
+    fun buildLivePlayUrl(
+        streamId: Int,
+        extOverride: String? = null,
+    ): String = cfg.liveUrl(streamId, extOverride)
 
-    fun buildVodPlayUrl(vodId: Int, container: String?): String =
-        cfg.vodUrl(vodId, container)
+    fun buildVodPlayUrl(
+        vodId: Int,
+        container: String?,
+    ): String = cfg.vodUrl(vodId, container)
 
     fun buildSeriesEpisodePlayUrl(
         seriesId: Int,
         season: Int,
         episode: Int,
         episodeExt: String?,
-        episodeId: Int? = null
+        episodeId: Int? = null,
     ): String =
         episodeId?.takeIf { it > 0 }?.let {
             @Suppress("DEPRECATION")
@@ -505,36 +577,52 @@ class XtreamClient(
         action: String,
         extra: String? = null,
         map: (obj: Map<String, JsonElement>) -> T,
-    ): List<T> = withContext(io) {
-        val url = cfg.playerApi(action, extra)
-        val isEpg = action == "get_short_epg"
-        val cached = readCache(url, isEpg)
-        val body: String = if (cached != null) {
-            if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
-            cached
-        } else {
-            if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "API: ${redact(url)}")
-            takeRateSlot()
-            val req = Request.Builder().url(url).header("Accept", "application/json").get().build()
-            httpClient.newCall(req).execute().use { resp ->
-                val code = resp.code
-                val ct = resp.header("Content-Type").orEmpty()
-                if (!resp.isSuccessful) {
-                    Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=${ct}")
-                    return@withContext emptyList()
+    ): List<T> =
+        withContext(io) {
+            val url = cfg.playerApi(action, extra)
+            val isEpg = action == "get_short_epg"
+            val cached = readCache(url, isEpg)
+            val body: String =
+                if (cached != null) {
+                    if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
+                    cached
+                } else {
+                    if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "API: ${redact(url)}")
+                    takeRateSlot()
+                    val req =
+                        Request
+                            .Builder()
+                            .url(url)
+                            .header("Accept", "application/json")
+                            .get()
+                            .build()
+                    httpClient.newCall(req).execute().use { resp ->
+                        val code = resp.code
+                        val ct = resp.header("Content-Type").orEmpty()
+                        if (!resp.isSuccessful) {
+                            Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=$ct")
+                            return@withContext emptyList()
+                        }
+                        val b = resp.body?.string().orEmpty()
+                        writeCache(url, b)
+                        b
+                    }
                 }
-                val b = resp.body?.string().orEmpty()
-                writeCache(url, b)
-                b
+            val root =
+                runCatching { json.parseToJsonElement(body) }.getOrElse { err ->
+                    Log.w(
+                        "XtreamClient",
+                        "parse_error action=$action len=${body.length} head='${snippet(body)}' err=${err.javaClass.simpleName}",
+                    )
+                    null
+                }
+            if (root != null && root.isJsonArray()) {
+                root.jsonArray.mapNotNull { el -> el.jsonObjectOrNull()?.let { map(it) } }
+            } else {
+                Log.w("XtreamClient", "unexpected_body action=$action len=${body.length} head='${snippet(body)}'")
+                emptyList()
             }
         }
-        val root = runCatching { json.parseToJsonElement(body) }.getOrElse { err ->
-            Log.w("XtreamClient", "parse_error action=$action len=${body.length} head='${snippet(body)}' err=${err.javaClass.simpleName}")
-            null
-        }
-        if (root != null && root.isJsonArray()) root.jsonArray.mapNotNull { el -> el.jsonObjectOrNull()?.let { map(it) } }
-        else { Log.w("XtreamClient", "unexpected_body action=$action len=${body.length} head='${snippet(body)}'"); emptyList() }
-    }
 
     private suspend fun <T> sliceArray(
         action: String,
@@ -543,81 +631,123 @@ class XtreamClient(
         limit: Int,
         map: (obj: Map<String, JsonElement>) -> T,
     ): List<T> {
-        val all: List<T> = if (categoryId == null) {
-            // Erst * probieren; bei leerem Resultat ODER Fehler → 0 → ohne category_id als letzte Eskalation
-            val star = runCatching { apiArray(action, extra = "&category_id=*", map = map) }.getOrElse { emptyList() }
-            if (star.isNotEmpty()) star
-            else {
-        if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "Fallback category_id=0 for action=$action (star empty)")
-                val zero = runCatching { apiArray(action, extra = "&category_id=0", map = map) }.getOrElse { emptyList() }
-                if (zero.isNotEmpty()) zero
-                else {
-                    if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "Fallback without category_id for action=$action (0 empty)")
-                    apiArray(action, extra = null, map = map)
+        val all: List<T> =
+            if (categoryId == null) {
+                // Erst * probieren; bei leerem Resultat ODER Fehler → 0 → ohne category_id als letzte Eskalation
+                val star = runCatching { apiArray(action, extra = "&category_id=*", map = map) }.getOrElse { emptyList() }
+                if (star.isNotEmpty()) {
+                    star
+                } else {
+                    if (com.chris.m3usuite.BuildConfig.DEBUG) {
+                        Log.i(
+                            "XtreamClient",
+                            "Fallback category_id=0 for action=$action (star empty)",
+                        )
+                    }
+                    val zero = runCatching { apiArray(action, extra = "&category_id=0", map = map) }.getOrElse { emptyList() }
+                    if (zero.isNotEmpty()) {
+                        zero
+                    } else {
+                        if (com.chris.m3usuite.BuildConfig.DEBUG) {
+                            Log.i(
+                                "XtreamClient",
+                                "Fallback without category_id for action=$action (0 empty)",
+                            )
+                        }
+                        apiArray(action, extra = null, map = map)
+                    }
                 }
+            } else {
+                apiArray(action, extra = "&category_id=$categoryId", map = map)
             }
-        } else {
-            apiArray(action, extra = "&category_id=$categoryId", map = map)
-        }
         val from = offset.coerceAtLeast(0)
         val to = (offset + limit).coerceAtMost(all.size)
         return if (from < to) all.subList(from, to) else emptyList()
     }
 
-    private suspend fun apiObject(action: String, extra: String?): Map<String, JsonElement>? = withContext(io) {
-        val url = cfg.playerApi(action, extra)
-        val isEpg = action == "get_short_epg"
-        val cached = readCache(url, isEpg)
-        val body: String = if (cached != null) {
-            if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
-            cached
-        } else {
+    private suspend fun apiObject(
+        action: String,
+        extra: String?,
+    ): Map<String, JsonElement>? =
+        withContext(io) {
+            val url = cfg.playerApi(action, extra)
+            val isEpg = action == "get_short_epg"
+            val cached = readCache(url, isEpg)
+            val body: String =
+                if (cached != null) {
+                    if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
+                    cached
+                } else {
+                    if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "API: ${redact(url)}")
+                    takeRateSlot()
+                    val req =
+                        Request
+                            .Builder()
+                            .url(url)
+                            .header("Accept", "application/json")
+                            .get()
+                            .build()
+                    httpClient.newCall(req).execute().use { resp ->
+                        val code = resp.code
+                        val ct = resp.header("Content-Type").orEmpty()
+                        if (!resp.isSuccessful) {
+                            Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=$ct")
+                            return@withContext null
+                        }
+                        val b = resp.body?.string().orEmpty()
+                        writeCache(url, b)
+                        b
+                    }
+                }
+            val root =
+                runCatching { json.parseToJsonElement(body) }.getOrElse { err ->
+                    Log.w(
+                        "XtreamClient",
+                        "parse_error action=$action len=${body.length} head='${snippet(body)}' err=${err.javaClass.simpleName}",
+                    )
+                    null
+                }
+            if (root != null && root.isJsonObject()) {
+                root.jsonObject
+            } else {
+                Log.w("XtreamClient", "unexpected_body action=$action len=${body.length} head='${snippet(body)}'")
+                null
+            }
+        }
+
+    private suspend fun apiRaw(
+        action: String,
+        extra: String?,
+    ): String? =
+        withContext(io) {
+            val url = cfg.playerApi(action, extra)
+            val isEpg = action == "get_short_epg"
+            val cached = readCache(url, isEpg)
+            if (cached != null) {
+                if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
+                return@withContext cached
+            }
             if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "API: ${redact(url)}")
             takeRateSlot()
-            val req = Request.Builder().url(url).header("Accept", "application/json").get().build()
+            val req =
+                Request
+                    .Builder()
+                    .url(url)
+                    .header("Accept", "application/json")
+                    .get()
+                    .build()
             httpClient.newCall(req).execute().use { resp ->
                 val code = resp.code
                 val ct = resp.header("Content-Type").orEmpty()
                 if (!resp.isSuccessful) {
-                    Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=${ct}")
+                    Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=$ct")
                     return@withContext null
                 }
-                val b = resp.body?.string().orEmpty()
-                writeCache(url, b)
-                b
+                val body = resp.body?.string()
+                if (body != null) writeCache(url, body)
+                body
             }
         }
-        val root = runCatching { json.parseToJsonElement(body) }.getOrElse { err ->
-            Log.w("XtreamClient", "parse_error action=$action len=${body.length} head='${snippet(body)}' err=${err.javaClass.simpleName}")
-            null
-        }
-        if (root != null && root.isJsonObject()) root.jsonObject
-        else { Log.w("XtreamClient", "unexpected_body action=$action len=${body.length} head='${snippet(body)}'"); null }
-    }
-
-    private suspend fun apiRaw(action: String, extra: String?): String? = withContext(io) {
-        val url = cfg.playerApi(action, extra)
-        val isEpg = action == "get_short_epg"
-        val cached = readCache(url, isEpg)
-        if (cached != null) {
-            if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
-            return@withContext cached
-        }
-        if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "API: ${redact(url)}")
-        takeRateSlot()
-        val req = Request.Builder().url(url).header("Accept", "application/json").get().build()
-        httpClient.newCall(req).execute().use { resp ->
-            val code = resp.code
-            val ct = resp.header("Content-Type").orEmpty()
-            if (!resp.isSuccessful) {
-                Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=${ct}")
-                return@withContext null
-            }
-            val body = resp.body?.string()
-            if (body != null) writeCache(url, body)
-            body
-        }
-    }
 
     private fun resolveVodIdField(): String = "vod_id" // die meisten Panels erwarten dieses Feld
 }
@@ -626,46 +756,54 @@ class XtreamClient(
 // JSON‑Helper (sicheres Lesen ohne NPEs)
 // ============================================================
 private fun JsonElement?.asString(): String? = runCatching { this?.jsonPrimitive?.content }.getOrNull()
+
 private fun JsonElement?.asIntOrNull(): Int? = runCatching { this?.jsonPrimitive?.intOrNull }.getOrNull()
+
 private fun JsonElement?.asDoubleOrNull(): Double? = runCatching { this?.jsonPrimitive?.doubleOrNull }.getOrNull()
+
 private fun JsonElement?.jsonObjectOrNull(): Map<String, JsonElement>? = runCatching { this?.jsonObject }.getOrNull()
 
 private fun JsonElement?.isJsonArray(): Boolean = this is JsonArray
+
 private fun JsonElement?.isJsonObject(): Boolean = this is JsonObject
 
-private fun parseDurationSeconds(raw: String?): Int? = runCatching {
-    val value = raw?.trim().orEmpty()
-    if (value.isEmpty()) return@runCatching null
-    if (":" in value) {
-        val parts = value.split(":").map { it.toIntOrNull() ?: 0 }
-        return@runCatching when (parts.size) {
-            3 -> parts[0] * 3600 + parts[1] * 60 + parts[2]
-            2 -> parts[0] * 60 + parts[1]
-            else -> parts.lastOrNull()
+private fun parseDurationSeconds(raw: String?): Int? =
+    runCatching {
+        val value = raw?.trim().orEmpty()
+        if (value.isEmpty()) return@runCatching null
+        if (":" in value) {
+            val parts = value.split(":").map { it.toIntOrNull() ?: 0 }
+            return@runCatching when (parts.size) {
+                3 -> parts[0] * 3600 + parts[1] * 60 + parts[2]
+                2 -> parts[0] * 60 + parts[1]
+                else -> parts.lastOrNull()
+            }
         }
-    }
-    val digits = value.takeWhile { it.isDigit() }
-    val number = digits.toIntOrNull() ?: return@runCatching null
-    val lower = value.lowercase()
-    when {
-        lower.contains("hour") || lower.contains("hr") -> number * 3600
-        lower.contains("min") || lower.contains("m") -> number * 60
-        else -> if (number <= 600) number * 60 else number
-    }
-}.getOrNull()
+        val digits = value.takeWhile { it.isDigit() }
+        val number = digits.toIntOrNull() ?: return@runCatching null
+        val lower = value.lowercase()
+        when {
+            lower.contains("hour") || lower.contains("hr") -> number * 3600
+            lower.contains("min") || lower.contains("m") -> number * 60
+            else -> if (number <= 600) number * 60 else number
+        }
+    }.getOrNull()
 
 // "01:23:45" → Sekunden; „85“ → 85
-private fun JsonElement.asIntFromDuration(): Int? = runCatching {
-    val s = this.jsonPrimitive.content.trim()
-    if (":" in s) {
-        val p = s.split(":").map { it.toIntOrNull() ?: 0 }
-        when (p.size) {
-            3 -> p[0] * 3600 + p[1] * 60 + p[2]
-            2 -> p[0] * 60 + p[1]
-            else -> p.lastOrNull()
+private fun JsonElement.asIntFromDuration(): Int? =
+    runCatching {
+        val s = this.jsonPrimitive.content.trim()
+        if (":" in s) {
+            val p = s.split(":").map { it.toIntOrNull() ?: 0 }
+            when (p.size) {
+                3 -> p[0] * 3600 + p[1] * 60 + p[2]
+                2 -> p[0] * 60 + p[1]
+                else -> p.lastOrNull()
+            }
+        } else {
+            s.toIntOrNull()
         }
-    } else s.toIntOrNull()
-}.getOrNull()
+    }.getOrNull()
 
 private val EXT_REGEX = Regex("^[a-z0-9]{2,5}$")
 

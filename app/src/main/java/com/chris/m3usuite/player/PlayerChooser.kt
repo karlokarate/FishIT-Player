@@ -1,16 +1,15 @@
 package com.chris.m3usuite.player
 
 import android.content.Context
-import kotlinx.coroutines.flow.first
-import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.data.repo.PermissionRepository
+import com.chris.m3usuite.prefs.SettingsStore
+import kotlinx.coroutines.flow.first
 
 /**
  * Zentrale Wahl "Immer fragen | Intern | Extern".
  * Die drei Detail-Screens (Vod/Series/Live) rufen nur noch diese Funktion auf.
  */
 object PlayerChooser {
-
     /**
      * Startet je nach Settings den internen Player, externen Player oder fragt.
      * @param buildInternal lambda: (startMs) -> Unit ruft deine Nav-Route "player?..." auf
@@ -22,7 +21,7 @@ object PlayerChooser {
         headers: Map<String, String> = emptyMap(),
         startPositionMs: Long? = null,
         mimeType: String? = null,
-        buildInternal: (startPositionMs: Long?, mimeType: String?) -> Unit
+        buildInternal: (startPositionMs: Long?, mimeType: String?) -> Unit,
     ) {
         // Force internal for Telegram scheme
         if (url.startsWith("tg://", ignoreCase = true)) {
@@ -43,7 +42,10 @@ object PlayerChooser {
                 buildInternal(startPositionMs, mimeType)
             }
             "external" -> {
-                android.util.Log.d("PlayerChooser", "mode=external; starting external preferredPkg=${'$'}{store.preferredPlayerPkg.first()}")
+                android.util.Log.d(
+                    "PlayerChooser",
+                    "mode=external; starting external preferredPkg=${'$'}{store.preferredPlayerPkg.first()}",
+                )
                 val pkg = store.preferredPlayerPkg.first().ifBlank { null }
                 if (pkg == null) {
                     // No preferred external player selected → avoid system chooser; play internally
@@ -55,7 +57,7 @@ object PlayerChooser {
                         url = url,
                         headers = headers,
                         startPositionMs = startPositionMs,
-                        preferredPkg = pkg
+                        preferredPkg = pkg,
                     )
                 }
             }
@@ -72,7 +74,7 @@ object PlayerChooser {
                         url = url,
                         headers = headers,
                         preferredPkg = pkg,
-                        startPositionMs = startPositionMs
+                        startPositionMs = startPositionMs,
                     )
                 }
             }
@@ -88,23 +90,25 @@ object PlayerChooser {
                 return@suspendCancellableCoroutine
             }
             act.runOnUiThread {
-                val dlg = android.app.AlertDialog.Builder(act)
-                    .setTitle("Wie abspielen?")
-                    .setItems(arrayOf("Intern", "Extern")) { d, which ->
-                        if (cont.isActive) cont.resumeWith(Result.success(which == 0))
-                        d.dismiss()
-                    }
-                    .setOnCancelListener { if (cont.isActive) cont.resumeWith(Result.success(true)) }
-                    .create()
+                val dlg =
+                    android.app.AlertDialog
+                        .Builder(act)
+                        .setTitle("Wie abspielen?")
+                        .setItems(arrayOf("Intern", "Extern")) { d, which ->
+                            if (cont.isActive) cont.resumeWith(Result.success(which == 0))
+                            d.dismiss()
+                        }.setOnCancelListener { if (cont.isActive) cont.resumeWith(Result.success(true)) }
+                        .create()
                 cont.invokeOnCancellation { runCatching { dlg.dismiss() } }
                 dlg.show()
             }
         }
     }
 
-    private tailrec fun findActivity(ctx: Context?): android.app.Activity? = when (ctx) {
-        is android.app.Activity -> ctx
-        is android.content.ContextWrapper -> findActivity(ctx.baseContext)
-        else -> null
-    }
+    private tailrec fun findActivity(ctx: Context?): android.app.Activity? =
+        when (ctx) {
+            is android.app.Activity -> ctx
+            is android.content.ContextWrapper -> findActivity(ctx.baseContext)
+            else -> null
+        }
 }

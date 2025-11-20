@@ -81,7 +81,16 @@ fun DetailFacts(
         if (!imdbId.isNullOrBlank() || !tmdbId.isNullOrBlank() || !tmdbUrl.isNullOrBlank()) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 imdbId?.takeIf { it.isNotBlank() }?.let { id ->
-                    val imdbUrl = if (id.startsWith("tt", ignoreCase = true)) "https://www.imdb.com/title/$id" else "https://www.imdb.com/find?q=$id"
+                    val imdbUrl =
+                        if (id.startsWith(
+                                "tt",
+                                ignoreCase = true,
+                            )
+                        ) {
+                            "https://www.imdb.com/title/$id"
+                        } else {
+                            "https://www.imdb.com/find?q=$id"
+                        }
                     Chip("IMDB: $id") { onOpenLink?.invoke(imdbUrl) }
                 }
                 tmdbId?.takeIf { it.isNotBlank() }?.let { id ->
@@ -95,17 +104,21 @@ fun DetailFacts(
 }
 
 @Composable
-private fun Chip(text: String, onClick: (() -> Unit)? = null) {
+private fun Chip(
+    text: String,
+    onClick: (() -> Unit)? = null,
+) {
     val container = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
     val label = MaterialTheme.colorScheme.onSurface
     androidx.compose.material3.AssistChip(
         onClick = onClick ?: {},
         enabled = onClick != null,
         label = { Text(text) },
-        colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
-            containerColor = container,
-            labelColor = label
-        )
+        colors =
+            androidx.compose.material3.AssistChipDefaults.assistChipColors(
+                containerColor = container,
+                labelColor = label,
+            ),
     )
 }
 

@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chris.m3usuite.telegram.browser.ChatBrowser
-import com.chris.m3usuite.telegram.config.AppConfig
 import com.chris.m3usuite.telegram.config.ConfigLoader
 import com.chris.m3usuite.telegram.session.AuthEvent
 import com.chris.m3usuite.telegram.session.TelegramSession
@@ -16,7 +15,7 @@ import kotlinx.coroutines.launch
 /**
  * ViewModel example demonstrating TelegramSession integration.
  * This shows how to manage authentication and chat browsing in a ViewModel.
- * 
+ *
  * Usage in a real app:
  * - Inject dependencies via Hilt/Koin
  * - Store API credentials securely
@@ -26,9 +25,8 @@ import kotlinx.coroutines.launch
 class TelegramViewModel(
     private val context: Context,
     private val apiId: Int,
-    private val apiHash: String
+    private val apiHash: String,
 ) : ViewModel() {
-
     // TDLib client and session
     private var client: TdlClient? = null
     private var session: TelegramSession? = null
@@ -53,12 +51,13 @@ class TelegramViewModel(
 
                 // Create client and configuration
                 client = TdlClient.create()
-                val config = ConfigLoader.load(
-                    context = context,
-                    apiId = apiId,
-                    apiHash = apiHash,
-                    phoneNumber = phoneNumber
-                )
+                val config =
+                    ConfigLoader.load(
+                        context = context,
+                        apiId = apiId,
+                        apiHash = apiHash,
+                        phoneNumber = phoneNumber,
+                    )
 
                 // Create session
                 session = TelegramSession(client!!, config, viewModelScope)
@@ -136,10 +135,11 @@ class TelegramViewModel(
     /**
      * Load messages from a specific chat.
      */
-    fun loadMessages(chatId: Long): Flow<List<Message>> = flow {
-        val messages = browser?.loadChatHistory(chatId) ?: emptyList()
-        emit(messages)
-    }
+    fun loadMessages(chatId: Long): Flow<List<Message>> =
+        flow {
+            val messages = browser?.loadChatHistory(chatId) ?: emptyList()
+            emit(messages)
+        }
 
     /**
      * Logout from Telegram.
@@ -167,7 +167,7 @@ class TelegramViewModel(
                     is AuthEvent.StateChanged -> handleAuthState(event.state)
                     is AuthEvent.Ready -> {
                         _uiState.value = TelegramUiState.Ready
-                        loadChats()  // Auto-load chats when ready
+                        loadChats() // Auto-load chats when ready
                     }
                     is AuthEvent.Error -> {
                         _uiState.value = TelegramUiState.Error(event.message)
@@ -181,14 +181,15 @@ class TelegramViewModel(
      * Handle specific authorization states.
      */
     private fun handleAuthState(state: AuthorizationState) {
-        _uiState.value = when (state) {
-            is AuthorizationStateWaitTdlibParameters -> TelegramUiState.WaitingForParameters
-            is AuthorizationStateWaitPhoneNumber -> TelegramUiState.WaitingForPhoneNumber
-            is AuthorizationStateWaitCode -> TelegramUiState.WaitingForCode
-            is AuthorizationStateWaitPassword -> TelegramUiState.WaitingForPassword
-            is AuthorizationStateReady -> TelegramUiState.Ready
-            else -> TelegramUiState.Unknown(state::class.simpleName ?: "Unknown")
-        }
+        _uiState.value =
+            when (state) {
+                is AuthorizationStateWaitTdlibParameters -> TelegramUiState.WaitingForParameters
+                is AuthorizationStateWaitPhoneNumber -> TelegramUiState.WaitingForPhoneNumber
+                is AuthorizationStateWaitCode -> TelegramUiState.WaitingForCode
+                is AuthorizationStateWaitPassword -> TelegramUiState.WaitingForPassword
+                is AuthorizationStateReady -> TelegramUiState.Ready
+                else -> TelegramUiState.Unknown(state::class.simpleName ?: "Unknown")
+            }
     }
 
     /**
@@ -212,18 +213,38 @@ class TelegramViewModel(
  */
 sealed class TelegramUiState {
     object Idle : TelegramUiState()
+
     object Initializing : TelegramUiState()
+
     object WaitingForParameters : TelegramUiState()
+
     object WaitingForPhoneNumber : TelegramUiState()
+
     object SendingPhoneNumber : TelegramUiState()
+
     object WaitingForCode : TelegramUiState()
+
     object SendingCode : TelegramUiState()
+
     object WaitingForPassword : TelegramUiState()
+
     object SendingPassword : TelegramUiState()
+
     object Ready : TelegramUiState()
+
     object LoadingChats : TelegramUiState()
-    data class ChatsLoaded(val count: Int) : TelegramUiState()
+
+    data class ChatsLoaded(
+        val count: Int,
+    ) : TelegramUiState()
+
     object LoggingOut : TelegramUiState()
-    data class Error(val message: String) : TelegramUiState()
-    data class Unknown(val stateName: String) : TelegramUiState()
+
+    data class Error(
+        val message: String,
+    ) : TelegramUiState()
+
+    data class Unknown(
+        val stateName: String,
+    ) : TelegramUiState()
 }

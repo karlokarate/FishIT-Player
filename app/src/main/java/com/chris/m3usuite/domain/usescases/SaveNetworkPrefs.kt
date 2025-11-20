@@ -7,11 +7,11 @@ data class NetworkPrefs(
     val epgUrl: String,
     val userAgent: String,
     val referer: String,
-    val extraHeadersJson: String
+    val extraHeadersJson: String,
 )
 
 class SaveNetworkPrefs(
-    private val repo: SettingsRepository
+    private val repo: SettingsRepository,
 ) {
     suspend operator fun invoke(p: NetworkPrefs) {
         repo.saveNetworkBases(p.m3uUrl.trim(), p.epgUrl.trim(), p.userAgent.trim(), p.referer.trim())

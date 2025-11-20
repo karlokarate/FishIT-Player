@@ -38,6 +38,11 @@ data class StartUiState(
 )
 
 sealed interface StartEvent {
-    data class Toast(val message: String): StartEvent
-    data class Failure(val message: String): StartEvent
+    data class Toast(
+        val message: String,
+    ) : StartEvent
+
+    data class Failure(
+        val message: String,
+    ) : StartEvent
 }

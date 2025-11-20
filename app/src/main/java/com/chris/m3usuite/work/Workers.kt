@@ -3,7 +3,10 @@ package com.chris.m3usuite.work
 import android.content.Context
 import androidx.work.*
 
-class XtreamRefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
+class XtreamRefreshWorker(
+    ctx: Context,
+    params: WorkerParameters,
+) : CoroutineWorker(ctx, params) {
     override suspend fun doWork(): Result {
         // No-op by policy: Xtream periodic refresh is disabled; use on-demand lazy loading instead
         return Result.success()
@@ -16,7 +19,10 @@ class XtreamRefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWor
     }
 }
 
-class XtreamEnrichmentWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
+class XtreamEnrichmentWorker(
+    ctx: Context,
+    params: WorkerParameters,
+) : CoroutineWorker(ctx, params) {
     override suspend fun doWork(): Result {
         // No-op by policy: on-demand enrichment is handled in detail screens
         return Result.success()

@@ -7,7 +7,7 @@ import androidx.navigation.NavOptionsBuilder
 fun NavOptionsBuilder.popUpToStartDestination(
     navController: NavHostController,
     inclusive: Boolean = false,
-    saveState: Boolean = false
+    saveState: Boolean = false,
 ) {
     val startRoute = navController.graph.startDestinationRoute
     if (startRoute != null) {

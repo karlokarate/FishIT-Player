@@ -22,24 +22,25 @@ fun AccentCard(
     modifier: Modifier = Modifier,
     accent: Color = DesignTokens.Accent,
     contentPadding: PaddingValues = PaddingValues(14.dp),
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = MaterialTheme.shapes.medium
-    val focusAwareModifier = with(FocusKit) {
-        modifier
-            .focusGroup()
-            .focusBringIntoViewOnFocus()
-    }
+    val focusAwareModifier =
+        with(FocusKit) {
+            modifier
+                .focusGroup()
+                .focusBringIntoViewOnFocus()
+        }
     Column(
         focusAwareModifier
             .shadow(elevation = 3.dp, shape = shape, clip = false)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.65f), shape)
-            .border(BorderStroke(1.dp, accent.copy(alpha = 0.25f)), shape)
+            .border(BorderStroke(1.dp, accent.copy(alpha = 0.25f)), shape),
     ) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .padding(contentPadding)
+                .padding(contentPadding),
         ) { content() }
     }
 }

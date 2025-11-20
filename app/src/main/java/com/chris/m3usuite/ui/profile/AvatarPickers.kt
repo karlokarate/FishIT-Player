@@ -11,51 +11,49 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import com.chris.m3usuite.ui.common.AppIcon
-import com.chris.m3usuite.ui.common.AppIconButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import com.chris.m3usuite.ui.common.AppIcon
+import com.chris.m3usuite.ui.common.AppIconButton
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
-import com.chris.m3usuite.ui.focus.focusScaleOnTv
 
 @Composable
-fun AvatarCaptureAndPickButtons(
-    onPicked: (Uri) -> Unit
-) {
+fun AvatarCaptureAndPickButtons(onPicked: (Uri) -> Unit) {
     val context = LocalContext.current
 
     val tempDir = remember { File(context.cacheDir, "images").apply { mkdirs() } }
     var tempFile by remember { mutableStateOf<File?>(null) }
     val authority = "${context.packageName}.fileprovider"
 
-    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        val f = tempFile
-        if (success && f != null && f.exists()) {
-            onPicked(Uri.fromFile(f))
-        } else Toast.makeText(context, "Foto abgebrochen", Toast.LENGTH_SHORT).show()
-    }
+    val cameraLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            val f = tempFile
+            if (success && f != null && f.exists()) {
+                onPicked(Uri.fromFile(f))
+            } else {
+                Toast.makeText(context, "Foto abgebrochen", Toast.LENGTH_SHORT).show()
+            }
+        }
 
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) {
-            val f = File.createTempFile("avatar_", ".jpg", tempDir)
-            tempFile = f
-            val uri = FileProvider.getUriForFile(context, authority, f)
-            cameraLauncher.launch(uri)
-        } else Toast.makeText(context, "Kamerazugriff verweigert", Toast.LENGTH_LONG).show()
-    }
+    val cameraPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                val f = File.createTempFile("avatar_", ".jpg", tempDir)
+                tempFile = f
+                val uri = FileProvider.getUriForFile(context, authority, f)
+                cameraLauncher.launch(uri)
+            } else {
+                Toast.makeText(context, "Kamerazugriff verweigert", Toast.LENGTH_LONG).show()
+            }
+        }
 
     fun launchCameraWithPermission() {
         when {
@@ -72,18 +70,24 @@ fun AvatarCaptureAndPickButtons(
         }
     }
 
-    val pickerLauncher13 = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) onPicked(uri)
-    }
-    val legacyPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) onPicked(uri)
-    }
+    val pickerLauncher13 =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) onPicked(uri)
+        }
+    val legacyPickerLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) onPicked(uri)
+        }
 
     AppIconButton(icon = AppIcon.Camera, contentDescription = "Foto aufnehmen", onClick = { launchCameraWithPermission() })
     AppIconButton(icon = AppIcon.Gallery, contentDescription = "Bild aus Galerie wählen", onClick = {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) pickerLauncher13.launch(
-            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-        ) else legacyPickerLauncher.launch("image/*")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pickerLauncher13.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+            )
+        } else {
+            legacyPickerLauncher.launch("image/*")
+        }
     })
 }
 

@@ -1,9 +1,9 @@
 package com.chris.m3usuite.core.xtream
 
 import android.net.Uri
+import androidx.core.net.toUri
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import androidx.core.net.toUri
 
 /**
  * XtreamConfig – VARIANT-PREFERRED, ALIAS-AWARE, PORT-EXPLICIT
@@ -36,7 +36,6 @@ data class XtreamConfig(
     val port: Int,
     val username: String,
     val password: String,
-
     /**
      * Pfadsegmente/ Aliasse (konfigurierbar):
      * - liveKind bleibt i. d. R. "live".
@@ -44,13 +43,11 @@ data class XtreamConfig(
      * - seriesKind ist meist "series".
      */
     val pathKinds: PathKinds = PathKinds(),
-
     /**
      * Optionales Panel-Unterverzeichnis (Reverse Proxy), z. B. "/xtream".
      * Normalisierung: führender Slash erlaubt, *kein* Slash am Ende.
      */
     val basePath: String? = null,
-
     /**
      * Container-Präferenzen:
      * - Live (Transport): z. B. ["m3u8","ts"] oder ["ts","m3u8"]
@@ -70,7 +67,7 @@ data class XtreamConfig(
         username: String,
         password: String,
         output: String,
-        scheme: String = if (port == 443) "https" else "http"
+        scheme: String = if (port == 443) "https" else "http",
     ) : this(
         scheme = scheme,
         host = host,
@@ -81,8 +78,9 @@ data class XtreamConfig(
         basePath = null,
         liveExtPrefs = listOf(normalizeLiveExt(output)).filter { it.isNotBlank() }.ifEmpty { listOf("m3u8") },
         vodExtPrefs = listOf("mp4", "mkv", "avi"),
-        seriesExtPrefs = listOf("mp4", "mkv", "avi")
+        seriesExtPrefs = listOf("mp4", "mkv", "avi"),
     )
+
     init {
         require(scheme.equals("http", true) || scheme.equals("https", true)) {
             "scheme must be 'http' or 'https'"
@@ -96,11 +94,12 @@ data class XtreamConfig(
     val portalBase: String get() = "${scheme.lowercase()}://$host:$port"
 
     /** player_api-Basis inkl. optionalem basePath. */
-    private val playerApiBase: String get() = buildString {
-        append(portalBase)
-        basePath?.normalizedOrNull()?.let { append(it) }
-        append("/player_api.php")
-    }
+    private val playerApiBase: String get() =
+        buildString {
+            append(portalBase)
+            basePath?.normalizedOrNull()?.let { append(it) }
+            append("/player_api.php")
+        }
 
     /**
      * player_api-URL mit deterministischer Query-Reihenfolge wie in Referenz-Clients:
@@ -109,14 +108,23 @@ data class XtreamConfig(
      *
      * Erstellt die URL strikt via HttpUrl.Builder, um Encoding/Trennzeichenfehler zu vermeiden.
      */
-    fun playerApi(action: String, extra: String? = null): String {
-        val b = okhttp3.HttpUrl.Builder()
-            .scheme(scheme.lowercase())
-            .host(host)
-            .port(port)
+    fun playerApi(
+        action: String,
+        extra: String? = null,
+    ): String {
+        val b =
+            okhttp3.HttpUrl
+                .Builder()
+                .scheme(scheme.lowercase())
+                .host(host)
+                .port(port)
         basePath?.normalizedOrNull()?.let { path ->
             // split path segments without leading '/'
-            path.removePrefix("/").split('/').filter { it.isNotBlank() }.forEach { seg -> b.addPathSegment(seg) }
+            path
+                .removePrefix("/")
+                .split('/')
+                .filter { it.isNotBlank() }
+                .forEach { seg -> b.addPathSegment(seg) }
         }
         b.addPathSegment("player_api.php")
         // Order: action → extras → username/password
@@ -145,11 +153,15 @@ data class XtreamConfig(
      * Auswahlreihenfolge: extOverride → liveExtPrefs[0] → definierter Fallback ("m3u8").
      * Normalisierung: "hls" → "m3u8".
      */
-    fun liveUrl(streamId: Int, extOverride: String? = null): String {
-        val ext = normalizeLiveExt(
-            extOverride
-                ?: liveExtPrefs.firstOrNull().orEmpty()
-        ).ifBlank { "m3u8" } // definierter Fallback
+    fun liveUrl(
+        streamId: Int,
+        extOverride: String? = null,
+    ): String {
+        val ext =
+            normalizeLiveExt(
+                extOverride
+                    ?: liveExtPrefs.firstOrNull().orEmpty(),
+            ).ifBlank { "m3u8" } // definierter Fallback
         return buildString {
             append(portalBase)
             basePath?.normalizedOrNull()?.let { append(it) }
@@ -170,11 +182,15 @@ data class XtreamConfig(
      * VOD-Play-URL.
      * Reihenfolge: container (vom Call; z. B. aus API) → vodExtPrefs[0] → definierter Fallback ("mp4").
      */
-    fun vodUrl(vodId: Int, container: String?): String {
-        val ext = sanitizeExt(
-            container?.lowercase()?.trim()
-                ?: vodExtPrefs.firstOrNull().orEmpty()
-        ).ifBlank { "mp4" }
+    fun vodUrl(
+        vodId: Int,
+        container: String?,
+    ): String {
+        val ext =
+            sanitizeExt(
+                container?.lowercase()?.trim()
+                    ?: vodExtPrefs.firstOrNull().orEmpty(),
+            ).ifBlank { "mp4" }
         return buildString {
             append(portalBase)
             basePath?.normalizedOrNull()?.let { append(it) }
@@ -195,11 +211,17 @@ data class XtreamConfig(
      * Series-Play-URL (empfohlen).
      * Reihenfolge: ext (pro Episode, z. B. aus RawEpisode.container_extension) → seriesExtPrefs[0] → Fallback ("mp4").
      */
-    fun seriesEpisodeUrl(seriesId: Int, season: Int, episode: Int, ext: String? = null): String {
-        val e = sanitizeExt(
-            ext?.lowercase()?.trim()
-                ?: seriesExtPrefs.firstOrNull().orEmpty()
-        ).ifBlank { "mp4" }
+    fun seriesEpisodeUrl(
+        seriesId: Int,
+        season: Int,
+        episode: Int,
+        ext: String? = null,
+    ): String {
+        val e =
+            sanitizeExt(
+                ext?.lowercase()?.trim()
+                    ?: seriesExtPrefs.firstOrNull().orEmpty(),
+            ).ifBlank { "mp4" }
         return buildString {
             append(portalBase)
             basePath?.normalizedOrNull()?.let { append(it) }
@@ -225,11 +247,15 @@ data class XtreamConfig(
      * Reihenfolge wie VOD.
      */
     @Deprecated("Use seriesEpisodeUrl(seriesId, season, episode, ext)")
-    fun seriesEpisodeUrl(episodeId: Int, container: String?): String {
-        val ext = sanitizeExt(
-            container?.lowercase()?.trim()
-                ?: seriesExtPrefs.firstOrNull().orEmpty()
-        ).ifBlank { "mp4" }
+    fun seriesEpisodeUrl(
+        episodeId: Int,
+        container: String?,
+    ): String {
+        val ext =
+            sanitizeExt(
+                container?.lowercase()?.trim()
+                    ?: seriesExtPrefs.firstOrNull().orEmpty(),
+            ).ifBlank { "mp4" }
         return buildString {
             append(portalBase)
             basePath?.normalizedOrNull()?.let { append(it) }
@@ -263,44 +289,49 @@ data class XtreamConfig(
             // optional known alias from discovery
             discoveredVodKind: String? = null,
             basePath: String? = null,
-            defaults: DefaultPrefs = DefaultPrefs()
-        ): XtreamConfig? = runCatching {
-            val u = m3u.toUri()
-            val scheme = (u.scheme ?: "http").lowercase()
-            val host = (u.host ?: return null)
-            val port = u.port
-            if (port <= 0) return null // kein Raten – Discovery zuerst
+            defaults: DefaultPrefs = DefaultPrefs(),
+        ): XtreamConfig? =
+            runCatching {
+                val u = m3u.toUri()
+                val scheme = (u.scheme ?: "http").lowercase()
+                val host = (u.host ?: return null)
+                val port = u.port
+                if (port <= 0) return null // kein Raten – Discovery zuerst
 
-            val user = u.getQueryParameter("username") ?: return null
-            val pass = u.getQueryParameter("password") ?: return null
+                val user = u.getQueryParameter("username") ?: return null
+                val pass = u.getQueryParameter("password") ?: return null
 
-            val out = (u.getQueryParameter("output") ?: "").lowercase().trim()
-            val container = (u.getQueryParameter("container") ?: "").lowercase().trim()
+                val out = (u.getQueryParameter("output") ?: "").lowercase().trim()
+                val container = (u.getQueryParameter("container") ?: "").lowercase().trim()
 
-            val livePrefs = buildLivePrefs(out, defaults.liveExtPrefs)
-            val vodPrefs = buildFilePrefs(container, defaults.vodExtPrefs)
-            val seriesPrefs = buildFilePrefs(container, defaults.seriesExtPrefs)
+                val livePrefs = buildLivePrefs(out, defaults.liveExtPrefs)
+                val vodPrefs = buildFilePrefs(container, defaults.vodExtPrefs)
+                val seriesPrefs = buildFilePrefs(container, defaults.seriesExtPrefs)
 
-            XtreamConfig(
-                scheme = scheme,
-                host = host,
-                port = port,
-                username = user,
-                password = pass,
-                pathKinds = PathKinds(
-                    liveKind = "live",
-                    vodKind = discoveredVodKind?.ifBlank { null } ?: "movie",
-                    seriesKind = "series"
-                ),
-                basePath = basePath,
-                liveExtPrefs = livePrefs,
-                vodExtPrefs = vodPrefs,
-                seriesExtPrefs = seriesPrefs
-            )
-        }.getOrNull()
+                XtreamConfig(
+                    scheme = scheme,
+                    host = host,
+                    port = port,
+                    username = user,
+                    password = pass,
+                    pathKinds =
+                        PathKinds(
+                            liveKind = "live",
+                            vodKind = discoveredVodKind?.ifBlank { null } ?: "movie",
+                            seriesKind = "series",
+                        ),
+                    basePath = basePath,
+                    liveExtPrefs = livePrefs,
+                    vodExtPrefs = vodPrefs,
+                    seriesExtPrefs = seriesPrefs,
+                )
+            }.getOrNull()
 
         // ---- Helpers für Präferenzen ----
-        private fun buildLivePrefs(hint: String?, defaults: List<String>): List<String> {
+        private fun buildLivePrefs(
+            hint: String?,
+            defaults: List<String>,
+        ): List<String> {
             val norm = normalizeLiveExt(hint)
             return when {
                 norm.isNotBlank() && !defaults.contains(norm) -> listOf(norm) + defaults
@@ -309,7 +340,10 @@ data class XtreamConfig(
             }
         }
 
-        private fun buildFilePrefs(hint: String?, defaults: List<String>): List<String> {
+        private fun buildFilePrefs(
+            hint: String?,
+            defaults: List<String>,
+        ): List<String> {
             val e = sanitizeExt(hint?.lowercase()?.trim())
             return when {
                 e.isNotBlank() && !defaults.contains(e) -> listOf(e) + defaults
@@ -360,8 +394,6 @@ private fun sanitizeExt(ext: String?): String {
     return if (ok.matches(e)) e else ""
 }
 
-private fun q(s: String): String =
-    Uri.encode(s)
+private fun q(s: String): String = Uri.encode(s)
 
-private fun p(s: String): String =
-    URLEncoder.encode(s, StandardCharsets.UTF_8.name())
+private fun p(s: String): String = URLEncoder.encode(s, StandardCharsets.UTF_8.name())

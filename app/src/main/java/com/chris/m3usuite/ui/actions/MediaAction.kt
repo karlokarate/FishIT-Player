@@ -14,6 +14,5 @@ data class MediaAction(
     val enabled: Boolean = true,
     val primary: Boolean = false,
     val badge: String? = null,
-    val onClick: () -> Unit
+    val onClick: () -> Unit,
 )
-

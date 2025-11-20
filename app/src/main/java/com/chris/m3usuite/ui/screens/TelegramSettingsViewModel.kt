@@ -20,9 +20,8 @@ import kotlinx.coroutines.launch
  */
 class TelegramSettingsViewModel(
     private val app: Application,
-    private val store: SettingsStore
+    private val store: SettingsStore,
 ) : ViewModel() {
-
     // TDLib components
     private var client: TdlClient? = null
     private var session: TelegramSession? = null
@@ -40,7 +39,7 @@ class TelegramSettingsViewModel(
                 store.tgApiId,
                 store.tgApiHash,
                 store.tgSelectedChatsCsv,
-                store.tgCacheLimitGb
+                store.tgCacheLimitGb,
             ) { enabled, apiId, apiHash, chats, cacheLimit ->
                 _state.update { current ->
                     current.copy(
@@ -48,7 +47,7 @@ class TelegramSettingsViewModel(
                         apiId = apiId.toString(),
                         apiHash = apiHash,
                         selectedChats = chats.split(",").filter { it.isNotBlank() },
-                        cacheLimitGb = cacheLimit
+                        cacheLimitGb = cacheLimit,
                     )
                 }
             }.collect()
@@ -71,7 +70,10 @@ class TelegramSettingsViewModel(
     /**
      * Update API credentials.
      */
-    fun onUpdateCredentials(apiId: String, apiHash: String) {
+    fun onUpdateCredentials(
+        apiId: String,
+        apiHash: String,
+    ) {
         viewModelScope.launch {
             val idInt = apiId.toIntOrNull() ?: 0
             store.setTelegramApiId(idInt)
@@ -87,26 +89,29 @@ class TelegramSettingsViewModel(
         viewModelScope.launch {
             try {
                 _state.update { it.copy(isConnecting = true, errorMessage = null) }
-                
+
                 val apiId = _state.value.apiId.toIntOrNull() ?: 0
                 val apiHash = _state.value.apiHash
-                
+
                 if (apiId == 0 || apiHash.isBlank()) {
-                    _state.update { it.copy(
-                        isConnecting = false,
-                        errorMessage = "Bitte API-ID und API-Hash eingeben"
-                    )}
+                    _state.update {
+                        it.copy(
+                            isConnecting = false,
+                            errorMessage = "Bitte API-ID und API-Hash eingeben",
+                        )
+                    }
                     return@launch
                 }
 
                 // Create client and config
                 client = TdlClient.create()
-                val config = ConfigLoader.load(
-                    context = app,
-                    apiId = apiId,
-                    apiHash = apiHash,
-                    phoneNumber = phoneNumber
-                )
+                val config =
+                    ConfigLoader.load(
+                        context = app,
+                        apiId = apiId,
+                        apiHash = apiHash,
+                        phoneNumber = phoneNumber,
+                    )
 
                 // Create session and browser
                 session = TelegramSession(client!!, config, viewModelScope)
@@ -117,12 +122,13 @@ class TelegramSettingsViewModel(
 
                 // Start login
                 session!!.login()
-                
             } catch (e: Exception) {
-                _state.update { it.copy(
-                    isConnecting = false,
-                    errorMessage = "Verbindung fehlgeschlagen: ${e.message}"
-                )}
+                _state.update {
+                    it.copy(
+                        isConnecting = false,
+                        errorMessage = "Verbindung fehlgeschlagen: ${e.message}",
+                    )
+                }
             }
         }
     }
@@ -163,27 +169,33 @@ class TelegramSettingsViewModel(
             try {
                 _state.update { it.copy(isLoadingChats = true) }
                 val chats = browser?.loadChats() ?: emptyList()
-                _state.update { it.copy(
-                    isLoadingChats = false,
-                    availableChats = chats.map { chat ->
-                        ChatInfo(
-                            id = chat.id,
-                            title = chat.title,
-                            type = when (chat.type) {
-                                is ChatTypePrivate -> "Privat"
-                                is ChatTypeBasicGroup -> "Gruppe"
-                                is ChatTypeSupergroup -> "Kanal"
-                                is ChatTypeSecret -> "Geheim"
-                                else -> "Unbekannt"
-                            }
-                        )
-                    }
-                )}
+                _state.update {
+                    it.copy(
+                        isLoadingChats = false,
+                        availableChats =
+                            chats.map { chat ->
+                                ChatInfo(
+                                    id = chat.id,
+                                    title = chat.title,
+                                    type =
+                                        when (chat.type) {
+                                            is ChatTypePrivate -> "Privat"
+                                            is ChatTypeBasicGroup -> "Gruppe"
+                                            is ChatTypeSupergroup -> "Kanal"
+                                            is ChatTypeSecret -> "Geheim"
+                                            else -> "Unbekannt"
+                                        },
+                                )
+                            },
+                    )
+                }
             } catch (e: Exception) {
-                _state.update { it.copy(
-                    isLoadingChats = false,
-                    errorMessage = "Chats laden fehlgeschlagen: ${e.message}"
-                )}
+                _state.update {
+                    it.copy(
+                        isLoadingChats = false,
+                        errorMessage = "Chats laden fehlgeschlagen: ${e.message}",
+                    )
+                }
             }
         }
     }
@@ -217,10 +229,12 @@ class TelegramSettingsViewModel(
             try {
                 session?.logout()
                 cleanup()
-                _state.update { it.copy(
-                    authState = TelegramAuthState.DISCONNECTED,
-                    selectedChats = emptyList()
-                )}
+                _state.update {
+                    it.copy(
+                        authState = TelegramAuthState.DISCONNECTED,
+                        selectedChats = emptyList(),
+                    )
+                }
             } catch (e: Exception) {
                 _state.update { it.copy(errorMessage = "Trennung fehlgeschlagen: ${e.message}") }
             }
@@ -236,17 +250,21 @@ class TelegramSettingsViewModel(
                 when (event) {
                     is AuthEvent.StateChanged -> handleAuthState(event.state)
                     is AuthEvent.Ready -> {
-                        _state.update { it.copy(
-                            isConnecting = false,
-                            authState = TelegramAuthState.READY
-                        )}
-                        onLoadChats()  // Auto-load chats when ready
+                        _state.update {
+                            it.copy(
+                                isConnecting = false,
+                                authState = TelegramAuthState.READY,
+                            )
+                        }
+                        onLoadChats() // Auto-load chats when ready
                     }
                     is AuthEvent.Error -> {
-                        _state.update { it.copy(
-                            isConnecting = false,
-                            errorMessage = event.message
-                        )}
+                        _state.update {
+                            it.copy(
+                                isConnecting = false,
+                                errorMessage = event.message,
+                            )
+                        }
                     }
                 }
             }
@@ -257,13 +275,14 @@ class TelegramSettingsViewModel(
      * Handle specific authorization states.
      */
     private fun handleAuthState(authState: AuthorizationState) {
-        val newState = when (authState) {
-            is AuthorizationStateWaitPhoneNumber -> TelegramAuthState.WAITING_FOR_PHONE
-            is AuthorizationStateWaitCode -> TelegramAuthState.WAITING_FOR_CODE
-            is AuthorizationStateWaitPassword -> TelegramAuthState.WAITING_FOR_PASSWORD
-            is AuthorizationStateReady -> TelegramAuthState.READY
-            else -> TelegramAuthState.DISCONNECTED
-        }
+        val newState =
+            when (authState) {
+                is AuthorizationStateWaitPhoneNumber -> TelegramAuthState.WAITING_FOR_PHONE
+                is AuthorizationStateWaitCode -> TelegramAuthState.WAITING_FOR_CODE
+                is AuthorizationStateWaitPassword -> TelegramAuthState.WAITING_FOR_PASSWORD
+                is AuthorizationStateReady -> TelegramAuthState.READY
+                else -> TelegramAuthState.DISCONNECTED
+            }
         _state.update { it.copy(authState = newState) }
     }
 
@@ -308,7 +327,7 @@ data class TelegramSettingsState(
     val errorMessage: String? = null,
     val selectedChats: List<String> = emptyList(),
     val availableChats: List<ChatInfo> = emptyList(),
-    val cacheLimitGb: Int = 5
+    val cacheLimitGb: Int = 5,
 )
 
 /**
@@ -317,7 +336,7 @@ data class TelegramSettingsState(
 data class ChatInfo(
     val id: Long,
     val title: String,
-    val type: String
+    val type: String,
 )
 
 /**
@@ -328,5 +347,5 @@ enum class TelegramAuthState {
     WAITING_FOR_PHONE,
     WAITING_FOR_CODE,
     WAITING_FOR_PASSWORD,
-    READY
+    READY,
 }

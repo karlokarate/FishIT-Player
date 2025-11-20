@@ -14,9 +14,9 @@ object DeviceProfile {
         val pm = context.packageManager
         val mode = context.resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK
         return mode == Configuration.UI_MODE_TYPE_TELEVISION ||
-               ui?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION ||
-               pm.hasSystemFeature("android.software.leanback") ||
-               pm.hasSystemFeature("amazon.hardware.fire_tv")
+            ui?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION ||
+            pm.hasSystemFeature("android.software.leanback") ||
+            pm.hasSystemFeature("amazon.hardware.fire_tv")
     }
 
     /**
@@ -30,4 +30,3 @@ object DeviceProfile {
         return true || !has64
     }
 }
-

@@ -11,17 +11,26 @@ object GlobalDebug {
     private const val TAG = "GlobalDebug"
     private val enabled = AtomicBoolean(false)
 
-    fun setEnabled(on: Boolean) { enabled.set(on) }
+    fun setEnabled(on: Boolean) {
+        enabled.set(on)
+    }
+
     fun isEnabled(): Boolean = enabled.get()
 
     // Navigation route changes
-    fun logNavigation(from: String?, to: String?) {
+    fun logNavigation(
+        from: String?,
+        to: String?,
+    ) {
         if (!enabled.get()) return
         Log.i(TAG, "nav: ${from.orEmpty()} -> ${to.orEmpty()}")
     }
 
     // DPAD / key interactions
-    fun logDpad(action: String, extras: Map<String, Any?>? = null) {
+    fun logDpad(
+        action: String,
+        extras: Map<String, Any?>? = null,
+    ) {
         if (!enabled.get()) return
         val sfx = extras?.entries?.joinToString(", ") { (k, v) -> "$k=$v" }
         if (sfx.isNullOrBlank()) Log.i(TAG, "dpad: $action") else Log.i(TAG, "dpad: $action { $sfx }")
@@ -32,13 +41,22 @@ object GlobalDebug {
         if (!enabled.get()) return
         Log.i(TAG, node)
     }
-    fun logTree(node: String, hint: String?) {
+
+    fun logTree(
+        node: String,
+        hint: String?,
+    ) {
         if (!enabled.get()) return
         if (hint.isNullOrBlank()) Log.i(TAG, node) else Log.i(TAG, "$node [$hint]")
     }
 
     // Focus details emitted by rows/tiles
-    fun logTileFocus(type: String, id: String, uiTitle: String?, obxTitle: String?) {
+    fun logTileFocus(
+        type: String,
+        id: String,
+        uiTitle: String?,
+        obxTitle: String?,
+    ) {
         if (!enabled.get()) return
         val ui = uiTitle?.takeIf { it.isNotBlank() } ?: ""
         val obx = obxTitle?.takeIf { it.isNotBlank() } ?: ""
@@ -47,41 +65,66 @@ object GlobalDebug {
     }
 
     // Generic widget focus (Buttons, Chips, Clickables ...)
-    fun logFocusWidget(component: String, module: String? = null, tag: String? = null) {
+    fun logFocusWidget(
+        component: String,
+        module: String? = null,
+        tag: String? = null,
+    ) {
         if (!enabled.get()) return
         val mod = module?.takeIf { it.isNotBlank() } ?: ""
         val tg = tag?.takeIf { it.isNotBlank() } ?: ""
-        val suffix = buildString {
-            if (mod.isNotEmpty()) append(" module=").append(mod)
-            if (tg.isNotEmpty()) append(" tag=").append(tg)
-        }
+        val suffix =
+            buildString {
+                if (mod.isNotEmpty()) append(" module=").append(mod)
+                if (tg.isNotEmpty()) append(" tag=").append(tg)
+            }
         Log.i(TAG, "focus:widget component=$component$suffix")
     }
 
     // OBX index/key backfills
-    fun logObxKey(kind: String, id: String, change: String) {
+    fun logObxKey(
+        kind: String,
+        id: String,
+        change: String,
+    ) {
         if (!enabled.get()) return
         Log.i(TAG, "obxKey:$kind id=$id $change")
     }
 
-    fun logObxKey(kind: String, id: String, change: Map<String, Any?>) {
+    fun logObxKey(
+        kind: String,
+        id: String,
+        change: Map<String, Any?>,
+    ) {
         if (!enabled.get()) return
         val s = change.entries.joinToString(", ") { (k, v) -> "$k=$v" }
         Log.i(TAG, "obxKey:$kind id=$id { $s }")
     }
 
-    fun logDetailSection(type: String, id: String, section: String, entries: Map<String, Any?>) {
+    fun logDetailSection(
+        type: String,
+        id: String,
+        section: String,
+        entries: Map<String, Any?>,
+    ) {
         if (!enabled.get()) return
         if (entries.isEmpty()) return
-        val body = entries.entries.joinToString(", ") { (k, v) ->
-            val value = v?.toString()?.replace('\n', ' ')?.replace('\r', ' ')
-            "$k=${value ?: ""}"
-        }
+        val body =
+            entries.entries.joinToString(", ") { (k, v) ->
+                val value = v?.toString()?.replace('\n', ' ')?.replace('\r', ' ')
+                "$k=${value ?: ""}"
+            }
         Log.i(TAG, "detail:$type id=$id section=$section { $body }")
     }
 
     // Row navigation intent/decision logging
-    fun logRowNav(direction: String, rowKey: String?, fromIndex: Int?, targetIndex: Int?, note: String? = null) {
+    fun logRowNav(
+        direction: String,
+        rowKey: String?,
+        fromIndex: Int?,
+        targetIndex: Int?,
+        note: String? = null,
+    ) {
         if (!enabled.get()) return
         val rk = rowKey ?: ""
         val fr = fromIndex?.toString() ?: ""
@@ -96,19 +139,38 @@ object GlobalDebug {
     }
 
     // Row scroll plan (index + offset)
-    fun logRowScrollPlan(index: Int, offset: Int, reason: String? = null) {
+    fun logRowScrollPlan(
+        index: Int,
+        offset: Int,
+        reason: String? = null,
+    ) {
         if (!enabled.get()) return
-        if (reason.isNullOrBlank()) Log.i(TAG, "row:scrollPlan index=$index offset=$offset")
-        else Log.i(TAG, "row:scrollPlan index=$index offset=$offset $reason")
+        if (reason.isNullOrBlank()) {
+            Log.i(TAG, "row:scrollPlan index=$index offset=$offset")
+        } else {
+            Log.i(TAG, "row:scrollPlan index=$index offset=$offset $reason")
+        }
     }
 
-    fun logRowWindow(rowKey: String?, first: Int, last: Int, vpStart: Int, vpEnd: Int, items: String) {
+    fun logRowWindow(
+        rowKey: String?,
+        first: Int,
+        last: Int,
+        vpStart: Int,
+        vpEnd: Int,
+        items: String,
+    ) {
         if (!enabled.get()) return
         val rk = rowKey ?: ""
         Log.i(TAG, "row:window row=$rk first=$first last=$last vp=$vpStart..$vpEnd vis=[$items]")
     }
 
-    fun logRowFocusState(rowKey: String?, index: Int, self: Boolean, has: Boolean) {
+    fun logRowFocusState(
+        rowKey: String?,
+        index: Int,
+        self: Boolean,
+        has: Boolean,
+    ) {
         if (!enabled.get()) return
         val rk = rowKey ?: ""
         Log.i(TAG, "row:focusState row=$rk idx=$index self=$self has=$has")

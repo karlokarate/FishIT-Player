@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -28,7 +27,7 @@ fun DetailBackdrop(
     heroUrl: Any?,
     isAdult: Boolean,
     pads: PaddingValues,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Box(Modifier.fillMaxSize()) {
         // Layer 1: full-screen hero
@@ -38,7 +37,7 @@ fun DetailBackdrop(
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().graphicsLayer(alpha = HERO_SCRIM_IMAGE_ALPHA),
-                crossfade = true
+                crossfade = true,
             )
         }
         // Accent colors align with Series detail
@@ -51,10 +50,14 @@ fun DetailBackdrop(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            0f to androidx.compose.material3.MaterialTheme.colorScheme.background.copy(alpha = 0.35f),
-                            1f to androidx.compose.material3.MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
-                        )
-                    )
+                            0f to
+                                androidx.compose.material3.MaterialTheme.colorScheme.background
+                                    .copy(alpha = 0.35f),
+                            1f to
+                                androidx.compose.material3.MaterialTheme.colorScheme.surface
+                                    .copy(alpha = 0.55f),
+                        ),
+                    ),
             )
             // Radial accent glow
             val radius = with(LocalDensity.current) { 680.dp.toPx() }
@@ -63,22 +66,22 @@ fun DetailBackdrop(
                     .fillMaxSize()
                     .background(
                         Brush.radialGradient(
-                            colors = listOf(
-                                accent.copy(alpha = if (!isAdult) 0.20f else 0.12f),
-                                Color.Transparent
-                            ),
-                            radius = radius
-                        )
-                    )
+                            colors =
+                                listOf(
+                                    accent.copy(alpha = if (!isAdult) 0.20f else 0.12f),
+                                    Color.Transparent,
+                                ),
+                            radius = radius,
+                        ),
+                    ),
             )
             // Foreground card content
             AccentCard(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
-                accent = accent
+                accent = accent,
             ) {
                 content()
             }
         }
     }
 }
-

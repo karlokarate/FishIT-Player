@@ -1,6 +1,5 @@
 package com.chris.m3usuite.ui.detail
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -21,7 +20,7 @@ fun DetailScaffold(
     modifier: Modifier = Modifier,
     headerExtras: @Composable ColumnScope.() -> Unit = {},
     collapsibleMeta: Boolean = false,
-    content: LazyListScope.() -> Unit
+    content: LazyListScope.() -> Unit,
 ) {
     LazyColumn(state = listState, modifier = modifier) {
         item {
@@ -33,7 +32,7 @@ fun DetailScaffold(
                 actions = actions,
                 meta = meta,
                 headerExtras = headerExtras,
-                collapsibleMeta = collapsibleMeta
+                collapsibleMeta = collapsibleMeta,
             )
         }
         content()
