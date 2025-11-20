@@ -96,13 +96,14 @@ object TgContentHeuristics {
         parsed: MediaInfo,
         chatTitle: String?,
     ): HeuristicResult {
-        val allText = buildString {
-            append(chatTitle.orEmpty())
-            append(" ")
-            append(parsed.fileName.orEmpty())
-            append(" ")
-            append(parsed.title.orEmpty())
-        }
+        val allText =
+            buildString {
+                append(chatTitle.orEmpty())
+                append(" ")
+                append(parsed.fileName.orEmpty())
+                append(" ")
+                append(parsed.title.orEmpty())
+            }
 
         // Extract season/episode from all available text
         val seasonEp = guessSeasonEpisode(allText)

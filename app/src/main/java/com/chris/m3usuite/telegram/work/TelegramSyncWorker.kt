@@ -1,7 +1,6 @@
 package com.chris.m3usuite.telegram.work
 
 import android.content.Context
-import android.os.Build
 import androidx.work.CoroutineWorker
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -11,12 +10,9 @@ import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TgSyncState
-import com.chris.m3usuite.telegram.parser.MediaParser
-import com.chris.m3usuite.telegram.parser.TgContentHeuristics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
@@ -89,16 +85,17 @@ class TelegramSyncWorker(
 
                 val results =
                     withContext(dispatcher) {
-                        chatsToSync.map { chatConfig ->
-                            async {
-                                syncChat(
-                                    serviceClient = serviceClient,
-                                    chatId = chatConfig.chatId,
-                                    chatType = chatConfig.type,
-                                    mode = mode,
-                                )
-                            }
-                        }.awaitAll()
+                        chatsToSync
+                            .map { chatConfig ->
+                                async {
+                                    syncChat(
+                                        serviceClient = serviceClient,
+                                        chatId = chatConfig.chatId,
+                                        chatType = chatConfig.type,
+                                        mode = mode,
+                                    )
+                                }
+                            }.awaitAll()
                     }
 
                 // Sum up results

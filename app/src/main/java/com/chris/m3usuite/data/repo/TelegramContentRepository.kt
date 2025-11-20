@@ -6,13 +6,11 @@ import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.telegram.models.MediaInfo
-import com.chris.m3usuite.telegram.models.MediaKind
 import com.chris.m3usuite.telegram.parser.MediaParser
 import com.chris.m3usuite.telegram.parser.TgContentHeuristics
 import dev.g000sha256.tdl.dto.Message
-import dev.g000sha256.tdl.dto.MessageVideo
 import dev.g000sha256.tdl.dto.MessageDocument
+import dev.g000sha256.tdl.dto.MessageVideo
 import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
 import io.objectbox.kotlin.query
@@ -81,7 +79,10 @@ class TelegramContentRepository(
                         when (val content = message.content) {
                             is MessageVideo -> {
                                 fileId = content.video.video?.id
-                                fileUniqueId = content.video.video?.remote?.uniqueId
+                                fileUniqueId =
+                                    content.video.video
+                                        ?.remote
+                                        ?.uniqueId
                                 durationSecs = content.video.duration
                                 width = content.video.width
                                 height = content.video.height
@@ -89,7 +90,10 @@ class TelegramContentRepository(
                             }
                             is MessageDocument -> {
                                 fileId = content.document.document?.id
-                                fileUniqueId = content.document.document?.remote?.uniqueId
+                                fileUniqueId =
+                                    content.document.document
+                                        ?.remote
+                                        ?.uniqueId
                                 durationSecs = mediaInfo.durationMinutes?.times(60)
                                 width = null
                                 height = null
