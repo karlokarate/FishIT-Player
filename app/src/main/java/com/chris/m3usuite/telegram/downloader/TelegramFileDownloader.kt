@@ -37,7 +37,21 @@ data class DownloadProgress(
  * - Implements proper caching to prevent bloat
  * - Manages concurrent downloads efficiently
  * - Provides real-time download progress tracking
+ * 
+ * @deprecated This is legacy code. Use T_TelegramFileDownloader from telegram.core package instead.
+ * This class will be removed in a future version.
+ * 
+ * See:
+ * - telegram/core/T_TelegramFileDownloader.kt for the new implementation
+ * - telegram/core/T_TelegramServiceClient.kt for access via the unified engine
  */
+@Deprecated(
+    message = "Use T_TelegramFileDownloader from telegram.core package instead",
+    replaceWith = ReplaceWith(
+        "T_TelegramFileDownloader",
+        "com.chris.m3usuite.telegram.core.T_TelegramFileDownloader"
+    )
+)
 class TelegramFileDownloader(
     private val context: Context,
     private val session: TelegramSession,
