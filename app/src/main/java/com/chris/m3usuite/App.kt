@@ -10,6 +10,18 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        // Initialize debug tools in debug builds
+        if (BuildConfig.DEBUG) {
+            try {
+                val debugClass = Class.forName("com.chris.m3usuite.DebugToolsInitializer")
+                val initMethod = debugClass.getMethod("initialize", Application::class.java)
+                initMethod.invoke(null, this)
+            } catch (e: Exception) {
+                // Debug initializer not available (e.g., in release builds)
+            }
+        }
+
         Telemetry.registerDefault(this)
         telemetryCloser = FrameTimeWatchdog.install()
     }
