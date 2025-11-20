@@ -17,6 +17,10 @@ import io.objectbox.kotlin.query
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -388,6 +392,85 @@ class TelegramContentRepository(
                         )
                     },
                 )
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Get Telegram VOD content.
+     * Filters by selected VOD chats from settings.
+     */
+    fun getTelegramVod(): Flow<List<MediaItem>> =
+        flow {
+            store.tgSelectedVodChatsCsv.collect { csv ->
+                val chatIds = csv.split(",").mapNotNull { it.trim().toLongOrNull() }
+                if (chatIds.isEmpty()) {
+                    // Fall back to general selected chats if VOD-specific list is empty
+                    val generalCsv = store.tgSelectedChatsCsv.first()
+                    val generalChatIds = generalCsv.split(",").mapNotNull { it.trim().toLongOrNull() }
+                    if (generalChatIds.isEmpty()) {
+                        emit(emptyList())
+                    } else {
+                        emit(getTelegramContentByChatIds(generalChatIds))
+                    }
+                } else {
+                    emit(getTelegramContentByChatIds(chatIds))
+                }
+            }
+        }.flowOn(Dispatchers.IO)
+
+    /**
+     * Get Telegram Series content.
+     * Filters by selected Series chats from settings.
+     */
+    fun getTelegramSeries(): Flow<List<MediaItem>> =
+        flow {
+            store.tgSelectedSeriesChatsCsv.collect { csv ->
+                val chatIds = csv.split(",").mapNotNull { it.trim().toLongOrNull() }
+                if (chatIds.isEmpty()) {
+                    emit(emptyList())
+                } else {
+                    val items = getTelegramContentByChatIds(chatIds)
+                    // Mark items as series type
+                    emit(items.map { it.copy(type = "series") })
+                }
+            }
+        }.flowOn(Dispatchers.IO)
+
+    /**
+     * Get Telegram Feed items (recent activity).
+     * Returns the most recent items from all selected chats.
+     * Limited to last 100 items for feed display.
+     */
+    fun getTelegramFeedItems(): Flow<List<MediaItem>> =
+        store.tgSelectedChatsCsv
+            .map { csv ->
+                val chatIds = csv.split(",").mapNotNull { it.trim().toLongOrNull() }
+                if (chatIds.isEmpty()) {
+                    emptyList()
+                } else {
+                    val messages =
+                        messageBox
+                            .query {
+                                `in`(ObxTelegramMessage_.chatId, chatIds.toLongArray())
+                                orderDesc(ObxTelegramMessage_.date)
+                            }.find(0, 100) // Limit to 100 most recent items
+
+                    messages.map { obxMsg ->
+                        MediaItem(
+                            id = encodeTelegramId(obxMsg.messageId),
+                            name = obxMsg.caption ?: "Untitled",
+                            type = "vod",
+                            url = "tg://file/${obxMsg.fileId}",
+                            poster = obxMsg.thumbLocalPath,
+                            plot = null,
+                            rating = null,
+                            year = null,
+                            durationSecs = obxMsg.durationSecs,
+                            categoryName = "Telegram - New",
+                            source = "telegram",
+                            providerKey = "Telegram",
+                        )
+                    }
+                }
             }.flowOn(Dispatchers.IO)
 
     /**
