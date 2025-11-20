@@ -21,7 +21,22 @@ import kotlinx.coroutines.launch
  * - Store API credentials securely
  * - Persist authentication state
  * - Handle configuration changes properly
+ * 
+ * @deprecated This is legacy example code. Use TelegramSettingsViewModel from telegram.ui
+ * package instead, which properly integrates with T_TelegramServiceClient and the unified
+ * Telegram engine. This class will be removed in a future version.
+ * 
+ * See:
+ * - telegram/ui/TelegramSettingsViewModel.kt for the replacement
+ * - telegram/core/T_TelegramServiceClient.kt for the unified Telegram engine
  */
+@Deprecated(
+    message = "Use TelegramSettingsViewModel from telegram.ui package instead",
+    replaceWith = ReplaceWith(
+        "TelegramSettingsViewModel(app, store)",
+        "com.chris.m3usuite.telegram.ui.TelegramSettingsViewModel"
+    )
+)
 class TelegramViewModel(
     private val context: Context,
     private val apiId: Int,

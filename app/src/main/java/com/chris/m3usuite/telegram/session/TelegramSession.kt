@@ -25,7 +25,9 @@ fun <T> TdlResult<T>.getOrThrow(): T =
 
 /**
  * Authentication state events emitted during login flow.
+ * @deprecated Use types from telegram.core package instead
  */
+@Deprecated("Use types from telegram.core package instead")
 sealed class AuthEvent {
     data class StateChanged(
         val state: AuthorizationState,
@@ -42,7 +44,21 @@ sealed class AuthEvent {
 /**
  * Manages a TDLib client session with Flow-based authentication.
  * Handles the complete login flow including phone number, code, and password steps.
+ * 
+ * @deprecated This is legacy code. Use T_TelegramSession from telegram.core package instead.
+ * This class will be removed in a future version.
+ * 
+ * See:
+ * - telegram/core/T_TelegramSession.kt for the new implementation
+ * - telegram/core/T_TelegramServiceClient.kt for access via the unified engine
  */
+@Deprecated(
+    message = "Use T_TelegramSession from telegram.core package instead",
+    replaceWith = ReplaceWith(
+        "T_TelegramSession",
+        "com.chris.m3usuite.telegram.core.T_TelegramSession"
+    )
+)
 class TelegramSession(
     val client: TdlClient,
     val config: AppConfig,

@@ -197,7 +197,6 @@ fun SeriesDetailScreen(
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
     val scope = rememberCoroutineScope()
-    val telegramServiceClient = remember { TelegramServiceClient(ctx.applicationContext) }
     val uriHandler = LocalUriHandler.current
     val resumeRepo =
         remember {
@@ -567,7 +566,8 @@ fun SeriesDetailScreen(
             }
             val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
 
-            // TODO: Telegram playback not yet implemented
+            // TODO: Telegram playback not yet fully implemented
+            // Will use T_TelegramServiceClient singleton when implemented
             val tgUrl: String? = null
             /*
             val tgUrl = if (e.tgChatId != null && e.tgMessageId != null) {
@@ -575,7 +575,7 @@ fun SeriesDetailScreen(
                     PlayUrlHelper.tgPlayUri(
                         chatId = e.tgChatId,
                         messageId = e.tgMessageId,
-                        svc = telegramServiceClient
+                        svc = T_TelegramServiceClient.getInstance(ctx)
                     ).toString()
                 }.getOrElse { err ->
                     android.util.Log.w(

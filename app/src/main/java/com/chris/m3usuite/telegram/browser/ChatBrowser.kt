@@ -11,7 +11,21 @@ import kotlinx.coroutines.flow.map
  * Browser for navigating Telegram chats and messages.
  * Provides paging support for both chat lists and message history.
  * Includes real-time message updates and chat caching.
+ * 
+ * @deprecated This is legacy code. Use T_ChatBrowser from telegram.core package instead.
+ * This class will be removed in a future version.
+ * 
+ * See:
+ * - telegram/core/T_ChatBrowser.kt for the new implementation
+ * - telegram/core/T_TelegramServiceClient.kt for access via the unified engine
  */
+@Deprecated(
+    message = "Use T_ChatBrowser from telegram.core package instead",
+    replaceWith = ReplaceWith(
+        "T_ChatBrowser",
+        "com.chris.m3usuite.telegram.core.T_ChatBrowser"
+    )
+)
 class ChatBrowser(
     private val session: TelegramSession,
 ) {

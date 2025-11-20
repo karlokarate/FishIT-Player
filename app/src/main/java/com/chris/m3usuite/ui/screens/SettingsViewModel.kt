@@ -24,13 +24,20 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Simple UI projection of a Telegram chat. */
+/** Simple UI projection of a Telegram chat. 
+ * @deprecated Use types from telegram.ui package instead
+ */
+@Deprecated("Use types from telegram.ui package instead")
 data class ChatUi(
     val id: Long,
     val title: String,
 )
 
-/** Aggregated UI state for Telegram-specific preferences. */
+/** 
+ * Aggregated UI state for Telegram-specific preferences.
+ * @deprecated Use TelegramSettingsViewModel from telegram.ui package instead
+ */
+@Deprecated("Use TelegramSettingsViewModel from telegram.ui package instead")
 data class SettingsUiState(
     val tgEnabled: Boolean = false,
     val authState: TelegramServiceClient.AuthState = TelegramServiceClient.AuthState.Idle,
@@ -48,6 +55,25 @@ data class SettingsUiState(
     val apiKeysMissing: Boolean = true, // TODO: Update when TG_API constants are added to BuildConfig
 )
 
+/**
+ * Legacy ViewModel for Telegram settings.
+ * 
+ * @deprecated This is legacy code that uses the old TelegramServiceClient placeholder.
+ * Use TelegramSettingsViewModel from telegram.ui package instead, which properly integrates
+ * with T_TelegramServiceClient and the unified Telegram engine.
+ * This class will be removed in a future version.
+ * 
+ * See:
+ * - telegram/ui/TelegramSettingsViewModel.kt for the replacement
+ * - telegram/core/T_TelegramServiceClient.kt for the unified Telegram engine
+ */
+@Deprecated(
+    message = "Use TelegramSettingsViewModel from telegram.ui package instead",
+    replaceWith = ReplaceWith(
+        "TelegramSettingsViewModel(app, store)",
+        "com.chris.m3usuite.telegram.ui.TelegramSettingsViewModel"
+    )
+)
 sealed interface SettingsIntent {
     data class RequestCode(
         val phone: String,
@@ -92,6 +118,10 @@ sealed interface SettingsEffect {
     ) : SettingsEffect
 }
 
+/**
+ * @deprecated Use TelegramSettingsViewModel from telegram.ui package instead
+ */
+@Deprecated("Use TelegramSettingsViewModel from telegram.ui package instead")
 class SettingsViewModel(
     private val app: Application,
     private val store: SettingsStore,

@@ -43,6 +43,22 @@ class TelegramDataSource(
     private var bytesRemaining: Long = C.LENGTH_UNSET.toLong()
     private var totalSize: Long = C.LENGTH_UNSET.toLong()
     private var fileId: String? = null
+    /**
+     * The Telegram chat ID associated with the file to be streamed.
+     *
+     * This is parsed from the `chatId` query parameter in the Telegram file URL
+     * (e.g., `tg://file/<fileId>?chatId=<chatId>&messageId=<messageId>`).
+     * It is set during the [open] method when the DataSource is initialized.
+     */
+    private var chatId: Long? = null
+    /**
+     * The Telegram message ID associated with the file to be streamed.
+     *
+     * This is parsed from the `messageId` query parameter in the Telegram file URL
+     * (e.g., `tg://file/<fileId>?chatId=<chatId>&messageId=<messageId>`).
+     * It is set during the [open] method when the DataSource is initialized.
+     */
+    private var messageId: Long? = null
     private var opened = false
     private var transferListener: TransferListener? = null
 

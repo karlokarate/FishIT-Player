@@ -10,9 +10,22 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Placeholder service client for Telegram functionality.
- * TODO: Implement actual Telegram service integration.
+ * Legacy placeholder service client for Telegram functionality.
+ * 
+ * @deprecated This is legacy code. Use T_TelegramServiceClient from telegram.core package instead.
+ * This class will be removed in a future version.
+ * 
+ * See:
+ * - telegram/core/T_TelegramServiceClient.kt for the new unified Telegram engine
+ * - telegram/ui/TelegramSettingsViewModel.kt for UI integration
  */
+@Deprecated(
+    message = "Use T_TelegramServiceClient from telegram.core package instead",
+    replaceWith = ReplaceWith(
+        "T_TelegramServiceClient.getInstance(context)",
+        "com.chris.m3usuite.telegram.core.T_TelegramServiceClient"
+    )
+)
 class TelegramServiceClient(
     private val context: Context,
 ) {
