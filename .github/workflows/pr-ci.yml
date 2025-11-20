@@ -66,12 +66,6 @@ jobs:
           check_name: 'Unit Test Results'
           fail_on_failure: true
 
-      - name: Run Detekt
-        run: ./gradlew detekt --no-daemon --stacktrace
-        continue-on-error: true
-        env:
-          GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2g"
-
       - name: Run ktlint Check
         run: ./gradlew ktlintCheck --no-daemon --stacktrace
         continue-on-error: true
