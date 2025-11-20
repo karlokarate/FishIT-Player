@@ -21,7 +21,13 @@ import kotlinx.coroutines.launch
  * - Store API credentials securely
  * - Persist authentication state
  * - Handle configuration changes properly
+ *
+ * @deprecated Legacy TDLib integration - do not use in new code. Use TelegramSettingsViewModel or specialized VMs instead.
  */
+@Deprecated(
+    message = "Legacy TDLib integration - do not use in new code. Use TelegramSettingsViewModel or specialized VMs instead.",
+    level = DeprecationLevel.WARNING
+)
 class TelegramViewModel(
     private val context: Context,
     private val apiId: Int,

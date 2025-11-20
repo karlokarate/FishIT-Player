@@ -42,7 +42,13 @@ sealed class AuthEvent {
 /**
  * Manages a TDLib client session with Flow-based authentication.
  * Handles the complete login flow including phone number, code, and password steps.
+ *
+ * @deprecated Legacy TDLib integration - do not use in new code. Use T_TelegramSession from telegram.core instead.
  */
+@Deprecated(
+    message = "Legacy TDLib integration - do not use in new code. Use T_TelegramSession from telegram.core instead.",
+    level = DeprecationLevel.WARNING
+)
 class TelegramSession(
     val client: TdlClient,
     val config: AppConfig,
