@@ -1,7 +1,7 @@
 package com.chris.m3usuite.telegram.core
 
-import android.util.Log
 import com.chris.m3usuite.telegram.config.AppConfig
+import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.*
@@ -95,13 +95,13 @@ class T_TelegramSession(
      * @throws TimeoutCancellationException if authentication doesn't complete within 5 minutes
      */
     suspend fun login() {
-        Log.d(TAG, " Login flow starting...")
+        TelegramLogRepository.debug("T_TelegramSession", " Login flow starting...")
 
         startAuthCollectorIfNeeded()
 
         // Get initial state for debugging
         val initial = client.getAuthorizationState().getOrThrow()
-        Log.d(TAG, " Initial state: ${initial::class.simpleName}")
+        TelegramLogRepository.debug("T_TelegramSession", " Initial state: ${initial::class.simpleName}")
         currentState = initial
 
         // Wait for ready state or handle initial state
@@ -113,7 +113,7 @@ class T_TelegramSession(
                 while (true) {
                     when (val s = currentState) {
                         is AuthorizationStateReady -> {
-                            Log.d(TAG, " Ready ✅")
+                            TelegramLogRepository.debug("T_TelegramSession", " Ready ✅")
                             _authEvents.emit(AuthEvent.Ready)
                             return@withTimeout
                         }
@@ -123,7 +123,7 @@ class T_TelegramSession(
                         is AuthorizationStateLoggingOut,
                         -> {
                             val error = "Fatal state: ${s::class.simpleName}"
-                            Log.d(TAG, " $error")
+                            TelegramLogRepository.debug("T_TelegramSession", " $error")
                             _authEvents.emit(AuthEvent.Error(error))
                             throw RuntimeException(error)
                         }
@@ -136,7 +136,7 @@ class T_TelegramSession(
             }
         } catch (e: TimeoutCancellationException) {
             val error = "Login timeout - no response from TDLib after 5 minutes"
-            Log.d(TAG, " $error")
+            TelegramLogRepository.debug("T_TelegramSession", " $error")
             _authEvents.emit(AuthEvent.Error(error))
             throw RuntimeException(error, e)
         }
@@ -153,7 +153,7 @@ class T_TelegramSession(
         phoneNumber: String,
         retries: Int = 3,
     ) {
-        Log.d(TAG, " Sending phone number...")
+        TelegramLogRepository.debug("T_TelegramSession", " Sending phone number...")
         var lastError: Exception? = null
 
         repeat(retries) { attempt ->
@@ -170,11 +170,11 @@ class T_TelegramSession(
                     )
 
                 client.setAuthenticationPhoneNumber(phoneNumber, settings).getOrThrow()
-                Log.d(TAG, " Phone number submitted successfully")
+                TelegramLogRepository.debug("T_TelegramSession", " Phone number submitted successfully")
                 return // Success, exit
             } catch (e: Exception) {
                 lastError = e
-                Log.d(TAG, " Error sending phone (attempt ${attempt + 1}/$retries): ${e.message}")
+                TelegramLogRepository.debug("T_TelegramSession", " Error sending phone (attempt ${attempt + 1}/$retries): ${e.message}")
 
                 if (attempt < retries - 1) {
                     delay(1000L * (attempt + 1)) // Exponential backoff
@@ -184,7 +184,7 @@ class T_TelegramSession(
 
         // All retries failed
         val errorMsg = "Failed to send phone number after $retries attempts: ${lastError?.message}"
-        Log.d(TAG, " $errorMsg")
+        TelegramLogRepository.debug("T_TelegramSession", " $errorMsg")
         _authEvents.emit(AuthEvent.Error(errorMsg))
         throw lastError ?: Exception(errorMsg)
     }
@@ -200,17 +200,17 @@ class T_TelegramSession(
         code: String,
         retries: Int = 2,
     ) {
-        Log.d(TAG, " Sending code...")
+        TelegramLogRepository.debug("T_TelegramSession", " Sending code...")
         var lastError: Exception? = null
 
         repeat(retries) { attempt ->
             try {
                 client.checkAuthenticationCode(code).getOrThrow()
-                Log.d(TAG, " Code submitted successfully")
+                TelegramLogRepository.debug("T_TelegramSession", " Code submitted successfully")
                 return // Success, exit
             } catch (e: Exception) {
                 lastError = e
-                Log.d(TAG, " Error sending code (attempt ${attempt + 1}/$retries): ${e.message}")
+                TelegramLogRepository.debug("T_TelegramSession", " Error sending code (attempt ${attempt + 1}/$retries): ${e.message}")
 
                 if (attempt < retries - 1) {
                     delay(500L)
@@ -220,7 +220,7 @@ class T_TelegramSession(
 
         // All retries failed
         val errorMsg = "Failed to send code after $retries attempts: ${lastError?.message}"
-        Log.d(TAG, " $errorMsg")
+        TelegramLogRepository.debug("T_TelegramSession", " $errorMsg")
         _authEvents.emit(AuthEvent.Error(errorMsg))
         throw lastError ?: Exception(errorMsg)
     }
@@ -236,17 +236,17 @@ class T_TelegramSession(
         password: String,
         retries: Int = 2,
     ) {
-        Log.d(TAG, " Sending password...")
+        TelegramLogRepository.debug("T_TelegramSession", " Sending password...")
         var lastError: Exception? = null
 
         repeat(retries) { attempt ->
             try {
                 client.checkAuthenticationPassword(password).getOrThrow()
-                Log.d(TAG, " Password submitted successfully")
+                TelegramLogRepository.debug("T_TelegramSession", " Password submitted successfully")
                 return // Success, exit
             } catch (e: Exception) {
                 lastError = e
-                Log.d(TAG, " Error sending password (attempt ${attempt + 1}/$retries): ${e.message}")
+                TelegramLogRepository.debug("T_TelegramSession", " Error sending password (attempt ${attempt + 1}/$retries): ${e.message}")
 
                 if (attempt < retries - 1) {
                     delay(500L)
@@ -256,7 +256,7 @@ class T_TelegramSession(
 
         // All retries failed
         val errorMsg = "Failed to send password after $retries attempts: ${lastError?.message}"
-        Log.d(TAG, " $errorMsg")
+        TelegramLogRepository.debug("T_TelegramSession", " $errorMsg")
         _authEvents.emit(AuthEvent.Error(errorMsg))
         throw lastError ?: Exception(errorMsg)
     }
@@ -265,11 +265,11 @@ class T_TelegramSession(
      * Log out from Telegram.
      */
     suspend fun logout() {
-        Log.d(TAG, " Logging out...")
+        TelegramLogRepository.debug("T_TelegramSession", " Logging out...")
         try {
             client.logOut().getOrThrow()
         } catch (e: Exception) {
-            Log.d(TAG, " Error during logout: ${e.message}")
+            TelegramLogRepository.debug("T_TelegramSession", " Error during logout: ${e.message}")
             throw e
         }
     }
@@ -281,19 +281,19 @@ class T_TelegramSession(
     private fun startAuthCollectorIfNeeded() {
         if (!collectorStarted.compareAndSet(false, true)) return
 
-        Log.d(TAG, " Starting auth state flow collector...")
+        TelegramLogRepository.debug("T_TelegramSession", " Starting auth state flow collector...")
 
         scope.launch {
             try {
                 client.authorizationStateUpdates.collect { update ->
                     val state = update.authorizationState
-                    Log.d(TAG, " State update: ${state::class.simpleName}")
+                    TelegramLogRepository.debug("T_TelegramSession", " State update: ${state::class.simpleName}")
                     currentState = state
                     _authEvents.emit(AuthEvent.StateChanged(state))
                     handleAuthState(state)
                 }
             } catch (t: Throwable) {
-                Log.d(TAG, " Error in auth flow: ${t.message}")
+                TelegramLogRepository.debug("T_TelegramSession", " Error in auth flow: ${t.message}")
                 t.printStackTrace()
                 _authEvents.emit(AuthEvent.Error("Auth flow error: ${t.message}"))
             }
@@ -310,16 +310,16 @@ class T_TelegramSession(
             is AuthorizationStateWaitCode -> onWaitCode()
             is AuthorizationStateWaitPassword -> onWaitPassword()
             is AuthorizationStateReady -> {
-                Log.d(TAG, " Ready state received")
+                TelegramLogRepository.debug("T_TelegramSession", " Ready state received")
             }
             is AuthorizationStateLoggingOut,
             is AuthorizationStateClosing,
             is AuthorizationStateClosed,
             -> {
-                Log.d(TAG, " Terminal state: ${state::class.simpleName}")
+                TelegramLogRepository.debug("T_TelegramSession", " Terminal state: ${state::class.simpleName}")
             }
             else -> {
-                Log.d(TAG, " Unhandled state: ${state::class.simpleName}")
+                TelegramLogRepository.debug("T_TelegramSession", " Unhandled state: ${state::class.simpleName}")
             }
         }
     }
@@ -328,10 +328,10 @@ class T_TelegramSession(
      * Handle TdlibParameters state - automatically set parameters.
      */
     private suspend fun onWaitTdlibParameters() {
-        Log.d(TAG, " Setting TdlibParameters...")
+        TelegramLogRepository.debug("T_TelegramSession", " Setting TdlibParameters...")
 
         if (!tdParamsSet.compareAndSet(false, true)) {
-            Log.d(TAG, " TdlibParameters already set, skipping")
+            TelegramLogRepository.debug("T_TelegramSession", " TdlibParameters already set, skipping")
             return
         }
 
@@ -354,9 +354,9 @@ class T_TelegramSession(
                     applicationVersion = "FishIT-Player-1.0",
                 ).getOrThrow()
 
-            Log.d(TAG, " TdlibParameters set successfully")
+            TelegramLogRepository.debug("T_TelegramSession", " TdlibParameters set successfully")
         } catch (e: Exception) {
-            Log.d(TAG, " Error setting parameters: ${e.message}")
+            TelegramLogRepository.debug("T_TelegramSession", " Error setting parameters: ${e.message}")
             _authEvents.emit(AuthEvent.Error("Failed to set parameters: ${e.message}"))
             throw e
         }
@@ -366,7 +366,7 @@ class T_TelegramSession(
      * Handle phone number state - automatically send from config if available.
      */
     private suspend fun onWaitPhoneNumber() {
-        Log.d(TAG, " → AuthorizationStateWaitPhoneNumber")
+        TelegramLogRepository.debug("T_TelegramSession", " → AuthorizationStateWaitPhoneNumber")
 
         // Only auto-send if phone number is provided in config
         if (config.phoneNumber.isNotBlank()) {
@@ -383,13 +383,13 @@ class T_TelegramSession(
                     )
 
                 client.setAuthenticationPhoneNumber(config.phoneNumber, settings).getOrThrow()
-                Log.d(TAG, " Phone number auto-submitted: ${config.phoneNumber}")
+                TelegramLogRepository.debug("T_TelegramSession", " Phone number auto-submitted: ${config.phoneNumber}")
             } catch (e: Exception) {
-                Log.d(TAG, " Error auto-submitting phone: ${e.message}")
+                TelegramLogRepository.debug("T_TelegramSession", " Error auto-submitting phone: ${e.message}")
                 _authEvents.emit(AuthEvent.Error("Failed to submit phone number: ${e.message}"))
             }
         } else {
-            Log.d(TAG, " Waiting for phone number from UI...")
+            TelegramLogRepository.debug("T_TelegramSession", " Waiting for phone number from UI...")
         }
     }
 
@@ -397,7 +397,7 @@ class T_TelegramSession(
      * Handle code state - wait for UI to call sendCode().
      */
     private suspend fun onWaitCode() {
-        Log.d(TAG, " Waiting for authentication code from UI...")
+        TelegramLogRepository.debug("T_TelegramSession", " Waiting for authentication code from UI...")
         // UI must call sendCode() when user enters the code
     }
 
@@ -405,7 +405,7 @@ class T_TelegramSession(
      * Handle password state - wait for UI to call sendPassword().
      */
     private suspend fun onWaitPassword() {
-        Log.d(TAG, " Waiting for 2FA password from UI...")
+        TelegramLogRepository.debug("T_TelegramSession", " Waiting for 2FA password from UI...")
         // UI must call sendPassword() when user enters the password
     }
 }

@@ -1,10 +1,11 @@
 package com.chris.m3usuite.telegram.core
 
 import android.content.Context
-import android.util.Log
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.config.AppConfig
 import com.chris.m3usuite.telegram.config.ConfigLoader
+import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.telegram.logging.TgLogEntry
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.dto.*
 import kotlinx.coroutines.*
@@ -175,12 +176,16 @@ class T_TelegramServiceClient private constructor(
         settings: SettingsStore,
     ) {
         if (isStarted.get()) {
-            Log.d(TAG, " Already started")
+            TelegramLogRepository.log(
+                level = TgLogEntry.LogLevel.DEBUG,
+                source = "T_TelegramServiceClient",
+                message = "Already started",
+            )
             return
         }
 
         if (!isInitializing.compareAndSet(false, true)) {
-            Log.d(TAG, " Already initializing, waiting...")
+            TelegramLogRepository.debug("T_TelegramServiceClient", "Already initializing, waiting...")
             // Wait for initialization to complete
             while (isInitializing.get()) {
                 delay(100)
@@ -191,11 +196,15 @@ class T_TelegramServiceClient private constructor(
         try {
             // Recreate serviceScope if it was cancelled (e.g., after shutdown)
             if (!serviceScope.isActive) {
-                Log.d(TAG, " Recreating cancelled serviceScope...")
+                TelegramLogRepository.debug("T_TelegramServiceClient", "Recreating cancelled serviceScope...")
                 serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             }
 
-            Log.d(TAG, " Starting Unified Telegram Engine...")
+            TelegramLogRepository.log(
+                level = TgLogEntry.LogLevel.INFO,
+                source = "T_TelegramServiceClient",
+                message = "Starting Unified Telegram Engine",
+            )
             _connectionState.value = TgConnectionState.Connecting
 
             // Load configuration from settings
@@ -217,7 +226,11 @@ class T_TelegramServiceClient private constructor(
 
             // Create TdlClient
             client = TdlClient.create()
-            Log.d(TAG, " TdlClient created")
+            TelegramLogRepository.log(
+                level = TgLogEntry.LogLevel.INFO,
+                source = "T_TelegramServiceClient",
+                message = "TdlClient created",
+            )
 
             // Create core components
             session =
@@ -247,9 +260,18 @@ class T_TelegramServiceClient private constructor(
             _connectionState.value = TgConnectionState.Connected
             isStarted.set(true)
 
-            Log.d(TAG, " Unified Telegram Engine started successfully")
+            TelegramLogRepository.log(
+                level = TgLogEntry.LogLevel.INFO,
+                source = "T_TelegramServiceClient",
+                message = "Unified Telegram Engine started successfully",
+            )
         } catch (e: Exception) {
-            Log.d(TAG, " Failed to start: ${e.message}")
+            TelegramLogRepository.log(
+                level = TgLogEntry.LogLevel.ERROR,
+                source = "T_TelegramServiceClient",
+                message = "Failed to start",
+                details = mapOf("error" to (e.message ?: "Unknown error")),
+            )
             e.printStackTrace()
             _connectionState.value = TgConnectionState.Error(e.message ?: "Unknown error")
             _authState.value = TelegramAuthState.Error(e.message ?: "Unknown error")
@@ -277,24 +299,24 @@ class T_TelegramServiceClient private constructor(
         try {
             when {
                 password != null -> {
-                    Log.d(TAG, " Submitting password...")
+                    TelegramLogRepository.debug("T_TelegramServiceClient", "Submitting password...")
                     currentSession.sendPassword(password)
                 }
                 code != null -> {
-                    Log.d(TAG, " Submitting code...")
+                    TelegramLogRepository.debug("T_TelegramServiceClient", "Submitting code...")
                     currentSession.sendCode(code)
                 }
                 phone != null -> {
-                    Log.d(TAG, " Submitting phone number...")
+                    TelegramLogRepository.debug("T_TelegramServiceClient", "Submitting phone number...")
                     currentSession.sendPhoneNumber(phone)
                 }
                 else -> {
-                    Log.d(TAG, " Starting login flow...")
+                    TelegramLogRepository.debug("T_TelegramServiceClient", "Starting login flow...")
                     currentSession.login()
                 }
             }
         } catch (e: Exception) {
-            Log.d(TAG, " Login error: ${e.message}")
+            TelegramLogRepository.debug("T_TelegramServiceClient", "Login error: ${e.message}")
             _authState.value = TelegramAuthState.Error(e.message ?: "Login failed")
             throw e
         }
@@ -372,7 +394,7 @@ class T_TelegramServiceClient private constructor(
                     )
                 }
             } catch (e: Exception) {
-                Log.d(TAG, " Error in newMessageUpdates flow: ${e.message}")
+                TelegramLogRepository.debug("T_TelegramServiceClient", "Error in newMessageUpdates flow: ${e.message}")
             }
         }
 
@@ -393,11 +415,11 @@ class T_TelegramServiceClient private constructor(
                     }
                 }
             } catch (e: Exception) {
-                Log.d(TAG, " Error in file updates flow: ${e.message}")
+                TelegramLogRepository.debug("T_TelegramServiceClient", "Error in file updates flow: ${e.message}")
             }
         }
 
-        Log.d(TAG, " Update distribution started")
+        TelegramLogRepository.debug("T_TelegramServiceClient", "Update distribution started")
     }
 
     /**
@@ -413,20 +435,20 @@ class T_TelegramServiceClient private constructor(
                         is AuthEvent.StateChanged -> {
                             val newState = mapAuthorizationStateToAuthState(event.state)
                             _authState.value = newState
-                            Log.d(TAG, " Auth state changed: $newState")
+                            TelegramLogRepository.debug("T_TelegramServiceClient", "Auth state changed: $newState")
                         }
                         is AuthEvent.Ready -> {
                             _authState.value = TelegramAuthState.Ready
-                            Log.d(TAG, " Auth ready ✅")
+                            TelegramLogRepository.debug("T_TelegramServiceClient", "Auth ready ✅")
                         }
                         is AuthEvent.Error -> {
                             _authState.value = TelegramAuthState.Error(event.message)
-                            Log.d(TAG, " Auth error: ${event.message}")
+                            TelegramLogRepository.debug("T_TelegramServiceClient", "Auth error: ${event.message}")
                         }
                     }
                 }
             } catch (e: Exception) {
-                Log.d(TAG, " Error in auth events flow: ${e.message}")
+                TelegramLogRepository.debug("T_TelegramServiceClient", "Error in auth events flow: ${e.message}")
             }
         }
     }
@@ -452,7 +474,7 @@ class T_TelegramServiceClient private constructor(
      * Shutdown the service and cleanup resources.
      */
     fun shutdown() {
-        Log.d(TAG, " Shutting down...")
+        TelegramLogRepository.debug("T_TelegramServiceClient", "Shutting down...")
 
         // Cancel scope and wait for coroutines to finish
         serviceScope.cancel()
@@ -461,9 +483,9 @@ class T_TelegramServiceClient private constructor(
         runBlocking {
             try {
                 client?.close()
-                Log.d(TAG, " TdlClient closed")
+                TelegramLogRepository.debug("T_TelegramServiceClient", "TdlClient closed")
             } catch (e: Exception) {
-                Log.d(TAG, " Error closing TdlClient: ${e.message}")
+                TelegramLogRepository.debug("T_TelegramServiceClient", "Error closing TdlClient: ${e.message}")
             }
         }
 
@@ -479,6 +501,6 @@ class T_TelegramServiceClient private constructor(
         _connectionState.value = TgConnectionState.Disconnected
         _syncState.value = TgSyncState.Idle
 
-        Log.d(TAG, "Shutdown complete")
+        TelegramLogRepository.info("T_TelegramServiceClient", "Shutdown complete")
     }
 }
