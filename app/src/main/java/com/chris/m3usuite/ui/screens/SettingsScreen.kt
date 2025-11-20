@@ -40,6 +40,8 @@ fun SettingsScreen(
     onGlobalSearch: (() -> Unit)? = null,
     app: Application = LocalContext.current.applicationContext as Application,
     onOpenPortalCheck: (() -> Unit)? = null, // navigiert zu XtreamPortalCheckScreen
+    onOpenTelegramLog: (() -> Unit)? = null, // navigiert zu TelegramLogScreen
+    onOpenTelegramFeed: (() -> Unit)? = null, // navigiert zu TelegramActivityFeedScreen
 ) {
     // --- ViewModels (bestehend) ---
     val playerVm: PlayerSettingsViewModel = viewModel(factory = PlayerSettingsViewModel.factory(app))
@@ -285,6 +287,8 @@ fun SettingsScreen(
                 onUpdateSelectedChats = telegramVm::onUpdateSelectedChats,
                 onUpdateCacheLimit = telegramVm::onUpdateCacheLimit,
                 onDisconnect = telegramVm::onDisconnect,
+                onOpenLog = onOpenTelegramLog,
+                onOpenFeed = onOpenTelegramFeed,
             )
 
             // --- Allgemein ---
@@ -334,6 +338,8 @@ private fun TelegramSettingsSection(
     onUpdateSelectedChats: (List<String>) -> Unit,
     onUpdateCacheLimit: (Int) -> Unit,
     onDisconnect: () -> Unit,
+    onOpenLog: (() -> Unit)? = null,
+    onOpenFeed: (() -> Unit)? = null,
 ) {
     var showChatPicker by remember { mutableStateOf(false) }
     var phoneNumber by remember { mutableStateOf("") }
@@ -520,6 +526,34 @@ private fun TelegramSettingsSection(
                                 onClick = { onUpdateCacheLimit((state.cacheLimitGb + 1).coerceAtMost(20)) },
                             ) {
                                 Text("+")
+                            }
+                        }
+                    }
+
+                    // Navigation to Telegram screens
+                    HorizontalDivider()
+                    Text(
+                        "Telegram Tools",
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        onOpenFeed?.let { handler ->
+                            Button(
+                                onClick = handler,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text("Activity Feed")
+                            }
+                        }
+                        onOpenLog?.let { handler ->
+                            Button(
+                                onClick = handler,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text("Logs")
                             }
                         }
                     }
