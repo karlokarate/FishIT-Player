@@ -16,6 +16,7 @@ object SchedulingGateway {
     const val NAME_EPG_REFRESH = "epg_refresh"
     const val NAME_SCREEN_RESET = "screen_time_daily_reset_once"
     const val NAME_XTREAM_DELTA = "xtream_delta_import"
+    const val NAME_TG_SYNC = "telegram_sync"
 
     fun scheduleAll(ctx: Context) {
         // Intentionally do NOT schedule Xtream delta periodic.
@@ -86,6 +87,25 @@ object SchedulingGateway {
         policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE,
     ) {
         WorkManager.getInstance(ctx).enqueueUniqueWork(uniqueName, policy, req)
+    }
+
+    /**
+     * Schedule a Telegram sync with the specified mode.
+     *
+     * @param ctx Android context
+     * @param mode Sync mode: "all", "selection_changed", or "backfill_series"
+     * @param refreshHome Whether to refresh home screen after sync
+     */
+    fun scheduleTelegramSync(
+        ctx: Context,
+        mode: String = "all",
+        refreshHome: Boolean = false,
+    ) {
+        com.chris.m3usuite.telegram.work.TelegramSyncWorker.scheduleNow(
+            context = ctx,
+            mode = mode,
+            refreshHome = refreshHome,
+        )
     }
 
     suspend fun refreshFavoritesEpgNow(
