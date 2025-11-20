@@ -95,6 +95,7 @@ class TelegramSettingsViewModel(
 
             if (!enabled) {
                 serviceClient.shutdown()
+                T_TelegramServiceClient.resetInstance()
             }
         }
     }
