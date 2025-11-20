@@ -6,9 +6,20 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.TransferListener
+import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
+import com.chris.m3usuite.telegram.player.TelegramDataSource
 import java.io.IOException
 import java.util.Locale
 
+/**
+ * Factory for creating DataSource instances with custom routing logic.
+ * Routes requests to appropriate DataSource implementations based on URL scheme.
+ *
+ * Supported schemes:
+ * - tg:// - Telegram files via TelegramDataSource
+ * - rar:// - RAR archive entries via RarDataSource
+ * - http://, https://, file:// - Standard sources via fallback factory
+ */
 @UnstableApi
 class DelegatingDataSourceFactory(
     private val context: Context,
@@ -17,6 +28,9 @@ class DelegatingDataSourceFactory(
     override fun createDataSource(): DataSource = DelegatingDataSource(context, fallback)
 }
 
+/**
+ * Internal DataSource that delegates to scheme-specific implementations.
+ */
 @UnstableApi
 private class DelegatingDataSource(
     private val context: Context,
@@ -32,16 +46,20 @@ private class DelegatingDataSource(
     @Throws(IOException::class)
     override fun open(dataSpec: DataSpec): Long {
         val scheme = dataSpec.uri.scheme?.lowercase(Locale.US)
-        val target: DataSource =
-            when {
-                scheme == "tg" -> {
-                    // For Telegram files, we need TelegramSession
-                    // For now, create a placeholder that will be replaced with proper implementation
-                    throw IOException("Telegram playback requires TelegramSession - not yet wired")
+        val target: DataSource = when {
+            scheme == "tg" -> {
+                // Route Telegram files to TelegramDataSource
+                // Get T_TelegramServiceClient singleton instance
+                val serviceClient = try {
+                    T_TelegramServiceClient.getInstance(context)
+                } catch (e: Exception) {
+                    throw IOException("Failed to get Telegram service client: ${e.message}", e)
                 }
-                scheme == "rar" -> RarDataSource(context)
-                else -> fallback.createDataSource()
+                TelegramDataSource(context, serviceClient)
             }
+            scheme == "rar" -> RarDataSource(context)
+            else -> fallback.createDataSource()
+        }
         delegate = target
         transferListener?.let { target.addTransferListener(it) }
         return target.open(dataSpec)
