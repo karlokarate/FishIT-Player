@@ -43,8 +43,6 @@ class TelegramDataSource(
     private var bytesRemaining: Long = C.LENGTH_UNSET.toLong()
     private var totalSize: Long = C.LENGTH_UNSET.toLong()
     private var fileId: String? = null
-    private var chatId: Long? = null
-    private var messageId: Long? = null
     private var opened = false
     private var transferListener: TransferListener? = null
 
