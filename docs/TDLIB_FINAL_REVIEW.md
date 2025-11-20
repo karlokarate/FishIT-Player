@@ -2,6 +2,30 @@
 
 This document tracks all tasks required to fully implement the TDLib integration according to `tdlibAgent.md` and `TDLIB_TASK_GROUPING.md`.
 
+## ⚠️ Critical Findings from Analysis (2025-11-20)
+
+**Issues #251 and #252 Review:**
+- **PR #251**: Closed without merge (was a sub-PR to #247) - No impact on main
+- **PR #252**: Merged but with **critical issues**:
+  - ✅ Navigation wiring for telegram_log and telegram_feed **WORKS**
+  - ✅ UI error/loading states (FeedState.isLoading, errorMessage) **IMPLEMENTED**
+  - ❌ Unit tests **BROKEN** - MediaParserTest.kt and TgContentHeuristicsTest.kt **don't compile**
+    - Tests reference functions that don't exist (parseEpisodeInfo, detectLanguage, extractQuality, etc.)
+    - PR claimed tests were complete but they were never run/verified
+  - ✅ Parser/heuristics implementation files exist and are substantial (753 LOC combined)
+
+**Actual Status vs. Claimed:**
+- **Claimed**: 77/250 items complete (31%)
+- **Verified**: 62/250 items complete (25%)
+- **Broken**: 8 items marked complete but broken (unit tests)
+
+**Highest Priority Issues:**
+1. Fix unit tests (18.1-18.5) - Make them compile and pass
+2. Implement ProcessLifecycleOwner integration (2.20)
+3. Complete TelegramSyncWorker implementation (7.1-7.17)
+4. Verify zero-copy streaming in TelegramDataSource (8.4, 8.6, 8.7)
+5. Wire TelegramSettingsViewModel properly (10.1-10.12)
+
 **Status Legend:**
 - `[ ]` = Not started / Incomplete
 - `[x]` = Fully implemented, tested, and verified
@@ -98,16 +122,16 @@ This document tracks all tasks required to fully implement the TDLib integration
 
 ### TgContentHeuristics Implementation (Section 2.4)
 
-- [ ] 6.1 File `telegram/parser/TgContentHeuristics.kt` exists
-- [ ] 6.2 Multi-format season/episode detection (S01E02, 1x02, "Episode 4")
-- [ ] 6.3 Adult content filtering implemented
-- [ ] 6.4 Movie/series classification with confidence scoring
-- [ ] 6.5 Metadata quality assessment implemented
-- [ ] 6.6 `fun classify(parsed, chatTitle, fileName): HeuristicResult` works
-- [ ] 6.7 `fun guessSeasonEpisode(text): SeasonEpisode?` works
-- [ ] 6.8 Combined evaluation (chat title + filename + caption)
-- [ ] 6.9 Unit tests for heuristic classification
-- [ ] 6.10 Unit tests for episode parsing (SxxEyy, "Episode 4", etc.)
+- [x] 6.1 File `telegram/parser/TgContentHeuristics.kt` exists
+- [x] 6.2 Multi-format season/episode detection (S01E02, 1x02, "Episode 4")
+- [x] 6.3 Adult content filtering implemented
+- [x] 6.4 Movie/series classification with confidence scoring
+- [x] 6.5 Metadata quality assessment implemented
+- [x] 6.6 `fun classify(parsed, chatTitle, fileName): HeuristicResult` works
+- [x] 6.7 `fun guessSeasonEpisode(text): SeasonEpisode?` works
+- [x] 6.8 Combined evaluation (chat title + filename + caption)
+- [ ] 6.9 Unit tests for heuristic classification - **BROKEN: Tests don't compile, reference non-existent functions**
+- [ ] 6.10 Unit tests for episode parsing (SxxEyy, "Episode 4", etc.) - **BROKEN: Tests don't compile**
 
 ### TelegramSyncWorker (Turbo-Sync) (Section 4.1)
 
@@ -135,16 +159,16 @@ This document tracks all tasks required to fully implement the TDLib integration
 
 ### TelegramDataSource Zero-Copy Implementation (Section 4.2)
 
-- [ ] 8.1 File moved to `telegram/player/TelegramDataSource.kt` - File exists but need to verify package
+- [x] 8.1 File moved to `telegram/player/TelegramDataSource.kt`
 - [x] 8.2 Constructor injects `T_TelegramServiceClient` and/or `T_TelegramFileDownloader`
 - [x] 8.3 `open(dataSpec)` parses `tg://file/<fileId>?chatId=...&messageId=...`
-- [ ] 8.4 Requests in-memory stream/ringbuffer from `T_TelegramFileDownloader` - Need to verify implementation
+- [ ] 8.4 Requests in-memory stream/ringbuffer from `T_TelegramFileDownloader` - Need to verify zero-copy implementation
 - [x] 8.5 `TransferListener.onTransferStart` called correctly
-- [ ] 8.6 `read(buffer, offset, length)` reads from in-memory buffer - Need to verify implementation
-- [ ] 8.7 Background download continues as needed - Need to verify implementation
+- [ ] 8.6 `read(buffer, offset, length)` reads from in-memory buffer - Need to verify zero-copy streaming
+- [ ] 8.7 Background download continues as needed - Need to verify background behavior
 - [x] 8.8 `close()` cancels/releases streams
 - [x] 8.9 `TransferListener.onTransferEnd` called on close
-- [x] 8.10 `DelegatingDataSourceFactory` creates `TelegramDataSource` for `tg://` URLs
+- [x] 8.10 `DelegatingDataSourceFactory` creates `TelegramDataSource` for `tg://` URLs - Verified in PlayerChooser.kt and DelegatingDataSourceFactory.kt
 - [ ] 8.11 Zero-copy streaming tested with sample video - Need manual testing
 
 ### Coil 3.x Thumbnail Integration (Section 6.2)
@@ -176,7 +200,7 @@ This document tracks all tasks required to fully implement the TDLib integration
 
 ### Telegram Activity Feed (Section 5.2)
 
-- [x] 11.1 `TgActivityEvent` sealed class defined (NewMovie, NewEpisode, NewArchive, ChatUpdated)
+- [x] 11.1 `TgActivityEvent` sealed class defined (NewMovie, NewEpisode, NewArchive, ChatUpdated) - Actually has NewMessage, NewDownload, DownloadComplete, ParseComplete
 - [x] 11.2 `T_TelegramServiceClient` emits events to `activityEvents` SharedFlow
 - [x] 11.3 File `telegram/ui/feed/TelegramActivityFeedViewModel.kt` exists
 - [x] 11.4 ViewModel listens to `activityEvents`
@@ -187,8 +211,8 @@ This document tracks all tasks required to fully implement the TDLib integration
 - [x] 11.9 Feed list UI is touch-friendly
 - [x] 11.10 Direct play/navigation from feed items works
 - [x] 11.11 Feed accessible from Start/Library/Settings ("Telegram-Feed" entry) - Accessible from Settings → Telegram Tools → Activity Feed
-- [ ] 11.12 Empty state UI when feed is empty - Need to verify
-- [ ] 11.13 Error state UI for feed errors - Need to verify
+- [x] 11.12 Empty state UI when feed is empty
+- [x] 11.13 Error state UI for feed errors - Has error card with retry button and loading spinner
 
 ### Chat Picker Enhancements (Section 6.2)
 
@@ -272,11 +296,11 @@ This document tracks all tasks required to fully implement the TDLib integration
 
 ### Unit Tests (Section 6.3)
 
-- [x] 18.1 MediaParser tests: SxxEyy parsing
-- [x] 18.2 MediaParser tests: "Episode 4" parsing
-- [x] 18.3 MediaParser tests: Language tag detection
-- [x] 18.4 TgContentHeuristics tests: Classification accuracy
-- [x] 18.5 TgContentHeuristics tests: Confidence scoring
+- [ ] 18.1 MediaParser tests: SxxEyy parsing - **EXISTS BUT BROKEN: Tests don't compile**
+- [ ] 18.2 MediaParser tests: "Episode 4" parsing - **EXISTS BUT BROKEN: Tests don't compile**
+- [ ] 18.3 MediaParser tests: Language tag detection - **EXISTS BUT BROKEN: Tests don't compile**
+- [ ] 18.4 TgContentHeuristics tests: Classification accuracy - **EXISTS BUT BROKEN: Tests don't compile**
+- [ ] 18.5 TgContentHeuristics tests: Confidence scoring - **EXISTS BUT BROKEN: Tests don't compile**
 - [ ] 18.6 TelegramContentRepository tests: ID mapping
 - [ ] 18.7 TelegramContentRepository tests: URL generation
 - [ ] 18.8 T_TelegramSession tests: Auth state mapping
@@ -362,12 +386,12 @@ This document tracks all tasks required to fully implement the TDLib integration
 
 ## Progress Summary
 
-**Total Tasks:** 250+  
-**Completed:** 0  
-**In Progress:** 0  
-**Remaining:** 250+
+**Total Tasks:** 250  
+**Completed (Verified):** 62  
+**Partially Complete/Broken:** 8  
+**Remaining:** 180
 
-**Completion:** 0%
+**Completion:** ~25% (62/250 verified complete)
 
 ---
 
@@ -381,4 +405,4 @@ This document tracks all tasks required to fully implement the TDLib integration
 
 ---
 
-_Last Updated: 2025-11-20_
+_Last Updated: 2025-11-20 19:35 UTC - Comprehensive analysis of #251 and #252 completed. Critical issues identified in unit tests._
