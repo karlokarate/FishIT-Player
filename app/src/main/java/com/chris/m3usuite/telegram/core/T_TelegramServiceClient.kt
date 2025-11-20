@@ -440,6 +440,7 @@ class T_TelegramServiceClient private constructor(
         _syncState.value = TgSyncState.Idle
 
         println("[T_TelegramServiceClient] Shutdown complete")
+        T_TelegramServiceClient.INSTANCE = null
     }
 
     companion object {
