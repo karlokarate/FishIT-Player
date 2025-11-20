@@ -106,9 +106,7 @@ class TelegramLogViewModel : ViewModel() {
      * Clear all log entries.
      */
     fun clearLogs() {
-        viewModelScope.launch {
-            TelegramLogRepository.clear()
-        }
+        TelegramLogRepository.clear()
     }
 
     /**
