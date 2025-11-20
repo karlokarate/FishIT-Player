@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.work.TelegramSyncWorker
+import com.chris.m3usuite.telegram.work.TelegramSyncWorker
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
