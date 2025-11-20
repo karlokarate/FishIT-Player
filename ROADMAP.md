@@ -211,7 +211,7 @@ Prio 3 — FocusKit Migration (ON, blockiert durch Prio 2)
   - ui/tv/TvFocusRow.kt, ui/focus/FocusRowEngine.kt, ui/skin/TvModifiers.kt stay; FocusKit fronts them in screens.
   - ✅ StartScreen Telegram-Suche nutzt bereits FocusKit.TvRowLight (stateKey `start_tg_search`).
 
-Completed — Globale Zentralisierung Fokus/TV‑Darstellung (moved to Changelog)
+HISTORICAL (moved to Changelog) — Globale Zentralisierung Fokus/TV‑Darstellung
 - Ziel: Einheitliche, zentral gesteuerte Fokusdarstellung und -navigation (DPAD) in allen UIs; keine verstreuten Implementierungen mehr.
 - Leitfaden: `tools/Zentralisierung.txt` (kanonisch). Fokus-/TV‑Änderungen erfolgen ausschließlich dort bzw. in den dort benannten Modulen.
 - Aufgaben:
