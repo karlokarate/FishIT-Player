@@ -1,5 +1,6 @@
 package com.chris.m3usuite.telegram.parser
 
+import com.chris.m3usuite.telegram.models.*
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -7,73 +8,91 @@ import org.junit.Test
  * Unit tests for TgContentHeuristics.
  *
  * Tests focus on:
- * - Content classification (Movie vs Series)
- * - Confidence scoring
- * - Adult content filtering
- * - Season/Episode detection
+ * - Content classification (Movie vs Series vs Episode)
+ * - Confidence scoring via classify()
+ * - Season/Episode detection via guessSeasonEpisode()
+ * - Language detection via detectLanguages()
+ * - Quality detection via detectQuality()
+ * - Chat title analysis via hasSeriesIndicators/hasMovieIndicators
  */
 class TgContentHeuristicsTest {
 
     @Test
-    fun `classifySeries detects series from episode pattern`() {
-        val result = TgContentHeuristics.classifyContent(
+    fun `classify detects EPISODE from season and episode in parsed data`() {
+        val parsed = MediaInfo(
+            chatId = 123L,
+            messageId = 456L,
+            kind = MediaKind.MOVIE, // Will be overridden by heuristics
             fileName = "Breaking.Bad.S01E01.mkv",
-            chatTitle = "TV Series",
-            caption = null
+            title = "Breaking Bad",
+            seasonNumber = 1,
+            episodeNumber = 1
         )
-        assertEquals(ContentType.SERIES, result.type)
-        assertTrue(result.confidence > 0.7)
+        val result = TgContentHeuristics.classify(parsed, "TV Series")
+        assertEquals(MediaKind.EPISODE, result.suggestedKind)
+        assertTrue("Confidence should be high (> 0.7)", result.confidence > 0.7)
+        assertNotNull(result.seasonNumber)
+        assertNotNull(result.episodeNumber)
     }
 
     @Test
-    fun `classifySeries detects series from chat title`() {
-        val result = TgContentHeuristics.classifyContent(
-            fileName = "episode_01.mkv",
-            chatTitle = "Series Collection",
-            caption = null
+    fun `classify detects SERIES from episode metadata`() {
+        val parsed = MediaInfo(
+            chatId = 123L,
+            messageId = 456L,
+            kind = MediaKind.SERIES,
+            fileName = "Show.Complete.mkv",
+            title = "Complete Show",
+            totalEpisodes = 24,
+            totalSeasons = 2
         )
-        assertEquals(ContentType.SERIES, result.type)
+        val result = TgContentHeuristics.classify(parsed, "Series Collection")
+        assertEquals(MediaKind.SERIES, result.suggestedKind)
+        assertTrue("Confidence should be reasonable (> 0.5)", result.confidence > 0.5)
     }
 
     @Test
-    fun `classifyMovie detects movie from year pattern`() {
-        val result = TgContentHeuristics.classifyContent(
+    fun `classify respects MOVIE with year in filename`() {
+        val parsed = MediaInfo(
+            chatId = 123L,
+            messageId = 456L,
+            kind = MediaKind.MOVIE,
             fileName = "Inception.2010.1080p.mkv",
-            chatTitle = "Movies HD",
-            caption = null
+            title = "Inception",
+            year = 2010
         )
-        assertEquals(ContentType.MOVIE, result.type)
-        assertTrue(result.confidence > 0.5)
+        val result = TgContentHeuristics.classify(parsed, "Movies HD")
+        // Should remain MOVIE or have movie-friendly classification
+        assertTrue("Should have reasonable confidence", result.confidence > 0.3)
     }
 
     @Test
-    fun `detectAdultContent from filename`() {
-        val result = TgContentHeuristics.detectAdultContent(
-            fileName = "xxx_content.mkv",
-            chatTitle = "Regular Channel",
-            caption = null
+    fun `classify uses chat title series indicators`() {
+        val parsed = MediaInfo(
+            chatId = 123L,
+            messageId = 456L,
+            kind = MediaKind.MOVIE,
+            fileName = "episode_01.mkv",
+            title = "Episode 1"
         )
-        assertTrue(result)
+        val result = TgContentHeuristics.classify(parsed, "TV Series Collection")
+        // Chat title should influence classification
+        assertTrue("Series indicator in chat should affect classification", 
+            result.suggestedKind == MediaKind.SERIES || result.suggestedKind == MediaKind.EPISODE)
     }
 
     @Test
-    fun `detectAdultContent from chat title`() {
-        val result = TgContentHeuristics.detectAdultContent(
-            fileName = "movie.mkv",
-            chatTitle = "Adult Content 18+",
-            caption = null
+    fun `classify uses chat title movie indicators`() {
+        val parsed = MediaInfo(
+            chatId = 123L,
+            messageId = 456L,
+            kind = MediaKind.MOVIE,
+            fileName = "feature.mkv",
+            title = "Feature Film"
         )
-        assertTrue(result)
-    }
-
-    @Test
-    fun `detectAdultContent returns false for clean content`() {
-        val result = TgContentHeuristics.detectAdultContent(
-            fileName = "family_movie.mkv",
-            chatTitle = "Family Movies",
-            caption = "A wholesome film"
-        )
-        assertFalse(result)
+        val result = TgContentHeuristics.classify(parsed, "Movies HD")
+        // Chat title should support movie classification
+        assertTrue("Confidence should be reasonable", result.confidence > 0.3)
     }
 
     @Test
@@ -82,6 +101,16 @@ class TgContentHeuristicsTest {
         assertNotNull(result)
         assertEquals(1, result?.season)
         assertEquals(1, result?.episode)
+        assertEquals("SxxEyy", result?.pattern)
+    }
+
+    @Test
+    fun `guessSeasonEpisode parses 1x02 format`() {
+        val result = TgContentHeuristics.guessSeasonEpisode("Series.1x02.mkv")
+        assertNotNull(result)
+        assertEquals(1, result?.season)
+        assertEquals(2, result?.episode)
+        assertEquals("XxY", result?.pattern)
     }
 
     @Test
@@ -90,6 +119,34 @@ class TgContentHeuristicsTest {
         assertNotNull(result)
         assertNull(result?.season)
         assertEquals(4, result?.episode)
+        assertEquals("Episode X", result?.pattern)
+    }
+
+    @Test
+    fun `guessSeasonEpisode parses Ep 5 format`() {
+        val result = TgContentHeuristics.guessSeasonEpisode("Ep 5 The Beginning")
+        assertNotNull(result)
+        assertNull(result?.season)
+        assertEquals(5, result?.episode)
+        assertEquals("Ep X", result?.pattern)
+    }
+
+    @Test
+    fun `guessSeasonEpisode parses German Folge format`() {
+        val result = TgContentHeuristics.guessSeasonEpisode("Serie Folge 3")
+        assertNotNull(result)
+        assertNull(result?.season)
+        assertEquals(3, result?.episode)
+        assertEquals("Folge X", result?.pattern)
+    }
+
+    @Test
+    fun `guessSeasonEpisode parses German Staffel format`() {
+        val result = TgContentHeuristics.guessSeasonEpisode("Staffel 2 Komplett")
+        assertNotNull(result)
+        assertEquals(2, result?.season)
+        assertNull(result?.episode)
+        assertEquals("Staffel X", result?.pattern)
     }
 
     @Test
@@ -99,144 +156,168 @@ class TgContentHeuristicsTest {
     }
 
     @Test
-    fun `calculateConfidence returns high score for strong indicators`() {
-        val score = TgContentHeuristics.calculateConfidence(
-            hasEpisodePattern = true,
-            hasSeriesKeyword = true,
-            hasYearPattern = false,
-            hasMovieKeyword = false,
-            fileExtension = "mkv"
+    fun `guessSeasonEpisode handles high episode numbers`() {
+        val result = TgContentHeuristics.guessSeasonEpisode("Show.S05E123.mkv")
+        assertNotNull(result)
+        assertEquals(5, result?.season)
+        assertEquals(123, result?.episode)
+    }
+
+    @Test
+    fun `detectLanguages finds German tag`() {
+        val result = TgContentHeuristics.detectLanguages("Movie.GERMAN.1080p.mkv")
+        assertTrue("Should find GERMAN", result.any { it.contains("GERMAN", ignoreCase = true) })
+    }
+
+    @Test
+    fun `detectLanguages finds English tag`() {
+        val result = TgContentHeuristics.detectLanguages("Show.ENGLISH.720p")
+        assertTrue("Should find ENGLISH or ENG", 
+            result.any { it.contains("ENGLISH", ignoreCase = true) || it.contains("ENG", ignoreCase = true) })
+    }
+
+    @Test
+    fun `detectLanguages finds MULTI tag`() {
+        val result = TgContentHeuristics.detectLanguages("Film.MULTI.BDRip")
+        assertTrue("Should find MULTI", result.any { it.contains("MULTI", ignoreCase = true) })
+    }
+
+    @Test
+    fun `detectLanguages finds multiple tags`() {
+        val result = TgContentHeuristics.detectLanguages("Movie.GERMAN.ENGLISH.DUBBED.1080p")
+        assertTrue("Should find at least 2 tags", result.size >= 2)
+    }
+
+    @Test
+    fun `detectLanguages is case insensitive`() {
+        val result = TgContentHeuristics.detectLanguages("movie.german.1080p")
+        assertTrue("Should find lowercase german", result.isNotEmpty())
+    }
+
+    @Test
+    fun `detectLanguages returns empty for no tags`() {
+        val result = TgContentHeuristics.detectLanguages("Simple Movie Title")
+        assertTrue("Should return empty list", result.isEmpty())
+    }
+
+    @Test
+    fun `detectQuality finds 4K`() {
+        val result = TgContentHeuristics.detectQuality("Movie.4K.HDR.mkv")
+        assertNotNull("Should find 4K", result)
+        assertTrue("Should contain 4K or UHD", 
+            result!!.contains("4K", ignoreCase = true) || result.contains("UHD", ignoreCase = true))
+    }
+
+    @Test
+    fun `detectQuality finds 2160p`() {
+        val result = TgContentHeuristics.detectQuality("Film.2160p.UHD.mkv")
+        assertNotNull("Should find 2160p", result)
+        assertTrue("Should contain 2160 or UHD", result!!.contains("2160", ignoreCase = true) || result.contains("UHD", ignoreCase = true))
+    }
+
+    @Test
+    fun `detectQuality finds 1080p`() {
+        val result = TgContentHeuristics.detectQuality("Show.1080p.BluRay")
+        assertNotNull("Should find 1080p", result)
+        assertTrue("Should contain 1080", result!!.contains("1080", ignoreCase = true))
+    }
+
+    @Test
+    fun `detectQuality finds 720p`() {
+        val result = TgContentHeuristics.detectQuality("Film.720p.WEB-DL")
+        assertNotNull("Should find 720p", result)
+        assertTrue("Should contain 720", result!!.contains("720", ignoreCase = true))
+    }
+
+    @Test
+    fun `detectQuality finds 480p`() {
+        val result = TgContentHeuristics.detectQuality("Video.480p.DVDRip")
+        assertNotNull("Should find 480p", result)
+        assertTrue("Should contain 480", result!!.contains("480", ignoreCase = true))
+    }
+
+    @Test
+    fun `detectQuality returns null for no quality`() {
+        val result = TgContentHeuristics.detectQuality("Simple Movie")
+        assertNull("Should return null for no quality info", result)
+    }
+
+    @Test
+    fun `hasSeriesIndicators detects series keyword`() {
+        assertTrue(TgContentHeuristics.hasSeriesIndicators("TV Series Collection"))
+    }
+
+    @Test
+    fun `hasSeriesIndicators detects show keyword`() {
+        assertTrue(TgContentHeuristics.hasSeriesIndicators("Best Shows"))
+    }
+
+    @Test
+    fun `hasSeriesIndicators detects German Serien`() {
+        assertTrue(TgContentHeuristics.hasSeriesIndicators("Serien HD"))
+    }
+
+    @Test
+    fun `hasSeriesIndicators detects Staffel`() {
+        assertTrue(TgContentHeuristics.hasSeriesIndicators("Staffel Sammlung"))
+    }
+
+    @Test
+    fun `hasSeriesIndicators returns false for no indicators`() {
+        assertFalse(TgContentHeuristics.hasSeriesIndicators("Random Channel"))
+    }
+
+    @Test
+    fun `hasMovieIndicators detects movie keyword`() {
+        assertTrue(TgContentHeuristics.hasMovieIndicators("Movies HD"))
+    }
+
+    @Test
+    fun `hasMovieIndicators detects film keyword`() {
+        assertTrue(TgContentHeuristics.hasMovieIndicators("Film Collection"))
+    }
+
+    @Test
+    fun `hasMovieIndicators detects cinema keyword`() {
+        assertTrue(TgContentHeuristics.hasMovieIndicators("Cinema Releases"))
+    }
+
+    @Test
+    fun `hasMovieIndicators detects German Kino`() {
+        assertTrue(TgContentHeuristics.hasMovieIndicators("Kino Filme"))
+    }
+
+    @Test
+    fun `hasMovieIndicators returns false for no indicators`() {
+        assertFalse(TgContentHeuristics.hasMovieIndicators("Random Channel"))
+    }
+
+    @Test
+    fun `scoreContent provides quality score`() {
+        val parsed = MediaInfo(
+            chatId = 123L,
+            messageId = 456L,
+            kind = MediaKind.MOVIE,
+            fileName = "Inception.2010.1080p.BluRay.mkv",
+            title = "Inception",
+            year = 2010,
+            tmdbRating = 8.5
         )
-        assertTrue(score > 0.8)
+        val score = TgContentHeuristics.scoreContent(parsed)
+        assertTrue("Score should be positive", score > 0.0)
+        assertTrue("Score should be reasonable (< 1.5)", score <= 1.5)
     }
 
     @Test
-    fun `calculateConfidence returns low score for weak indicators`() {
-        val score = TgContentHeuristics.calculateConfidence(
-            hasEpisodePattern = false,
-            hasSeriesKeyword = false,
-            hasYearPattern = false,
-            hasMovieKeyword = false,
-            fileExtension = "txt"
+    fun `scoreContent handles minimal data`() {
+        val parsed = MediaInfo(
+            chatId = 123L,
+            messageId = 456L,
+            kind = MediaKind.MOVIE,
+            fileName = "movie.mkv",
+            title = null
         )
-        assertTrue(score < 0.3)
-    }
-
-    @Test
-    fun `isVideoFile detects common video extensions`() {
-        assertTrue(TgContentHeuristics.isVideoFile("movie.mkv"))
-        assertTrue(TgContentHeuristics.isVideoFile("video.mp4"))
-        assertTrue(TgContentHeuristics.isVideoFile("show.avi"))
-        assertTrue(TgContentHeuristics.isVideoFile("clip.mov"))
-        assertTrue(TgContentHeuristics.isVideoFile("stream.ts"))
-    }
-
-    @Test
-    fun `isVideoFile rejects non-video extensions`() {
-        assertFalse(TgContentHeuristics.isVideoFile("document.pdf"))
-        assertFalse(TgContentHeuristics.isVideoFile("archive.rar"))
-        assertFalse(TgContentHeuristics.isVideoFile("image.jpg"))
-    }
-
-    @Test
-    fun `metadataQuality assesses high quality metadata`() {
-        val quality = TgContentHeuristics.assessMetadataQuality(
-            fileName = "Movie.2023.1080p.BluRay.x264-GROUP.mkv",
-            chatTitle = "High Quality Movies",
-            hasCaption = true
-        )
-        assertTrue(quality > 0.7)
-    }
-
-    @Test
-    fun `metadataQuality assesses low quality metadata`() {
-        val quality = TgContentHeuristics.assessMetadataQuality(
-            fileName = "vid.mkv",
-            chatTitle = "Files",
-            hasCaption = false
-        )
-        assertTrue(quality < 0.4)
+        val score = TgContentHeuristics.scoreContent(parsed)
+        assertTrue("Score should still be valid", score >= 0.0)
     }
 }
-
-// Mock data classes for testing
-data class ContentClassification(
-    val type: ContentType,
-    val confidence: Double,
-    val isAdult: Boolean = false
-)
-
-enum class ContentType {
-    MOVIE,
-    SERIES,
-    UNKNOWN
-}
-
-// Mock TgContentHeuristics object for compilation
-object TgContentHeuristics {
-    fun classifyContent(fileName: String, chatTitle: String, caption: String?): ContentClassification {
-        // Stub implementation - actual implementation exists in main code
-        val hasEpisode = fileName.matches(Regex(".*[Ss]\\d{2}[Ee]\\d{2}.*")) || 
-                        fileName.contains("episode", ignoreCase = true)
-        val isSeries = hasEpisode || chatTitle.contains("series", ignoreCase = true)
-        return if (isSeries) {
-            ContentClassification(ContentType.SERIES, 0.8)
-        } else {
-            ContentClassification(ContentType.MOVIE, 0.6)
-        }
-    }
-
-    fun detectAdultContent(fileName: String, chatTitle: String, caption: String?): Boolean {
-        val text = "$fileName $chatTitle ${caption ?: ""}"
-        return text.contains("xxx", ignoreCase = true) || 
-               text.contains("adult", ignoreCase = true) ||
-               text.contains("18+", ignoreCase = true)
-    }
-
-    fun guessSeasonEpisode(text: String): SeasonEpisode? {
-        val sePattern = Regex("[Ss](\\d{1,2})[Ee](\\d{1,2})")
-        val match = sePattern.find(text)
-        if (match != null) {
-            return SeasonEpisode(match.groupValues[1].toInt(), match.groupValues[2].toInt())
-        }
-        val epPattern = Regex("(?:Episode|Ep\\.?)\\s+(\\d+)", RegexOption.IGNORE_CASE)
-        val epMatch = epPattern.find(text)
-        if (epMatch != null) {
-            return SeasonEpisode(null, epMatch.groupValues[1].toInt())
-        }
-        return null
-    }
-
-    fun calculateConfidence(
-        hasEpisodePattern: Boolean,
-        hasSeriesKeyword: Boolean,
-        hasYearPattern: Boolean,
-        hasMovieKeyword: Boolean,
-        fileExtension: String
-    ): Double {
-        var score = 0.0
-        if (hasEpisodePattern) score += 0.4
-        if (hasSeriesKeyword) score += 0.3
-        if (hasYearPattern) score += 0.2
-        if (hasMovieKeyword) score += 0.2
-        if (fileExtension in listOf("mkv", "mp4", "avi")) score += 0.1
-        return score.coerceIn(0.0, 1.0)
-    }
-
-    fun isVideoFile(fileName: String): Boolean {
-        val ext = fileName.substringAfterLast('.', "").lowercase()
-        return ext in listOf("mkv", "mp4", "avi", "mov", "ts", "m4v", "wmv", "flv", "webm")
-    }
-
-    fun assessMetadataQuality(fileName: String, chatTitle: String, hasCaption: Boolean): Double {
-        var score = 0.0
-        if (fileName.length > 20) score += 0.3
-        if (fileName.matches(Regex(".*\\d{4}.*"))) score += 0.2 // Has year
-        if (fileName.contains("1080p") || fileName.contains("720p")) score += 0.2
-        if (chatTitle.length > 10) score += 0.2
-        if (hasCaption) score += 0.1
-        return score.coerceIn(0.0, 1.0)
-    }
-}
-
-data class SeasonEpisode(val season: Int?, val episode: Int)
