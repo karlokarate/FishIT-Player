@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.RandomAccessFile
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.min
 
 /**
@@ -57,11 +58,11 @@ class T_TelegramFileDownloader(
 ) {
     private val client get() = session.client
 
-    // Cache for file info to avoid repeated TDLib calls
-    private val fileInfoCache = mutableMapOf<String, File>()
+    // Cache for file info to avoid repeated TDLib calls - thread-safe
+    private val fileInfoCache = ConcurrentHashMap<String, File>()
 
-    // Active downloads tracker
-    private val activeDownloads = mutableSetOf<Int>()
+    // Active downloads tracker - thread-safe
+    private val activeDownloads = ConcurrentHashMap.newKeySet<Int>()
 
     /**
      * Get file size from TDLib.
