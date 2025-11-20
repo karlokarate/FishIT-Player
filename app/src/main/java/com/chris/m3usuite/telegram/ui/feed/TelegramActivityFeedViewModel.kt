@@ -9,6 +9,7 @@ import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TgActivityEvent
+import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -40,6 +41,11 @@ class TelegramActivityFeedViewModel(
     val activityLog: StateFlow<List<ActivityLogEntry>> = _activityLog.asStateFlow()
 
     init {
+        TelegramLogRepository.info(
+            source = "TelegramActivityFeedViewModel",
+            message = "Initializing Activity Feed"
+        )
+        
         // Collect activity events from service client
         viewModelScope.launch {
             try {
@@ -47,6 +53,11 @@ class TelegramActivityFeedViewModel(
                     handleActivityEvent(event)
                 }
             } catch (e: Exception) {
+                TelegramLogRepository.error(
+                    source = "TelegramActivityFeedViewModel",
+                    message = "Error collecting activity events",
+                    exception = e
+                )
                 _feedState.update { 
                     it.copy(
                         errorMessage = "Fehler beim Laden der Aktivitäten: ${e.message}",
@@ -61,6 +72,11 @@ class TelegramActivityFeedViewModel(
             _feedState.update { it.copy(isLoading = true) }
             try {
                 repository.getTelegramFeedItems().collect { items ->
+                    TelegramLogRepository.debug(
+                        source = "TelegramActivityFeedViewModel",
+                        message = "Loaded feed items",
+                        details = mapOf("count" to items.size.toString())
+                    )
                     _feedState.update { 
                         it.copy(
                             feedItems = items, 
@@ -70,6 +86,11 @@ class TelegramActivityFeedViewModel(
                     }
                 }
             } catch (e: Exception) {
+                TelegramLogRepository.error(
+                    source = "TelegramActivityFeedViewModel",
+                    message = "Error loading feed items",
+                    exception = e
+                )
                 _feedState.update { 
                     it.copy(
                         isLoading = false,
