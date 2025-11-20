@@ -95,7 +95,8 @@ class TelegramSettingsViewModel(
 
             if (!enabled) {
                 serviceClient.shutdown()
-                T_TelegramServiceClient.resetInstance()
+                // Note: Singleton instance is retained but marked as stopped.
+                // Next ensureStarted() call will restart it with a fresh scope.
             }
         }
     }
