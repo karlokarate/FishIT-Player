@@ -1,43 +1,37 @@
 package com.chris.m3usuite.ui.screens
 
 import android.content.Context
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import com.chris.m3usuite.prefs.SettingsStore
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlin.math.max
-import com.chris.m3usuite.ui.util.rememberImageHeaders
-import com.chris.m3usuite.ui.home.HomeChromeScaffold
-import com.chris.m3usuite.ui.detail.DetailMeta
-import com.chris.m3usuite.ui.detail.DetailPage
-import com.chris.m3usuite.ui.actions.MediaAction
-import com.chris.m3usuite.ui.actions.MediaActionId
-import com.chris.m3usuite.ui.actions.MediaActionBar
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import com.chris.m3usuite.data.obx.toMediaItem
 import com.chris.m3usuite.data.repo.KidContentRepository
 import com.chris.m3usuite.data.repo.ResumeRepository
 import com.chris.m3usuite.player.PlayerChooser
+import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.ui.actions.MediaAction
+import com.chris.m3usuite.ui.actions.MediaActionId
 import com.chris.m3usuite.ui.components.sheets.KidSelectSheet
-import com.chris.m3usuite.ui.util.buildImageRequest
+import com.chris.m3usuite.ui.detail.DetailMeta
+import com.chris.m3usuite.ui.detail.DetailPage
+import com.chris.m3usuite.ui.home.HomeChromeScaffold
+import com.chris.m3usuite.ui.util.rememberImageHeaders
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
-import com.chris.m3usuite.data.obx.toMediaItem
+import kotlin.math.max
 
 // --- Helpers ---
 private fun fmt(totalSecs: Int): String {
@@ -47,7 +41,6 @@ private fun fmt(totalSecs: Int): String {
     val sec = s % 60
     return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
 }
-
 
 // OBX ID decode
 private fun decodeObxVodId(itemId: Long): Int? =
@@ -71,74 +64,95 @@ private data class LoadedVod(
     val categoryLabel: String?,
     val containerExt: String?,
     val playUrl: String?,
-    val mimeType: String?
+    val mimeType: String?,
 )
 
 // Load VOD details from OBX; enrich via Xtream on-demand
 private suspend fun loadVodDetail(
     ctx: Context,
     store: SettingsStore,
-    itemId: Long
-): LoadedVod? = withContext(Dispatchers.IO) {
-    val obxVid = decodeObxVodId(itemId) ?: return@withContext null
-    val obx = com.chris.m3usuite.data.obx.ObxStore.get(ctx)
-    val vodBox = obx.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
+    itemId: Long,
+): LoadedVod? =
+    withContext(Dispatchers.IO) {
+        val obxVid = decodeObxVodId(itemId) ?: return@withContext null
+        val obx =
+            com.chris.m3usuite.data.obx.ObxStore
+                .get(ctx)
+        val vodBox = obx.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java)
 
-    fun read(): com.chris.m3usuite.data.obx.ObxVod? =
-        vodBox.query(com.chris.m3usuite.data.obx.ObxVod_.vodId.equal(obxVid.toLong())).build().findFirst()
+        fun read(): com.chris.m3usuite.data.obx.ObxVod? =
+            vodBox
+                .query(
+                    com.chris.m3usuite.data.obx.ObxVod_.vodId
+                        .equal(obxVid.toLong()),
+                ).build()
+                .findFirst()
 
-    var row = read()
-    if (row == null || row.plot.isNullOrBlank()) {
-        val repo = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, store)
-        runCatching { repo.importVodDetailOnce(obxVid) }
-        row = read()
-    }
-    row ?: return@withContext null
-
-    val providerLabel = row.providerKey?.takeIf { it.isNotBlank() }?.let { key ->
-        com.chris.m3usuite.core.xtream.ProviderLabelStore.get(ctx).labelFor(key) ?: key
-    }
-    val categoryLabel = row.categoryId?.takeIf { it.isNotBlank() }?.let { catId ->
-        val box = obx.boxFor(com.chris.m3usuite.data.obx.ObxCategory::class.java)
-        box.query(
-            com.chris.m3usuite.data.obx.ObxCategory_.kind.equal("vod").and(
-                com.chris.m3usuite.data.obx.ObxCategory_.categoryId.equal(catId)
-            )
-        ).build().findFirst()?.categoryName ?: catId
-    }
-
-    val images: List<String> = runCatching {
-        row.imagesJson?.let { j ->
-            Json.parseToJsonElement(j).jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull }
+        var row = read()
+        if (row == null || row.plot.isNullOrBlank()) {
+            val repo =
+                com.chris.m3usuite.data.repo
+                    .XtreamObxRepository(ctx, store)
+            runCatching { repo.importVodDetailOnce(obxVid) }
+            row = read()
         }
-    }.getOrNull() ?: emptyList()
-    val poster = row.poster?.takeUnless { it.isBlank() } ?: images.firstOrNull()
-    val backdrop = images.firstOrNull { it != poster }
+        row ?: return@withContext null
 
-    val media = row.toMediaItem(ctx)
-    val playReq = com.chris.m3usuite.core.playback.PlayUrlHelper.forVod(ctx, store, media)
+        val providerLabel =
+            row.providerKey?.takeIf { it.isNotBlank() }?.let { key ->
+                com.chris.m3usuite.core.xtream.ProviderLabelStore
+                    .get(ctx)
+                    .labelFor(key) ?: key
+            }
+        val categoryLabel =
+            row.categoryId?.takeIf { it.isNotBlank() }?.let { catId ->
+                val box = obx.boxFor(com.chris.m3usuite.data.obx.ObxCategory::class.java)
+                box
+                    .query(
+                        com.chris.m3usuite.data.obx.ObxCategory_.kind.equal("vod").and(
+                            com.chris.m3usuite.data.obx.ObxCategory_.categoryId
+                                .equal(catId),
+                        ),
+                    ).build()
+                    .findFirst()
+                    ?.categoryName ?: catId
+            }
 
-    LoadedVod(
-        title = row.name ?: "",
-        poster = poster,
-        backdrop = backdrop,
-        plot = row.plot,
-        rating = row.rating,
-        durationSecs = row.durationSecs,
-        year = row.year,
-        genre = row.genre,
-        director = row.director,
-        cast = row.cast,
-        country = row.country,
-        releaseDate = row.releaseDate,
-        trailer = row.trailer,
-        providerLabel = providerLabel,
-        categoryLabel = categoryLabel,
-        containerExt = row.containerExt,
-        playUrl = playReq?.url,
-        mimeType = playReq?.mimeType
-    )
-}
+        val images: List<String> =
+            runCatching {
+                row.imagesJson?.let { j ->
+                    Json.parseToJsonElement(j).jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull }
+                }
+            }.getOrNull() ?: emptyList()
+        val poster = row.poster?.takeUnless { it.isBlank() } ?: images.firstOrNull()
+        val backdrop = images.firstOrNull { it != poster }
+
+        val media = row.toMediaItem(ctx)
+        val playReq =
+            com.chris.m3usuite.core.playback.PlayUrlHelper
+                .forVod(ctx, store, media)
+
+        LoadedVod(
+            title = row.name ?: "",
+            poster = poster,
+            backdrop = backdrop,
+            plot = row.plot,
+            rating = row.rating,
+            durationSecs = row.durationSecs,
+            year = row.year,
+            genre = row.genre,
+            director = row.director,
+            cast = row.cast,
+            country = row.country,
+            releaseDate = row.releaseDate,
+            trailer = row.trailer,
+            providerLabel = providerLabel,
+            categoryLabel = categoryLabel,
+            containerExt = row.containerExt,
+            playUrl = playReq?.url,
+            mimeType = playReq?.mimeType,
+        )
+    }
 
 private fun normalizeTrailerUrl(raw: String?): String? {
     val trimmed = raw?.trim().orEmpty()
@@ -161,7 +175,7 @@ fun VodDetailScreen(
     openVod: ((Long) -> Unit)? = null,
     onLogo: (() -> Unit)? = null,
     onGlobalSearch: (() -> Unit)? = null,
-    onOpenSettings: (() -> Unit)? = null
+    onOpenSettings: (() -> Unit)? = null,
 ) {
     val ctx = LocalContext.current
     rememberImageHeaders()
@@ -191,40 +205,58 @@ fun VodDetailScreen(
                 context = ctx,
                 store = store,
                 url = u,
-                headers = com.chris.m3usuite.core.playback.PlayUrlHelper.defaultHeaders(store),
+                headers =
+                    com.chris.m3usuite.core.playback.PlayUrlHelper
+                        .defaultHeaders(store),
                 startPositionMs = startMs,
-                mimeType = mimeType
+                mimeType = mimeType,
             ) { s, resolvedMime ->
                 if (openInternal != null) openInternal(u, s, resolvedMime ?: mimeType)
             }
         }
     }
 
-    fun setResume(newSecs: Int) = scope.launch(Dispatchers.IO) {
-        val pos = max(0, newSecs)
-        resumeSecs = pos
-        resumeRepo.setVodResume(id, pos)
-    }
-    fun clearResume() = scope.launch(Dispatchers.IO) { resumeSecs = null; resumeRepo.clearVod(id) }
+    fun setResume(newSecs: Int) =
+        scope.launch(Dispatchers.IO) {
+            val pos = max(0, newSecs)
+            resumeSecs = pos
+            resumeRepo.setVodResume(id, pos)
+        }
+
+    fun clearResume() =
+        scope.launch(Dispatchers.IO) {
+            resumeSecs = null
+            resumeRepo.clearVod(id)
+        }
 
     val listState = rememberLazyListState()
     val snackHost = remember { SnackbarHostState() }
     // Kid whitelist sheets need to be declared before actions builder uses them
     var showGrantSheet by rememberSaveable { mutableStateOf(false) }
     var showRevokeSheet by rememberSaveable { mutableStateOf(false) }
-    val permRepo = remember { com.chris.m3usuite.data.repo.PermissionRepository(ctx, store) }
+    val permRepo =
+        remember {
+            com.chris.m3usuite.data.repo
+                .PermissionRepository(ctx, store)
+        }
     var canEditWhitelist by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { canEditWhitelist = permRepo.current().canEditWhitelist }
     // Profile (adult/kid) — used for accent + backdrop parity with Series
     val profileId by store.currentProfileId.collectAsState(initial = -1L)
     var isAdult by remember { mutableStateOf(true) }
     LaunchedEffect(profileId) {
-        isAdult = if (profileId <= 0L) true else withContext(Dispatchers.IO) {
-            com.chris.m3usuite.data.obx.ObxStore
-                .get(ctx)
-                .boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java)
-                .get(profileId)?.type != "kid"
-        }
+        isAdult =
+            if (profileId <= 0L) {
+                true
+            } else {
+                withContext(Dispatchers.IO) {
+                    com.chris.m3usuite.data.obx.ObxStore
+                        .get(ctx)
+                        .boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java)
+                        .get(profileId)
+                        ?.type != "kid"
+                }
+            }
     }
 
     HomeChromeScaffold(
@@ -243,82 +275,106 @@ fun VodDetailScreen(
         val lblShare = stringResource(com.chris.m3usuite.R.string.action_share)
         val lblGrant = "Für Kinder freigeben"
         val lblRevoke = "Freigabe entfernen"
-        val actions = remember(data, resumeSecs, url, lblPlay, lblResume, lblTrailer, lblShare, lblGrant, lblRevoke, uriHandler, canEditWhitelist) {
-            buildList {
-                val canPlay = url != null
-                val resumeLabel = resumeSecs?.let { fmt(it) }
-                if (resumeLabel != null && canPlay) add(
-                    MediaAction(
-                        id = MediaActionId.Resume,
-                        label = lblResume,
-                        badge = resumeLabel,
-                        onClick = { play(false) }
-                    )
-                )
-                add(
-                    MediaAction(
-                        id = MediaActionId.Play,
-                        label = lblPlay,
-                        primary = true,
-                        enabled = canPlay,
-                        onClick = { if (resumeSecs != null) play(false) else play(true) }
-                    )
-                )
-                val tr = normalizeTrailerUrl(data?.trailer)
-                if (!tr.isNullOrBlank()) add(
-                    MediaAction(
-                        id = MediaActionId.Trailer,
-                        label = lblTrailer,
-                        onClick = { runCatching { uriHandler.openUri(tr) } }
-                    )
-                )
-                if (!url.isNullOrBlank()) add(
-                    MediaAction(
-                        id = MediaActionId.Share,
-                        label = lblShare,
-                        onClick = {
-                            val link = url
-                            if (link.isNullOrBlank()) {
-                                android.widget.Toast.makeText(ctx, com.chris.m3usuite.R.string.no_link_available, android.widget.Toast.LENGTH_SHORT).show()
-                            } else {
-                                val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(android.content.Intent.EXTRA_SUBJECT, data?.title ?: "VOD-Link")
-                                    putExtra(android.content.Intent.EXTRA_TEXT, link)
-                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                ctx.startActivity(android.content.Intent.createChooser(send, ctx.getString(com.chris.m3usuite.R.string.action_share)))
-                            }
-                        }
-                    )
-                )
-                if (canEditWhitelist) {
+        val actions =
+            remember(data, resumeSecs, url, lblPlay, lblResume, lblTrailer, lblShare, lblGrant, lblRevoke, uriHandler, canEditWhitelist) {
+                buildList {
+                    val canPlay = url != null
+                    val resumeLabel = resumeSecs?.let { fmt(it) }
+                    if (resumeLabel != null && canPlay) {
+                        add(
+                            MediaAction(
+                                id = MediaActionId.Resume,
+                                label = lblResume,
+                                badge = resumeLabel,
+                                onClick = { play(false) },
+                            ),
+                        )
+                    }
                     add(
                         MediaAction(
-                            id = MediaActionId.AddToList,
-                            label = lblGrant,
-                            onClick = { showGrantSheet = true }
-                        )
+                            id = MediaActionId.Play,
+                            label = lblPlay,
+                            primary = true,
+                            enabled = canPlay,
+                            onClick = { if (resumeSecs != null) play(false) else play(true) },
+                        ),
                     )
-                    add(
-                        MediaAction(
-                            id = MediaActionId.RemoveFromList,
-                            label = lblRevoke,
-                            onClick = { showRevokeSheet = true }
+                    val tr = normalizeTrailerUrl(data?.trailer)
+                    if (!tr.isNullOrBlank()) {
+                        add(
+                            MediaAction(
+                                id = MediaActionId.Trailer,
+                                label = lblTrailer,
+                                onClick = { runCatching { uriHandler.openUri(tr) } },
+                            ),
                         )
-                    )
+                    }
+                    if (!url.isNullOrBlank()) {
+                        add(
+                            MediaAction(
+                                id = MediaActionId.Share,
+                                label = lblShare,
+                                onClick = {
+                                    val link = url
+                                    if (link.isNullOrBlank()) {
+                                        android.widget.Toast
+                                            .makeText(
+                                                ctx,
+                                                com.chris.m3usuite.R.string.no_link_available,
+                                                android.widget.Toast.LENGTH_SHORT,
+                                            ).show()
+                                    } else {
+                                        val send =
+                                            android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                                type = "text/plain"
+                                                putExtra(android.content.Intent.EXTRA_SUBJECT, data?.title ?: "VOD-Link")
+                                                putExtra(android.content.Intent.EXTRA_TEXT, link)
+                                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            }
+                                        ctx.startActivity(
+                                            android.content.Intent.createChooser(
+                                                send,
+                                                ctx.getString(com.chris.m3usuite.R.string.action_share),
+                                            ),
+                                        )
+                                    }
+                                },
+                            ),
+                        )
+                    }
+                    if (canEditWhitelist) {
+                        add(
+                            MediaAction(
+                                id = MediaActionId.AddToList,
+                                label = lblGrant,
+                                onClick = { showGrantSheet = true },
+                            ),
+                        )
+                        add(
+                            MediaAction(
+                                id = MediaActionId.RemoveFromList,
+                                label = lblRevoke,
+                                onClick = { showRevokeSheet = true },
+                            ),
+                        )
+                    }
                 }
             }
-        }
 
-        val meta = DetailMeta(
-            year = data?.year,
-            durationSecs = data?.durationSecs,
-            videoQuality = data?.containerExt?.uppercase(),
-            genres = data?.genre?.split(',', ';', '|', '/')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList(),
-            provider = data?.providerLabel,
-            category = data?.categoryLabel
-        )
+        val meta =
+            DetailMeta(
+                year = data?.year,
+                durationSecs = data?.durationSecs,
+                videoQuality = data?.containerExt?.uppercase(),
+                genres =
+                    data
+                        ?.genre
+                        ?.split(',', ';', '|', '/')
+                        ?.map { it.trim() }
+                        ?.filter { it.isNotEmpty() } ?: emptyList(),
+                provider = data?.providerLabel,
+                category = data?.categoryLabel,
+            )
 
         DetailPage(
             isAdult = isAdult,
@@ -341,7 +397,12 @@ fun VodDetailScreen(
             age = null,
             provider = data?.providerLabel,
             category = data?.categoryLabel,
-            genres = data?.genre?.split(',', ';', '|', '/')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList(),
+            genres =
+                data
+                    ?.genre
+                    ?.split(',', ';', '|', '/')
+                    ?.map { it.trim() }
+                    ?.filter { it.isNotEmpty() } ?: emptyList(),
             countries = data?.country?.let { listOf(it) } ?: emptyList(),
             director = data?.director,
             cast = data?.cast,
@@ -356,19 +417,23 @@ fun VodDetailScreen(
             trailerUrl = normalizeTrailerUrl(data?.trailer),
             trailerHeaders = null,
             extraItems = null,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         )
     }
 
     // Sheets
-    if (showGrantSheet) KidSelectSheet(onConfirm = { kidIds ->
-        scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.allowBulk(it, "vod", listOf(id)) } }
-        scope.launch { snackHost.showSnackbar("VOD freigegeben für ${kidIds.size} Kinder") }
-        showGrantSheet = false
-    }, onDismiss = { showGrantSheet = false })
-    if (showRevokeSheet) KidSelectSheet(onConfirm = { kidIds ->
-        scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.disallowBulk(it, "vod", listOf(id)) } }
-        scope.launch { snackHost.showSnackbar("VOD aus ${kidIds.size} Kinderprofil(en) entfernt") }
-        showRevokeSheet = false
-    }, onDismiss = { showRevokeSheet = false })
+    if (showGrantSheet) {
+        KidSelectSheet(onConfirm = { kidIds ->
+            scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.allowBulk(it, "vod", listOf(id)) } }
+            scope.launch { snackHost.showSnackbar("VOD freigegeben für ${kidIds.size} Kinder") }
+            showGrantSheet = false
+        }, onDismiss = { showGrantSheet = false })
+    }
+    if (showRevokeSheet) {
+        KidSelectSheet(onConfirm = { kidIds ->
+            scope.launch(Dispatchers.IO) { kidIds.forEach { kidRepo.disallowBulk(it, "vod", listOf(id)) } }
+            scope.launch { snackHost.showSnackbar("VOD aus ${kidIds.size} Kinderprofil(en) entfernt") }
+            showRevokeSheet = false
+        }, onDismiss = { showRevokeSheet = false })
+    }
 }

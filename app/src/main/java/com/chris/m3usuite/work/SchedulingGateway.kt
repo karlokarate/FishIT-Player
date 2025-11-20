@@ -12,10 +12,10 @@ import kotlinx.coroutines.flow.first
  */
 object SchedulingGateway {
     const val NAME_XTREAM_REFRESH = "xtream_refresh"
-    const val NAME_XTREAM_ENRICH  = "xtream_enrich"
-    const val NAME_EPG_REFRESH    = "epg_refresh"
-    const val NAME_SCREEN_RESET   = "screen_time_daily_reset_once"
-    const val NAME_XTREAM_DELTA   = "xtream_delta_import"
+    const val NAME_XTREAM_ENRICH = "xtream_enrich"
+    const val NAME_EPG_REFRESH = "epg_refresh"
+    const val NAME_SCREEN_RESET = "screen_time_daily_reset_once"
+    const val NAME_XTREAM_DELTA = "xtream_delta_import"
 
     fun scheduleAll(ctx: Context) {
         // Intentionally do NOT schedule Xtream delta periodic.
@@ -83,13 +83,18 @@ object SchedulingGateway {
         ctx: Context,
         uniqueName: String,
         req: OneTimeWorkRequest,
-        policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE
+        policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE,
     ) {
         WorkManager.getInstance(ctx).enqueueUniqueWork(uniqueName, policy, req)
     }
 
-    suspend fun refreshFavoritesEpgNow(ctx: Context, aggressive: Boolean = false): Boolean {
-        val settings = com.chris.m3usuite.prefs.SettingsStore(ctx)
+    suspend fun refreshFavoritesEpgNow(
+        ctx: Context,
+        aggressive: Boolean = false,
+    ): Boolean {
+        val settings =
+            com.chris.m3usuite.prefs
+                .SettingsStore(ctx)
         if (!settings.m3uWorkersEnabled.first()) return false
         // Direct OBX prefetch for favorite Live streamIds (no Worker)
         // 1) read favorites (Room ids) → 2) map to streamIds → 3) OBX prefetch
@@ -97,15 +102,23 @@ object SchedulingGateway {
             val favCsv = settings.favoriteLiveIdsCsv.first()
             val ids = favCsv.split(',').mapNotNull { it.toLongOrNull() }
             if (ids.isEmpty()) return false
-            val streamIds = ids.mapNotNull { id ->
-                if (id >= 1_000_000_000_000L && id < 2_000_000_000_000L)
-                    (id - 1_000_000_000_000L).toInt()
-                else null
-            }.distinct()
+            val streamIds =
+                ids
+                    .mapNotNull { id ->
+                        if (id >= 1_000_000_000_000L && id < 2_000_000_000_000L) {
+                            (id - 1_000_000_000_000L).toInt()
+                        } else {
+                            null
+                        }
+                    }.distinct()
             if (streamIds.isEmpty()) return false
-            val xtObx = com.chris.m3usuite.data.repo.XtreamObxRepository(ctx, settings)
+            val xtObx =
+                com.chris.m3usuite.data.repo
+                    .XtreamObxRepository(ctx, settings)
             xtObx.prefetchEpgForVisible(streamIds)
             true
-        } catch (_: Throwable) { false }
+        } catch (_: Throwable) {
+            false
+        }
     }
 }

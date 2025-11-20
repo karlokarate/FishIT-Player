@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,7 +27,7 @@ fun FishTelegramContent(
     resumeFraction: Float? = null,
     onPlay: (() -> Unit)? = null,
     onAssign: (() -> Unit)? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     FishTile(
         title = mediaItem.name,
@@ -39,7 +38,7 @@ fun FishTelegramContent(
         topStartBadge = {
             TelegramBadge()
         },
-        onClick = onClick
+        onClick = onClick,
     )
 }
 
@@ -50,17 +49,18 @@ fun FishTelegramContent(
 @Composable
 private fun TelegramBadge() {
     Box(
-        modifier = Modifier
-            .size(32.dp)
-            .background(Color(0xFF0088CC), CircleShape)
-            .padding(4.dp),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .size(32.dp)
+                .background(Color(0xFF0088CC), CircleShape)
+                .padding(4.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = "T",
             color = Color.White,
             fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
     }
 }
@@ -75,21 +75,22 @@ fun FishTelegramRow(
     stateKey: String,
     title: String,
     modifier: Modifier = Modifier,
-    onItemClick: (MediaItem) -> Unit
+    onItemClick: (MediaItem) -> Unit,
 ) {
     FishRow(
         items = items,
         stateKey = stateKey,
         title = title,
         modifier = modifier,
-        header = FishHeaderData.Text(
-            text = title,
-            anchorKey = "telegram_$stateKey"
-        )
+        header =
+            FishHeaderData.Text(
+                text = title,
+                anchorKey = "telegram_$stateKey",
+            ),
     ) { item ->
         FishTelegramContent(
             mediaItem = item,
-            onClick = { onItemClick(item) }
+            onClick = { onItemClick(item) },
         )
     }
 }

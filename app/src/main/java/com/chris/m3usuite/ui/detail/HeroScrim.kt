@@ -22,14 +22,14 @@ const val HERO_SCRIM_IMAGE_ALPHA: Float = 0.5f
 fun HeroScrim(
     url: Any?,
     height: Dp = 260.dp,
-    alpha: Float = HERO_SCRIM_IMAGE_ALPHA
+    alpha: Float = HERO_SCRIM_IMAGE_ALPHA,
 ) {
     Box(Modifier.fillMaxWidth().height(height)) {
         AppHeroImage(
             url = url,
             contentDescription = null,
             crossfade = true,
-            modifier = Modifier.fillMaxSize().graphicsLayer(alpha = alpha)
+            modifier = Modifier.fillMaxSize().graphicsLayer(alpha = alpha),
         )
         // Top and bottom gradient for readability
         Box(
@@ -38,9 +38,9 @@ fun HeroScrim(
                     0f to Color.Black.copy(alpha = 0.55f),
                     0.25f to Color.Transparent,
                     0.75f to Color.Transparent,
-                    1f to Color.Black.copy(alpha = 0.65f)
-                )
-            )
+                    1f to Color.Black.copy(alpha = 0.65f),
+                ),
+            ),
         )
     }
 }

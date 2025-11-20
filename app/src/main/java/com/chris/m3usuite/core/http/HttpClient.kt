@@ -4,13 +4,13 @@ import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 import android.os.StatFs
+import com.chris.m3usuite.core.device.DeviceProfile
 import com.chris.m3usuite.prefs.SettingsStore
 import okhttp3.Cache
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.concurrent.TimeUnit
-import okhttp3.Dispatcher
-import com.chris.m3usuite.core.device.DeviceProfile
 
 /**
  * HttpClientFactory – ohne zusätzliche Abhängigkeiten.
@@ -22,9 +22,13 @@ import com.chris.m3usuite.core.device.DeviceProfile
  */
 object HttpClientFactory {
     @Volatile private var client: OkHttpClient? = null
+
     @Volatile private var cookieJar: PersistentCookieJar? = null
 
-    fun create(context: Context, settings: SettingsStore): OkHttpClient {
+    fun create(
+        context: Context,
+        settings: SettingsStore,
+    ): OkHttpClient {
         client?.let { return it }
 
         // Seed headers synchron (für Aufrufer ohne Lifecycle-Scope)
@@ -36,51 +40,62 @@ object HttpClientFactory {
         val cacheDir = File(context.cacheDir, "http_cache").apply { mkdirs() }
         val httpCache = Cache(cacheDir, computeHttpCacheSizeBytes(context, cacheDir))
 
-        val builder = OkHttpClient.Builder()
-            .cookieJar(jar)
-            .cache(httpCache)
-            .connectTimeout(120, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(120, TimeUnit.SECONDS)
-            .followRedirects(true)
-            .retryOnConnectionFailure(true)
-            // Zstd interceptor removed: OkHttp core handles gzip by default; zstd is optional.
-            // --- 5xx-Retry (2 Wiederholungen) ---
-            .addInterceptor { chain ->
-                var attempt = 0
-                val maxRetries = 2
-                var backoffMs = 500L
-                val req0 = chain.request()
-                var res = chain.proceed(req0)
-                while (attempt < maxRetries && res.code in 500..599) {
-                    try { res.close() } catch (_: Throwable) {}
-                    try { Thread.sleep(backoffMs) } catch (_: InterruptedException) {}
-                    backoffMs = (backoffMs * 1.5).toLong().coerceAtLeast(1L)
-                    attempt++
-                    res = chain.proceed(req0)
+        val builder =
+            OkHttpClient
+                .Builder()
+                .cookieJar(jar)
+                .cache(httpCache)
+                .connectTimeout(120, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .writeTimeout(120, TimeUnit.SECONDS)
+                .followRedirects(true)
+                .retryOnConnectionFailure(true)
+                // Zstd interceptor removed: OkHttp core handles gzip by default; zstd is optional.
+                // --- 5xx-Retry (2 Wiederholungen) ---
+                .addInterceptor { chain ->
+                    var attempt = 0
+                    val maxRetries = 2
+                    var backoffMs = 500L
+                    val req0 = chain.request()
+                    var res = chain.proceed(req0)
+                    while (attempt < maxRetries && res.code in 500..599) {
+                        try {
+                            res.close()
+                        } catch (_: Throwable) {
+                        }
+                        try {
+                            Thread.sleep(backoffMs)
+                        } catch (_: InterruptedException) {
+                        }
+                        backoffMs = (backoffMs * 1.5).toLong().coerceAtLeast(1L)
+                        attempt++
+                        res = chain.proceed(req0)
+                    }
+                    res
                 }
-                res
-            }
-            // --- Header & Traffic-Log ---
-            .addInterceptor { chain ->
-                val dynamic = RequestHeadersProvider.snapshot().ifEmpty { seeded }
-                val inReq = chain.request()
-                val nb = inReq.newBuilder()
-                    .header("Accept", "*/*")
-                for ((k, v) in dynamic) nb.header(k, v)
-                val outReq = nb.build()
-                val start = System.nanoTime()
-                val res = chain.proceed(outReq)
-                TrafficLogger.tryLog(appContext = context, request = outReq, response = res, startedNs = start)
-                res
-            }
+                // --- Header & Traffic-Log ---
+                .addInterceptor { chain ->
+                    val dynamic = RequestHeadersProvider.snapshot().ifEmpty { seeded }
+                    val inReq = chain.request()
+                    val nb =
+                        inReq
+                            .newBuilder()
+                            .header("Accept", "*/*")
+                    for ((k, v) in dynamic) nb.header(k, v)
+                    val outReq = nb.build()
+                    val start = System.nanoTime()
+                    val res = chain.proceed(outReq)
+                    TrafficLogger.tryLog(appContext = context, request = outReq, response = res, startedNs = start)
+                    res
+                }
 
         // TV low-spec: throttle OkHttp concurrency for smoother UI
         if (DeviceProfile.isTvLowSpec(context)) {
-            val disp = Dispatcher().apply {
-                maxRequests = 16
-                maxRequestsPerHost = 4
-            }
+            val disp =
+                Dispatcher().apply {
+                    maxRequests = 16
+                    maxRequestsPerHost = 4
+                }
             builder.dispatcher(disp)
         }
 
@@ -91,9 +106,17 @@ object HttpClientFactory {
     }
 }
 
-private fun computeHttpCacheSizeBytes(context: Context, cacheDir: File): Long {
+private fun computeHttpCacheSizeBytes(
+    context: Context,
+    cacheDir: File,
+): Long {
     val MB = 1024L * 1024L
-    val is64 = try { Build.SUPPORTED_64_BIT_ABIS.isNotEmpty() } catch (_: Throwable) { false }
+    val is64 =
+        try {
+            Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()
+        } catch (_: Throwable) {
+            false
+        }
     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
     val isLowRam = am?.isLowRamDevice == true
 

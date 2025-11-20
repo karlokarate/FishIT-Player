@@ -1,8 +1,6 @@
 package com.chris.m3usuite.ui.screens
 
 import android.app.Application
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -38,7 +36,7 @@ fun SettingsScreen(
     onOpenXtreamCfCheck: (() -> Unit)? = null,
     onGlobalSearch: (() -> Unit)? = null,
     app: Application = LocalContext.current.applicationContext as Application,
-    onOpenPortalCheck: (() -> Unit)? = null,             // navigiert zu XtreamPortalCheckScreen
+    onOpenPortalCheck: (() -> Unit)? = null, // navigiert zu XtreamPortalCheckScreen
 ) {
     // --- ViewModels (bestehend) ---
     val playerVm: PlayerSettingsViewModel = viewModel(factory = PlayerSettingsViewModel.factory(app))
@@ -62,15 +60,16 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Einstellungen") },
-                navigationIcon = if (onBack != null) {
-                    {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+                navigationIcon =
+                    if (onBack != null) {
+                        {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+                            }
                         }
-                    }
-                } else {
-                    {}
-                },
+                    } else {
+                        {}
+                    },
                 actions = {
                     onOpenProfiles?.let { handler ->
                         TextButton(onClick = handler) { Text("Profile") }
@@ -78,70 +77,89 @@ fun SettingsScreen(
                     onGlobalSearch?.let { handler ->
                         TextButton(onClick = handler) { Text("Suche") }
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .verticalScroll(scroll),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            modifier =
+                Modifier
+                    .padding(padding)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .verticalScroll(scroll),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-
             // --- Network ---
             SettingsCard(title = "Netzwerk (M3U / EPG / Header)") {
                 OutlinedTextField(
-                    value = networkState.m3uUrl, onValueChange = { networkVm.onChange(m3u = it) },
-                    label = { Text("M3U URL") }, modifier = Modifier.fillMaxWidth()
+                    value = networkState.m3uUrl,
+                    onValueChange = { networkVm.onChange(m3u = it) },
+                    label = { Text("M3U URL") },
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    value = networkState.epgUrl, onValueChange = { networkVm.onChange(epg = it) },
-                    label = { Text("EPG URL") }, modifier = Modifier.fillMaxWidth()
+                    value = networkState.epgUrl,
+                    onValueChange = { networkVm.onChange(epg = it) },
+                    label = { Text("EPG URL") },
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    value = networkState.userAgent, onValueChange = { networkVm.onChange(ua = it) },
-                    label = { Text("User-Agent") }, modifier = Modifier.fillMaxWidth()
+                    value = networkState.userAgent,
+                    onValueChange = { networkVm.onChange(ua = it) },
+                    label = { Text("User-Agent") },
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    value = networkState.referer, onValueChange = { networkVm.onChange(ref = it) },
-                    label = { Text("Referer") }, modifier = Modifier.fillMaxWidth()
+                    value = networkState.referer,
+                    onValueChange = { networkVm.onChange(ref = it) },
+                    label = { Text("Referer") },
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = networkState.extraHeadersJson,
                     onValueChange = { networkVm.onChange(headersJson = it) },
                     label = { Text("Zusätzliche Header (JSON)") },
                     supportingText = { Text("Beispiel: {\"X-Auth\":\"abc\",\"X-Token\":\"123\"}") },
-                    modifier = Modifier.fillMaxWidth(), singleLine = false, maxLines = 5
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = false,
+                    maxLines = 5,
                 )
             }
 
             // --- Xtream ---
             SettingsCard(title = "Xtream") {
                 OutlinedTextField(
-                    value = xtreamState.host, onValueChange = { xtreamVm.onChange(host = it) },
-                    label = { Text("Host") }, modifier = Modifier.fillMaxWidth()
+                    value = xtreamState.host,
+                    onValueChange = { xtreamVm.onChange(host = it) },
+                    label = { Text("Host") },
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
                         value = xtreamState.port.toString(),
                         onValueChange = { it.toIntOrNull()?.let { p -> xtreamVm.onChange(port = p) } },
-                        label = { Text("Port") }, modifier = Modifier.weight(1f)
+                        label = { Text("Port") },
+                        modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
-                        value = xtreamState.output, onValueChange = { xtreamVm.onChange(output = it) },
-                        label = { Text("Output (z.B. m3u8)") }, modifier = Modifier.weight(1f)
+                        value = xtreamState.output,
+                        onValueChange = { xtreamVm.onChange(output = it) },
+                        label = { Text("Output (z.B. m3u8)") },
+                        modifier = Modifier.weight(1f),
                     )
                 }
                 OutlinedTextField(
-                    value = xtreamState.user, onValueChange = { xtreamVm.onChange(user = it) },
-                    label = { Text("User") }, modifier = Modifier.fillMaxWidth()
+                    value = xtreamState.user,
+                    onValueChange = { xtreamVm.onChange(user = it) },
+                    label = { Text("User") },
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    value = xtreamState.pass, onValueChange = { xtreamVm.onChange(pass = it) },
-                    label = { Text("Passwort") }, modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation()
+                    value = xtreamState.pass,
+                    onValueChange = { xtreamVm.onChange(pass = it) },
+                    label = { Text("Passwort") },
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = PasswordVisualTransformation(),
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -151,7 +169,7 @@ fun SettingsScreen(
                     }
                     Button(
                         onClick = { xtreamVm.onTriggerDeltaImport(includeLive = false) },
-                        enabled = !xtreamState.isImportInFlight
+                        enabled = !xtreamState.isImportInFlight,
                     ) { Text(if (xtreamState.isImportInFlight) "Import läuft…" else "Delta-Import starten") }
                 }
             }
@@ -164,7 +182,7 @@ fun SettingsScreen(
                         FilterChip(
                             selected = playerState.mode == value,
                             onClick = { playerVm.onChangeMode(value) },
-                            label = { Text(label) }
+                            label = { Text(label) },
                         )
                     }
                 }
@@ -172,50 +190,61 @@ fun SettingsScreen(
                     value = playerState.preferredPkg,
                     onValueChange = { playerVm.onChangePreferredPkg(it) },
                     label = { Text("Externes Paket (Package-Name)") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 // Untertitel
                 Spacer(Modifier.height(8.dp))
                 Text("Untertitel-Stil")
                 Slider(
-                    value = playerState.subScale, onValueChange = { playerVm.onChangeSubtitle(scale = it) },
-                    valueRange = 0.04f..0.12f
+                    value = playerState.subScale,
+                    onValueChange = { playerVm.onChangeSubtitle(scale = it) },
+                    valueRange = 0.04f..0.12f,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
                         value = "0x${playerState.subFgArgb.toUInt().toString(16).uppercase()}",
-                        onValueChange = { runCatching { it.removePrefix("0x").toUInt(16).toInt() }
-                            .onSuccess { v -> playerVm.onChangeSubtitle(fgArgb = v) } },
-                        label = { Text("FG (ARGB)") }, modifier = Modifier.weight(1f)
+                        onValueChange = {
+                            runCatching { it.removePrefix("0x").toUInt(16).toInt() }
+                                .onSuccess { v -> playerVm.onChangeSubtitle(fgArgb = v) }
+                        },
+                        label = { Text("FG (ARGB)") },
+                        modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
                         value = "0x${playerState.subBgArgb.toUInt().toString(16).uppercase()}",
-                        onValueChange = { runCatching { it.removePrefix("0x").toUInt(16).toInt() }
-                            .onSuccess { v -> playerVm.onChangeSubtitle(bgArgb = v) } },
-                        label = { Text("BG (ARGB)") }, modifier = Modifier.weight(1f)
+                        onValueChange = {
+                            runCatching { it.removePrefix("0x").toUInt(16).toInt() }
+                                .onSuccess { v -> playerVm.onChangeSubtitle(bgArgb = v) }
+                        },
+                        label = { Text("BG (ARGB)") },
+                        modifier = Modifier.weight(1f),
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
                         value = playerState.subFgOpacityPct.toString(),
                         onValueChange = { it.toIntOrNull()?.let { v -> playerVm.onChangeSubtitle(fgPct = v) } },
-                        label = { Text("FG-Deckkraft (%)") }, modifier = Modifier.weight(1f)
+                        label = { Text("FG-Deckkraft (%)") },
+                        modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
                         value = playerState.subBgOpacityPct.toString(),
                         onValueChange = { it.toIntOrNull()?.let { v -> playerVm.onChangeSubtitle(bgPct = v) } },
-                        label = { Text("BG-Deckkraft (%)") }, modifier = Modifier.weight(1f)
+                        label = { Text("BG-Deckkraft (%)") },
+                        modifier = Modifier.weight(1f),
                     )
                 }
                 // Toggles
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     FilterChip(
-                        selected = playerState.rotationLocked, onClick = { playerVm.onToggleRotation(!playerState.rotationLocked) },
-                        label = { Text(if (playerState.rotationLocked) "Rotation gesperrt" else "Rotation frei") }
+                        selected = playerState.rotationLocked,
+                        onClick = { playerVm.onToggleRotation(!playerState.rotationLocked) },
+                        label = { Text(if (playerState.rotationLocked) "Rotation gesperrt" else "Rotation frei") },
                     )
                     FilterChip(
-                        selected = playerState.autoplayNext, onClick = { playerVm.onToggleAutoplay(!playerState.autoplayNext) },
-                        label = { Text(if (playerState.autoplayNext) "Autoplay an" else "Autoplay aus") }
+                        selected = playerState.autoplayNext,
+                        onClick = { playerVm.onToggleAutoplay(!playerState.autoplayNext) },
+                        label = { Text(if (playerState.autoplayNext) "Autoplay an" else "Autoplay aus") },
                     )
                 }
             }
@@ -226,18 +255,18 @@ fun SettingsScreen(
                     FilterChip(
                         selected = epgState.useXtreamForFavorites,
                         onClick = { epgVm.onToggleUseXtream(!epgState.useXtreamForFavorites) },
-                        label = { Text(if (epgState.useXtreamForFavorites) "Xtream bevorzugen" else "Xtream aus") }
+                        label = { Text(if (epgState.useXtreamForFavorites) "Xtream bevorzugen" else "Xtream aus") },
                     )
                     FilterChip(
                         selected = epgState.skipXmltvIfXtreamOk,
                         onClick = { epgVm.onToggleSkipXmltv(!epgState.skipXmltvIfXtreamOk) },
-                        label = { Text("XMLTV überspringen, wenn Xtream OK") }
+                        label = { Text("XMLTV überspringen, wenn Xtream OK") },
                     )
                 }
                 Spacer(Modifier.height(8.dp))
                 Button(
                     onClick = { epgVm.onRefreshFavoritesNow() },
-                    enabled = !epgState.isRefreshing
+                    enabled = !epgState.isRefreshing,
                 ) { Text(if (epgState.isRefreshing) "Aktualisiere …" else "Favoriten-EPG jetzt aktualisieren") }
             }
 
@@ -252,7 +281,7 @@ fun SettingsScreen(
                 onLoadChats = telegramVm::onLoadChats,
                 onUpdateSelectedChats = telegramVm::onUpdateSelectedChats,
                 onUpdateCacheLimit = telegramVm::onUpdateCacheLimit,
-                onDisconnect = telegramVm::onDisconnect
+                onDisconnect = telegramVm::onDisconnect,
             )
 
             // --- Allgemein ---
@@ -260,11 +289,11 @@ fun SettingsScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Kategorie 'For Adults' anzeigen",
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                     Switch(
                         checked = generalState.showAdults,
-                        onCheckedChange = { value -> generalVm.onToggleShowAdults(value) }
+                        onCheckedChange = { value -> generalVm.onToggleShowAdults(value) },
                     )
                 }
             }
@@ -277,7 +306,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsCard(
     title: String,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -301,24 +330,38 @@ private fun TelegramSettingsSection(
     onLoadChats: () -> Unit,
     onUpdateSelectedChats: (List<String>) -> Unit,
     onUpdateCacheLimit: (Int) -> Unit,
-    onDisconnect: () -> Unit
+    onDisconnect: () -> Unit,
 ) {
     var showChatPicker by remember { mutableStateOf(false) }
     var phoneNumber by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
+    // Local state for API credentials to allow smooth typing
+    var apiIdLocal by remember { mutableStateOf(state.apiId) }
+    var apiHashLocal by remember { mutableStateOf(state.apiHash) }
+
+    // Sync local state with incoming state (but don't overwrite while user is typing)
+    LaunchedEffect(state.apiId, state.apiHash) {
+        if (apiIdLocal.isEmpty() && state.apiId.isNotEmpty()) {
+            apiIdLocal = state.apiId
+        }
+        if (apiHashLocal.isEmpty() && state.apiHash.isNotEmpty()) {
+            apiHashLocal = state.apiHash
+        }
+    }
+
     SettingsCard(title = "Telegram Integration") {
         // Enable/Disable Toggle
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Telegram aktivieren")
             Switch(
                 checked = state.enabled,
-                onCheckedChange = onToggleEnabled
+                onCheckedChange = onToggleEnabled,
             )
         }
 
@@ -329,23 +372,23 @@ private fun TelegramSettingsSection(
             if (state.authState == TelegramAuthState.DISCONNECTED) {
                 Text(
                     "API Zugangsdaten",
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     OutlinedTextField(
-                        value = state.apiId,
-                        onValueChange = { onUpdateCredentials(it, state.apiHash) },
+                        value = apiIdLocal,
+                        onValueChange = { apiIdLocal = it },
                         label = { Text("API ID") },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
-                        value = state.apiHash,
-                        onValueChange = { onUpdateCredentials(state.apiId, it) },
+                        value = apiHashLocal,
+                        onValueChange = { apiHashLocal = it },
                         label = { Text("API Hash") },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
@@ -354,7 +397,7 @@ private fun TelegramSettingsSection(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Status: ${state.authState.name}")
                 if (state.authState == TelegramAuthState.READY) {
@@ -369,7 +412,7 @@ private fun TelegramSettingsSection(
                 Text(
                     text = state.errorMessage,
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
 
@@ -380,12 +423,16 @@ private fun TelegramSettingsSection(
                         value = phoneNumber,
                         onValueChange = { phoneNumber = it },
                         label = { Text("Telefonnummer (+49...)") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                     Button(
-                        onClick = { onConnectWithPhone(phoneNumber) },
+                        onClick = {
+                            // Save credentials before connecting
+                            onUpdateCredentials(apiIdLocal, apiHashLocal)
+                            onConnectWithPhone(phoneNumber)
+                        },
                         enabled = phoneNumber.isNotBlank() && !state.isConnecting,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(if (state.isConnecting) "Verbinde..." else "Mit Telegram verbinden")
                     }
@@ -396,12 +443,12 @@ private fun TelegramSettingsSection(
                         value = code,
                         onValueChange = { code = it },
                         label = { Text("Verifizierungscode") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                     Button(
                         onClick = { onSendCode(code) },
                         enabled = code.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Code senden")
                     }
@@ -413,12 +460,12 @@ private fun TelegramSettingsSection(
                         onValueChange = { password = it },
                         label = { Text("2FA Passwort") },
                         visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                     Button(
                         onClick = { onSendPassword(password) },
                         enabled = password.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Passwort senden")
                     }
@@ -430,20 +477,20 @@ private fun TelegramSettingsSection(
                     // Chat Selection
                     Text(
                         "Ausgewählte Chats (${state.selectedChats.size})",
-                        style = MaterialTheme.typography.titleSmall
+                        style = MaterialTheme.typography.titleSmall,
                     )
-                    
+
                     if (state.selectedChats.isNotEmpty()) {
                         Text(
                             state.selectedChats.joinToString(", "),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
                     Button(
                         onClick = { showChatPicker = true },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Chats auswählen")
                     }
@@ -453,21 +500,21 @@ private fun TelegramSettingsSection(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text("Cache-Limit")
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text("${state.cacheLimitGb} GB")
                             Button(
-                                onClick = { onUpdateCacheLimit((state.cacheLimitGb - 1).coerceAtLeast(1)) }
+                                onClick = { onUpdateCacheLimit((state.cacheLimitGb - 1).coerceAtLeast(1)) },
                             ) {
                                 Text("-")
                             }
                             Button(
-                                onClick = { onUpdateCacheLimit((state.cacheLimitGb + 1).coerceAtMost(20)) }
+                                onClick = { onUpdateCacheLimit((state.cacheLimitGb + 1).coerceAtMost(20)) },
                             ) {
                                 Text("+")
                             }
@@ -493,7 +540,7 @@ private fun TelegramSettingsSection(
                 onUpdateSelectedChats(selected)
                 showChatPicker = false
             },
-            onDismiss = { showChatPicker = false }
+            onDismiss = { showChatPicker = false },
         )
     }
 }
@@ -509,7 +556,7 @@ private fun TelegramChatPickerDialog(
     isLoading: Boolean,
     onLoadChats: () -> Unit,
     onConfirm: (List<String>) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var selection by remember { mutableStateOf(selectedChatIds.toSet()) }
     var searchQuery by remember { mutableStateOf("") }
@@ -525,67 +572,72 @@ private fun TelegramChatPickerDialog(
         title = { Text("Chats auswählen") },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(400.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(400.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Search Field
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     label = { Text("Suchen...") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 if (isLoading) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
                     }
                 } else {
-                    val filteredChats = availableChats.filter { chat ->
-                        searchQuery.isBlank() || chat.title.contains(searchQuery, ignoreCase = true)
-                    }
+                    val filteredChats =
+                        availableChats.filter { chat ->
+                            searchQuery.isBlank() || chat.title.contains(searchQuery, ignoreCase = true)
+                        }
 
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState()),
                     ) {
                         filteredChats.forEach { chat ->
                             val chatIdStr = chat.id.toString()
                             val isSelected = selection.contains(chatIdStr)
 
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = chat.title,
-                                        style = MaterialTheme.typography.bodyMedium
+                                        style = MaterialTheme.typography.bodyMedium,
                                     )
                                     Text(
                                         text = chat.type,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                                 Checkbox(
                                     checked = isSelected,
                                     onCheckedChange = { checked ->
-                                        selection = if (checked) {
-                                            selection + chatIdStr
-                                        } else {
-                                            selection - chatIdStr
-                                        }
-                                    }
+                                        selection =
+                                            if (checked) {
+                                                selection + chatIdStr
+                                            } else {
+                                                selection - chatIdStr
+                                            }
+                                    },
                                 )
                             }
                         }
@@ -595,7 +647,7 @@ private fun TelegramChatPickerDialog(
                                 text = "Keine Chats gefunden",
                                 modifier = Modifier.padding(16.dp),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -605,7 +657,7 @@ private fun TelegramChatPickerDialog(
         confirmButton = {
             Button(
                 onClick = { onConfirm(selection.toList()) },
-                enabled = !isLoading
+                enabled = !isLoading,
             ) {
                 Text("Übernehmen (${selection.size})")
             }
@@ -614,6 +666,6 @@ private fun TelegramChatPickerDialog(
             TextButton(onClick = onDismiss) {
                 Text("Abbrechen")
             }
-        }
+        },
     )
 }

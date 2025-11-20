@@ -10,7 +10,6 @@ package com.chris.m3usuite.core.util
  * a layering violation (data/work must not depend on ui).
  */
 object CategoryNormalizer {
-
     // Drop leading country/language tags with common delimiters: "DE | ", "DE:", "[DE] ", "DE=> ", "EN-", etc.
     private val leadingLang = Regex("^(?:\\[?[A-Z]{2,3}\\]?\\s*(?:\\||:|/|->|=>|-)+\\s*)+")
     private val nonWord = Regex("[^\\p{L}\\p{N}]+")
@@ -58,13 +57,20 @@ object CategoryNormalizer {
      * Deterministic bucket normalization per kind (live|vod|series), capped to ≤10 buckets by design.
      * Uses group-title, tvg-name and URL signals; ignores quality tokens (HEVC/FHD/HD/SD/4K).
      */
-    fun normalizeBucket(kind: String, groupTitle: String?, tvgName: String?, url: String?): String {
+    fun normalizeBucket(
+        kind: String,
+        groupTitle: String?,
+        tvgName: String?,
+        url: String?,
+    ): String {
         val gt = (groupTitle ?: "").lowercase()
         val name = (tvgName ?: "").lowercase()
         val u = (url ?: "").lowercase()
 
         fun has(any: String) = any in gt || any in name || any in u
+
         fun hasWord(re: Regex) = re.containsMatchIn(gt) || re.containsMatchIn(name) || re.containsMatchIn(u)
+
         fun hasAny(tokens: Array<String>) = tokens.any { has(it) }
 
         // Special handling: keep FOR ADULTS sub-categories as distinct buckets for VOD.
@@ -74,10 +80,11 @@ object CategoryNormalizer {
             val inAdults = adultsRe.containsMatchIn(groupTitle.orEmpty()) || adultsRe.containsMatchIn(tvgName.orEmpty())
             if (inAdults) {
                 val src = groupTitle?.ifBlank { tvgName ?: "" } ?: (tvgName ?: "")
-                val tail = Regex(
-                    """for adults\s*(?:[➾:>\-]+\s*)?(.*)""",
-                    RegexOption.IGNORE_CASE
-                ).find(src)?.groupValues?.getOrNull(1)?.trim().orEmpty()
+                val tail =
+                    Regex(
+                        """for adults\s*(?:[➾:>\-]+\s*)?(.*)""",
+                        RegexOption.IGNORE_CASE,
+                    ).find(src)?.groupValues?.getOrNull(1)?.trim().orEmpty()
                 val sub = tail.ifBlank { "other" }
                 val slug = nonWord.replace(sub.lowercase(), "_").trim('_').ifBlank { "other" }
                 return "adult_" + slug
@@ -91,7 +98,8 @@ object CategoryNormalizer {
         val isKids = hasAny(arrayOf("kids", "kinder", "cartoon", "nick", "kika", "disney channel"))
         val isMusic = hasAny(arrayOf("musik", "music", "mtv", "vh1"))
         val isMoviesLive = hasAny(arrayOf("sky cinema", "cinema"))
-        val isInternational = hasAny(arrayOf("thailand", "arabic", "turkish", "fr ", " france", "italy", "spanish", "english", "usa", "uk "))
+        val isInternational =
+            hasAny(arrayOf("thailand", "arabic", "turkish", "fr ", " france", "italy", "spanish", "english", "usa", "uk "))
 
         val isNetflix = has("netflix")
         val isAmazon = has("amazon") || has("prime")
@@ -103,46 +111,53 @@ object CategoryNormalizer {
         val isGermanGroup = has("de ") || has("deutschland") || has("german")
 
         return when (kind.lowercase()) {
-            "live" -> when {
-                isScreensaver -> "screensaver"
-                isSport -> "sports"
-                isNews -> "news"
-                isDoc -> "documentary"
-                isKids -> "kids"
-                isMusic -> "music"
-                isMoviesLive -> "movies"
-                isInternational -> "international"
-                else -> "entertainment"
-            }
-            "vod" -> when {
-                isNetflix -> "netflix"
-                isAmazon -> "amazon_prime"
-                isDisney -> "disney_plus"
-                isApple -> "apple_tv_plus"
-                isSkyWarner -> "sky_warner"
-                isAnime -> "anime"
-                isNew -> "new"
-                isKids -> "kids"
-                isGermanGroup -> "german"
-                else -> "other"
-            }
-            "series" -> when {
-                isNetflix -> "netflix_series"
-                (isAmazon && isApple) || has("amazon & apple") -> "amazon_apple_series"
-                isApple -> "amazon_apple_series" // Apple‑only einordnen
-                isDisney -> "disney_plus_series"
-                isSkyWarner -> "sky_warner_series"
-                isAnime -> "anime_series"
-                isKids -> "kids_series"
-                isGermanGroup -> "german_series"
-                else -> "other"
-            }
+            "live" ->
+                when {
+                    isScreensaver -> "screensaver"
+                    isSport -> "sports"
+                    isNews -> "news"
+                    isDoc -> "documentary"
+                    isKids -> "kids"
+                    isMusic -> "music"
+                    isMoviesLive -> "movies"
+                    isInternational -> "international"
+                    else -> "entertainment"
+                }
+            "vod" ->
+                when {
+                    isNetflix -> "netflix"
+                    isAmazon -> "amazon_prime"
+                    isDisney -> "disney_plus"
+                    isApple -> "apple_tv_plus"
+                    isSkyWarner -> "sky_warner"
+                    isAnime -> "anime"
+                    isNew -> "new"
+                    isKids -> "kids"
+                    isGermanGroup -> "german"
+                    else -> "other"
+                }
+            "series" ->
+                when {
+                    isNetflix -> "netflix_series"
+                    (isAmazon && isApple) || has("amazon & apple") -> "amazon_apple_series"
+                    isApple -> "amazon_apple_series" // Apple‑only einordnen
+                    isDisney -> "disney_plus_series"
+                    isSkyWarner -> "sky_warner_series"
+                    isAnime -> "anime_series"
+                    isKids -> "kids_series"
+                    isGermanGroup -> "german_series"
+                    else -> "other"
+                }
             else -> "other"
         }
     }
 
     /** Optional helper keys for indexing/filter */
-    fun langKey(groupTitle: String?, tvgName: String?, url: String?): String? {
+    fun langKey(
+        groupTitle: String?,
+        tvgName: String?,
+        url: String?,
+    ): String? {
         val s = listOfNotNull(groupTitle, tvgName, url).joinToString(" ").lowercase()
         return when {
             Regex("\\bde(utsch)?\\b").containsMatchIn(s) -> "DE"
@@ -178,68 +193,75 @@ object CategoryNormalizer {
     /**
      * Convert a normalized key to a human-readable label.
      */
-    fun displayLabel(key: String): String = when (key) {
-        // Adult buckets (dynamic): map "adult_milf" -> "For Adults – MILF"
-        else -> if (key.startsWith("adult_")) {
-            val raw = key.removePrefix("adult_").replace('_', ' ').trim()
-            val pretty = raw.split(' ').joinToString(" ") { w ->
-                if (w.isEmpty()) w else w.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() }
-            }.ifBlank { "Other" }
-            "For Adults – $pretty"
-        } else when (key) {
-        // Curated VOD genre/thematic labels (German)
-        "action" -> "Action"
-        "comedy" -> "Komödie"
-        "kids" -> "Kinder & Animation"
-        "horror" -> "Horror"
-        "thriller" -> "Thriller"
-        "documentary" -> "Dokumentationen"
-        "romance" -> "Romanze"
-        "family" -> "Familie"
-        "christmas" -> "Weihnachten"
-        "sci_fi" -> "Science‑Fiction"
-        "western" -> "Western"
-        "war" -> "Kriegsfilme"
-        "bollywood" -> "Bollywood"
-        "anime" -> "Anime"
-        "fantasy" -> "Fantasy"
-        "martial_arts" -> "Martial Arts"
-        "classic" -> "Classic"
-        "adventure" -> "Abenteuer"
-        "show" -> "Show"
-        "collection" -> "Kollektionen"
-        "4k" -> "4K"
-        "other" -> "Unkategorisiert"
-        "apple_tv_plus" -> "Apple TV+"
-        "netflix" -> "Netflix"
-        "disney_plus" -> "Disney+"
-        "amazon_prime" -> "Amazon Prime"
-        "sky_warner" -> "Sky/Warner"
-        "paramount_plus" -> "Paramount+"
-        "max" -> "Max"
-        "sky_wow" -> "Sky / WOW"
-        "discovery_plus" -> "discovery+"
-        "mubi" -> "MUBI"
-        "new" -> "Neu"
-        "german" -> "Deutsch"
-        // keep legacy keys for other contexts
-        // (already handled curated kids above)
-        // "kids" -> "Kids"
-        "sports" -> "Sport"
-        "news" -> "News"
-        "music" -> "Musik"
-        "international" -> "International"
-        "screensaver" -> "Screensaver"
-        // Series variants map to provider labels
-        "netflix_series" -> "Netflix"
-        "amazon_apple_series" -> "Amazon & Apple"
-        "disney_plus_series" -> "Disney+"
-        "sky_warner_series" -> "Sky/Warner"
-        "anime_series" -> "Anime"
-        "kids_series" -> "Kids"
-        "german_series" -> "Deutsch"
-        "unknown" -> "Unbekannt"
-        else -> key.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    fun displayLabel(key: String): String =
+        when (key) {
+            // Adult buckets (dynamic): map "adult_milf" -> "For Adults – MILF"
+            else ->
+                if (key.startsWith("adult_")) {
+                    val raw = key.removePrefix("adult_").replace('_', ' ').trim()
+                    val pretty =
+                        raw
+                            .split(' ')
+                            .joinToString(" ") { w ->
+                                if (w.isEmpty()) w else w.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() }
+                            }.ifBlank { "Other" }
+                    "For Adults – $pretty"
+                } else {
+                    when (key) {
+                        // Curated VOD genre/thematic labels (German)
+                        "action" -> "Action"
+                        "comedy" -> "Komödie"
+                        "kids" -> "Kinder & Animation"
+                        "horror" -> "Horror"
+                        "thriller" -> "Thriller"
+                        "documentary" -> "Dokumentationen"
+                        "romance" -> "Romanze"
+                        "family" -> "Familie"
+                        "christmas" -> "Weihnachten"
+                        "sci_fi" -> "Science‑Fiction"
+                        "western" -> "Western"
+                        "war" -> "Kriegsfilme"
+                        "bollywood" -> "Bollywood"
+                        "anime" -> "Anime"
+                        "fantasy" -> "Fantasy"
+                        "martial_arts" -> "Martial Arts"
+                        "classic" -> "Classic"
+                        "adventure" -> "Abenteuer"
+                        "show" -> "Show"
+                        "collection" -> "Kollektionen"
+                        "4k" -> "4K"
+                        "other" -> "Unkategorisiert"
+                        "apple_tv_plus" -> "Apple TV+"
+                        "netflix" -> "Netflix"
+                        "disney_plus" -> "Disney+"
+                        "amazon_prime" -> "Amazon Prime"
+                        "sky_warner" -> "Sky/Warner"
+                        "paramount_plus" -> "Paramount+"
+                        "max" -> "Max"
+                        "sky_wow" -> "Sky / WOW"
+                        "discovery_plus" -> "discovery+"
+                        "mubi" -> "MUBI"
+                        "new" -> "Neu"
+                        "german" -> "Deutsch"
+                        // keep legacy keys for other contexts
+                        // (already handled curated kids above)
+                        // "kids" -> "Kids"
+                        "sports" -> "Sport"
+                        "news" -> "News"
+                        "music" -> "Musik"
+                        "international" -> "International"
+                        "screensaver" -> "Screensaver"
+                        // Series variants map to provider labels
+                        "netflix_series" -> "Netflix"
+                        "amazon_apple_series" -> "Amazon & Apple"
+                        "disney_plus_series" -> "Disney+"
+                        "sky_warner_series" -> "Sky/Warner"
+                        "anime_series" -> "Anime"
+                        "kids_series" -> "Kids"
+                        "german_series" -> "Deutsch"
+                        "unknown" -> "Unbekannt"
+                        else -> key.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                    }
+                }
         }
-    }
 }

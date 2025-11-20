@@ -20,9 +20,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Slider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,7 +53,7 @@ enum class TvKeyboard {
     Uri,
     Number,
     Password,
-    Email
+    Email,
 }
 
 @Composable
@@ -61,7 +61,7 @@ fun FishFormSection(
     title: String,
     modifier: Modifier = Modifier,
     description: String? = null,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val horizontal = LocalFishDimens.current.contentPaddingHorizontalDp
     Column(modifier = modifier.fillMaxWidth()) {
@@ -69,24 +69,26 @@ fun FishFormSection(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontal, vertical = 4.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontal, vertical = 4.dp),
         )
         if (!description.isNullOrBlank()) {
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = horizontal)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = horizontal),
             )
         }
         Spacer(modifier = Modifier.height(6.dp))
         Column(
             modifier = FocusKit.run { Modifier.focusGroup() },
-            content = content
+            content = content,
         )
     }
 }
@@ -99,37 +101,38 @@ fun FishFormSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     helperText: String? = null,
-    errorText: String? = null
+    errorText: String? = null,
 ) {
     val horizontal = LocalFishDimens.current.contentPaddingHorizontalDp
     Column(modifier = modifier.fillMaxWidth()) {
-        val rowModifier = FocusKit.run {
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontal, vertical = 6.dp)
-                .tvClickable(
-                    enabled = enabled,
-                    role = androidx.compose.ui.semantics.Role.Switch
-                ) { onCheckedChange(!checked) }
-                .onDpadAdjustLeftRight(
-                    onLeft = { if (enabled && checked) onCheckedChange(false) },
-                    onRight = { if (enabled && !checked) onCheckedChange(true) }
-                )
-        }
+        val rowModifier =
+            FocusKit.run {
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontal, vertical = 6.dp)
+                    .tvClickable(
+                        enabled = enabled,
+                        role = androidx.compose.ui.semantics.Role.Switch,
+                    ) { onCheckedChange(!checked) }
+                    .onDpadAdjustLeftRight(
+                        onLeft = { if (enabled && checked) onCheckedChange(false) },
+                        onRight = { if (enabled && !checked) onCheckedChange(true) },
+                    )
+            }
         Row(
             modifier = rowModifier,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             Switch(
                 checked = checked,
                 onCheckedChange = { onCheckedChange(it) },
-                enabled = enabled
+                enabled = enabled,
             )
         }
         FormSupportingText(helperText, errorText, enabled, horizontal)
@@ -147,65 +150,79 @@ fun <T> FishFormSelect(
     helperText: String? = null,
     errorText: String? = null,
     optionLabel: (T) -> String = { it.toString() },
-    placeholder: String = "—"
+    placeholder: String = "—",
 ) {
     val horizontal = LocalFishDimens.current.contentPaddingHorizontalDp
     val safeOptions = if (options.isEmpty()) emptyList() else options
     val currentIndex = safeOptions.indexOfFirst { it == selected }.takeIf { it >= 0 } ?: 0
     val displayValue = safeOptions.getOrNull(currentIndex)?.let(optionLabel) ?: placeholder
     Column(modifier = modifier.fillMaxWidth()) {
-        val rowModifier = FocusKit.run {
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontal, vertical = 6.dp)
-                .tvClickable(enabled = enabled, role = androidx.compose.ui.semantics.Role.DropdownList) {
-                    if (enabled && safeOptions.isNotEmpty()) {
-                        val nextIndex = (currentIndex + 1) % safeOptions.size
-                        onSelected(safeOptions[nextIndex])
-                    }
-                }
-                .onDpadAdjustLeftRight(
-                    onLeft = {
+        val rowModifier =
+            FocusKit.run {
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontal, vertical = 6.dp)
+                    .tvClickable(enabled = enabled, role = androidx.compose.ui.semantics.Role.DropdownList) {
                         if (enabled && safeOptions.isNotEmpty()) {
-                            val next = if (currentIndex <= 0) safeOptions.lastIndex else currentIndex - 1
-                            onSelected(safeOptions[next])
+                            val nextIndex = (currentIndex + 1) % safeOptions.size
+                            onSelected(safeOptions[nextIndex])
                         }
-                    },
-                    onRight = {
-                        if (enabled && safeOptions.isNotEmpty()) {
-                            val next = if (currentIndex >= safeOptions.lastIndex) 0 else currentIndex + 1
-                            onSelected(safeOptions[next])
-                        }
-                    }
-                )
-        }
+                    }.onDpadAdjustLeftRight(
+                        onLeft = {
+                            if (enabled && safeOptions.isNotEmpty()) {
+                                val next = if (currentIndex <= 0) safeOptions.lastIndex else currentIndex - 1
+                                onSelected(safeOptions[next])
+                            }
+                        },
+                        onRight = {
+                            if (enabled && safeOptions.isNotEmpty()) {
+                                val next = if (currentIndex >= safeOptions.lastIndex) 0 else currentIndex + 1
+                                onSelected(safeOptions[next])
+                            }
+                        },
+                    )
+            }
         Row(
             modifier = rowModifier,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = null,
-                    tint = if (enabled && safeOptions.isNotEmpty()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    tint =
+                        if (enabled &&
+                            safeOptions.isNotEmpty()
+                        ) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        },
                 )
                 Text(
                     text = displayValue,
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = null,
-                    tint = if (enabled && safeOptions.isNotEmpty()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    tint =
+                        if (enabled &&
+                            safeOptions.isNotEmpty()
+                        ) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        },
                 )
             }
         }
@@ -224,7 +241,7 @@ fun FishFormSlider(
     enabled: Boolean = true,
     helperText: String? = null,
     errorText: String? = null,
-    valueFormatter: (Int) -> String = { it.toString() }
+    valueFormatter: (Int) -> String = { it.toString() },
 ) {
     val horizontal = LocalFishDimens.current.contentPaddingHorizontalDp
     val context = LocalContext.current
@@ -233,55 +250,57 @@ fun FishFormSlider(
     val ratio = if (range.isEmpty()) 0f else (clamped - range.first).toFloat() / max(1, range.last - range.first)
     val sliderSteps = if (step <= 0) 0 else max(0, ((range.last - range.first) / step) - 1)
     Column(modifier = modifier.fillMaxWidth()) {
-        val rowModifier = FocusKit.run {
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontal, vertical = 6.dp)
-                .tvClickable(enabled = enabled) {}
-                .onDpadAdjustLeftRight(
-                    onLeft = {
-                        if (enabled && !range.isEmpty()) {
-                            val next = clamped - step
-                            onValueChange(max(range.first, next))
-                        }
-                    },
-                    onRight = {
-                        if (enabled && !range.isEmpty()) {
-                            val next = clamped + step
-                            onValueChange(min(range.last, next))
-                        }
-                    }
-                )
-        }
+        val rowModifier =
+            FocusKit.run {
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontal, vertical = 6.dp)
+                    .tvClickable(enabled = enabled) {}
+                    .onDpadAdjustLeftRight(
+                        onLeft = {
+                            if (enabled && !range.isEmpty()) {
+                                val next = clamped - step
+                                onValueChange(max(range.first, next))
+                            }
+                        },
+                        onRight = {
+                            if (enabled && !range.isEmpty()) {
+                                val next = clamped + step
+                                onValueChange(min(range.last, next))
+                            }
+                        },
+                    )
+            }
         Row(
             modifier = rowModifier,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             Text(
                 text = valueFormatter(clamped),
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
             )
         }
         if (isTv) {
             LinearProgressIndicator(
                 progress = { ratio },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = horizontal)
-                    .height(6.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(999.dp)
-                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = horizontal)
+                        .height(6.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(999.dp),
+                        ),
                 color = MaterialTheme.colorScheme.primary,
-                trackColor = Color.Transparent
+                trackColor = Color.Transparent,
             )
         } else {
             Slider(
@@ -295,16 +314,22 @@ fun FishFormSlider(
                 valueRange = range.first.toFloat()..range.last.toFloat(),
                 steps = sliderSteps,
                 enabled = enabled,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = horizontal)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = horizontal),
             )
         }
         FormSupportingText(helperText, errorText, enabled, horizontal)
     }
 }
 
-private fun snapToStep(value: Float, min: Int, max: Int, step: Int): Int {
+private fun snapToStep(
+    value: Float,
+    min: Int,
+    max: Int,
+    step: Int,
+): Int {
     if (step <= 0) return value.roundToInt().coerceIn(min, max)
     val base = min.toFloat()
     val normalized = (value - base) / step.toFloat()
@@ -323,47 +348,50 @@ fun FishFormTextField(
     helperText: String? = null,
     errorText: String? = null,
     keyboard: TvKeyboard = TvKeyboard.Default,
-    trailingContent: (@Composable RowScope.() -> Unit)? = null
+    trailingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val horizontal = LocalFishDimens.current.contentPaddingHorizontalDp
     var showDialog by remember { mutableStateOf(false) }
     Column(modifier = modifier.fillMaxWidth()) {
-        val rowModifier = FocusKit.run {
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontal, vertical = 6.dp)
-                .tvClickable(enabled = enabled) { if (enabled) showDialog = true }
-        }
+        val rowModifier =
+            FocusKit.run {
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontal, vertical = 6.dp)
+                    .tvClickable(enabled = enabled) { if (enabled) showDialog = true }
+            }
         Row(
             modifier = rowModifier,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             if (trailingContent != null) {
                 trailingContent()
             } else {
-                val display = when {
-                    value.isNotBlank() && keyboard == TvKeyboard.Password -> "\u2022".repeat(value.length).ifEmpty { "\u2022" }
-                    value.isNotBlank() -> value
-                    !placeholder.isNullOrBlank() -> placeholder
-                    else -> "—"
-                }
-                val color = when {
-                    value.isNotBlank() -> MaterialTheme.colorScheme.onSurface
-                    !placeholder.isNullOrBlank() -> MaterialTheme.colorScheme.onSurfaceVariant
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                }.let { if (enabled) it else it.copy(alpha = 0.4f) }
+                val display =
+                    when {
+                        value.isNotBlank() && keyboard == TvKeyboard.Password -> "\u2022".repeat(value.length).ifEmpty { "\u2022" }
+                        value.isNotBlank() -> value
+                        !placeholder.isNullOrBlank() -> placeholder
+                        else -> "—"
+                    }
+                val color =
+                    when {
+                        value.isNotBlank() -> MaterialTheme.colorScheme.onSurface
+                        !placeholder.isNullOrBlank() -> MaterialTheme.colorScheme.onSurfaceVariant
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }.let { if (enabled) it else it.copy(alpha = 0.4f) }
                 Text(
                     text = display,
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = color
+                    color = color,
                 )
             }
         }
@@ -385,19 +413,19 @@ fun FishFormTextField(
                         keyboardOptions = keyboardOptions,
                         singleLine = true,
                         visualTransformation = transformation,
-                        placeholder = placeholder?.let { ph -> { Text(ph) } }
+                        placeholder = placeholder?.let { ph -> { Text(ph) } },
                     )
                     if (!errorText.isNullOrBlank()) {
                         Text(
                             text = errorText,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.error,
                         )
                     } else if (!helperText.isNullOrBlank()) {
                         Text(
                             text = helperText,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -414,7 +442,7 @@ fun FishFormTextField(
                 TextButton(onClick = { showDialog = false }) {
                     Text("Abbrechen")
                 }
-            }
+            },
         )
     }
 }
@@ -428,29 +456,30 @@ fun FishFormButtonRow(
     secondaryText: String? = null,
     onSecondary: (() -> Unit)? = null,
     secondaryEnabled: Boolean = true,
-    isBusy: Boolean = false
+    isBusy: Boolean = false,
 ) {
     val horizontal = LocalFishDimens.current.contentPaddingHorizontalDp
     val focusModifier = FocusKit.run { Modifier.focusGroup() }
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = horizontal, vertical = 8.dp)
-            .then(focusModifier),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = horizontal, vertical = 8.dp)
+                .then(focusModifier),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         FocusKit.TvButton(
             onClick = onPrimary,
             enabled = primaryEnabled && !isBusy,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (isBusy) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
                         strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
                 Text(primaryText)
@@ -459,7 +488,7 @@ fun FishFormButtonRow(
         if (secondaryText != null && onSecondary != null) {
             FocusKit.TvOutlinedButton(
                 onClick = onSecondary,
-                enabled = secondaryEnabled
+                enabled = secondaryEnabled,
             ) {
                 Text(secondaryText)
             }
@@ -472,35 +501,39 @@ private fun FormSupportingText(
     helperText: String?,
     errorText: String?,
     enabled: Boolean,
-    horizontal: Dp
+    horizontal: Dp,
 ) {
-    val text = when {
-        !errorText.isNullOrBlank() -> errorText
-        !helperText.isNullOrBlank() -> helperText
-        else -> null
-    }
+    val text =
+        when {
+            !errorText.isNullOrBlank() -> errorText
+            !helperText.isNullOrBlank() -> helperText
+            else -> null
+        }
     if (text.isNullOrBlank()) return
-    val color = if (!errorText.isNullOrBlank()) {
-        MaterialTheme.colorScheme.error
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }.let { if (enabled) it else it.copy(alpha = 0.5f) }
+    val color =
+        if (!errorText.isNullOrBlank()) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }.let { if (enabled) it else it.copy(alpha = 0.5f) }
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,
         color = color,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = horizontal, vertical = 2.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = horizontal, vertical = 2.dp),
     )
 }
 
-private fun TvKeyboard.toKeyboardOptions(): KeyboardOptions = when (this) {
-    TvKeyboard.Default -> KeyboardOptions.Default.copy(imeAction = ImeAction.Done)
-    TvKeyboard.Uri -> KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done)
-    TvKeyboard.Number -> KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)
-    TvKeyboard.Password -> KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done)
-    TvKeyboard.Email -> KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done)
-}
+private fun TvKeyboard.toKeyboardOptions(): KeyboardOptions =
+    when (this) {
+        TvKeyboard.Default -> KeyboardOptions.Default.copy(imeAction = ImeAction.Done)
+        TvKeyboard.Uri -> KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done)
+        TvKeyboard.Number -> KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done)
+        TvKeyboard.Password -> KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done)
+        TvKeyboard.Email -> KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done)
+    }
 
 // Use Kotlin's built-in IntRange.isEmpty()

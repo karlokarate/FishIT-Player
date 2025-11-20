@@ -9,12 +9,18 @@ import java.util.concurrent.atomic.AtomicReference
  * Keeps the latest player instance and remembers which URL was configured on it.
  */
 object PlaybackSession {
-    data class Holder(val player: ExoPlayer, val isNew: Boolean)
+    data class Holder(
+        val player: ExoPlayer,
+        val isNew: Boolean,
+    )
 
     private val playerRef = AtomicReference<ExoPlayer?>()
     private val sourceRef = AtomicReference<String?>(null)
 
-    fun acquire(context: Context, builder: () -> ExoPlayer): Holder {
+    fun acquire(
+        context: Context,
+        builder: () -> ExoPlayer,
+    ): Holder {
         var created = false
         var current = playerRef.get()
         if (current == null) {

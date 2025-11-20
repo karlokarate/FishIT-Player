@@ -55,7 +55,7 @@ fun FishTile(
     footer: (@Composable () -> Unit)? = null,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
     onFocusChanged: ((Boolean) -> Unit)? = null,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
     val d = LocalFishDimens.current
     val shape = RoundedCornerShape(d.tileCornerDp)
@@ -63,47 +63,47 @@ fun FishTile(
     val scale by animateFloatAsState(targetValue = if (focused) d.focusScale else 1f, label = "fishTileScale")
 
     Box(
-        modifier = modifier
-            .size(d.tileWidthDp, d.tileHeightDp)
-            .graphicsLayer {
-                scaleX = scale; scaleY = scale
-                shadowElevation = if (focused) 18f else 0f
-                clip = false
-            }
-            .then(
-                FocusKit.run {
-                    Modifier
-                        .tvFocusFrame(
-                            focusedScale = 1f,
-                            pressedScale = 1f,
-                            focusBorderWidth = d.focusBorderWidthDp,
-                            shape = shape,
-                            brightenContent = false
-                        )
-                        .tvClickable(
-                            role = androidx.compose.ui.semantics.Role.Button,
-                            scaleFocused = 1f,
-                            scalePressed = 1f,
-                            autoBringIntoView = false,
-                            focusBorderWidth = 0.dp,
-                            brightenContent = false,
-                            debugTag = "FishTile",
-                            onClick = onClick
-                        )
-                }
-            )
-            .onFocusChanged {
-                focused = it.isFocused
-                onFocusChanged?.invoke(focused)
-            },
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .size(d.tileWidthDp, d.tileHeightDp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    shadowElevation = if (focused) 18f else 0f
+                    clip = false
+                }.then(
+                    FocusKit.run {
+                        Modifier
+                            .tvFocusFrame(
+                                focusedScale = 1f,
+                                pressedScale = 1f,
+                                focusBorderWidth = d.focusBorderWidthDp,
+                                shape = shape,
+                                brightenContent = false,
+                            ).tvClickable(
+                                role = androidx.compose.ui.semantics.Role.Button,
+                                scaleFocused = 1f,
+                                scalePressed = 1f,
+                                autoBringIntoView = false,
+                                focusBorderWidth = 0.dp,
+                                brightenContent = false,
+                                debugTag = "FishTile",
+                                onClick = onClick,
+                            )
+                    },
+                ).onFocusChanged {
+                    focused = it.isFocused
+                    onFocusChanged?.invoke(focused)
+                },
+        contentAlignment = Alignment.Center,
     ) {
         // Poster + reflection overlay
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(shape)
-                .border(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent)), shape)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .clip(shape)
+                    .border(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.Transparent)), shape),
         ) {
             var loaded by remember(poster) { mutableStateOf(false) }
             if (!loaded) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.1f)))
@@ -115,7 +115,7 @@ fun FishTile(
                 crossfade = false,
                 onLoading = { loaded = false },
                 onSuccess = { loaded = true },
-                onError = { loaded = true }
+                onError = { loaded = true },
             )
             // Reflection (top)
             Box(
@@ -125,17 +125,23 @@ fun FishTile(
                     .background(
                         Brush.verticalGradient(
                             0f to Color.White.copy(alpha = if (focused) d.reflectionAlpha else d.reflectionAlpha * 0.6f),
-                            1f to Color.Transparent
-                        )
-                    )
+                            1f to Color.Transparent,
+                        ),
+                    ),
             )
             if (showNew && topStartBadge == null) {
                 Surface(
                     color = Color.Black.copy(alpha = 0.28f),
                     contentColor = Color.Red,
                     shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
-                ) { Text(text = "NEU", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)) }
+                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+                ) {
+                    Text(
+                        text = "NEU",
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
+                }
             }
             if (topStartBadge != null) Box(Modifier.align(Alignment.TopStart).padding(6.dp)) { topStartBadge() }
             if (topEndBadge != null) Box(Modifier.align(Alignment.TopEnd).padding(6.dp)) { topEndBadge() }
@@ -143,25 +149,27 @@ fun FishTile(
             resumeFraction?.let { f ->
                 val clamped = f.coerceIn(0f, 1f)
                 Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(3.dp)
-                        .background(Color.White.copy(alpha = 0.15f))
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .background(Color.White.copy(alpha = 0.15f)),
                 )
                 Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .fillMaxWidth(clamped)
-                        .height(3.dp)
-                        .background(Color(0xFF2196F3))
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth(clamped)
+                            .height(3.dp)
+                            .background(Color(0xFF2196F3)),
                 )
             }
             // Actions slot (bottom-end)
             bottomEndActions?.let {
                 Row(
                     Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.End,
                 ) { it() }
             }
         }
@@ -176,7 +184,7 @@ fun FishTile(
                         style = MaterialTheme.typography.labelLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                     )
                 }
                 if (focused) {

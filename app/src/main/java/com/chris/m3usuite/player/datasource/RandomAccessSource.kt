@@ -17,5 +17,10 @@ interface RandomAccessSource : Closeable {
      * Reads up to [len] bytes from [offset] into [dst] at [off]. Returns the number of bytes
      * read or `-1` on EOF.
      */
-    fun read(offset: Long, dst: ByteArray, off: Int, len: Int): Int
+    fun read(
+        offset: Long,
+        dst: ByteArray,
+        off: Int,
+        len: Int,
+    ): Int
 }

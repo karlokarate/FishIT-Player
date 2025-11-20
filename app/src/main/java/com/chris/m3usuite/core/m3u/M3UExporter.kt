@@ -15,11 +15,15 @@ object M3UExporter {
      * - Adds url-tvg header if EPG_URL is set
      * - Exports LIVE and VOD entries that have a concrete URL
      */
-    suspend fun build(context: Context, settings: SettingsStore): String = withContext(Dispatchers.IO) {
-        val sw = java.io.StringWriter(1024 * 1024)
-        stream(context, settings, sw)
-        sw.toString()
-    }
+    suspend fun build(
+        context: Context,
+        settings: SettingsStore,
+    ): String =
+        withContext(Dispatchers.IO) {
+            val sw = java.io.StringWriter(1024 * 1024)
+            stream(context, settings, sw)
+            sw.toString()
+        }
 
     /**
      * Streaming export to an Appendable/Writer to reduce memory usage.
@@ -29,7 +33,7 @@ object M3UExporter {
         context: Context,
         settings: SettingsStore,
         out: java.lang.Appendable,
-        batchSize: Int = 5000
+        batchSize: Int = 5000,
     ) = withContext(Dispatchers.IO) {
         val epg = settings.epgUrl.first().trim()
         if (epg.isNotBlank()) out.append("#EXTM3U url-tvg=\"").append(epg).append("\"\n") else out.append("#EXTM3U\n")
@@ -40,11 +44,12 @@ object M3UExporter {
             var offset = 0
             while (true) {
                 val box = ObxStore.get(context)
-                val chunk = when (type) {
-                    "live" -> box.boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java).all.map { it.toMediaItem(context) }
-                    "vod" -> box.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java).all.map { it.toMediaItem(context) }
-                    else -> emptyList()
-                }
+                val chunk =
+                    when (type) {
+                        "live" -> box.boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java).all.map { it.toMediaItem(context) }
+                        "vod" -> box.boxFor(com.chris.m3usuite.data.obx.ObxVod::class.java).all.map { it.toMediaItem(context) }
+                        else -> emptyList()
+                    }
                 if (chunk.isEmpty()) break
                 for (it in chunk) {
                     val url = it.url ?: continue

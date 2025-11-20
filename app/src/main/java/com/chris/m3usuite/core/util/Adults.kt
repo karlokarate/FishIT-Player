@@ -7,7 +7,10 @@ package com.chris.m3usuite.core.util
  * - Category id/label that starts with "For Adult" or "adult_" is treated as adult.
  * - Normalized provider/genre keys that start with "adult_" are treated as adult.
  */
-fun isAdultCategory(categoryId: String?, categoryName: String?): Boolean {
+fun isAdultCategory(
+    categoryId: String?,
+    categoryName: String?,
+): Boolean {
     val id = (categoryId ?: "").trim().lowercase()
     val name = (categoryName ?: "").trim().lowercase()
     if (id.startsWith("adult_")) return true
@@ -31,4 +34,3 @@ fun isAdultProvider(providerOrGenreKey: String?): Boolean {
     val k = (providerOrGenreKey ?: "").trim().lowercase()
     return k.startsWith("adult_") || k == "for_adults"
 }
-

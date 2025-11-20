@@ -1,10 +1,11 @@
 package com.chris.m3usuite.ui.home
 
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,8 +14,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -23,83 +24,76 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.onFocusEvent
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.asComposeRenderEffect
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chris.m3usuite.ui.home.header.FishITHeader
-import com.chris.m3usuite.ui.home.header.FishITHeaderHeights
-import com.chris.m3usuite.ui.home.header.rememberHeaderAlpha
-import com.chris.m3usuite.ui.home.header.LocalLibraryFirstFocus
-import com.chris.m3usuite.ui.home.header.LocalHeaderFirstFocus
-import com.chris.m3usuite.ui.home.header.LocalChromeOnAction
 import com.chris.m3usuite.core.xtream.XtreamImportCoordinator
-import android.graphics.RenderEffect
-import android.graphics.Shader
-import android.os.Build
-import androidx.compose.runtime.CompositionLocalProvider
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.delay
 import com.chris.m3usuite.ui.focus.FocusKit
 import com.chris.m3usuite.ui.home.MiniPlayerHost
 import com.chris.m3usuite.ui.home.MiniPlayerState
-import com.chris.m3usuite.work.SchedulingGateway
-import com.chris.m3usuite.ui.focus.run as focusKitRun
+import com.chris.m3usuite.ui.home.header.FishITHeaderHeights
+import com.chris.m3usuite.ui.home.header.rememberHeaderAlpha
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
 
 // Rows notify current focused row to drive chrome behavior
-val LocalChromeRowFocusSetter: androidx.compose.runtime.ProvidableCompositionLocal<(String?) -> Unit> = compositionLocalOf { {}
-}
+val LocalChromeRowFocusSetter: androidx.compose.runtime.ProvidableCompositionLocal<(String?) -> Unit> =
+    compositionLocalOf {
+        {}
+    }
 
 data class ChromeHeaderFocusRefs(
     val logo: FocusRequester,
     val search: FocusRequester,
     val profile: FocusRequester,
-    val settings: FocusRequester
+    val settings: FocusRequester,
 )
 
 data class ChromeLibraryFocusRefs(
     val live: FocusRequester,
     val vod: FocusRequester,
-    val series: FocusRequester
+    val series: FocusRequester,
 )
 
 val LocalChromeHeaderFocusRefs: androidx.compose.runtime.ProvidableCompositionLocal<ChromeHeaderFocusRefs?> = compositionLocalOf { null }
 val LocalChromeLibraryFocusRefs: androidx.compose.runtime.ProvidableCompositionLocal<ChromeLibraryFocusRefs?> = compositionLocalOf { null }
 
-enum class LibraryTab(val key: String) {
+enum class LibraryTab(
+    val key: String,
+) {
     Live("live"),
     Vod("vod"),
-    Series("series");
+    Series("series"),
+    ;
 
     companion object {
         fun fromKey(key: String): LibraryTab = values().firstOrNull { it.key == key } ?: Live
@@ -108,7 +102,7 @@ enum class LibraryTab(val key: String) {
 
 data class LibraryNavConfig(
     val selected: LibraryTab,
-    val onSelect: (LibraryTab) -> Unit
+    val onSelect: (LibraryTab) -> Unit,
 )
 
 // TV chrome mode (file-private)
@@ -116,6 +110,7 @@ private enum class ChromeMode { Visible, Collapsed, Expanded }
 
 // Global toggle provider to allow deep children (e.g., tiles) to trigger burger behavior
 val LocalChromeToggle: androidx.compose.runtime.ProvidableCompositionLocal<(() -> Unit)?> = compositionLocalOf { null }
+
 // Explicit expand action for chrome (TV only usage)
 val LocalChromeExpand: androidx.compose.runtime.ProvidableCompositionLocal<(() -> Unit)?> = compositionLocalOf { null }
 
@@ -138,16 +133,34 @@ fun HomeChromeScaffold(
     preferSettingsFirstFocus: Boolean = false,
     // TV-only: allow DPAD LEFT to expand chrome (default true). Detail screens can disable this.
     enableDpadLeftChrome: Boolean = true,
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     // TV device detection
     val ctx = LocalContext.current
     val isTv = remember(ctx) { FocusKit.isTvDevice(ctx) }
     val isPreview = LocalInspectionMode.current
-    val settingsStore = remember(ctx) { com.chris.m3usuite.prefs.SettingsStore(ctx) }
+    val settingsStore =
+        remember(ctx) {
+            com.chris.m3usuite.prefs
+                .SettingsStore(ctx)
+        }
     val logOverlayHost = remember { SnackbarHostState() }
-    val logOverlayState = if (isPreview) remember { mutableStateOf(false) } else settingsStore.tgLogOverlayEnabled.collectAsStateWithLifecycle(initialValue = false)
-    val logVerbosityState = if (isPreview) remember { mutableStateOf(0) } else settingsStore.tgLogVerbosity.collectAsStateWithLifecycle(initialValue = 1)
+    val logOverlayState =
+        if (isPreview) {
+            remember {
+                mutableStateOf(false)
+            }
+        } else {
+            settingsStore.tgLogOverlayEnabled.collectAsStateWithLifecycle(initialValue = false)
+        }
+    val logVerbosityState =
+        if (isPreview) {
+            remember {
+                mutableStateOf(0)
+            }
+        } else {
+            settingsStore.tgLogVerbosity.collectAsStateWithLifecycle(initialValue = 1)
+        }
     val showLogOverlay by logOverlayState
     val tgLogVerbosity by logVerbosityState
 
@@ -194,36 +207,51 @@ fun HomeChromeScaffold(
     // Focus targets for Expanded trap
     // Light-touch DPAD hooks: only expand chrome on specific conditions, but DO NOT move focus here.
     // Return false so the event continues to propagate and natural focus navigation still applies.
-    val chromeDpadModifier = if (isTv) Modifier.onPreviewKeyEvent { ev ->
-        val isDown = ev.type == KeyEventType.KeyDown
-        when (ev.key) {
-            Key.DirectionUp -> {
-                if (isDown && tvChromeMode.value != ChromeMode.Expanded) {
-                    val atTop = listState.firstVisibleItemIndex == 0
-                    val rowIdx = focusedRowKey?.let { com.chris.m3usuite.ui.state.readRowFocus(it).index }
-                    if (atTop && rowIdx == 0) {
-                        tvChromeMode.value = ChromeMode.Expanded
-                        focusedRowKey = null
+    val chromeDpadModifier =
+        if (isTv) {
+            Modifier.onPreviewKeyEvent { ev ->
+                val isDown = ev.type == KeyEventType.KeyDown
+                when (ev.key) {
+                    Key.DirectionUp -> {
+                        if (isDown && tvChromeMode.value != ChromeMode.Expanded) {
+                            val atTop = listState.firstVisibleItemIndex == 0
+                            val rowIdx =
+                                focusedRowKey?.let {
+                                    com.chris.m3usuite.ui.state
+                                        .readRowFocus(it)
+                                        .index
+                                }
+                            if (atTop && rowIdx == 0) {
+                                tvChromeMode.value = ChromeMode.Expanded
+                                focusedRowKey = null
+                            }
+                        }
+                        false // allow normal up navigation
                     }
-                }
-                false // allow normal up navigation
-            }
-            Key.DirectionDown -> false
-            Key.DirectionLeft -> {
-                if (isDown && enableDpadLeftChrome) {
-                    val rowIdx = focusedRowKey?.let { com.chris.m3usuite.ui.state.readRowFocus(it).index }
-                    val noContent = focusedRowKey == null
-                    val shouldExpand = noContent || (rowIdx != null && rowIdx <= 0)
-                    if (shouldExpand && tvChromeMode.value != ChromeMode.Expanded) {
-                        tvChromeMode.value = ChromeMode.Expanded
-                        focusedRowKey = null
+                    Key.DirectionDown -> false
+                    Key.DirectionLeft -> {
+                        if (isDown && enableDpadLeftChrome) {
+                            val rowIdx =
+                                focusedRowKey?.let {
+                                    com.chris.m3usuite.ui.state
+                                        .readRowFocus(it)
+                                        .index
+                                }
+                            val noContent = focusedRowKey == null
+                            val shouldExpand = noContent || (rowIdx != null && rowIdx <= 0)
+                            if (shouldExpand && tvChromeMode.value != ChromeMode.Expanded) {
+                                tvChromeMode.value = ChromeMode.Expanded
+                                focusedRowKey = null
+                            }
+                        }
+                        false // allow normal left navigation
                     }
+                    else -> false
                 }
-                false // allow normal left navigation
             }
-            else -> false
+        } else {
+            Modifier
         }
-    } else Modifier
 
     // TODO: Telegram sync banner not yet implemented
     val telegramBannerVisible = false
@@ -273,7 +301,7 @@ fun HomeChromeScaffold(
             SchedulingGateway.acknowledgeTelegramSync()
         }
     }
-    */
+     */
 
     Box(
         Modifier
@@ -287,9 +315,11 @@ fun HomeChromeScaffold(
                     Key.Menu -> {
                         // If mini-player is visible, focus it instead of toggling chrome
                         if (MiniPlayerState.visible.value) {
-                            MiniPlayerState.requestFocus(); true
+                            MiniPlayerState.requestFocus()
+                            true
                         } else {
-                            com.chris.m3usuite.core.debug.GlobalDebug.logDpad("MENU")
+                            com.chris.m3usuite.core.debug.GlobalDebug
+                                .logDpad("MENU")
                             if (tvChromeMode.value == ChromeMode.Expanded) {
                                 tvChromeMode.value = ChromeMode.Collapsed
                             } else {
@@ -301,7 +331,10 @@ fun HomeChromeScaffold(
                     }
                     Key.Escape, Key.Back -> {
                         // Treat ESC/BACK as chrome-collapse first on TV to avoid closing content/player
-                        if (isUp) com.chris.m3usuite.core.debug.GlobalDebug.logDpad("BACK")
+                        if (isUp) {
+                            com.chris.m3usuite.core.debug.GlobalDebug
+                                .logDpad("BACK")
+                        }
                         val expanded = tvChromeMode.value != ChromeMode.Collapsed
                         if (expanded) {
                             if (isDown) {
@@ -309,36 +342,43 @@ fun HomeChromeScaffold(
                                 runCatching {
                                     val moved = focusManager.moveFocus(FocusDirection.Down)
                                     if (!moved) focusManager.moveFocus(FocusDirection.Up)
-                                    com.chris.m3usuite.core.debug.GlobalDebug.logTree("focusReq:Chrome:content")
+                                    com.chris.m3usuite.core.debug.GlobalDebug
+                                        .logTree("focusReq:Chrome:content")
                                 }
                             }
                             true
-                        } else false
+                        } else {
+                            false
+                        }
                     }
                     else -> false
                 }
-        }
+            },
     ) {
         // Focus handled inside overlay
         Column(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = statusPad + 12.dp),
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = statusPad + 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AnimatedVisibility(visible = seedingInFlight) {
                 Surface(
                     tonalElevation = 6.dp,
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp)
+                    shape =
+                        androidx.compose.foundation.shape
+                            .RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp),
                 ) {
                     Text(
                         text = "Import läuft…",
                         style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
-                            .alpha(0.9f)
+                        modifier =
+                            Modifier
+                                .padding(horizontal = 20.dp, vertical = 8.dp)
+                                .alpha(0.9f),
                     )
                 }
             }
@@ -359,40 +399,63 @@ fun HomeChromeScaffold(
                             .alpha(0.96f)
                     )
                 }
-                */
+                 */
             }
         }
         // Inhalt mit korrektem Chrome/Inset-Padding (blur in Expanded on TV)
-    val blurModifier = if (isTv && tvChromeMode.value == ChromeMode.Expanded) {
-        if (Build.VERSION.SDK_INT >= 31) {
-            Modifier.graphicsLayer { renderEffect = RenderEffect.createBlurEffect(24f, 24f, Shader.TileMode.CLAMP).asComposeRenderEffect() }
-        } else {
-            Modifier.drawWithContent {
-                drawContent()
-                drawRect(Color.Black.copy(alpha = 0.22f))
+        val blurModifier =
+            if (isTv && tvChromeMode.value == ChromeMode.Expanded) {
+                if (Build.VERSION.SDK_INT >= 31) {
+                    Modifier.graphicsLayer {
+                        renderEffect =
+                            RenderEffect.createBlurEffect(24f, 24f, Shader.TileMode.CLAMP).asComposeRenderEffect()
+                    }
+                } else {
+                    Modifier.drawWithContent {
+                        drawContent()
+                        drawRect(Color.Black.copy(alpha = 0.22f))
+                    }
+                }
+            } else {
+                Modifier
             }
-        }
-    } else Modifier
 
         CompositionLocalProvider(
-            LocalChromeToggle provides ({
-                if (tvChromeMode.value == ChromeMode.Expanded) {
-                    tvChromeMode.value = ChromeMode.Collapsed
-                } else {
-                    focusedRowKey = null
-                    tvChromeMode.value = ChromeMode.Expanded
+            LocalChromeToggle provides (
+                {
+                    if (tvChromeMode.value == ChromeMode.Expanded) {
+                        tvChromeMode.value = ChromeMode.Collapsed
+                    } else {
+                        focusedRowKey = null
+                        tvChromeMode.value = ChromeMode.Expanded
+                    }
                 }
-            }),
-            LocalChromeExpand provides (if (isTv) ({
-                focusedRowKey = null
-                tvChromeMode.value = ChromeMode.Expanded
-            }) else null),
+            ),
+            LocalChromeExpand provides (
+                if (isTv) {
+                    (
+                        {
+                            focusedRowKey = null
+                            tvChromeMode.value = ChromeMode.Expanded
+                        }
+                    )
+                } else {
+                    null
+                }
+            ),
             LocalChromeRowFocusSetter provides { key: String? ->
                 focusedRowKey = key
                 if (isTv && key != null && tvChromeMode.value != ChromeMode.Expanded) tvChromeMode.value = ChromeMode.Collapsed
-            }
+            },
         ) {
-            val contentFocusBlocker = if (isTv && tvChromeMode.value == ChromeMode.Expanded) Modifier.focusProperties { canFocus = false } else Modifier
+            val contentFocusBlocker =
+                if (isTv &&
+                    tvChromeMode.value == ChromeMode.Expanded
+                ) {
+                    Modifier.focusProperties { canFocus = false }
+                } else {
+                    Modifier
+                }
             Box(Modifier.fillMaxSize().then(blurModifier).then(contentFocusBlocker)) {
                 content(pads)
             }
@@ -414,7 +477,7 @@ fun HomeChromeScaffold(
             navPad = navPad,
             scrimAlpha = scrimAlpha,
             preferSettingsFirstFocus = preferSettingsFirstFocus,
-            onActionCollapse = { if (isTv) tvChromeMode.value = ChromeMode.Collapsed }
+            onActionCollapse = { if (isTv) tvChromeMode.value = ChromeMode.Collapsed },
         )
 
         // Global TV mini player overlay (bottom-right). When chrome is Expanded, leave it visible but non-focusable.
@@ -426,7 +489,7 @@ fun HomeChromeScaffold(
                 Modifier
                     .fillMaxSize()
                     .padding(WindowInsets.navigationBars.asPaddingValues()),
-                contentAlignment = Alignment.BottomCenter
+                contentAlignment = Alignment.BottomCenter,
             ) {
                 SnackbarHost(hostState = snackbarHost)
             }
@@ -437,7 +500,7 @@ fun HomeChromeScaffold(
                 Modifier
                     .fillMaxSize()
                     .padding(navInsets),
-                contentAlignment = Alignment.BottomCenter
+                contentAlignment = Alignment.BottomCenter,
             ) {
                 val extraBottom = if (snackbarHost != null) 72.dp else 12.dp
                 SnackbarHost(hostState = logOverlayHost, modifier = Modifier.padding(bottom = extraBottom))

@@ -21,7 +21,7 @@ data class SeriesTileContent(
     val footer: (@Composable () -> Unit)?,
     val overlay: (@Composable BoxScope.() -> Unit)?,
     val onFocusChanged: ((Boolean) -> Unit)?,
-    val onClick: () -> Unit
+    val onClick: () -> Unit,
 )
 
 @Composable
@@ -30,7 +30,7 @@ fun buildSeriesTileContent(
     allowAssign: Boolean = true,
     onOpenDetails: (() -> Unit)? = null,
     onPlayDirect: (() -> Unit)? = null, // usually series plays via episode; kept for parity
-    onAssignToKid: (() -> Unit)? = null
+    onAssignToKid: (() -> Unit)? = null,
 ): SeriesTileContent {
     val ctx = LocalContext.current
     val assign = LocalAssignSelection.current
@@ -39,24 +39,32 @@ fun buildSeriesTileContent(
     val poster = media.poster ?: media.backdrop
     val selected = assign?.selectedSnapshot?.contains(media.id) == true
 
-    val topStartBadge: (@Composable () -> Unit)? = if (allowAssign && assign != null) {
-        { FishActions.AssignBadge(selected = selected) { assign.toggle(media.id) } }
-    } else null
+    val topStartBadge: (@Composable () -> Unit)? =
+        if (allowAssign && assign != null) {
+            { FishActions.AssignBadge(selected = selected) { assign.toggle(media.id) } }
+        } else {
+            null
+        }
 
-    val bottomEndActions: (@Composable RowScope.() -> Unit)? = if (assign?.active != true) {
-        if (onPlayDirect != null || (allowAssign && onAssignToKid != null)) {
-            {
-                with(FishActions) {
-                    if (onPlayDirect != null) {
-                        VodBottomActions(onPlay = onPlayDirect)
-                    }
-                    if (allowAssign) {
-                        AssignBottomAction(onAssign = onAssignToKid)
+    val bottomEndActions: (@Composable RowScope.() -> Unit)? =
+        if (assign?.active != true) {
+            if (onPlayDirect != null || (allowAssign && onAssignToKid != null)) {
+                {
+                    with(FishActions) {
+                        if (onPlayDirect != null) {
+                            VodBottomActions(onPlay = onPlayDirect)
+                        }
+                        if (allowAssign) {
+                            AssignBottomAction(onAssign = onAssignToKid)
+                        }
                     }
                 }
+            } else {
+                null
             }
-        } else null
-    } else null
+        } else {
+            null
+        }
 
     val onClick: () -> Unit = {
         if (assign?.active == true) assign.toggle(media.id) else onOpenDetails?.invoke()
@@ -83,6 +91,6 @@ fun buildSeriesTileContent(
         footer = footer,
         overlay = null,
         onFocusChanged = onFocusChanged,
-        onClick = onClick
+        onClick = onClick,
     )
 }

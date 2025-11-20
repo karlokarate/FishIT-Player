@@ -3,7 +3,7 @@ package com.chris.m3usuite.domain.usecases
 import com.chris.m3usuite.data.repo.SettingsRepository
 
 data class PlayerPrefs(
-    val mode: String,              // "ask" | "internal" | "external"
+    val mode: String, // "ask" | "internal" | "external"
     val preferredPkg: String,
     val rotationLocked: Boolean,
     val autoplayNext: Boolean,
@@ -11,11 +11,11 @@ data class PlayerPrefs(
     val subFgArgb: Int,
     val subBgArgb: Int,
     val subFgOpacityPct: Int,
-    val subBgOpacityPct: Int
+    val subBgOpacityPct: Int,
 )
 
 class SavePlayerPrefs(
-    private val repo: SettingsRepository
+    private val repo: SettingsRepository,
 ) {
     suspend operator fun invoke(p: PlayerPrefs) {
         repo.setPlayerMode(p.mode)

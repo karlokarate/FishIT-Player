@@ -17,28 +17,29 @@ fun DetailHeaderExtras(
     audio: String? = null,
     video: String? = null,
 ) {
-    val chips = buildList<String> {
-        mpaaRating?.takeIf { it.isNotBlank() }?.let { add("MPAA: $it") }
-        age?.takeIf { it.isNotBlank() }?.let { add("Age: $it") }
-        audio?.takeIf { it.isNotBlank() }?.let { add("Audio: ${it.take(18)}") }
-        video?.takeIf { it.isNotBlank() }?.let { add("Video: ${it.take(18)}") }
-    }
+    val chips =
+        buildList<String> {
+            mpaaRating?.takeIf { it.isNotBlank() }?.let { add("MPAA: $it") }
+            age?.takeIf { it.isNotBlank() }?.let { add("Age: $it") }
+            audio?.takeIf { it.isNotBlank() }?.let { add("Audio: ${it.take(18)}") }
+            video?.takeIf { it.isNotBlank() }?.let { add("Video: ${it.take(18)}") }
+        }
     if (chips.isEmpty()) return
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         chips.forEach { label ->
             AssistChip(
                 onClick = {},
                 enabled = false,
                 label = { Text(label) },
-                colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                colors =
+                    androidx.compose.material3.AssistChipDefaults.assistChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             )
         }
     }
 }
-

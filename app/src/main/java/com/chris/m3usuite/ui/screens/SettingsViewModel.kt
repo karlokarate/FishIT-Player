@@ -6,7 +6,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.chris.m3usuite.BuildConfig
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.work.TelegramSyncWorker
 import kotlinx.coroutines.CoroutineDispatcher
@@ -26,7 +25,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Simple UI projection of a Telegram chat. */
-data class ChatUi(val id: Long, val title: String)
+data class ChatUi(
+    val id: Long,
+    val title: String,
+)
 
 /** Aggregated UI state for Telegram-specific preferences. */
 data class SettingsUiState(
@@ -43,31 +45,58 @@ data class SettingsUiState(
     val effectiveApiHash: String = "", // TODO: BuildConfig.TG_API_HASH not defined
     val buildApiId: Int = 0, // TODO: BuildConfig.TG_API_ID not defined
     val buildApiHash: String = "", // TODO: BuildConfig.TG_API_HASH not defined
-    val apiKeysMissing: Boolean = true // TODO: Update when TG_API constants are added to BuildConfig
+    val apiKeysMissing: Boolean = true, // TODO: Update when TG_API constants are added to BuildConfig
 )
 
 sealed interface SettingsIntent {
-    data class RequestCode(val phone: String) : SettingsIntent
-    data class SubmitCode(val code: String) : SettingsIntent
-    data class SubmitPassword(val password: String) : SettingsIntent
+    data class RequestCode(
+        val phone: String,
+    ) : SettingsIntent
+
+    data class SubmitCode(
+        val code: String,
+    ) : SettingsIntent
+
+    data class SubmitPassword(
+        val password: String,
+    ) : SettingsIntent
+
     data object ResendCode : SettingsIntent
-    data class ConfirmChats(val ids: Set<Long>) : SettingsIntent
-    data class SetLogDir(val treeUri: Uri) : SettingsIntent
+
+    data class ConfirmChats(
+        val ids: Set<Long>,
+    ) : SettingsIntent
+
+    data class SetLogDir(
+        val treeUri: Uri,
+    ) : SettingsIntent
+
     data object StartFullSync : SettingsIntent
-    data class SetEnabled(val value: Boolean) : SettingsIntent
-    data class SetApiId(val value: String) : SettingsIntent
-    data class SetApiHash(val value: String) : SettingsIntent
+
+    data class SetEnabled(
+        val value: Boolean,
+    ) : SettingsIntent
+
+    data class SetApiId(
+        val value: String,
+    ) : SettingsIntent
+
+    data class SetApiHash(
+        val value: String,
+    ) : SettingsIntent
 }
 
 sealed interface SettingsEffect {
-    data class Snackbar(val message: String) : SettingsEffect
+    data class Snackbar(
+        val message: String,
+    ) : SettingsEffect
 }
 
 class SettingsViewModel(
     private val app: Application,
     private val store: SettingsStore,
     private val tg: TelegramServiceClient,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val buildApiId = 0 // TODO: BuildConfig.TG_API_ID not defined
     private val buildApiHash = "" // TODO: BuildConfig.TG_API_HASH not defined
@@ -78,13 +107,14 @@ class SettingsViewModel(
     private val _effects = MutableSharedFlow<SettingsEffect>(extraBufferCapacity = 1)
     val effects: SharedFlow<SettingsEffect> = _effects.asSharedFlow()
 
-    private val selectedIdsFlow = store.tgSelectedChatsCsv
-        .map { csv ->
-            csv.split(',')
-                .mapNotNull { it.trim().toLongOrNull() }
-                .toSet()
-        }
-        .distinctUntilChanged()
+    private val selectedIdsFlow =
+        store.tgSelectedChatsCsv
+            .map { csv ->
+                csv
+                    .split(',')
+                    .mapNotNull { it.trim().toLongOrNull() }
+                    .toSet()
+            }.distinctUntilChanged()
 
     init {
         // TODO: Telegram service binding not yet properly initialized
@@ -95,7 +125,7 @@ class SettingsViewModel(
                 buildApiHash = buildApiHash,
                 effectiveApiId = effectiveId(it.overrideApiId),
                 effectiveApiHash = effectiveHash(it.overrideApiHash),
-                apiKeysMissing = areKeysMissing(it.overrideApiId, it.overrideApiHash)
+                apiKeysMissing = areKeysMissing(it.overrideApiId, it.overrideApiHash),
             )
         }
         observePreferences()
@@ -109,7 +139,7 @@ class SettingsViewModel(
                 selectedIdsFlow,
                 store.logDirTreeUri,
                 store.tgApiId,
-                store.tgApiHash
+                store.tgApiHash,
             ) { values ->
                 @Suppress("UNCHECKED_CAST")
                 TelegramPrefs(
@@ -117,29 +147,29 @@ class SettingsViewModel(
                     selectedIds = values[1] as Set<Long>,
                     logDir = values[2] as String,
                     overrideApiId = values[3] as Int,
-                    overrideApiHash = values[4] as String
+                    overrideApiHash = values[4] as String,
                 )
             }.collectLatest { prefs ->
-                    _state.update {
-                        it.copy(
-                            tgEnabled = prefs.enabled,
-                            logDir = prefs.logDir,
-                            overrideApiId = prefs.overrideApiId,
-                            overrideApiHash = prefs.overrideApiHash,
-                            effectiveApiId = effectiveId(prefs.overrideApiId),
-                            effectiveApiHash = effectiveHash(prefs.overrideApiHash),
-                            apiKeysMissing = areKeysMissing(prefs.overrideApiId, prefs.overrideApiHash)
-                        )
-                    }
-                    if (prefs.selectedIds.isEmpty()) {
-                        _state.update { it.copy(selectedChats = emptyList(), isResolvingChats = false) }
-                    } else {
-                        _state.update { it.copy(isResolvingChats = true) }
-                        val chats = resolveChatNames(prefs.selectedIds)
-                        _state.update { it.copy(selectedChats = chats, isResolvingChats = false) }
-                    }
-                    if (prefs.enabled) ensureClientStarted()
+                _state.update {
+                    it.copy(
+                        tgEnabled = prefs.enabled,
+                        logDir = prefs.logDir,
+                        overrideApiId = prefs.overrideApiId,
+                        overrideApiHash = prefs.overrideApiHash,
+                        effectiveApiId = effectiveId(prefs.overrideApiId),
+                        effectiveApiHash = effectiveHash(prefs.overrideApiHash),
+                        apiKeysMissing = areKeysMissing(prefs.overrideApiId, prefs.overrideApiHash),
+                    )
                 }
+                if (prefs.selectedIds.isEmpty()) {
+                    _state.update { it.copy(selectedChats = emptyList(), isResolvingChats = false) }
+                } else {
+                    _state.update { it.copy(isResolvingChats = true) }
+                    val chats = resolveChatNames(prefs.selectedIds)
+                    _state.update { it.copy(selectedChats = chats, isResolvingChats = false) }
+                }
+                if (prefs.enabled) ensureClientStarted()
+            }
         }
     }
 
@@ -200,7 +230,12 @@ class SettingsViewModel(
     }
 
     private suspend fun handleConfirmChats(ids: Set<Long>) {
-        val csv = ids.asSequence().map { it.toString() }.sorted().joinToString(",")
+        val csv =
+            ids
+                .asSequence()
+                .map { it.toString() }
+                .sorted()
+                .joinToString(",")
         withContext(ioDispatcher) { store.setTelegramSelectedChatsCsv(csv) }
         if (ids.isEmpty()) {
             _state.update { it.copy(selectedChats = emptyList(), isResolvingChats = false) }
@@ -225,15 +260,16 @@ class SettingsViewModel(
 
     private suspend fun handleStartFullSync() {
         _state.update { it.copy(isSyncRunning = true) }
-        val result = runCatching {
-            withContext(ioDispatcher) {
-                TelegramSyncWorker.scheduleNow(
-                    app.applicationContext,
-                    mode = TelegramSyncWorker.MODE_ALL,
-                    refreshHome = true
-                )
+        val result =
+            runCatching {
+                withContext(ioDispatcher) {
+                    TelegramSyncWorker.scheduleNow(
+                        app.applicationContext,
+                        mode = TelegramSyncWorker.MODE_ALL,
+                        refreshHome = true,
+                    )
+                }
             }
-        }
         _state.update { it.copy(isSyncRunning = false) }
         result.fold(
             onSuccess = {
@@ -243,10 +279,10 @@ class SettingsViewModel(
                 Log.w("SettingsViewModel", "Failed to trigger Telegram sync", error)
                 _effects.emit(
                     SettingsEffect.Snackbar(
-                        "Telegram Sync fehlgeschlagen: ${error.message ?: "Unbekannter Fehler"}"
-                    )
+                        "Telegram Sync fehlgeschlagen: ${error.message ?: "Unbekannter Fehler"}",
+                    ),
                 )
-            }
+            },
         )
     }
 
@@ -261,7 +297,7 @@ class SettingsViewModel(
                 overrideApiId = parsed,
                 effectiveApiId = effId,
                 effectiveApiHash = effHash,
-                apiKeysMissing = areKeysMissing(parsed, it.overrideApiHash)
+                apiKeysMissing = areKeysMissing(parsed, it.overrideApiHash),
             )
         }
         ensureClientStarted(parsed, state.value.overrideApiHash)
@@ -277,7 +313,7 @@ class SettingsViewModel(
                 overrideApiHash = trimmed,
                 effectiveApiId = effId,
                 effectiveApiHash = effHash,
-                apiKeysMissing = areKeysMissing(it.overrideApiId, trimmed)
+                apiKeysMissing = areKeysMissing(it.overrideApiId, trimmed),
             )
         }
         ensureClientStarted(state.value.overrideApiId, trimmed)
@@ -287,13 +323,19 @@ class SettingsViewModel(
 
     private fun effectiveHash(overrideHash: String): String = if (overrideHash.isNotBlank()) overrideHash else buildApiHash
 
-    private fun areKeysMissing(overrideId: Int, overrideHash: String): Boolean {
+    private fun areKeysMissing(
+        overrideId: Int,
+        overrideHash: String,
+    ): Boolean {
         val effId = effectiveId(overrideId)
         val effHash = effectiveHash(overrideHash)
         return effId <= 0 || effHash.isBlank()
     }
 
-    private suspend fun ensureClientStarted(overrideId: Int? = null, overrideHash: String? = null) {
+    private suspend fun ensureClientStarted(
+        overrideId: Int? = null,
+        overrideHash: String? = null,
+    ) {
         val snapshot = state.value
         if (!snapshot.tgEnabled) return
         val effId = effectiveId(overrideId ?: snapshot.overrideApiId)
@@ -310,15 +352,17 @@ class SettingsViewModel(
         }
     }
 
-    private suspend fun resolveChatNames(ids: Set<Long>): List<ChatUi> = withContext(ioDispatcher) {
-        if (ids.isEmpty()) return@withContext emptyList()
-        val resolved = runCatching { tg.resolveChatTitles(ids.toList()) }.getOrNull().orEmpty()
-        val nameMap = resolved.toMap()
-        ids.map { id ->
-            val title = nameMap[id] ?: runCatching { tg.resolveChatTitle(id) }.getOrNull() ?: id.toString()
-            ChatUi(id, title)
-        }.sortedBy { it.title.lowercase() }
-    }
+    private suspend fun resolveChatNames(ids: Set<Long>): List<ChatUi> =
+        withContext(ioDispatcher) {
+            if (ids.isEmpty()) return@withContext emptyList()
+            val resolved = runCatching { tg.resolveChatTitles(ids.toList()) }.getOrNull().orEmpty()
+            val nameMap = resolved.toMap()
+            ids
+                .map { id ->
+                    val title = nameMap[id] ?: runCatching { tg.resolveChatTitle(id) }.getOrNull() ?: id.toString()
+                    ChatUi(id, title)
+                }.sortedBy { it.title.lowercase() }
+        }
 
     override fun onCleared() {
         super.onCleared()
@@ -332,22 +376,23 @@ class SettingsViewModel(
         val selectedIds: Set<Long>,
         val logDir: String,
         val overrideApiId: Int,
-        val overrideApiHash: String
+        val overrideApiHash: String,
     )
 
     companion object {
         fun provideFactory(
             application: Application,
-            store: SettingsStore
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
-                    val service = TelegramServiceClient(application.applicationContext)
-                    return SettingsViewModel(application, store, service) as T
+            store: SettingsStore,
+        ): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
+                        val service = TelegramServiceClient(application.applicationContext)
+                        return SettingsViewModel(application, store, service) as T
+                    }
+                    throw IllegalArgumentException("Unknown ViewModel class")
                 }
-                throw IllegalArgumentException("Unknown ViewModel class")
             }
-        }
     }
 }

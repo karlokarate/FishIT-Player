@@ -11,12 +11,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import com.chris.m3usuite.R
 import com.chris.m3usuite.ui.debug.safePainter
+
 @Composable
 fun FishBackground(
     modifier: Modifier = Modifier,
     alpha: Float = 0.05f,
     neutralizeUnderlay: Boolean = false,
-    neutralizeColor: Color = MaterialTheme.colorScheme.background
+    neutralizeColor: Color = MaterialTheme.colorScheme.background,
 ) {
     Box(modifier = modifier) {
         if (neutralizeUnderlay) {
@@ -27,10 +28,11 @@ fun FishBackground(
         Image(
             painter = safePainter(id = R.drawable.fisch_bg),
             contentDescription = null,
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer(alpha = alpha),
-            contentScale = ContentScale.Fit
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(alpha = alpha),
+            contentScale = ContentScale.Fit,
         )
     }
 }

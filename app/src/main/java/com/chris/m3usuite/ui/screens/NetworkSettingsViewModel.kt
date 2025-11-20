@@ -28,16 +28,15 @@ data class NetworkSettingsState(
     val userAgent: String = "IBOPlayer/1.4 (Android)",
     val referer: String = "",
     val extraHeadersJson: String = "",
-    val isSaving: Boolean = false
+    val isSaving: Boolean = false,
 )
 
 class NetworkSettingsViewModel(
     app: Application,
     private val repo: SettingsRepository,
     private val saveNetwork: SaveNetworkPrefs,
-    private val saveXtream: SaveXtreamPrefs
+    private val saveXtream: SaveXtreamPrefs,
 ) : AndroidViewModel(app) {
-
     private val _state = MutableStateFlow(NetworkSettingsState())
     val state: StateFlow<NetworkSettingsState> = _state
 
@@ -52,14 +51,14 @@ class NetworkSettingsViewModel(
                 repo.epgUrl,
                 repo.userAgent,
                 repo.referer,
-                repo.extraHeadersJson
+                repo.extraHeadersJson,
             ) { values: Array<Any?> ->
                 NetworkSettingsState(
                     m3uUrl = values[0] as String,
                     epgUrl = values[1] as String,
                     userAgent = values[2] as String,
                     referer = values[3] as String,
-                    extraHeadersJson = values[4] as String
+                    extraHeadersJson = values[4] as String,
                 )
             }.collect { _state.value = it }
         }
@@ -75,17 +74,18 @@ class NetworkSettingsViewModel(
         epg: String? = null,
         ua: String? = null,
         ref: String? = null,
-        headersJson: String? = null
+        headersJson: String? = null,
     ) = viewModelScope.launch {
         // 1) UI-State aktualisieren
-        val s = _state.value.copy(
-            m3uUrl = m3u ?: _state.value.m3uUrl,
-            epgUrl = epg ?: _state.value.epgUrl,
-            userAgent = ua ?: _state.value.userAgent,
-            referer = ref ?: _state.value.referer,
-            extraHeadersJson = headersJson ?: _state.value.extraHeadersJson,
-            isSaving = true
-        )
+        val s =
+            _state.value.copy(
+                m3uUrl = m3u ?: _state.value.m3uUrl,
+                epgUrl = epg ?: _state.value.epgUrl,
+                userAgent = ua ?: _state.value.userAgent,
+                referer = ref ?: _state.value.referer,
+                extraHeadersJson = headersJson ?: _state.value.extraHeadersJson,
+                isSaving = true,
+            )
         _state.value = s
 
         // 2) Persistieren (Network) via Usecase
@@ -127,20 +127,22 @@ class NetworkSettingsViewModel(
             val host = uri.host?.trim().orEmpty()
             if (host.isEmpty()) return@withContext null
             val isHttps = (uri.scheme?.equals("https", true) == true)
-            val port = when {
-                uri.port > 0 -> uri.port
-                isHttps -> 443
-                else -> 80
-            }
+            val port =
+                when {
+                    uri.port > 0 -> uri.port
+                    isHttps -> 443
+                    else -> 80
+                }
 
             // Query-Parameter robust lesen
             fun qp(key: String): String? {
                 val all = uri.query?.split('&').orEmpty()
                 val keyLower = key.lowercase(Locale.ROOT)
-                val hit = all.firstOrNull {
-                    val k = it.substringBefore('=', "").lowercase(Locale.ROOT)
-                    k == keyLower
-                } ?: return null
+                val hit =
+                    all.firstOrNull {
+                        val k = it.substringBefore('=', "").lowercase(Locale.ROOT)
+                        k == keyLower
+                    } ?: return null
                 val raw = hit.substringAfter('=', "")
                 return runCatching { URLDecoder.decode(raw, "UTF-8") }.getOrNull() ?: raw
             }
@@ -156,7 +158,7 @@ class NetworkSettingsViewModel(
                 port = port,
                 user = user,
                 pass = pass,
-                output = output
+                output = output,
             )
         }
 
@@ -166,8 +168,8 @@ class NetworkSettingsViewModel(
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     val store = SettingsStore(app)
                     val repo = SettingsRepository(store)
-                    val saveNetwork = SaveNetworkPrefs(repo)    // :contentReference[oaicite:4]{index=4}
-                    val saveXtream = SaveXtreamPrefs(repo)      // :contentReference[oaicite:5]{index=5}
+                    val saveNetwork = SaveNetworkPrefs(repo) // :contentReference[oaicite:4]{index=4}
+                    val saveXtream = SaveXtreamPrefs(repo) // :contentReference[oaicite:5]{index=5}
                     @Suppress("UNCHECKED_CAST")
                     return NetworkSettingsViewModel(app, repo, saveNetwork, saveXtream) as T
                 }

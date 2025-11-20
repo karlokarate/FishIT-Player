@@ -20,29 +20,36 @@ fun LoadingState(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator()
     }
 }
 
 @Composable
-fun EmptyState(text: String = stringResource(R.string.empty_default), modifier: Modifier = Modifier) {
+fun EmptyState(
+    text: String = stringResource(R.string.empty_default),
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
-fun ErrorState(text: String, onRetry: (() -> Unit)?, modifier: Modifier = Modifier) {
+fun ErrorState(
+    text: String,
+    onRetry: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
+        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
     ) {
         Text(text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
         if (onRetry != null) {
@@ -50,4 +57,3 @@ fun ErrorState(text: String, onRetry: (() -> Unit)?, modifier: Modifier = Modifi
         }
     }
 }
-

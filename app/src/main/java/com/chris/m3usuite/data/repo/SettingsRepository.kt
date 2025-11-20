@@ -9,9 +9,8 @@ import kotlinx.coroutines.flow.Flow
  * - Enthält nur Settings-bezogene Schreibvorgänge (keine UI/Worker-Logik)
  */
 class SettingsRepository(
-    private val store: SettingsStore
+    private val store: SettingsStore,
 ) {
-
     // --- Network ---
     val m3uUrl: Flow<String> = store.m3uUrl
     val epgUrl: Flow<String> = store.epgUrl
@@ -24,7 +23,7 @@ class SettingsRepository(
         m3u: String,
         epg: String,
         ua: String,
-        ref: String
+        ref: String,
     ) {
         store.setM3uUrl(m3u)
         store.setEpgUrl(epg)
@@ -39,7 +38,7 @@ class SettingsRepository(
     suspend fun setShowAdults(value: Boolean) = store.setShowAdults(value)
 
     // --- Player ---
-    val playerMode: Flow<String> = store.playerMode                // "ask" | "internal" | "external"
+    val playerMode: Flow<String> = store.playerMode // "ask" | "internal" | "external"
     val preferredPlayerPkg: Flow<String> = store.preferredPlayerPkg
     val rotationLocked: Flow<Boolean> = store.rotationLocked
     val autoplayNext: Flow<Boolean> = store.autoplayNext
@@ -51,14 +50,21 @@ class SettingsRepository(
     val subtitleBgOpacityPct: Flow<Int> = store.subtitleBgOpacityPct
 
     suspend fun setPlayerMode(mode: String) = store.setPlayerMode(mode)
+
     suspend fun setPreferredPlayerPackage(pkg: String) = store.setPreferredPlayerPackage(pkg)
+
     suspend fun setRotationLocked(locked: Boolean) = store.setRotationLocked(locked)
+
     suspend fun setAutoplayNext(enabled: Boolean) = store.setAutoplayNext(enabled)
 
-    suspend fun setSubtitleStyle(scale: Float, fgArgb: Int, bgArgb: Int) =
-        store.setSubtitleStyle(scale, fgArgb, bgArgb)
+    suspend fun setSubtitleStyle(
+        scale: Float,
+        fgArgb: Int,
+        bgArgb: Int,
+    ) = store.setSubtitleStyle(scale, fgArgb, bgArgb)
 
     suspend fun setSubtitleFgOpacityPct(value: Int) = store.setSubtitleFgOpacityPct(value)
+
     suspend fun setSubtitleBgOpacityPct(value: Int) = store.setSubtitleBgOpacityPct(value)
 
     // --- Xtream ---
@@ -73,7 +79,7 @@ class SettingsRepository(
         port: Int,
         user: String,
         pass: String,
-        output: String
+        output: String,
     ) {
         store.setXtHost(host)
         store.setXtPort(port)
@@ -87,5 +93,6 @@ class SettingsRepository(
     val epgFavSkipXmltvIfXtreamOk: Flow<Boolean> = store.epgFavSkipXmltvIfXtreamOk
 
     suspend fun setEpgFavUseXtream(value: Boolean) = store.setEpgFavUseXtream(value)
+
     suspend fun setEpgFavSkipXmltvIfXtreamOk(value: Boolean) = store.setEpgFavSkipXmltvIfXtreamOk(value)
 }

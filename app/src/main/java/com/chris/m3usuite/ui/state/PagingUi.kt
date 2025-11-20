@@ -22,4 +22,3 @@ fun combinedPagingCountFlow(vararg items: LazyPagingItems<*>): Flow<Int> {
         totals.sum()
     }
 }
-

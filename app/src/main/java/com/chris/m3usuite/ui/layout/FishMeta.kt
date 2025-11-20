@@ -14,7 +14,9 @@ import com.chris.m3usuite.model.MediaItem
 /** Shared metadata helpers for Fish content composition. */
 object FishMeta {
     fun displayVodTitle(media: MediaItem): String? {
-        val y = media.year ?: com.chris.m3usuite.domain.selectors.extractYearFrom(media.name)
+        val y =
+            media.year ?: com.chris.m3usuite.domain.selectors
+                .extractYearFrom(media.name)
         return if (y != null) "${media.name} ($y)" else media.name
     }
 
@@ -26,7 +28,7 @@ object FishMeta {
             text = plot,
             style = MaterialTheme.typography.labelSmall,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 
@@ -40,13 +42,18 @@ object FishMeta {
         LaunchedEffect(media.id, media.durationSecs, ctx) {
             val total = media.durationSecs ?: 0
             if (total > 0) {
-                val secs = runCatching {
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        com.chris.m3usuite.data.repo.ResumeRepository(ctx).getVodResume(media.id)
-                    }
-                }.getOrNull() ?: 0
+                val secs =
+                    runCatching {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            com.chris.m3usuite.data.repo
+                                .ResumeRepository(ctx)
+                                .getVodResume(media.id)
+                        }
+                    }.getOrNull() ?: 0
                 state.value = if (secs > 0) (secs.toFloat() / total.toFloat()).coerceIn(0f, 1f) else null
-            } else state.value = null
+            } else {
+                state.value = null
+            }
         }
         return state
     }

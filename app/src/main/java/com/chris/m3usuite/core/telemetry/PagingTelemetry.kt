@@ -14,9 +14,12 @@ import kotlinx.coroutines.flow.collectLatest
  * Hängt sich an LazyPagingItems an und protokolliert Refresh/Append/Prepend-Dauern & Fehler.
  */
 @Composable
-fun AttachPagingTelemetry(tag: String, items: LazyPagingItems<*>) {
+fun AttachPagingTelemetry(
+    tag: String,
+    items: LazyPagingItems<*>,
+) {
     val refreshStart = remember { TimeBox() }
-    val appendStart  = remember { TimeBox() }
+    val appendStart = remember { TimeBox() }
     val prependStart = remember { TimeBox() }
 
     LaunchedEffect(items) {
@@ -27,17 +30,19 @@ fun AttachPagingTelemetry(tag: String, items: LazyPagingItems<*>) {
                     is LoadState.Loading -> refreshStart.start()
                     is LoadState.NotLoading -> {
                         val ms = refreshStart.stop()
-                        if (ms != null) Telemetry.event(
-                            "Paging.Refresh.Done",
-                            mapOf("tag" to tag, "durationMs" to ms, "items" to items.itemCount)
-                        )
+                        if (ms != null) {
+                            Telemetry.event(
+                                "Paging.Refresh.Done",
+                                mapOf("tag" to tag, "durationMs" to ms, "items" to items.itemCount),
+                            )
+                        }
                     }
                     is LoadState.Error -> {
                         val ms = refreshStart.stop()
                         Telemetry.error(
                             "Paging.Refresh.Error",
                             s.error,
-                            mapOf("tag" to tag, "durationMs" to (ms ?: -1), "items" to items.itemCount)
+                            mapOf("tag" to tag, "durationMs" to (ms ?: -1), "items" to items.itemCount),
                         )
                     }
                 }
@@ -46,13 +51,20 @@ fun AttachPagingTelemetry(tag: String, items: LazyPagingItems<*>) {
                     is LoadState.Loading -> appendStart.start()
                     is LoadState.NotLoading -> {
                         val ms = appendStart.stop()
-                        if (ms != null) Telemetry.event("Paging.Append.Done",
-                            mapOf("tag" to tag, "durationMs" to ms, "items" to items.itemCount))
+                        if (ms != null) {
+                            Telemetry.event(
+                                "Paging.Append.Done",
+                                mapOf("tag" to tag, "durationMs" to ms, "items" to items.itemCount),
+                            )
+                        }
                     }
                     is LoadState.Error -> {
                         val ms = appendStart.stop()
-                        Telemetry.error("Paging.Append.Error", s.error,
-                            mapOf("tag" to tag, "durationMs" to (ms ?: -1), "items" to items.itemCount))
+                        Telemetry.error(
+                            "Paging.Append.Error",
+                            s.error,
+                            mapOf("tag" to tag, "durationMs" to (ms ?: -1), "items" to items.itemCount),
+                        )
                     }
                 }
                 // Prepend (falls verwendet)
@@ -60,13 +72,20 @@ fun AttachPagingTelemetry(tag: String, items: LazyPagingItems<*>) {
                     is LoadState.Loading -> prependStart.start()
                     is LoadState.NotLoading -> {
                         val ms = prependStart.stop()
-                        if (ms != null) Telemetry.event("Paging.Prepend.Done",
-                            mapOf("tag" to tag, "durationMs" to ms, "items" to items.itemCount))
+                        if (ms != null) {
+                            Telemetry.event(
+                                "Paging.Prepend.Done",
+                                mapOf("tag" to tag, "durationMs" to ms, "items" to items.itemCount),
+                            )
+                        }
                     }
                     is LoadState.Error -> {
                         val ms = prependStart.stop()
-                        Telemetry.error("Paging.Prepend.Error", s.error,
-                            mapOf("tag" to tag, "durationMs" to (ms ?: -1), "items" to items.itemCount))
+                        Telemetry.error(
+                            "Paging.Prepend.Error",
+                            s.error,
+                            mapOf("tag" to tag, "durationMs" to (ms ?: -1), "items" to items.itemCount),
+                        )
                     }
                 }
             }
@@ -75,6 +94,10 @@ fun AttachPagingTelemetry(tag: String, items: LazyPagingItems<*>) {
 
 private class TimeBox {
     private var start: Long = -1
-    fun start() { start = SystemClock.elapsedRealtime() }
+
+    fun start() {
+        start = SystemClock.elapsedRealtime()
+    }
+
     fun stop(): Long? = if (start > 0) (SystemClock.elapsedRealtime() - start).also { start = -1 } else null
 }

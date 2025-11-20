@@ -4,15 +4,15 @@ package com.chris.m3usuite.telegram.models
  * Media content type classification for parsed Telegram messages.
  */
 enum class MediaKind {
-    MOVIE,          // Film
-    SERIES,         // komplette Serie (Metadaten ohne einzelne Episode)
-    EPISODE,        // einzelne Folge einer Serie
-    CLIP,           // kurzer Clip / unbekannte Länge
-    RAR_ARCHIVE,    // .rar / .zip / .7z usw.
+    MOVIE, // Film
+    SERIES, // komplette Serie (Metadaten ohne einzelne Episode)
+    EPISODE, // einzelne Folge einer Serie
+    CLIP, // kurzer Clip / unbekannte Länge
+    RAR_ARCHIVE, // .rar / .zip / .7z usw.
     PHOTO,
     TEXT_ONLY,
     ADULT,
-    OTHER
+    OTHER,
 }
 
 /**
@@ -24,11 +24,9 @@ data class MediaInfo(
     val messageId: Long,
     val kind: MediaKind,
     val chatTitle: String? = null,
-
     val fileName: String? = null,
     val mimeType: String? = null,
     val sizeBytes: Long? = null,
-
     val title: String? = null,
     val originalTitle: String? = null,
     val year: Int? = null,
@@ -40,13 +38,11 @@ data class MediaInfo(
     val director: String? = null,
     val tmdbRating: Double? = null,
     val tmdbVotes: Int? = null,
-
     val totalEpisodes: Int? = null,
     val totalSeasons: Int? = null,
     val seasonNumber: Int? = null,
     val episodeNumber: Int? = null,
-
-    val extraInfo: String? = null
+    val extraInfo: String? = null,
 )
 
 /**
@@ -58,7 +54,7 @@ data class SubChatRef(
     val parentMessageId: Long,
     val label: String,
     val linkedChatId: Long? = null,
-    val inviteLinks: List<String> = emptyList()
+    val inviteLinks: List<String> = emptyList(),
 )
 
 /**
@@ -67,7 +63,7 @@ data class SubChatRef(
 data class InviteLink(
     val chatId: Long,
     val messageId: Long,
-    val url: String
+    val url: String,
 )
 
 /**
@@ -75,8 +71,20 @@ data class InviteLink(
  * Can be media content, a sub-chat reference, an invite link, or nothing of interest.
  */
 sealed class ParsedItem {
-    data class Media(val info: MediaInfo) : ParsedItem()
-    data class SubChat(val ref: SubChatRef) : ParsedItem()
-    data class Invite(val invite: InviteLink) : ParsedItem()
-    data class None(val chatId: Long, val messageId: Long) : ParsedItem()
+    data class Media(
+        val info: MediaInfo,
+    ) : ParsedItem()
+
+    data class SubChat(
+        val ref: SubChatRef,
+    ) : ParsedItem()
+
+    data class Invite(
+        val invite: InviteLink,
+    ) : ParsedItem()
+
+    data class None(
+        val chatId: Long,
+        val messageId: Long,
+    ) : ParsedItem()
 }

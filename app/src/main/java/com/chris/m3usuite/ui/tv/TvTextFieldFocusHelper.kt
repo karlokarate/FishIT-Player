@@ -8,21 +8,20 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.input.TextFieldValue
 
 /**
  * TV-optimized TextField focus manager.
- * 
- * Problem: In Settings screens on TV, when a TextField is focused and the 
- * TV keyboard is open, DPAD navigation gets trapped - users cannot navigate 
+ *
+ * Problem: In Settings screens on TV, when a TextField is focused and the
+ * TV keyboard is open, DPAD navigation gets trapped - users cannot navigate
  * away from the text field using the remote control.
- * 
- * Solution: Intercept DPAD events when TextField is focused and allow 
+ *
+ * Solution: Intercept DPAD events when TextField is focused and allow
  * navigation to escape the field without dismissing edits.
- * 
+ *
  * Usage:
  *   val focusHelper = rememberTvTextFieldFocusHelper()
- *   
+ *
  *   OutlinedTextField(
  *       value = text,
  *       onValueChange = { text = it },
@@ -32,16 +31,16 @@ import androidx.compose.ui.text.input.TextFieldValue
 class TvTextFieldFocusHelper {
     private val textFieldFocusRequester = FocusRequester()
     private var isTextFieldFocused by mutableStateOf(false)
-    
+
     /**
      * Handle key events for TextField to enable DPAD navigation away from field.
      */
     fun handleKeyEvent(event: KeyEvent): Boolean {
         if (!isTextFieldFocused) return false
-        
+
         // Only handle ACTION_DOWN to avoid duplicate processing
         if (event.type != KeyEventType.KeyDown) return false
-        
+
         // Check for DPAD navigation keys
         return when (event.key.keyCode) {
             // Allow DPAD_DOWN and DPAD_UP to navigate away from the TextField
@@ -50,7 +49,8 @@ class TvTextFieldFocusHelper {
             // Also handle DPAD_LEFT and DPAD_RIGHT when cursor is at edges
             // (this is a simplified implementation - could be enhanced)
             Key.DirectionLeft.keyCode,
-            Key.DirectionRight.keyCode -> {
+            Key.DirectionRight.keyCode,
+            -> {
                 // Let the focus system handle navigation
                 false
             }
@@ -62,11 +62,11 @@ class TvTextFieldFocusHelper {
             else -> false
         }
     }
-    
+
     fun onFocusChanged(focused: Boolean) {
         isTextFieldFocused = focused
     }
-    
+
     fun getFocusRequester(): FocusRequester = textFieldFocusRequester
 }
 
@@ -74,29 +74,26 @@ class TvTextFieldFocusHelper {
  * Remember a TvTextFieldFocusHelper instance.
  */
 @Composable
-fun rememberTvTextFieldFocusHelper(): TvTextFieldFocusHelper {
-    return remember { TvTextFieldFocusHelper() }
-}
+fun rememberTvTextFieldFocusHelper(): TvTextFieldFocusHelper = remember { TvTextFieldFocusHelper() }
 
 /**
  * Modifier extension to make TextField TV-navigable.
  */
-fun Modifier.tvTextFieldFocusable(
-    helper: TvTextFieldFocusHelper
-): Modifier = this.then(
-    Modifier
-        .focusRequester(helper.getFocusRequester())
-        .onPreviewKeyEvent { event ->
-            helper.handleKeyEvent(event)
-        }
-)
+fun Modifier.tvTextFieldFocusable(helper: TvTextFieldFocusHelper): Modifier =
+    this.then(
+        Modifier
+            .focusRequester(helper.getFocusRequester())
+            .onPreviewKeyEvent { event ->
+                helper.handleKeyEvent(event)
+            },
+    )
 
 /**
  * TV-optimized TextField wrapper with automatic focus escape handling.
- * 
+ *
  * Problem: Standard TextField on TV can trap focus when the on-screen keyboard
  * is displayed, preventing DPAD navigation to other elements.
- * 
+ *
  * Solution: This wrapper adds DPAD event handling to allow users to navigate
  * away from the TextField using the remote control.
  */
@@ -112,33 +109,38 @@ fun TvTextField(
     trailingIcon: @Composable (() -> Unit)? = null,
     singleLine: Boolean = true,
     maxLines: Int = 1,
-    textField: @Composable (Modifier) -> Unit
+    textField: @Composable (Modifier) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     var isFocused by remember { mutableStateOf(false) }
-    
+
     Box(
-        modifier = modifier
-            .onPreviewKeyEvent { event ->
-                if (!isFocused) return@onPreviewKeyEvent false
-                
-                // Handle DPAD events to enable navigation away from TextField
-                when (event.key.keyCode) {
-                    Key.DirectionDown.keyCode -> {
-                        if (event.type == KeyEventType.KeyDown) {
-                            focusManager.moveFocus(FocusDirection.Down)
-                            true
-                        } else false
+        modifier =
+            modifier
+                .onPreviewKeyEvent { event ->
+                    if (!isFocused) return@onPreviewKeyEvent false
+
+                    // Handle DPAD events to enable navigation away from TextField
+                    when (event.key.keyCode) {
+                        Key.DirectionDown.keyCode -> {
+                            if (event.type == KeyEventType.KeyDown) {
+                                focusManager.moveFocus(FocusDirection.Down)
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        Key.DirectionUp.keyCode -> {
+                            if (event.type == KeyEventType.KeyDown) {
+                                focusManager.moveFocus(FocusDirection.Up)
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        else -> false
                     }
-                    Key.DirectionUp.keyCode -> {
-                        if (event.type == KeyEventType.KeyDown) {
-                            focusManager.moveFocus(FocusDirection.Up)
-                            true
-                        } else false
-                    }
-                    else -> false
-                }
-            }
+                },
     ) {
         textField(Modifier)
     }
@@ -151,7 +153,7 @@ fun TvTextField(
 object TvSettingsFocusConfig {
     /**
      * Configure TextField for TV with proper focus handling.
-     * 
+     *
      * Ensures:
      * - DPAD navigation can escape from focused TextFields
      * - Focus order is logical (top to bottom)
@@ -160,13 +162,13 @@ object TvSettingsFocusConfig {
     @Composable
     fun rememberTextFieldModifier(
         index: Int,
-        totalFields: Int
+        totalFields: Int,
     ): Modifier {
         val focusManager = LocalFocusManager.current
-        
+
         return Modifier.onPreviewKeyEvent { event ->
             if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-            
+
             when (event.key.keyCode) {
                 Key.DirectionDown.keyCode -> {
                     focusManager.moveFocus(FocusDirection.Down)

@@ -11,6 +11,7 @@ object CategoryFonts {
     val Orbitron = FontFamily(Font(R.font.orbitron))
     val Cinzel = FontFamily(Font(R.font.cinzel))
     val Rye = FontFamily(Font(R.font.rye_regular))
+
     // MountainsOfChristmas not available yet → keep default to avoid crashes
     val MountainsOfChristmas = FontFamily.Default
     val Parisienne = FontFamily(Font(R.font.parisienne_regular))

@@ -14,18 +14,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.chris.m3usuite.ui.focus.FocusKit
-import com.chris.m3usuite.ui.home.ChromeLibraryFocusRefs
 import com.chris.m3usuite.ui.home.ChromeHeaderFocusRefs
-import com.chris.m3usuite.ui.home.LocalChromeLibraryFocusRefs
-import com.chris.m3usuite.ui.home.LocalChromeHeaderFocusRefs
+import com.chris.m3usuite.ui.home.ChromeLibraryFocusRefs
 import com.chris.m3usuite.ui.home.LibraryTab
+import com.chris.m3usuite.ui.home.LocalChromeHeaderFocusRefs
+import com.chris.m3usuite.ui.home.LocalChromeLibraryFocusRefs
 import com.chris.m3usuite.ui.home.header.FishITHeader
-import com.chris.m3usuite.ui.home.header.LocalLibraryFirstFocus
-import com.chris.m3usuite.ui.home.header.LocalHeaderFirstFocus
-import com.chris.m3usuite.ui.home.header.LocalPreferSettingsFirstFocus
 import com.chris.m3usuite.ui.home.header.LocalChromeOnAction
+import com.chris.m3usuite.ui.home.header.LocalHeaderFirstFocus
+import com.chris.m3usuite.ui.home.header.LocalLibraryFirstFocus
+import com.chris.m3usuite.ui.home.header.LocalPreferSettingsFirstFocus
 
 /** Hosts header + bottom chrome and wires focus locals for TV. */
 @Composable
@@ -44,7 +43,7 @@ fun HomeChromeOverlay(
     navPad: Dp,
     scrimAlpha: Float,
     preferSettingsFirstFocus: Boolean,
-    onActionCollapse: () -> Unit
+    onActionCollapse: () -> Unit,
 ) {
     val context = LocalContext.current
     val isTv = remember(context) { FocusKit.isTvDevice(context) }
@@ -71,21 +70,22 @@ fun HomeChromeOverlay(
         LocalHeaderFirstFocus provides headerInitial,
         LocalLibraryFirstFocus provides bottomInitial,
         LocalChromeOnAction provides onActionCollapse,
-        LocalPreferSettingsFirstFocus provides preferSettingsFirstFocus
+        LocalPreferSettingsFirstFocus provides preferSettingsFirstFocus,
     ) {
         Box(Modifier.fillMaxSize()) {
             if (expanded && isTv) {
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.02f))
+                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.02f)),
                 )
             }
             if (showHeader) {
                 Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = statusPad)
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = statusPad),
                 ) {
                     FishITHeader(
                         title = title,
@@ -95,7 +95,7 @@ fun HomeChromeOverlay(
                         onProfiles = onProfiles,
                         onLogo = onLogo,
                         librarySelected = if (showLibraryNav) librarySelected else null,
-                        onLibrarySelect = if (showLibraryNav) onLibrarySelect else null
+                        onLibrarySelect = if (showLibraryNav) onLibrarySelect else null,
                     )
                 }
             }

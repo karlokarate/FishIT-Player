@@ -15,14 +15,13 @@ import kotlinx.coroutines.launch
 
 data class GeneralSettingsState(
     val showAdults: Boolean = false,
-    val isSaving: Boolean = false
+    val isSaving: Boolean = false,
 )
 
 class GeneralSettingsViewModel(
     app: Application,
-    private val repo: SettingsRepository
+    private val repo: SettingsRepository,
 ) : AndroidViewModel(app) {
-
     private val _state = MutableStateFlow(GeneralSettingsState())
     val state: StateFlow<GeneralSettingsState> = _state
 
@@ -46,16 +45,17 @@ class GeneralSettingsViewModel(
     }
 
     companion object {
-        fun factory(app: Application): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(GeneralSettingsViewModel::class.java)) {
-                    val store = SettingsStore(app)
-                    val repo = SettingsRepository(store)
-                    return GeneralSettingsViewModel(app, repo) as T
+        fun factory(app: Application): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    if (modelClass.isAssignableFrom(GeneralSettingsViewModel::class.java)) {
+                        val store = SettingsStore(app)
+                        val repo = SettingsRepository(store)
+                        return GeneralSettingsViewModel(app, repo) as T
+                    }
+                    throw IllegalArgumentException("Unknown ViewModel class")
                 }
-                throw IllegalArgumentException("Unknown ViewModel class")
             }
-        }
     }
 }

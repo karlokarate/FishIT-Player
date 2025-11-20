@@ -1,20 +1,20 @@
 package com.chris.m3usuite.ui.detail
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.ui.unit.dp
 import com.chris.m3usuite.ui.actions.MediaAction
 
 /**
@@ -65,13 +65,13 @@ fun DetailPage(
     trailerHeaders: Map<String, String>? = null,
     // Optional type-specific items (episodes, similar rows, etc.)
     extraItems: (LazyListScope.() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     DetailBackdrop(heroUrl = heroUrl, isAdult = isAdult, pads = pads) {
         LazyColumn(
             modifier = modifier,
             state = listState,
-            contentPadding = PaddingValues(bottom = 16.dp)
+            contentPadding = PaddingValues(bottom = 16.dp),
         ) {
             item {
                 DetailHeader(
@@ -82,21 +82,23 @@ fun DetailPage(
                     actions = actions,
                     meta = if (showHeaderMetaChips) meta else null,
                     showHeroScrim = false,
-                    headerExtras = { headerExtras() }
+                    headerExtras = { headerExtras() },
                 )
             }
             if (!resumeText.isNullOrBlank()) item { androidx.compose.material3.Text(resumeText) }
-            if (!plot.isNullOrBlank()) item {
-                // Match Series: Rounded surface with darker accent color and badge alpha
-                val accent = if (!isAdult) com.chris.m3usuite.ui.theme.DesignTokens.KidAccent else com.chris.m3usuite.ui.theme.DesignTokens.Accent
-                val badgeColorDarker = if (!isAdult) accent.copy(alpha = 0.32f) else accent.copy(alpha = 0.26f)
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = badgeColorDarker,
-                    contentColor = Color.White,
-                    modifier = Modifier.fillMaxWidth().graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha)
-                ) {
-                    androidx.compose.material3.Text(plot!!, modifier = Modifier.padding(12.dp))
+            if (!plot.isNullOrBlank()) {
+                item {
+                    // Match Series: Rounded surface with darker accent color and badge alpha
+                    val accent = if (!isAdult) com.chris.m3usuite.ui.theme.DesignTokens.KidAccent else com.chris.m3usuite.ui.theme.DesignTokens.Accent
+                    val badgeColorDarker = if (!isAdult) accent.copy(alpha = 0.32f) else accent.copy(alpha = 0.26f)
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = badgeColorDarker,
+                        contentColor = Color.White,
+                        modifier = Modifier.fillMaxWidth().graphicsLayer(alpha = com.chris.m3usuite.ui.theme.DesignTokens.BadgeAlpha),
+                    ) {
+                        androidx.compose.material3.Text(plot!!, modifier = Modifier.padding(12.dp))
+                    }
                 }
             }
             item {
@@ -121,7 +123,7 @@ fun DetailPage(
                     audio = audio,
                     video = video,
                     bitrate = bitrate,
-                    onOpenLink = onOpenLink
+                    onOpenLink = onOpenLink,
                 )
             }
             if (!trailerUrl.isNullOrBlank()) {
@@ -135,7 +137,7 @@ fun DetailPage(
                 androidx.compose.material3.Text(
                     "Tippe auf Poster oder Titel, um abzuspielen.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.secondary,
                 )
             }
         }

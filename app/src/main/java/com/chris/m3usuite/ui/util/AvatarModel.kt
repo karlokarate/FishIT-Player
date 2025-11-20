@@ -13,12 +13,12 @@ import java.io.File
  * - everything else -> raw string (e.g., http/https)
  */
 @Composable
-fun rememberAvatarModel(path: String?): Any? = remember(path) {
-    when {
-        path.isNullOrBlank() -> null
-        path.startsWith("/") -> File(path)
-        path.startsWith("file://") || path.startsWith("content://") -> Uri.parse(path)
-        else -> path
+fun rememberAvatarModel(path: String?): Any? =
+    remember(path) {
+        when {
+            path.isNullOrBlank() -> null
+            path.startsWith("/") -> File(path)
+            path.startsWith("file://") || path.startsWith("content://") -> Uri.parse(path)
+            else -> path
+        }
     }
-}
-

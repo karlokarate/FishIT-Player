@@ -120,7 +120,7 @@ data class RawEpisodeInfo(
 
 @Serializable
 data class NormalizedListItem(
-    val kind: String,            // live|vod|series
+    val kind: String, // live|vod|series
     val id: Int,
     val name: String,
     val logo: String? = null,
@@ -201,5 +201,5 @@ data class NormalizedEpisode(
 data class XtShortEPGProgramme(
     val title: String? = null,
     val start: String? = null, // epoch seconds as string
-    val end: String? = null,   // epoch seconds as string
+    val end: String? = null, // epoch seconds as string
 )

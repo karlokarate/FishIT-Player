@@ -24,7 +24,7 @@ data class DetailMeta(
     val audio: String? = null,
     val genres: List<String> = emptyList(),
     val provider: String? = null,
-    val category: String? = null
+    val category: String? = null,
 )
 
 @androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -33,21 +33,22 @@ fun MetaChips(
     meta: DetailMeta,
     compact: Boolean = false,
     collapsible: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val spacing = if (compact) 6.dp else 8.dp
-    val chips = remember(meta) {
-        buildList {
-            meta.year?.let { add(it.toString()) }
-            meta.durationSecs?.let { secs -> add(formatDuration(secs)) }
-            meta.videoQuality?.takeIf { it.isNotBlank() }?.let { add(it) }
-            meta.hdr?.takeIf { it.isNotBlank() }?.let { add(it) }
-            meta.audio?.takeIf { it.isNotBlank() }?.let { add("Audio: $it") }
-            meta.provider?.takeIf { it.isNotBlank() }?.let { add(it) }
-            meta.category?.takeIf { it.isNotBlank() }?.let { add(it) }
-            meta.genres.forEach { g -> add(g) }
+    val chips =
+        remember(meta) {
+            buildList {
+                meta.year?.let { add(it.toString()) }
+                meta.durationSecs?.let { secs -> add(formatDuration(secs)) }
+                meta.videoQuality?.takeIf { it.isNotBlank() }?.let { add(it) }
+                meta.hdr?.takeIf { it.isNotBlank() }?.let { add(it) }
+                meta.audio?.takeIf { it.isNotBlank() }?.let { add("Audio: $it") }
+                meta.provider?.takeIf { it.isNotBlank() }?.let { add(it) }
+                meta.category?.takeIf { it.isNotBlank() }?.let { add(it) }
+                meta.genres.forEach { g -> add(g) }
+            }
         }
-    }
     val maxCollapsed = 3
     val canCollapse = collapsible && chips.size > maxCollapsed
     var expanded by rememberSaveable(meta, collapsible) { mutableStateOf(!canCollapse) }
@@ -56,14 +57,14 @@ fun MetaChips(
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(spacing),
-        verticalArrangement = Arrangement.spacedBy(spacing)
+        verticalArrangement = Arrangement.spacedBy(spacing),
     ) {
         visible.forEach { Chip(it) }
         if (canCollapse) {
             val label = if (expanded) "Weniger" else "Mehr…"
             AssistChip(
                 onClick = { expanded = !expanded },
-                label = { Text(label) }
+                label = { Text(label) },
             )
         }
     }
@@ -77,10 +78,11 @@ private fun Chip(text: String) {
         onClick = {},
         enabled = false,
         label = { Text(text) },
-        colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
-            containerColor = container,
-            labelColor = label
-        )
+        colors =
+            androidx.compose.material3.AssistChipDefaults.assistChipColors(
+                containerColor = container,
+                labelColor = label,
+            ),
     )
 }
 

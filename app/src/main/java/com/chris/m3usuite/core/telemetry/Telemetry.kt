@@ -14,10 +14,17 @@ import java.util.concurrent.CopyOnWriteArrayList
  * - Telemetry.trace(name) { ... }
  */
 object Telemetry {
-
     interface Sink {
-        fun event(name: String, attrs: Map<String, Any?> = emptyMap())
-        fun error(name: String, t: Throwable, attrs: Map<String, Any?> = emptyMap())
+        fun event(
+            name: String,
+            attrs: Map<String, Any?> = emptyMap(),
+        )
+
+        fun error(
+            name: String,
+            t: Throwable,
+            attrs: Map<String, Any?> = emptyMap(),
+        )
     }
 
     private val sinks = CopyOnWriteArrayList<Sink>()
@@ -38,19 +45,29 @@ object Telemetry {
         runCatching { register(CrashlyticsSink()) }
     }
 
-    fun event(name: String, attrs: Map<String, Any?> = emptyMap()) {
+    fun event(
+        name: String,
+        attrs: Map<String, Any?> = emptyMap(),
+    ) {
         sinks.forEach {
             runCatching { it.event(name, attrs) }.onFailure { Log.w("Telemetry", "event sink failed", it) }
         }
     }
 
-    fun error(name: String, t: Throwable, attrs: Map<String, Any?> = emptyMap()) {
+    fun error(
+        name: String,
+        t: Throwable,
+        attrs: Map<String, Any?> = emptyMap(),
+    ) {
         sinks.forEach {
             runCatching { it.error(name, t, attrs) }.onFailure { Log.w("Telemetry", "error sink failed", it) }
         }
     }
 
-    fun begin(name: String, attrs: Map<String, Any?> = emptyMap()): Closeable {
+    fun begin(
+        name: String,
+        attrs: Map<String, Any?> = emptyMap(),
+    ): Closeable {
         val start = SystemClock.elapsedRealtime()
         return Closeable {
             val dur = SystemClock.elapsedRealtime() - start
@@ -58,18 +75,34 @@ object Telemetry {
         }
     }
 
-    inline fun <T> trace(name: String, attrs: Map<String, Any?> = emptyMap(), block: () -> T): T {
+    inline fun <T> trace(
+        name: String,
+        attrs: Map<String, Any?> = emptyMap(),
+        block: () -> T,
+    ): T {
         val c = begin(name, attrs)
-        return try { block() } finally { c.close() }
+        return try {
+            block()
+        } finally {
+            c.close()
+        }
     }
 
     // --- Sinks ---
 
     private class LogcatSink : Sink {
-        override fun event(name: String, attrs: Map<String, Any?>) {
+        override fun event(
+            name: String,
+            attrs: Map<String, Any?>,
+        ) {
             Log.d("Telemetry", "event=$name attrs=${attrs.toLogLine()}")
         }
-        override fun error(name: String, t: Throwable, attrs: Map<String, Any?>) {
+
+        override fun error(
+            name: String,
+            t: Throwable,
+            attrs: Map<String, Any?>,
+        ) {
             Log.e("Telemetry", "error=$name attrs=${attrs.toLogLine()}", t)
         }
     }
@@ -83,17 +116,23 @@ object Telemetry {
         private val logMethod = clazz.getMethod("log", String::class.java)
         private val recordMethod = clazz.getMethod("recordException", Throwable::class.java)
 
-        override fun event(name: String, attrs: Map<String, Any?>) {
+        override fun event(
+            name: String,
+            attrs: Map<String, Any?>,
+        ) {
             val line = "event=$name ${attrs.toLogLine()}"
             logMethod.invoke(instance, line)
         }
 
-        override fun error(name: String, t: Throwable, attrs: Map<String, Any?>) {
+        override fun error(
+            name: String,
+            t: Throwable,
+            attrs: Map<String, Any?>,
+        ) {
             logMethod.invoke(instance, "error=$name ${attrs.toLogLine()}")
             recordMethod.invoke(instance, t)
         }
     }
 
-    private fun Map<String, Any?>.toLogLine(): String =
-        entries.joinToString(" ") { (k, v) -> "$k=${v.toString().take(200)}" }
+    private fun Map<String, Any?>.toLogLine(): String = entries.joinToString(" ") { (k, v) -> "$k=${v.toString().take(200)}" }
 }

@@ -16,10 +16,18 @@ object TrafficLogger {
     private val dateFmt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US)
     private const val MAX_BODY_BYTES = 262144 // 256 KiB per side
 
-    fun setEnabled(value: Boolean) { enabled.set(value) }
+    fun setEnabled(value: Boolean) {
+        enabled.set(value)
+    }
+
     fun isEnabled(): Boolean = enabled.get()
 
-    fun tryLog(appContext: Context, request: Request, response: Response, startedNs: Long) {
+    fun tryLog(
+        appContext: Context,
+        request: Request,
+        response: Response,
+        startedNs: Long,
+    ) {
         if (!enabled.get()) return
         runCatching {
             val durMs = (System.nanoTime() - startedNs) / 1_000_000
@@ -72,11 +80,13 @@ object TrafficLogger {
         }
     }
 
-    private fun writeJsonLine(ctx: Context, obj: JSONObject) {
+    private fun writeJsonLine(
+        ctx: Context,
+        obj: JSONObject,
+    ) {
         val dir = File(ctx.filesDir, "http-logs")
         if (!dir.exists()) dir.mkdirs()
         val file = File(dir, "traffic-${SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())}.jsonl")
         file.appendText(obj.toString() + "\n")
     }
 }
-

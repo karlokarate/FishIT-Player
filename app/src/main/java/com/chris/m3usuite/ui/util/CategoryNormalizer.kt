@@ -6,15 +6,16 @@ package com.chris.m3usuite.ui.util
  */
 @Deprecated(
     message = "Use com.chris.m3usuite.core.util.CategoryNormalizer",
-    replaceWith = ReplaceWith("com.chris.m3usuite.core.util.CategoryNormalizer")
+    replaceWith = ReplaceWith("com.chris.m3usuite.core.util.CategoryNormalizer"),
 )
 object CategoryNormalizer {
-
     @JvmStatic
     fun normalizeKey(raw: String?): String =
-        com.chris.m3usuite.core.util.CategoryNormalizer.normalizeKey(raw)
+        com.chris.m3usuite.core.util.CategoryNormalizer
+            .normalizeKey(raw)
 
     @JvmStatic
     fun displayLabel(key: String): String =
-        com.chris.m3usuite.core.util.CategoryNormalizer.displayLabel(key)
+        com.chris.m3usuite.core.util.CategoryNormalizer
+            .displayLabel(key)
 }

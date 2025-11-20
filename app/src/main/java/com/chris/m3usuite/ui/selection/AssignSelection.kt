@@ -17,7 +17,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
@@ -39,7 +38,7 @@ import kotlinx.coroutines.launch
 @Immutable
 class AssignSelectionState internal constructor(
     private val _active: MutableState<Boolean>,
-    private val _selected: MutableList<Long>
+    private val _selected: MutableList<Long>,
 ) {
     val active: Boolean get() = _active.value
     val selectedCount: Int get() = _selected.size
@@ -69,32 +68,32 @@ class AssignSelectionState internal constructor(
     }
 }
 
-private val AssignSelectionSaver: Saver<AssignSelectionState, Any> = listSaver(
-    save = {
-        val ids = it.selectedSnapshot
-        val active = it.active
-        listOf(active) + ids
-    },
-    restore = { list ->
-        val active = (list.firstOrNull() as? Boolean) ?: false
-        val ids = list.drop(1).mapNotNull { v -> (v as? Number)?.toLong() }.toMutableList()
-        AssignSelectionState(mutableStateOf(active), ids)
-    }
-)
+private val AssignSelectionSaver: Saver<AssignSelectionState, Any> =
+    listSaver(
+        save = {
+            val ids = it.selectedSnapshot
+            val active = it.active
+            listOf(active) + ids
+        },
+        restore = { list ->
+            val active = (list.firstOrNull() as? Boolean) ?: false
+            val ids = list.drop(1).mapNotNull { v -> (v as? Number)?.toLong() }.toMutableList()
+            AssignSelectionState(mutableStateOf(active), ids)
+        },
+    )
 
 @Composable
-fun rememberAssignSelectionState(): AssignSelectionState {
-    return rememberSaveable(saver = AssignSelectionSaver) {
+fun rememberAssignSelectionState(): AssignSelectionState =
+    rememberSaveable(saver = AssignSelectionSaver) {
         AssignSelectionState(mutableStateOf(false), mutableStateListOf())
     }
-}
 
 val LocalAssignSelection = staticCompositionLocalOf<AssignSelectionState?> { null }
 
 @Composable
 fun ProvideAssignSelection(
     state: AssignSelectionState,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(LocalAssignSelection provides state, content = content)
 }
@@ -107,17 +106,17 @@ fun ProvideAssignSelection(
 fun AssignModeBar(
     state: AssignSelectionState,
     modifier: Modifier = Modifier,
-    onPickProfileAndApply: suspend (selectedEncodedIds: List<Long>) -> Unit
+    onPickProfileAndApply: suspend (selectedEncodedIds: List<Long>) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = modifier
-            .background(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                shape = RoundedCornerShape(8.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+        modifier =
+            modifier
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    shape = RoundedCornerShape(8.dp),
+                ).padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         Button(onClick = { state.toggleActive() }) {
             Text(text = if (state.active) "Zuweisen beenden" else "Zuweisen")
@@ -132,7 +131,7 @@ fun AssignModeBar(
                     state.clear()
                     state.toggleActive()
                 }
-            }
+            },
         ) {
             Text(text = "Profil wählen • ${state.selectedCount} ausgewählt")
         }
@@ -146,25 +145,29 @@ fun AssignModeBar(
 @Composable
 fun AssignSelectionBadge(
     encodedId: Long,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val sel = LocalAssignSelection.current
     if (sel?.active == true) {
         val selected = sel.selectedSnapshot.contains(encodedId)
         Box(
-            modifier = modifier
-                .alpha(if (selected) 1f else 0.6f)
-                .background(
-                    color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
-                    else Color.Black.copy(alpha = 0.35f),
-                    shape = RoundedCornerShape(6.dp)
-                )
-                .padding(horizontal = 6.dp, vertical = 2.dp)
+            modifier =
+                modifier
+                    .alpha(if (selected) 1f else 0.6f)
+                    .background(
+                        color =
+                            if (selected) {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+                            } else {
+                                Color.Black.copy(alpha = 0.35f)
+                            },
+                        shape = RoundedCornerShape(6.dp),
+                    ).padding(horizontal = 6.dp, vertical = 2.dp),
         ) {
             Text(
                 text = if (selected) "Ausgewählt" else "Wählen",
                 color = Color.White,
-                style = MaterialTheme.typography.labelMedium
+                style = MaterialTheme.typography.labelMedium,
             )
         }
     }
@@ -175,7 +178,10 @@ fun AssignSelectionBadge(
  * Return true if the event was consumed by selection.
  * Use the overload with explicit state for non-Composable contexts (e.g., onClick lambdas).
  */
-fun handleAssignSelectionClick(encodedId: Long, state: AssignSelectionState?): Boolean {
+fun handleAssignSelectionClick(
+    encodedId: Long,
+    state: AssignSelectionState?,
+): Boolean {
     val sel = state ?: return false
     if (!sel.active) return false
     sel.toggle(encodedId)
@@ -189,4 +195,3 @@ fun handleAssignSelectionClick(encodedId: Long): Boolean {
     sel.toggle(encodedId)
     return true
 }
-

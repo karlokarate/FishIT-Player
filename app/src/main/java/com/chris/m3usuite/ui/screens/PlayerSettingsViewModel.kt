@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class PlayerSettingsState(
-    val mode: String = "internal",     // "ask" | "internal" | "external"
+    val mode: String = "internal", // "ask" | "internal" | "external"
     val preferredPkg: String = "",
     val rotationLocked: Boolean = false,
     val autoplayNext: Boolean = false,
@@ -25,15 +25,14 @@ data class PlayerSettingsState(
     val subBgArgb: Int = 0x66000000,
     val subFgOpacityPct: Int = 90,
     val subBgOpacityPct: Int = 40,
-    val isSaving: Boolean = false
+    val isSaving: Boolean = false,
 )
 
 class PlayerSettingsViewModel(
     app: Application,
     private val repo: SettingsRepository,
-    private val save: SavePlayerPrefs
+    private val save: SavePlayerPrefs,
 ) : AndroidViewModel(app) {
-
     private val _state = MutableStateFlow(PlayerSettingsState())
     val state: StateFlow<PlayerSettingsState> = _state
 
@@ -52,7 +51,7 @@ class PlayerSettingsViewModel(
                 repo.subtitleFg,
                 repo.subtitleBg,
                 repo.subtitleFgOpacityPct,
-                repo.subtitleBgOpacityPct
+                repo.subtitleBgOpacityPct,
             ) { values: Array<Any?> ->
                 @Suppress("UNCHECKED_CAST")
                 PlayerSettingsState(
@@ -65,62 +64,68 @@ class PlayerSettingsViewModel(
                     subBgArgb = values[6] as Int,
                     subFgOpacityPct = values[7] as Int,
                     subBgOpacityPct = values[8] as Int,
-                    isSaving = false
+                    isSaving = false,
                 )
             }.collect { _state.value = it }
         }
     }
 
-    fun onChangeMode(mode: String) = viewModelScope.launch {
-        _state.update { it.copy(isSaving = true, mode = mode) }
-        save(_state.value.toPrefs().copy(mode = mode))
-    }
+    fun onChangeMode(mode: String) =
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true, mode = mode) }
+            save(_state.value.toPrefs().copy(mode = mode))
+        }
 
-    fun onChangePreferredPkg(pkg: String) = viewModelScope.launch {
-        _state.update { it.copy(isSaving = true, preferredPkg = pkg) }
-        save(_state.value.toPrefs().copy(preferredPkg = pkg))
-    }
+    fun onChangePreferredPkg(pkg: String) =
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true, preferredPkg = pkg) }
+            save(_state.value.toPrefs().copy(preferredPkg = pkg))
+        }
 
-    fun onToggleRotation(locked: Boolean) = viewModelScope.launch {
-        _state.update { it.copy(isSaving = true, rotationLocked = locked) }
-        save(_state.value.toPrefs().copy(rotationLocked = locked))
-    }
+    fun onToggleRotation(locked: Boolean) =
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true, rotationLocked = locked) }
+            save(_state.value.toPrefs().copy(rotationLocked = locked))
+        }
 
-    fun onToggleAutoplay(next: Boolean) = viewModelScope.launch {
-        _state.update { it.copy(isSaving = true, autoplayNext = next) }
-        save(_state.value.toPrefs().copy(autoplayNext = next))
-    }
+    fun onToggleAutoplay(next: Boolean) =
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true, autoplayNext = next) }
+            save(_state.value.toPrefs().copy(autoplayNext = next))
+        }
 
     fun onChangeSubtitle(
         scale: Float? = null,
         fgArgb: Int? = null,
         bgArgb: Int? = null,
         fgPct: Int? = null,
-        bgPct: Int? = null
+        bgPct: Int? = null,
     ) = viewModelScope.launch {
-        val s = _state.value.copy(
-            subScale = scale ?: _state.value.subScale,
-            subFgArgb = fgArgb ?: _state.value.subFgArgb,
-            subBgArgb = bgArgb ?: _state.value.subBgArgb,
-            subFgOpacityPct = (fgPct ?: _state.value.subFgOpacityPct).coerceIn(0, 100),
-            subBgOpacityPct = (bgPct ?: _state.value.subBgOpacityPct).coerceIn(0, 100),
-            isSaving = true
-        )
+        val s =
+            _state.value.copy(
+                subScale = scale ?: _state.value.subScale,
+                subFgArgb = fgArgb ?: _state.value.subFgArgb,
+                subBgArgb = bgArgb ?: _state.value.subBgArgb,
+                subFgOpacityPct = (fgPct ?: _state.value.subFgOpacityPct).coerceIn(0, 100),
+                subBgOpacityPct = (bgPct ?: _state.value.subBgOpacityPct).coerceIn(0, 100),
+                isSaving = true,
+            )
         _state.value = s
         save(s.toPrefs())
     }
 
-    private fun PlayerSettingsState.toPrefs() = PlayerPrefs(
-        mode = mode,
-        preferredPkg = preferredPkg,
-        rotationLocked = rotationLocked,
-        autoplayNext = autoplayNext,
-        subScale = subScale,
-        subFgArgb = subFgArgb,
-        subBgArgb = subBgArgb,
-        subFgOpacityPct = subFgOpacityPct,
-        subBgOpacityPct = subBgOpacityPct
-    )
+    private fun PlayerSettingsState.toPrefs() =
+        PlayerPrefs(
+            mode = mode,
+            preferredPkg = preferredPkg,
+            rotationLocked = rotationLocked,
+            autoplayNext = autoplayNext,
+            subScale = subScale,
+            subFgArgb = subFgArgb,
+            subBgArgb = subBgArgb,
+            subFgOpacityPct = subFgOpacityPct,
+            subBgOpacityPct = subBgOpacityPct,
+        )
 
     companion object {
         fun factory(app: Application): ViewModelProvider.Factory {

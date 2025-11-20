@@ -8,7 +8,9 @@ import androidx.compose.runtime.compositionLocalOf
 val LocalFocusAreaTag = compositionLocalOf<String?> { null }
 
 @Composable
-fun ProvideFocusArea(tag: String, content: @Composable () -> Unit) {
+fun ProvideFocusArea(
+    tag: String,
+    content: @Composable () -> Unit,
+) {
     CompositionLocalProvider(LocalFocusAreaTag provides tag) { content() }
 }
-

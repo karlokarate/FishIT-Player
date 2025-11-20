@@ -21,42 +21,47 @@ class RarEntryRandomAccessSource(
     private val memoryCacheBytes: Long = 4L * 1024 * 1024,
     private val ringBufferBytes: Long = 150L * 1024 * 1024,
 ) : RandomAccessSource {
-
     companion object {
         private const val TAG = "RarRandomSource"
         private const val CACHE_PREFIX = "rar_entry_"
     }
 
-    private val chunkCache = object : LinkedHashMap<Int, ByteArray>(8, 0.75f, true) {
-        private var currentBytes = 0L
-        override fun put(key: Int, value: ByteArray): ByteArray? {
-            val previous = super.put(key, value)
-            if (previous != null) currentBytes -= previous.size
-            currentBytes += value.size
-            trim()
-            return previous
-        }
+    private val chunkCache =
+        object : LinkedHashMap<Int, ByteArray>(8, 0.75f, true) {
+            private var currentBytes = 0L
 
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, ByteArray>): Boolean {
-            return if (currentBytes > memoryCacheBytes) {
-                currentBytes -= eldest.value.size
-                true
-            } else {
-                false
+            override fun put(
+                key: Int,
+                value: ByteArray,
+            ): ByteArray? {
+                val previous = super.put(key, value)
+                if (previous != null) currentBytes -= previous.size
+                currentBytes += value.size
+                trim()
+                return previous
+            }
+
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, ByteArray>): Boolean =
+                if (currentBytes > memoryCacheBytes) {
+                    currentBytes -= eldest.value.size
+                    true
+                } else {
+                    false
+                }
+
+            private fun trim() {
+                while (currentBytes > memoryCacheBytes && isNotEmpty()) {
+                    val iterator = entries.iterator()
+                    if (iterator.hasNext()) {
+                        val entry = iterator.next()
+                        currentBytes -= entry.value.size
+                        iterator.remove()
+                    } else {
+                        break
+                    }
+                }
             }
         }
-
-        private fun trim() {
-            while (currentBytes > memoryCacheBytes && isNotEmpty()) {
-                val iterator = entries.iterator()
-                if (iterator.hasNext()) {
-                    val entry = iterator.next()
-                    currentBytes -= entry.value.size
-                    iterator.remove()
-                } else break
-            }
-        }
-    }
 
     private var sizeBytes: Long = -1
     private var materialized: File? = null
@@ -135,7 +140,12 @@ class RarEntryRandomAccessSource(
 
     override fun mime(): String = "audio/mpeg"
 
-    override fun read(offset: Long, dst: ByteArray, off: Int, len: Int): Int {
+    override fun read(
+        offset: Long,
+        dst: ByteArray,
+        off: Int,
+        len: Int,
+    ): Int {
         if (len == 0) return 0
         ensureMaterialized()
         val file = materialized ?: return -1
@@ -160,7 +170,10 @@ class RarEntryRandomAccessSource(
         chunkCache.clear()
     }
 
-    private fun loadChunk(file: File, index: Int): ByteArray {
+    private fun loadChunk(
+        file: File,
+        index: Int,
+    ): ByteArray {
         chunkCache[index]?.let { return it }
         val bufSize = min(chunkSize.toLong(), sizeBytes - index * chunkSize.toLong()).toInt()
         val buffer = ByteArray(bufSize)

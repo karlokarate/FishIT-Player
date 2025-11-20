@@ -15,8 +15,9 @@ import java.io.File
 import java.io.IOException
 
 @UnstableApi
-class RarDataSource(private val context: Context) : DataSource {
-
+class RarDataSource(
+    private val context: Context,
+) : DataSource {
     private var source: RarEntryRandomAccessSource? = null
     private var currentUri: Uri? = null
     private var currentDataSpec: DataSpec? = null
@@ -55,7 +56,11 @@ class RarDataSource(private val context: Context) : DataSource {
         return if (bytesRemaining >= 0) bytesRemaining else C.LENGTH_UNSET.toLong()
     }
 
-    override fun read(buffer: ByteArray, offset: Int, readLength: Int): Int {
+    override fun read(
+        buffer: ByteArray,
+        offset: Int,
+        readLength: Int,
+    ): Int {
         if (readLength == 0) return 0
         val src = source ?: return C.RESULT_END_OF_INPUT
         val read = src.read(position, buffer, offset, readLength)
@@ -85,9 +90,10 @@ class RarDataSource(private val context: Context) : DataSource {
         currentDataSpec = null
     }
 
-    private fun findMessage(messageId: Long): ObxTelegramMessage? = runBlocking {
-        val store = ObxStore.get(context)
-        val box = store.boxFor(ObxTelegramMessage::class.java)
-        box.query(ObxTelegramMessage_.messageId.equal(messageId)).build().findFirst()
-    }
+    private fun findMessage(messageId: Long): ObxTelegramMessage? =
+        runBlocking {
+            val store = ObxStore.get(context)
+            val box = store.boxFor(ObxTelegramMessage::class.java)
+            box.query(ObxTelegramMessage_.messageId.equal(messageId)).build().findFirst()
+        }
 }

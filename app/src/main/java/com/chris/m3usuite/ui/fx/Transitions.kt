@@ -19,19 +19,23 @@ import androidx.compose.ui.Modifier
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun FadeThrough(
-  key: Any,
-  modifier: Modifier = Modifier,
-  content: @Composable () -> Unit
+    key: Any,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
 ) {
-  AnimatedContent(
-    targetState = key,
-    transitionSpec = {
-      (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
-       scaleIn(initialScale = 0.92f, animationSpec = tween(220, delayMillis = 90))) togetherWith
-      (fadeOut(animationSpec = tween(90)) +
-       scaleOut(targetScale = 1.02f, animationSpec = tween(90)))
-    },
-    modifier = modifier,
-    label = "fadeThrough"
-  ) { _ -> content() }
+    AnimatedContent(
+        targetState = key,
+        transitionSpec = {
+            (
+                fadeIn(animationSpec = tween(220, delayMillis = 90)) +
+                    scaleIn(initialScale = 0.92f, animationSpec = tween(220, delayMillis = 90))
+            ) togetherWith
+                (
+                    fadeOut(animationSpec = tween(90)) +
+                        scaleOut(targetScale = 1.02f, animationSpec = tween(90))
+                )
+        },
+        modifier = modifier,
+        label = "fadeThrough",
+    ) { _ -> content() }
 }

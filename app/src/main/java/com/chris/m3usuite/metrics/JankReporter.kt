@@ -7,12 +7,21 @@ import androidx.annotation.RequiresApi
 import java.util.concurrent.ConcurrentHashMap
 
 object JankReporter {
-    private data class Counter(var frames: Long = 0, var janks: Long = 0, var lastLogMs: Long = 0)
+    private data class Counter(
+        var frames: Long = 0,
+        var janks: Long = 0,
+        var lastLogMs: Long = 0,
+    )
+
     private val counters = ConcurrentHashMap<String, Counter>()
     private const val WINDOW_MS = 5_000L
 
     @RequiresApi(Build.VERSION_CODES.N)
-    fun record(route: String, isJank: Boolean, durationNs: Long) {
+    fun record(
+        route: String,
+        isJank: Boolean,
+        durationNs: Long,
+    ) {
         val key = route.ifBlank { "unknown" }
         val now = SystemClock.uptimeMillis()
         val c = counters.computeIfAbsent(key) { Counter(lastLogMs = now) }

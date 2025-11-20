@@ -1,15 +1,14 @@
 package com.chris.m3usuite.playback
 
-import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.player.PlayerChooser
-import com.chris.m3usuite.data.repo.ResumeRepository
 import com.chris.m3usuite.core.playback.PlayUrlHelper
-import kotlinx.coroutines.Dispatchers
 import com.chris.m3usuite.core.telemetry.Telemetry
+import com.chris.m3usuite.data.repo.ResumeRepository
+import com.chris.m3usuite.player.PlayerChooser
+import com.chris.m3usuite.prefs.SettingsStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 interface PlaybackLauncher {
@@ -19,7 +18,7 @@ interface PlaybackLauncher {
 @Composable
 fun rememberPlaybackLauncher(
     onOpenInternal: (PlayRequest) -> Unit = {},
-    onResult: ((PlayRequest, PlayerResult) -> Unit)? = null
+    onResult: ((PlayRequest, PlayerResult) -> Unit)? = null,
 ): PlaybackLauncher {
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
@@ -39,17 +38,22 @@ fun rememberPlaybackLauncher(
                             "episode" to (req.episodeNum ?: -1),
                             "episodeId" to (req.episodeId ?: -1),
                             "mime" to (req.mimeType ?: ""),
-                            "urlHasCreds" to req.url.contains("username=")
-                        )
+                            "urlHasCreds" to req.url.contains("username="),
+                        ),
                     )
-                    val startMs = req.startPositionMs ?: withContext(Dispatchers.IO) {
-                        when (req.type) {
-                            "vod" -> resumeRepo.recentVod(60)
-                                .firstOrNull { it.mediaId == req.mediaId }
-                                ?.positionSecs?.toLong()?.times(1000)
-                            else -> null
+                    val startMs =
+                        req.startPositionMs ?: withContext(Dispatchers.IO) {
+                            when (req.type) {
+                                "vod" ->
+                                    resumeRepo
+                                        .recentVod(60)
+                                        .firstOrNull { it.mediaId == req.mediaId }
+                                        ?.positionSecs
+                                        ?.toLong()
+                                        ?.times(1000)
+                                else -> null
+                            }
                         }
-                    }
                     val mime = req.mimeType ?: PlayUrlHelper.guessMimeType(req.url, null)
                     PlayerChooser.start(
                         context = ctx,
@@ -57,10 +61,10 @@ fun rememberPlaybackLauncher(
                         url = req.url,
                         headers = req.headers,
                         startPositionMs = startMs,
-                        mimeType = mime
+                        mimeType = mime,
                     ) { s, resolvedMime ->
                         onOpenInternal(
-                            req.copy(startPositionMs = s, mimeType = resolvedMime ?: mime)
+                            req.copy(startPositionMs = s, mimeType = resolvedMime ?: mime),
                         )
                     }
                     Telemetry.event(
@@ -71,8 +75,8 @@ fun rememberPlaybackLauncher(
                             "seriesId" to (req.seriesId ?: -1),
                             "season" to (req.season ?: -1),
                             "episode" to (req.episodeNum ?: -1),
-                            "episodeId" to (req.episodeId ?: -1)
-                        )
+                            "episodeId" to (req.episodeId ?: -1),
+                        ),
                     )
                     val result = PlayerResult.Stopped(positionMs = startMs ?: 0L)
                     Telemetry.event(
@@ -86,8 +90,8 @@ fun rememberPlaybackLauncher(
                             "episode" to (req.episodeNum ?: -1),
                             "episodeId" to (req.episodeId ?: -1),
                             "positionMs" to (startMs ?: 0L),
-                            "mime" to (mime ?: "")
-                        )
+                            "mime" to (mime ?: ""),
+                        ),
                     )
                     onResult?.invoke(req, result)
                     return result
@@ -103,8 +107,8 @@ fun rememberPlaybackLauncher(
                             "season" to (req.season ?: -1),
                             "episode" to (req.episodeNum ?: -1),
                             "episodeId" to (req.episodeId ?: -1),
-                            "message" to (t.message ?: "")
-                        )
+                            "message" to (t.message ?: ""),
+                        ),
                     )
                     return PlayerResult.Error(t.message ?: "Playback failed", t)
                 }

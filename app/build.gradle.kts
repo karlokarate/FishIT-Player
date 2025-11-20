@@ -186,15 +186,16 @@ android {
     }
 
     packaging {
-        resources.excludes += setOf(
-            "META-INF/AL2.0",
-            "META-INF/LGPL2.1",
-            "META-INF/DEPENDENCIES",
-            "META-INF/LICENSE*",
-            "META-INF/NOTICE*",
-            "META-INF/*.kotlin_module",
-            "META-INF/INDEX.LIST",
-        )
+        resources.excludes +=
+            setOf(
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1",
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/*.kotlin_module",
+                "META-INF/INDEX.LIST",
+            )
         resources.excludes += setOf("**/com/chris/m3usuite/reference/**")
         jniLibs {
             useLegacyPackaging = false
