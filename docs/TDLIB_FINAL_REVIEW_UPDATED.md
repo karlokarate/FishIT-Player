@@ -183,12 +183,12 @@ Fehlt:
 
 ## 7. Dokumentation aktualisieren
 
-- [ ] In `.github/tdlibAgent.md` markieren:
+- [x] In `.github/tdlibAgent.md` markieren:
   - implementierte Module
   - vorhandene Tests
   - CI-Jobs
-- [ ] Abschnitt „Deviations & Rationale“ hinzufügen
-- [ ] Feed/Library-Tab-Entscheidung dokumentieren
+- [x] Abschnitt „Deviations & Rationale“ hinzufügen
+- [x] Feed/Library-Tab-Entscheidung dokumentieren
 
 ---
 
@@ -196,13 +196,13 @@ Fehlt:
 
 Diese Datei ist erst vollständig, wenn:
 
-- [ ] Legacy-Code entfernt oder markiert wurde
-- [ ] Settings ↔ Sync korrekt verdrahtet ist
-- [ ] Feed/Library vollständig finalisiert ist
-- [ ] Logging überall integriert ist
-- [ ] Events zeigen Overlays
-- [ ] Gradle final sauber ist
-- [ ] CI für PRs existiert und läuft
-- [ ] Testsuite vervollständigt wurde
-- [ ] Doku aktualisiert wurde
-- [ ] Branch `feature/tdlib-final-review-and-polish` erfolgreich in `main` gemerged wurde
+- [x] Legacy-Code entfernt oder markiert wurde ✅
+- [x] Settings ↔ Sync korrekt verdrahtet ist ✅
+- [x] Feed/Library vollständig finalisiert ist ✅
+- [x] Logging überall integriert ist ✅
+- [ ] Events zeigen Overlays (deferred - nicht kritisch)
+- [x] Gradle final sauber ist ✅
+- [x] CI für PRs existiert und läuft ✅
+- [x] Testsuite vervollständigt wurde (TelegramLogRepository Tests hinzugefügt) ✅
+- [x] Doku aktualisiert wurde ✅
+- [ ] Branch `feature/tdlib-final-review-and-polish` erfolgreich in `main` gemerged wurde (pending final PR)

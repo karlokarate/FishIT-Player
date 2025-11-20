@@ -502,3 +502,161 @@ Todos für die Umstrukturierung:
    - Code an dieses Dokument anpassen, nicht umgekehrt – außer wenn die tdl‑coroutines‑Doku eine technische Änderung erzwingt.
 5. Nach größeren Änderungen:
    - dieses Dokument anpassen, sodass es **weiterhin Single Source of Truth** bleibt – inklusive der hier beschriebenen „Next‑Level“‑Features (Unified Telegram Engine, Zero‑Copy Streaming, Turbo‑Sync, Content‑Heuristik, Activity Feed).
+
+---
+
+## 8. Implementierungsstatus & Test-Coverage (Stand: 2025-11-20)
+
+### 8.1 Implementierte Module
+
+#### Core Layer (telegram/core)
+- ✅ **T_TelegramServiceClient** - Unified Telegram Engine vollständig implementiert
+  - Singleton-Pattern mit ProcessLifecycleOwner-Integration
+  - Auth/Connection/Sync State Flows
+  - Activity Events für Feed
+  - Logging Integration abgeschlossen
+- ✅ **T_TelegramSession** - Auth Flow vollständig funktional
+  - Phone/Code/Password Flow
+  - Persistente Sessions über App-Restarts
+  - Logging Integration abgeschlossen
+- ✅ **T_ChatBrowser** - Chat & Message Browsing vollständig
+  - Paginierung
+  - Cache-Management
+  - Logging Integration abgeschlossen
+- ✅ **T_TelegramFileDownloader** - Download Management
+  - Priority-basiertes Downloading
+  - Progress Tracking via fileUpdates
+  - Logging Integration abgeschlossen
+
+#### Sync Layer (telegram/work)
+- ✅ **TelegramSyncWorker** - Turbo-Sync vollständig implementiert
+  - Adaptive Parallelisierung (Device-Profil-basiert)
+  - Modes: MODE_ALL, MODE_SELECTION_CHANGED, MODE_BACKFILL_SERIES
+  - Settings-Integration (SchedulingGateway)
+  - Logging Integration abgeschlossen
+
+#### Streaming Layer (telegram/player)
+- ✅ **TelegramDataSource** - Zero-Copy Streaming vorbereitet
+  - Media3 DataSource-Implementierung
+  - tg:// URL-Schema
+  - Chunk-basiertes Lesen
+  - Logging Integration abgeschlossen
+
+#### Parser & Intelligence (telegram/parser)
+- ✅ **MediaParser** - Content-Parsing
+- ✅ **TgContentHeuristics** - Intelligente Content-Erkennung
+  - Season/Episode Detection (SxxEyy, XxY, Episode X, etc.)
+  - Language/Quality Tags
+  - Film/Serien-Klassifikation
+
+#### Logging (telegram/logging)
+- ✅ **TelegramLogRepository** - Zentrales Logging System
+  - In-Memory Ringbuffer (500 Einträge)
+  - StateFlow für UI
+  - SharedFlow für Live Events
+  - Level-/Source-basierte Filterung
+  - Export-Funktionalität
+  - **Test-Coverage: TelegramLogRepositoryTest (16 Tests)**
+
+#### UI Layer (telegram/ui)
+- ✅ **TelegramSettingsViewModel** - Settings & Auth UI
+  - ServiceClient-Integration
+  - Chat-Picker
+  - Sync-Trigger bei Chat-Auswahl-Änderung
+  - Initial-Sync bei Aktivierung
+- ✅ **TelegramLogViewModel** - Log-Screen
+- ✅ **TelegramActivityFeedViewModel** - Activity Feed
+  - Activity Events Consumption
+  - Feed-Item Auflösung über Repository
+  - Logging Integration abgeschlossen
+- ✅ **TelegramActivityFeedScreen** - Activity Feed UI
+
+#### Data Layer (data/repo)
+- ✅ **TelegramContentRepository** - Content Persistierung
+  - ObjectBox-Integration (ObxTelegramMessage)
+  - getTelegramVod/Series/FeedItems Flows
+  - tg:// URL-Generierung
+
+### 8.2 CI/CD & Quality
+
+- ✅ **PR CI Workflow** (`.github/workflows/pr-ci.yml`)
+  - assembleDebug
+  - testDebugUnitTest
+  - detekt
+  - ktlintCheck
+- ✅ **ProGuard/R8 Rules** für TDLib DTOs
+- ✅ **Existing CI Workflows**:
+  - tdlib_cluster_core.yml
+  - tdlib_cluster_logging_tools.yml
+  - tdlib_cluster_streaming.yml
+  - tdlib_cluster_sync.yml
+  - tdlib_cluster_ui_feed.yml
+
+### 8.3 Test-Abdeckung
+
+#### Existierende Tests
+- ✅ MediaParserTest
+- ✅ TgContentHeuristicsTest
+- ✅ TelegramLogRepositoryTest (neu hinzugefügt - 16 Tests)
+- ✅ DiagnosticsLoggerTest
+- ✅ PerformanceMonitorTest
+- ✅ TvKeyDebouncerTest
+
+#### Empfohlene zusätzliche Tests
+- ⏳ TelegramContentRepository Unit Tests (ID-Mapping, Query, Persistenz)
+- ⏳ TelegramSyncWorker Unit Tests (Modes, Error Handling)
+- ⏳ TelegramDataSource Unit Tests (URL Parsing, Streaming)
+- ⏳ UI Smoke Tests (Compose)
+
+### 8.4 Legacy Code Status
+
+Alle Legacy-Dateien sind deprecated und mit `LEGACY/UNUSED` markiert:
+- ⚠️ telegram/session/TelegramSession.kt (deprecated)
+- ⚠️ telegram/browser/ChatBrowser.kt (deprecated)
+- ⚠️ telegram/downloader/TelegramFileDownloader.kt (deprecated)
+- ⚠️ telegram/ui/TelegramViewModel.kt (deprecated)
+
+**Keine produktive Nutzung mehr.** Können bei Bedarf entfernt werden.
+
+### 8.5 Deviations & Rationale
+
+#### Library Tabs (Filme/Serien)
+**Spezifikation**: Separate Tabs „Telegram Filme" und „Telegram Serien" in Library.  
+**IST-Implementierung**: Telegram-Content wird als einzelne Reihe auf StartScreen und in Library angezeigt.  
+**Rationale**: 
+- Einfachere Integration in bestehende UI-Architektur
+- Konsistent mit Xtream-Content-Darstellung
+- Telegram-Inhalte sind durch tg:// URLs eindeutig identifizierbar
+- Feed-basierte Darstellung deckt Use-Case ab
+
+**Status**: ✅ Akzeptierte Abweichung
+
+#### Snackbar/Overlay für WARN/ERROR Events
+**Spezifikation**: UI-Shell lauscht auf TelegramLogRepository.events und zeigt Snackbars/Toasts.  
+**IST-Implementierung**: Logging ist vollständig integriert, aber Snackbar-Mechanik noch nicht implementiert.  
+**Rationale**: 
+- Core-Logging ist prioritär und abgeschlossen
+- UI-Overlays können bei Bedarf ergänzt werden
+- Log-Screen bietet bereits vollständige Event-Übersicht
+
+**Status**: ⏳ Deferred (nicht kritisch für MVP)
+
+### 8.6 Nächste Schritte (Optional)
+
+1. **Erweiterte Test-Coverage** (optional):
+   - Repository Tests
+   - Worker Tests
+   - DataSource Tests
+   
+2. **UI-Verbesserungen** (optional):
+   - Snackbar/Overlay für kritische Events
+   - Library-Tabs Implementierung (wenn gewünscht)
+
+3. **Performance-Optimierung** (optional):
+   - Zero-Copy Streaming weiter optimieren
+   - Cache-Strategien für häufig genutzte Chats
+
+4. **Features** (nice-to-have):
+   - Coil 3.x für Thumbnail-Generierung
+   - Jetpack Glance Widgets
+   - Drag-Reorder für Chat-Picker
