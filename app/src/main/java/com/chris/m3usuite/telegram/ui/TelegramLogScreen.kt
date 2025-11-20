@@ -391,7 +391,7 @@ private fun FilterDialog(
                         onClick = { onLevelSelected(null) },
                         label = { Text("All") },
                     )
-                    TgLogEntry.LogLevel.values().forEach { level ->
+                    TgLogEntry.LogLevel.entries.forEach { level ->
                         FilterChip(
                             selected = currentLevel == level,
                             onClick = { onLevelSelected(level) },
