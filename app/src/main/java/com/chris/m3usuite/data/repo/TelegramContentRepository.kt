@@ -242,7 +242,20 @@ class TelegramContentRepository(
                     }.find()
 
             messages.map { obxMsg ->
-                toMediaItem(obxMsg, contentType)
+                MediaItem(
+                    id = encodeTelegramId(obxMsg.messageId),
+                    name = obxMsg.caption ?: "Untitled",
+                    type = "vod", // Default to VOD, can be refined based on metadata
+                    url = "tg://file/${obxMsg.fileId}?chatId=${obxMsg.chatId}&messageId=${obxMsg.messageId}",
+                    poster = obxMsg.thumbLocalPath,
+                    plot = null,
+                    rating = null,
+                    year = null,
+                    durationSecs = obxMsg.durationSecs,
+                    categoryName = "Telegram",
+                    source = "telegram",
+                    providerKey = "Telegram",
+                )
             }
         }
 
@@ -328,7 +341,16 @@ class TelegramContentRepository(
 
                 emit(
                     messages.map { obxMsg ->
-                        toMediaItem(obxMsg).copy(
+                        MediaItem(
+                            id = encodeTelegramId(obxMsg.messageId),
+                            name = obxMsg.caption ?: "Untitled",
+                            type = "vod",
+                            url = "tg://file/${obxMsg.fileId}?chatId=${obxMsg.chatId}&messageId=${obxMsg.messageId}",
+                            poster = obxMsg.thumbLocalPath,
+                            plot = null,
+                            rating = null,
+                            year = null,
+                            durationSecs = obxMsg.durationSecs,
                             categoryName = "Telegram - Chat $chatId",
                         )
                     },
@@ -350,7 +372,20 @@ class TelegramContentRepository(
 
                 emit(
                     messages.map { obxMsg ->
-                        toMediaItem(obxMsg)
+                        MediaItem(
+                            id = encodeTelegramId(obxMsg.messageId),
+                            name = obxMsg.caption ?: "Untitled",
+                            type = "vod",
+                            url = "tg://file/${obxMsg.fileId}?chatId=${obxMsg.chatId}&messageId=${obxMsg.messageId}",
+                            poster = obxMsg.thumbLocalPath,
+                            plot = null,
+                            rating = null,
+                            year = null,
+                            durationSecs = obxMsg.durationSecs,
+                            categoryName = "Telegram",
+                            source = "telegram",
+                            providerKey = "Telegram",
+                        )
                     },
                 )
             }.flowOn(Dispatchers.IO)
