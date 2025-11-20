@@ -80,6 +80,67 @@ fun TelegramActivityFeedScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Error state
+        feedState.errorMessage?.let { error ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                ),
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "⚠️ Fehler",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                        Text(
+                            text = error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                        TextButton(
+                            onClick = { viewModel.refreshFeed() },
+                            modifier = Modifier.focusScaleOnTv(),
+                        ) {
+                            Text("Erneut versuchen")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Loading state
+        if (feedState.isLoading) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CircularProgressIndicator()
+                        Text(
+                            text = "Lade Aktivitäten...",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+            }
+        }
+
         // Content
         val listState = rememberLazyListState()
 

@@ -42,6 +42,8 @@ import com.chris.m3usuite.ui.screens.SeriesDetailScreen
 import com.chris.m3usuite.ui.screens.SettingsScreen
 import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.screens.XtreamPortalCheckScreen
+import com.chris.m3usuite.telegram.ui.TelegramLogScreen
+import com.chris.m3usuite.telegram.ui.feed.TelegramActivityFeedScreen
 import com.chris.m3usuite.ui.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -467,6 +469,8 @@ class MainActivity : ComponentActivity() {
                                     nav.navigateTopLevel("library?qs=show")
                                 },
                                 onOpenPortalCheck = { nav.navigate("xt_cfcheck") },
+                                onOpenTelegramLog = { nav.navigate("telegram_log") },
+                                onOpenTelegramFeed = { nav.navigate("telegram_feed") },
                             )
                         }
 
@@ -515,6 +519,29 @@ class MainActivity : ComponentActivity() {
                         // Xtream Cloudflare portal check (WebView)
                         composable("xt_cfcheck") {
                             XtreamPortalCheckScreen(onDone = { nav.popBackStack() })
+                        }
+
+                        // Telegram Log Screen
+                        composable("telegram_log") {
+                            TelegramLogScreen(
+                                onBack = { nav.popBackStack() },
+                            )
+                        }
+
+                        // Telegram Activity Feed Screen
+                        composable("telegram_feed") {
+                            TelegramActivityFeedScreen(
+                                onItemClick = { mediaItem ->
+                                    // Navigate to appropriate detail screen based on media type
+                                    when (mediaItem.type) {
+                                        "series" -> nav.navigate("series/${mediaItem.id}")
+                                        "vod" -> nav.navigate("vod/${mediaItem.id}")
+                                        "live" -> nav.navigate("live/${mediaItem.id}")
+                                        else -> nav.navigate("vod/${mediaItem.id}")
+                                    }
+                                },
+                                onBack = { nav.popBackStack() },
+                            )
                         }
                     }
                 }
