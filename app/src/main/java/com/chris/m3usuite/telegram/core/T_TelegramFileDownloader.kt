@@ -130,8 +130,9 @@ class T_TelegramFileDownloader(
                 }
             }
 
-            // Read from local file
-            val localPath = fileInfo.local?.path
+            // After potential download, get the latest file info
+            val updatedFileInfo = getFileInfo(fileId)
+            val localPath = updatedFileInfo.local?.path
             if (localPath.isNullOrBlank()) {
                 throw Exception("File not downloaded yet: $fileId")
             }
