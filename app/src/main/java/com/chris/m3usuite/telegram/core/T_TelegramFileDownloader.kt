@@ -303,12 +303,11 @@ class T_TelegramFileDownloader(
         length: Int,
     ): Int =
         withContext(Dispatchers.IO) {
+            // Get file info once
             val fileInfo = getFileInfo(fileId)
             val fileIdInt = fileInfo.id
+            val localPath = fileInfo.local?.path
 
-            // Get local path from TDLib
-            val updatedFileInfo = getFileInfo(fileId)
-            val localPath = updatedFileInfo.local?.path
             if (localPath.isNullOrBlank()) {
                 throw Exception("File not downloaded yet: $fileId")
             }
@@ -319,6 +318,8 @@ class T_TelegramFileDownloader(
             }
 
             // Get or create cached file handle for Zero-Copy reads
+            // Note: Cache is keyed by fileId. If TDLib changes the file path,
+            // the cached handle will become stale and trigger the retry logic below.
             val raf =
                 fileHandleCache.computeIfAbsent(fileIdInt) {
                     RandomAccessFile(file, "r")
@@ -335,10 +336,10 @@ class T_TelegramFileDownloader(
                 // Zero-Copy: write directly into buffer
                 return@withContext raf.read(buffer, offset, bytesToRead)
             } catch (e: Exception) {
-                // If handle is stale, remove from cache and retry once
+                // If handle is stale (e.g., file moved/updated), remove from cache and retry
                 fileHandleCache.remove(fileIdInt)?.close()
                 
-                // Retry with fresh handle
+                // Retry with fresh handle pointing to current file location
                 RandomAccessFile(file, "r").use { freshRaf ->
                     if (position >= freshRaf.length()) {
                         return@withContext -1 // EOF
