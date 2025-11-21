@@ -43,6 +43,26 @@ data class MediaInfo(
     val seasonNumber: Int? = null,
     val episodeNumber: Int? = null,
     val extraInfo: String? = null,
+    // File IDs for TDLib access
+    val fileId: Int? = null,
+    val fileUniqueId: String? = null,
+    // Poster from structured pattern (MessagePhoto)
+    val posterFileId: Int? = null,
+    val posterPhotoSizes: List<Any>? = null, // TDLib PhotoSize objects
+    // Series-specific metadata
+    val seriesName: String? = null,
+    val episodeTitle: String? = null,
+    // Flag to mark messages as consumed in structured patterns
+    val isConsumed: Boolean = false,
+)
+
+/**
+ * Chat context configuration for parsing behavior.
+ */
+data class ChatContext(
+    val chatId: Long,
+    val chatTitle: String?,
+    val isStructuredMovieChat: Boolean = false,
 )
 
 /**
