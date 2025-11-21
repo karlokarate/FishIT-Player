@@ -276,7 +276,7 @@ class T_TelegramFileDownloaderTest {
     fun `StreamingConfig has ringbuffer constants`() {
         // Verify StreamingConfig includes ringbuffer configuration
         // Tests run from app directory
-        val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/StreamingConfig.kt")
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/StreamingConfig.kt")
         assert(sourceFile.exists()) {
             "StreamingConfig.kt should exist as a separate file"
         }
