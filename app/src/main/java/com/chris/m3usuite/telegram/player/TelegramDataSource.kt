@@ -201,7 +201,7 @@ class TelegramDataSource(
                 mapOf(
                     "fileId" to fileIdInt.toString(),
                     "position" to position.toString(),
-                    "readLength" to "initial".toString(),
+                    "readLength" to "initial",
                     "windowStart" to windowStart.toString(),
                     "windowSize" to windowSize.toString(),
                 ),
