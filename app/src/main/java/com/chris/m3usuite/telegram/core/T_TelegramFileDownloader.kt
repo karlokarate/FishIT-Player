@@ -13,63 +13,6 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.min
 
 /**
- * Windowing configuration for Zero-Copy Streaming.
- *
- * **Windowed Zero-Copy Streaming** means:
- * - TDLib continues to cache media files on disk (unavoidable)
- * - Only a window of the file around the current playback position is downloaded
- * - When seeking, old windows are discarded and new windows are opened at the target position
- * - `readFileChunk()` writes directly from the TDLib cache into the player buffer (zero-copy at the app layer)
- *
- * **Window size rationale:**
- * - For large files (e.g., 4GB for a 90min movie), the window must be large enough
- * - 16MB window allows about 1-2 minutes of buffer at ~8 Mbit/s bitrate
- * - 4MB prefetch margin triggers timely reloading before the end of the window
- * - These values prevent stuttering and excessive reloading
- *
- * **Applies only to:**
- * - MediaKind.MOVIE
- * - MediaKind.EPISODE
- * - MediaKind.CLIP
- * - MediaKind.AUDIO (if available)
- *
- * **NOT for RAR_ARCHIVE** - these use full download.
- */
-object StreamingConfig {
-    /**
-     * Window size for streaming (16 MB).
-     * Sufficient for smooth playback of typical HD videos.
-     */
-    const val TELEGRAM_STREAM_WINDOW_BYTES = 16 * 1024 * 1024L
-
-    /**
-     * Prefetch margin (4 MB).
-     * When the read position falls below this distance to the end of the window,
-     * the next window is prepared.
-     */
-    const val TELEGRAM_STREAM_PREFETCH_MARGIN = 4 * 1024 * 1024L
-
-    /**
-     * Timeout for window transition operations (30 seconds).
-     * Prevents indefinite blocking during window setup failures.
-     */
-    const val WINDOW_TRANSITION_TIMEOUT_MS = 30_000L
-
-    /**
-     * Timeout for read operations (10 seconds).
-     * Prevents indefinite blocking during file read operations.
-     */
-    const val READ_OPERATION_TIMEOUT_MS = 10_000L
-
-    /**
-     * Maximum read attempts including initial attempt (3 attempts total).
-     * With 3 attempts, there are 2 retries after the initial attempt.
-     * Handles race conditions where file handles may be closed by another thread.
-     */
-    const val MAX_READ_ATTEMPTS = 3
-}
-
-/**
  * Download progress information for a file.
  */
 data class DownloadProgress(
@@ -153,6 +96,17 @@ class T_TelegramFileDownloader(
 
     // File handle cache for Zero-Copy reads - thread-safe
     private val fileHandleCache = ConcurrentHashMap<Int, RandomAccessFile>()
+
+    // In-Memory Ringbuffer pro File für Windowed Streaming
+    private val streamingBuffers = ConcurrentHashMap<Int, ChunkRingBuffer>()
+
+    private fun getRingBuffer(fileId: Int): ChunkRingBuffer =
+        streamingBuffers.computeIfAbsent(fileId) {
+            ChunkRingBuffer(
+                chunkSize = StreamingConfig.RINGBUFFER_CHUNK_SIZE_BYTES,
+                maxChunks = StreamingConfig.RINGBUFFER_MAX_CHUNKS,
+            )
+        }
 
     /**
      * Ensure a download window is active for the specified file and position.
@@ -247,6 +201,9 @@ class T_TelegramFileDownloader(
                     isComplete = false,
                 )
             windowStates[fileIdInt] = newWindowState
+
+            // Neues Fenster => alten In-Memory-Buffer verwerfen
+            getRingBuffer(fileIdInt).clear()
 
             // Start windowed download
             activeDownloads.add(fileIdInt)
@@ -370,6 +327,17 @@ class T_TelegramFileDownloader(
                 throw Exception("Downloaded file not found: $localPath")
             }
 
+            val ringBuffer = getRingBuffer(fileIdInt)
+
+            // Falls der Ringbuffer den gesamten Bereich schon im RAM hat, direkt von dort lesen
+            if (ringBuffer.containsRange(position, length)) {
+                val fromCache = ringBuffer.read(position, buffer, offset, length)
+                if (fromCache > 0) {
+                    return@withContext fromCache
+                }
+                // Wenn aus irgendeinem Grund 0 zurückkommt, normal weiter unten über File lesen
+            }
+
             // Retry logic to handle race condition where file handle is closed by another thread
             var retryCount = 0
             val maxRetries = StreamingConfig.MAX_READ_ATTEMPTS
@@ -392,7 +360,14 @@ class T_TelegramFileDownloader(
                     val bytesToRead = min(length, (raf.length() - position).toInt())
 
                     // Zero-Copy: write directly into buffer
-                    return@withContext raf.read(buffer, offset, bytesToRead)
+                    val bytesRead = raf.read(buffer, offset, bytesToRead)
+
+                    if (bytesRead > 0) {
+                        // Gelesene Daten zusätzlich im Ringbuffer cachen
+                        ringBuffer.write(position, buffer, offset, bytesRead)
+                    }
+
+                    return@withContext bytesRead
                 } catch (e: java.io.IOException) {
                     // Handle closed stream or stale handle - remove from cache and retry
                     fileHandleCache.remove(fileIdInt)?.runCatching { close() }
@@ -509,6 +484,7 @@ class T_TelegramFileDownloader(
                 // Clean up window state and file handle
                 windowStates.remove(fileIdInt)
                 fileHandleCache.remove(fileIdInt)?.runCatching { close() }
+                streamingBuffers.remove(fileIdInt)?.clear()
 
                 TelegramLogRepository.debug(
                     source = "T_TelegramFileDownloader",
@@ -537,6 +513,7 @@ class T_TelegramFileDownloader(
                 // Clean up window state and file handle
                 windowStates.remove(fileId)
                 fileHandleCache.remove(fileId)?.runCatching { close() }
+                streamingBuffers.remove(fileId)?.clear()
 
                 TelegramLogRepository.debug(
                     source = "T_TelegramFileDownloader",
@@ -556,6 +533,7 @@ class T_TelegramFileDownloader(
     suspend fun cleanupFileHandle(fileId: Int) =
         withContext(Dispatchers.IO) {
             fileHandleCache.remove(fileId)?.runCatching { close() }
+            streamingBuffers.remove(fileId)?.clear()
             TelegramLogRepository.debug(
                 source = "T_TelegramFileDownloader",
                 message = "Cleaned up file handle",
