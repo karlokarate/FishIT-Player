@@ -236,7 +236,7 @@ class T_TelegramFileDownloader(
                     fileInfoCache[fileIdInt.toString()] = file
 
                     // Update window state with initial progress
-                    val downloadedInWindow = (file.local?.downloadedSize?.toLong() ?: 0L) - windowStart
+                    val downloadedInWindow = file.local?.downloadedSize?.toLong() ?: 0L
                     newWindowState.localSize = downloadedInWindow.coerceAtLeast(0)
                     newWindowState.isComplete = file.local?.isDownloadingCompleted ?: false
 
