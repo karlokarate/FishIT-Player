@@ -226,7 +226,8 @@ class T_TelegramFileDownloaderTest {
             val content = sourceFile.readText()
             // Check both cancelDownload overloads
             val cancelSections = content.split("suspend fun cancelDownload")
-            assert(cancelSections.size >= 3) { // Original + 2 overloads
+            assert(cancelSections.size >= 3) {
+                // Original + 2 overloads
                 "Should have at least 2 cancelDownload method implementations"
             }
 

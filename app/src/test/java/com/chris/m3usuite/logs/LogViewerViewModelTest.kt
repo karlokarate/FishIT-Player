@@ -15,7 +15,6 @@ import org.junit.Test
  * The actual extractSource method is internal and tested indirectly through integration tests.
  */
 class LogViewerViewModelTest {
-
     /**
      * Test helper that mirrors the production extractSource logic.
      */
@@ -28,45 +27,45 @@ class LogViewerViewModelTest {
                 return sourceMatch.groupValues[1]
             }
         }
-        
+
         // Bracketed format [Source]
         val bracketRegex = Regex("""\[([^\]]+)\]""")
         val bracketMatch = bracketRegex.find(line)
         if (bracketMatch != null) {
             return bracketMatch.groupValues[1]
         }
-        
+
         // Space-separated format (third token)
         val parts = line.split(" ", limit = 4)
         if (parts.size >= 3) {
             val candidate = parts[2]
             val logLevels = setOf("INFO", "DEBUG", "ERROR", "WARN", "TRACE", "FATAL")
-            
+
             // Reject if candidate is a known log level
             if (candidate in logLevels) {
                 return null
             }
-            
+
             // Validate timestamp format
             if (!parts[0].contains('T') && !parts[0].contains(':')) {
                 return null
             }
-            
+
             // Validate log level
             if (parts[1].uppercase() !in logLevels) {
                 return null
             }
-            
+
             // Return if it looks like a source
-            if (candidate.isNotEmpty() && 
-                (candidate[0].isUpperCase() || candidate.startsWith("T_"))) {
+            if (candidate.isNotEmpty() &&
+                (candidate[0].isUpperCase() || candidate.startsWith("T_"))
+            ) {
                 return candidate
             }
         }
-        
+
         return null
     }
-
 
     @Test
     fun `extractSource handles space-separated format correctly`() {
@@ -77,13 +76,14 @@ class LogViewerViewModelTest {
 
     @Test
     fun `extractSource rejects log levels as sources`() {
-        val testCases = listOf(
-            "2025-11-21T10:30:00Z INFO ERROR message",
-            "2025-11-21T10:30:00Z DEBUG INFO some text",
-            "2025-11-21T10:30:00Z WARN DEBUG another message",
-            "2025-11-21T10:30:00Z ERROR WARN test"
-        )
-        
+        val testCases =
+            listOf(
+                "2025-11-21T10:30:00Z INFO ERROR message",
+                "2025-11-21T10:30:00Z DEBUG INFO some text",
+                "2025-11-21T10:30:00Z WARN DEBUG another message",
+                "2025-11-21T10:30:00Z ERROR WARN test",
+            )
+
         testCases.forEach { log ->
             val source = extractSourceForTest(log)
             assertNull("Log level should not be treated as source in: $log", source)
@@ -120,13 +120,14 @@ class LogViewerViewModelTest {
 
     @Test
     fun `extractSource with malformed logs returns null`() {
-        val testCases = listOf(
-            "",
-            "single",
-            "two words",
-            "no timestamp here TelegramDataSource",
-        )
-        
+        val testCases =
+            listOf(
+                "",
+                "single",
+                "two words",
+                "no timestamp here TelegramDataSource",
+            )
+
         testCases.forEach { log ->
             val source = extractSourceForTest(log)
             assertNull("Should return null for malformed log: $log", source)
@@ -135,11 +136,12 @@ class LogViewerViewModelTest {
 
     @Test
     fun `extractSource with various timestamp formats`() {
-        val testCases = listOf(
-            "2025-11-21T10:30:00Z DEBUG TelegramDataSource msg" to "TelegramDataSource",
-            "10:30:00 ERROR DataProvider failure" to "DataProvider",
-        )
-        
+        val testCases =
+            listOf(
+                "2025-11-21T10:30:00Z DEBUG TelegramDataSource msg" to "TelegramDataSource",
+                "10:30:00 ERROR DataProvider failure" to "DataProvider",
+            )
+
         testCases.forEach { (log, expected) ->
             val source = extractSourceForTest(log)
             assertEquals("Should extract source from: $log", expected, source)

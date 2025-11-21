@@ -22,9 +22,7 @@ internal class ChunkRingBuffer(
     // Map: chunkIndex -> ByteArray(chunkSize), with LRU-Eviction
     private val chunks =
         object : LinkedHashMap<Long, ByteArray>(maxChunks, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, ByteArray>): Boolean {
-                return size > maxChunks
-            }
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, ByteArray>): Boolean = size > maxChunks
         }
 
     /**
