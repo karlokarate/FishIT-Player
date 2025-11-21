@@ -213,7 +213,9 @@ object MediaParser {
             "Episode X" -> base.replace(Regex("""[Ee]pisode[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
             "Ep X" -> base.replace(Regex("""[Ee]p[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
             "Folge X" -> base.replace(Regex("""[Ff]olge[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
-            else -> base
+            "Staffel X" -> base.replace(Regex("""[Ss]taffel[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
+            "Season X Episode Y" -> base.replace(Regex("""[Ss]eason[.\s]*\d{1,3}[.\s]*[Ee]pisode[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
+            else -> base.replace(Regex("""([Ss]taffel|[Ss]eason)[.\s]*\d{1,3}([.\s]*[Ee]pisode[.\s]*\d{1,3})?""", RegexOption.IGNORE_CASE), "")
         }
 
         // Clean up separators and whitespace
