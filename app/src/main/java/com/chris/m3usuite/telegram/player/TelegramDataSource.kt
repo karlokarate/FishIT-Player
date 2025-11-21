@@ -13,7 +13,7 @@ import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.io.IOException
-import java.util.concurrent.TimeoutException
+import kotlinx.coroutines.TimeoutCancellationException
 
 /**
  * DataSource for streaming Telegram files via TDLib with **Windowed Zero-Copy Streaming**.
