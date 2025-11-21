@@ -164,8 +164,7 @@ fun LogViewerScreen(
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(
-                            "Logfiles werden im Verzeichnis files/telegram_logs/ gespeichert. " +
-                            "Es wurden noch keine Logs geschrieben oder das Verzeichnis ist leer.",
+                            "Es wurden noch keine Logs geschrieben.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
