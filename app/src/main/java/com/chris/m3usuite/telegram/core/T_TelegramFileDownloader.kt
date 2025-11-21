@@ -321,7 +321,7 @@ class T_TelegramFileDownloader(
                 }
                 
                 // Check if file size is sufficient for requested position
-                // Need at least position + 1 byte to read from position
+                // Need file length greater than position to read at that position
                 return@withContext file.length() > position
             } catch (e: Exception) {
                 // Any error means data is not available
@@ -376,7 +376,7 @@ class T_TelegramFileDownloader(
                             ),
                     )
                     throw Exception(
-                        "Timeout: Telegram file not downloaded at position $position after $retryAttempts attempts (fileId=$fileId)",
+                        "Timeout: Data not available at position $position after $retryAttempts attempts (fileId=$fileId)",
                     )
                 }
 
@@ -429,7 +429,7 @@ class T_TelegramFileDownloader(
             
             if (localPath.isNullOrBlank()) {
                 // This should not happen after retry loop, but handle gracefully
-                throw Exception("File not downloaded yet: $fileId (after retry)")
+                throw Exception("File path not available yet: $fileId (after retry)")
             }
 
             val file = java.io.File(localPath)
