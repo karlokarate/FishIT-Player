@@ -69,4 +69,17 @@ object StreamingConfig {
      * LRU eviction ensures old chunks are discarded when limit is reached.
      */
     const val RINGBUFFER_MAX_CHUNKS = 64
+
+    /**
+     * Maximum retry attempts for waiting on chunk download (200 attempts).
+     * With 15ms delay per attempt, this allows up to 3 seconds wait time.
+     * Prevents immediate IOException when TDLib is still downloading the first bytes.
+     */
+    const val READ_RETRY_MAX_ATTEMPTS = 200
+
+    /**
+     * Delay between retry attempts in milliseconds (15ms).
+     * Short enough for responsive playback start, long enough to avoid busy-waiting.
+     */
+    const val READ_RETRY_DELAY_MS = 15L
 }

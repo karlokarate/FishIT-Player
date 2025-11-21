@@ -4,6 +4,7 @@ import android.content.Context
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import dev.g000sha256.tdl.dto.File
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -288,6 +289,47 @@ class T_TelegramFileDownloader(
         }
 
     /**
+     * Check if file data is downloaded at the specified position.
+     * 
+     * This checks:
+     * 1. If the file has a local path
+     * 2. If the local file exists
+     * 3. If the local file is large enough to contain data at the requested position
+     *
+     * @param fileId TDLib file ID (string)
+     * @param position Byte offset to check
+     * @return true if data is available at position, false otherwise
+     */
+    private suspend fun isDownloadedAt(
+        fileId: String,
+        position: Long,
+    ): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val fileInfo = getFileInfo(fileId)
+                val localPath = fileInfo.local?.path
+                
+                // Check if file has a local path
+                if (localPath.isNullOrBlank()) {
+                    return@withContext false
+                }
+                
+                // Check if file exists and is large enough
+                val file = java.io.File(localPath)
+                if (!file.exists()) {
+                    return@withContext false
+                }
+                
+                // Check if file size is sufficient for requested position
+                // Need at least position + 1 byte to read from position
+                return@withContext file.length() > position
+            } catch (e: Exception) {
+                // Any error means data is not available
+                return@withContext false
+            }
+        }
+
+    /**
      * Read a chunk of data from a Telegram file with **Zero-Copy** optimization.
      *
      * This method implements Zero-Copy streaming by:
@@ -313,13 +355,81 @@ class T_TelegramFileDownloader(
         length: Int,
     ): Int =
         withContext(Dispatchers.IO) {
-            // Get file info once
+            // Get file info once to get fileIdInt
             val fileInfo = getFileInfo(fileId)
             val fileIdInt = fileInfo.id
-            val localPath = fileInfo.local?.path
 
+            // Blocking retry: wait for TDLib to download the first bytes at position
+            var retryAttempts = 0
+            val maxRetryAttempts = StreamingConfig.READ_RETRY_MAX_ATTEMPTS
+
+            while (!isDownloadedAt(fileId, position)) {
+                if (retryAttempts >= maxRetryAttempts) {
+                    TelegramLogRepository.error(
+                        source = "T_TelegramFileDownloader",
+                        message = "read(): timeout waiting for chunk",
+                        details =
+                            mapOf(
+                                "fileId" to fileId,
+                                "position" to position.toString(),
+                                "attempts" to retryAttempts.toString(),
+                            ),
+                    )
+                    throw Exception(
+                        "Timeout: Telegram file not downloaded at position $position after $retryAttempts attempts (fileId=$fileId)",
+                    )
+                }
+
+                // Log retry attempt
+                if (retryAttempts % 20 == 0) {
+                    // Log every 20th attempt to avoid log spam (~300ms intervals)
+                    TelegramLogRepository.debug(
+                        source = "T_TelegramFileDownloader",
+                        message = "read(): waiting for chunk",
+                        details =
+                            mapOf(
+                                "fileId" to fileId,
+                                "position" to position.toString(),
+                                "attempt" to retryAttempts.toString(),
+                            ),
+                    )
+                }
+
+                retryAttempts++
+                delay(StreamingConfig.READ_RETRY_DELAY_MS)
+
+                // Re-trigger window download to ensure it's still active
+                if (retryAttempts % 50 == 0) {
+                    // Every 50 attempts (~750ms), re-ensure window
+                    val windowState = windowStates[fileIdInt]
+                    if (windowState != null) {
+                        runCatching {
+                            ensureWindow(fileIdInt, windowState.windowStart, windowState.windowSize)
+                        }
+                    }
+                }
+            }
+
+            // Log successful chunk availability
+            if (retryAttempts > 0) {
+                TelegramLogRepository.debug(
+                    source = "T_TelegramFileDownloader",
+                    message = "read(): chunk available, reading...",
+                    details =
+                        mapOf(
+                            "fileId" to fileId,
+                            "position" to position.toString(),
+                            "attempts" to retryAttempts.toString(),
+                        ),
+                )
+            }
+
+            // Now proceed with actual file reading
+            val localPath = fileInfo.local?.path
+            
             if (localPath.isNullOrBlank()) {
-                throw Exception("File not downloaded yet: $fileId")
+                // This should not happen after retry loop, but handle gracefully
+                throw Exception("File not downloaded yet: $fileId (after retry)")
             }
 
             val file = java.io.File(localPath)
@@ -339,11 +449,11 @@ class T_TelegramFileDownloader(
             }
 
             // Retry logic to handle race condition where file handle is closed by another thread
-            var retryCount = 0
-            val maxRetries = StreamingConfig.MAX_READ_ATTEMPTS
+            var ioRetryCount = 0
+            val maxIoRetries = StreamingConfig.MAX_READ_ATTEMPTS
 
-            while (retryCount < maxRetries) {
-                retryCount++
+            while (ioRetryCount < maxIoRetries) {
+                ioRetryCount++
 
                 try {
                     // Get or create cached file handle for Zero-Copy reads
@@ -372,9 +482,9 @@ class T_TelegramFileDownloader(
                     // Handle closed stream or stale handle - remove from cache and retry
                     fileHandleCache.remove(fileIdInt)?.runCatching { close() }
 
-                    if (retryCount >= maxRetries) {
+                    if (ioRetryCount >= maxIoRetries) {
                         // Max attempts reached, rethrow exception
-                        throw Exception("Failed to read file chunk after $maxRetries attempts", e)
+                        throw Exception("Failed to read file chunk after $maxIoRetries attempts", e)
                     }
 
                     // Log retry for debugging
@@ -385,7 +495,7 @@ class T_TelegramFileDownloader(
                             mapOf(
                                 "fileId" to fileId,
                                 "position" to position.toString(),
-                                "retryCount" to retryCount.toString(),
+                                "retryCount" to ioRetryCount.toString(),
                             ),
                     )
                 } catch (e: Exception) {
@@ -395,7 +505,7 @@ class T_TelegramFileDownloader(
                 }
             }
 
-            throw Exception("Failed to read file chunk after $maxRetries attempts")
+            throw Exception("Failed to read file chunk after $maxIoRetries attempts")
         }
 
     /**

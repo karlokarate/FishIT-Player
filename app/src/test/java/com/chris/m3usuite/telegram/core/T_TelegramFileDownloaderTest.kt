@@ -165,8 +165,8 @@ class T_TelegramFileDownloaderTest {
     @Test
     fun `ChunkRingBuffer class exists and is internal`() {
         // Verify ChunkRingBuffer class exists
-        // Tests run from project root, not app directory
-        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/ChunkRingBuffer.kt")
+        // Tests run from app directory
+        val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/ChunkRingBuffer.kt")
         assert(sourceFile.exists()) {
             "ChunkRingBuffer.kt file should exist in telegram/core package"
         }
@@ -277,7 +277,7 @@ class T_TelegramFileDownloaderTest {
     fun `StreamingConfig has ringbuffer constants`() {
         // Verify StreamingConfig includes ringbuffer configuration
         // Tests run from app directory
-        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/StreamingConfig.kt")
+        val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/StreamingConfig.kt")
         assert(sourceFile.exists()) {
             "StreamingConfig.kt should exist as a separate file"
         }
