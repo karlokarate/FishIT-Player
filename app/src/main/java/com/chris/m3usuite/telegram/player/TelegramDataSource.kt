@@ -295,7 +295,7 @@ class TelegramDataSource(
                     withTimeout(StreamingConfig.WINDOW_TRANSITION_TIMEOUT_MS) {
                         downloader.ensureWindow(fileIdInt, windowStart, windowSize)
                     }
-                } catch (e: TimeoutException) {
+                } catch (e: TimeoutCancellationException) {
                     TelegramLogRepository.error(
                         source = "TelegramDataSource",
                         message = "Window transition timed out",
@@ -346,7 +346,7 @@ class TelegramDataSource(
                     withTimeout(StreamingConfig.READ_OPERATION_TIMEOUT_MS) {
                         downloader.readFileChunk(fid, position, buffer, offset, bytesToRead)
                     }
-                } catch (e: TimeoutException) {
+                } catch (e: TimeoutCancellationException) {
                     throw IOException(
                         "Read operation timed out for Telegram file $fid at position $position",
                         e,

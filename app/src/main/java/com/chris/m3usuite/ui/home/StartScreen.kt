@@ -78,6 +78,7 @@ import com.chris.m3usuite.data.repo.MediaQueryRepository
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
 import com.chris.m3usuite.ui.components.rows.LiveAddTile
@@ -207,6 +208,26 @@ fun StartScreen(
         if (!initialSearch.isNullOrBlank()) vm.setQuery(initialSearch)
     }
 
+    // Snackbar for Telegram logging overlays
+    val snackbarHost = remember { androidx.compose.material3.SnackbarHostState() }
+
+    // Collect Telegram log events and show WARN/ERROR as snackbars
+    LaunchedEffect(Unit) {
+        TelegramLogRepository.events.collect { entry ->
+            when (entry.level) {
+                com.chris.m3usuite.telegram.logging.TgLogEntry.LogLevel.WARN,
+                com.chris.m3usuite.telegram.logging.TgLogEntry.LogLevel.ERROR -> {
+                    snackbarHost.showSnackbar(
+                        message = "[${entry.level}] ${entry.message}"
+                    )
+                }
+                else -> {
+                    // INFO/DEBUG: nur im Log-Screen sichtbar
+                }
+            }
+        }
+    }
+
     HomeChromeScaffold(
         title = "FishIT Player",
         onSearch = { showSearch = true },
@@ -231,6 +252,7 @@ fun StartScreen(
                 }
             },
         listState = listState,
+        snackbarHost = snackbarHost,
         onLogo = {
             val current = navController.currentBackStackEntry?.destination?.route
             if (current != "library?q={q}&qs={qs}") {
@@ -682,6 +704,16 @@ fun StartScreen(
                 item("start_telegram_row") {
                     val onTelegramClick: (MediaItem) -> Unit = { media ->
                         scope.launch {
+                            TelegramLogRepository.info(
+                                source = "StartScreen",
+                                message = "User started Telegram playback from StartScreen",
+                                details = mapOf(
+                                    "mediaId" to media.id.toString(),
+                                    "title" to media.name,
+                                    "playUrl" to (media.url ?: "null")
+                                )
+                            )
+
                             // For Telegram items, we need to handle playback via TDLib
                             // The URL is in format: tg://file/<fileId>
                             playbackLauncher.launch(
