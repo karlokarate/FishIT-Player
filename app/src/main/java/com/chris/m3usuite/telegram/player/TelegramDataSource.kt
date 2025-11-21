@@ -256,8 +256,8 @@ class TelegramDataSource(
         val windowEnd = windowStart + windowSize
         val distanceToWindowEnd = windowEnd - position
 
-        if (distanceToWindowEnd < StreamingConfig.TELEGRAM_STREAM_PREFETCH_MARGIN) {
-            // Approaching window end, open new window
+        if (distanceToWindowEnd < StreamingConfig.TELEGRAM_STREAM_PREFETCH_MARGIN || position < windowStart) {
+            // Approaching window end or seeking backward, open new window
             val newWindowStart = position
             
             TelegramLogRepository.logStreamingActivity(
