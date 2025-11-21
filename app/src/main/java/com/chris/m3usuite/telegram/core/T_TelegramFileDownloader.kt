@@ -374,7 +374,8 @@ class T_TelegramFileDownloader(
                         source = "T_TelegramFileDownloader",
                         message = "Retrying read after closed stream",
                         details =
-                            mapOf(
+                        }
+                        return@withContext -1 // Ensure we exit after the final retry
                                 "fileId" to fileId,
                                 "position" to position.toString(),
                                 "attemptCount" to attemptCount.toString(),
