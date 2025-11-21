@@ -42,6 +42,9 @@ class LogViewerViewModel(
         private val JSON_SOURCE_REGEX = Regex(""""source"\s*:\s*"([^"]+)"""")
         private val BRACKETED_SOURCE_REGEX = Regex("""\[([^\]]+)\]""")
         
+        // Known log levels that should not be treated as sources
+        private val LOG_LEVELS = setOf("INFO", "DEBUG", "ERROR", "WARN", "TRACE", "FATAL")
+        
         // Limit to prevent memory issues with very large files
         private const val MAX_LOG_LINES = 10000
         
@@ -140,8 +143,10 @@ class LogViewerViewModel(
      * 1. Space-separated: "2025-..T..Z DEBUG TelegramDataSource ..."
      * 2. JSON: {"source":"TelegramDataSource",...}
      * 3. Bracketed: "[TelegramDataSource] ..."
+     * 
+     * Package-private for testing.
      */
-    private fun extractSource(line: String): String? {
+    internal fun extractSource(line: String): String? {
         // Try JSON format first
         if (line.trim().startsWith("{")) {
             val sourceMatch = JSON_SOURCE_REGEX.find(line)
@@ -161,11 +166,8 @@ class LogViewerViewModel(
         if (parts.size >= 3) {
             val candidate = parts[2]
             
-            // Known log levels that should not be treated as sources
-            val logLevels = setOf("INFO", "DEBUG", "ERROR", "WARN", "TRACE", "FATAL")
-            
             // Reject if candidate is a known log level
-            if (candidate in logLevels) {
+            if (candidate in LOG_LEVELS) {
                 return null
             }
             
@@ -176,7 +178,7 @@ class LogViewerViewModel(
             
             // Validate that second part looks like a log level
             val secondPart = parts[1].uppercase()
-            if (secondPart !in logLevels) {
+            if (secondPart !in LOG_LEVELS) {
                 return null
             }
             

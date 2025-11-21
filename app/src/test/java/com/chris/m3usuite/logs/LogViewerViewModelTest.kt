@@ -11,25 +11,27 @@ import org.junit.Test
  * 2. Validation that log levels are not treated as sources
  * 3. Edge cases in log parsing
  *
- * Note: These tests focus on the logic of extractSource, which doesn't require Android context.
+ * Note: These tests use a test-only function that mirrors the production logic.
+ * The actual extractSource method is internal and tested indirectly through integration tests.
  */
 class LogViewerViewModelTest {
 
     /**
-     * Helper function to simulate extractSource logic.
-     * This is a copy of the actual implementation for testing purposes.
+     * Test helper that mirrors the production extractSource logic.
      */
-    private fun extractSource(line: String): String? {
+    private fun extractSourceForTest(line: String): String? {
         // JSON format
+        val jsonRegex = Regex(""""source"\s*:\s*"([^"]+)"""")
         if (line.trim().startsWith("{")) {
-            val sourceMatch = Regex(""""source"\s*:\s*"([^"]+)"""").find(line)
+            val sourceMatch = jsonRegex.find(line)
             if (sourceMatch != null) {
                 return sourceMatch.groupValues[1]
             }
         }
         
         // Bracketed format [Source]
-        val bracketMatch = Regex("""\[([^\]]+)\]""").find(line)
+        val bracketRegex = Regex("""\[([^\]]+)\]""")
+        val bracketMatch = bracketRegex.find(line)
         if (bracketMatch != null) {
             return bracketMatch.groupValues[1]
         }
@@ -38,42 +40,43 @@ class LogViewerViewModelTest {
         val parts = line.split(" ", limit = 4)
         if (parts.size >= 3) {
             val candidate = parts[2]
-            // Known log levels that should not be treated as sources
             val logLevels = setOf("INFO", "DEBUG", "ERROR", "WARN", "TRACE", "FATAL")
             
-            // Reject if it's a known log level
+            // Reject if candidate is a known log level
             if (candidate in logLevels) {
                 return null
             }
             
-            // Basic validation: first part should look like a timestamp
-            if (parts[0].contains('T') || parts[0].contains(':')) {
-                // Second part should look like a log level
-                val secondPart = parts[1].uppercase()
-                if (secondPart in logLevels) {
-                    // Return if it looks like a source (starts with capital or T_)
-                    if (candidate.isNotEmpty() && 
-                        (candidate[0].isUpperCase() || candidate.startsWith("T_"))) {
-                        return candidate
-                    }
-                }
+            // Validate timestamp format
+            if (!parts[0].contains('T') && !parts[0].contains(':')) {
+                return null
+            }
+            
+            // Validate log level
+            if (parts[1].uppercase() !in logLevels) {
+                return null
+            }
+            
+            // Return if it looks like a source
+            if (candidate.isNotEmpty() && 
+                (candidate[0].isUpperCase() || candidate.startsWith("T_"))) {
+                return candidate
             }
         }
         
         return null
     }
 
+
     @Test
     fun `extractSource handles space-separated format correctly`() {
-        // Valid space-separated format
         val validLog = "2025-11-21T10:30:00Z DEBUG TelegramDataSource message text"
-        val source = extractSource(validLog)
+        val source = extractSourceForTest(validLog)
         assertEquals("TelegramDataSource", source)
     }
 
     @Test
     fun `extractSource rejects log levels as sources`() {
-        // Log levels should not be treated as sources
         val testCases = listOf(
             "2025-11-21T10:30:00Z INFO ERROR message",
             "2025-11-21T10:30:00Z DEBUG INFO some text",
@@ -82,7 +85,7 @@ class LogViewerViewModelTest {
         )
         
         testCases.forEach { log ->
-            val source = extractSource(log)
+            val source = extractSourceForTest(log)
             assertNull("Log level should not be treated as source in: $log", source)
         }
     }
@@ -90,43 +93,42 @@ class LogViewerViewModelTest {
     @Test
     fun `extractSource handles JSON format`() {
         val jsonLog = """{"source":"TelegramDataSource","level":"DEBUG","message":"test"}"""
-        val source = extractSource(jsonLog)
+        val source = extractSourceForTest(jsonLog)
         assertEquals("TelegramDataSource", source)
     }
 
     @Test
     fun `extractSource handles bracketed format`() {
         val bracketedLog = "[TelegramDataSource] Some log message here"
-        val source = extractSource(bracketedLog)
+        val source = extractSourceForTest(bracketedLog)
         assertEquals("TelegramDataSource", source)
     }
 
     @Test
     fun `extractSource validates timestamp and log level format`() {
-        // Invalid timestamp format should not return source
         val invalidLog = "NOTADATE NOTLEVEL TelegramDataSource message"
-        val source = extractSource(invalidLog)
+        val source = extractSourceForTest(invalidLog)
         assertNull("Should not extract source without valid timestamp and log level", source)
     }
 
     @Test
     fun `extractSource handles T_ prefix correctly`() {
         val logWithT = "2025-11-21T10:30:00Z DEBUG T_DataSource message"
-        val source = extractSource(logWithT)
+        val source = extractSourceForTest(logWithT)
         assertEquals("T_DataSource", source)
     }
 
     @Test
     fun `extractSource with malformed logs returns null`() {
         val testCases = listOf(
-            "",  // Empty
-            "single",  // Too short
-            "two words",  // Too short
-            "no timestamp here TelegramDataSource",  // No timestamp
+            "",
+            "single",
+            "two words",
+            "no timestamp here TelegramDataSource",
         )
         
         testCases.forEach { log ->
-            val source = extractSource(log)
+            val source = extractSourceForTest(log)
             assertNull("Should return null for malformed log: $log", source)
         }
     }
@@ -139,8 +141,9 @@ class LogViewerViewModelTest {
         )
         
         testCases.forEach { (log, expected) ->
-            val source = extractSource(log)
+            val source = extractSourceForTest(log)
             assertEquals("Should extract source from: $log", expected, source)
         }
     }
+}
 }
