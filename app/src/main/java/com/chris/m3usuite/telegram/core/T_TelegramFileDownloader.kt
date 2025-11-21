@@ -179,6 +179,16 @@ class T_TelegramFileDownloader(
         windowSize: Long,
     ): Boolean =
         withContext(Dispatchers.IO) {
+            TelegramLogRepository.debug(
+                source = "T_TelegramFileDownloader",
+                message = "ensureWindow start",
+                details = mapOf(
+                    "fileId" to fileIdInt.toString(),
+                    "windowStart" to windowStart.toString(),
+                    "windowSize" to windowSize.toString(),
+                ),
+            )
+
             val existingWindow = windowStates[fileIdInt]
 
             // Check if existing window covers the requested range
@@ -265,6 +275,16 @@ class T_TelegramFileDownloader(
                         total = windowSize.toInt(),
                         status = "window_started",
                     )
+
+                    TelegramLogRepository.debug(
+                        source = "T_TelegramFileDownloader",
+                        message = "ensureWindow complete",
+                        details = mapOf(
+                            "fileId" to fileIdInt.toString(),
+                            "windowStart" to windowStart.toString(),
+                            "windowSize" to windowSize.toString(),
+                        ),
+                    )
                     true
                 }
                 is dev.g000sha256.tdl.TdlResult.Failure -> {
@@ -278,6 +298,16 @@ class T_TelegramFileDownloader(
                                 "fileId" to fileIdInt.toString(),
                                 "error" to result.message,
                             ),
+                    )
+                    TelegramLogRepository.debug(
+                        source = "T_TelegramFileDownloader",
+                        message = "ensureWindow failed",
+                        details = mapOf(
+                            "fileId" to fileIdInt.toString(),
+                            "windowStart" to windowStart.toString(),
+                            "windowSize" to windowSize.toString(),
+                            "error" to result.message,
+                        ),
                     )
                     false
                 }
@@ -338,11 +368,11 @@ class T_TelegramFileDownloader(
             }
 
             // Retry logic to handle race condition where file handle is closed by another thread
-            var attemptCount = 0
-            val maxAttempts = StreamingConfig.MAX_READ_ATTEMPTS
+            var retryCount = 0
+            val maxRetries = StreamingConfig.MAX_READ_ATTEMPTS
 
-            while (attemptCount < maxAttempts) {
-                attemptCount++
+            while (retryCount < maxRetries) {
+                retryCount++
                 
                 try {
                     // Get or create cached file handle for Zero-Copy reads
@@ -364,9 +394,9 @@ class T_TelegramFileDownloader(
                     // Handle closed stream or stale handle - remove from cache and retry
                     fileHandleCache.remove(fileIdInt)?.runCatching { close() }
 
-                    if (attemptCount >= maxAttempts) {
+                    if (retryCount >= maxRetries) {
                         // Max attempts reached, rethrow exception
-                        throw Exception("Failed to read file chunk after $maxAttempts attempts", e)
+                        throw Exception("Failed to read file chunk after $maxRetries attempts", e)
                     }
 
                     // Log retry for debugging
@@ -376,7 +406,7 @@ class T_TelegramFileDownloader(
                         details = mapOf(
                             "fileId" to fileId,
                             "position" to position.toString(),
-                            "attemptCount" to attemptCount.toString(),
+                            "retryCount" to retryCount.toString(),
                         ),
                     )
                 } catch (e: Exception) {
@@ -386,7 +416,7 @@ class T_TelegramFileDownloader(
                 }
             }
 
-            throw Exception("Failed to read file chunk after $maxAttempts attempts")
+            throw Exception("Failed to read file chunk after $maxRetries attempts")
         }
 
     /**

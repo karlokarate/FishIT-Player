@@ -57,6 +57,14 @@ class TelegramDataSource(
     private var totalSize: Long = C.LENGTH_UNSET.toLong()
     private var fileId: String? = null
 
+    companion object {
+        /**
+         * Minimum window size for streaming (256 KB).
+         * This ensures we don't create too small windows that would require frequent refills.
+         */
+        const val MIN_WINDOW_SIZE_BYTES = 256 * 1024L
+    }
+
     /**
      * The Telegram chat ID associated with the file to be streamed.
      *
@@ -185,6 +193,19 @@ class TelegramDataSource(
 
         // Ensure initial window is prepared
         val fileIdInt = fileId!!.toIntOrNull() ?: throw IOException("Invalid file ID: $fileId")
+        
+        TelegramLogRepository.debug(
+            source = "TelegramDataSource",
+            message = "prepare window",
+            details = mapOf(
+                "fileId" to fileIdInt.toString(),
+                "position" to position.toString(),
+                "readLength" to "initial".toString(),
+                "windowStart" to windowStart.toString(),
+                "windowSize" to windowSize.toString(),
+            ),
+        )
+        
         val windowReady =
             runBlocking {
                 try {
@@ -288,6 +309,18 @@ class TelegramDataSource(
                 } catch (e: Exception) {
                     throw IOException("Telegram service not available: ${e.message}", e)
                 }
+
+            TelegramLogRepository.debug(
+                source = "TelegramDataSource",
+                message = "prepare window",
+                details = mapOf(
+                    "fileId" to fileIdInt.toString(),
+                    "position" to position.toString(),
+                    "readLength" to readLength.toString(),
+                    "windowStart" to windowStart.toString(),
+                    "windowSize" to windowSize.toString(),
+                ),
+            )
 
             runBlocking {
                 try {
