@@ -43,6 +43,7 @@ import com.chris.m3usuite.ui.screens.LiveDetailScreen
 import com.chris.m3usuite.ui.screens.PlaylistSetupScreen
 import com.chris.m3usuite.ui.screens.SeriesDetailScreen
 import com.chris.m3usuite.ui.screens.SettingsScreen
+import com.chris.m3usuite.ui.screens.TelegramDetailScreen
 import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.screens.XtreamPortalCheckScreen
 import com.chris.m3usuite.ui.theme.AppTheme
@@ -267,6 +268,7 @@ class MainActivity : ComponentActivity() {
                                 openLive = { id -> nav.navigate("live/$id") },
                                 openVod = { id -> nav.navigate("vod/$id") },
                                 openSeries = { id -> nav.navigate("series/$id") },
+                                openTelegram = { id -> nav.navigate("telegram/$id") },
                                 initialSearch = q.ifBlank { null },
                                 openSearchOnStart = openDlg,
                             )
@@ -279,6 +281,7 @@ class MainActivity : ComponentActivity() {
                                 openLive = { id -> nav.navigate("live/$id") },
                                 openVod = { id -> nav.navigate("vod/$id") },
                                 openSeries = { id -> nav.navigate("series/$id") },
+                                openTelegram = { id -> nav.navigate("telegram/$id") },
                             )
                         }
 
@@ -313,6 +316,35 @@ class MainActivity : ComponentActivity() {
                                     nav.navigate("player?url=$encoded&type=vod&mediaId=$id&startMs=$start&mime=$mimeArg")
                                 },
                                 openVod = { target -> nav.navigate("vod/$target") },
+                                onLogo = {
+                                    val current = nav.currentBackStackEntry?.destination?.route
+                                    if (current != "library") {
+                                        nav.navigateTopLevel("library?q=&qs=")
+                                    }
+                                },
+                                onGlobalSearch = {
+                                    nav.navigateTopLevel("library?qs=show")
+                                },
+                                onOpenSettings = {
+                                    val current = nav.currentBackStackEntry?.destination?.route
+                                    if (current != "settings") {
+                                        nav.navigate("settings") { launchSingleTop = true }
+                                    }
+                                },
+                            )
+                        }
+
+                        // Telegram-Details
+                        composable("telegram/{id}") { back ->
+                            val id = back.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+                            TelegramDetailScreen(
+                                id = id,
+                                openInternal = { url, startMs, mime ->
+                                    val encoded = Uri.encode(url)
+                                    val start = startMs ?: -1L
+                                    val mimeArg = mime?.let { Uri.encode(it) } ?: ""
+                                    nav.navigate("player?url=$encoded&type=vod&mediaId=$id&startMs=$start&mime=$mimeArg")
+                                },
                                 onLogo = {
                                     val current = nav.currentBackStackEntry?.destination?.route
                                     if (current != "library") {

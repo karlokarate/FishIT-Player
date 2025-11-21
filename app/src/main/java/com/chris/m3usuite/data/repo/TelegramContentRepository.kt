@@ -191,6 +191,8 @@ class TelegramContentRepository(
         val width: Int?
         val height: Int?
         val supportsStreaming: Boolean?
+        val thumbFileId: Int?
+        val thumbLocalPath: String?
 
         when (val content = message.content) {
             is MessageVideo -> {
@@ -203,6 +205,9 @@ class TelegramContentRepository(
                 width = content.video.width
                 height = content.video.height
                 supportsStreaming = content.video.supportsStreaming
+                // Extract video thumbnail
+                thumbFileId = content.video.thumbnail?.file?.id
+                thumbLocalPath = content.video.thumbnail?.file?.local?.path
             }
             is MessageDocument -> {
                 fileId = content.document.document?.id
@@ -214,6 +219,9 @@ class TelegramContentRepository(
                 width = null
                 height = null
                 supportsStreaming = null
+                // Extract document thumbnail
+                thumbFileId = content.document.thumbnail?.file?.id
+                thumbLocalPath = content.document.thumbnail?.file?.local?.path
             }
             else -> {
                 fileId = null
@@ -222,6 +230,8 @@ class TelegramContentRepository(
                 width = null
                 height = null
                 supportsStreaming = null
+                thumbFileId = null
+                thumbLocalPath = null
             }
         }
 
@@ -268,6 +278,9 @@ class TelegramContentRepository(
                 width = width,
                 height = height,
                 language = language,
+                // Thumbnail fields (video/document thumbnail)
+                thumbFileId = thumbFileId,
+                thumbLocalPath = thumbLocalPath,
                 // Movie metadata
                 title = mediaInfo.title,
                 year = mediaInfo.year,
@@ -393,7 +406,7 @@ class TelegramContentRepository(
                     name = obxMsg.caption ?: "Untitled",
                     type = "vod", // Default to VOD, can be refined based on metadata
                     url = "tg://file/${obxMsg.fileId}?chatId=${obxMsg.chatId}&messageId=${obxMsg.messageId}",
-                    poster = obxMsg.thumbLocalPath,
+                    poster = obxMsg.posterLocalPath ?: obxMsg.thumbLocalPath,
                     plot = null,
                     rating = null,
                     year = null,
@@ -443,12 +456,15 @@ class TelegramContentRepository(
                 else -> "vod" // Default to VOD
             }
 
+        // Use posterLocalPath as primary, fallback to thumbLocalPath (video thumbnail)
+        val poster = obxMsg.posterLocalPath ?: obxMsg.thumbLocalPath
+
         return MediaItem(
             id = encodeTelegramId(obxMsg.messageId),
             name = obxMsg.caption ?: obxMsg.fileName ?: "Untitled",
             type = type,
             url = url,
-            poster = obxMsg.thumbLocalPath,
+            poster = poster,
             plot = null,
             rating = null,
             year = null,
@@ -492,7 +508,7 @@ class TelegramContentRepository(
                             name = obxMsg.caption ?: "Untitled",
                             type = "vod",
                             url = "tg://file/${obxMsg.fileId}?chatId=${obxMsg.chatId}&messageId=${obxMsg.messageId}",
-                            poster = obxMsg.thumbLocalPath,
+                            poster = obxMsg.posterLocalPath ?: obxMsg.thumbLocalPath,
                             plot = null,
                             rating = null,
                             year = null,
@@ -635,7 +651,7 @@ class TelegramContentRepository(
                             name = obxMsg.caption ?: "Untitled",
                             type = "vod",
                             url = "tg://file/${obxMsg.fileId}?chatId=${obxMsg.chatId}&messageId=${obxMsg.messageId}",
-                            poster = obxMsg.thumbLocalPath,
+                            poster = obxMsg.posterLocalPath ?: obxMsg.thumbLocalPath,
                             plot = null,
                             rating = null,
                             year = null,

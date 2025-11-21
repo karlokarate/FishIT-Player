@@ -80,6 +80,7 @@ fun LibraryScreen(
     openLive: (Long) -> Unit,
     openVod: (Long) -> Unit,
     openSeries: (Long) -> Unit,
+    openTelegram: ((Long) -> Unit)? = null,
 ) {
     LaunchedEffect(Unit) {
         com.chris.m3usuite.metrics.RouteTag
@@ -1210,28 +1211,34 @@ fun LibraryScreen(
                             if (tgEnabled && telegramContent.isNotEmpty() && selectedTab == ContentTab.Vod) {
                                 item {
                                     val onTelegramClick: (MediaItem) -> Unit = { media ->
-                                        scope.launch {
-                                            TelegramLogRepository.info(
-                                                source = "LibraryScreen",
-                                                message = "User started Telegram playback from LibraryScreen",
-                                                details =
-                                                    mapOf(
-                                                        "mediaId" to media.id.toString(),
-                                                        "title" to media.name,
-                                                        "playUrl" to (media.url ?: "null"),
-                                                    ),
-                                            )
+                                        // Navigate to Telegram detail screen instead of playing directly
+                                        if (openTelegram != null) {
+                                            openTelegram(media.id)
+                                        } else {
+                                            // Fallback: play directly if no detail screen handler is provided
+                                            scope.launch {
+                                                TelegramLogRepository.info(
+                                                    source = "LibraryScreen",
+                                                    message = "User started Telegram playback from LibraryScreen",
+                                                    details =
+                                                        mapOf(
+                                                            "mediaId" to media.id.toString(),
+                                                            "title" to media.name,
+                                                            "playUrl" to (media.url ?: "null"),
+                                                        ),
+                                                )
 
-                                            playbackLauncher.launch(
-                                                com.chris.m3usuite.playback.PlayRequest(
-                                                    type = "vod",
-                                                    mediaId = media.id,
-                                                    url = media.url ?: "",
-                                                    headers = emptyMap(),
-                                                    mimeType = null,
-                                                    title = media.name,
-                                                ),
-                                            )
+                                                playbackLauncher.launch(
+                                                    com.chris.m3usuite.playback.PlayRequest(
+                                                        type = "vod",
+                                                        mediaId = media.id,
+                                                        url = media.url ?: "",
+                                                        headers = emptyMap(),
+                                                        mimeType = null,
+                                                        title = media.name,
+                                                    ),
+                                                )
+                                            }
                                         }
                                     }
                                     com.chris.m3usuite.ui.layout.FishTelegramRow(
