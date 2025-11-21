@@ -121,10 +121,21 @@ class TelegramDataSource(
         }
 
         fileId = segments[0]
+        
+        // Validate fileId is a valid positive integer
+        val fileIdInt = fileId?.toIntOrNull()
+        if (fileIdInt == null || fileIdInt <= 0) {
+            TelegramLogRepository.error(
+                source = "TelegramDataSource",
+                message = "Invalid fileId in URI",
+                details = mapOf("fileId" to (fileId ?: "null"), "uri" to uri.toString()),
+            )
+            throw IOException("Invalid fileId in Telegram URI: $uri (fileId=$fileId must be a positive integer)")
+        }
 
         // Log stream start
         TelegramLogRepository.logStreamingActivity(
-            fileId = fileId!!.toIntOrNull() ?: 0,
+            fileId = fileIdInt,
             action = "opening",
             details = mapOf("uri" to uri.toString()),
         )

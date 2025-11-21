@@ -211,7 +211,7 @@ object MediaParser {
     /**
      * Extract series name from filename by removing season/episode patterns.
      */
-    private fun extractSeriesName(
+    internal fun extractSeriesName(
         fileName: String,
         seasonEp: TgContentHeuristics.SeasonEpisode?,
     ): String? {
