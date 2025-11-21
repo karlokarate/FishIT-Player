@@ -23,9 +23,7 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun LogViewerScreen(
-    onBack: () -> Unit,
-) {
+fun LogViewerScreen(onBack: () -> Unit) {
     val app = LocalContext.current.applicationContext as Application
     val viewModel: LogViewerViewModel = viewModel(factory = LogViewerViewModel.factory(app))
     val state by viewModel.state.collectAsState()
@@ -39,31 +37,32 @@ fun LogViewerScreen(
         exportErrorMessage?.let { message ->
             snackbarHostState.showSnackbar(
                 message = message,
-                duration = SnackbarDuration.Short
+                duration = SnackbarDuration.Short,
             )
             exportErrorMessage = null
         }
     }
 
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = CreateDocument("text/plain"),
-    ) { uri: Uri? ->
-        val file = exportPendingFile
-        exportPendingFile = null
-        if (uri != null && file != null) {
-            runCatching {
-                context.contentResolver.openOutputStream(uri)?.use { out ->
-                    file.inputStream().use { `in` ->
-                        `in`.copyTo(out)
+    val exportLauncher =
+        rememberLauncherForActivityResult(
+            contract = CreateDocument("text/plain"),
+        ) { uri: Uri? ->
+            val file = exportPendingFile
+            exportPendingFile = null
+            if (uri != null && file != null) {
+                runCatching {
+                    context.contentResolver.openOutputStream(uri)?.use { out ->
+                        file.inputStream().use { `in` ->
+                            `in`.copyTo(out)
+                        }
                     }
+                }.onFailure { e ->
+                    exportErrorMessage = "Export fehlgeschlagen. Bitte überprüfen Sie die Berechtigung und den Speicherplatz."
+                }.onSuccess {
+                    exportErrorMessage = "Export erfolgreich"
                 }
-            }.onFailure { e ->
-                exportErrorMessage = "Export fehlgeschlagen. Bitte überprüfen Sie die Berechtigung und den Speicherplatz."
-            }.onSuccess {
-                exportErrorMessage = "Export erfolgreich"
             }
         }
-    }
 
     Scaffold(
         topBar = {
@@ -90,10 +89,11 @@ fun LogViewerScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(8.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(8.dp),
         ) {
             // Datei-Auswahl
             if (state.logFiles.isNotEmpty()) {
@@ -104,9 +104,10 @@ fun LogViewerScreen(
                     onExpandedChange = { expanded = !expanded },
                 ) {
                     TextField(
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth(),
+                        modifier =
+                            Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
                         value = state.selectedFile?.name ?: "",
                         onValueChange = {},
                         readOnly = true,
@@ -151,13 +152,14 @@ fun LogViewerScreen(
             } else {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        ),
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
                             "Keine Logfiles gefunden",
@@ -225,12 +227,14 @@ fun LogViewerScreen(
             SelectionContainer {
                 Text(
                     text = state.filteredContent,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = FontFamily.Monospace,
-                    ),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState),
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = FontFamily.Monospace,
+                        ),
                 )
             }
         }

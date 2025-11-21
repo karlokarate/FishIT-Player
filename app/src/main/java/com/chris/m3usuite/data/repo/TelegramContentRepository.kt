@@ -12,6 +12,8 @@ import com.chris.m3usuite.telegram.parser.MediaParser
 import com.chris.m3usuite.telegram.parser.TgContentHeuristics
 import dev.g000sha256.tdl.dto.Message
 import dev.g000sha256.tdl.dto.MessageDocument
+import dev.g000sha256.tdl.dto.MessagePhoto
+import dev.g000sha256.tdl.dto.MessageText
 import dev.g000sha256.tdl.dto.MessageVideo
 import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
@@ -65,25 +67,26 @@ class TelegramContentRepository(
 
             // Detect if this is a structured movie chat by analyzing message patterns
             val isStructuredMovieChat = detectStructuredMovieChat(messages)
-            
+
             // If structured, parse all messages at once using structured parser
             if (isStructuredMovieChat) {
-                val chatContext = com.chris.m3usuite.telegram.models.ChatContext(
-                    chatId = chatId,
-                    chatTitle = chatTitle,
-                    isStructuredMovieChat = true
-                )
-                
+                val chatContext =
+                    com.chris.m3usuite.telegram.models.ChatContext(
+                        chatId = chatId,
+                        chatTitle = chatTitle,
+                        isStructuredMovieChat = true,
+                    )
+
                 // Sort messages by descending message ID (most recent first) as expected by parser
                 val sortedMessages = messages.sortedByDescending { it.id }
                 val parsedItems = MediaParser.parseStructuredMovieChat(chatContext, sortedMessages)
-                
+
                 // Process each parsed item
                 parsedItems.forEach { parsed ->
                     when (parsed) {
                         is com.chris.m3usuite.telegram.models.ParsedItem.Media -> {
                             val mediaInfo = parsed.info
-                            
+
                             // Find the original message to extract additional metadata
                             val message = messages.find { it.id == mediaInfo.messageId }
                             if (message != null) {
@@ -139,27 +142,28 @@ class TelegramContentRepository(
     private fun detectStructuredMovieChat(messages: List<Message>): Boolean {
         // Need at least 3 messages for pattern detection
         if (messages.size < 3) return false
-        
+
         // Sort by message ID descending to analyze sequential patterns
         val sorted = messages.sortedByDescending { it.id }
         var patternMatches = 0
-        
+
         // Look for at least 2 occurrences of the pattern
         for (i in 0..sorted.size - 3) {
             val msg0 = sorted[i]
             val msg1 = sorted[i + 1]
             val msg2 = sorted[i + 2]
-            
-            val isPattern = msg0.content is MessageVideo &&
-                           msg1.content is dev.g000sha256.tdl.dto.MessageText &&
-                           msg2.content is dev.g000sha256.tdl.dto.MessagePhoto
-            
+
+            val isPattern =
+                msg0.content is MessageVideo &&
+                    msg1.content is MessageText &&
+                    msg2.content is MessagePhoto
+
             if (isPattern) {
                 patternMatches++
                 if (patternMatches >= 2) return true
             }
         }
-        
+
         return false
     }
 
@@ -170,7 +174,7 @@ class TelegramContentRepository(
     private suspend fun indexMediaInfo(
         mediaInfo: MediaInfo,
         message: Message,
-        chatTitle: String
+        chatTitle: String,
     ): Int {
         // Skip items without valid fileId (cannot be played)
         if (mediaInfo.fileId == null || mediaInfo.fileId <= 0) {
@@ -225,20 +229,27 @@ class TelegramContentRepository(
         val language = heuristic.detectedLanguages.firstOrNull()
 
         // Determine if this is a series episode
+        // Note: The parser (MediaParser) may detect series patterns even without extracting a name.
+        // However, for storage and grouping, we require a valid series name. Episodes without
+        // a series name cannot be grouped and will be treated as standalone content.
         // Only mark as series if we have a valid series name AND season/episode info
-        val isSeries = (heuristic.suggestedKind == MediaKind.EPISODE || 
-                       mediaInfo.seasonNumber != null || 
-                       mediaInfo.episodeNumber != null) &&
-                       !mediaInfo.seriesName.isNullOrBlank()
+        val isSeries =
+            (
+                heuristic.suggestedKind == MediaKind.EPISODE ||
+                    mediaInfo.seasonNumber != null ||
+                    mediaInfo.episodeNumber != null
+            ) &&
+                !mediaInfo.seriesName.isNullOrBlank()
 
         // Normalize series name for grouping
         // Note: This normalization may cause collisions for series that differ only in casing,
         // separators, or spacing. This is intentional for grouping variations of the same series.
         // Examples: "Star.Trek" and "Star-Trek" both become "star trek"
-        val seriesNameNormalized = mediaInfo.seriesName
-            ?.lowercase()
-            ?.replace(Regex("""[._-]+"""), " ")
-            ?.trim()
+        val seriesNameNormalized =
+            mediaInfo.seriesName
+                ?.lowercase()
+                ?.replace(Regex("""[._-]+"""), " ")
+                ?.trim()
 
         val obxMessage =
             ObxTelegramMessage(
@@ -495,7 +506,7 @@ class TelegramContentRepository(
     /**
      * Get grouped series data for a specific chat.
      * Groups episodes by series name and organizes by season.
-     * 
+     *
      * @param chatId Chat ID to query
      * @return Map of series name to list of episodes
      */
@@ -517,7 +528,7 @@ class TelegramContentRepository(
 
     /**
      * Get all episodes for a specific series in a chat.
-     * 
+     *
      * @param chatId Chat ID
      * @param seriesNameNormalized Normalized series name for grouping
      * @return List of episodes sorted by season and episode number
@@ -544,7 +555,7 @@ class TelegramContentRepository(
 
     /**
      * Get movies (non-series content) for specific chats.
-     * 
+     *
      * @param chatIds List of chat IDs
      * @return List of movie MediaItems
      */
@@ -565,7 +576,7 @@ class TelegramContentRepository(
 
     /**
      * Get unique series (one entry per series) for specific chats.
-     * 
+     *
      * @param chatIds List of chat IDs
      * @return List of series MediaItems (one per series)
      */
