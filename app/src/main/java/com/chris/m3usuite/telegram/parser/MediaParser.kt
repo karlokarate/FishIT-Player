@@ -69,6 +69,217 @@ object MediaParser {
         return ParsedItem.None(chatId, message.id)
     }
 
+    /**
+     * Parse structured movie chat with 3-message pattern: Video + Meta + Poster.
+     * 
+     * Expected pattern (in descending order by messageId):
+     * - i: MessageVideo with .mp4
+     * - i+1: MessageText with metadata (Titel:, Erscheinungsjahr:, etc.)
+     * - i+2: MessagePhoto (poster)
+     * 
+     * Returns list of ParsedItem where:
+     * - Video becomes ParsedItem.Media with full metadata
+     * - Meta and Poster are marked as consumed (isConsumed=true)
+     * 
+     * @param chatContext Chat context with isStructuredMovieChat flag
+     * @param messages List of messages sorted descending by messageId
+     * @return List of ParsedItem (Media items and consumed markers)
+     */
+    fun parseStructuredMovieChat(
+        chatContext: ChatContext,
+        messages: List<Message>,
+    ): List<ParsedItem> {
+        if (!chatContext.isStructuredMovieChat || messages.size < 3) {
+            return emptyList()
+        }
+
+        val results = mutableListOf<ParsedItem>()
+        val consumedIds = mutableSetOf<Long>()
+        var i = 0
+
+        while (i <= messages.size - 3) {
+            val msg0 = messages[i]
+            val msg1 = messages[i + 1]
+            val msg2 = messages[i + 2]
+
+            // Check for pattern: Video, Text, Photo
+            val isPattern =
+                msg0.content is MessageVideo &&
+                    msg1.content is MessageText &&
+                    msg2.content is MessagePhoto
+
+            if (isPattern) {
+                val videoContent = msg0.content as MessageVideo
+                val textContent = msg1.content as MessageText
+                val photoContent = msg2.content as MessagePhoto
+
+                // Validate video file
+                val video = videoContent.video
+                val fileName = video.fileName
+                val fileId = video.video?.id
+                val fileUniqueId = video.video?.remote?.uniqueId
+
+                // Only create media if fileId is valid
+                if (fileId != null && fileId > 0 && !fileName.isNullOrBlank()) {
+                    // Check if filename is a supported video format
+                    val supportedVideoRegex = Regex(""".*\.(mp4|mkv|avi|mov|webm)$""", RegexOption.IGNORE_CASE)
+                    val isSupportedVideoFile = supportedVideoRegex.matches(fileName)
+
+                    if (isSupportedVideoFile) {
+                        // Parse metadata from text
+                        val metaText = textContent.text?.text.orEmpty()
+                        val meta = parseMetaFromText(metaText)
+
+                        // Extract poster info
+                        val photo = photoContent.photo
+                        val posterFileId = photo.sizes?.maxByOrNull { it.width }?.photo?.id
+
+                        // Detect series from filename/caption
+                        val allText = combineTextForAnalysis(fileName, videoContent.caption?.text.orEmpty())
+                        val seasonEp = TgContentHeuristics.guessSeasonEpisode(allText)
+                        val isSeries = seasonEp != null && (seasonEp.season != null || seasonEp.episode != null)
+                        val kind = if (isSeries) MediaKind.EPISODE else MediaKind.MOVIE
+
+                        // Extract series name if episode
+                        val seriesName = if (isSeries) {
+                            extractSeriesName(fileName, seasonEp)
+                        } else null
+
+                        // Create MediaInfo for video with full metadata
+                        val mediaInfo = MediaInfo(
+                            chatId = chatContext.chatId,
+                            messageId = msg0.id,
+                            kind = kind,
+                            chatTitle = chatContext.chatTitle,
+                            fileName = fileName,
+                            mimeType = video.mimeType,
+                            sizeBytes = video.video?.size?.toLong(),
+                            fileId = fileId,
+                            fileUniqueId = fileUniqueId,
+                            title = meta?.title,
+                            year = meta?.year,
+                            genres = meta?.genres ?: emptyList(),
+                            fsk = meta?.fsk,
+                            durationMinutes = meta?.durationMinutes,
+                            country = meta?.country,
+                            director = meta?.director,
+                            tmdbRating = meta?.tmdbRating,
+                            tmdbVotes = meta?.tmdbVotes,
+                            posterFileId = posterFileId,
+                            seasonNumber = seasonEp?.season,
+                            episodeNumber = seasonEp?.episode,
+                            seriesName = seriesName,
+                            extraInfo = meta?.extraInfo,
+                        )
+
+                        results.add(ParsedItem.Media(mediaInfo))
+
+                        // Mark meta and poster messages as consumed
+                        consumedIds.add(msg1.id)
+                        consumedIds.add(msg2.id)
+
+                        // Skip the processed triplet
+                        i += 3
+                        continue
+                    }
+                }
+            }
+
+            // No pattern match, move to next message
+            i++
+        }
+
+        // No need to add consumed markers for meta/poster messages; these are filtered out downstream.
+
+        return results
+    }
+
+    /**
+     * Extract series name from filename by removing season/episode patterns.
+     */
+    internal fun extractSeriesName(
+        fileName: String,
+        seasonEp: TgContentHeuristics.SeasonEpisode?,
+    ): String? {
+        if (seasonEp == null) return null
+
+        // Remove file extension
+        val base = fileName.substringBeforeLast('.')
+
+        // Remove the season/episode pattern
+        val cleaned = when (seasonEp.pattern) {
+            "SxxEyy" -> base.replace(Regex("""[Ss]\d{1,2}[Ee]\d{1,3}"""), "")
+            "XxY" -> base.replace(Regex("""\d{1,2}x\d{1,3}"""), "")
+            "Episode X" -> base.replace(Regex("""[Ee]pisode[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
+            "Ep X" -> base.replace(Regex("""[Ee]p[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
+            "Folge X" -> base.replace(Regex("""[Ff]olge[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
+            "Staffel X" -> base.replace(Regex("""[Ss]taffel[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
+            "Season X Episode Y" -> base.replace(Regex("""[Ss]eason[.\s]*\d{1,3}[.\s]*[Ee]pisode[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
+            else -> base.replace(Regex("""([Ss]taffel|[Ss]eason)[.\s]*\d{1,3}([.\s]*[Ee]pisode[.\s]*\d{1,3})?""", RegexOption.IGNORE_CASE), "")
+        }
+
+        // Clean up separators and whitespace
+        return cleaned
+            .replace(Regex("""[._-]+"""), " ")
+            .trim()
+            .takeIf { it.isNotBlank() }
+    }
+
+    /**
+     * Combine filename and caption text for analysis.
+     */
+    private fun combineTextForAnalysis(
+        fileName: String?,
+        captionText: String,
+    ): String = (fileName ?: "") + " " + captionText
+
+    /**
+     * Select appropriate title from caption, parsed metadata, or filename.
+     * Prefers caption if it is not a metadata block (i.e., does not contain multiple metadata markers),
+     * otherwise uses parsed title from filename, or falls back to filename without extension.
+     *
+     * Preference order:
+     *   1. Caption text (if not a metadata block)
+     *   2. Parsed title (from filename or metadata)
+     *   3. Filename without extension
+     */
+    private fun selectTitle(
+        captionText: String,
+        parsedTitle: String?,
+        fileName: String?,
+    ): String? =
+        if (captionText.isNotBlank() && !isMetadataBlock(captionText)) {
+            captionText
+        } else {
+            parsedTitle ?: fileName?.substringBeforeLast('.')
+        }
+
+    /**
+     * Detects if the caption text is a metadata block by checking for multiple metadata markers.
+     */
+    private fun isMetadataBlock(captionText: String): Boolean {
+        val markers = listOf(
+            "Titel:",
+            "Originaltitel:",
+            "Erscheinungsjahr:",
+            "Länge:",
+            "Länge:",
+            "Produktionsland:",
+            "FSK:",
+            "Filmreihe:",
+            "Regie:",
+            "TMDbRating:",
+            "Genres:",
+            "Episoden:"
+        )
+        var count = 0
+        for (marker in markers) {
+            if (captionText.contains(marker, ignoreCase = true)) {
+                count++
+            }
+        }
+        return count >= 2 // Consider it a metadata block if 2 or more markers are present
+    }
     private fun parseMedia(
         chatId: Long,
         chatTitle: String?,
@@ -81,21 +292,48 @@ object MediaParser {
             is MessageVideo -> {
                 val video = content.video
                 val name = video.fileName?.takeIf { it.isNotBlank() }
+                
+                // Extract file IDs
+                val fileId = video.video?.id
+                val fileUniqueId = video.video?.remote?.uniqueId
+                
+                // Get thumbnail for fallback poster
+                val thumbFileId = video.thumbnail?.file?.id
+                
+                // Parse metadata from filename and caption
                 val metaFromName = parseMediaFromFileName(name)
+                val captionText = content.caption?.text.orEmpty()
+                val metaFromText = parseMetaFromText(captionText)
+                
+                // Detect series from filename or caption
+                val allText = combineTextForAnalysis(name, captionText)
+                val seasonEp = TgContentHeuristics.guessSeasonEpisode(allText)
+                val isSeries = seasonEp != null && (seasonEp.season != null || seasonEp.episode != null)
+                
                 val kind =
-                    if (isAdultChannel(chatTitle, content.caption?.text)) {
+                    if (isAdultChannel(chatTitle, captionText)) {
                         MediaKind.ADULT
                     } else {
-                        if (metaFromName?.seasonNumber != null) MediaKind.EPISODE else MediaKind.MOVIE
+                        if (isSeries || metaFromName?.seasonNumber != null) MediaKind.EPISODE else MediaKind.MOVIE
                     }
 
-                val metaFromText = parseMetaFromText(content.caption?.text.orEmpty())
+                // Extract series name if episode
+                val seriesName = if (isSeries && name != null) {
+                    extractSeriesName(name, seasonEp)
+                } else null
+
                 val base =
                     metaFromName?.copy(
                         kind = kind,
                         chatId = chatId,
                         messageId = message.id,
                         chatTitle = chatTitle,
+                        fileId = fileId,
+                        fileUniqueId = fileUniqueId,
+                        seasonNumber = seasonEp?.season ?: metaFromName.seasonNumber,
+                        episodeNumber = seasonEp?.episode ?: metaFromName.episodeNumber,
+                        seriesName = seriesName,
+                        title = selectTitle(captionText, metaFromName.title, name),
                     ) ?: MediaInfo(
                         chatId = chatId,
                         messageId = message.id,
@@ -104,30 +342,69 @@ object MediaParser {
                         fileName = name,
                         mimeType = video.mimeType,
                         sizeBytes = video.video?.size?.toLong(),
+                        fileId = fileId,
+                        fileUniqueId = fileUniqueId,
+                        seasonNumber = seasonEp?.season,
+                        episodeNumber = seasonEp?.episode,
+                        seriesName = seriesName,
+                        title = selectTitle(captionText, null, name),
                     )
 
-                mergeMeta(base, metaFromText)
+                mergeMeta(base, metaFromText).copy(
+                    posterFileId = thumbFileId, // Use video thumbnail as fallback poster
+                )
             }
 
             is MessageDocument -> {
                 val doc = content.document
                 val name = doc.fileName?.takeIf { it.isNotBlank() }
                 val isArchive = name?.matches(Regex(""".*\.(rar|zip|7z|tar|gz|bz2)$""", RegexOption.IGNORE_CASE)) == true
+                
+                // Extract file IDs
+                val fileId = doc.document?.id
+                val fileUniqueId = doc.document?.remote?.uniqueId
+                
+                // Get thumbnail for fallback poster
+                val thumbFileId = doc.thumbnail?.file?.id
+                
+                // Check if it's a video file (mp4, mkv, avi, etc.)
+                val isVideoFile = name?.matches(Regex(""".*\.(mp4|mkv|avi|mov|wmv|flv|webm)$""", RegexOption.IGNORE_CASE)) == true
+                
+                // Parse metadata
+                val captionText = content.caption?.text.orEmpty()
+                val metaFromName = parseMediaFromFileName(name)
+                val metaFromText = parseMetaFromText(captionText)
+                
+                // Detect series if it's a video file
+                val allText = combineTextForAnalysis(name, captionText)
+                val seasonEp = if (isVideoFile) TgContentHeuristics.guessSeasonEpisode(allText) else null
+                val isSeries = seasonEp != null && (seasonEp.season != null || seasonEp.episode != null)
+                
                 val kind =
                     when {
                         isArchive -> MediaKind.RAR_ARCHIVE
-                        isAdultChannel(chatTitle, content.caption?.text) -> MediaKind.ADULT
+                        isAdultChannel(chatTitle, captionText) -> MediaKind.ADULT
+                        isSeries -> MediaKind.EPISODE
                         else -> MediaKind.MOVIE
                     }
 
-                val metaFromName = parseMediaFromFileName(name)
-                val metaFromText = parseMetaFromText(content.caption?.text.orEmpty())
+                // Extract series name if episode
+                val seriesName = if (isSeries && name != null) {
+                    extractSeriesName(name, seasonEp)
+                } else null
+
                 val base =
                     metaFromName?.copy(
                         kind = if (isArchive) MediaKind.RAR_ARCHIVE else kind,
                         chatId = chatId,
                         messageId = message.id,
                         chatTitle = chatTitle,
+                        fileId = fileId,
+                        fileUniqueId = fileUniqueId,
+                        seasonNumber = seasonEp?.season ?: metaFromName.seasonNumber,
+                        episodeNumber = seasonEp?.episode ?: metaFromName.episodeNumber,
+                        seriesName = seriesName,
+                        title = selectTitle(captionText, metaFromName.title, name),
                     ) ?: MediaInfo(
                         chatId = chatId,
                         messageId = message.id,
@@ -136,9 +413,17 @@ object MediaParser {
                         fileName = name,
                         mimeType = doc.mimeType,
                         sizeBytes = doc.document?.size?.toLong(),
+                        fileId = fileId,
+                        fileUniqueId = fileUniqueId,
+                        seasonNumber = seasonEp?.season,
+                        episodeNumber = seasonEp?.episode,
+                        seriesName = seriesName,
+                        title = selectTitle(captionText, null, name),
                     )
 
-                mergeMeta(base, metaFromText)
+                mergeMeta(base, metaFromText).copy(
+                    posterFileId = if (isVideoFile) thumbFileId else null, // Use thumbnail for video files
+                )
             }
 
             is MessagePhoto -> {

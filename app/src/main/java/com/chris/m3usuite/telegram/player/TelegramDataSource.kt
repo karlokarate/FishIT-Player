@@ -121,10 +121,21 @@ class TelegramDataSource(
         }
 
         fileId = segments[0]
+        
+        // Validate fileId is a valid positive integer
+        val fileIdInt = fileId?.toIntOrNull()
+        if (fileIdInt == null || fileIdInt <= 0) {
+            TelegramLogRepository.error(
+                source = "TelegramDataSource",
+                message = "Invalid fileId in URI",
+                details = mapOf("fileId" to (fileId ?: "null"), "uri" to uri.toString()),
+            )
+            throw IOException("Invalid fileId in Telegram URI: $uri (fileId=$fileId must be a positive integer)")
+        }
 
         // Log stream start
         TelegramLogRepository.logStreamingActivity(
-            fileId = fileId!!.toIntOrNull() ?: 0,
+            fileId = fileIdInt,
             action = "opening",
             details = mapOf("uri" to uri.toString()),
         )
@@ -191,15 +202,15 @@ class TelegramDataSource(
         windowStart = position
         windowSize = StreamingConfig.TELEGRAM_STREAM_WINDOW_BYTES
 
-        // Ensure initial window is prepared
-        val fileIdInt = fileId!!.toIntOrNull() ?: throw IOException("Invalid file ID: $fileId")
+        // Ensure initial window is prepared (fileIdInt already validated above)
+        val windowFileId = fileIdInt
 
         TelegramLogRepository.debug(
             source = "TelegramDataSource",
             message = "prepare window",
             details =
                 mapOf(
-                    "fileId" to fileIdInt.toString(),
+                    "fileId" to windowFileId.toString(),
                     "position" to position.toString(),
                     "readLength" to "initial",
                     "windowStart" to windowStart.toString(),
@@ -210,7 +221,7 @@ class TelegramDataSource(
         val windowReady =
             runBlocking {
                 try {
-                    downloader.ensureWindow(fileIdInt, windowStart, windowSize)
+                    downloader.ensureWindow(windowFileId, windowStart, windowSize)
                 } catch (e: Exception) {
                     TelegramLogRepository.error(
                         source = "TelegramDataSource",
@@ -237,7 +248,7 @@ class TelegramDataSource(
 
         // Log successful open
         TelegramLogRepository.logStreamingActivity(
-            fileId = fileId!!.toIntOrNull() ?: 0,
+            fileId = fileIdInt,
             action = "opened",
             details =
                 mapOf(

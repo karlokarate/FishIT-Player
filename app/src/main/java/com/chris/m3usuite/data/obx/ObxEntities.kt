@@ -215,6 +215,21 @@ data class ObxTelegramMessage(
     var width: Int? = null,
     var height: Int? = null,
     @Index var language: String? = null,
+    // Movie metadata (from structured 3-message pattern):
+    var title: String? = null,
+    var year: Int? = null,
+    var genres: String? = null, // Comma-separated
+    var fsk: Int? = null,
+    var description: String? = null,
+    var posterFileId: Int? = null,
+    var posterLocalPath: String? = null,
+    // Series metadata (for episode grouping):
+    @Index var isSeries: Boolean = false,
+    @Index var seriesName: String? = null,
+    var seriesNameNormalized: String? = null, // For grouping
+    var seasonNumber: Int? = null,
+    var episodeNumber: Int? = null,
+    var episodeTitle: String? = null,
 )
 
 // --- Aggregated index tables (persisted once per import; no full scans required) ---

@@ -6,6 +6,7 @@ import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.models.MediaKind
 import com.chris.m3usuite.telegram.parser.MediaParser
 import com.chris.m3usuite.telegram.parser.TgContentHeuristics
 import dev.g000sha256.tdl.dto.Message
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.net.URLEncoder
 
 /**
  * Repository for Telegram content.
@@ -73,6 +75,16 @@ class TelegramContentRepository(
                     is com.chris.m3usuite.telegram.models.ParsedItem.Media -> {
                         val mediaInfo = parsed.info
 
+                        // Skip consumed messages (from structured patterns)
+                        if (mediaInfo.isConsumed) {
+                            return@forEach
+                        }
+
+                        // Skip items without valid fileId (cannot be played)
+                        if (mediaInfo.fileId == null || mediaInfo.fileId <= 0) {
+                            return@forEach
+                        }
+
                         // Apply heuristics for better classification
                         val heuristic = TgContentHeuristics.classify(mediaInfo, chatTitle)
 
@@ -120,6 +132,17 @@ class TelegramContentRepository(
                         // Detect language from heuristics
                         val language = heuristic.detectedLanguages.firstOrNull()
 
+                        // Determine if this is a series episode
+                        val isSeries = heuristic.suggestedKind == MediaKind.EPISODE || 
+                                      mediaInfo.seasonNumber != null || 
+                                      mediaInfo.episodeNumber != null
+
+                        // Normalize series name for grouping
+                        val seriesNameNormalized = mediaInfo.seriesName
+                            ?.lowercase()
+                            ?.replace(Regex("""[._-]+"""), " ")
+                            ?.trim()
+
                         val obxMessage =
                             ObxTelegramMessage(
                                 chatId = chatId,
@@ -137,6 +160,20 @@ class TelegramContentRepository(
                                 width = width,
                                 height = height,
                                 language = language,
+                                // Movie metadata
+                                title = mediaInfo.title,
+                                year = mediaInfo.year,
+                                genres = mediaInfo.genres.joinToString(", "),
+                                fsk = mediaInfo.fsk,
+                                description = mediaInfo.extraInfo,
+                                posterFileId = mediaInfo.posterFileId,
+                                // Series metadata
+                                isSeries = isSeries,
+                                seriesName = mediaInfo.seriesName,
+                                seriesNameNormalized = seriesNameNormalized,
+                                seasonNumber = heuristic.seasonNumber ?: mediaInfo.seasonNumber,
+                                episodeNumber = heuristic.episodeNumber ?: mediaInfo.episodeNumber,
+                                episodeTitle = mediaInfo.episodeTitle,
                             )
 
                         // Upsert logic: check if already exists
@@ -191,7 +228,7 @@ class TelegramContentRepository(
                 if (chatIds.isEmpty()) {
                     emptyList()
                 } else {
-                    getTelegramContentByChatIds(chatIds, "vod")
+                    getTelegramMoviesByChatIds(chatIds)
                 }
             }.flowOn(Dispatchers.IO)
 
@@ -206,7 +243,7 @@ class TelegramContentRepository(
                 if (chatIds.isEmpty()) {
                     emptyList()
                 } else {
-                    getTelegramContentByChatIds(chatIds, "series")
+                    getTelegramSeriesByChatIds(chatIds)
                 }
             }.flowOn(Dispatchers.IO)
 
@@ -364,6 +401,118 @@ class TelegramContentRepository(
                     },
                 )
             }.flowOn(Dispatchers.IO)
+
+    /**
+     * Get grouped series data for a specific chat.
+     * Groups episodes by series name and organizes by season.
+     * 
+     * @param chatId Chat ID to query
+     * @return Map of series name to list of episodes
+     */
+    suspend fun getSeriesGroupedByChat(chatId: Long): Map<String, List<ObxTelegramMessage>> =
+        withContext(Dispatchers.IO) {
+            val episodes =
+                messageBox
+                    .query {
+                        equal(ObxTelegramMessage_.chatId, chatId)
+                        equal(ObxTelegramMessage_.isSeries, true)
+                        orderDesc(ObxTelegramMessage_.date)
+                    }.find()
+
+            // Group by normalized series name
+            episodes
+                .filter { !it.seriesNameNormalized.isNullOrBlank() }
+                .groupBy { it.seriesNameNormalized!! }
+        }
+
+    /**
+     * Get all episodes for a specific series in a chat.
+     * 
+     * @param chatId Chat ID
+     * @param seriesNameNormalized Normalized series name for grouping
+     * @return List of episodes sorted by season and episode number
+     */
+    suspend fun getSeriesEpisodes(
+        chatId: Long,
+        seriesNameNormalized: String,
+    ): List<ObxTelegramMessage> =
+        withContext(Dispatchers.IO) {
+            messageBox
+                .query {
+                    equal(ObxTelegramMessage_.chatId, chatId)
+                    equal(ObxTelegramMessage_.isSeries, true)
+                    // Use exact match for normalized series name
+                    equal(ObxTelegramMessage_.seriesNameNormalized, seriesNameNormalized, StringOrder.CASE_SENSITIVE)
+                }.find()
+                .sortedWith(
+                    compareBy(
+                        { it.seasonNumber ?: 0 },
+                        { it.episodeNumber ?: 0 },
+                    ),
+                )
+        }
+
+    /**
+     * Get movies (non-series content) for specific chats.
+     * 
+     * @param chatIds List of chat IDs
+     * @return List of movie MediaItems
+     */
+    private suspend fun getTelegramMoviesByChatIds(chatIds: List<Long>): List<MediaItem> =
+        withContext(Dispatchers.IO) {
+            val messages =
+                messageBox
+                    .query {
+                        `in`(ObxTelegramMessage_.chatId, chatIds.toLongArray())
+                        equal(ObxTelegramMessage_.isSeries, false)
+                        orderDesc(ObxTelegramMessage_.date)
+                    }.find()
+
+            messages.map { obxMsg ->
+                toMediaItem(obxMsg, "vod")
+            }
+        }
+
+    /**
+     * Get unique series (one entry per series) for specific chats.
+     * 
+     * @param chatIds List of chat IDs
+     * @return List of series MediaItems (one per series)
+     */
+    private suspend fun getTelegramSeriesByChatIds(chatIds: List<Long>): List<MediaItem> =
+        withContext(Dispatchers.IO) {
+            val episodes =
+                messageBox
+                    .query {
+                        `in`(ObxTelegramMessage_.chatId, chatIds.toLongArray())
+                        equal(ObxTelegramMessage_.isSeries, true)
+                        orderDesc(ObxTelegramMessage_.date)
+                    }.find()
+
+            // Group by (chatId, seriesNameNormalized) and take first episode as representative
+            episodes
+                .filter { !it.seriesNameNormalized.isNullOrBlank() }
+                .groupBy { Pair(it.chatId, it.seriesNameNormalized!!) }
+                .map { (_, episodeList) ->
+                    // Use first episode as representative, but modify fields for series view
+                    val representative = episodeList.first()
+                    val encodedSeriesName = URLEncoder.encode(representative.seriesNameNormalized, "UTF-8")
+                    MediaItem(
+                        id = encodeTelegramId(representative.messageId),
+                        name = representative.seriesName ?: "Untitled Series",
+                        type = "series",
+                        url = "tg://series/${representative.chatId}/$encodedSeriesName",
+                        poster = representative.posterLocalPath ?: representative.thumbLocalPath,
+                        plot = representative.description,
+                        rating = null,
+                        year = representative.year,
+                        durationSecs = null, // Series don't have a single duration
+                        categoryName = "Telegram Series",
+                        source = "telegram",
+                        providerKey = "Telegram",
+                    )
+                }
+        }
 
     /**
      * Search Telegram content.
