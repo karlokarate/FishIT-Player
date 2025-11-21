@@ -445,14 +445,12 @@ class T_TelegramServiceClient private constructor(
                             _authState.value = TelegramAuthState.WaitingForPhone
                             TelegramLogRepository.info("T_TelegramServiceClient", "Reauth required: ${event.reason}")
                             // Show global snackbar notification
-                            serviceScope.launch {
-                                try {
-                                    com.chris.m3usuite.ui.home.GlobalSnackbarEvent.show(
-                                        "Telegram benötigt eine erneute Anmeldung. Bitte öffne die Telegram-Einstellungen.",
-                                    )
-                                } catch (e: Exception) {
-                                    TelegramLogRepository.debug("T_TelegramServiceClient", "Error showing reauth snackbar: ${e.message}")
-                                }
+                            try {
+                                com.chris.m3usuite.ui.home.GlobalSnackbarEvent.show(
+                                    "Telegram benötigt eine erneute Anmeldung. Bitte öffne die Telegram-Einstellungen.",
+                                )
+                            } catch (e: Exception) {
+                                TelegramLogRepository.debug("T_TelegramServiceClient", "Error showing reauth snackbar: ${e.message}")
                             }
                         }
                     }
