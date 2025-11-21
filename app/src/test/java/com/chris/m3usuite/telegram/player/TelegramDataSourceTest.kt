@@ -65,13 +65,13 @@ class TelegramDataSourceTest {
     }
 
     @Test
-    fun `TelegramDataSource imports TimeoutException`() {
-        // Verify imports include TimeoutException for proper exception handling
+    fun `TelegramDataSource imports TimeoutCancellationException`() {
+        // Verify imports include TimeoutCancellationException for proper exception handling
         val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/player/TelegramDataSource.kt")
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
-            assert(content.contains("import java.util.concurrent.TimeoutException")) {
-                "TelegramDataSource should import TimeoutException"
+            assert(content.contains("import kotlinx.coroutines.TimeoutCancellationException")) {
+                "TelegramDataSource should import TimeoutCancellationException"
             }
         }
     }
