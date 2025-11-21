@@ -55,8 +55,11 @@ class TelegramDataSourceTest {
             assert(content.contains("import kotlinx.coroutines.withTimeout")) {
                 "TelegramDataSource should import withTimeout for timeout handling"
             }
-            assert(content.contains("withTimeout(30_000L)") || content.contains("withTimeout(10_000L)")) {
-                "TelegramDataSource should use withTimeout for blocking operations"
+            assert(
+                content.contains("withTimeout(StreamingConfig.WINDOW_TRANSITION_TIMEOUT_MS)") ||
+                content.contains("withTimeout(StreamingConfig.READ_OPERATION_TIMEOUT_MS)")
+            ) {
+                "TelegramDataSource should use withTimeout with StreamingConfig timeout constants for blocking operations"
             }
         }
     }
