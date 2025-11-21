@@ -134,7 +134,8 @@ object MediaParser {
                         val posterFileId = photo.sizes?.maxByOrNull { it.width }?.photo?.id
 
                         // Detect series from filename/caption
-                        val seasonEp = TgContentHeuristics.guessSeasonEpisode(fileName + " " + (videoContent.caption?.text ?: ""))
+                        val allText = combineTextForAnalysis(fileName, videoContent.caption?.text.orEmpty())
+                        val seasonEp = TgContentHeuristics.guessSeasonEpisode(allText)
                         val isSeries = seasonEp != null && (seasonEp.season != null || seasonEp.episode != null)
                         val kind = if (isSeries) MediaKind.EPISODE else MediaKind.MOVIE
 
@@ -236,6 +237,30 @@ object MediaParser {
             .takeIf { it.isNotBlank() }
     }
 
+    /**
+     * Combine filename and caption text for analysis.
+     */
+    private fun combineTextForAnalysis(
+        fileName: String?,
+        captionText: String,
+    ): String = (fileName ?: "") + " " + captionText
+
+    /**
+     * Select appropriate title from caption or filename.
+     * Prefers caption if it doesn't contain metadata markers,
+     * otherwise uses parsed title from filename.
+     */
+    private fun selectTitle(
+        captionText: String,
+        parsedTitle: String?,
+        fileName: String?,
+    ): String? =
+        if (captionText.isNotBlank() && !captionText.contains("Titel:", ignoreCase = true)) {
+            captionText
+        } else {
+            parsedTitle ?: fileName?.substringBeforeLast('.') ?: fileName
+        }
+
     private fun parseMedia(
         chatId: Long,
         chatTitle: String?,
@@ -262,7 +287,7 @@ object MediaParser {
                 val metaFromText = parseMetaFromText(captionText)
                 
                 // Detect series from filename or caption
-                val allText = (name ?: "") + " " + captionText
+                val allText = combineTextForAnalysis(name, captionText)
                 val seasonEp = TgContentHeuristics.guessSeasonEpisode(allText)
                 val isSeries = seasonEp != null && (seasonEp.season != null || seasonEp.episode != null)
                 
@@ -289,12 +314,7 @@ object MediaParser {
                         seasonNumber = seasonEp?.season ?: metaFromName.seasonNumber,
                         episodeNumber = seasonEp?.episode ?: metaFromName.episodeNumber,
                         seriesName = seriesName,
-                        // Use caption as title if available, otherwise use parsed title from filename
-                        title = if (captionText.isNotBlank() && !captionText.contains("Titel:", ignoreCase = true)) {
-                            captionText
-                        } else {
-                            metaFromName.title
-                        },
+                        title = selectTitle(captionText, metaFromName.title, name),
                     ) ?: MediaInfo(
                         chatId = chatId,
                         messageId = message.id,
@@ -308,12 +328,7 @@ object MediaParser {
                         seasonNumber = seasonEp?.season,
                         episodeNumber = seasonEp?.episode,
                         seriesName = seriesName,
-                        // Use caption as title if available, otherwise filename without extension
-                        title = if (captionText.isNotBlank() && !captionText.contains("Titel:", ignoreCase = true)) {
-                            captionText
-                        } else {
-                            name?.substringBeforeLast('.') ?: name
-                        },
+                        title = selectTitle(captionText, null, name),
                     )
 
                 mergeMeta(base, metaFromText).copy(
@@ -342,7 +357,7 @@ object MediaParser {
                 val metaFromText = parseMetaFromText(captionText)
                 
                 // Detect series if it's a video file
-                val allText = (name ?: "") + " " + captionText
+                val allText = combineTextForAnalysis(name, captionText)
                 val seasonEp = if (isVideoFile) TgContentHeuristics.guessSeasonEpisode(allText) else null
                 val isSeries = seasonEp != null && (seasonEp.season != null || seasonEp.episode != null)
                 
@@ -370,11 +385,7 @@ object MediaParser {
                         seasonNumber = seasonEp?.season ?: metaFromName.seasonNumber,
                         episodeNumber = seasonEp?.episode ?: metaFromName.episodeNumber,
                         seriesName = seriesName,
-                        title = if (captionText.isNotBlank() && !captionText.contains("Titel:", ignoreCase = true)) {
-                            captionText
-                        } else {
-                            metaFromName.title
-                        },
+                        title = selectTitle(captionText, metaFromName.title, name),
                     ) ?: MediaInfo(
                         chatId = chatId,
                         messageId = message.id,
@@ -388,11 +399,7 @@ object MediaParser {
                         seasonNumber = seasonEp?.season,
                         episodeNumber = seasonEp?.episode,
                         seriesName = seriesName,
-                        title = if (captionText.isNotBlank() && !captionText.contains("Titel:", ignoreCase = true)) {
-                            captionText
-                        } else {
-                            name?.substringBeforeLast('.') ?: name
-                        },
+                        title = selectTitle(captionText, null, name),
                     )
 
                 mergeMeta(base, metaFromText).copy(

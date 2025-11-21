@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.net.URLEncoder
 
 /**
  * Repository for Telegram content.
@@ -496,11 +497,12 @@ class TelegramContentRepository(
                 .map { (_, episodeList) ->
                     // Use first episode as representative, but modify fields for series view
                     val representative = episodeList.first()
+                    val encodedSeriesName = URLEncoder.encode(representative.seriesNameNormalized, "UTF-8")
                     MediaItem(
                         id = encodeTelegramId(representative.messageId),
                         name = representative.seriesName ?: "Untitled Series",
                         type = "series",
-                        url = "tg://series/${representative.chatId}/${representative.seriesNameNormalized}",
+                        url = "tg://series/${representative.chatId}/$encodedSeriesName",
                         poster = representative.posterLocalPath ?: representative.thumbLocalPath,
                         plot = representative.description,
                         rating = null,
