@@ -495,7 +495,7 @@ class T_TelegramFileDownloader(
                             mapOf(
                                 "fileId" to fileId,
                                 "position" to position.toString(),
-                                "retryCount" to ioRetryCount.toString(),
+                                "ioRetryCount" to ioRetryCount.toString(),
                             ),
                     )
                 } catch (e: Exception) {
