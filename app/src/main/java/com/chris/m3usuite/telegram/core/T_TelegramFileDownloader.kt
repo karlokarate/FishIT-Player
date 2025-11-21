@@ -15,37 +15,37 @@ import kotlin.math.min
 /**
  * Windowing configuration for Zero-Copy Streaming.
  *
- * **Windowed Zero-Copy Streaming** bedeutet:
- * - TDLib cached Mediendateien weiterhin auf Disk (unvermeidbar)
- * - Es wird nur ein Fenster der Datei rund um die aktuelle Abspielposition heruntergeladen
- * - Beim Spulen werden alte Fenster verworfen und neue Fenster an der Zielposition geöffnet
- * - `readFileChunk()` schreibt direkt aus dem TDLib-Cache in den Player-Buffer (Zero-Copy im App-Layer)
+ * **Windowed Zero-Copy Streaming** means:
+ * - TDLib continues to cache media files on disk (unavoidable)
+ * - Only a window of the file around the current playback position is downloaded
+ * - When seeking, old windows are discarded and new windows are opened at the target position
+ * - `readFileChunk()` writes directly from the TDLib cache into the player buffer (zero-copy at the app layer)
  *
- * **Window-Größen-Rationale:**
- * - Für große Dateien (z.B. 4GB für 90min Film) muss das Fenster groß genug sein
- * - 16MB Window ermöglicht ca. 1-2 Minuten Puffer bei ~8 Mbit/s Bitrate
- * - 4MB Prefetch-Margin triggert rechtzeitiges Nachladen vor Ende des Fensters
- * - Diese Werte verhindern Ruckeln und exzessives Nachladen
+ * **Window size rationale:**
+ * - For large files (e.g., 4GB for a 90min movie), the window must be large enough
+ * - 16MB window allows about 1-2 minutes of buffer at ~8 Mbit/s bitrate
+ * - 4MB prefetch margin triggers timely reloading before the end of the window
+ * - These values prevent stuttering and excessive reloading
  *
- * **Gilt nur für:**
+ * **Applies only to:**
  * - MediaKind.MOVIE
  * - MediaKind.EPISODE
  * - MediaKind.CLIP
- * - MediaKind.AUDIO (falls vorhanden)
+ * - MediaKind.AUDIO (if available)
  *
- * **NICHT für RAR_ARCHIVE** - diese nutzen Voll-Download.
+ * **NOT for RAR_ARCHIVE** - these use full download.
  */
 object StreamingConfig {
     /**
-     * Fenstergröße für Streaming (16 MB).
-     * Ausreichend für flüssiges Abspielen typischer HD-Videos.
+     * Window size for streaming (16 MB).
+     * Sufficient for smooth playback of typical HD videos.
      */
     const val TELEGRAM_STREAM_WINDOW_BYTES = 16 * 1024 * 1024L
 
     /**
-     * Prefetch-Margin (4 MB).
-     * Wenn die Leseposition diese Distanz zum Fenster-Ende unterschreitet,
-     * wird das nächste Fenster vorbereitet.
+     * Prefetch margin (4 MB).
+     * When the read position falls below this distance to the end of the window,
+     * the next window is prepared.
      */
     const val TELEGRAM_STREAM_PREFETCH_MARGIN = 4 * 1024 * 1024L
 }
