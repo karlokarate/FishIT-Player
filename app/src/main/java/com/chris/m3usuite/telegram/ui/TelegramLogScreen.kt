@@ -1,7 +1,6 @@
 package com.chris.m3usuite.telegram.ui
 
 import android.content.Intent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
@@ -25,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.chris.m3usuite.telegram.logging.TgLogEntry
-import kotlinx.coroutines.launch
 
 /**
  * Telegram Log Screen - View and manage Telegram operation logs.

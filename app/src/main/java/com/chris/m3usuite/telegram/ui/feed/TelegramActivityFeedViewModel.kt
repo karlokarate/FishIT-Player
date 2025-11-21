@@ -43,9 +43,9 @@ class TelegramActivityFeedViewModel(
     init {
         TelegramLogRepository.info(
             source = "TelegramActivityFeedViewModel",
-            message = "Initializing Activity Feed"
+            message = "Initializing Activity Feed",
         )
-        
+
         // Collect activity events from service client
         viewModelScope.launch {
             try {
@@ -56,13 +56,13 @@ class TelegramActivityFeedViewModel(
                 TelegramLogRepository.error(
                     source = "TelegramActivityFeedViewModel",
                     message = "Error collecting activity events",
-                    exception = e
+                    exception = e,
                 )
-                _feedState.update { 
+                _feedState.update {
                     it.copy(
                         errorMessage = "Fehler beim Laden der Aktivitäten: ${e.message}",
-                        isLoading = false
-                    ) 
+                        isLoading = false,
+                    )
                 }
             }
         }
@@ -75,27 +75,27 @@ class TelegramActivityFeedViewModel(
                     TelegramLogRepository.debug(
                         source = "TelegramActivityFeedViewModel",
                         message = "Loaded feed items",
-                        details = mapOf("count" to items.size.toString())
+                        details = mapOf("count" to items.size.toString()),
                     )
-                    _feedState.update { 
+                    _feedState.update {
                         it.copy(
-                            feedItems = items, 
+                            feedItems = items,
                             isLoading = false,
-                            errorMessage = null
-                        ) 
+                            errorMessage = null,
+                        )
                     }
                 }
             } catch (e: Exception) {
                 TelegramLogRepository.error(
                     source = "TelegramActivityFeedViewModel",
                     message = "Error loading feed items",
-                    exception = e
+                    exception = e,
                 )
-                _feedState.update { 
+                _feedState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Fehler beim Laden der Medien: ${e.message}"
-                    ) 
+                        errorMessage = "Fehler beim Laden der Medien: ${e.message}",
+                    )
                 }
             }
         }
@@ -178,11 +178,11 @@ class TelegramActivityFeedViewModel(
                     _feedState.update { it.copy(feedItems = items, isLoading = false) }
                 }
             } catch (e: Exception) {
-                _feedState.update { 
+                _feedState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Fehler beim Aktualisieren: ${e.message}"
-                    ) 
+                        errorMessage = "Fehler beim Aktualisieren: ${e.message}",
+                    )
                 }
             }
         }

@@ -6,12 +6,11 @@ import org.junit.Test
 /**
  * Unit tests for TelegramSyncWorker.
  * Tests worker structure and API compatibility.
- * 
+ *
  * Note: Full worker testing requires WorkManager test framework and Android context.
  * These tests verify the worker's basic structure and exposed API.
  */
 class TelegramSyncWorkerTest {
-
     @Test
     fun `TelegramSyncWorker class exists and extends CoroutineWorker`() {
         // Verify the class structure

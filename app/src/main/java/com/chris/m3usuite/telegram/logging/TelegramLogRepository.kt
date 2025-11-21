@@ -84,10 +84,11 @@ object TelegramLogRepository {
     val entries: StateFlow<List<TgLogEntry>> = _entries.asStateFlow()
 
     // SharedFlow for live events (consumed by overlays)
-    private val _events = MutableSharedFlow<TgLogEntry>(
-        replay = 0,
-        extraBufferCapacity = 10,
-    )
+    private val _events =
+        MutableSharedFlow<TgLogEntry>(
+            replay = 0,
+            extraBufferCapacity = 10,
+        )
     val events: SharedFlow<TgLogEntry> = _events.asSharedFlow()
 
     /**

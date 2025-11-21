@@ -84,9 +84,10 @@ fun TelegramActivityFeedScreen(
         feedState.errorMessage?.let { error ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                ),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),

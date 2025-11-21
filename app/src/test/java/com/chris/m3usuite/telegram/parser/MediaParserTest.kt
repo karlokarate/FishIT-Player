@@ -19,7 +19,6 @@ import org.junit.Test
  * - Content classification via classify
  */
 class MediaParserTest {
-
     @Test
     fun `guessSeasonEpisode detects S01E01 format`() {
         val result = TgContentHeuristics.guessSeasonEpisode("Breaking Bad S01E01 Pilot")
@@ -96,7 +95,10 @@ class MediaParserTest {
     @Test
     fun `detectLanguages finds English tags`() {
         val result = TgContentHeuristics.detectLanguages("Show.ENGLISH.720p")
-        assertTrue("Expected ENGLISH tag", result.any { it.contains("ENGLISH", ignoreCase = true) || it.contains("ENG", ignoreCase = true) })
+        assertTrue(
+            "Expected ENGLISH tag",
+            result.any { it.contains("ENGLISH", ignoreCase = true) || it.contains("ENG", ignoreCase = true) },
+        )
     }
 
     @Test
@@ -126,7 +128,10 @@ class MediaParserTest {
     @Test
     fun `detectQuality detects 4K`() {
         val result = TgContentHeuristics.detectQuality("Movie.4K.HDR.mkv")
-        assertTrue("Expected 4K or UHD", result?.contains("4K", ignoreCase = true) == true || result?.contains("UHD", ignoreCase = true) == true)
+        assertTrue(
+            "Expected 4K or UHD",
+            result?.contains("4K", ignoreCase = true) == true || result?.contains("UHD", ignoreCase = true) == true,
+        )
     }
 
     @Test
@@ -169,15 +174,16 @@ class MediaParserTest {
 
     @Test
     fun `classify detects series from episode pattern`() {
-        val parsed = MediaInfo(
-            chatId = 123,
-            messageId = 456,
-            kind = MediaKind.MOVIE,
-            fileName = "Breaking.Bad.S01E01.mkv",
-            title = "Breaking Bad",
-            seasonNumber = 1,
-            episodeNumber = 1
-        )
+        val parsed =
+            MediaInfo(
+                chatId = 123,
+                messageId = 456,
+                kind = MediaKind.MOVIE,
+                fileName = "Breaking.Bad.S01E01.mkv",
+                title = "Breaking Bad",
+                seasonNumber = 1,
+                episodeNumber = 1,
+            )
         val result = TgContentHeuristics.classify(parsed, "TV Series")
         assertEquals("Expected EPISODE classification", MediaKind.EPISODE, result.suggestedKind)
         assertTrue("Expected high confidence > 0.7", result.confidence > 0.7)
@@ -185,14 +191,15 @@ class MediaParserTest {
 
     @Test
     fun `classify respects movie classification from year and context`() {
-        val parsed = MediaInfo(
-            chatId = 123,
-            messageId = 456,
-            kind = MediaKind.MOVIE,
-            fileName = "Inception.2010.1080p.mkv",
-            title = "Inception",
-            year = 2010
-        )
+        val parsed =
+            MediaInfo(
+                chatId = 123,
+                messageId = 456,
+                kind = MediaKind.MOVIE,
+                fileName = "Inception.2010.1080p.mkv",
+                title = "Inception",
+                year = 2010,
+            )
         val result = TgContentHeuristics.classify(parsed, "Movies HD")
         // Should stay as MOVIE or have reasonable confidence
         assertTrue("Result should be meaningful", result.confidence > 0.3)

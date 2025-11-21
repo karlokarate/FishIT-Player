@@ -114,7 +114,7 @@ class T_TelegramServiceClient private constructor(
 ) {
     companion object {
         private const val TAG = "TelegramServiceClient"
-        
+
         @Volatile
         private var INSTANCE: T_TelegramServiceClient? = null
 
@@ -132,7 +132,7 @@ class T_TelegramServiceClient private constructor(
                 }
             }
     }
-    
+
     // Single TdlClient instance for the entire process
     private var client: TdlClient? = null
 
@@ -478,7 +478,7 @@ class T_TelegramServiceClient private constructor(
 
         // Cancel scope and wait for coroutines to finish
         serviceScope.cancel()
-        
+
         // Close TdlClient to release native resources
         runBlocking {
             try {

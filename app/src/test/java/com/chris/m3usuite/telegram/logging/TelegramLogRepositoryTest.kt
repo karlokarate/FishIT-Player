@@ -18,7 +18,6 @@ import org.junit.Test
  * - Log clearing
  */
 class TelegramLogRepositoryTest {
-
     @Before
     fun setup() {
         // Clear log before each test
@@ -37,12 +36,12 @@ class TelegramLogRepositoryTest {
             level = LogLevel.INFO,
             source = "TestSource",
             message = "Test message",
-            details = mapOf("key1" to "value1")
+            details = mapOf("key1" to "value1"),
         )
 
         val entries = TelegramLogRepository.entries.value
         assertEquals(1, entries.size)
-        
+
         val entry = entries.first()
         assertEquals(LogLevel.INFO, entry.level)
         assertEquals("TestSource", entry.source)
@@ -94,7 +93,7 @@ class TelegramLogRepositoryTest {
 
         val entries = TelegramLogRepository.entries.value
         assertEquals(3, entries.size)
-        
+
         // Verify order (oldest to newest) - the main goal is to verify messages are in the correct order
         assertEquals("Message 1", entries[0].message)
         assertEquals("Message 2", entries[1].message)
@@ -114,7 +113,7 @@ class TelegramLogRepositoryTest {
         assertEquals(1, infoEntries.size)
         assertEquals(1, warnEntries.size)
         assertEquals(1, errorEntries.size)
-        
+
         assertEquals("Info message", infoEntries.first().message)
         assertEquals("Warn message", warnEntries.first().message)
         assertEquals("Error message", errorEntries.first().message)
@@ -161,44 +160,47 @@ class TelegramLogRepositoryTest {
 
     @Test
     fun `TgLogEntry formattedTime formats timestamp`() {
-        val entry = TgLogEntry(
-            timestamp = System.currentTimeMillis(),
-            level = LogLevel.INFO,
-            source = "Test",
-            message = "Test message"
-        )
+        val entry =
+            TgLogEntry(
+                timestamp = System.currentTimeMillis(),
+                level = LogLevel.INFO,
+                source = "Test",
+                message = "Test message",
+            )
 
         val formatted = entry.formattedTime()
-        
+
         // Format is HH:mm:ss.SSS
         assertTrue(formatted.matches(Regex("\\d{2}:\\d{2}:\\d{2}\\.\\d{3}")))
     }
 
     @Test
     fun `TgLogEntry formattedDetails returns null for empty details`() {
-        val entry = TgLogEntry(
-            timestamp = System.currentTimeMillis(),
-            level = LogLevel.INFO,
-            source = "Test",
-            message = "Test message",
-            details = null
-        )
+        val entry =
+            TgLogEntry(
+                timestamp = System.currentTimeMillis(),
+                level = LogLevel.INFO,
+                source = "Test",
+                message = "Test message",
+                details = null,
+            )
 
         assertNull(entry.formattedDetails())
     }
 
     @Test
     fun `TgLogEntry formattedDetails formats map correctly`() {
-        val entry = TgLogEntry(
-            timestamp = System.currentTimeMillis(),
-            level = LogLevel.INFO,
-            source = "Test",
-            message = "Test message",
-            details = mapOf("key1" to "value1", "key2" to "value2")
-        )
+        val entry =
+            TgLogEntry(
+                timestamp = System.currentTimeMillis(),
+                level = LogLevel.INFO,
+                source = "Test",
+                message = "Test message",
+                details = mapOf("key1" to "value1", "key2" to "value2"),
+            )
 
         val formatted = entry.formattedDetails()
-        
+
         assertNotNull(formatted)
         assertTrue(formatted!!.contains("key1=value1"))
         assertTrue(formatted.contains("key2=value2"))

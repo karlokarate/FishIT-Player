@@ -108,7 +108,7 @@ class TelegramSettingsViewModel(
                     SchedulingGateway.scheduleTelegramSync(
                         ctx = app,
                         mode = "all",
-                        refreshHome = true
+                        refreshHome = true,
                     )
                 }
             }
@@ -274,13 +274,13 @@ class TelegramSettingsViewModel(
             val csv = chatIds.joinToString(",")
             store.setTgSelectedChatsCsv(csv)
             _state.update { it.copy(selectedChats = chatIds) }
-            
+
             // Trigger sync after chat selection changes
             if (chatIds.isNotEmpty() && _state.value.enabled) {
                 SchedulingGateway.scheduleTelegramSync(
                     ctx = app,
                     mode = "selection_changed",
-                    refreshHome = true
+                    refreshHome = true,
                 )
             }
         }

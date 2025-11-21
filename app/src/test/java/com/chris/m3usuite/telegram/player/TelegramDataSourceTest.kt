@@ -5,12 +5,11 @@ import org.junit.Test
 /**
  * Unit tests for TelegramDataSource.
  * Tests data source structure and API compatibility.
- * 
+ *
  * Note: Full integration testing of TelegramDataSource requires TDLib client
  * and actual file downloads, which are better suited for integration tests.
  */
 class TelegramDataSourceTest {
-
     @Test
     fun `TelegramDataSource class exists`() {
         // Verify the class can be referenced
