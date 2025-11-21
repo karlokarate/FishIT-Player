@@ -7,24 +7,34 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.TransferListener
+import com.chris.m3usuite.telegram.core.StreamingConfig
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
 
 /**
- * DataSource for streaming Telegram files via TDLib.
+ * DataSource for streaming Telegram files via TDLib with **Windowed Zero-Copy Streaming**.
  * Handles tg://file/<fileId>?chatId=...&messageId=... URLs.
  *
  * This is a COMPLETE implementation for the Streaming Cluster as specified in:
  * - .github/tdlibAgent.md (Section 4.2: TelegramDataSource - Zero-Copy Streaming)
  * - docs/TDLIB_TASK_GROUPING.md (Cluster C: Streaming / DataSource, Tasks 49-56)
  *
+ * **Windowed Zero-Copy Streaming:**
+ * - Downloads only a window (z.B. 16MB) of the file around current playback position
+ * - Old windows are discarded when seeking, new windows opened at target position
+ * - `read()` writes **directly** from TDLib cache into ExoPlayer's buffer without extra copies
+ * - Automatic window transitions when approaching prefetch margin
+ * - Only for direct media files: MOVIE, EPISODE, CLIP, AUDIO
+ * - RAR_ARCHIVE and other containers use full-download path (not this DataSource)
+ *
  * Key responsibilities:
  * - Parse tg:// URLs with fileId, chatId, messageId parameters
- * - Stream Telegram files via T_TelegramFileDownloader from T_TelegramServiceClient
+ * - Stream Telegram files via T_TelegramFileDownloader with windowing
  * - Properly inform TransferListener of transfer lifecycle (onTransferStart/End)
  * - Handle read operations with proper EOF detection
+ * - Manage window transitions on seek or approaching window end
  * - Clean up resources on close
  *
  * Following TDLib and Media3 best practices:
@@ -62,6 +72,10 @@ class TelegramDataSource(
     private var messageId: Long? = null
     private var opened = false
     private var transferListener: TransferListener? = null
+    
+    // Window state for streaming
+    private var windowStart: Long = 0
+    private var windowSize: Long = StreamingConfig.TELEGRAM_STREAM_WINDOW_BYTES
 
     override fun addTransferListener(transferListener: TransferListener) {
         this.transferListener = transferListener
@@ -158,6 +172,35 @@ class TelegramDataSource(
             C.LENGTH_UNSET.toLong()
         }
 
+        // Initialize window at current position
+        windowStart = position
+        windowSize = StreamingConfig.TELEGRAM_STREAM_WINDOW_BYTES
+
+        // Ensure initial window is prepared
+        val fileIdInt = fileId!!.toIntOrNull() ?: throw IOException("Invalid file ID: $fileId")
+        val windowReady =
+            runBlocking {
+                try {
+                    downloader.ensureWindow(fileIdInt, windowStart, windowSize)
+                } catch (e: Exception) {
+                    TelegramLogRepository.error(
+                        source = "TelegramDataSource",
+                        message = "Failed to prepare window",
+                        exception = e,
+                        details =
+                            mapOf(
+                                "fileId" to fileId!!,
+                                "windowStart" to windowStart.toString(),
+                            ),
+                    )
+                    throw IOException("Failed to prepare window for fileId=$fileId: ${e.message}", e)
+                }
+            }
+
+        if (!windowReady) {
+            throw IOException("Failed to start windowed download for fileId=$fileId")
+        }
+
         opened = true
 
         // Notify transfer listener that transfer has started
@@ -177,10 +220,15 @@ class TelegramDataSource(
     }
 
     /**
-     * Read data from the Telegram file into the provided buffer.
+     * Read data from the Telegram file into the provided buffer with **Windowed Zero-Copy**.
      * This method blocks until data is available or EOF is reached.
      *
-     * @param buffer Destination buffer
+     * **Window Transition Logic:**
+     * - Checks if current position is within active window
+     * - If approaching prefetch margin, opens new window
+     * - Directly reads into buffer without intermediate copies
+     *
+     * @param buffer Destination buffer (provided by ExoPlayer)
      * @param offset Offset in buffer to start writing
      * @param readLength Maximum number of bytes to read
      * @return Number of bytes read, or C.RESULT_END_OF_INPUT if EOF
@@ -197,10 +245,59 @@ class TelegramDataSource(
         }
 
         val fid = fileId ?: throw IOException("No file ID available")
+        val fileIdInt = fid.toIntOrNull() ?: throw IOException("Invalid file ID: $fid")
 
         // Check if we've reached the end
         if (bytesRemaining == 0L) {
             return C.RESULT_END_OF_INPUT
+        }
+
+        // Check if we need to transition to a new window
+        val windowEnd = windowStart + windowSize
+        val distanceToWindowEnd = windowEnd - position
+
+        if (distanceToWindowEnd < StreamingConfig.TELEGRAM_STREAM_PREFETCH_MARGIN) {
+            // Approaching window end, open new window
+            val newWindowStart = position
+            
+            TelegramLogRepository.logStreamingActivity(
+                fileId = fileIdInt,
+                action = "window_transition",
+                details =
+                    mapOf(
+                        "old_start" to windowStart.toString(),
+                        "new_start" to newWindowStart.toString(),
+                        "position" to position.toString(),
+                    ),
+            )
+
+            windowStart = newWindowStart
+
+            // Ensure new window
+            val downloader =
+                try {
+                    serviceClient.downloader()
+                } catch (e: Exception) {
+                    throw IOException("Telegram service not available: ${e.message}", e)
+                }
+
+            runBlocking {
+                try {
+                    downloader.ensureWindow(fileIdInt, windowStart, windowSize)
+                } catch (e: Exception) {
+                    TelegramLogRepository.error(
+                        source = "TelegramDataSource",
+                        message = "Failed to transition window",
+                        exception = e,
+                        details =
+                            mapOf(
+                                "fileId" to fid,
+                                "position" to position.toString(),
+                            ),
+                    )
+                    // Continue anyway - downloader might still have data
+                }
+            }
         }
 
         // Calculate how many bytes to read
@@ -255,26 +352,27 @@ class TelegramDataSource(
     override fun getUri(): Uri? = currentUri
 
     /**
-     * Close the data source and release all resources.
+     * Close the data source and release all resources including window state.
      * This method is idempotent - safe to call multiple times.
      */
     override fun close() {
         if (!opened) return
 
         val closingFileId = fileId
+        val closingFileIdInt = closingFileId?.toIntOrNull()
         opened = false
 
         // Cancel any ongoing downloads
-        fileId?.let { fid ->
+        if (closingFileIdInt != null) {
             runCatching {
                 runBlocking {
                     val downloader = serviceClient.downloader()
-                    downloader.cancelDownload(fid)
+                    downloader.cancelDownload(closingFileIdInt)
                 }
             }
         }
 
-        // Reset state
+        // Reset state including window state
         val spec = currentDataSpec
         currentUri = null
         currentDataSpec = null
@@ -284,6 +382,8 @@ class TelegramDataSource(
         position = 0
         bytesRemaining = C.LENGTH_UNSET.toLong()
         totalSize = C.LENGTH_UNSET.toLong()
+        windowStart = 0
+        windowSize = StreamingConfig.TELEGRAM_STREAM_WINDOW_BYTES
 
         // Notify transfer listener that transfer has ended
         if (spec != null) {
