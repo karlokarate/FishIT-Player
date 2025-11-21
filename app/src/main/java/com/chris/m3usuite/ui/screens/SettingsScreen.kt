@@ -427,7 +427,9 @@ private fun TelegramSettingsSection(
 
             // Authentication Flow
             when (state.authState) {
-                TelegramAuthState.DISCONNECTED -> {
+                TelegramAuthState.DISCONNECTED,
+                TelegramAuthState.WAITING_FOR_PHONE,
+                -> {
                     OutlinedTextField(
                         value = phoneNumber,
                         onValueChange = { phoneNumber = it },
