@@ -144,6 +144,78 @@ class TelegramSyncWorker(
         }
 
     /**
+     * Load messages for sync with multi-page support.
+     * Loads up to maxPages of messages from the chat.
+     *
+     * @param chatId Chat ID to load messages from
+     * @param pageSize Number of messages per page
+     * @param maxPages Maximum number of pages to load
+     * @return List of all loaded messages
+     */
+    private suspend fun loadMessagesForSync(
+        serviceClient: T_TelegramServiceClient,
+        chatId: Long,
+        pageSize: Int = 50,
+        maxPages: Int = 10,
+    ): List<dev.g000sha256.tdl.dto.Message> {
+        val all = mutableListOf<dev.g000sha256.tdl.dto.Message>()
+        var fromMessageId = 0L
+        var offset = 0
+
+        repeat(maxPages) { pageIndex ->
+            val page =
+                serviceClient.browser().loadMessagesPaged(
+                    chatId = chatId,
+                    fromMessageId = fromMessageId,
+                    offset = offset,
+                    limit = pageSize,
+                )
+
+            if (page.isEmpty()) {
+                TelegramLogRepository.debug(
+                    source = "TelegramSyncWorker",
+                    message = "No more messages",
+                    details =
+                        mapOf(
+                            "chatId" to chatId.toString(),
+                            "page" to pageIndex.toString(),
+                            "total" to all.size.toString(),
+                        ),
+                )
+                return all
+            }
+
+            all += page
+
+            TelegramLogRepository.info(
+                source = "TelegramSyncWorker",
+                message = "Loaded Telegram page",
+                details =
+                    mapOf(
+                        "chatId" to chatId.toString(),
+                        "page" to pageIndex.toString(),
+                        "pageSize" to page.size.toString(),
+                        "totalLoaded" to all.size.toString(),
+                    ),
+            )
+
+            // Nächster fromMessageId = älteste Message in dieser Page
+            val oldest = page.minOfOrNull { it.id }
+            if (oldest == null || oldest == fromMessageId) {
+                return all
+            }
+            fromMessageId = oldest
+            offset = 0
+
+            if (page.size < pageSize) {
+                return all
+            }
+        }
+
+        return all
+    }
+
+    /**
      * Sync a single chat with error handling and retry logic.
      */
     private suspend fun syncChat(
@@ -165,27 +237,30 @@ class TelegramSyncWorker(
                 val messages =
                     when (mode) {
                         MODE_ALL -> {
-                            // Load all messages (paginated)
-                            serviceClient.browser().loadMessagesPaged(
+                            // Load messages with pagination (10 pages, 100 per page)
+                            loadMessagesForSync(
+                                serviceClient = serviceClient,
                                 chatId = chatId,
-                                limit = 100,
-                                fromMessageId = 0,
+                                pageSize = 100,
+                                maxPages = 10,
                             )
                         }
                         MODE_SELECTION_CHANGED -> {
-                            // Load recent messages only
-                            serviceClient.browser().loadMessagesPaged(
+                            // Load recent messages (10 pages, 50 per page)
+                            loadMessagesForSync(
+                                serviceClient = serviceClient,
                                 chatId = chatId,
-                                limit = 50,
-                                fromMessageId = 0,
+                                pageSize = 50,
+                                maxPages = 10,
                             )
                         }
                         MODE_BACKFILL_SERIES -> {
-                            // For series, load more messages to capture all episodes
-                            serviceClient.browser().loadMessagesPaged(
+                            // For series, load more messages to capture all episodes (10 pages, 200 per page)
+                            loadMessagesForSync(
+                                serviceClient = serviceClient,
                                 chatId = chatId,
-                                limit = 200,
-                                fromMessageId = 0,
+                                pageSize = 200,
+                                maxPages = 10,
                             )
                         }
                         else -> emptyList()
@@ -196,7 +271,16 @@ class TelegramSyncWorker(
                     return@withContext 0
                 }
 
-                TelegramLogRepository.info("TelegramSyncWorker", "Processing ${messages.size} messages from chat $chatId")
+                TelegramLogRepository.info(
+                    source = "TelegramSyncWorker",
+                    message = "Processing messages from chat",
+                    details =
+                        mapOf(
+                            "chatId" to chatId.toString(),
+                            "mode" to mode,
+                            "messageCount" to messages.size.toString(),
+                        ),
+                )
 
                 // Index messages using repository
                 itemsProcessed =
