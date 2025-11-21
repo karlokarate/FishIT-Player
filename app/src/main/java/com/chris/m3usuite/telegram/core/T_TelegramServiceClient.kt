@@ -208,19 +208,15 @@ class T_TelegramServiceClient private constructor(
             _connectionState.value = TgConnectionState.Connecting
 
             // Load configuration from settings
-            val apiId = settings.tgApiId.first()
-            val apiHash = settings.tgApiHash.first()
-            val phoneNumber = "" // Phone will be provided during login
-
-            if (apiId == 0 || apiHash.isBlank()) {
-                throw IllegalStateException("API credentials not configured")
-            }
+            val apiIdOverride = settings.tgApiId.first().takeIf { it != 0 }
+            val apiHashOverride = settings.tgApiHash.first().takeIf { it.isNotBlank() }
+            val phoneNumber = settings.tgPhoneNumber.first() // Can be empty
 
             config =
                 ConfigLoader.load(
                     context = context,
-                    apiId = apiId,
-                    apiHash = apiHash,
+                    apiId = apiIdOverride,
+                    apiHash = apiHashOverride,
                     phoneNumber = phoneNumber,
                 )
 
@@ -444,6 +440,20 @@ class T_TelegramServiceClient private constructor(
                         is AuthEvent.Error -> {
                             _authState.value = TelegramAuthState.Error(event.message)
                             TelegramLogRepository.debug("T_TelegramServiceClient", "Auth error: ${event.message}")
+                        }
+                        is AuthEvent.ReauthRequired -> {
+                            _authState.value = TelegramAuthState.WaitingForPhone
+                            TelegramLogRepository.info("T_TelegramServiceClient", "Reauth required: ${event.reason}")
+                            // Show global snackbar notification
+                            serviceScope.launch {
+                                try {
+                                    com.chris.m3usuite.ui.home.GlobalSnackbarEvent.show(
+                                        "Telegram benötigt eine erneute Anmeldung. Bitte öffne die Telegram-Einstellungen.",
+                                    )
+                                } catch (e: Exception) {
+                                    TelegramLogRepository.debug("T_TelegramServiceClient", "Error showing reauth snackbar: ${e.message}")
+                                }
+                            }
                         }
                     }
                 }

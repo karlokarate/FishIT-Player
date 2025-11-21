@@ -1,6 +1,7 @@
 package com.chris.m3usuite.telegram.config
 
 import android.content.Context
+import com.chris.m3usuite.BuildConfig
 import java.io.File
 
 /**
@@ -23,9 +24,14 @@ object ConfigLoader {
         apiHash: String? = null,
         phoneNumber: String = "",
     ): AppConfig {
-        // Use provided values or fall back to BuildConfig defaults
-        val finalApiId = apiId ?: 0 // Should be set via BuildConfig or Settings
-        val finalApiHash = apiHash ?: "" // Should be set via BuildConfig or Settings
+        // Use provided overrides if valid, otherwise fall back to BuildConfig
+        val effectiveApiId = apiId?.takeIf { it != 0 } ?: BuildConfig.TG_API_ID
+        val effectiveApiHash = apiHash?.takeIf { it.isNotBlank() } ?: BuildConfig.TG_API_HASH
+
+        // Validate that we have credentials from either override or BuildConfig
+        require(effectiveApiId != 0 && effectiveApiHash.isNotBlank()) {
+            "TDLib API credentials not configured (BuildConfig + overrides are empty)"
+        }
 
         // Use Android app directories for database and files
         // noBackupFilesDir is used to prevent backup of TDLib database (contains local cache)
@@ -42,8 +48,8 @@ object ConfigLoader {
                 }.absolutePath
 
         return AppConfig(
-            apiId = finalApiId,
-            apiHash = finalApiHash,
+            apiId = effectiveApiId,
+            apiHash = effectiveApiHash,
             phoneNumber = phoneNumber,
             dbDir = dbDir,
             filesDir = filesDir,

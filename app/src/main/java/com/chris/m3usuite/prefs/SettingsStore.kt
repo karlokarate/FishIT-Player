@@ -149,6 +149,7 @@ object Keys {
     // Telegram API overrides (optional)
     val TG_API_ID = intPreferencesKey("tg_api_id")
     val TG_API_HASH = stringPreferencesKey("tg_api_hash")
+    val TG_PHONE_NUMBER = stringPreferencesKey("tg_phone_number")
 
     // Debug/Logging
     val HTTP_LOG_ENABLED = booleanPreferencesKey("http_log_enabled")
@@ -353,6 +354,7 @@ class SettingsStore(
     val tgAutoRoamingLessDataCalls: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] ?: true }
     val tgApiId: Flow<Int> = context.dataStore.data.map { it[Keys.TG_API_ID] ?: 0 }
     val tgApiHash: Flow<String> = context.dataStore.data.map { it[Keys.TG_API_HASH].orEmpty() }
+    val tgPhoneNumber: Flow<String> = context.dataStore.data.map { it[Keys.TG_PHONE_NUMBER].orEmpty() }
 
     // Debug/Logging
     val httpLogEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.HTTP_LOG_ENABLED] ?: false }
@@ -816,6 +818,10 @@ class SettingsStore(
         context.dataStore.edit { it[Keys.TG_API_HASH] = value }
     }
 
+    suspend fun setTelegramPhoneNumber(value: String) {
+        context.dataStore.edit { it[Keys.TG_PHONE_NUMBER] = value }
+    }
+
     suspend fun setTelegramPreferIpv6(value: Boolean) {
         context.dataStore.edit { it[Keys.TG_PREFER_IPV6] = value }
     }
@@ -1010,6 +1016,8 @@ class SettingsStore(
     suspend fun setTgApiId(value: Int) = setTelegramApiId(value)
 
     suspend fun setTgApiHash(value: String) = setTelegramApiHash(value)
+
+    suspend fun setTgPhoneNumber(value: String) = setTelegramPhoneNumber(value)
 
     suspend fun setTgSelectedChatsCsv(value: String) = setTelegramSelectedChatsCsv(value)
 

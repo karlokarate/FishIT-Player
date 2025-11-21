@@ -41,6 +41,10 @@ sealed class AuthEvent {
     ) : AuthEvent()
 
     object Ready : AuthEvent()
+
+    data class ReauthRequired(
+        val reason: String,
+    ) : AuthEvent()
 }
 
 /**
@@ -71,6 +75,9 @@ class T_TelegramSession(
 
     @Volatile
     private var currentState: AuthorizationState? = null
+
+    @Volatile
+    private var previousState: AuthorizationState? = null
 
     private val collectorStarted = AtomicBoolean(false)
     private val tdParamsSet = AtomicBoolean(false)
@@ -288,6 +295,22 @@ class T_TelegramSession(
                 client.authorizationStateUpdates.collect { update ->
                     val state = update.authorizationState
                     TelegramLogRepository.debug("T_TelegramSession", " State update: ${state::class.simpleName}")
+
+                    // Detect reauth requirement: if we were Ready and now need phone/code/password
+                    if (previousState is AuthorizationStateReady) {
+                        when (state) {
+                            is AuthorizationStateWaitPhoneNumber,
+                            is AuthorizationStateWaitCode,
+                            is AuthorizationStateWaitPassword,
+                            -> {
+                                TelegramLogRepository.debug("T_TelegramSession", " Reauth required: was Ready, now ${state::class.simpleName}")
+                                _authEvents.emit(AuthEvent.ReauthRequired("Telegram session expired, please login again"))
+                            }
+                            else -> {}
+                        }
+                    }
+
+                    previousState = currentState
                     currentState = state
                     _authEvents.emit(AuthEvent.StateChanged(state))
                     handleAuthState(state)
