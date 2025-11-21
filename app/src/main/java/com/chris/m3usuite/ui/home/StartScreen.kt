@@ -216,9 +216,10 @@ fun StartScreen(
         TelegramLogRepository.events.collect { entry ->
             when (entry.level) {
                 com.chris.m3usuite.telegram.logging.TgLogEntry.LogLevel.WARN,
-                com.chris.m3usuite.telegram.logging.TgLogEntry.LogLevel.ERROR -> {
+                com.chris.m3usuite.telegram.logging.TgLogEntry.LogLevel.ERROR,
+                -> {
                     snackbarHost.showSnackbar(
-                        message = "[${entry.level}] ${entry.message}"
+                        message = "[${entry.level}] ${entry.message}",
                     )
                 }
                 else -> {
@@ -707,11 +708,12 @@ fun StartScreen(
                             TelegramLogRepository.info(
                                 source = "StartScreen",
                                 message = "User started Telegram playback from StartScreen",
-                                details = mapOf(
-                                    "mediaId" to media.id.toString(),
-                                    "title" to media.name,
-                                    "playUrl" to (media.url ?: "null")
-                                )
+                                details =
+                                    mapOf(
+                                        "mediaId" to media.id.toString(),
+                                        "title" to media.name,
+                                        "playUrl" to (media.url ?: "null"),
+                                    ),
                             )
 
                             // For Telegram items, we need to handle playback via TDLib

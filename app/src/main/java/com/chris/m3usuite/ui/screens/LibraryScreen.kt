@@ -1214,11 +1214,12 @@ fun LibraryScreen(
                                             TelegramLogRepository.info(
                                                 source = "LibraryScreen",
                                                 message = "User started Telegram playback from LibraryScreen",
-                                                details = mapOf(
-                                                    "mediaId" to media.id.toString(),
-                                                    "title" to media.name,
-                                                    "playUrl" to (media.url ?: "null")
-                                                )
+                                                details =
+                                                    mapOf(
+                                                        "mediaId" to media.id.toString(),
+                                                        "title" to media.name,
+                                                        "playUrl" to (media.url ?: "null"),
+                                                    ),
                                             )
 
                                             playbackLauncher.launch(

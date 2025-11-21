@@ -103,13 +103,13 @@ class TelegramSettingsViewModel(
             if (!enabled) {
                 TelegramLogRepository.info(
                     source = "TelegramSettingsViewModel",
-                    message = "Telegram disabled by user"
+                    message = "Telegram disabled by user",
                 )
                 serviceClient.shutdown()
             } else if (!wasEnabled && enabled) {
                 TelegramLogRepository.info(
                     source = "TelegramSettingsViewModel",
-                    message = "Telegram enabled by user"
+                    message = "Telegram enabled by user",
                 )
 
                 // First activation - trigger initial full sync if chats are selected
@@ -119,7 +119,7 @@ class TelegramSettingsViewModel(
                     TelegramLogRepository.info(
                         source = "TelegramSettingsViewModel",
                         message = "Triggering initial full Telegram sync",
-                        details = mapOf("selectedChatsCount" to count.toString())
+                        details = mapOf("selectedChatsCount" to count.toString()),
                     )
 
                     SchedulingGateway.scheduleTelegramSync(
@@ -291,7 +291,7 @@ class TelegramSettingsViewModel(
             TelegramLogRepository.info(
                 source = "TelegramSettingsViewModel",
                 message = "User updated Telegram chat selection",
-                details = mapOf("selectedCount" to chatIds.size.toString())
+                details = mapOf("selectedCount" to chatIds.size.toString()),
             )
 
             val csv = chatIds.joinToString(",")
