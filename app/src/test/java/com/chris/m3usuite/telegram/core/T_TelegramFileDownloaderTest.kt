@@ -306,7 +306,7 @@ class T_TelegramFileDownloaderTest {
             assert(Regex("""READ_RETRY_MAX_ATTEMPTS\s*=\s*200\b""").containsMatchIn(content)) {
                 "READ_RETRY_MAX_ATTEMPTS should be set to 200"
             }
-            assert(content.contains("= 15L")) {
+            assert(Regex("""READ_RETRY_DELAY_MS\s*=\s*15L""").containsMatchIn(content)) {
                 "READ_RETRY_DELAY_MS should be 15L"
             }
         }
