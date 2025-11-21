@@ -442,9 +442,8 @@ class TelegramContentRepository(
                     equal(ObxTelegramMessage_.chatId, chatId)
                     equal(ObxTelegramMessage_.isSeries, true)
                     // Use exact match for normalized series name
-                    contains(ObxTelegramMessage_.seriesNameNormalized, seriesNameNormalized, StringOrder.CASE_SENSITIVE)
+                    equal(ObxTelegramMessage_.seriesNameNormalized, seriesNameNormalized, StringOrder.CASE_SENSITIVE)
                 }.find()
-                .filter { it.seriesNameNormalized == seriesNameNormalized } // Exact match post-filter
                 .sortedWith(
                     compareBy(
                         { it.seasonNumber ?: 0 },
