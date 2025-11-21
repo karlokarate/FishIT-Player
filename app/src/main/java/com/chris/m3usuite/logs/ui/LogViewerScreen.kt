@@ -32,6 +32,18 @@ fun LogViewerScreen(
     val context = LocalContext.current
 
     var exportPendingFile by remember { mutableStateOf<File?>(null) }
+    var exportErrorMessage by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(exportErrorMessage) {
+        exportErrorMessage?.let { message ->
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Short
+            )
+            exportErrorMessage = null
+        }
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = CreateDocument("text/plain"),
@@ -45,8 +57,10 @@ fun LogViewerScreen(
                         `in`.copyTo(out)
                     }
                 }
-            }.onFailure {
-                // Optional: Snackbar/Logging für Exportfehler
+            }.onFailure { e ->
+                exportErrorMessage = "Export fehlgeschlagen: ${e.message}"
+            }.onSuccess {
+                exportErrorMessage = "Export erfolgreich"
             }
         }
     }
@@ -73,6 +87,7 @@ fun LogViewerScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Column(
             modifier = Modifier

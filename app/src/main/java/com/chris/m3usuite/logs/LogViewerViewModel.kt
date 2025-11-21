@@ -37,6 +37,24 @@ class LogViewerViewModel(
         File(getApplication<Application>().filesDir, "telegram_logs")
     }
 
+    companion object {
+        // Regex patterns as constants for efficiency
+        private val JSON_SOURCE_REGEX = Regex(""""source"\s*:\s*"([^"]+)"""")
+        private val BRACKETED_SOURCE_REGEX = Regex("""\[([^\]]+)\]""")
+        
+        // Limit to prevent memory issues with very large files
+        private const val MAX_LOG_LINES = 10000
+        
+        fun factory(app: Application): androidx.lifecycle.ViewModelProvider.Factory {
+            return object : androidx.lifecycle.ViewModelProvider.Factory {
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                    @Suppress("UNCHECKED_CAST")
+                    return LogViewerViewModel(app) as T
+                }
+            }
+        }
+    }
+
     init {
         refreshLogFiles()
     }
@@ -45,27 +63,38 @@ class LogViewerViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
 
-            if (!logsDir.exists()) {
-                logsDir.mkdirs()
-            }
+            try {
+                if (!logsDir.exists() && !logsDir.mkdirs()) {
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        errorMessage = "Fehler beim Erstellen des Log-Verzeichnisses"
+                    )
+                    return@launch
+                }
 
-            val files = logsDir
-                .listFiles { f -> f.isFile && f.name.endsWith(".txt") }
-                ?.sortedByDescending { it.lastModified() }
-                ?: emptyList()
+                val files = logsDir
+                    .listFiles { f -> f.isFile && f.name.endsWith(".txt") }
+                    ?.sortedByDescending { it.lastModified() }
+                    ?: emptyList()
 
-            val selected = _state.value.selectedFile ?: files.firstOrNull()
+                val selected = _state.value.selectedFile ?: files.firstOrNull()
 
-            _state.value = _state.value.copy(
-                logFiles = files,
-                selectedFile = selected,
-                isLoading = false,
-            )
+                _state.value = _state.value.copy(
+                    logFiles = files,
+                    selectedFile = selected,
+                    isLoading = false,
+                )
 
-            if (selected != null) {
-                loadFile(selected)
-            } else {
-                _state.value = _state.value.copy(entries = emptyList(), filteredContent = "")
+                if (selected != null) {
+                    loadFile(selected)
+                } else {
+                    _state.value = _state.value.copy(entries = emptyList(), filteredContent = "")
+                }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    errorMessage = "Fehler beim Laden der Logfiles: ${e.message}"
+                )
             }
         }
     }
@@ -84,7 +113,20 @@ class LogViewerViewModel(
     private fun parseLogFile(file: File): List<LogEntry> {
         if (!file.exists()) return emptyList()
 
-        return file.readLines().map { line ->
+        // Limit to prevent memory issues with very large files
+        val lines = mutableListOf<String>()
+        
+        file.bufferedReader().use { reader ->
+            var line = reader.readLine()
+            var count = 0
+            while (line != null && count < MAX_LOG_LINES) {
+                lines.add(line)
+                line = reader.readLine()
+                count++
+            }
+        }
+
+        return lines.map { line ->
             LogEntry(
                 raw = line,
                 source = extractSource(line),
@@ -102,14 +144,14 @@ class LogViewerViewModel(
     private fun extractSource(line: String): String? {
         // Try JSON format first
         if (line.trim().startsWith("{")) {
-            val sourceMatch = Regex(""""source"\s*:\s*"([^"]+)"""").find(line)
+            val sourceMatch = JSON_SOURCE_REGEX.find(line)
             if (sourceMatch != null) {
                 return sourceMatch.groupValues[1]
             }
         }
         
         // Try bracketed format [Source]
-        val bracketMatch = Regex("""\[([^\]]+)\]""").find(line)
+        val bracketMatch = BRACKETED_SOURCE_REGEX.find(line)
         if (bracketMatch != null) {
             return bracketMatch.groupValues[1]
         }
@@ -166,13 +208,18 @@ class LogViewerViewModel(
                     if (current.activeSources.isEmpty()) sources.toSet() // initial: alle aktiv
                     else current.activeSources.intersect(sources.toSet())
 
+                // Check if file was truncated
+                val warningMessage = if (entries.size >= MAX_LOG_LINES) {
+                    "Hinweis: Nur die ersten $MAX_LOG_LINES Zeilen werden angezeigt"
+                } else null
+
                 val newState = current.copy(
                     selectedFile = file,
                     entries = entries,
                     availableSources = sources,
                     activeSources = activeSources,
                     isLoading = false,
-                    errorMessage = null,
+                    errorMessage = warningMessage,
                 )
                 _state.value = newState
                 updateFilteredContent()
@@ -202,15 +249,4 @@ class LogViewerViewModel(
     }
 
     fun currentFileOrNull(): File? = _state.value.selectedFile
-
-    companion object {
-        fun factory(app: Application): androidx.lifecycle.ViewModelProvider.Factory {
-            return object : androidx.lifecycle.ViewModelProvider.Factory {
-                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                    @Suppress("UNCHECKED_CAST")
-                    return LogViewerViewModel(app) as T
-                }
-            }
-        }
-    }
 }
