@@ -321,8 +321,14 @@ class T_TelegramFileDownloader(
                 }
                 
                 // Check if file size is sufficient for requested position
-                // Need file length greater than position to read at that position
-                return@withContext file.length() > position
+                // If position is at EOF and download is complete, allow EOF handling
+                if (file.length() > position) {
+                    return@withContext true
+                }
+                if (file.length() == position && fileInfo.local?.isDownloadingCompleted == true) {
+                    return@withContext true
+                }
+                return@withContext false
             } catch (e: Exception) {
                 // Any error means data is not available
                 return@withContext false
