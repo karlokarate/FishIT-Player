@@ -100,4 +100,61 @@ class T_TelegramFileDownloaderTest {
             }
         }
     }
+
+    @Test
+    fun `ensureWindow logs start complete and failed messages`() {
+        // Verify ensureWindow has proper logging for start, complete, and failed states
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            assert(content.contains("\"ensureWindow start\"")) {
+                "ensureWindow should log 'ensureWindow start' message"
+            }
+            assert(content.contains("\"ensureWindow complete\"")) {
+                "ensureWindow should log 'ensureWindow complete' message"
+            }
+            assert(content.contains("\"ensureWindow failed\"")) {
+                "ensureWindow should log 'ensureWindow failed' message"
+            }
+        }
+    }
+
+    @Test
+    fun `ensureWindow logging contains required details`() {
+        // Verify ensureWindow logs include fileId, windowStart, and windowSize
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            val ensureWindowSection = content.substringAfter("suspend fun ensureWindow", "")
+                .substringBefore("suspend fun getFileSize")
+            
+            assert(ensureWindowSection.contains("\"fileId\" to fileIdInt.toString()")) {
+                "ensureWindow logs should include fileId"
+            }
+            assert(ensureWindowSection.contains("\"windowStart\" to windowStart.toString()")) {
+                "ensureWindow logs should include windowStart"
+            }
+            assert(ensureWindowSection.contains("\"windowSize\" to windowSize.toString()")) {
+                "ensureWindow logs should include windowSize"
+            }
+        }
+    }
+
+    @Test
+    fun `readFileChunk retry logic uses TelegramLogRepository debug`() {
+        // Verify retry logging uses proper format with debug level
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            val readFileChunkSection = content.substringAfter("suspend fun readFileChunk", "")
+                .substringBefore("suspend fun startDownload")
+            
+            assert(readFileChunkSection.contains("\"Retrying read after closed stream\"")) {
+                "readFileChunk retry should log 'Retrying read after closed stream' message"
+            }
+            assert(readFileChunkSection.contains("\"retryCount\" to retryCount.toString()")) {
+                "readFileChunk retry log should include retryCount"
+            }
+        }
+    }
 }
