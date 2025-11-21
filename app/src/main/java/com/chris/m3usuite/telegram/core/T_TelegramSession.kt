@@ -303,8 +303,13 @@ class T_TelegramSession(
                             is AuthorizationStateWaitCode,
                             is AuthorizationStateWaitPassword,
                             -> {
-                                TelegramLogRepository.debug("T_TelegramSession", " Reauth required: was Ready, now ${state::class.simpleName}")
-                                _authEvents.emit(AuthEvent.ReauthRequired("Telegram session expired, please login again"))
+                                TelegramLogRepository.debug(
+                                    "T_TelegramSession",
+                                    " Reauth required: was Ready, now ${state::class.simpleName}",
+                                )
+                                _authEvents.emit(
+                                    AuthEvent.ReauthRequired("Telegram session expired, please login again"),
+                                )
                             }
                             else -> {}
                         }
