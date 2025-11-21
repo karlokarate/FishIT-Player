@@ -10,10 +10,10 @@ import androidx.media3.datasource.TransferListener
 import com.chris.m3usuite.telegram.core.StreamingConfig
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.io.IOException
-import kotlinx.coroutines.TimeoutCancellationException
 
 /**
  * DataSource for streaming Telegram files via TDLib with **Windowed Zero-Copy Streaming**.
@@ -56,6 +56,14 @@ class TelegramDataSource(
     private var bytesRemaining: Long = C.LENGTH_UNSET.toLong()
     private var totalSize: Long = C.LENGTH_UNSET.toLong()
     private var fileId: String? = null
+
+    companion object {
+        /**
+         * Minimum window size for streaming (256 KB).
+         * This ensures we don't create too small windows that would require frequent refills.
+         */
+        const val MIN_WINDOW_SIZE_BYTES = 256 * 1024L
+    }
 
     /**
      * The Telegram chat ID associated with the file to be streamed.
@@ -185,6 +193,20 @@ class TelegramDataSource(
 
         // Ensure initial window is prepared
         val fileIdInt = fileId!!.toIntOrNull() ?: throw IOException("Invalid file ID: $fileId")
+
+        TelegramLogRepository.debug(
+            source = "TelegramDataSource",
+            message = "prepare window",
+            details =
+                mapOf(
+                    "fileId" to fileIdInt.toString(),
+                    "position" to position.toString(),
+                    "readLength" to "initial",
+                    "windowStart" to windowStart.toString(),
+                    "windowSize" to windowSize.toString(),
+                ),
+        )
+
         val windowReady =
             runBlocking {
                 try {
@@ -288,6 +310,19 @@ class TelegramDataSource(
                 } catch (e: Exception) {
                     throw IOException("Telegram service not available: ${e.message}", e)
                 }
+
+            TelegramLogRepository.debug(
+                source = "TelegramDataSource",
+                message = "prepare window",
+                details =
+                    mapOf(
+                        "fileId" to fileIdInt.toString(),
+                        "position" to position.toString(),
+                        "readLength" to readLength.toString(),
+                        "windowStart" to windowStart.toString(),
+                        "windowSize" to windowSize.toString(),
+                    ),
+            )
 
             runBlocking {
                 try {
@@ -405,7 +440,7 @@ class TelegramDataSource(
                     downloader.cancelDownload(closingFileIdInt)
                 }
             }
-            
+
             // Then explicitly cleanup file handle - separate block ensures this runs even if cancel fails
             runCatching {
                 runBlocking {
