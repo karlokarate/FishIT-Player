@@ -291,8 +291,8 @@ class TelegramDataSource(
 
             runBlocking {
                 try {
-                    // Add 30 second timeout to prevent indefinite blocking during window setup failures
-                    withTimeout(30_000L) {
+                    // Add timeout to prevent indefinite blocking during window setup failures
+                    withTimeout(StreamingConfig.WINDOW_TRANSITION_TIMEOUT_MS) {
                         downloader.ensureWindow(fileIdInt, windowStart, windowSize)
                     }
                 } catch (e: TimeoutException) {
@@ -342,8 +342,8 @@ class TelegramDataSource(
         val bytesRead =
             runBlocking {
                 try {
-                    // Add 10 second timeout for read operations
-                    withTimeout(10_000L) {
+                    // Add timeout for read operations
+                    withTimeout(StreamingConfig.READ_OPERATION_TIMEOUT_MS) {
                         downloader.readFileChunk(fid, position, buffer, offset, bytesToRead)
                     }
                 } catch (e: TimeoutException) {

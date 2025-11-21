@@ -48,6 +48,24 @@ object StreamingConfig {
      * the next window is prepared.
      */
     const val TELEGRAM_STREAM_PREFETCH_MARGIN = 4 * 1024 * 1024L
+
+    /**
+     * Timeout for window transition operations (30 seconds).
+     * Prevents indefinite blocking during window setup failures.
+     */
+    const val WINDOW_TRANSITION_TIMEOUT_MS = 30_000L
+
+    /**
+     * Timeout for read operations (10 seconds).
+     * Prevents indefinite blocking during file read operations.
+     */
+    const val READ_OPERATION_TIMEOUT_MS = 10_000L
+
+    /**
+     * Maximum retry attempts for file read operations (2 retries).
+     * Handles race conditions where file handles may be closed by another thread.
+     */
+    const val MAX_READ_RETRIES = 2
 }
 
 /**
@@ -320,7 +338,7 @@ class T_TelegramFileDownloader(
 
             // Retry logic to handle race condition where file handle is closed by another thread
             var retryCount = 0
-            val maxRetries = 2
+            val maxRetries = StreamingConfig.MAX_READ_RETRIES
 
             while (retryCount <= maxRetries) {
                 try {
