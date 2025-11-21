@@ -223,7 +223,7 @@ fun StartScreen(
                     )
                 }
                 else -> {
-                    // INFO/DEBUG: nur im Log-Screen sichtbar
+                    // INFO/DEBUG: only visible in log screen
                 }
             }
         }
