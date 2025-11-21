@@ -303,8 +303,8 @@ class T_TelegramFileDownloaderTest {
             assert(content.contains("READ_RETRY_DELAY_MS")) {
                 "StreamingConfig should define READ_RETRY_DELAY_MS"
             }
-            assert(content.contains("= 200")) {
-                "READ_RETRY_MAX_ATTEMPTS should be 200"
+            assert(Regex("""READ_RETRY_MAX_ATTEMPTS\s*=\s*200\b""").containsMatchIn(content)) {
+                "READ_RETRY_MAX_ATTEMPTS should be set to 200"
             }
             assert(content.contains("= 15L")) {
                 "READ_RETRY_DELAY_MS should be 15L"
