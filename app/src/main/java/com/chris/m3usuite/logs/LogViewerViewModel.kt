@@ -93,14 +93,39 @@ class LogViewerViewModel(
     }
 
     /**
-     * Einfache Heuristik: Wir erwarten Format in der Art:
-     * "2025-..T..Z DEBUG TelegramDataSource ..."
-     * → drittes Token = Quelle.
-     * Falls dein reales Format abweicht, diesen Parser entsprechend anpassen.
+     * Extract source/tag from log line.
+     * Supports multiple formats:
+     * 1. Space-separated: "2025-..T..Z DEBUG TelegramDataSource ..."
+     * 2. JSON: {"source":"TelegramDataSource",...}
+     * 3. Bracketed: "[TelegramDataSource] ..."
      */
     private fun extractSource(line: String): String? {
-        val parts = line.split(" ")
-        return parts.getOrNull(2)
+        // Try JSON format first
+        if (line.trim().startsWith("{")) {
+            val sourceMatch = Regex(""""source"\s*:\s*"([^"]+)"""").find(line)
+            if (sourceMatch != null) {
+                return sourceMatch.groupValues[1]
+            }
+        }
+        
+        // Try bracketed format [Source]
+        val bracketMatch = Regex("""\[([^\]]+)\]""").find(line)
+        if (bracketMatch != null) {
+            return bracketMatch.groupValues[1]
+        }
+        
+        // Default: space-separated format (third token)
+        val parts = line.split(" ", limit = 4)
+        if (parts.size >= 3) {
+            val candidate = parts[2]
+            // Return if it looks like a source (starts with capital or T_)
+            if (candidate.isNotEmpty() && 
+                (candidate[0].isUpperCase() || candidate.startsWith("T_"))) {
+                return candidate
+            }
+        }
+        
+        return null
     }
 
     private fun applyFilter(

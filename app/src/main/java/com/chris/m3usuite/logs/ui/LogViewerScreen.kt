@@ -134,10 +134,28 @@ fun LogViewerScreen(
                     }
                 }
             } else {
-                Text(
-                    "Keine Logfiles gefunden.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "Keine Logfiles gefunden",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            "Logfiles werden im Verzeichnis files/telegram_logs/ gespeichert. " +
+                            "Es wurden noch keine Logs geschrieben oder das Verzeichnis ist leer.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(8.dp))
