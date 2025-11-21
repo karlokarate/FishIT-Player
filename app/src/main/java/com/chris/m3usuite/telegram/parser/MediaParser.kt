@@ -121,10 +121,11 @@ object MediaParser {
 
                 // Only create media if fileId is valid
                 if (fileId != null && fileId > 0 && !fileName.isNullOrBlank()) {
-                    // Check if filename is .mp4
-                    val isMp4 = fileName.endsWith(".mp4", ignoreCase = true)
+                    // Check if filename is a supported video format
+                    val supportedVideoRegex = Regex(""".*\.(mp4|mkv|avi|mov|webm)$""", RegexOption.IGNORE_CASE)
+                    val isSupportedVideoFile = supportedVideoRegex.matches(fileName)
 
-                    if (isMp4) {
+                    if (isSupportedVideoFile) {
                         // Parse metadata from text
                         val metaText = textContent.text?.text.orEmpty()
                         val meta = parseMetaFromText(metaText)
