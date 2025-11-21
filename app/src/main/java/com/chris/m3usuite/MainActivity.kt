@@ -24,13 +24,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.chris.m3usuite.logs.ui.LogViewerScreen
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.player.InternalPlayerScreen // <- korrektes Paket (s. Schritt A)
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.ui.TelegramLogScreen
 import com.chris.m3usuite.telegram.ui.feed.TelegramActivityFeedScreen
+import com.chris.m3usuite.logs.ui.LogViewerScreen
 import com.chris.m3usuite.ui.auth.ProfileGate
 import com.chris.m3usuite.ui.home.LocalMiniPlayerResume
 import com.chris.m3usuite.ui.home.MiniPlayerSnapshot
