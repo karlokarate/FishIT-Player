@@ -237,7 +237,7 @@ fun TelegramDetailScreen(
                             label = lblPlay,
                             primary = true,
                             enabled = canPlay,
-                            onClick = { if (resumeSecs != null) play(false) else play(true) },
+                            onClick = { play(true) },
                         ),
                     )
                 }
