@@ -431,7 +431,8 @@ class T_TelegramFileDownloader(
             }
 
             // Now proceed with actual file reading
-            val localPath = fileInfo.local?.path
+            val updatedFileInfo = getFileInfo(fileId)
+            val localPath = updatedFileInfo.local?.path
             
             if (localPath.isNullOrBlank()) {
                 // This should not happen after retry loop, but handle gracefully
