@@ -206,8 +206,15 @@ class TelegramContentRepository(
                 height = content.video.height
                 supportsStreaming = content.video.supportsStreaming
                 // Extract video thumbnail
-                thumbFileId = content.video.thumbnail?.file?.id
-                thumbLocalPath = content.video.thumbnail?.file?.local?.path
+                thumbFileId =
+                    content.video.thumbnail
+                        ?.file
+                        ?.id
+                thumbLocalPath =
+                    content.video.thumbnail
+                        ?.file
+                        ?.local
+                        ?.path
             }
             is MessageDocument -> {
                 fileId = content.document.document?.id
@@ -220,8 +227,15 @@ class TelegramContentRepository(
                 height = null
                 supportsStreaming = null
                 // Extract document thumbnail
-                thumbFileId = content.document.thumbnail?.file?.id
-                thumbLocalPath = content.document.thumbnail?.file?.local?.path
+                thumbFileId =
+                    content.document.thumbnail
+                        ?.file
+                        ?.id
+                thumbLocalPath =
+                    content.document.thumbnail
+                        ?.file
+                        ?.local
+                        ?.path
             }
             else -> {
                 fileId = null

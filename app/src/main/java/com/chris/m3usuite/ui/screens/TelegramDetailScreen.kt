@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.chris.m3usuite.data.obx.ObxStore
@@ -70,9 +69,9 @@ private suspend fun loadTelegramDetail(
 
         val row =
             msgBox
-                .query {
-                    equal(ObxTelegramMessage_.messageId, messageId)
-                }.build()
+                .query()
+                .equal(ObxTelegramMessage_.messageId, messageId)
+                .build()
                 .findFirst() ?: return@withContext null
 
         // Use posterLocalPath with fallback to thumbLocalPath (video thumbnail)
@@ -283,15 +282,10 @@ fun TelegramDetailScreen(
             provider = "Telegram",
             category = "Telegram",
             genres = genreList,
-            cast = null,
+            countries = emptyList(),
             director = null,
-            country = null,
+            cast = null,
             releaseDate = null,
-            trailer = null,
-            sections = emptyList(),
-            resumePosition = resumeSecs,
-            onSeek = ::setResume,
-            onClearResume = ::clearResume,
         )
     }
 }
