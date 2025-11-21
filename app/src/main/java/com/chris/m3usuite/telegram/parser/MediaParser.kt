@@ -231,21 +231,52 @@ object MediaParser {
     ): String = (fileName ?: "") + " " + captionText
 
     /**
-     * Select appropriate title from caption or filename.
-     * Prefers caption if it doesn't contain metadata markers,
-     * otherwise uses parsed title from filename.
+     * Select appropriate title from caption, parsed metadata, or filename.
+     * Prefers caption if it is not a metadata block (i.e., does not contain multiple metadata markers),
+     * otherwise uses parsed title from filename, or falls back to filename without extension.
+     *
+     * Preference order:
+     *   1. Caption text (if not a metadata block)
+     *   2. Parsed title (from filename or metadata)
+     *   3. Filename without extension
      */
     private fun selectTitle(
         captionText: String,
         parsedTitle: String?,
         fileName: String?,
     ): String? =
-        if (captionText.isNotBlank() && !captionText.contains("Titel:", ignoreCase = true)) {
+        if (captionText.isNotBlank() && !isMetadataBlock(captionText)) {
             captionText
         } else {
-            parsedTitle ?: fileName?.substringBeforeLast('.') ?: fileName
+            parsedTitle ?: fileName?.substringBeforeLast('.')
         }
 
+    /**
+     * Detects if the caption text is a metadata block by checking for multiple metadata markers.
+     */
+    private fun isMetadataBlock(captionText: String): Boolean {
+        val markers = listOf(
+            "Titel:",
+            "Originaltitel:",
+            "Erscheinungsjahr:",
+            "Länge:",
+            "Länge:",
+            "Produktionsland:",
+            "FSK:",
+            "Filmreihe:",
+            "Regie:",
+            "TMDbRating:",
+            "Genres:",
+            "Episoden:"
+        )
+        var count = 0
+        for (marker in markers) {
+            if (captionText.contains(marker, ignoreCase = true)) {
+                count++
+            }
+        }
+        return count >= 2 // Consider it a metadata block if 2 or more markers are present
+    }
     private fun parseMedia(
         chatId: Long,
         chatTitle: String?,
