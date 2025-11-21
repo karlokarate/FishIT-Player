@@ -39,7 +39,7 @@ Legacy-Dateien:
   - [x] ENTWEDER löschen  
   - [x] ODER `@Deprecated("Legacy – do not use")` + Kommentar „LEGACY/UNUSED“
 
-**Status IST:** Vollständig bereinigt. Alle Legacy-Dateien sind mit @Deprecated markiert und werden nur noch intern referenziert.
+**Status IST:** Vollständig bereinigt. Alle Legacy-Dateien sind mit @Deprecated markiert und haben keine produktiven Verwendungen mehr.
 
 ---
 
