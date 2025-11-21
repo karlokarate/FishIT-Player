@@ -72,7 +72,7 @@ object MediaParser {
     /**
      * Parse structured movie chat with 3-message pattern: Video + Meta + Poster.
      *
-     * Expected pattern (in descending order by messageId):
+     * Expected pattern (in ascending order by messageId / chronological order):
      * - i: MessageVideo with .mp4
      * - i+1: MessageText with metadata (Titel:, Erscheinungsjahr:, etc.)
      * - i+2: MessagePhoto (poster)
@@ -82,7 +82,7 @@ object MediaParser {
      * - Meta and Poster are marked as consumed (isConsumed=true)
      *
      * @param chatContext Chat context with isStructuredMovieChat flag
-     * @param messages List of messages sorted descending by messageId
+     * @param messages List of messages sorted ascending by messageId (chronological order)
      * @return List of ParsedItem (Media items and consumed markers)
      */
     fun parseStructuredMovieChat(
