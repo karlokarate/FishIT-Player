@@ -165,8 +165,8 @@ class T_TelegramFileDownloader(
             // Check if existing window covers the requested range
             if (existingWindow != null) {
                 val windowEnd = existingWindow.windowStart + existingWindow.windowSize
-                if (windowStart >= existingWindow.windowStart && windowStart < windowEnd) {
-                    // Current window is still valid
+                if (windowStart >= existingWindow.windowStart && (windowStart + windowSize) <= windowEnd) {
+                    // Current window fully covers the requested range
                     return@withContext true
                 }
 
