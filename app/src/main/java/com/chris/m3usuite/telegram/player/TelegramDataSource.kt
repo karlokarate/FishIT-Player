@@ -398,12 +398,18 @@ class TelegramDataSource(
 
         // Cancel any ongoing downloads and ensure file handles are cleaned up
         if (closingFileIdInt != null) {
+            // Cancel download first to prevent new operations on the file handle
             runCatching {
                 runBlocking {
                     val downloader = serviceClient.downloader()
-                    // Cancel download first to prevent new operations on the file handle
                     downloader.cancelDownload(closingFileIdInt)
-                    // Then explicitly cleanup file handle to ensure it's removed even if cancellation failed
+                }
+            }
+            
+            // Then explicitly cleanup file handle - separate block ensures this runs even if cancel fails
+            runCatching {
+                runBlocking {
+                    val downloader = serviceClient.downloader()
                     downloader.cleanupFileHandle(closingFileIdInt)
                 }
             }

@@ -62,10 +62,11 @@ object StreamingConfig {
     const val READ_OPERATION_TIMEOUT_MS = 10_000L
 
     /**
-     * Maximum retry attempts for file read operations (2 retries).
+     * Maximum read attempts including initial attempt (3 attempts total).
+     * With 3 attempts, there are 2 retries after the initial attempt.
      * Handles race conditions where file handles may be closed by another thread.
      */
-    const val MAX_READ_RETRIES = 2
+    const val MAX_READ_ATTEMPTS = 3
 }
 
 /**
@@ -337,14 +338,14 @@ class T_TelegramFileDownloader(
             }
 
             // Retry logic to handle race condition where file handle is closed by another thread
-            var retryCount = 0
-            val maxRetries = StreamingConfig.MAX_READ_RETRIES
+            var attemptCount = 0
+            val maxAttempts = StreamingConfig.MAX_READ_ATTEMPTS
 
-            while (retryCount < maxRetries) {
+            while (attemptCount < maxAttempts) {
+                attemptCount++
+                
                 try {
                     // Get or create cached file handle for Zero-Copy reads
-                    // Note: Cache is keyed by fileId. If TDLib changes the file path,
-                    // the cached handle will become stale and trigger the retry logic below.
                     val raf =
                         fileHandleCache.computeIfAbsent(fileIdInt) {
                             RandomAccessFile(file, "r")
@@ -363,18 +364,9 @@ class T_TelegramFileDownloader(
                     // Handle closed stream or stale handle - remove from cache and retry
                     fileHandleCache.remove(fileIdInt)?.runCatching { close() }
 
-                    retryCount++
-                    
-                    if (retryCount >= maxRetries) {
-                        // Max retries reached, make final attempt with fresh handle
-                        RandomAccessFile(file, "r").use { freshRaf ->
-                            if (position >= freshRaf.length()) {
-                                return@withContext -1 // EOF
-                            }
-                            freshRaf.seek(position)
-                            val bytesToRead = min(length, (freshRaf.length() - position).toInt())
-                            return@withContext freshRaf.read(buffer, offset, bytesToRead)
-                        }
+                    if (attemptCount >= maxAttempts) {
+                        // Max attempts reached, rethrow exception
+                        throw Exception("Failed to read file chunk after $maxAttempts attempts", e)
                     }
 
                     // Log retry for debugging
@@ -385,7 +377,7 @@ class T_TelegramFileDownloader(
                             mapOf(
                                 "fileId" to fileId,
                                 "position" to position.toString(),
-                                "retryCount" to retryCount.toString(),
+                                "attemptCount" to attemptCount.toString(),
                             ),
                     )
                 } catch (e: Exception) {
@@ -395,7 +387,7 @@ class T_TelegramFileDownloader(
                 }
             }
 
-            throw Exception("Failed to read file chunk after $maxRetries retries")
+            throw Exception("Failed to read file chunk after $maxAttempts attempts")
         }
 
     /**
