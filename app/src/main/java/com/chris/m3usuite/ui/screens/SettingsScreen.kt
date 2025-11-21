@@ -42,6 +42,7 @@ fun SettingsScreen(
     onOpenPortalCheck: (() -> Unit)? = null, // navigiert zu XtreamPortalCheckScreen
     onOpenTelegramLog: (() -> Unit)? = null, // navigiert zu TelegramLogScreen
     onOpenTelegramFeed: (() -> Unit)? = null, // navigiert zu TelegramActivityFeedScreen
+    onOpenLogViewer: (() -> Unit)? = null, // navigiert zu LogViewerScreen
 ) {
     // --- ViewModels (bestehend) ---
     val playerVm: PlayerSettingsViewModel = viewModel(factory = PlayerSettingsViewModel.factory(app))
@@ -289,6 +290,7 @@ fun SettingsScreen(
                 onDisconnect = telegramVm::onDisconnect,
                 onOpenLog = onOpenTelegramLog,
                 onOpenFeed = onOpenTelegramFeed,
+                onOpenLogViewer = onOpenLogViewer,
             )
 
             // --- Allgemein ---
@@ -340,6 +342,7 @@ private fun TelegramSettingsSection(
     onDisconnect: () -> Unit,
     onOpenLog: (() -> Unit)? = null,
     onOpenFeed: (() -> Unit)? = null,
+    onOpenLogViewer: (() -> Unit)? = null,
 ) {
     var showChatPicker by remember { mutableStateOf(false) }
     var phoneNumber by remember { mutableStateOf("") }
@@ -557,6 +560,14 @@ private fun TelegramSettingsSection(
                             ) {
                                 Text("Logs")
                             }
+                        }
+                    }
+                    onOpenLogViewer?.let { handler ->
+                        Button(
+                            onClick = handler,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Log Viewer")
                         }
                     }
                 }
