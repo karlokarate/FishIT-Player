@@ -145,6 +145,7 @@ fun HomeChromeScaffold(
                 .SettingsStore(ctx)
         }
     val logOverlayHost = remember { SnackbarHostState() }
+    val globalSnackbarHost = snackbarHost ?: remember { SnackbarHostState() }
     val logOverlayState =
         if (isPreview) {
             remember {
@@ -195,6 +196,13 @@ fun HomeChromeScaffold(
     val pads = PaddingValues(top = animatedTopPad, bottom = animatedBottomPad)
 
     val scrimAlpha = if (headerShouldShow) rememberHeaderAlpha(listState) else 0f
+
+    // Global snackbar event listener
+    LaunchedEffect(Unit) {
+        GlobalSnackbarEvent.events.collect { snackbarMessage ->
+            globalSnackbarHost.showSnackbar(snackbarMessage.message)
+        }
+    }
 
     // Auto-collapse on scroll (TV only)
     LaunchedEffect(isTv, listState) {
@@ -483,16 +491,14 @@ fun HomeChromeScaffold(
         // Global TV mini player overlay (bottom-right). When chrome is Expanded, leave it visible but non-focusable.
         MiniPlayerHost(focusEnabled = !(isTv && tvChromeMode.value == ChromeMode.Expanded))
 
-        // SnackbarHost (optional) – ebenfalls oberhalb der Navigation-Bar platzieren
-        if (snackbarHost != null) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(WindowInsets.navigationBars.asPaddingValues()),
-                contentAlignment = Alignment.BottomCenter,
-            ) {
-                SnackbarHost(hostState = snackbarHost)
-            }
+        // SnackbarHost for global app messages (always present)
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(WindowInsets.navigationBars.asPaddingValues()),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            SnackbarHost(hostState = globalSnackbarHost)
         }
         if (!isPreview && showLogOverlay && tgLogVerbosity > 0) {
             val navInsets = WindowInsets.navigationBars.asPaddingValues()
@@ -502,7 +508,7 @@ fun HomeChromeScaffold(
                     .padding(navInsets),
                 contentAlignment = Alignment.BottomCenter,
             ) {
-                val extraBottom = if (snackbarHost != null) 72.dp else 12.dp
+                val extraBottom = 72.dp // Always account for global snackbar
                 SnackbarHost(hostState = logOverlayHost, modifier = Modifier.padding(bottom = extraBottom))
             }
         }

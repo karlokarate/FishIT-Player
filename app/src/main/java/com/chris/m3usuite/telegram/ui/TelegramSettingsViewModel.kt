@@ -109,8 +109,20 @@ class TelegramSettingsViewModel(
             } else if (!wasEnabled && enabled) {
                 TelegramLogRepository.info(
                     source = "TelegramSettingsViewModel",
-                    message = "Telegram enabled by user",
+                    message = "Telegram enabled by user - warm-up starting",
                 )
+
+                // Warm-up: Start service and login flow without requiring phone
+                try {
+                    serviceClient.ensureStarted(app, store)
+                    serviceClient.login() // Let TDLib determine if session is valid
+                } catch (e: Exception) {
+                    TelegramLogRepository.info(
+                        source = "TelegramSettingsViewModel",
+                        message = "Warm-up failed: ${e.message}",
+                    )
+                    _state.update { it.copy(errorMessage = "Fehler beim Starten: ${e.message}") }
+                }
 
                 // First activation - trigger initial full sync if chats are selected
                 val selectedChats = store.tgSelectedChatsCsv.first()
@@ -181,18 +193,12 @@ class TelegramSettingsViewModel(
             try {
                 _state.update { it.copy(isConnecting = true, errorMessage = null) }
 
-                val apiId = _state.value.apiId.toIntOrNull() ?: 0
-                val apiHash = _state.value.apiHash
-
-                if (apiId == 0 || apiHash.isBlank()) {
-                    _state.update {
-                        it.copy(
-                            isConnecting = false,
-                            errorMessage = "Bitte API-ID und API-Hash eingeben",
-                        )
-                    }
-                    return@launch
-                }
+                // Save phone number persistently
+                store.setTelegramPhoneNumber(phoneNumber)
+                TelegramLogRepository.info(
+                    source = "TelegramSettingsViewModel",
+                    message = "Phone number saved persistently",
+                )
 
                 // Ensure service is started
                 serviceClient.ensureStarted(app, store)

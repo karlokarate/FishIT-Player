@@ -76,6 +76,16 @@ android {
         val defaultUa = uaProp("HEADER").orEmpty()
         buildConfigField("String", "DEFAULT_UA", "\"${defaultUa}\"")
 
+        // Telegram API credentials from environment (CI) or fallback for local builds
+        val tgApiIdEnv = System.getenv("TG_API_ID")
+        val tgApiHashEnv = System.getenv("TG_API_HASH")
+
+        val tgApiIdValue = tgApiIdEnv?.toIntOrNull() ?: 0
+        val tgApiHashValue = tgApiHashEnv ?: ""
+
+        buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
+        buildConfigField("String", "TG_API_HASH", "\"$tgApiHashValue\"")
+
         // Feature switches
         val showHeaderUi =
             (project.findProperty("SHOW_HEADER_UI")?.toString()?.toBooleanStrictOrNull()) ?: false
