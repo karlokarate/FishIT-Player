@@ -223,9 +223,9 @@ object MediaParser {
         val cleaned = when (seasonEp.pattern) {
             "SxxEyy" -> base.replace(Regex("""[Ss]\d{1,2}[Ee]\d{1,3}"""), "")
             "XxY" -> base.replace(Regex("""\d{1,2}x\d{1,3}"""), "")
-            "Episode X" -> base.replace(Regex("""[Ee]pisode\s*\d{1,3}""", RegexOption.IGNORE_CASE), "")
-            "Ep X" -> base.replace(Regex("""[Ee]p\s*\d{1,3}""", RegexOption.IGNORE_CASE), "")
-            "Folge X" -> base.replace(Regex("""[Ff]olge\s*\d{1,3}""", RegexOption.IGNORE_CASE), "")
+            "Episode X" -> base.replace(Regex("""[Ee]pisode[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
+            "Ep X" -> base.replace(Regex("""[Ee]p[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
+            "Folge X" -> base.replace(Regex("""[Ff]olge[.\s]*\d{1,3}""", RegexOption.IGNORE_CASE), "")
             else -> base
         }
 

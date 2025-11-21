@@ -57,8 +57,9 @@ class StructuredParserTest {
         val result = MediaParser.extractSeriesName("Sherlock.Episode.4.mp4", seasonEp)
         
         assertNotNull(result)
-        assertTrue("Expected 'Sherlock' in result", result?.contains("Sherlock") == true)
-        assertFalse("Should not contain Episode", result?.contains("Episode") == true)
+        assertTrue("Expected 'Sherlock' in result", result?.contains("Sherlock", ignoreCase = true) == true)
+        assertFalse("Should not contain Episode", result?.contains("Episode", ignoreCase = true) == true)
+        assertFalse("Should not contain '4'", result?.contains("4") == true)
     }
     
     @Test
