@@ -6,6 +6,7 @@ import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.models.MediaInfo
 import com.chris.m3usuite.telegram.models.MediaKind
 import com.chris.m3usuite.telegram.parser.MediaParser
 import com.chris.m3usuite.telegram.parser.TgContentHeuristics
@@ -62,145 +63,234 @@ class TelegramContentRepository(
         withContext(Dispatchers.IO) {
             var indexed = 0
 
-            messages.forEach { message ->
-                val parsed =
-                    MediaParser.parseMessage(
-                        chatId = chatId,
-                        chatTitle = chatTitle,
-                        message = message,
-                        recentMessages = emptyList(),
-                    )
-
-                when (parsed) {
-                    is com.chris.m3usuite.telegram.models.ParsedItem.Media -> {
-                        val mediaInfo = parsed.info
-
-                        // Skip consumed messages (from structured patterns)
-                        if (mediaInfo.isConsumed) {
-                            return@forEach
-                        }
-
-                        // Skip items without valid fileId (cannot be played)
-                        if (mediaInfo.fileId == null || mediaInfo.fileId <= 0) {
-                            return@forEach
-                        }
-
-                        // Apply heuristics for better classification
-                        val heuristic = TgContentHeuristics.classify(mediaInfo, chatTitle)
-
-                        // Extract file metadata from TDLib message content
-                        val fileId: Int?
-                        val fileUniqueId: String?
-                        val durationSecs: Int?
-                        val width: Int?
-                        val height: Int?
-                        val supportsStreaming: Boolean?
-
-                        when (val content = message.content) {
-                            is MessageVideo -> {
-                                fileId = content.video.video?.id
-                                fileUniqueId =
-                                    content.video.video
-                                        ?.remote
-                                        ?.uniqueId
-                                durationSecs = content.video.duration
-                                width = content.video.width
-                                height = content.video.height
-                                supportsStreaming = content.video.supportsStreaming
-                            }
-                            is MessageDocument -> {
-                                fileId = content.document.document?.id
-                                fileUniqueId =
-                                    content.document.document
-                                        ?.remote
-                                        ?.uniqueId
-                                durationSecs = mediaInfo.durationMinutes?.times(60)
-                                width = null
-                                height = null
-                                supportsStreaming = null
-                            }
-                            else -> {
-                                fileId = null
-                                fileUniqueId = null
-                                durationSecs = mediaInfo.durationMinutes?.times(60)
-                                width = null
-                                height = null
-                                supportsStreaming = null
+            // Detect if this is a structured movie chat by analyzing message patterns
+            val isStructuredMovieChat = detectStructuredMovieChat(messages)
+            
+            // If structured, parse all messages at once using structured parser
+            if (isStructuredMovieChat) {
+                val chatContext = com.chris.m3usuite.telegram.models.ChatContext(
+                    chatId = chatId,
+                    chatTitle = chatTitle,
+                    isStructuredMovieChat = true
+                )
+                
+                // Sort messages by descending message ID (most recent first) as expected by parser
+                val sortedMessages = messages.sortedByDescending { it.id }
+                val parsedItems = MediaParser.parseStructuredMovieChat(chatContext, sortedMessages)
+                
+                // Process each parsed item
+                parsedItems.forEach { parsed ->
+                    when (parsed) {
+                        is com.chris.m3usuite.telegram.models.ParsedItem.Media -> {
+                            val mediaInfo = parsed.info
+                            
+                            // Find the original message to extract additional metadata
+                            val message = messages.find { it.id == mediaInfo.messageId }
+                            if (message != null) {
+                                indexed += indexMediaInfo(mediaInfo, message, chatTitle)
                             }
                         }
-
-                        // Detect language from heuristics
-                        val language = heuristic.detectedLanguages.firstOrNull()
-
-                        // Determine if this is a series episode
-                        val isSeries = heuristic.suggestedKind == MediaKind.EPISODE || 
-                                      mediaInfo.seasonNumber != null || 
-                                      mediaInfo.episodeNumber != null
-
-                        // Normalize series name for grouping
-                        val seriesNameNormalized = mediaInfo.seriesName
-                            ?.lowercase()
-                            ?.replace(Regex("""[._-]+"""), " ")
-                            ?.trim()
-
-                        val obxMessage =
-                            ObxTelegramMessage(
-                                chatId = chatId,
-                                messageId = message.id,
-                                fileId = fileId,
-                                fileUniqueId = fileUniqueId,
-                                supportsStreaming = supportsStreaming,
-                                caption = mediaInfo.title ?: mediaInfo.fileName,
-                                captionLower = (mediaInfo.title ?: mediaInfo.fileName)?.lowercase(),
-                                date = message.date.toLong(),
-                                fileName = mediaInfo.fileName,
-                                durationSecs = durationSecs,
-                                mimeType = mediaInfo.mimeType,
-                                sizeBytes = mediaInfo.sizeBytes,
-                                width = width,
-                                height = height,
-                                language = language,
-                                // Movie metadata
-                                title = mediaInfo.title,
-                                year = mediaInfo.year,
-                                genres = mediaInfo.genres.joinToString(", "),
-                                fsk = mediaInfo.fsk,
-                                description = mediaInfo.extraInfo,
-                                posterFileId = mediaInfo.posterFileId,
-                                // Series metadata
-                                isSeries = isSeries,
-                                seriesName = mediaInfo.seriesName,
-                                seriesNameNormalized = seriesNameNormalized,
-                                seasonNumber = heuristic.seasonNumber ?: mediaInfo.seasonNumber,
-                                episodeNumber = heuristic.episodeNumber ?: mediaInfo.episodeNumber,
-                                episodeTitle = mediaInfo.episodeTitle,
-                            )
-
-                        // Upsert logic: check if already exists
-                        val existing =
-                            messageBox
-                                .query {
-                                    equal(ObxTelegramMessage_.chatId, chatId)
-                                    equal(ObxTelegramMessage_.messageId, message.id)
-                                }.findFirst()
-
-                        if (existing == null) {
-                            messageBox.put(obxMessage)
-                            indexed++
-                        } else {
-                            // Update existing with new metadata
-                            obxMessage.id = existing.id
-                            messageBox.put(obxMessage)
+                        else -> {
+                            // Skip non-media items
                         }
                     }
-                    else -> {
-                        // Skip non-media items (SubChat, Invite, None)
+                }
+            } else {
+                // Non-structured chat: use traditional per-message parsing
+                messages.forEach { message ->
+                    val parsed =
+                        MediaParser.parseMessage(
+                            chatId = chatId,
+                            chatTitle = chatTitle,
+                            message = message,
+                            recentMessages = emptyList(),
+                        )
+
+                    when (parsed) {
+                        is com.chris.m3usuite.telegram.models.ParsedItem.Media -> {
+                            val mediaInfo = parsed.info
+
+                            // Skip consumed messages (from structured patterns)
+                            if (mediaInfo.isConsumed) {
+                                return@forEach
+                            }
+
+                            // Skip items without valid fileId (cannot be played)
+                            if (mediaInfo.fileId == null || mediaInfo.fileId <= 0) {
+                                return@forEach
+                            }
+
+                            indexed += indexMediaInfo(mediaInfo, message, chatTitle)
+                        }
+                        else -> {
+                            // Skip non-media items (SubChat, Invite, None)
+                        }
                     }
                 }
             }
 
             indexed
         }
+
+    /**
+     * Detect if a chat follows the structured movie pattern by analyzing message sequences.
+     * A structured chat typically has repeating patterns of: Video -> Text (metadata) -> Photo (poster)
+     */
+    private fun detectStructuredMovieChat(messages: List<Message>): Boolean {
+        // Need at least 3 messages for pattern detection
+        if (messages.size < 3) return false
+        
+        // Sort by message ID descending to analyze sequential patterns
+        val sorted = messages.sortedByDescending { it.id }
+        var patternMatches = 0
+        
+        // Look for at least 2 occurrences of the pattern
+        for (i in 0..sorted.size - 3) {
+            val msg0 = sorted[i]
+            val msg1 = sorted[i + 1]
+            val msg2 = sorted[i + 2]
+            
+            val isPattern = msg0.content is MessageVideo &&
+                           msg1.content is dev.g000sha256.tdl.dto.MessageText &&
+                           msg2.content is dev.g000sha256.tdl.dto.MessagePhoto
+            
+            if (isPattern) {
+                patternMatches++
+                if (patternMatches >= 2) return true
+            }
+        }
+        
+        return false
+    }
+
+    /**
+     * Index a single MediaInfo object extracted from a message.
+     * This is shared logic between structured and non-structured parsing.
+     */
+    private suspend fun indexMediaInfo(
+        mediaInfo: MediaInfo,
+        message: Message,
+        chatTitle: String
+    ): Int {
+        // Skip items without valid fileId (cannot be played)
+        if (mediaInfo.fileId == null || mediaInfo.fileId <= 0) {
+            return 0
+        }
+
+        // Apply heuristics for better classification
+        val heuristic = TgContentHeuristics.classify(mediaInfo, chatTitle)
+
+        // Extract file metadata from TDLib message content
+        val fileId: Int?
+        val fileUniqueId: String?
+        val durationSecs: Int?
+        val width: Int?
+        val height: Int?
+        val supportsStreaming: Boolean?
+
+        when (val content = message.content) {
+            is MessageVideo -> {
+                fileId = content.video.video?.id
+                fileUniqueId =
+                    content.video.video
+                        ?.remote
+                        ?.uniqueId
+                durationSecs = content.video.duration
+                width = content.video.width
+                height = content.video.height
+                supportsStreaming = content.video.supportsStreaming
+            }
+            is MessageDocument -> {
+                fileId = content.document.document?.id
+                fileUniqueId =
+                    content.document.document
+                        ?.remote
+                        ?.uniqueId
+                durationSecs = mediaInfo.durationMinutes?.times(60)
+                width = null
+                height = null
+                supportsStreaming = null
+            }
+            else -> {
+                fileId = null
+                fileUniqueId = null
+                durationSecs = mediaInfo.durationMinutes?.times(60)
+                width = null
+                height = null
+                supportsStreaming = null
+            }
+        }
+
+        // Detect language from heuristics
+        val language = heuristic.detectedLanguages.firstOrNull()
+
+        // Determine if this is a series episode
+        // Only mark as series if we have a valid series name AND season/episode info
+        val isSeries = (heuristic.suggestedKind == MediaKind.EPISODE || 
+                       mediaInfo.seasonNumber != null || 
+                       mediaInfo.episodeNumber != null) &&
+                       !mediaInfo.seriesName.isNullOrBlank()
+
+        // Normalize series name for grouping
+        // Note: This normalization may cause collisions for series that differ only in casing,
+        // separators, or spacing. This is intentional for grouping variations of the same series.
+        // Examples: "Star.Trek" and "Star-Trek" both become "star trek"
+        val seriesNameNormalized = mediaInfo.seriesName
+            ?.lowercase()
+            ?.replace(Regex("""[._-]+"""), " ")
+            ?.trim()
+
+        val obxMessage =
+            ObxTelegramMessage(
+                chatId = mediaInfo.chatId,
+                messageId = message.id,
+                fileId = fileId,
+                fileUniqueId = fileUniqueId,
+                supportsStreaming = supportsStreaming,
+                caption = mediaInfo.title ?: mediaInfo.fileName,
+                captionLower = (mediaInfo.title ?: mediaInfo.fileName)?.lowercase(),
+                date = message.date.toLong(),
+                fileName = mediaInfo.fileName,
+                durationSecs = durationSecs,
+                mimeType = mediaInfo.mimeType,
+                sizeBytes = mediaInfo.sizeBytes,
+                width = width,
+                height = height,
+                language = language,
+                // Movie metadata
+                title = mediaInfo.title,
+                year = mediaInfo.year,
+                genres = mediaInfo.genres.joinToString(", "),
+                fsk = mediaInfo.fsk,
+                description = mediaInfo.extraInfo,
+                posterFileId = mediaInfo.posterFileId,
+                // Series metadata
+                isSeries = isSeries,
+                seriesName = mediaInfo.seriesName,
+                seriesNameNormalized = seriesNameNormalized,
+                seasonNumber = heuristic.seasonNumber ?: mediaInfo.seasonNumber,
+                episodeNumber = heuristic.episodeNumber ?: mediaInfo.episodeNumber,
+                episodeTitle = mediaInfo.episodeTitle,
+            )
+
+        // Upsert logic: check if already exists
+        val existing =
+            messageBox
+                .query {
+                    equal(ObxTelegramMessage_.chatId, mediaInfo.chatId)
+                    equal(ObxTelegramMessage_.messageId, message.id)
+                }.findFirst()
+
+        if (existing == null) {
+            messageBox.put(obxMessage)
+            return 1
+        } else {
+            // Update existing with new metadata
+            obxMessage.id = existing.id
+            messageBox.put(obxMessage)
+            return 0
+        }
+    }
 
     /**
      * Get all Telegram messages as MediaItem list.

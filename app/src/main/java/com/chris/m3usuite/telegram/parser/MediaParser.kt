@@ -137,6 +137,9 @@ object MediaParser {
                         // Detect series from filename/caption
                         val allText = combineTextForAnalysis(fileName, videoContent.caption?.text.orEmpty())
                         val seasonEp = TgContentHeuristics.guessSeasonEpisode(allText)
+                        // Note: We classify as EPISODE if season OR episode is present.
+                        // This means season-only patterns (e.g., "Season 1 Complete") are also treated as episodes.
+                        // For more granular classification (e.g., distinguishing season packs), additional logic would be needed.
                         val isSeries = seasonEp != null && (seasonEp.season != null || seasonEp.episode != null)
                         val kind = if (isSeries) MediaKind.EPISODE else MediaKind.MOVIE
 
@@ -196,6 +199,21 @@ object MediaParser {
 
     /**
      * Extract series name from filename by removing season/episode patterns.
+     * 
+     * Note: The extracted series name is later normalized using lowercase and separator
+     * replacement, which may cause collisions for series that differ only in:
+     * - Casing: "Lost" vs "LOST"
+     * - Separators: "Star.Trek" vs "Star-Trek" vs "Star_Trek"
+     * - Multiple spaces: "Breaking  Bad" vs "Breaking Bad"
+     * 
+     * This normalization is intentional for grouping variations of the same series together.
+     * However, it could incorrectly group different series like:
+     * - "X-Men" and "Xmen" → "x men" vs "xmen" (different after normalization)
+     * - "FBI" and "F.B.I." → "fbi" vs "f b i " (different after normalization)
+     * 
+     * @param fileName Original filename with extension
+     * @param seasonEp Season/episode information detected from filename
+     * @return Cleaned series name or null if extraction fails
      */
     internal fun extractSeriesName(
         fileName: String,
@@ -308,6 +326,8 @@ object MediaParser {
                 // Detect series from filename or caption
                 val allText = combineTextForAnalysis(name, captionText)
                 val seasonEp = TgContentHeuristics.guessSeasonEpisode(allText)
+                // Note: We classify as EPISODE if season OR episode is present.
+                // This means season-only patterns (e.g., "Season 1 Complete") are also treated as episodes.
                 val isSeries = seasonEp != null && (seasonEp.season != null || seasonEp.episode != null)
                 
                 val kind =

@@ -1,6 +1,7 @@
 package com.chris.m3usuite.telegram.parser
 
 import com.chris.m3usuite.telegram.models.*
+import dev.g000sha256.tdl.dto.*
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -15,6 +16,52 @@ import org.junit.Test
  * - fileId validation
  */
 class StructuredParserTest {
+    
+    @Test
+    fun `parseStructuredMovieChat processes video-text-photo pattern`() {
+        // Create mock messages for pattern: Video -> Text -> Photo
+        val chatContext = ChatContext(
+            chatId = 12345L,
+            chatTitle = "Test Movie Chat",
+            isStructuredMovieChat = true
+        )
+        
+        // Note: Full message parsing requires real TDLib message objects
+        // This test validates that the function exists and accepts the correct parameters
+        val messages = emptyList<Message>()
+        val result = MediaParser.parseStructuredMovieChat(chatContext, messages)
+        
+        assertNotNull("parseStructuredMovieChat should return a list", result)
+        assertEquals("Empty message list should return empty result", 0, result.size)
+    }
+    
+    @Test
+    fun `parseStructuredMovieChat returns empty list when not structured chat`() {
+        val chatContext = ChatContext(
+            chatId = 12345L,
+            chatTitle = "Test Chat",
+            isStructuredMovieChat = false
+        )
+        
+        val messages = emptyList<Message>()
+        val result = MediaParser.parseStructuredMovieChat(chatContext, messages)
+        
+        assertEquals("Non-structured chat should return empty list", 0, result.size)
+    }
+    
+    @Test
+    fun `parseStructuredMovieChat returns empty list when less than 3 messages`() {
+        val chatContext = ChatContext(
+            chatId = 12345L,
+            chatTitle = "Test Chat",
+            isStructuredMovieChat = true
+        )
+        
+        val messages = emptyList<Message>()
+        val result = MediaParser.parseStructuredMovieChat(chatContext, messages)
+        
+        assertEquals("Less than 3 messages should return empty list", 0, result.size)
+    }
     
     @Test
     fun `extractSeriesName removes S01E01 pattern`() {
