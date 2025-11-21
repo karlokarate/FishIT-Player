@@ -373,13 +373,11 @@ class T_TelegramFileDownloader(
                     TelegramLogRepository.debug(
                         source = "T_TelegramFileDownloader",
                         message = "Retrying read after closed stream",
-                        details =
-                        }
-                        return@withContext -1 // Ensure we exit after the final retry
-                                "fileId" to fileId,
-                                "position" to position.toString(),
-                                "attemptCount" to attemptCount.toString(),
-                            ),
+                        details = mapOf(
+                            "fileId" to fileId,
+                            "position" to position.toString(),
+                            "attemptCount" to attemptCount.toString(),
+                        ),
                     )
                 } catch (e: Exception) {
                     // For other exceptions, remove stale handle and rethrow

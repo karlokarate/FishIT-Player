@@ -35,6 +35,7 @@ import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.model.isAdultCategory
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.ui.focus.OnPrefetchKeys
 import com.chris.m3usuite.ui.focus.OnPrefetchPaged
 import com.chris.m3usuite.ui.focus.focusScaleOnTv
@@ -1210,6 +1211,17 @@ fun LibraryScreen(
                                 item {
                                     val onTelegramClick: (MediaItem) -> Unit = { media ->
                                         scope.launch {
+                                            TelegramLogRepository.info(
+                                                source = "LibraryScreen",
+                                                message = "User started Telegram playback from LibraryScreen",
+                                                details =
+                                                    mapOf(
+                                                        "mediaId" to media.id.toString(),
+                                                        "title" to media.name,
+                                                        "playUrl" to (media.url ?: "null"),
+                                                    ),
+                                            )
+
                                             playbackLauncher.launch(
                                                 com.chris.m3usuite.playback.PlayRequest(
                                                     type = "vod",

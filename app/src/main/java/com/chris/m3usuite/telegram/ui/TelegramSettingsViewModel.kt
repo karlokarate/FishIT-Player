@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.*
+import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.work.SchedulingGateway
 import dev.g000sha256.tdl.dto.*
 import kotlinx.coroutines.flow.*
@@ -100,11 +101,27 @@ class TelegramSettingsViewModel(
             _state.update { it.copy(enabled = enabled) }
 
             if (!enabled) {
+                TelegramLogRepository.info(
+                    source = "TelegramSettingsViewModel",
+                    message = "Telegram disabled by user",
+                )
                 serviceClient.shutdown()
             } else if (!wasEnabled && enabled) {
+                TelegramLogRepository.info(
+                    source = "TelegramSettingsViewModel",
+                    message = "Telegram enabled by user",
+                )
+
                 // First activation - trigger initial full sync if chats are selected
                 val selectedChats = store.tgSelectedChatsCsv.first()
                 if (selectedChats.isNotBlank() && _state.value.authState == TelegramAuthState.READY) {
+                    val count = selectedChats.split(",").size
+                    TelegramLogRepository.info(
+                        source = "TelegramSettingsViewModel",
+                        message = "Triggering initial full Telegram sync",
+                        details = mapOf("selectedChatsCount" to count.toString()),
+                    )
+
                     SchedulingGateway.scheduleTelegramSync(
                         ctx = app,
                         mode = "all",
@@ -271,6 +288,12 @@ class TelegramSettingsViewModel(
      */
     fun onUpdateSelectedChats(chatIds: List<String>) {
         viewModelScope.launch {
+            TelegramLogRepository.info(
+                source = "TelegramSettingsViewModel",
+                message = "User updated Telegram chat selection",
+                details = mapOf("selectedCount" to chatIds.size.toString()),
+            )
+
             val csv = chatIds.joinToString(",")
             store.setTgSelectedChatsCsv(csv)
             _state.update { it.copy(selectedChats = chatIds) }

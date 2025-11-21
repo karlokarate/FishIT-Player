@@ -115,8 +115,8 @@ Aktueller Stand:
 - Core (Session/Browser/ServiceClient) nutzt Logging **vollständig** (T_TelegramFileDownloader ergänzt)
 - Sync nutzt Logging **vollständig**
 - Streaming (`TelegramDataSource`) loggt **vollständig**
-- UI/Feed loggt **vollständig** (TelegramActivityFeedViewModel ergänzt)
-- Snackbars/Overlays aus `TelegramLogRepository.events` - **deferred (nicht kritisch)**
+- UI/Feed loggt **vollständig** (TelegramActivityFeedViewModel, TelegramSettingsViewModel, StartScreen, LibraryScreen ergänzt)
+- Snackbars/Overlays aus `TelegramLogRepository.events` - **vollständig implementiert**
 
 ### Aufgaben:
 
@@ -124,7 +124,7 @@ Aktueller Stand:
 - [x] Sync-Module vollständig loggen
 - [x] Streaming-Module vollständig loggen
 - [x] UI/Feed-Module loggen Nutzeraktionen/Ereignisse
-- [x] Snackbar/Overlay-Mechanik für WARN/ERROR - **als Deviation dokumentiert** (würde invasive UI-Änderungen erfordern, TelegramLogRepository.events Flow ist bereits vorhanden für zukünftige Integration)
+- [x] Snackbar/Overlay-Mechanik für WARN/ERROR implementiert (StartScreen integriert TelegramLogRepository.events über HomeChromeScaffold)
 
 ---
 
