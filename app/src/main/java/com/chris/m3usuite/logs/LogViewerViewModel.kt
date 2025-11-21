@@ -20,7 +20,7 @@ data class LogViewerState(
     val entries: List<LogEntry> = emptyList(),
     val filteredContent: String = "",
     val availableSources: List<String> = emptyList(),
-    val activeSources: Set<String> = emptySet(), // leer = "alle aktiv"
+    val activeSources: Set<String>? = null, // null = "alle aktiv", empty = "keine aktiv"
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -67,7 +67,7 @@ class LogViewerViewModel(
                 if (!logsDir.exists() && !logsDir.mkdirs()) {
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        errorMessage = "Fehler beim Erstellen des Log-Verzeichnisses"
+                        errorMessage = "Fehler beim Erstellen des Log-Verzeichnisses. Bitte überprüfen Sie die Berechtigung."
                     )
                     return@launch
                 }
@@ -93,7 +93,7 @@ class LogViewerViewModel(
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    errorMessage = "Fehler beim Laden der Logfiles: ${e.message}"
+                    errorMessage = "Fehler beim Laden der Dateien. Bitte versuchen Sie es erneut."
                 )
             }
         }
@@ -160,6 +160,26 @@ class LogViewerViewModel(
         val parts = line.split(" ", limit = 4)
         if (parts.size >= 3) {
             val candidate = parts[2]
+            
+            // Known log levels that should not be treated as sources
+            val logLevels = setOf("INFO", "DEBUG", "ERROR", "WARN", "TRACE", "FATAL")
+            
+            // Reject if candidate is a known log level
+            if (candidate in logLevels) {
+                return null
+            }
+            
+            // Validate that first part looks like a timestamp (contains 'T' or ':')
+            if (!parts[0].contains('T') && !parts[0].contains(':')) {
+                return null
+            }
+            
+            // Validate that second part looks like a log level
+            val secondPart = parts[1].uppercase()
+            if (secondPart !in logLevels) {
+                return null
+            }
+            
             // Return if it looks like a source (starts with capital or T_)
             if (candidate.isNotEmpty() && 
                 (candidate[0].isUpperCase() || candidate.startsWith("T_"))) {
@@ -172,13 +192,14 @@ class LogViewerViewModel(
 
     private fun applyFilter(
         entries: List<LogEntry>,
-        activeSources: Set<String>,
+        activeSources: Set<String>?,
         searchQuery: String,
     ): String {
         return entries
             .asSequence()
             .filter { entry ->
-                activeSources.isEmpty() || (entry.source != null && entry.source in activeSources)
+                // null = show all, empty set = show none, non-empty set = filter by sources
+                activeSources == null || (entry.source != null && entry.source in activeSources)
             }
             .filter { entry ->
                 searchQuery.isBlank() ||
@@ -205,7 +226,7 @@ class LogViewerViewModel(
 
                 val current = _state.value
                 val activeSources =
-                    if (current.activeSources.isEmpty()) sources.toSet() // initial: alle aktiv
+                    if (current.activeSources == null) null // initial: alle aktiv (null)
                     else current.activeSources.intersect(sources.toSet())
 
                 // Check if file was truncated
@@ -228,7 +249,7 @@ class LogViewerViewModel(
                     entries = emptyList(),
                     filteredContent = "",
                     isLoading = false,
-                    errorMessage = "Fehler beim Lesen des Logfiles: ${e.message}",
+                    errorMessage = "Fehler beim Lesen der Datei. Bitte überprüfen Sie die Berechtigung.",
                 )
             }
         }
@@ -236,7 +257,9 @@ class LogViewerViewModel(
 
     fun toggleSourceFilter(source: String) {
         val current = _state.value
-        val newSet = current.activeSources.toMutableSet().apply {
+        // Initialize with all available sources if currently null (showing all)
+        val currentSet = current.activeSources ?: current.availableSources.toSet()
+        val newSet = currentSet.toMutableSet().apply {
             if (contains(source)) remove(source) else add(source)
         }
         _state.value = current.copy(activeSources = newSet)

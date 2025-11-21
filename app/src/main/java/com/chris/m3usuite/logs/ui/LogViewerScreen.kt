@@ -58,7 +58,7 @@ fun LogViewerScreen(
                     }
                 }
             }.onFailure { e ->
-                exportErrorMessage = "Export fehlgeschlagen: ${e.message}"
+                exportErrorMessage = "Export fehlgeschlagen. Bitte überprüfen Sie die Berechtigung und den Speicherplatz."
             }.onSuccess {
                 exportErrorMessage = "Export erfolgreich"
             }
@@ -192,7 +192,8 @@ fun LogViewerScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         state.availableSources.forEach { source ->
-                            val selected = source in state.activeSources
+                            // null means all sources are active
+                            val selected = state.activeSources?.contains(source) ?: true
                             FilterChip(
                                 selected = selected,
                                 onClick = { viewModel.toggleSourceFilter(source) },
