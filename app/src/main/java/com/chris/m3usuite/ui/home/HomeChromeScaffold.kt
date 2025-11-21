@@ -198,6 +198,10 @@ fun HomeChromeScaffold(
     val scrimAlpha = if (headerShouldShow) rememberHeaderAlpha(listState) else 0f
 
     // Global snackbar event listener
+    // Note: Uses LaunchedEffect(Unit) intentionally. HomeChromeScaffold is the root scaffold
+    // that remains in composition for the app's lifetime, so this collector persists throughout
+    // the app session. If the scaffold were temporarily removed and re-added, the collector
+    // would restart automatically on recomposition.
     LaunchedEffect(Unit) {
         GlobalSnackbarEvent.events.collect { snackbarMessage ->
             globalSnackbarHost.showSnackbar(snackbarMessage.message)

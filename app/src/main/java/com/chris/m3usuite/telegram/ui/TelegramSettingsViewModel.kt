@@ -124,22 +124,10 @@ class TelegramSettingsViewModel(
                     _state.update { it.copy(errorMessage = "Fehler beim Starten: ${e.message}") }
                 }
 
-                // First activation - trigger initial full sync if chats are selected
-                val selectedChats = store.tgSelectedChatsCsv.first()
-                if (selectedChats.isNotBlank() && _state.value.authState == TelegramAuthState.READY) {
-                    val count = selectedChats.split(",").size
-                    TelegramLogRepository.info(
-                        source = "TelegramSettingsViewModel",
-                        message = "Triggering initial full Telegram sync",
-                        details = mapOf("selectedChatsCount" to count.toString()),
-                    )
-
-                    SchedulingGateway.scheduleTelegramSync(
-                        ctx = app,
-                        mode = "all",
-                        refreshHome = true,
-                    )
-                }
+                // Note: Initial sync is NOT triggered here because login() is asynchronous
+                // and auth state won't be READY immediately. The sync should be triggered
+                // by a separate observer that monitors auth state transitions to READY,
+                // or manually by the user after authentication completes.
             }
         }
     }

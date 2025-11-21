@@ -296,6 +296,10 @@ class T_TelegramSession(
                     val state = update.authorizationState
                     TelegramLogRepository.debug("T_TelegramSession", " State update: ${state::class.simpleName}")
 
+                    // Update state tracking first
+                    previousState = currentState
+                    currentState = state
+
                     // Detect reauth requirement: if we were Ready and now need phone/code/password
                     if (previousState is AuthorizationStateReady) {
                         when (state) {
@@ -314,9 +318,6 @@ class T_TelegramSession(
                             else -> {}
                         }
                     }
-
-                    previousState = currentState
-                    currentState = state
                     _authEvents.emit(AuthEvent.StateChanged(state))
                     handleAuthState(state)
                 }
