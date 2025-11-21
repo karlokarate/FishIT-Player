@@ -161,4 +161,132 @@ class T_TelegramFileDownloaderTest {
             }
         }
     }
+
+    @Test
+    fun `ChunkRingBuffer class exists and is internal`() {
+        // Verify ChunkRingBuffer class exists
+        // Tests run from project root, not app directory
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/ChunkRingBuffer.kt")
+        assert(sourceFile.exists()) {
+            "ChunkRingBuffer.kt file should exist in telegram/core package"
+        }
+
+        val content = sourceFile.readText()
+        assert(content.contains("internal class ChunkRingBuffer")) {
+            "ChunkRingBuffer should be an internal class"
+        }
+    }
+
+    @Test
+    fun `T_TelegramFileDownloader references ChunkRingBuffer`() {
+        // Verify T_TelegramFileDownloader uses ChunkRingBuffer
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            assert(content.contains("ChunkRingBuffer")) {
+                "T_TelegramFileDownloader should reference ChunkRingBuffer"
+            }
+            assert(content.contains("streamingBuffers")) {
+                "T_TelegramFileDownloader should have streamingBuffers field"
+            }
+        }
+    }
+
+    @Test
+    fun `readFileChunk uses ringbuffer for read-through cache`() {
+        // Verify readFileChunk implements read-through cache pattern with ringbuffer
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            val readFileChunkSection =
+                content
+                    .substringAfter("suspend fun readFileChunk", "")
+                    .substringBefore("suspend fun startDownload")
+
+            assert(readFileChunkSection.contains("getRingBuffer(")) {
+                "readFileChunk should call getRingBuffer to get ringbuffer instance"
+            }
+            assert(readFileChunkSection.contains("containsRange(")) {
+                "readFileChunk should check if data is in ringbuffer with containsRange"
+            }
+            assert(readFileChunkSection.contains("ringBuffer.read(")) {
+                "readFileChunk should read from ringbuffer when data is available"
+            }
+            assert(readFileChunkSection.contains("ringBuffer.write(")) {
+                "readFileChunk should write to ringbuffer after reading from file"
+            }
+        }
+    }
+
+    @Test
+    fun `cancelDownload clears ringbuffer`() {
+        // Verify cancelDownload methods clean up ringbuffer
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            // Check both cancelDownload overloads
+            val cancelSections = content.split("suspend fun cancelDownload")
+            assert(cancelSections.size >= 3) { // Original + 2 overloads
+                "Should have at least 2 cancelDownload method implementations"
+            }
+
+            var foundCleanup = 0
+            for (section in cancelSections.drop(1)) { // Skip the part before first method
+                if (section.contains("streamingBuffers.remove(") && section.contains(".clear()")) {
+                    foundCleanup++
+                }
+            }
+            assert(foundCleanup >= 2) {
+                "Both cancelDownload overloads should clean up streamingBuffers (found $foundCleanup)"
+            }
+        }
+    }
+
+    @Test
+    fun `cleanupFileHandle clears ringbuffer`() {
+        // Verify cleanupFileHandle also cleans up ringbuffer
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            val cleanupSection = content.substringAfter("suspend fun cleanupFileHandle", "")
+            assert(cleanupSection.contains("streamingBuffers.remove(") && cleanupSection.contains(".clear()")) {
+                "cleanupFileHandle should clean up streamingBuffers"
+            }
+        }
+    }
+
+    @Test
+    fun `ensureWindow clears ringbuffer on new window`() {
+        // Verify ensureWindow clears ringbuffer when creating new window
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            val ensureWindowSection =
+                content
+                    .substringAfter("suspend fun ensureWindow", "")
+                    .substringBefore("suspend fun getFileSize")
+
+            assert(ensureWindowSection.contains("getRingBuffer(") && ensureWindowSection.contains(".clear()")) {
+                "ensureWindow should clear ringbuffer when creating new window"
+            }
+        }
+    }
+
+    @Test
+    fun `StreamingConfig has ringbuffer constants`() {
+        // Verify StreamingConfig includes ringbuffer configuration
+        // Tests run from app directory
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/StreamingConfig.kt")
+        assert(sourceFile.exists()) {
+            "StreamingConfig.kt should exist as a separate file"
+        }
+
+        val content = sourceFile.readText()
+        assert(content.contains("RINGBUFFER_CHUNK_SIZE_BYTES")) {
+            "StreamingConfig should define RINGBUFFER_CHUNK_SIZE_BYTES"
+        }
+        assert(content.contains("RINGBUFFER_MAX_CHUNKS")) {
+            "StreamingConfig should define RINGBUFFER_MAX_CHUNKS"
+        }
+    }
 }

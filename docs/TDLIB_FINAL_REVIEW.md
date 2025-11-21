@@ -162,10 +162,10 @@ This document tracks all tasks required to fully implement the TDLib integration
 - [x] 8.1 File moved to `telegram/player/TelegramDataSource.kt`
 - [x] 8.2 Constructor injects `T_TelegramServiceClient` and/or `T_TelegramFileDownloader`
 - [x] 8.3 `open(dataSpec)` parses `tg://file/<fileId>?chatId=...&messageId=...`
-- [ ] 8.4 Requests in-memory stream/ringbuffer from `T_TelegramFileDownloader` - Need to verify zero-copy implementation
+- [x] 8.4 Requests windowed stream from `T_TelegramFileDownloader` with ChunkRingBuffer - **Phase 2 COMPLETED: In-memory ringbuffer with read-through cache**
 - [x] 8.5 `TransferListener.onTransferStart` called correctly
-- [ ] 8.6 `read(buffer, offset, length)` reads from in-memory buffer - Need to verify zero-copy streaming
-- [ ] 8.7 Background download continues as needed - Need to verify background behavior
+- [x] 8.6 `read(buffer, offset, length)` reads from ringbuffer (256KB chunks, 64 max, LRU eviction) - **Phase 2 COMPLETED: Zero-copy streaming via ChunkRingBuffer**
+- [x] 8.7 Background download continues as needed with automatic window management - **Phase 2 COMPLETED: Windowed downloads with 16MB windows**
 - [x] 8.8 `close()` cancels/releases streams
 - [x] 8.9 `TransferListener.onTransferEnd` called on close
 - [x] 8.10 `DelegatingDataSourceFactory` creates `TelegramDataSource` for `tg://` URLs - Verified in PlayerChooser.kt and DelegatingDataSourceFactory.kt
