@@ -180,7 +180,7 @@ class T_TelegramFileDownloaderTest {
     @Test
     fun `T_TelegramFileDownloader references ChunkRingBuffer`() {
         // Verify T_TelegramFileDownloader uses ChunkRingBuffer
-        val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
             assert(content.contains("ChunkRingBuffer")) {
