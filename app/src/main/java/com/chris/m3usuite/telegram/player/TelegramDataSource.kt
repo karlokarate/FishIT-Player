@@ -401,9 +401,10 @@ class TelegramDataSource(
             runCatching {
                 runBlocking {
                     val downloader = serviceClient.downloader()
-                    // Explicit cleanup: ensure file handles are removed even if cancellation fails
-                    downloader.cleanupFileHandle(closingFileIdInt)
+                    // Cancel download first to prevent new operations on the file handle
                     downloader.cancelDownload(closingFileIdInt)
+                    // Then explicitly cleanup file handle to ensure it's removed even if cancellation failed
+                    downloader.cleanupFileHandle(closingFileIdInt)
                 }
             }
         }

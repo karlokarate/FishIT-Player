@@ -340,7 +340,7 @@ class T_TelegramFileDownloader(
             var retryCount = 0
             val maxRetries = StreamingConfig.MAX_READ_RETRIES
 
-            while (retryCount <= maxRetries) {
+            while (retryCount < maxRetries) {
                 try {
                     // Get or create cached file handle for Zero-Copy reads
                     // Note: Cache is keyed by fileId. If TDLib changes the file path,
@@ -363,8 +363,10 @@ class T_TelegramFileDownloader(
                     // Handle closed stream or stale handle - remove from cache and retry
                     fileHandleCache.remove(fileIdInt)?.runCatching { close() }
 
+                    retryCount++
+                    
                     if (retryCount >= maxRetries) {
-                        // Final retry with fresh handle
+                        // Max retries reached, make final attempt with fresh handle
                         RandomAccessFile(file, "r").use { freshRaf ->
                             if (position >= freshRaf.length()) {
                                 return@withContext -1 // EOF
@@ -375,7 +377,6 @@ class T_TelegramFileDownloader(
                         }
                     }
 
-                    retryCount++
                     // Log retry for debugging
                     TelegramLogRepository.debug(
                         source = "T_TelegramFileDownloader",
