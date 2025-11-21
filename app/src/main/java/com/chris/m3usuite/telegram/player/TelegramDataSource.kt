@@ -11,7 +11,9 @@ import com.chris.m3usuite.telegram.core.StreamingConfig
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import java.io.IOException
+import kotlinx.coroutines.TimeoutCancellationException
 
 /**
  * DataSource for streaming Telegram files via TDLib with **Windowed Zero-Copy Streaming**.
@@ -54,6 +56,7 @@ class TelegramDataSource(
     private var bytesRemaining: Long = C.LENGTH_UNSET.toLong()
     private var totalSize: Long = C.LENGTH_UNSET.toLong()
     private var fileId: String? = null
+
     /**
      * The Telegram chat ID associated with the file to be streamed.
      *
@@ -62,6 +65,7 @@ class TelegramDataSource(
      * It is set during the [open] method when the DataSource is initialized.
      */
     private var chatId: Long? = null
+
     /**
      * The Telegram message ID associated with the file to be streamed.
      *
@@ -72,7 +76,7 @@ class TelegramDataSource(
     private var messageId: Long? = null
     private var opened = false
     private var transferListener: TransferListener? = null
-    
+
     // Window state for streaming
     private var windowStart: Long = 0
     private var windowSize: Long = StreamingConfig.TELEGRAM_STREAM_WINDOW_BYTES
@@ -109,12 +113,12 @@ class TelegramDataSource(
         }
 
         fileId = segments[0]
-        
+
         // Log stream start
         TelegramLogRepository.logStreamingActivity(
             fileId = fileId!!.toIntOrNull() ?: 0,
             action = "opening",
-            details = mapOf("uri" to uri.toString())
+            details = mapOf("uri" to uri.toString()),
         )
 
         // Extract chatId and messageId from query parameters
@@ -137,40 +141,43 @@ class TelegramDataSource(
             TelegramLogRepository.error(
                 source = "TelegramDataSource",
                 message = "Failed to parse Telegram URI",
-                exception = e
+                exception = e,
             )
             throw IOException("Failed to parse Telegram URI parameters: $uri - ${e.message}", e)
         }
 
         // Get downloader from service client
-        val downloader = try {
-            serviceClient.downloader()
-        } catch (e: Exception) {
-            throw IOException("Telegram service not available: ${e.message}", e)
-        }
+        val downloader =
+            try {
+                serviceClient.downloader()
+            } catch (e: Exception) {
+                throw IOException("Telegram service not available: ${e.message}", e)
+            }
 
         // Get file size from TDLib
-        totalSize = runBlocking {
-            try {
-                downloader.getFileSize(fileId!!)
-            } catch (e: Exception) {
-                TelegramLogRepository.error(
-                    source = "TelegramDataSource",
-                    message = "Failed to get file size",
-                    exception = e,
-                    details = mapOf("fileId" to fileId!!)
-                )
-                throw IOException("Failed to get file size for fileId=$fileId: ${e.message}", e)
+        totalSize =
+            runBlocking {
+                try {
+                    downloader.getFileSize(fileId!!)
+                } catch (e: Exception) {
+                    TelegramLogRepository.error(
+                        source = "TelegramDataSource",
+                        message = "Failed to get file size",
+                        exception = e,
+                        details = mapOf("fileId" to fileId!!),
+                    )
+                    throw IOException("Failed to get file size for fileId=$fileId: ${e.message}", e)
+                }
             }
-        }
 
         // Calculate position and bytes remaining
         position = dataSpec.position
-        bytesRemaining = if (totalSize >= 0) {
-            (totalSize - position).coerceAtLeast(0)
-        } else {
-            C.LENGTH_UNSET.toLong()
-        }
+        bytesRemaining =
+            if (totalSize >= 0) {
+                (totalSize - position).coerceAtLeast(0)
+            } else {
+                C.LENGTH_UNSET.toLong()
+            }
 
         // Initialize window at current position
         windowStart = position
@@ -205,15 +212,16 @@ class TelegramDataSource(
 
         // Notify transfer listener that transfer has started
         transferListener?.onTransferStart(this, dataSpec, true)
-        
+
         // Log successful open
         TelegramLogRepository.logStreamingActivity(
             fileId = fileId!!.toIntOrNull() ?: 0,
             action = "opened",
-            details = mapOf(
-                "size" to totalSize.toString(),
-                "position" to position.toString()
-            )
+            details =
+                mapOf(
+                    "size" to totalSize.toString(),
+                    "position" to position.toString(),
+                ),
         )
 
         return if (bytesRemaining >= 0) bytesRemaining else C.LENGTH_UNSET.toLong()
@@ -259,7 +267,7 @@ class TelegramDataSource(
         if (distanceToWindowEnd < StreamingConfig.TELEGRAM_STREAM_PREFETCH_MARGIN || position < windowStart) {
             // Approaching window end or seeking backward, open new window
             val newWindowStart = position
-            
+
             TelegramLogRepository.logStreamingActivity(
                 fileId = fileIdInt,
                 action = "window_transition",
@@ -273,7 +281,7 @@ class TelegramDataSource(
 
             windowStart = newWindowStart
 
-            // Ensure new window
+            // Ensure new window with timeout to prevent indefinite blocking
             val downloader =
                 try {
                     serviceClient.downloader()
@@ -283,7 +291,22 @@ class TelegramDataSource(
 
             runBlocking {
                 try {
-                    downloader.ensureWindow(fileIdInt, windowStart, windowSize)
+                    // Add timeout to prevent indefinite blocking during window setup failures
+                    withTimeout(StreamingConfig.WINDOW_TRANSITION_TIMEOUT_MS) {
+                        downloader.ensureWindow(fileIdInt, windowStart, windowSize)
+                    }
+                } catch (e: TimeoutException) {
+                    TelegramLogRepository.error(
+                        source = "TelegramDataSource",
+                        message = "Window transition timed out",
+                        exception = e,
+                        details =
+                            mapOf(
+                                "fileId" to fid,
+                                "position" to position.toString(),
+                            ),
+                    )
+                    throw IOException("Window transition timed out at position $position for fileId $fid", e)
                 } catch (e: Exception) {
                     TelegramLogRepository.error(
                         source = "TelegramDataSource",
@@ -301,29 +324,40 @@ class TelegramDataSource(
         }
 
         // Calculate how many bytes to read
-        val bytesToRead = if (bytesRemaining == C.LENGTH_UNSET.toLong()) {
-            readLength
-        } else {
-            minOf(readLength.toLong(), bytesRemaining).toInt()
-        }
+        val bytesToRead =
+            if (bytesRemaining == C.LENGTH_UNSET.toLong()) {
+                readLength
+            } else {
+                minOf(readLength.toLong(), bytesRemaining).toInt()
+            }
 
         // Get downloader and read chunk
-        val downloader = try {
-            serviceClient.downloader()
-        } catch (e: Exception) {
-            throw IOException("Telegram service not available: ${e.message}", e)
-        }
-
-        val bytesRead = runBlocking {
+        val downloader =
             try {
-                downloader.readFileChunk(fid, position, buffer, offset, bytesToRead)
+                serviceClient.downloader()
             } catch (e: Exception) {
-                throw IOException(
-                    "Failed to read from Telegram file $fid at position $position: ${e.message}",
-                    e,
-                )
+                throw IOException("Telegram service not available: ${e.message}", e)
             }
-        }
+
+        val bytesRead =
+            runBlocking {
+                try {
+                    // Add timeout for read operations
+                    withTimeout(StreamingConfig.READ_OPERATION_TIMEOUT_MS) {
+                        downloader.readFileChunk(fid, position, buffer, offset, bytesToRead)
+                    }
+                } catch (e: TimeoutException) {
+                    throw IOException(
+                        "Read operation timed out for Telegram file $fid at position $position",
+                        e,
+                    )
+                } catch (e: Exception) {
+                    throw IOException(
+                        "Failed to read from Telegram file $fid at position $position: ${e.message}",
+                        e,
+                    )
+                }
+            }
 
         // Handle EOF
         if (bytesRead <= 0) {
@@ -362,12 +396,21 @@ class TelegramDataSource(
         val closingFileIdInt = closingFileId?.toIntOrNull()
         opened = false
 
-        // Cancel any ongoing downloads
+        // Cancel any ongoing downloads and ensure file handles are cleaned up
         if (closingFileIdInt != null) {
+            // Cancel download first to prevent new operations on the file handle
             runCatching {
                 runBlocking {
                     val downloader = serviceClient.downloader()
                     downloader.cancelDownload(closingFileIdInt)
+                }
+            }
+            
+            // Then explicitly cleanup file handle - separate block ensures this runs even if cancel fails
+            runCatching {
+                runBlocking {
+                    val downloader = serviceClient.downloader()
+                    downloader.cleanupFileHandle(closingFileIdInt)
                 }
             }
         }
@@ -389,13 +432,13 @@ class TelegramDataSource(
         if (spec != null) {
             transferListener?.onTransferEnd(this, spec, true)
         }
-        
+
         // Log stream close
         closingFileId?.let { fid ->
             TelegramLogRepository.logStreamingActivity(
                 fileId = fid.toIntOrNull() ?: 0,
                 action = "closed",
-                details = null
+                details = null,
             )
         }
     }

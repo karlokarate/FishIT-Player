@@ -46,20 +46,22 @@ private class DelegatingDataSource(
     @Throws(IOException::class)
     override fun open(dataSpec: DataSpec): Long {
         val scheme = dataSpec.uri.scheme?.lowercase(Locale.US)
-        val target: DataSource = when {
-            scheme == "tg" -> {
-                // Route Telegram files to TelegramDataSource
-                // Get T_TelegramServiceClient singleton instance
-                val serviceClient = try {
-                    T_TelegramServiceClient.getInstance(context)
-                } catch (e: Exception) {
-                    throw IOException("Failed to get Telegram service client: ${e.message}", e)
+        val target: DataSource =
+            when {
+                scheme == "tg" -> {
+                    // Route Telegram files to TelegramDataSource
+                    // Get T_TelegramServiceClient singleton instance
+                    val serviceClient =
+                        try {
+                            T_TelegramServiceClient.getInstance(context)
+                        } catch (e: Exception) {
+                            throw IOException("Failed to get Telegram service client: ${e.message}", e)
+                        }
+                    TelegramDataSource(context, serviceClient)
                 }
-                TelegramDataSource(context, serviceClient)
+                scheme == "rar" -> RarDataSource(context)
+                else -> fallback.createDataSource()
             }
-            scheme == "rar" -> RarDataSource(context)
-            else -> fallback.createDataSource()
-        }
         delegate = target
         transferListener?.let { target.addTransferListener(it) }
         return target.open(dataSpec)

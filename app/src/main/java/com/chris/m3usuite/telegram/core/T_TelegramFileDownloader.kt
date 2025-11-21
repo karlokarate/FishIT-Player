@@ -48,6 +48,25 @@ object StreamingConfig {
      * the next window is prepared.
      */
     const val TELEGRAM_STREAM_PREFETCH_MARGIN = 4 * 1024 * 1024L
+
+    /**
+     * Timeout for window transition operations (30 seconds).
+     * Prevents indefinite blocking during window setup failures.
+     */
+    const val WINDOW_TRANSITION_TIMEOUT_MS = 30_000L
+
+    /**
+     * Timeout for read operations (10 seconds).
+     * Prevents indefinite blocking during file read operations.
+     */
+    const val READ_OPERATION_TIMEOUT_MS = 10_000L
+
+    /**
+     * Maximum read attempts including initial attempt (3 attempts total).
+     * With 3 attempts, there are 2 retries after the initial attempt.
+     * Handles race conditions where file handles may be closed by another thread.
+     */
+    const val MAX_READ_ATTEMPTS = 3
 }
 
 /**
@@ -285,6 +304,7 @@ class T_TelegramFileDownloader(
      * - Reusing cached RandomAccessFile handles
      * - Writing directly from TDLib cache file into the provided buffer
      * - Avoiding intermediate ByteArray allocations
+     * - Handling race conditions with retry logic for closed streams
      *
      * For windowed streaming, ensure `ensureWindow()` is called before reading.
      *
@@ -317,38 +337,58 @@ class T_TelegramFileDownloader(
                 throw Exception("Downloaded file not found: $localPath")
             }
 
-            // Get or create cached file handle for Zero-Copy reads
-            // Note: Cache is keyed by fileId. If TDLib changes the file path,
-            // the cached handle will become stale and trigger the retry logic below.
-            val raf =
-                fileHandleCache.computeIfAbsent(fileIdInt) {
-                    RandomAccessFile(file, "r")
-                }
+            // Retry logic to handle race condition where file handle is closed by another thread
+            var attemptCount = 0
+            val maxAttempts = StreamingConfig.MAX_READ_ATTEMPTS
 
-            try {
-                if (position >= raf.length()) {
-                    return@withContext -1 // EOF
-                }
+            while (attemptCount < maxAttempts) {
+                attemptCount++
+                
+                try {
+                    // Get or create cached file handle for Zero-Copy reads
+                    val raf =
+                        fileHandleCache.computeIfAbsent(fileIdInt) {
+                            RandomAccessFile(file, "r")
+                        }
 
-                raf.seek(position)
-                val bytesToRead = min(length, (raf.length() - position).toInt())
-                
-                // Zero-Copy: write directly into buffer
-                return@withContext raf.read(buffer, offset, bytesToRead)
-            } catch (e: Exception) {
-                // If handle is stale (e.g., file moved/updated), remove from cache and retry
-                fileHandleCache.remove(fileIdInt)?.close()
-                
-                // Retry with fresh handle pointing to current file location
-                RandomAccessFile(file, "r").use { freshRaf ->
-                    if (position >= freshRaf.length()) {
+                    if (position >= raf.length()) {
                         return@withContext -1 // EOF
                     }
-                    freshRaf.seek(position)
-                    val bytesToRead = min(length, (freshRaf.length() - position).toInt())
-                    return@withContext freshRaf.read(buffer, offset, bytesToRead)
+
+                    raf.seek(position)
+                    val bytesToRead = min(length, (raf.length() - position).toInt())
+
+                    // Zero-Copy: write directly into buffer
+                    return@withContext raf.read(buffer, offset, bytesToRead)
+                } catch (e: java.io.IOException) {
+                    // Handle closed stream or stale handle - remove from cache and retry
+                    fileHandleCache.remove(fileIdInt)?.runCatching { close() }
+
+                    if (attemptCount >= maxAttempts) {
+                        // Max attempts reached, rethrow exception
+                        throw Exception("Failed to read file chunk after $maxAttempts attempts", e)
+                    }
+
+                    // Log retry for debugging
+                    TelegramLogRepository.debug(
+                        source = "T_TelegramFileDownloader",
+                        message = "Retrying read after closed stream",
+                        details =
+                        }
+                        return@withContext -1 // Ensure we exit after the final retry
+                                "fileId" to fileId,
+                                "position" to position.toString(),
+                                "attemptCount" to attemptCount.toString(),
+                            ),
+                    )
+                } catch (e: Exception) {
+                    // For other exceptions, remove stale handle and rethrow
+                    fileHandleCache.remove(fileIdInt)?.runCatching { close() }
+                    throw e
                 }
             }
+
+            throw Exception("Failed to read file chunk after $maxAttempts attempts")
         }
 
     /**
@@ -370,7 +410,7 @@ class T_TelegramFileDownloader(
                 TelegramLogRepository.debug(
                     source = "T_TelegramFileDownloader",
                     message = "Starting download",
-                    details = mapOf("fileId" to fileId.toString(), "priority" to priority.toString())
+                    details = mapOf("fileId" to fileId.toString(), "priority" to priority.toString()),
                 )
 
                 val result =
@@ -389,7 +429,7 @@ class T_TelegramFileDownloader(
                             fileId = fileId,
                             progress = 0,
                             total = (result.result.expectedSize ?: 0).toInt(),
-                            status = "started"
+                            status = "started",
                         )
                         true
                     }
@@ -398,7 +438,7 @@ class T_TelegramFileDownloader(
                         TelegramLogRepository.error(
                             source = "T_TelegramFileDownloader",
                             message = "Download start failed",
-                            details = mapOf("fileId" to fileId.toString(), "error" to result.message)
+                            details = mapOf("fileId" to fileId.toString(), "error" to result.message),
                         )
                         false
                     }
@@ -409,7 +449,7 @@ class T_TelegramFileDownloader(
                     source = "T_TelegramFileDownloader",
                     message = "Download start error",
                     exception = e,
-                    details = mapOf("fileId" to fileId.toString())
+                    details = mapOf("fileId" to fileId.toString()),
                 )
                 false
             }
@@ -433,15 +473,15 @@ class T_TelegramFileDownloader(
                     )
                 }
                 activeDownloads.remove(fileIdInt)
-                
+
                 // Clean up window state and file handle
                 windowStates.remove(fileIdInt)
-                fileHandleCache.remove(fileIdInt)?.close()
-                
+                fileHandleCache.remove(fileIdInt)?.runCatching { close() }
+
                 TelegramLogRepository.debug(
                     source = "T_TelegramFileDownloader",
                     message = "Cancelled download",
-                    details = mapOf("fileId" to fileId)
+                    details = mapOf("fileId" to fileId),
                 )
             }
         }
@@ -461,17 +501,34 @@ class T_TelegramFileDownloader(
                     )
                 }
                 activeDownloads.remove(fileId)
-                
+
                 // Clean up window state and file handle
                 windowStates.remove(fileId)
-                fileHandleCache.remove(fileId)?.close()
-                
+                fileHandleCache.remove(fileId)?.runCatching { close() }
+
                 TelegramLogRepository.debug(
                     source = "T_TelegramFileDownloader",
                     message = "Cancelled download",
-                    details = mapOf("fileId" to fileId.toString())
+                    details = mapOf("fileId" to fileId.toString()),
                 )
             }
+        }
+
+    /**
+     * Explicitly cleanup file handle for a given file ID.
+     * This ensures file handles are closed even if download cancellation fails.
+     * Safe to call multiple times - idempotent.
+     *
+     * @param fileId TDLib file ID (integer)
+     */
+    suspend fun cleanupFileHandle(fileId: Int) =
+        withContext(Dispatchers.IO) {
+            fileHandleCache.remove(fileId)?.runCatching { close() }
+            TelegramLogRepository.debug(
+                source = "T_TelegramFileDownloader",
+                message = "Cleaned up file handle",
+                details = mapOf("fileId" to fileId.toString()),
+            )
         }
 
     /**
