@@ -22,7 +22,7 @@ import java.io.IOException
  * - docs/TDLIB_TASK_GROUPING.md (Cluster C: Streaming / DataSource, Tasks 49-56)
  *
  * **Windowed Zero-Copy Streaming:**
- * - Downloads only a window (z.B. 16MB) of the file around current playback position
+ * - Downloads only a window (currently 16MB) of the file around current playback position
  * - Old windows are discarded when seeking, new windows opened at target position
  * - `read()` writes **directly** from TDLib cache into ExoPlayer's buffer without extra copies
  * - Automatic window transitions when approaching prefetch margin
