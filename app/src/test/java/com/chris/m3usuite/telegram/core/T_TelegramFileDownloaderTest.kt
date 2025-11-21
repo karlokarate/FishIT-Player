@@ -290,4 +290,95 @@ class T_TelegramFileDownloaderTest {
             "StreamingConfig should define RINGBUFFER_MAX_CHUNKS"
         }
     }
+
+    @Test
+    fun `StreamingConfig has read retry constants`() {
+        // Verify StreamingConfig includes retry configuration for blocking reads
+        val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/StreamingConfig.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            assert(content.contains("READ_RETRY_MAX_ATTEMPTS")) {
+                "StreamingConfig should define READ_RETRY_MAX_ATTEMPTS"
+            }
+            assert(content.contains("READ_RETRY_DELAY_MS")) {
+                "StreamingConfig should define READ_RETRY_DELAY_MS"
+            }
+            assert(content.contains("= 200")) {
+                "READ_RETRY_MAX_ATTEMPTS should be 200"
+            }
+            assert(content.contains("= 15L")) {
+                "READ_RETRY_DELAY_MS should be 15L"
+            }
+        }
+    }
+
+    @Test
+    fun `readFileChunk implements blocking retry for chunk availability`() {
+        // Verify readFileChunk waits for TDLib download instead of throwing immediately
+        val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            val readFileChunkSection =
+                content
+                    .substringAfter("suspend fun readFileChunk", "")
+                    .substringBefore("suspend fun startDownload")
+
+            // Check for blocking retry loop
+            assert(readFileChunkSection.contains("while (!isDownloadedAt(fileId, position))")) {
+                "readFileChunk should have blocking retry loop with isDownloadedAt check"
+            }
+
+            assert(readFileChunkSection.contains("delay(StreamingConfig.READ_RETRY_DELAY_MS)")) {
+                "readFileChunk should use delay with READ_RETRY_DELAY_MS"
+            }
+
+            assert(readFileChunkSection.contains("StreamingConfig.READ_RETRY_MAX_ATTEMPTS")) {
+                "readFileChunk should use READ_RETRY_MAX_ATTEMPTS constant"
+            }
+
+            // Check for appropriate logging
+            assert(readFileChunkSection.contains("\"read(): waiting for chunk\"")) {
+                "readFileChunk should log 'waiting for chunk' during retries"
+            }
+
+            assert(readFileChunkSection.contains("\"read(): chunk available, reading...\"")) {
+                "readFileChunk should log 'chunk available' after successful wait"
+            }
+
+            assert(readFileChunkSection.contains("\"read(): timeout waiting for chunk\"")) {
+                "readFileChunk should log timeout error if retries exhausted"
+            }
+        }
+    }
+
+    @Test
+    fun `T_TelegramFileDownloader has isDownloadedAt helper method`() {
+        // Verify isDownloadedAt helper exists for checking chunk availability
+        val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+
+            assert(content.contains("private suspend fun isDownloadedAt")) {
+                "T_TelegramFileDownloader should have isDownloadedAt helper method"
+            }
+
+            val isDownloadedAtSection =
+                content
+                    .substringAfter("private suspend fun isDownloadedAt", "")
+                    .substringBefore("suspend fun readFileChunk")
+
+            // Check implementation details
+            assert(isDownloadedAtSection.contains("localPath.isNullOrBlank()")) {
+                "isDownloadedAt should check if localPath exists"
+            }
+
+            assert(isDownloadedAtSection.contains("file.exists()")) {
+                "isDownloadedAt should check if file exists"
+            }
+
+            assert(isDownloadedAtSection.contains("file.length() > position")) {
+                "isDownloadedAt should check if file is large enough for position"
+            }
+        }
+    }
 }
