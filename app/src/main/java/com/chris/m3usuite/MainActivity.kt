@@ -30,6 +30,7 @@ import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.ui.TelegramLogScreen
 import com.chris.m3usuite.telegram.ui.feed.TelegramActivityFeedScreen
+import com.chris.m3usuite.logs.ui.LogViewerScreen
 import com.chris.m3usuite.ui.auth.ProfileGate
 import com.chris.m3usuite.ui.home.LocalMiniPlayerResume
 import com.chris.m3usuite.ui.home.MiniPlayerSnapshot
@@ -471,6 +472,7 @@ class MainActivity : ComponentActivity() {
                                 onOpenPortalCheck = { nav.navigate("xt_cfcheck") },
                                 onOpenTelegramLog = { nav.navigate("telegram_log") },
                                 onOpenTelegramFeed = { nav.navigate("telegram_feed") },
+                                onOpenLogViewer = { nav.navigate("log_viewer") },
                             )
                         }
 
@@ -540,6 +542,13 @@ class MainActivity : ComponentActivity() {
                                         else -> nav.navigate("vod/${mediaItem.id}")
                                     }
                                 },
+                                onBack = { nav.popBackStack() },
+                            )
+                        }
+
+                        // Log Viewer Screen
+                        composable("log_viewer") {
+                            LogViewerScreen(
                                 onBack = { nav.popBackStack() },
                             )
                         }
