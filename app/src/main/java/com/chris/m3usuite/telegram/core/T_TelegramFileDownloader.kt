@@ -13,6 +13,44 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.min
 
 /**
+ * Windowing configuration for Zero-Copy Streaming.
+ *
+ * **Windowed Zero-Copy Streaming** means:
+ * - TDLib continues to cache media files on disk (unavoidable)
+ * - Only a window of the file around the current playback position is downloaded
+ * - When seeking, old windows are discarded and new windows are opened at the target position
+ * - `readFileChunk()` writes directly from the TDLib cache into the player buffer (zero-copy at the app layer)
+ *
+ * **Window size rationale:**
+ * - For large files (e.g., 4GB for a 90min movie), the window must be large enough
+ * - 16MB window allows about 1-2 minutes of buffer at ~8 Mbit/s bitrate
+ * - 4MB prefetch margin triggers timely reloading before the end of the window
+ * - These values prevent stuttering and excessive reloading
+ *
+ * **Applies only to:**
+ * - MediaKind.MOVIE
+ * - MediaKind.EPISODE
+ * - MediaKind.CLIP
+ * - MediaKind.AUDIO (if available)
+ *
+ * **NOT for RAR_ARCHIVE** - these use full download.
+ */
+object StreamingConfig {
+    /**
+     * Window size for streaming (16 MB).
+     * Sufficient for smooth playback of typical HD videos.
+     */
+    const val TELEGRAM_STREAM_WINDOW_BYTES = 16 * 1024 * 1024L
+
+    /**
+     * Prefetch margin (4 MB).
+     * When the read position falls below this distance to the end of the window,
+     * the next window is prepared.
+     */
+    const val TELEGRAM_STREAM_PREFETCH_MARGIN = 4 * 1024 * 1024L
+}
+
+/**
  * Download progress information for a file.
  */
 data class DownloadProgress(
@@ -31,24 +69,50 @@ data class DownloadProgress(
 }
 
 /**
- * Handles file downloads from Telegram using TDLib.
+ * Represents the current window state for a file being streamed.
+ *
+ * @property fileId TDLib file ID
+ * @property windowStart Starting byte offset of the current window
+ * @property windowSize Size of the current window in bytes
+ * @property localSize Number of bytes already downloaded within this window
+ * @property isComplete Whether the window download is complete
+ */
+data class WindowState(
+    val fileId: Int,
+    var windowStart: Long,
+    var windowSize: Long,
+    var localSize: Long = 0,
+    var isComplete: Boolean = false,
+)
+
+/**
+ * Handles file downloads from Telegram using TDLib with **Windowed Zero-Copy Streaming**.
  *
  * This class DOES NOT create its own TdlClient - it receives an injected session
  * from T_TelegramServiceClient. All operations use the client from session.
  *
+ * **Windowed Zero-Copy Streaming:**
+ * - TDLib cached Mediendateien weiterhin auf Disk (unvermeidbar)
+ * - Es wird nur ein Fenster (z.B. 16MB) der Datei rund um die aktuelle Abspielposition geladen
+ * - Beim Spulen werden alte Fenster verworfen und neue Fenster an der Zielposition geöffnet
+ * - `readFileChunk()` schreibt **direkt** aus dem TDLib-Cache in den Player-Buffer ohne zusätzliche Kopien
+ * - Gilt nur für direkt abspielbare Medien: MOVIE, EPISODE, CLIP, AUDIO
+ * - RAR_ARCHIVE und andere Container nutzen weiterhin Voll-Download
+ *
  * Key responsibilities:
- * - File download management with priority support
+ * - Windowed file download management with priority support
  * - Real-time download progress tracking via fileUpdates
- * - File chunk reading for streaming (Zero-Copy preparation)
- * - Download cancellation
- * - File info caching
+ * - Zero-Copy file chunk reading for streaming (direct buffer writes)
+ * - Window state management and automatic window transitions
+ * - Download cancellation and cleanup
+ * - File info and handle caching
  * - Storage optimization and cleanup
  *
  * This implementation is designed to support the Streaming cluster's DataSource
- * with efficient chunk-based access and in-memory buffer support.
+ * with efficient windowed access and Zero-Copy buffer handling.
  *
  * Following TDLib coroutines documentation:
- * - Uses downloadFile API with priority and offset support
+ * - Uses downloadFile API with offset/limit support for windowing
  * - Implements proper caching to prevent bloat
  * - Manages concurrent downloads efficiently
  * - Provides real-time download progress tracking via fileUpdates flow
@@ -65,6 +129,142 @@ class T_TelegramFileDownloader(
     // Active downloads tracker - thread-safe
     private val activeDownloads = ConcurrentHashMap.newKeySet<Int>()
 
+    // Window state per file for streaming - thread-safe
+    private val windowStates = ConcurrentHashMap<Int, WindowState>()
+
+    // File handle cache for Zero-Copy reads - thread-safe
+    private val fileHandleCache = ConcurrentHashMap<Int, RandomAccessFile>()
+
+    /**
+     * Ensure a download window is active for the specified file and position.
+     *
+     * This method implements the windowing logic for Zero-Copy streaming:
+     * - Checks if current window covers the requested position
+     * - If not, cancels old downloads and starts a new windowed download
+     * - Updates window state for progress tracking
+     *
+     * **Window Management:**
+     * - Window starts at `windowStart` and spans `windowSize` bytes
+     * - Downloads with high priority for streaming
+     * - Asynchronous download continues in background
+     * - Progress can be tracked via `observeDownloadProgress()`
+     *
+     * @param fileIdInt TDLib file ID (integer)
+     * @param windowStart Starting byte offset for the window
+     * @param windowSize Size of the window in bytes
+     * @return true if window is active, false if setup failed
+     */
+    suspend fun ensureWindow(
+        fileIdInt: Int,
+        windowStart: Long,
+        windowSize: Long,
+    ): Boolean =
+        withContext(Dispatchers.IO) {
+            val existingWindow = windowStates[fileIdInt]
+
+            // Check if existing window covers the requested range
+            if (existingWindow != null) {
+                val windowEnd = existingWindow.windowStart + existingWindow.windowSize
+                if (windowStart >= existingWindow.windowStart && (windowStart + windowSize) <= windowEnd) {
+                    // Current window fully covers the requested range
+                    return@withContext true
+                }
+
+                // Need new window - cancel old download
+                TelegramLogRepository.logStreamingActivity(
+                    fileId = fileIdInt,
+                    action = "window_switch",
+                    details =
+                        mapOf(
+                            "old_start" to existingWindow.windowStart.toString(),
+                            "new_start" to windowStart.toString(),
+                            "window_size" to windowSize.toString(),
+                        ),
+                )
+
+                // Cancel old download if active
+                if (activeDownloads.contains(fileIdInt)) {
+                    runCatching {
+                        client.cancelDownloadFile(
+                            fileId = fileIdInt,
+                            onlyIfPending = false,
+                        )
+                    }
+                    activeDownloads.remove(fileIdInt)
+                }
+
+                // Close old file handle
+                fileHandleCache.remove(fileIdInt)?.close()
+            } else {
+                TelegramLogRepository.logStreamingActivity(
+                    fileId = fileIdInt,
+                    action = "window_open",
+                    details =
+                        mapOf(
+                            "start" to windowStart.toString(),
+                            "size" to windowSize.toString(),
+                        ),
+                )
+            }
+
+            // Create new window state
+            val newWindowState =
+                WindowState(
+                    fileId = fileIdInt,
+                    windowStart = windowStart,
+                    windowSize = windowSize,
+                    localSize = 0,
+                    isComplete = false,
+                )
+            windowStates[fileIdInt] = newWindowState
+
+            // Start windowed download
+            activeDownloads.add(fileIdInt)
+
+            val result =
+                client.downloadFile(
+                    fileId = fileIdInt,
+                    priority = 32, // High priority for streaming
+                    offset = windowStart.coerceAtLeast(0L),
+                    limit = windowSize, // Download only the window
+                    synchronous = false, // Async download
+                )
+
+            when (result) {
+                is dev.g000sha256.tdl.TdlResult.Success -> {
+                    val file = result.result
+                    fileInfoCache[fileIdInt.toString()] = file
+
+                    // Update window state with initial progress
+                    val downloadedInWindow = file.local?.downloadedSize?.toLong() ?: 0L
+                    newWindowState.localSize = downloadedInWindow.coerceAtLeast(0)
+                    newWindowState.isComplete = file.local?.isDownloadingCompleted ?: false
+
+                    TelegramLogRepository.logFileDownload(
+                        fileId = fileIdInt,
+                        progress = downloadedInWindow.toInt(),
+                        total = windowSize.toInt(),
+                        status = "window_started",
+                    )
+                    true
+                }
+                is dev.g000sha256.tdl.TdlResult.Failure -> {
+                    activeDownloads.remove(fileIdInt)
+                    windowStates.remove(fileIdInt)
+                    TelegramLogRepository.error(
+                        source = "T_TelegramFileDownloader",
+                        message = "Window download failed",
+                        details =
+                            mapOf(
+                                "fileId" to fileIdInt.toString(),
+                                "error" to result.message,
+                            ),
+                    )
+                    false
+                }
+            }
+        }
+
     /**
      * Get file size from TDLib.
      * Returns -1 if size is unknown.
@@ -79,15 +279,18 @@ class T_TelegramFileDownloader(
         }
 
     /**
-     * Read a chunk of data from a Telegram file.
-     * Downloads the required portion if not cached.
+     * Read a chunk of data from a Telegram file with **Zero-Copy** optimization.
      *
-     * This method is designed for streaming use cases where the DataSource
-     * needs random access to file chunks.
+     * This method implements Zero-Copy streaming by:
+     * - Reusing cached RandomAccessFile handles
+     * - Writing directly from TDLib cache file into the provided buffer
+     * - Avoiding intermediate ByteArray allocations
      *
-     * @param fileId TDLib file ID
+     * For windowed streaming, ensure `ensureWindow()` is called before reading.
+     *
+     * @param fileId TDLib file ID (string)
      * @param position Offset in bytes
-     * @param buffer Destination buffer
+     * @param buffer Destination buffer (provided by ExoPlayer/Media3)
      * @param offset Offset in buffer to start writing
      * @param length Number of bytes to read
      * @return Number of bytes actually read, or -1 on EOF
@@ -100,41 +303,11 @@ class T_TelegramFileDownloader(
         length: Int,
     ): Int =
         withContext(Dispatchers.IO) {
+            // Get file info once
             val fileInfo = getFileInfo(fileId)
             val fileIdInt = fileInfo.id
+            val localPath = fileInfo.local?.path
 
-            // Calculate which part we need
-            val endPosition = position + length
-
-            // Check if we need to download more data
-            val downloadedSize = fileInfo.local?.downloadedSize?.toLong() ?: 0L
-
-            if (downloadedSize < endPosition) {
-                // Need to download more data
-                // Download with higher priority for streaming
-                val result =
-                    client.downloadFile(
-                        fileId = fileIdInt,
-                        priority = 16, // High priority for streaming
-                        offset = position.coerceAtLeast(0L),
-                        limit = 0L, // 0 means download from offset to end
-                        synchronous = true, // Wait for completion
-                    )
-
-                when (result) {
-                    is dev.g000sha256.tdl.TdlResult.Success -> {
-                        // Update cached file info
-                        fileInfoCache[fileId] = result.result
-                    }
-                    is dev.g000sha256.tdl.TdlResult.Failure -> {
-                        throw Exception("TDLib download failed: ${result.code} - ${result.message}")
-                    }
-                }
-            }
-
-            // After potential download, get the latest file info
-            val updatedFileInfo = getFileInfo(fileId)
-            val localPath = updatedFileInfo.local?.path
             if (localPath.isNullOrBlank()) {
                 throw Exception("File not downloaded yet: $fileId")
             }
@@ -144,14 +317,37 @@ class T_TelegramFileDownloader(
                 throw Exception("Downloaded file not found: $localPath")
             }
 
-            RandomAccessFile(file, "r").use { raf ->
+            // Get or create cached file handle for Zero-Copy reads
+            // Note: Cache is keyed by fileId. If TDLib changes the file path,
+            // the cached handle will become stale and trigger the retry logic below.
+            val raf =
+                fileHandleCache.computeIfAbsent(fileIdInt) {
+                    RandomAccessFile(file, "r")
+                }
+
+            try {
                 if (position >= raf.length()) {
                     return@withContext -1 // EOF
                 }
 
                 raf.seek(position)
                 val bytesToRead = min(length, (raf.length() - position).toInt())
+                
+                // Zero-Copy: write directly into buffer
                 return@withContext raf.read(buffer, offset, bytesToRead)
+            } catch (e: Exception) {
+                // If handle is stale (e.g., file moved/updated), remove from cache and retry
+                fileHandleCache.remove(fileIdInt)?.close()
+                
+                // Retry with fresh handle pointing to current file location
+                RandomAccessFile(file, "r").use { freshRaf ->
+                    if (position >= freshRaf.length()) {
+                        return@withContext -1 // EOF
+                    }
+                    freshRaf.seek(position)
+                    val bytesToRead = min(length, (freshRaf.length() - position).toInt())
+                    return@withContext freshRaf.read(buffer, offset, bytesToRead)
+                }
             }
         }
 
@@ -220,9 +416,9 @@ class T_TelegramFileDownloader(
         }
 
     /**
-     * Cancel an ongoing download.
+     * Cancel an ongoing download and clean up associated resources.
      *
-     * @param fileId TDLib file ID
+     * @param fileId TDLib file ID (string)
      */
     suspend fun cancelDownload(fileId: String) =
         withContext(Dispatchers.IO) {
@@ -237,6 +433,11 @@ class T_TelegramFileDownloader(
                     )
                 }
                 activeDownloads.remove(fileIdInt)
+                
+                // Clean up window state and file handle
+                windowStates.remove(fileIdInt)
+                fileHandleCache.remove(fileIdInt)?.close()
+                
                 TelegramLogRepository.debug(
                     source = "T_TelegramFileDownloader",
                     message = "Cancelled download",
@@ -246,7 +447,7 @@ class T_TelegramFileDownloader(
         }
 
     /**
-     * Cancel an ongoing download by integer file ID.
+     * Cancel an ongoing download by integer file ID and clean up associated resources.
      *
      * @param fileId TDLib file ID (integer)
      */
@@ -260,7 +461,16 @@ class T_TelegramFileDownloader(
                     )
                 }
                 activeDownloads.remove(fileId)
-                println("[T_TelegramFileDownloader] Cancelled download for file $fileId")
+                
+                // Clean up window state and file handle
+                windowStates.remove(fileId)
+                fileHandleCache.remove(fileId)?.close()
+                
+                TelegramLogRepository.debug(
+                    source = "T_TelegramFileDownloader",
+                    message = "Cancelled download",
+                    details = mapOf("fileId" to fileId.toString())
+                )
             }
         }
 

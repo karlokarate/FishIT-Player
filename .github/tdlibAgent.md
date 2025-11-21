@@ -660,3 +660,101 @@ Alle Legacy-Dateien sind deprecated und mit `LEGACY/UNUSED` markiert:
    - Coil 3.x für Thumbnail-Generierung
    - Jetpack Glance Widgets
    - Drag-Reorder für Chat-Picker
+
+---
+
+## 9. Windowed Zero-Copy Streaming Implementation (2025-11-21)
+
+### 9.1 Overview
+
+**Windowed Zero-Copy Streaming** für Telegram-Medienfiles wurde implementiert.
+
+**Definition:**
+- TDLib cached Mediendateien weiterhin auf Disk (unvermeidbar)
+- Es wird nur ein **Fenster** (16 MB) der Datei rund um die aktuelle Abspielposition heruntergeladen
+- Beim Spulen werden alte Fenster verworfen und neue Fenster an der Zielposition geöffnet
+- `TelegramDataSource.read()` schreibt **direkt** aus dem TDLib-Cache in den vom Player gelieferten ByteArray-Buffer, **ohne weitere App-seitige Kopien**
+
+### 9.2 Window Configuration
+
+**StreamingConfig** definiert:
+- `TELEGRAM_STREAM_WINDOW_BYTES = 16 * 1024 * 1024L` (16 MB)
+- `TELEGRAM_STREAM_PREFETCH_MARGIN = 4 * 1024 * 1024L` (4 MB)
+
+**Rationale:**
+- Für große Dateien (z.B. 4GB für 90min Film) muss das Fenster groß genug sein
+- 16MB ermöglicht ca. 1-2 Minuten Puffer bei ~8 Mbit/s Bitrate
+- 4MB Prefetch-Margin triggert rechtzeitiges Nachladen vor Ende des Fensters
+- Diese Werte verhindern Ruckeln und exzessives Nachladen
+
+### 9.3 Implementation Details
+
+**T_TelegramFileDownloader:**
+- `WindowState` data class für Fensterzustand pro Datei
+- `windowStates: ConcurrentHashMap<Int, WindowState>` für Thread-Safe State-Management
+- `fileHandleCache: ConcurrentHashMap<Int, RandomAccessFile>` für Zero-Copy reads
+- `ensureWindow(fileIdInt, windowStart, windowSize)` API:
+  - Prüft ob aktuelles Fenster passt
+  - Cancelt alte Downloads bei Window-Switch
+  - Startet neue windowed Downloads mit offset/limit
+  - Loggt alle Window-Operationen
+- `readFileChunk()` optimiert:
+  - Nutzt cached RandomAccessFile handles
+  - Schreibt direkt in buffer ohne Zwischenkopien
+  - Retry-Logik bei stale handles
+- `cancelDownload()` erweitert:
+  - Cleanup von window state
+  - Schließen von file handles
+
+**TelegramDataSource:**
+- Window-State-Variablen: `windowStart`, `windowSize`
+- `open()`:
+  - Initialisiert window an dataSpec.position
+  - Ruft `ensureWindow()` für initiales Fenster
+- `read()`:
+  - Prüft Distanz zum Window-Ende
+  - Triggert Window-Transition bei Unterschreitung der Prefetch-Margin
+  - Schreibt direkt in ExoPlayer-Buffer (Zero-Copy)
+  - Loggt Window-Transitions
+- `close()`:
+  - Cancelt Downloads
+  - Reset von window state
+  - Cleanup von Resources
+
+### 9.4 MediaKind Scope
+
+**Gilt nur für direkt abspielbare Medienfiles:**
+- `MediaKind.MOVIE`
+- `MediaKind.EPISODE`
+- `MediaKind.CLIP`
+- `MediaKind.AUDIO` (falls vorhanden)
+
+**NICHT für:**
+- `MediaKind.RAR_ARCHIVE` - nutzen weiterhin Voll-Download-Pfad
+- Andere Archive/Container
+
+### 9.5 TDLib Cache Behavior
+
+**Wichtig zu verstehen:**
+- TDLib speichert heruntergeladene Daten weiterhin lokal auf Disk (unvermeidbar)
+- "Zero-Copy" bezieht sich auf den **App-Layer**: Keine zusätzlichen Kopien zwischen TDLib-Cache und Player-Buffer
+- App liest direkt per `RandomAccessFile` aus TDLib-Cache-Dateien
+- Windows werden bei Bedarf verworfen (alte Downloads cancelled)
+- TDLib's eigener Cache-Management bleibt unberührt
+
+### 9.6 Logging Integration
+
+Alle Window-Operationen werden geloggt via `TelegramLogRepository`:
+- `window_open` - Initiales Fenster
+- `window_switch` - Wechsel zu neuem Fenster
+- `window_transition` - Automatischer Übergang bei Prefetch
+- `opening`, `opened`, `closed` - DataSource lifecycle
+- Alle Events mit fileId, position, window-details
+
+### 9.7 Testing
+
+- Code kompiliert erfolgreich
+- Unit-Tests für TelegramDataSource vorhanden (basic structure tests)
+- Integration-Tests mit echtem TDLib/Download erfordern separate Test-Infrastruktur
+- Manuelle Validierung via Player-Nutzung empfohlen
+

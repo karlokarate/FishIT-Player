@@ -28,6 +28,13 @@ import kotlinx.coroutines.withContext
 /**
  * Repository for Telegram content.
  * Handles message indexing, metadata extraction, and content queries.
+ *
+ * **Windowed Zero-Copy Streaming Support:**
+ * - Generates tg://file/<fileId>?chatId=...&messageId=... URLs for all Telegram media
+ * - These URLs are handled by TelegramDataSource with windowed streaming
+ * - Windowing applies to direct media files: MOVIE, EPISODE, CLIP, AUDIO
+ * - RAR_ARCHIVE and other archives are NOT streamed via TelegramDataSource
+ *   (they require full download and extraction, separate handling)
  */
 class TelegramContentRepository(
     private val context: Context,
