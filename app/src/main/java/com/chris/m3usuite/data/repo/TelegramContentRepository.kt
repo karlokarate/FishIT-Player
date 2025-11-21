@@ -77,8 +77,8 @@ class TelegramContentRepository(
                         isStructuredMovieChat = true,
                     )
 
-                // Sort messages by descending message ID (most recent first) as expected by parser
-                val sortedMessages = messages.sortedByDescending { it.id }
+                // Sort messages by ascending message ID (chronological order) as expected by parser
+                val sortedMessages = messages.sortedBy { it.id }
                 val parsedItems = MediaParser.parseStructuredMovieChat(chatContext, sortedMessages)
 
                 // Process each parsed item
@@ -143,8 +143,8 @@ class TelegramContentRepository(
         // Need at least 3 messages for pattern detection
         if (messages.size < 3) return false
 
-        // Sort by message ID descending to analyze sequential patterns
-        val sorted = messages.sortedByDescending { it.id }
+        // Sort by message ID ascending (chronological order as sent)
+        val sorted = messages.sortedBy { it.id }
         var patternMatches = 0
 
         // Look for at least 2 occurrences of the pattern
