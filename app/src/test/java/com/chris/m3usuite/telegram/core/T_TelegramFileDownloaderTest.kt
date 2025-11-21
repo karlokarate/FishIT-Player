@@ -166,7 +166,7 @@ class T_TelegramFileDownloaderTest {
     fun `ChunkRingBuffer class exists and is internal`() {
         // Verify ChunkRingBuffer class exists
         // Tests run from project root, not app directory
-        val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/ChunkRingBuffer.kt")
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/ChunkRingBuffer.kt")
         assert(sourceFile.exists()) {
             "ChunkRingBuffer.kt file should exist in telegram/core package"
         }
