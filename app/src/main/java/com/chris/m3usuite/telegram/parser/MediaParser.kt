@@ -188,22 +188,7 @@ object MediaParser {
             i++
         }
 
-        // Add consumed markers for meta/poster messages
-        messages.forEach { msg ->
-            if (consumedIds.contains(msg.id)) {
-                // Create a consumed marker (we'll filter these out in the repository)
-                results.add(
-                    ParsedItem.Media(
-                        MediaInfo(
-                            chatId = chatContext.chatId,
-                            messageId = msg.id,
-                            kind = MediaKind.OTHER,
-                            isConsumed = true,
-                        ),
-                    ),
-                )
-            }
-        }
+        // No need to add consumed markers for meta/poster messages; these are filtered out downstream.
 
         return results
     }
