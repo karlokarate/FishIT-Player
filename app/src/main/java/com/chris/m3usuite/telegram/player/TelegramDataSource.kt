@@ -295,7 +295,7 @@ class TelegramDataSource(
                                 "position" to position.toString(),
                             ),
                     )
-                    // Continue anyway - downloader might still have data
+                    throw IOException("Failed to transition window at position $position for fileId $fid: ${e.message}", e)
                 }
             }
         }
