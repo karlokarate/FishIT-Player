@@ -48,7 +48,6 @@ data class MediaInfo(
     val fileUniqueId: String? = null,
     // Poster from structured pattern (MessagePhoto)
     val posterFileId: Int? = null,
-    val posterPhotoSizes: List<Any>? = null, // TDLib PhotoSize objects
     // Series-specific metadata
     val seriesName: String? = null,
     val episodeTitle: String? = null,

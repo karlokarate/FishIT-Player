@@ -202,15 +202,15 @@ class TelegramDataSource(
         windowStart = position
         windowSize = StreamingConfig.TELEGRAM_STREAM_WINDOW_BYTES
 
-        // Ensure initial window is prepared
-        val fileIdInt = fileId!!.toIntOrNull() ?: throw IOException("Invalid file ID: $fileId")
+        // Ensure initial window is prepared (fileIdInt already validated above)
+        val windowFileId = fileIdInt
 
         TelegramLogRepository.debug(
             source = "TelegramDataSource",
             message = "prepare window",
             details =
                 mapOf(
-                    "fileId" to fileIdInt.toString(),
+                    "fileId" to windowFileId.toString(),
                     "position" to position.toString(),
                     "readLength" to "initial",
                     "windowStart" to windowStart.toString(),
@@ -221,7 +221,7 @@ class TelegramDataSource(
         val windowReady =
             runBlocking {
                 try {
-                    downloader.ensureWindow(fileIdInt, windowStart, windowSize)
+                    downloader.ensureWindow(windowFileId, windowStart, windowSize)
                 } catch (e: Exception) {
                     TelegramLogRepository.error(
                         source = "TelegramDataSource",
@@ -248,7 +248,7 @@ class TelegramDataSource(
 
         // Log successful open
         TelegramLogRepository.logStreamingActivity(
-            fileId = fileId!!.toIntOrNull() ?: 0,
+            fileId = fileIdInt,
             action = "opened",
             details =
                 mapOf(

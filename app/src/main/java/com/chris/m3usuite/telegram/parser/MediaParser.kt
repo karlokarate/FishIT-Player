@@ -164,7 +164,6 @@ object MediaParser {
                             tmdbRating = meta?.tmdbRating,
                             tmdbVotes = meta?.tmdbVotes,
                             posterFileId = posterFileId,
-                            posterPhotoSizes = photo.sizes,
                             seasonNumber = seasonEp?.season,
                             episodeNumber = seasonEp?.episode,
                             seriesName = seriesName,

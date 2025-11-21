@@ -6,6 +6,7 @@ import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.models.MediaKind
 import com.chris.m3usuite.telegram.parser.MediaParser
 import com.chris.m3usuite.telegram.parser.TgContentHeuristics
 import dev.g000sha256.tdl.dto.Message
@@ -439,8 +440,10 @@ class TelegramContentRepository(
                 .query {
                     equal(ObxTelegramMessage_.chatId, chatId)
                     equal(ObxTelegramMessage_.isSeries, true)
-                    equal(ObxTelegramMessage_.seriesNameNormalized, seriesNameNormalized)
+                    // Use exact match for normalized series name
+                    contains(ObxTelegramMessage_.seriesNameNormalized, seriesNameNormalized, StringOrder.CASE_SENSITIVE)
                 }.find()
+                .filter { it.seriesNameNormalized == seriesNameNormalized } // Exact match post-filter
                 .sortedWith(
                     compareBy(
                         { it.seasonNumber ?: 0 },
