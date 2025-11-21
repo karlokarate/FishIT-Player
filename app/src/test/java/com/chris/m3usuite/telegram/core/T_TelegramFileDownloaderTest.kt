@@ -125,9 +125,11 @@ class T_TelegramFileDownloaderTest {
         val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
-            val ensureWindowSection = content.substringAfter("suspend fun ensureWindow", "")
-                .substringBefore("suspend fun getFileSize")
-            
+            val ensureWindowSection =
+                content
+                    .substringAfter("suspend fun ensureWindow", "")
+                    .substringBefore("suspend fun getFileSize")
+
             assert(ensureWindowSection.contains("\"fileId\" to fileIdInt.toString()")) {
                 "ensureWindow logs should include fileId"
             }
@@ -146,9 +148,11 @@ class T_TelegramFileDownloaderTest {
         val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
-            val readFileChunkSection = content.substringAfter("suspend fun readFileChunk", "")
-                .substringBefore("suspend fun startDownload")
-            
+            val readFileChunkSection =
+                content
+                    .substringAfter("suspend fun readFileChunk", "")
+                    .substringBefore("suspend fun startDownload")
+
             assert(readFileChunkSection.contains("\"Retrying read after closed stream\"")) {
                 "readFileChunk retry should log 'Retrying read after closed stream' message"
             }

@@ -182,11 +182,12 @@ class T_TelegramFileDownloader(
             TelegramLogRepository.debug(
                 source = "T_TelegramFileDownloader",
                 message = "ensureWindow start",
-                details = mapOf(
-                    "fileId" to fileIdInt.toString(),
-                    "windowStart" to windowStart.toString(),
-                    "windowSize" to windowSize.toString(),
-                ),
+                details =
+                    mapOf(
+                        "fileId" to fileIdInt.toString(),
+                        "windowStart" to windowStart.toString(),
+                        "windowSize" to windowSize.toString(),
+                    ),
             )
 
             val existingWindow = windowStates[fileIdInt]
@@ -279,11 +280,12 @@ class T_TelegramFileDownloader(
                     TelegramLogRepository.debug(
                         source = "T_TelegramFileDownloader",
                         message = "ensureWindow complete",
-                        details = mapOf(
-                            "fileId" to fileIdInt.toString(),
-                            "windowStart" to windowStart.toString(),
-                            "windowSize" to windowSize.toString(),
-                        ),
+                        details =
+                            mapOf(
+                                "fileId" to fileIdInt.toString(),
+                                "windowStart" to windowStart.toString(),
+                                "windowSize" to windowSize.toString(),
+                            ),
                     )
                     true
                 }
@@ -302,12 +304,13 @@ class T_TelegramFileDownloader(
                     TelegramLogRepository.debug(
                         source = "T_TelegramFileDownloader",
                         message = "ensureWindow failed",
-                        details = mapOf(
-                            "fileId" to fileIdInt.toString(),
-                            "windowStart" to windowStart.toString(),
-                            "windowSize" to windowSize.toString(),
-                            "error" to result.message,
-                        ),
+                        details =
+                            mapOf(
+                                "fileId" to fileIdInt.toString(),
+                                "windowStart" to windowStart.toString(),
+                                "windowSize" to windowSize.toString(),
+                                "error" to result.message,
+                            ),
                     )
                     false
                 }
@@ -373,7 +376,7 @@ class T_TelegramFileDownloader(
 
             while (retryCount < maxRetries) {
                 retryCount++
-                
+
                 try {
                     // Get or create cached file handle for Zero-Copy reads
                     val raf =
@@ -403,11 +406,12 @@ class T_TelegramFileDownloader(
                     TelegramLogRepository.debug(
                         source = "T_TelegramFileDownloader",
                         message = "Retrying read after closed stream",
-                        details = mapOf(
-                            "fileId" to fileId,
-                            "position" to position.toString(),
-                            "retryCount" to retryCount.toString(),
-                        ),
+                        details =
+                            mapOf(
+                                "fileId" to fileId,
+                                "position" to position.toString(),
+                                "retryCount" to retryCount.toString(),
+                            ),
                     )
                 } catch (e: Exception) {
                     // For other exceptions, remove stale handle and rethrow

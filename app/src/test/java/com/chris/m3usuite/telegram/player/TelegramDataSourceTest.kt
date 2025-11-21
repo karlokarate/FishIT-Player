@@ -57,7 +57,7 @@ class TelegramDataSourceTest {
             }
             assert(
                 content.contains("withTimeout(StreamingConfig.WINDOW_TRANSITION_TIMEOUT_MS)") ||
-                content.contains("withTimeout(StreamingConfig.READ_OPERATION_TIMEOUT_MS)")
+                    content.contains("withTimeout(StreamingConfig.READ_OPERATION_TIMEOUT_MS)"),
             ) {
                 "TelegramDataSource should use withTimeout with StreamingConfig timeout constants for blocking operations"
             }
@@ -123,19 +123,20 @@ class TelegramDataSourceTest {
             val content = sourceFile.readText()
             // Find the prepare window logging sections
             val prepareWindowLogs = content.split("\"prepare window\"")
-            
+
             // Should have at least 2 occurrences (open and read methods)
-            assert(prepareWindowLogs.size >= 3) { // Split creates one more element than occurrences
+            assert(prepareWindowLogs.size >= 3) {
+                // Split creates one more element than occurrences
                 "TelegramDataSource should have prepare window logging in multiple places"
             }
-            
+
             // Check that logging includes required fields
             val hasFileId = content.contains("\"fileId\" to fileIdInt.toString()")
             val hasPosition = content.contains("\"position\" to position.toString()")
             val hasReadLength = content.contains("\"readLength\" to readLength.toString()")
             val hasWindowStart = content.contains("\"windowStart\" to windowStart.toString()")
             val hasWindowSize = content.contains("\"windowSize\" to windowSize.toString()")
-            
+
             assert(hasFileId && hasPosition && hasWindowStart && hasWindowSize) {
                 "Prepare window log should include fileId, position, windowStart, and windowSize"
             }
