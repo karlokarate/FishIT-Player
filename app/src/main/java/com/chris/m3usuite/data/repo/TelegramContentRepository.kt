@@ -444,22 +444,7 @@ class TelegramContentRepository(
                         orderDesc(ObxTelegramMessage_.date)
                     }.find()
 
-            messages.map { obxMsg ->
-                MediaItem(
-                    id = encodeTelegramId(obxMsg.messageId),
-                    name = obxMsg.caption ?: "Untitled",
-                    type = "vod", // Default to VOD, can be refined based on metadata
-                    url = "tg://file/${obxMsg.fileId}?chatId=${obxMsg.chatId}&messageId=${obxMsg.messageId}",
-                    poster = obxMsg.posterLocalPath ?: obxMsg.thumbLocalPath,
-                    plot = null,
-                    rating = null,
-                    year = null,
-                    durationSecs = obxMsg.durationSecs,
-                    categoryName = "Telegram",
-                    source = "telegram",
-                    providerKey = "Telegram",
-                )
-            }
+            messages.map { obxMsg -> toMediaItem(obxMsg, contentType) }
         }
 
     /**
@@ -483,7 +468,12 @@ class TelegramContentRepository(
         }
 
     /**
-     * Convert ObxTelegramMessage to MediaItem with proper URL format.
+     * Single source of truth for mapping ObxTelegramMessage -> MediaItem
+     * for single Telegram messages.
+     *
+     * All single-message queries must use this function rather than
+     * constructing MediaItem instances manually.
+     *
      * Includes thumbnail support (Requirement 3) and zero-copy paths (Requirement 6).
      */
     private fun toMediaItem(
@@ -537,11 +527,7 @@ class TelegramContentRepository(
         fileId: Int?,
         chatId: Long,
         messageId: Long,
-    ): String {
-        requireNotNull(fileId) { "fileId must not be null when building Telegram URL" }
-        val baseUrl = "tg://file/$fileId"
-        return "$baseUrl?chatId=$chatId&messageId=$messageId"
-    }
+    ): String = com.chris.m3usuite.telegram.util.TelegramPlayUrl.buildFileUrl(fileId, chatId, messageId)
 
     /**
      * Get Telegram content for a specific chat.
@@ -557,20 +543,7 @@ class TelegramContentRepository(
                         }.find()
 
                 emit(
-                    messages.map { obxMsg ->
-                        MediaItem(
-                            id = encodeTelegramId(obxMsg.messageId),
-                            name = obxMsg.caption ?: "Untitled",
-                            type = "vod",
-                            url = "tg://file/${obxMsg.fileId}?chatId=${obxMsg.chatId}&messageId=${obxMsg.messageId}",
-                            poster = obxMsg.posterLocalPath ?: obxMsg.thumbLocalPath,
-                            plot = null,
-                            rating = null,
-                            year = null,
-                            durationSecs = obxMsg.durationSecs,
-                            categoryName = "Telegram - Chat $chatId",
-                        )
-                    },
+                    messages.map { obxMsg -> toMediaItem(obxMsg, "vod") },
                 )
             }.flowOn(Dispatchers.IO)
 
@@ -700,22 +673,7 @@ class TelegramContentRepository(
                         }.find()
 
                 emit(
-                    messages.map { obxMsg ->
-                        MediaItem(
-                            id = encodeTelegramId(obxMsg.messageId),
-                            name = obxMsg.caption ?: "Untitled",
-                            type = "vod",
-                            url = "tg://file/${obxMsg.fileId}?chatId=${obxMsg.chatId}&messageId=${obxMsg.messageId}",
-                            poster = obxMsg.posterLocalPath ?: obxMsg.thumbLocalPath,
-                            plot = null,
-                            rating = null,
-                            year = null,
-                            durationSecs = obxMsg.durationSecs,
-                            categoryName = "Telegram",
-                            source = "telegram",
-                            providerKey = "Telegram",
-                        )
-                    },
+                    messages.map { obxMsg -> toMediaItem(obxMsg, "vod") },
                 )
             }.flowOn(Dispatchers.IO)
 

@@ -188,6 +188,11 @@ class TelegramFileLoader(
      * Ensure file is ready for zero-copy playback (Requirement 6).
      * Downloads with high priority and ensures sufficient prefix is available.
      *
+     * Optional helper to ensure a file prefix is downloaded for direct file-path playback.
+     *
+     * Currently unused by TelegramFileDataSource, which relies on
+     * T_TelegramFileDownloader.ensureFileReady(...).
+     *
      * @param fileId TDLib file ID
      * @param minPrefixBytes Minimum bytes to download from start
      * @return Local file path or null

@@ -16,6 +16,18 @@ import kotlinx.coroutines.withTimeout
 import java.io.IOException
 
 /**
+ * Legacy Telegram data source implementation.
+ *
+ * @deprecated Replaced by TelegramFileDataSource and T_TelegramFileDownloader.
+ *             Kept only for historical reference and tests.
+ *             Do not use in new code.
+ */
+@Deprecated(
+    message = "Replaced by TelegramFileDataSource and T_TelegramFileDownloader. " +
+        "Kept only for historical reference and tests.",
+    level = DeprecationLevel.WARNING,
+)
+/**
  * DataSource for streaming Telegram files via TDLib with **Windowed Zero-Copy Streaming**.
  * Handles tg://file/<fileId>?chatId=...&messageId=... URLs.
  *

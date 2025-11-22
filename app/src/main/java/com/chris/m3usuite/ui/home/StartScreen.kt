@@ -148,7 +148,8 @@ fun StartScreen(
     val seriesNewIds by vm.seriesNewIds.collectAsStateWithLifecycle(emptySet())
     val vodNewIds by vm.vodNewIds.collectAsStateWithLifecycle(emptySet())
     val favLive by vm.favLive.collectAsStateWithLifecycle(emptyList())
-    val telegramContent by vm.telegramContent.collectAsStateWithLifecycle(emptyList())
+    val telegramContentByChat by vm.telegramContentByChat
+        .collectAsStateWithLifecycle(emptyMap())
     val tgEnabled by vm.tgEnabled.collectAsStateWithLifecycle(false)
 
     // Header: Tab aus Store-Index
@@ -701,49 +702,54 @@ fun StartScreen(
                 }
             }
 
-            // Telegram content row (when enabled and content available)
-            if (tgEnabled && telegramContent.isNotEmpty()) {
-                item("start_telegram_row") {
-                    val onTelegramClick: (MediaItem) -> Unit = { media ->
-                        // Navigate to Telegram detail screen instead of playing directly
-                        if (openTelegram != null) {
-                            openTelegram(media.id)
-                        } else {
-                            // Fallback: play directly if no detail screen handler is provided
-                            scope.launch {
-                                TelegramLogRepository.info(
-                                    source = "StartScreen",
-                                    message = "User started Telegram playback from StartScreen",
-                                    details =
-                                        mapOf(
-                                            "mediaId" to media.id.toString(),
-                                            "title" to media.name,
-                                            "playUrl" to (media.url ?: "null"),
-                                        ),
-                                )
+            // Telegram content rows (one per chat)
+            if (tgEnabled && telegramContentByChat.isNotEmpty()) {
+                telegramContentByChat.forEach { (chatId, chatData) ->
+                    val (chatTitle, items) = chatData
+                    if (items.isNotEmpty()) {
+                        item(key = "start_telegram_row:$chatId") {
+                            val onTelegramClick: (MediaItem) -> Unit = { media ->
+                                // Navigate to Telegram detail screen instead of playing directly
+                                if (openTelegram != null) {
+                                    openTelegram(media.id)
+                                } else {
+                                    // Fallback: play directly if no detail screen handler is provided
+                                    scope.launch {
+                                        TelegramLogRepository.info(
+                                            source = "StartScreen",
+                                            message = "User started Telegram playback from StartScreen",
+                                            details =
+                                                mapOf(
+                                                    "mediaId" to media.id.toString(),
+                                                    "title" to media.name,
+                                                    "playUrl" to (media.url ?: "null"),
+                                                ),
+                                        )
 
-                                // For Telegram items, we need to handle playback via TDLib
-                                // The URL is in format: tg://file/<fileId>
-                                playbackLauncher.launch(
-                                    com.chris.m3usuite.playback.PlayRequest(
-                                        type = "vod",
-                                        mediaId = media.id,
-                                        url = media.url ?: "",
-                                        headers = emptyMap(),
-                                        mimeType = null, // Will be detected
-                                        title = media.name,
-                                    ),
-                                )
+                                        // For Telegram items, we need to handle playback via TDLib
+                                        // The URL is in format: tg://file/<fileId>
+                                        playbackLauncher.launch(
+                                            com.chris.m3usuite.playback.PlayRequest(
+                                                type = "vod",
+                                                mediaId = media.id,
+                                                url = media.url ?: "",
+                                                headers = emptyMap(),
+                                                mimeType = null, // Will be detected
+                                                title = media.name,
+                                            ),
+                                        )
+                                    }
+                                }
                             }
+                            com.chris.m3usuite.ui.layout.FishTelegramRow(
+                                items = items,
+                                stateKey = "start_telegram:$chatId",
+                                title = chatTitle,
+                                modifier = Modifier,
+                                onItemClick = onTelegramClick,
+                            )
                         }
                     }
-                    com.chris.m3usuite.ui.layout.FishTelegramRow(
-                        items = telegramContent,
-                        stateKey = "start_telegram",
-                        title = "Telegram",
-                        modifier = Modifier,
-                        onItemClick = onTelegramClick,
-                    )
                 }
             }
 

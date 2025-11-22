@@ -1,4 +1,9 @@
-# Telegram Integration Implementation Summary
+# Telegram Integration Implementation Summary (ARCHIVED)
+
+> **Note:** This document describes the legacy Telegram integration.
+> The current implementation is documented in `/TELEGRAM_UPGRADE_IMPLEMENTATION.md`.
+> TelegramDataSource has been superseded by TelegramFileDataSource and
+> T_TelegramFileDownloader for improved zero-copy streaming and reliability.
 
 ## Overview
 Complete implementation of Telegram integration into FishIT Player UI, following the specifications from CHANGELOG.md, ROADMAP.md, and TDLIB_INTEGRATION.md.

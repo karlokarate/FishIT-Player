@@ -566,10 +566,15 @@ fun SeriesDetailScreen(
             }
             val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
 
-            // TODO: Telegram playback not yet fully implemented
-            // Will use T_TelegramServiceClient singleton when implemented
+            // Note: Telegram playback for series-level items is handled via
+            // TelegramDetailScreen / dedicated Telegram UI, not through this
+            // series detail screen.
             val tgUrl: String? = null
+
             /*
+            // Commented out: Telegram series playback via PlayUrlHelper.tgPlayUri
+            // is not the current implementation path. Telegram content is handled
+            // via dedicated TelegramDetailScreen and TelegramFileDataSource.
             val tgUrl = if (e.tgChatId != null && e.tgMessageId != null) {
                 runCatching {
                     PlayUrlHelper.tgPlayUri(
@@ -585,7 +590,7 @@ fun SeriesDetailScreen(
                     null
                 }
             } else null
-             */
+            */
 
             val headers =
                 com.chris.m3usuite.core.http.RequestHeadersProvider
