@@ -568,29 +568,9 @@ fun SeriesDetailScreen(
 
             // Note: Telegram playback for series-level items is handled via
             // TelegramDetailScreen / dedicated Telegram UI, not through this
-            // series detail screen.
+            // series detail screen. This approach provides better control and
+            // specialized UI for Telegram content.
             val tgUrl: String? = null
-
-            /*
-            // Commented out: Telegram series playback via PlayUrlHelper.tgPlayUri
-            // is not the current implementation path. Telegram content is handled
-            // via dedicated TelegramDetailScreen and TelegramFileDataSource.
-            val tgUrl = if (e.tgChatId != null && e.tgMessageId != null) {
-                runCatching {
-                    PlayUrlHelper.tgPlayUri(
-                        chatId = e.tgChatId,
-                        messageId = e.tgMessageId,
-                        svc = T_TelegramServiceClient.getInstance(ctx)
-                    ).toString()
-                }.getOrElse { err ->
-                    android.util.Log.w(
-                        "SeriesDetail",
-                        "tgPlayUri failed chatId=${e.tgChatId} messageId=${e.tgMessageId}: ${err.message}"
-                    )
-                    null
-                }
-            } else null
-            */
 
             val headers =
                 com.chris.m3usuite.core.http.RequestHeadersProvider

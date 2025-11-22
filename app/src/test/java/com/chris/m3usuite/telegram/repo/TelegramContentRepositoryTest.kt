@@ -3,7 +3,6 @@ package com.chris.m3usuite.telegram.repo
 import com.chris.m3usuite.data.repo.TelegramContentRepository
 import org.junit.Test
 import kotlin.reflect.full.declaredMemberFunctions
-import kotlin.reflect.full.memberFunctions
 
 /**
  * Unit tests for TelegramContentRepository.
@@ -37,14 +36,16 @@ class TelegramContentRepositoryTest {
     }
 
     @Test
-    fun `TelegramContentRepository toMediaItem is accessible via reflection`() {
-        // Verify toMediaItem exists as the single source of truth (Section 1)
-        // Note: Since it's private, we can only verify the class structure
+    fun `TelegramContentRepository has toMediaItem method`() {
+        // Verify toMediaItem method exists (Section 1)
+        // We test for its existence in the class structure rather than testing
+        // private implementation details. The actual behavior is tested through
+        // public methods that use toMediaItem internally.
         val clazz = TelegramContentRepository::class
         val privateMethods = clazz.declaredMemberFunctions.map { it.name }
         
         assert(privateMethods.contains("toMediaItem")) {
-            "TelegramContentRepository should have toMediaItem method as single source of truth"
+            "TelegramContentRepository should have toMediaItem method"
         }
     }
 }

@@ -24,6 +24,19 @@ import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TelegramFileLoader
 
 /**
+ * Shared TelegramFileLoader instance to avoid repeated instantiation per composable.
+ * Uses singleton T_TelegramServiceClient for efficient resource usage.
+ */
+@Composable
+private fun rememberTelegramFileLoader(): TelegramFileLoader {
+    val context = LocalContext.current
+    return remember {
+        val serviceClient = T_TelegramServiceClient.getInstance(context)
+        TelegramFileLoader(serviceClient)
+    }
+}
+
+/**
  * Renders a Telegram media item with the blue "T" badge.
  * Conforms to existing FishTile pattern for UI consistency.
  *
@@ -49,9 +62,7 @@ fun FishTelegramContent(
     onAssign: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val serviceClient = remember { T_TelegramServiceClient.getInstance(context) }
-    val fileLoader = remember { TelegramFileLoader(serviceClient) }
+    val fileLoader = rememberTelegramFileLoader()
 
     var thumbPath by remember(mediaItem.posterId, mediaItem.localPosterPath) {
         mutableStateOf(mediaItem.localPosterPath)
