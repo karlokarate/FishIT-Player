@@ -469,14 +469,16 @@ class MainActivity : ComponentActivity() {
                                             val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
                                             val chatId = parsed.getQueryParameter("chatId")?.toLongOrNull()
                                             if (messageId != null && chatId != null) {
-                                                val tgRepo = com.chris.m3usuite.data.repo.TelegramContentRepository(
-                                                    this@MainActivity,
-                                                    store,
-                                                )
+                                                val tgRepo =
+                                                    com.chris.m3usuite.data.repo.TelegramContentRepository(
+                                                        this@MainActivity,
+                                                        store,
+                                                    )
                                                 // Use withTimeoutOrNull to avoid blocking indefinitely
-                                                val mediaItems = kotlinx.coroutines.withTimeoutOrNull(5000) {
-                                                    tgRepo.getTelegramContentByChat(chatId).first()
-                                                }
+                                                val mediaItems =
+                                                    kotlinx.coroutines.withTimeoutOrNull(5000) {
+                                                        tgRepo.getTelegramContentByChat(chatId).first()
+                                                    }
                                                 preparedMediaItem = mediaItems?.find { it.tgMessageId == messageId }
                                             }
                                         } catch (e: Exception) {
