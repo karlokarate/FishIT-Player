@@ -87,9 +87,6 @@ class T_TelegramFileDownloaderTest {
         // For suspend functions, Kotlin adds a Continuation parameter,
         // so we just verify that at least one getFileInfo method exists
         // We've already confirmed methods exist above
-        assert(true) {
-            "getFileInfo methods verified"
-        }
     }
 
     @Test
