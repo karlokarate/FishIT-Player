@@ -204,4 +204,40 @@ class MediaParserTest {
         // Should stay as MOVIE or have reasonable confidence
         assertTrue("Result should be meaningful", result.confidence > 0.3)
     }
+
+    @Test
+    fun `video file extension detection matches supported formats`() {
+        // This documents the video file extensions that should be accepted by MessageDocument
+        // Per the fix for non-video documents, only these extensions should be indexed
+        val videoExtensions = listOf("mp4", "mkv", "avi", "mov", "wmv", "flv", "webm")
+        val nonVideoExtensions = listOf("pdf", "txt", "doc", "docx", "zip", "rar", "jpg", "png")
+
+        // Video extensions should match the pattern
+        val videoPattern = Regex(""".*\.(mp4|mkv|avi|mov|wmv|flv|webm)$""", RegexOption.IGNORE_CASE)
+        for (ext in videoExtensions) {
+            assertTrue(".$ext should be recognized as video", "test.$ext".matches(videoPattern))
+            assertTrue(".$ext uppercase should be recognized as video", "test.${ext.uppercase()}".matches(videoPattern))
+        }
+
+        // Non-video extensions should NOT match
+        for (ext in nonVideoExtensions) {
+            assertFalse(".$ext should NOT be recognized as video", "test.$ext".matches(videoPattern))
+        }
+    }
+
+    @Test
+    fun `video MIME type detection validates video prefix`() {
+        // This documents the MIME type validation used in MessageDocument
+        // Per the fix, only MIME types starting with "video/" should be accepted
+        val validMimeTypes = listOf("video/mp4", "video/x-matroska", "video/webm", "video/quicktime")
+        val invalidMimeTypes = listOf("application/pdf", "text/plain", "image/jpeg", "application/octet-stream")
+
+        for (mimeType in validMimeTypes) {
+            assertTrue("$mimeType should be valid video MIME", mimeType.startsWith("video/", ignoreCase = true))
+        }
+
+        for (mimeType in invalidMimeTypes) {
+            assertFalse("$mimeType should NOT be valid video MIME", mimeType.startsWith("video/", ignoreCase = true))
+        }
+    }
 }

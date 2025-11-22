@@ -290,7 +290,7 @@ class T_TelegramFileDownloader(
 
     /**
      * Check if file data is downloaded at the specified position.
-     * 
+     *
      * This checks:
      * 1. If the file has a local path
      * 2. If the local file exists
@@ -308,18 +308,18 @@ class T_TelegramFileDownloader(
             try {
                 val fileInfo = getFileInfo(fileId)
                 val localPath = fileInfo.local?.path
-                
+
                 // Check if file has a local path
                 if (localPath.isNullOrBlank()) {
                     return@withContext false
                 }
-                
+
                 // Check if file exists and is large enough
                 val file = java.io.File(localPath)
                 if (!file.exists()) {
                     return@withContext false
                 }
-                
+
                 // Check if file size is sufficient for requested position
                 // If position is at EOF and download is complete, allow EOF handling
                 if (file.length() > position) {
@@ -433,7 +433,7 @@ class T_TelegramFileDownloader(
             // Now proceed with actual file reading
             val updatedFileInfo = getFileInfo(fileId)
             val localPath = updatedFileInfo.local?.path
-            
+
             if (localPath.isNullOrBlank()) {
                 // This should not happen after retry loop, but handle gracefully
                 throw Exception("File path not available yet: $fileId (after retry)")
