@@ -83,7 +83,7 @@ class T_TelegramFileDownloaderTest {
         assert(methods.isNotEmpty()) {
             "T_TelegramFileDownloader should have getFileInfo method(s)"
         }
-        
+
         // For suspend functions, Kotlin adds a Continuation parameter,
         // so we just verify that at least one getFileInfo method exists
         // We've already confirmed methods exist above
@@ -98,12 +98,12 @@ class T_TelegramFileDownloaderTest {
         // We check this by verifying all declared methods including private ones
         val clazz = T_TelegramFileDownloader::class.java
         val allMethods = clazz.declaredMethods.map { it.name }
-        
+
         // The getFileOrThrow method should exist (will be mangled name for suspend functions)
         val hasGetFileOrThrowRelated = allMethods.any { it.contains("getFileOrThrow") }
         assert(hasGetFileOrThrowRelated) {
             "T_TelegramFileDownloader should have getFileOrThrow helper method. " +
-            "Available methods: ${allMethods.filter { it.contains("File") }.joinToString()}"
+                "Available methods: ${allMethods.filter { it.contains("File") }.joinToString()}"
         }
     }
 
@@ -112,12 +112,12 @@ class T_TelegramFileDownloaderTest {
         // Verify the getFreshFileState helper exists
         val clazz = T_TelegramFileDownloader::class.java
         val allMethods = clazz.declaredMethods.map { it.name }
-        
+
         // The getFreshFileState method should exist (will be mangled name for suspend functions)
         val hasGetFreshFileStateRelated = allMethods.any { it.contains("getFreshFileState") }
         assert(hasGetFreshFileStateRelated) {
             "T_TelegramFileDownloader should have getFreshFileState helper method. " +
-            "Available methods: ${allMethods.filter { it.contains("File") || it.contains("Fresh") }.joinToString()}"
+                "Available methods: ${allMethods.filter { it.contains("File") || it.contains("Fresh") }.joinToString()}"
         }
     }
 
@@ -127,15 +127,15 @@ class T_TelegramFileDownloaderTest {
         // 1. getFileOrThrow helper exists (checked above)
         // 2. getFreshFileState helper exists (checked above)
         // 3. Both methods are used to eliminate duplication
-        
+
         // Since we've verified both helpers exist, the refactoring requirement is met
         val clazz = T_TelegramFileDownloader::class.java
         val methodNames = clazz.declaredMethods.map { it.name }
-        
+
         assert(methodNames.any { it.contains("getFileOrThrow") }) {
             "Refactoring requirement: getFileOrThrow helper should exist"
         }
-        
+
         assert(methodNames.any { it.contains("getFreshFileState") }) {
             "Refactoring requirement: getFreshFileState helper should exist"
         }
