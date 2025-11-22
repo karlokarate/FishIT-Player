@@ -929,6 +929,12 @@ class TelegramContentRepository(
                                 providerKey = "Telegram",
                                 posterId = representative.posterFileId ?: representative.thumbFileId,
                                 localPosterPath = representative.posterLocalPath ?: representative.thumbLocalPath,
+                                tgChatId = representative.chatId,
+                                tgMessageId = representative.messageId,
+                                tgFileId = representative.fileId,
+                                localVideoPath = representative.localPath,
+                                localPhotoPath = null,
+                                localDocumentPath = representative.localPath,
                             )
                         }
                 
