@@ -49,33 +49,37 @@ data class WindowState(
 )
 
 /**
- * Handles file downloads from Telegram using TDLib with **Windowed Zero-Copy Streaming**.
+ * Handles file downloads from Telegram using TDLib with **Zero-Copy Streaming**.
  *
  * This class DOES NOT create its own TdlClient - it receives an injected session
  * from T_TelegramServiceClient. All operations use the client from session.
  *
- * **Windowed Zero-Copy Streaming:**
- * - TDLib cached Mediendateien weiterhin auf Disk (unvermeidbar)
- * - Es wird nur ein Fenster (z.B. 16MB) der Datei rund um die aktuelle Abspielposition geladen
- * - Beim Spulen werden alte Fenster verworfen und neue Fenster an der Zielposition geöffnet
- * - `readFileChunk()` schreibt **direkt** aus dem TDLib-Cache in den Player-Buffer ohne zusätzliche Kopien
- * - Gilt nur für direkt abspielbare Medien: MOVIE, EPISODE, CLIP, AUDIO
- * - RAR_ARCHIVE und andere Container nutzen weiterhin Voll-Download
+ * **Zero-Copy Streaming Architecture (Updated):**
+ * - TDLib caches media files on disk (unavoidable)
+ * - `ensureFileReady()` ensures TDLib has downloaded required prefix/range
+ * - TelegramFileDataSource delegates I/O to Media3's FileDataSource
+ * - No in-memory ringbuffer - direct file access via FileDataSource
+ * - ExoPlayer/FileDataSource handles seeking and position tracking
+ * - Applies to all media types: MOVIE, EPISODE, CLIP, AUDIO
+ * - RAR_ARCHIVE uses different extraction path
+ *
+ * **Legacy Windowed Streaming (Deprecated):**
+ * - Old implementation used ensureWindow() with in-memory ChunkRingBuffer
+ * - readFileChunk() wrote directly to player buffers from TDLib cache
+ * - This has been replaced by TelegramFileDataSource + FileDataSource
  *
  * Key responsibilities:
- * - Windowed file download management with priority support
+ * - File download management with priority support
  * - Real-time download progress tracking via fileUpdates
- * - Zero-Copy file chunk reading for streaming (direct buffer writes)
- * - Window state management and automatic window transitions
+ * - Zero-Copy file chunk reading for legacy code paths
+ * - Window state management for legacy streaming
  * - Download cancellation and cleanup
  * - File info and handle caching
  * - Storage optimization and cleanup
- *
- * This implementation is designed to support the Streaming cluster's DataSource
- * with efficient windowed access and Zero-Copy buffer handling.
+ * - ensureFileReady() for new TelegramFileDataSource architecture
  *
  * Following TDLib coroutines documentation:
- * - Uses downloadFile API with offset/limit support for windowing
+ * - Uses downloadFile API with offset/limit support
  * - Implements proper caching to prevent bloat
  * - Manages concurrent downloads efficiently
  * - Provides real-time download progress tracking via fileUpdates flow

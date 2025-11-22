@@ -57,17 +57,19 @@ object StreamingConfig {
     const val MAX_READ_ATTEMPTS = 3
 
     /**
-     * Chunk size for in-memory ringbuffer (256 KB).
-     * Balances memory efficiency with reduced fragmentation.
-     * Each chunk can hold approximately 2 seconds of HD video at 1 Mbit/s.
+     * @deprecated Legacy ringbuffer configuration - no longer used.
+     * TelegramFileDataSource now uses FileDataSource directly without in-memory caching.
+     * Kept for reference only.
      */
+    @Deprecated("Legacy ringbuffer - no longer used", ReplaceWith(""))
     const val RINGBUFFER_CHUNK_SIZE_BYTES = 256 * 1024
 
     /**
-     * Maximum number of chunks in ringbuffer (64 chunks).
-     * With 256 KB per chunk, this allows ~16 MB total ringbuffer capacity.
-     * LRU eviction ensures old chunks are discarded when limit is reached.
+     * @deprecated Legacy ringbuffer configuration - no longer used.
+     * TelegramFileDataSource now uses FileDataSource directly without in-memory caching.
+     * Kept for reference only.
      */
+    @Deprecated("Legacy ringbuffer - no longer used", ReplaceWith(""))
     const val RINGBUFFER_MAX_CHUNKS = 64
 
     /**
