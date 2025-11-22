@@ -31,8 +31,8 @@ import kotlinx.coroutines.flow.*
 class TelegramThumbPrefetcher(
     private val context: Context,
     private val serviceClient: T_TelegramServiceClient,
+    private val repository: TelegramContentRepository, // Inject instead of create
 ) {
-    private val repository = TelegramContentRepository(context, SettingsStore(context))
     private val fileLoader = TelegramFileLoader(serviceClient)
     private val store = SettingsStore(context)
     
