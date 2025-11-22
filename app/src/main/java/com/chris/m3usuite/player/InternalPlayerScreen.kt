@@ -341,16 +341,24 @@ fun InternalPlayerScreen(
 
             // Align button-based seek increments (also used by PlayerView controller buttons)
             val seekIncrementMs = 10_000L
+            
+            // Configure ExtractorsFactory with proper flags for MP4 and other containers
+            val extractorsFactory = androidx.media3.exoplayer.extractor.DefaultExtractorsFactory()
+                .setMp4ExtractorFlags(
+                    androidx.media3.exoplayer.extractor.mp4.Mp4Extractor.FLAG_WORKAROUND_IGNORE_EDIT_LISTS
+                )
+            
+            // Create MediaSourceFactory with configured extractors
+            val mediaSourceFactory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
+                .setExtractorsFactory(extractorsFactory)
 
             PlaybackSession.acquire(ctx) {
                 ExoPlayer
                     .Builder(ctx)
                     .setRenderersFactory(renderers)
                     .setTrackSelector(trackSelector)
-                    .setMediaSourceFactory(
-                        androidx.media3.exoplayer.source
-                            .DefaultMediaSourceFactory(dataSourceFactory),
-                    ).setSeekBackIncrementMs(seekIncrementMs)
+                    .setMediaSourceFactory(mediaSourceFactory)
+                    .setSeekBackIncrementMs(seekIncrementMs)
                     .setSeekForwardIncrementMs(seekIncrementMs)
                     .setLoadControl(loadControl)
                     .build()
@@ -388,13 +396,62 @@ fun InternalPlayerScreen(
                     Uri.parse(url)
                 }
             val finalUrl = resolvedUri.toString()
-            val inferredMime = mimeType ?: PlayUrlHelper.guessMimeType(finalUrl, null)
+            
+            // Enhanced MIME type detection for Telegram URLs
+            val inferredMime = when {
+                mimeType != null -> mimeType
+                url.startsWith("tg://", ignoreCase = true) -> {
+                    // Try to get MIME type from ObjectBox metadata
+                    val telegramMime = withContext(Dispatchers.IO) {
+                        try {
+                            val parsed = Uri.parse(url)
+                            val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
+                            if (messageId != null) {
+                                val msgBox = obxStore.boxFor<com.chris.m3usuite.data.obx.ObxTelegramMessage>()
+                                val msg = msgBox
+                                    .query()
+                                    .equal(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId, messageId)
+                                    .build()
+                                    .findFirst()
+                                
+                                // Use stored MIME type or infer from fileName
+                                msg?.mimeType?.takeIf { it.isNotBlank() } ?: run {
+                                    val fileName = msg?.fileName
+                                    when {
+                                        fileName?.endsWith(".mp4", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4
+                                        fileName?.endsWith(".mkv", ignoreCase = true) == true -> MimeTypes.VIDEO_MATROSKA
+                                        fileName?.endsWith(".webm", ignoreCase = true) == true -> MimeTypes.VIDEO_WEBM
+                                        fileName?.endsWith(".avi", ignoreCase = true) == true -> MimeTypes.VIDEO_AVI
+                                        fileName?.endsWith(".mov", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4 // QuickTime, MP4-based
+                                        else -> null
+                                    }
+                                }
+                            } else {
+                                null
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("ExoSetup", "Failed to get Telegram MIME type: ${e.message}")
+                            null
+                        }
+                    }
+                    // Default to MP4 for Telegram if no specific type found
+                    telegramMime ?: MimeTypes.VIDEO_MP4
+                }
+                else -> PlayUrlHelper.guessMimeType(finalUrl, null)
+            }
+            
             val mediaItem =
                 MediaItem
                     .Builder()
                     .setUri(resolvedUri)
                     .also { builder -> inferredMime?.let { builder.setMimeType(it) } }
                     .build()
+            
+            // Log media item details for Telegram
+            if (url.startsWith("tg://", ignoreCase = true)) {
+                android.util.Log.d("ExoSetup", "Telegram MediaItem: uri=$resolvedUri, mimeType=$inferredMime")
+            }
+            
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
             exoPlayer.setSeekParameters(SeekParameters.CLOSEST_SYNC)
@@ -619,10 +676,35 @@ fun InternalPlayerScreen(
         val listener =
             object : Player.Listener {
                 override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                    android.util.Log.e(
-                        "ExoErr",
-                        "playback_error type=$type code=${error.errorCode} cause=${error.cause?.javaClass?.simpleName}: ${error.message}",
-                    )
+                    // Enhanced error logging for debugging Telegram playback issues
+                    val errorDetails = buildString {
+                        append("playback_error type=$type")
+                        append(" url=$url")
+                        append(" code=${error.errorCode}")
+                        append(" errorCodeName=${error.errorCodeName}")
+                        append(" message=${error.message ?: "no message"}")
+                        append(" cause=${error.cause?.javaClass?.name ?: "no cause"}")
+                    }
+                    android.util.Log.e("ExoErr", errorDetails)
+                    
+                    // Log full stack trace for cause
+                    error.cause?.printStackTrace()
+                    
+                    // For Telegram URLs, log additional context
+                    if (url.startsWith("tg://", ignoreCase = true)) {
+                        com.chris.m3usuite.telegram.logging.TelegramLogRepository.error(
+                            source = "InternalPlayerScreen",
+                            message = "Telegram playback error",
+                            exception = error,
+                            details = mapOf(
+                                "url" to url,
+                                "errorCode" to error.errorCode.toString(),
+                                "errorCodeName" to error.errorCodeName,
+                                "causeName" to (error.cause?.javaClass?.name ?: "no cause"),
+                            ),
+                        )
+                    }
+                    
                     try {
                         Toast.makeText(ctx, "Wiedergabefehler: ${error.errorCodeName}", Toast.LENGTH_LONG).show()
                     } catch (_: Throwable) {
