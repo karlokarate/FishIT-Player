@@ -257,7 +257,8 @@ class TelegramContentRepository(
                 width = largestPhoto?.width
                 height = largestPhoto?.height
                 supportsStreaming = null
-                // Photos typically don't have separate thumbnails
+                // Photos use different sizes, not separate thumbnail files
+                // Use the largest size directly as the poster
                 thumbFileId = null
                 thumbLocalPath = null
                 // Extract local photo path (Requirement 6)
