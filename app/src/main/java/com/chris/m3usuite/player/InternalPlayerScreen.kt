@@ -134,6 +134,8 @@ fun InternalPlayerScreen(
     originLiveLibrary: Boolean = false,
     liveCategoryHint: String? = null,
     liveProviderHint: String? = null,
+    // Pre-resolved MediaItem for Telegram content (avoids UI repository lookups)
+    preparedMediaItem: com.chris.m3usuite.model.MediaItem? = null,
 ) {
     LaunchedEffect(type, mediaId, seriesId, episodeId) {
         com.chris.m3usuite.metrics.RouteTag
@@ -394,17 +396,29 @@ fun InternalPlayerScreen(
             val finalUrl = resolvedUri.toString()
 
             // Enhanced MIME type detection for Telegram URLs
-            // Also retrieve MediaItem metadata for artwork support
+            // Use pre-resolved MediaItem if provided (avoids UI repository lookups)
             val (inferredMime, appMediaItem) =
                 when {
-                    mimeType != null -> Pair(mimeType, null)
+                    mimeType != null -> Pair(mimeType, preparedMediaItem)
+                    preparedMediaItem != null -> {
+                        // Use MIME type from prepared MediaItem or infer from fileName
+                        val mime =
+                            when {
+                                preparedMediaItem.url?.contains(".mp4", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4
+                                preparedMediaItem.url?.contains(".mkv", ignoreCase = true) == true -> MimeTypes.VIDEO_MATROSKA
+                                preparedMediaItem.url?.contains(".webm", ignoreCase = true) == true -> MimeTypes.VIDEO_WEBM
+                                preparedMediaItem.url?.contains(".avi", ignoreCase = true) == true -> MimeTypes.VIDEO_AVI
+                                preparedMediaItem.url?.contains(".mov", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4
+                                else -> MimeTypes.VIDEO_MP4
+                            }
+                        Pair(mime, preparedMediaItem)
+                    }
                     url.startsWith("tg://", ignoreCase = true) -> {
-                        // Try to get MIME type and MediaItem from ObjectBox metadata
+                        // Fallback: Try to get MIME type from ObjectBox metadata (minimal lookup)
                         withContext(Dispatchers.IO) {
                             try {
                                 val parsed = Uri.parse(url)
                                 val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
-                                val chatId = parsed.getQueryParameter("chatId")?.toLongOrNull()
                                 if (messageId != null) {
                                     val msgBox = obxStore.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
                                     val msg =
@@ -415,13 +429,6 @@ fun InternalPlayerScreen(
                                             .findFirst()
 
                                     if (msg != null) {
-                                        // Build MediaItem from ObxTelegramMessage for artwork
-                                        val tgRepo =
-                                            com.chris.m3usuite.data.repo
-                                                .TelegramContentRepository(ctx, store)
-                                        val mediaItems = tgRepo.getTelegramContentByChat(msg.chatId).first()
-                                        val appMediaItem = mediaItems.find { it.tgMessageId == messageId }
-
                                         // Use stored MIME type or infer from fileName
                                         val mime =
                                             msg.mimeType?.takeIf { it.isNotBlank() } ?: run {
@@ -435,7 +442,7 @@ fun InternalPlayerScreen(
                                                     else -> null
                                                 }
                                             }
-                                        Pair(mime ?: MimeTypes.VIDEO_MP4, appMediaItem)
+                                        Pair(mime ?: MimeTypes.VIDEO_MP4, null)
                                     } else {
                                         Pair(MimeTypes.VIDEO_MP4, null)
                                     }

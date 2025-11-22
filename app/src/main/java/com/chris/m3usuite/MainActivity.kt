@@ -459,6 +459,30 @@ class MainActivity : ComponentActivity() {
                             val cat = back.arguments?.getString("cat").orEmpty()
                             val prov = back.arguments?.getString("prov").orEmpty()
 
+                            // Resolve Telegram MediaItem before launching player (moves repository lookup out of UI)
+                            var preparedMediaItem by remember { mutableStateOf<com.chris.m3usuite.model.MediaItem?>(null) }
+                            LaunchedEffect(url) {
+                                if (url.startsWith("tg://", ignoreCase = true)) {
+                                    kotlinx.coroutines.withContext(Dispatchers.IO) {
+                                        try {
+                                            val parsed = Uri.parse(url)
+                                            val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
+                                            val chatId = parsed.getQueryParameter("chatId")?.toLongOrNull()
+                                            if (messageId != null && chatId != null) {
+                                                val tgRepo = com.chris.m3usuite.data.repo.TelegramContentRepository(
+                                                    this@MainActivity,
+                                                    store,
+                                                )
+                                                val mediaItems = tgRepo.getTelegramContentByChat(chatId).first()
+                                                preparedMediaItem = mediaItems.find { it.tgMessageId == messageId }
+                                            }
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("MainActivity", "Failed to resolve Telegram MediaItem: ${e.message}", e)
+                                        }
+                                    }
+                                }
+                            }
+
                             InternalPlayerScreen(
                                 url = url,
                                 type = type,
@@ -473,6 +497,7 @@ class MainActivity : ComponentActivity() {
                                 originLiveLibrary = (origin == "lib"),
                                 liveCategoryHint = cat.ifBlank { null },
                                 liveProviderHint = prov.ifBlank { null },
+                                preparedMediaItem = preparedMediaItem,
                             )
                         }
 
