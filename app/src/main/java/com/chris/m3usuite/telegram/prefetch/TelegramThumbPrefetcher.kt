@@ -84,7 +84,7 @@ class TelegramThumbPrefetcher(
                 TelegramLogRepository.error(
                     source = TAG,
                     message = "TelegramThumbPrefetcher error",
-                    error = e,
+                    exception = e,
                 )
             }
         }
@@ -182,7 +182,7 @@ class TelegramThumbPrefetcher(
             TelegramLogRepository.error(
                 source = TAG,
                 message = "Error prefetching thumbnail fileId=$fileId",
-                error = e,
+                exception = e,
             )
             false
         }
