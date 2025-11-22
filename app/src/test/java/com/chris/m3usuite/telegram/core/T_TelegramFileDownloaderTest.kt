@@ -416,8 +416,8 @@ class T_TelegramFileDownloaderTest {
                 "ensureFileReady should use delay in polling loop"
             }
 
-            assert(ensureFileReadySection.contains("file = getFileInfo(fileId)")) {
-                "ensureFileReady should refresh file info from TDLib in loop"
+            assert(ensureFileReadySection.contains("file = getFreshFileState(fileId)")) {
+                "ensureFileReady should refresh file state from TDLib in loop (bypassing cache)"
             }
 
             assert(ensureFileReadySection.contains("val prefix = file.local?.downloadedPrefixSize?.toLong() ?: 0L")) {
@@ -426,6 +426,67 @@ class T_TelegramFileDownloaderTest {
 
             assert(ensureFileReadySection.contains("SystemClock.elapsedRealtime()")) {
                 "ensureFileReady should use SystemClock for timeout tracking"
+            }
+        }
+    }
+
+    @Test
+    fun `getFreshFileState helper bypasses cache`() {
+        // Verify getFreshFileState exists and bypasses cache
+        val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+
+            assert(content.contains("private suspend fun getFreshFileState(fileId: Int): File")) {
+                "T_TelegramFileDownloader should have getFreshFileState helper method"
+            }
+
+            val getFreshFileStateSection =
+                content
+                    .substringAfter("private suspend fun getFreshFileState", "")
+                    .substringBefore("private suspend fun getFileInfo")
+
+            // Verify it doesn't use cache
+            assert(!getFreshFileStateSection.contains("fileInfoCache")) {
+                "getFreshFileState should not use fileInfoCache"
+            }
+
+            // Verify it calls client.getFile
+            assert(getFreshFileStateSection.contains("client.getFile(fileId)")) {
+                "getFreshFileState should call client.getFile directly"
+            }
+
+            // Verify it returns the result directly without caching
+            assert(getFreshFileStateSection.contains("return@withContext result.result")) {
+                "getFreshFileState should return result directly without caching"
+            }
+        }
+    }
+
+    @Test
+    fun `ensureFileReady uses getFreshFileState not getFileInfo`() {
+        // Verify ensureFileReady uses getFreshFileState instead of getFileInfo
+        val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+
+            val ensureFileReadySection =
+                content
+                    .substringAfter("suspend fun ensureFileReady", "")
+                    .substringBefore("suspend fun getFileSize")
+
+            // Should use getFreshFileState
+            assert(ensureFileReadySection.contains("getFreshFileState(fileId)")) {
+                "ensureFileReady should use getFreshFileState to bypass cache"
+            }
+
+            // Should not use getFileInfo for polling
+            val pollingSection =
+                ensureFileReadySection
+                    .substringAfter("while (result == null)", "")
+
+            assert(!pollingSection.contains("getFileInfo(fileId)")) {
+                "ensureFileReady polling loop should not use getFileInfo"
             }
         }
     }
