@@ -443,6 +443,11 @@ object MediaParser {
                 val mimeType = doc.mimeType
                 val isValidVideoMime = mimeType?.startsWith("video/", ignoreCase = true) == true
                 
+                // Skip if neither valid MIME type nor video extension (e.g., PDFs, text files)
+                if (!isValidVideoMime && !isVideoFile) {
+                    return null
+                }
+                
                 // Normalize MIME type based on file extension for video files
                 val normalizedMimeType = when {
                     isVideoFile -> when {
