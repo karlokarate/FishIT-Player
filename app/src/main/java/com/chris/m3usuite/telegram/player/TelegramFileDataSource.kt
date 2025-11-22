@@ -70,6 +70,17 @@ class TelegramFileDataSource(
      *
      * URL format: tg://file/<fileId>?chatId=<chatId>&messageId=<messageId>
      *
+     * **IMPORTANT - Blocking Behavior:**
+     * This method uses runBlocking() to ensure the TDLib file is ready, which blocks
+     * the calling thread. This is necessary because the DataSource.open() interface
+     * is synchronous, but TDLib operations are asynchronous. If this DataSource is
+     * opened on the main thread, it may cause ANR (Application Not Responding) issues
+     * if the download takes too long. ExoPlayer typically calls open() from background
+     * threads, but callers should be aware of this blocking behavior.
+     *
+     * The maximum blocking time is configurable in ensureFileReady() (default: 30 seconds).
+     * For large files or slow connections, consider pre-downloading files before playback.
+     *
      * @param dataSpec The DataSpec to open
      * @return The number of bytes remaining, or C.LENGTH_UNSET if unknown
      * @throws IOException if the URL is invalid or file access fails
@@ -120,34 +131,43 @@ class TelegramFileDataSource(
             ),
         )
 
+        // Notify TransferListener that TDLib preparation phase is starting
+        transferListener?.onTransferStart(this, dataSpec, /* isNetwork = */ true)
+
         // Ensure TDLib has the file ready with sufficient prefix
-        val localPath = runBlocking {
-            try {
+        val localPath = try {
+            runBlocking {
                 val downloader = serviceClient.downloader()
                 downloader.ensureFileReady(
                     fileId = fileIdInt,
                     startPosition = dataSpec.position,
                     minBytes = MIN_PREFIX_BYTES,
                 )
-            } catch (e: Exception) {
-                TelegramLogRepository.error(
-                    source = "TelegramFileDataSource",
-                    message = "Failed to ensure file ready",
-                    exception = e,
-                    details = mapOf(
-                        "fileId" to fileIdInt.toString(),
-                        "position" to dataSpec.position.toString(),
-                    ),
-                )
-                // Reset state variables to avoid partial initialization
-                delegate = null
-                resolvedUri = null
-                fileId = null
-                chatId = null
-                messageId = null
-                throw IOException("Failed to prepare Telegram file: ${e.message}", e)
             }
+        } catch (e: Exception) {
+            // Notify TransferListener that TDLib preparation phase failed
+            transferListener?.onTransferEnd(this, dataSpec, /* isNetwork = */ true)
+            
+            TelegramLogRepository.error(
+                source = "TelegramFileDataSource",
+                message = "Failed to ensure file ready",
+                exception = e,
+                details = mapOf(
+                    "fileId" to fileIdInt.toString(),
+                    "position" to dataSpec.position.toString(),
+                ),
+            )
+            // Reset state variables to avoid partial initialization
+            delegate = null
+            resolvedUri = null
+            fileId = null
+            chatId = null
+            messageId = null
+            throw IOException("Failed to prepare Telegram file: ${e.message}", e)
         }
+
+        // Notify TransferListener that TDLib preparation phase completed successfully
+        transferListener?.onTransferEnd(this, dataSpec, /* isNetwork = */ true)
 
         // Build file:// URI
         val file = File(localPath)

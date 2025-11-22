@@ -4,11 +4,14 @@ import android.content.Context
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import dev.g000sha256.tdl.dto.File
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import java.io.RandomAccessFile
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.min
@@ -273,8 +276,11 @@ class T_TelegramFileDownloader(
      * **Flow:**
      * 1. Get file info from TDLib
      * 2. Start download with offset/limit for the required range
-     * 3. Wait (with retry) until downloadedPrefixSize >= startPosition + minBytes
+     * 3. Reactively wait (via fileUpdates Flow) until downloadedPrefixSize >= startPosition + minBytes
      * 4. Return local file path
+     *
+     * This method uses TDLib's file update flow to reactively wait for download progress
+     * instead of polling, which reduces CPU usage and unnecessary API calls.
      *
      * @param fileId TDLib file ID (integer)
      * @param startPosition Starting byte offset for the range
@@ -373,48 +379,72 @@ class T_TelegramFileDownloader(
                     throw Exception("Download failed: ${downloadResult.message}")
                 }
                 is dev.g000sha256.tdl.TdlResult.Success -> {
-                    // Download started, now wait for prefix
-                    var retryCount = 0
-                    val maxRetries = 300 // 300 * 100ms = 30 seconds max wait
-
-                    while (retryCount < maxRetries) {
-                        val updatedInfo = getFileInfo(fileId)
-                        val downloadedPrefixSize = updatedInfo?.local?.downloadedPrefixSize?.toLong() ?: 0L
-                        val path = updatedInfo?.local?.path
-
-                        if (!path.isNullOrBlank() && downloadedPrefixSize >= requiredPrefixSize) {
+                    // Download started, now wait for prefix using reactive flow
+                    val timeoutMs = 30_000L // 30 seconds max wait
+                    
+                    try {
+                        // Use fileUpdates Flow to reactively wait for download progress
+                        val resultPath = withTimeout(timeoutMs) {
+                            client.fileUpdates
+                                .filter { update -> update.file.id == fileId }
+                                .map { update ->
+                                    val file = update.file
+                                    val downloadedPrefixSize = file.local?.downloadedPrefixSize?.toLong() ?: 0L
+                                    val path = file.local?.path ?: ""
+                                    
+                                    // Log progress periodically (on each update)
+                                    TelegramLogRepository.debug(
+                                        source = "T_TelegramFileDownloader",
+                                        message = "ensureFileReady: download progress",
+                                        details = mapOf(
+                                            "fileId" to fileId.toString(),
+                                            "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                                            "requiredPrefixSize" to requiredPrefixSize.toString(),
+                                        ),
+                                    )
+                                    
+                                    Pair(downloadedPrefixSize, path)
+                                }
+                                .first { pair ->
+                                    pair.second.isNotBlank() && pair.first >= requiredPrefixSize
+                                }
+                                .second
+                        }
+                        
+                        TelegramLogRepository.debug(
+                            source = "T_TelegramFileDownloader",
+                            message = "ensureFileReady: ready",
+                            details = mapOf(
+                                "fileId" to fileId.toString(),
+                                "path" to resultPath,
+                            ),
+                        )
+                        
+                        return@withContext resultPath
+                    } catch (e: TimeoutCancellationException) {
+                        // On timeout, check one more time in case the file became ready just as we timed out
+                        val finalInfo = getFileInfo(fileId)
+                        val finalPrefixSize = finalInfo?.local?.downloadedPrefixSize?.toLong() ?: 0L
+                        val finalPath = finalInfo?.local?.path
+                        
+                        if (!finalPath.isNullOrBlank() && finalPrefixSize >= requiredPrefixSize) {
                             TelegramLogRepository.debug(
                                 source = "T_TelegramFileDownloader",
-                                message = "ensureFileReady: ready",
+                                message = "ensureFileReady: ready after timeout check",
                                 details = mapOf(
                                     "fileId" to fileId.toString(),
-                                    "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                                    "downloadedPrefixSize" to finalPrefixSize.toString(),
                                     "requiredPrefixSize" to requiredPrefixSize.toString(),
-                                    "retries" to retryCount.toString(),
                                 ),
                             )
-                            return@withContext path
+                            return@withContext finalPath
                         }
-
-                        // Log progress periodically
-                        if (retryCount % 50 == 0) {
-                            TelegramLogRepository.debug(
-                                source = "T_TelegramFileDownloader",
-                                message = "ensureFileReady: waiting",
-                                details = mapOf(
-                                    "fileId" to fileId.toString(),
-                                    "downloadedPrefixSize" to downloadedPrefixSize.toString(),
-                                    "requiredPrefixSize" to requiredPrefixSize.toString(),
-                                    "retries" to retryCount.toString(),
-                                ),
-                            )
-                        }
-
-                        retryCount++
-                        delay(100) // 100ms between checks
+                        
+                        throw Exception(
+                            "Timeout waiting for file ready: fileId=$fileId, " +
+                            "downloaded=$finalPrefixSize, required=$requiredPrefixSize"
+                        )
                     }
-
-                    throw Exception("Timeout waiting for file ready: fileId=$fileId, retries=$retryCount")
                 }
             }
         }
