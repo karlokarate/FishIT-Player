@@ -98,16 +98,6 @@ class T_TelegramFileDownloader(
     // File handle cache for Zero-Copy reads - thread-safe
     private val fileHandleCache = ConcurrentHashMap<Int, RandomAccessFile>()
 
-    // In-Memory Ringbuffer pro File für Windowed Streaming
-    private val streamingBuffers = ConcurrentHashMap<Int, ChunkRingBuffer>()
-
-    private fun getRingBuffer(fileId: Int): ChunkRingBuffer =
-        streamingBuffers.computeIfAbsent(fileId) {
-            ChunkRingBuffer(
-                chunkSize = StreamingConfig.RINGBUFFER_CHUNK_SIZE_BYTES,
-                maxChunks = StreamingConfig.RINGBUFFER_MAX_CHUNKS,
-            )
-        }
 
     /**
      * Ensure a download window is active for the specified file and position.
@@ -203,9 +193,6 @@ class T_TelegramFileDownloader(
                 )
             windowStates[fileIdInt] = newWindowState
 
-            // Neues Fenster => alten In-Memory-Buffer verwerfen
-            getRingBuffer(fileIdInt).clear()
-
             // Start windowed download
             activeDownloads.add(fileIdInt)
 
@@ -271,6 +258,132 @@ class T_TelegramFileDownloader(
                             ),
                     )
                     false
+                }
+            }
+        }
+
+    /**
+     * Ensure TDLib has downloaded a file up to the specified position + minBytes.
+     * This is used by TelegramFileDataSource for zero-copy streaming.
+     *
+     * **Flow:**
+     * 1. Get file info from TDLib
+     * 2. Start download with offset/limit for the required range
+     * 3. Wait (with retry) until downloadedPrefixSize >= startPosition + minBytes
+     * 4. Return local file path
+     *
+     * @param fileId TDLib file ID (integer)
+     * @param startPosition Starting byte offset for the range
+     * @param minBytes Minimum number of bytes needed from startPosition
+     * @return Local file path from TDLib cache
+     * @throws Exception if download fails or times out
+     */
+    suspend fun ensureFileReady(
+        fileId: Int,
+        startPosition: Long,
+        minBytes: Long,
+    ): String =
+        withContext(Dispatchers.IO) {
+            TelegramLogRepository.debug(
+                source = "T_TelegramFileDownloader",
+                message = "ensureFileReady start",
+                details = mapOf(
+                    "fileId" to fileId.toString(),
+                    "startPosition" to startPosition.toString(),
+                    "minBytes" to minBytes.toString(),
+                ),
+            )
+
+            // Get current file info
+            val fileInfo = getFileInfo(fileId)
+                ?: throw Exception("File not found: $fileId")
+
+            val expectedSize = fileInfo.expectedSize?.toLong() ?: 0L
+            val requiredPrefixSize = (startPosition + minBytes).coerceAtMost(expectedSize)
+
+            // Check if already downloaded
+            val currentPrefixSize = fileInfo.local?.downloadedPrefixSize?.toLong() ?: 0L
+            val localPath = fileInfo.local?.path
+
+            if (!localPath.isNullOrBlank() && currentPrefixSize >= requiredPrefixSize) {
+                TelegramLogRepository.debug(
+                    source = "T_TelegramFileDownloader",
+                    message = "ensureFileReady: already available",
+                    details = mapOf(
+                        "fileId" to fileId.toString(),
+                        "currentPrefixSize" to currentPrefixSize.toString(),
+                        "requiredPrefixSize" to requiredPrefixSize.toString(),
+                    ),
+                )
+                return@withContext localPath
+            }
+
+            // Start download with offset/limit
+            TelegramLogRepository.debug(
+                source = "T_TelegramFileDownloader",
+                message = "ensureFileReady: starting download",
+                details = mapOf(
+                    "fileId" to fileId.toString(),
+                    "offset" to startPosition.toString(),
+                    "limit" to minBytes.toString(),
+                ),
+            )
+
+            val downloadResult = client.downloadFile(
+                fileId = fileId,
+                priority = 32, // High priority for streaming
+                offset = startPosition.coerceAtLeast(0L),
+                limit = minBytes,
+                synchronous = false, // Async download
+            )
+
+            when (downloadResult) {
+                is dev.g000sha256.tdl.TdlResult.Failure -> {
+                    throw Exception("Download failed: ${downloadResult.message}")
+                }
+                is dev.g000sha256.tdl.TdlResult.Success -> {
+                    // Download started, now wait for prefix
+                    var retryCount = 0
+                    val maxRetries = 300 // 300 * 100ms = 30 seconds max wait
+
+                    while (retryCount < maxRetries) {
+                        val updatedInfo = getFileInfo(fileId)
+                        val downloadedPrefixSize = updatedInfo?.local?.downloadedPrefixSize?.toLong() ?: 0L
+                        val path = updatedInfo?.local?.path
+
+                        if (!path.isNullOrBlank() && downloadedPrefixSize >= requiredPrefixSize) {
+                            TelegramLogRepository.debug(
+                                source = "T_TelegramFileDownloader",
+                                message = "ensureFileReady: ready",
+                                details = mapOf(
+                                    "fileId" to fileId.toString(),
+                                    "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                                    "requiredPrefixSize" to requiredPrefixSize.toString(),
+                                    "retries" to retryCount.toString(),
+                                ),
+                            )
+                            return@withContext path
+                        }
+
+                        // Log progress periodically
+                        if (retryCount % 50 == 0) {
+                            TelegramLogRepository.debug(
+                                source = "T_TelegramFileDownloader",
+                                message = "ensureFileReady: waiting",
+                                details = mapOf(
+                                    "fileId" to fileId.toString(),
+                                    "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                                    "requiredPrefixSize" to requiredPrefixSize.toString(),
+                                    "retries" to retryCount.toString(),
+                                ),
+                            )
+                        }
+
+                        retryCount++
+                        delay(100) // 100ms between checks
+                    }
+
+                    throw Exception("Timeout waiting for file ready: fileId=$fileId, retries=$retryCount")
                 }
             }
         }
@@ -444,17 +557,6 @@ class T_TelegramFileDownloader(
                 throw Exception("Downloaded file not found: $localPath")
             }
 
-            val ringBuffer = getRingBuffer(fileIdInt)
-
-            // Falls der Ringbuffer den gesamten Bereich schon im RAM hat, direkt von dort lesen
-            if (ringBuffer.containsRange(position, length)) {
-                val fromCache = ringBuffer.read(position, buffer, offset, length)
-                if (fromCache > 0) {
-                    return@withContext fromCache
-                }
-                // Wenn aus irgendeinem Grund 0 zurückkommt, normal weiter unten über File lesen
-            }
-
             // Retry logic to handle race condition where file handle is closed by another thread
             var ioRetryCount = 0
             val maxIoRetries = StreamingConfig.MAX_READ_ATTEMPTS
@@ -478,11 +580,6 @@ class T_TelegramFileDownloader(
 
                     // Zero-Copy: write directly into buffer
                     val bytesRead = raf.read(buffer, offset, bytesToRead)
-
-                    if (bytesRead > 0) {
-                        // Gelesene Daten zusätzlich im Ringbuffer cachen
-                        ringBuffer.write(position, buffer, offset, bytesRead)
-                    }
 
                     return@withContext bytesRead
                 } catch (e: java.io.IOException) {
@@ -601,7 +698,6 @@ class T_TelegramFileDownloader(
                 // Clean up window state and file handle
                 windowStates.remove(fileIdInt)
                 fileHandleCache.remove(fileIdInt)?.runCatching { close() }
-                streamingBuffers.remove(fileIdInt)?.clear()
 
                 TelegramLogRepository.debug(
                     source = "T_TelegramFileDownloader",
@@ -630,7 +726,6 @@ class T_TelegramFileDownloader(
                 // Clean up window state and file handle
                 windowStates.remove(fileId)
                 fileHandleCache.remove(fileId)?.runCatching { close() }
-                streamingBuffers.remove(fileId)?.clear()
 
                 TelegramLogRepository.debug(
                     source = "T_TelegramFileDownloader",
@@ -650,7 +745,6 @@ class T_TelegramFileDownloader(
     suspend fun cleanupFileHandle(fileId: Int) =
         withContext(Dispatchers.IO) {
             fileHandleCache.remove(fileId)?.runCatching { close() }
-            streamingBuffers.remove(fileId)?.clear()
             TelegramLogRepository.debug(
                 source = "T_TelegramFileDownloader",
                 message = "Cleaned up file handle",

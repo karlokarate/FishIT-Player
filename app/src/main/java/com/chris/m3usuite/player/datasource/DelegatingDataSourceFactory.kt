@@ -7,7 +7,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.TransferListener
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
-import com.chris.m3usuite.telegram.player.TelegramDataSource
+import com.chris.m3usuite.telegram.player.TelegramFileDataSource
 import java.io.IOException
 import java.util.Locale
 
@@ -16,7 +16,7 @@ import java.util.Locale
  * Routes requests to appropriate DataSource implementations based on URL scheme.
  *
  * Supported schemes:
- * - tg:// - Telegram files via TelegramDataSource
+ * - tg:// - Telegram files via TelegramFileDataSource (zero-copy with FileDataSource)
  * - rar:// - RAR archive entries via RarDataSource
  * - http://, https://, file:// - Standard sources via fallback factory
  */
@@ -49,7 +49,7 @@ private class DelegatingDataSource(
         val target: DataSource =
             when {
                 scheme == "tg" -> {
-                    // Route Telegram files to TelegramDataSource
+                    // Route Telegram files to TelegramFileDataSource (zero-copy with FileDataSource)
                     // Get T_TelegramServiceClient singleton instance
                     val serviceClient =
                         try {
@@ -57,7 +57,7 @@ private class DelegatingDataSource(
                         } catch (e: Exception) {
                             throw IOException("Failed to get Telegram service client: ${e.message}", e)
                         }
-                    TelegramDataSource(context, serviceClient)
+                    TelegramFileDataSource(serviceClient)
                 }
                 scheme == "rar" -> RarDataSource(context)
                 else -> fallback.createDataSource()
