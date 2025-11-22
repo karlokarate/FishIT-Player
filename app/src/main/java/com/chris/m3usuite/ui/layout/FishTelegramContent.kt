@@ -7,13 +7,34 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chris.m3usuite.model.MediaItem
+import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
+import com.chris.m3usuite.telegram.core.TelegramFileLoader
+
+/**
+ * Shared TelegramFileLoader instance to avoid repeated instantiation per composable.
+ * Uses singleton T_TelegramServiceClient for efficient resource usage.
+ */
+@Composable
+private fun rememberTelegramFileLoader(): TelegramFileLoader {
+    val context = LocalContext.current
+    return remember {
+        val serviceClient = T_TelegramServiceClient.getInstance(context)
+        TelegramFileLoader(serviceClient)
+    }
+}
 
 /**
  * Renders a Telegram media item with the blue "T" badge.
@@ -41,13 +62,27 @@ fun FishTelegramContent(
     onAssign: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
+    val fileLoader = rememberTelegramFileLoader()
+
+    var thumbPath by remember(mediaItem.posterId, mediaItem.localPosterPath) {
+        mutableStateOf(mediaItem.localPosterPath)
+    }
+
+    LaunchedEffect(mediaItem.posterId) {
+        if (thumbPath == null && mediaItem.posterId != null) {
+            thumbPath = fileLoader.ensureThumbDownloaded(mediaItem.posterId!!)
+        }
+    }
+
+    val posterModel = thumbPath ?: mediaItem.localPosterPath ?: mediaItem.poster
+
     // Determine tile style based on media type
     when (mediaItem.type) {
         "series" -> {
             // Use SeriesFishTile style for series content
             FishTile(
                 title = mediaItem.name,
-                poster = mediaItem.poster,
+                poster = posterModel,
                 modifier = modifier,
                 showNew = showNew,
                 resumeFraction = resumeFraction,
@@ -61,7 +96,7 @@ fun FishTelegramContent(
             // Use standard tile with episode indicator
             FishTile(
                 title = mediaItem.name,
-                poster = mediaItem.poster,
+                poster = posterModel,
                 modifier = modifier,
                 showNew = showNew,
                 resumeFraction = resumeFraction,
@@ -75,7 +110,7 @@ fun FishTelegramContent(
             // Default VOD/Movie/Clip/Archive style
             FishTile(
                 title = mediaItem.name,
-                poster = mediaItem.poster,
+                poster = posterModel,
                 modifier = modifier,
                 showNew = showNew,
                 resumeFraction = resumeFraction,

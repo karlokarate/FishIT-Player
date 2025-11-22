@@ -102,9 +102,11 @@ class StartViewModel(
     private val _favLive = MutableStateFlow<List<MediaItem>>(emptyList())
     val favLive: StateFlow<List<MediaItem>> = _favLive
 
-    // Telegram content
-    private val _telegramContent = MutableStateFlow<List<MediaItem>>(emptyList())
-    val telegramContent: StateFlow<List<MediaItem>> = _telegramContent
+    // Telegram content by chat
+    private val _telegramContentByChat =
+        MutableStateFlow<Map<Long, Pair<String, List<MediaItem>>>>(emptyMap())
+    val telegramContentByChat: StateFlow<Map<Long, Pair<String, List<MediaItem>>>> =
+        _telegramContentByChat
 
     // Telegram enabled?
     val tgEnabled: StateFlow<Boolean> =
@@ -272,9 +274,14 @@ class StartViewModel(
     private fun observeTelegramContent() =
         viewModelScope.launch {
             tgRepo
-                .getAllTelegramContent()
-                .collectLatest { items ->
-                    _telegramContent.value = items.take(120) // Limit to 120 for Start screen
+                .getTelegramVodByChat()
+                .collectLatest { chatMap ->
+                    // Limit each row to e.g. 120 items
+                    _telegramContentByChat.value =
+                        chatMap.mapValues { (chatId, pair) ->
+                            val (title, items) = pair
+                            title to items.take(120)
+                        }
                 }
         }
 
