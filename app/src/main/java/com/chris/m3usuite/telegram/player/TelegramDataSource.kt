@@ -52,7 +52,7 @@ class TelegramDataSource(
 ) : DataSource {
     private var currentUri: Uri? = null
     private var currentDataSpec: DataSpec? = null
-    private var position: Long = 0
+    private var currentPosition: Long = 0
     private var bytesRemaining: Long = C.LENGTH_UNSET.toLong()
     private var totalSize: Long = C.LENGTH_UNSET.toLong()
     private var fileId: String? = null
@@ -194,17 +194,19 @@ class TelegramDataSource(
                 }
             }
 
-        // Calculate position and bytes remaining
-        position = dataSpec.position
+        // Calculate currentPosition and bytes remaining - always from dataSpec.position
+        // IMPORTANT: currentPosition is the absolute file position, never derived from windowStart
+        currentPosition = dataSpec.position
         bytesRemaining =
             if (totalSize >= 0) {
-                (totalSize - position).coerceAtLeast(0)
+                (totalSize - currentPosition).coerceAtLeast(0)
             } else {
                 C.LENGTH_UNSET.toLong()
             }
 
         // Initialize window at current position
-        windowStart = position
+        // windowStart tracks the beginning of the download window, but does NOT affect currentPosition
+        windowStart = currentPosition
         windowSize = StreamingConfig.TELEGRAM_STREAM_WINDOW_BYTES
 
         // Ensure initial window is prepared (fileIdInt already validated above)
@@ -216,7 +218,7 @@ class TelegramDataSource(
             details =
                 mapOf(
                     "fileId" to windowFileId.toString(),
-                    "position" to position.toString(),
+                    "currentPosition" to currentPosition.toString(),
                     "readLength" to "initial",
                     "windowStart" to windowStart.toString(),
                     "windowSize" to windowSize.toString(),
@@ -260,8 +262,9 @@ class TelegramDataSource(
                     "fileId" to fileIdInt.toString(),
                     "chatId" to (chatId?.toString() ?: "null"),
                     "messageId" to (messageId?.toString() ?: "null"),
+                    "dataSpecPosition" to dataSpec.position.toString(),
+                    "currentPosition" to currentPosition.toString(),
                     "totalSize" to totalSize.toString(),
-                    "position" to position.toString(),
                     "windowStart" to windowStart.toString(),
                     "windowSize" to windowSize.toString(),
                 ),
@@ -274,8 +277,14 @@ class TelegramDataSource(
      * Read data from the Telegram file into the provided buffer with **Windowed Zero-Copy**.
      * This method blocks until data is available or EOF is reached.
      *
+     * **Position Management:**
+     * - currentPosition is the absolute file position, maintained independently of window state
+     * - windowStart/windowSize track the download window but NEVER override currentPosition
+     * - Window offset is calculated as (currentPosition - windowStart) for internal buffer access
+     * - currentPosition is incremented after each successful read
+     *
      * **Window Transition Logic:**
-     * - Checks if current position is within active window
+     * - Checks if currentPosition is within active window
      * - If approaching prefetch margin, opens new window
      * - Directly reads into buffer without intermediate copies
      *
@@ -307,7 +316,7 @@ class TelegramDataSource(
                     details =
                         mapOf(
                             "fileId" to fid,
-                            "position" to position.toString(),
+                            "currentPosition" to currentPosition.toString(),
                             "requested" to readLength.toString(),
                         ),
                 )
@@ -315,12 +324,15 @@ class TelegramDataSource(
             }
 
             // Check if we need to transition to a new window
+            // windowStart and windowSize define the download window
+            // currentPosition is the absolute file position we're reading from
             val windowEnd = windowStart + windowSize
-            val distanceToWindowEnd = windowEnd - position
+            val distanceToWindowEnd = windowEnd - currentPosition
 
-            if (distanceToWindowEnd < StreamingConfig.TELEGRAM_STREAM_PREFETCH_MARGIN || position < windowStart) {
+            if (distanceToWindowEnd < StreamingConfig.TELEGRAM_STREAM_PREFETCH_MARGIN || currentPosition < windowStart) {
                 // Approaching window end or seeking backward, open new window
-                val newWindowStart = position
+                // IMPORTANT: New window starts at currentPosition, not at windowStart!
+                val newWindowStart = currentPosition
 
                 TelegramLogRepository.logStreamingActivity(
                     fileId = fileIdInt,
@@ -329,7 +341,7 @@ class TelegramDataSource(
                         mapOf(
                             "old_start" to windowStart.toString(),
                             "new_start" to newWindowStart.toString(),
-                            "position" to position.toString(),
+                            "currentPosition" to currentPosition.toString(),
                         ),
                 )
 
@@ -349,7 +361,7 @@ class TelegramDataSource(
                     details =
                         mapOf(
                             "fileId" to fileIdInt.toString(),
-                            "position" to position.toString(),
+                            "currentPosition" to currentPosition.toString(),
                             "readLength" to readLength.toString(),
                             "windowStart" to windowStart.toString(),
                             "windowSize" to windowSize.toString(),
@@ -370,10 +382,10 @@ class TelegramDataSource(
                             details =
                                 mapOf(
                                     "fileId" to fid,
-                                    "position" to position.toString(),
+                                    "currentPosition" to currentPosition.toString(),
                                 ),
                         )
-                        throw IOException("Window transition timed out at position $position for fileId $fid", e)
+                        throw IOException("Window transition timed out at position $currentPosition for fileId $fid", e)
                     } catch (e: Exception) {
                         TelegramLogRepository.error(
                             source = "TelegramDataSource",
@@ -382,10 +394,10 @@ class TelegramDataSource(
                             details =
                                 mapOf(
                                     "fileId" to fid,
-                                    "position" to position.toString(),
+                                    "currentPosition" to currentPosition.toString(),
                                 ),
                         )
-                        throw IOException("Failed to transition window at position $position for fileId $fid: ${e.message}", e)
+                        throw IOException("Failed to transition window at position $currentPosition for fileId $fid: ${e.message}", e)
                     }
                 }
             }
@@ -410,17 +422,18 @@ class TelegramDataSource(
                 runBlocking {
                     try {
                         // Add timeout for read operations
+                        // IMPORTANT: Pass absolute currentPosition to readFileChunk, not a window-relative offset
                         withTimeout(StreamingConfig.READ_OPERATION_TIMEOUT_MS) {
-                            downloader.readFileChunk(fid, position, buffer, offset, bytesToRead)
+                            downloader.readFileChunk(fid, currentPosition, buffer, offset, bytesToRead)
                         }
                     } catch (e: TimeoutCancellationException) {
                         throw IOException(
-                            "Read operation timed out for Telegram file $fid at position $position",
+                            "Read operation timed out for Telegram file $fid at position $currentPosition",
                             e,
                         )
                     } catch (e: Exception) {
                         throw IOException(
-                            "Failed to read from Telegram file $fid at position $position: ${e.message}",
+                            "Failed to read from Telegram file $fid at position $currentPosition: ${e.message}",
                             e,
                         )
                     }
@@ -434,7 +447,7 @@ class TelegramDataSource(
                     details =
                         mapOf(
                             "fileId" to fid,
-                            "position" to position.toString(),
+                            "currentPosition" to currentPosition.toString(),
                             "requested" to readLength.toString(),
                             "bytesRead" to bytesRead.toString(),
                         ),
@@ -443,7 +456,7 @@ class TelegramDataSource(
             }
 
             // Debug: Check header bytes on first read to detect non-video files
-            if (position == 0L && bytesRead >= 4) {
+            if (currentPosition == 0L && bytesRead >= 4) {
                 val headerBytes = buffer.copyOfRange(offset, offset + minOf(bytesRead, 32))
                 val headerHex = headerBytes.take(minOf(bytesRead, 16)).joinToString(" ") { "%02X".format(it) }
 
@@ -493,8 +506,9 @@ class TelegramDataSource(
                 }
             }
 
-            // Update position and remaining bytes
-            position += bytesRead.toLong()
+            // Update currentPosition and remaining bytes
+            // IMPORTANT: Only update AFTER successful read, never set to windowStart
+            currentPosition += bytesRead.toLong()
             if (bytesRemaining != C.LENGTH_UNSET.toLong()) {
                 bytesRemaining = (bytesRemaining - bytesRead).coerceAtLeast(0)
             }
@@ -504,14 +518,15 @@ class TelegramDataSource(
                 transferListener?.onBytesTransferred(this, spec, true, bytesRead)
             }
 
-            // Log successful read at trace level (for detailed debugging)
+            // Log successful read at debug level
+            // Shows the position we READ FROM (before incrementing currentPosition)
             TelegramLogRepository.debug(
                 source = "TelegramDataSource",
                 message = "read chunk",
                 details =
                     mapOf(
                         "fileId" to fid,
-                        "position" to (position - bytesRead).toString(),
+                        "position" to (currentPosition - bytesRead).toString(),
                         "requested" to readLength.toString(),
                         "read" to bytesRead.toString(),
                         "windowStart" to windowStart.toString(),
@@ -528,7 +543,7 @@ class TelegramDataSource(
                 details =
                     mapOf(
                         "fileId" to fid,
-                        "position" to position.toString(),
+                        "currentPosition" to currentPosition.toString(),
                         "requested" to readLength.toString(),
                         "windowStart" to windowStart.toString(),
                         "windowSize" to windowSize.toString(),
@@ -582,7 +597,7 @@ class TelegramDataSource(
         fileId = null
         chatId = null
         messageId = null
-        position = 0
+        currentPosition = 0
         bytesRemaining = C.LENGTH_UNSET.toLong()
         totalSize = C.LENGTH_UNSET.toLong()
         windowStart = 0
@@ -601,7 +616,7 @@ class TelegramDataSource(
                 details =
                     mapOf(
                         "fileId" to fid,
-                        "finalPosition" to position.toString(),
+                        "finalPosition" to currentPosition.toString(),
                         "totalSize" to totalSize.toString(),
                     ),
             )

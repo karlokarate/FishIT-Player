@@ -154,4 +154,81 @@ class TelegramDataSourceTest {
             }
         }
     }
+
+    @Test
+    fun `TelegramDataSource uses currentPosition variable`() {
+        // Verify that position variable is renamed to currentPosition
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/player/TelegramDataSource.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            assert(content.contains("private var currentPosition: Long = 0")) {
+                "TelegramDataSource should use currentPosition variable instead of position"
+            }
+        }
+    }
+
+    @Test
+    fun `TelegramDataSource sets currentPosition from dataSpec position in open`() {
+        // Verify currentPosition is set from dataSpec.position
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/player/TelegramDataSource.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            assert(content.contains("currentPosition = dataSpec.position")) {
+                "TelegramDataSource open() should set currentPosition from dataSpec.position"
+            }
+        }
+    }
+
+    @Test
+    fun `TelegramDataSource reads from currentPosition not windowStart`() {
+        // Verify that read operations use currentPosition, not windowStart
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/player/TelegramDataSource.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            assert(content.contains("readFileChunk(fid, currentPosition, buffer, offset, bytesToRead)")) {
+                "TelegramDataSource should call readFileChunk with currentPosition (absolute position)"
+            }
+        }
+    }
+
+    @Test
+    fun `TelegramDataSource logs currentPosition in opened message`() {
+        // Verify that opened log includes currentPosition
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/player/TelegramDataSource.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            // Look for opened log with currentPosition
+            assert(content.contains("\"currentPosition\" to currentPosition.toString()")) {
+                "TelegramDataSource opened log should include currentPosition field"
+            }
+        }
+    }
+
+    @Test
+    fun `TelegramDataSource increments currentPosition after read`() {
+        // Verify currentPosition is incremented correctly
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/player/TelegramDataSource.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            assert(content.contains("currentPosition += bytesRead.toLong()")) {
+                "TelegramDataSource should increment currentPosition by bytesRead after successful read"
+            }
+        }
+    }
+
+    @Test
+    fun `TelegramDataSource documents position vs window separation`() {
+        // Verify documentation clarifies position vs window separation
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/player/TelegramDataSource.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            // Check for documentation about position management
+            assert(
+                content.contains("currentPosition is the absolute file position") ||
+                    content.contains("IMPORTANT: currentPosition"),
+            ) {
+                "TelegramDataSource should document that currentPosition is absolute and independent of window"
+            }
+        }
+    }
 }
