@@ -473,7 +473,7 @@ class MainActivity : ComponentActivity() {
                                                     this@MainActivity,
                                                     store,
                                                 )
-                                                // Use firstOrNull to avoid blocking indefinitely
+                                                // Use withTimeoutOrNull to avoid blocking indefinitely
                                                 val mediaItems = kotlinx.coroutines.withTimeoutOrNull(5000) {
                                                     tgRepo.getTelegramContentByChat(chatId).first()
                                                 }
