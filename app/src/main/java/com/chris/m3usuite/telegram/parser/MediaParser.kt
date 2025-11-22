@@ -329,15 +329,16 @@ object MediaParser {
             is MessageVideo -> {
                 val video = content.video
                 val name = video.fileName?.takeIf { it.isNotBlank() }
-                
+
                 // Validate that this is actually a video file
                 val mimeType = video.mimeType
                 val isValidVideoMime = mimeType?.startsWith("video/", ignoreCase = true) == true
                 val supportedVideoExtensions = listOf(".mp4", ".mkv", ".avi", ".mov", ".webm", ".flv", ".wmv")
-                val hasVideoExtension = name?.let { fileName ->
-                    supportedVideoExtensions.any { ext -> fileName.endsWith(ext, ignoreCase = true) }
-                } ?: false
-                
+                val hasVideoExtension =
+                    name?.let { fileName ->
+                        supportedVideoExtensions.any { ext -> fileName.endsWith(ext, ignoreCase = true) }
+                    } ?: false
+
                 // Skip if neither valid MIME type nor video extension
                 if (!isValidVideoMime && !hasVideoExtension) {
                     return null
@@ -349,19 +350,20 @@ object MediaParser {
 
                 // Get thumbnail for fallback poster
                 val thumbFileId = video.thumbnail?.file?.id
-                
+
                 // Normalize MIME type based on file extension if MIME is missing or generic
-                val normalizedMimeType = when {
-                    mimeType?.startsWith("video/", ignoreCase = true) == true -> mimeType
-                    name?.endsWith(".mp4", ignoreCase = true) == true -> "video/mp4"
-                    name?.endsWith(".mkv", ignoreCase = true) == true -> "video/x-matroska"
-                    name?.endsWith(".webm", ignoreCase = true) == true -> "video/webm"
-                    name?.endsWith(".avi", ignoreCase = true) == true -> "video/x-msvideo"
-                    name?.endsWith(".mov", ignoreCase = true) == true -> "video/quicktime"
-                    name?.endsWith(".flv", ignoreCase = true) == true -> "video/x-flv"
-                    name?.endsWith(".wmv", ignoreCase = true) == true -> "video/x-ms-wmv"
-                    else -> mimeType
-                }
+                val normalizedMimeType =
+                    when {
+                        mimeType?.startsWith("video/", ignoreCase = true) == true -> mimeType
+                        name?.endsWith(".mp4", ignoreCase = true) == true -> "video/mp4"
+                        name?.endsWith(".mkv", ignoreCase = true) == true -> "video/x-matroska"
+                        name?.endsWith(".webm", ignoreCase = true) == true -> "video/webm"
+                        name?.endsWith(".avi", ignoreCase = true) == true -> "video/x-msvideo"
+                        name?.endsWith(".mov", ignoreCase = true) == true -> "video/quicktime"
+                        name?.endsWith(".flv", ignoreCase = true) == true -> "video/x-flv"
+                        name?.endsWith(".wmv", ignoreCase = true) == true -> "video/x-ms-wmv"
+                        else -> mimeType
+                    }
 
                 // Parse metadata from filename and caption
                 val metaFromName = parseMediaFromFileName(name)
@@ -438,31 +440,33 @@ object MediaParser {
 
                 // Check if it's a video file (mp4, mkv, avi, etc.)
                 val isVideoFile = name?.matches(Regex(""".*\.(mp4|mkv|avi|mov|wmv|flv|webm)$""", RegexOption.IGNORE_CASE)) == true
-                
+
                 // Validate MIME type for video files
                 val mimeType = doc.mimeType
                 val isValidVideoMime = mimeType?.startsWith("video/", ignoreCase = true) == true
-                
+
                 // Skip if neither valid MIME type nor video extension (e.g., PDFs, text files)
                 if (!isValidVideoMime && !isVideoFile) {
                     return null
                 }
-                
+
                 // Normalize MIME type based on file extension for video files
-                val normalizedMimeType = when {
-                    isVideoFile -> when {
-                        mimeType?.startsWith("video/", ignoreCase = true) == true -> mimeType
-                        name?.endsWith(".mp4", ignoreCase = true) == true -> "video/mp4"
-                        name?.endsWith(".mkv", ignoreCase = true) == true -> "video/x-matroska"
-                        name?.endsWith(".webm", ignoreCase = true) == true -> "video/webm"
-                        name?.endsWith(".avi", ignoreCase = true) == true -> "video/x-msvideo"
-                        name?.endsWith(".mov", ignoreCase = true) == true -> "video/quicktime"
-                        name?.endsWith(".flv", ignoreCase = true) == true -> "video/x-flv"
-                        name?.endsWith(".wmv", ignoreCase = true) == true -> "video/x-ms-wmv"
-                        else -> "video/mp4" // Default fallback for video files
+                val normalizedMimeType =
+                    when {
+                        isVideoFile ->
+                            when {
+                                mimeType?.startsWith("video/", ignoreCase = true) == true -> mimeType
+                                name?.endsWith(".mp4", ignoreCase = true) == true -> "video/mp4"
+                                name?.endsWith(".mkv", ignoreCase = true) == true -> "video/x-matroska"
+                                name?.endsWith(".webm", ignoreCase = true) == true -> "video/webm"
+                                name?.endsWith(".avi", ignoreCase = true) == true -> "video/x-msvideo"
+                                name?.endsWith(".mov", ignoreCase = true) == true -> "video/quicktime"
+                                name?.endsWith(".flv", ignoreCase = true) == true -> "video/x-flv"
+                                name?.endsWith(".wmv", ignoreCase = true) == true -> "video/x-ms-wmv"
+                                else -> "video/mp4" // Default fallback for video files
+                            }
+                        else -> mimeType
                     }
-                    else -> mimeType
-                }
 
                 // Parse metadata
                 val captionText = content.caption?.text.orEmpty()

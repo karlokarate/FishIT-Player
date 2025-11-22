@@ -441,51 +441,54 @@ class TelegramDataSource(
                 )
                 return C.RESULT_END_OF_INPUT
             }
-            
+
             // Debug: Check header bytes on first read to detect non-video files
             if (position == 0L && bytesRead >= 4) {
                 val headerBytes = buffer.copyOfRange(offset, offset + minOf(bytesRead, 32))
                 val headerHex = headerBytes.take(minOf(bytesRead, 16)).joinToString(" ") { "%02X".format(it) }
-                
+
                 // Detect common magic bytes
-                val magicWarning = when {
-                    // RAR archive: 52 61 72 21 (Rar!)
-                    headerBytes.size >= 4 && 
-                    headerBytes[0].toInt() == 0x52 && 
-                    headerBytes[1].toInt() == 0x61 && 
-                    headerBytes[2].toInt() == 0x72 && 
-                    headerBytes[3].toInt() == 0x21 -> "RAR archive detected - not a video file!"
-                    
-                    // ZIP archive: 50 4B 03 04 (PK..)
-                    headerBytes.size >= 4 && 
-                    headerBytes[0].toInt() == 0x50 && 
-                    headerBytes[1].toInt() == 0x4B && 
-                    headerBytes[2].toInt() == 0x03 && 
-                    headerBytes[3].toInt() == 0x04 -> "ZIP archive detected - not a video file!"
-                    
-                    else -> null
-                }
-                
+                val magicWarning =
+                    when {
+                        // RAR archive: 52 61 72 21 (Rar!)
+                        headerBytes.size >= 4 &&
+                            headerBytes[0].toInt() == 0x52 &&
+                            headerBytes[1].toInt() == 0x61 &&
+                            headerBytes[2].toInt() == 0x72 &&
+                            headerBytes[3].toInt() == 0x21 -> "RAR archive detected - not a video file!"
+
+                        // ZIP archive: 50 4B 03 04 (PK..)
+                        headerBytes.size >= 4 &&
+                            headerBytes[0].toInt() == 0x50 &&
+                            headerBytes[1].toInt() == 0x4B &&
+                            headerBytes[2].toInt() == 0x03 &&
+                            headerBytes[3].toInt() == 0x04 -> "ZIP archive detected - not a video file!"
+
+                        else -> null
+                    }
+
                 if (magicWarning != null) {
                     TelegramLogRepository.error(
                         source = "TelegramDataSource",
                         message = magicWarning,
-                        details = mapOf(
-                            "fileId" to fid,
-                            "headerHex" to headerHex,
-                            "chatId" to (chatId?.toString() ?: "unknown"),
-                            "messageId" to (messageId?.toString() ?: "unknown"),
-                        ),
+                        details =
+                            mapOf(
+                                "fileId" to fid,
+                                "headerHex" to headerHex,
+                                "chatId" to (chatId?.toString() ?: "unknown"),
+                                "messageId" to (messageId?.toString() ?: "unknown"),
+                            ),
                     )
                 } else {
                     // Log header for valid video files (debug only)
                     TelegramLogRepository.debug(
                         source = "TelegramDataSource",
                         message = "File header sample",
-                        details = mapOf(
-                            "fileId" to fid,
-                            "headerHex" to headerHex,
-                        ),
+                        details =
+                            mapOf(
+                                "fileId" to fid,
+                                "headerHex" to headerHex,
+                            ),
                     )
                 }
             }
