@@ -524,9 +524,9 @@ class TelegramContentRepository(
             posterId = obxMsg.posterFileId ?: obxMsg.thumbFileId,
             localPosterPath = obxMsg.posterLocalPath ?: obxMsg.thumbLocalPath,
             // Zero-copy paths (Requirement 6) - use localPath for video/document
-            localVideoPath = obxMsg.localPath,
-            localPhotoPath = null, // Photos typically don't have separate local paths
-            localDocumentPath = obxMsg.localPath, // Documents use same local path
+            localVideoPath = if (obxMsg.durationSecs != null) obxMsg.localPath else null,
+            localPhotoPath = if (obxMsg.durationSecs == null && obxMsg.width != null) obxMsg.localPath else null,
+            localDocumentPath = if (obxMsg.durationSecs == null && obxMsg.width == null) obxMsg.localPath else null,
         )
     }
 
