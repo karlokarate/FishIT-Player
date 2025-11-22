@@ -90,6 +90,7 @@ import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.ResumeRepository
 import com.chris.m3usuite.data.repo.ScreenTimeRepository
 import com.chris.m3usuite.diagnostics.DiagnosticsLogger
+import com.chris.m3usuite.model.playerArtwork
 import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
 import com.chris.m3usuite.prefs.SettingsStore
@@ -393,28 +394,35 @@ fun InternalPlayerScreen(
             val finalUrl = resolvedUri.toString()
 
             // Enhanced MIME type detection for Telegram URLs
-            val inferredMime =
+            // Also retrieve MediaItem metadata for artwork support
+            val (inferredMime, appMediaItem) =
                 when {
-                    mimeType != null -> mimeType
+                    mimeType != null -> Pair(mimeType, null)
                     url.startsWith("tg://", ignoreCase = true) -> {
-                        // Try to get MIME type from ObjectBox metadata
-                        val telegramMime =
-                            withContext(Dispatchers.IO) {
-                                try {
-                                    val parsed = Uri.parse(url)
-                                    val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
-                                    if (messageId != null) {
-                                        val msgBox = obxStore.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
-                                        val msg =
-                                            msgBox
-                                                .query()
-                                                .equal(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId, messageId)
-                                                .build()
-                                                .findFirst()
+                        // Try to get MIME type and MediaItem from ObjectBox metadata
+                        withContext(Dispatchers.IO) {
+                            try {
+                                val parsed = Uri.parse(url)
+                                val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
+                                val chatId = parsed.getQueryParameter("chatId")?.toLongOrNull()
+                                if (messageId != null) {
+                                    val msgBox = obxStore.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
+                                    val msg =
+                                        msgBox
+                                            .query()
+                                            .equal(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId, messageId)
+                                            .build()
+                                            .findFirst()
+
+                                    if (msg != null) {
+                                        // Build MediaItem from ObxTelegramMessage for artwork
+                                        val tgRepo = com.chris.m3usuite.data.repo.TelegramContentRepository(ctx, store)
+                                        val mediaItems = tgRepo.getTelegramContentByChat(msg.chatId).first()
+                                        val appMediaItem = mediaItems.find { it.tgMessageId == messageId }
 
                                         // Use stored MIME type or infer from fileName
-                                        msg?.mimeType?.takeIf { it.isNotBlank() } ?: run {
-                                            val fileName = msg?.fileName
+                                        val mime = msg.mimeType?.takeIf { it.isNotBlank() } ?: run {
+                                            val fileName = msg.fileName
                                             when {
                                                 fileName?.endsWith(".mp4", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4
                                                 fileName?.endsWith(".mkv", ignoreCase = true) == true -> MimeTypes.VIDEO_MATROSKA
@@ -424,30 +432,61 @@ fun InternalPlayerScreen(
                                                 else -> null
                                             }
                                         }
+                                        Pair(mime ?: MimeTypes.VIDEO_MP4, appMediaItem)
                                     } else {
-                                        null
+                                        Pair(MimeTypes.VIDEO_MP4, null)
                                     }
-                                } catch (e: Exception) {
-                                    android.util.Log.w("ExoSetup", "Failed to get Telegram MIME type: ${e.message}")
-                                    null
+                                } else {
+                                    Pair(MimeTypes.VIDEO_MP4, null)
                                 }
+                            } catch (e: Exception) {
+                                android.util.Log.w("ExoSetup", "Failed to get Telegram MIME type: ${e.message}")
+                                Pair(MimeTypes.VIDEO_MP4, null)
                             }
-                        // Default to MP4 for Telegram if no specific type found
-                        telegramMime ?: MimeTypes.VIDEO_MP4
+                        }
                     }
-                    else -> PlayUrlHelper.guessMimeType(finalUrl, null)
+                    else -> Pair(PlayUrlHelper.guessMimeType(finalUrl, null), null)
                 }
+
+            // Build Media3 metadata with artwork support (Requirement 1.1)
+            val metadataBuilder =
+                androidx.media3.common.MediaMetadata
+                    .Builder()
+                    .setTitle(appMediaItem?.name ?: "")
+
+            // Inject artwork if available (Requirement 1.1)
+            val artwork = appMediaItem?.playerArtwork()
+            if (artwork != null) {
+                metadataBuilder.setArtworkData(
+                    artwork,
+                    androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER,
+                )
+            }
 
             val mediaItem =
                 MediaItem
                     .Builder()
                     .setUri(resolvedUri)
+                    .setMediaMetadata(metadataBuilder.build())
                     .also { builder -> inferredMime?.let { builder.setMimeType(it) } }
                     .build()
 
-            // Log media item details for Telegram
+            // Log media item details for Telegram (Requirement 3.3)
             if (url.startsWith("tg://", ignoreCase = true)) {
                 android.util.Log.d("ExoSetup", "Telegram MediaItem: uri=$resolvedUri, mimeType=$inferredMime")
+                
+                // Log to TelegramLogRepository for observability (Requirement 3.3)
+                com.chris.m3usuite.telegram.logging.TelegramLogRepository.info(
+                    source = "InternalPlayerScreen",
+                    message = "Starting Telegram playback",
+                    details = mapOf(
+                        "mediaId" to (appMediaItem?.id?.toString() ?: "null"),
+                        "tgChatId" to (appMediaItem?.tgChatId?.toString() ?: "null"),
+                        "tgMessageId" to (appMediaItem?.tgMessageId?.toString() ?: "null"),
+                        "url" to url,
+                        "hasArtwork" to (artwork != null).toString(),
+                    ),
+                )
             }
 
             exoPlayer.setMediaItem(mediaItem)

@@ -44,9 +44,11 @@ class TelegramFileLoader(
         timeoutMs: Long = DEFAULT_TIMEOUT_MS,
     ): String? {
         return try {
+            // Log start (Requirement 3.1.1)
             TelegramLogRepository.debug(
                 source = TAG,
-                message = "ensureThumbDownloaded: Starting download for fileId=$fileId",
+                message = "ensureThumbDownloaded start",
+                details = mapOf("fileId" to fileId.toString()),
             )
 
             // Use downloader to ensure the file is ready (entire file for thumbnails)
@@ -58,16 +60,24 @@ class TelegramFileLoader(
                     timeoutMs = timeoutMs,
                 )
 
+            // Log success (Requirement 3.1.2)
             TelegramLogRepository.debug(
                 source = TAG,
-                message = "ensureThumbDownloaded: Complete fileId=$fileId, path=$path",
+                message = "ensureThumbDownloaded success",
+                details =
+                    mapOf(
+                        "fileId" to fileId.toString(),
+                        "path" to path,
+                    ),
             )
             path
         } catch (e: Exception) {
+            // Log failure/timeout with exception (Requirement 3.1.3)
             TelegramLogRepository.error(
                 source = TAG,
-                message = "ensureThumbDownloaded: Exception for fileId=$fileId",
+                message = "ensureThumbDownloaded failed",
                 exception = e,
+                details = mapOf("fileId" to fileId.toString()),
             )
             null
         }

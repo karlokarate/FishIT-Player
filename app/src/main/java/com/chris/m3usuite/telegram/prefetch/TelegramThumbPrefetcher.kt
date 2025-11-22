@@ -130,24 +130,53 @@ class TelegramThumbPrefetcher(
                 return@collectLatest
             }
             
+            // Log batch start (Requirement 3.2.1)
             TelegramLogRepository.info(
                 source = TAG,
-                message = "Prefetching ${posterIds.size} thumbnails",
+                message = "Prefetch batch starting",
+                details = mapOf(
+                    "batchSize" to posterIds.size.toString(),
+                    "totalChats" to chatMap.size.toString(),
+                ),
             )
+            
+            // Track success/failure counts
+            var successCount = 0
+            var failureCount = 0
+            var skippedCount = 0
             
             // Prefetch thumbnails in batches with concurrency limit
             posterIds.chunked(MAX_CONCURRENT_DOWNLOADS).forEach { batch ->
-                coroutineScope {
-                    batch.map { posterId ->
-                        async {
-                            prefetchThumbnail(posterId)
-                        }
-                    }.awaitAll()
+                val results =
+                    coroutineScope {
+                        batch.map { posterId ->
+                            async {
+                                prefetchThumbnail(posterId)
+                            }
+                        }.awaitAll()
+                    }
+                
+                // Count results
+                results.forEach { success ->
+                    if (success) successCount++ else failureCount++
                 }
                 
                 // Delay between batches to avoid overwhelming TDLib
                 delay(PREFETCH_DELAY_MS)
             }
+            
+            // Log batch completion (Requirement 3.2.1)
+            TelegramLogRepository.info(
+                source = TAG,
+                message = "Prefetch batch complete",
+                details =
+                    mapOf(
+                        "total" to posterIds.size.toString(),
+                        "success" to successCount.toString(),
+                        "failed" to failureCount.toString(),
+                        "skipped" to skippedCount.toString(),
+                    ),
+            )
         }
     }
 
