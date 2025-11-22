@@ -454,6 +454,7 @@ class TelegramContentRepository(
 
     /**
      * Convert ObxTelegramMessage to MediaItem with proper URL format.
+     * Includes thumbnail support (Requirement 3) and zero-copy paths (Requirement 6).
      */
     private fun toMediaItem(
         obxMsg: ObxTelegramMessage,
@@ -479,13 +480,23 @@ class TelegramContentRepository(
             type = type,
             url = url,
             poster = poster,
-            plot = null,
+            plot = obxMsg.description,
             rating = null,
-            year = null,
+            year = obxMsg.year,
             durationSecs = obxMsg.durationSecs,
             categoryName = "Telegram",
             source = "telegram",
             providerKey = "Telegram",
+            tgChatId = obxMsg.chatId,
+            tgMessageId = obxMsg.messageId,
+            tgFileId = obxMsg.fileId,
+            // Thumbnail support (Requirement 3)
+            posterId = obxMsg.posterFileId ?: obxMsg.thumbFileId,
+            localPosterPath = obxMsg.posterLocalPath ?: obxMsg.thumbLocalPath,
+            // Zero-copy paths (Requirement 6) - use localPath for video/document
+            localVideoPath = obxMsg.localPath,
+            localPhotoPath = null, // Photos typically don't have separate local paths
+            localDocumentPath = obxMsg.localPath, // Documents use same local path
         )
     }
 
@@ -692,6 +703,212 @@ class TelegramContentRepository(
     suspend fun clearAllMessages() =
         withContext(Dispatchers.IO) {
             messageBox.removeAll()
+        }
+
+    /**
+     * Get Telegram content grouped by chat ID for per-chat rows (Requirement 1, 2).
+     * Returns a map of chatId to (chatTitle, List<MediaItem>).
+     *
+     * This enables rendering separate rows for each enabled chat in Home/Library screens.
+     * Chat titles are resolved via TDLib for proper display (not numeric IDs).
+     *
+     * @return Flow of Map<Long, Pair<String, List<MediaItem>>> where:
+     *         - Key: chatId
+     *         - Value: Pair of (chatTitle, list of MediaItems for that chat)
+     */
+    fun getTelegramContentByChat(): Flow<Map<Long, Pair<String, List<MediaItem>>>> =
+        store.tgSelectedChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyMap()
+                } else {
+                    buildChatContentMap(chatIds)
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Build map of chat content with resolved titles.
+     * Internal helper for getTelegramContentByChat().
+     */
+    private suspend fun buildChatContentMap(
+        chatIds: List<Long>,
+    ): Map<Long, Pair<String, List<MediaItem>>> =
+        withContext(Dispatchers.IO) {
+            val result = mutableMapOf<Long, Pair<String, List<MediaItem>>>()
+            
+            for (chatId in chatIds) {
+                // Get messages for this chat
+                val messages =
+                    messageBox
+                        .query {
+                            equal(ObxTelegramMessage_.chatId, chatId)
+                            orderDesc(ObxTelegramMessage_.date)
+                        }.find()
+                
+                if (messages.isEmpty()) continue
+                
+                // Resolve chat title via TDLib (Requirement 2)
+                val chatTitle = resolveChatTitle(chatId)
+                
+                // Convert to MediaItems
+                val items = messages.map { obxMsg -> toMediaItem(obxMsg, null) }
+                
+                result[chatId] = Pair(chatTitle, items)
+            }
+            
+            result
+        }
+
+    /**
+     * Resolve chat title from TDLib (Requirement 2).
+     * Returns chat title or falls back to "Chat {chatId}" if unavailable.
+     */
+    private suspend fun resolveChatTitle(chatId: Long): String =
+        withContext(Dispatchers.IO) {
+            try {
+                // Access TDLib session to get chat info
+                val serviceClient =
+                    com.chris.m3usuite.telegram.core
+                        .T_TelegramServiceClient
+                        .getInstance(context)
+                val session = serviceClient.getSessionOrNull()
+                
+                if (session != null) {
+                    val getChatRequest = dev.g000sha256.tdl.dto.GetChat(chatId)
+                    val chatResult = session.client.send(getChatRequest)
+                    
+                    when (chatResult) {
+                        is dev.g000sha256.tdl.TdlResult.Success -> {
+                            val chat = chatResult.result
+                            chat.title?.takeUnless { it.isEmpty() } ?: "Chat $chatId"
+                        }
+                        is dev.g000sha256.tdl.TdlResult.Failure -> {
+                            "Chat $chatId"
+                        }
+                    }
+                } else {
+                    "Chat $chatId"
+                }
+            } catch (e: Exception) {
+                "Chat $chatId"
+            }
+        }
+
+    /**
+     * Get VOD content grouped by chat (Requirement 1, 2).
+     */
+    fun getTelegramVodByChat(): Flow<Map<Long, Pair<String, List<MediaItem>>>> =
+        store.tgSelectedVodChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyMap()
+                } else {
+                    buildChatMoviesMap(chatIds)
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Build map of chat movie content with resolved titles.
+     */
+    private suspend fun buildChatMoviesMap(
+        chatIds: List<Long>,
+    ): Map<Long, Pair<String, List<MediaItem>>> =
+        withContext(Dispatchers.IO) {
+            val result = mutableMapOf<Long, Pair<String, List<MediaItem>>>()
+            
+            for (chatId in chatIds) {
+                // Get non-series messages for this chat
+                val messages =
+                    messageBox
+                        .query {
+                            equal(ObxTelegramMessage_.chatId, chatId)
+                            equal(ObxTelegramMessage_.isSeries, false)
+                            orderDesc(ObxTelegramMessage_.date)
+                        }.find()
+                
+                if (messages.isEmpty()) continue
+                
+                val chatTitle = resolveChatTitle(chatId)
+                val items = messages.map { obxMsg -> toMediaItem(obxMsg, "vod") }
+                
+                result[chatId] = Pair(chatTitle, items)
+            }
+            
+            result
+        }
+
+    /**
+     * Get Series content grouped by chat (Requirement 1, 2).
+     */
+    fun getTelegramSeriesByChat(): Flow<Map<Long, Pair<String, List<MediaItem>>>> =
+        store.tgSelectedSeriesChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyMap()
+                } else {
+                    buildChatSeriesMap(chatIds)
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Build map of chat series content with resolved titles.
+     */
+    private suspend fun buildChatSeriesMap(
+        chatIds: List<Long>,
+    ): Map<Long, Pair<String, List<MediaItem>>> =
+        withContext(Dispatchers.IO) {
+            val result = mutableMapOf<Long, Pair<String, List<MediaItem>>>()
+            
+            for (chatId in chatIds) {
+                // Get series grouped by normalized name
+                val episodes =
+                    messageBox
+                        .query {
+                            equal(ObxTelegramMessage_.chatId, chatId)
+                            equal(ObxTelegramMessage_.isSeries, true)
+                            orderDesc(ObxTelegramMessage_.date)
+                        }.find()
+                
+                if (episodes.isEmpty()) continue
+                
+                val chatTitle = resolveChatTitle(chatId)
+                
+                // Group by series and create representative items
+                val seriesItems =
+                    episodes
+                        .filter { !it.seriesNameNormalized.isNullOrBlank() }
+                        .groupBy { it.seriesNameNormalized!! }
+                        .map { (_, episodeList) ->
+                            // Use first episode as representative
+                            val representative = episodeList.first()
+                            val encodedSeriesName = java.net.URLEncoder.encode(representative.seriesNameNormalized, "UTF-8")
+                            MediaItem(
+                                id = encodeTelegramId(representative.messageId),
+                                name = representative.seriesName ?: "Untitled Series",
+                                type = "series",
+                                url = "tg://series/${representative.chatId}/$encodedSeriesName",
+                                poster = representative.posterLocalPath ?: representative.thumbLocalPath,
+                                plot = representative.description,
+                                rating = null,
+                                year = representative.year,
+                                durationSecs = null,
+                                categoryName = "Telegram Series - $chatTitle",
+                                source = "telegram",
+                                providerKey = "Telegram",
+                                posterId = representative.posterFileId ?: representative.thumbFileId,
+                                localPosterPath = representative.posterLocalPath ?: representative.thumbLocalPath,
+                            )
+                        }
+                
+                if (seriesItems.isNotEmpty()) {
+                    result[chatId] = Pair(chatTitle, seriesItems)
+                }
+            }
+            
+            result
         }
 
     /**

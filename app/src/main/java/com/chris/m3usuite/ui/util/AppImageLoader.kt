@@ -15,6 +15,7 @@ import okio.Path.Companion.toPath
  *
  * - Disk cache: 256 MiB under app cache dir
  * - Memory cache: up to 25% of available memory
+ * - Telegram thumbnail support via TelegramThumbFetcher (Requirement 4)
  *
  * Network headers are attached per-request via buildImageRequest() to keep parity
  * with the app's OkHttp configuration; we avoid hard-coupling to specific
@@ -47,6 +48,10 @@ object AppImageLoader {
                 // Memory & disk caches
                 .memoryCache { mem }
                 .diskCache { disk }
+                // Register Telegram thumbnail fetcher (Requirement 4)
+                .components {
+                    add(com.chris.m3usuite.telegram.image.TelegramThumbFetcher.Factory())
+                }
                 // Prefer hardware bitmaps globally unless a request opts out
                 .apply { /* Request-level allowHardware(true) is set in Images.kt */ }
                 .build()
