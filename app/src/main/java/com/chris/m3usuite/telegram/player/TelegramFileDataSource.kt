@@ -123,48 +123,51 @@ class TelegramFileDataSource(
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
             message = "opening",
-            details = mapOf(
-                "fileId" to fileIdInt.toString(),
-                "chatId" to chatId.toString(),
-                "messageId" to messageId.toString(),
-                "dataSpecPosition" to dataSpec.position.toString(),
-            ),
+            details =
+                mapOf(
+                    "fileId" to fileIdInt.toString(),
+                    "chatId" to chatId.toString(),
+                    "messageId" to messageId.toString(),
+                    "dataSpecPosition" to dataSpec.position.toString(),
+                ),
         )
 
         // Notify TransferListener that TDLib preparation phase is starting
         transferListener?.onTransferStart(this, dataSpec, /* isNetwork = */ true)
 
         // Ensure TDLib has the file ready with sufficient prefix
-        val localPath = try {
-            runBlocking {
-                val downloader = serviceClient.downloader()
-                downloader.ensureFileReady(
-                    fileId = fileIdInt,
-                    startPosition = dataSpec.position,
-                    minBytes = MIN_PREFIX_BYTES,
+        val localPath =
+            try {
+                runBlocking {
+                    val downloader = serviceClient.downloader()
+                    downloader.ensureFileReady(
+                        fileId = fileIdInt,
+                        startPosition = dataSpec.position,
+                        minBytes = MIN_PREFIX_BYTES,
+                    )
+                }
+            } catch (e: Exception) {
+                // Notify TransferListener that TDLib preparation phase failed
+                transferListener?.onTransferEnd(this, dataSpec, /* isNetwork = */ true)
+
+                TelegramLogRepository.error(
+                    source = "TelegramFileDataSource",
+                    message = "Failed to ensure file ready",
+                    exception = e,
+                    details =
+                        mapOf(
+                            "fileId" to fileIdInt.toString(),
+                            "position" to dataSpec.position.toString(),
+                        ),
                 )
+                // Reset state variables to avoid partial initialization
+                delegate = null
+                resolvedUri = null
+                fileId = null
+                chatId = null
+                messageId = null
+                throw IOException("Failed to prepare Telegram file: ${e.message}", e)
             }
-        } catch (e: Exception) {
-            // Notify TransferListener that TDLib preparation phase failed
-            transferListener?.onTransferEnd(this, dataSpec, /* isNetwork = */ true)
-            
-            TelegramLogRepository.error(
-                source = "TelegramFileDataSource",
-                message = "Failed to ensure file ready",
-                exception = e,
-                details = mapOf(
-                    "fileId" to fileIdInt.toString(),
-                    "position" to dataSpec.position.toString(),
-                ),
-            )
-            // Reset state variables to avoid partial initialization
-            delegate = null
-            resolvedUri = null
-            fileId = null
-            chatId = null
-            messageId = null
-            throw IOException("Failed to prepare Telegram file: ${e.message}", e)
-        }
 
         // Notify TransferListener that TDLib preparation phase completed successfully
         transferListener?.onTransferEnd(this, dataSpec, /* isNetwork = */ true)
@@ -187,12 +190,13 @@ class TelegramFileDataSource(
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
             message = "opened",
-            details = mapOf(
-                "fileId" to fileIdInt.toString(),
-                "localPath" to localPath,
-                "dataSpecPosition" to dataSpec.position.toString(),
-                "fileSize" to file.length().toString(),
-            ),
+            details =
+                mapOf(
+                    "fileId" to fileIdInt.toString(),
+                    "localPath" to localPath,
+                    "dataSpecPosition" to dataSpec.position.toString(),
+                    "fileSize" to file.length().toString(),
+                ),
         )
 
         return fileDataSource.open(fileDataSpec)
@@ -207,9 +211,11 @@ class TelegramFileDataSource(
      * @param length Maximum number of bytes to read
      * @return Number of bytes read, or C.RESULT_END_OF_INPUT if EOF
      */
-    override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
-        return delegate?.read(buffer, offset, length) ?: C.RESULT_END_OF_INPUT
-    }
+    override fun read(
+        buffer: ByteArray,
+        offset: Int,
+        length: Int,
+    ): Int = delegate?.read(buffer, offset, length) ?: C.RESULT_END_OF_INPUT
 
     /**
      * Get the URI currently being read (file:// URI).

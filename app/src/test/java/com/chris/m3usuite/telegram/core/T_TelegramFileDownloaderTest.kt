@@ -384,43 +384,48 @@ class T_TelegramFileDownloaderTest {
 
     @Test
     fun `ensureFileReady checks file status immediately after download start`() {
-        // Verify ensureFileReady implements immediate check to avoid race condition
+        // Verify ensureFileReady polls TDLib state correctly
         val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
-            
-            val ensureFileReadySection = 
+
+            val ensureFileReadySection =
                 content
                     .substringAfter("suspend fun ensureFileReady", "")
                     .substringBefore("suspend fun getFileSize")
-            
-            // Check that there's an immediate check after downloadFile() success
-            assert(ensureFileReadySection.contains("is dev.g000sha256.tdl.TdlResult.Success")) {
-                "ensureFileReady should handle Success result"
+
+            // Check that the new implementation checks status first
+            assert(ensureFileReadySection.contains("val initialPrefix = file.local?.downloadedPrefixSize?.toLong() ?: 0L")) {
+                "ensureFileReady should get initial prefix size from TDLib"
             }
-            
-            assert(ensureFileReadySection.contains("val immediateCheck = getFileInfo(fileId)")) {
-                "ensureFileReady should get immediate file info after download start"
+
+            assert(ensureFileReadySection.contains("if (!localPath.isNullOrBlank() && initialPrefix >= requiredPrefixSize)")) {
+                "ensureFileReady should check if file is already satisfied before downloading"
             }
-            
-            assert(ensureFileReadySection.contains("val immediatePrefix = immediateCheck?.local?.downloadedPrefixSize?.toLong() ?: 0L")) {
-                "ensureFileReady should check immediate prefix size"
+
+            assert(ensureFileReadySection.contains("\"ensureFileReady: already satisfied\"")) {
+                "ensureFileReady should log when file is already satisfied"
             }
-            
-            assert(ensureFileReadySection.contains("val immediatePath = immediateCheck?.local?.path")) {
-                "ensureFileReady should get immediate path"
+
+            // Check polling loop implementation
+            assert(ensureFileReadySection.contains("while (true)")) {
+                "ensureFileReady should use polling loop"
             }
-            
-            assert(ensureFileReadySection.contains("if (!immediatePath.isNullOrBlank() && immediatePrefix >= requiredPrefixSize)")) {
-                "ensureFileReady should check if file is already ready before flow subscription"
+
+            assert(ensureFileReadySection.contains("delay(100)")) {
+                "ensureFileReady should use delay in polling loop"
             }
-            
-            assert(ensureFileReadySection.contains("return@withContext immediatePath")) {
-                "ensureFileReady should return immediately if file is already ready"
+
+            assert(ensureFileReadySection.contains("file = getFileInfo(fileId)")) {
+                "ensureFileReady should refresh file info from TDLib in loop"
             }
-            
-            assert(ensureFileReadySection.contains("\"ensureFileReady: already ready after download start\"")) {
-                "ensureFileReady should log when file is already ready after download start"
+
+            assert(ensureFileReadySection.contains("val prefix = file.local?.downloadedPrefixSize?.toLong() ?: 0L")) {
+                "ensureFileReady should read downloadedPrefixSize from TDLib in loop"
+            }
+
+            assert(ensureFileReadySection.contains("SystemClock.elapsedRealtime()")) {
+                "ensureFileReady should use SystemClock for timeout tracking"
             }
         }
     }
