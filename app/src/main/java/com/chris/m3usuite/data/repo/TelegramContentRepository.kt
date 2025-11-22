@@ -184,7 +184,7 @@ class TelegramContentRepository(
         // Apply heuristics for better classification
         val heuristic = TgContentHeuristics.classify(mediaInfo, chatTitle)
 
-        // Extract file metadata from TDLib message content
+        // Extract file metadata from TDLib message content (Requirement 3, 6)
         val fileId: Int?
         val fileUniqueId: String?
         val durationSecs: Int?
@@ -193,6 +193,7 @@ class TelegramContentRepository(
         val supportsStreaming: Boolean?
         val thumbFileId: Int?
         val thumbLocalPath: String?
+        val localPath: String? // Zero-copy playback path (Requirement 6)
 
         when (val content = message.content) {
             is MessageVideo -> {
@@ -205,7 +206,7 @@ class TelegramContentRepository(
                 width = content.video.width
                 height = content.video.height
                 supportsStreaming = content.video.supportsStreaming
-                // Extract video thumbnail
+                // Extract video thumbnail (Requirement 3)
                 thumbFileId =
                     content.video.thumbnail
                         ?.file
@@ -213,6 +214,11 @@ class TelegramContentRepository(
                 thumbLocalPath =
                     content.video.thumbnail
                         ?.file
+                        ?.local
+                        ?.path
+                // Extract local video file path (Requirement 6)
+                localPath =
+                    content.video.video
                         ?.local
                         ?.path
             }
@@ -226,7 +232,7 @@ class TelegramContentRepository(
                 width = null
                 height = null
                 supportsStreaming = null
-                // Extract document thumbnail
+                // Extract document thumbnail (Requirement 3)
                 thumbFileId =
                     content.document.thumbnail
                         ?.file
@@ -236,6 +242,26 @@ class TelegramContentRepository(
                         ?.file
                         ?.local
                         ?.path
+                // Extract local document file path (Requirement 6)
+                localPath =
+                    content.document.document
+                        ?.local
+                        ?.path
+            }
+            is MessagePhoto -> {
+                // For photos, use the largest size
+                val largestPhoto = content.photo.sizes.maxByOrNull { it.width * it.height }
+                fileId = largestPhoto?.photo?.id
+                fileUniqueId = largestPhoto?.photo?.remote?.uniqueId
+                durationSecs = null
+                width = largestPhoto?.width
+                height = largestPhoto?.height
+                supportsStreaming = null
+                // Photos typically don't have separate thumbnails
+                thumbFileId = null
+                thumbLocalPath = null
+                // Extract local photo path (Requirement 6)
+                localPath = largestPhoto?.photo?.local?.path
             }
             else -> {
                 fileId = null
@@ -246,6 +272,7 @@ class TelegramContentRepository(
                 supportsStreaming = null
                 thumbFileId = null
                 thumbLocalPath = null
+                localPath = null
             }
         }
 
@@ -292,7 +319,9 @@ class TelegramContentRepository(
                 width = width,
                 height = height,
                 language = language,
-                // Thumbnail fields (video/document thumbnail)
+                // Local file path for zero-copy playback (Requirement 6)
+                localPath = localPath,
+                // Thumbnail fields (video/document thumbnail) (Requirement 3)
                 thumbFileId = thumbFileId,
                 thumbLocalPath = thumbLocalPath,
                 // Movie metadata
