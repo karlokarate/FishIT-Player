@@ -139,6 +139,12 @@ class TelegramFileDataSource(
                         "position" to dataSpec.position.toString(),
                     ),
                 )
+                // Reset state variables to avoid partial initialization
+                delegate = null
+                resolvedUri = null
+                fileId = null
+                chatId = null
+                messageId = null
                 throw IOException("Failed to prepare Telegram file: ${e.message}", e)
             }
         }
