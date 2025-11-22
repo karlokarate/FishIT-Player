@@ -499,6 +499,51 @@ fun InternalPlayerScreen(
         }
     }
 
+    // Second LaunchedEffect: Update artwork when preparedMediaItem arrives
+    // This effect runs whenever preparedMediaItem changes and injects artwork
+    // into the current MediaItem without restarting playback
+    LaunchedEffect(preparedMediaItem?.id) {
+        val item = preparedMediaItem ?: return@LaunchedEffect
+        val artwork = item.playerArtwork() ?: return@LaunchedEffect
+
+        val player = session.player ?: return@LaunchedEffect
+        val currentItem = player.currentMediaItem ?: return@LaunchedEffect
+
+        // Build updated metadata with artwork
+        val updatedMetadata =
+            currentItem.mediaMetadata
+                .buildUpon()
+                .setArtworkData(
+                    artwork,
+                    androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER,
+                ).build()
+
+        // Replace current MediaItem with same URI but updated metadata
+        val updatedMediaItem =
+            currentItem
+                .buildUpon()
+                .setMediaMetadata(updatedMetadata)
+                .build()
+
+        player.replaceMediaItem(player.currentMediaItemIndex, updatedMediaItem)
+
+        // Log artwork injection for Telegram content
+        if (url.startsWith("tg://", ignoreCase = true)) {
+            android.util.Log.d("ExoSetup", "Telegram artwork injected for mediaId=${item.id}")
+            com.chris.m3usuite.telegram.logging.TelegramLogRepository.info(
+                source = "InternalPlayerScreen",
+                message = "Artwork injected into playing MediaItem",
+                details =
+                    mapOf(
+                        "mediaId" to item.id.toString(),
+                        "tgChatId" to (item.tgChatId?.toString() ?: "null"),
+                        "tgMessageId" to (item.tgMessageId?.toString() ?: "null"),
+                        "artworkSize" to artwork.size.toString(),
+                    ),
+            )
+        }
+    }
+
     // Phase 4: Kid-Profil + Screen-Time-Gate vor Start
     var kidBlocked by remember { mutableStateOf(false) }
     var kidActive by remember { mutableStateOf(false) }
@@ -2511,8 +2556,8 @@ private fun OverlayIconButton(
  * Helper function to infer MIME type from file name or URL extension.
  * Used for Telegram content when explicit MIME type is not available.
  */
-private fun inferMimeTypeFromFileName(fileName: String?): String? {
-    return when {
+private fun inferMimeTypeFromFileName(fileName: String?): String? =
+    when {
         fileName == null -> null
         fileName.endsWith(".mp4", ignoreCase = true) -> MimeTypes.VIDEO_MP4
         fileName.endsWith(".mkv", ignoreCase = true) -> MimeTypes.VIDEO_MATROSKA
@@ -2521,4 +2566,3 @@ private fun inferMimeTypeFromFileName(fileName: String?): String? {
         fileName.endsWith(".mov", ignoreCase = true) -> MimeTypes.VIDEO_MP4 // QuickTime, MP4-based
         else -> null
     }
-}
