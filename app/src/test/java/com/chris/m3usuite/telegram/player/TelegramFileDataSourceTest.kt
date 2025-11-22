@@ -246,18 +246,24 @@ class TelegramFileDataSourceTest {
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
             
-            // Find the ensureFileReady documentation
-            val ensureFileReadyStart = content.indexOf("/**", content.indexOf("suspend fun ensureFileReady"))
-            if (ensureFileReadyStart >= 0) {
-                val docEnd = content.indexOf("*/", ensureFileReadyStart)
-                val documentation = content.substring(ensureFileReadyStart, docEnd)
-                
-                assert(documentation.contains("Reactively wait") || documentation.contains("fileUpdates Flow")) {
-                    "ensureFileReady documentation should mention reactive waiting via fileUpdates Flow"
-                }
-                
-                assert(documentation.contains("reduces CPU usage") || documentation.contains("unnecessary API calls")) {
-                    "ensureFileReady documentation should mention efficiency benefits"
+            // Find the ensureFileReady function
+            val ensureFileReadyIndex = content.indexOf("suspend fun ensureFileReady")
+            if (ensureFileReadyIndex >= 0) {
+                // Find the documentation before the function
+                val ensureFileReadyStart = content.lastIndexOf("/**", ensureFileReadyIndex)
+                if (ensureFileReadyStart >= 0) {
+                    val docEnd = content.indexOf("*/", ensureFileReadyStart)
+                    if (docEnd >= 0 && docEnd < ensureFileReadyIndex) {
+                        val documentation = content.substring(ensureFileReadyStart, docEnd)
+                        
+                        assert(documentation.contains("Reactively wait") || documentation.contains("fileUpdates Flow")) {
+                            "ensureFileReady documentation should mention reactive waiting via fileUpdates Flow"
+                        }
+                        
+                        assert(documentation.contains("reduces CPU usage") || documentation.contains("unnecessary API calls")) {
+                            "ensureFileReady documentation should mention efficiency benefits"
+                        }
+                    }
                 }
             }
         }

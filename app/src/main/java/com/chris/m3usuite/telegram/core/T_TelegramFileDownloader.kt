@@ -4,12 +4,14 @@ import android.content.Context
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import dev.g000sha256.tdl.dto.File
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import java.io.RandomAccessFile
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.min
@@ -382,7 +384,7 @@ class T_TelegramFileDownloader(
                     
                     try {
                         // Use fileUpdates Flow to reactively wait for download progress
-                        val resultPath = kotlinx.coroutines.withTimeout(timeoutMs) {
+                        val resultPath = withTimeout(timeoutMs) {
                             client.fileUpdates
                                 .filter { update -> update.file.id == fileId }
                                 .map { update ->
@@ -419,7 +421,7 @@ class T_TelegramFileDownloader(
                         )
                         
                         return@withContext resultPath
-                    } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                    } catch (e: TimeoutCancellationException) {
                         // On timeout, check one more time in case the file became ready just as we timed out
                         val finalInfo = getFileInfo(fileId)
                         val finalPrefixSize = finalInfo?.local?.downloadedPrefixSize?.toLong() ?: 0L
