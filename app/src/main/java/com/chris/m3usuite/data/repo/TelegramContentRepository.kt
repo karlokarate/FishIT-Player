@@ -755,29 +755,14 @@ class TelegramContentRepository(
     private suspend fun resolveChatTitle(chatId: Long): String =
         withContext(Dispatchers.IO) {
             try {
-                // Access TDLib session to get chat info
+                // Access TDLib service client to get chat info
                 val serviceClient =
                     com.chris.m3usuite.telegram.core
                         .T_TelegramServiceClient
                         .getInstance(context)
-                val session = serviceClient.getSessionOrNull()
-                
-                if (session != null) {
-                    val getChatRequest = dev.g000sha256.tdl.dto.GetChat(chatId)
-                    val chatResult = session.client.send(getChatRequest)
-                    
-                    when (chatResult) {
-                        is dev.g000sha256.tdl.TdlResult.Success -> {
-                            val chat = chatResult.result
-                            chat.title?.takeUnless { it.isEmpty() } ?: "Chat $chatId"
-                        }
-                        is dev.g000sha256.tdl.TdlResult.Failure -> {
-                            "Chat $chatId"
-                        }
-                    }
-                } else {
-                    "Chat $chatId"
-                }
+
+                // Use the browser to resolve chat title
+                serviceClient.resolveChatTitle(chatId)
             } catch (e: Exception) {
                 "Chat $chatId"
             }
