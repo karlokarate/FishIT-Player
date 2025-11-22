@@ -109,9 +109,10 @@ class TelegramFileDataSourceTest {
             val content = sourceFile.readText()
             // Should not have any ByteArray fields (except method parameters)
             val lines = content.lines()
-            val hasRingBuffer = lines.any { line ->
-                line.contains("RingBuffer") && !line.trim().startsWith("*") && !line.trim().startsWith("//")
-            }
+            val hasRingBuffer =
+                lines.any { line ->
+                    line.contains("RingBuffer") && !line.trim().startsWith("*") && !line.trim().startsWith("//")
+                }
             assert(!hasRingBuffer) {
                 "TelegramFileDataSource should not use ringbuffer"
             }
@@ -203,36 +204,37 @@ class TelegramFileDataSourceTest {
         val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
-            
+
             // Should use fileUpdates Flow
             assert(content.contains("client.fileUpdates")) {
                 "ensureFileReady should use client.fileUpdates Flow for reactive waiting"
             }
-            
+
             // Should use withTimeout instead of manual retry loop
             assert(content.contains("withTimeout")) {
                 "ensureFileReady should use withTimeout for timeout handling"
             }
-            
+
             // Should use .first() to wait for condition
             assert(content.contains(".first")) {
                 "ensureFileReady should use .first() to wait for download completion"
             }
-            
+
             // Should NOT have old polling pattern with retryCount and delay(100)
             val ensureFileReadyStart = content.indexOf("suspend fun ensureFileReady")
             if (ensureFileReadyStart >= 0) {
                 val nextFunctionStart = content.indexOf("suspend fun", ensureFileReadyStart + 1)
-                val ensureFileReadyBody = if (nextFunctionStart > 0) {
-                    content.substring(ensureFileReadyStart, nextFunctionStart)
-                } else {
-                    content.substring(ensureFileReadyStart)
-                }
-                
+                val ensureFileReadyBody =
+                    if (nextFunctionStart > 0) {
+                        content.substring(ensureFileReadyStart, nextFunctionStart)
+                    } else {
+                        content.substring(ensureFileReadyStart)
+                    }
+
                 assert(!ensureFileReadyBody.contains("while (retryCount < maxRetries)")) {
                     "ensureFileReady should not use old polling loop with retryCount"
                 }
-                
+
                 assert(!ensureFileReadyBody.contains("delay(100)")) {
                     "ensureFileReady should not use delay(100) for polling"
                 }
@@ -245,7 +247,7 @@ class TelegramFileDataSourceTest {
         val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
-            
+
             // Find the ensureFileReady function
             val ensureFileReadyIndex = content.indexOf("suspend fun ensureFileReady")
             if (ensureFileReadyIndex >= 0) {
@@ -255,11 +257,11 @@ class TelegramFileDataSourceTest {
                     val docEnd = content.indexOf("*/", ensureFileReadyStart)
                     if (docEnd >= 0 && docEnd < ensureFileReadyIndex) {
                         val documentation = content.substring(ensureFileReadyStart, docEnd)
-                        
+
                         assert(documentation.contains("Reactively wait") || documentation.contains("fileUpdates Flow")) {
                             "ensureFileReady documentation should mention reactive waiting via fileUpdates Flow"
                         }
-                        
+
                         assert(documentation.contains("reduces CPU usage") || documentation.contains("unnecessary API calls")) {
                             "ensureFileReady documentation should mention efficiency benefits"
                         }
