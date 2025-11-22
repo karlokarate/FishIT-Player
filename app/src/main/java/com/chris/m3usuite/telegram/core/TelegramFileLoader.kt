@@ -1,7 +1,6 @@
 package com.chris.m3usuite.telegram.core
 
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Handles downloading and accessing Telegram files via TDLib.
@@ -42,8 +41,8 @@ class TelegramFileLoader(
     suspend fun ensureThumbDownloaded(
         fileId: Int,
         timeoutMs: Long = DEFAULT_TIMEOUT_MS,
-    ): String? {
-        return try {
+    ): String? =
+        try {
             // Log start (Requirement 3.1.1)
             TelegramLogRepository.debug(
                 source = TAG,
@@ -81,7 +80,6 @@ class TelegramFileLoader(
             )
             null
         }
-    }
 
     /**
      * Get local path for a file if already downloaded (Requirement 6).
@@ -126,8 +124,8 @@ class TelegramFileLoader(
         fileId: Int,
         minPrefixBytes: Long = 1024 * 1024, // 1 MB default
         timeoutMs: Long = 60_000L,
-    ): String? {
-        return try {
+    ): String? =
+        try {
             TelegramLogRepository.info(
                 source = TAG,
                 message = "ensureFileForPlayback: Starting for fileId=$fileId, minPrefix=$minPrefixBytes",
@@ -154,5 +152,4 @@ class TelegramFileLoader(
             )
             null
         }
-    }
 }

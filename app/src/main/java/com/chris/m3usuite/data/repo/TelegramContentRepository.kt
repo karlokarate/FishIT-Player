@@ -527,7 +527,9 @@ class TelegramContentRepository(
         fileId: Int?,
         chatId: Long,
         messageId: Long,
-    ): String = com.chris.m3usuite.telegram.util.TelegramPlayUrl.buildFileUrl(fileId, chatId, messageId)
+    ): String =
+        com.chris.m3usuite.telegram.util.TelegramPlayUrl
+            .buildFileUrl(fileId, chatId, messageId)
 
     /**
      * Get Telegram content for a specific chat.
@@ -719,12 +721,10 @@ class TelegramContentRepository(
      * Build map of chat content with resolved titles.
      * Internal helper for getTelegramContentByChat().
      */
-    private suspend fun buildChatContentMap(
-        chatIds: List<Long>,
-    ): Map<Long, Pair<String, List<MediaItem>>> =
+    private suspend fun buildChatContentMap(chatIds: List<Long>): Map<Long, Pair<String, List<MediaItem>>> =
         withContext(Dispatchers.IO) {
             val result = mutableMapOf<Long, Pair<String, List<MediaItem>>>()
-            
+
             for (chatId in chatIds) {
                 // Get messages for this chat
                 val messages =
@@ -733,18 +733,18 @@ class TelegramContentRepository(
                             equal(ObxTelegramMessage_.chatId, chatId)
                             orderDesc(ObxTelegramMessage_.date)
                         }.find()
-                
+
                 if (messages.isEmpty()) continue
-                
+
                 // Resolve chat title via TDLib (Requirement 2)
                 val chatTitle = resolveChatTitle(chatId)
-                
+
                 // Convert to MediaItems
                 val items = messages.map { obxMsg -> toMediaItem(obxMsg, null) }
-                
+
                 result[chatId] = Pair(chatTitle, items)
             }
-            
+
             result
         }
 
@@ -785,12 +785,10 @@ class TelegramContentRepository(
     /**
      * Build map of chat movie content with resolved titles.
      */
-    private suspend fun buildChatMoviesMap(
-        chatIds: List<Long>,
-    ): Map<Long, Pair<String, List<MediaItem>>> =
+    private suspend fun buildChatMoviesMap(chatIds: List<Long>): Map<Long, Pair<String, List<MediaItem>>> =
         withContext(Dispatchers.IO) {
             val result = mutableMapOf<Long, Pair<String, List<MediaItem>>>()
-            
+
             for (chatId in chatIds) {
                 // Get non-series messages for this chat
                 val messages =
@@ -800,15 +798,15 @@ class TelegramContentRepository(
                             equal(ObxTelegramMessage_.isSeries, false)
                             orderDesc(ObxTelegramMessage_.date)
                         }.find()
-                
+
                 if (messages.isEmpty()) continue
-                
+
                 val chatTitle = resolveChatTitle(chatId)
                 val items = messages.map { obxMsg -> toMediaItem(obxMsg, "vod") }
-                
+
                 result[chatId] = Pair(chatTitle, items)
             }
-            
+
             result
         }
 
@@ -829,12 +827,10 @@ class TelegramContentRepository(
     /**
      * Build map of chat series content with resolved titles.
      */
-    private suspend fun buildChatSeriesMap(
-        chatIds: List<Long>,
-    ): Map<Long, Pair<String, List<MediaItem>>> =
+    private suspend fun buildChatSeriesMap(chatIds: List<Long>): Map<Long, Pair<String, List<MediaItem>>> =
         withContext(Dispatchers.IO) {
             val result = mutableMapOf<Long, Pair<String, List<MediaItem>>>()
-            
+
             for (chatId in chatIds) {
                 // Get series grouped by normalized name
                 val episodes =
@@ -844,11 +840,11 @@ class TelegramContentRepository(
                             equal(ObxTelegramMessage_.isSeries, true)
                             orderDesc(ObxTelegramMessage_.date)
                         }.find()
-                
+
                 if (episodes.isEmpty()) continue
-                
+
                 val chatTitle = resolveChatTitle(chatId)
-                
+
                 // Group by series and create representative items
                 val seriesItems =
                     episodes
@@ -881,12 +877,12 @@ class TelegramContentRepository(
                                 localDocumentPath = representative.localPath,
                             )
                         }
-                
+
                 if (seriesItems.isNotEmpty()) {
                     result[chatId] = Pair(chatTitle, seriesItems)
                 }
             }
-            
+
             result
         }
 

@@ -50,7 +50,10 @@ object AppImageLoader {
                 .diskCache { disk }
                 // Register Telegram thumbnail fetcher (Requirement 4)
                 .components {
-                    add(com.chris.m3usuite.telegram.image.TelegramThumbFetcher.Factory())
+                    add(
+                        com.chris.m3usuite.telegram.image.TelegramThumbFetcher
+                            .Factory(),
+                    )
                 }
                 // Prefer hardware bitmaps globally unless a request opts out
                 .apply { /* Request-level allowHardware(true) is set in Images.kt */ }

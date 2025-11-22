@@ -25,7 +25,7 @@ class TelegramContentRepositoryTest {
         // Verify per-chat methods exist for unified handling (Section 2)
         val clazz = TelegramContentRepository::class
         val methods = clazz.java.methods.map { it.name }
-        
+
         assert(methods.contains("getTelegramVodByChat")) {
             "TelegramContentRepository should have getTelegramVodByChat method"
         }
@@ -39,7 +39,7 @@ class TelegramContentRepositoryTest {
         // Verify method for retrieving content by multiple chat IDs exists
         val clazz = TelegramContentRepository::class
         val methods = clazz.java.declaredMethods.map { it.name }
-        
+
         assert(methods.contains("getTelegramContentByChatIds")) {
             "TelegramContentRepository should have getTelegramContentByChatIds method"
         }
@@ -50,7 +50,7 @@ class TelegramContentRepositoryTest {
         // Verify search method exists
         val clazz = TelegramContentRepository::class
         val methods = clazz.java.methods.map { it.name }
-        
+
         assert(methods.contains("searchTelegramContent")) {
             "TelegramContentRepository should have searchTelegramContent method"
         }
@@ -61,7 +61,7 @@ class TelegramContentRepositoryTest {
         // Verify single-chat query method exists
         val clazz = TelegramContentRepository::class
         val methods = clazz.java.methods.map { it.name }
-        
+
         assert(methods.contains("getTelegramContentByChat")) {
             "TelegramContentRepository should have getTelegramContentByChat method with per-chat grouping"
         }
@@ -72,7 +72,7 @@ class TelegramContentRepositoryTest {
         // Verify resolveChatTitle method exists for chat title resolution
         val clazz = TelegramContentRepository::class
         val methods = clazz.java.declaredMethods.map { it.name }
-        
+
         assert(methods.contains("resolveChatTitle")) {
             "TelegramContentRepository should have resolveChatTitle method"
         }
@@ -83,22 +83,23 @@ class TelegramContentRepositoryTest {
         // Structural test: Verify that MediaItem has all required Telegram fields
         val mediaItemClass = com.chris.m3usuite.model.MediaItem::class
         val properties = mediaItemClass.java.declaredFields.map { it.name }
-        
+
         // Required fields for Telegram integration
-        val requiredFields = listOf(
-            "id",
-            "name",
-            "url",
-            "posterId",
-            "localPosterPath",
-            "localVideoPath",
-            "localPhotoPath",
-            "localDocumentPath",
-            "tgChatId",
-            "tgMessageId",
-            "tgFileId",
-        )
-        
+        val requiredFields =
+            listOf(
+                "id",
+                "name",
+                "url",
+                "posterId",
+                "localPosterPath",
+                "localVideoPath",
+                "localPhotoPath",
+                "localDocumentPath",
+                "tgChatId",
+                "tgMessageId",
+                "tgFileId",
+            )
+
         requiredFields.forEach { field ->
             assert(properties.contains(field)) {
                 "MediaItem should have $field field for Telegram integration"
@@ -111,11 +112,11 @@ class TelegramContentRepositoryTest {
         // Structural test: Verify getTelegramVodByChat returns Flow
         val clazz = TelegramContentRepository::class
         val method = clazz.java.methods.find { it.name == "getTelegramVodByChat" }
-        
+
         assert(method != null) {
             "getTelegramVodByChat method should exist"
         }
-        
+
         // Verify return type is Flow
         assert(method!!.returnType.name.contains("Flow")) {
             "getTelegramVodByChat should return Flow type"
@@ -127,11 +128,11 @@ class TelegramContentRepositoryTest {
         // Structural test: Verify getTelegramSeriesByChat returns Flow
         val clazz = TelegramContentRepository::class
         val method = clazz.java.methods.find { it.name == "getTelegramSeriesByChat" }
-        
+
         assert(method != null) {
             "getTelegramSeriesByChat method should exist"
         }
-        
+
         // Verify return type is Flow
         assert(method!!.returnType.name.contains("Flow")) {
             "getTelegramSeriesByChat should return Flow type"
@@ -143,7 +144,7 @@ class TelegramContentRepositoryTest {
         // Verify toMediaItem method exists (single-source mapping)
         val clazz = TelegramContentRepository::class
         val methods = clazz.java.declaredMethods.map { it.name }
-        
+
         assert(methods.contains("toMediaItem")) {
             "TelegramContentRepository should have toMediaItem method for single-source mapping"
         }
@@ -154,7 +155,7 @@ class TelegramContentRepositoryTest {
         // Verify buildTelegramUrl method exists for URL generation
         val clazz = TelegramContentRepository::class
         val methods = clazz.java.declaredMethods.map { it.name }
-        
+
         assert(methods.contains("buildTelegramUrl")) {
             "TelegramContentRepository should have buildTelegramUrl method for tg:// URL generation"
         }

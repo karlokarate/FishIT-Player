@@ -293,7 +293,8 @@ class TelegramSettingsViewModel(
             _state.update { it.copy(selectedChats = chatIds) }
 
             // Clear prefetcher cache when chat selection changes
-            com.chris.m3usuite.telegram.prefetch.TelegramPrefetcherHolder.clear()
+            com.chris.m3usuite.telegram.prefetch.TelegramPrefetcherHolder
+                .clear()
 
             // Trigger sync after chat selection changes
             if (chatIds.isNotEmpty() && _state.value.enabled) {

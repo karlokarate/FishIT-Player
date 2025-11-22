@@ -24,7 +24,7 @@ class StartViewModelTest {
         // Verify that the ViewModel observes Telegram content
         val clazz = StartViewModel::class
         val methods = clazz.java.declaredMethods.map { it.name }
-        
+
         // The method is private, but we can check it exists
         assert(methods.contains("observeTelegramContent")) {
             "StartViewModel should have observeTelegramContent method"
@@ -36,7 +36,7 @@ class StartViewModelTest {
         // Verify core data loading method exists
         val clazz = StartViewModel::class
         val methods = clazz.java.declaredMethods.map { it.name }
-        
+
         assert(methods.contains("reloadFromObx")) {
             "StartViewModel should have reloadFromObx method for data loading"
         }
@@ -47,7 +47,7 @@ class StartViewModelTest {
         // Verify search functionality exists
         val clazz = StartViewModel::class
         val methods = clazz.java.methods.map { it.name }
-        
+
         assert(methods.contains("setQuery")) {
             "StartViewModel should have setQuery method for search"
         }
@@ -59,7 +59,7 @@ class StartViewModelTest {
         val clazz = StartViewModel::class
         val companionClass = Class.forName("com.chris.m3usuite.ui.home.StartViewModel\$Companion")
         val methods = companionClass.methods.map { it.name }
-        
+
         assert(methods.contains("Factory")) {
             "StartViewModel should have Factory method in companion object"
         }

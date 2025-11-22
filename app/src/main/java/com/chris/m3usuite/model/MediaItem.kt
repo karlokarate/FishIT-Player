@@ -75,12 +75,15 @@ fun MediaItem.playerArtwork(): ByteArray? {
     // Try local poster path first (for Telegram content)
     localPosterPath?.let { path ->
         return try {
-            java.io.File(path).takeIf { it.exists() && it.canRead() }?.readBytes()
+            java.io
+                .File(path)
+                .takeIf { it.exists() && it.canRead() }
+                ?.readBytes()
         } catch (e: Exception) {
             null
         }
     }
-    
+
     // TODO: For network posters, this would require async loading
     // For now, return null for non-local posters
     return null

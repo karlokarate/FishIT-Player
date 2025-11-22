@@ -1265,7 +1265,7 @@ fun LibraryScreen(
                                                     else -> { /* No-op for Live */ }
                                                 }
                                             }
-                                            
+
                                             // Render row with chat title (Requirement 2)
                                             com.chris.m3usuite.ui.layout.FishTelegramRow(
                                                 items = items.take(120),

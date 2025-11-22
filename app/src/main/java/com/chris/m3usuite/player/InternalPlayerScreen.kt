@@ -416,22 +416,25 @@ fun InternalPlayerScreen(
 
                                     if (msg != null) {
                                         // Build MediaItem from ObxTelegramMessage for artwork
-                                        val tgRepo = com.chris.m3usuite.data.repo.TelegramContentRepository(ctx, store)
+                                        val tgRepo =
+                                            com.chris.m3usuite.data.repo
+                                                .TelegramContentRepository(ctx, store)
                                         val mediaItems = tgRepo.getTelegramContentByChat(msg.chatId).first()
                                         val appMediaItem = mediaItems.find { it.tgMessageId == messageId }
 
                                         // Use stored MIME type or infer from fileName
-                                        val mime = msg.mimeType?.takeIf { it.isNotBlank() } ?: run {
-                                            val fileName = msg.fileName
-                                            when {
-                                                fileName?.endsWith(".mp4", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4
-                                                fileName?.endsWith(".mkv", ignoreCase = true) == true -> MimeTypes.VIDEO_MATROSKA
-                                                fileName?.endsWith(".webm", ignoreCase = true) == true -> MimeTypes.VIDEO_WEBM
-                                                fileName?.endsWith(".avi", ignoreCase = true) == true -> MimeTypes.VIDEO_AVI
-                                                fileName?.endsWith(".mov", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4 // QuickTime, MP4-based
-                                                else -> null
+                                        val mime =
+                                            msg.mimeType?.takeIf { it.isNotBlank() } ?: run {
+                                                val fileName = msg.fileName
+                                                when {
+                                                    fileName?.endsWith(".mp4", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4
+                                                    fileName?.endsWith(".mkv", ignoreCase = true) == true -> MimeTypes.VIDEO_MATROSKA
+                                                    fileName?.endsWith(".webm", ignoreCase = true) == true -> MimeTypes.VIDEO_WEBM
+                                                    fileName?.endsWith(".avi", ignoreCase = true) == true -> MimeTypes.VIDEO_AVI
+                                                    fileName?.endsWith(".mov", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4 // QuickTime, MP4-based
+                                                    else -> null
+                                                }
                                             }
-                                        }
                                         Pair(mime ?: MimeTypes.VIDEO_MP4, appMediaItem)
                                     } else {
                                         Pair(MimeTypes.VIDEO_MP4, null)
@@ -474,18 +477,19 @@ fun InternalPlayerScreen(
             // Log media item details for Telegram (Requirement 3.3)
             if (url.startsWith("tg://", ignoreCase = true)) {
                 android.util.Log.d("ExoSetup", "Telegram MediaItem: uri=$resolvedUri, mimeType=$inferredMime")
-                
+
                 // Log to TelegramLogRepository for observability (Requirement 3.3)
                 com.chris.m3usuite.telegram.logging.TelegramLogRepository.info(
                     source = "InternalPlayerScreen",
                     message = "Starting Telegram playback",
-                    details = mapOf(
-                        "mediaId" to (appMediaItem?.id?.toString() ?: "null"),
-                        "tgChatId" to (appMediaItem?.tgChatId?.toString() ?: "null"),
-                        "tgMessageId" to (appMediaItem?.tgMessageId?.toString() ?: "null"),
-                        "url" to url,
-                        "hasArtwork" to (artwork != null).toString(),
-                    ),
+                    details =
+                        mapOf(
+                            "mediaId" to (appMediaItem?.id?.toString() ?: "null"),
+                            "tgChatId" to (appMediaItem?.tgChatId?.toString() ?: "null"),
+                            "tgMessageId" to (appMediaItem?.tgMessageId?.toString() ?: "null"),
+                            "url" to url,
+                            "hasArtwork" to (artwork != null).toString(),
+                        ),
                 )
             }
 

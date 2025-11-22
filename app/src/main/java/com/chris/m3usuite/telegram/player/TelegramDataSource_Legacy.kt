@@ -23,8 +23,9 @@ import java.io.IOException
  *             Do not use in new code.
  */
 @Deprecated(
-    message = "Replaced by TelegramFileDataSource and T_TelegramFileDownloader. " +
-        "Kept only for historical reference and tests.",
+    message =
+        "Replaced by TelegramFileDataSource and T_TelegramFileDownloader. " +
+            "Kept only for historical reference and tests.",
     level = DeprecationLevel.WARNING,
 )
 /**
