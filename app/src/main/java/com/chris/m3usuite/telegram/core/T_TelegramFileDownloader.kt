@@ -772,25 +772,30 @@ class T_TelegramFileDownloader(
             }
 
     /**
+     * Get a file from TDLib or throw an exception on failure.
+     * This is a shared helper to avoid duplicating error handling.
+     *
+     * @param fileId TDLib file ID (integer)
+     * @return File object from TDLib
+     * @throws Exception if the request fails
+     */
+    private suspend fun getFileOrThrow(fileId: Int): File =
+        withContext(Dispatchers.IO) {
+            when (val result = client.getFile(fileId)) {
+                is dev.g000sha256.tdl.TdlResult.Success -> result.result
+                is dev.g000sha256.tdl.TdlResult.Failure ->
+                    throw Exception("Failed to get file $fileId: ${result.code} - ${result.message}")
+            }
+        }
+
+    /**
      * Get fresh file state from TDLib without using cache.
      * Used by ensureFileReady to poll actual download progress.
      *
      * @param fileId TDLib file ID (integer)
      * @return Fresh File object from TDLib
      */
-    private suspend fun getFreshFileState(fileId: Int): File =
-        withContext(Dispatchers.IO) {
-            val result = client.getFile(fileId)
-
-            when (result) {
-                is dev.g000sha256.tdl.TdlResult.Success -> {
-                    return@withContext result.result
-                }
-                is dev.g000sha256.tdl.TdlResult.Failure -> {
-                    throw Exception("Failed to get fresh file state: ${result.code} - ${result.message}")
-                }
-            }
-        }
+    private suspend fun getFreshFileState(fileId: Int): File = getFileOrThrow(fileId)
 
     /**
      * Get file information from TDLib.
@@ -812,18 +817,10 @@ class T_TelegramFileDownloader(
                     throw Exception("Invalid file ID format: $fileId")
                 }
 
-            val result = client.getFile(fileIdInt)
-
-            when (result) {
-                is dev.g000sha256.tdl.TdlResult.Success -> {
-                    val file = result.result
-                    fileInfoCache[fileId] = file
-                    return@withContext file
-                }
-                is dev.g000sha256.tdl.TdlResult.Failure -> {
-                    throw Exception("Failed to get file info: ${result.code} - ${result.message}")
-                }
-            }
+            // Use getFileOrThrow helper to fetch the file
+            val file = getFileOrThrow(fileIdInt)
+            fileInfoCache[fileId] = file
+            file
         }
 
     /**
@@ -838,19 +835,14 @@ class T_TelegramFileDownloader(
             val cacheKey = fileId.toString()
             fileInfoCache[cacheKey]?.let { return@withContext it }
 
-            // Get from TDLib
-            val result = client.getFile(fileId)
-
-            when (result) {
-                is dev.g000sha256.tdl.TdlResult.Success -> {
-                    val file = result.result
-                    fileInfoCache[cacheKey] = file
-                    return@withContext file
-                }
-                is dev.g000sha256.tdl.TdlResult.Failure -> {
-                    println("[T_TelegramFileDownloader] Failed to get file info: ${result.message}")
-                    return@withContext null
-                }
+            // Get from TDLib using getFileOrThrow helper
+            try {
+                val file = getFileOrThrow(fileId)
+                fileInfoCache[cacheKey] = file
+                file
+            } catch (e: Exception) {
+                println("[T_TelegramFileDownloader] Failed to get file info: ${e.message}")
+                null
             }
         }
 
