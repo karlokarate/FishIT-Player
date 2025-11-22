@@ -310,16 +310,43 @@ class T_TelegramFileDownloader(
             val localPath = fileInfo.local?.path
 
             if (!localPath.isNullOrBlank() && currentPrefixSize >= requiredPrefixSize) {
-                TelegramLogRepository.debug(
-                    source = "T_TelegramFileDownloader",
-                    message = "ensureFileReady: already available",
-                    details = mapOf(
-                        "fileId" to fileId.toString(),
-                        "currentPrefixSize" to currentPrefixSize.toString(),
-                        "requiredPrefixSize" to requiredPrefixSize.toString(),
-                    ),
-                )
-                return@withContext localPath
+                // If expectedSize is unknown (0), check that the file exists and is non-empty
+                if (expectedSize == 0L) {
+                    val file = java.io.File(localPath)
+                    if (!file.exists() || file.length() == 0L) {
+                        TelegramLogRepository.debug(
+                            source = "T_TelegramFileDownloader",
+                            message = "ensureFileReady: file missing or empty for unknown size, proceeding to download",
+                            details = mapOf(
+                                "fileId" to fileId.toString(),
+                                "localPath" to localPath,
+                            ),
+                        )
+                    } else {
+                        TelegramLogRepository.debug(
+                            source = "T_TelegramFileDownloader",
+                            message = "ensureFileReady: already available (unknown size, file exists and non-empty)",
+                            details = mapOf(
+                                "fileId" to fileId.toString(),
+                                "currentPrefixSize" to currentPrefixSize.toString(),
+                                "requiredPrefixSize" to requiredPrefixSize.toString(),
+                                "localPath" to localPath,
+                            ),
+                        )
+                        return@withContext localPath
+                    }
+                } else {
+                    TelegramLogRepository.debug(
+                        source = "T_TelegramFileDownloader",
+                        message = "ensureFileReady: already available",
+                        details = mapOf(
+                            "fileId" to fileId.toString(),
+                            "currentPrefixSize" to currentPrefixSize.toString(),
+                            "requiredPrefixSize" to requiredPrefixSize.toString(),
+                        ),
+                    )
+                    return@withContext localPath
+                }
             }
 
             // Start download with offset/limit
