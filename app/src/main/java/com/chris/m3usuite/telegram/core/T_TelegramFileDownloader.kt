@@ -379,6 +379,24 @@ class T_TelegramFileDownloader(
                     throw Exception("Download failed: ${downloadResult.message}")
                 }
                 is dev.g000sha256.tdl.TdlResult.Success -> {
+                    // Check if already ready before waiting on flow
+                    val immediateCheck = getFileInfo(fileId)
+                    val immediatePrefix = immediateCheck?.local?.downloadedPrefixSize?.toLong() ?: 0L
+                    val immediatePath = immediateCheck?.local?.path
+                    
+                    if (!immediatePath.isNullOrBlank() && immediatePrefix >= requiredPrefixSize) {
+                        TelegramLogRepository.debug(
+                            source = "T_TelegramFileDownloader",
+                            message = "ensureFileReady: already ready after download start",
+                            details = mapOf(
+                                "fileId" to fileId.toString(),
+                                "downloadedPrefixSize" to immediatePrefix.toString(),
+                                "requiredPrefixSize" to requiredPrefixSize.toString(),
+                            ),
+                        )
+                        return@withContext immediatePath
+                    }
+                    
                     // Download started, now wait for prefix using reactive flow
                     val timeoutMs = 30_000L // 30 seconds max wait
                     

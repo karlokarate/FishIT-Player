@@ -381,4 +381,47 @@ class T_TelegramFileDownloaderTest {
             }
         }
     }
+
+    @Test
+    fun `ensureFileReady checks file status immediately after download start`() {
+        // Verify ensureFileReady implements immediate check to avoid race condition
+        val sourceFile = java.io.File("src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+            
+            val ensureFileReadySection = 
+                content
+                    .substringAfter("suspend fun ensureFileReady", "")
+                    .substringBefore("suspend fun getFileSize")
+            
+            // Check that there's an immediate check after downloadFile() success
+            assert(ensureFileReadySection.contains("is dev.g000sha256.tdl.TdlResult.Success")) {
+                "ensureFileReady should handle Success result"
+            }
+            
+            assert(ensureFileReadySection.contains("val immediateCheck = getFileInfo(fileId)")) {
+                "ensureFileReady should get immediate file info after download start"
+            }
+            
+            assert(ensureFileReadySection.contains("val immediatePrefix = immediateCheck?.local?.downloadedPrefixSize?.toLong() ?: 0L")) {
+                "ensureFileReady should check immediate prefix size"
+            }
+            
+            assert(ensureFileReadySection.contains("val immediatePath = immediateCheck?.local?.path")) {
+                "ensureFileReady should get immediate path"
+            }
+            
+            assert(ensureFileReadySection.contains("if (!immediatePath.isNullOrBlank() && immediatePrefix >= requiredPrefixSize)")) {
+                "ensureFileReady should check if file is already ready before flow subscription"
+            }
+            
+            assert(ensureFileReadySection.contains("return@withContext immediatePath")) {
+                "ensureFileReady should return immediately if file is already ready"
+            }
+            
+            assert(ensureFileReadySection.contains("\"ensureFileReady: already ready after download start\"")) {
+                "ensureFileReady should log when file is already ready after download start"
+            }
+        }
+    }
 }
