@@ -1,7 +1,7 @@
 package com.chris.m3usuite.telegram.util
 
-import org.junit.Test
 import org.junit.Assert.*
+import org.junit.Test
 
 /**
  * Unit tests for TelegramPlayUrl utility.
@@ -10,15 +10,16 @@ import org.junit.Assert.*
 class TelegramPlayUrlTest {
     @Test
     fun `buildFileUrl constructs proper tg URL format`() {
-        val url = TelegramPlayUrl.buildFileUrl(
-            fileId = 12345,
-            chatId = -1001234567890L,
-            messageId = 98765L
-        )
-        
+        val url =
+            TelegramPlayUrl.buildFileUrl(
+                fileId = 12345,
+                chatId = -1001234567890L,
+                messageId = 98765L,
+            )
+
         assertEquals(
             "tg://file/12345?chatId=-1001234567890&messageId=98765",
-            url
+            url,
         )
     }
 
@@ -27,7 +28,7 @@ class TelegramPlayUrlTest {
         TelegramPlayUrl.buildFileUrl(
             fileId = null,
             chatId = 123L,
-            messageId = 456L
+            messageId = 456L,
         )
     }
 
@@ -36,7 +37,7 @@ class TelegramPlayUrlTest {
         // Test with different fileId values
         val url1 = TelegramPlayUrl.buildFileUrl(1, 100L, 200L)
         assertTrue(url1.startsWith("tg://file/1?"))
-        
+
         val url2 = TelegramPlayUrl.buildFileUrl(999999, 100L, 200L)
         assertTrue(url2.startsWith("tg://file/999999?"))
     }

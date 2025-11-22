@@ -45,7 +45,8 @@ class App : Application() {
         telegramPrefetcher = TelegramThumbPrefetcher(this, serviceClient, tgRepo)
 
         // Register in holder for global access
-        com.chris.m3usuite.telegram.prefetch.TelegramPrefetcherHolder.set(telegramPrefetcher)
+        com.chris.m3usuite.telegram.prefetch.TelegramPrefetcherHolder
+            .set(telegramPrefetcher)
 
         applicationScope.launch {
             telegramPrefetcher.start(this)

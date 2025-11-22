@@ -3,8 +3,8 @@ package com.chris.m3usuite.telegram.prefetch
 import android.content.Context
 import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.telegram.core.TelegramFileLoader
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
+import com.chris.m3usuite.telegram.core.TelegramFileLoader
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -35,7 +35,7 @@ class TelegramThumbPrefetcher(
 ) {
     private val fileLoader = TelegramFileLoader(serviceClient)
     private val store = SettingsStore(context)
-    
+
     companion object {
         private const val TAG = "TelegramThumbPrefetcher"
         private const val PREFETCH_DELAY_MS = 1000L // Delay between prefetch batches
@@ -53,41 +53,42 @@ class TelegramThumbPrefetcher(
     fun start(scope: CoroutineScope) {
         // Cancel existing job if any
         prefetchJob?.cancel()
-        
-        prefetchJob = scope.launch {
-            TelegramLogRepository.info(
-                source = TAG,
-                message = "TelegramThumbPrefetcher started",
-            )
-            
-            try {
-                // Observe enabled state
-                store.tgEnabled.collectLatest { enabled ->
-                    if (!enabled) {
-                        TelegramLogRepository.debug(
-                            source = TAG,
-                            message = "Telegram disabled, pausing prefetcher",
-                        )
-                        return@collectLatest
-                    }
-                    
-                    // Observe content changes and prefetch thumbnails
-                    observeAndPrefetch()
-                }
-            } catch (e: CancellationException) {
+
+        prefetchJob =
+            scope.launch {
                 TelegramLogRepository.info(
                     source = TAG,
-                    message = "TelegramThumbPrefetcher cancelled",
+                    message = "TelegramThumbPrefetcher started",
                 )
-                throw e
-            } catch (e: Exception) {
-                TelegramLogRepository.error(
-                    source = TAG,
-                    message = "TelegramThumbPrefetcher error",
-                    exception = e,
-                )
+
+                try {
+                    // Observe enabled state
+                    store.tgEnabled.collectLatest { enabled ->
+                        if (!enabled) {
+                            TelegramLogRepository.debug(
+                                source = TAG,
+                                message = "Telegram disabled, pausing prefetcher",
+                            )
+                            return@collectLatest
+                        }
+
+                        // Observe content changes and prefetch thumbnails
+                        observeAndPrefetch()
+                    }
+                } catch (e: CancellationException) {
+                    TelegramLogRepository.info(
+                        source = TAG,
+                        message = "TelegramThumbPrefetcher cancelled",
+                    )
+                    throw e
+                } catch (e: Exception) {
+                    TelegramLogRepository.error(
+                        source = TAG,
+                        message = "TelegramThumbPrefetcher error",
+                        exception = e,
+                    )
+                }
             }
-        }
     }
 
     /**
@@ -115,13 +116,14 @@ class TelegramThumbPrefetcher(
             allChats
         }.collectLatest { chatMap ->
             // Extract all poster IDs that need prefetching
-            val posterIds = chatMap.values
-                .flatMap { (_, items) -> items }
-                .mapNotNull { it.posterId }
-                .filter { it !in prefetchedIds } // Skip already prefetched
-                .distinct()
-                .take(100) // Limit to 100 at a time to avoid overwhelming TDLib
-            
+            val posterIds =
+                chatMap.values
+                    .flatMap { (_, items) -> items }
+                    .mapNotNull { it.posterId }
+                    .filter { it !in prefetchedIds } // Skip already prefetched
+                    .distinct()
+                    .take(100) // Limit to 100 at a time to avoid overwhelming TDLib
+
             if (posterIds.isEmpty()) {
                 TelegramLogRepository.debug(
                     source = TAG,
@@ -129,25 +131,56 @@ class TelegramThumbPrefetcher(
                 )
                 return@collectLatest
             }
-            
+
+            // Log batch start (Requirement 3.2.1)
             TelegramLogRepository.info(
                 source = TAG,
-                message = "Prefetching ${posterIds.size} thumbnails",
+                message = "Prefetch batch starting",
+                details =
+                    mapOf(
+                        "batchSize" to posterIds.size.toString(),
+                        "totalChats" to chatMap.size.toString(),
+                    ),
             )
-            
+
+            // Track success/failure counts
+            var successCount = 0
+            var failureCount = 0
+            var skippedCount = 0
+
             // Prefetch thumbnails in batches with concurrency limit
             posterIds.chunked(MAX_CONCURRENT_DOWNLOADS).forEach { batch ->
-                coroutineScope {
-                    batch.map { posterId ->
-                        async {
-                            prefetchThumbnail(posterId)
-                        }
-                    }.awaitAll()
+                val results =
+                    coroutineScope {
+                        batch
+                            .map { posterId ->
+                                async {
+                                    prefetchThumbnail(posterId)
+                                }
+                            }.awaitAll()
+                    }
+
+                // Count results
+                results.forEach { success ->
+                    if (success) successCount++ else failureCount++
                 }
-                
+
                 // Delay between batches to avoid overwhelming TDLib
                 delay(PREFETCH_DELAY_MS)
             }
+
+            // Log batch completion (Requirement 3.2.1)
+            TelegramLogRepository.info(
+                source = TAG,
+                message = "Prefetch batch complete",
+                details =
+                    mapOf(
+                        "total" to posterIds.size.toString(),
+                        "success" to successCount.toString(),
+                        "failed" to failureCount.toString(),
+                        "skipped" to skippedCount.toString(),
+                    ),
+            )
         }
     }
 
@@ -155,15 +188,16 @@ class TelegramThumbPrefetcher(
      * Prefetch a single thumbnail.
      * Returns true if successful, false otherwise.
      */
-    private suspend fun prefetchThumbnail(fileId: Int): Boolean {
-        return try {
-            val result = withTimeoutOrNull(THUMBNAIL_TIMEOUT_MS) {
-                fileLoader.ensureThumbDownloaded(
-                    fileId = fileId,
-                    timeoutMs = THUMBNAIL_TIMEOUT_MS,
-                )
-            }
-            
+    private suspend fun prefetchThumbnail(fileId: Int): Boolean =
+        try {
+            val result =
+                withTimeoutOrNull(THUMBNAIL_TIMEOUT_MS) {
+                    fileLoader.ensureThumbDownloaded(
+                        fileId = fileId,
+                        timeoutMs = THUMBNAIL_TIMEOUT_MS,
+                    )
+                }
+
             if (result != null) {
                 prefetchedIds.add(fileId)
                 TelegramLogRepository.debug(
@@ -186,7 +220,6 @@ class TelegramThumbPrefetcher(
             )
             false
         }
-    }
 
     /**
      * Clear the prefetch cache.

@@ -1,6 +1,5 @@
 package com.chris.m3usuite.telegram.image
 
-import android.content.Context
 import coil3.ImageLoader
 import coil3.decode.DataSource
 import coil3.decode.ImageSource
@@ -38,14 +37,15 @@ class TelegramThumbFetcher(
         // Convert path to Okio Path
         val file = File(path)
         val okioPath = file.absolutePath.toPath()
-        
+
         // Create ImageSource from file
-        val source = ImageSource(
-            file = okioPath,
-            fileSystem = FileSystem.SYSTEM,
-            metadata = null,
-        )
-        
+        val source =
+            ImageSource(
+                file = okioPath,
+                fileSystem = FileSystem.SYSTEM,
+                metadata = null,
+            )
+
         return SourceFetchResult(
             source = source,
             mimeType = guessMimeType(path),
@@ -53,15 +53,14 @@ class TelegramThumbFetcher(
         )
     }
 
-    private fun guessMimeType(path: String): String? {
-        return when (path.substringAfterLast('.', "").lowercase()) {
+    private fun guessMimeType(path: String): String? =
+        when (path.substringAfterLast('.', "").lowercase()) {
             "jpg", "jpeg" -> "image/jpeg"
             "png" -> "image/png"
             "webp" -> "image/webp"
             "gif" -> "image/gif"
             else -> null
         }
-    }
 
     /**
      * Factory for creating TelegramThumbFetcher instances.
@@ -76,18 +75,19 @@ class TelegramThumbFetcher(
             // Check if this is a file path (starts with / or file://)
             val isFilePath = data.startsWith("/") || data.startsWith("file://")
             if (!isFilePath) return null
-            
+
             // Extract actual path
-            val path = if (data.startsWith("file://")) {
-                data.removePrefix("file://")
-            } else {
-                data
-            }
-            
+            val path =
+                if (data.startsWith("file://")) {
+                    data.removePrefix("file://")
+                } else {
+                    data
+                }
+
             // Verify file exists
             val file = File(path)
             if (!file.exists() || !file.canRead()) return null
-            
+
             return TelegramThumbFetcher(path, options)
         }
     }
@@ -97,8 +97,9 @@ class TelegramThumbFetcher(
  * Extension to register TelegramThumbFetcher in AppImageLoader.
  * Call this when building the ImageLoader to enable Telegram thumbnail support.
  */
-fun ImageLoader.Builder.supportTelegramThumbs() = apply {
-    components {
-        add(TelegramThumbFetcher.Factory())
+fun ImageLoader.Builder.supportTelegramThumbs() =
+    apply {
+        components {
+            add(TelegramThumbFetcher.Factory())
+        }
     }
-}

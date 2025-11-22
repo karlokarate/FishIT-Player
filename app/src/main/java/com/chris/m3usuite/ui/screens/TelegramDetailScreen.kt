@@ -84,7 +84,9 @@ private suspend fun loadTelegramDetail(
             year = row.year,
             genres = row.genres,
             durationSecs = row.durationSecs,
-            playUrl = com.chris.m3usuite.telegram.util.TelegramPlayUrl.buildFileUrl(row.fileId, row.chatId, row.messageId),
+            playUrl =
+                com.chris.m3usuite.telegram.util.TelegramPlayUrl
+                    .buildFileUrl(row.fileId, row.chatId, row.messageId),
             chatId = row.chatId,
             messageId = row.messageId,
             fileId = row.fileId,
