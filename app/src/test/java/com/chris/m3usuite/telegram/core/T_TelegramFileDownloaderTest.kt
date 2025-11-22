@@ -408,7 +408,7 @@ class T_TelegramFileDownloaderTest {
             }
 
             // Check polling loop implementation
-            assert(ensureFileReadySection.contains("while (true)")) {
+            assert(ensureFileReadySection.contains("while (result == null)")) {
                 "ensureFileReady should use polling loop"
             }
 

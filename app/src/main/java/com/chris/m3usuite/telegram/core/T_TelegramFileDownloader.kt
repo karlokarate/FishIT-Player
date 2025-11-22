@@ -292,8 +292,8 @@ class T_TelegramFileDownloader(
         startPosition: Long,
         minBytes: Long,
         timeoutMs: Long = 30_000L,
-    ): String =
-        withContext(Dispatchers.IO) {
+    ): String {
+        return withContext(Dispatchers.IO) {
             // 1. Get current file status from TDLib
             var file =
                 getFileInfo(fileId)
@@ -348,7 +348,8 @@ class T_TelegramFileDownloader(
 
             // 4. Wait loop - poll TDLib state
             val startTime = SystemClock.elapsedRealtime()
-            while (true) {
+            var result: String? = null
+            while (result == null) {
                 delay(100) // 100ms polling interval
 
                 // Get updated file state from TDLib
@@ -368,19 +369,19 @@ class T_TelegramFileDownloader(
                                 "path" to pathNow,
                             ),
                     )
-                    return@withContext pathNow
-                }
-
-                val elapsed = SystemClock.elapsedRealtime() - startTime
-                if (elapsed > timeoutMs) {
-                    throw Exception(
-                        "Timeout waiting for file ready: fileId=$fileId, downloaded=$prefix, required=$requiredPrefixSize",
-                    )
+                    result = pathNow
+                } else {
+                    val elapsed = SystemClock.elapsedRealtime() - startTime
+                    if (elapsed > timeoutMs) {
+                        throw Exception(
+                            "Timeout waiting for file ready: fileId=$fileId, downloaded=$prefix, required=$requiredPrefixSize",
+                        )
+                    }
                 }
             }
-            @Suppress("UNREACHABLE_CODE")
-            throw Exception("Unreachable code - this should never execute")
+            result
         }
+    }
 
     /**
      * Get file size from TDLib.
