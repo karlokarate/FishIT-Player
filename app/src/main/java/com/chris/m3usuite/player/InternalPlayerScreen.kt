@@ -342,15 +342,8 @@ fun InternalPlayerScreen(
             // Align button-based seek increments (also used by PlayerView controller buttons)
             val seekIncrementMs = 10_000L
             
-            // Configure ExtractorsFactory with proper flags for MP4 and other containers
-            val extractorsFactory = androidx.media3.exoplayer.extractor.DefaultExtractorsFactory()
-                .setMp4ExtractorFlags(
-                    androidx.media3.exoplayer.extractor.mp4.Mp4Extractor.FLAG_WORKAROUND_IGNORE_EDIT_LISTS
-                )
-            
-            // Create MediaSourceFactory with configured extractors
+            // Create MediaSourceFactory (uses DefaultExtractorsFactory by default which supports all standard formats)
             val mediaSourceFactory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
-                .setExtractorsFactory(extractorsFactory)
 
             PlaybackSession.acquire(ctx) {
                 ExoPlayer
@@ -407,7 +400,7 @@ fun InternalPlayerScreen(
                             val parsed = Uri.parse(url)
                             val messageId = parsed.getQueryParameter("messageId")?.toLongOrNull()
                             if (messageId != null) {
-                                val msgBox = obxStore.boxFor<com.chris.m3usuite.data.obx.ObxTelegramMessage>()
+                                val msgBox = obxStore.boxFor(com.chris.m3usuite.data.obx.ObxTelegramMessage::class.java)
                                 val msg = msgBox
                                     .query()
                                     .equal(com.chris.m3usuite.data.obx.ObxTelegramMessage_.messageId, messageId)
