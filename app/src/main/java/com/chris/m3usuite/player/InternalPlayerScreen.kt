@@ -401,20 +401,13 @@ fun InternalPlayerScreen(
                 when {
                     mimeType != null -> Pair(mimeType, preparedMediaItem)
                     preparedMediaItem != null -> {
-                        // Use MIME type from prepared MediaItem or infer from fileName
-                        val mime =
-                            when {
-                                preparedMediaItem.url?.contains(".mp4", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4
-                                preparedMediaItem.url?.contains(".mkv", ignoreCase = true) == true -> MimeTypes.VIDEO_MATROSKA
-                                preparedMediaItem.url?.contains(".webm", ignoreCase = true) == true -> MimeTypes.VIDEO_WEBM
-                                preparedMediaItem.url?.contains(".avi", ignoreCase = true) == true -> MimeTypes.VIDEO_AVI
-                                preparedMediaItem.url?.contains(".mov", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4
-                                else -> MimeTypes.VIDEO_MP4
-                            }
+                        // Use MIME type from prepared MediaItem or infer from URL
+                        val mime = inferMimeTypeFromFileName(preparedMediaItem.url) ?: MimeTypes.VIDEO_MP4
                         Pair(mime, preparedMediaItem)
                     }
                     url.startsWith("tg://", ignoreCase = true) -> {
-                        // Fallback: Try to get MIME type from ObjectBox metadata (minimal lookup)
+                        // Fallback: Perform direct ObjectBox lookup when MediaItem wasn't pre-resolved
+                        // This is a lightweight query that only fetches MIME metadata, not full MediaItem
                         withContext(Dispatchers.IO) {
                             try {
                                 val parsed = Uri.parse(url)
@@ -431,17 +424,8 @@ fun InternalPlayerScreen(
                                     if (msg != null) {
                                         // Use stored MIME type or infer from fileName
                                         val mime =
-                                            msg.mimeType?.takeIf { it.isNotBlank() } ?: run {
-                                                val fileName = msg.fileName
-                                                when {
-                                                    fileName?.endsWith(".mp4", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4
-                                                    fileName?.endsWith(".mkv", ignoreCase = true) == true -> MimeTypes.VIDEO_MATROSKA
-                                                    fileName?.endsWith(".webm", ignoreCase = true) == true -> MimeTypes.VIDEO_WEBM
-                                                    fileName?.endsWith(".avi", ignoreCase = true) == true -> MimeTypes.VIDEO_AVI
-                                                    fileName?.endsWith(".mov", ignoreCase = true) == true -> MimeTypes.VIDEO_MP4 // QuickTime, MP4-based
-                                                    else -> null
-                                                }
-                                            }
+                                            msg.mimeType?.takeIf { it.isNotBlank() }
+                                                ?: inferMimeTypeFromFileName(msg.fileName)
                                         Pair(mime ?: MimeTypes.VIDEO_MP4, null)
                                     } else {
                                         Pair(MimeTypes.VIDEO_MP4, null)
@@ -2520,5 +2504,21 @@ private fun OverlayIconButton(
         Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(painter = painterResource(iconRes), contentDescription = null, tint = contentColor)
         }
+    }
+}
+
+/**
+ * Helper function to infer MIME type from file name or URL extension.
+ * Used for Telegram content when explicit MIME type is not available.
+ */
+private fun inferMimeTypeFromFileName(fileName: String?): String? {
+    return when {
+        fileName == null -> null
+        fileName.endsWith(".mp4", ignoreCase = true) -> MimeTypes.VIDEO_MP4
+        fileName.endsWith(".mkv", ignoreCase = true) -> MimeTypes.VIDEO_MATROSKA
+        fileName.endsWith(".webm", ignoreCase = true) -> MimeTypes.VIDEO_WEBM
+        fileName.endsWith(".avi", ignoreCase = true) -> MimeTypes.VIDEO_AVI
+        fileName.endsWith(".mov", ignoreCase = true) -> MimeTypes.VIDEO_MP4 // QuickTime, MP4-based
+        else -> null
     }
 }

@@ -473,8 +473,11 @@ class MainActivity : ComponentActivity() {
                                                     this@MainActivity,
                                                     store,
                                                 )
-                                                val mediaItems = tgRepo.getTelegramContentByChat(chatId).first()
-                                                preparedMediaItem = mediaItems.find { it.tgMessageId == messageId }
+                                                // Use firstOrNull to avoid blocking indefinitely
+                                                val mediaItems = kotlinx.coroutines.withTimeoutOrNull(5000) {
+                                                    tgRepo.getTelegramContentByChat(chatId).first()
+                                                }
+                                                preparedMediaItem = mediaItems?.find { it.tgMessageId == messageId }
                                             }
                                         } catch (e: Exception) {
                                             android.util.Log.e("MainActivity", "Failed to resolve Telegram MediaItem: ${e.message}", e)
