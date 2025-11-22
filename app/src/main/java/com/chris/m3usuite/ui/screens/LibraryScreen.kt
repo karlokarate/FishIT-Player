@@ -220,8 +220,8 @@ fun LibraryScreen(
     var newestRow by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
     var topYearsRow by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
 
-    // Telegram content
-    var telegramContent by remember { mutableStateOf<List<MediaItem>>(emptyList()) }
+    // Telegram content grouped by chat (Requirement 2)
+    var telegramContentByChat by remember { mutableStateOf<Map<Long, Pair<String, List<MediaItem>>>>(emptyMap()) }
     val tgEnabled by store.tgEnabled.collectAsStateWithLifecycle(initialValue = false)
 
     var liveCategoryLabels by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
@@ -635,7 +635,7 @@ fun LibraryScreen(
                         groupKeys.years.isNotEmpty() ||
                         groupKeys.categories.isNotEmpty()
                 val hasRows = recentRow.isNotEmpty() || newestRow.isNotEmpty() || topYearsRow.isNotEmpty()
-                val hasTelegram = tgEnabled && telegramContent.isNotEmpty()
+                val hasTelegram = tgEnabled && telegramContentByChat.isNotEmpty()
                 uiState =
                     if (hasGroups ||
                         hasRows ||
@@ -785,14 +785,26 @@ fun LibraryScreen(
             }
     }
 
-    // Load Telegram content when enabled
-    LaunchedEffect(tgEnabled, resumeTick) {
+    // Load Telegram content when enabled (Requirement 1, 2)
+    LaunchedEffect(tgEnabled, selectedTab, resumeTick) {
         if (tgEnabled) {
-            tgRepo.getAllTelegramContent().collect { items ->
-                telegramContent = items
+            when (selectedTab) {
+                ContentTab.Vod -> {
+                    tgRepo.getTelegramVodByChat().collect { chatMap ->
+                        telegramContentByChat = chatMap
+                    }
+                }
+                ContentTab.Series -> {
+                    tgRepo.getTelegramSeriesByChat().collect { chatMap ->
+                        telegramContentByChat = chatMap
+                    }
+                }
+                else -> {
+                    telegramContentByChat = emptyMap()
+                }
             }
         } else {
-            telegramContent = emptyList()
+            telegramContentByChat = emptyMap()
         }
     }
 
@@ -1207,47 +1219,63 @@ fun LibraryScreen(
                                 }
                             }
 
-                            // Telegram content row (when enabled and available)
-                            if (tgEnabled && telegramContent.isNotEmpty() && selectedTab == ContentTab.Vod) {
-                                item {
-                                    val onTelegramClick: (MediaItem) -> Unit = { media ->
-                                        // Navigate to Telegram detail screen instead of playing directly
-                                        if (openTelegram != null) {
-                                            openTelegram(media.id)
-                                        } else {
-                                            // Fallback: play directly if no detail screen handler is provided
-                                            scope.launch {
-                                                TelegramLogRepository.info(
-                                                    source = "LibraryScreen",
-                                                    message = "User started Telegram playback from LibraryScreen",
-                                                    details =
-                                                        mapOf(
-                                                            "mediaId" to media.id.toString(),
-                                                            "title" to media.name,
-                                                            "playUrl" to (media.url ?: "null"),
-                                                        ),
-                                                )
+                            // Telegram content rows - one per chat (Requirement 2)
+                            if (tgEnabled && telegramContentByChat.isNotEmpty()) {
+                                telegramContentByChat.forEach { (chatId, chatData) ->
+                                    val (chatTitle, items) = chatData
+                                    if (items.isNotEmpty()) {
+                                        item(key = "telegram:$selectedTabKey:$chatId") {
+                                            val onTelegramClick: (MediaItem) -> Unit = { media ->
+                                                // Navigate to detail screen or play directly
+                                                when (selectedTab) {
+                                                    ContentTab.Vod -> {
+                                                        if (openTelegram != null) {
+                                                            openTelegram(media.id)
+                                                        } else {
+                                                            scope.launch {
+                                                                TelegramLogRepository.info(
+                                                                    source = "LibraryScreen",
+                                                                    message = "User started Telegram playback from LibraryScreen",
+                                                                    details =
+                                                                        mapOf(
+                                                                            "mediaId" to media.id.toString(),
+                                                                            "title" to media.name,
+                                                                            "chatId" to chatId.toString(),
+                                                                            "chatTitle" to chatTitle,
+                                                                        ),
+                                                                )
 
-                                                playbackLauncher.launch(
-                                                    com.chris.m3usuite.playback.PlayRequest(
-                                                        type = "vod",
-                                                        mediaId = media.id,
-                                                        url = media.url ?: "",
-                                                        headers = emptyMap(),
-                                                        mimeType = null,
-                                                        title = media.name,
-                                                    ),
-                                                )
+                                                                playbackLauncher.launch(
+                                                                    com.chris.m3usuite.playback.PlayRequest(
+                                                                        type = "vod",
+                                                                        mediaId = media.id,
+                                                                        url = media.url ?: "",
+                                                                        headers = emptyMap(),
+                                                                        mimeType = null,
+                                                                        title = media.name,
+                                                                    ),
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                    ContentTab.Series -> {
+                                                        // For series, always open detail screen
+                                                        openSeries(media.id)
+                                                    }
+                                                    else -> { /* No-op for Live */ }
+                                                }
                                             }
+                                            
+                                            // Render row with chat title (Requirement 2)
+                                            com.chris.m3usuite.ui.layout.FishTelegramRow(
+                                                items = items.take(120),
+                                                stateKey = "library:$selectedTabKey:telegram:$chatId",
+                                                title = chatTitle, // Display chat name, not ID
+                                                modifier = Modifier,
+                                                onItemClick = onTelegramClick,
+                                            )
                                         }
                                     }
-                                    com.chris.m3usuite.ui.layout.FishTelegramRow(
-                                        items = telegramContent.take(120),
-                                        stateKey = "library:$selectedTabKey:telegram",
-                                        title = "Telegram",
-                                        modifier = Modifier,
-                                        onItemClick = onTelegramClick,
-                                    )
                                 }
                             }
                             // Live: Kategorien (aus API), keine Provider/Genre-Buckets

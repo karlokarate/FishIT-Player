@@ -184,7 +184,7 @@ class TelegramContentRepository(
         // Apply heuristics for better classification
         val heuristic = TgContentHeuristics.classify(mediaInfo, chatTitle)
 
-        // Extract file metadata from TDLib message content
+        // Extract file metadata from TDLib message content (Requirement 3, 6)
         val fileId: Int?
         val fileUniqueId: String?
         val durationSecs: Int?
@@ -193,6 +193,7 @@ class TelegramContentRepository(
         val supportsStreaming: Boolean?
         val thumbFileId: Int?
         val thumbLocalPath: String?
+        val localPath: String? // Zero-copy playback path (Requirement 6)
 
         when (val content = message.content) {
             is MessageVideo -> {
@@ -205,7 +206,7 @@ class TelegramContentRepository(
                 width = content.video.width
                 height = content.video.height
                 supportsStreaming = content.video.supportsStreaming
-                // Extract video thumbnail
+                // Extract video thumbnail (Requirement 3)
                 thumbFileId =
                     content.video.thumbnail
                         ?.file
@@ -213,6 +214,11 @@ class TelegramContentRepository(
                 thumbLocalPath =
                     content.video.thumbnail
                         ?.file
+                        ?.local
+                        ?.path
+                // Extract local video file path (Requirement 6)
+                localPath =
+                    content.video.video
                         ?.local
                         ?.path
             }
@@ -226,7 +232,7 @@ class TelegramContentRepository(
                 width = null
                 height = null
                 supportsStreaming = null
-                // Extract document thumbnail
+                // Extract document thumbnail (Requirement 3)
                 thumbFileId =
                     content.document.thumbnail
                         ?.file
@@ -236,6 +242,27 @@ class TelegramContentRepository(
                         ?.file
                         ?.local
                         ?.path
+                // Extract local document file path (Requirement 6)
+                localPath =
+                    content.document.document
+                        ?.local
+                        ?.path
+            }
+            is MessagePhoto -> {
+                // For photos, use the largest size
+                val largestPhoto = content.photo.sizes.maxByOrNull { it.width * it.height }
+                fileId = largestPhoto?.photo?.id
+                fileUniqueId = largestPhoto?.photo?.remote?.uniqueId
+                durationSecs = null
+                width = largestPhoto?.width
+                height = largestPhoto?.height
+                supportsStreaming = null
+                // Photos use different sizes, not separate thumbnail files
+                // Use the largest size directly as the poster
+                thumbFileId = null
+                thumbLocalPath = null
+                // Extract local photo path (Requirement 6)
+                localPath = largestPhoto?.photo?.local?.path
             }
             else -> {
                 fileId = null
@@ -246,6 +273,7 @@ class TelegramContentRepository(
                 supportsStreaming = null
                 thumbFileId = null
                 thumbLocalPath = null
+                localPath = null
             }
         }
 
@@ -292,7 +320,9 @@ class TelegramContentRepository(
                 width = width,
                 height = height,
                 language = language,
-                // Thumbnail fields (video/document thumbnail)
+                // Local file path for zero-copy playback (Requirement 6)
+                localPath = localPath,
+                // Thumbnail fields (video/document thumbnail) (Requirement 3)
                 thumbFileId = thumbFileId,
                 thumbLocalPath = thumbLocalPath,
                 // Movie metadata
@@ -454,6 +484,7 @@ class TelegramContentRepository(
 
     /**
      * Convert ObxTelegramMessage to MediaItem with proper URL format.
+     * Includes thumbnail support (Requirement 3) and zero-copy paths (Requirement 6).
      */
     private fun toMediaItem(
         obxMsg: ObxTelegramMessage,
@@ -479,13 +510,23 @@ class TelegramContentRepository(
             type = type,
             url = url,
             poster = poster,
-            plot = null,
+            plot = obxMsg.description,
             rating = null,
-            year = null,
+            year = obxMsg.year,
             durationSecs = obxMsg.durationSecs,
             categoryName = "Telegram",
             source = "telegram",
             providerKey = "Telegram",
+            tgChatId = obxMsg.chatId,
+            tgMessageId = obxMsg.messageId,
+            tgFileId = obxMsg.fileId,
+            // Thumbnail support (Requirement 3)
+            posterId = obxMsg.posterFileId ?: obxMsg.thumbFileId,
+            localPosterPath = obxMsg.posterLocalPath ?: obxMsg.thumbLocalPath,
+            // Zero-copy paths (Requirement 6) - use localPath for video/document
+            localVideoPath = if (obxMsg.durationSecs != null) obxMsg.localPath else null,
+            localPhotoPath = if (obxMsg.durationSecs == null && obxMsg.width != null) obxMsg.localPath else null,
+            localDocumentPath = if (obxMsg.durationSecs == null && obxMsg.width == null) obxMsg.localPath else null,
         )
     }
 
@@ -692,6 +733,218 @@ class TelegramContentRepository(
     suspend fun clearAllMessages() =
         withContext(Dispatchers.IO) {
             messageBox.removeAll()
+        }
+
+    /**
+     * Get Telegram content grouped by chat ID for per-chat rows (Requirement 1, 2).
+     * Returns a map of chatId to (chatTitle, List<MediaItem>).
+     *
+     * This enables rendering separate rows for each enabled chat in Home/Library screens.
+     * Chat titles are resolved via TDLib for proper display (not numeric IDs).
+     *
+     * @return Flow of Map<Long, Pair<String, List<MediaItem>>> where:
+     *         - Key: chatId
+     *         - Value: Pair of (chatTitle, list of MediaItems for that chat)
+     */
+    fun getTelegramContentByChat(): Flow<Map<Long, Pair<String, List<MediaItem>>>> =
+        store.tgSelectedChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyMap()
+                } else {
+                    buildChatContentMap(chatIds)
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Build map of chat content with resolved titles.
+     * Internal helper for getTelegramContentByChat().
+     */
+    private suspend fun buildChatContentMap(
+        chatIds: List<Long>,
+    ): Map<Long, Pair<String, List<MediaItem>>> =
+        withContext(Dispatchers.IO) {
+            val result = mutableMapOf<Long, Pair<String, List<MediaItem>>>()
+            
+            for (chatId in chatIds) {
+                // Get messages for this chat
+                val messages =
+                    messageBox
+                        .query {
+                            equal(ObxTelegramMessage_.chatId, chatId)
+                            orderDesc(ObxTelegramMessage_.date)
+                        }.find()
+                
+                if (messages.isEmpty()) continue
+                
+                // Resolve chat title via TDLib (Requirement 2)
+                val chatTitle = resolveChatTitle(chatId)
+                
+                // Convert to MediaItems
+                val items = messages.map { obxMsg -> toMediaItem(obxMsg, null) }
+                
+                result[chatId] = Pair(chatTitle, items)
+            }
+            
+            result
+        }
+
+    /**
+     * Resolve chat title from TDLib (Requirement 2).
+     * Returns chat title or falls back to "Chat {chatId}" if unavailable.
+     */
+    private suspend fun resolveChatTitle(chatId: Long): String =
+        withContext(Dispatchers.IO) {
+            try {
+                // Access TDLib session to get chat info
+                val serviceClient =
+                    com.chris.m3usuite.telegram.core
+                        .T_TelegramServiceClient
+                        .getInstance(context)
+                val session = serviceClient.getSessionOrNull()
+                
+                if (session != null) {
+                    val getChatRequest = dev.g000sha256.tdl.dto.GetChat(chatId)
+                    val chatResult = session.client.send(getChatRequest)
+                    
+                    when (chatResult) {
+                        is dev.g000sha256.tdl.TdlResult.Success -> {
+                            val chat = chatResult.result
+                            chat.title?.takeUnless { it.isEmpty() } ?: "Chat $chatId"
+                        }
+                        is dev.g000sha256.tdl.TdlResult.Failure -> {
+                            "Chat $chatId"
+                        }
+                    }
+                } else {
+                    "Chat $chatId"
+                }
+            } catch (e: Exception) {
+                "Chat $chatId"
+            }
+        }
+
+    /**
+     * Get VOD content grouped by chat (Requirement 1, 2).
+     */
+    fun getTelegramVodByChat(): Flow<Map<Long, Pair<String, List<MediaItem>>>> =
+        store.tgSelectedVodChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyMap()
+                } else {
+                    buildChatMoviesMap(chatIds)
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Build map of chat movie content with resolved titles.
+     */
+    private suspend fun buildChatMoviesMap(
+        chatIds: List<Long>,
+    ): Map<Long, Pair<String, List<MediaItem>>> =
+        withContext(Dispatchers.IO) {
+            val result = mutableMapOf<Long, Pair<String, List<MediaItem>>>()
+            
+            for (chatId in chatIds) {
+                // Get non-series messages for this chat
+                val messages =
+                    messageBox
+                        .query {
+                            equal(ObxTelegramMessage_.chatId, chatId)
+                            equal(ObxTelegramMessage_.isSeries, false)
+                            orderDesc(ObxTelegramMessage_.date)
+                        }.find()
+                
+                if (messages.isEmpty()) continue
+                
+                val chatTitle = resolveChatTitle(chatId)
+                val items = messages.map { obxMsg -> toMediaItem(obxMsg, "vod") }
+                
+                result[chatId] = Pair(chatTitle, items)
+            }
+            
+            result
+        }
+
+    /**
+     * Get Series content grouped by chat (Requirement 1, 2).
+     */
+    fun getTelegramSeriesByChat(): Flow<Map<Long, Pair<String, List<MediaItem>>>> =
+        store.tgSelectedSeriesChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyMap()
+                } else {
+                    buildChatSeriesMap(chatIds)
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Build map of chat series content with resolved titles.
+     */
+    private suspend fun buildChatSeriesMap(
+        chatIds: List<Long>,
+    ): Map<Long, Pair<String, List<MediaItem>>> =
+        withContext(Dispatchers.IO) {
+            val result = mutableMapOf<Long, Pair<String, List<MediaItem>>>()
+            
+            for (chatId in chatIds) {
+                // Get series grouped by normalized name
+                val episodes =
+                    messageBox
+                        .query {
+                            equal(ObxTelegramMessage_.chatId, chatId)
+                            equal(ObxTelegramMessage_.isSeries, true)
+                            orderDesc(ObxTelegramMessage_.date)
+                        }.find()
+                
+                if (episodes.isEmpty()) continue
+                
+                val chatTitle = resolveChatTitle(chatId)
+                
+                // Group by series and create representative items
+                val seriesItems =
+                    episodes
+                        .filter { !it.seriesNameNormalized.isNullOrBlank() }
+                        .groupBy { it.seriesNameNormalized!! }
+                        .map { (_, episodeList) ->
+                            // Use first episode as representative
+                            val representative = episodeList.first()
+                            val encodedSeriesName = java.net.URLEncoder.encode(representative.seriesNameNormalized, "UTF-8")
+                            MediaItem(
+                                id = encodeTelegramId(representative.messageId),
+                                name = representative.seriesName ?: "Untitled Series",
+                                type = "series",
+                                url = "tg://series/${representative.chatId}/$encodedSeriesName",
+                                poster = representative.posterLocalPath ?: representative.thumbLocalPath,
+                                plot = representative.description,
+                                rating = null,
+                                year = representative.year,
+                                durationSecs = null,
+                                categoryName = "Telegram Series - $chatTitle",
+                                source = "telegram",
+                                providerKey = "Telegram",
+                                posterId = representative.posterFileId ?: representative.thumbFileId,
+                                localPosterPath = representative.posterLocalPath ?: representative.thumbLocalPath,
+                                tgChatId = representative.chatId,
+                                tgMessageId = representative.messageId,
+                                tgFileId = representative.fileId,
+                                localVideoPath = representative.localPath,
+                                localPhotoPath = null,
+                                localDocumentPath = representative.localPath,
+                            )
+                        }
+                
+                if (seriesItems.isNotEmpty()) {
+                    result[chatId] = Pair(chatTitle, seriesItems)
+                }
+            }
+            
+            result
         }
 
     /**
