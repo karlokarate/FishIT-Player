@@ -294,10 +294,8 @@ class T_TelegramFileDownloader(
         timeoutMs: Long = 30_000L,
     ): String {
         return withContext(Dispatchers.IO) {
-            // 1. Get current file status from TDLib
-            var file =
-                getFileInfo(fileId)
-                    ?: throw Exception("File not found: $fileId")
+            // 1. Get current file status from TDLib (fresh, no cache)
+            var file = getFreshFileState(fileId)
 
             val requiredPrefixSize = startPosition + minBytes
             val initialPrefix = file.local?.downloadedPrefixSize?.toLong() ?: 0L
@@ -346,14 +344,14 @@ class T_TelegramFileDownloader(
                 throw Exception("Download failed: ${downloadResult.message}")
             }
 
-            // 4. Wait loop - poll TDLib state
+            // 4. Wait loop - poll TDLib state with fresh requests
             val startTime = SystemClock.elapsedRealtime()
             var result: String? = null
             while (result == null) {
                 delay(100) // 100ms polling interval
 
-                // Get updated file state from TDLib
-                file = getFileInfo(fileId) ?: throw Exception("File info lost during download")
+                // Get fresh file state from TDLib (bypassing cache)
+                file = getFreshFileState(fileId)
                 val prefix = file.local?.downloadedPrefixSize?.toLong() ?: 0L
                 val pathNow = file.local?.path
 
@@ -772,6 +770,27 @@ class T_TelegramFileDownloader(
                     isComplete = isComplete,
                 )
             }
+
+    /**
+     * Get fresh file state from TDLib without using cache.
+     * Used by ensureFileReady to poll actual download progress.
+     *
+     * @param fileId TDLib file ID (integer)
+     * @return Fresh File object from TDLib
+     */
+    private suspend fun getFreshFileState(fileId: Int): File =
+        withContext(Dispatchers.IO) {
+            val result = client.getFile(fileId)
+
+            when (result) {
+                is dev.g000sha256.tdl.TdlResult.Success -> {
+                    return@withContext result.result
+                }
+                is dev.g000sha256.tdl.TdlResult.Failure -> {
+                    throw Exception("Failed to get fresh file state: ${result.code} - ${result.message}")
+                }
+            }
+        }
 
     /**
      * Get file information from TDLib.
