@@ -32,7 +32,7 @@ The repository currently has **15 releases**:
 ### Tools Created/Available
 
 #### 1. Existing Bash Scripts
-- `scripts/delete-all-releases.sh` - Safe deletion with confirmationprompts and dry-run support
+- `scripts/delete-all-releases.sh` - Safe deletion with confirmation prompts and dry-run support
 - `scripts/delete-releases-oneliner.sh` - Quick deletion without prompts
 
 #### 2. New Python Script (✨ NEW)

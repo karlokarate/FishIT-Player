@@ -22,7 +22,7 @@ def delete_all_releases():
         sys.exit(1)
     
     headers = {
-        'Authorization': f'token {token}',
+        'Authorization': f'Bearer {token}',
         'Accept': 'application/vnd.github.v3+json',
         'User-Agent': 'FishIT-Player-Release-Deleter'
     }
@@ -68,7 +68,8 @@ def delete_all_releases():
         delete_url = f"https://api.github.com/repos/{repo}/releases/{release_id}"
         
         try:
-            req = Request(delete_url, headers=headers, method='DELETE')
+            req = Request(delete_url, headers=headers)
+            req.get_method = lambda: 'DELETE'
             with urlopen(req) as response:
                 if response.status == 204:
                     print("✅ Deleted")
