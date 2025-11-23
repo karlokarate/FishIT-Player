@@ -172,14 +172,13 @@ class TelegramSyncWorker(
                 )
 
             if (page.isEmpty()) {
-                TelegramLogRepository.debug(
+                TelegramLogRepository.info(
                     source = "TelegramSyncWorker",
-                    message = "No more messages",
+                    message = "Stopping pagination: empty page from TDLib",
                     details =
                         mapOf(
                             "chatId" to chatId.toString(),
-                            "page" to pageIndex.toString(),
-                            "total" to all.size.toString(),
+                            "totalLoaded" to all.size.toString(),
                         ),
                 )
                 return all
@@ -199,18 +198,36 @@ class TelegramSyncWorker(
                     ),
             )
 
-            // Nächster fromMessageId = älteste Message in dieser Page
-            val oldest = page.minOfOrNull { it.id }
-            if (oldest == null || oldest == fromMessageId) {
+            // Use last message from the page to set next fromMessageId (consistent with T_ChatBrowser)
+            val oldestMessage = page.lastOrNull()
+            if (oldestMessage == null || oldestMessage.id == fromMessageId) {
+                TelegramLogRepository.info(
+                    source = "TelegramSyncWorker",
+                    message = "Stopping pagination: reached oldest known message",
+                    details =
+                        mapOf(
+                            "chatId" to chatId.toString(),
+                            "fromMessageId" to fromMessageId.toString(),
+                            "totalLoaded" to all.size.toString(),
+                        ),
+                )
                 return all
             }
-            fromMessageId = oldest
-            offset = 0
 
-            if (page.size < pageSize) {
-                return all
-            }
+            fromMessageId = oldestMessage.id
+            offset = 0
         }
+
+        TelegramLogRepository.info(
+            source = "TelegramSyncWorker",
+            message = "Stopping pagination: reached maxPages cap",
+            details =
+                mapOf(
+                    "chatId" to chatId.toString(),
+                    "maxPages" to maxPages.toString(),
+                    "totalLoaded" to all.size.toString(),
+                ),
+        )
 
         return all
     }
