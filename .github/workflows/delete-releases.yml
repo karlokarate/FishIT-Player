@@ -1,0 +1,40 @@
+name: Delete All Releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_deletion:
+        description: 'Type "DELETE ALL RELEASES" to confirm'
+        required: true
+        type: string
+
+jobs:
+  delete-releases:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Verify confirmation
+        run: |
+          if [ "${{ inputs.confirm_deletion }}" != "DELETE ALL RELEASES" ]; then
+            echo "❌ Confirmation phrase incorrect. Expected: DELETE ALL RELEASES"
+            exit 1
+          fi
+          echo "✅ Confirmation verified"
+      
+      - name: Delete all releases using Python script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 scripts/delete-releases-api.py
+      
+      - name: Summary
+        run: |
+          echo "## Release Deletion Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All releases have been deleted from the repository." >> $GITHUB_STEP_SUMMARY
+          echo "This frees up significant storage space." >> $GITHUB_STEP_SUMMARY
