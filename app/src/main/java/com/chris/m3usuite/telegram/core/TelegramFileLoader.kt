@@ -18,7 +18,8 @@ import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 class TelegramFileLoader(
     private val serviceClient: T_TelegramServiceClient,
 ) {
-    private val downloader = serviceClient.downloader()
+    private val downloader: T_TelegramFileDownloader
+        get() = serviceClient.downloader()
 
     companion object {
         private const val TAG = "TelegramFileLoader"
