@@ -71,7 +71,7 @@ echo ""
 DELETED=0
 FAILED=0
 
-echo "${RELEASES}" | while read -r tag; do
+while read -r tag; do
   echo -n "Deleting release: ${tag}... "
   if gh release delete "${tag}" --repo "${REPO}" --yes 2>/dev/null; then
     echo "✅ Deleted"
@@ -80,7 +80,7 @@ echo "${RELEASES}" | while read -r tag; do
     echo "❌ Failed"
     FAILED=$((FAILED + 1))
   fi
-done
+done < <(echo "${RELEASES}")
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
