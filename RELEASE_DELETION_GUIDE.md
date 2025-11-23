@@ -101,28 +101,6 @@ gh release delete boringssl-28efc83e86dc-android24-ndk-r27c --repo karlokarate/F
 gh release delete v0.2.0 --repo karlokarate/FishIT-Player --yes
 ```
 
-### Method 3: Using GitHub CLI Manually
-
-Delete each release individually:
-
-```bash
-gh release delete dragon --repo karlokarate/FishIT-Player --yes
-gh release delete zoolander --repo karlokarate/FishIT-Player --yes
-gh release delete uu --repo karlokarate/FishIT-Player --yes
-gh release delete optimum --repo karlokarate/FishIT-Player --yes
-gh release delete hdhd --repo karlokarate/FishIT-Player --yes
-gh release delete silverbear --repo karlokarate/FishIT-Player --yes
-gh release delete goldtwo --repo karlokarate/FishIT-Player --yes
-gh release delete goldone --repo karlokarate/FishIT-Player --yes
-gh release delete fff --repo karlokarate/FishIT-Player --yes
-gh release delete Jupiterone --repo karlokarate/FishIT-Player --yes
-gh release delete quessel --repo karlokarate/FishIT-Player --yes
-gh release delete goldbeta --repo karlokarate/FishIT-Player --yes
-gh release delete betaone --repo karlokarate/FishIT-Player --yes
-gh release delete boringssl-28efc83e86dc-android24-ndk-r27c --repo karlokarate/FishIT-Player --yes
-gh release delete v0.2.0 --repo karlokarate/FishIT-Player --yes
-```
-
 ### Method 4: Using GitHub Web Interface
 
 1. Go to https://github.com/karlokarate/FishIT-Player/releases
