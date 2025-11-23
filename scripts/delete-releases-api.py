@@ -13,7 +13,7 @@ from urllib.error import HTTPError, URLError
 
 def delete_all_releases():
     """Delete all releases from the repository."""
-    repo = "karlokarate/FishIT-Player"
+    repo = os.environ.get('GITHUB_REPOSITORY', 'karlokarate/FishIT-Player')
     token = os.environ.get('GITHUB_TOKEN')
     
     if not token:
