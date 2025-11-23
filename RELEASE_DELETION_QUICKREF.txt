@@ -1,0 +1,47 @@
+┌─────────────────────────────────────────────────────────────┐
+│                 RELEASE DELETION QUICK REF                  │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  PROBLEM: 15 releases consuming ~1-2 GB of space           │
+│                                                             │
+│  SOLUTION: Run one of the deletion scripts                 │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  SETUP (one-time)                                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. Install GitHub CLI: https://cli.github.com/            │
+│  2. Authenticate: gh auth login                            │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  OPTION A: Fast Deletion (no prompts)                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ./scripts/delete-releases-oneliner.sh                     │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  OPTION B: Safe Deletion (with confirmation)               │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  # Preview first                                           │
+│  ./scripts/delete-all-releases.sh --dry-run               │
+│                                                             │
+│  # Then delete                                             │
+│  ./scripts/delete-all-releases.sh                         │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  VERIFY                                                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  gh release list --repo karlokarate/FishIT-Player          │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  MORE INFO                                                  │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  📖 Full documentation: RELEASE_DELETION_GUIDE.md          │
+│  📂 Scripts overview: scripts/README.md                    │
+│                                                             │
+│  ⚠️  Note: Deleting releases does NOT delete git tags      │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
