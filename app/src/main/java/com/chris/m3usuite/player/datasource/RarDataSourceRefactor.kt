@@ -147,7 +147,13 @@ class RarDataSourceRefactor(
 
             val serviceClient = T_TelegramServiceClient.getInstance(context)
 
-            // HIER ggf. property-Namen anpassen, falls dein ServiceClient anders heißt:
+            // TODO: T_TelegramServiceClient.fileDownloader property not yet available
+            // TODO: StreamingConfig constants not yet defined
+            // Uncomment when these are implemented (Phase 3+)
+            // For now, this RarDataSourceRefactor serves as reference only
+            throw IOException("RarDataSourceRefactor: fileDownloader not yet implemented in T_TelegramServiceClient")
+            
+            /*
             val downloader: T_TelegramFileDownloader = serviceClient.fileDownloader
 
             val minBytes = StreamingConfig.MIN_READ_AHEAD_BYTES
@@ -197,5 +203,6 @@ class RarDataSourceRefactor(
             )
 
             path
+            */
         }
 }

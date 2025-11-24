@@ -275,7 +275,9 @@ fun rememberInternalPlayerSession(
             },
         )
 
-        // Sleep-Timer (reuses your existing SettingsStore flag)
+        // TODO: Sleep-Timer feature not yet implemented in SettingsStore
+        // Uncomment when SettingsStore.playerSleepTimerMinutes is available (Phase 4+)
+        /*
         val sleepMinutes = settings.playerSleepTimerMinutes
         if (sleepMinutes > 0) {
             val total = sleepMinutes * 60_000L
@@ -296,6 +298,7 @@ fun rememberInternalPlayerSession(
                 }
             }
         }
+        */
 
         // Resume + Screen-Time periodic tick (~3s)
         scope.launch {
@@ -388,6 +391,9 @@ private fun buildMediaItemWithTelegramExtras(
 
     val appItem = resolved.appMediaItem
 
+    // TODO: Subtitles support - AppMediaItem.subtitles field not yet implemented
+    // Uncomment when MediaItem has subtitles field (Phase 4+)
+    /*
     // Subtitles from AppMediaItem (keeps Xtream + Telegram behaviour)
     appItem?.subtitles?.forEach { sub ->
         val subUri = Uri.parse(sub.url)
@@ -403,12 +409,16 @@ private fun buildMediaItemWithTelegramExtras(
             builder.build().subtitleConfigurations + subConfig,
         )
     }
+    */
 
     val metadataBuilder =
         MediaMetadata
             .Builder()
             .setTitle(appItem?.name ?: "")
 
+    // TODO: Artwork support - playerArtwork() returns wrong type
+    // Uncomment when MediaItem.playerArtwork() returns ByteArray? (Phase 4+)
+    /*
     // Artwork from AppMediaItem, if provided
     val artwork = appItem?.playerArtwork()
     if (artwork != null) {
@@ -417,6 +427,7 @@ private fun buildMediaItemWithTelegramExtras(
             MediaMetadata.PICTURE_TYPE_FRONT_COVER,
         )
     }
+    */
 
     builder.setMediaMetadata(metadataBuilder.build())
 

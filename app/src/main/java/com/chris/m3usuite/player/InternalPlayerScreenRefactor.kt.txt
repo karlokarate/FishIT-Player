@@ -35,7 +35,7 @@ import com.chris.m3usuite.player.internal.ui.SleepTimerDialog
 import com.chris.m3usuite.player.internal.ui.SpeedDialog
 import com.chris.m3usuite.player.internal.ui.TracksDialog
 import com.chris.m3usuite.ui.layout.FishM3uSuiteAppTheme
-import com.chris.m3usuite.ui.layout.rememberImageHeaders
+import com.chris.m3usuite.ui.util.rememberImageHeaders
 import com.chris.m3usuite.ui.util.LocalWindowSize
 
 /**
@@ -185,6 +185,8 @@ fun InternalPlayerScreenRefactor(
         }
 
         // Sleep timer dialog
+        // TODO: Sleep timer feature not yet implemented in SettingsStore
+        /*
         if (uiState.showSleepTimerDialog) {
             SleepTimerDialog(
                 remainingMs = uiState.sleepTimerRemainingMs,
@@ -197,6 +199,8 @@ fun InternalPlayerScreenRefactor(
                 },
             )
         }
+        */
+
 
         // Tracks dialog (audio + subtitles)
         if (uiState.showTracksDialog && player != null) {
