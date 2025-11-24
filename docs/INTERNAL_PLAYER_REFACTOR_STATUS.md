@@ -122,9 +122,55 @@ Before the remaining modules can be integrated, the codebase needs:
 - The integration is designed to be non-breaking: all existing functionality continues to work
 - The new modules provide the foundation for future refactoring work
 
-## Files in ZIP Not Yet Used
+## SIP Reference Modules Imported (Phase 2 Follow-up - 2025-11-24)
 
-The following files remain in the ZIP at `tools/tdlib neu.zip` and can be referenced for future implementation:
+All remaining SIP modules from `tools/tdlib neu.zip` have been imported as reference implementations.
+
+### Fully Integrated and Compilable Modules
+
+**UI/System Layer:**
+- ✅ **InternalPlayerControls.kt** - Player controls, dialogs (speed, tracks, debug), and overlays with fallback Material Icons
+- ✅ **InternalPlayerSystemUi.kt** - System UI management (back handler, screen-on, fullscreen, PiP)
+
+**Session Layer:**
+- ✅ **InternalPlayerSession.kt** - Player lifecycle management, resume handling, kids gate integration
+  - Note: Sleep timer and subtitle support commented out pending API availability
+
+**Refactored Modules (with "Refactor" suffix to avoid conflicts):**
+- ✅ **StreamingConfigRefactor.kt** - Streaming configuration object
+- ✅ **T_TelegramFileDownloaderRefactor.kt** - File downloader with DownloadProgressRefactor type
+- ✅ **RarDataSourceRefactor.kt** - RAR archive data source (implementation stubbed pending fileDownloader API)
+- ✅ **ObxEntitiesRefactor.kt** - Refactored ObxTelegramMessage entity
+
+**Infrastructure Stubs:**
+- ✅ **RememberPlayerController.kt** - Stub interface for player lifecycle (TODO: Phase 7 implementation)
+- ✅ **R.string.pip_not_available** - String resource for PiP unavailable message
+
+### Reference-Only Modules (saved as .txt)
+
+The following modules have extensive missing dependencies and are saved as .txt files for reference:
+
+- 📄 **InternalPlayerScreenRefactor.kt.txt** - Modular screen orchestrator
+  - Requires: FishM3uSuiteAppTheme, LocalWindowSize, playerSleepTimerMinutes
+  
+- 📄 **TelegramContentRepositoryRefactor.kt.txt** - Refactored Telegram content repository
+  - Incompatible with current ObjectBox query API
+
+### Build Status
+
+✅ **Project builds successfully** (`./gradlew :app:assembleDebug`)
+
+All compilable modules are integrated and the legacy monolithic InternalPlayerScreen.kt remains as the active runtime implementation. The SIP modules serve as reference implementations for future phases (3-10) of the refactor roadmap.
+
+### Why This Was Done
+
+> "All SIP modules from tools/tdlib neu.zip are now available in the repo as compilable reference implementations (or .txt for incompatible modules).
+The old monolithic InternalPlayerScreen and associated streaming classes remain active for runtime.
+This allows future phases (3-10) of the roadmap to progressively replace legacy behaviour with modular implementations without losing any functionality."
+
+## Files Previously in ZIP (Now Integrated)
+
+The following files have been extracted and integrated from `tools/tdlib neu.zip`:
 
 - InternalPlayerScreen.kt
 - InternalPlayerSession.kt
