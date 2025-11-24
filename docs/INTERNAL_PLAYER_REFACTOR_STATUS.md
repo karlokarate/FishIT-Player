@@ -268,3 +268,41 @@ The following files have been extracted and integrated from `tools/tdlib neu.zip
 - Updated ObxEntities.kt (refactored ObxTelegramMessage)
 
 These can serve as reference implementations for the corresponding future phases of the refactor.
+
+---
+
+## Phase 2 Preparation Started
+
+- Integrated SIP domain modules for resume and kids gate.
+- Added Phase2Stubs.kt as anchor point for upcoming integration.
+- Legacy InternalPlayerScreen remains the active runtime implementation.
+- No functional changes performed.
+
+### SIP Modules Verified for Phase 2
+
+The following modules are now in place and ready for Phase 2 integration:
+
+**Domain Layer (`internal/domain/`):**
+- `ResumeManager.kt` - Interface + `DefaultResumeManager` implementation
+- `KidsPlaybackGate.kt` - Interface + `DefaultKidsPlaybackGate` implementation
+- `PlaybackContext.kt` - Domain context for playback sessions
+
+**State Layer (`internal/state/`):**
+- `InternalPlayerState.kt` - Contains `InternalPlayerUiState`, `AspectRatioMode`, `InternalPlayerController`
+
+**Session Layer (`internal/session/`):**
+- `InternalPlayerSession.kt` - Session management with resume and kids gate support
+- `Phase2Stubs.kt` - Anchor point for Phase 2 integration (NEW)
+
+**Source Resolution (`internal/source/`):**
+- `InternalPlaybackSourceResolver.kt` - URL resolution with `PlaybackSourceResolver` and `ResolvedPlaybackSource`
+
+**UI/System Layers:**
+- `internal/ui/InternalPlayerControls.kt` - Player controls reference
+- `internal/system/InternalPlayerSystemUi.kt` - System UI management reference
+
+### Phase 2 Status: 🔄 **PREPARATION COMPLETE**
+
+All SIP modules for resume and kids gate are integrated, verified, and ready for use.
+The `Phase2Stubs.kt` anchor file provides a stable integration point for upcoming work.
+No runtime changes have been made - legacy `InternalPlayerScreen` remains the active implementation.
