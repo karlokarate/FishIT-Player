@@ -450,12 +450,14 @@ fun SeriesDetailScreen(
             }
         
         // Phase 1: Use PlaybackContext even in fallback case
-        // Note: This fallback is missing series context (seriesStreamId, season, episodeNum)
-        // which appears to be intentional in the current implementation.
+        // Note: This fallback path is missing series context (seriesId, season, episodeNumber)
+        // which appears to be intentional in the current implementation. The seriesLauncher
+        // callback path (via openInternal) provides complete context, but this inline fallback
+        // only has episodeId available. This may warrant investigation in future phases.
         val playbackContext = PlaybackContext(
             type = PlaybackType.SERIES,
             mediaId = null,
-            seriesId = null, // Not available in this fallback path
+            seriesId = null, // TODO: Not available in this fallback path - consider passing from parent scope
             season = null,
             episodeNumber = null,
             episodeId = internalEpisodeId,

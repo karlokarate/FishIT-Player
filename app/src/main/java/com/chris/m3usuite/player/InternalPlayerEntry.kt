@@ -41,6 +41,9 @@ fun InternalPlayerEntry(
         headers = headers,
         mimeType = mimeType,
         onExit = onExit,
+        // Legacy flag: originLiveLibrary indicates if content came from live library.
+        // We derive this from presence of liveCategoryHint, which is set when navigating
+        // from live content screens.
         originLiveLibrary = playbackContext.liveCategoryHint != null,
         liveCategoryHint = playbackContext.liveCategoryHint,
         liveProviderHint = playbackContext.liveProviderHint,
