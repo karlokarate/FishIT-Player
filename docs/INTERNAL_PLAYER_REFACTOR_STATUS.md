@@ -168,6 +168,68 @@ All compilable modules are integrated and the legacy monolithic InternalPlayerSc
 The old monolithic InternalPlayerScreen and associated streaming classes remain active for runtime.
 This allows future phases (3-10) of the roadmap to progressively replace legacy behaviour with modular implementations without losing any functionality."
 
+## Phase 1 Completed (2025-11-24)
+
+### What Was Done
+
+Phase 1 of the refactor roadmap has been completed. All call sites in the application now use `PlaybackContext` to describe playback sessions, while preserving existing runtime behavior.
+
+**Bridge Entry Point Created:**
+- `InternalPlayerEntry.kt` - A Phase 1 bridge function that:
+  - Accepts the new typed `PlaybackContext` model
+  - Maps `PlaybackType` enum to legacy string types ("vod", "series", "live")
+  - Delegates to the monolithic legacy `InternalPlayerScreen` implementation
+  - Preserves all existing runtime behavior
+
+**Call Sites Updated:**
+
+All internal player call sites now construct and pass `PlaybackContext`:
+
+1. **MainActivity navigation composable** (`player?url=...` route)
+   - Builds `PlaybackContext` based on type parameter
+   - VOD: Uses `PlaybackType.VOD` with `mediaId`
+   - SERIES: Uses `PlaybackType.SERIES` with `seriesId`, `season`, `episodeNumber`, `episodeId`
+   - LIVE: Uses `PlaybackType.LIVE` with `mediaId`, `liveCategoryHint`, `liveProviderHint`
+
+2. **LiveDetailScreen** (direct call)
+   - Constructs `PlaybackContext` with `PlaybackType.LIVE` and category hints
+   - Replaced direct `InternalPlayerScreen` call with `InternalPlayerEntry`
+
+3. **SeriesDetailScreen** (fallback when `openInternal` is null)
+   - Constructs `PlaybackContext` with `PlaybackType.SERIES`
+   - Replaced direct `InternalPlayerScreen` call with `InternalPlayerEntry`
+   - Note: Fallback path is missing some series context (by design in current implementation)
+
+4. **VodDetailScreen, TelegramDetailScreen, SeriesDetailScreen** (via `openInternal` callbacks)
+   - These screens use `openInternal` callbacks that navigate via route strings
+   - The navigation is handled by the MainActivity composable (above)
+   - Therefore all paths now use `PlaybackContext`
+
+### Current Architecture
+
+```
+Call Sites (VOD/SERIES/LIVE/Telegram Detail Screens)
+    ↓
+InternalPlayerEntry (Phase 1 Bridge)
+    ↓
+InternalPlayerScreen (Legacy Monolithic Implementation)
+```
+
+### Build Status
+
+✅ **Project builds successfully** with all Phase 1 changes
+
+### What's Next
+
+Phase 1 establishes the foundation for future refactor phases:
+
+- **Phase 2**: ResumeManager and KidsPlaybackGate integration (already imported, ready to wire)
+- **Phase 3-10**: Progressive replacement of legacy functionality with modular SIP implementations
+
+The typed `PlaybackContext` at all call sites means future phases can switch to the modular SIP-based orchestrator without modifying call sites.
+
+---
+
 ## Files Previously in ZIP (Now Integrated)
 
 The following files have been extracted and integrated from `tools/tdlib neu.zip`:
