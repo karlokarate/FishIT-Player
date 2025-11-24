@@ -51,7 +51,10 @@ import androidx.media3.common.util.UnstableApi
 import com.chris.m3usuite.data.obx.toMediaItem
 import com.chris.m3usuite.data.repo.EpgRepository
 import com.chris.m3usuite.data.repo.KidContentRepository
+import com.chris.m3usuite.player.InternalPlayerEntry
 import com.chris.m3usuite.player.InternalPlayerScreen
+import com.chris.m3usuite.player.internal.domain.PlaybackContext
+import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.components.sheets.KidSelectSheet
 import com.chris.m3usuite.ui.focus.focusScaleOnTv
@@ -353,15 +356,23 @@ fun LiveDetailScreen(
                 if (internalUa.isNotBlank()) put("User-Agent", internalUa)
                 if (internalRef.isNotBlank()) put("Referer", internalRef)
             }
-        InternalPlayerScreen(
-            url = internalUrl.orEmpty(),
-            type = "live",
+        
+        val playbackContext = PlaybackContext(
+            type = PlaybackType.LIVE,
             mediaId = id,
-            startPositionMs = internalStartMs,
-            headers = hdrs,
-            onExit = { showInternal = false },
-            originLiveLibrary = true,
             liveCategoryHint = categoryName,
+            liveProviderHint = null,
+            kidProfileId = null, // Will be derived from SettingsStore
+        )
+        
+        InternalPlayerEntry(
+            url = internalUrl.orEmpty(),
+            startMs = internalStartMs,
+            mimeType = null,
+            headers = hdrs,
+            mediaItem = null,
+            playbackContext = playbackContext,
+            onExit = { showInternal = false },
         )
         return
     }

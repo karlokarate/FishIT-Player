@@ -43,10 +43,14 @@ Refactor the legacy `InternalPlayerScreen` into a modular, testable, and maintai
   - ✅ `RememberInternalPlayerScreen(...)` now takes a `PlaybackContext`
   - ✅ `InternalPlayerScreen(...)` now takes a `PlaybackContext` and passes it to the session
 
-- ⬜ Update all call sites in the app
-  - ⬜ For VOD calls: construct `PlaybackContext(type = PlaybackType.VOD, mediaId = ..., ...)`
-  - ⬜ For series/episode calls: include `PlaybackType.SERIES` + `seriesId`, `season`, `episodeNumber`
-  - ⬜ For live calls: use `PlaybackType.LIVE` + `liveCategoryHint` / `liveProviderHint` where available
+- ✅ Update all call sites in the app
+  - ✅ For VOD calls: construct `PlaybackContext(type = PlaybackType.VOD, mediaId = ..., ...)`
+  - ✅ For series/episode calls: include `PlaybackType.SERIES` + `seriesId`, `season`, `episodeNumber`
+  - ✅ For live calls: use `PlaybackType.LIVE` + `liveCategoryHint` / `liveProviderHint` where available
+  - ✅ Created `InternalPlayerEntry` bridge that accepts PlaybackContext and delegates to legacy `InternalPlayerScreen`
+  - ✅ Updated MainActivity navigation composable to build PlaybackContext from route parameters
+  - ✅ Updated LiveDetailScreen direct call to use InternalPlayerEntry with PlaybackContext
+  - ✅ Updated SeriesDetailScreen fallback to use InternalPlayerEntry with PlaybackContext
 
 ---
 
