@@ -754,7 +754,7 @@
     },
     {
       "id": "13:3463824368552542268",
-      "lastPropertyId": "19:4405478845776680096",
+      "lastPropertyId": "32:1095475850419797386",
       "name": "ObxTelegramMessage",
       "properties": [
         {
@@ -867,6 +867,75 @@
         {
           "id": "19:4405478845776680096",
           "name": "fileName",
+          "type": 9
+        },
+        {
+          "id": "20:1655202533119471021",
+          "name": "title",
+          "type": 9
+        },
+        {
+          "id": "21:6607450835477700131",
+          "name": "year",
+          "type": 5
+        },
+        {
+          "id": "22:7010399678497084911",
+          "name": "genres",
+          "type": 9
+        },
+        {
+          "id": "23:5502667410425124679",
+          "name": "fsk",
+          "type": 5
+        },
+        {
+          "id": "24:5314246928478674433",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "25:3101800239475750624",
+          "name": "posterFileId",
+          "type": 5
+        },
+        {
+          "id": "26:5560794787418849156",
+          "name": "posterLocalPath",
+          "type": 9
+        },
+        {
+          "id": "27:2181241144592879148",
+          "name": "isSeries",
+          "indexId": "77:7750478664689829168",
+          "type": 1,
+          "flags": 8
+        },
+        {
+          "id": "28:7395034779444134006",
+          "name": "seriesName",
+          "indexId": "78:2278006117773784949",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "29:114243577328240341",
+          "name": "seriesNameNormalized",
+          "type": 9
+        },
+        {
+          "id": "30:4332033684608952079",
+          "name": "seasonNumber",
+          "type": 5
+        },
+        {
+          "id": "31:6525051912946263853",
+          "name": "episodeNumber",
+          "type": 5
+        },
+        {
+          "id": "32:1095475850419797386",
+          "name": "episodeTitle",
           "type": 9
         }
       ],
@@ -1198,7 +1267,7 @@
     }
   ],
   "lastEntityId": "19:5410393420475292600",
-  "lastIndexId": "76:6188449872107352810",
+  "lastIndexId": "78:2278006117773784949",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

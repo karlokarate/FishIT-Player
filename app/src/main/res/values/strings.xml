@@ -11,4 +11,6 @@
     <string name="no_link_available">Kein Link verfügbar</string>
     <string name="empty_default">Keine Inhalte verfügbar</string>
     <string name="action_retry">Erneut versuchen</string>
+    <!-- Player UI -->
+    <string name="pip_not_available">Picture-in-Picture not available on this device</string>
 </resources>
