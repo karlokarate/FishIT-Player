@@ -68,7 +68,10 @@ import com.chris.m3usuite.core.xtream.ProviderLabelStore
 import com.chris.m3usuite.data.obx.buildPlayUrl
 import com.chris.m3usuite.data.obx.toEpisode
 import com.chris.m3usuite.model.Episode
+import com.chris.m3usuite.player.InternalPlayerEntry
 import com.chris.m3usuite.player.InternalPlayerScreen
+import com.chris.m3usuite.player.internal.domain.PlaybackContext
+import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.actions.MediaAction
 import com.chris.m3usuite.ui.actions.MediaActionBar
@@ -445,13 +448,27 @@ fun SeriesDetailScreen(
                 if (internalUa.isNotBlank()) this["User-Agent"] = internalUa
                 if (internalRef.isNotBlank()) this["Referer"] = internalRef
             }
-        InternalPlayerScreen(
-            url = internalUrl.orEmpty(),
-            type = "series",
+        
+        // Phase 1: Use PlaybackContext even in fallback case
+        // Note: This fallback is missing series context (seriesStreamId, season, episodeNum)
+        // which appears to be intentional in the current implementation.
+        val playbackContext = PlaybackContext(
+            type = PlaybackType.SERIES,
+            mediaId = null,
+            seriesId = null, // Not available in this fallback path
+            season = null,
+            episodeNumber = null,
             episodeId = internalEpisodeId,
-            startPositionMs = internalStartMs,
-            headers = hdrs,
+            kidProfileId = null, // Will be derived from SettingsStore
+        )
+        
+        InternalPlayerEntry(
+            url = internalUrl.orEmpty(),
+            startMs = internalStartMs,
             mimeType = internalMime,
+            headers = hdrs,
+            mediaItem = null,
+            playbackContext = playbackContext,
             onExit = { showInternal = false },
         )
         return

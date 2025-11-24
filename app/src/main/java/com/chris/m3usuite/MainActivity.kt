@@ -26,7 +26,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.chris.m3usuite.logs.ui.LogViewerScreen
 import com.chris.m3usuite.navigation.navigateTopLevel
+import com.chris.m3usuite.player.InternalPlayerEntry
 import com.chris.m3usuite.player.InternalPlayerScreen // <- korrektes Paket (s. Schritt A)
+import com.chris.m3usuite.player.internal.domain.PlaybackContext
+import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.ui.TelegramLogScreen
@@ -488,21 +491,39 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
-                            InternalPlayerScreen(
+                            // Build PlaybackContext based on type
+                            val playbackContext = when (type) {
+                                "series" -> PlaybackContext(
+                                    type = PlaybackType.SERIES,
+                                    mediaId = null,
+                                    seriesId = seriesId,
+                                    season = season,
+                                    episodeNumber = episodeNum,
+                                    episodeId = episodeId,
+                                    kidProfileId = null, // Will be derived from SettingsStore
+                                )
+                                "live" -> PlaybackContext(
+                                    type = PlaybackType.LIVE,
+                                    mediaId = mediaId,
+                                    liveCategoryHint = cat.ifBlank { null },
+                                    liveProviderHint = prov.ifBlank { null },
+                                    kidProfileId = null, // Will be derived from SettingsStore
+                                )
+                                else -> PlaybackContext( // "vod" or default
+                                    type = PlaybackType.VOD,
+                                    mediaId = mediaId,
+                                    kidProfileId = null, // Will be derived from SettingsStore
+                                )
+                            }
+
+                            InternalPlayerEntry(
                                 url = url,
-                                type = type,
-                                mediaId = mediaId,
-                                episodeId = episodeId,
-                                seriesId = seriesId,
-                                season = season,
-                                episodeNum = episodeNum,
-                                startPositionMs = startMs,
+                                startMs = startMs,
                                 mimeType = mime,
+                                headers = emptyMap(),
+                                mediaItem = preparedMediaItem,
+                                playbackContext = playbackContext,
                                 onExit = { nav.popBackStack() },
-                                originLiveLibrary = (origin == "lib"),
-                                liveCategoryHint = cat.ifBlank { null },
-                                liveProviderHint = prov.ifBlank { null },
-                                preparedMediaItem = preparedMediaItem,
                             )
                         }
 
