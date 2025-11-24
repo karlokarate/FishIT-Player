@@ -1264,10 +1264,165 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "20:2105640230933897644",
+      "lastPropertyId": "28:5026580435191464100",
+      "name": "ObxTelegramMessageRefactor",
+      "properties": [
+        {
+          "id": "1:6606059050461206556",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:2323367320355465269",
+          "name": "chatId",
+          "indexId": "79:1893931273037195068",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "3:2768974038547238694",
+          "name": "messageId",
+          "indexId": "80:8418729326789839605",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "4:7921380454492253164",
+          "name": "fileId",
+          "indexId": "81:2570900342989619037",
+          "type": 5,
+          "flags": 8
+        },
+        {
+          "id": "5:6391075450426491390",
+          "name": "fileUniqueId",
+          "type": 9
+        },
+        {
+          "id": "6:7306058069428981804",
+          "name": "caption",
+          "type": 9
+        },
+        {
+          "id": "7:255596189560916420",
+          "name": "captionLower",
+          "type": 9
+        },
+        {
+          "id": "8:5632928336813491645",
+          "name": "durationSecs",
+          "type": 5
+        },
+        {
+          "id": "9:7052328960818900314",
+          "name": "supportsStreaming",
+          "type": 1
+        },
+        {
+          "id": "10:6279596448967013316",
+          "name": "date",
+          "type": 6
+        },
+        {
+          "id": "11:5843025638277347611",
+          "name": "fileName",
+          "type": 9
+        },
+        {
+          "id": "12:3396804846426525782",
+          "name": "language",
+          "type": 9
+        },
+        {
+          "id": "13:7426894395275210625",
+          "name": "isKidsContent",
+          "type": 1
+        },
+        {
+          "id": "14:1488517436175406976",
+          "name": "isFavorite",
+          "type": 1
+        },
+        {
+          "id": "15:746273678204745913",
+          "name": "isHidden",
+          "type": 1
+        },
+        {
+          "id": "16:900080782104444353",
+          "name": "title",
+          "type": 9
+        },
+        {
+          "id": "17:2601386729020553722",
+          "name": "year",
+          "type": 5
+        },
+        {
+          "id": "18:5365219033896428562",
+          "name": "genres",
+          "type": 9
+        },
+        {
+          "id": "19:3291470617299986696",
+          "name": "fsk",
+          "type": 5
+        },
+        {
+          "id": "20:3157640919667626423",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "21:4332442684405144611",
+          "name": "posterFileId",
+          "type": 5
+        },
+        {
+          "id": "22:6149588582947737908",
+          "name": "isSeries",
+          "type": 1
+        },
+        {
+          "id": "23:4188963276657230902",
+          "name": "seriesName",
+          "type": 9
+        },
+        {
+          "id": "24:3684896475063123774",
+          "name": "seriesNameNormalized",
+          "type": 9
+        },
+        {
+          "id": "25:1467401212270481634",
+          "name": "seasonNumber",
+          "type": 5
+        },
+        {
+          "id": "26:6554709710610831107",
+          "name": "episodeNumber",
+          "type": 5
+        },
+        {
+          "id": "27:210434461892806793",
+          "name": "episodeTitle",
+          "type": 9
+        },
+        {
+          "id": "28:5026580435191464100",
+          "name": "thumbFileId",
+          "type": 5
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "19:5410393420475292600",
-  "lastIndexId": "78:2278006117773784949",
+  "lastEntityId": "20:2105640230933897644",
+  "lastIndexId": "81:2570900342989619037",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
