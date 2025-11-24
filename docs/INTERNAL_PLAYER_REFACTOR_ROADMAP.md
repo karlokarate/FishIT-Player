@@ -51,6 +51,12 @@ Refactor the legacy `InternalPlayerScreen` into a modular, testable, and maintai
   - ✅ Updated MainActivity navigation composable to build PlaybackContext from route parameters
   - ✅ Updated LiveDetailScreen direct call to use InternalPlayerEntry with PlaybackContext
   - ✅ Updated SeriesDetailScreen fallback to use InternalPlayerEntry with PlaybackContext
+  - ✅ Verified all other call sites (VodDetailScreen, TelegramDetailScreen, LibraryScreen, StartScreen) route through MainActivity navigation
+  - ✅ Confirmed no direct InternalPlayerScreen calls remain except in InternalPlayerEntry bridge
+
+### Phase 1 Status: ✅ **FULLY COMPLETE**
+
+All player call sites now use typed PlaybackContext and route through InternalPlayerEntry. The legacy monolithic InternalPlayerScreen remains the active runtime implementation. Runtime behavior is 100% preserved. The SIP modules are ready as reference implementations for future phases.
 
 ---
 
