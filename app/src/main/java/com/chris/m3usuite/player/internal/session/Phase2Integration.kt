@@ -20,7 +20,7 @@ import com.chris.m3usuite.player.internal.domain.ResumeManager
  *
  * Legacy Behavior Mapping (for future integration):
  *
- * Resume (legacy InternalPlayerScreen lines 572-608, 692-722, 751-810):
+ * Resume (legacy InternalPlayerScreen lines 572-608, 692-722, 798-806):
  * - On start: Load resume position, seek if > 10s
  * - Periodic (~3s): Save resume or clear if < 10s remaining
  * - On STATE_ENDED: Clear resume marker
@@ -102,7 +102,7 @@ object Phase2Integration {
     /**
      * Handle playback ended event.
      *
-     * Mirrors legacy behavior at InternalPlayerScreen L793-810:
+     * Mirrors legacy behavior at InternalPlayerScreen L798-806:
      * - Clear resume marker on STATE_ENDED for VOD/Series
      *
      * @param playbackContext The current playback context

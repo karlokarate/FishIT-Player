@@ -328,7 +328,7 @@ The following legacy behaviors in `InternalPlayerScreen.kt` have been mapped to 
 | L572-608 | Load resume position on start, seek if >10s | `ResumeManager.loadResumePositionMs()` |
 | L692-722 | Save/clear resume every ~3s | `ResumeManager.handlePeriodicTick()` |
 | L636-664 | Save/clear resume on ON_DESTROY | Future: `InternalPlayerLifecycle` (Phase 8) |
-| L793-810 | Clear resume on STATE_ENDED | `ResumeManager.handleEnded()` |
+| L798-806 | Clear resume on STATE_ENDED | `ResumeManager.handleEnded()` |
 
 **Kids/Screen-Time Gate:**
 | Legacy Location | Legacy Behavior | Phase 2 Abstraction |
