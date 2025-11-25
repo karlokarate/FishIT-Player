@@ -40,6 +40,20 @@ interface ResumeManager {
 /**
  * Default implementation that mimics the legacy InternalPlayerScreen logic,
  * but lives in a dedicated domain service.
+ *
+ * Phase 2 Behavioral Parity Notes (vs. legacy InternalPlayerScreen):
+ * ─────────────────────────────────────────────────────────────────────
+ * - loadResumePositionMs: Only returns position if >10s (matching legacy L601)
+ * - handlePeriodicTick: Called every ~3s; clears resume if <10s remaining (matching legacy L701-708)
+ * - handleEnded: Clears resume on STATE_ENDED (matching legacy L798-806)
+ *
+ * TODO(Phase 2): Verify all thresholds match legacy:
+ *   - Resume threshold: position > 10s before restoring
+ *   - Near-end clear: remaining < 10s (9999ms) clears resume
+ *
+ * TODO(Phase 2): Legacy also saves resume on ON_DESTROY lifecycle event (L636-664).
+ *   The modular session relies on periodic tick for saves; on-destroy save
+ *   should be handled by InternalPlayerLifecycle (Phase 8).
  */
 class DefaultResumeManager(
     context: Context,
@@ -47,6 +61,9 @@ class DefaultResumeManager(
 
     private val repo = ResumeRepository(context)
 
+    // TODO(Phase 2): Legacy uses ResumeRepository.recentVod() and recentEpisodes()
+    // for lookups. This implementation uses getVodResume/getSeriesResume directly.
+    // Verify functional equivalence.
     override suspend fun loadResumePositionMs(context: PlaybackContext): Long? =
         withContext(Dispatchers.IO) {
             when (context.type) {

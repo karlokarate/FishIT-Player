@@ -51,6 +51,21 @@ interface KidsPlaybackGate {
  * - Uses SettingsStore.currentProfileId to find the active profile.
  * - Loads ObxProfile to decide if this is a kid profile.
  * - Uses ScreenTimeRepository.remainingMinutes / tickUsageIfPlaying.
+ *
+ * Phase 2 Behavioral Parity Notes (vs. legacy InternalPlayerScreen):
+ * ─────────────────────────────────────────────────────────────────────
+ * - evaluateStart: Matches legacy L552-569 (check kid profile, get remaining minutes)
+ * - onPlaybackTick: Matches legacy L725-744 (tick every 60s, block if limit reached)
+ *
+ * TODO(Phase 2): Legacy checks `prof?.type == "kid"` (L557). Verify ObxProfile.type
+ *   values are consistent with this check.
+ *
+ * TODO(Phase 2): Legacy uses `tickUsageIfPlaying(kidId, tickAccum)` where tickAccum
+ *   is accumulated in 3s increments until 60s. This implementation receives deltaSecs
+ *   directly. Ensure ScreenTimeRepository.tickUsageIfPlaying handles both patterns.
+ *
+ * TODO(Phase 2): Legacy pauses player on block (L735-736). The modular session
+ *   should handle pause based on kidBlocked state returned here.
  */
 class DefaultKidsPlaybackGate(
     private val context: Context,

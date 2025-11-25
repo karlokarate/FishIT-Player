@@ -267,6 +267,7 @@ The following files have been extracted and integrated from `tools/tdlib neu.zip
 - Updated TelegramDetailScreen.kt
 - Updated ObxEntities.kt (refactored ObxTelegramMessage)
 
+
 These can serve as reference implementations for the corresponding future phases of the refactor.
 
 ---
@@ -306,3 +307,42 @@ The following modules are now in place and ready for Phase 2 integration:
 All SIP modules for resume and kids gate are integrated, verified, and ready for use.
 The `Phase2Stubs.kt` anchor file provides a stable integration point for upcoming work.
 No runtime changes have been made - legacy `InternalPlayerScreen` remains the active implementation.
+
+---
+
+## Phase 2 – Resume & Kids Gate (Preparation Started)
+
+- Verified that Phase 2 SIP abstractions (ResumeManager, KidsPlaybackGate, etc.) are imported and compile.
+- Documented parity expectations between legacy InternalPlayerScreen behavior and modular implementations.
+- Added Phase2Integration.kt as stable integration anchor for resume and kids logic.
+- Legacy InternalPlayerScreen remains the active runtime implementation.
+- No runtime behavior changes have been made yet.
+
+### Legacy Behavior Mapping
+
+The following legacy behaviors in `InternalPlayerScreen.kt` have been mapped to Phase 2 abstractions:
+
+**Resume Handling:**
+| Legacy Location | Legacy Behavior | Phase 2 Abstraction |
+|-----------------|-----------------|---------------------|
+| L572-608 | Load resume position on start, seek if >10s | `ResumeManager.loadResumePositionMs()` |
+| L692-722 | Save/clear resume every ~3s | `ResumeManager.handlePeriodicTick()` |
+| L636-664 | Save/clear resume on ON_DESTROY | Future: `InternalPlayerLifecycle` (Phase 8) |
+| L798-806 | Clear resume on STATE_ENDED | `ResumeManager.handleEnded()` |
+
+**Kids/Screen-Time Gate:**
+| Legacy Location | Legacy Behavior | Phase 2 Abstraction |
+|-----------------|-----------------|---------------------|
+| L547-569 | Check kid profile & remaining time on start | `KidsPlaybackGate.evaluateStart()` |
+| L725-744 | Tick usage every ~60s, block if limit reached | `KidsPlaybackGate.onPlaybackTick()` |
+| L2282-2290 | Show AlertDialog when blocked | `InternalPlayerUiState.kidBlocked` |
+
+### Integration Anchor
+
+`Phase2Integration.kt` provides stable integration hooks that mirror legacy behavior:
+- `loadInitialResumePosition()` - Resume loading on playback start
+- `onPlaybackTick()` - Periodic resume save and kids gate tick
+- `onPlaybackEnded()` - Clear resume on playback completion
+- `evaluateKidsGateOnStart()` - Kids gate evaluation before playback
+
+These functions are NOT called from production code paths and serve as the integration anchor for future work that will gradually move logic from the legacy screen into the modular session.
