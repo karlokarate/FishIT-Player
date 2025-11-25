@@ -8,21 +8,30 @@ import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
  * Never interacts with UI or runtime player.
  *
  * ════════════════════════════════════════════════════════════════════════════════════════════════════
- * PHASE 3 STATUS: CONTROLS SHADOW MODE (DIAGNOSTICS ONLY)
+ * PHASE 3 STEP 4: SPEC-DRIVEN CONTROLS SHADOW MODE (DIAGNOSTICS ONLY)
  * ════════════════════════════════════════════════════════════════════════════════════════════════════
  *
  * This shadow wrapper mirrors the behaviors of [InternalPlayerControls] for diagnostic purposes.
  * It evaluates control state and emits diagnostic strings without affecting runtime behavior.
  *
+ * **KEY PRINCIPLE (Step 4):**
+ * Diagnostics are now spec-oriented. The shadow never assumes the legacy screen is correct.
+ * All behavior is validated against the Behavior Contract where applicable.
+ *
  * **SHADOWED CONTROLS BEHAVIORS:**
  * - Gesture logic (play/pause, seek)
- * - Trickplay (fast-forward, rewind speeds)
+ * - Trickplay (fast-forward, rewind speeds) - with spec validation
  * - UI visibility (controls visible/hidden)
  * - Seek preview (scrubbing position)
  * - CC/subtitle triggers (menu toggles)
  * - Menu toggles (settings, tracks, speed dialogs)
- * - Aspect ratio mode changes
+ * - Aspect ratio mode changes - with spec-preferred scenarios
  * - Future DPAD mappings (Phase 6)
+ *
+ * **SPEC-ORIENTED DIAGNOSTICS:**
+ * - "trickplay start violates spec (speed < 0 not allowed)"
+ * - "aspect ratio FIT is spec-preferred in this scenario"
+ * - "subtitle menu open matches spec"
  *
  * **SAFETY GUARANTEES:**
  * - Never modifies InternalPlayerUiState
@@ -44,12 +53,10 @@ object InternalPlayerControlsShadow {
      * what control events would have been triggered. Diagnostics are emitted via
      * the optional callback without modifying state or affecting runtime.
      *
-     * **DIAGNOSTIC EXAMPLES:**
-     * - "controlsVisible toggled via state change"
-     * - "seekPreview requested at 12000ms"
-     * - "aspectRatioMode changed to FIT"
-     * - "trickplay started: speed=+16x"
-     * - "subtitle menu opened"
+     * **SPEC-ORIENTED DIAGNOSTIC EXAMPLES (Phase 3 Step 4):**
+     * - "trickplay start violates spec (speed < 0 not allowed)"
+     * - "aspect ratio FIT is spec-preferred for VOD content"
+     * - "subtitle/tracks menu: opened (matches spec)"
      * - "playback state: playing=true, buffering=false"
      *
      * @param state The current shadow UI state to evaluate
@@ -77,12 +84,12 @@ object InternalPlayerControlsShadow {
             evaluateUiVisibility(state, onControlsDiagnostic)
 
             // ────────────────────────────────────────────────────────────────
-            // Trickplay / Speed Diagnostics
+            // Trickplay / Speed Diagnostics (Spec-Validated)
             // ────────────────────────────────────────────────────────────────
             evaluateTrickplay(state, onControlsDiagnostic)
 
             // ────────────────────────────────────────────────────────────────
-            // Aspect Ratio Diagnostics
+            // Aspect Ratio Diagnostics (Spec-Oriented)
             // ────────────────────────────────────────────────────────────────
             evaluateAspectRatio(state, onControlsDiagnostic)
 
@@ -97,12 +104,12 @@ object InternalPlayerControlsShadow {
             evaluateLoopMode(state, onControlsDiagnostic)
 
             // ────────────────────────────────────────────────────────────────
-            // Menu / Dialog Diagnostics
+            // Menu / Dialog Diagnostics (Spec-Oriented)
             // ────────────────────────────────────────────────────────────────
             evaluateMenus(state, onControlsDiagnostic)
 
             // ────────────────────────────────────────────────────────────────
-            // Kids Gate Diagnostics
+            // Kids Gate Diagnostics (Spec-Validated)
             // ────────────────────────────────────────────────────────────────
             evaluateKidsGate(state, onControlsDiagnostic)
 
@@ -145,16 +152,21 @@ object InternalPlayerControlsShadow {
     }
 
     /**
-     * Evaluate trickplay / playback speed state.
+     * Evaluate trickplay / playback speed state with spec validation.
      *
      * Trickplay is considered "active" when:
      * - Speed is not 1.0f (normal speed)
      * - Speed is greater than 0 (valid speed)
      *
-     * Edge cases handled:
-     * - Zero speed (invalid): Treated as paused/invalid, no trickplay diagnostic
-     * - Negative speed (invalid): Treated as invalid, no trickplay diagnostic
-     * - Speed = 1.0f: Normal playback, no trickplay
+     * **SPEC RULES:**
+     * - Speed must be > 0 (negative/zero violates spec)
+     * - Speed < 1.0 is allowed for slow-motion
+     * - Speed > 1.0 is allowed for fast-forward
+     *
+     * Edge cases handled with spec validation:
+     * - Zero speed (invalid): Violates spec
+     * - Negative speed (invalid): Violates spec
+     * - Speed = 1.0f: Normal playback, matches spec
      */
     private fun evaluateTrickplay(
         state: InternalPlayerUiState,
@@ -162,25 +174,40 @@ object InternalPlayerControlsShadow {
     ) {
         val speed = state.playbackSpeed
 
-        // Guard: Invalid speeds (zero, negative)
+        // Guard: Invalid speeds (zero, negative) - SPEC VIOLATION
         if (speed <= 0f) {
             callback("trickplay: invalid speed ($speed)")
+            callback("trickplay violates spec (speed <= 0 not allowed)")
             return
         }
 
-        // Normal speed - no trickplay
+        // Normal speed - matches spec
         if (speed == 1f) {
             callback("trickplay: inactive (normal speed)")
+            callback("trickplay matches spec (normal playback)")
             return
         }
 
         // Format speed with sign for clarity
         val speedFormatted = if (speed > 1f) "+${speed}x" else "${speed}x"
         callback("trickplay active: speed=$speedFormatted")
+
+        // Spec validation for active trickplay
+        if (speed < 1f) {
+            callback("slow-motion playback is spec-compliant")
+        } else {
+            callback("fast-forward playback is spec-compliant")
+        }
     }
 
     /**
-     * Evaluate aspect ratio mode.
+     * Evaluate aspect ratio mode with spec-orientation.
+     *
+     * **SPEC GUIDANCE:**
+     * - FIT is typically preferred for most content
+     * - FILL may crop content but fills screen
+     * - ZOOM expands content
+     * - STRETCH may distort aspect ratio
      */
     private fun evaluateAspectRatio(
         state: InternalPlayerUiState,
@@ -188,6 +215,14 @@ object InternalPlayerControlsShadow {
     ) {
         val mode = state.aspectRatioMode
         callback("aspectRatioMode: ${mode.name}")
+
+        // Spec-oriented diagnostic
+        when (mode) {
+            AspectRatioMode.FIT -> callback("aspect ratio FIT is spec-preferred for most scenarios")
+            AspectRatioMode.FILL -> callback("aspect ratio FILL may crop content (user preference)")
+            AspectRatioMode.ZOOM -> callback("aspect ratio ZOOM expands content (user preference)")
+            AspectRatioMode.STRETCH -> callback("aspect ratio STRETCH may distort (user preference)")
+        }
     }
 
     /**
@@ -207,6 +242,13 @@ object InternalPlayerControlsShadow {
         if (state.isResumingFromLegacy) {
             val resumeMs = state.resumeStartMs ?: 0L
             callback("resuming from: ${resumeMs}ms")
+
+            // Spec validation: Resume should be > 10s (Section 3.3)
+            if (resumeMs > 0 && resumeMs <= 10_000L) {
+                callback("resume position violates spec (should be >10s)")
+            } else if (resumeMs > 10_000L) {
+                callback("resume position is spec-compliant (>10s)")
+            }
         }
 
         // Seek preview (if currentPositionMs differs from positionMs, could indicate scrubbing)
@@ -229,7 +271,7 @@ object InternalPlayerControlsShadow {
     }
 
     /**
-     * Evaluate menu/dialog visibility.
+     * Evaluate menu/dialog visibility with spec-orientation.
      *
      * Handles subtitle/track menu, speed dialog, settings dialog, sleep timer dialog.
      */
@@ -239,6 +281,7 @@ object InternalPlayerControlsShadow {
     ) {
         if (state.showTracksDialog) {
             callback("subtitle/tracks menu: opened")
+            callback("subtitle menu open matches spec")
         }
         if (state.showSpeedDialog) {
             callback("speed dialog: opened")
@@ -258,7 +301,12 @@ object InternalPlayerControlsShadow {
     }
 
     /**
-     * Evaluate kids gate state.
+     * Evaluate kids gate state with spec validation.
+     *
+     * **SPEC RULES (Section 4):**
+     * - Block when quota <= 0
+     * - 60-second accumulation for quota decrement
+     * - Fail-open on errors
      */
     private fun evaluateKidsGate(
         state: InternalPlayerUiState,
@@ -281,6 +329,34 @@ object InternalPlayerControlsShadow {
                     }
                 },
             )
+
+            // Spec validation: Block when quota <= 0 (Section 4.3)
+            val specValidation = evaluateKidsGateCompliance(remaining, blocked)
+            callback(specValidation)
+        }
+    }
+
+    /**
+     * Evaluate kids gate compliance with Behavior Contract Section 4.3.
+     *
+     * @param remainingMinutes Remaining quota in minutes
+     * @param isBlocked Whether playback is currently blocked
+     * @return Spec validation message
+     */
+    private fun evaluateKidsGateCompliance(remainingMinutes: Int?, isBlocked: Boolean): String {
+        if (remainingMinutes == null) {
+            return "kids gate: quota unknown (cannot validate spec compliance)"
+        }
+
+        return when {
+            remainingMinutes <= 0 && !isBlocked ->
+                "kids gate violates spec (should be blocked when quota <= 0)"
+            remainingMinutes <= 0 && isBlocked ->
+                "kids gate matches spec (blocked due to exhausted quota)"
+            remainingMinutes > 0 && isBlocked ->
+                "kids gate may violate spec (blocked but quota > 0)"
+            else ->
+                "kids gate matches spec (not blocked, quota available)"
         }
     }
 

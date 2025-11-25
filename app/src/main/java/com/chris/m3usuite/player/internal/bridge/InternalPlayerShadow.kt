@@ -2,6 +2,7 @@ package com.chris.m3usuite.player.internal.bridge
 
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
+import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.internal.shadow.InternalPlayerControlsShadow
 import com.chris.m3usuite.player.internal.shadow.ShadowComparisonService
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
@@ -12,19 +13,24 @@ import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
  * Output is used purely for future verification and diagnostics.
  *
  * ════════════════════════════════════════════════════════════════════════════════════════════════════
- * PHASE 3 STATUS: SHADOW-MODE ENTRY POINT (NON-RUNTIME)
+ * PHASE 3 STEP 4: SPEC-DRIVEN SHADOW-MODE ENTRY POINT (NON-RUNTIME)
  * ════════════════════════════════════════════════════════════════════════════════════════════════════
  *
  * This entry point allows shadow-mode invocation of the modular SIP session from
  * Phase 3+ verification tasks. It does NOT control playback and does NOT interact
  * with the real player or modify runtime behavior.
  *
+ * **KEY PRINCIPLE (Step 4):**
+ * Shadow diagnostics now operate strictly via the Behavior Contract.
+ * Legacy behavior is NOT the source of truth. The Behavior Contract
+ * (docs/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md) defines correctness.
+ *
  * **CURRENT STATUS:**
  * - NOT called by runtime code paths.
  * - Runtime flow remains: InternalPlayerEntry → legacy InternalPlayerScreen
  * - Future Phase 3–4 verification workflows may invoke this entry point to:
  *   1. Observe parallel modular session behavior
- *   2. Compare modular vs legacy state emissions
+ *   2. Compare modular vs legacy vs SPEC state emissions
  *   3. Debug diagnostics without affecting playback
  *
  * **SHADOW MODE PRINCIPLES:**
@@ -46,6 +52,13 @@ import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
  * - No player control event influences the legacy player
  * - No UI calls are made
  * - No gestures, trickplay, seek, or visibility toggles propagate to runtime
+ *
+ * **PHASE 3 STEP 4: SPEC-DRIVEN DIAGNOSTICS**
+ * Shadow pipeline now evaluates SIP and Legacy behavior strictly against the Behavior Contract:
+ * - SIP is allowed to intentionally improve on legacy when the spec says so
+ * - Legacy no longer defines correctness; the Behavior Contract does
+ * - New SpecComparisonResult opens the door for future CI validation
+ * - Every diagnostic output is classified using ParityKind
  */
 object InternalPlayerShadow {
 
@@ -64,9 +77,9 @@ object InternalPlayerShadow {
      * - Must NOT call ObjectBox directly (uses abstracted repositories)
      * - Must NOT throw exceptions to caller (fail-safe)
      *
-     * **FUTURE PHASE 3 USAGE:**
+     * **PHASE 3 STEP 4 SPEC-DRIVEN USAGE:**
      * ```kotlin
-     * // Example verification workflow (not yet implemented)
+     * // Example spec-driven verification workflow
      * InternalPlayerShadow.startShadowSession(
      *     url = currentUrl,
      *     startMs = providedStartMs,
@@ -78,12 +91,17 @@ object InternalPlayerShadow {
      *         diagnosticsLogger.logShadowComparison(legacyState, shadowState)
      *     },
      *     onShadowComparison = { comparisonResult ->
-     *         // Log parity comparison results
+     *         // Log parity comparison results (legacy format)
      *         if (!comparisonResult.resumeParityOk) {
      *             diagnosticsLogger.logMismatch("resume", comparisonResult)
      *         }
-     *         if (!comparisonResult.kidsGateParityOk) {
-     *             diagnosticsLogger.logMismatch("kidsGate", comparisonResult)
+     *     },
+     *     onSpecComparison = { specResult ->
+     *         // Log spec-driven comparison results (new format)
+     *         when (specResult.parityKind) {
+     *             ParityKind.SpecPreferredSIP -> log("SIP correct, legacy bug: ${specResult.dimension}")
+     *             ParityKind.SpecPreferredLegacy -> log("SIP violation: ${specResult.dimension}")
+     *             else -> {}
      *         }
      *     },
      *     onShadowControlsDiagnostic = { diagnostic ->
@@ -99,7 +117,8 @@ object InternalPlayerShadow {
      * @param mediaItem Prepared MediaItem with metadata, or null
      * @param playbackContext Domain context with type, IDs, and hints
      * @param onShadowStateChanged Callback for shadow state updates (diagnostics only)
-     * @param onShadowComparison Callback for legacy↔shadow state comparison results (diagnostics only)
+     * @param onShadowComparison Callback for legacy↔shadow state comparison results (legacy format, diagnostics only)
+     * @param onSpecComparison Callback for spec-driven comparison results (Phase 3 Step 4)
      * @param onShadowControlsDiagnostic Callback for controls diagnostic strings (diagnostics only)
      */
     @Suppress("UNUSED_PARAMETER")
@@ -111,6 +130,7 @@ object InternalPlayerShadow {
         playbackContext: PlaybackContext,
         onShadowStateChanged: ((ShadowSessionState) -> Unit)? = null,
         onShadowComparison: ((ShadowComparisonService.ComparisonResult) -> Unit)? = null,
+        onSpecComparison: ((ShadowComparisonService.SpecComparisonResult) -> Unit)? = null,
         onShadowControlsDiagnostic: ((String) -> Unit)? = null,
     ) {
         // TODO(Phase 3): Instantiate modular InternalPlayerSession without wiring to UI or ExoPlayer.
@@ -164,6 +184,64 @@ object InternalPlayerShadow {
         callback?.invoke(
             ShadowComparisonService.compare(legacyState, shadowState),
         )
+    }
+
+    /**
+     * Invoke spec-driven comparison between legacy, SIP, and the Behavior Contract.
+     *
+     * This utility function performs three-way comparison according to Phase 3 Step 4:
+     * 1. SIP state vs Spec
+     * 2. Legacy state vs Spec
+     * 3. SIP vs Legacy (for context only)
+     *
+     * **USAGE:**
+     * ```kotlin
+     * onShadowStateUpdate { shadowState ->
+     *     InternalPlayerShadow.invokeSpecComparison(
+     *         legacyState = legacyStateSnapshot,
+     *         sipState = shadowState,
+     *         playbackContext = playbackContext,
+     *         durationMs = knownDuration,
+     *         callback = onSpecComparison
+     *     )
+     * }
+     * ```
+     *
+     * **KEY PRINCIPLE:**
+     * Legacy behavior is NOT the source of truth. The Behavior Contract
+     * (docs/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md) defines correctness.
+     *
+     * **SAFETY GUARANTEES:**
+     * - Safe to call with null callback (no-op)
+     * - Never throws exceptions
+     * - Never affects runtime behavior
+     *
+     * @param legacyState The current state from legacy InternalPlayerScreen
+     * @param sipState The current state from modular InternalPlayerSession
+     * @param playbackContext The playback context with type information
+     * @param durationMs Optional duration for near-end calculations
+     * @param callback Optional callback to receive each spec comparison result
+     */
+    fun invokeSpecComparison(
+        legacyState: InternalPlayerUiState,
+        sipState: InternalPlayerUiState,
+        playbackContext: PlaybackContext,
+        durationMs: Long? = null,
+        callback: ((ShadowComparisonService.SpecComparisonResult) -> Unit)?,
+    ) {
+        if (callback == null) return
+
+        try {
+            val results = ShadowComparisonService.compareAgainstSpec(
+                legacy = legacyState,
+                sip = sipState,
+                playbackType = playbackContext.type,
+                durationMs = durationMs,
+            )
+            results.forEach { result -> callback(result) }
+        } catch (_: Throwable) {
+            // Fail-safe: Never throw, silently absorb errors
+        }
     }
 
     /**

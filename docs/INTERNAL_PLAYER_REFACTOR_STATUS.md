@@ -924,3 +924,179 @@ InternalPlayerShadow (Shadow - PASSIVE, NOT WIRED YET)
     ├─→ ShadowComparisonService (Session parity diagnostics)
     └─→ InternalPlayerControlsShadow (Controls diagnostics)
 ```
+
+---
+
+## Phase 3 – Step 4: Spec-Driven Diagnostics
+
+**Date:** 2025-11-25
+
+This step implements spec-driven shadow diagnostics, evaluating SIP and Legacy behavior strictly against the Behavior Contract rather than treating Legacy as the gold standard.
+
+### What Was Done
+
+**1. Updated ShadowComparisonService with Spec-Driven Three-Way Comparison:**
+
+The comparison service now performs:
+1. SIP state vs Spec (Behavior Contract)
+2. Legacy state vs Spec (Behavior Contract)
+3. SIP vs Legacy (for context only)
+
+**New Types Added:**
+
+```kotlin
+enum class ParityKind {
+    ExactMatch,          // SIP == Spec AND Legacy == Spec
+    SpecPreferredSIP,    // SIP == Spec, Legacy violates Spec
+    SpecPreferredLegacy, // Legacy == Spec, SIP violates Spec
+    BothViolateSpec,     // both are wrong
+    DontCare             // divergence allowed by spec
+}
+
+data class SpecComparisonResult(
+    val parityKind: ParityKind,
+    val dimension: String,        // "resume", "kids", "position", etc.
+    val legacyValue: Any?,
+    val sipValue: Any?,
+    val specDetails: String,
+    val flags: List<String> = emptyList()
+)
+```
+
+**Spec Rules Implemented (from INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md):**
+
+| Dimension | Spec Rule | Section |
+|-----------|-----------|---------|
+| Resume | Only restore if position > 10 seconds | 3.3 |
+| Resume | Clear resume when remaining < 10 seconds | 3.4 |
+| Resume | LIVE content never resumes | 3.1 |
+| Kids Gate | Block when quota <= 0 | 4.3 |
+| Position | Drift within 1s tolerance is DontCare | Tolerated variance |
+
+**2. Integrated Spec-Based Comparison into InternalPlayerShadow:**
+
+Added new callback and utility function:
+
+```kotlin
+// New callback parameter
+onSpecComparison: ((ShadowComparisonService.SpecComparisonResult) -> Unit)? = null
+
+// New utility function
+fun invokeSpecComparison(
+    legacyState: InternalPlayerUiState,
+    sipState: InternalPlayerUiState,
+    playbackContext: PlaybackContext,
+    durationMs: Long? = null,
+    callback: ((ShadowComparisonService.SpecComparisonResult) -> Unit)?
+)
+```
+
+**3. Updated InternalPlayerControlsShadow with Spec-Oriented Diagnostics:**
+
+Controls shadow now emits spec-validated diagnostics:
+
+| Diagnostic | Spec Validation |
+|------------|-----------------|
+| Trickplay | `"trickplay violates spec (speed <= 0 not allowed)"` |
+| Aspect Ratio | `"aspect ratio FIT is spec-preferred for most scenarios"` |
+| Subtitle Menu | `"subtitle menu open matches spec"` |
+| Resume | `"resume position violates spec (should be >10s)"` |
+| Kids Gate | `"kids gate violates spec (should be blocked when quota <= 0)"` |
+
+**4. Created ShadowDiagnosticsAggregator:**
+
+New aggregator class for storing and forwarding shadow diagnostic events:
+
+- `ShadowEvent.Kind.SpecComparison` - For spec comparison results
+- `ShadowEvent.Kind.LegacyComparison` - For legacy parity results
+- `ShadowEvent.Kind.ControlsDiagnostic` - For controls diagnostic strings
+
+Features:
+- Event storage for debugging/verification
+- Filtered views by dimension and ParityKind
+- Callback registration for downstream consumers
+- Thread-safe event collection
+- Fail-safe error handling
+
+**5. Added Spec-Driven Tests (InternalPlayerShadowSpecComparisonTest.kt):**
+
+Comprehensive test coverage for:
+
+| Test Category | Coverage |
+|--------------|----------|
+| Resume Spec | ExactMatch, SpecPreferredSIP, SpecPreferredLegacy, BothViolateSpec |
+| Resume LIVE | Never resumes rule validation |
+| Kids Gate | Quota blocking rule validation |
+| Position | Drift tolerance validation |
+| Robustness | Null, malformed, extreme state handling |
+
+Tests load rules from the Behavior Contract (embedded as constants in ShadowComparisonService).
+
+### Key Principle
+
+**Legacy behavior is NOT the source of truth. The Behavior Contract defines correctness.**
+
+SIP is allowed to intentionally improve on legacy when the spec says so. Diagnostics classify differences as:
+- `SpecPreferredSIP`: SIP fixes a legacy bug
+- `SpecPreferredLegacy`: SIP has a bug that legacy got right
+- `ExactMatch`: Both comply with spec
+- `BothViolateSpec`: Both need fixing
+- `DontCare`: Allowed variance
+
+### Files Added/Modified
+
+**New Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/shadow/ShadowDiagnosticsAggregator.kt`
+- `app/src/test/java/com/chris/m3usuite/player/internal/shadow/InternalPlayerShadowSpecComparisonTest.kt`
+
+**Modified Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/shadow/ShadowComparisonService.kt` - Added spec-driven comparison
+- `app/src/main/java/com/chris/m3usuite/player/internal/shadow/InternalPlayerControlsShadow.kt` - Added spec-oriented diagnostics
+- `app/src/main/java/com/chris/m3usuite/player/internal/bridge/InternalPlayerShadow.kt` - Added spec comparison callback
+- `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` - This documentation
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ Shadow diagnostics operate strictly via the Behavior Contract
+- ✅ Legacy is no longer treated as the reference
+- ✅ SIP is judged solely against the contract and allowed to fix legacy bugs
+- ✅ Every diagnostic output is classified using ParityKind
+- ✅ No runtime flow is changed
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:assembleDebug` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest` passes all tests including new spec comparison tests
+
+### Architecture After Phase 3 Step 4
+
+```
+Call Sites (VOD/SERIES/LIVE/Telegram Detail Screens)
+    ↓
+InternalPlayerEntry (Phase 1 Bridge)
+    ↓
+InternalPlayerScreen (Legacy - ACTIVE)
+    ↓ (future: shadow observation)
+InternalPlayerShadow (Shadow - PASSIVE, NOT WIRED YET)
+    ├─→ ShadowComparisonService (Spec-driven three-way comparison)
+    ├─→ InternalPlayerControlsShadow (Spec-oriented diagnostics)
+    └─→ ShadowDiagnosticsAggregator (Event collection & forwarding)
+```
+
+### Phase 3 Status
+
+Phase 3 is NOT complete. Step 4 is complete.
+
+Completed Phase 3 steps:
+- [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
+- [x] Step 2: Legacy↔Shadow parity comparison pipeline
+- [x] Step 3: Controls shadow mode activated
+- [x] Step 4: Spec-driven diagnostics integration
+
+Remaining Phase 3 work:
+- [ ] Implement shadow session internals
+- [ ] Wire shadow session to observe real playback inputs
+- [ ] Add diagnostics logging for shadow state
+- [ ] Create verification workflow to compare modular vs legacy behavior
+- [ ] Add developer toggle for shadow mode activation
