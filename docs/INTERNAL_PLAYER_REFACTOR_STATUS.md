@@ -346,3 +346,52 @@ The following legacy behaviors in `InternalPlayerScreen.kt` have been mapped to 
 - `evaluateKidsGateOnStart()` - Kids gate evaluation before playback
 
 These functions are NOT called from production code paths and serve as the integration anchor for future work that will gradually move logic from the legacy screen into the modular session.
+
+---
+
+## Phase 2 – Step 2 Completed
+
+- Phase2Integration.kt now mirrors all legacy behavioral segments:
+  - L547–569 (KidsGate start)
+  - L572–608 (Resume start)
+  - L692–722 (Resume tick)
+  - L725–744 (Kids tick)
+  - L798–806 (Playback end)
+- ResumeManager and KidsPlaybackGate contain full parity TODOs for future migration.
+- No runtime behavior modified.
+- All SIP modules remain reference-only.
+
+### Detailed Behavioral Mapping in Phase2Integration.kt
+
+Each integration function now includes:
+- **Legacy Parameter Shape**: The exact parameters used by legacy InternalPlayerScreen
+- **Modular Parameter Shape**: The equivalent PlaybackContext-based parameters
+- **Behavioral Parity Notes**: Line-by-line correspondence to legacy code
+- **Threshold Rules**: Exact threshold values (e.g., >10s for resume, <10s for near-end clear)
+- **Timing Contracts**: Expected call frequency (3s for ticks, 60s for kids gate)
+- **Side Effects**: What UI or player state changes are expected
+
+### Full Parity TODOs Added
+
+**DefaultResumeManager TODOs:**
+- `>10s rule`: Only restore resume positions greater than 10 seconds
+- `<10s near-end clear`: Clear resume when remaining playback is less than 10 seconds
+- `Multi-ID mapping`: VOD uses mediaId, SERIES uses composite key (seriesId+season+episodeNum)
+- `Periodic tick timing contract (3s)`: Called every ~3 seconds during playback
+- `Duration guard`: Skip save/clear when duration is unknown or invalid
+- `STATE_ENDED clear`: Clear resume unconditionally on playback end
+
+**DefaultKidsPlaybackGate TODOs:**
+- `Profile detection`: currentProfileId.first() → ObxProfile lookup
+- `Kid profile type check`: prof?.type == "kid"
+- `Daily quota`: remainingMinutes() returns MINUTES for quota comparison
+- `Block transitions`: kidBlocked = remain <= 0; player.playWhenReady = false
+- `60-second accumulation`: Tick every 60 seconds, not every 3 seconds
+- `Pause/Play event interactions`: Stop accumulation during pause
+- `Fail-open exception handling`: Exceptions result in allow (kidActive = false)
+
+### Verification
+
+- ✅ `./gradlew :app:assembleDebug` builds successfully
+- ✅ Runtime flow unchanged: InternalPlayerEntry → legacy InternalPlayerScreen
+- ✅ All SIP modules compile but are not executed at runtime
