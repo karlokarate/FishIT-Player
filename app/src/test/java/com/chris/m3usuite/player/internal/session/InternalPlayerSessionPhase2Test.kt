@@ -170,7 +170,8 @@ class InternalPlayerSessionPhase2Test {
             if (deltaSecs <= 0) return current
 
             // Simulate ScreenTimeRepository.tickUsageIfPlaying
-            // Converts accumulated seconds to minutes
+            // Converts accumulated seconds to minutes using integer division
+            // (matches legacy behavior: partial minutes are truncated, e.g., 59s = 0 minutes added)
             val addMinutes = deltaSecs / 60
             if (addMinutes > 0) {
                 usedMinutes += addMinutes
@@ -469,9 +470,9 @@ class InternalPlayerSessionPhase2Test {
         // When: Tick is called
         val newState = kidsGate.onPlaybackTick(currentState, deltaSecs = 60)
 
-        // Then: State unchanged, no tick usage
+        // Then: State unchanged, no tick usage applied
         assertFalse("Should still be inactive", newState.kidActive)
-        // tickUsageCalled is true but early return happens before actual usage
+        assertEquals("Remaining minutes should be unchanged", 60, kidsGate.remainingMinutes)
     }
 
     @Test
