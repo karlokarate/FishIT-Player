@@ -22,7 +22,7 @@ import org.junit.Test
  *    - `currentChannel.value == null`
  *    - `epgOverlay.value.visible == false`
  *
- * **Phase 3 – Step 2/3 TODOs:**
+ * **Phase 3 - Step 2/3 TODOs:**
  * - Test channel list loading from repository.
  * - Test jumpChannel navigation with wrap-around.
  * - Test selectChannel lookup and state update.
@@ -108,7 +108,7 @@ class LivePlaybackControllerTest {
     }
 
     // ════════════════════════════════════════════════════════════════════════════
-    // Phase 3 – Step 1: Initial State Tests
+    // Phase 3 - Step 1: Initial State Tests
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
@@ -154,7 +154,7 @@ class LivePlaybackControllerTest {
     }
 
     // ════════════════════════════════════════════════════════════════════════════
-    // Phase 3 – Step 1: Data Model Tests
+    // Phase 3 - Step 1: Data Model Tests
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
@@ -229,7 +229,7 @@ class LivePlaybackControllerTest {
     }
 
     // ════════════════════════════════════════════════════════════════════════════
-    // Phase 3 – Step 1: TimeProvider Tests
+    // Phase 3 - Step 1: TimeProvider Tests
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
@@ -273,12 +273,12 @@ class LivePlaybackControllerTest {
     }
 
     // ════════════════════════════════════════════════════════════════════════════
-    // Phase 3 – Step 2/3: TODO Tests (Placeholders)
+    // Phase 3 - Step 2/3: TODO Tests (Placeholders)
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
     fun `initFromPlaybackContext - TODO Phase 3 Step 2`() = runBlocking {
-        // TODO("Phase 3 – Step 2: Test channel list loading from PlaybackContext")
+        // TODO("Phase 3 - Step 2: Test channel list loading from PlaybackContext")
         // This test will verify:
         // - Channel list is loaded based on liveCategoryHint/liveProviderHint
         // - Initial channel is resolved
@@ -288,7 +288,7 @@ class LivePlaybackControllerTest {
 
     @Test
     fun `jumpChannel - TODO Phase 3 Step 2`() {
-        // TODO("Phase 3 – Step 2: Test channel navigation with wrap-around")
+        // TODO("Phase 3 - Step 2: Test channel navigation with wrap-around")
         // This test will verify:
         // - jumpChannel(+1) moves to next channel
         // - jumpChannel(-1) moves to previous channel
@@ -298,7 +298,7 @@ class LivePlaybackControllerTest {
 
     @Test
     fun `selectChannel - TODO Phase 3 Step 2`() {
-        // TODO("Phase 3 – Step 2: Test direct channel selection")
+        // TODO("Phase 3 - Step 2: Test direct channel selection")
         // This test will verify:
         // - selectChannel updates currentChannel
         // - Invalid channel ID is handled gracefully
@@ -307,7 +307,7 @@ class LivePlaybackControllerTest {
 
     @Test
     fun `onPlaybackPositionChanged - TODO Phase 3 Step 2`() {
-        // TODO("Phase 3 – Step 2: Test EPG overlay auto-hide timing")
+        // TODO("Phase 3 - Step 2: Test EPG overlay auto-hide timing")
         // This test will verify:
         // - Overlay hides when hideAtRealtimeMs is reached
         // - EPG data is refreshed periodically
@@ -315,7 +315,7 @@ class LivePlaybackControllerTest {
 
     @Test
     fun `integration with LiveChannelRepository - TODO Phase 3 Step 3`() = runBlocking {
-        // TODO("Phase 3 – Step 3: Test integration with real repository implementation")
+        // TODO("Phase 3 - Step 3: Test integration with real repository implementation")
         // This test will verify:
         // - Controller works with actual LiveChannelRepository wrapping ObxLive
         // - Channel filtering by category/provider works
@@ -323,7 +323,7 @@ class LivePlaybackControllerTest {
 
     @Test
     fun `integration with LiveEpgRepository - TODO Phase 3 Step 3`() = runBlocking {
-        // TODO("Phase 3 – Step 3: Test integration with real EPG repository")
+        // TODO("Phase 3 - Step 3: Test integration with real EPG repository")
         // This test will verify:
         // - Controller works with actual LiveEpgRepository wrapping EpgRepository
         // - Now/next data is correctly mapped

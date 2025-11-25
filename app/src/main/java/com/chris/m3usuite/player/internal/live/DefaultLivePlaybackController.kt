@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
  *
  * This implementation is a **stub** that provides the structural foundation for
  * Phase 3 of the internal player refactor. All methods contain TODO placeholders
- * that reference "Phase 3 – Step 2" where the actual migration from legacy
+ * that reference "Phase 3 - Step 2" where the actual migration from legacy
  * InternalPlayerScreen will occur.
  *
  * **Current State:**
@@ -84,9 +84,9 @@ class DefaultLivePlaybackController(
     // ════════════════════════════════════════════════════════════════════════════
 
     override suspend fun initFromPlaybackContext(ctx: PlaybackContext) {
-        // TODO("Phase 3 – Step 2: migrate legacy live initialization logic")
+        // TODO("Phase 3 - Step 2: migrate legacy live initialization logic")
         //
-        // Phase 3 – Step 2 will:
+        // Phase 3 - Step 2 will:
         // 1. Load channel list from liveRepository using ctx.liveCategoryHint/liveProviderHint
         // 2. Resolve initial channel (from URL match or first in list)
         // 3. Fetch EPG now/next from epgRepository
@@ -99,9 +99,9 @@ class DefaultLivePlaybackController(
     }
 
     override fun jumpChannel(delta: Int) {
-        // TODO("Phase 3 – Step 2: migrate legacy jumpLive(delta) logic")
+        // TODO("Phase 3 - Step 2: migrate legacy jumpLive(delta) logic")
         //
-        // Phase 3 – Step 2 will:
+        // Phase 3 - Step 2 will:
         // 1. Find current channel index in the channel list
         // 2. Calculate new index with wrap-around
         // 3. Update _currentChannel
@@ -111,9 +111,9 @@ class DefaultLivePlaybackController(
     }
 
     override fun selectChannel(channelId: Long) {
-        // TODO("Phase 3 – Step 2: migrate legacy switchToLive(channelId) logic")
+        // TODO("Phase 3 - Step 2: migrate legacy switchToLive(channelId) logic")
         //
-        // Phase 3 – Step 2 will:
+        // Phase 3 - Step 2 will:
         // 1. Look up channel by ID from repository
         // 2. Update _currentChannel
         // 3. Trigger EPG refresh
@@ -122,9 +122,9 @@ class DefaultLivePlaybackController(
     }
 
     override fun onPlaybackPositionChanged(positionMs: Long) {
-        // TODO("Phase 3 – Step 2: migrate EPG overlay auto-hide logic")
+        // TODO("Phase 3 - Step 2: migrate EPG overlay auto-hide logic")
         //
-        // Phase 3 – Step 2 will:
+        // Phase 3 - Step 2 will:
         // 1. Check if current time exceeds hideAtRealtimeMs
         // 2. If so, hide the overlay by updating _epgOverlay
         // 3. Optionally refresh EPG data periodically

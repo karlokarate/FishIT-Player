@@ -88,7 +88,10 @@ interface LivePlaybackController {
  * This is a domain abstraction over the underlying data layer (ObxLive, etc.).
  * The implementation will bridge to existing repositories and ObjectBox entities.
  *
- * **Phase 3 – Step 2**: Implement this interface to wrap XtreamObxRepository/ObxLive queries.
+ * **Phase 3 - Step 2**: Implement this interface to wrap XtreamObxRepository/ObxLive queries.
+ *
+ * **Note on ID types**: LiveChannel.id uses `Long` for forward compatibility, while
+ * ObxLive.streamId is `Int`. Implementations should cast appropriately.
  */
 interface LiveChannelRepository {
 
@@ -119,14 +122,18 @@ interface LiveChannelRepository {
  * This is a domain abstraction over the existing EpgRepository.
  * The implementation will delegate to the existing EpgRepository class.
  *
- * **Phase 3 – Step 2**: Implement this interface to wrap EpgRepository calls.
+ * **Phase 3 - Step 2**: Implement this interface to wrap EpgRepository calls.
+ *
+ * **Note on ID types**: The `streamId` parameter is `Int` to match the existing
+ * EpgRepository API and ObxLive.streamId field. The LiveChannel.id is `Long` for
+ * forward compatibility. Implementations should handle the mapping appropriately.
  */
 interface LiveEpgRepository {
 
     /**
      * Fetches the now/next program titles for a channel.
      *
-     * @param streamId The channel's stream ID.
+     * @param streamId The channel's stream ID (Int, matching ObxLive.streamId).
      * @return Pair of (nowTitle, nextTitle), with nulls for unavailable data.
      */
     suspend fun getNowNext(streamId: Int): Pair<String?, String?>
