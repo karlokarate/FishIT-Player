@@ -2,6 +2,7 @@ package com.chris.m3usuite.player.internal.bridge
 
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
+import com.chris.m3usuite.player.internal.shadow.InternalPlayerControlsShadow
 import com.chris.m3usuite.player.internal.shadow.ShadowComparisonService
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 
@@ -37,6 +38,14 @@ import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
  * - Toggle between shadow-mode and runtime-mode
  * - Provide A/B comparison of modular vs legacy behavior
  * - Eventually replace legacy InternalPlayerScreen entirely (Phase 4+)
+ *
+ * **PHASE 3 STEP 3: CONTROLS SHADOW MODE**
+ * Shadow pipeline now evaluates Session + Controls without affecting runtime:
+ * - InternalPlayerControlsShadow evaluates control state diagnostically
+ * - Diagnostics callback for control events via onShadowControlsDiagnostic
+ * - No player control event influences the legacy player
+ * - No UI calls are made
+ * - No gestures, trickplay, seek, or visibility toggles propagate to runtime
  */
 object InternalPlayerShadow {
 
@@ -76,6 +85,10 @@ object InternalPlayerShadow {
      *         if (!comparisonResult.kidsGateParityOk) {
      *             diagnosticsLogger.logMismatch("kidsGate", comparisonResult)
      *         }
+     *     },
+     *     onShadowControlsDiagnostic = { diagnostic ->
+     *         // Log control diagnostics
+     *         diagnosticsLogger.logControlEvent(diagnostic)
      *     }
      * )
      * ```
@@ -87,6 +100,7 @@ object InternalPlayerShadow {
      * @param playbackContext Domain context with type, IDs, and hints
      * @param onShadowStateChanged Callback for shadow state updates (diagnostics only)
      * @param onShadowComparison Callback for legacy↔shadow state comparison results (diagnostics only)
+     * @param onShadowControlsDiagnostic Callback for controls diagnostic strings (diagnostics only)
      */
     @Suppress("UNUSED_PARAMETER")
     fun startShadowSession(
@@ -97,6 +111,7 @@ object InternalPlayerShadow {
         playbackContext: PlaybackContext,
         onShadowStateChanged: ((ShadowSessionState) -> Unit)? = null,
         onShadowComparison: ((ShadowComparisonService.ComparisonResult) -> Unit)? = null,
+        onShadowControlsDiagnostic: ((String) -> Unit)? = null,
     ) {
         // TODO(Phase 3): Instantiate modular InternalPlayerSession without wiring to UI or ExoPlayer.
         // This session must not interact with the real player or modify runtime behavior.
@@ -149,6 +164,40 @@ object InternalPlayerShadow {
         callback?.invoke(
             ShadowComparisonService.compare(legacyState, shadowState),
         )
+    }
+
+    /**
+     * Evaluate controls state in shadow mode.
+     *
+     * This utility function evaluates the provided shadow state through
+     * [InternalPlayerControlsShadow] and invokes the diagnostic callback.
+     *
+     * **USAGE:**
+     * Called after shadow state updates to evaluate what control actions
+     * would have been triggered without affecting runtime.
+     *
+     * ```kotlin
+     * // Inside shadow state update handler
+     * InternalPlayerShadow.evaluateControlsInShadowMode(
+     *     shadowState = updatedShadowState,
+     *     callback = onShadowControlsDiagnostic
+     * )
+     * ```
+     *
+     * **SAFETY GUARANTEES:**
+     * - Safe to call with null callback (no-op)
+     * - Never throws exceptions
+     * - Never modifies state
+     * - Never affects runtime behavior
+     *
+     * @param shadowState The current shadow UI state to evaluate
+     * @param callback Optional callback to receive diagnostic strings
+     */
+    fun evaluateControlsInShadowMode(
+        shadowState: InternalPlayerUiState,
+        callback: ((String) -> Unit)?,
+    ) {
+        InternalPlayerControlsShadow.evaluateControls(shadowState, callback)
     }
 
     /**

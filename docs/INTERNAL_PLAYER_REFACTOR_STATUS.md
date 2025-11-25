@@ -780,11 +780,12 @@ Comprehensive tests verify:
 
 ### Phase 3 Status
 
-Phase 3 is NOT complete. This was Step 2 of Phase 3.
+Phase 3 is NOT complete. This was Step 3 of Phase 3.
 
 Completed Phase 3 steps:
 - [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
 - [x] Step 2: Legacy↔Shadow parity comparison pipeline
+- [x] Step 3: Controls shadow mode activated
 
 Remaining Phase 3 work:
 - [ ] Implement shadow session internals
@@ -792,3 +793,134 @@ Remaining Phase 3 work:
 - [ ] Add diagnostics logging for shadow state
 - [ ] Create verification workflow to compare modular vs legacy behavior
 - [ ] Add developer toggle for shadow mode activation
+
+---
+
+## Phase 3 – Step 3: Controls Shadow Mode Activated
+
+**Date:** 2025-11-25
+
+This step adds modular SIP InternalPlayerControls shadow-mode diagnostics without affecting runtime behavior.
+
+### What Was Done
+
+**1. Created InternalPlayerControlsShadow (`internal/shadow/InternalPlayerControlsShadow.kt`):**
+
+A diagnostics-only wrapper that mirrors all public behaviors from InternalPlayerControls:
+
+| Control Behavior | Diagnostic Emitted |
+|-----------------|-------------------|
+| Playback state | `playback state: playing=true, buffering=false` |
+| Trickplay/speed | `trickplay active: speed=+2.0x` or `trickplay: inactive (normal speed)` |
+| Aspect ratio | `aspectRatioMode: FIT` |
+| Seek position | `position: 12000ms / 60000ms` |
+| Seek preview | `seekPreview requested at 45000ms` |
+| Loop mode | `loop mode: enabled` |
+| Subtitle menu | `subtitle/tracks menu: opened` |
+| Speed dialog | `speed dialog: opened` |
+| Settings dialog | `settings dialog: opened` |
+| Debug overlay | `debug overlay: visible` |
+| Sleep timer | `sleep timer active: 300000ms remaining` |
+| Kids gate | `kids gate: active, profileId=123, blocked=false, remaining=15min` |
+| Resume state | `resuming from: 45000ms` |
+| Errors | `playback error: <message>` |
+
+**Safety Guarantees:**
+- Never modifies InternalPlayerUiState
+- Never interacts with any UI component
+- Never affects ExoPlayer or legacy player
+- Safe to call with null/empty/invalid state fields
+- Never throws exceptions (fail-safe with catch-all)
+
+**2. Extended InternalPlayerShadow with Controls Callback:**
+
+Added new callback parameter to `startShadowSession()`:
+```kotlin
+onShadowControlsDiagnostic: ((String) -> Unit)? = null
+```
+
+Added utility function:
+```kotlin
+fun evaluateControlsInShadowMode(
+    shadowState: InternalPlayerUiState,
+    callback: ((String) -> Unit)?
+)
+```
+
+**3. Added Comprehensive Test Suite (`InternalPlayerControlsShadowTest.kt`):**
+
+Test categories:
+
+**Safety/Edge Case Tests (Must Never Throw):**
+- Default state
+- Null callback
+- Missing aspectRatioMode
+- Missing subtitle flags
+- Impossible trickplay combination (zero speed)
+- Negative speed
+- All null optional fields
+- Extreme values (Long.MAX_VALUE, Float.MAX_VALUE)
+
+**Diagnostic String Emission Tests:**
+- Playback state (playing, buffering)
+- Trickplay (fast-forward, slow-motion, normal)
+- Aspect ratio (all modes)
+- Position
+- Seek preview
+- Subtitle/tracks menu
+- Speed dialog
+- Settings dialog
+- Loop mode
+- Debug overlay
+- Sleep timer
+- Kids gate (active, blocked)
+- Resume state
+
+**No Modification/Immutability Tests:**
+- UiState remains unchanged after evaluation
+
+**InternalPlayerShadow Integration Tests:**
+- evaluateControlsInShadowMode works correctly
+- Safe with null callback
+- startShadowSession accepts onShadowControlsDiagnostic parameter
+
+**No Linkage to UI Tests:**
+- Does not require Android Context
+- Works without Composable context
+- Pure function with no side effects
+
+### Files Added/Modified
+
+**New Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/shadow/InternalPlayerControlsShadow.kt`
+- `app/src/test/java/com/chris/m3usuite/player/internal/shadow/InternalPlayerControlsShadowTest.kt`
+
+**Modified Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/bridge/InternalPlayerShadow.kt` - Added controls callback and utility
+- `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` - This documentation
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ Controls shadow is diagnostics-only (never affects playback)
+- ✅ Shadow pipeline now evaluates Session + Controls without affecting runtime
+- ✅ No functional changes to production player flow
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:assembleDebug` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest` passes all tests including new controls shadow tests
+
+### Architecture After Phase 3 Step 3
+
+```
+Call Sites (VOD/SERIES/LIVE/Telegram Detail Screens)
+    ↓
+InternalPlayerEntry (Phase 1 Bridge)
+    ↓
+InternalPlayerScreen (Legacy - ACTIVE)
+    ↓ (future: shadow observation)
+InternalPlayerShadow (Shadow - PASSIVE, NOT WIRED YET)
+    ├─→ ShadowComparisonService (Session parity diagnostics)
+    └─→ InternalPlayerControlsShadow (Controls diagnostics)
+```
