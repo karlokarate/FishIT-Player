@@ -52,6 +52,7 @@ class ShadowDiagnosticsAggregator {
     private var specComparisonCallback: ((ShadowComparisonService.SpecComparisonResult) -> Unit)? = null
     private var legacyComparisonCallback: ((ShadowComparisonService.ComparisonResult) -> Unit)? = null
     private var controlsDiagnosticCallback: ((String) -> Unit)? = null
+    private var enforcementCallback: ((BehaviorContractEnforcer.EnforcementResult) -> Unit)? = null
     private var eventCallback: ((ShadowEvent) -> Unit)? = null
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -85,6 +86,12 @@ class ShadowDiagnosticsAggregator {
     val controlsDiagnosticEvents: List<ShadowEvent>
         get() = _events.filter { it.kind == ShadowEvent.Kind.ControlsDiagnostic }
 
+    /**
+     * Enforcement events only (filtered) - Phase 3B.
+     */
+    val enforcementEvents: List<ShadowEvent>
+        get() = _events.filter { it.kind == ShadowEvent.Kind.Enforcement }
+
     // ════════════════════════════════════════════════════════════════════════════
     // Callback Registration
     // ════════════════════════════════════════════════════════════════════════════
@@ -108,6 +115,13 @@ class ShadowDiagnosticsAggregator {
      */
     fun onControlsDiagnostic(callback: (String) -> Unit) {
         controlsDiagnosticCallback = callback
+    }
+
+    /**
+     * Register a callback for enforcement results (Phase 3B).
+     */
+    fun onEnforcement(callback: (BehaviorContractEnforcer.EnforcementResult) -> Unit) {
+        enforcementCallback = callback
     }
 
     /**
@@ -146,6 +160,9 @@ class ShadowDiagnosticsAggregator {
                 }
                 ShadowEvent.Kind.ControlsDiagnostic -> {
                     event.diagnosticMessage?.let { controlsDiagnosticCallback?.invoke(it) }
+                }
+                ShadowEvent.Kind.Enforcement -> {
+                    event.enforcementResult?.let { enforcementCallback?.invoke(it) }
                 }
             }
         } catch (_: Throwable) {
@@ -192,6 +209,30 @@ class ShadowDiagnosticsAggregator {
         )
     }
 
+    /**
+     * Emit an enforcement result as a shadow event (Phase 3B).
+     *
+     * @param result The enforcement result containing dimension, action, and values
+     */
+    fun emitEnforcement(result: BehaviorContractEnforcer.EnforcementResult) {
+        emit(
+            ShadowEvent(
+                kind = ShadowEvent.Kind.Enforcement,
+                dimension = result.dimension,
+                enforcementResult = result,
+            ),
+        )
+    }
+
+    /**
+     * Emit multiple enforcement results (Phase 3B).
+     *
+     * @param results List of enforcement results
+     */
+    fun emitEnforcementBatch(results: List<BehaviorContractEnforcer.EnforcementResult>) {
+        results.forEach { emitEnforcement(it) }
+    }
+
     // ════════════════════════════════════════════════════════════════════════════
     // Utility Methods
     // ════════════════════════════════════════════════════════════════════════════
@@ -234,6 +275,7 @@ class ShadowDiagnosticsAggregator {
  * @property specResult Spec comparison result (for SpecComparison events)
  * @property legacyResult Legacy comparison result (for LegacyComparison events)
  * @property diagnosticMessage Diagnostic string (for ControlsDiagnostic events)
+ * @property enforcementResult Enforcement result (for Enforcement events) - Phase 3B
  * @property timestampMs When this event was created
  */
 data class ShadowEvent(
@@ -242,6 +284,7 @@ data class ShadowEvent(
     val specResult: ShadowComparisonService.SpecComparisonResult? = null,
     val legacyResult: ShadowComparisonService.ComparisonResult? = null,
     val diagnosticMessage: String? = null,
+    val enforcementResult: BehaviorContractEnforcer.EnforcementResult? = null,
     val timestampMs: Long = System.currentTimeMillis(),
 ) {
     /**
@@ -265,5 +308,15 @@ data class ShadowEvent(
          * Uses [diagnosticMessage].
          */
         ControlsDiagnostic,
+
+        /**
+         * Enforcement action recommendation (Phase 3B).
+         * Uses [enforcementResult] containing:
+         * - dimension
+         * - sipValue
+         * - specValue
+         * - recommended action
+         */
+        Enforcement,
     }
 }

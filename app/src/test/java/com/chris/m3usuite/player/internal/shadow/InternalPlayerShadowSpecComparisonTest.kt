@@ -544,4 +544,153 @@ class InternalPlayerShadowSpecComparisonTest {
         assertTrue(values.contains(ShadowComparisonService.ParityKind.BothViolateSpec))
         assertTrue(values.contains(ShadowComparisonService.ParityKind.DontCare))
     }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 3B Helper Methods Tests
+    // ════════════════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `filterSipViolations returns only SIP violations`() {
+        // Given: Mix of parity kinds
+        val results = listOf(
+            ShadowComparisonService.SpecComparisonResult(
+                parityKind = ShadowComparisonService.ParityKind.ExactMatch,
+                dimension = "resume",
+                legacyValue = null,
+                sipValue = null,
+                specDetails = "Match",
+            ),
+            ShadowComparisonService.SpecComparisonResult(
+                parityKind = ShadowComparisonService.ParityKind.SpecPreferredSIP,
+                dimension = "kids",
+                legacyValue = null,
+                sipValue = null,
+                specDetails = "SIP preferred",
+            ),
+            ShadowComparisonService.SpecComparisonResult(
+                parityKind = ShadowComparisonService.ParityKind.SpecPreferredLegacy,
+                dimension = "position",
+                legacyValue = null,
+                sipValue = null,
+                specDetails = "Legacy preferred",
+            ),
+            ShadowComparisonService.SpecComparisonResult(
+                parityKind = ShadowComparisonService.ParityKind.BothViolateSpec,
+                dimension = "other",
+                legacyValue = null,
+                sipValue = null,
+                specDetails = "Both violate",
+            ),
+        )
+
+        // When: Filtering SIP violations
+        val violations = ShadowComparisonService.filterSipViolations(results)
+
+        // Then: Only SpecPreferredLegacy and BothViolateSpec
+        assertEquals(2, violations.size)
+        assertTrue(violations.all {
+            it.parityKind == ShadowComparisonService.ParityKind.SpecPreferredLegacy ||
+                it.parityKind == ShadowComparisonService.ParityKind.BothViolateSpec
+        })
+    }
+
+    @Test
+    fun `needsEnforcement returns true when violations exist`() {
+        val results = listOf(
+            ShadowComparisonService.SpecComparisonResult(
+                parityKind = ShadowComparisonService.ParityKind.SpecPreferredLegacy,
+                dimension = "resume",
+                legacyValue = null,
+                sipValue = null,
+                specDetails = "SIP violates",
+            ),
+        )
+
+        assertTrue(ShadowComparisonService.needsEnforcement(results))
+    }
+
+    @Test
+    fun `needsEnforcement returns false when no violations`() {
+        val results = listOf(
+            ShadowComparisonService.SpecComparisonResult(
+                parityKind = ShadowComparisonService.ParityKind.ExactMatch,
+                dimension = "resume",
+                legacyValue = null,
+                sipValue = null,
+                specDetails = "Match",
+            ),
+            ShadowComparisonService.SpecComparisonResult(
+                parityKind = ShadowComparisonService.ParityKind.SpecPreferredSIP,
+                dimension = "kids",
+                legacyValue = null,
+                sipValue = null,
+                specDetails = "SIP preferred",
+            ),
+        )
+
+        assertFalse(ShadowComparisonService.needsEnforcement(results))
+    }
+
+    @Test
+    fun `buildStructuredDiff creates map by dimension`() {
+        val results = listOf(
+            ShadowComparisonService.SpecComparisonResult(
+                parityKind = ShadowComparisonService.ParityKind.ExactMatch,
+                dimension = "resume",
+                legacyValue = 60_000L,
+                sipValue = 60_000L,
+                specDetails = "Match",
+            ),
+            ShadowComparisonService.SpecComparisonResult(
+                parityKind = ShadowComparisonService.ParityKind.DontCare,
+                dimension = "position",
+                legacyValue = 30_000L,
+                sipValue = 30_500L,
+                specDetails = "Within tolerance",
+            ),
+        )
+
+        val diff = ShadowComparisonService.buildStructuredDiff(results)
+
+        assertEquals(2, diff.size)
+        assertTrue(diff.containsKey("resume"))
+        assertTrue(diff.containsKey("position"))
+        assertEquals(ShadowComparisonService.ParityKind.ExactMatch, diff["resume"]?.parityKind)
+        assertEquals(ShadowComparisonService.ParityKind.DontCare, diff["position"]?.parityKind)
+    }
+
+    @Test
+    fun `summarizeViolations returns human-readable summary`() {
+        val results = listOf(
+            ShadowComparisonService.SpecComparisonResult(
+                parityKind = ShadowComparisonService.ParityKind.SpecPreferredLegacy,
+                dimension = "resume",
+                legacyValue = null,
+                sipValue = 5_000L,
+                specDetails = "SIP violates 10s rule",
+            ),
+        )
+
+        val summary = ShadowComparisonService.summarizeViolations(results)
+
+        assertTrue(summary.contains("resume"))
+        assertTrue(summary.contains("SpecPreferredLegacy"))
+    }
+
+    @Test
+    fun `summarizeViolations returns no violations message when empty`() {
+        val results = listOf(
+            ShadowComparisonService.SpecComparisonResult(
+                parityKind = ShadowComparisonService.ParityKind.ExactMatch,
+                dimension = "resume",
+                legacyValue = null,
+                sipValue = null,
+                specDetails = "Match",
+            ),
+        )
+
+        val summary = ShadowComparisonService.summarizeViolations(results)
+
+        assertTrue(summary.contains("No SIP violations"))
+    }
 }
