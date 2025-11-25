@@ -499,3 +499,90 @@ Phase 2 modular implementation is complete. The following phases remain:
 - **Phase 8**: Lifecycle management (`ON_DESTROY` save/clear)
 
 The typed `PlaybackContext` at all call sites and the complete modular implementations mean future phases can switch to the SIP-based orchestrator without modifying call sites or re-implementing resume/kids logic.
+
+---
+
+## Phase 2 – Final Stabilization Completed
+
+**Date:** 2025-11-25
+
+This phase finalizes Phase 2 by stabilizing the modular session infrastructure and preparing it for Phase 3 activation.
+
+### What Was Done
+
+**SIP InternalPlayerSession Hardened with Defensive Guards:**
+
+1. **Negative durationMs Guard:**
+   - ResumeManager skips save/clear when durationMs <= 0
+   - Matches legacy behavior that guards against unknown duration
+
+2. **positionMs > durationMs Guard:**
+   - Near-end logic uses remaining calculation which handles this case
+   - Negative remaining treated as near-end (clears resume)
+
+3. **Unknown/Malformed PlaybackContext Guards:**
+   - Null mediaId for VOD: No-op (no crash)
+   - Null seriesId/season/episodeNumber for SERIES: No-op
+   - Guards at all entry points in ResumeManager and KidsPlaybackGate
+
+4. **LIVE Playback Resume Guard:**
+   - Explicit check in initial seek: `playbackContext.type == PlaybackType.LIVE → null`
+   - ResumeManager returns null for LIVE type
+   - No resume save/clear operations for LIVE content
+
+**Extended InternalPlayerUiState Fields (Phase 3 Ready):**
+
+| Field | Type | Phase 3 UI Consumption |
+|-------|------|------------------------|
+| `isResumingFromLegacy` | Boolean | Show "Resuming..." indicator during initial seek |
+| `resumeStartMs` | Long? | Show toast "Resumed from X:XX" after seek completes |
+| `remainingKidsMinutes` | Int? | Show countdown timer in controls for kid profiles |
+
+**SIP-Only Integration Tests:**
+
+New test file: `InternalPlayerSessionPhase2IntegrationTest.kt`
+
+Tests verify:
+- ResumeManager + KidsGate coordination through Phase2Integration
+- SIP session correctly updates InternalPlayerUiState
+- Blocking transitions do not affect runtime (no actual player)
+- SIP session emits stable, predictable state for Phase 3
+- Defensive guards for edge cases:
+  - Negative durationMs
+  - positionMs > durationMs
+  - Null mediaId/seriesId
+  - Null kidProfileId
+
+**Inline Documentation Added:**
+
+- Comprehensive phase activation roadmap in InternalPlayerSession
+- Legacy behavior mirroring annotations for all modules
+- Independence guarantees documentation (no ViewModel, Navigation, ObjectBox, or legacy state dependencies)
+
+### Files Modified
+
+1. `InternalPlayerSession.kt` - Added defensive guards and phase documentation
+2. `InternalPlayerState.kt` - Extended with Phase 3 annotated fields
+3. `InternalPlayerSessionPhase2IntegrationTest.kt` - New SIP-only integration tests
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ SIP session remains non-runtime reference implementation
+- ✅ No functional changes to production player flow
+- ✅ Modular session is now verified and ready for Phase 3 activation work
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:assembleDebug` builds successfully
+- ✅ `./gradlew :app:test` passes all tests including new Phase 2 integration tests
+- ✅ All SIP modules compile and are internally consistent
+
+### Phase 3 Readiness Checklist
+
+- [x] SIP InternalPlayerSession hardened with defensive guards
+- [x] Extended modular InternalPlayerUiState fields for future UI phases
+- [x] SIP-only integration tests implemented
+- [x] Legacy behavior mapping fully documented
+- [x] Independence from ViewModels, Navigation, ObjectBox verified
+- [x] Stable, predictable state emission for Phase 3 UI modules

@@ -25,6 +25,7 @@ import com.chris.m3usuite.player.internal.domain.DefaultKidsPlaybackGate
 import com.chris.m3usuite.player.internal.domain.DefaultResumeManager
 import com.chris.m3usuite.player.internal.domain.KidsGateState
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
+import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.internal.source.PlaybackSourceResolver
 import com.chris.m3usuite.player.internal.source.ResolvedPlaybackSource
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
@@ -39,7 +40,37 @@ import kotlinx.coroutines.launch
 import kotlin.math.max
 
 /**
- * Builds and manages the ExoPlayer instance for the internal player.
+ * SIP (Session Integration Point) - Builds and manages the ExoPlayer instance for the internal player.
+ *
+ * ════════════════════════════════════════════════════════════════════════════════════════════════════
+ * PHASE 2 STATUS: NON-RUNTIME / REFERENCE IMPLEMENTATION
+ * ════════════════════════════════════════════════════════════════════════════════════════════════════
+ *
+ * This SIP session is part of the Phase 2 modular refactor infrastructure.
+ *
+ * **CURRENT STATUS:**
+ * - This code path is NOT activated at runtime.
+ * - Runtime flow: InternalPlayerEntry → legacy InternalPlayerScreen (monolithic)
+ * - This session exists for Phase 3+ activation work.
+ *
+ * **LEGACY BEHAVIOR MIRRORING:**
+ * - Resume logic mirrors InternalPlayerScreen L572-608, L692-722, L798-806
+ * - Kids gate logic mirrors InternalPlayerScreen L547-569, L725-744
+ * - Defensive guards match legacy behavior for edge cases
+ *
+ * **PHASE ACTIVATION ROADMAP:**
+ * - Phase 3: Wire this session into InternalPlayerEntry (runtime activation)
+ * - Phase 4: Sleep timer integration (playerSleepTimerMinutes)
+ * - Phase 5: Subtitle support (MediaItem.subtitles field)
+ * - Phase 7: RememberPlayerController full implementation
+ * - Phase 8: Lifecycle management (ON_DESTROY save/clear)
+ *
+ * **INDEPENDENCE GUARANTEES:**
+ * This session is fully self-contained and independent of:
+ * - ViewModels (no ViewModel dependencies)
+ * - Navigation (no NavController or routing)
+ * - ObjectBox (uses abstracted repositories)
+ * - Legacy screen state (no shared mutable state)
  *
  * Responsibilities:
  * - Create and configure ExoPlayer (buffering, seek increments)
@@ -152,24 +183,52 @@ fun rememberInternalPlayerSession(
         newPlayer.setMediaItem(mediaItem)
         newPlayer.prepare()
 
-        // Initial seek: explicit startMs has priority, otherwise try resume
+        // ════════════════════════════════════════════════════════════════════════
+        // RESUME HANDLING - Mirrors legacy InternalPlayerScreen L572-608
+        // ════════════════════════════════════════════════════════════════════════
+        //
+        // Phase 3 activation: This resume logic will be activated when
+        // InternalPlayerEntry is switched to use this SIP session.
+        //
+        // Defensive guards match legacy behavior:
+        // - Explicit startMs has priority over resume
+        // - LIVE content skips resume (handled in ResumeManager)
+        // - Position must be > 10s to be restored (handled in ResumeManager)
+        // - Fail-open: On any error, continue without seeking
         try {
             val initialSeekMs: Long? =
                 when {
+                    // Guard: Explicit start position takes priority
                     startMs != null && startMs > 0 -> startMs
+                    // Guard: LIVE playback ignores resume (ResumeManager returns null for LIVE)
+                    playbackContext.type == PlaybackType.LIVE -> null
+                    // Default: Try loading resume from storage
                     else -> resumeManager.loadResumePositionMs(playbackContext)
                 }
 
+            // Guard: Only seek if position is valid and positive
             if (initialSeekMs != null && initialSeekMs > 0) {
                 newPlayer.seekTo(initialSeekMs)
             }
         } catch (_: Throwable) {
-            // best-effort
+            // Fail-open: Continue playback from beginning on any error
+            // Matches legacy behavior at L567-569
         }
 
         controller.attachPlayer(newPlayer)
 
-        // Kid gate before starting playback
+        // ════════════════════════════════════════════════════════════════════════
+        // KIDS GATE - Mirrors legacy InternalPlayerScreen L547-569
+        // ════════════════════════════════════════════════════════════════════════
+        //
+        // Phase 3 activation: Kids gate blocks playback when screen time is exhausted.
+        //
+        // Defensive guards match legacy behavior:
+        // - Profile detection: currentProfileId.first() → ObxProfile lookup
+        // - Kid profile type check: profile?.type == "kid"
+        // - Daily quota: remainingMinutes() returns MINUTES for quota comparison
+        // - Block condition: remain <= 0 → kidBlocked = true; playWhenReady = false
+        // - Fail-open: On any exception, allow playback (kidActive = false)
         var kidsState: KidsGateState? = null
         try {
             val gateState = kidsGate.evaluateStart()
@@ -184,20 +243,33 @@ fun rememberInternalPlayerSession(
             playerState.value = updated
             onStateChanged(updated)
 
+            // Guard: Only block playback if kid is active AND blocked
             newPlayer.playWhenReady = !(gateState.kidActive && gateState.kidBlocked)
         } catch (_: Throwable) {
-            // On any failure, fall back to autoplay
+            // Fail-open: On any failure, fall back to autoplay
+            // Matches legacy behavior at L567-569
             newPlayer.playWhenReady = true
         }
 
-        // Player listener → update InternalPlayerUiState
+        // ════════════════════════════════════════════════════════════════════════
+        // PLAYER LISTENER - Updates InternalPlayerUiState on player events
+        // ════════════════════════════════════════════════════════════════════════
+        //
+        // Phase 3 activation: This listener will be active when SIP session is wired.
+        //
+        // Defensive guards for state updates:
+        // - Negative positionMs: coerced to 0
+        // - TIME_UNSET duration: treated as 0
+        // - positionMs > durationMs: position is clamped by player internally
         newPlayer.addListener(
             object : Player.Listener {
                 override fun onEvents(
                     player: Player,
                     events: Player.Events,
                 ) {
+                    // Guard: Ensure position is never negative
                     val pos = player.currentPosition.coerceAtLeast(0L)
+                    // Guard: Handle C.TIME_UNSET (-1) by treating as 0
                     val dur =
                         player.duration.takeIf { it != C.TIME_UNSET }?.coerceAtLeast(0L)
                             ?: 0L
@@ -262,12 +334,23 @@ fun rememberInternalPlayerSession(
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
+                    // ════════════════════════════════════════════════════════════════
+                    // PLAYBACK ENDED - Mirrors legacy InternalPlayerScreen L798-806
+                    // ════════════════════════════════════════════════════════════════
+                    //
+                    // Phase 3 activation: Resume is cleared when playback reaches end.
+                    //
+                    // Defensive guards match legacy behavior:
+                    // - Only triggers on STATE_ENDED (natural end of playback)
+                    // - LIVE content: No resume to clear (handled in ResumeManager)
+                    // - Fail-open: On any exception, continue silently
                     if (playbackState == Player.STATE_ENDED) {
                         scope.launch {
                             try {
                                 resumeManager.handleEnded(playbackContext)
                             } catch (_: Throwable) {
-                                // best-effort
+                                // Fail-open: Continue silently on error
+                                // Matches legacy behavior
                             }
                         }
                     }
@@ -300,7 +383,23 @@ fun rememberInternalPlayerSession(
         }
         */
 
-        // Resume + Screen-Time periodic tick (~3s)
+        // ════════════════════════════════════════════════════════════════════════════
+        // PERIODIC TICK (~3s) - Resume save + Kids gate tick
+        // ════════════════════════════════════════════════════════════════════════════
+        //
+        // Mirrors legacy InternalPlayerScreen:
+        // - Resume tick: L692-722 (save resume every ~3s for VOD/SERIES)
+        // - Kids tick: L725-744 (60s accumulation before quota decrement)
+        //
+        // Phase 3 activation: This loop will be active when SIP session is wired.
+        //
+        // Defensive guards match legacy behavior:
+        // - Negative durationMs: Handled by ResumeManager (skips if dur <= 0)
+        // - positionMs > durationMs: ResumeManager uses remaining calculation
+        // - LIVE playback: ResumeManager ignores resume for LIVE type
+        // - Kids gate: Only ticks when kidActive && playWhenReady && isPlaying
+        // - Block transitions: kidBlocked triggers playWhenReady = false
+        // - Fail-open: All exceptions caught, continue tick loop
         scope.launch {
             var tickAccumSecs = 0
             while (isActive) {
@@ -310,14 +409,28 @@ fun rememberInternalPlayerSession(
                     val pos = newPlayer.currentPosition
                     val dur = newPlayer.duration
 
-                    // Resume handling (VOD / Series)
+                    // ────────────────────────────────────────────────────────────────
+                    // Resume handling (VOD / Series) - Mirrors L692-722
+                    // ────────────────────────────────────────────────────────────────
+                    // Defensive guards in ResumeManager:
+                    // - LIVE content: No-op
+                    // - Invalid duration (<=0): No-op
+                    // - Near-end (<10s remaining): Clear resume
+                    // - Normal: Save current position
                     resumeManager.handlePeriodicTick(
                         context = playbackContext,
                         positionMs = pos,
                         durationMs = dur,
                     )
 
-                    // Screen-Time: only when kidActive and actually playing
+                    // ────────────────────────────────────────────────────────────────
+                    // Screen-Time tick - Mirrors L725-744
+                    // ────────────────────────────────────────────────────────────────
+                    // Defensive guards:
+                    // - Only tick when kidActive AND actually playing
+                    // - 60-second accumulation before quota decrement
+                    // - Block transition: Set playWhenReady = false
+                    // - Reset accumulation when paused or not kid profile
                     val currentKids = kidsState
                     if (currentKids != null &&
                         currentKids.kidActive &&
@@ -358,10 +471,11 @@ fun rememberInternalPlayerSession(
                             }
                         }
                     } else {
+                        // Reset accumulation when not playing or not kid profile
                         tickAccumSecs = 0
                     }
                 } catch (_: Throwable) {
-                    // ignore, best-effort
+                    // Fail-open: Continue tick loop on any error
                 }
 
                 delay(3_000)
