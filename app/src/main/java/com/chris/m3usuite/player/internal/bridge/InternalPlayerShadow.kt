@@ -3,6 +3,7 @@ package com.chris.m3usuite.player.internal.bridge
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
 import com.chris.m3usuite.player.internal.domain.PlaybackType
+import com.chris.m3usuite.player.internal.shadow.BehaviorContractEnforcer
 import com.chris.m3usuite.player.internal.shadow.InternalPlayerControlsShadow
 import com.chris.m3usuite.player.internal.shadow.ShadowComparisonService
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
@@ -59,6 +60,13 @@ import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
  * - Legacy no longer defines correctness; the Behavior Contract does
  * - New SpecComparisonResult opens the door for future CI validation
  * - Every diagnostic output is classified using ParityKind
+ *
+ * **PHASE 3B: BEHAVIOR CONTRACT ENFORCEMENT**
+ * Shadow pipeline now includes enforcement layer that:
+ * - Evaluates SIP state against Behavior Contract
+ * - Produces corrective EnforcementActions for violations
+ * - Invokes onEnforcementActions callback in shadow-only mode
+ * - Does NOT modify actual playback behavior
  */
 object InternalPlayerShadow {
 
@@ -107,6 +115,12 @@ object InternalPlayerShadow {
      *     onShadowControlsDiagnostic = { diagnostic ->
      *         // Log control diagnostics
      *         diagnosticsLogger.logControlEvent(diagnostic)
+     *     },
+     *     onEnforcementActions = { actions ->
+     *         // Log enforcement actions (Phase 3B)
+     *         actions.forEach { action ->
+     *             log("Enforcement: ${action.dimension} -> ${action.action.describe()}")
+     *         }
      *     }
      * )
      * ```
@@ -120,6 +134,7 @@ object InternalPlayerShadow {
      * @param onShadowComparison Callback for legacy↔shadow state comparison results (legacy format, diagnostics only)
      * @param onSpecComparison Callback for spec-driven comparison results (Phase 3 Step 4)
      * @param onShadowControlsDiagnostic Callback for controls diagnostic strings (diagnostics only)
+     * @param onEnforcementActions Callback for enforcement actions (Phase 3B, shadow-only mode)
      */
     @Suppress("UNUSED_PARAMETER")
     fun startShadowSession(
@@ -132,6 +147,7 @@ object InternalPlayerShadow {
         onShadowComparison: ((ShadowComparisonService.ComparisonResult) -> Unit)? = null,
         onSpecComparison: ((ShadowComparisonService.SpecComparisonResult) -> Unit)? = null,
         onShadowControlsDiagnostic: ((String) -> Unit)? = null,
+        onEnforcementActions: ((List<BehaviorContractEnforcer.EnforcementResult>) -> Unit)? = null,
     ) {
         // TODO(Phase 3): Instantiate modular InternalPlayerSession without wiring to UI or ExoPlayer.
         // This session must not interact with the real player or modify runtime behavior.
@@ -146,6 +162,10 @@ object InternalPlayerShadow {
         //        ShadowComparisonService.compare(legacyStateSnapshot, shadowState)
         //    )
         // 5. Log all state transitions for comparison with legacy behavior
+        // 6. Call enforcement evaluation (Phase 3B):
+        //    val specResults = ShadowComparisonService.compareAgainstSpec(legacy, sip, type, duration)
+        //    val enforcements = BehaviorContractEnforcer.evaluate(specResults, sipState, type, duration)
+        //    onEnforcementActions?.invoke(BehaviorContractEnforcer.filterActionableEnforcements(enforcements))
         //
         // For now, this is a no-op placeholder that defines the shadow-mode contract.
     }
@@ -239,6 +259,67 @@ object InternalPlayerShadow {
                 durationMs = durationMs,
             )
             results.forEach { result -> callback(result) }
+        } catch (_: Throwable) {
+            // Fail-safe: Never throw, silently absorb errors
+        }
+    }
+
+    /**
+     * Invoke enforcement evaluation in shadow mode (Phase 3B).
+     *
+     * This utility function evaluates the SIP state against the Behavior Contract
+     * and returns recommended enforcement actions.
+     *
+     * **USAGE:**
+     * ```kotlin
+     * onShadowStateUpdate { shadowState ->
+     *     InternalPlayerShadow.invokeEnforcement(
+     *         legacyState = legacyStateSnapshot,
+     *         sipState = shadowState,
+     *         playbackContext = playbackContext,
+     *         durationMs = knownDuration,
+     *         callback = onEnforcementActions
+     *     )
+     * }
+     * ```
+     *
+     * **KEY PRINCIPLE:**
+     * This method produces corrective actions but does NOT execute them.
+     * The callback receives the actions for diagnostics logging only.
+     * Phase 4 will wire these actions to actual playback behavior.
+     *
+     * **SAFETY GUARANTEES:**
+     * - Safe to call with null callback (no-op)
+     * - Never throws exceptions
+     * - Never affects runtime behavior
+     *
+     * @param legacyState The current state from legacy InternalPlayerScreen
+     * @param sipState The current state from modular InternalPlayerSession
+     * @param playbackContext The playback context with type information
+     * @param durationMs Optional duration for calculations
+     * @param callback Optional callback to receive enforcement results
+     */
+    fun invokeEnforcement(
+        legacyState: InternalPlayerUiState,
+        sipState: InternalPlayerUiState,
+        playbackContext: PlaybackContext,
+        durationMs: Long? = null,
+        callback: ((List<BehaviorContractEnforcer.EnforcementResult>) -> Unit)?,
+    ) {
+        if (callback == null) return
+
+        try {
+            val results = BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacyState,
+                sipState = sipState,
+                playbackType = playbackContext.type,
+                durationMs = durationMs,
+            )
+            // Only invoke callback with actionable enforcements
+            val actionable = BehaviorContractEnforcer.filterActionableEnforcements(results)
+            if (actionable.isNotEmpty()) {
+                callback(actionable)
+            }
         } catch (_: Throwable) {
             // Fail-safe: Never throw, silently absorb errors
         }

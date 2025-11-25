@@ -514,4 +514,74 @@ object ShadowComparisonService {
             )
         }
     }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 3B: Enforcement Helper Methods
+    // ════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Check if any spec comparison results indicate SIP-specific violations
+     * that require enforcement.
+     *
+     * This helper returns only results where SIP violates the spec:
+     * - SpecPreferredLegacy: Legacy is correct, SIP needs fixing
+     * - BothViolateSpec: Both are wrong, but SIP still needs correction
+     *
+     * Results where SIP is correct (ExactMatch, SpecPreferredSIP, DontCare)
+     * are filtered out.
+     *
+     * @param results List of spec comparison results
+     * @return List of results that indicate SIP violations requiring enforcement
+     */
+    fun filterSipViolations(
+        results: List<SpecComparisonResult>,
+    ): List<SpecComparisonResult> {
+        return results.filter { result ->
+            result.parityKind == ParityKind.SpecPreferredLegacy ||
+                result.parityKind == ParityKind.BothViolateSpec
+        }
+    }
+
+    /**
+     * Check if any enforcement is needed for the given spec comparison results.
+     *
+     * Returns true if at least one result indicates a SIP violation.
+     *
+     * @param results List of spec comparison results
+     * @return True if enforcement is needed
+     */
+    fun needsEnforcement(results: List<SpecComparisonResult>): Boolean {
+        return filterSipViolations(results).isNotEmpty()
+    }
+
+    /**
+     * Build a structured diff containing all contract dimensions with their
+     * comparison results.
+     *
+     * This is useful for diagnostics logging and debugging.
+     *
+     * @param results List of spec comparison results
+     * @return Map of dimension name to comparison result
+     */
+    fun buildStructuredDiff(
+        results: List<SpecComparisonResult>,
+    ): Map<String, SpecComparisonResult> {
+        return results.associateBy { it.dimension }
+    }
+
+    /**
+     * Get a summary of all violations for logging.
+     *
+     * @param results List of spec comparison results
+     * @return Human-readable summary of violations
+     */
+    fun summarizeViolations(results: List<SpecComparisonResult>): String {
+        val violations = filterSipViolations(results)
+        if (violations.isEmpty()) {
+            return "No SIP violations detected"
+        }
+        return violations.joinToString("; ") { result ->
+            "${result.dimension}: ${result.parityKind.name} - ${result.specDetails}"
+        }
+    }
 }
