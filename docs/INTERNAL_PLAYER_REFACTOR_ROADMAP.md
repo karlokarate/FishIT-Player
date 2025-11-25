@@ -122,13 +122,19 @@ All player call sites now use typed PlaybackContext and route through InternalPl
 
 ### Checklist
 
-- ⬜ Design LivePlaybackController
-  - ⬜ Define `LivePlaybackController` interface:
-    - ⬜ `suspend fun initFromPlaybackContext(ctx: PlaybackContext)`
-    - ⬜ `fun jumpChannel(delta: Int)`
-    - ⬜ `fun selectChannel(channelId: Long)`
-    - ⬜ `fun onPlaybackPositionChanged(positionMs: Long)`
-    - ⬜ Expose `State<LiveChannel?>` and `State<EpgOverlayState>`
+- ✅ Design LivePlaybackController
+  - ✅ Define `LivePlaybackController` interface:
+    - ✅ `suspend fun initFromPlaybackContext(ctx: PlaybackContext)`
+    - ✅ `fun jumpChannel(delta: Int)`
+    - ✅ `fun selectChannel(channelId: Long)`
+    - ✅ `fun onPlaybackPositionChanged(positionMs: Long)`
+    - ✅ Expose `StateFlow<LiveChannel?>` and `StateFlow<EpgOverlayState>`
+  - ✅ Create `LiveChannel` data class
+  - ✅ Create `EpgOverlayState` data class
+  - ✅ Create `DefaultLivePlaybackController` stub implementation
+  - ✅ Create repository interfaces (`LiveChannelRepository`, `LiveEpgRepository`)
+  - ✅ Create `TimeProvider` abstraction for testable time operations
+  - ✅ Create `LivePlaybackControllerTest` with test skeleton
 
 - ⬜ Migrate legacy Live-TV logic
   - ⬜ Extract live lists (`libraryLive`, favorites) from legacy screen into controller
@@ -408,10 +414,11 @@ app/
                     PlaybackContext.kt
                     ResumeManager.kt
                     KidsPlaybackGate.kt
-                    // future: LivePlaybackController.kt, SubtitleStyleManager.kt, etc.
+                    // future: SubtitleStyleManager.kt, etc.
 
                   live/
                     LivePlaybackController.kt
+                    DefaultLivePlaybackController.kt
                     LiveChannel.kt
                     EpgOverlayState.kt
 
