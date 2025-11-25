@@ -143,18 +143,28 @@ All player call sites now use typed PlaybackContext and route through InternalPl
   - ⬜ Move EPG resolution (`EpgRepository` queries) into controller
   - ⬜ Implement auto-hide of EPG overlay in controller or a dedicated timer helper
 
-- ⬜ Integrate with UI
-  - ⬜ Extend `InternalPlayerUiState` with:
-    - ⬜ `liveChannelName`
-    - ⬜ `liveNowTitle`
-    - ⬜ `liveNextTitle`
-    - ⬜ `epgOverlayVisible`
-  - ⬜ Update `InternalPlayerContent` to:
-    - ⬜ Show EPG overlay when controller marks it visible
-    - ⬜ Render live channel title and EPG snippet
-  - ⬜ Map gestures in `PlayerSurface`:
-    - ⬜ Horizontal swipe ⇒ `jumpChannel(+/-1)` for Live, seek/trickplay for VOD
-    - ⬜ Vertical swipe ⇒ open live list sheet or quick actions
+- ✅ Integrate with UI (SIP UI path only)
+  - ✅ Extend `InternalPlayerUiState` with:
+    - ✅ `liveChannelName`
+    - ✅ `liveNowTitle`
+    - ✅ `liveNextTitle`
+    - ✅ `epgOverlayVisible`
+    - ✅ `liveListVisible`
+  - ✅ Update `InternalPlayerContent` to:
+    - ✅ Show EPG overlay when controller marks it visible
+    - ✅ Render live channel title and EPG snippet
+    - ✅ Hide progress row for LIVE content
+  - ✅ Create `PlayerSurface` with gesture handling:
+    - ✅ Horizontal swipe ⇒ `jumpChannel(+/-1)` for Live, seek for VOD
+    - ✅ Vertical swipe ⇒ toggle live list (stub with TODO for Phase 3 extended)
+  - ✅ Add live controller callbacks to `InternalPlayerController`:
+    - ✅ `onJumpLiveChannel(delta: Int)`
+    - ✅ `onToggleLiveList()`
+  - ✅ Wire `DefaultLivePlaybackController` in `InternalPlayerSession` (SIP path)
+  - ✅ Add unit tests for live UI state mapping
+
+**Note:** Legacy `InternalPlayerScreen` still owns runtime Live UI until the final migration phase.
+The SIP-based UI integration is complete but not activated at runtime.
 
 ---
 

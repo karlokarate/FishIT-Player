@@ -48,6 +48,35 @@ fun InternalPlayerContent(
         // Hier würdest du die eigentliche Video-Surface einbauen (PlayerView/AndroidView)
         // In deinem bestehenden Code ist das der PlayerView-Block – den kannst du 1:1 hierher ziehen.
 
+        // ════════════════════════════════════════════════════════════════════════════
+        // Phase 3 Step 3: Live TV EPG Overlay (SIP only)
+        // ════════════════════════════════════════════════════════════════════════════
+        //
+        // Renders EPG overlay for LIVE playback when epgOverlayVisible is true.
+        // This overlay shows:
+        // - Current channel name (liveChannelName)
+        // - Now playing title (liveNowTitle)
+        // - Up next title (liveNextTitle)
+        //
+        // The overlay is visually lightweight and coexists with existing controls.
+        // Legacy InternalPlayerScreen still owns runtime live UI until final migration.
+        if (state.isLive && state.epgOverlayVisible) {
+            LiveEpgOverlay(
+                channelName = state.liveChannelName,
+                nowTitle = state.liveNowTitle,
+                nextTitle = state.liveNextTitle,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        }
+
+        // Live channel name display (always visible for LIVE when name available)
+        if (state.isLive && state.liveChannelName != null && !state.epgOverlayVisible) {
+            LiveChannelNameBar(
+                channelName = state.liveChannelName,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        }
+
         // Overlay-Controls (vereinfacht)
         Column(
             modifier =
@@ -69,7 +98,10 @@ fun InternalPlayerContent(
                 onPipClick = { requestPictureInPicture(activity) },
             )
             Spacer(Modifier.height(8.dp))
-            ProgressRow(state = state, onScrubTo = controller.onSeekTo)
+            // Hide progress row for LIVE content (no seeking)
+            if (!state.isLive) {
+                ProgressRow(state = state, onScrubTo = controller.onSeekTo)
+            }
         }
 
         if (state.showDebugInfo) {
@@ -404,4 +436,108 @@ private fun formatMs(ms: Long): String {
     val minutes = totalSec / 60
     val seconds = totalSec % 60
     return "%02d:%02d".format(minutes, seconds)
+}
+
+// ════════════════════════════════════════════════════════════════════════════════════════════════════
+// Phase 3 Step 3: Live TV EPG Overlay Components (SIP only)
+// ════════════════════════════════════════════════════════════════════════════════════════════════════
+//
+// These components render the Live TV EPG overlay for SIP-based playback.
+// They are driven by InternalPlayerUiState fields populated by LivePlaybackController.
+//
+// Legacy InternalPlayerScreen still owns runtime live UI until final migration.
+
+/**
+ * EPG overlay bar showing channel name and now/next program titles.
+ *
+ * Displayed when:
+ * - playbackType == LIVE
+ * - epgOverlayVisible == true
+ *
+ * Auto-hides based on LivePlaybackController timing logic.
+ */
+@Composable
+fun LiveEpgOverlay(
+    channelName: String?,
+    nowTitle: String?,
+    nextTitle: String?,
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+        ) {
+            // Channel name
+            if (channelName != null) {
+                Text(
+                    text = channelName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(4.dp))
+            }
+
+            // Now/Next row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                // Now playing
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Now",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = nowTitle ?: "No information",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                    )
+                }
+
+                // Up next
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Next",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = nextTitle ?: "No information",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Simple channel name bar when EPG overlay is hidden.
+ *
+ * Shows just the channel name for context during LIVE playback.
+ */
+@Composable
+fun LiveChannelNameBar(
+    channelName: String,
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(
+        modifier =
+            modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = channelName,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+    }
 }

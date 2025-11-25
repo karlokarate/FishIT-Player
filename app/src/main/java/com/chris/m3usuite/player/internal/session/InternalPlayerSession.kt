@@ -25,6 +25,11 @@ import com.chris.m3usuite.player.internal.domain.DefaultResumeManager
 import com.chris.m3usuite.player.internal.domain.KidsGateState
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
 import com.chris.m3usuite.player.internal.domain.PlaybackType
+import com.chris.m3usuite.player.internal.live.DefaultLivePlaybackController
+import com.chris.m3usuite.player.internal.live.LiveChannelRepository
+import com.chris.m3usuite.player.internal.live.LiveEpgRepository
+import com.chris.m3usuite.player.internal.live.LivePlaybackController
+import com.chris.m3usuite.player.internal.live.SystemTimeProvider
 import com.chris.m3usuite.player.internal.source.PlaybackSourceResolver
 import com.chris.m3usuite.player.internal.source.ResolvedPlaybackSource
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
@@ -32,6 +37,8 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.ui.util.ImageHeaders
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import com.chris.m3usuite.model.MediaItem as AppMediaItem
@@ -40,19 +47,32 @@ import com.chris.m3usuite.model.MediaItem as AppMediaItem
  * SIP (Session Integration Point) - Builds and manages the ExoPlayer instance for the internal player.
  *
  * ════════════════════════════════════════════════════════════════════════════════════════════════════
- * PHASE 2 STATUS: NON-RUNTIME / REFERENCE IMPLEMENTATION
+ * PHASE 3 STATUS: LIVE TV INTEGRATION (SIP PATH ONLY)
  * ════════════════════════════════════════════════════════════════════════════════════════════════════
  *
- * This SIP session is part of the Phase 2 modular refactor infrastructure.
+ * This SIP session is part of the Phase 3 modular refactor infrastructure.
  *
  * **CURRENT STATUS:**
  * - This code path is NOT activated at runtime.
  * - Runtime flow: InternalPlayerEntry → legacy InternalPlayerScreen (monolithic)
  * - This session exists for Phase 3+ activation work.
  *
+ * **PHASE 3 STEP 3 ADDITIONS:**
+ * - LivePlaybackController integration for LIVE playback type
+ * - Live TV state fields mapped to InternalPlayerUiState:
+ *   - liveChannelName: Current channel name
+ *   - liveNowTitle: Current program title from EPG
+ *   - liveNextTitle: Next program title from EPG
+ *   - epgOverlayVisible: EPG overlay visibility
+ *   - liveListVisible: Live channel list visibility
+ * - Live controller callbacks:
+ *   - onJumpLiveChannel(delta): Jump to adjacent channel
+ *   - onToggleLiveList(): Toggle channel list visibility
+ *
  * **LEGACY BEHAVIOR MIRRORING:**
  * - Resume logic mirrors InternalPlayerScreen L572-608, L692-722, L798-806
  * - Kids gate logic mirrors InternalPlayerScreen L547-569, L725-744
+ * - Live TV logic mirrors InternalPlayerScreen L1120-1185 (channel navigation, EPG)
  * - Defensive guards match legacy behavior for edge cases
  *
  * **PHASE ACTIVATION ROADMAP:**
@@ -76,9 +96,15 @@ import com.chris.m3usuite.model.MediaItem as AppMediaItem
  * - Push state updates into InternalPlayerUiState via onStateChanged
  * - Handle resume (load + periodic save/clear + on-ended)
  * - Handle kid/screentime gate (start + periodic tick)
+ * - Handle live TV (channel navigation, EPG overlay) for LIVE type
  * - Log playback events into TelegramLogRepository
  *
- * This composable does NOT know about UI, DPAD, gestures or series/live logic.
+ * This composable does NOT know about UI, DPAD, gestures or series logic.
+ *
+ * @param liveChannelRepository Repository for live channel data. Required for LIVE playback.
+ *                               Pass null to disable live controller (safe for VOD/SERIES).
+ * @param liveEpgRepository Repository for EPG now/next data. Required for LIVE playback.
+ *                          Pass null to disable EPG overlay (safe for VOD/SERIES).
  */
 @Composable
 fun rememberInternalPlayerSession(
@@ -93,11 +119,42 @@ fun rememberInternalPlayerSession(
     controller: RememberPlayerController,
     onStateChanged: (InternalPlayerUiState) -> Unit,
     onError: (PlaybackException) -> Unit,
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 3 Step 3: Live TV repositories (optional, SIP only)
+    // ════════════════════════════════════════════════════════════════════════════
+    liveChannelRepository: LiveChannelRepository? = null,
+    liveEpgRepository: LiveEpgRepository? = null,
 ): ExoPlayer? {
     val scope = rememberCoroutineScope()
 
     val resumeManager = remember(context) { DefaultResumeManager(context) }
     val kidsGate = remember(context, settings) { DefaultKidsPlaybackGate(context, settings) }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 3 Step 3: LivePlaybackController for LIVE playback (SIP only)
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // Only create the controller when:
+    // 1. PlaybackType is LIVE
+    // 2. Both repositories are provided (non-null)
+    //
+    // This controller is NOT connected to legacy InternalPlayerScreen.
+    // State flows are collected and mapped to InternalPlayerUiState.
+    val liveController: LivePlaybackController? =
+        remember(liveChannelRepository, liveEpgRepository, playbackContext.type) {
+            if (playbackContext.type == PlaybackType.LIVE &&
+                liveChannelRepository != null &&
+                liveEpgRepository != null
+            ) {
+                DefaultLivePlaybackController(
+                    liveRepository = liveChannelRepository,
+                    epgRepository = liveEpgRepository,
+                    clock = SystemTimeProvider,
+                )
+            } else {
+                null
+            }
+        }
 
     val playerState =
         remember {
@@ -108,6 +165,43 @@ fun rememberInternalPlayerSession(
             )
         }
     val playerHolder = remember { mutableStateOf<ExoPlayer?>(null) }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 3 Step 3: LivePlaybackController State Collection (SIP only)
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // Collect StateFlows from LivePlaybackController and map them to InternalPlayerUiState:
+    // - currentChannel.name → liveChannelName
+    // - epgOverlay.nowTitle → liveNowTitle
+    // - epgOverlay.nextTitle → liveNextTitle
+    // - epgOverlay.visible → epgOverlayVisible
+    //
+    // This is a one-way mapping: controller → UiState (no UI logic inside controller).
+    LaunchedEffect(liveController, playbackContext) {
+        val ctrl = liveController ?: return@LaunchedEffect
+
+        // Initialize the live controller from playback context
+        ctrl.initFromPlaybackContext(playbackContext)
+
+        // Collect combined state from controller
+        combine(
+            ctrl.currentChannel,
+            ctrl.epgOverlay,
+        ) { channel, epg ->
+            Triple(channel, epg.nowTitle to epg.nextTitle, epg.visible)
+        }.collectLatest { (channel, nowNext, visible) ->
+            val (nowTitle, nextTitle) = nowNext
+            val updatedState =
+                playerState.value.copy(
+                    liveChannelName = channel?.name,
+                    liveNowTitle = nowTitle,
+                    liveNextTitle = nextTitle,
+                    epgOverlayVisible = visible,
+                )
+            playerState.value = updatedState
+            onStateChanged(updatedState)
+        }
+    }
 
     LaunchedEffect(url, startMs, mimeType, preparedMediaItem, networkHeaders, playbackContext.type) {
         // Release previous instance
@@ -425,6 +519,13 @@ fun rememberInternalPlayerSession(
                         positionMs = pos,
                         durationMs = dur,
                     )
+
+                    // ────────────────────────────────────────────────────────────────
+                    // Live controller position update - Phase 3 Step 3
+                    // ────────────────────────────────────────────────────────────────
+                    // For LIVE playback, notify the controller of position changes.
+                    // This triggers EPG overlay auto-hide timing checks.
+                    liveController?.onPlaybackPositionChanged(pos)
 
                     // ────────────────────────────────────────────────────────────────
                     // Screen-Time tick - Mirrors L725-744

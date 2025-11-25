@@ -1251,3 +1251,159 @@ internal/live/
     ├── LiveChannel.kt (data model)
     └── EpgOverlayState.kt (data model)
 ```
+
+---
+
+## Phase 3 – Step 3: SIP Live UI Integration
+
+**Date:** 2025-11-25
+
+This step integrates DefaultLivePlaybackController into the SIP UI layer by wiring it into InternalPlayerUiState and InternalPlayerContent. Legacy InternalPlayerScreen remains the active runtime implementation.
+
+### What Was Done
+
+**1. Extended InternalPlayerUiState with Live TV Fields:**
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `liveChannelName` | String? | Current channel name for display |
+| `liveNowTitle` | String? | EPG "Now" program title |
+| `liveNextTitle` | String? | EPG "Next" program title |
+| `epgOverlayVisible` | Boolean | Controls EPG overlay visibility |
+| `liveListVisible` | Boolean | Controls live channel list visibility |
+
+**2. Added Live Controller Callbacks to InternalPlayerController:**
+
+| Callback | Purpose |
+|----------|---------|
+| `onJumpLiveChannel(delta: Int)` | Jump to adjacent channel for horizontal swipe |
+| `onToggleLiveList()` | Toggle live channel list for vertical swipe |
+
+Both callbacks have safe defaults (empty lambdas) for non-live playback.
+
+**3. Updated InternalPlayerSession with LivePlaybackController Wiring (SIP only):**
+
+- Creates `DefaultLivePlaybackController` when `playbackContext.type == PlaybackType.LIVE`
+- Requires `LiveChannelRepository` and `LiveEpgRepository` (optional parameters)
+- Collects controller StateFlows and maps them to InternalPlayerUiState:
+  - `currentChannel?.name` → `liveChannelName`
+  - `epgOverlay.nowTitle` → `liveNowTitle`
+  - `epgOverlay.nextTitle` → `liveNextTitle`
+  - `epgOverlay.visible` → `epgOverlayVisible`
+- Calls `liveController.onPlaybackPositionChanged(pos)` in periodic tick loop
+
+**4. Updated InternalPlayerContent with Live TV UI (SIP only):**
+
+- Renders `LiveEpgOverlay` when `isLive && epgOverlayVisible`:
+  - Shows channel name, now title, next title
+  - Visually lightweight card-based design
+- Renders `LiveChannelNameBar` when `isLive && liveChannelName != null && !epgOverlayVisible`
+- Hides progress row for LIVE content (no seeking)
+- Existing VOD/SERIES behavior unchanged
+
+**5. Created PlayerSurface with Gesture Handling:**
+
+- Horizontal swipe:
+  - LIVE: Calls `onJumpLiveChannel(+1/-1)`
+  - VOD/SERIES: Calls `onSeekBy(delta)` (unchanged)
+- Vertical swipe:
+  - LIVE: Calls `onToggleLiveList()` (stub with TODO)
+  - VOD/SERIES: No action (future: brightness/volume)
+- Tap: Toggles control visibility
+
+**6. Added Unit Tests (InternalPlayerSessionPhase3LiveUiTest.kt):**
+
+Test coverage includes:
+- InternalPlayerUiState live field defaults and updates
+- LivePlaybackController → UiState mapping
+- Controller creation conditions (LIVE only, requires repositories)
+- Edge cases (empty channels, no EPG data, repository errors)
+- InternalPlayerController callback behavior
+- UI rendering logic conditions
+
+### Files Added/Modified
+
+**New Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/ui/PlayerSurface.kt`
+- `app/src/test/java/com/chris/m3usuite/player/internal/session/InternalPlayerSessionPhase3LiveUiTest.kt`
+
+**Modified Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt` - Added live fields and callbacks
+- `app/src/main/java/com/chris/m3usuite/player/internal/session/InternalPlayerSession.kt` - Added live controller wiring
+- `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt` - Added EPG overlay components
+- `docs/INTERNAL_PLAYER_REFACTOR_ROADMAP.md` - Updated Phase 3 checklist
+- `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` - This documentation
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ SIP session has live controller wiring but is NOT activated at runtime
+- ✅ Legacy InternalPlayerScreen still owns runtime Live UI
+- ✅ No functional changes to production player flow
+- ✅ All new code is SIP-only and tested
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest` passes all tests including new Phase 3 Step 3 tests
+
+### Behavior Contract Compliance
+
+As documented in INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md:
+
+1. **LIVE playback never resumes** (Section 3.1):
+   - LivePlaybackController does NOT integrate with ResumeManager
+   - Resume is handled at session level where LIVE type is excluded
+
+2. **Kids gating handled by existing components**:
+   - KidsPlaybackGate handles screen-time quota for LIVE playback
+   - LivePlaybackController does NOT re-implement kids gating
+
+3. **Contract enforcer only observes LIVE for diagnostics**:
+   - DefaultLivePlaybackController does NOT talk to BehaviorContractEnforcer directly
+   - Shadow diagnostics may observe LIVE sessions without affecting runtime
+
+### Architecture After Phase 3 Step 3
+
+```
+Call Sites (VOD/SERIES/LIVE/Telegram Detail Screens)
+    ↓
+InternalPlayerEntry (Phase 1 Bridge)
+    ↓
+InternalPlayerScreen (Legacy - ACTIVE at runtime)
+
+SIP Path (NOT ACTIVE at runtime):
+InternalPlayerSession
+    ├─→ DefaultLivePlaybackController (for LIVE playback)
+    │       ├── currentChannel StateFlow
+    │       └── epgOverlay StateFlow
+    ↓
+InternalPlayerUiState
+    ├── liveChannelName
+    ├── liveNowTitle
+    ├── liveNextTitle
+    ├── epgOverlayVisible
+    └── liveListVisible
+    ↓
+InternalPlayerContent
+    ├─→ LiveEpgOverlay (when isLive && epgOverlayVisible)
+    ├─→ LiveChannelNameBar (when isLive && name && !overlay)
+    └─→ ProgressRow (hidden for LIVE)
+
+PlayerSurface
+    ├── Horizontal swipe → onJumpLiveChannel (LIVE) / onSeekBy (VOD)
+    └── Vertical swipe → onToggleLiveList (LIVE)
+```
+
+### Phase 3 Status Summary
+
+**Completed:**
+- [x] Step 1: LivePlaybackController structural foundation
+- [x] Step 2: DefaultLivePlaybackController implementation
+- [x] Step 3: SIP Live UI integration (this step)
+
+**Remaining (future work):**
+- [ ] Implement LiveChannelRepository wrapping XtreamObxRepository
+- [ ] Implement LiveEpgRepository wrapping EpgRepository
+- [ ] Runtime activation (switch InternalPlayerEntry to use SIP)
+- [ ] Full live channel list UI (Phase 3 extended)

@@ -155,6 +155,74 @@ data class InternalPlayerUiState(
      * - Null when comparison is not active
      */
     val comparisonDurationMs: Long? = null,
+    // ════════════════════════════════════════════════════════════════════════════
+    // Live TV / EPG - Phase 3 Step 3 fields
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // These fields are driven by LivePlaybackController in SIP.
+    // Legacy InternalPlayerScreen may still render its own live UI separately
+    // until the final migration phase.
+    //
+    // Phase 3 UI consumption (SIP path only):
+    // - liveChannelName: Show current channel name in overlay
+    // - liveNowTitle: Show "Now playing" program title in EPG overlay
+    // - liveNextTitle: Show "Up next" program title in EPG overlay
+    // - epgOverlayVisible: Control EPG overlay visibility
+    // - liveListVisible: Control live channel list/quick actions visibility
+    /**
+     * Name of the currently playing live channel.
+     *
+     * Phase 3 UI consumption:
+     * - Show channel name in player controls when playbackType == LIVE
+     * - Example: "CNN International"
+     *
+     * **Driven by LivePlaybackController in SIP.**
+     * Null when no live channel is selected or not in LIVE mode.
+     */
+    val liveChannelName: String? = null,
+    /**
+     * Title of the currently playing program (from EPG).
+     *
+     * Phase 3 UI consumption:
+     * - Show "Now" label with this title in EPG overlay
+     * - Example: "Morning News with John Smith"
+     *
+     * **Driven by LivePlaybackController in SIP.**
+     * Null when EPG data is unavailable.
+     */
+    val liveNowTitle: String? = null,
+    /**
+     * Title of the next program (from EPG).
+     *
+     * Phase 3 UI consumption:
+     * - Show "Next" label with this title in EPG overlay
+     * - Example: "Sports Live at 10"
+     *
+     * **Driven by LivePlaybackController in SIP.**
+     * Null when EPG data is unavailable.
+     */
+    val liveNextTitle: String? = null,
+    /**
+     * Whether the EPG overlay should be visible.
+     *
+     * Phase 3 UI consumption:
+     * - Show/hide EPG overlay bar in InternalPlayerContent
+     * - Overlay contains channel name, now/next titles
+     * - Auto-hides after timeout (managed by LivePlaybackController)
+     *
+     * **Driven by LivePlaybackController in SIP.**
+     */
+    val epgOverlayVisible: Boolean = false,
+    /**
+     * Whether the live channel list/quick actions panel should be visible.
+     *
+     * Phase 3 UI consumption:
+     * - Toggle live channel list or quick actions panel
+     * - Typically triggered by vertical swipe gesture on LIVE content
+     *
+     * TODO("Phase 3 – extended live UI"): Full live list implementation.
+     */
+    val liveListVisible: Boolean = false,
 ) {
     val isLive: Boolean
         get() = playbackType == PlaybackType.LIVE
@@ -175,6 +243,13 @@ enum class AspectRatioMode {
  *
  * The screen and the UI modules should only talk to this abstraction,
  * never directly to ExoPlayer or TDLib.
+ *
+ * **SIP Live TV Callbacks (Phase 3 Step 3):**
+ * - `onJumpLiveChannel`: For horizontal swipe gestures in LIVE mode (SIP only)
+ * - `onToggleLiveList`: For vertical swipe gestures in LIVE mode (SIP only)
+ *
+ * These callbacks are provided by the SIP session and delegate to
+ * DefaultLivePlaybackController. They are no-ops in the legacy screen.
  */
 data class InternalPlayerController(
     val onPlayPause: () -> Unit,
@@ -189,4 +264,25 @@ data class InternalPlayerController(
     val onToggleSleepTimerDialog: () -> Unit,
     val onToggleDebugInfo: () -> Unit,
     val onCycleAspectRatio: () -> Unit,
+    // ════════════════════════════════════════════════════════════════════════════
+    // Live TV Callbacks - Phase 3 Step 3 (SIP only)
+    // ════════════════════════════════════════════════════════════════════════════
+    /**
+     * Jump to adjacent live channel.
+     *
+     * @param delta The number of channels to jump (+1 for next, -1 for previous).
+     *
+     * **SIP only:** Delegates to LivePlaybackController.jumpChannel(delta).
+     * **Legacy:** No-op (legacy screen handles live navigation internally).
+     */
+    val onJumpLiveChannel: (delta: Int) -> Unit = {},
+    /**
+     * Toggle the live channel list/quick actions panel.
+     *
+     * **SIP only:** Toggles InternalPlayerUiState.liveListVisible.
+     * **Legacy:** No-op (legacy screen handles live list internally).
+     *
+     * TODO("Phase 3 – extended live UI"): Full live list implementation.
+     */
+    val onToggleLiveList: () -> Unit = {},
 )
