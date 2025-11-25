@@ -854,7 +854,7 @@ Test categories:
 **Safety/Edge Case Tests (Must Never Throw):**
 - Default state
 - Null callback
-- Missing aspectRatioMode
+- Default aspectRatioMode
 - Missing subtitle flags
 - Impossible trickplay combination (zero speed)
 - Negative speed
