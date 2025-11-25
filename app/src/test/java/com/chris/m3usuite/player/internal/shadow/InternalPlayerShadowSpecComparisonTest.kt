@@ -32,7 +32,6 @@ import org.junit.Test
  * - Tests comparison logic independently of actual player behavior
  */
 class InternalPlayerShadowSpecComparisonTest {
-
     // ════════════════════════════════════════════════════════════════════════════
     // Resume Spec Comparison Tests
     // ════════════════════════════════════════════════════════════════════════════
@@ -45,12 +44,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val duration = 120_000L
 
         // When: Comparing against spec
-        val result = ShadowComparisonService.compareResumeAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = duration,
-        )
+        val result =
+            ShadowComparisonService.compareResumeAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = duration,
+            )
 
         // Then: ExactMatch
         assertEquals(ShadowComparisonService.ParityKind.ExactMatch, result.parityKind)
@@ -64,12 +64,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val sip = InternalPlayerUiState(resumeStartMs = null) // Correct: cleared
 
         // When: Comparing against spec
-        val result = ShadowComparisonService.compareResumeAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val result =
+            ShadowComparisonService.compareResumeAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: SpecPreferredSIP (SIP is correct, legacy violates spec)
         assertEquals(ShadowComparisonService.ParityKind.SpecPreferredSIP, result.parityKind)
@@ -83,12 +84,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val sip = InternalPlayerUiState(resumeStartMs = 5_000L) // Violates: <=10s should not resume
 
         // When: Comparing against spec
-        val result = ShadowComparisonService.compareResumeAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val result =
+            ShadowComparisonService.compareResumeAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: SpecPreferredLegacy (Legacy is correct, SIP violates spec)
         assertEquals(ShadowComparisonService.ParityKind.SpecPreferredLegacy, result.parityKind)
@@ -102,12 +104,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val sip = InternalPlayerUiState(resumeStartMs = 8_000L)
 
         // When: Comparing against spec
-        val result = ShadowComparisonService.compareResumeAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val result =
+            ShadowComparisonService.compareResumeAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: BothViolateSpec
         assertEquals(ShadowComparisonService.ParityKind.BothViolateSpec, result.parityKind)
@@ -121,12 +124,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val sip = InternalPlayerUiState(resumeStartMs = null) // Correct
 
         // When: Comparing against spec for LIVE
-        val result = ShadowComparisonService.compareResumeAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.LIVE,
-            durationMs = null,
-        )
+        val result =
+            ShadowComparisonService.compareResumeAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.LIVE,
+                durationMs = null,
+            )
 
         // Then: SpecPreferredSIP
         assertEquals(ShadowComparisonService.ParityKind.SpecPreferredSIP, result.parityKind)
@@ -141,12 +145,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val sip = InternalPlayerUiState(resumeStartMs = null)
 
         // When: Comparing against spec for LIVE
-        val result = ShadowComparisonService.compareResumeAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.LIVE,
-            durationMs = null,
-        )
+        val result =
+            ShadowComparisonService.compareResumeAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.LIVE,
+                durationMs = null,
+            )
 
         // Then: ExactMatch
         assertEquals(ShadowComparisonService.ParityKind.ExactMatch, result.parityKind)
@@ -159,12 +164,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val sip = InternalPlayerUiState(resumeStartMs = 90_000L)
 
         // When: Comparing against spec for LIVE
-        val result = ShadowComparisonService.compareResumeAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.LIVE,
-            durationMs = null,
-        )
+        val result =
+            ShadowComparisonService.compareResumeAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.LIVE,
+                durationMs = null,
+            )
 
         // Then: BothViolateSpec
         assertEquals(ShadowComparisonService.ParityKind.BothViolateSpec, result.parityKind)
@@ -178,12 +184,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val sip = InternalPlayerUiState(resumeStartMs = 65_000L)
 
         // When: Comparing against spec
-        val result = ShadowComparisonService.compareResumeAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val result =
+            ShadowComparisonService.compareResumeAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: DontCare (both compliant, minor difference allowed)
         assertEquals(ShadowComparisonService.ParityKind.DontCare, result.parityKind)
@@ -313,28 +320,31 @@ class InternalPlayerShadowSpecComparisonTest {
     @Test
     fun `compareAgainstSpec returns results for all dimensions`() {
         // Given: States for comparison
-        val legacy = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidActive = true,
-            kidBlocked = false,
-            remainingKidsMinutes = 15,
-            currentPositionMs = 30_000L,
-        )
-        val sip = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidActive = true,
-            kidBlocked = false,
-            remainingKidsMinutes = 15,
-            currentPositionMs = 30_500L,
-        )
+        val legacy =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidActive = true,
+                kidBlocked = false,
+                remainingKidsMinutes = 15,
+                currentPositionMs = 30_000L,
+            )
+        val sip =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidActive = true,
+                kidBlocked = false,
+                remainingKidsMinutes = 15,
+                currentPositionMs = 30_500L,
+            )
 
         // When: Comparing all dimensions
-        val results = ShadowComparisonService.compareAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val results =
+            ShadowComparisonService.compareAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: Results for all dimensions
         assertEquals(3, results.size)
@@ -350,20 +360,22 @@ class InternalPlayerShadowSpecComparisonTest {
     @Test
     fun `invokeSpecComparison invokes callback for each dimension`() {
         // Given: States for comparison
-        val legacy = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidActive = true,
-            kidBlocked = true,
-            remainingKidsMinutes = 0,
-            currentPositionMs = 30_000L,
-        )
-        val sip = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidActive = true,
-            kidBlocked = true,
-            remainingKidsMinutes = 0,
-            currentPositionMs = 30_000L,
-        )
+        val legacy =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidActive = true,
+                kidBlocked = true,
+                remainingKidsMinutes = 0,
+                currentPositionMs = 30_000L,
+            )
+        val sip =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidActive = true,
+                kidBlocked = true,
+                remainingKidsMinutes = 0,
+                currentPositionMs = 30_000L,
+            )
         val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
 
         // When: Invoking spec comparison
@@ -430,12 +442,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val sip = InternalPlayerUiState(resumeStartMs = null)
 
         // When/Then: No exception
-        val result = ShadowComparisonService.compareResumeAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = null,
-        )
+        val result =
+            ShadowComparisonService.compareResumeAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = null,
+            )
         assertNotNull(result)
     }
 
@@ -446,12 +459,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val sip = InternalPlayerUiState(resumeStartMs = 60_000L)
 
         // When/Then: No exception
-        val result = ShadowComparisonService.compareResumeAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = null,
-        )
+        val result =
+            ShadowComparisonService.compareResumeAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = null,
+            )
         assertNotNull(result)
     }
 
@@ -484,12 +498,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val sip = InternalPlayerUiState()
 
         // When/Then: No exception
-        val results = ShadowComparisonService.compareAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = null,
-        )
+        val results =
+            ShadowComparisonService.compareAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = null,
+            )
         assertEquals(3, results.size)
     }
 
@@ -520,12 +535,13 @@ class InternalPlayerShadowSpecComparisonTest {
         val sip = InternalPlayerUiState(resumeStartMs = null)
 
         // When: Getting result
-        val result = ShadowComparisonService.compareResumeAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val result =
+            ShadowComparisonService.compareResumeAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: All fields are present
         assertNotNull(result.parityKind)
@@ -552,103 +568,109 @@ class InternalPlayerShadowSpecComparisonTest {
     @Test
     fun `filterSipViolations returns only SIP violations`() {
         // Given: Mix of parity kinds
-        val results = listOf(
-            ShadowComparisonService.SpecComparisonResult(
-                parityKind = ShadowComparisonService.ParityKind.ExactMatch,
-                dimension = "resume",
-                legacyValue = null,
-                sipValue = null,
-                specDetails = "Match",
-            ),
-            ShadowComparisonService.SpecComparisonResult(
-                parityKind = ShadowComparisonService.ParityKind.SpecPreferredSIP,
-                dimension = "kids",
-                legacyValue = null,
-                sipValue = null,
-                specDetails = "SIP preferred",
-            ),
-            ShadowComparisonService.SpecComparisonResult(
-                parityKind = ShadowComparisonService.ParityKind.SpecPreferredLegacy,
-                dimension = "position",
-                legacyValue = null,
-                sipValue = null,
-                specDetails = "Legacy preferred",
-            ),
-            ShadowComparisonService.SpecComparisonResult(
-                parityKind = ShadowComparisonService.ParityKind.BothViolateSpec,
-                dimension = "other",
-                legacyValue = null,
-                sipValue = null,
-                specDetails = "Both violate",
-            ),
-        )
+        val results =
+            listOf(
+                ShadowComparisonService.SpecComparisonResult(
+                    parityKind = ShadowComparisonService.ParityKind.ExactMatch,
+                    dimension = "resume",
+                    legacyValue = null,
+                    sipValue = null,
+                    specDetails = "Match",
+                ),
+                ShadowComparisonService.SpecComparisonResult(
+                    parityKind = ShadowComparisonService.ParityKind.SpecPreferredSIP,
+                    dimension = "kids",
+                    legacyValue = null,
+                    sipValue = null,
+                    specDetails = "SIP preferred",
+                ),
+                ShadowComparisonService.SpecComparisonResult(
+                    parityKind = ShadowComparisonService.ParityKind.SpecPreferredLegacy,
+                    dimension = "position",
+                    legacyValue = null,
+                    sipValue = null,
+                    specDetails = "Legacy preferred",
+                ),
+                ShadowComparisonService.SpecComparisonResult(
+                    parityKind = ShadowComparisonService.ParityKind.BothViolateSpec,
+                    dimension = "other",
+                    legacyValue = null,
+                    sipValue = null,
+                    specDetails = "Both violate",
+                ),
+            )
 
         // When: Filtering SIP violations
         val violations = ShadowComparisonService.filterSipViolations(results)
 
         // Then: Only SpecPreferredLegacy and BothViolateSpec
         assertEquals(2, violations.size)
-        assertTrue(violations.all {
-            it.parityKind == ShadowComparisonService.ParityKind.SpecPreferredLegacy ||
-                it.parityKind == ShadowComparisonService.ParityKind.BothViolateSpec
-        })
+        assertTrue(
+            violations.all {
+                it.parityKind == ShadowComparisonService.ParityKind.SpecPreferredLegacy ||
+                    it.parityKind == ShadowComparisonService.ParityKind.BothViolateSpec
+            },
+        )
     }
 
     @Test
     fun `needsEnforcement returns true when violations exist`() {
-        val results = listOf(
-            ShadowComparisonService.SpecComparisonResult(
-                parityKind = ShadowComparisonService.ParityKind.SpecPreferredLegacy,
-                dimension = "resume",
-                legacyValue = null,
-                sipValue = null,
-                specDetails = "SIP violates",
-            ),
-        )
+        val results =
+            listOf(
+                ShadowComparisonService.SpecComparisonResult(
+                    parityKind = ShadowComparisonService.ParityKind.SpecPreferredLegacy,
+                    dimension = "resume",
+                    legacyValue = null,
+                    sipValue = null,
+                    specDetails = "SIP violates",
+                ),
+            )
 
         assertTrue(ShadowComparisonService.needsEnforcement(results))
     }
 
     @Test
     fun `needsEnforcement returns false when no violations`() {
-        val results = listOf(
-            ShadowComparisonService.SpecComparisonResult(
-                parityKind = ShadowComparisonService.ParityKind.ExactMatch,
-                dimension = "resume",
-                legacyValue = null,
-                sipValue = null,
-                specDetails = "Match",
-            ),
-            ShadowComparisonService.SpecComparisonResult(
-                parityKind = ShadowComparisonService.ParityKind.SpecPreferredSIP,
-                dimension = "kids",
-                legacyValue = null,
-                sipValue = null,
-                specDetails = "SIP preferred",
-            ),
-        )
+        val results =
+            listOf(
+                ShadowComparisonService.SpecComparisonResult(
+                    parityKind = ShadowComparisonService.ParityKind.ExactMatch,
+                    dimension = "resume",
+                    legacyValue = null,
+                    sipValue = null,
+                    specDetails = "Match",
+                ),
+                ShadowComparisonService.SpecComparisonResult(
+                    parityKind = ShadowComparisonService.ParityKind.SpecPreferredSIP,
+                    dimension = "kids",
+                    legacyValue = null,
+                    sipValue = null,
+                    specDetails = "SIP preferred",
+                ),
+            )
 
         assertFalse(ShadowComparisonService.needsEnforcement(results))
     }
 
     @Test
     fun `buildStructuredDiff creates map by dimension`() {
-        val results = listOf(
-            ShadowComparisonService.SpecComparisonResult(
-                parityKind = ShadowComparisonService.ParityKind.ExactMatch,
-                dimension = "resume",
-                legacyValue = 60_000L,
-                sipValue = 60_000L,
-                specDetails = "Match",
-            ),
-            ShadowComparisonService.SpecComparisonResult(
-                parityKind = ShadowComparisonService.ParityKind.DontCare,
-                dimension = "position",
-                legacyValue = 30_000L,
-                sipValue = 30_500L,
-                specDetails = "Within tolerance",
-            ),
-        )
+        val results =
+            listOf(
+                ShadowComparisonService.SpecComparisonResult(
+                    parityKind = ShadowComparisonService.ParityKind.ExactMatch,
+                    dimension = "resume",
+                    legacyValue = 60_000L,
+                    sipValue = 60_000L,
+                    specDetails = "Match",
+                ),
+                ShadowComparisonService.SpecComparisonResult(
+                    parityKind = ShadowComparisonService.ParityKind.DontCare,
+                    dimension = "position",
+                    legacyValue = 30_000L,
+                    sipValue = 30_500L,
+                    specDetails = "Within tolerance",
+                ),
+            )
 
         val diff = ShadowComparisonService.buildStructuredDiff(results)
 
@@ -661,15 +683,16 @@ class InternalPlayerShadowSpecComparisonTest {
 
     @Test
     fun `summarizeViolations returns human-readable summary`() {
-        val results = listOf(
-            ShadowComparisonService.SpecComparisonResult(
-                parityKind = ShadowComparisonService.ParityKind.SpecPreferredLegacy,
-                dimension = "resume",
-                legacyValue = null,
-                sipValue = 5_000L,
-                specDetails = "SIP violates 10s rule",
-            ),
-        )
+        val results =
+            listOf(
+                ShadowComparisonService.SpecComparisonResult(
+                    parityKind = ShadowComparisonService.ParityKind.SpecPreferredLegacy,
+                    dimension = "resume",
+                    legacyValue = null,
+                    sipValue = 5_000L,
+                    specDetails = "SIP violates 10s rule",
+                ),
+            )
 
         val summary = ShadowComparisonService.summarizeViolations(results)
 
@@ -679,15 +702,16 @@ class InternalPlayerShadowSpecComparisonTest {
 
     @Test
     fun `summarizeViolations returns no violations message when empty`() {
-        val results = listOf(
-            ShadowComparisonService.SpecComparisonResult(
-                parityKind = ShadowComparisonService.ParityKind.ExactMatch,
-                dimension = "resume",
-                legacyValue = null,
-                sipValue = null,
-                specDetails = "Match",
-            ),
-        )
+        val results =
+            listOf(
+                ShadowComparisonService.SpecComparisonResult(
+                    parityKind = ShadowComparisonService.ParityKind.ExactMatch,
+                    dimension = "resume",
+                    legacyValue = null,
+                    sipValue = null,
+                    specDetails = "Match",
+                ),
+            )
 
         val summary = ShadowComparisonService.summarizeViolations(results)
 

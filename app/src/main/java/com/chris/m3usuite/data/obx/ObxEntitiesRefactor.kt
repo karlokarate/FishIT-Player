@@ -24,44 +24,32 @@ import io.objectbox.annotation.Index
  */
 @Entity
 data class ObxTelegramMessageRefactor(
-
     @Id
     var id: Long = 0,
-
     // Telegram identifiers
     @Index
     var chatId: Long = 0,
-
     @Index
     var messageId: Long = 0,
-
     @Index
     var fileId: Int? = null,
-
     var fileUniqueId: String? = null,
-
     // Caption (TDLib text or filename), lowercased for search
     var caption: String? = null,
     var captionLower: String? = null,
-
     // File metadata (semantic; real technical info stays in TDLib)
     var durationSecs: Int? = null,
     var supportsStreaming: Boolean? = null,
-
     // Timestamp (TDLib message.date)
     var date: Long? = null,
-
     // Filename from TDLib
     var fileName: String? = null,
-
     // Optional language tag (heuristic)
     var language: String? = null,
-
     // User flags
     var isKidsContent: Boolean = false,
     var isFavorite: Boolean = false,
     var isHidden: Boolean = false,
-
     // Movie metadata
     var title: String? = null,
     var year: Int? = null,
@@ -69,7 +57,6 @@ data class ObxTelegramMessageRefactor(
     var fsk: Int? = null,
     var description: String? = null,
     var posterFileId: Int? = null,
-
     // Episode metadata
     var isSeries: Boolean = false,
     var seriesName: String? = null,
@@ -77,7 +64,6 @@ data class ObxTelegramMessageRefactor(
     var seasonNumber: Int? = null,
     var episodeNumber: Int? = null,
     var episodeTitle: String? = null,
-
     // Thumbnail (NOT a path; tdlib resolves paths)
-    var thumbFileId: Int? = null
+    var thumbFileId: Int? = null,
 )

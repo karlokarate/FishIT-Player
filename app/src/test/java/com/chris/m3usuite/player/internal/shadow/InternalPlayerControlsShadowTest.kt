@@ -32,7 +32,6 @@ import org.junit.Test
  * - Controls shadow is for diagnostics and verification only
  */
 class InternalPlayerControlsShadowTest {
-
     // ════════════════════════════════════════════════════════════════════════════
     // Safety / Edge Case Tests - Must Never Throw
     // ════════════════════════════════════════════════════════════════════════════
@@ -57,11 +56,12 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls never throws with null callback`() {
         // Given: State with some fields set
-        val state = InternalPlayerUiState(
-            isPlaying = true,
-            positionMs = 60_000L,
-            durationMs = 120_000L,
-        )
+        val state =
+            InternalPlayerUiState(
+                isPlaying = true,
+                positionMs = 60_000L,
+                durationMs = 120_000L,
+            )
 
         // When/Then: No exception thrown with null callback
         InternalPlayerControlsShadow.evaluateControls(state, null)
@@ -70,9 +70,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls never throws with null aspectRatioMode fields`() {
         // Given: State with default aspectRatioMode (FIT)
-        val state = InternalPlayerUiState(
-            aspectRatioMode = AspectRatioMode.FIT,
-        )
+        val state =
+            InternalPlayerUiState(
+                aspectRatioMode = AspectRatioMode.FIT,
+            )
 
         // When/Then: No exception thrown
         val diagnostics = mutableListOf<String>()
@@ -88,9 +89,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls never throws with missing subtitle flags`() {
         // Given: State with tracks dialog hidden (default)
-        val state = InternalPlayerUiState(
-            showTracksDialog = false,
-        )
+        val state =
+            InternalPlayerUiState(
+                showTracksDialog = false,
+            )
 
         // When/Then: No exception thrown
         val diagnostics = mutableListOf<String>()
@@ -106,9 +108,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls never throws with impossible trickplay combination - active with no speed`() {
         // Given: State with zero speed (impossible/invalid)
-        val state = InternalPlayerUiState(
-            playbackSpeed = 0f,
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackSpeed = 0f,
+            )
 
         // When/Then: No exception thrown
         val diagnostics = mutableListOf<String>()
@@ -124,9 +127,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls never throws with negative speed`() {
         // Given: State with negative speed (invalid)
-        val state = InternalPlayerUiState(
-            playbackSpeed = -2f,
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackSpeed = -2f,
+            )
 
         // When/Then: No exception thrown
         val diagnostics = mutableListOf<String>()
@@ -142,15 +146,16 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls never throws with all null optional fields`() {
         // Given: State with all optional fields null
-        val state = InternalPlayerUiState(
-            kidProfileId = null,
-            sleepTimerRemainingMs = null,
-            resumeStartMs = null,
-            shadowStateDebug = null,
-            currentPositionMs = null,
-            comparisonDurationMs = null,
-            playbackError = null,
-        )
+        val state =
+            InternalPlayerUiState(
+                kidProfileId = null,
+                sleepTimerRemainingMs = null,
+                resumeStartMs = null,
+                shadowStateDebug = null,
+                currentPositionMs = null,
+                comparisonDurationMs = null,
+                playbackError = null,
+            )
 
         // When/Then: No exception thrown
         val diagnostics = mutableListOf<String>()
@@ -166,12 +171,13 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls never throws with extreme values`() {
         // Given: State with extreme values
-        val state = InternalPlayerUiState(
-            positionMs = Long.MAX_VALUE,
-            durationMs = Long.MAX_VALUE,
-            playbackSpeed = Float.MAX_VALUE,
-            remainingKidsMinutes = Int.MAX_VALUE,
-        )
+        val state =
+            InternalPlayerUiState(
+                positionMs = Long.MAX_VALUE,
+                durationMs = Long.MAX_VALUE,
+                playbackSpeed = Float.MAX_VALUE,
+                remainingKidsMinutes = Int.MAX_VALUE,
+            )
 
         // When/Then: No exception thrown
         val diagnostics = mutableListOf<String>()
@@ -191,10 +197,11 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits playback state diagnostic`() {
         // Given: Playing state
-        val state = InternalPlayerUiState(
-            isPlaying = true,
-            isBuffering = false,
-        )
+        val state =
+            InternalPlayerUiState(
+                isPlaying = true,
+                isBuffering = false,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -210,10 +217,11 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits buffering state diagnostic`() {
         // Given: Buffering state
-        val state = InternalPlayerUiState(
-            isPlaying = false,
-            isBuffering = true,
-        )
+        val state =
+            InternalPlayerUiState(
+                isPlaying = false,
+                isBuffering = true,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -229,9 +237,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits trickplay active for fast-forward`() {
         // Given: Fast-forward speed
-        val state = InternalPlayerUiState(
-            playbackSpeed = 2f,
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackSpeed = 2f,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -247,9 +256,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits trickplay active for slow-motion`() {
         // Given: Slow-motion speed
-        val state = InternalPlayerUiState(
-            playbackSpeed = 0.5f,
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackSpeed = 0.5f,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -265,9 +275,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits inactive trickplay for normal speed`() {
         // Given: Normal speed
-        val state = InternalPlayerUiState(
-            playbackSpeed = 1f,
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackSpeed = 1f,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -301,10 +312,11 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits position diagnostic`() {
         // Given: State with position and duration
-        val state = InternalPlayerUiState(
-            positionMs = 12_000L,
-            durationMs = 60_000L,
-        )
+        val state =
+            InternalPlayerUiState(
+                positionMs = 12_000L,
+                durationMs = 60_000L,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -320,10 +332,11 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits seek preview diagnostic`() {
         // Given: State with different currentPositionMs (scrubbing)
-        val state = InternalPlayerUiState(
-            positionMs = 30_000L,
-            currentPositionMs = 45_000L, // Scrubbing ahead
-        )
+        val state =
+            InternalPlayerUiState(
+                positionMs = 30_000L,
+                currentPositionMs = 45_000L, // Scrubbing ahead
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -339,9 +352,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits subtitle menu opened diagnostic`() {
         // Given: Tracks dialog shown
-        val state = InternalPlayerUiState(
-            showTracksDialog = true,
-        )
+        val state =
+            InternalPlayerUiState(
+                showTracksDialog = true,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -357,9 +371,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits speed dialog opened diagnostic`() {
         // Given: Speed dialog shown
-        val state = InternalPlayerUiState(
-            showSpeedDialog = true,
-        )
+        val state =
+            InternalPlayerUiState(
+                showSpeedDialog = true,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -375,9 +390,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits settings dialog opened diagnostic`() {
         // Given: Settings dialog shown
-        val state = InternalPlayerUiState(
-            showSettingsDialog = true,
-        )
+        val state =
+            InternalPlayerUiState(
+                showSettingsDialog = true,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -393,9 +409,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits loop mode enabled diagnostic`() {
         // Given: Loop mode enabled
-        val state = InternalPlayerUiState(
-            isLooping = true,
-        )
+        val state =
+            InternalPlayerUiState(
+                isLooping = true,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -411,9 +428,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits debug overlay visible diagnostic`() {
         // Given: Debug overlay shown
-        val state = InternalPlayerUiState(
-            showDebugInfo = true,
-        )
+        val state =
+            InternalPlayerUiState(
+                showDebugInfo = true,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -429,9 +447,10 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits sleep timer active diagnostic`() {
         // Given: Sleep timer active
-        val state = InternalPlayerUiState(
-            sleepTimerRemainingMs = 300_000L,
-        )
+        val state =
+            InternalPlayerUiState(
+                sleepTimerRemainingMs = 300_000L,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -447,12 +466,13 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits kids gate diagnostic`() {
         // Given: Kids gate active
-        val state = InternalPlayerUiState(
-            kidActive = true,
-            kidBlocked = false,
-            kidProfileId = 123L,
-            remainingKidsMinutes = 15,
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = true,
+                kidBlocked = false,
+                kidProfileId = 123L,
+                remainingKidsMinutes = 15,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -473,11 +493,12 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits kids gate blocked diagnostic`() {
         // Given: Kids gate blocked
-        val state = InternalPlayerUiState(
-            kidActive = true,
-            kidBlocked = true,
-            kidProfileId = 456L,
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = true,
+                kidBlocked = true,
+                kidProfileId = 456L,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -493,10 +514,11 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls emits resume state diagnostic`() {
         // Given: Resuming state
-        val state = InternalPlayerUiState(
-            isResumingFromLegacy = true,
-            resumeStartMs = 45_000L,
-        )
+        val state =
+            InternalPlayerUiState(
+                isResumingFromLegacy = true,
+                resumeStartMs = 45_000L,
+            )
 
         // When: Evaluating
         val diagnostics = mutableListOf<String>()
@@ -516,16 +538,17 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls does not modify UiState`() {
         // Given: State with various fields
-        val state = InternalPlayerUiState(
-            isPlaying = true,
-            positionMs = 30_000L,
-            durationMs = 60_000L,
-            playbackSpeed = 2f,
-            isLooping = true,
-            kidActive = true,
-            kidBlocked = false,
-            aspectRatioMode = AspectRatioMode.FILL,
-        )
+        val state =
+            InternalPlayerUiState(
+                isPlaying = true,
+                positionMs = 30_000L,
+                durationMs = 60_000L,
+                playbackSpeed = 2f,
+                isLooping = true,
+                kidActive = true,
+                kidBlocked = false,
+                aspectRatioMode = AspectRatioMode.FILL,
+            )
 
         // When: Evaluating
         InternalPlayerControlsShadow.evaluateControls(state) { /* no-op */ }
@@ -548,11 +571,12 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `InternalPlayerShadow evaluateControlsInShadowMode works correctly`() {
         // Given: State with various fields
-        val state = InternalPlayerUiState(
-            isPlaying = true,
-            playbackSpeed = 1.5f,
-            aspectRatioMode = AspectRatioMode.ZOOM,
-        )
+        val state =
+            InternalPlayerUiState(
+                isPlaying = true,
+                playbackSpeed = 1.5f,
+                aspectRatioMode = AspectRatioMode.ZOOM,
+            )
 
         // When: Using InternalPlayerShadow utility
         val diagnostics = mutableListOf<String>()
@@ -585,10 +609,11 @@ class InternalPlayerControlsShadowTest {
             startMs = null,
             mimeType = null,
             mediaItem = null,
-            playbackContext = com.chris.m3usuite.player.internal.domain.PlaybackContext(
-                type = PlaybackType.VOD,
-                mediaId = 123L,
-            ),
+            playbackContext =
+                com.chris.m3usuite.player.internal.domain.PlaybackContext(
+                    type = PlaybackType.VOD,
+                    mediaId = 123L,
+                ),
             onShadowStateChanged = null,
             onShadowComparison = null,
             onShadowControlsDiagnostic = { diagnosticReceived = true },
@@ -631,10 +656,11 @@ class InternalPlayerControlsShadowTest {
     @Test
     fun `evaluateControls is pure function with no side effects`() {
         // Given: Same state
-        val state = InternalPlayerUiState(
-            isPlaying = true,
-            playbackSpeed = 2f,
-        )
+        val state =
+            InternalPlayerUiState(
+                isPlaying = true,
+                playbackSpeed = 2f,
+            )
 
         // When: Called multiple times
         val diagnostics1 = mutableListOf<String>()

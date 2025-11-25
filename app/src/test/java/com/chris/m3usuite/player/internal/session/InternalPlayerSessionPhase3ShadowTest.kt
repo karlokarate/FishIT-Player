@@ -37,7 +37,6 @@ import org.junit.Test
  * - Shadow session is for diagnostics and verification only
  */
 class InternalPlayerSessionPhase3ShadowTest {
-
     // ════════════════════════════════════════════════════════════════════════════
     // Fake Implementations for Shadow Testing
     // ════════════════════════════════════════════════════════════════════════════
@@ -164,12 +163,13 @@ class InternalPlayerSessionPhase3ShadowTest {
     @Test
     fun `shadow session never throws with null seriesId`() {
         // Given: Series context with missing seriesId
-        val context = PlaybackContext(
-            type = PlaybackType.SERIES,
-            seriesId = null,
-            season = 1,
-            episodeNumber = 5,
-        )
+        val context =
+            PlaybackContext(
+                type = PlaybackType.SERIES,
+                seriesId = null,
+                season = 1,
+                episodeNumber = 5,
+            )
 
         // When/Then: No exception thrown
         InternalPlayerShadow.startShadowSession(
@@ -199,12 +199,13 @@ class InternalPlayerSessionPhase3ShadowTest {
     @Test
     fun `shadow session never throws with invalid PlaybackContext combinations`() {
         // Given: Various invalid context combinations
-        val contexts = listOf(
-            PlaybackContext(type = PlaybackType.VOD, mediaId = null),
-            PlaybackContext(type = PlaybackType.SERIES, seriesId = null, season = null, episodeNumber = null),
-            PlaybackContext(type = PlaybackType.LIVE, liveCategoryHint = null, liveProviderHint = null),
-            PlaybackContext(type = PlaybackType.VOD, mediaId = -1L),
-        )
+        val contexts =
+            listOf(
+                PlaybackContext(type = PlaybackType.VOD, mediaId = null),
+                PlaybackContext(type = PlaybackType.SERIES, seriesId = null, season = null, episodeNumber = null),
+                PlaybackContext(type = PlaybackType.LIVE, liveCategoryHint = null, liveProviderHint = null),
+                PlaybackContext(type = PlaybackType.VOD, mediaId = -1L),
+            )
 
         // When/Then: No exceptions thrown for any context
         contexts.forEach { context ->
@@ -276,10 +277,11 @@ class InternalPlayerSessionPhase3ShadowTest {
     @Test
     fun `InternalPlayerUiState shadow fields can be set independently`() {
         // Given: State with shadow fields set
-        val state = InternalPlayerUiState(
-            shadowActive = true,
-            shadowStateDebug = "pos=60000|dur=120000|playing=true|kid=false",
-        )
+        val state =
+            InternalPlayerUiState(
+                shadowActive = true,
+                shadowStateDebug = "pos=60000|dur=120000|playing=true|kid=false",
+            )
 
         // Then: Shadow fields are accessible
         assertTrue("shadowActive should be true", state.shadowActive)
@@ -293,17 +295,19 @@ class InternalPlayerSessionPhase3ShadowTest {
     @Test
     fun `InternalPlayerUiState copy preserves shadow fields`() {
         // Given: State with shadow fields
-        val initial = InternalPlayerUiState(
-            playbackType = PlaybackType.VOD,
-            shadowActive = true,
-            shadowStateDebug = "test-debug-string",
-        )
+        val initial =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.VOD,
+                shadowActive = true,
+                shadowStateDebug = "test-debug-string",
+            )
 
         // When: Copy with playback updates
-        val updated = initial.copy(
-            isPlaying = true,
-            positionMs = 30_000L,
-        )
+        val updated =
+            initial.copy(
+                isPlaying = true,
+                positionMs = 30_000L,
+            )
 
         // Then: Shadow fields preserved
         assertTrue("shadowActive preserved", updated.shadowActive)
@@ -313,16 +317,17 @@ class InternalPlayerSessionPhase3ShadowTest {
     @Test
     fun `InternalPlayerUiState shadow fields do not affect legacy fields`() {
         // Given: State with both legacy and shadow fields
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.SERIES,
-            isPlaying = true,
-            positionMs = 60_000L,
-            durationMs = 120_000L,
-            kidActive = true,
-            kidBlocked = false,
-            shadowActive = true,
-            shadowStateDebug = "shadow-data",
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.SERIES,
+                isPlaying = true,
+                positionMs = 60_000L,
+                durationMs = 120_000L,
+                kidActive = true,
+                kidBlocked = false,
+                shadowActive = true,
+                shadowStateDebug = "shadow-data",
+            )
 
         // Then: Legacy fields are independent
         assertEquals("playbackType unchanged", PlaybackType.SERIES, state.playbackType)
@@ -357,12 +362,13 @@ class InternalPlayerSessionPhase3ShadowTest {
     fun `ShadowSessionState can be constructed with custom values`() {
         // Given: Custom shadow state
         val timestamp = System.currentTimeMillis()
-        val state = ShadowSessionState(
-            shadowActive = true,
-            shadowStateDebug = "pos=30000|dur=60000",
-            timestampMs = timestamp,
-            source = "test",
-        )
+        val state =
+            ShadowSessionState(
+                shadowActive = true,
+                shadowStateDebug = "pos=30000|dur=60000",
+                timestampMs = timestamp,
+                source = "test",
+            )
 
         // Then: Values are accessible
         assertTrue("shadowActive should be true", state.shadowActive)
@@ -376,130 +382,140 @@ class InternalPlayerSessionPhase3ShadowTest {
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `shadow resume manager loads position for VOD`() = runBlocking {
-        // Given: VOD context
-        val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
+    fun `shadow resume manager loads position for VOD`() =
+        runBlocking {
+            // Given: VOD context
+            val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
 
-        // When: Loading resume
-        val resumeMs = resumeManager.loadResumePositionMs(context)
+            // When: Loading resume
+            val resumeMs = resumeManager.loadResumePositionMs(context)
 
-        // Then: Position returned (fake always returns 60000 for VOD with mediaId)
-        assertEquals("Should return resume position", 60_000L, resumeMs)
-        assertEquals("Load should be called once", 1, resumeManager.loadCallCount)
-    }
-
-    @Test
-    fun `shadow resume manager returns null for LIVE`() = runBlocking {
-        // Given: LIVE context
-        val context = PlaybackContext(type = PlaybackType.LIVE, mediaId = 123L)
-
-        // When: Loading resume
-        val resumeMs = resumeManager.loadResumePositionMs(context)
-
-        // Then: Null returned (LIVE has no resume)
-        assertNull("LIVE should not have resume", resumeMs)
-    }
+            // Then: Position returned (fake always returns 60000 for VOD with mediaId)
+            assertEquals("Should return resume position", 60_000L, resumeMs)
+            assertEquals("Load should be called once", 1, resumeManager.loadCallCount)
+        }
 
     @Test
-    fun `shadow resume manager tick does not persist`() = runBlocking {
-        // Given: VOD context
-        val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
+    fun `shadow resume manager returns null for LIVE`() =
+        runBlocking {
+            // Given: LIVE context
+            val context = PlaybackContext(type = PlaybackType.LIVE, mediaId = 123L)
 
-        // When: Ticking
-        resumeManager.handlePeriodicTick(context, 30_000L, 60_000L)
+            // When: Loading resume
+            val resumeMs = resumeManager.loadResumePositionMs(context)
 
-        // Then: Called but no persistence (shadow mode)
-        assertEquals("Tick should be called once", 1, resumeManager.tickCallCount)
-    }
+            // Then: Null returned (LIVE has no resume)
+            assertNull("LIVE should not have resume", resumeMs)
+        }
+
+    @Test
+    fun `shadow resume manager tick does not persist`() =
+        runBlocking {
+            // Given: VOD context
+            val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
+
+            // When: Ticking
+            resumeManager.handlePeriodicTick(context, 30_000L, 60_000L)
+
+            // Then: Called but no persistence (shadow mode)
+            assertEquals("Tick should be called once", 1, resumeManager.tickCallCount)
+        }
 
     // ════════════════════════════════════════════════════════════════════════════
     // Kids Gate Shadow Behavior Tests
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `shadow kids gate evaluates start safely`() = runBlocking {
-        // Given: Non-kid profile
-        kidsGate.simulateKidProfile = false
+    fun `shadow kids gate evaluates start safely`() =
+        runBlocking {
+            // Given: Non-kid profile
+            kidsGate.simulateKidProfile = false
 
-        // When: Evaluating
-        val state = kidsGate.evaluateStart()
+            // When: Evaluating
+            val state = kidsGate.evaluateStart()
 
-        // Then: Safe default returned
-        assertFalse("kidActive should be false", state.kidActive)
-        assertFalse("kidBlocked should be false", state.kidBlocked)
-        assertNull("kidProfileId should be null", state.kidProfileId)
-        assertEquals("Evaluate should be called once", 1, kidsGate.evaluateCallCount)
-    }
-
-    @Test
-    fun `shadow kids gate returns blocked for kid with exhausted quota`() = runBlocking {
-        // Given: Kid profile with exhausted quota
-        kidsGate.simulateKidProfile = true
-        kidsGate.simulateBlocked = true
-
-        // When: Evaluating
-        val state = kidsGate.evaluateStart()
-
-        // Then: Blocked state returned (but doesn't affect playback in shadow mode)
-        assertTrue("kidActive should be true", state.kidActive)
-        assertTrue("kidBlocked should be true", state.kidBlocked)
-        assertEquals("kidProfileId should be set", 1L, state.kidProfileId)
-    }
+            // Then: Safe default returned
+            assertFalse("kidActive should be false", state.kidActive)
+            assertFalse("kidBlocked should be false", state.kidBlocked)
+            assertNull("kidProfileId should be null", state.kidProfileId)
+            assertEquals("Evaluate should be called once", 1, kidsGate.evaluateCallCount)
+        }
 
     @Test
-    fun `shadow kids gate tick returns same state`() = runBlocking {
-        // Given: Active kid state
-        val currentState = KidsGateState(
-            kidActive = true,
-            kidBlocked = false,
-            kidProfileId = 1L,
-        )
+    fun `shadow kids gate returns blocked for kid with exhausted quota`() =
+        runBlocking {
+            // Given: Kid profile with exhausted quota
+            kidsGate.simulateKidProfile = true
+            kidsGate.simulateBlocked = true
 
-        // When: Ticking
-        val newState = kidsGate.onPlaybackTick(currentState, 60)
+            // When: Evaluating
+            val state = kidsGate.evaluateStart()
 
-        // Then: Same state returned (shadow mode doesn't decrement)
-        assertEquals("State should be unchanged", currentState, newState)
-        assertEquals("Tick should be called once", 1, kidsGate.tickCallCount)
-    }
+            // Then: Blocked state returned (but doesn't affect playback in shadow mode)
+            assertTrue("kidActive should be true", state.kidActive)
+            assertTrue("kidBlocked should be true", state.kidBlocked)
+            assertEquals("kidProfileId should be set", 1L, state.kidProfileId)
+        }
+
+    @Test
+    fun `shadow kids gate tick returns same state`() =
+        runBlocking {
+            // Given: Active kid state
+            val currentState =
+                KidsGateState(
+                    kidActive = true,
+                    kidBlocked = false,
+                    kidProfileId = 1L,
+                )
+
+            // When: Ticking
+            val newState = kidsGate.onPlaybackTick(currentState, 60)
+
+            // Then: Same state returned (shadow mode doesn't decrement)
+            assertEquals("State should be unchanged", currentState, newState)
+            assertEquals("Tick should be called once", 1, kidsGate.tickCallCount)
+        }
 
     // ════════════════════════════════════════════════════════════════════════════
     // Phase2Integration Shadow Behavior Tests
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `Phase2Integration works with shadow fakes`() = runBlocking {
-        // Given: VOD context with shadow fakes
-        val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
+    fun `Phase2Integration works with shadow fakes`() =
+        runBlocking {
+            // Given: VOD context with shadow fakes
+            val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
 
-        // When: Loading resume via Phase2Integration
-        val resumeMs = Phase2Integration.loadInitialResumePosition(context, resumeManager)
+            // When: Loading resume via Phase2Integration
+            val resumeMs = Phase2Integration.loadInitialResumePosition(context, resumeManager)
 
-        // Then: Works correctly with fakes
-        assertEquals("Should return resume position", 60_000L, resumeMs)
-    }
+            // Then: Works correctly with fakes
+            assertEquals("Should return resume position", 60_000L, resumeMs)
+        }
 
     @Test
-    fun `Phase2Integration tick works with shadow fakes`() = runBlocking {
-        // Given: VOD context with shadow fakes
-        val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
-        kidsGate.simulateKidProfile = true
-        val kidsState = kidsGate.evaluateStart()
+    fun `Phase2Integration tick works with shadow fakes`() =
+        runBlocking {
+            // Given: VOD context with shadow fakes
+            val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
+            kidsGate.simulateKidProfile = true
+            val kidsState = kidsGate.evaluateStart()
 
-        // When: Ticking via Phase2Integration
-        val newState = Phase2Integration.onPlaybackTick(
-            playbackContext = context,
-            positionMs = 30_000L,
-            durationMs = 60_000L,
-            resumeManager = resumeManager,
-            kidsGate = kidsGate,
-            currentKidsState = kidsState,
-            tickAccumSecs = 60,
-        )
+            // When: Ticking via Phase2Integration
+            val newState =
+                Phase2Integration.onPlaybackTick(
+                    playbackContext = context,
+                    positionMs = 30_000L,
+                    durationMs = 60_000L,
+                    resumeManager = resumeManager,
+                    kidsGate = kidsGate,
+                    currentKidsState = kidsState,
+                    tickAccumSecs = 60,
+                )
 
-        // Then: Both managers processed
-        assertEquals("Resume tick should be called", 1, resumeManager.tickCallCount)
-        assertEquals("Kids tick should be called", 1, kidsGate.tickCallCount)
-        assertNotNull("New state should be returned", newState)
-    }
+            // Then: Both managers processed
+            assertEquals("Resume tick should be called", 1, resumeManager.tickCallCount)
+            assertEquals("Kids tick should be called", 1, kidsGate.tickCallCount)
+            assertNotNull("New state should be returned", newState)
+        }
 }

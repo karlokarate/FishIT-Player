@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.StateFlow
  * ════════════════════════════════════════════════════════════════════════════════════════════════════
  */
 interface LivePlaybackController {
-
     /**
      * Initializes the controller from a playback context.
      *
@@ -94,7 +93,6 @@ interface LivePlaybackController {
  * ObxLive.streamId is `Int`. Implementations should cast appropriately.
  */
 interface LiveChannelRepository {
-
     /**
      * Retrieves live channels filtered by category and/or provider.
      *
@@ -129,7 +127,6 @@ interface LiveChannelRepository {
  * forward compatibility. Implementations should handle the mapping appropriately.
  */
 interface LiveEpgRepository {
-
     /**
      * Fetches the now/next program titles for a channel.
      *
@@ -146,7 +143,6 @@ interface LiveEpgRepository {
  * (e.g., EPG overlay auto-hide timing).
  */
 interface TimeProvider {
-
     /**
      * Returns the current realtime in milliseconds (like System.currentTimeMillis()).
      */

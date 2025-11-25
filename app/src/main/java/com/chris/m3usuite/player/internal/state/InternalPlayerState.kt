@@ -32,7 +32,6 @@ import com.chris.m3usuite.player.internal.domain.PlaybackType
 @Immutable
 data class InternalPlayerUiState(
     val playbackType: PlaybackType = PlaybackType.VOD,
-
     val isPlaying: Boolean = false,
     val isBuffering: Boolean = false,
     val positionMs: Long = 0L,
@@ -41,7 +40,6 @@ data class InternalPlayerUiState(
     val isLooping: Boolean = false,
     val playbackError: PlaybackException? = null,
     val sleepTimerRemainingMs: Long? = null,
-
     // ════════════════════════════════════════════════════════════════════════════
     // Kids / Screen-Time - Phase 2 fields
     // ════════════════════════════════════════════════════════════════════════════
@@ -66,7 +64,6 @@ data class InternalPlayerUiState(
      * - Session layer is responsible for maintaining this invariant
      */
     val remainingKidsMinutes: Int? = null,
-
     // ════════════════════════════════════════════════════════════════════════════
     // Resume state - Phase 2 fields
     // ════════════════════════════════════════════════════════════════════════════
@@ -90,16 +87,13 @@ data class InternalPlayerUiState(
      * - Null when no resume position was loaded or playback started fresh
      */
     val resumeStartMs: Long? = null,
-
     // UI dialogs / overlays
     val showSettingsDialog: Boolean = false,
     val showTracksDialog: Boolean = false,
     val showSpeedDialog: Boolean = false,
     val showSleepTimerDialog: Boolean = false,
     val showDebugInfo: Boolean = false,
-
     val aspectRatioMode: AspectRatioMode = AspectRatioMode.FIT,
-
     // ════════════════════════════════════════════════════════════════════════════
     // Shadow Mode - Phase 3 fields
     // ════════════════════════════════════════════════════════════════════════════
@@ -136,7 +130,6 @@ data class InternalPlayerUiState(
      * - Null when shadow mode is inactive or not emitting debug info
      */
     val shadowStateDebug: String? = null,
-
     // ════════════════════════════════════════════════════════════════════════════
     // Parity Comparison - Phase 3 Step 2 fields
     // ════════════════════════════════════════════════════════════════════════════

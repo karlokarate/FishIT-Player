@@ -44,7 +44,6 @@ package com.chris.m3usuite.player.internal.shadow
  * - Never throws exceptions to callers
  */
 class ShadowDiagnosticsAggregator {
-
     // ════════════════════════════════════════════════════════════════════════════
     // Event Callbacks
     // ════════════════════════════════════════════════════════════════════════════
@@ -255,8 +254,7 @@ class ShadowDiagnosticsAggregator {
     /**
      * Get events by dimension.
      */
-    fun eventsByDimension(dimension: String): List<ShadowEvent> =
-        _events.filter { it.dimension == dimension }
+    fun eventsByDimension(dimension: String): List<ShadowEvent> = _events.filter { it.dimension == dimension }
 
     /**
      * Get events by ParityKind (for spec comparison events only).

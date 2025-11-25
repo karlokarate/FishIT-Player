@@ -2,7 +2,6 @@ package com.chris.m3usuite.player.internal.bridge
 
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
-import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.internal.shadow.BehaviorContractEnforcer
 import com.chris.m3usuite.player.internal.shadow.InternalPlayerControlsShadow
 import com.chris.m3usuite.player.internal.shadow.ShadowComparisonService
@@ -69,7 +68,6 @@ import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
  * - Does NOT modify actual playback behavior
  */
 object InternalPlayerShadow {
-
     /**
      * Start a shadow-mode session that runs in parallel without controlling playback.
      *
@@ -252,12 +250,13 @@ object InternalPlayerShadow {
         if (callback == null) return
 
         try {
-            val results = ShadowComparisonService.compareAgainstSpec(
-                legacy = legacyState,
-                sip = sipState,
-                playbackType = playbackContext.type,
-                durationMs = durationMs,
-            )
+            val results =
+                ShadowComparisonService.compareAgainstSpec(
+                    legacy = legacyState,
+                    sip = sipState,
+                    playbackType = playbackContext.type,
+                    durationMs = durationMs,
+                )
             results.forEach { result -> callback(result) }
         } catch (_: Throwable) {
             // Fail-safe: Never throw, silently absorb errors
@@ -309,12 +308,13 @@ object InternalPlayerShadow {
         if (callback == null) return
 
         try {
-            val results = BehaviorContractEnforcer.evaluateFromStates(
-                legacyState = legacyState,
-                sipState = sipState,
-                playbackType = playbackContext.type,
-                durationMs = durationMs,
-            )
+            val results =
+                BehaviorContractEnforcer.evaluateFromStates(
+                    legacyState = legacyState,
+                    sipState = sipState,
+                    playbackType = playbackContext.type,
+                    durationMs = durationMs,
+                )
             // Only invoke callback with actionable enforcements
             val actionable = BehaviorContractEnforcer.filterActionableEnforcements(results)
             if (actionable.isNotEmpty()) {
@@ -399,18 +399,15 @@ data class ShadowSessionState(
      * Indicates whether the shadow session is actively observing.
      */
     val shadowActive: Boolean = false,
-
     /**
      * Debug string representing the current shadow state.
      * Format: "position_ms|duration_ms|is_playing|is_buffering|kid_active|kid_blocked"
      */
     val shadowStateDebug: String? = null,
-
     /**
      * Timestamp when this state was emitted (for diagnostics).
      */
     val timestampMs: Long = System.currentTimeMillis(),
-
     /**
      * Source of this state ("shadow" vs "legacy" for comparison).
      */

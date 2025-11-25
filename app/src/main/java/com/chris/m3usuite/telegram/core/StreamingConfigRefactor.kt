@@ -13,7 +13,6 @@ package com.chris.m3usuite.telegram.core
  * directly from TDLib's cached file on disk (zero-copy friendly).
  */
 object StreamingConfigRefactor {
-
     // --- Prefix / Read-Ahead Strategy ---------------------------------------
 
     /**

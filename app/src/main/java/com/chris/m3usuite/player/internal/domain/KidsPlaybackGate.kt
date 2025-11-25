@@ -144,7 +144,6 @@ class DefaultKidsPlaybackGate(
     private val context: Context,
     private val settings: SettingsStore,
 ) : KidsPlaybackGate {
-
     private val screenTimeRepo = ScreenTimeRepository(context)
     private val store get() = ObxStore.get(context)
 

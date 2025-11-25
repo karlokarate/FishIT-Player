@@ -68,7 +68,6 @@ import com.chris.m3usuite.player.internal.domain.ResumeManager
  *     - Action: Navigate back / close player
  */
 object Phase2Integration {
-
     /**
      * Load the initial resume position for a playback session.
      *
@@ -341,9 +340,7 @@ object Phase2Integration {
      *         - Set playWhenReady = !kidBlocked
      *         - Show block overlay if kidBlocked == true
      */
-    suspend fun evaluateKidsGateOnStart(
-        kidsGate: KidsPlaybackGate,
-    ): KidsGateState {
+    suspend fun evaluateKidsGateOnStart(kidsGate: KidsPlaybackGate): KidsGateState {
         // TODO(Phase 2): Mirror legacy kid gate start evaluation.
         // This determines if playback should be blocked before it begins.
         //

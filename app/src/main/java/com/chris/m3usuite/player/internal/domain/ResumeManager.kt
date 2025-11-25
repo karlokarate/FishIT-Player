@@ -127,7 +127,6 @@ interface ResumeManager {
 class DefaultResumeManager(
     context: Context,
 ) : ResumeManager {
-
     private val repo = ResumeRepository(context)
 
     // TODO(Phase 2 Parity): Legacy uses ResumeRepository.recentVod() and recentEpisodes()

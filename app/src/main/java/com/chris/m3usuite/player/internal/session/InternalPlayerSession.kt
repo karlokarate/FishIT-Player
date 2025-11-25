@@ -1,7 +1,6 @@
 package com.chris.m3usuite.player.internal.session
 
 import android.content.Context
-import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -19,7 +18,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import com.chris.m3usuite.model.MediaItem as AppMediaItem
+import com.chris.m3usuite.core.playback.RememberPlayerController
 import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
 import com.chris.m3usuite.player.internal.domain.DefaultKidsPlaybackGate
 import com.chris.m3usuite.player.internal.domain.DefaultResumeManager
@@ -29,15 +28,13 @@ import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.internal.source.PlaybackSourceResolver
 import com.chris.m3usuite.player.internal.source.ResolvedPlaybackSource
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.core.playback.RememberPlayerController
+import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.ui.util.ImageHeaders
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.math.max
+import com.chris.m3usuite.model.MediaItem as AppMediaItem
 
 /**
  * SIP (Session Integration Point) - Builds and manages the ExoPlayer instance for the internal player.
@@ -148,10 +145,14 @@ fun rememberInternalPlayerSession(
             DefaultLoadControl
                 .Builder()
                 .setBufferDurationsMs(
-                    /* minBufferMs = */ 15_000,
-                    /* maxBufferMs = */ 60_000,
-                    /* bufferForPlaybackMs = */ 1_000,
-                    /* bufferForPlaybackAfterRebufferMs = */ 3_000,
+                    // minBufferMs =
+                    15_000,
+                    // maxBufferMs =
+                    60_000,
+                    // bufferForPlaybackMs =
+                    1_000,
+                    // bufferForPlaybackAfterRebufferMs =
+                    3_000,
                 ).build()
 
         val mediaSourceFactory = DefaultMediaSourceFactory(delegatingFactory)
@@ -383,7 +384,7 @@ fun rememberInternalPlayerSession(
                 }
             }
         }
-        */
+         */
 
         // ════════════════════════════════════════════════════════════════════════════
         // PERIODIC TICK (~3s) - Resume save + Kids gate tick
@@ -496,9 +497,7 @@ fun rememberInternalPlayerSession(
     return playerHolder.value
 }
 
-private fun buildMediaItemWithTelegramExtras(
-    resolved: ResolvedPlaybackSource,
-): MediaItem {
+private fun buildMediaItemWithTelegramExtras(resolved: ResolvedPlaybackSource): MediaItem {
     val builder =
         MediaItem
             .Builder()
@@ -525,7 +524,7 @@ private fun buildMediaItemWithTelegramExtras(
             builder.build().subtitleConfigurations + subConfig,
         )
     }
-    */
+     */
 
     val metadataBuilder =
         MediaMetadata
@@ -543,7 +542,7 @@ private fun buildMediaItemWithTelegramExtras(
             MediaMetadata.PICTURE_TYPE_FRONT_COVER,
         )
     }
-    */
+     */
 
     builder.setMediaMetadata(metadataBuilder.build())
 
@@ -584,7 +583,10 @@ fun applyPlayerCommand_ChangeSpeed(
     player.playbackParameters = PlaybackParameters(speed)
 }
 
-fun applyPlayerCommand_ToggleLoop(player: ExoPlayer?, looping: Boolean) {
+fun applyPlayerCommand_ToggleLoop(
+    player: ExoPlayer?,
+    looping: Boolean,
+) {
     player ?: return
     player.repeatMode =
         if (looping) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF

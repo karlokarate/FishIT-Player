@@ -15,22 +15,17 @@ package com.chris.m3usuite.player.internal.domain
  */
 data class PlaybackContext(
     val type: PlaybackType,
-
     // VOD / Telegram-style media id (encoded OBX id or Telegram file id)
     val mediaId: Long? = null,
-
     // Series (legacy episode id – mostly unused in OBX path, but kept for compatibility)
     val episodeId: Int? = null,
-
     // Series composite key (OBX series id)
     val seriesId: Int? = null,
     val season: Int? = null,
     val episodeNumber: Int? = null,
-
     // Live-TV context hints for navigation & lists
     val liveCategoryHint: String? = null,
     val liveProviderHint: String? = null,
-
     // Optional kid profile id, if already known; if null, the Kids gate
     // will derive it from SettingsStore.currentProfileId.
     val kidProfileId: Long? = null,

@@ -27,7 +27,6 @@ import androidx.navigation.navArgument
 import com.chris.m3usuite.logs.ui.LogViewerScreen
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.player.InternalPlayerEntry
-import com.chris.m3usuite.player.InternalPlayerScreen // <- korrektes Paket (s. Schritt A)
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
 import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.prefs.Keys
@@ -492,29 +491,33 @@ class MainActivity : ComponentActivity() {
                             }
 
                             // Build PlaybackContext based on type
-                            val playbackContext = when (type) {
-                                "series" -> PlaybackContext(
-                                    type = PlaybackType.SERIES,
-                                    mediaId = null,
-                                    seriesId = seriesId,
-                                    season = season,
-                                    episodeNumber = episodeNum,
-                                    episodeId = episodeId,
-                                    kidProfileId = null, // Will be derived from SettingsStore
-                                )
-                                "live" -> PlaybackContext(
-                                    type = PlaybackType.LIVE,
-                                    mediaId = mediaId,
-                                    liveCategoryHint = cat.ifBlank { null },
-                                    liveProviderHint = prov.ifBlank { null },
-                                    kidProfileId = null, // Will be derived from SettingsStore
-                                )
-                                else -> PlaybackContext( // "vod" or default
-                                    type = PlaybackType.VOD,
-                                    mediaId = mediaId,
-                                    kidProfileId = null, // Will be derived from SettingsStore
-                                )
-                            }
+                            val playbackContext =
+                                when (type) {
+                                    "series" ->
+                                        PlaybackContext(
+                                            type = PlaybackType.SERIES,
+                                            mediaId = null,
+                                            seriesId = seriesId,
+                                            season = season,
+                                            episodeNumber = episodeNum,
+                                            episodeId = episodeId,
+                                            kidProfileId = null, // Will be derived from SettingsStore
+                                        )
+                                    "live" ->
+                                        PlaybackContext(
+                                            type = PlaybackType.LIVE,
+                                            mediaId = mediaId,
+                                            liveCategoryHint = cat.ifBlank { null },
+                                            liveProviderHint = prov.ifBlank { null },
+                                            kidProfileId = null, // Will be derived from SettingsStore
+                                        )
+                                    else ->
+                                        PlaybackContext( // "vod" or default
+                                            type = PlaybackType.VOD,
+                                            mediaId = mediaId,
+                                            kidProfileId = null, // Will be derived from SettingsStore
+                                        )
+                                }
 
                             InternalPlayerEntry(
                                 url = url,

@@ -35,7 +35,6 @@ import org.junit.Test
  * - SIP session remains reference-only until Phase 3 activation
  */
 class InternalPlayerSessionPhase2IntegrationTest {
-
     // ════════════════════════════════════════════════════════════════════════════
     // Fake Implementations (Stubs for Integration Testing)
     // ════════════════════════════════════════════════════════════════════════════
@@ -55,18 +54,29 @@ class InternalPlayerSessionPhase2IntegrationTest {
         var lastTickPositionMs: Long? = null
         var lastTickDurationMs: Long? = null
 
-        fun setVodResume(mediaId: Long, positionSecs: Int) {
+        fun setVodResume(
+            mediaId: Long,
+            positionSecs: Int,
+        ) {
             vodResume[mediaId] = positionSecs
         }
 
-        fun setSeriesResume(seriesId: Int, season: Int, episodeNum: Int, positionSecs: Int) {
+        fun setSeriesResume(
+            seriesId: Int,
+            season: Int,
+            episodeNum: Int,
+            positionSecs: Int,
+        ) {
             seriesResume["$seriesId-$season-$episodeNum"] = positionSecs
         }
 
         fun getStoredVodResume(mediaId: Long): Int? = vodResume[mediaId]
 
-        fun getStoredSeriesResume(seriesId: Int, season: Int, episodeNum: Int): Int? =
-            seriesResume["$seriesId-$season-$episodeNum"]
+        fun getStoredSeriesResume(
+            seriesId: Int,
+            season: Int,
+            episodeNum: Int,
+        ): Int? = seriesResume["$seriesId-$season-$episodeNum"]
 
         fun isVodResumeCleared(mediaId: Long): Boolean = !vodResume.containsKey(mediaId)
 
@@ -216,80 +226,86 @@ class InternalPlayerSessionPhase2IntegrationTest {
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `Phase2Integration coordinates resume and kids gate on tick`() = runBlocking {
-        // Given: VOD context with active kid profile
-        val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
-        kidsGate.isKidProfile = true
-        kidsGate.remainingMinutes = 10
+    fun `Phase2Integration coordinates resume and kids gate on tick`() =
+        runBlocking {
+            // Given: VOD context with active kid profile
+            val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
+            kidsGate.isKidProfile = true
+            kidsGate.remainingMinutes = 10
 
-        val kidsState = KidsGateState(
-            kidActive = true,
-            kidBlocked = false,
-            kidProfileId = 42L,
-        )
+            val kidsState =
+                KidsGateState(
+                    kidActive = true,
+                    kidBlocked = false,
+                    kidProfileId = 42L,
+                )
 
-        // When: Tick with 60 seconds accumulated (triggers kids gate)
-        val newState = Phase2Integration.onPlaybackTick(
-            playbackContext = context,
-            positionMs = 30_000L,
-            durationMs = 120_000L,
-            resumeManager = resumeManager,
-            kidsGate = kidsGate,
-            currentKidsState = kidsState,
-            tickAccumSecs = 60,
-        )
+            // When: Tick with 60 seconds accumulated (triggers kids gate)
+            val newState =
+                Phase2Integration.onPlaybackTick(
+                    playbackContext = context,
+                    positionMs = 30_000L,
+                    durationMs = 120_000L,
+                    resumeManager = resumeManager,
+                    kidsGate = kidsGate,
+                    currentKidsState = kidsState,
+                    tickAccumSecs = 60,
+                )
 
-        // Then: Both resume and kids gate processed
-        assertEquals("Resume tick should be called", 1, resumeManager.tickCalledCount)
-        assertEquals("Resume should be saved at 30 seconds", 30, resumeManager.getStoredVodResume(123L))
-        assertEquals("Kids tick should be called", 1, kidsGate.tickCalledCount)
-        assertEquals("Remaining minutes should decrease", 9, kidsGate.remainingMinutes)
-        assertNotNull("Kids state should be returned", newState)
-        assertFalse("Should not be blocked yet", newState!!.kidBlocked)
-    }
-
-    @Test
-    fun `Phase2Integration skips kids gate when tickAccumSecs below threshold`() = runBlocking {
-        // Given: VOD context with active kid profile
-        val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
-        kidsGate.isKidProfile = true
-        kidsGate.remainingMinutes = 10
-
-        val kidsState = KidsGateState(
-            kidActive = true,
-            kidBlocked = false,
-            kidProfileId = 42L,
-        )
-
-        // When: Tick with only 30 seconds accumulated (below 60s threshold)
-        Phase2Integration.onPlaybackTick(
-            playbackContext = context,
-            positionMs = 30_000L,
-            durationMs = 120_000L,
-            resumeManager = resumeManager,
-            kidsGate = kidsGate,
-            currentKidsState = kidsState,
-            tickAccumSecs = 30,
-        )
-
-        // Then: Resume processed but kids gate skipped
-        assertEquals("Resume tick should be called", 1, resumeManager.tickCalledCount)
-        assertEquals("Kids tick should NOT be called", 0, kidsGate.tickCalledCount)
-        assertEquals("Remaining minutes unchanged", 10, kidsGate.remainingMinutes)
-    }
+            // Then: Both resume and kids gate processed
+            assertEquals("Resume tick should be called", 1, resumeManager.tickCalledCount)
+            assertEquals("Resume should be saved at 30 seconds", 30, resumeManager.getStoredVodResume(123L))
+            assertEquals("Kids tick should be called", 1, kidsGate.tickCalledCount)
+            assertEquals("Remaining minutes should decrease", 9, kidsGate.remainingMinutes)
+            assertNotNull("Kids state should be returned", newState)
+            assertFalse("Should not be blocked yet", newState!!.kidBlocked)
+        }
 
     @Test
-    fun `Phase2Integration handles LIVE content without resume`() = runBlocking {
-        // Given: LIVE context (resume not applicable)
-        val context = PlaybackContext(type = PlaybackType.LIVE, mediaId = 789L)
+    fun `Phase2Integration skips kids gate when tickAccumSecs below threshold`() =
+        runBlocking {
+            // Given: VOD context with active kid profile
+            val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
+            kidsGate.isKidProfile = true
+            kidsGate.remainingMinutes = 10
 
-        // When: Loading resume
-        val resumeMs = Phase2Integration.loadInitialResumePosition(context, resumeManager)
+            val kidsState =
+                KidsGateState(
+                    kidActive = true,
+                    kidBlocked = false,
+                    kidProfileId = 42L,
+                )
 
-        // Then: Returns null (LIVE has no resume)
-        assertNull("LIVE should not have resume", resumeMs)
-        assertEquals("Load should still be called", 1, resumeManager.loadCalledCount)
-    }
+            // When: Tick with only 30 seconds accumulated (below 60s threshold)
+            Phase2Integration.onPlaybackTick(
+                playbackContext = context,
+                positionMs = 30_000L,
+                durationMs = 120_000L,
+                resumeManager = resumeManager,
+                kidsGate = kidsGate,
+                currentKidsState = kidsState,
+                tickAccumSecs = 30,
+            )
+
+            // Then: Resume processed but kids gate skipped
+            assertEquals("Resume tick should be called", 1, resumeManager.tickCalledCount)
+            assertEquals("Kids tick should NOT be called", 0, kidsGate.tickCalledCount)
+            assertEquals("Remaining minutes unchanged", 10, kidsGate.remainingMinutes)
+        }
+
+    @Test
+    fun `Phase2Integration handles LIVE content without resume`() =
+        runBlocking {
+            // Given: LIVE context (resume not applicable)
+            val context = PlaybackContext(type = PlaybackType.LIVE, mediaId = 789L)
+
+            // When: Loading resume
+            val resumeMs = Phase2Integration.loadInitialResumePosition(context, resumeManager)
+
+            // Then: Returns null (LIVE has no resume)
+            assertNull("LIVE should not have resume", resumeMs)
+            assertEquals("Load should still be called", 1, resumeManager.loadCalledCount)
+        }
 
     // ════════════════════════════════════════════════════════════════════════════
     // InternalPlayerUiState Update Tests
@@ -318,10 +334,11 @@ class InternalPlayerSessionPhase2IntegrationTest {
     @Test
     fun `InternalPlayerUiState supports Phase 3 resume fields`() {
         // Given: State with resume info set
-        val state = InternalPlayerUiState(
-            isResumingFromLegacy = true,
-            resumeStartMs = 60_000L,
-        )
+        val state =
+            InternalPlayerUiState(
+                isResumingFromLegacy = true,
+                resumeStartMs = 60_000L,
+            )
 
         // Then: Resume fields are accessible
         assertTrue("isResumingFromLegacy should be true", state.isResumingFromLegacy)
@@ -331,12 +348,13 @@ class InternalPlayerSessionPhase2IntegrationTest {
     @Test
     fun `InternalPlayerUiState supports Phase 3 kids fields`() {
         // Given: State with kids info set
-        val state = InternalPlayerUiState(
-            kidActive = true,
-            kidBlocked = false,
-            kidProfileId = 42L,
-            remainingKidsMinutes = 15,
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = true,
+                kidBlocked = false,
+                kidProfileId = 42L,
+                remainingKidsMinutes = 15,
+            )
 
         // Then: Kids fields are accessible
         assertTrue("kidActive should be true", state.kidActive)
@@ -348,18 +366,20 @@ class InternalPlayerSessionPhase2IntegrationTest {
     @Test
     fun `InternalPlayerUiState copy preserves new fields`() {
         // Given: Initial state
-        val initial = InternalPlayerUiState(
-            playbackType = PlaybackType.SERIES,
-            isResumingFromLegacy = true,
-            resumeStartMs = 120_000L,
-            remainingKidsMinutes = 30,
-        )
+        val initial =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.SERIES,
+                isResumingFromLegacy = true,
+                resumeStartMs = 120_000L,
+                remainingKidsMinutes = 30,
+            )
 
         // When: Copy with playback update
-        val updated = initial.copy(
-            isPlaying = true,
-            positionMs = 125_000L,
-        )
+        val updated =
+            initial.copy(
+                isPlaying = true,
+                positionMs = 125_000L,
+            )
 
         // Then: New fields preserved
         assertTrue("isResumingFromLegacy preserved", updated.isResumingFromLegacy)
@@ -375,201 +395,217 @@ class InternalPlayerSessionPhase2IntegrationTest {
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `blocking transition updates state without runtime effect`() = runBlocking {
-        // Given: Kid profile with 1 minute remaining
-        kidsGate.isKidProfile = true
-        kidsGate.remainingMinutes = 1
-        kidsGate.profileId = 42L
+    fun `blocking transition updates state without runtime effect`() =
+        runBlocking {
+            // Given: Kid profile with 1 minute remaining
+            kidsGate.isKidProfile = true
+            kidsGate.remainingMinutes = 1
+            kidsGate.profileId = 42L
 
-        val kidsState = KidsGateState(
-            kidActive = true,
-            kidBlocked = false,
-            kidProfileId = 42L,
-        )
+            val kidsState =
+                KidsGateState(
+                    kidActive = true,
+                    kidBlocked = false,
+                    kidProfileId = 42L,
+                )
 
-        // When: 60 seconds of playback exhausts quota
-        val newState = kidsGate.onPlaybackTick(kidsState, deltaSecs = 60)
+            // When: 60 seconds of playback exhausts quota
+            val newState = kidsGate.onPlaybackTick(kidsState, deltaSecs = 60)
 
-        // Then: State shows blocked (but no actual player to pause)
-        assertTrue("Should be blocked", newState.kidBlocked)
-        assertEquals("Remaining minutes should be 0", 0, kidsGate.remainingMinutes)
+            // Then: State shows blocked (but no actual player to pause)
+            assertTrue("Should be blocked", newState.kidBlocked)
+            assertEquals("Remaining minutes should be 0", 0, kidsGate.remainingMinutes)
 
-        // Verify: InternalPlayerUiState can represent this
-        val uiState = InternalPlayerUiState(
-            kidActive = newState.kidActive,
-            kidBlocked = newState.kidBlocked,
-            kidProfileId = newState.kidProfileId,
-        )
-        assertTrue("UI state reflects blocked", uiState.kidBlocked)
-    }
+            // Verify: InternalPlayerUiState can represent this
+            val uiState =
+                InternalPlayerUiState(
+                    kidActive = newState.kidActive,
+                    kidBlocked = newState.kidBlocked,
+                    kidProfileId = newState.kidProfileId,
+                )
+            assertTrue("UI state reflects blocked", uiState.kidBlocked)
+        }
 
     @Test
-    fun `resume clear transition updates state without runtime effect`() = runBlocking {
-        // Given: VOD with resume position stored
-        resumeManager.setVodResume(123L, 100)
-        val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
+    fun `resume clear transition updates state without runtime effect`() =
+        runBlocking {
+            // Given: VOD with resume position stored
+            resumeManager.setVodResume(123L, 100)
+            val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
 
-        // When: Position near end (remaining < 10 seconds)
-        resumeManager.handlePeriodicTick(
-            context = context,
-            positionMs = 55_000L,
-            durationMs = 60_000L,
-        )
+            // When: Position near end (remaining < 10 seconds)
+            resumeManager.handlePeriodicTick(
+                context = context,
+                positionMs = 55_000L,
+                durationMs = 60_000L,
+            )
 
-        // Then: Resume cleared (but no actual player state change)
-        assertTrue("Resume should be cleared", resumeManager.isVodResumeCleared(123L))
-    }
+            // Then: Resume cleared (but no actual player state change)
+            assertTrue("Resume should be cleared", resumeManager.isVodResumeCleared(123L))
+        }
 
     // ════════════════════════════════════════════════════════════════════════════
     // Stable State Emission Tests (Phase 3 Readiness)
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `SIP session emits predictable state sequence`() = runBlocking {
-        // Simulate the state sequence that would occur during playback
+    fun `SIP session emits predictable state sequence`() =
+        runBlocking {
+            // Simulate the state sequence that would occur during playback
 
-        // Step 1: Initial state
-        val initial = InternalPlayerUiState(
-            playbackType = PlaybackType.VOD,
-        )
-        assertFalse("Initial: not playing", initial.isPlaying)
-        assertEquals("Initial: position at 0", 0L, initial.positionMs)
+            // Step 1: Initial state
+            val initial =
+                InternalPlayerUiState(
+                    playbackType = PlaybackType.VOD,
+                )
+            assertFalse("Initial: not playing", initial.isPlaying)
+            assertEquals("Initial: position at 0", 0L, initial.positionMs)
 
-        // Step 2: Playback starts with resume
-        val resumed = initial.copy(
-            isResumingFromLegacy = true,
-            resumeStartMs = 60_000L,
-            positionMs = 60_000L,
-        )
-        assertTrue("Resumed: resuming flag set", resumed.isResumingFromLegacy)
-        assertEquals("Resumed: position at resume point", 60_000L, resumed.positionMs)
+            // Step 2: Playback starts with resume
+            val resumed =
+                initial.copy(
+                    isResumingFromLegacy = true,
+                    resumeStartMs = 60_000L,
+                    positionMs = 60_000L,
+                )
+            assertTrue("Resumed: resuming flag set", resumed.isResumingFromLegacy)
+            assertEquals("Resumed: position at resume point", 60_000L, resumed.positionMs)
 
-        // Step 3: Playing state
-        val playing = resumed.copy(
-            isPlaying = true,
-            isResumingFromLegacy = false,
-            positionMs = 65_000L,
-        )
-        assertTrue("Playing: isPlaying true", playing.isPlaying)
-        assertFalse("Playing: resuming complete", playing.isResumingFromLegacy)
+            // Step 3: Playing state
+            val playing =
+                resumed.copy(
+                    isPlaying = true,
+                    isResumingFromLegacy = false,
+                    positionMs = 65_000L,
+                )
+            assertTrue("Playing: isPlaying true", playing.isPlaying)
+            assertFalse("Playing: resuming complete", playing.isResumingFromLegacy)
 
-        // Step 4: Near end
-        val nearEnd = playing.copy(
-            positionMs = 118_000L,
-            durationMs = 120_000L,
-        )
-        assertEquals("Near end: position", 118_000L, nearEnd.positionMs)
+            // Step 4: Near end
+            val nearEnd =
+                playing.copy(
+                    positionMs = 118_000L,
+                    durationMs = 120_000L,
+                )
+            assertEquals("Near end: position", 118_000L, nearEnd.positionMs)
 
-        // Step 5: Ended (position at duration)
-        val ended = nearEnd.copy(
-            isPlaying = false,
-            positionMs = 120_000L,
-        )
-        assertFalse("Ended: not playing", ended.isPlaying)
-        assertEquals("Ended: at duration", ended.durationMs, ended.positionMs)
-    }
+            // Step 5: Ended (position at duration)
+            val ended =
+                nearEnd.copy(
+                    isPlaying = false,
+                    positionMs = 120_000L,
+                )
+            assertFalse("Ended: not playing", ended.isPlaying)
+            assertEquals("Ended: at duration", ended.durationMs, ended.positionMs)
+        }
 
     @Test
-    fun `SIP session emits predictable kids state sequence`() = runBlocking {
-        // Simulate kids state sequence
+    fun `SIP session emits predictable kids state sequence`() =
+        runBlocking {
+            // Simulate kids state sequence
 
-        // Step 1: Kid profile detected
-        kidsGate.isKidProfile = true
-        kidsGate.remainingMinutes = 5
-        kidsGate.profileId = 42L
+            // Step 1: Kid profile detected
+            kidsGate.isKidProfile = true
+            kidsGate.remainingMinutes = 5
+            kidsGate.profileId = 42L
 
-        val startState = kidsGate.evaluateStart()
-        assertTrue("Start: kid active", startState.kidActive)
-        assertFalse("Start: not blocked", startState.kidBlocked)
+            val startState = kidsGate.evaluateStart()
+            assertTrue("Start: kid active", startState.kidActive)
+            assertFalse("Start: not blocked", startState.kidBlocked)
 
-        // Step 2: After 4 minutes of playback (240 seconds)
-        var currentState = startState
-        repeat(4) {
-            currentState = kidsGate.onPlaybackTick(currentState, deltaSecs = 60)
+            // Step 2: After 4 minutes of playback (240 seconds)
+            var currentState = startState
+            repeat(4) {
+                currentState = kidsGate.onPlaybackTick(currentState, deltaSecs = 60)
+            }
+            assertFalse("After 4 min: not blocked", currentState.kidBlocked)
+            assertEquals("After 4 min: 1 minute remaining", 1, kidsGate.remainingMinutes)
+
+            // Step 3: After 5th minute - blocked
+            val blockedState = kidsGate.onPlaybackTick(currentState, deltaSecs = 60)
+            assertTrue("After 5 min: blocked", blockedState.kidBlocked)
+            assertEquals("After 5 min: 0 minutes remaining", 0, kidsGate.remainingMinutes)
         }
-        assertFalse("After 4 min: not blocked", currentState.kidBlocked)
-        assertEquals("After 4 min: 1 minute remaining", 1, kidsGate.remainingMinutes)
-
-        // Step 3: After 5th minute - blocked
-        val blockedState = kidsGate.onPlaybackTick(currentState, deltaSecs = 60)
-        assertTrue("After 5 min: blocked", blockedState.kidBlocked)
-        assertEquals("After 5 min: 0 minutes remaining", 0, kidsGate.remainingMinutes)
-    }
 
     // ════════════════════════════════════════════════════════════════════════════
     // Defensive Guard Tests
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `resumeManager handles negative durationMs gracefully`() = runBlocking {
-        // Given: VOD context
-        val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
+    fun `resumeManager handles negative durationMs gracefully`() =
+        runBlocking {
+            // Given: VOD context
+            val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
 
-        // When: Duration is negative
-        resumeManager.handlePeriodicTick(
-            context = context,
-            positionMs = 30_000L,
-            durationMs = -1L,
-        )
+            // When: Duration is negative
+            resumeManager.handlePeriodicTick(
+                context = context,
+                positionMs = 30_000L,
+                durationMs = -1L,
+            )
 
-        // Then: No resume saved (guard against invalid duration)
-        assertNull("Resume should not be saved", resumeManager.getStoredVodResume(123L))
-        assertEquals("Tick should still be tracked", 1, resumeManager.tickCalledCount)
-    }
-
-    @Test
-    fun `resumeManager handles positionMs greater than durationMs`() = runBlocking {
-        // Given: VOD context
-        val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
-
-        // When: Position exceeds duration (edge case - can happen during seek overshoot)
-        resumeManager.handlePeriodicTick(
-            context = context,
-            positionMs = 70_000L,
-            durationMs = 60_000L,
-        )
-
-        // Then: Position is saved (remaining is negative, not in 0..9999 range)
-        // This matches legacy behavior where invalid states are handled gracefully
-        // The player will naturally correct this state on next tick
-        assertEquals(
-            "Resume should be saved with clamped position",
-            70,
-            resumeManager.getStoredVodResume(123L),
-        )
-    }
+            // Then: No resume saved (guard against invalid duration)
+            assertNull("Resume should not be saved", resumeManager.getStoredVodResume(123L))
+            assertEquals("Tick should still be tracked", 1, resumeManager.tickCalledCount)
+        }
 
     @Test
-    fun `resumeManager handles unknown PlaybackContext fields`() = runBlocking {
-        // Given: VOD context with missing mediaId
-        val context = PlaybackContext(type = PlaybackType.VOD, mediaId = null)
+    fun `resumeManager handles positionMs greater than durationMs`() =
+        runBlocking {
+            // Given: VOD context
+            val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
 
-        // When: Attempting to save resume
-        resumeManager.handlePeriodicTick(
-            context = context,
-            positionMs = 30_000L,
-            durationMs = 60_000L,
-        )
+            // When: Position exceeds duration (edge case - can happen during seek overshoot)
+            resumeManager.handlePeriodicTick(
+                context = context,
+                positionMs = 70_000L,
+                durationMs = 60_000L,
+            )
 
-        // Then: No crash, no resume saved
-        assertEquals("Tick should be called", 1, resumeManager.tickCalledCount)
-        // No assertion on storage since mediaId is null
-    }
+            // Then: Position is saved (remaining is negative, not in 0..9999 range)
+            // This matches legacy behavior where invalid states are handled gracefully
+            // The player will naturally correct this state on next tick
+            assertEquals(
+                "Resume should be saved with clamped position",
+                70,
+                resumeManager.getStoredVodResume(123L),
+            )
+        }
 
     @Test
-    fun `kidsGate handles malformed PlaybackContext gracefully`() = runBlocking {
-        // Given: Kids state with null profileId
-        val state = KidsGateState(
-            kidActive = true,
-            kidBlocked = false,
-            kidProfileId = null,
-        )
+    fun `resumeManager handles unknown PlaybackContext fields`() =
+        runBlocking {
+            // Given: VOD context with missing mediaId
+            val context = PlaybackContext(type = PlaybackType.VOD, mediaId = null)
 
-        // When: Tick is called
-        val newState = kidsGate.onPlaybackTick(state, deltaSecs = 60)
+            // When: Attempting to save resume
+            resumeManager.handlePeriodicTick(
+                context = context,
+                positionMs = 30_000L,
+                durationMs = 60_000L,
+            )
 
-        // Then: Returns original state (no crash)
-        assertFalse("Should not be blocked", newState.kidBlocked)
-        assertEquals("Remaining minutes unchanged", 60, kidsGate.remainingMinutes)
-    }
+            // Then: No crash, no resume saved
+            assertEquals("Tick should be called", 1, resumeManager.tickCalledCount)
+            // No assertion on storage since mediaId is null
+        }
+
+    @Test
+    fun `kidsGate handles malformed PlaybackContext gracefully`() =
+        runBlocking {
+            // Given: Kids state with null profileId
+            val state =
+                KidsGateState(
+                    kidActive = true,
+                    kidBlocked = false,
+                    kidProfileId = null,
+                )
+
+            // When: Tick is called
+            val newState = kidsGate.onPlaybackTick(state, deltaSecs = 60)
+
+            // Then: Returns original state (no crash)
+            assertFalse("Should not be blocked", newState.kidBlocked)
+            assertEquals("Remaining minutes unchanged", 60, kidsGate.remainingMinutes)
+        }
 }

@@ -34,7 +34,6 @@ import org.junit.Test
  * - Comparison service is for diagnostics and verification only
  */
 class InternalPlayerShadowComparisonTest {
-
     // ════════════════════════════════════════════════════════════════════════════
     // Resume Parity Tests
     // ════════════════════════════════════════════════════════════════════════════
@@ -244,14 +243,16 @@ class InternalPlayerShadowComparisonTest {
     @Test
     fun `flags list is empty when all parity checks pass`() {
         // Given: Both states are identical in checked fields
-        val legacy = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidBlocked = false,
-        )
-        val shadow = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidBlocked = false,
-        )
+        val legacy =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidBlocked = false,
+            )
+        val shadow =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidBlocked = false,
+            )
 
         // When: Comparing states
         val result = ShadowComparisonService.compare(legacy, shadow)
@@ -263,14 +264,16 @@ class InternalPlayerShadowComparisonTest {
     @Test
     fun `flags contain both mismatches when resume and kids differ`() {
         // Given: Both resume and kids status differ
-        val legacy = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidBlocked = false,
-        )
-        val shadow = InternalPlayerUiState(
-            resumeStartMs = 90_000L,
-            kidBlocked = true,
-        )
+        val legacy =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidBlocked = false,
+            )
+        val shadow =
+            InternalPlayerUiState(
+                resumeStartMs = 90_000L,
+                kidBlocked = true,
+            )
 
         // When: Comparing states
         val result = ShadowComparisonService.compare(legacy, shadow)
@@ -284,14 +287,16 @@ class InternalPlayerShadowComparisonTest {
     @Test
     fun `flags contain only resume mismatch when only resume differs`() {
         // Given: Only resume differs
-        val legacy = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidBlocked = false,
-        )
-        val shadow = InternalPlayerUiState(
-            resumeStartMs = 90_000L,
-            kidBlocked = false,
-        )
+        val legacy =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidBlocked = false,
+            )
+        val shadow =
+            InternalPlayerUiState(
+                resumeStartMs = 90_000L,
+                kidBlocked = false,
+            )
 
         // When: Comparing states
         val result = ShadowComparisonService.compare(legacy, shadow)
@@ -305,14 +310,16 @@ class InternalPlayerShadowComparisonTest {
     @Test
     fun `flags contain only kids mismatch when only kids differs`() {
         // Given: Only kids status differs
-        val legacy = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidBlocked = false,
-        )
-        val shadow = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidBlocked = true,
-        )
+        val legacy =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidBlocked = false,
+            )
+        val shadow =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidBlocked = true,
+            )
 
         // When: Comparing states
         val result = ShadowComparisonService.compare(legacy, shadow)
@@ -330,16 +337,18 @@ class InternalPlayerShadowComparisonTest {
     @Test
     fun `invokeComparison invokes callback with comparison result`() {
         // Given: States with known differences
-        val legacy = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidBlocked = false,
-            currentPositionMs = 30_000L,
-        )
-        val shadow = InternalPlayerUiState(
-            resumeStartMs = 90_000L, // Different
-            kidBlocked = false,
-            currentPositionMs = 28_000L, // Different
-        )
+        val legacy =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidBlocked = false,
+                currentPositionMs = 30_000L,
+            )
+        val shadow =
+            InternalPlayerUiState(
+                resumeStartMs = 90_000L, // Different
+                kidBlocked = false,
+                currentPositionMs = 28_000L, // Different
+            )
 
         // When: Invoking comparison with callback
         var receivedResult: ShadowComparisonService.ComparisonResult? = null
@@ -375,16 +384,18 @@ class InternalPlayerShadowComparisonTest {
     @Test
     fun `invokeComparison works with fully matching states`() {
         // Given: Identical states
-        val legacy = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidBlocked = false,
-            currentPositionMs = 30_000L,
-        )
-        val shadow = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidBlocked = false,
-            currentPositionMs = 30_000L,
-        )
+        val legacy =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidBlocked = false,
+                currentPositionMs = 30_000L,
+            )
+        val shadow =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidBlocked = false,
+                currentPositionMs = 30_000L,
+            )
 
         // When: Invoking comparison
         var receivedResult: ShadowComparisonService.ComparisonResult? = null
@@ -409,16 +420,18 @@ class InternalPlayerShadowComparisonTest {
     @Test
     fun `comparison does not modify legacy state`() {
         // Given: Legacy state
-        val legacy = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidBlocked = false,
-            isPlaying = true,
-            positionMs = 30_000L,
-        )
-        val shadow = InternalPlayerUiState(
-            resumeStartMs = 90_000L,
-            kidBlocked = true,
-        )
+        val legacy =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidBlocked = false,
+                isPlaying = true,
+                positionMs = 30_000L,
+            )
+        val shadow =
+            InternalPlayerUiState(
+                resumeStartMs = 90_000L,
+                kidBlocked = true,
+            )
 
         // When: Comparing states
         ShadowComparisonService.compare(legacy, shadow)
@@ -433,16 +446,18 @@ class InternalPlayerShadowComparisonTest {
     @Test
     fun `comparison does not modify shadow state`() {
         // Given: Shadow state
-        val legacy = InternalPlayerUiState(
-            resumeStartMs = 60_000L,
-            kidBlocked = false,
-        )
-        val shadow = InternalPlayerUiState(
-            resumeStartMs = 90_000L,
-            kidBlocked = true,
-            isPlaying = false,
-            positionMs = 45_000L,
-        )
+        val legacy =
+            InternalPlayerUiState(
+                resumeStartMs = 60_000L,
+                kidBlocked = false,
+            )
+        val shadow =
+            InternalPlayerUiState(
+                resumeStartMs = 90_000L,
+                kidBlocked = true,
+                isPlaying = false,
+                positionMs = 45_000L,
+            )
 
         // When: Comparing states
         ShadowComparisonService.compare(legacy, shadow)
@@ -505,10 +520,11 @@ class InternalPlayerShadowComparisonTest {
     @Test
     fun `InternalPlayerUiState comparison fields can be set`() {
         // Given: State with comparison fields set
-        val state = InternalPlayerUiState(
-            currentPositionMs = 60_000L,
-            comparisonDurationMs = 120_000L,
-        )
+        val state =
+            InternalPlayerUiState(
+                currentPositionMs = 60_000L,
+                comparisonDurationMs = 120_000L,
+            )
 
         // Then: Values are accessible
         assertEquals("currentPositionMs should be set", 60_000L, state.currentPositionMs)
@@ -518,12 +534,13 @@ class InternalPlayerShadowComparisonTest {
     @Test
     fun `InternalPlayerUiState comparison fields are independent from runtime fields`() {
         // Given: State with both runtime and comparison fields
-        val state = InternalPlayerUiState(
-            positionMs = 30_000L,           // Runtime field
-            durationMs = 60_000L,           // Runtime field
-            currentPositionMs = 35_000L,    // Comparison field
-            comparisonDurationMs = 65_000L, // Comparison field
-        )
+        val state =
+            InternalPlayerUiState(
+                positionMs = 30_000L, // Runtime field
+                durationMs = 60_000L, // Runtime field
+                currentPositionMs = 35_000L, // Comparison field
+                comparisonDurationMs = 65_000L, // Comparison field
+            )
 
         // Then: Fields are independent
         assertEquals("positionMs unchanged", 30_000L, state.positionMs)
@@ -535,10 +552,11 @@ class InternalPlayerShadowComparisonTest {
     @Test
     fun `InternalPlayerUiState copy preserves comparison fields`() {
         // Given: State with comparison fields
-        val initial = InternalPlayerUiState(
-            currentPositionMs = 60_000L,
-            comparisonDurationMs = 120_000L,
-        )
+        val initial =
+            InternalPlayerUiState(
+                currentPositionMs = 60_000L,
+                comparisonDurationMs = 120_000L,
+            )
 
         // When: Copy with runtime field update
         val updated = initial.copy(isPlaying = true)

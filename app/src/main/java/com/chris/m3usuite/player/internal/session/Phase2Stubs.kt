@@ -10,11 +10,17 @@ import com.chris.m3usuite.player.internal.domain.ResumeManager
  * They allow later phases to progressively replace legacy behavior.
  */
 object Phase2Stubs {
-    fun prepareResume(context: PlaybackContext, manager: ResumeManager) {
+    fun prepareResume(
+        context: PlaybackContext,
+        manager: ResumeManager,
+    ) {
         // TODO(Phase 2): integrate default resume logic into modular session
     }
 
-    fun prepareKidsGate(context: PlaybackContext, gate: KidsPlaybackGate) {
+    fun prepareKidsGate(
+        context: PlaybackContext,
+        gate: KidsPlaybackGate,
+    ) {
         // TODO(Phase 2): integrate kids gate logic into modular session
     }
 }

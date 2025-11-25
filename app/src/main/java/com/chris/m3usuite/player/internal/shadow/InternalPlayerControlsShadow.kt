@@ -45,7 +45,6 @@ import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
  * to evaluate what control actions would have been triggered.
  */
 object InternalPlayerControlsShadow {
-
     /**
      * Evaluate controls state and emit diagnostic strings.
      *
@@ -130,12 +129,13 @@ object InternalPlayerControlsShadow {
         state: InternalPlayerUiState,
         callback: (String) -> Unit,
     ) {
-        val playbackDiag = buildString {
-            append("playback state: playing=")
-            append(state.isPlaying)
-            append(", buffering=")
-            append(state.isBuffering)
-        }
+        val playbackDiag =
+            buildString {
+                append("playback state: playing=")
+                append(state.isPlaying)
+                append(", buffering=")
+                append(state.isBuffering)
+            }
         callback(playbackDiag)
     }
 
@@ -343,7 +343,10 @@ object InternalPlayerControlsShadow {
      * @param isBlocked Whether playback is currently blocked
      * @return Spec validation message
      */
-    private fun evaluateKidsGateCompliance(remainingMinutes: Int?, isBlocked: Boolean): String {
+    private fun evaluateKidsGateCompliance(
+        remainingMinutes: Int?,
+        isBlocked: Boolean,
+    ): String {
         if (remainingMinutes == null) {
             return "kids gate: quota unknown (cannot validate spec compliance)"
         }
