@@ -200,7 +200,9 @@ fun rememberInternalPlayerSession(
                 when {
                     // Guard: Explicit start position takes priority
                     startMs != null && startMs > 0 -> startMs
-                    // Guard: LIVE playback ignores resume (ResumeManager returns null for LIVE)
+                    // Guard: LIVE playback ignores resume (defense-in-depth)
+                    // Note: ResumeManager also returns null for LIVE, but this explicit
+                    // check avoids the suspending call and makes the code self-documenting.
                     playbackContext.type == PlaybackType.LIVE -> null
                     // Default: Try loading resume from storage
                     else -> resumeManager.loadResumePositionMs(playbackContext)

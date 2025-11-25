@@ -60,7 +60,10 @@ data class InternalPlayerUiState(
      * Phase 3 UI consumption:
      * - Show countdown timer in controls: "12 min remaining"
      * - Show warning overlay when < 5 min remaining
-     * - Null when kidActive is false
+     *
+     * **Logical constraint (not enforced by type system):**
+     * - Should be null when kidActive is false
+     * - Session layer is responsible for maintaining this invariant
      */
     val remainingKidsMinutes: Int? = null,
 
