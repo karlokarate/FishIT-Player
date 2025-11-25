@@ -2,6 +2,7 @@ package com.chris.m3usuite.player.internal.shadow
 
 import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
+import kotlin.math.abs
 
 /**
  * Compares legacy state vs shadow state vs Behavior Contract for diagnostics.
@@ -286,13 +287,11 @@ object ShadowComparisonService {
         val sipResumeCompliant = sipResume == null || sipResume > RESUME_MIN_THRESHOLD_MS
 
         // Rule: Clear resume when near end (Section 3.4)
-        val nearEnd = durationMs != null && legacyResume != null &&
-            (durationMs - legacyResume) <= NEAR_END_THRESHOLD_MS
-        val sipNearEnd = durationMs != null && sipResume != null &&
-            (durationMs - sipResume) <= NEAR_END_THRESHOLD_MS
+        val legacyNearEnd = isNearEnd(legacyResume, durationMs)
+        val sipNearEnd = isNearEnd(sipResume, durationMs)
 
         // Near-end should clear resume
-        val legacyNearEndCompliant = if (nearEnd) legacyResume == null else true
+        val legacyNearEndCompliant = if (legacyNearEnd) legacyResume == null else true
         val sipNearEndCompliant = if (sipNearEnd) sipResume == null else true
 
         // Combine compliance checks
@@ -355,6 +354,19 @@ object ShadowComparisonService {
                 specDetails = "Both compliant but different values (allowed tolerance)",
             )
         }
+    }
+
+    /**
+     * Check if a resume position is near the end of playback.
+     *
+     * @param resumePosition The resume position in milliseconds
+     * @param duration The total duration in milliseconds
+     * @return True if remaining time is within the near-end threshold
+     */
+    private fun isNearEnd(resumePosition: Long?, duration: Long?): Boolean {
+        if (resumePosition == null || duration == null) return false
+        val remaining = duration - resumePosition
+        return remaining <= NEAR_END_THRESHOLD_MS
     }
 
     private fun buildResumeSpecDetails(
@@ -481,7 +493,7 @@ object ShadowComparisonService {
             )
         }
 
-        val offset = kotlin.math.abs(legacyPos - sipPos)
+        val offset = abs(legacyPos - sipPos)
 
         return if (offset <= POSITION_TOLERANCE_MS) {
             SpecComparisonResult(

@@ -331,15 +331,32 @@ object InternalPlayerControlsShadow {
             )
 
             // Spec validation: Block when quota <= 0 (Section 4.3)
-            if (remaining != null && remaining <= 0 && !blocked) {
-                callback("kids gate violates spec (should be blocked when quota <= 0)")
-            } else if (remaining != null && remaining <= 0 && blocked) {
-                callback("kids gate matches spec (blocked due to exhausted quota)")
-            } else if (remaining != null && remaining > 0 && blocked) {
-                callback("kids gate may violate spec (blocked but quota > 0)")
-            } else if (remaining != null && remaining > 0 && !blocked) {
-                callback("kids gate matches spec (not blocked, quota available)")
-            }
+            val specValidation = evaluateKidsGateCompliance(remaining, blocked)
+            callback(specValidation)
+        }
+    }
+
+    /**
+     * Evaluate kids gate compliance with Behavior Contract Section 4.3.
+     *
+     * @param remainingMinutes Remaining quota in minutes
+     * @param isBlocked Whether playback is currently blocked
+     * @return Spec validation message
+     */
+    private fun evaluateKidsGateCompliance(remainingMinutes: Int?, isBlocked: Boolean): String {
+        if (remainingMinutes == null) {
+            return "kids gate: quota unknown (cannot validate spec compliance)"
+        }
+
+        return when {
+            remainingMinutes <= 0 && !isBlocked ->
+                "kids gate violates spec (should be blocked when quota <= 0)"
+            remainingMinutes <= 0 && isBlocked ->
+                "kids gate matches spec (blocked due to exhausted quota)"
+            remainingMinutes > 0 && isBlocked ->
+                "kids gate may violate spec (blocked but quota > 0)"
+            else ->
+                "kids gate matches spec (not blocked, quota available)"
         }
     }
 
