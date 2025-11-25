@@ -52,20 +52,93 @@ interface KidsPlaybackGate {
  * - Loads ObxProfile to decide if this is a kid profile.
  * - Uses ScreenTimeRepository.remainingMinutes / tickUsageIfPlaying.
  *
- * Phase 2 Behavioral Parity Notes (vs. legacy InternalPlayerScreen):
- * ─────────────────────────────────────────────────────────────────────
- * - evaluateStart: Matches legacy L552-569 (check kid profile, get remaining minutes)
- * - onPlaybackTick: Matches legacy L725-744 (tick every 60s, block if limit reached)
+ * ════════════════════════════════════════════════════════════════════════════
+ * Phase 2 Behavioral Parity Notes (vs. legacy InternalPlayerScreen)
+ * ════════════════════════════════════════════════════════════════════════════
  *
- * TODO(Phase 2): Legacy checks `prof?.type == "kid"` (L557). Verify ObxProfile.type
- *   values are consistent with this check.
+ * EVALUATE START (evaluateStart):
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Legacy Reference: InternalPlayerScreen L547-569
  *
- * TODO(Phase 2): Legacy uses `tickUsageIfPlaying(kidId, tickAccum)` where tickAccum
- *   is accumulated in 3s increments until 60s. This implementation receives deltaSecs
- *   directly. Ensure ScreenTimeRepository.tickUsageIfPlaying handles both patterns.
+ * TODO(Phase 2 Parity): Profile Detection
+ *   - Legacy (L554): val id = store.currentProfileId.first()
+ *   - Legacy (L555): if (id > 0) { ... }
+ *   - This implementation: settings.currentProfileId.first()
+ *   - ✓ Matches: Skips processing if profileId <= 0 (no profile selected)
+ *   - Default behavior: kidActive = false, kidBlocked = false when no profile
  *
- * TODO(Phase 2): Legacy pauses player on block (L735-736). The modular session
- *   should handle pause based on kidBlocked state returned here.
+ * TODO(Phase 2 Parity): Kid Profile Type Check
+ *   - Legacy (L556-557):
+ *       val prof = withContext(Dispatchers.IO) { obxStore.boxFor(ObxProfile).get(id) }
+ *       kidActive = prof?.type == "kid"
+ *   - This implementation: profile?.type == "kid"
+ *   - ✓ Matches: Only type == "kid" activates kid mode
+ *   - Other types ("adult", null, etc.) → kidActive = false
+ *
+ * TODO(Phase 2 Parity): Daily Quota Check
+ *   - Legacy (L560-562):
+ *       val remain = screenTimeRepo.remainingMinutes(kidIdState!!)
+ *       kidBlocked = remain <= 0
+ *   - This implementation: screenTimeRepo.remainingMinutes(profileId); kidBlocked = remaining <= 0
+ *   - ✓ Matches: Block when remaining minutes is zero or negative
+ *   - Note: remainingMinutes() returns MINUTES, not seconds
+ *   - Daily quota is configured per-profile in ScreenTimeRepository
+ *
+ * TODO(Phase 2 Parity): Fail-Open Exception Handling
+ *   - Legacy (L567-569): try/catch wraps entire block; on error: exoPlayer.playWhenReady = true
+ *   - This implementation: runCatching { box.get(profileId) }.getOrNull()
+ *   - ✓ Matches: Exceptions result in kidActive = false (allow playback)
+ *   - Purpose: Don't block playback due to ObjectBox errors
+ *
+ * PLAYBACK TICK (onPlaybackTick):
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Legacy Reference: InternalPlayerScreen L725-744
+ *
+ * TODO(Phase 2 Parity): 60-Second Accumulation
+ *   - Legacy (L727-728):
+ *       tickAccum += 3  // Every 3-second loop iteration
+ *       if (tickAccum >= 60) { ... }
+ *   - This implementation receives deltaSecs directly
+ *   - Caller (Phase2Integration.onPlaybackTick) is responsible for accumulation
+ *   - ScreenTimeRepository.tickUsageIfPlaying receives accumulated seconds
+ *
+ * TODO(Phase 2 Parity): Tick Condition
+ *   - Legacy (L726): if (kidActive && exoPlayer.playWhenReady && exoPlayer.isPlaying)
+ *   - This implementation: if (!current.kidActive) return current
+ *   - Note: Caller should only invoke onPlaybackTick when player is actively playing
+ *   - Legacy tracks playWhenReady + isPlaying; modular delegates to caller
+ *
+ * TODO(Phase 2 Parity): Block Transitions
+ *   - Legacy (L733-737):
+ *       val remain = screenTimeRepo.remainingMinutes(kidId)
+ *       if (remain <= 0) {
+ *           exoPlayer.playWhenReady = false
+ *           kidBlocked = true
+ *       }
+ *   - This implementation: current.copy(kidBlocked = remaining <= 0)
+ *   - Caller should check kidBlocked and pause player:
+ *       if (newState.kidBlocked) player.playWhenReady = false
+ *
+ * TODO(Phase 2 Parity): Pause/Play Event Interactions
+ *   - Legacy (L742-743): tickAccum = 0 when not playing
+ *   - This prevents accumulation during pause
+ *   - Modular: Caller should not invoke onPlaybackTick during pause
+ *   - If user pauses manually, accumulation should stop
+ *   - If blocked, player is paused and accumulation naturally stops
+ *
+ * TODO(Phase 2 Parity): Tick Reset
+ *   - Legacy (L732): tickAccum = 0 (after tickUsageIfPlaying)
+ *   - Legacy (L739, 743): tickAccum = 0 (on no kidId, or not playing)
+ *   - Modular: Caller (Phase2Integration) resets tickAccumSecs after tick fires
+ *
+ * UI FEEDBACK:
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Legacy Reference: InternalPlayerScreen L2282-2290
+ *
+ * TODO(Phase 2 UI): AlertDialog when blocked
+ *   - Legacy shows AlertDialog with title "Bildschirmzeit abgelaufen"
+ *   - Modular: InternalPlayerUiState.kidBlocked drives UI overlay
+ *   - Overlay should display blocking message and exit option
  */
 class DefaultKidsPlaybackGate(
     private val context: Context,
