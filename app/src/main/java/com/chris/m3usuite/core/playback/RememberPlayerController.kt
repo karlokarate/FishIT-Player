@@ -17,7 +17,7 @@ interface RememberPlayerController {
      * mini-player state, and PiP coordination.
      */
     fun attachPlayer(player: ExoPlayer)
-    
+
     /**
      * Detaches the current player instance.
      */
@@ -30,11 +30,11 @@ interface RememberPlayerController {
  */
 private class StubRememberPlayerController : RememberPlayerController {
     private var currentPlayer: ExoPlayer? = null
-    
+
     override fun attachPlayer(player: ExoPlayer) {
         currentPlayer = player
     }
-    
+
     override fun detachPlayer() {
         currentPlayer = null
     }
@@ -45,6 +45,4 @@ private class StubRememberPlayerController : RememberPlayerController {
  * TODO: Real implementation in Phase 7 should coordinate with PlaybackSession
  */
 @Composable
-fun rememberPlayerController(): RememberPlayerController {
-    return remember { StubRememberPlayerController() }
-}
+fun rememberPlayerController(): RememberPlayerController = remember { StubRememberPlayerController() }

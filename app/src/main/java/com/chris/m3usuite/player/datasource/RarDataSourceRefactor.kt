@@ -10,13 +10,8 @@ import androidx.media3.datasource.TransferListener
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
-import com.chris.m3usuite.telegram.core.StreamingConfig
-import com.chris.m3usuite.telegram.core.T_TelegramFileDownloader
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 
@@ -24,7 +19,6 @@ import java.io.IOException
 class RarDataSourceRefactor(
     private val context: Context,
 ) : DataSource {
-
     private var source: RarEntryRandomAccessSource? = null
     private var currentUri: Uri? = null
     private var currentDataSpec: DataSpec? = null
@@ -152,7 +146,7 @@ class RarDataSourceRefactor(
             // Uncomment when these are implemented (Phase 3+)
             // For now, this RarDataSourceRefactor serves as reference only
             throw IOException("RarDataSourceRefactor: fileDownloader not yet implemented in T_TelegramServiceClient")
-            
+
             /*
             val downloader: T_TelegramFileDownloader = serviceClient.fileDownloader
 
@@ -203,6 +197,6 @@ class RarDataSourceRefactor(
             )
 
             path
-            */
+             */
         }
 }

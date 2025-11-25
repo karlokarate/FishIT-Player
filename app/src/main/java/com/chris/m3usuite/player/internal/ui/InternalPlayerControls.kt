@@ -12,10 +12,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -27,11 +27,9 @@ import androidx.media3.common.C
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.ExoPlayer
-import com.chris.m3usuite.player.internal.state.AspectRatioMode
 import com.chris.m3usuite.player.internal.state.InternalPlayerController
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 import com.chris.m3usuite.player.internal.system.requestPictureInPicture
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun InternalPlayerContent(

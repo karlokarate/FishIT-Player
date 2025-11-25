@@ -34,7 +34,6 @@ import kotlin.math.abs
  * - DontCare: Divergence allowed by spec
  */
 object ShadowComparisonService {
-
     // ════════════════════════════════════════════════════════════════════════════
     // Behavior Contract Constants (from docs/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md)
     // ════════════════════════════════════════════════════════════════════════════
@@ -110,14 +109,15 @@ object ShadowComparisonService {
         if (!kidsParity) flags += "kidsGateMismatch"
 
         // Position delta (safe for nulls)
-        val offset = if (
-            legacy.currentPositionMs != null &&
-            shadow.currentPositionMs != null
-        ) {
-            legacy.currentPositionMs - shadow.currentPositionMs
-        } else {
-            null
-        }
+        val offset =
+            if (
+                legacy.currentPositionMs != null &&
+                shadow.currentPositionMs != null
+            ) {
+                legacy.currentPositionMs - shadow.currentPositionMs
+            } else {
+                null
+            }
 
         return ComparisonResult(
             resumeParityOk = resumeParity,
@@ -248,37 +248,41 @@ object ShadowComparisonService {
             val sipCompliant = sipResume == null
 
             return when {
-                sipCompliant && legacyCompliant -> SpecComparisonResult(
-                    parityKind = ParityKind.ExactMatch,
-                    dimension = "resume",
-                    legacyValue = legacyResume,
-                    sipValue = sipResume,
-                    specDetails = "LIVE content never resumes (Section 3.1)",
-                )
-                sipCompliant && !legacyCompliant -> SpecComparisonResult(
-                    parityKind = ParityKind.SpecPreferredSIP,
-                    dimension = "resume",
-                    legacyValue = legacyResume,
-                    sipValue = sipResume,
-                    specDetails = "LIVE content never resumes; legacy incorrectly stores resume (Section 3.1)",
-                    flags = listOf("legacyBug:liveResume"),
-                )
-                !sipCompliant && legacyCompliant -> SpecComparisonResult(
-                    parityKind = ParityKind.SpecPreferredLegacy,
-                    dimension = "resume",
-                    legacyValue = legacyResume,
-                    sipValue = sipResume,
-                    specDetails = "LIVE content never resumes; SIP incorrectly stores resume (Section 3.1)",
-                    flags = listOf("sipViolation:liveResume"),
-                )
-                else -> SpecComparisonResult(
-                    parityKind = ParityKind.BothViolateSpec,
-                    dimension = "resume",
-                    legacyValue = legacyResume,
-                    sipValue = sipResume,
-                    specDetails = "LIVE content never resumes; both store resume (Section 3.1)",
-                    flags = listOf("bothViolate:liveResume"),
-                )
+                sipCompliant && legacyCompliant ->
+                    SpecComparisonResult(
+                        parityKind = ParityKind.ExactMatch,
+                        dimension = "resume",
+                        legacyValue = legacyResume,
+                        sipValue = sipResume,
+                        specDetails = "LIVE content never resumes (Section 3.1)",
+                    )
+                sipCompliant && !legacyCompliant ->
+                    SpecComparisonResult(
+                        parityKind = ParityKind.SpecPreferredSIP,
+                        dimension = "resume",
+                        legacyValue = legacyResume,
+                        sipValue = sipResume,
+                        specDetails = "LIVE content never resumes; legacy incorrectly stores resume (Section 3.1)",
+                        flags = listOf("legacyBug:liveResume"),
+                    )
+                !sipCompliant && legacyCompliant ->
+                    SpecComparisonResult(
+                        parityKind = ParityKind.SpecPreferredLegacy,
+                        dimension = "resume",
+                        legacyValue = legacyResume,
+                        sipValue = sipResume,
+                        specDetails = "LIVE content never resumes; SIP incorrectly stores resume (Section 3.1)",
+                        flags = listOf("sipViolation:liveResume"),
+                    )
+                else ->
+                    SpecComparisonResult(
+                        parityKind = ParityKind.BothViolateSpec,
+                        dimension = "resume",
+                        legacyValue = legacyResume,
+                        sipValue = sipResume,
+                        specDetails = "LIVE content never resumes; both store resume (Section 3.1)",
+                        flags = listOf("bothViolate:liveResume"),
+                    )
             }
         }
 
@@ -322,37 +326,41 @@ object ShadowComparisonService {
 
         // Values differ - classify based on compliance
         return when {
-            sipFullyCompliant && !legacyFullyCompliant -> SpecComparisonResult(
-                parityKind = ParityKind.SpecPreferredSIP,
-                dimension = "resume",
-                legacyValue = legacyResume,
-                sipValue = sipResume,
-                specDetails = buildResumeSpecDetails(legacyResumeCompliant, legacyNearEndCompliant, "Legacy"),
-                flags = listOf("legacyBug:resumeThreshold"),
-            )
-            !sipFullyCompliant && legacyFullyCompliant -> SpecComparisonResult(
-                parityKind = ParityKind.SpecPreferredLegacy,
-                dimension = "resume",
-                legacyValue = legacyResume,
-                sipValue = sipResume,
-                specDetails = buildResumeSpecDetails(sipResumeCompliant, sipNearEndCompliant, "SIP"),
-                flags = listOf("sipViolation:resumeThreshold"),
-            )
-            !sipFullyCompliant && !legacyFullyCompliant -> SpecComparisonResult(
-                parityKind = ParityKind.BothViolateSpec,
-                dimension = "resume",
-                legacyValue = legacyResume,
-                sipValue = sipResume,
-                specDetails = "Both violate spec resume rules (Section 3.3/3.4)",
-                flags = listOf("bothViolate:resumeThreshold"),
-            )
-            else -> SpecComparisonResult(
-                parityKind = ParityKind.DontCare,
-                dimension = "resume",
-                legacyValue = legacyResume,
-                sipValue = sipResume,
-                specDetails = "Both compliant but different values (allowed tolerance)",
-            )
+            sipFullyCompliant && !legacyFullyCompliant ->
+                SpecComparisonResult(
+                    parityKind = ParityKind.SpecPreferredSIP,
+                    dimension = "resume",
+                    legacyValue = legacyResume,
+                    sipValue = sipResume,
+                    specDetails = buildResumeSpecDetails(legacyResumeCompliant, legacyNearEndCompliant, "Legacy"),
+                    flags = listOf("legacyBug:resumeThreshold"),
+                )
+            !sipFullyCompliant && legacyFullyCompliant ->
+                SpecComparisonResult(
+                    parityKind = ParityKind.SpecPreferredLegacy,
+                    dimension = "resume",
+                    legacyValue = legacyResume,
+                    sipValue = sipResume,
+                    specDetails = buildResumeSpecDetails(sipResumeCompliant, sipNearEndCompliant, "SIP"),
+                    flags = listOf("sipViolation:resumeThreshold"),
+                )
+            !sipFullyCompliant && !legacyFullyCompliant ->
+                SpecComparisonResult(
+                    parityKind = ParityKind.BothViolateSpec,
+                    dimension = "resume",
+                    legacyValue = legacyResume,
+                    sipValue = sipResume,
+                    specDetails = "Both violate spec resume rules (Section 3.3/3.4)",
+                    flags = listOf("bothViolate:resumeThreshold"),
+                )
+            else ->
+                SpecComparisonResult(
+                    parityKind = ParityKind.DontCare,
+                    dimension = "resume",
+                    legacyValue = legacyResume,
+                    sipValue = sipResume,
+                    specDetails = "Both compliant but different values (allowed tolerance)",
+                )
         }
     }
 
@@ -363,7 +371,10 @@ object ShadowComparisonService {
      * @param duration The total duration in milliseconds
      * @return True if remaining time is within the near-end threshold
      */
-    private fun isNearEnd(resumePosition: Long?, duration: Long?): Boolean {
+    private fun isNearEnd(
+        resumePosition: Long?,
+        duration: Long?,
+    ): Boolean {
         if (resumePosition == null || duration == null) return false
         val remaining = duration - resumePosition
         return remaining <= NEAR_END_THRESHOLD_MS
@@ -373,11 +384,12 @@ object ShadowComparisonService {
         thresholdCompliant: Boolean,
         nearEndCompliant: Boolean,
         source: String,
-    ): String = buildString {
-        append("$source violates spec: ")
-        if (!thresholdCompliant) append("position ≤10s not cleared (Section 3.3); ")
-        if (!nearEndCompliant) append("near-end position not cleared (Section 3.4)")
-    }
+    ): String =
+        buildString {
+            append("$source violates spec: ")
+            if (!thresholdCompliant) append("position ≤10s not cleared (Section 3.3); ")
+            if (!nearEndCompliant) append("near-end position not cleared (Section 3.4)")
+        }
 
     /**
      * Compare kids gate behavior against the Behavior Contract.
@@ -400,17 +412,19 @@ object ShadowComparisonService {
 
         // Rule: Block state when quota <= 0 (Section 4.3)
         // If active and remaining is known, blocked should be true when remaining <= 0
-        val legacyBlockCompliant = if (legacyActive && legacyRemaining != null) {
-            (legacyRemaining <= 0) == legacyBlocked
-        } else {
-            true // Can't verify without data
-        }
+        val legacyBlockCompliant =
+            if (legacyActive && legacyRemaining != null) {
+                (legacyRemaining <= 0) == legacyBlocked
+            } else {
+                true // Can't verify without data
+            }
 
-        val sipBlockCompliant = if (sipActive && sipRemaining != null) {
-            (sipRemaining <= 0) == sipBlocked
-        } else {
-            true // Can't verify without data
-        }
+        val sipBlockCompliant =
+            if (sipActive && sipRemaining != null) {
+                (sipRemaining <= 0) == sipBlocked
+            } else {
+                true // Can't verify without data
+            }
 
         // If both have same blocked state
         if (legacyBlocked == sipBlocked) {
@@ -436,37 +450,41 @@ object ShadowComparisonService {
 
         // Different blocked states - classify
         return when {
-            sipBlockCompliant && !legacyBlockCompliant -> SpecComparisonResult(
-                parityKind = ParityKind.SpecPreferredSIP,
-                dimension = "kids",
-                legacyValue = mapOf("blocked" to legacyBlocked, "remaining" to legacyRemaining),
-                sipValue = mapOf("blocked" to sipBlocked, "remaining" to sipRemaining),
-                specDetails = "Legacy violates quota blocking rule; SIP is correct (Section 4.3)",
-                flags = listOf("legacyBug:kidsBlockRule"),
-            )
-            !sipBlockCompliant && legacyBlockCompliant -> SpecComparisonResult(
-                parityKind = ParityKind.SpecPreferredLegacy,
-                dimension = "kids",
-                legacyValue = mapOf("blocked" to legacyBlocked, "remaining" to legacyRemaining),
-                sipValue = mapOf("blocked" to sipBlocked, "remaining" to sipRemaining),
-                specDetails = "SIP violates quota blocking rule; Legacy is correct (Section 4.3)",
-                flags = listOf("sipViolation:kidsBlockRule"),
-            )
-            !sipBlockCompliant && !legacyBlockCompliant -> SpecComparisonResult(
-                parityKind = ParityKind.BothViolateSpec,
-                dimension = "kids",
-                legacyValue = mapOf("blocked" to legacyBlocked, "remaining" to legacyRemaining),
-                sipValue = mapOf("blocked" to sipBlocked, "remaining" to sipRemaining),
-                specDetails = "Both violate quota blocking rule (Section 4.3)",
-                flags = listOf("bothViolate:kidsBlockRule"),
-            )
-            else -> SpecComparisonResult(
-                parityKind = ParityKind.DontCare,
-                dimension = "kids",
-                legacyValue = mapOf("blocked" to legacyBlocked, "remaining" to legacyRemaining),
-                sipValue = mapOf("blocked" to sipBlocked, "remaining" to sipRemaining),
-                specDetails = "Both compliant but different states (allowed variance)",
-            )
+            sipBlockCompliant && !legacyBlockCompliant ->
+                SpecComparisonResult(
+                    parityKind = ParityKind.SpecPreferredSIP,
+                    dimension = "kids",
+                    legacyValue = mapOf("blocked" to legacyBlocked, "remaining" to legacyRemaining),
+                    sipValue = mapOf("blocked" to sipBlocked, "remaining" to sipRemaining),
+                    specDetails = "Legacy violates quota blocking rule; SIP is correct (Section 4.3)",
+                    flags = listOf("legacyBug:kidsBlockRule"),
+                )
+            !sipBlockCompliant && legacyBlockCompliant ->
+                SpecComparisonResult(
+                    parityKind = ParityKind.SpecPreferredLegacy,
+                    dimension = "kids",
+                    legacyValue = mapOf("blocked" to legacyBlocked, "remaining" to legacyRemaining),
+                    sipValue = mapOf("blocked" to sipBlocked, "remaining" to sipRemaining),
+                    specDetails = "SIP violates quota blocking rule; Legacy is correct (Section 4.3)",
+                    flags = listOf("sipViolation:kidsBlockRule"),
+                )
+            !sipBlockCompliant && !legacyBlockCompliant ->
+                SpecComparisonResult(
+                    parityKind = ParityKind.BothViolateSpec,
+                    dimension = "kids",
+                    legacyValue = mapOf("blocked" to legacyBlocked, "remaining" to legacyRemaining),
+                    sipValue = mapOf("blocked" to sipBlocked, "remaining" to sipRemaining),
+                    specDetails = "Both violate quota blocking rule (Section 4.3)",
+                    flags = listOf("bothViolate:kidsBlockRule"),
+                )
+            else ->
+                SpecComparisonResult(
+                    parityKind = ParityKind.DontCare,
+                    dimension = "kids",
+                    legacyValue = mapOf("blocked" to legacyBlocked, "remaining" to legacyRemaining),
+                    sipValue = mapOf("blocked" to sipBlocked, "remaining" to sipRemaining),
+                    specDetails = "Both compliant but different states (allowed variance)",
+                )
         }
     }
 
@@ -533,14 +551,11 @@ object ShadowComparisonService {
      * @param results List of spec comparison results
      * @return List of results that indicate SIP violations requiring enforcement
      */
-    fun filterSipViolations(
-        results: List<SpecComparisonResult>,
-    ): List<SpecComparisonResult> {
-        return results.filter { result ->
+    fun filterSipViolations(results: List<SpecComparisonResult>): List<SpecComparisonResult> =
+        results.filter { result ->
             result.parityKind == ParityKind.SpecPreferredLegacy ||
                 result.parityKind == ParityKind.BothViolateSpec
         }
-    }
 
     /**
      * Check if any enforcement is needed for the given spec comparison results.
@@ -550,9 +565,7 @@ object ShadowComparisonService {
      * @param results List of spec comparison results
      * @return True if enforcement is needed
      */
-    fun needsEnforcement(results: List<SpecComparisonResult>): Boolean {
-        return filterSipViolations(results).isNotEmpty()
-    }
+    fun needsEnforcement(results: List<SpecComparisonResult>): Boolean = filterSipViolations(results).isNotEmpty()
 
     /**
      * Build a structured diff containing all contract dimensions with their
@@ -563,11 +576,7 @@ object ShadowComparisonService {
      * @param results List of spec comparison results
      * @return Map of dimension name to comparison result
      */
-    fun buildStructuredDiff(
-        results: List<SpecComparisonResult>,
-    ): Map<String, SpecComparisonResult> {
-        return results.associateBy { it.dimension }
-    }
+    fun buildStructuredDiff(results: List<SpecComparisonResult>): Map<String, SpecComparisonResult> = results.associateBy { it.dimension }
 
     /**
      * Get a summary of all violations for logging.

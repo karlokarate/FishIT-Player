@@ -48,7 +48,13 @@ Legacy `InternalPlayerScreen` is treated as a reference implementation, not as t
 2. LIVE content **never** resumes from a saved position.
 3. Resume logic must be **idempotent** and **safe**:
    - No crashes on missing data, negative duration, or malformed IDs.
-   - Failing repositories must result in “no resume”, not in a crash.
+   - Failing repositories must result in "no resume", not in a crash.
+
+> **Note (LIVE Playback & Contract Enforcer):**
+> LIVE playback is excluded from resume rules and is not affected by Contract Enforcer
+> beyond diagnostics. The `LivePlaybackController` handles channel navigation, EPG overlay,
+> and auto-hide timing, but does NOT integrate with `ResumeManager` or `BehaviorContractEnforcer`.
+> Shadow diagnostics may observe LIVE sessions for validation purposes without affecting runtime behavior.
 
 ### 3.2. Identification Rules
 

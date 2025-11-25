@@ -69,7 +69,6 @@ import com.chris.m3usuite.data.obx.buildPlayUrl
 import com.chris.m3usuite.data.obx.toEpisode
 import com.chris.m3usuite.model.Episode
 import com.chris.m3usuite.player.InternalPlayerEntry
-import com.chris.m3usuite.player.InternalPlayerScreen
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
 import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.prefs.SettingsStore
@@ -448,22 +447,23 @@ fun SeriesDetailScreen(
                 if (internalUa.isNotBlank()) this["User-Agent"] = internalUa
                 if (internalRef.isNotBlank()) this["Referer"] = internalRef
             }
-        
+
         // Phase 1: Use PlaybackContext even in fallback case
         // Note: This fallback path is missing series context (seriesId, season, episodeNumber)
         // which appears to be intentional in the current implementation. The seriesLauncher
         // callback path (via openInternal) provides complete context, but this inline fallback
         // only has episodeId available. This may warrant investigation in future phases.
-        val playbackContext = PlaybackContext(
-            type = PlaybackType.SERIES,
-            mediaId = null,
-            seriesId = null, // TODO: Not available in this fallback path - consider passing from parent scope
-            season = null,
-            episodeNumber = null,
-            episodeId = internalEpisodeId,
-            kidProfileId = null, // Will be derived from SettingsStore
-        )
-        
+        val playbackContext =
+            PlaybackContext(
+                type = PlaybackType.SERIES,
+                mediaId = null,
+                seriesId = null, // TODO: Not available in this fallback path - consider passing from parent scope
+                season = null,
+                episodeNumber = null,
+                episodeId = internalEpisodeId,
+                kidProfileId = null, // Will be derived from SettingsStore
+            )
+
         InternalPlayerEntry(
             url = internalUrl.orEmpty(),
             startMs = internalStartMs,

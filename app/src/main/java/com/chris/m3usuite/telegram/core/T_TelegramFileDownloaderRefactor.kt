@@ -50,7 +50,6 @@ class T_TelegramFileDownloaderRefactor(
     private val context: Context,
     private val session: T_TelegramSession,
 ) {
-
     private val client get() = session.client
 
     // File info cache keyed by TDLib file ID (string)
@@ -267,7 +266,10 @@ class T_TelegramFileDownloaderRefactor(
      * @param position Offset in bytes
      * @return true if data is available, false otherwise
      */
-    suspend fun isDownloadedAt(fileId: String, position: Long): Boolean =
+    suspend fun isDownloadedAt(
+        fileId: String,
+        position: Long,
+    ): Boolean =
         withContext(Dispatchers.IO) {
             val fileInfo = getFileInfo(fileId)
             val localPath = fileInfo.local?.path
@@ -312,31 +314,30 @@ class T_TelegramFileDownloaderRefactor(
         position: Long,
         timeoutMs: Long = 30_000L,
         pollIntervalMs: Long = 100L,
-    ) =
-        withContext(Dispatchers.IO) {
-            val startTime = SystemClock.elapsedRealtime()
+    ) = withContext(Dispatchers.IO) {
+        val startTime = SystemClock.elapsedRealtime()
 
-            while (!isDownloadedAt(fileId, position)) {
-                delay(pollIntervalMs)
+        while (!isDownloadedAt(fileId, position)) {
+            delay(pollIntervalMs)
 
-                val elapsed = SystemClock.elapsedRealtime() - startTime
-                if (elapsed > timeoutMs) {
-                    TelegramLogRepository.error(
-                        source = "T_TelegramFileDownloader",
-                        message = "waitForDataAt(): timeout waiting for data",
-                        details =
-                            mapOf(
-                                "fileId" to fileId,
-                                "position" to position.toString(),
-                                "timeoutMs" to timeoutMs.toString(),
-                            ),
-                    )
-                    throw Exception(
-                        "Timeout: Data not available at position $position after $timeoutMs ms (fileId=$fileId)",
-                    )
-                }
+            val elapsed = SystemClock.elapsedRealtime() - startTime
+            if (elapsed > timeoutMs) {
+                TelegramLogRepository.error(
+                    source = "T_TelegramFileDownloader",
+                    message = "waitForDataAt(): timeout waiting for data",
+                    details =
+                        mapOf(
+                            "fileId" to fileId,
+                            "position" to position.toString(),
+                            "timeoutMs" to timeoutMs.toString(),
+                        ),
+                )
+                throw Exception(
+                    "Timeout: Data not available at position $position after $timeoutMs ms (fileId=$fileId)",
+                )
             }
         }
+    }
 
     /**
      * Cancel an ongoing download for a file by string file ID.

@@ -7,9 +7,9 @@ import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
-import com.chris.m3usuite.model.MediaItem as AppMediaItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.chris.m3usuite.model.MediaItem as AppMediaItem
 
 data class ResolvedPlaybackSource(
     val uri: Uri,
@@ -27,7 +27,6 @@ data class ResolvedPlaybackSource(
 class PlaybackSourceResolver(
     private val context: Context,
 ) {
-
     suspend fun resolve(
         url: String,
         explicitMimeType: String?,
@@ -68,7 +67,8 @@ class PlaybackSourceResolver(
     private suspend fun resolveTelegramMimeFromObx(uri: Uri): String? =
         withContext(Dispatchers.IO) {
             val messageId =
-                uri.getQueryParameter("messageId")
+                uri
+                    .getQueryParameter("messageId")
                     ?.toLongOrNull()
                     ?: return@withContext null
 

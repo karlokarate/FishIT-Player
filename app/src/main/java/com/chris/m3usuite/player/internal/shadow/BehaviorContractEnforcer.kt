@@ -40,7 +40,6 @@ import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
  * - Thread-safe (stateless)
  */
 object BehaviorContractEnforcer {
-
     // ════════════════════════════════════════════════════════════════════════════
     // Enforcement Actions
     // ════════════════════════════════════════════════════════════════════════════
@@ -63,7 +62,9 @@ object BehaviorContractEnforcer {
          *
          * @property positionMs The correct resume position in milliseconds
          */
-        data class FixResumePosition(val positionMs: Long) : EnforcementAction()
+        data class FixResumePosition(
+            val positionMs: Long,
+        ) : EnforcementAction()
 
         /**
          * Clear resume position entirely.
@@ -90,19 +91,22 @@ object BehaviorContractEnforcer {
          *
          * @property positionMs The normalized position in milliseconds
          */
-        data class NormalizePosition(val positionMs: Long) : EnforcementAction()
+        data class NormalizePosition(
+            val positionMs: Long,
+        ) : EnforcementAction()
 
         /**
          * Get human-readable description of the action.
          */
-        fun describe(): String = when (this) {
-            is NoAction -> "No action needed"
-            is FixResumePosition -> "Fix resume position to ${positionMs}ms"
-            is ClearResume -> "Clear resume position"
-            is BlockKidsPlayback -> "Block kids playback (quota exhausted)"
-            is UnblockKidsPlayback -> "Unblock kids playback (quota available)"
-            is NormalizePosition -> "Normalize position to ${positionMs}ms"
-        }
+        fun describe(): String =
+            when (this) {
+                is NoAction -> "No action needed"
+                is FixResumePosition -> "Fix resume position to ${positionMs}ms"
+                is ClearResume -> "Clear resume position"
+                is BlockKidsPlayback -> "Block kids playback (quota exhausted)"
+                is UnblockKidsPlayback -> "Unblock kids playback (quota available)"
+                is NormalizePosition -> "Normalize position to ${positionMs}ms"
+            }
     }
 
     /**
@@ -143,11 +147,10 @@ object BehaviorContractEnforcer {
         sipState: InternalPlayerUiState,
         playbackType: PlaybackType,
         durationMs: Long?,
-    ): List<EnforcementResult> {
-        return specResults.mapNotNull { result ->
+    ): List<EnforcementResult> =
+        specResults.mapNotNull { result ->
             evaluateSingleDimension(result, sipState, playbackType, durationMs)
         }
-    }
 
     /**
      * Convenience method that performs spec comparison and enforcement in one call.
@@ -164,12 +167,13 @@ object BehaviorContractEnforcer {
         playbackType: PlaybackType,
         durationMs: Long?,
     ): List<EnforcementResult> {
-        val specResults = ShadowComparisonService.compareAgainstSpec(
-            legacy = legacyState,
-            sip = sipState,
-            playbackType = playbackType,
-            durationMs = durationMs,
-        )
+        val specResults =
+            ShadowComparisonService.compareAgainstSpec(
+                legacy = legacyState,
+                sip = sipState,
+                playbackType = playbackType,
+                durationMs = durationMs,
+            )
         return evaluate(specResults, sipState, playbackType, durationMs)
     }
 
@@ -187,10 +191,9 @@ object BehaviorContractEnforcer {
         sipState: InternalPlayerUiState,
         playbackType: PlaybackType,
         durationMs: Long?,
-    ): Boolean {
-        return evaluate(specResults, sipState, playbackType, durationMs)
+    ): Boolean =
+        evaluate(specResults, sipState, playbackType, durationMs)
             .any { it.action !is EnforcementAction.NoAction }
-    }
 
     /**
      * Get only the actions that require enforcement (filter out NoAction).
@@ -198,11 +201,8 @@ object BehaviorContractEnforcer {
      * @param results Enforcement results
      * @return List of results with actual enforcement actions
      */
-    fun filterActionableEnforcements(
-        results: List<EnforcementResult>,
-    ): List<EnforcementResult> {
-        return results.filter { it.action !is EnforcementAction.NoAction }
-    }
+    fun filterActionableEnforcements(results: List<EnforcementResult>): List<EnforcementResult> =
+        results.filter { it.action !is EnforcementAction.NoAction }
 
     // ════════════════════════════════════════════════════════════════════════════
     // Per-Dimension Enforcement Logic
@@ -213,14 +213,13 @@ object BehaviorContractEnforcer {
         sipState: InternalPlayerUiState,
         playbackType: PlaybackType,
         durationMs: Long?,
-    ): EnforcementResult? {
-        return when (result.dimension) {
+    ): EnforcementResult? =
+        when (result.dimension) {
             "resume" -> evaluateResumeEnforcement(result, sipState, playbackType, durationMs)
             "kids" -> evaluateKidsEnforcement(result, sipState)
             "position" -> evaluatePositionEnforcement(result, sipState, durationMs)
             else -> null // Unknown dimension - skip
         }
-    }
 
     /**
      * Evaluate enforcement for resume dimension.
@@ -242,17 +241,20 @@ object BehaviorContractEnforcer {
             // SIP matches spec - no action needed
             ShadowComparisonService.ParityKind.ExactMatch,
             ShadowComparisonService.ParityKind.SpecPreferredSIP,
-            ShadowComparisonService.ParityKind.DontCare -> EnforcementResult(
-                dimension = "resume",
-                action = EnforcementAction.NoAction,
-                sipValue = sipResume,
-                specValue = result.sipValue,
-                reason = "SIP complies with spec or is preferred",
-            )
+            ShadowComparisonService.ParityKind.DontCare,
+            ->
+                EnforcementResult(
+                    dimension = "resume",
+                    action = EnforcementAction.NoAction,
+                    sipValue = sipResume,
+                    specValue = result.sipValue,
+                    reason = "SIP complies with spec or is preferred",
+                )
 
             // SIP violates spec - need correction
             ShadowComparisonService.ParityKind.SpecPreferredLegacy,
-            ShadowComparisonService.ParityKind.BothViolateSpec -> {
+            ShadowComparisonService.ParityKind.BothViolateSpec,
+            -> {
                 determineResumeCorrection(sipResume, playbackType, durationMs, result)
             }
         }
@@ -341,17 +343,20 @@ object BehaviorContractEnforcer {
             // SIP matches spec - no action needed
             ShadowComparisonService.ParityKind.ExactMatch,
             ShadowComparisonService.ParityKind.SpecPreferredSIP,
-            ShadowComparisonService.ParityKind.DontCare -> EnforcementResult(
-                dimension = "kids",
-                action = EnforcementAction.NoAction,
-                sipValue = mapOf("blocked" to sipBlocked, "remaining" to sipRemaining),
-                specValue = result.sipValue,
-                reason = "SIP complies with spec or is preferred",
-            )
+            ShadowComparisonService.ParityKind.DontCare,
+            ->
+                EnforcementResult(
+                    dimension = "kids",
+                    action = EnforcementAction.NoAction,
+                    sipValue = mapOf("blocked" to sipBlocked, "remaining" to sipRemaining),
+                    specValue = result.sipValue,
+                    reason = "SIP complies with spec or is preferred",
+                )
 
             // SIP violates spec - need correction
             ShadowComparisonService.ParityKind.SpecPreferredLegacy,
-            ShadowComparisonService.ParityKind.BothViolateSpec -> {
+            ShadowComparisonService.ParityKind.BothViolateSpec,
+            -> {
                 determineKidsCorrection(sipActive, sipBlocked, sipRemaining, result)
             }
         }
@@ -422,13 +427,14 @@ object BehaviorContractEnforcer {
         // Position is typically DontCare or ExactMatch with flag
         // We only enforce if there's a significant drift that needs correction
         return when (result.parityKind) {
-            ShadowComparisonService.ParityKind.DontCare -> EnforcementResult(
-                dimension = "position",
-                action = EnforcementAction.NoAction,
-                sipValue = sipPosition,
-                specValue = result.sipValue,
-                reason = "Position within tolerance",
-            )
+            ShadowComparisonService.ParityKind.DontCare ->
+                EnforcementResult(
+                    dimension = "position",
+                    action = EnforcementAction.NoAction,
+                    sipValue = sipPosition,
+                    specValue = result.sipValue,
+                    reason = "Position within tolerance",
+                )
 
             ShadowComparisonService.ParityKind.ExactMatch -> {
                 // Check if flagged for drift
@@ -463,13 +469,14 @@ object BehaviorContractEnforcer {
                 }
             }
 
-            else -> EnforcementResult(
-                dimension = "position",
-                action = EnforcementAction.NoAction,
-                sipValue = sipPosition,
-                specValue = result.sipValue,
-                reason = "Position - ${result.parityKind}",
-            )
+            else ->
+                EnforcementResult(
+                    dimension = "position",
+                    action = EnforcementAction.NoAction,
+                    sipValue = sipPosition,
+                    specValue = result.sipValue,
+                    reason = "Position - ${result.parityKind}",
+                )
         }
     }
 }

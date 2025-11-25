@@ -1209,6 +1209,23 @@ As documented in the KDoc:
    - State exposed via StateFlow for UI consumption
    - Composable and testable in isolation
 
+### Phase 3 – Step 1 Complete
+
+**PR #307** completed Phase 3 – Step 1: LivePlaybackController structural foundation.
+
+**What was delivered:**
+- ✅ `LivePlaybackController` interface with full contract documentation
+- ✅ `LiveChannel` and `EpgOverlayState` domain models
+- ✅ `DefaultLivePlaybackController` stub implementation with TODO markers
+- ✅ `LiveChannelRepository` and `LiveEpgRepository` abstractions
+- ✅ `TimeProvider` abstraction for testable time operations
+- ✅ `LivePlaybackControllerTest` test skeleton with fake implementations
+
+**Behavior Contract Compliance (documented in KDoc):**
+- LIVE playback never participates in resume (Section 3.1)
+- Kids gating handled by existing `KidsPlaybackGate`
+- Controller is domain-only (pure Kotlin, no Android dependencies)
+
 ### Next Steps (Phase 3 – Step 2)
 
 The following migration work remains for Step 2:

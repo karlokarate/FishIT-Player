@@ -26,7 +26,6 @@ import org.junit.Test
  * It does NOT affect runtime behavior - actions are for diagnostics only.
  */
 class BehaviorContractEnforcerTest {
-
     // ════════════════════════════════════════════════════════════════════════════
     // Resume Enforcement Tests
     // ════════════════════════════════════════════════════════════════════════════
@@ -38,12 +37,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(resumeStartMs = 60_000L)
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: NoAction for resume
         val resumeResult = results.find { it.dimension == "resume" }
@@ -58,12 +58,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(resumeStartMs = null) // Correct
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: NoAction (SIP is correct, legacy has bug)
         val resumeResult = results.find { it.dimension == "resume" }
@@ -81,12 +82,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(resumeStartMs = 5_000L) // Violates spec
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: ClearResume action
         val resumeResult = results.find { it.dimension == "resume" }
@@ -104,12 +106,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(resumeStartMs = 60_000L) // Violates spec
 
         // When: Evaluating enforcement for LIVE
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.LIVE,
-            durationMs = null,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.LIVE,
+                durationMs = null,
+            )
 
         // Then: ClearResume action (LIVE never resumes)
         val resumeResult = results.find { it.dimension == "resume" }
@@ -131,12 +134,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(resumeStartMs = 115_000L) // Near end of 120s content
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: ClearResume action (near-end should be cleared)
         val resumeResult = results.find { it.dimension == "resume" }
@@ -154,12 +158,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(resumeStartMs = 3_000L) // Violates spec
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: ClearResume (the SIP value is <= 10s, so it should be cleared regardless)
         val resumeResult = results.find { it.dimension == "resume" }
@@ -178,12 +183,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(resumeStartMs = 45_000L)
 
         // When: Evaluating enforcement for SERIES
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.SERIES,
-            durationMs = 60_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.SERIES,
+                durationMs = 60_000L,
+            )
 
         // Then: NoAction (SERIES can resume like VOD)
         val resumeResult = results.find { it.dimension == "resume" }
@@ -202,12 +208,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(kidActive = true, kidBlocked = true, remainingKidsMinutes = 0)
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 60_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 60_000L,
+            )
 
         // Then: NoAction
         val kidsResult = results.find { it.dimension == "kids" }
@@ -222,12 +229,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(kidActive = true, kidBlocked = false, remainingKidsMinutes = 0) // Violates spec
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 60_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 60_000L,
+            )
 
         // Then: BlockKidsPlayback action
         val kidsResult = results.find { it.dimension == "kids" }
@@ -245,12 +253,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(kidActive = true, kidBlocked = true, remainingKidsMinutes = 15) // Violates spec
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 60_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 60_000L,
+            )
 
         // Then: UnblockKidsPlayback action
         val kidsResult = results.find { it.dimension == "kids" }
@@ -268,12 +277,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(kidActive = false, kidBlocked = false)
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 60_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 60_000L,
+            )
 
         // Then: NoAction (not a kid profile)
         val kidsResult = results.find { it.dimension == "kids" }
@@ -288,12 +298,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(kidActive = true, kidBlocked = true, remainingKidsMinutes = 0)
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 60_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 60_000L,
+            )
 
         // Then: NoAction (SIP is correct)
         val kidsResult = results.find { it.dimension == "kids" }
@@ -315,12 +326,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(currentPositionMs = 60_500L)
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: NoAction
         val posResult = results.find { it.dimension == "position" }
@@ -335,12 +347,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(currentPositionMs = 65_000L) // 5s drift
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: NormalizePosition action
         val posResult = results.find { it.dimension == "position" }
@@ -360,12 +373,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(currentPositionMs = null)
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 120_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 120_000L,
+            )
 
         // Then: NoAction
         val posResult = results.find { it.dimension == "position" }
@@ -384,12 +398,13 @@ class BehaviorContractEnforcerTest {
         val sip = InternalPlayerUiState(resumeStartMs = null, playbackType = PlaybackType.LIVE)
 
         // When: Evaluating enforcement
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.LIVE,
-            durationMs = null,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.LIVE,
+                durationMs = null,
+            )
 
         // Then: All NoAction
         val resumeResult = results.find { it.dimension == "resume" }
@@ -407,12 +422,13 @@ class BehaviorContractEnforcerTest {
         val legacy = InternalPlayerUiState(resumeStartMs = 50_000L)
         val sip = InternalPlayerUiState(resumeStartMs = 50_000L)
 
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 100_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 100_000L,
+            )
 
         val resumeResult = results.find { it.dimension == "resume" }
         assertTrue(resumeResult!!.action is BehaviorContractEnforcer.EnforcementAction.NoAction)
@@ -424,12 +440,13 @@ class BehaviorContractEnforcerTest {
         val legacy = InternalPlayerUiState(resumeStartMs = 5_000L)
         val sip = InternalPlayerUiState(resumeStartMs = null)
 
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 100_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 100_000L,
+            )
 
         val resumeResult = results.find { it.dimension == "resume" }
         assertTrue(resumeResult!!.action is BehaviorContractEnforcer.EnforcementAction.NoAction)
@@ -441,12 +458,13 @@ class BehaviorContractEnforcerTest {
         val legacy = InternalPlayerUiState(resumeStartMs = null)
         val sip = InternalPlayerUiState(resumeStartMs = 5_000L)
 
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 100_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 100_000L,
+            )
 
         val resumeResult = results.find { it.dimension == "resume" }
         assertFalse(
@@ -461,12 +479,13 @@ class BehaviorContractEnforcerTest {
         val legacy = InternalPlayerUiState(resumeStartMs = 5_000L)
         val sip = InternalPlayerUiState(resumeStartMs = 8_000L)
 
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 100_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 100_000L,
+            )
 
         val resumeResult = results.find { it.dimension == "resume" }
         assertFalse(
@@ -481,12 +500,13 @@ class BehaviorContractEnforcerTest {
         val legacy = InternalPlayerUiState(resumeStartMs = 50_000L)
         val sip = InternalPlayerUiState(resumeStartMs = 55_000L)
 
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 100_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 100_000L,
+            )
 
         val resumeResult = results.find { it.dimension == "resume" }
         assertTrue(resumeResult!!.action is BehaviorContractEnforcer.EnforcementAction.NoAction)
@@ -502,19 +522,21 @@ class BehaviorContractEnforcerTest {
         val legacy = InternalPlayerUiState(resumeStartMs = null)
         val sip = InternalPlayerUiState(resumeStartMs = 5_000L)
 
-        val specResults = ShadowComparisonService.compareAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 100_000L,
-        )
+        val specResults =
+            ShadowComparisonService.compareAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 100_000L,
+            )
 
-        val needsEnforcement = BehaviorContractEnforcer.needsEnforcement(
-            specResults,
-            sip,
-            PlaybackType.VOD,
-            100_000L,
-        )
+        val needsEnforcement =
+            BehaviorContractEnforcer.needsEnforcement(
+                specResults,
+                sip,
+                PlaybackType.VOD,
+                100_000L,
+            )
 
         assertTrue("Enforcement needed for SIP violation", needsEnforcement)
     }
@@ -525,19 +547,21 @@ class BehaviorContractEnforcerTest {
         val legacy = InternalPlayerUiState(resumeStartMs = 50_000L)
         val sip = InternalPlayerUiState(resumeStartMs = 50_000L)
 
-        val specResults = ShadowComparisonService.compareAgainstSpec(
-            legacy = legacy,
-            sip = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 100_000L,
-        )
+        val specResults =
+            ShadowComparisonService.compareAgainstSpec(
+                legacy = legacy,
+                sip = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 100_000L,
+            )
 
-        val needsEnforcement = BehaviorContractEnforcer.needsEnforcement(
-            specResults,
-            sip,
-            PlaybackType.VOD,
-            100_000L,
-        )
+        val needsEnforcement =
+            BehaviorContractEnforcer.needsEnforcement(
+                specResults,
+                sip,
+                PlaybackType.VOD,
+                100_000L,
+            )
 
         assertFalse("No enforcement needed when compliant", needsEnforcement)
     }
@@ -545,22 +569,23 @@ class BehaviorContractEnforcerTest {
     @Test
     fun `filterActionableEnforcements removes NoAction`() {
         // Given: Mix of NoAction and actual actions
-        val results = listOf(
-            BehaviorContractEnforcer.EnforcementResult(
-                dimension = "resume",
-                action = BehaviorContractEnforcer.EnforcementAction.NoAction,
-                sipValue = null,
-                specValue = null,
-                reason = "OK",
-            ),
-            BehaviorContractEnforcer.EnforcementResult(
-                dimension = "kids",
-                action = BehaviorContractEnforcer.EnforcementAction.BlockKidsPlayback,
-                sipValue = false,
-                specValue = true,
-                reason = "Block needed",
-            ),
-        )
+        val results =
+            listOf(
+                BehaviorContractEnforcer.EnforcementResult(
+                    dimension = "resume",
+                    action = BehaviorContractEnforcer.EnforcementAction.NoAction,
+                    sipValue = null,
+                    specValue = null,
+                    reason = "OK",
+                ),
+                BehaviorContractEnforcer.EnforcementResult(
+                    dimension = "kids",
+                    action = BehaviorContractEnforcer.EnforcementAction.BlockKidsPlayback,
+                    sipValue = false,
+                    specValue = true,
+                    reason = "Block needed",
+                ),
+            )
 
         val actionable = BehaviorContractEnforcer.filterActionableEnforcements(results)
 
@@ -577,12 +602,13 @@ class BehaviorContractEnforcerTest {
         val legacy = InternalPlayerUiState()
         val sip = InternalPlayerUiState()
 
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = null,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = null,
+            )
 
         assertEquals(3, results.size)
         results.forEach { result ->
@@ -597,12 +623,13 @@ class BehaviorContractEnforcerTest {
         val legacy = InternalPlayerUiState(resumeStartMs = 50_000L)
         val sip = InternalPlayerUiState(resumeStartMs = 50_000L)
 
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = null,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = null,
+            )
 
         assertNotNull(results)
         assertEquals(3, results.size)
@@ -613,12 +640,13 @@ class BehaviorContractEnforcerTest {
         val legacy = InternalPlayerUiState(kidActive = true, kidBlocked = true, remainingKidsMinutes = -5)
         val sip = InternalPlayerUiState(kidActive = true, kidBlocked = true, remainingKidsMinutes = -5)
 
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = 60_000L,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = 60_000L,
+            )
 
         assertNotNull(results)
         val kidsResult = results.find { it.dimension == "kids" }
@@ -630,12 +658,13 @@ class BehaviorContractEnforcerTest {
         val legacy = InternalPlayerUiState(currentPositionMs = Long.MAX_VALUE)
         val sip = InternalPlayerUiState(currentPositionMs = Long.MAX_VALUE - 100)
 
-        val results = BehaviorContractEnforcer.evaluateFromStates(
-            legacyState = legacy,
-            sipState = sip,
-            playbackType = PlaybackType.VOD,
-            durationMs = Long.MAX_VALUE,
-        )
+        val results =
+            BehaviorContractEnforcer.evaluateFromStates(
+                legacyState = legacy,
+                sipState = sip,
+                playbackType = PlaybackType.VOD,
+                durationMs = Long.MAX_VALUE,
+            )
 
         assertNotNull(results)
     }
@@ -646,14 +675,15 @@ class BehaviorContractEnforcerTest {
 
     @Test
     fun `EnforcementAction describe() returns meaningful text`() {
-        val actions = listOf(
-            BehaviorContractEnforcer.EnforcementAction.NoAction,
-            BehaviorContractEnforcer.EnforcementAction.FixResumePosition(60_000L),
-            BehaviorContractEnforcer.EnforcementAction.ClearResume,
-            BehaviorContractEnforcer.EnforcementAction.BlockKidsPlayback,
-            BehaviorContractEnforcer.EnforcementAction.UnblockKidsPlayback,
-            BehaviorContractEnforcer.EnforcementAction.NormalizePosition(30_000L),
-        )
+        val actions =
+            listOf(
+                BehaviorContractEnforcer.EnforcementAction.NoAction,
+                BehaviorContractEnforcer.EnforcementAction.FixResumePosition(60_000L),
+                BehaviorContractEnforcer.EnforcementAction.ClearResume,
+                BehaviorContractEnforcer.EnforcementAction.BlockKidsPlayback,
+                BehaviorContractEnforcer.EnforcementAction.UnblockKidsPlayback,
+                BehaviorContractEnforcer.EnforcementAction.NormalizePosition(30_000L),
+            )
 
         actions.forEach { action ->
             val description = action.describe()
@@ -683,18 +713,20 @@ class BehaviorContractEnforcerTest {
     @Test
     fun `invokeEnforcement calls callback with actionable results`() {
         // Given: State that needs enforcement
-        val legacy = InternalPlayerUiState(
-            resumeStartMs = null,
-            kidActive = true,
-            kidBlocked = true,
-            remainingKidsMinutes = 0,
-        )
-        val sip = InternalPlayerUiState(
-            resumeStartMs = 5_000L, // Violates spec
-            kidActive = true,
-            kidBlocked = true,
-            remainingKidsMinutes = 0,
-        )
+        val legacy =
+            InternalPlayerUiState(
+                resumeStartMs = null,
+                kidActive = true,
+                kidBlocked = true,
+                remainingKidsMinutes = 0,
+            )
+        val sip =
+            InternalPlayerUiState(
+                resumeStartMs = 5_000L, // Violates spec
+                kidActive = true,
+                kidBlocked = true,
+                remainingKidsMinutes = 0,
+            )
         val context = PlaybackContext(type = PlaybackType.VOD, mediaId = 123L)
 
         // When: Invoking enforcement

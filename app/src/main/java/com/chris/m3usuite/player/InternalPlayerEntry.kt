@@ -27,11 +27,12 @@ fun InternalPlayerEntry(
     // Phase 1 bridge: delegate to the monolithic legacy implementation
     InternalPlayerScreen(
         url = url,
-        type = when (playbackContext.type) {
-            PlaybackType.LIVE -> "live"
-            PlaybackType.SERIES -> "series"
-            PlaybackType.VOD -> "vod"
-        },
+        type =
+            when (playbackContext.type) {
+                PlaybackType.LIVE -> "live"
+                PlaybackType.SERIES -> "series"
+                PlaybackType.VOD -> "vod"
+            },
         mediaId = playbackContext.mediaId,
         episodeId = playbackContext.episodeId,
         seriesId = playbackContext.seriesId,
