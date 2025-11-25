@@ -158,7 +158,7 @@ data class InternalPlayerUiState(
      *
      * **NOT FOR RUNTIME USE:**
      * - Used for Phase 3–4 shadow vs legacy comparison
-     * - Separate from existing `durationMs` for explicit comparison
+     * - Separate from `durationMs` to avoid runtime changes
      * - Null when comparison is not active
      */
     val comparisonDurationMs: Long? = null,
