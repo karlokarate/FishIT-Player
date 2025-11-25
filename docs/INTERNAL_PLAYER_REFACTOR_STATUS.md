@@ -689,3 +689,106 @@ InternalPlayerShadow (Shadow - PASSIVE, NOT WIRED YET)
     ↓
 InternalPlayerSession (SIP - NOT CONTROLLING PLAYBACK)
 ```
+
+---
+
+## Phase 3 – Step 2: Legacy↔Shadow Parity Comparison Implemented
+
+**Date:** 2025-11-25
+
+This step implements the comparison pipeline between legacy and shadow state for diagnostics-only verification.
+
+### What Was Done
+
+**1. Created ShadowComparisonService (`internal/shadow/ShadowComparisonService.kt`):**
+
+A diagnostics-only service for comparing legacy and shadow state:
+- `compare(legacy, shadow)` - Compares two `InternalPlayerUiState` instances
+- Returns `ComparisonResult` with parity flags and position offset
+
+**ComparisonResult fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `resumeParityOk` | Boolean | True if both states have same resumeStartMs |
+| `kidsGateParityOk` | Boolean | True if both states have same kidBlocked status |
+| `positionOffsetMs` | Long? | Difference between legacy and shadow position (null if unavailable) |
+| `flags` | List<String> | Diagnostic flags: "resumeMismatch", "kidsGateMismatch" |
+
+**2. Added Comparison Callback to InternalPlayerShadow:**
+
+Extended `startShadowSession(...)` with new parameter:
+```kotlin
+onShadowComparison: ((ShadowComparisonService.ComparisonResult) -> Unit)? = null
+```
+
+Added utility function:
+```kotlin
+fun invokeComparison(
+    legacyState: InternalPlayerUiState,
+    shadowState: InternalPlayerUiState,
+    callback: ((ShadowComparisonService.ComparisonResult) -> Unit)?
+)
+```
+
+**3. Extended InternalPlayerUiState with Comparison Fields:**
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `currentPositionMs` | Long? | Current position for parity comparison (separate from runtime positionMs) |
+| `comparisonDurationMs` | Long? | Duration for parity comparison (separate from runtime durationMs) |
+
+**Documentation in InternalPlayerState.kt:**
+```
+These fields exist to enable parity comparison between
+legacy and shadow sessions (Phase 3–4).
+They MUST NOT drive any runtime UI behavior yet.
+```
+
+**4. Added Dedicated Tests (`InternalPlayerShadowComparisonTest.kt`):**
+
+Comprehensive tests verify:
+- Resume parity detection (matching, null, mismatch cases)
+- Kids-gate parity detection (blocked/unblocked cases)
+- Position offset calculation (positive, negative, zero, null cases)
+- ComparisonResult flags (empty, single, multiple)
+- Callback invocation (with/without callback, matching/mismatching states)
+- No runtime path impact (state immutability, placeholder behavior)
+- InternalPlayerUiState comparison fields (defaults, independence, copy preservation)
+
+### Files Added/Modified
+
+**New Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/shadow/ShadowComparisonService.kt`
+- `app/src/test/java/com/chris/m3usuite/player/internal/session/InternalPlayerShadowComparisonTest.kt`
+
+**Modified Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt` - Added comparison fields
+- `app/src/main/java/com/chris/m3usuite/player/internal/bridge/InternalPlayerShadow.kt` - Added comparison callback
+- `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` - This documentation
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ Comparison service is diagnostics-only (never affects playback)
+- ✅ Shadow session placeholder does not invoke callbacks
+- ✅ No functional changes to production player flow
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:assembleDebug` builds successfully
+- ✅ `./gradlew :app:test` passes all tests including new comparison tests
+
+### Phase 3 Status
+
+Phase 3 is NOT complete. This was Step 2 of Phase 3.
+
+Completed Phase 3 steps:
+- [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
+- [x] Step 2: Legacy↔Shadow parity comparison pipeline
+
+Remaining Phase 3 work:
+- [ ] Implement shadow session internals
+- [ ] Wire shadow session to observe real playback inputs
+- [ ] Add diagnostics logging for shadow state
+- [ ] Create verification workflow to compare modular vs legacy behavior
+- [ ] Add developer toggle for shadow mode activation

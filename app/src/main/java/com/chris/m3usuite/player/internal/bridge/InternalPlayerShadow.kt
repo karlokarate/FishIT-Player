@@ -2,6 +2,8 @@ package com.chris.m3usuite.player.internal.bridge
 
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
+import com.chris.m3usuite.player.internal.shadow.ShadowComparisonService
+import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 
 /**
  * Phase 3 Shadow Mode:
@@ -65,6 +67,15 @@ object InternalPlayerShadow {
      *     onShadowStateChanged = { shadowState ->
      *         // Compare shadowState with legacy state
      *         diagnosticsLogger.logShadowComparison(legacyState, shadowState)
+     *     },
+     *     onShadowComparison = { comparisonResult ->
+     *         // Log parity comparison results
+     *         if (!comparisonResult.resumeParityOk) {
+     *             diagnosticsLogger.logMismatch("resume", comparisonResult)
+     *         }
+     *         if (!comparisonResult.kidsGateParityOk) {
+     *             diagnosticsLogger.logMismatch("kidsGate", comparisonResult)
+     *         }
      *     }
      * )
      * ```
@@ -75,6 +86,7 @@ object InternalPlayerShadow {
      * @param mediaItem Prepared MediaItem with metadata, or null
      * @param playbackContext Domain context with type, IDs, and hints
      * @param onShadowStateChanged Callback for shadow state updates (diagnostics only)
+     * @param onShadowComparison Callback for legacy↔shadow state comparison results (diagnostics only)
      */
     @Suppress("UNUSED_PARAMETER")
     fun startShadowSession(
@@ -84,6 +96,7 @@ object InternalPlayerShadow {
         mediaItem: MediaItem?,
         playbackContext: PlaybackContext,
         onShadowStateChanged: ((ShadowSessionState) -> Unit)? = null,
+        onShadowComparison: ((ShadowComparisonService.ComparisonResult) -> Unit)? = null,
     ) {
         // TODO(Phase 3): Instantiate modular InternalPlayerSession without wiring to UI or ExoPlayer.
         // This session must not interact with the real player or modify runtime behavior.
@@ -93,9 +106,49 @@ object InternalPlayerShadow {
         //    require @Composable context or real ExoPlayer
         // 2. Wire ResumeManager and KidsPlaybackGate in passive mode
         // 3. Emit state updates through onShadowStateChanged callback
-        // 4. Log all state transitions for comparison with legacy behavior
+        // 4. Inside shadow state update, call comparison:
+        //    onShadowComparison?.invoke(
+        //        ShadowComparisonService.compare(legacyStateSnapshot, shadowState)
+        //    )
+        // 5. Log all state transitions for comparison with legacy behavior
         //
         // For now, this is a no-op placeholder that defines the shadow-mode contract.
+    }
+
+    /**
+     * Invoke comparison between legacy and shadow states.
+     *
+     * This utility function should be called from within shadow state update logic
+     * to perform parity comparison and invoke the callback.
+     *
+     * **USAGE:**
+     * ```kotlin
+     * onShadowStateUpdate { shadowState ->
+     *     InternalPlayerShadow.invokeComparison(
+     *         legacyState = legacyStateSnapshot,
+     *         shadowState = shadowState,
+     *         callback = onShadowComparison
+     *     )
+     * }
+     * ```
+     *
+     * **SAFETY GUARANTEES:**
+     * - Safe to call with null callback (no-op)
+     * - Never throws exceptions
+     * - Never affects runtime behavior
+     *
+     * @param legacyState The current state from legacy InternalPlayerScreen
+     * @param shadowState The current state from modular InternalPlayerSession
+     * @param callback Optional callback to receive comparison results
+     */
+    fun invokeComparison(
+        legacyState: InternalPlayerUiState,
+        shadowState: InternalPlayerUiState,
+        callback: ((ShadowComparisonService.ComparisonResult) -> Unit)?,
+    ) {
+        callback?.invoke(
+            ShadowComparisonService.compare(legacyState, shadowState),
+        )
     }
 
     /**

@@ -136,6 +136,32 @@ data class InternalPlayerUiState(
      * - Null when shadow mode is inactive or not emitting debug info
      */
     val shadowStateDebug: String? = null,
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Parity Comparison - Phase 3 Step 2 fields
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // These fields exist to enable parity comparison between
+    // legacy and shadow sessions (Phase 3–4).
+    // They MUST NOT drive any runtime UI behavior yet.
+    /**
+     * Current playback position in milliseconds for parity comparison.
+     *
+     * **NOT FOR RUNTIME USE:**
+     * - Used for Phase 3–4 shadow vs legacy comparison
+     * - Separate from `positionMs` to avoid runtime changes
+     * - Null when comparison is not active
+     */
+    val currentPositionMs: Long? = null,
+    /**
+     * Total duration in milliseconds for parity comparison.
+     *
+     * **NOT FOR RUNTIME USE:**
+     * - Used for Phase 3–4 shadow vs legacy comparison
+     * - Separate from `durationMs` to avoid runtime changes
+     * - Null when comparison is not active
+     */
+    val comparisonDurationMs: Long? = null,
 ) {
     val isLive: Boolean
         get() = playbackType == PlaybackType.LIVE
