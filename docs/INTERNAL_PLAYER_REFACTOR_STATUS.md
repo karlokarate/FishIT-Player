@@ -586,3 +586,106 @@ Tests verify:
 - [x] Legacy behavior mapping fully documented
 - [x] Independence from ViewModels, Navigation, ObjectBox verified
 - [x] Stable, predictable state emission for Phase 3 UI modules
+
+---
+
+## Phase 3 – Shadow Mode Initialization Started
+
+**Date:** 2025-11-25
+
+This phase initiates shadow-mode activation of the modular SIP session, running it in parallel with the legacy player for verification and diagnostics.
+
+### What Was Done
+
+**1. Created InternalPlayerShadow Bridge (`internal/bridge/InternalPlayerShadow.kt`):**
+
+The shadow-mode entry point allows the modular session to be invoked in observation mode:
+- `startShadowSession(...)` - Starts shadow session without controlling playback
+- `stopShadowSession()` - Cleans up shadow session resources
+- `ShadowSessionState` - Data class for shadow state diagnostics
+
+**Shadow Mode Principles:**
+- Never controls real ExoPlayer instance
+- Never modifies legacy screen state
+- Never interrupts or affects user playback experience
+- State is captured for diagnostics only
+
+**2. Extended InternalPlayerUiState with Shadow-Mode Fields:**
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `shadowActive` | Boolean | Indicates if shadow observation is active |
+| `shadowStateDebug` | String? | Debug string for overlay diagnostics |
+
+**Field Documentation:**
+- Not consumed by runtime UI
+- Used for Phase 3–4 overlay debugging and verification
+- Can be toggled via developer settings (future)
+
+**3. Added SIP-Only Shadow-Mode Tests (`InternalPlayerSessionPhase3ShadowTest.kt`):**
+
+Comprehensive tests verify:
+
+**Shadow Session Safety:**
+- Modular session can start without UI, navigation, ObjectBox, or ExoPlayer
+- Shadow session never throws even with:
+  - Missing mediaItem
+  - Null seriesId
+  - Negative durations
+  - Invalid PlaybackContext combinations
+
+**Clean Shutdown:**
+- Shadow session stops cleanly without affecting legacy behavior
+- Stop is safe to call multiple times
+- Stop is safe to call without prior start
+
+**State Independence:**
+- UI state shadow fields have stable defaults
+- Shadow fields can be set independently
+- Copy preserves shadow fields
+- Shadow fields do not affect legacy fields
+
+**Integration with Phase2 Modules:**
+- Phase2Integration works with shadow fakes
+- ResumeManager and KidsPlaybackGate work in shadow mode
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ Shadow entry point defined but NOT called by runtime code
+- ✅ Legacy player remains the active orchestrator
+- ✅ No functional changes to production player flow
+
+### Files Added/Modified
+
+**New Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/bridge/InternalPlayerShadow.kt`
+- `app/src/test/java/com/chris/m3usuite/player/internal/session/InternalPlayerSessionPhase3ShadowTest.kt`
+
+**Modified Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt` - Added shadow fields
+- `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` - This documentation
+
+### What's Next (Phase 3 Remaining Work)
+
+Phase 3 is NOT complete. Remaining tasks:
+
+- [ ] Implement shadow session internals (currently placeholder)
+- [ ] Wire shadow session to observe real playback inputs
+- [ ] Add diagnostics logging for shadow state
+- [ ] Create verification workflow to compare modular vs legacy behavior
+- [ ] Add developer toggle for shadow mode activation
+
+### Architecture After Phase 3 Initialization
+
+```
+Call Sites (VOD/SERIES/LIVE/Telegram Detail Screens)
+    ↓
+InternalPlayerEntry (Phase 1 Bridge)
+    ↓
+InternalPlayerScreen (Legacy - ACTIVE)
+    ↓ (future: shadow observation)
+InternalPlayerShadow (Shadow - PASSIVE, NOT WIRED YET)
+    ↓
+InternalPlayerSession (SIP - NOT CONTROLLING PLAYBACK)
+```

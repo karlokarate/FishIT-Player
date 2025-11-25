@@ -99,6 +99,43 @@ data class InternalPlayerUiState(
     val showDebugInfo: Boolean = false,
 
     val aspectRatioMode: AspectRatioMode = AspectRatioMode.FIT,
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Shadow Mode - Phase 3 fields
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // These fields are for modular screen/session diagnostics only.
+    // Not consumed by runtime UI.
+    // Will be used by Phase 3–4 overlay debugging and verification workflows.
+    /**
+     * Indicates whether shadow-mode observation is active.
+     *
+     * When true, the modular session is running in parallel with the legacy
+     * player, observing the same inputs but never controlling playback.
+     *
+     * **NOT FOR RUNTIME USE:**
+     * - Not consumed by runtime UI
+     * - Used for Phase 3–4 diagnostics and verification
+     * - Can be toggled via developer settings (future)
+     */
+    val shadowActive: Boolean = false,
+    /**
+     * Debug string representing the shadow session's current state.
+     *
+     * Format varies by implementation but typically includes:
+     * - Position and duration
+     * - Playback state flags
+     * - Kid gate status
+     * - Resume state
+     *
+     * Example: "pos=60000|dur=120000|playing=true|kid=false"
+     *
+     * **NOT FOR RUNTIME USE:**
+     * - Not consumed by runtime UI
+     * - Used for Phase 3–4 overlay debugging
+     * - Null when shadow mode is inactive or not emitting debug info
+     */
+    val shadowStateDebug: String? = null,
 ) {
     val isLive: Boolean
         get() = playbackType == PlaybackType.LIVE
