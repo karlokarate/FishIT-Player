@@ -1100,3 +1100,137 @@ Remaining Phase 3 work:
 - [ ] Add diagnostics logging for shadow state
 - [ ] Create verification workflow to compare modular vs legacy behavior
 - [ ] Add developer toggle for shadow mode activation
+
+---
+
+## Phase 3 – LivePlaybackController Structural Foundation
+
+**Date:** 2025-11-25
+
+This section documents the implementation of the LivePlaybackController interface and core models as the structural foundation for Phase 3 live-TV functionality.
+
+### What Was Done
+
+**1. Created `internal/live` Package with Core Models:**
+
+- **LiveChannel.kt** - Domain model for live TV channels:
+  ```kotlin
+  data class LiveChannel(
+      val id: Long,
+      val name: String,
+      val url: String,
+      val category: String?,
+      val logoUrl: String?,
+  )
+  ```
+
+- **EpgOverlayState.kt** - Domain model for EPG overlay state:
+  ```kotlin
+  data class EpgOverlayState(
+      val visible: Boolean,
+      val nowTitle: String?,
+      val nextTitle: String?,
+      val hideAtRealtimeMs: Long?,
+  )
+  ```
+
+**2. Created LivePlaybackController Interface:**
+
+Defines the contract for live TV playback behavior:
+- `suspend fun initFromPlaybackContext(ctx: PlaybackContext)`
+- `fun jumpChannel(delta: Int)`
+- `fun selectChannel(channelId: Long)`
+- `fun onPlaybackPositionChanged(positionMs: Long)`
+- `val currentChannel: StateFlow<LiveChannel?>`
+- `val epgOverlay: StateFlow<EpgOverlayState>`
+
+**3. Created Supporting Interfaces:**
+
+- **LiveChannelRepository** - Abstraction for live channel data access
+- **LiveEpgRepository** - Abstraction for EPG (now/next) data access
+- **TimeProvider** - Abstraction for clock operations (testability)
+- **SystemTimeProvider** - Default implementation using System.currentTimeMillis()
+
+**4. Created DefaultLivePlaybackController Stub Implementation:**
+
+- StateFlows initialized with safe defaults (`currentChannel = null`, `epgOverlay.visible = false`)
+- All methods contain TODO markers referencing "Phase 3 – Step 2"
+- Full KDoc documenting Behavior Contract compliance:
+  - LIVE playback never participates in resume
+  - Kids gating handled by existing components
+  - Controller remains domain-only (no Android/UI dependencies)
+
+**5. Created LivePlaybackControllerTest:**
+
+Test skeleton with:
+- Fake implementations for all dependencies
+- Initial state assertions (`currentChannel.value == null`, `epgOverlay.value.visible == false`)
+- Data model property tests
+- TimeProvider tests
+- TODO-marked tests for Phase 3 – Step 2/3 (channel navigation, EPG auto-hide, integration)
+
+### Files Added
+
+| File | Description |
+|------|-------------|
+| `internal/live/LiveChannel.kt` | Domain model for live channels |
+| `internal/live/EpgOverlayState.kt` | Domain model for EPG overlay state |
+| `internal/live/LivePlaybackController.kt` | Interface + repository abstractions + TimeProvider |
+| `internal/live/DefaultLivePlaybackController.kt` | Stub implementation |
+| `test/.../live/LivePlaybackControllerTest.kt` | Test skeleton |
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ No legacy logic migrated yet
+- ✅ No UI integration performed
+- ✅ Pure structural foundation only
+- ✅ All code compiles and tests pass
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*.LivePlaybackControllerTest"` passes all tests
+
+### Behavior Contract Compliance
+
+As documented in the KDoc:
+
+1. **LIVE playback never resumes** (INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md Section 3.1)
+   - LivePlaybackController does NOT integrate with ResumeManager
+   - Resume is handled at session level where LIVE type is excluded
+
+2. **Kids gating handled by existing components**
+   - KidsPlaybackGate handles screen-time quota for all types including LIVE
+   - LivePlaybackController does NOT re-implement kids gating
+
+3. **LivePlaybackController is domain-only**
+   - Pure Kotlin, no Android dependencies
+   - State exposed via StateFlow for UI consumption
+   - Composable and testable in isolation
+
+### Next Steps (Phase 3 – Step 2)
+
+The following migration work remains for Step 2:
+- [ ] Implement LiveChannelRepository wrapping XtreamObxRepository/ObxLive
+- [ ] Implement LiveEpgRepository wrapping existing EpgRepository
+- [ ] Migrate `initFromPlaybackContext` logic from legacy screen
+- [ ] Migrate `jumpChannel`/`selectChannel` logic from legacy screen
+- [ ] Migrate EPG overlay timing logic from legacy screen
+
+### Architecture After Phase 3 – LivePlaybackController Foundation
+
+```
+Call Sites (VOD/SERIES/LIVE/Telegram Detail Screens)
+    ↓
+InternalPlayerEntry (Phase 1 Bridge)
+    ↓
+InternalPlayerScreen (Legacy - ACTIVE)
+
+NEW (not wired to runtime):
+internal/live/
+    ├── LivePlaybackController.kt (interface)
+    ├── DefaultLivePlaybackController.kt (stub)
+    ├── LiveChannel.kt (data model)
+    └── EpgOverlayState.kt (data model)
+```
