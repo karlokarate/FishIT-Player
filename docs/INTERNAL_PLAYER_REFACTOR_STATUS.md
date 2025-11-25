@@ -395,3 +395,107 @@ Each integration function now includes:
 - ✅ `./gradlew :app:assembleDebug` builds successfully
 - ✅ Runtime flow unchanged: InternalPlayerEntry → legacy InternalPlayerScreen
 - ✅ All SIP modules compile but are not executed at runtime
+
+---
+
+## Phase 2 – Modular Resume & Kids Gate Implemented (Not Wired)
+
+**Date:** 2025-11-25
+
+This phase implements the actual modular logic inside the SIP Phase 2 modules and their session integration, while keeping them unused in runtime (no changes to navigation or InternalPlayerEntry).
+
+### What Was Done
+
+**DefaultResumeManager Implementation (Mirrors Legacy Behavior):**
+
+1. `loadResumePositionMs(playbackContext)` - Mirrors legacy L572-608:
+   - Only restores if position > 10 seconds (legacy threshold)
+   - Uses `mediaId` for VOD content
+   - Uses composite series key (`seriesId` + `season` + `episodeNumber`) for SERIES content
+   - Returns `null` for LIVE content
+   - Returns `null` when no stored resume entry exists or stored position ≤ 10 seconds
+
+2. `handlePeriodicTick(playbackContext, positionMs, durationMs)` - Mirrors legacy L692-722:
+   - Assumes caller invokes at ~3s intervals (does not re-implement timing)
+   - Saves resume position for VOD/SERIES
+   - Clears resume when remaining duration < 10 seconds
+   - No-op for LIVE content
+   - Guards against invalid duration (duration ≤ 0)
+
+3. `handleEnded(playbackContext)` - Mirrors legacy L798-806:
+   - Clears resume for VOD/SERIES when playback fully ends (STATE_ENDED)
+   - No-op for LIVE content
+
+**DefaultKidsPlaybackGate Implementation (Mirrors Legacy Behavior):**
+
+1. `evaluateStart()` - Mirrors legacy L547-569 "KidsGate start":
+   - Looks up `currentProfileId` → `ObxProfile`
+   - Determines `isKid` via `profile?.type == "kid"`
+   - Initializes remaining daily quota based on `ScreenTimeRepository`
+   - Fail-open behavior: On exceptions or missing profile, returns safe state (`kidActive = false`)
+
+2. `onPlaybackTick(currentState, deltaSecs)` - Mirrors legacy L725-744:
+   - Assumes caller passes exact `deltaSecs` intervals (e.g., 60 seconds)
+   - Decrements remaining daily quota using `ScreenTimeRepository.tickUsageIfPlaying`
+   - If quota ≤ 0: Returns state indicating kid playback must be blocked
+   - Maintains block transitions parity: Once blocked, state remains blocked
+   - Fail-open: Exceptions do not crash; returns safe state
+
+**SIP InternalPlayerSession Integration:**
+
+The SIP `InternalPlayerSession` already integrates both modules:
+- Instantiates `DefaultResumeManager` and `DefaultKidsPlaybackGate` using existing dependencies
+- On session start: Uses `Phase2Integration.loadInitialResumePosition` to determine initial seek position
+- On periodic playback position updates (3s loop): Calls resume and kids gate tick handlers
+- Updates `InternalPlayerUiState` fields: `kidActive`, `kidBlocked`, `kidProfileId`
+- On playback end: Uses `resumeManager.handleEnded()` to clear resume
+
+### New Unit Tests
+
+Added `InternalPlayerSessionPhase2Test.kt` with comprehensive tests:
+
+**ResumeManager Tests:**
+- Does not resume when stored position ≤ 10 seconds
+- Resumes when stored position > 10 seconds
+- Returns null for LIVE content
+- Clears resume when remaining duration < 10 seconds
+- Saves resume when remaining duration ≥ 10 seconds
+- Clears resume on playback ended
+- Does not save when duration is invalid
+
+**KidsPlaybackGate Tests:**
+- Kid profile detection returns proper state
+- Returns blocked state when quota exhausted
+- 60-second accumulation triggers quota decrement
+- Quota exhaustion leads to blocked state
+- Non-kid profiles are not affected
+- Blocked state persists
+
+**Phase2Integration Tests:**
+- `loadInitialResumePosition` delegates correctly
+- `onPlaybackTick` handles both resume and kids gate
+- `onPlaybackEnded` clears resume
+- `evaluateKidsGateOnStart` delegates correctly
+
+### Runtime Status
+
+- ✅ Runtime path is unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ SIP session remains a non-runtime, future target for Phase 3+
+- ✅ No functional changes to the production player flow
+- ✅ All modular implementations are complete and tested
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:assembleDebug` builds successfully
+- ✅ `./gradlew :app:test` passes all tests including new Phase 2 tests
+- ✅ All SIP modules compile and are ready for future runtime wiring
+
+### What's Next
+
+Phase 2 modular implementation is complete. The following phases remain:
+
+- **Phase 3+**: Actual runtime switchover from legacy `InternalPlayerScreen` to modular SIP-based architecture
+- **Phase 7**: `RememberPlayerController` implementation
+- **Phase 8**: Lifecycle management (`ON_DESTROY` save/clear)
+
+The typed `PlaybackContext` at all call sites and the complete modular implementations mean future phases can switch to the SIP-based orchestrator without modifying call sites or re-implementing resume/kids logic.
