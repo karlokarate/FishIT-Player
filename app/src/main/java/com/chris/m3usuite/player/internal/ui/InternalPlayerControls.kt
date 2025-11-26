@@ -117,6 +117,7 @@ fun InternalPlayerContent(
                 onChangeAspectRatio = controller.onCycleAspectRatio,
                 onSpeedClick = controller.onToggleSpeedDialog,
                 onTracksClick = controller.onToggleTracksDialog,
+                onCcClick = controller.onToggleCcMenu, // Phase 4 Group 4
                 onSettingsClick = controller.onToggleSettingsDialog,
                 onPipClick = { requestPictureInPicture(activity) },
             )
@@ -128,6 +129,34 @@ fun InternalPlayerContent(
             DebugInfoOverlay(
                 state = state,
                 player = player,
+            )
+        }
+
+        // Phase 4 Group 4: CC Menu Dialog
+        // Shows when state.showCcMenuDialog is true
+        // Contract Section 8: CC/Subtitle UI for SIP Only
+        if (state.showCcMenuDialog && !state.kidActive) {
+            // TODO: Extract available tracks from player
+            // For now, use empty list as placeholder until full integration
+            val availableTracks = emptyList<com.chris.m3usuite.player.internal.subtitles.SubtitleTrack>()
+
+            CcMenuDialog(
+                currentStyle = state.subtitleStyle,
+                availableTracks = availableTracks,
+                selectedTrack = state.selectedSubtitleTrack,
+                onDismiss = controller.onToggleCcMenu,
+                onApplyStyle = { style ->
+                    // TODO: Wire to SubtitleStyleManager.updateStyle()
+                    // This will be implemented when we integrate with session
+                },
+                onApplyPreset = { preset ->
+                    // TODO: Wire to SubtitleStyleManager.applyPreset()
+                    // This will be implemented when we integrate with session
+                },
+                onSelectTrack = { track ->
+                    // TODO: Wire to SubtitleSelectionPolicy.persistSelection()
+                    // This will be implemented when we integrate with session
+                },
             )
         }
     }
@@ -143,6 +172,7 @@ private fun MainControlsRow(
     onChangeAspectRatio: () -> Unit,
     onSpeedClick: () -> Unit,
     onTracksClick: () -> Unit,
+    onCcClick: () -> Unit, // Phase 4 Group 4
     onSettingsClick: () -> Unit,
     onPipClick: () -> Unit,
 ) {
@@ -214,6 +244,18 @@ private fun MainControlsRow(
                     imageVector = Icons.Filled.Subtitles,
                     contentDescription = "Tracks",
                 )
+            }
+            // Phase 4 Group 4: CC button
+            // Visibility rules (Contract Section 8.1):
+            // - Visible only for non-kid profiles
+            // - Visible only if at least one subtitle track exists
+            if (!state.kidActive && state.selectedSubtitleTrack != null) {
+                IconButton(onClick = onCcClick) {
+                    Icon(
+                        imageVector = Icons.Filled.ClosedCaption,
+                        contentDescription = "Subtitles & CC",
+                    )
+                }
             }
             IconButton(onClick = onSettingsClick) {
                 Icon(
