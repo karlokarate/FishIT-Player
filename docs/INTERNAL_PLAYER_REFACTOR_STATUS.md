@@ -1617,3 +1617,157 @@ When Phase 3+ activates the SIP path:
 3. No additional UI work needed for basic Live-TV display
 
 ---
+
+## Phase 3 – Step 3.D: SIP PlayerSurface Horizontal Swipe → Live jumpChannel
+
+**Date:** 2025-11-26
+
+This step wires horizontal swipe gestures in the SIP PlayerSurface to trigger Live channel zapping via a callback, without touching the legacy InternalPlayerScreen or changing existing VOD/SERIES behavior.
+
+### What Was Done
+
+**1. Created PlayerSurface.kt composable:**
+
+A new composable that encapsulates the ExoPlayer PlayerView and handles gesture input:
+
+- **Tap gesture:** Invokes `onTap()` callback (for future control visibility toggling)
+- **Horizontal swipe gesture (LIVE only):**
+  - Swipe right (left-to-right) → calls `onJumpLiveChannel(-1)` (previous channel)
+  - Swipe left (right-to-left) → calls `onJumpLiveChannel(+1)` (next channel)
+  - Threshold: 60px (matches legacy implementation)
+  - Distinguishes horizontal vs vertical based on drag axis dominance
+- **VOD/SERIES:** Gestures are ignored (future phases will add seek/trickplay)
+
+**Key Features:**
+- `playbackType` parameter determines behavior (LIVE vs VOD/SERIES)
+- `onJumpLiveChannel` callback has default no-op implementation (safe for non-LIVE usage)
+- AspectRatioMode support (FIT, FILL, ZOOM, STRETCH)
+- PlayerView configuration matches existing patterns
+
+**2. Extended InternalPlayerController:**
+
+Added new method to the controller interface:
+```kotlin
+val onJumpLiveChannel: (delta: Int) -> Unit = {}
+```
+
+- Default no-op implementation for backward compatibility
+- Only meaningful for LIVE playback
+- Delta values: +1 for next channel, -1 for previous channel
+
+**3. Updated InternalPlayerContent:**
+
+Modified to use PlayerSurface instead of placeholder comment:
+- Threads `controller.onJumpLiveChannel` callback to PlayerSurface
+- `playbackType` and `aspectRatioMode` passed from state
+- Existing Live-TV UI elements (channel header, EPG overlay) remain unchanged
+- Controls and debug overlay remain functional
+
+**4. Added LivePlaybackController Wiring Documentation:**
+
+Added TODO comment in InternalPlayerSession showing how future SIP screens will wire:
+```kotlin
+val controller = InternalPlayerController(
+    // ... other callbacks ...
+    onJumpLiveChannel = { delta ->
+        if (playbackContext.type == PlaybackType.LIVE) {
+            liveController?.jumpChannel(delta)
+        }
+    }
+)
+```
+
+This documents the pathway but doesn't implement it yet (SIP session is non-runtime).
+
+**5. Created PlayerSurfacePhase3LiveGestureTest.kt:**
+
+Comprehensive test suite (19 tests) covering:
+
+**LIVE Playback Scenarios:**
+- Swipe right → delta +1
+- Swipe left → delta -1
+- Threshold boundary tests (60px)
+- Below threshold → no callback
+- Vertical swipe → no horizontal callback
+- Diagonal swipe with horizontal dominance → triggers callback
+
+**VOD/SERIES Playback Scenarios:**
+- Horizontal swipe → no callback (any magnitude)
+- Callback never invoked for non-LIVE types
+
+**Edge Cases:**
+- Zero drag
+- Exact threshold boundary
+- Just above threshold
+
+**Integration Tests:**
+- PlaybackType enum coverage
+- AspectRatioMode enum coverage
+- Callback optionality
+
+Tests use `simulateGestureLogic` helper to abstract pointer gesture mechanics for unit testing without Compose runtime.
+
+### Files Added/Modified
+
+**New Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/ui/PlayerSurface.kt`
+- `app/src/test/java/com/chris/m3usuite/player/internal/ui/PlayerSurfacePhase3LiveGestureTest.kt`
+
+**Modified Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
+  - Added `onJumpLiveChannel` to InternalPlayerController
+- `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt`
+  - Updated InternalPlayerContent to use PlayerSurface
+  - Threaded callback from controller
+- `app/src/main/java/com/chris/m3usuite/player/internal/session/InternalPlayerSession.kt`
+  - Added TODO documentation for controller wiring
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ SIP PlayerSurface + InternalPlayerContent are non-runtime (Phase 3 reference)
+- ✅ No functional changes to production player flow
+- ✅ Legacy gesture handling in InternalPlayerScreen remains active
+- ✅ VOD/SERIES behavior unchanged (gestures ignored in PlayerSurface)
+- ✅ Callback pathway documented but not activated
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*.PlayerSurfacePhase3LiveGestureTest"` passes all 19 tests
+- ✅ No regressions in existing tests
+- ✅ ktlint warnings only on existing deprecated code (TelegramDataSource)
+
+### Behavior Constraints Verified
+
+1. ✅ **Legacy InternalPlayerScreen untouched** (no changes to legacy file)
+2. ✅ **VOD/SERIES gestures unchanged** (gestures only active for LIVE in PlayerSurface)
+3. ✅ **Callback is optional** (default no-op in InternalPlayerController)
+4. ✅ **Non-blocking gesture handling** (uses detectDragGestures async API)
+5. ✅ **Consistent threshold** (60px matches legacy implementation)
+6. ✅ **No DPAD/TV remote changes** (gesture handling only for touch/mouse)
+7. ✅ **No new overlays or navigation** (pure gesture → callback wiring)
+
+### Phase 3 Status
+
+Phase 3 - Step 3.D is **COMPLETE** ✅
+
+Completed Phase 3 steps:
+- [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
+- [x] Step 2: Legacy↔Shadow parity comparison pipeline
+- [x] Step 3: Controls shadow mode activated
+- [x] Step 4: Spec-driven diagnostics integration
+- [x] LivePlaybackController structural foundation (PR #307)
+- [x] Step 3.A: UiState Live fields added
+- [x] Step 3.B: LivePlaybackController → UiState mapping (SIP)
+- [x] Step 3.C: SIP InternalPlayerContent shows Live channel + EPG overlay
+- [x] **Step 3.D: SIP PlayerSurface horizontal swipe → Live jumpChannel** ✅ **NEW**
+
+Remaining Phase 3 work:
+- [ ] Implement shadow session internals
+- [ ] Wire shadow session to observe real playback inputs
+- [ ] Add diagnostics logging for shadow state
+- [ ] Create verification workflow to compare modular vs legacy behavior
+- [ ] Add developer toggle for shadow mode activation
+
+---

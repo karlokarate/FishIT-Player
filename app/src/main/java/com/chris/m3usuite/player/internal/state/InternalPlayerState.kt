@@ -228,4 +228,12 @@ data class InternalPlayerController(
     val onToggleSleepTimerDialog: () -> Unit,
     val onToggleDebugInfo: () -> Unit,
     val onCycleAspectRatio: () -> Unit,
+    /**
+     * Jumps to an adjacent live channel (Phase 3 Step 3.D).
+     *
+     * Only meaningful for LIVE playback. For VOD/SERIES, this is a no-op.
+     *
+     * @param delta The number of channels to jump (+1 for next, -1 for previous).
+     */
+    val onJumpLiveChannel: (delta: Int) -> Unit = {},
 )
