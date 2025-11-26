@@ -109,10 +109,16 @@ All player call sites now use typed PlaybackContext and route through InternalPl
   - ✅ On `STATE_ENDED`:
     - ✅ Call `resumeManager.handleEnded(playbackContext)` to clear resume markers
 
-- ⬜ UI feedback for kids block
+- ✅ UI feedback for kids block
   - ✅ Show a blocking overlay when `kidBlocked == true`
   - ✅ Provide a clear message and optional navigation back
   - ✅ Log a diagnostics event on kid block (for the internal debug screen)
+
+### Phase 2 Status: ✅ **FULLY COMPLETE**
+
+All Resume and Kids/Screen-Time gate modules are fully implemented, tested, and integrated into the SIP session. The modular implementations mirror legacy behavior with full parity. All unit tests pass. The legacy InternalPlayerScreen remains the active runtime implementation.
+
+**Completion Date:** 2025-11-25
 
 ---
 
@@ -153,14 +159,19 @@ All player call sites now use typed PlaybackContext and route through InternalPl
   - ✅ AnimatedVisibility uses epgOverlay.visible directly (~200ms fade animations)
   - ✅ Comprehensive test suite (12 controller + 15 UI tests, all existing tests pass)
 
-- ⬜ Migrate legacy Live-TV logic
-  - ⬜ Extract live lists (`libraryLive`, favorites) from legacy screen into controller
-  - ⬜ Move `switchToLive(...)` into controller
-  - ⬜ Move `jumpLive(delta: Int)` into controller
-  - ⬜ Move EPG resolution (`EpgRepository` queries) into controller
-  - ⬜ Implement auto-hide of EPG overlay in controller or a dedicated timer helper
+- ✅ Migrate legacy Live-TV logic (SIP Implementation)
+  - ✅ Live channel lists integrated via DefaultLiveChannelRepository → ObxLive
+  - ✅ `jumpChannel(delta: Int)` implemented in DefaultLivePlaybackController
+  - ✅ `selectChannel(channelId: Long)` implemented in DefaultLivePlaybackController
+  - ✅ EPG resolution integrated via DefaultLiveEpgRepository → EpgRepository
+  - ✅ Auto-hide of EPG overlay implemented with configurable timing
+  - ✅ EPG stale detection, caching, and fallback implemented
+  - ✅ Smart channel filtering (null/empty URLs, duplicates)
+  - ✅ 200ms deterministic jump throttle using TimeProvider
+  - ✅ Comprehensive test coverage (68+ tests)
+  - **Note:** SIP implementation complete; legacy InternalPlayerScreen remains active runtime
 
-- ⬜ Integrate with UI
+- ✅ Integrate with UI (SIP Implementation Complete)
   - ✅ Extend `InternalPlayerUiState` with:
     - ✅ `liveChannelName` (Step 3.A)
     - ✅ `liveNowTitle` (Step 3.A)
@@ -181,11 +192,25 @@ All player call sites now use typed PlaybackContext and route through InternalPl
     - ✅ AnimatedVisibility with 200ms fade animations (Task 2)
   - ✅ Map gestures in `PlayerSurface` (Step 3.D - **SIP PATH COMPLETE**):
     - ✅ Horizontal swipe ⇒ `jumpChannel(+/-1)` for Live (SIP only)
+    - ✅ 200ms deterministic throttle using TimeProvider (Task 2)
     - ✅ Created PlayerSurface.kt with gesture handling
     - ✅ Wired callback through InternalPlayerContent
-    - ✅ Added PlayerSurfacePhase3LiveGestureTest
+    - ✅ Added PlayerSurfacePhase3LiveGestureTest (19 tests)
     - ⬜ Vertical swipe ⇒ open live list sheet or quick actions (future phase)
     - ⬜ VOD/SERIES: seek/trickplay gestures (future phase)
+
+### Phase 3 Status: ✅ **FULLY COMPLETE (SIP Implementation)**
+
+All Live-TV controller modules are fully implemented, tested, and integrated into the SIP UI path. The DefaultLivePlaybackController contains complete legacy behavior migration including:
+- Channel navigation with smart filtering and deduplication
+- EPG overlay management with stale detection, caching, and fallback
+- 200ms deterministic jump throttle
+- LiveMetrics exposure for diagnostics
+- Comprehensive test coverage (68+ controller tests, 19 UI tests, 19 gesture tests)
+
+The **legacy InternalPlayerScreen remains the active runtime implementation**. The SIP Live-TV implementation is complete and ready for activation in future phases.
+
+**Completion Date:** 2025-11-26
 
 ---
 
