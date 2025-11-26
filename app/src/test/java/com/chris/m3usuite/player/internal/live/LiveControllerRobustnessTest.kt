@@ -187,18 +187,18 @@ class LiveControllerRobustnessTest {
     @Test
     fun `channels with null URLs are skipped`() =
         runBlocking {
-            // Given: Repository with channels including null URL
+            // Given: Repository with channels including empty URL (url is non-nullable in LiveChannel)
             liveRepository.channels =
                 listOf(
                     LiveChannel(id = 1L, name = "Valid", url = "http://valid.m3u8", category = null, logoUrl = null),
-                    LiveChannel(id = 2L, name = "Null URL", url = "", category = null, logoUrl = null), // Use empty string instead
+                    LiveChannel(id = 2L, name = "Null URL", url = "", category = null, logoUrl = null),
                     LiveChannel(id = 3L, name = "Valid 2", url = "http://valid2.m3u8", category = null, logoUrl = null),
                 )
 
             // When: Initializing controller
             controller.initFromPlaybackContext(PlaybackContext(type = PlaybackType.LIVE))
 
-            // Then: Null URL channel is skipped
+            // Then: Empty URL channel is skipped
             assertEquals("Only valid channels should be loaded", 2, controller.channels.size)
             assertTrue("All channels should have valid URLs", controller.channels.all { !it.url.isNullOrBlank() })
             assertEquals("Skip count should increment", 1, controller.liveMetrics.value.channelSkipCount)
