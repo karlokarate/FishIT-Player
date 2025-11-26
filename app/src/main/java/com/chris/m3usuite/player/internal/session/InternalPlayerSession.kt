@@ -19,12 +19,17 @@ import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.chris.m3usuite.core.playback.RememberPlayerController
+import com.chris.m3usuite.data.repo.EpgRepository
 import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
 import com.chris.m3usuite.player.internal.domain.DefaultKidsPlaybackGate
 import com.chris.m3usuite.player.internal.domain.DefaultResumeManager
 import com.chris.m3usuite.player.internal.domain.KidsGateState
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
 import com.chris.m3usuite.player.internal.domain.PlaybackType
+import com.chris.m3usuite.player.internal.live.DefaultLiveChannelRepository
+import com.chris.m3usuite.player.internal.live.DefaultLiveEpgRepository
+import com.chris.m3usuite.player.internal.live.DefaultLivePlaybackController
+import com.chris.m3usuite.player.internal.live.SystemTimeProvider
 import com.chris.m3usuite.player.internal.source.PlaybackSourceResolver
 import com.chris.m3usuite.player.internal.source.ResolvedPlaybackSource
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
@@ -98,6 +103,29 @@ fun rememberInternalPlayerSession(
 
     val resumeManager = remember(context) { DefaultResumeManager(context) }
     val kidsGate = remember(context, settings) { DefaultKidsPlaybackGate(context, settings) }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 3 Step 3.B: LivePlaybackController for LIVE sessions
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // Create LivePlaybackController only for LIVE playback type.
+    // - Uses DefaultLiveChannelRepository to access ObxLive data
+    // - Uses DefaultLiveEpgRepository to wrap existing EpgRepository
+    // - Uses SystemTimeProvider for EPG overlay auto-hide timing
+    val liveController =
+        remember(context, settings, playbackContext.type) {
+            if (playbackContext.type == PlaybackType.LIVE) {
+                val liveRepo = DefaultLiveChannelRepository(context)
+                val epgRepo = DefaultLiveEpgRepository(EpgRepository(context, settings))
+                DefaultLivePlaybackController(
+                    liveRepository = liveRepo,
+                    epgRepository = epgRepo,
+                    clock = SystemTimeProvider,
+                )
+            } else {
+                null
+            }
+        }
 
     val playerState =
         remember {
@@ -219,6 +247,21 @@ fun rememberInternalPlayerSession(
         }
 
         controller.attachPlayer(newPlayer)
+
+        // ════════════════════════════════════════════════════════════════════════
+        // Phase 3 Step 3.B: LivePlaybackController initialization for LIVE sessions
+        // ════════════════════════════════════════════════════════════════════════
+        //
+        // Initialize LivePlaybackController from PlaybackContext when type == LIVE.
+        // This loads the channel list, resolves the initial channel, and fetches EPG data.
+        if (liveController != null) {
+            try {
+                liveController.initFromPlaybackContext(playbackContext)
+            } catch (_: Throwable) {
+                // Fail-open: Continue playback even if live controller init fails
+                // Channels and EPG will simply be unavailable
+            }
+        }
 
         // ════════════════════════════════════════════════════════════════════════
         // KIDS GATE - Mirrors legacy InternalPlayerScreen L547-569
@@ -363,6 +406,7 @@ fun rememberInternalPlayerSession(
 
         // TODO: Sleep-Timer feature not yet implemented in SettingsStore
         // Uncomment when SettingsStore.playerSleepTimerMinutes is available (Phase 4+)
+
         /*
         val sleepMinutes = settings.playerSleepTimerMinutes
         if (sleepMinutes > 0) {
@@ -484,6 +528,54 @@ fun rememberInternalPlayerSession(
                 delay(3_000)
             }
         }
+
+        // ════════════════════════════════════════════════════════════════════════════
+        // Phase 3 Step 3.B: LivePlaybackController StateFlow → UiState mapping
+        // ════════════════════════════════════════════════════════════════════════════
+        //
+        // Collect LivePlaybackController StateFlows and map them into InternalPlayerUiState.
+        // This is a one-way mapping (controller → UiState). The session does not push UI
+        // state back into the controller.
+        //
+        // Mapping:
+        // - currentChannel.value?.name → liveChannelName
+        // - epgOverlay.nowTitle → liveNowTitle
+        // - epgOverlay.nextTitle → liveNextTitle
+        // - epgOverlay.visible → epgOverlayVisible
+        //
+        // For non-LIVE playback types, the controller is null and these fields remain at
+        // their defaults (null / false).
+        if (liveController != null) {
+            // Collect currentChannel StateFlow
+            scope.launch {
+                liveController.currentChannel.collect { channel ->
+                    if (playerHolder.value !== newPlayer) return@collect
+
+                    val updated =
+                        playerState.value.copy(
+                            liveChannelName = channel?.name,
+                        )
+                    playerState.value = updated
+                    onStateChanged(updated)
+                }
+            }
+
+            // Collect epgOverlay StateFlow
+            scope.launch {
+                liveController.epgOverlay.collect { overlay ->
+                    if (playerHolder.value !== newPlayer) return@collect
+
+                    val updated =
+                        playerState.value.copy(
+                            liveNowTitle = overlay.nowTitle,
+                            liveNextTitle = overlay.nextTitle,
+                            epgOverlayVisible = overlay.visible,
+                        )
+                    playerState.value = updated
+                    onStateChanged(updated)
+                }
+            }
+        }
     }
 
     // Release when the composable leaves composition
@@ -508,6 +600,7 @@ private fun buildMediaItemWithTelegramExtras(resolved: ResolvedPlaybackSource): 
 
     // TODO: Subtitles support - AppMediaItem.subtitles field not yet implemented
     // Uncomment when MediaItem has subtitles field (Phase 4+)
+
     /*
     // Subtitles from AppMediaItem (keeps Xtream + Telegram behaviour)
     appItem?.subtitles?.forEach { sub ->
@@ -533,6 +626,7 @@ private fun buildMediaItemWithTelegramExtras(resolved: ResolvedPlaybackSource): 
 
     // TODO: Artwork support - playerArtwork() returns wrong type
     // Uncomment when MediaItem.playerArtwork() returns ByteArray? (Phase 4+)
+
     /*
     // Artwork from AppMediaItem, if provided
     val artwork = appItem?.playerArtwork()
