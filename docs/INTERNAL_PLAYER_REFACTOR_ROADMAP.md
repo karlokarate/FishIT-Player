@@ -216,33 +216,162 @@ The **legacy InternalPlayerScreen remains the active runtime implementation**. T
 
 ## Phase 4 – Subtitle style & CC menu centralization
 
-**Goal:** Move subtitle style (scale, foreground/background colors, opacity) and the CC menu out of the legacy screen into `SubtitleStyleManager` + UI controls.
+**Goal:** Move subtitle style, CC menu, and subtitle track selection out of the legacy screen into centralized domain modules (`SubtitleStyleManager` + `SubtitleSelectionPolicy`).
 
-### Checklist
+**Full Specification:** See [INTERNAL_PLAYER_PHASE4_CHECKLIST.md](INTERNAL_PLAYER_PHASE4_CHECKLIST.md) and [INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md](INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md)
 
-- ⬜ SubtitleStyleManager
-  - ⬜ Define `SubtitleStyle` data class (scale, fgColor, bgColor, fgOpacity, bgOpacity)
-  - ⬜ Define `SubtitleStyleManager` interface with:
-    - ⬜ `val currentStyle: StateFlow<SubtitleStyle>`
-    - ⬜ `suspend fun update(style: SubtitleStyle)`
-  - ⬜ Implement default manager using `SettingsStore` keys for subtitle style
+**Key Principles:**
+- SIP-Only: No modifications to legacy `InternalPlayerScreen.kt`
+- Contract-Driven: Behavior defined by subtitle/CC contract
+- Kid Mode First: Subtitles completely disabled for kid profiles
+- Centralized: All subtitle logic flows through domain modules
 
-- ⬜ Wire subtitle style into player
-  - ⬜ Add `subtitleStyle: SubtitleStyle` to `InternalPlayerUiState`
-  - ⬜ Pass the style into `PlayerSurface` / PlayerView creation
-  - ⬜ Apply styles to `subtitleView`:
-    - ⬜ `setFractionalTextSize(scale)`
-    - ⬜ `setApplyEmbeddedStyles(true)` / `setApplyEmbeddedFontSizes(true)`
-    - ⬜ `setStyle(CaptionStyleCompat(...))` with colors + alpha
+### Task Group 1: SubtitleStyle Domain Model & Manager
 
-- ⬜ CC menu in InternalPlayerControls
-  - ⬜ Implement `CcSettingsDialog` with:
-    - ⬜ Scale control
-    - ⬜ FG/BG color selection
-    - ⬜ Opacity sliders
-  - ⬜ On confirm:
-    - ⬜ Call `SubtitleStyleManager.update(...)`
-    - ⬜ Update `InternalPlayerUiState.subtitleStyle`
+- ⬜ Task 1.1: SubtitleStyle Data Model
+  - ⬜ Create `internal/subtitles/SubtitleStyle.kt`
+  - ⬜ Define data class with: `textScale`, `foregroundColor`, `backgroundColor`, `foregroundOpacity`, `backgroundOpacity`, `edgeStyle`
+  - ⬜ Define `EdgeStyle` enum: NONE, OUTLINE, SHADOW, GLOW
+  - ⬜ Legacy Reference: L208-212, L1748-1766
+
+- ⬜ Task 1.2: SubtitlePreset Enum
+  - ⬜ Create `internal/subtitles/SubtitlePreset.kt`
+  - ⬜ Define presets: DEFAULT, HIGH_CONTRAST, TV_LARGE, MINIMAL
+  - ⬜ Implement `toStyle()` conversion
+  - ⬜ Legacy Reference: L2374-2382
+
+- ⬜ Task 1.3: SubtitleStyleManager Interface
+  - ⬜ Create `internal/subtitles/SubtitleStyleManager.kt`
+  - ⬜ Define interface with: `currentStyle: StateFlow`, `currentPreset: StateFlow`, `updateStyle()`, `applyPreset()`, `resetToDefault()`
+  - ⬜ Contract Reference: Section 5
+
+- ⬜ Task 1.4: DefaultSubtitleStyleManager Implementation
+  - ⬜ Create `internal/subtitles/DefaultSubtitleStyleManager.kt`
+  - ⬜ Use SettingsStore for persistence (SUB_SCALE, SUB_FG, SUB_BG, SUB_FG_OPACITY_PCT, SUB_BG_OPACITY_PCT)
+  - ⬜ Per-profile persistence using currentProfileId
+  - ⬜ StateFlow emission on updates
+  - ⬜ Legacy Reference: SettingsStore.kt L207-211
+
+### Task Group 2: SubtitleSelectionPolicy
+
+- ⬜ Task 2.1: SubtitleSelectionPolicy Interface
+  - ⬜ Create `internal/subtitles/SubtitleSelectionPolicy.kt`
+  - ⬜ Define `SubtitleTrack` data class
+  - ⬜ Define interface with: `selectInitialTrack()`, `persistSelection()`
+  - ⬜ Contract Reference: Section 6
+
+- ⬜ Task 2.2: DefaultSubtitleSelectionPolicy Implementation
+  - ⬜ Create `internal/subtitles/DefaultSubtitleSelectionPolicy.kt`
+  - ⬜ Kid mode: Always return null
+  - ⬜ Language priority: System → Primary → Secondary → Default flag → First (if enabled) → null
+  - ⬜ Separate VOD/LIVE preferences
+  - ⬜ Legacy Reference: L1284-1304, L2304-2340
+
+### Task Group 3: Player Integration (SIP Session)
+
+- ⬜ Task 3.1: Apply SubtitleStyle to PlayerView
+  - ⬜ Extend `InternalPlayerUiState` with `subtitleStyle: SubtitleStyle`
+  - ⬜ Instantiate `DefaultSubtitleStyleManager` in `InternalPlayerSession`
+  - ⬜ Collect `currentStyle` StateFlow and update UiState
+  - ⬜ Apply to PlayerView: `setFractionalTextSize()`, `setStyle(CaptionStyleCompat)`
+  - ⬜ Map `SubtitleStyle` to `CaptionStyleCompat` with opacity
+  - ⬜ Legacy Reference: L1748-1766, L2476-2484
+
+- ⬜ Task 3.2: Subtitle Track Selection Integration
+  - ⬜ Extend `InternalPlayerUiState` with `selectedSubtitleTrack: SubtitleTrack?`
+  - ⬜ Instantiate `DefaultSubtitleSelectionPolicy` in `InternalPlayerSession`
+  - ⬜ On `Player.Listener.onTracksChanged`: Enumerate tracks and call `selectInitialTrack()`
+  - ⬜ Apply selection via `TrackSelectionOverride`
+  - ⬜ Kid mode: Skip all track selection
+  - ⬜ Legacy Reference: L1284-1304, L2304-2312
+
+### Task Group 4: CC Menu UI (SIP InternalPlayerControls)
+
+- ⬜ Task 4.1: CC Button in InternalPlayerControls
+  - ⬜ Add CC button to control bar
+  - ⬜ Visibility: Non-kid profiles AND at least one subtitle track
+  - ⬜ Opens CC menu on click
+  - ⬜ Legacy Reference: L2194-2210, L2253-2267
+
+- ⬜ Task 4.2: CcMenuDialog Composable
+  - ⬜ Create `internal/ui/CcMenuDialog.kt`
+  - ⬜ Segments: Track/Language, Text Size, FG Color, BG Color, FG Opacity, BG Opacity, Edge Style, Presets
+  - ⬜ DPAD behavior: Left/Right (segments), Up/Down (options), Center (apply), Back (cancel)
+  - ⬜ Touch UI: BottomSheet variant
+  - ⬜ Legacy Reference: L2290-2390
+
+- ⬜ Task 4.3: Live Preview in CC Menu
+  - ⬜ Preview label at top showing "Example Subtitle Text"
+  - ⬜ Reflects pending style changes immediately
+  - ⬜ Does not affect active playback until applied
+  - ⬜ Contract Reference: Section 8.5
+
+### Task Group 5: SettingsScreen Integration
+
+- ⬜ Task 5.1: Subtitle Settings Section
+  - ⬜ Modify `ui/screens/SettingsScreen.kt`
+  - ⬜ Add "Subtitles" category with: Preset, Scale, FG Color, BG Color, FG Opacity, BG Opacity, Edge Style, Reset
+  - ⬜ Kid mode: Hidden or read-only
+  - ⬜ Contract Reference: Section 9.1
+
+- ⬜ Task 5.2: Subtitle Preview Box
+  - ⬜ Small preview label in settings
+  - ⬜ Shows "Example Text" with current style
+  - ⬜ Real-time updates
+  - ⬜ Contract Reference: Section 9.2
+
+### Task Group 6: Testing & Validation
+
+- ⬜ Task 6.1: SubtitleStyleManager Tests
+  - ⬜ Create `test/.../subtitles/SubtitleStyleManagerTest.kt`
+  - ⬜ Coverage: Range validation, presets, persistence, reset, thread safety, StateFlow
+
+- ⬜ Task 6.2: SubtitleSelectionPolicy Tests
+  - ⬜ Create `test/.../subtitles/SubtitleSelectionPolicyTest.kt`
+  - ⬜ Coverage: Priority order, kid mode, manual override, VOD/LIVE, language matching
+
+- ⬜ Task 6.3: CC Menu UI Tests
+  - ⬜ Create `test/.../ui/CcMenuDialogTest.kt`
+  - ⬜ Coverage: Visibility rules, DPAD navigation, preview, cancel/apply
+
+- ⬜ Task 6.4: Integration Tests
+  - ⬜ Create `test/.../session/InternalPlayerSessionPhase4SubtitleTest.kt`
+  - ⬜ Coverage: Style propagation, player stability, SettingsScreen sync, kid mode
+
+### Files Overview
+
+**New SIP Files (11 files):**
+- `internal/subtitles/SubtitleStyle.kt`
+- `internal/subtitles/SubtitlePreset.kt`
+- `internal/subtitles/SubtitleStyleManager.kt`
+- `internal/subtitles/DefaultSubtitleStyleManager.kt`
+- `internal/subtitles/SubtitleSelectionPolicy.kt`
+- `internal/subtitles/DefaultSubtitleSelectionPolicy.kt`
+- `internal/ui/CcMenuDialog.kt`
+- 4 test files (SubtitleStyleManagerTest, SubtitleSelectionPolicyTest, CcMenuDialogTest, InternalPlayerSessionPhase4SubtitleTest)
+
+**Modified SIP Files (5 files):**
+- `internal/state/InternalPlayerState.kt` - Add subtitle fields
+- `internal/session/InternalPlayerSession.kt` - Wire managers
+- `internal/ui/InternalPlayerControls.kt` - Add CC button
+- `ui/screens/SettingsScreen.kt` - Add subtitle section
+- `prefs/SettingsStore.kt` - Add write methods (if needed)
+
+**Legacy Files NOT Modified:**
+- ❌ `player/InternalPlayerScreen.kt` - Untouched (remains active runtime)
+
+### Legacy Behavior Mapping
+
+| Legacy Code | Behavior | SIP Module |
+|-------------|----------|------------|
+| L208-212 | Subtitle preferences | DefaultSubtitleStyleManager |
+| L1258-1266 | Effective style helpers | SubtitleStyle data model |
+| L1284-1304 | Track enumeration | SubtitleSelectionPolicy |
+| L1748-1766 | PlayerView config | InternalPlayerSession |
+| L2194-2210, L2253-2267 | CC button | InternalPlayerControls |
+| L2290-2390 | CC menu | CcMenuDialog |
+| L2304-2312, L2328-2339 | Track selection | SubtitleSelectionPolicy |
+| L2476-2484 | withOpacity() | Style application |
 
 ---
 

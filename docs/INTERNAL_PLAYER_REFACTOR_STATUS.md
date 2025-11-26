@@ -2209,6 +2209,229 @@ Shadow mode work remains:
 
 ---
 
+## Phase 4 – Subtitle Style & CC Menu Centralization (Kickoff Started)
+
+**Date:** 2025-11-26
+
+### Kickoff Status: 🔄 **IN PROGRESS**
+
+Phase 4 kickoff has been initiated to plan and document the centralization of subtitle styling, CC menu, and subtitle track selection into the modular SIP architecture.
+
+### What Was Done (Kickoff Task)
+
+**1. Documentation Review & Analysis:**
+- ✅ Read and analyzed `INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md` (authoritative behavior contract)
+- ✅ Read existing `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` and `INTERNAL_PLAYER_REFACTOR_STATUS.md`
+- ✅ Verified Phase 1-3 completion status
+
+**2. Repository Scanning & Code Discovery:**
+- ✅ Identified all subtitle-related code in legacy `InternalPlayerScreen.kt`:
+  - L208-212: Subtitle style preferences from SettingsStore
+  - L1258-1266: Effective style helper functions
+  - L1284-1304: Subtitle track enumeration logic
+  - L1748-1766: PlayerView subtitle configuration with CaptionStyleCompat
+  - L2194-2210, L2253-2267: CC button in controls and quick actions
+  - L2290-2390: CC menu dialog with scale, color, opacity controls
+  - L2304-2312, L2328-2339: Track selection via TrackSelectionOverride
+  - L2476-2484: `withOpacity()` helper function
+- ✅ Identified SettingsStore persistence code (L207-211)
+- ✅ Verified no existing SIP subtitle modules exist
+
+**3. Phase 4 Checklist Created:**
+- ✅ Created `docs/INTERNAL_PLAYER_PHASE4_CHECKLIST.md` (17,614 characters)
+- ✅ Defined 6 task groups with 21 specific tasks
+- ✅ Mapped all legacy behavior to SIP modules
+- ✅ Specified file paths for all new and modified files
+- ✅ Documented contract compliance requirements
+- ✅ Included test requirements for each task
+
+**4. Roadmap Documentation Updated:**
+- ✅ Updated `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` Phase 4 section
+- ✅ Replaced coarse bullet points with detailed task breakdown
+- ✅ Added file mappings and legacy code references
+- ✅ Preserved Phase 1-3 sections (no changes)
+
+**5. Status Documentation Updated:**
+- ✅ Updated `INTERNAL_PLAYER_REFACTOR_STATUS.md` with Phase 4 kickoff section
+- ✅ Documented kickoff completion
+- ✅ Added kickoff task details
+
+### Task Groups Defined (from Checklist)
+
+**Task Group 1: SubtitleStyle Domain Model & Manager**
+- Task 1.1: SubtitleStyle Data Model (EdgeStyle enum, defaults, ranges)
+- Task 1.2: SubtitlePreset Enum (DEFAULT, HIGH_CONTRAST, TV_LARGE, MINIMAL)
+- Task 1.3: SubtitleStyleManager Interface (StateFlows, update methods)
+- Task 1.4: DefaultSubtitleStyleManager Implementation (DataStore persistence, per-profile)
+
+**Task Group 2: SubtitleSelectionPolicy**
+- Task 2.1: SubtitleSelectionPolicy Interface (SubtitleTrack model, selection logic)
+- Task 2.2: DefaultSubtitleSelectionPolicy Implementation (language priority, kid mode blocking)
+
+**Task Group 3: Player Integration (SIP Session)**
+- Task 3.1: Apply SubtitleStyle to PlayerView (CaptionStyleCompat mapping, opacity application)
+- Task 3.2: Subtitle Track Selection Integration (TrackSelectionOverride, onTracksChanged listener)
+
+**Task Group 4: CC Menu UI (SIP InternalPlayerControls)**
+- Task 4.1: CC Button in InternalPlayerControls (visibility rules, kid mode)
+- Task 4.2: CcMenuDialog Composable (DPAD navigation, segments, touch UI variant)
+- Task 4.3: Live Preview in CC Menu (pending style preview, isolation from playback)
+
+**Task Group 5: SettingsScreen Integration**
+- Task 5.1: Subtitle Settings Section (global controls, kid mode read-only)
+- Task 5.2: Subtitle Preview Box (real-time preview in settings)
+
+**Task Group 6: Testing & Validation**
+- Task 6.1: SubtitleStyleManager Tests (range validation, presets, persistence, thread safety)
+- Task 6.2: SubtitleSelectionPolicy Tests (priority order, kid mode, VOD/LIVE preferences)
+- Task 6.3: CC Menu UI Tests (visibility, DPAD navigation, preview accuracy)
+- Task 6.4: Integration Tests (style propagation, player stability, synchronization)
+
+### Files to Create (SIP Only - 11 New Files)
+
+**Domain Layer:**
+1. `internal/subtitles/SubtitleStyle.kt` - Data model with EdgeStyle enum
+2. `internal/subtitles/SubtitlePreset.kt` - Preset enum with toStyle() conversion
+3. `internal/subtitles/SubtitleStyleManager.kt` - Interface definition
+4. `internal/subtitles/DefaultSubtitleStyleManager.kt` - DataStore implementation
+5. `internal/subtitles/SubtitleSelectionPolicy.kt` - Interface with SubtitleTrack model
+6. `internal/subtitles/DefaultSubtitleSelectionPolicy.kt` - Language priority implementation
+
+**UI Layer:**
+7. `internal/ui/CcMenuDialog.kt` - CC menu composable with DPAD support
+
+**Test Layer:**
+8. `test/.../subtitles/SubtitleStyleManagerTest.kt`
+9. `test/.../subtitles/SubtitleSelectionPolicyTest.kt`
+10. `test/.../ui/CcMenuDialogTest.kt`
+11. `test/.../session/InternalPlayerSessionPhase4SubtitleTest.kt`
+
+### Files to Modify (SIP Only - 5 Files)
+
+1. `internal/state/InternalPlayerState.kt` - Add `subtitleStyle`, `selectedSubtitleTrack` fields
+2. `internal/session/InternalPlayerSession.kt` - Wire managers, apply style, handle selection
+3. `internal/ui/InternalPlayerControls.kt` - Add CC button with visibility rules
+4. `ui/screens/SettingsScreen.kt` - Add subtitle settings section with preview
+5. `prefs/SettingsStore.kt` - Add write methods for subtitle persistence (if missing)
+
+### Files NOT Modified (Legacy - Untouched)
+
+- ❌ `player/InternalPlayerScreen.kt` - **REMAINS UNTOUCHED** (legacy active runtime)
+
+### Legacy Behavior Mapping Table
+
+| Legacy Code | Lines | Behavior | SIP Module | Task |
+|-------------|-------|----------|------------|------|
+| SettingsStore subtitle flows | L207-211 | Persistence | DefaultSubtitleStyleManager | 1.4 |
+| Effective style helpers | L1258-1266 | Style computation | SubtitleStyle data model | 1.1 |
+| refreshSubtitleOptions() | L1284-1304 | Track enumeration | SubtitleSelectionPolicy | 2.2 |
+| subtitleView?.apply | L1748-1766 | PlayerView config | InternalPlayerSession | 3.1 |
+| CC button (controls) | L2194-2210 | Button visibility | InternalPlayerControls | 4.1 |
+| CC button (quick actions) | L2253-2267 | Button visibility | InternalPlayerControls | 4.1 |
+| CC menu dialog | L2290-2390 | Menu UI | CcMenuDialog | 4.2 |
+| Track selection (subtitle) | L2304-2312 | TrackSelectionOverride | SubtitleSelectionPolicy | 3.2 |
+| Track selection (audio) | L2328-2339 | TrackSelectionOverride | (Audio separate) | N/A |
+| withOpacity() helper | L2476-2484 | Opacity calculation | Style application | 3.1 |
+
+### Contract Compliance Analysis
+
+Phase 4 implementation must comply with `INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md`:
+
+**Global Rules (Section 3):**
+- ✅ Kid Mode: No subtitles rendered (Section 3.1)
+- ✅ Kid Mode: No subtitle track selected (Section 3.1)
+- ✅ Kid Mode: No CC button shown (Section 3.1)
+- ✅ Kid Mode: Settings hidden/read-only (Section 3.1)
+- ✅ SIP-Only target (Section 3.2)
+
+**SubtitleStyle (Section 4):**
+- ✅ Required fields defined (textScale, colors, opacity, edgeStyle)
+- ✅ Defaults specified (1.0, White/Black, 100%/60%, Outline)
+- ✅ Allowed ranges (0.5-2.0 scale, 0.5-1.0 fgOpacity, 0.0-1.0 bgOpacity)
+
+**SubtitleStyleManager (Section 5):**
+- ✅ Interface definition (currentStyle, currentPreset, update methods)
+- ✅ Per-profile persistence
+- ✅ StateFlow propagation
+- ✅ Kid mode: Values stored but ignored
+
+**SubtitleSelectionPolicy (Section 6):**
+- ✅ Selection rules (language priority, default flag, fallback)
+- ✅ Kid mode: Always "no subtitles"
+- ✅ Persistence per profile
+
+**Player Integration (Section 7):**
+- ✅ CaptionStyleCompat mapping
+- ✅ Live style updates
+- ✅ Error handling (never crash)
+
+**CC/Subtitle UI (Section 8):**
+- ✅ Button visibility rules
+- ✅ Radial CC menu with segments
+- ✅ DPAD behavior specification
+- ✅ Touch UI variant
+- ✅ Live preview
+
+**SettingsScreen (Section 9):**
+- ✅ Global subtitle settings per profile
+- ✅ Preview box
+- ✅ Kid mode behavior
+
+### Code Classification Summary
+
+**Legacy Code to Migrate (SIP-Only):**
+- ✅ All subtitle style code (L208-212, L1258-1266, L1748-1766)
+- ✅ All CC menu code (L2194-2210, L2253-2267, L2290-2390)
+- ✅ All track selection code (L1284-1304, L2304-2312)
+- ✅ Helper functions (L2476-2484)
+
+**Legacy Code NOT to Migrate (Obsolete):**
+- None identified (all legacy subtitle code is valid and must be migrated)
+
+**Code Already Covered by Checklist:**
+- All discovered legacy code is mapped to specific Phase 4 tasks
+- No gaps or missing behavior identified
+
+**Code Missing from Checklist (None):**
+- All requirements from contract are covered by checklist tasks
+- No additional tasks required
+
+### Completion Criteria Established
+
+Phase 4 will be considered complete when:
+1. ✅ All 21 tasks across 6 task groups are complete
+2. ✅ All unit and integration tests passing
+3. ✅ SIP subtitle style working in isolation
+4. ✅ CC menu functional with DPAD and touch
+5. ✅ SettingsScreen integration complete with preview
+6. ✅ Kid mode completely blocks subtitles (no render, no track, no button, no settings)
+7. ✅ No changes to legacy `InternalPlayerScreen.kt`
+8. ✅ Documentation updated (Roadmap, Status)
+9. ✅ Contract compliance verified for all sections
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ No subtitle modules exist yet in SIP path
+- ✅ No functional changes to production player flow
+- ✅ Legacy subtitle code remains active and unchanged
+
+### Phase 4 Status: 🔄 **KICKOFF COMPLETE, IMPLEMENTATION NOT STARTED**
+
+**Kickoff Completed:** 2025-11-26
+
+**What's Next:**
+- Task Group 1 (SubtitleStyle Domain Model & Manager) - 4 tasks
+- Task Group 2 (SubtitleSelectionPolicy) - 2 tasks
+- Task Group 3 (Player Integration) - 2 tasks
+- Task Group 4 (CC Menu UI) - 3 tasks
+- Task Group 5 (SettingsScreen Integration) - 2 tasks
+- Task Group 6 (Testing & Validation) - 4 tasks
+
+All Phase 4 tasks are now fully documented, concretized, and ready for implementation. No new tasks will be added. All work must follow the checklist and contract.
+
+---
+
 ### Summary Table
 
 | Phase | Status | Completion Date | Runtime Active | SIP Complete |
@@ -2216,7 +2439,7 @@ Shadow mode work remains:
 | Phase 1 – PlaybackContext | ✅ Complete | 2025-11-24 | Legacy | ✅ Yes |
 | Phase 2 – Resume & Kids Gate | ✅ Complete | 2025-11-25 | Legacy | ✅ Yes |
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
-| Phase 4 – Subtitles | ⬜ Not Started | - | Legacy | ⬜ No |
+| Phase 4 – Subtitles | 🔄 Kickoff Complete | 2025-11-26 | Legacy | ⬜ No |
 | Phase 5 – PlayerSurface | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 6 – TV Remote | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
