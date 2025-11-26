@@ -127,6 +127,32 @@ fun rememberInternalPlayerSession(
             }
         }
 
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 3 Step 3.D: LivePlaybackController → UI callback wiring (TODO)
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // When a SIP screen uses this session + InternalPlayerContent, it must create
+    // an InternalPlayerController that wires LivePlaybackController to the UI.
+    //
+    // Example wiring (for future SIP screen implementation):
+    //
+    // val controller = remember(liveController) {
+    //     InternalPlayerController(
+    //         onPlayPause = { /* ... */ },
+    //         onSeekTo = { /* ... */ },
+    //         // ... other callbacks ...
+    //         onJumpLiveChannel = { delta ->
+    //             if (playbackContext.type == PlaybackType.LIVE) {
+    //                 liveController?.jumpChannel(delta)
+    //             }
+    //         }
+    //     )
+    // }
+    //
+    // Then pass this controller to InternalPlayerContent(..., controller = controller).
+    //
+    // This allows PlayerSurface gestures → onJumpLiveChannel → LivePlaybackController.jumpChannel.
+
     val playerState =
         remember {
             mutableStateOf(

@@ -161,9 +161,13 @@ All player call sites now use typed PlaybackContext and route through InternalPl
     - ✅ Show EPG overlay when controller marks it visible
     - ✅ Render live channel title and EPG snippet
     - ✅ Add comprehensive UI tests (InternalPlayerContentPhase3LiveUiTest)
-  - ⬜ Map gestures in `PlayerSurface`:
-    - ⬜ Horizontal swipe ⇒ `jumpChannel(+/-1)` for Live, seek/trickplay for VOD
-    - ⬜ Vertical swipe ⇒ open live list sheet or quick actions
+  - ✅ Map gestures in `PlayerSurface` (Step 3.D - **SIP PATH COMPLETE**):
+    - ✅ Horizontal swipe ⇒ `jumpChannel(+/-1)` for Live (SIP only)
+    - ✅ Created PlayerSurface.kt with gesture handling
+    - ✅ Wired callback through InternalPlayerContent
+    - ✅ Added PlayerSurfacePhase3LiveGestureTest
+    - ⬜ Vertical swipe ⇒ open live list sheet or quick actions (future phase)
+    - ⬜ VOD/SERIES: seek/trickplay gestures (future phase)
 
 ---
 

@@ -45,8 +45,17 @@ fun InternalPlayerContent(
             Modifier
                 .fillMaxSize(),
     ) {
-        // Hier würdest du die eigentliche Video-Surface einbauen (PlayerView/AndroidView)
-        // In deinem bestehenden Code ist das der PlayerView-Block – den kannst du 1:1 hierher ziehen.
+        // Phase 3 Step 3.D: PlayerSurface with gesture handling
+        PlayerSurface(
+            player = player,
+            aspectRatioMode = state.aspectRatioMode,
+            playbackType = state.playbackType,
+            onTap = {
+                // Future: toggle controls visibility
+                // For now, no-op (controls are always shown in SIP reference)
+            },
+            onJumpLiveChannel = controller.onJumpLiveChannel,
+        )
 
         // Phase 3 Step 3.C: Live channel name header (LIVE only)
         if (state.isLive && state.liveChannelName != null) {
