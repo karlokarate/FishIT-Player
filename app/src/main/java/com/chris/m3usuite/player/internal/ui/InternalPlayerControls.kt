@@ -48,6 +48,29 @@ fun InternalPlayerContent(
         // Hier würdest du die eigentliche Video-Surface einbauen (PlayerView/AndroidView)
         // In deinem bestehenden Code ist das der PlayerView-Block – den kannst du 1:1 hierher ziehen.
 
+        // Phase 3 Step 3.C: Live channel name header (LIVE only)
+        if (state.isLive && state.liveChannelName != null) {
+            LiveChannelHeader(
+                channelName = state.liveChannelName,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth(),
+            )
+        }
+
+        // Phase 3 Step 3.C: EPG overlay (LIVE only, when visible)
+        if (state.isLive && state.epgOverlayVisible) {
+            LiveEpgOverlay(
+                nowTitle = state.liveNowTitle,
+                nextTitle = state.liveNextTitle,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp),
+            )
+        }
+
         // Overlay-Controls (vereinfacht)
         Column(
             modifier =
@@ -393,6 +416,89 @@ fun DebugInfoOverlay(
             Text("Speed: ${"%.2fx".format(speed)}  Loop: $loop  Buffering: $buf")
             player?.let {
                 Text("Tracks: ${it.currentTracks.groups.size}")
+            }
+        }
+    }
+}
+
+/**
+ * Phase 3 Step 3.C: Live channel name header for LIVE playback.
+ *
+ * Displays the current channel name at the top of the player.
+ * Only rendered when playbackType == LIVE and liveChannelName != null.
+ */
+@Composable
+private fun LiveChannelHeader(
+    channelName: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .padding(16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        ElevatedCard {
+            Text(
+                text = channelName,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Phase 3 Step 3.C: EPG overlay for LIVE playback.
+ *
+ * Displays "Now" and "Next" program titles when available.
+ * Only rendered when epgOverlayVisible == true.
+ *
+ * The overlay is positioned at the bottom-left and does not interfere
+ * with existing controls.
+ */
+@Composable
+private fun LiveEpgOverlay(
+    nowTitle: String?,
+    nextTitle: String?,
+    modifier: Modifier = Modifier,
+) {
+    ElevatedCard(
+        modifier = modifier,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .padding(12.dp),
+        ) {
+            Text(
+                text = "EPG",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(4.dp))
+
+            if (nowTitle != null) {
+                Text(
+                    text = "Now: $nowTitle",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            if (nextTitle != null) {
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "Next: $nextTitle",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            // Show placeholder if both are null
+            if (nowTitle == null && nextTitle == null) {
+                Text(
+                    text = "No EPG data available",
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
         }
     }

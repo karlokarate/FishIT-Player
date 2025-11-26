@@ -157,9 +157,10 @@ All player call sites now use typed PlaybackContext and route through InternalPl
     - ✅ Collect currentChannel StateFlow → map to liveChannelName
     - ✅ Collect epgOverlay StateFlow → map to liveNowTitle, liveNextTitle, epgOverlayVisible
     - ✅ Add comprehensive tests (InternalPlayerSessionPhase3LiveMappingTest)
-  - ⬜ Update `InternalPlayerContent` to:
-    - ⬜ Show EPG overlay when controller marks it visible
-    - ⬜ Render live channel title and EPG snippet
+  - ✅ Update `InternalPlayerContent` to (Step 3.C - **SIP PATH COMPLETE**):
+    - ✅ Show EPG overlay when controller marks it visible
+    - ✅ Render live channel title and EPG snippet
+    - ✅ Add comprehensive UI tests (InternalPlayerContentPhase3LiveUiTest)
   - ⬜ Map gestures in `PlayerSurface`:
     - ⬜ Horizontal swipe ⇒ `jumpChannel(+/-1)` for Live, seek/trickplay for VOD
     - ⬜ Vertical swipe ⇒ open live list sheet or quick actions
