@@ -4,6 +4,7 @@ import com.chris.m3usuite.player.internal.domain.PlaybackContext
 import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.internal.live.EpgOverlayState
 import com.chris.m3usuite.player.internal.live.LiveChannel
+import com.chris.m3usuite.player.internal.live.LiveMetrics
 import com.chris.m3usuite.player.internal.live.LivePlaybackController
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +48,9 @@ class InternalPlayerSessionPhase3LiveMappingTest {
                 ),
             )
         override val epgOverlay: StateFlow<EpgOverlayState> = _epgOverlay
+
+        private val _liveMetrics = MutableStateFlow(LiveMetrics())
+        override val liveMetrics: StateFlow<LiveMetrics> = _liveMetrics
 
         // Control methods for tests
         fun emitChannel(channel: LiveChannel?) {

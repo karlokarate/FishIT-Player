@@ -400,17 +400,19 @@ class LivePlaybackControllerTest {
         }
 
     @Test
-    fun `jumpChannel updates EPG overlay visibility`() =
+    fun `jumpChannel hides EPG overlay when switching channels`() =
         runBlocking {
-            // Given: Initialized controller
+            // Given: Initialized controller with visible overlay
             liveRepository.channels = testChannels
+            epgRepository.nowNextMap = mapOf(1 to ("Show A" to "Show B"))
             controller.initFromPlaybackContext(PlaybackContext(type = PlaybackType.LIVE))
+            assertTrue("Overlay should be visible initially", controller.epgOverlay.value.visible)
 
             // When: Jumping to next channel
             controller.jumpChannel(+1)
 
-            // Then: EPG overlay is shown
-            assertTrue("EPG overlay should be visible", controller.epgOverlay.value.visible)
+            // Then: EPG overlay is hidden (Phase 3 Task 1 behavior)
+            assertFalse("EPG overlay should be hidden after channel switch", controller.epgOverlay.value.visible)
         }
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -448,22 +450,19 @@ class LivePlaybackControllerTest {
         }
 
     @Test
-    fun `selectChannel shows EPG overlay`() =
+    fun `selectChannel hides EPG overlay when switching`() =
         runBlocking {
-            // Given: Initialized controller
+            // Given: Initialized controller with visible overlay
             liveRepository.channels = testChannels
+            epgRepository.nowNextMap = mapOf(1 to ("Show A" to "Show B"))
             controller.initFromPlaybackContext(PlaybackContext(type = PlaybackType.LIVE))
+            assertTrue("Overlay should be visible initially", controller.epgOverlay.value.visible)
 
-            // Hide overlay first
-            timeProvider.advanceBy(5000)
-            controller.onPlaybackPositionChanged(0)
-            assertFalse(controller.epgOverlay.value.visible)
-
-            // When: Selecting a channel
+            // When: Selecting a different channel
             controller.selectChannel(2L)
 
-            // Then: EPG overlay is shown
-            assertTrue("EPG overlay should be visible", controller.epgOverlay.value.visible)
+            // Then: EPG overlay is hidden (Phase 3 Task 1 behavior)
+            assertFalse("EPG overlay should be hidden after channel selection", controller.epgOverlay.value.visible)
         }
 
     // ════════════════════════════════════════════════════════════════════════════
