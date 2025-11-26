@@ -222,7 +222,7 @@ class InternalPlayerContentLiveOverlayPolishTest {
     }
 
     @Test
-    fun `EPG overlay doesnt overlap controls - positioning validation`() {
+    fun `EPG overlay does_not overlap controls - positioning validation`() {
         // This is a logic test - actual positioning is tested in instrumentation tests
         // Here we validate that both overlay and controls can coexist in state
         val stateWithOverlayAndControls =
