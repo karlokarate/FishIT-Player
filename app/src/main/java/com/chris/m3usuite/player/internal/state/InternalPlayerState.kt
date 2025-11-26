@@ -3,6 +3,8 @@ package com.chris.m3usuite.player.internal.state
 import androidx.compose.runtime.Immutable
 import androidx.media3.common.PlaybackException
 import com.chris.m3usuite.player.internal.domain.PlaybackType
+import com.chris.m3usuite.player.internal.subtitles.SubtitleStyle
+import com.chris.m3usuite.player.internal.subtitles.SubtitleTrack
 
 /**
  * Immutable UI state for the internal player.
@@ -194,6 +196,39 @@ data class InternalPlayerUiState(
      * - Toggleable by user action during live playback
      */
     val epgOverlayVisible: Boolean = false,
+    // ════════════════════════════════════════════════════════════════════════════
+    // Subtitle & CC - Phase 4 fields
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // These fields support subtitle styling and track selection for the SIP UI.
+    // Contract: INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md
+    /**
+     * Current subtitle style applied to the player.
+     *
+     * Phase 4 UI consumption:
+     * - Applied to Media3 subtitleView via CaptionStyleCompat
+     * - Previewed in CC menu during style changes
+     * - Shown in SettingsScreen preview box
+     *
+     * **Kid Mode Behavior:**
+     * - Style is stored and updated normally
+     * - BUT subtitles are not rendered (enforced by player session)
+     */
+    val subtitleStyle: SubtitleStyle = SubtitleStyle(),
+    /**
+     * Currently selected subtitle track.
+     *
+     * Phase 4 UI consumption:
+     * - Show in CC menu tracks list (highlighted)
+     * - Show in tracks dialog
+     *
+     * **Kid Mode Behavior:**
+     * - Always null for kid profiles (no subtitle tracks selected)
+     *
+     * **LIVE Behavior:**
+     * - Subtitle tracks may be available but are not persisted
+     */
+    val selectedSubtitleTrack: SubtitleTrack? = null,
 ) {
     val isLive: Boolean
         get() = playbackType == PlaybackType.LIVE
@@ -236,4 +271,16 @@ data class InternalPlayerController(
      * @param delta The number of channels to jump (+1 for next, -1 for previous).
      */
     val onJumpLiveChannel: (delta: Int) -> Unit = {},
+    /**
+     * Toggles the CC/Subtitle menu (Phase 4).
+     *
+     * Opens the CC menu dialog for subtitle track selection and style customization.
+     */
+    val onToggleCcMenu: () -> Unit = {},
+    /**
+     * Selects a subtitle track (Phase 4).
+     *
+     * @param track The track to select, or null to disable subtitles.
+     */
+    val onSelectSubtitleTrack: (SubtitleTrack?) -> Unit = {},
 )

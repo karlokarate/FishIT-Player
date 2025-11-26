@@ -2432,6 +2432,160 @@ All Phase 4 tasks are now fully documented, concretized, and ready for implement
 
 ---
 
+## Phase 4 – Subtitle Style & CC Menu (Foundation Complete)
+
+**Date:** 2025-11-26
+
+**Status:** ✅ **FOUNDATION COMPLETE** - Core domain models and integration points ready
+
+This phase implements centralized subtitle styling, CC menu controls, and subtitle track selection for the modular SIP Internal Player.
+
+### What Was Completed
+
+**Group 1: SubtitleStyle Domain (Complete) ✅**
+
+Created complete domain model infrastructure:
+- ✅ `SubtitleStyle.kt` - Data class with full contract compliance
+  - Contract-compliant defaults (textScale=1.0, White/Black, 60% opacity, OUTLINE)
+  - Range validation (textScale 0.5-2.0, fgOpacity 0.5-1.0, bgOpacity 0.0-1.0)
+  - `isValid()` safety method for external integrations
+- ✅ `EdgeStyle.kt` - Enum (NONE, OUTLINE, SHADOW, GLOW)
+- ✅ `SubtitlePreset.kt` - 4 presets with `toStyle()` conversion
+  - DEFAULT: Standard white-on-black with outline
+  - HIGH_CONTRAST: Yellow on solid black (accessibility)
+  - TV_LARGE: 1.5x scale for TV viewing
+  - MINIMAL: 0.8x scale with subtle background
+- ✅ `SubtitleStyleManager.kt` - Interface with StateFlow-based API
+- ✅ `DefaultSubtitleStyleManager.kt` - DataStore implementation
+  - Per-profile persistence via SettingsStore
+  - Scale normalization (legacy 0.04-0.12 ↔ new 0.5-2.0)
+  - Real-time StateFlow emission
+- ✅ `SubtitleStyleTest.kt` - 11 unit tests (all passing)
+
+**Group 2: SubtitleSelectionPolicy (Complete) ✅**
+
+Created subtitle track selection infrastructure:
+- ✅ `SubtitleTrack.kt` - Data model for Media3 tracks
+- ✅ `SubtitleSelectionPolicy.kt` - Interface for track selection logic
+- ✅ `DefaultSubtitleSelectionPolicy.kt` - Implementation
+  - Kid Mode blocking (always returns null per contract)
+  - Language priority matching (system → profile primary → secondary → default flag)
+  - Default flag fallback
+  - Persistence hooks prepared for future DataStore keys
+- ✅ `SubtitleSelectionPolicyTest.kt` - 7 unit tests (all passing)
+
+**Group 3: SIP Session Integration (Foundation) ✅**
+
+Prepared state infrastructure for subtitle integration:
+- ✅ Extended `InternalPlayerUiState` with subtitle fields:
+  - `subtitleStyle: SubtitleStyle` - Current style applied to player
+  - `selectedSubtitleTrack: SubtitleTrack?` - Currently selected track
+- ✅ Extended `InternalPlayerController` with CC callbacks:
+  - `onToggleCcMenu()` - Opens CC menu dialog
+  - `onSelectSubtitleTrack(track)` - Selects subtitle track
+- ✅ Added imports to InternalPlayerState.kt
+- 🔄 Remaining: Wire SubtitleStyleManager into InternalPlayerSession
+- 🔄 Remaining: Apply SubtitleStyle to Media3 subtitleView (CaptionStyleCompat mapping)
+- 🔄 Remaining: Wire SubtitleSelectionPolicy for track selection on playback start
+
+### Contract Compliance
+
+All implemented modules follow `INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md`:
+
+| Contract Section | Requirement | Implementation Status |
+|-----------------|-------------|----------------------|
+| 3.1 | Kid Mode: No subtitles | ✅ Policy returns null |
+| 4.1 | SubtitleStyle fields | ✅ All fields defined |
+| 4.2 | Default values | ✅ Matches contract |
+| 4.3 | Allowed ranges | ✅ Validated with init{} |
+| 5.1 | SubtitleStyleManager interface | ✅ StateFlow-based API |
+| 5.2 | Per-profile persistence | ✅ Via SettingsStore |
+| 6.1 | SubtitleSelectionPolicy interface | ✅ With SubtitleTrack model |
+| 6.2 | Language priority order | ✅ Implemented |
+
+### Test Coverage
+
+**Unit Tests:**
+- ✅ 11 tests in SubtitleStyleTest (contract defaults, ranges, presets, edge styles)
+- ✅ 7 tests in SubtitleSelectionPolicyTest (kid mode, language priority, default flag)
+- ✅ All 18 tests passing
+
+**Build Status:**
+- ✅ `./gradlew :app:compileDebugKotlin` - Builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*.Subtitle*Test"` - All tests pass
+- ✅ No breaking changes to existing code
+- ✅ No changes to legacy InternalPlayerScreen
+
+### Files Created (SIP-Only)
+
+**Domain Layer (7 files):**
+1. `internal/subtitles/SubtitleStyle.kt` (87 lines)
+2. `internal/subtitles/SubtitlePreset.kt` (53 lines)
+3. `internal/subtitles/SubtitleStyleManager.kt` (49 lines)
+4. `internal/subtitles/DefaultSubtitleStyleManager.kt` (104 lines)
+5. `internal/subtitles/SubtitleSelectionPolicy.kt` (70 lines)
+6. `internal/subtitles/DefaultSubtitleSelectionPolicy.kt` (70 lines)
+
+**Test Layer (2 files):**
+7. `test/.../subtitles/SubtitleStyleTest.kt` (143 lines, 11 tests)
+8. `test/.../subtitles/SubtitleSelectionPolicyTest.kt` (130 lines, 7 tests)
+
+**Modified Files (1 file):**
+- `internal/state/InternalPlayerState.kt` - Added subtitle fields and controller callbacks
+
+### Remaining Work for Full Phase 4 Completion
+
+**Group 3: Session Integration (Remaining):**
+- Wire SubtitleStyleManager into InternalPlayerSession
+- Apply SubtitleStyle to Media3 subtitleView (CaptionStyleCompat)
+- Wire SubtitleSelectionPolicy for track selection
+- Ensure Kid Mode blocks subtitle rendering
+- Add integration tests
+
+**Group 4: CC Menu UI (Not Started):**
+- Add CC button to InternalPlayerControls (visibility rules)
+- Create CcMenuDialog composable (Radial menu for TV/DPAD)
+- Implement Touch UI variant (BottomSheet)
+- Add real-time preview region
+- Connect controls to SubtitleStyleManager
+- Add UI tests
+
+**Group 5: SettingsScreen Integration (Not Started):**
+- Add Subtitle & CC settings section
+- Use same SubtitleStyleManager instance as SIP player
+- Mirror radial menu controls
+- Add preview box with real-time updates
+- Enforce Kid Mode suppression
+- Add cross-integration tests
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ SIP subtitle modules compile and test successfully
+- ✅ No functional changes to production player flow
+- ✅ Legacy subtitle code remains active and unchanged
+- ✅ Domain models ready for full session integration
+
+### Phase 4 Foundation Complete Status
+
+**Completion Date:** 2025-11-26
+
+**What Was Delivered:**
+- Complete domain model infrastructure (Groups 1 & 2)
+- State integration points prepared (Group 3 partial)
+- 18 unit tests covering contract compliance
+- Clean architecture separation (SIP-only, no legacy modifications)
+
+**Next Steps for Full Completion:**
+- Complete Group 3 (Session wiring with CaptionStyleCompat)
+- Implement Group 4 (CC Menu UI with DPAD support)
+- Implement Group 5 (SettingsScreen integration)
+- Add comprehensive integration tests
+
+The foundation is solid and contract-compliant. The remaining work is primarily UI integration and wiring existing domain models into the session layer.
+
+---
+
 ### Summary Table
 
 | Phase | Status | Completion Date | Runtime Active | SIP Complete |
@@ -2439,7 +2593,7 @@ All Phase 4 tasks are now fully documented, concretized, and ready for implement
 | Phase 1 – PlaybackContext | ✅ Complete | 2025-11-24 | Legacy | ✅ Yes |
 | Phase 2 – Resume & Kids Gate | ✅ Complete | 2025-11-25 | Legacy | ✅ Yes |
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
-| Phase 4 – Subtitles | 🔄 Kickoff Complete | 2025-11-26 | Legacy | ⬜ No |
+| Phase 4 – Subtitles | ✅ Foundation Complete | 2025-11-26 | Legacy | 🔄 Partial |
 | Phase 5 – PlayerSurface | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 6 – TV Remote | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
@@ -2450,6 +2604,11 @@ All Phase 4 tasks are now fully documented, concretized, and ready for implement
 **Legend:**
 - **Runtime Active:** Which implementation is currently active in production
 - **SIP Complete:** Whether the SIP (reference) implementation is complete
+  - ✅ Yes = Fully implemented and tested
+  - 🔄 Partial = Foundation/domain models complete, UI integration remaining
+  - ⬜ No = Not started
+
+**Phase 4 Note:** Domain models (Groups 1 & 2) and state integration points (Group 3 partial) complete with 18 passing tests. Remaining: Session wiring (CaptionStyleCompat), CC Menu UI, and SettingsScreen integration.
 
 ---
 
