@@ -1,6 +1,9 @@
 package com.chris.m3usuite.player.internal.ui
 
 import android.app.Activity
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -68,15 +71,30 @@ fun InternalPlayerContent(
             )
         }
 
-        // Phase 3 Step 3.C: EPG overlay (LIVE only, when visible)
-        if (state.isLive && state.epgOverlayVisible) {
+        // Phase 3 Step 3.C & Task 2: EPG overlay (LIVE only, with AnimatedVisibility)
+        // AnimatedVisibility uses epgOverlayVisible directly without delays
+        AnimatedVisibility(
+            visible = state.isLive && state.epgOverlayVisible,
+            enter =
+                fadeIn(
+                    animationSpec =
+                        androidx.compose.animation.core
+                            .tween(durationMillis = 200),
+                ),
+            exit =
+                fadeOut(
+                    animationSpec =
+                        androidx.compose.animation.core
+                            .tween(durationMillis = 200),
+                ),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp),
+        ) {
             LiveEpgOverlay(
                 nowTitle = state.liveNowTitle,
                 nextTitle = state.liveNextTitle,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(16.dp),
             )
         }
 

@@ -67,7 +67,7 @@ class LiveControllerRobustnessTest {
             liveRepository.channels = validChannels
             epgRepository.nowNextMap = mapOf(1 to ("Morning Show" to "Afternoon News"))
             controller.initFromPlaybackContext(PlaybackContext(type = PlaybackType.LIVE))
-            
+
             // When: Time advances past stale threshold without EPG change
             timeProvider.advanceBy(DefaultLivePlaybackController.DEFAULT_EPG_STALE_THRESHOLD_MS + 1000)
             controller.onPlaybackPositionChanged(0)
@@ -370,7 +370,7 @@ class LiveControllerRobustnessTest {
             // Given: Initialized controller
             liveRepository.channels = validChannels
             epgRepository.nowNextMap = mapOf(1 to ("Show" to "Next"))
-            
+
             // When: Multiple EPG refreshes
             controller.initFromPlaybackContext(PlaybackContext(type = PlaybackType.LIVE))
             controller.refreshEpgForCurrentChannel()
@@ -489,6 +489,9 @@ class LiveControllerRobustnessTest {
 
             // Then: Wraps to last channel
             assertEquals("Should wrap to last channel", 2L, controller.currentChannel.value?.id)
+
+            // Phase 3 Task 2: Advance time to avoid throttle
+            timeProvider.advanceBy(250)
 
             // When: Jump forward from last channel
             controller.jumpChannel(+1)
