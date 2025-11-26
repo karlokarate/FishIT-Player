@@ -417,7 +417,7 @@ class DefaultLivePlaybackController(
         _liveEpgInfo.value = LiveEpgInfoState(
             nowTitle = nowTitle,
             nextTitle = nextTitle,
-            progressPercent = 0.0f, // TODO: Calculate from EPG program timing
+            progressPercent = 0.0f, // TODO(#456): Calculate from EPG program timing
         )
     }
 
