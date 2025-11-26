@@ -155,6 +155,45 @@ data class InternalPlayerUiState(
      * - Null when comparison is not active
      */
     val comparisonDurationMs: Long? = null,
+    // ════════════════════════════════════════════════════════════════════════════
+    // Live-TV - Phase 3 Step 3.A fields
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // These fields support Live-TV playback for the SIP UI.
+    // They are not wired to any behavior yet (Step 3.A: pure data class extension).
+    /**
+     * Name of the current live channel.
+     *
+     * Phase 3 UI consumption (future):
+     * - Display in player controls overlay
+     * - Show in EPG overlay
+     * - Null when not playing live content
+     */
+    val liveChannelName: String? = null,
+    /**
+     * Current program title (now playing).
+     *
+     * Phase 3 UI consumption (future):
+     * - Display in EPG overlay as "Now: <title>"
+     * - Null when EPG data is unavailable or not playing live content
+     */
+    val liveNowTitle: String? = null,
+    /**
+     * Next program title (upcoming).
+     *
+     * Phase 3 UI consumption (future):
+     * - Display in EPG overlay as "Next: <title>"
+     * - Null when EPG data is unavailable or not playing live content
+     */
+    val liveNextTitle: String? = null,
+    /**
+     * Whether the EPG overlay is visible.
+     *
+     * Phase 3 UI consumption (future):
+     * - Controls visibility of EPG overlay in player UI
+     * - Toggleable by user action during live playback
+     */
+    val epgOverlayVisible: Boolean = false,
 ) {
     val isLive: Boolean
         get() = playbackType == PlaybackType.LIVE
