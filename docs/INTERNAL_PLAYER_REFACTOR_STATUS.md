@@ -2702,30 +2702,47 @@ The remaining work is primarily:
 **Modified Files (1 file):**
 - `internal/state/InternalPlayerState.kt` - Added subtitle fields and controller callbacks
 
-### Remaining Work for Full Phase 4 Completion
+### Phase 4 Task 2b – Groups 3-5 Completed
 
-**Group 3: Session Integration (Remaining):**
-- Wire SubtitleStyleManager into InternalPlayerSession
-- Apply SubtitleStyle to Media3 subtitleView (CaptionStyleCompat)
-- Wire SubtitleSelectionPolicy for track selection
-- Ensure Kid Mode blocks subtitle rendering
-- Add integration tests
+**Completion Date:** 2025-11-26
 
-**Group 4: CC Menu UI (Not Started):**
-- Add CC button to InternalPlayerControls (visibility rules)
-- Create CcMenuDialog composable (Radial menu for TV/DPAD)
-- Implement Touch UI variant (BottomSheet)
-- Add real-time preview region
-- Connect controls to SubtitleStyleManager
-- Add UI tests
+**What Was Delivered:**
 
-**Group 5: SettingsScreen Integration (Not Started):**
-- Add Subtitle & CC settings section
-- Use same SubtitleStyleManager instance as SIP player
-- Mirror radial menu controls
-- Add preview box with real-time updates
-- Enforce Kid Mode suppression
-- Add cross-integration tests
+**Group 3: SIP Session Integration (Complete) ✅**
+- ✅ Wired SubtitleStyleManager into InternalPlayerSession
+- ✅ Applied SubtitleStyle to Media3 subtitleView (CaptionStyleCompat mapping)
+- ✅ Wired SubtitleSelectionPolicy for track selection (onTracksChanged)
+- ✅ Enforced Kid Mode blocking for subtitle rendering
+- ✅ Added `availableSubtitleTracks` field to InternalPlayerUiState for CC button visibility
+
+**Group 4: CC Menu UI (Complete) ✅**
+- ✅ CC button in InternalPlayerControls (visibility: !kidActive && hasTracks)
+- ✅ CcMenuDialog fully wired to controller callbacks
+- ✅ `onUpdateSubtitleStyle` callback wired to SubtitleStyleManager
+- ✅ `onApplySubtitlePreset` callback wired to SubtitleStyleManager
+- ✅ `onSelectSubtitleTrack` callback wired to track selection
+- ✅ All TODO markers resolved in CcMenuDialog
+
+**Group 5: SettingsScreen Integration (Complete) ✅**
+- ✅ Created `SubtitleSettingsViewModel` backed by `SubtitleStyleManager`
+- ✅ Added `SubtitleSettingsSection` composable with:
+  - Live preview box reflecting real-time style changes
+  - Preset buttons (DEFAULT, HIGH_CONTRAST, TV_LARGE, MINIMAL)
+  - Text size slider (0.5x - 2.0x)
+  - Foreground opacity slider (50% - 100%)
+  - Background opacity slider (0% - 100%)
+  - Reset to default button
+- ✅ Kid profile detection: Settings section hidden with message for kid profiles
+- ✅ Removed old subtitle settings from Player card (no duplicate systems)
+
+**Group 6: Testing (Complete) ✅**
+- ✅ Added `CcMenuPhase4UiTest.kt` with 19 unit tests covering:
+  - CC button visibility rules (kid mode, track availability)
+  - CC dialog display conditions
+  - Dialog state initialization from SubtitleStyleManager
+  - Available tracks population
+  - Track selection highlighting
+  - Style update isolation
 
 ### Runtime Status
 
@@ -2733,25 +2750,20 @@ The remaining work is primarily:
 - ✅ SIP subtitle modules compile and test successfully
 - ✅ No functional changes to production player flow
 - ✅ Legacy subtitle code remains active and unchanged
-- ✅ Domain models ready for full session integration
+- ✅ Phase 4 SIP implementation complete for subtitle/CC functionality
 
-### Phase 4 Foundation Complete Status
+### Phase 4 SIP Implementation Complete
 
 **Completion Date:** 2025-11-26
 
-**What Was Delivered:**
-- Complete domain model infrastructure (Groups 1 & 2)
-- State integration points prepared (Group 3 partial)
-- 18 unit tests covering contract compliance
-- Clean architecture separation (SIP-only, no legacy modifications)
-
-**Next Steps for Full Completion:**
-- Complete Group 3 (Session wiring with CaptionStyleCompat)
-- Implement Group 4 (CC Menu UI with DPAD support)
-- Implement Group 5 (SettingsScreen integration)
-- Add comprehensive integration tests
-
-The foundation is solid and contract-compliant. The remaining work is primarily UI integration and wiring existing domain models into the session layer.
+**Summary:**
+- All 6 Task Groups complete
+- All TODO markers resolved
+- Single unified subtitle settings system backed by SubtitleStyleManager
+- CC Menu fully wired to player session
+- SettingsScreen integrated with SubtitleSettingsViewModel
+- Kid Mode properly enforced at all levels
+- No changes to legacy InternalPlayerScreen
 
 ---
 
@@ -2762,7 +2774,7 @@ The foundation is solid and contract-compliant. The remaining work is primarily 
 | Phase 1 – PlaybackContext | ✅ Complete | 2025-11-24 | Legacy | ✅ Yes |
 | Phase 2 – Resume & Kids Gate | ✅ Complete | 2025-11-25 | Legacy | ✅ Yes |
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
-| Phase 4 – Subtitles | ✅ Groups 3 & 4 Complete | 2025-11-26 | Legacy | 🔄 Partial |
+| Phase 4 – Subtitles | ✅ SIP Complete | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 5 – PlayerSurface | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 6 – TV Remote | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
@@ -2777,7 +2789,7 @@ The foundation is solid and contract-compliant. The remaining work is primarily 
   - 🔄 Partial = Foundation/domain models complete, UI integration remaining
   - ⬜ No = Not started
 
-**Phase 4 Note:** Domain models (Groups 1 & 2), Session Integration (Group 3), and CC Menu UI (Group 4) complete with 18 passing unit tests. SIP player fully integrated with subtitle styling and track selection. Remaining: SettingsScreen integration (Group 5) and additional test coverage (Group 6).
+**Phase 4 Status:** All Groups complete (1-5). SIP player fully integrated with subtitle styling and track selection. CC Menu fully wired to SubtitleStyleManager. SettingsScreen integrated with SubtitleSettingsSection and SubtitleSettingsViewModel. Kid profile detection hides subtitle settings. No more TODOs remaining in CC menu.
 
 ---
 
