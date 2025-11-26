@@ -113,6 +113,9 @@ class DefaultLivePlaybackController(
     private val _liveMetrics = MutableStateFlow(LiveMetrics())
     override val liveMetrics: StateFlow<LiveMetrics> = _liveMetrics.asStateFlow()
 
+    private val _liveEpgInfo = MutableStateFlow(LiveEpgInfoState.EMPTY)
+    override val liveEpgInfo: StateFlow<LiveEpgInfoState> = _liveEpgInfo.asStateFlow()
+
     /**
      * Internal list of loaded channels. This mirrors the legacy `libraryLive` / `favorites` list.
      * Exposed for testing; not part of the public interface.
@@ -139,6 +142,22 @@ class DefaultLivePlaybackController(
      * Last known nowTitle for stale detection.
      */
     private var lastKnownNowTitle: String? = null
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 3 Task 2: UX Polish State
+    // ════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Timestamp of last channel jump for throttle protection (Phase 3 Task 2).
+     * Used to prevent rapid channel storms from swipe gestures.
+     */
+    private var lastJumpTimestamp: Long = 0L
+
+    /**
+     * Minimum time between channel jumps in milliseconds (Phase 3 Task 2).
+     * Default: 200ms (within 150-250ms requirement).
+     */
+    private val jumpThrottleMs: Long = 200L
 
     // ════════════════════════════════════════════════════════════════════════════
     // Interface Methods
@@ -212,6 +231,10 @@ class DefaultLivePlaybackController(
      * - Auto-hides EPG overlay when switching channels.
      * - Maintains wrap-around behavior with mod arithmetic.
      *
+     * **Phase 3 Task 2 Enhancements**:
+     * - Throttle protection: Ignores jumps within [jumpThrottleMs] of previous jump.
+     * - Prevents rapid channel storms from accidental swipe gestures.
+     *
      * **Note**: This controller does NOT call `BehaviorContractEnforcer` directly.
      * LIVE behavior is validated by shadow diagnostics externally.
      *
@@ -220,6 +243,14 @@ class DefaultLivePlaybackController(
     override fun jumpChannel(delta: Int) {
         // Phase 3 Task 1: Sanity guard against empty list
         if (channels.isEmpty()) return
+
+        // Phase 3 Task 2: Throttle protection - ignore jumps too close together
+        val now = clock.currentTimeMillis()
+        if (now - lastJumpTimestamp < jumpThrottleMs) {
+            // Too soon after last jump - ignore to prevent channel storms
+            return
+        }
+        lastJumpTimestamp = now
 
         val current = _currentChannel.value
         val currentIndex =
@@ -362,6 +393,8 @@ class DefaultLivePlaybackController(
      *
      * Sets `visible = true` and calculates `hideAtRealtimeMs` based on the current time
      * plus [epgOverlayDurationMs].
+     * 
+     * Also updates [liveEpgInfo] state for future Info Panel features (Phase 3 Task 2).
      */
     private fun showEpgOverlayWithAutoHide(
         nowTitle: String?,
@@ -376,6 +409,15 @@ class DefaultLivePlaybackController(
                 nextTitle = nextTitle,
                 hideAtRealtimeMs = hideAt,
             )
+
+        // Phase 3 Task 2: Update LiveEpgInfoState
+        // Note: progressPercent is set to 0.0 here as we don't have program start/end times yet
+        // Future enhancement could calculate actual progress from EPG program timing
+        _liveEpgInfo.value = LiveEpgInfoState(
+            nowTitle = nowTitle,
+            nextTitle = nextTitle,
+            progressPercent = 0.0f, // TODO: Calculate from EPG program timing
+        )
     }
 
     /**
