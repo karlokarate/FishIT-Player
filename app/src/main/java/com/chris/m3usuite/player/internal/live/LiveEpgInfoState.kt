@@ -36,6 +36,11 @@ data class LiveEpgInfoState(
     val nextTitle: String?,
     val progressPercent: Float,
 ) {
+    init {
+        require(progressPercent in 0.0f..1.0f) {
+            "progressPercent must be in range 0.0 to 1.0, got: $progressPercent"
+        }
+    }
     companion object {
         /**
          * Default state when no EPG information is available.
