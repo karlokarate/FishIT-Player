@@ -1,6 +1,7 @@
 package com.chris.m3usuite.ui.screens
 
 import android.app.Application
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,11 +12,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.chris.m3usuite.player.internal.subtitles.SubtitlePreset
 import com.chris.m3usuite.prefs.SettingsStore
 
 // --- Bestehende Settings-VMs ---
@@ -51,6 +55,8 @@ fun SettingsScreen(
     val epgVm: EpgSettingsViewModel = viewModel(factory = EpgSettingsViewModel.factory(app))
     val generalVm: GeneralSettingsViewModel = viewModel(factory = GeneralSettingsViewModel.factory(app))
     val telegramVm: TelegramSettingsViewModel = viewModel(factory = TelegramSettingsViewModel.factory(app))
+    // Phase 4 Group 5: SubtitleSettingsViewModel
+    val subtitleVm: SubtitleSettingsViewModel = viewModel(factory = SubtitleSettingsViewModel.factory(app))
 
     // --- States (bestehend) ---
     val playerState by playerVm.state.collectAsStateWithLifecycle()
@@ -59,6 +65,8 @@ fun SettingsScreen(
     val epgState by epgVm.state.collectAsStateWithLifecycle()
     val generalState by generalVm.state.collectAsStateWithLifecycle()
     val telegramState by telegramVm.state.collectAsStateWithLifecycle()
+    // Phase 4 Group 5: Subtitle settings state
+    val subtitleState by subtitleVm.state.collectAsStateWithLifecycle()
 
     val scroll = rememberScrollState()
 
@@ -198,49 +206,8 @@ fun SettingsScreen(
                     label = { Text("Externes Paket (Package-Name)") },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                // Untertitel
-                Spacer(Modifier.height(8.dp))
-                Text("Untertitel-Stil")
-                Slider(
-                    value = playerState.subScale,
-                    onValueChange = { playerVm.onChangeSubtitle(scale = it) },
-                    valueRange = 0.04f..0.12f,
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        value = "0x${playerState.subFgArgb.toUInt().toString(16).uppercase()}",
-                        onValueChange = {
-                            runCatching { it.removePrefix("0x").toUInt(16).toInt() }
-                                .onSuccess { v -> playerVm.onChangeSubtitle(fgArgb = v) }
-                        },
-                        label = { Text("FG (ARGB)") },
-                        modifier = Modifier.weight(1f),
-                    )
-                    OutlinedTextField(
-                        value = "0x${playerState.subBgArgb.toUInt().toString(16).uppercase()}",
-                        onValueChange = {
-                            runCatching { it.removePrefix("0x").toUInt(16).toInt() }
-                                .onSuccess { v -> playerVm.onChangeSubtitle(bgArgb = v) }
-                        },
-                        label = { Text("BG (ARGB)") },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        value = playerState.subFgOpacityPct.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { v -> playerVm.onChangeSubtitle(fgPct = v) } },
-                        label = { Text("FG-Deckkraft (%)") },
-                        modifier = Modifier.weight(1f),
-                    )
-                    OutlinedTextField(
-                        value = playerState.subBgOpacityPct.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { v -> playerVm.onChangeSubtitle(bgPct = v) } },
-                        label = { Text("BG-Deckkraft (%)") },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
                 // Toggles
+                Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     FilterChip(
                         selected = playerState.rotationLocked,
@@ -254,6 +221,16 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            // --- Subtitles & CC (Phase 4 Group 5) ---
+            SubtitleSettingsSection(
+                state = subtitleState,
+                onApplyPreset = subtitleVm::onApplyPreset,
+                onChangeTextScale = subtitleVm::onChangeTextScale,
+                onChangeForegroundOpacity = subtitleVm::onChangeForegroundOpacity,
+                onChangeBackgroundOpacity = subtitleVm::onChangeBackgroundOpacity,
+                onResetToDefault = subtitleVm::onResetToDefault,
+            )
 
             // --- EPG ---
             SettingsCard(title = "EPG (Favoriten)") {
@@ -718,4 +695,174 @@ private fun TelegramChatPickerDialog(
             }
         },
     )
+}
+
+/**
+ * Subtitle settings section backed by SubtitleStyleManager.
+ *
+ * **Phase 4 Group 5: SettingsScreen Integration**
+ *
+ * Contract Section 9:
+ * - Preset selection (Default, HighContrast, TVLarge, Minimal)
+ * - Text size slider
+ * - Foreground/background opacity controls
+ * - Real-time preview box
+ * - Hidden/disabled for kid profiles
+ */
+@Composable
+private fun SubtitleSettingsSection(
+    state: SubtitleSettingsState,
+    onApplyPreset: (SubtitlePreset) -> Unit,
+    onChangeTextScale: (Float) -> Unit,
+    onChangeForegroundOpacity: (Float) -> Unit,
+    onChangeBackgroundOpacity: (Float) -> Unit,
+    onResetToDefault: () -> Unit,
+) {
+    // Kid Mode: Show message instead of controls
+    if (state.isKidProfile) {
+        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Untertitel & CC", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "Untertitel-Einstellungen sind für Kinderprofile deaktiviert.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        return
+    }
+
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("Untertitel & CC", style = MaterialTheme.typography.titleMedium)
+
+            // Live Preview Box
+            SubtitlePreviewBox(style = state.style)
+
+            HorizontalDivider()
+
+            // Preset Buttons
+            Text("Voreinstellungen", style = MaterialTheme.typography.titleSmall)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SubtitlePreset.entries.forEach { preset ->
+                    FilterChip(
+                        selected = state.currentPreset == preset,
+                        onClick = { onApplyPreset(preset) },
+                        label = {
+                            Text(
+                                when (preset) {
+                                    SubtitlePreset.DEFAULT -> "Standard"
+                                    SubtitlePreset.HIGH_CONTRAST -> "Kontrast"
+                                    SubtitlePreset.TV_LARGE -> "TV Groß"
+                                    SubtitlePreset.MINIMAL -> "Minimal"
+                                },
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
+            HorizontalDivider()
+
+            // Text Scale Slider
+            Text(
+                text = "Textgröße: ${String.format("%.1f", state.style.textScale)}x",
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Slider(
+                value = state.style.textScale,
+                onValueChange = onChangeTextScale,
+                valueRange = 0.5f..2.0f,
+                steps = 14,
+            )
+
+            // Foreground Opacity Slider
+            Text(
+                text = "Text-Deckkraft: ${(state.style.foregroundOpacity * 100).toInt()}%",
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Slider(
+                value = state.style.foregroundOpacity,
+                onValueChange = onChangeForegroundOpacity,
+                valueRange = 0.5f..1.0f,
+                steps = 9,
+            )
+
+            // Background Opacity Slider
+            Text(
+                text = "Hintergrund-Deckkraft: ${(state.style.backgroundOpacity * 100).toInt()}%",
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Slider(
+                value = state.style.backgroundOpacity,
+                onValueChange = onChangeBackgroundOpacity,
+                valueRange = 0.0f..1.0f,
+                steps = 19,
+            )
+
+            // Reset Button
+            OutlinedButton(
+                onClick = onResetToDefault,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.isSaving,
+            ) {
+                Text("Auf Standard zurücksetzen")
+            }
+        }
+    }
+}
+
+/**
+ * Preview box showing how subtitle text will look with the current style.
+ *
+ * Contract Section 9.2: Real-time preview in settings.
+ */
+@Composable
+private fun SubtitlePreviewBox(
+    style: com.chris.m3usuite.player.internal.subtitles.SubtitleStyle,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.Black),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 80.dp)
+                    .padding(16.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            // Apply background color with opacity
+            val bgColor = Color(style.backgroundColor).copy(alpha = style.backgroundOpacity)
+            val fgColor = Color(style.foregroundColor).copy(alpha = style.foregroundOpacity)
+
+            Box(
+                modifier =
+                    Modifier
+                        .background(bgColor)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = "Beispiel Untertitel",
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = MaterialTheme.typography.bodyLarge.fontSize * style.textScale,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    color = fgColor,
+                )
+            }
+        }
+    }
 }

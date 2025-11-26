@@ -28,7 +28,6 @@ class DefaultSubtitleStyleManager(
     private val settingsStore: SettingsStore,
     private val scope: CoroutineScope,
 ) : SubtitleStyleManager {
-
     private val _currentStyle = MutableStateFlow(SubtitleStyle())
     override val currentStyle: StateFlow<SubtitleStyle> = _currentStyle.asStateFlow()
 
@@ -50,8 +49,9 @@ class DefaultSubtitleStyleManager(
                 // New model uses normalized scale factor
                 // Heuristic: 0.06 (legacy default) → 1.0 (new default)
                 // Scale range mapping: 0.04-0.12 → 0.5-2.0
-                val normalizedScale = ((scale - 0.04f) / (0.12f - 0.04f) * (2.0f - 0.5f) + 0.5f)
-                    .coerceIn(0.5f, 2.0f)
+                val normalizedScale =
+                    ((scale - 0.04f) / (0.12f - 0.04f) * (2.0f - 0.5f) + 0.5f)
+                        .coerceIn(0.5f, 2.0f)
 
                 SubtitleStyle(
                     textScale = normalizedScale,
@@ -59,7 +59,7 @@ class DefaultSubtitleStyleManager(
                     backgroundColor = bg,
                     foregroundOpacity = (fgOpacityPct / 100f).coerceIn(0.5f, 1.0f),
                     backgroundOpacity = (bgOpacityPct / 100f).coerceIn(0.0f, 1.0f),
-                    edgeStyle = EdgeStyle.OUTLINE,  // Always OUTLINE per contract
+                    edgeStyle = EdgeStyle.OUTLINE, // Always OUTLINE per contract
                 )
             }.collect { style ->
                 _currentStyle.value = style
@@ -74,8 +74,9 @@ class DefaultSubtitleStyleManager(
         }
 
         // Convert new scale (0.5-2.0) back to legacy fractional scale (0.04-0.12)
-        val legacyScale = ((style.textScale - 0.5f) / (2.0f - 0.5f) * (0.12f - 0.04f) + 0.04f)
-            .coerceIn(0.04f, 0.12f)
+        val legacyScale =
+            ((style.textScale - 0.5f) / (2.0f - 0.5f) * (0.12f - 0.04f) + 0.04f)
+                .coerceIn(0.04f, 0.12f)
 
         // Persist to DataStore
         settingsStore.setSubtitleStyle(

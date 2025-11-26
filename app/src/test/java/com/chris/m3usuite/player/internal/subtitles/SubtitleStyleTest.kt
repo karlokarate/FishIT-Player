@@ -1,8 +1,6 @@
 package com.chris.m3usuite.player.internal.subtitles
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -12,7 +10,6 @@ import org.junit.Test
  * Contract Reference: `INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md` Section 4
  */
 class SubtitleStyleTest {
-
     @Test
     fun `default values match contract`() {
         val style = SubtitleStyle()

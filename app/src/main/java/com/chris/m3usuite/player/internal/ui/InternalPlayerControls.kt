@@ -136,26 +136,22 @@ fun InternalPlayerContent(
         // Shows when state.showCcMenuDialog is true
         // Contract Section 8: CC/Subtitle UI for SIP Only
         if (state.showCcMenuDialog && !state.kidActive) {
-            // TODO: Extract available tracks from player
-            // For now, use empty list as placeholder until full integration
-            val availableTracks = emptyList<com.chris.m3usuite.player.internal.subtitles.SubtitleTrack>()
-
             CcMenuDialog(
                 currentStyle = state.subtitleStyle,
-                availableTracks = availableTracks,
+                availableTracks = state.availableSubtitleTracks,
                 selectedTrack = state.selectedSubtitleTrack,
                 onDismiss = controller.onToggleCcMenu,
                 onApplyStyle = { style ->
-                    // TODO: Wire to SubtitleStyleManager.updateStyle()
-                    // This will be implemented when we integrate with session
+                    // Wire to controller callback which delegates to SubtitleStyleManager.updateStyle()
+                    controller.onUpdateSubtitleStyle(style)
                 },
                 onApplyPreset = { preset ->
-                    // TODO: Wire to SubtitleStyleManager.applyPreset()
-                    // This will be implemented when we integrate with session
+                    // Wire to controller callback which delegates to SubtitleStyleManager.applyPreset()
+                    controller.onApplySubtitlePreset(preset)
                 },
                 onSelectTrack = { track ->
-                    // TODO: Wire to SubtitleSelectionPolicy.persistSelection()
-                    // This will be implemented when we integrate with session
+                    // Wire to controller callback which applies track selection to player
+                    controller.onSelectSubtitleTrack(track)
                 },
             )
         }
@@ -249,7 +245,7 @@ private fun MainControlsRow(
             // Visibility rules (Contract Section 8.1):
             // - Visible only for non-kid profiles
             // - Visible only if at least one subtitle track exists
-            if (!state.kidActive && state.selectedSubtitleTrack != null) {
+            if (!state.kidActive && state.availableSubtitleTracks.isNotEmpty()) {
                 IconButton(onClick = onCcClick) {
                     Icon(
                         imageVector = Icons.Filled.ClosedCaption,

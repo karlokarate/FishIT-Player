@@ -128,21 +128,23 @@ fun PlayerSurface(
                                 val bgColor = applyOpacity(subtitleStyle.backgroundColor, subtitleStyle.backgroundOpacity)
 
                                 // Map EdgeStyle to CaptionStyleCompat edge type
-                                val edgeType = when (subtitleStyle.edgeStyle) {
-                                    EdgeStyle.NONE -> CaptionStyleCompat.EDGE_TYPE_NONE
-                                    EdgeStyle.OUTLINE -> CaptionStyleCompat.EDGE_TYPE_OUTLINE
-                                    EdgeStyle.SHADOW -> CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW
-                                    EdgeStyle.GLOW -> CaptionStyleCompat.EDGE_TYPE_RAISED
-                                }
+                                val edgeType =
+                                    when (subtitleStyle.edgeStyle) {
+                                        EdgeStyle.NONE -> CaptionStyleCompat.EDGE_TYPE_NONE
+                                        EdgeStyle.OUTLINE -> CaptionStyleCompat.EDGE_TYPE_OUTLINE
+                                        EdgeStyle.SHADOW -> CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW
+                                        EdgeStyle.GLOW -> CaptionStyleCompat.EDGE_TYPE_RAISED
+                                    }
 
-                                val captionStyle = CaptionStyleCompat(
-                                    fgColor,
-                                    bgColor,
-                                    0x00000000, // windowColor transparent
-                                    edgeType,
-                                    0x00000000, // edgeColor
-                                    null, // typeface
-                                )
+                                val captionStyle =
+                                    CaptionStyleCompat(
+                                        fgColor,
+                                        bgColor,
+                                        0x00000000, // windowColor transparent
+                                        edgeType,
+                                        0x00000000, // edgeColor
+                                        null, // typeface
+                                    )
                                 setStyle(captionStyle)
                             }
                         }
@@ -161,21 +163,23 @@ fun PlayerSurface(
                             val fgColor = applyOpacity(subtitleStyle.foregroundColor, subtitleStyle.foregroundOpacity)
                             val bgColor = applyOpacity(subtitleStyle.backgroundColor, subtitleStyle.backgroundOpacity)
 
-                            val edgeType = when (subtitleStyle.edgeStyle) {
-                                EdgeStyle.NONE -> CaptionStyleCompat.EDGE_TYPE_NONE
-                                EdgeStyle.OUTLINE -> CaptionStyleCompat.EDGE_TYPE_OUTLINE
-                                EdgeStyle.SHADOW -> CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW
-                                EdgeStyle.GLOW -> CaptionStyleCompat.EDGE_TYPE_RAISED
-                            }
+                            val edgeType =
+                                when (subtitleStyle.edgeStyle) {
+                                    EdgeStyle.NONE -> CaptionStyleCompat.EDGE_TYPE_NONE
+                                    EdgeStyle.OUTLINE -> CaptionStyleCompat.EDGE_TYPE_OUTLINE
+                                    EdgeStyle.SHADOW -> CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW
+                                    EdgeStyle.GLOW -> CaptionStyleCompat.EDGE_TYPE_RAISED
+                                }
 
-                            val captionStyle = CaptionStyleCompat(
-                                fgColor,
-                                bgColor,
-                                0x00000000,
-                                edgeType,
-                                0x00000000,
-                                null,
-                            )
+                            val captionStyle =
+                                CaptionStyleCompat(
+                                    fgColor,
+                                    bgColor,
+                                    0x00000000,
+                                    edgeType,
+                                    0x00000000,
+                                    null,
+                                )
                             setStyle(captionStyle)
                         }
                     }
@@ -189,7 +193,10 @@ fun PlayerSurface(
  * Helper function to apply opacity to an ARGB color.
  * Converts opacity (0f..1f) to alpha channel (0..255).
  */
-private fun applyOpacity(argb: Int, opacity: Float): Int {
+private fun applyOpacity(
+    argb: Int,
+    opacity: Float,
+): Int {
     val alpha = (opacity.coerceIn(0f, 1f) * 255f).toInt().coerceIn(0, 255)
     val rgb = argb and 0x00FFFFFF
     return (alpha shl 24) or rgb

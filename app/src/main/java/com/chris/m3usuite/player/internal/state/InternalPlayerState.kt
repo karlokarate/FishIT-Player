@@ -3,6 +3,7 @@ package com.chris.m3usuite.player.internal.state
 import androidx.compose.runtime.Immutable
 import androidx.media3.common.PlaybackException
 import com.chris.m3usuite.player.internal.domain.PlaybackType
+import com.chris.m3usuite.player.internal.subtitles.SubtitlePreset
 import com.chris.m3usuite.player.internal.subtitles.SubtitleStyle
 import com.chris.m3usuite.player.internal.subtitles.SubtitleTrack
 
@@ -230,6 +231,20 @@ data class InternalPlayerUiState(
      * - Subtitle tracks may be available but are not persisted
      */
     val selectedSubtitleTrack: SubtitleTrack? = null,
+    /**
+     * List of available subtitle tracks from the current media.
+     *
+     * Phase 4 UI consumption:
+     * - Populate CC menu track selection buttons
+     * - Determine CC button visibility (visible when non-empty)
+     *
+     * **Kid Mode Behavior:**
+     * - Tracks are still detected but CC button is hidden
+     *
+     * **Updated by:**
+     * - Session's onTracksChanged listener extracts text tracks from Media3
+     */
+    val availableSubtitleTracks: List<SubtitleTrack> = emptyList(),
 ) {
     val isLive: Boolean
         get() = playbackType == PlaybackType.LIVE
@@ -284,4 +299,22 @@ data class InternalPlayerController(
      * @param track The track to select, or null to disable subtitles.
      */
     val onSelectSubtitleTrack: (SubtitleTrack?) -> Unit = {},
+    /**
+     * Updates the subtitle style (Phase 4).
+     *
+     * Called when user applies style changes from the CC menu.
+     * Persists via SubtitleStyleManager.
+     *
+     * @param style The new subtitle style to apply.
+     */
+    val onUpdateSubtitleStyle: (SubtitleStyle) -> Unit = {},
+    /**
+     * Applies a subtitle preset (Phase 4).
+     *
+     * Called when user selects a preset button in the CC menu.
+     * Converts preset to style and persists via SubtitleStyleManager.
+     *
+     * @param preset The preset to apply.
+     */
+    val onApplySubtitlePreset: (SubtitlePreset) -> Unit = {},
 )
