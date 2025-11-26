@@ -105,6 +105,28 @@ fun rememberInternalPlayerSession(
     val kidsGate = remember(context, settings) { DefaultKidsPlaybackGate(context, settings) }
 
     // ════════════════════════════════════════════════════════════════════════════
+    // Phase 4 Group 3: Subtitle Style & Track Selection
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // Create subtitle managers for style and track selection.
+    // - SubtitleStyleManager: Manages per-profile subtitle styling via DataStore
+    // - SubtitleSelectionPolicy: Selects subtitle tracks based on language preferences
+    val subtitleStyleManager =
+        remember(settings, scope) {
+            com.chris.m3usuite.player.internal.subtitles.DefaultSubtitleStyleManager(
+                settingsStore = settings,
+                scope = scope,
+            )
+        }
+
+    val subtitleSelectionPolicy =
+        remember(settings) {
+            com.chris.m3usuite.player.internal.subtitles.DefaultSubtitleSelectionPolicy(
+                settingsStore = settings,
+            )
+        }
+
+    // ════════════════════════════════════════════════════════════════════════════
     // Phase 3 Step 3.B: LivePlaybackController for LIVE sessions
     // ════════════════════════════════════════════════════════════════════════════
     //
@@ -427,6 +449,106 @@ fun rememberInternalPlayerSession(
                         }
                     }
                 }
+
+                override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                    // ════════════════════════════════════════════════════════════════
+                    // SUBTITLE TRACK SELECTION - Phase 4 Group 3
+                    // ════════════════════════════════════════════════════════════════
+                    //
+                    // Select initial subtitle track based on user preferences and kid mode.
+                    //
+                    // Defensive guards:
+                    // - Kid Mode: No subtitle track selected (returns null from policy)
+                    // - LIVE content: Subtitle tracks allowed but not persisted
+                    // - No tracks available: No-op
+                    // - Fail-open: On any exception, continue without subtitles
+                    try {
+                        val isKidMode = kidsState?.kidActive == true
+
+                        // Extract subtitle tracks from Media3 Tracks
+                        val availableSubtitleTracks = mutableListOf<com.chris.m3usuite.player.internal.subtitles.SubtitleTrack>()
+                        for (trackGroup in tracks.groups) {
+                            val group = trackGroup.mediaTrackGroup
+                            if (group.type == C.TRACK_TYPE_TEXT) {
+                                for (i in 0 until group.length) {
+                                    val format = group.getFormat(i)
+                                    availableSubtitleTracks.add(
+                                        com.chris.m3usuite.player.internal.subtitles.SubtitleTrack(
+                                            groupIndex = tracks.groups.indexOf(trackGroup),
+                                            trackIndex = i,
+                                            language = format.language,
+                                            label = format.label ?: format.language ?: "Unknown",
+                                            isDefault = (format.selectionFlags and C.SELECTION_FLAG_DEFAULT) != 0,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+
+                        if (availableSubtitleTracks.isNotEmpty()) {
+                            // Get system language and profile languages (TODO: actual profile language prefs)
+                            val systemLang = java.util.Locale.getDefault().language
+                            val preferredLanguages = listOf(systemLang)
+
+                            // Select initial track using policy
+                            val selectedTrack =
+                                subtitleSelectionPolicy.selectInitialTrack(
+                                    availableTracks = availableSubtitleTracks,
+                                    preferredLanguages = preferredLanguages,
+                                    playbackType = playbackContext.type,
+                                    isKidMode = isKidMode,
+                                )
+
+                            // Apply track selection to Media3
+                            if (selectedTrack != null && !isKidMode) {
+                                // Find the corresponding track group
+                                val trackGroupIndex = selectedTrack.groupIndex
+                                if (trackGroupIndex >= 0 && trackGroupIndex < tracks.groups.size) {
+                                    val trackGroup = tracks.groups[trackGroupIndex]
+                                    val mediaTrackGroup = trackGroup.mediaTrackGroup
+
+                                    // Create TrackSelectionOverride for the selected track
+                                    val override =
+                                        androidx.media3.common.TrackSelectionOverride(
+                                            mediaTrackGroup,
+                                            listOf(selectedTrack.trackIndex),
+                                        )
+
+                                    // Apply the override to the player
+                                    newPlayer.trackSelectionParameters =
+                                        newPlayer.trackSelectionParameters
+                                            .buildUpon()
+                                            .setOverrideForType(override)
+                                            .build()
+                                }
+
+                                // Update UiState with selected track
+                                val updated =
+                                    playerState.value.copy(
+                                        selectedSubtitleTrack = selectedTrack,
+                                    )
+                                playerState.value = updated
+                                onStateChanged(updated)
+                            } else {
+                                // No track selected or Kid Mode: clear subtitle track
+                                newPlayer.trackSelectionParameters =
+                                    newPlayer.trackSelectionParameters
+                                        .buildUpon()
+                                        .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                                        .build()
+
+                                val updated =
+                                    playerState.value.copy(
+                                        selectedSubtitleTrack = null,
+                                    )
+                                playerState.value = updated
+                                onStateChanged(updated)
+                            }
+                        }
+                    } catch (_: Throwable) {
+                        // Fail-open: Continue without subtitles on error
+                    }
+                }
             },
         )
 
@@ -600,6 +722,35 @@ fun rememberInternalPlayerSession(
                     playerState.value = updated
                     onStateChanged(updated)
                 }
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════════════
+        // Phase 4 Group 3: SubtitleStyleManager StateFlow → UiState mapping
+        // ════════════════════════════════════════════════════════════════════════════
+        //
+        // Collect SubtitleStyleManager.currentStyle and map it into InternalPlayerUiState.
+        // This is a one-way mapping (manager → UiState). The session does not push UI
+        // state back into the manager.
+        //
+        // Kid Mode Behavior:
+        // - Style is collected and stored in UiState normally
+        // - BUT subtitle rendering is disabled by not selecting any subtitle track
+        // - This allows settings/preview to still show styles for kid profiles
+        scope.launch {
+            subtitleStyleManager.currentStyle.collect { style ->
+                if (playerHolder.value !== newPlayer) return@collect
+
+                val updated =
+                    playerState.value.copy(
+                        subtitleStyle = style,
+                    )
+                playerState.value = updated
+                onStateChanged(updated)
+
+                // Apply style to Media3 subtitleView (if available)
+                // Note: PlayerView setup happens in InternalPlayerContent composable
+                // This will be applied when the PlayerView is created
             }
         }
     }

@@ -48,11 +48,13 @@ fun InternalPlayerContent(
             Modifier
                 .fillMaxSize(),
     ) {
-        // Phase 3 Step 3.D: PlayerSurface with gesture handling
+        // Phase 3 Step 3.D + Phase 4 Group 3: PlayerSurface with gesture handling and subtitle styling
         PlayerSurface(
             player = player,
             aspectRatioMode = state.aspectRatioMode,
             playbackType = state.playbackType,
+            subtitleStyle = state.subtitleStyle,
+            isKidMode = state.kidActive,
             onTap = {
                 // Future: toggle controls visibility
                 // For now, no-op (controls are always shown in SIP reference)
