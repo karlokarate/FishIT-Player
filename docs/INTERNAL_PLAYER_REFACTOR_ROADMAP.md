@@ -129,12 +129,22 @@ All player call sites now use typed PlaybackContext and route through InternalPl
     - ✅ `fun selectChannel(channelId: Long)`
     - ✅ `fun onPlaybackPositionChanged(positionMs: Long)`
     - ✅ Expose `StateFlow<LiveChannel?>` and `StateFlow<EpgOverlayState>`
+    - ✅ Expose `StateFlow<LiveMetrics>` for shadow diagnostics
   - ✅ Create `LiveChannel` data class
   - ✅ Create `EpgOverlayState` data class
+  - ✅ Create `LiveMetrics` data class
   - ✅ Create `DefaultLivePlaybackController` stub implementation
   - ✅ Create repository interfaces (`LiveChannelRepository`, `LiveEpgRepository`)
   - ✅ Create `TimeProvider` abstraction for testable time operations
   - ✅ Create `LivePlaybackControllerTest` with test skeleton
+
+- ✅ **Phase 3 Task 1: Live-TV Robustness & Data Integrity** ✅ **COMPLETE**
+  - ✅ EPG stale detection with configurable threshold (default: 3 minutes)
+  - ✅ EPG fallback and caching for error recovery
+  - ✅ Smart channel zapping (filter null/empty URLs, remove duplicates)
+  - ✅ Controller sanity guards (never crash on empty/invalid lists)
+  - ✅ Live metrics exposure for shadow diagnostics
+  - ✅ Comprehensive test suite (32 new tests in LiveControllerRobustnessTest)
 
 - ⬜ Migrate legacy Live-TV logic
   - ⬜ Extract live lists (`libraryLive`, favorites) from legacy screen into controller
