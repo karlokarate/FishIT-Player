@@ -1251,3 +1251,94 @@ internal/live/
     ├── LiveChannel.kt (data model)
     └── EpgOverlayState.kt (data model)
 ```
+
+---
+
+## Phase 3 – Step 3.A: InternalPlayerUiState Live-TV Fields Added
+
+**Date:** 2025-11-26
+
+This step extends `InternalPlayerUiState` with basic Live-TV fields required by the SIP UI, without wiring them to any behavior yet.
+
+### What Was Done
+
+**Extended InternalPlayerUiState with Live-TV fields:**
+
+Added four new fields to support Live-TV playback in the SIP UI:
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `liveChannelName` | String? | Name of the current live channel |
+| `liveNowTitle` | String? | Current program title (now playing) |
+| `liveNextTitle` | String? | Next program title (upcoming) |
+| `epgOverlayVisible` | Boolean | Whether the EPG overlay is visible |
+
+**Field Documentation:**
+- All fields have comprehensive KDoc documenting their future Phase 3 UI consumption
+- Fields are properly annotated as "Phase 3 Step 3.A fields"
+- All fields are nullable (except `epgOverlayVisible` which defaults to `false`)
+- Fields follow the existing pattern in `InternalPlayerUiState` for optional features
+
+**Created Comprehensive Test Coverage:**
+
+New test file: `InternalPlayerUiStatePhase3LiveTest.kt`
+
+Test coverage includes:
+- Default values validation (all null/false by default)
+- Field setting and retrieval
+- Data class copy operations
+- Field independence tests
+- Integration with existing fields (isLive property)
+- Edge cases (empty strings, long strings, special characters)
+
+### Files Modified
+
+**Modified Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt` - Added Live-TV fields
+
+**New Files:**
+- `app/src/test/java/com/chris/m3usuite/player/internal/state/InternalPlayerUiStatePhase3LiveTest.kt` - Test coverage
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ New fields are pure data extensions (no behavior)
+- ✅ No state mapping performed
+- ✅ No UI changes performed
+- ✅ No dependencies on other modules
+- ✅ All fields properly documented and tested
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:assembleDebug` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*.InternalPlayerUiStatePhase3LiveTest"` passes all 21 tests
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*.InternalPlayerSessionPhase2Test"` passes (no regressions)
+
+### Phase 3 Status
+
+Phase 3 - Step 3.A is **COMPLETE** ✅
+
+Completed Phase 3 steps:
+- [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
+- [x] Step 2: Legacy↔Shadow parity comparison pipeline
+- [x] Step 3: Controls shadow mode activated
+- [x] Step 4: Spec-driven diagnostics integration
+- [x] LivePlaybackController structural foundation (PR #307)
+- [x] **Step 3.A: UiState Live fields added** ✅ **NEW**
+
+Remaining Phase 3 work:
+- [ ] Step 3.B: Wire LivePlaybackController to populate Live-TV fields
+- [ ] Step 3.C: Integrate EPG overlay state management
+- [ ] Implement shadow session internals
+- [ ] Wire shadow session to observe real playback inputs
+- [ ] Add diagnostics logging for shadow state
+- [ ] Create verification workflow to compare modular vs legacy behavior
+- [ ] Add developer toggle for shadow mode activation
+
+### Next Steps (Phase 3 – Step 3.B)
+
+The following work remains for Step 3.B:
+- [ ] Wire `LivePlaybackController.currentChannel` to populate `liveChannelName`
+- [ ] Wire `LivePlaybackController.epgOverlay` to populate `liveNowTitle`, `liveNextTitle`, `epgOverlayVisible`
+- [ ] Add state mapping logic in InternalPlayerSession
+- [ ] Add tests for state mapping
