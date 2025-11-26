@@ -26,8 +26,8 @@ class DefaultLiveChannelRepository(
      * Retrieves live channels filtered by category and/or provider.
      *
      * **Implementation notes:**
-     * - Uses [ObxStore.live] to access the live channels box
-     * - Filters by [ObxLive.categoryName] when [categoryHint] is provided
+     * - Uses [ObxStore.get] to access the live channels box
+     * - Filters by [ObxLive.categoryId] when [categoryHint] is provided
      * - Currently does not filter by provider (providerHint is accepted but not used)
      * - Maps [ObxLive] entities to [LiveChannel] domain models
      *
@@ -36,7 +36,7 @@ class DefaultLiveChannelRepository(
      * - [LiveChannel.id] is Long for forward compatibility
      * - Conversion: `streamId.toLong()`
      *
-     * @param categoryHint Optional category filter (matched against ObxLive.categoryName).
+     * @param categoryHint Optional category filter (matched against ObxLive.categoryId).
      * @param providerHint Optional provider filter (currently not implemented).
      * @return List of live channels matching the criteria.
      */
