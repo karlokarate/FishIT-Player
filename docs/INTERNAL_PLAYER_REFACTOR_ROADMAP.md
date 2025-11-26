@@ -400,33 +400,147 @@ The **legacy InternalPlayerScreen remains the active runtime implementation**. T
 
 **Goal:** Encapsulate PlayerView, aspect ratio behaviour, trickplay (fast-forward/rewind with preview), and auto-hide logic in a dedicated composable and state.
 
-### Checklist
+**Status:** ⬜ **KICKOFF COMPLETE** (2025-11-26) – Checklist created, implementation not started
 
-- ⬜ PlayerSurface composable
-  - ⬜ Implement `PlayerSurface(...)` in `InternalPlayerControls` that:
-    - ⬜ Hosts the `AndroidView(PlayerView)`
-    - ⬜ Configures `resizeMode` based on `state.aspectRatioMode`
-    - ⬜ Connects subtitle style (from `InternalPlayerUiState`) to `subtitleView`
-    - ⬜ Handles gestures:
-      - ⬜ Tap: toggles control visibility
-      - ⬜ Horizontal swipe: seek/trickplay or Live-channel swap
-      - ⬜ Vertical swipe: open live list/quick actions
+**Full Specification:** See [INTERNAL_PLAYER_PHASE5_CHECKLIST.md](INTERNAL_PLAYER_PHASE5_CHECKLIST.md) and [INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md](INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md)
 
-- ⬜ Trickplay (FF/RW) and seek preview
-  - ⬜ Extend `InternalPlayerUiState` with:
-    - ⬜ `trickplayActive`, `trickplaySpeed`
-    - ⬜ `seekPreviewVisible`, `seekPreviewTargetMs`
-  - ⬜ Implement helpers in `InternalPlayerControls`:
-    - ⬜ `startTrickplay(direction)`
-    - ⬜ `stopTrickplay(resume: Boolean)`
-    - ⬜ `showSeekPreview(...)`
-  - ⬜ Port existing legacy trickplay behaviour (speeds, preview overlay, DPAD integration)
+**Key Principles:**
+- SIP-Only: No modifications to legacy `InternalPlayerScreen.kt`
+- Contract-Driven: Behavior defined by Phase 5 contract
+- Black Bars Must Be Black: All non-video areas must be pure black
+- Modern Trickplay: Responsive FF/RW with visual feedback
+- Non-Annoying Auto-Hide: Appropriate timeouts for TV vs phone
 
-- ⬜ Auto-hide controls
-  - ⬜ Add `controlsVisible` and `controlsTick` to state (or internal state in controls module)
-  - ⬜ Use `LaunchedEffect(controlsVisible, controlsTick, isTv)` to auto-hide:
-    - ⬜ Different timeouts for TV vs phone
-    - ⬜ No auto-hide while any menus/overlays are open (CC, tracks, settings, live EPG)
+### Task Group 1: PlayerSurface Foundation & Black Bars ⬜
+
+- ⬜ Task 1.1: PlayerView Background Configuration
+  - ⬜ Set `setShutterBackgroundColor(Color.BLACK)` in PlayerView factory
+  - ⬜ Set `setBackgroundColor(Color.BLACK)` in PlayerView factory
+  - ⬜ Legacy Reference: No explicit black background in legacy (bug fix)
+  
+- ⬜ Task 1.2: Compose Container Background
+  - ⬜ Add `.background(Color.Black)` to PlayerSurface Box container
+  - ⬜ Ensure background persists during aspect ratio changes
+
+- ⬜ Task 1.3: XML Layout Black Background
+  - ⬜ Add `android:background="@android:color/black"` to compose_player_view.xml
+
+### Task Group 2: Aspect Ratio Modes & Switching ⬜
+
+- ⬜ Task 2.1: AspectRatioMode Enum Cleanup
+  - ⬜ Verify FIT/FILL/ZOOM align with contract definitions
+  - ⬜ Consider STRETCH deprecation or rename
+  
+- ⬜ Task 2.2: Aspect Ratio Cycling Logic
+  - ⬜ Add `AspectRatioMode.next()` helper function
+  - ⬜ Cycle: FIT → FILL → ZOOM → FIT
+  - ⬜ Legacy Reference: L1374-1379
+
+- ⬜ Task 2.3: Aspect Ratio Controller Integration
+  - ⬜ Wire `onCycleAspectRatio` to state updates
+  - ⬜ Ensure black background maintained during switch
+
+### Task Group 3: Trickplay Behavior & UI Hooks ⬜
+
+- ⬜ Task 3.1: Trickplay State Model
+  - ⬜ Add `trickplayActive: Boolean` to InternalPlayerUiState
+  - ⬜ Add `trickplaySpeed: Float` to InternalPlayerUiState
+  - ⬜ Legacy Reference: L1467-1470 (trickplaySpeeds, ffStage, rwStage)
+
+- ⬜ Task 3.2: Trickplay Controller Methods
+  - ⬜ Add `onStartTrickplay(direction: Int)` callback
+  - ⬜ Add `onStopTrickplay(resume: Boolean)` callback
+  - ⬜ Add `onCycleTrickplaySpeed()` callback
+
+- ⬜ Task 3.3: Trickplay Session Logic
+  - ⬜ Implement speed cycling: 2x → 3x → 5x → normal
+  - ⬜ Apply via `exoPlayer.setPlaybackParameters(PlaybackParameters(speed))`
+  - ⬜ Update UI state on trickplay changes
+  - ⬜ Legacy Reference: L1473-1487 (stopTrickplay())
+
+- ⬜ Task 3.4: Seek Preview Logic
+  - ⬜ Add `seekPreviewVisible: Boolean` to InternalPlayerUiState
+  - ⬜ Add `seekPreviewTargetMs: Long?` to InternalPlayerUiState
+  - ⬜ Implement `showSeekPreview(base, target, autoHide)` in session
+  - ⬜ Auto-hide after 900ms (match legacy)
+  - ⬜ Legacy Reference: L1489-1507
+
+- ⬜ Task 3.5: Trickplay UI in InternalPlayerControls
+  - ⬜ Add trickplay speed indicator overlay (e.g., "2x ►►")
+  - ⬜ Add seek preview overlay showing target position
+  - ⬜ Use AnimatedVisibility for smooth transitions
+
+- ⬜ Task 3.6: Trickplay Gesture Handling
+  - ⬜ VOD/SERIES: Horizontal swipe triggers seek/trickplay
+  - ⬜ Optional: Double-tap sides for ±10s seek
+  - ⬜ Ensure no conflict with LIVE channel zapping
+
+### Task Group 4: Controls Auto-Hide (TV vs Touch) ⬜
+
+- ⬜ Task 4.1: Auto-Hide State Model
+  - ⬜ Add `controlsVisible: Boolean` to InternalPlayerUiState
+  - ⬜ Add `controlsTick: Int` to InternalPlayerUiState
+  - ⬜ Legacy Reference: L1347-1348
+
+- ⬜ Task 4.2: Auto-Hide Timer Logic
+  - ⬜ TV timeout: 5-7 seconds (contract)
+  - ⬜ Phone/tablet timeout: 3-5 seconds (contract)
+  - ⬜ Block auto-hide when modal overlays open
+  - ⬜ Legacy Reference: L1438-1451 (TV 10s, phone 5s)
+
+- ⬜ Task 4.3: Activity Detection
+  - ⬜ DPAD navigation resets timer
+  - ⬜ Touch tap/swipe resets timer
+  - ⬜ Trickplay adjustments reset timer
+  - ⬜ Menu interactions reset timer
+
+- ⬜ Task 4.4: Never-Hide Conditions
+  - ⬜ Never hide with CC menu open
+  - ⬜ Never hide with settings open
+  - ⬜ Never hide with kid block overlay
+  - ⬜ Never hide during active trickplay adjustment
+
+- ⬜ Task 4.5: Tap-to-Toggle Controls
+  - ⬜ Wire PlayerSurface `onTap` to toggle visibility
+  - ⬜ Increment `controlsTick` when showing controls
+  - ⬜ Legacy Reference: L1836-1837
+
+### Task Group 5: Tests & Validation ⬜
+
+- ⬜ Task 5.1: PlayerSurface Black-Bar Tests
+  - ⬜ PlayerView background is black
+  - ⬜ Compose container background is black
+  - ⬜ Black bars visible for narrow/wide videos
+
+- ⬜ Task 5.2: Aspect Ratio Tests
+  - ⬜ FIT/FILL/ZOOM modes work correctly
+  - ⬜ Mode switching preserves black background
+
+- ⬜ Task 5.3: Trickplay Tests
+  - ⬜ Enter/exit trickplay correctly
+  - ⬜ Speed cycling works
+  - ⬜ Position correct after exit
+
+- ⬜ Task 5.4: Auto-Hide Tests
+  - ⬜ Correct timeouts (TV vs phone)
+  - ⬜ Activity resets timer
+  - ⬜ Never hide with overlays open
+
+- ⬜ Task 5.5: Kid Mode Interaction Tests
+  - ⬜ Background stays black
+  - ⬜ No aspect ratio changes
+
+### Files Overview
+
+**Files to Modify:**
+- `internal/ui/PlayerSurface.kt` – Black bars, trickplay gestures, tap-to-toggle
+- `internal/state/InternalPlayerState.kt` – Trickplay fields, controls visibility
+- `internal/session/InternalPlayerSession.kt` – Trickplay logic, seek preview
+- `internal/ui/InternalPlayerControls.kt` – Auto-hide, trickplay UI
+- `res/layout/compose_player_view.xml` – Black background
+
+**Files NOT Modified:**
+- ❌ `player/InternalPlayerScreen.kt` – Untouched (legacy active runtime)
 
 ---
 
