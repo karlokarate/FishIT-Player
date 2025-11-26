@@ -150,8 +150,9 @@ class DefaultLivePlaybackController(
     /**
      * Timestamp of last channel jump for throttle protection (Phase 3 Task 2).
      * Used to prevent rapid channel storms from swipe gestures.
+     * Initialized to Long.MIN_VALUE to allow first jump immediately.
      */
-    private var lastJumpTimestamp: Long = 0L
+    private var lastJumpTimestamp: Long = Long.MIN_VALUE
 
     /**
      * Minimum time between channel jumps in milliseconds (Phase 3 Task 2).
