@@ -173,16 +173,12 @@ class InternalPlayerContentPhase3LiveUiTest {
             shouldRenderChannelHeader,
         )
 
-        // EPG overlay check uses only epgOverlayVisible, but in practice
-        // the session layer should never set it for non-LIVE
-        // This test documents the defensive behavior
-        assertTrue(
-            "epgOverlayVisible flag is set (unexpected for VOD)",
-            state.epgOverlayVisible,
+        // EPG overlay should also NOT render for non-LIVE (defensive check added)
+        val shouldRenderEpgOverlay = state.isLive && state.epgOverlayVisible
+        assertFalse(
+            "EPG overlay should NOT render for VOD even with flag set",
+            shouldRenderEpgOverlay,
         )
-        // However, in a proper implementation, we could add additional check:
-        // val shouldRenderEpg = state.epgOverlayVisible && state.isLive
-        // For now, we document that VOD should never have epgOverlayVisible=true
     }
 
     @Test
@@ -203,6 +199,12 @@ class InternalPlayerContentPhase3LiveUiTest {
         assertFalse(
             "Channel header should NOT render for SERIES playback",
             shouldRenderChannelHeader,
+        )
+
+        val shouldRenderEpgOverlay = state.isLive && state.epgOverlayVisible
+        assertFalse(
+            "EPG overlay should NOT render for SERIES even with flag set",
+            shouldRenderEpgOverlay,
         )
     }
 

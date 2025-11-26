@@ -60,7 +60,7 @@ fun InternalPlayerContent(
         }
 
         // Phase 3 Step 3.C: EPG overlay (LIVE only, when visible)
-        if (state.epgOverlayVisible) {
+        if (state.isLive && state.epgOverlayVisible) {
             LiveEpgOverlay(
                 nowTitle = state.liveNowTitle,
                 nextTitle = state.liveNextTitle,

@@ -1505,11 +1505,12 @@ Added conditional rendering for Live-TV UI elements:
 - Simple, minimal design consistent with existing UI
 
 **EPG Overlay:**
-- Rendered when: `state.epgOverlayVisible == true`
+- Rendered when: `state.isLive && state.epgOverlayVisible == true`
 - Positioned at bottom-left of player (does not interfere with controls)
 - Shows "Now" and "Next" program titles when available
 - Displays "No EPG data available" when both titles are null
 - Uses `ElevatedCard` with structured layout
+- **Defensive:** Requires both LIVE playback type AND visibility flag to prevent accidental display on VOD/SERIES
 
 **Behavior Constraints Verified:**
 - ✅ No new state introduced (uses only existing `InternalPlayerUiState` fields)
