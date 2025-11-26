@@ -151,7 +151,7 @@ All player call sites now use typed PlaybackContext and route through InternalPl
   - ✅ EPG overlay hides immediately on channel change (hideAtRealtimeMs = now)
   - ✅ LiveEpgInfoState StateFlow populated when EPG overlay updates
   - ✅ AnimatedVisibility uses epgOverlay.visible directly (~200ms fade animations)
-  - ✅ Comprehensive test suite (15 + 19 new tests, all existing tests pass)
+  - ✅ Comprehensive test suite (12 controller + 15 UI tests, all existing tests pass)
 
 - ⬜ Migrate legacy Live-TV logic
   - ⬜ Extract live lists (`libraryLive`, favorites) from legacy screen into controller
