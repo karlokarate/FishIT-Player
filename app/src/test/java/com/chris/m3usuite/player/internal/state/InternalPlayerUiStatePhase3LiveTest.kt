@@ -34,49 +34,54 @@ class InternalPlayerUiStatePhase3LiveTest {
 
     @Test
     fun `can set liveChannelName`() {
-        val state = InternalPlayerUiState(
-            liveChannelName = "BBC One"
-        )
+        val state =
+            InternalPlayerUiState(
+                liveChannelName = "BBC One",
+            )
 
         assertEquals("BBC One", state.liveChannelName)
     }
 
     @Test
     fun `can set liveNowTitle`() {
-        val state = InternalPlayerUiState(
-            liveNowTitle = "Evening News"
-        )
+        val state =
+            InternalPlayerUiState(
+                liveNowTitle = "Evening News",
+            )
 
         assertEquals("Evening News", state.liveNowTitle)
     }
 
     @Test
     fun `can set liveNextTitle`() {
-        val state = InternalPlayerUiState(
-            liveNextTitle = "Primetime Drama"
-        )
+        val state =
+            InternalPlayerUiState(
+                liveNextTitle = "Primetime Drama",
+            )
 
         assertEquals("Primetime Drama", state.liveNextTitle)
     }
 
     @Test
     fun `can set epgOverlayVisible`() {
-        val state = InternalPlayerUiState(
-            epgOverlayVisible = true
-        )
+        val state =
+            InternalPlayerUiState(
+                epgOverlayVisible = true,
+            )
 
         assertTrue(state.epgOverlayVisible)
     }
 
     @Test
     fun `can set all Live-TV fields together`() {
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.LIVE,
-            liveChannelName = "CNN",
-            liveNowTitle = "Breaking News",
-            liveNextTitle = "World Today",
-            epgOverlayVisible = true
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.LIVE,
+                liveChannelName = "CNN",
+                liveNowTitle = "Breaking News",
+                liveNextTitle = "World Today",
+                epgOverlayVisible = true,
+            )
 
         assertEquals(PlaybackType.LIVE, state.playbackType)
         assertEquals("CNN", state.liveChannelName)
@@ -91,12 +96,13 @@ class InternalPlayerUiStatePhase3LiveTest {
 
     @Test
     fun `copy preserves Live-TV fields`() {
-        val original = InternalPlayerUiState(
-            liveChannelName = "ESPN",
-            liveNowTitle = "Live Sports",
-            liveNextTitle = "Sports Center",
-            epgOverlayVisible = true
-        )
+        val original =
+            InternalPlayerUiState(
+                liveChannelName = "ESPN",
+                liveNowTitle = "Live Sports",
+                liveNextTitle = "Sports Center",
+                epgOverlayVisible = true,
+            )
 
         val copy = original.copy()
 
@@ -156,12 +162,13 @@ class InternalPlayerUiStatePhase3LiveTest {
 
     @Test
     fun `epgOverlayVisible is independent of other Live-TV fields`() {
-        val state = InternalPlayerUiState(
-            epgOverlayVisible = true,
-            liveChannelName = null,
-            liveNowTitle = null,
-            liveNextTitle = null
-        )
+        val state =
+            InternalPlayerUiState(
+                epgOverlayVisible = true,
+                liveChannelName = null,
+                liveNowTitle = null,
+                liveNextTitle = null,
+            )
 
         assertTrue(state.epgOverlayVisible)
         assertNull(state.liveChannelName)
@@ -175,14 +182,16 @@ class InternalPlayerUiStatePhase3LiveTest {
 
     @Test
     fun `Live-TV fields do not affect isLive property`() {
-        val vodState = InternalPlayerUiState(
-            playbackType = PlaybackType.VOD,
-            liveChannelName = "Test Channel"
-        )
-        val liveState = InternalPlayerUiState(
-            playbackType = PlaybackType.LIVE,
-            liveChannelName = null
-        )
+        val vodState =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.VOD,
+                liveChannelName = "Test Channel",
+            )
+        val liveState =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.LIVE,
+                liveChannelName = null,
+            )
 
         assertFalse(vodState.isLive)
         assertTrue(liveState.isLive)
@@ -190,13 +199,14 @@ class InternalPlayerUiStatePhase3LiveTest {
 
     @Test
     fun `Live-TV fields work with LIVE playbackType`() {
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.LIVE,
-            liveChannelName = "National Geographic",
-            liveNowTitle = "Wildlife Documentary",
-            liveNextTitle = "Ocean Explorers",
-            epgOverlayVisible = true
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.LIVE,
+                liveChannelName = "National Geographic",
+                liveNowTitle = "Wildlife Documentary",
+                liveNextTitle = "Ocean Explorers",
+                epgOverlayVisible = true,
+            )
 
         assertTrue("isLive should be true", state.isLive)
         assertEquals("National Geographic", state.liveChannelName)
@@ -227,11 +237,12 @@ class InternalPlayerUiStatePhase3LiveTest {
 
     @Test
     fun `empty strings are valid for Live-TV title fields`() {
-        val state = InternalPlayerUiState(
-            liveChannelName = "",
-            liveNowTitle = "",
-            liveNextTitle = ""
-        )
+        val state =
+            InternalPlayerUiState(
+                liveChannelName = "",
+                liveNowTitle = "",
+                liveNextTitle = "",
+            )
 
         assertEquals("", state.liveChannelName)
         assertEquals("", state.liveNowTitle)
@@ -244,11 +255,12 @@ class InternalPlayerUiStatePhase3LiveTest {
         val longNowTitle = "B".repeat(1000)
         val longNextTitle = "C".repeat(1000)
 
-        val state = InternalPlayerUiState(
-            liveChannelName = longChannelName,
-            liveNowTitle = longNowTitle,
-            liveNextTitle = longNextTitle
-        )
+        val state =
+            InternalPlayerUiState(
+                liveChannelName = longChannelName,
+                liveNowTitle = longNowTitle,
+                liveNextTitle = longNextTitle,
+            )
 
         assertEquals(1000, state.liveChannelName?.length)
         assertEquals(1000, state.liveNowTitle?.length)
@@ -257,11 +269,12 @@ class InternalPlayerUiStatePhase3LiveTest {
 
     @Test
     fun `special characters are valid in Live-TV title fields`() {
-        val state = InternalPlayerUiState(
-            liveChannelName = "Test & Co. (HD) #1",
-            liveNowTitle = "Show: \"The Best\" - Episode 5",
-            liveNextTitle = "News @ 9:00 PM"
-        )
+        val state =
+            InternalPlayerUiState(
+                liveChannelName = "Test & Co. (HD) #1",
+                liveNowTitle = "Show: \"The Best\" - Episode 5",
+                liveNextTitle = "News @ 9:00 PM",
+            )
 
         assertEquals("Test & Co. (HD) #1", state.liveChannelName)
         assertEquals("Show: \"The Best\" - Episode 5", state.liveNowTitle)

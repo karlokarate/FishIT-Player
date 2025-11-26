@@ -144,11 +144,19 @@ All player call sites now use typed PlaybackContext and route through InternalPl
   - ⬜ Implement auto-hide of EPG overlay in controller or a dedicated timer helper
 
 - ⬜ Integrate with UI
-  - ⬜ Extend `InternalPlayerUiState` with:
-    - ⬜ `liveChannelName`
-    - ⬜ `liveNowTitle`
-    - ⬜ `liveNextTitle`
-    - ⬜ `epgOverlayVisible`
+  - ✅ Extend `InternalPlayerUiState` with:
+    - ✅ `liveChannelName` (Step 3.A)
+    - ✅ `liveNowTitle` (Step 3.A)
+    - ✅ `liveNextTitle` (Step 3.A)
+    - ✅ `epgOverlayVisible` (Step 3.A)
+  - ✅ Wire LivePlaybackController in SIP session (Step 3.B):
+    - ✅ Create `DefaultLiveChannelRepository` bridging to ObxLive
+    - ✅ Create `DefaultLiveEpgRepository` bridging to EpgRepository
+    - ✅ Instantiate controller for LIVE playback type
+    - ✅ Initialize controller from PlaybackContext
+    - ✅ Collect currentChannel StateFlow → map to liveChannelName
+    - ✅ Collect epgOverlay StateFlow → map to liveNowTitle, liveNextTitle, epgOverlayVisible
+    - ✅ Add comprehensive tests (InternalPlayerSessionPhase3LiveMappingTest)
   - ⬜ Update `InternalPlayerContent` to:
     - ⬜ Show EPG overlay when controller marks it visible
     - ⬜ Render live channel title and EPG snippet

@@ -1342,3 +1342,146 @@ The following work remains for Step 3.B:
 - [ ] Wire `LivePlaybackController.epgOverlay` to populate `liveNowTitle`, `liveNextTitle`, `epgOverlayVisible`
 - [ ] Add state mapping logic in InternalPlayerSession
 - [ ] Add tests for state mapping
+
+---
+
+## Phase 3 – Step 3.B: LivePlaybackController → UiState Mapping in SIP Session
+
+**Date:** 2025-11-26
+
+This step completes the wiring of LivePlaybackController StateFlows into InternalPlayerUiState for LIVE playback sessions, without touching the legacy UI or any composables.
+
+### What Was Done
+
+**1. Created Repository Implementations:**
+
+Created concrete implementations that bridge the LivePlaybackController to the existing data layer:
+
+- **DefaultLiveChannelRepository.kt**
+  - Wraps `ObxStore` to access `ObxLive` entities
+  - Converts `ObxLive` to domain `LiveChannel` models
+  - Supports category-based filtering (uses `categoryId` field)
+  - Handles ID mapping: `ObxLive.streamId` (Int) → `LiveChannel.id` (Long)
+
+- **DefaultLiveEpgRepository.kt**
+  - Wraps existing `EpgRepository` class
+  - Delegates to `EpgRepository.nowNext(streamId, limit)` method
+  - Extracts now/next titles from `XtShortEPGProgramme` list
+  - Returns `Pair<String?, String?>` for EPG titles
+
+**2. Wired LivePlaybackController in InternalPlayerSession:**
+
+Modified `rememberInternalPlayerSession` to:
+- Create `DefaultLivePlaybackController` when `playbackContext.type == PlaybackType.LIVE`
+- Initialize controller from `PlaybackContext` after player setup
+- Collect `currentChannel` StateFlow → map to `liveChannelName`
+- Collect `epgOverlay` StateFlow → map to `liveNowTitle`, `liveNextTitle`, `epgOverlayVisible`
+- Use existing session scope for flow collection (structured concurrency)
+- Cancel collection when session is disposed
+
+**State Mapping Logic:**
+```kotlin
+// Collect currentChannel StateFlow
+scope.launch {
+    liveController.currentChannel.collect { channel ->
+        val updated = playerState.value.copy(
+            liveChannelName = channel?.name,
+        )
+        playerState.value = updated
+        onStateChanged(updated)
+    }
+}
+
+// Collect epgOverlay StateFlow
+scope.launch {
+    liveController.epgOverlay.collect { overlay ->
+        val updated = playerState.value.copy(
+            liveNowTitle = overlay.nowTitle,
+            liveNextTitle = overlay.nextTitle,
+            epgOverlayVisible = overlay.visible,
+        )
+        playerState.value = updated
+        onStateChanged(updated)
+    }
+}
+```
+
+**3. Created Comprehensive Tests:**
+
+New test file: `InternalPlayerSessionPhase3LiveMappingTest.kt`
+
+Test coverage includes:
+- **LIVE playback with controller emitting channel data**
+  - currentChannel → liveChannelName mapping
+  - epgOverlay → nowTitle, nextTitle, epgOverlayVisible mapping
+  - Full controller state (combined channel + EPG)
+- **Null / default value handling**
+  - Null channel falls back gracefully
+  - Null EPG titles fall back gracefully
+  - EPG overlay not visible
+  - Default controller state (no crashes)
+- **Non-LIVE playback types**
+  - VOD playback has null Live-TV fields
+  - SERIES playback has null Live-TV fields
+- Uses `FakeLivePlaybackController` with controllable `MutableStateFlow`s
+- Tests data transformation (not coroutine/lifecycle behavior)
+
+### Files Added/Modified
+
+**New Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/live/DefaultLiveChannelRepository.kt`
+- `app/src/main/java/com/chris/m3usuite/player/internal/live/DefaultLiveEpgRepository.kt`
+- `app/src/test/java/com/chris/m3usuite/player/internal/session/InternalPlayerSessionPhase3LiveMappingTest.kt`
+
+**Modified Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/session/InternalPlayerSession.kt`
+  - Added LivePlaybackController creation for LIVE sessions
+  - Added controller initialization from PlaybackContext
+  - Added StateFlow collection and mapping to UiState
+  - Added imports for live module classes
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ SIP session with LivePlaybackController is non-runtime (Phase 3 reference implementation)
+- ✅ No functional changes to production player flow
+- ✅ LivePlaybackController is wired but not activated in runtime
+- ✅ LIVE resume exclusion remains unchanged (handled in ResumeManager)
+- ✅ Kids gate unchanged (no KidsPlaybackGate modifications)
+- ✅ Non-LIVE playback keeps defaults (null/false)
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*InternalPlayerSessionPhase3LiveMappingTest*"` passes all tests
+- ✅ No regressions in existing tests
+
+### Behavior Constraints Verified
+
+1. ✅ **LIVE remains excluded from ResumeManager** (already handled in Phase 2)
+2. ✅ **No BehaviorContractEnforcer calls** (controller is domain-only)
+3. ✅ **No KidsPlaybackGate modifications** (kids gate is separate concern)
+4. ✅ **Non-LIVE playback keeps defaults** (controller is null for VOD/SERIES)
+
+### Phase 3 Status
+
+Phase 3 - Step 3.B is **COMPLETE** ✅
+
+Completed Phase 3 steps:
+- [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
+- [x] Step 2: Legacy↔Shadow parity comparison pipeline
+- [x] Step 3: Controls shadow mode activated
+- [x] Step 4: Spec-driven diagnostics integration
+- [x] LivePlaybackController structural foundation (PR #307)
+- [x] Step 3.A: UiState Live fields added
+- [x] **Step 3.B: LivePlaybackController → UiState mapping (SIP)** ✅ **NEW**
+
+Remaining Phase 3 work:
+- [ ] Step 3.C: Integrate EPG overlay state management
+- [ ] Implement shadow session internals
+- [ ] Wire shadow session to observe real playback inputs
+- [ ] Add diagnostics logging for shadow state
+- [ ] Create verification workflow to compare modular vs legacy behavior
+- [ ] Add developer toggle for shadow mode activation
+
+---
