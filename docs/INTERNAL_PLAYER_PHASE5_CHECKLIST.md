@@ -154,7 +154,7 @@ Box(
 
 ---
 
-### Task 2.2: Aspect Ratio Cycling Logic ⬜
+### Task 2.2: Aspect Ratio Cycling Logic ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
 
@@ -175,9 +175,11 @@ fun AspectRatioMode.next(): AspectRatioMode = when (this) {
 - Cycling behavior is deterministic
 - All modes cycle correctly
 
+**Completed:** 2025-11-26 - Added `next()` function to AspectRatioMode enum with deterministic FIT → FILL → ZOOM → FIT cycling.
+
 ---
 
-### Task 2.3: Aspect Ratio Controller Integration ⬜
+### Task 2.3: Aspect Ratio Controller Integration ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
 - `app/src/main/java/com/chris/m3usuite/player/internal/session/InternalPlayerSession.kt`
@@ -193,6 +195,8 @@ fun AspectRatioMode.next(): AspectRatioMode = when (this) {
 - Controller callback updates state
 - PlayerSurface receives new mode
 - Black background maintained during switch
+
+**Completed:** 2025-11-26 - Verified `onCycleAspectRatio` callback already exists in InternalPlayerController. Black background enforcement is independent of aspect ratio mode.
 
 ---
 
@@ -496,7 +500,7 @@ LaunchedEffect(controlsVisible, controlsTick, isTv) {
 
 **Goal:** Comprehensive test coverage for all Phase 5 modules
 
-### Task 5.1: PlayerSurface Black-Bar Tests ⬜
+### Task 5.1: PlayerSurface Black-Bar Tests ✅ **DONE**
 **Files to Create:**
 - `app/src/test/java/com/chris/m3usuite/player/internal/ui/PlayerSurfacePhase5BlackBarTest.kt`
 
@@ -510,9 +514,11 @@ LaunchedEffect(controlsVisible, controlsTick, isTv) {
 
 **Contract Reference:** Section 10.1
 
+**Completed:** 2025-11-26 - Created PlayerSurfacePhase5BlackBarTest.kt with 14 tests covering black bar verification, aspect ratio mapping, and cycling behavior.
+
 ---
 
-### Task 5.2: Aspect Ratio Tests ⬜
+### Task 5.2: Aspect Ratio Tests ✅ **DONE**
 **Files to Create:**
 - `app/src/test/java/com/chris/m3usuite/player/internal/ui/PlayerSurfacePhase5AspectRatioTest.kt`
 
@@ -524,6 +530,8 @@ LaunchedEffect(controlsVisible, controlsTick, isTv) {
 - No white/gray visible during mode switch
 
 **Contract Reference:** Section 10.1
+
+**Completed:** 2025-11-26 - Tests included in PlayerSurfacePhase5BlackBarTest.kt (combined with black bar tests for efficiency).
 
 ---
 
