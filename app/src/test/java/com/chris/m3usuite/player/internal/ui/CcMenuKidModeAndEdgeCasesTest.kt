@@ -287,7 +287,7 @@ class CcMenuKidModeAndEdgeCasesTest {
 
     @Test
     fun `multiple subtitle tracks - state handles large lists`() {
-        val largeTractList = List(100) { index ->
+        val largeTrackList = List(100) { index ->
             SubtitleTrack(
                 groupIndex = 0,
                 trackIndex = index,
@@ -299,7 +299,7 @@ class CcMenuKidModeAndEdgeCasesTest {
 
         val state = InternalPlayerUiState(
             kidActive = false,
-            availableSubtitleTracks = largeTractList,
+            availableSubtitleTracks = largeTrackList,
         )
 
         // Should handle large track lists without issue
