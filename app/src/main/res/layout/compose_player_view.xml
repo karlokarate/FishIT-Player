@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Phase 5 Group 1: Black bars must be black
+    Contract Section 4.2: PlayerView background must be black
+    This ensures non-video areas appear black, not white, during loading and playback
+-->
 <androidx.media3.ui.PlayerView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -6,4 +11,5 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:keepScreenOn="true"
+    android:background="@android:color/black"
     app:surface_type="surface_view" />

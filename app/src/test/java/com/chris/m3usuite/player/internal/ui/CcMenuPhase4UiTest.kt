@@ -30,18 +30,20 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC button visible when not kid mode and has tracks`() {
-        val state = InternalPlayerUiState(
-            kidActive = false,
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(
-                    groupIndex = 0,
-                    trackIndex = 0,
-                    language = "en",
-                    label = "English",
-                    isDefault = true,
-                ),
-            ),
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = false,
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(
+                            groupIndex = 0,
+                            trackIndex = 0,
+                            language = "en",
+                            label = "English",
+                            isDefault = true,
+                        ),
+                    ),
+            )
 
         // CC button visibility condition: !kidActive && availableSubtitleTracks.isNotEmpty()
         val shouldShowCcButton = !state.kidActive && state.availableSubtitleTracks.isNotEmpty()
@@ -50,18 +52,20 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC button hidden when kid mode active`() {
-        val state = InternalPlayerUiState(
-            kidActive = true,
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(
-                    groupIndex = 0,
-                    trackIndex = 0,
-                    language = "en",
-                    label = "English",
-                    isDefault = true,
-                ),
-            ),
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = true,
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(
+                            groupIndex = 0,
+                            trackIndex = 0,
+                            language = "en",
+                            label = "English",
+                            isDefault = true,
+                        ),
+                    ),
+            )
 
         val shouldShowCcButton = !state.kidActive && state.availableSubtitleTracks.isNotEmpty()
         assertFalse("CC button should be hidden for kid profile", shouldShowCcButton)
@@ -69,10 +73,11 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC button hidden when no subtitle tracks available`() {
-        val state = InternalPlayerUiState(
-            kidActive = false,
-            availableSubtitleTracks = emptyList(),
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = false,
+                availableSubtitleTracks = emptyList(),
+            )
 
         val shouldShowCcButton = !state.kidActive && state.availableSubtitleTracks.isNotEmpty()
         assertFalse("CC button should be hidden when no tracks available", shouldShowCcButton)
@@ -80,10 +85,11 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC button hidden when kid mode and no tracks`() {
-        val state = InternalPlayerUiState(
-            kidActive = true,
-            availableSubtitleTracks = emptyList(),
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = true,
+                availableSubtitleTracks = emptyList(),
+            )
 
         val shouldShowCcButton = !state.kidActive && state.availableSubtitleTracks.isNotEmpty()
         assertFalse("CC button should be hidden for kid profile with no tracks", shouldShowCcButton)
@@ -95,10 +101,11 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC dialog visible when showCcMenuDialog true and not kid mode`() {
-        val state = InternalPlayerUiState(
-            showCcMenuDialog = true,
-            kidActive = false,
-        )
+        val state =
+            InternalPlayerUiState(
+                showCcMenuDialog = true,
+                kidActive = false,
+            )
 
         // CcMenuDialog render condition: showCcMenuDialog && !kidActive
         val shouldShowCcDialog = state.showCcMenuDialog && !state.kidActive
@@ -107,10 +114,11 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC dialog hidden when showCcMenuDialog true but kid mode active`() {
-        val state = InternalPlayerUiState(
-            showCcMenuDialog = true,
-            kidActive = true,
-        )
+        val state =
+            InternalPlayerUiState(
+                showCcMenuDialog = true,
+                kidActive = true,
+            )
 
         val shouldShowCcDialog = state.showCcMenuDialog && !state.kidActive
         assertFalse("CC dialog should be hidden for kid profile", shouldShowCcDialog)
@@ -118,10 +126,11 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC dialog hidden when showCcMenuDialog false`() {
-        val state = InternalPlayerUiState(
-            showCcMenuDialog = false,
-            kidActive = false,
-        )
+        val state =
+            InternalPlayerUiState(
+                showCcMenuDialog = false,
+                kidActive = false,
+            )
 
         val shouldShowCcDialog = state.showCcMenuDialog && !state.kidActive
         assertFalse("CC dialog should be hidden when not requested", shouldShowCcDialog)
@@ -133,17 +142,19 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC dialog should reflect current subtitle style on open`() {
-        val customStyle = SubtitleStyle(
-            textScale = 1.5f,
-            foregroundOpacity = 0.8f,
-            backgroundOpacity = 0.4f,
-        )
+        val customStyle =
+            SubtitleStyle(
+                textScale = 1.5f,
+                foregroundOpacity = 0.8f,
+                backgroundOpacity = 0.4f,
+            )
 
-        val state = InternalPlayerUiState(
-            showCcMenuDialog = true,
-            kidActive = false,
-            subtitleStyle = customStyle,
-        )
+        val state =
+            InternalPlayerUiState(
+                showCcMenuDialog = true,
+                kidActive = false,
+                subtitleStyle = customStyle,
+            )
 
         // Dialog should display current style values
         assertEquals("Dialog should show current text scale", 1.5f, state.subtitleStyle.textScale, 0.001f)
@@ -153,17 +164,19 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC dialog should display available tracks from state`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "en", "English", true),
-            SubtitleTrack(0, 1, "de", "German", false),
-            SubtitleTrack(1, 0, "fr", "French", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "en", "English", true),
+                SubtitleTrack(0, 1, "de", "German", false),
+                SubtitleTrack(1, 0, "fr", "French", false),
+            )
 
-        val state = InternalPlayerUiState(
-            showCcMenuDialog = true,
-            kidActive = false,
-            availableSubtitleTracks = tracks,
-        )
+        val state =
+            InternalPlayerUiState(
+                showCcMenuDialog = true,
+                kidActive = false,
+                availableSubtitleTracks = tracks,
+            )
 
         assertEquals("Dialog should display 3 available tracks", 3, state.availableSubtitleTracks.size)
         assertEquals("First track should be English", "English", state.availableSubtitleTracks[0].label)
@@ -172,18 +185,20 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC dialog should highlight selected track`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "en", "English", true),
-            SubtitleTrack(0, 1, "de", "German", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "en", "English", true),
+                SubtitleTrack(0, 1, "de", "German", false),
+            )
         val selectedTrack = tracks[1] // German selected
 
-        val state = InternalPlayerUiState(
-            showCcMenuDialog = true,
-            kidActive = false,
-            availableSubtitleTracks = tracks,
-            selectedSubtitleTrack = selectedTrack,
-        )
+        val state =
+            InternalPlayerUiState(
+                showCcMenuDialog = true,
+                kidActive = false,
+                availableSubtitleTracks = tracks,
+                selectedSubtitleTrack = selectedTrack,
+            )
 
         assertNotNull("Selected track should not be null", state.selectedSubtitleTrack)
         assertEquals("Selected track should be German", "German", state.selectedSubtitleTrack?.label)
@@ -191,16 +206,18 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC dialog should show no selection when track is null`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "en", "English", true),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "en", "English", true),
+            )
 
-        val state = InternalPlayerUiState(
-            showCcMenuDialog = true,
-            kidActive = false,
-            availableSubtitleTracks = tracks,
-            selectedSubtitleTrack = null, // Off
-        )
+        val state =
+            InternalPlayerUiState(
+                showCcMenuDialog = true,
+                kidActive = false,
+                availableSubtitleTracks = tracks,
+                selectedSubtitleTrack = null, // Off
+            )
 
         assertNull("Selected track should be null for Off", state.selectedSubtitleTrack)
     }
@@ -240,13 +257,15 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC button available for VOD playback with tracks`() {
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.VOD,
-            kidActive = false,
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(0, 0, "en", "English", true),
-            ),
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.VOD,
+                kidActive = false,
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(0, 0, "en", "English", true),
+                    ),
+            )
 
         val shouldShowCcButton = !state.kidActive && state.availableSubtitleTracks.isNotEmpty()
         assertTrue("CC button should be visible for VOD with tracks", shouldShowCcButton)
@@ -254,13 +273,15 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC button available for SERIES playback with tracks`() {
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.SERIES,
-            kidActive = false,
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(0, 0, "en", "English", true),
-            ),
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.SERIES,
+                kidActive = false,
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(0, 0, "en", "English", true),
+                    ),
+            )
 
         val shouldShowCcButton = !state.kidActive && state.availableSubtitleTracks.isNotEmpty()
         assertTrue("CC button should be visible for SERIES with tracks", shouldShowCcButton)
@@ -268,13 +289,15 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `CC button available for LIVE playback with tracks`() {
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.LIVE,
-            kidActive = false,
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(0, 0, "en", "English", true),
-            ),
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.LIVE,
+                kidActive = false,
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(0, 0, "en", "English", true),
+                    ),
+            )
 
         val shouldShowCcButton = !state.kidActive && state.availableSubtitleTracks.isNotEmpty()
         assertTrue("CC button should be visible for LIVE with tracks", shouldShowCcButton)
@@ -293,10 +316,11 @@ class CcMenuPhase4UiTest {
 
     @Test
     fun `state with tracks populates availableSubtitleTracks`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "en", "English", true),
-            SubtitleTrack(0, 1, "de", "Deutsch", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "en", "English", true),
+                SubtitleTrack(0, 1, "de", "Deutsch", false),
+            )
 
         val state = InternalPlayerUiState(availableSubtitleTracks = tracks)
 

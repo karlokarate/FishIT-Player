@@ -56,7 +56,7 @@ Phase 5 implements the PlayerSurface composable as the visual rendering foundati
 
 **Goal:** Ensure PlayerSurface always renders non-video areas as black
 
-### Task 1.1: PlayerView Background Configuration ⬜
+### Task 1.1: PlayerView Background Configuration ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/java/com/chris/m3usuite/player/internal/ui/PlayerSurface.kt`
 - `app/src/main/res/layout/compose_player_view.xml` (optional)
@@ -78,9 +78,11 @@ setBackgroundColor(android.graphics.Color.BLACK)
 - Shutter color is black
 - No white/gray visible during initial buffering
 
+**Completed:** 2025-11-26 - Added `setBackgroundColor(AndroidColor.BLACK)` and `setShutterBackgroundColor(AndroidColor.BLACK)` to PlayerView factory block in PlayerSurface.kt.
+
 ---
 
-### Task 1.2: Compose Container Background ⬜
+### Task 1.2: Compose Container Background ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/java/com/chris/m3usuite/player/internal/ui/PlayerSurface.kt`
 
@@ -101,9 +103,11 @@ Box(
 - Background persists during aspect ratio changes
 - Background visible during video loading
 
+**Completed:** 2025-11-26 - Added `.background(Color.Black)` to PlayerSurface Box modifier.
+
 ---
 
-### Task 1.3: XML Layout Black Background ⬜
+### Task 1.3: XML Layout Black Background ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/res/layout/compose_player_view.xml`
 
@@ -120,13 +124,15 @@ Box(
 - XML-inflated PlayerView has black background
 - Background survives orientation changes
 
+**Completed:** 2025-11-26 - Added `android:background="@android:color/black"` to compose_player_view.xml.
+
 ---
 
 ## Task Group 2: Aspect Ratio Modes & Switching
 
 **Goal:** Implement contract-compliant FIT/FILL/ZOOM modes with clean switching
 
-### Task 2.1: AspectRatioMode Enum Cleanup ⬜
+### Task 2.1: AspectRatioMode Enum Cleanup ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
 

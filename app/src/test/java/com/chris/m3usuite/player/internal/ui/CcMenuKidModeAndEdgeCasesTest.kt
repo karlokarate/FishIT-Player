@@ -27,14 +27,16 @@ class CcMenuKidModeAndEdgeCasesTest {
 
     @Test
     fun `Kid Mode - CC button hidden even with available tracks (VOD)`() {
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.VOD,
-            kidActive = true,
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(0, 0, "en", "English", false),
-                SubtitleTrack(0, 1, "de", "German", false),
-            ),
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.VOD,
+                kidActive = true,
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(0, 0, "en", "English", false),
+                        SubtitleTrack(0, 1, "de", "German", false),
+                    ),
+            )
 
         // Contract Section 3.1: No CC/Subtitle button is shown in the player
         val ccButtonVisible = !state.kidActive && state.availableSubtitleTracks.isNotEmpty()
@@ -43,13 +45,15 @@ class CcMenuKidModeAndEdgeCasesTest {
 
     @Test
     fun `Kid Mode - CC button hidden even with available tracks (SERIES)`() {
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.SERIES,
-            kidActive = true,
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(0, 0, "en", "English", false),
-            ),
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.SERIES,
+                kidActive = true,
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(0, 0, "en", "English", false),
+                    ),
+            )
 
         val ccButtonVisible = !state.kidActive && state.availableSubtitleTracks.isNotEmpty()
         assertFalse("CC button must be hidden for kid profiles", ccButtonVisible)
@@ -57,13 +61,15 @@ class CcMenuKidModeAndEdgeCasesTest {
 
     @Test
     fun `Kid Mode - CC button hidden even with available tracks (LIVE)`() {
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.LIVE,
-            kidActive = true,
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(0, 0, "en", "English", false),
-            ),
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.LIVE,
+                kidActive = true,
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(0, 0, "en", "English", false),
+                    ),
+            )
 
         val ccButtonVisible = !state.kidActive && state.availableSubtitleTracks.isNotEmpty()
         assertFalse("CC button must be hidden for kid profiles", ccButtonVisible)
@@ -71,13 +77,15 @@ class CcMenuKidModeAndEdgeCasesTest {
 
     @Test
     fun `Kid Mode - CC dialog never shown even if showCcMenuDialog true`() {
-        val state = InternalPlayerUiState(
-            kidActive = true,
-            showCcMenuDialog = true, // accidentally set
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(0, 0, "en", "English", false),
-            ),
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = true,
+                showCcMenuDialog = true, // accidentally set
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(0, 0, "en", "English", false),
+                    ),
+            )
 
         // Contract Section 3.1: CC menu must not be shown for kid profiles
         val dialogVisible = state.showCcMenuDialog && !state.kidActive
@@ -86,13 +94,15 @@ class CcMenuKidModeAndEdgeCasesTest {
 
     @Test
     fun `Kid Mode - no subtitle track selected in state`() {
-        val state = InternalPlayerUiState(
-            kidActive = true,
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(0, 0, "en", "English", false),
-            ),
-            selectedSubtitleTrack = null, // Contract Section 3.1: No subtitle track is selected
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = true,
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(0, 0, "en", "English", false),
+                    ),
+                selectedSubtitleTrack = null, // Contract Section 3.1: No subtitle track is selected
+            )
 
         // Verify no track is selected
         assertTrue("selectedSubtitleTrack must be null for kid profiles", state.selectedSubtitleTrack == null)
@@ -104,10 +114,11 @@ class CcMenuKidModeAndEdgeCasesTest {
 
     @Test
     fun `zero tracks - CC button hidden (non-kid profile)`() {
-        val state = InternalPlayerUiState(
-            kidActive = false,
-            availableSubtitleTracks = emptyList(),
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = false,
+                availableSubtitleTracks = emptyList(),
+            )
 
         // Contract Section 8.1: Button visible only if at least one subtitle track exists
         val ccButtonVisible = !state.kidActive && state.availableSubtitleTracks.isNotEmpty()
@@ -116,22 +127,24 @@ class CcMenuKidModeAndEdgeCasesTest {
 
     @Test
     fun `zero tracks - selectedSubtitleTrack is null`() {
-        val state = InternalPlayerUiState(
-            kidActive = false,
-            availableSubtitleTracks = emptyList(),
-            selectedSubtitleTrack = null,
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = false,
+                availableSubtitleTracks = emptyList(),
+                selectedSubtitleTrack = null,
+            )
 
         assertTrue("selectedSubtitleTrack should be null when no tracks available", state.selectedSubtitleTrack == null)
     }
 
     @Test
     fun `zero tracks - CC dialog can be closed without crash`() {
-        val state = InternalPlayerUiState(
-            kidActive = false,
-            showCcMenuDialog = true,
-            availableSubtitleTracks = emptyList(),
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = false,
+                showCcMenuDialog = true,
+                availableSubtitleTracks = emptyList(),
+            )
 
         // Dialog may be open from before tracks were removed
         // Verify dialog visibility condition
@@ -151,23 +164,26 @@ class CcMenuKidModeAndEdgeCasesTest {
     @Test
     fun `track list changes - dialog remains valid when tracks removed`() {
         // Start with CC dialog open and tracks available
-        val initialState = InternalPlayerUiState(
-            kidActive = false,
-            showCcMenuDialog = true,
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(0, 0, "en", "English", false),
-                SubtitleTrack(0, 1, "de", "German", false),
-            ),
-            selectedSubtitleTrack = SubtitleTrack(0, 0, "en", "English", false),
-        )
+        val initialState =
+            InternalPlayerUiState(
+                kidActive = false,
+                showCcMenuDialog = true,
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(0, 0, "en", "English", false),
+                        SubtitleTrack(0, 1, "de", "German", false),
+                    ),
+                selectedSubtitleTrack = SubtitleTrack(0, 0, "en", "English", false),
+            )
 
         assertTrue("Dialog should be open initially", initialState.showCcMenuDialog)
 
         // Simulate onTracksChanged event removing all tracks
-        val updatedState = initialState.copy(
-            availableSubtitleTracks = emptyList(),
-            selectedSubtitleTrack = null,
-        )
+        val updatedState =
+            initialState.copy(
+                availableSubtitleTracks = emptyList(),
+                selectedSubtitleTrack = null,
+            )
 
         // Dialog should remain open (it's the user's choice to close it)
         assertTrue("Dialog flag should not auto-close on track change", updatedState.showCcMenuDialog)
@@ -180,20 +196,23 @@ class CcMenuKidModeAndEdgeCasesTest {
     @Test
     fun `track list changes - dialog remains valid when tracks added`() {
         // Start with CC dialog open but no tracks
-        val initialState = InternalPlayerUiState(
-            kidActive = false,
-            showCcMenuDialog = true,
-            availableSubtitleTracks = emptyList(),
-            selectedSubtitleTrack = null,
-        )
+        val initialState =
+            InternalPlayerUiState(
+                kidActive = false,
+                showCcMenuDialog = true,
+                availableSubtitleTracks = emptyList(),
+                selectedSubtitleTrack = null,
+            )
 
         // Simulate onTracksChanged event adding tracks
-        val updatedState = initialState.copy(
-            availableSubtitleTracks = listOf(
-                SubtitleTrack(0, 0, "en", "English", false),
-            ),
-            selectedSubtitleTrack = SubtitleTrack(0, 0, "en", "English", false),
-        )
+        val updatedState =
+            initialState.copy(
+                availableSubtitleTracks =
+                    listOf(
+                        SubtitleTrack(0, 0, "en", "English", false),
+                    ),
+                selectedSubtitleTrack = SubtitleTrack(0, 0, "en", "English", false),
+            )
 
         // Dialog should remain open
         assertTrue("Dialog should remain open after tracks added", updatedState.showCcMenuDialog)
@@ -208,16 +227,18 @@ class CcMenuKidModeAndEdgeCasesTest {
         val track0 = SubtitleTrack(0, 0, "en", "English", false)
         val track1 = SubtitleTrack(0, 1, "de", "German", false)
 
-        val initialState = InternalPlayerUiState(
-            kidActive = false,
-            availableSubtitleTracks = listOf(track0, track1),
-            selectedSubtitleTrack = track0,
-        )
+        val initialState =
+            InternalPlayerUiState(
+                kidActive = false,
+                availableSubtitleTracks = listOf(track0, track1),
+                selectedSubtitleTrack = track0,
+            )
 
         // Simulate track list change (same tracks, different order)
-        val updatedState = initialState.copy(
-            availableSubtitleTracks = listOf(track1, track0), // reordered
-        )
+        val updatedState =
+            initialState.copy(
+                availableSubtitleTracks = listOf(track1, track0), // reordered
+            )
 
         // Selected track should still be valid (by reference equality or track matching)
         assertNotNull("Selected track should remain valid", updatedState.selectedSubtitleTrack)
@@ -242,13 +263,15 @@ class CcMenuKidModeAndEdgeCasesTest {
 
     @Test
     fun `Kid Mode - subtitleStyle stored but not applied (state validation)`() {
-        val state = InternalPlayerUiState(
-            kidActive = true,
-            subtitleStyle = SubtitleStyle(
-                textScale = 1.5f, // custom style
-                foregroundColor = 0xFFFFFF00.toInt(), // yellow
-            ),
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = true,
+                subtitleStyle =
+                    SubtitleStyle(
+                        textScale = 1.5f, // custom style
+                        foregroundColor = 0xFFFFFF00.toInt(), // yellow
+                    ),
+            )
 
         // Contract Section 3.1: SubtitleStyleManager still stores styles, but they are never applied
         // State should contain the style, but it should be ignored during rendering
@@ -264,11 +287,12 @@ class CcMenuKidModeAndEdgeCasesTest {
 
     @Test
     fun `CC dialog state changes do not affect playback state`() {
-        val initialState = InternalPlayerUiState(
-            isPlaying = true,
-            positionMs = 30000L,
-            durationMs = 120000L,
-        )
+        val initialState =
+            InternalPlayerUiState(
+                isPlaying = true,
+                positionMs = 30000L,
+                durationMs = 120000L,
+            )
 
         // Open CC dialog
         val dialogOpenState = initialState.copy(showCcMenuDialog = true)
@@ -287,20 +311,22 @@ class CcMenuKidModeAndEdgeCasesTest {
 
     @Test
     fun `multiple subtitle tracks - state handles large lists`() {
-        val largeTrackList = List(100) { index ->
-            SubtitleTrack(
-                groupIndex = 0,
-                trackIndex = index,
-                language = "lang$index",
-                label = "Language $index",
-                isDefault = index == 0,
-            )
-        }
+        val largeTrackList =
+            List(100) { index ->
+                SubtitleTrack(
+                    groupIndex = 0,
+                    trackIndex = index,
+                    language = "lang$index",
+                    label = "Language $index",
+                    isDefault = index == 0,
+                )
+            }
 
-        val state = InternalPlayerUiState(
-            kidActive = false,
-            availableSubtitleTracks = largeTrackList,
-        )
+        val state =
+            InternalPlayerUiState(
+                kidActive = false,
+                availableSubtitleTracks = largeTrackList,
+            )
 
         // Should handle large track lists without issue
         assertTrue("Should handle 100 tracks", state.availableSubtitleTracks.size == 100)

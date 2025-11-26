@@ -1,5 +1,6 @@
 package com.chris.m3usuite.player.internal.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -10,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.exoplayer.ExoPlayer
@@ -21,12 +23,15 @@ import com.chris.m3usuite.player.internal.state.AspectRatioMode
 import com.chris.m3usuite.player.internal.subtitles.EdgeStyle
 import com.chris.m3usuite.player.internal.subtitles.SubtitleStyle
 import kotlin.math.abs
+import android.graphics.Color as AndroidColor
 
 /**
  * PlayerSurface composable encapsulates the ExoPlayer PlayerView and handles gesture input.
  *
  * **Phase 3 Step 3.D**: This composable now supports horizontal swipe gestures for Live channel zapping.
  * **Phase 4 Group 3**: This composable now applies subtitle styling to the PlayerView.
+ * **Phase 5 Group 1**: Black bars must be black - PlayerView and Compose container backgrounds are set to black.
+ * **Phase 5 Group 2**: AspectRatioMode (FIT/FILL/ZOOM) is applied correctly via toResizeMode().
  *
  * For LIVE playback:
  * - Horizontal swipe right → calls `onJumpLiveChannel(+1)` (next channel)
@@ -39,6 +44,12 @@ import kotlin.math.abs
  * Gesture thresholds:
  * - Horizontal swipe threshold: 60px (matches legacy implementation)
  * - Distinguishes horizontal vs vertical gestures based on drag axis dominance
+ *
+ * **Black Bar Contract (Phase 5 Section 4.2):**
+ * - PlayerView background is black
+ * - Shutter/background color is black (before first frame)
+ * - Compose container uses Color.Black background
+ * - Non-video areas (letterbox/pillarbox) are always black, never white
  *
  * @param player The ExoPlayer instance to render
  * @param aspectRatioMode The aspect ratio mode for the player view
@@ -68,6 +79,12 @@ fun PlayerSurface(
         modifier =
             Modifier
                 .fillMaxSize()
+                // ═══════════════════════════════════════════════════════════════
+                // Phase 5 Group 1: Black bars must be black
+                // ═══════════════════════════════════════════════════════════════
+                // Contract Section 4.2 Rule 3: Compose container must use black background
+                // This ensures non-video areas (letterbox/pillarbox) are black, not white
+                .background(Color.Black)
                 // Tap gesture: toggle controls visibility
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = { onTap() })
@@ -110,6 +127,14 @@ fun PlayerSurface(
                         this.player = player
                         useController = false // Controls managed by InternalPlayerControls
                         resizeMode = aspectRatioMode.toResizeMode()
+
+                        // ═══════════════════════════════════════════════════════════════
+                        // Phase 5 Group 1: Black bars must be black
+                        // ═══════════════════════════════════════════════════════════════
+                        // Contract Section 4.2 Rules 1-2: PlayerView background and shutter must be black
+                        // This ensures non-video areas and initial buffering state show black, not white
+                        setBackgroundColor(AndroidColor.BLACK)
+                        setShutterBackgroundColor(AndroidColor.BLACK)
 
                         // ═══════════════════════════════════════════════════════════════
                         // Phase 4 Group 3: Apply subtitle style to PlayerView
