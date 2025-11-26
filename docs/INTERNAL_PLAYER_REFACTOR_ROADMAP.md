@@ -326,19 +326,31 @@ The **legacy InternalPlayerScreen remains the active runtime implementation**. T
   - ✅ Real-time updates reflecting style changes
   - ✅ Contract Reference: Section 9.2
 
-### Task Group 6: Testing & Validation ✅
+### Task Group 6: Testing & Validation ✅ **COMPLETE (2025-11-26)**
 
 - ✅ Task 6.1: SubtitleStyleManager Tests
   - ✅ 11 tests in `SubtitleStyleTest.kt`
-  - ✅ Coverage: Range validation, presets, defaults, edge styles
+  - ✅ 18 tests in `SubtitleStyleManagerRobustnessTest.kt` (NEW)
+  - ✅ Coverage: Range validation, presets, defaults, edge styles, robustness
 
 - ✅ Task 6.2: SubtitleSelectionPolicy Tests
   - ✅ 7 tests in `SubtitleSelectionPolicyTest.kt`
-  - ✅ Coverage: Priority order, kid mode, default flag, language matching
+  - ✅ 22 tests in `InternalPlayerSessionSubtitleIntegrationTest.kt` (NEW)
+  - ✅ Coverage: Priority order, kid mode, default flag, language matching, VOD/SERIES/LIVE
 
 - ✅ Task 6.3: CC Menu UI Tests
   - ✅ 19 tests in `CcMenuPhase4UiTest.kt`
-  - ✅ Coverage: Visibility rules, dialog conditions, state initialization, track selection
+  - ✅ 18 tests in `CcMenuKidModeAndEdgeCasesTest.kt` (NEW)
+  - ✅ Coverage: Visibility rules, dialog conditions, state initialization, track selection, Kid Mode, edge cases
+
+**Phase 4 Group 6 Validation Summary:**
+- ✅ 95 total subtitle/CC tests (37 existing + 58 new)
+- ✅ All VOD/SERIES/LIVE subtitle selection scenarios validated
+- ✅ Kid Mode blocking verified end-to-end
+- ✅ Edge cases handled: zero tracks, invalid styles, track list changes
+- ✅ Contract compliance verified via comprehensive test suite
+- ✅ No changes to legacy InternalPlayerScreen
+- ✅ SIP subtitle/CC behavior fully validated and stabilized
 
 ### Files Overview
 
@@ -351,7 +363,13 @@ The **legacy InternalPlayerScreen remains the active runtime implementation**. T
 - ✅ `internal/subtitles/DefaultSubtitleSelectionPolicy.kt`
 - ✅ `internal/ui/CcMenuDialog.kt`
 - ✅ `ui/screens/SubtitleSettingsViewModel.kt`
-- ✅ 3 test files (SubtitleStyleTest, SubtitleSelectionPolicyTest, CcMenuPhase4UiTest)
+- ✅ 6 test files:
+  - `SubtitleStyleTest.kt` (11 tests)
+  - `SubtitleSelectionPolicyTest.kt` (7 tests)
+  - `CcMenuPhase4UiTest.kt` (19 tests)
+  - `SubtitleStyleManagerRobustnessTest.kt` (18 tests) - Group 6
+  - `InternalPlayerSessionSubtitleIntegrationTest.kt` (22 tests) - Group 6
+  - `CcMenuKidModeAndEdgeCasesTest.kt` (18 tests) - Group 6
 
 **Modified SIP Files:**
 - ✅ `internal/state/InternalPlayerState.kt` - Added subtitle fields and controller callbacks
