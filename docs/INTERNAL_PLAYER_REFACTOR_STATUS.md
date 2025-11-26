@@ -2775,7 +2775,7 @@ The remaining work is primarily:
 | Phase 2 – Resume & Kids Gate | ✅ Complete | 2025-11-25 | Legacy | ✅ Yes |
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 4 – Subtitles | ✅ SIP Complete | 2025-11-26 | Legacy | ✅ Yes |
-| Phase 5 – PlayerSurface | ⬜ Not Started | - | Legacy | ⬜ No |
+| Phase 5 – PlayerSurface | 🔄 Kickoff Complete | 2025-11-26 | Legacy | ⬜ No |
 | Phase 6 – TV Remote | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 8 – Lifecycle | ⬜ Not Started | - | Legacy | ⬜ No |
@@ -2798,6 +2798,98 @@ The remaining work is primarily:
 - ✅ Edge cases handled (zero tracks, invalid styles, track changes)
 - ✅ Contract compliance verified via tests
 - ✅ All subtitle/CC behavior fully validated for SIP
+
+---
+
+## Phase 5 – PlayerSurface, Aspect Ratio, Trickplay & Auto-Hide (Kickoff Complete)
+
+**Date:** 2025-11-26
+
+**Status:** 🔄 **KICKOFF COMPLETE** – Checklist created and contract analyzed
+
+### What Was Done (Kickoff Task)
+
+**1. Contract Analysis:**
+- ✅ Read and analyzed `INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md`
+- ✅ Extracted all requirements related to:
+  - PlayerSurface composable responsibilities (video surface, aspect ratio, gestures, auto-hide)
+  - Aspect ratio modes (FIT/FILL/ZOOM) with contract-compliant semantics
+  - Black bar/background rules (all non-video areas must be pure black)
+  - Trickplay behavior (2x/3x/5x speeds, visual feedback, enter/exit rules)
+  - Controls auto-hide behavior (TV 5-7s, phone 3-5s, never-hide conditions)
+  - TV remote & touch gestures (high-level mapping)
+
+**2. Repository Scan – PlayerSurface-Related Components:**
+
+| Component | Location | Current State | Phase 5 Action |
+|-----------|----------|---------------|----------------|
+| PlayerSurface.kt | `internal/ui/` | Hosts PlayerView, tap/swipe gestures, subtitle style | **EXTEND**: Add black bars, trickplay gestures, auto-hide |
+| AspectRatioMode | `internal/state/` | FIT/FILL/ZOOM/STRETCH enum | **REUSE**: Verify contract compliance |
+| InternalPlayerControls.kt | `internal/ui/` | Main controls, progress, EPG, CC menu | **EXTEND**: Add trickplay UI, auto-hide timer |
+| compose_player_view.xml | `res/layout/` | No background specified | **FIX**: Add black background |
+| Legacy InternalPlayerScreen | `player/` | Trickplay L1467-1507, Auto-hide L1438-1451 | **REFERENCE ONLY**: Migrate behavior, don't copy code |
+
+**3. Legacy Code Mapping:**
+
+| Legacy Location | Behavior | SIP Module |
+|-----------------|----------|------------|
+| L1347-1348 | controlsVisible, controlsTick | InternalPlayerUiState |
+| L1365 | resizeMode state | AspectRatioMode |
+| L1374-1379 | cycleResize() | AspectRatioMode.next() |
+| L1438-1451 | Auto-hide logic (TV 10s, phone 5s) | InternalPlayerControls |
+| L1456-1459 | seekPreviewVisible, targetMs | InternalPlayerUiState |
+| L1467-1470 | trickplaySpeeds, ffStage, rwStage | InternalPlayerUiState.trickplaySpeed |
+| L1473-1487 | stopTrickplay() | InternalPlayerController callback |
+| L1489-1507 | showSeekPreview() | InternalPlayerSession |
+| L1836-1837 | Tap toggles controls | PlayerSurface onTap |
+
+**4. Checklist Created:**
+- ✅ Created `docs/INTERNAL_PLAYER_PHASE5_CHECKLIST.md`
+- ✅ 5 Task Groups with 22 specific tasks:
+  - Group 1: PlayerSurface Foundation & Black Bars (3 tasks)
+  - Group 2: Aspect Ratio Modes & Switching (3 tasks)
+  - Group 3: Trickplay Behavior & UI Hooks (6 tasks)
+  - Group 4: Controls Auto-Hide (TV vs Touch) (5 tasks)
+  - Group 5: Tests & Validation (5 tasks)
+- ✅ All contract requirements mapped to checklist items
+- ✅ Legacy behavior mapped to SIP modules
+
+**5. Documentation Updated:**
+- ✅ Updated `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` with Phase 5 task groups
+- ✅ Updated `INTERNAL_PLAYER_REFACTOR_STATUS.md` with kickoff entry
+
+### Contract Compliance Mapping
+
+| Contract Section | Requirement | Checklist Task(s) |
+|-----------------|-------------|-------------------|
+| 3.1 | Black bars must be black | 1.1, 1.2, 1.3 |
+| 4.1 | FIT/FILL/ZOOM modes | 2.1, 2.2 |
+| 4.2 | Background black in all modes | 1.1, 1.2, 2.3 |
+| 5.1 | PlayerSurface responsibilities | 1.1, 1.2, 3.6, 4.5 |
+| 6.2 | Trickplay behavior | 3.1, 3.2, 3.3, 3.4, 3.5 |
+| 7.2 | Auto-hide timing | 4.2 |
+| 7.3 | Never hide with overlays | 4.4 |
+| 8.1 | Single tap toggles controls | 4.5 |
+| 10.1-10.4 | Testing requirements | 5.1-5.5 |
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ No code changes made in this kickoff task
+- ✅ All Phase 5 tasks are now documented and ready for implementation
+- ✅ Legacy InternalPlayerScreen remains untouched
+
+### What's Next (Phase 5 Implementation)
+
+The following task groups are ready for implementation:
+
+1. **Task Group 1:** PlayerSurface Foundation & Black Bars (3 tasks)
+2. **Task Group 2:** Aspect Ratio Modes & Switching (3 tasks)
+3. **Task Group 3:** Trickplay Behavior & UI Hooks (6 tasks)
+4. **Task Group 4:** Controls Auto-Hide (TV vs Touch) (5 tasks)
+5. **Task Group 5:** Tests & Validation (5 tests)
+
+All implementation must follow the checklist and contract. No new tasks will be added. Legacy InternalPlayerScreen must remain untouched.
 
 ---
 
