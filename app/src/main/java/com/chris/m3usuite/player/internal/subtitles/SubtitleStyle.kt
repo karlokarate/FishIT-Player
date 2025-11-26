@@ -27,8 +27,8 @@ package com.chris.m3usuite.player.internal.subtitles
  */
 data class SubtitleStyle(
     val textScale: Float = 1.0f,
-    val foregroundColor: Int = 0xFFFFFFFF.toInt(),  // White
-    val backgroundColor: Int = 0x99000000.toInt(),  // Black ~60% opacity
+    val foregroundColor: Int = 0xFFFFFFFF.toInt(), // White
+    val backgroundColor: Int = 0x99000000.toInt(), // Black ~60% opacity
     val foregroundOpacity: Float = 1.0f,
     val backgroundOpacity: Float = 0.6f,
     val edgeStyle: EdgeStyle = EdgeStyle.OUTLINE,

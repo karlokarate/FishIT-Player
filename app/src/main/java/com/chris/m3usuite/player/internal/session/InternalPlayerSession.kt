@@ -485,9 +485,20 @@ fun rememberInternalPlayerSession(
                             }
                         }
 
+                        // Always update available tracks in UiState (for CC button visibility)
+                        val tracksUpdated =
+                            playerState.value.copy(
+                                availableSubtitleTracks = availableSubtitleTracks.toList(),
+                            )
+                        playerState.value = tracksUpdated
+                        onStateChanged(tracksUpdated)
+
                         if (availableSubtitleTracks.isNotEmpty()) {
                             // Get system language and profile languages (TODO: actual profile language prefs)
-                            val systemLang = java.util.Locale.getDefault().language
+                            val systemLang =
+                                java.util.Locale
+                                    .getDefault()
+                                    .language
                             val preferredLanguages = listOf(systemLang)
 
                             // Select initial track using policy

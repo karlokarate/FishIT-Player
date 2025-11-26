@@ -40,24 +40,28 @@ enum class SubtitlePreset {
     /**
      * Converts this preset to its corresponding [SubtitleStyle].
      */
-    fun toStyle(): SubtitleStyle = when (this) {
-        DEFAULT -> SubtitleStyle()
+    fun toStyle(): SubtitleStyle =
+        when (this) {
+            DEFAULT -> SubtitleStyle()
 
-        HIGH_CONTRAST -> SubtitleStyle(
-            foregroundColor = 0xFFFFFF00.toInt(),  // Yellow
-            backgroundColor = 0xFF000000.toInt(),  // Solid black
-            foregroundOpacity = 1.0f,
-            backgroundOpacity = 1.0f,
-        )
+            HIGH_CONTRAST ->
+                SubtitleStyle(
+                    foregroundColor = 0xFFFFFF00.toInt(), // Yellow
+                    backgroundColor = 0xFF000000.toInt(), // Solid black
+                    foregroundOpacity = 1.0f,
+                    backgroundOpacity = 1.0f,
+                )
 
-        TV_LARGE -> SubtitleStyle(
-            textScale = 1.5f,
-            edgeStyle = EdgeStyle.OUTLINE,
-        )
+            TV_LARGE ->
+                SubtitleStyle(
+                    textScale = 1.5f,
+                    edgeStyle = EdgeStyle.OUTLINE,
+                )
 
-        MINIMAL -> SubtitleStyle(
-            textScale = 0.8f,
-            backgroundOpacity = 0.3f,
-        )
-    }
+            MINIMAL ->
+                SubtitleStyle(
+                    textScale = 0.8f,
+                    backgroundOpacity = 0.3f,
+                )
+        }
 }
