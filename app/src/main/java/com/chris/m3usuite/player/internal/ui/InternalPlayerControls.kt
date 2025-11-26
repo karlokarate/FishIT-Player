@@ -75,11 +75,22 @@ fun InternalPlayerContent(
         // AnimatedVisibility uses epgOverlayVisible directly without delays
         AnimatedVisibility(
             visible = state.isLive && state.epgOverlayVisible,
-            enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(durationMillis = 200)),
-            exit = fadeOut(animationSpec = androidx.compose.animation.core.tween(durationMillis = 200)),
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp),
+            enter =
+                fadeIn(
+                    animationSpec =
+                        androidx.compose.animation.core
+                            .tween(durationMillis = 200),
+                ),
+            exit =
+                fadeOut(
+                    animationSpec =
+                        androidx.compose.animation.core
+                            .tween(durationMillis = 200),
+                ),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp),
         ) {
             LiveEpgOverlay(
                 nowTitle = state.liveNowTitle,

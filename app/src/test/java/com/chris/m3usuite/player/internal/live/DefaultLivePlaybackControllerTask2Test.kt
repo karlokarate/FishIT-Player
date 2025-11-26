@@ -31,13 +31,9 @@ class DefaultLivePlaybackControllerTask2Test {
         override suspend fun getChannels(
             categoryHint: String?,
             providerHint: String?,
-        ): List<LiveChannel> {
-            return channels
-        }
+        ): List<LiveChannel> = channels
 
-        override suspend fun getChannel(channelId: Long): LiveChannel? {
-            return channels.find { it.id == channelId }
-        }
+        override suspend fun getChannel(channelId: Long): LiveChannel? = channels.find { it.id == channelId }
     }
 
     /**
@@ -46,9 +42,7 @@ class DefaultLivePlaybackControllerTask2Test {
     class FakeLiveEpgRepository : LiveEpgRepository {
         var nowNextMap: Map<Int, Pair<String?, String?>> = emptyMap()
 
-        override suspend fun getNowNext(streamId: Int): Pair<String?, String?> {
-            return nowNextMap[streamId] ?: (null to null)
-        }
+        override suspend fun getNowNext(streamId: Int): Pair<String?, String?> = nowNextMap[streamId] ?: (null to null)
     }
 
     /**
@@ -232,7 +226,11 @@ class DefaultLivePlaybackControllerTask2Test {
 
             // Then: EPG overlay is immediately hidden
             assertFalse("EPG overlay should be hidden immediately after jumpChannel", controller.epgOverlay.value.visible)
-            assertEquals("hideAtRealtimeMs should be set to current time", timeProvider.currentTime, controller.epgOverlay.value.hideAtRealtimeMs)
+            assertEquals(
+                "hideAtRealtimeMs should be set to current time",
+                timeProvider.currentTime,
+                controller.epgOverlay.value.hideAtRealtimeMs,
+            )
         }
 
     @Test
@@ -252,7 +250,11 @@ class DefaultLivePlaybackControllerTask2Test {
 
             // Then: EPG overlay is immediately hidden
             assertFalse("EPG overlay should be hidden immediately after selectChannel", controller.epgOverlay.value.visible)
-            assertEquals("hideAtRealtimeMs should be set to current time", timeProvider.currentTime, controller.epgOverlay.value.hideAtRealtimeMs)
+            assertEquals(
+                "hideAtRealtimeMs should be set to current time",
+                timeProvider.currentTime,
+                controller.epgOverlay.value.hideAtRealtimeMs,
+            )
         }
 
     @Test
@@ -306,10 +308,11 @@ class DefaultLivePlaybackControllerTask2Test {
         runBlocking {
             // Given: Controller with initial EPG data
             liveRepository.channels = testChannels
-            epgRepository.nowNextMap = mapOf(
-                1 to ("Show 1A" to "Show 1B"),
-                2 to ("Show 2A" to "Show 2B"),
-            )
+            epgRepository.nowNextMap =
+                mapOf(
+                    1 to ("Show 1A" to "Show 1B"),
+                    2 to ("Show 2A" to "Show 2B"),
+                )
             controller.initFromPlaybackContext(PlaybackContext(type = PlaybackType.LIVE))
 
             // Verify initial state
