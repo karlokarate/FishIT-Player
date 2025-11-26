@@ -1474,14 +1474,145 @@ Completed Phase 3 steps:
 - [x] Step 4: Spec-driven diagnostics integration
 - [x] LivePlaybackController structural foundation (PR #307)
 - [x] Step 3.A: UiState Live fields added
-- [x] **Step 3.B: LivePlaybackController → UiState mapping (SIP)** ✅ **NEW**
+- [x] Step 3.B: LivePlaybackController → UiState mapping (SIP)
+- [x] **Step 3.C: SIP InternalPlayerContent shows Live channel + EPG overlay** ✅ **NEW**
 
 Remaining Phase 3 work:
-- [ ] Step 3.C: Integrate EPG overlay state management
 - [ ] Implement shadow session internals
 - [ ] Wire shadow session to observe real playback inputs
 - [ ] Add diagnostics logging for shadow state
 - [ ] Create verification workflow to compare modular vs legacy behavior
 - [ ] Add developer toggle for shadow mode activation
+
+---
+
+## Phase 3 – Step 3.C: SIP InternalPlayerContent Live-TV UI Rendering
+
+**Date:** 2025-11-26
+
+This step completes the visual integration of Live-TV fields in the SIP UI path by modifying `InternalPlayerContent` to render channel name and EPG overlay, without touching legacy code or behavior.
+
+### What Was Done
+
+**1. Modified InternalPlayerContent Composable:**
+
+Added conditional rendering for Live-TV UI elements:
+
+**Live Channel Header:**
+- Rendered when: `state.isLive && state.liveChannelName != null`
+- Positioned at top-center of player
+- Uses `ElevatedCard` with channel name in `MaterialTheme.typography.titleMedium`
+- Simple, minimal design consistent with existing UI
+
+**EPG Overlay:**
+- Rendered when: `state.epgOverlayVisible == true`
+- Positioned at bottom-left of player (does not interfere with controls)
+- Shows "Now" and "Next" program titles when available
+- Displays "No EPG data available" when both titles are null
+- Uses `ElevatedCard` with structured layout
+
+**Behavior Constraints Verified:**
+- ✅ No new state introduced (uses only existing `InternalPlayerUiState` fields)
+- ✅ Non-LIVE playback types (VOD, SERIES) never show Live UI elements
+- ✅ EPG overlay only visible when `epgOverlayVisible == true`
+- ✅ Live UI coexists with existing controls without blocking or replacing them
+- ✅ No gesture/click handlers added (pure visual integration)
+
+**2. Created Helper Composables:**
+
+- `LiveChannelHeader(channelName: String, modifier: Modifier)`
+  - Private composable for channel name rendering
+  - Consistent with existing UI patterns in the file
+  
+- `LiveEpgOverlay(nowTitle: String?, nextTitle: String?, modifier: Modifier)`
+  - Private composable for EPG data rendering
+  - Handles null titles gracefully
+  - Shows placeholder when no data available
+
+**3. Created Comprehensive Tests:**
+
+New test file: `InternalPlayerContentPhase3LiveUiTest.kt`
+
+Test coverage includes (19 tests total):
+- **LIVE playback scenarios:**
+  - Channel name rendering conditions
+  - EPG overlay visibility control
+  - All Live fields populated
+  - EPG overlay hidden when flag is false
+  - Null EPG titles handling
+  - Partial EPG data (only nowTitle)
+  
+- **Non-LIVE playback scenarios:**
+  - VOD with accidentally set Live fields (defensive)
+  - SERIES with Live fields set
+  - VOD with null Live fields
+  
+- **Edge cases:**
+  - LIVE with null channel name (no header)
+  - Empty string channel name
+  - Long channel names and titles
+  - Special characters in fields
+  
+- **Default state:**
+  - Validates no Live UI renders by default
+
+### Files Modified/Created
+
+**Modified Files:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt`
+  - Modified `InternalPlayerContent` composable
+  - Added `LiveChannelHeader` helper composable
+  - Added `LiveEpgOverlay` helper composable
+
+**New Files:**
+- `app/src/test/java/com/chris/m3usuite/player/internal/ui/InternalPlayerContentPhase3LiveUiTest.kt`
+  - Comprehensive UI logic tests (19 tests)
+  - Validates rendering conditions for all scenarios
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ SIP `InternalPlayerContent` is non-runtime (Phase 3 reference implementation)
+- ✅ No functional changes to production player flow
+- ✅ Live-TV UI ready for Phase 3+ activation
+- ✅ No legacy code modified
+- ✅ No gesture handling added
+- ✅ Pure visual integration only
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest` passes all tests (including 19 new tests)
+- ✅ No regressions in existing tests
+- ✅ ktlint checks pass for new code
+
+### Behavior Contract Compliance
+
+1. ✅ **LIVE playback never participates in resume** (unchanged, handled in Phase 2)
+2. ✅ **No behavior logic added** (pure UI mapping)
+3. ✅ **Non-LIVE types excluded** (channel header uses `state.isLive` check)
+4. ✅ **EPG overlay controlled by state** (no internal state management)
+5. ✅ **No navigation added** (no click handlers, no channel switching)
+
+### Design Decisions
+
+**Positioning:**
+- Channel header at top-center: Visible but not obtrusive
+- EPG overlay at bottom-left: Avoids collision with controls at bottom-center
+
+**Styling:**
+- Used existing `MaterialTheme.typography` tokens
+- Consistent with other overlays (e.g., `DebugInfoOverlay`)
+- `ElevatedCard` for both elements (matches debug overlay pattern)
+
+**Null Handling:**
+- Channel header: Only renders when `liveChannelName != null`
+- EPG overlay: Renders structure even with null titles, shows placeholder
+
+**Future Activation:**
+When Phase 3+ activates the SIP path:
+1. InternalPlayerSession will populate Live fields from LivePlaybackController
+2. InternalPlayerContent will automatically render channel + EPG based on state
+3. No additional UI work needed for basic Live-TV display
 
 ---
