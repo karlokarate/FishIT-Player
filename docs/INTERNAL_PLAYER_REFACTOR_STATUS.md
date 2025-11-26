@@ -2061,3 +2061,173 @@ All requirements from the problem statement have been implemented:
 - Future: ShadowDiagnosticsAggregator can subscribe to liveMetrics flow
 
 ---
+
+## 📋 Overall Phase Status Summary
+
+This section provides a high-level overview of the Internal Player Refactor progress.
+
+### Phase 1 – PlaybackContext & Basic Wiring: ✅ **FULLY COMPLETE**
+
+**Status:** All work complete (2025-11-24)
+
+**What Was Done:**
+- ✅ Defined `PlaybackContext` domain model and `PlaybackType` enum (VOD, SERIES, LIVE)
+- ✅ Created `InternalPlayerEntry` bridge accepting PlaybackContext
+- ✅ Updated all call sites (MainActivity, LiveDetailScreen, SeriesDetailScreen, VodDetailScreen, TelegramDetailScreen)
+- ✅ All player invocations now use typed PlaybackContext
+- ✅ Legacy InternalPlayerScreen remains active runtime implementation
+- ✅ 100% runtime behavior preservation
+
+**Architecture:**
+```
+Call Sites → InternalPlayerEntry (Phase 1 Bridge) → InternalPlayerScreen (Legacy)
+```
+
+---
+
+### Phase 2 – Resume & Kids/Screen-Time Gate: ✅ **FULLY COMPLETE**
+
+**Status:** All work complete (2025-11-25)
+
+**What Was Done:**
+- ✅ `ResumeManager` interface + `DefaultResumeManager` implementation
+  - Load/save resume positions with >10s threshold
+  - Clear resume when remaining < 10s
+  - LIVE content never resumes
+- ✅ `KidsPlaybackGate` interface + `DefaultKidsPlaybackGate` implementation
+  - Kid profile detection via ObxProfile
+  - Daily quota tracking via ScreenTimeRepository
+  - Block transitions when quota exhausted
+- ✅ Integration into `InternalPlayerSession`
+  - Initial resume position loading
+  - Periodic tick handlers (3s for resume, 60s for kids gate)
+  - `InternalPlayerUiState` fields: `kidActive`, `kidBlocked`, `kidProfileId`
+- ✅ Comprehensive test suite (Phase2Integration, InternalPlayerSessionPhase2Test)
+- ✅ Legacy InternalPlayerScreen remains active runtime implementation
+- ✅ 100% behavioral parity with legacy implementation
+
+**Architecture:**
+```
+InternalPlayerSession (SIP - non-runtime)
+  ├─→ DefaultResumeManager (mirrors legacy L572-608, L692-722, L798-806)
+  └─→ DefaultKidsPlaybackGate (mirrors legacy L547-569, L725-744)
+```
+
+---
+
+### Phase 3 – Live-TV & EPG Controller: ✅ **FULLY COMPLETE (SIP Implementation)**
+
+**Status:** SIP implementation complete, legacy remains active (2025-11-26)
+
+**What Was Done:**
+
+**Core LivePlaybackController:**
+- ✅ `LivePlaybackController` interface with full contract documentation
+- ✅ `DefaultLivePlaybackController` with complete legacy behavior migration:
+  - ✅ Channel navigation (`jumpChannel`, `selectChannel`)
+  - ✅ EPG overlay management with auto-hide timing
+  - ✅ EPG stale detection (3-minute threshold)
+  - ✅ EPG caching and fallback on errors
+  - ✅ Smart channel filtering (null/empty URLs, duplicates)
+  - ✅ 200ms deterministic jump throttle using TimeProvider
+  - ✅ LiveMetrics exposure for diagnostics
+- ✅ Domain models: `LiveChannel`, `EpgOverlayState`, `LiveEpgInfoState`, `LiveMetrics`
+- ✅ Repository implementations:
+  - ✅ `DefaultLiveChannelRepository` (bridges to ObxLive)
+  - ✅ `DefaultLiveEpgRepository` (bridges to EpgRepository)
+- ✅ `TimeProvider` abstraction for testable time operations
+
+**UI Integration (SIP):**
+- ✅ Extended `InternalPlayerUiState` with Live-TV fields:
+  - `liveChannelName`, `liveNowTitle`, `liveNextTitle`, `epgOverlayVisible`
+- ✅ `InternalPlayerSession` wires LivePlaybackController StateFlows to UiState
+- ✅ `InternalPlayerContent` renders:
+  - Live channel header (top-center)
+  - EPG overlay with AnimatedVisibility (fade in/out 200ms)
+- ✅ `PlayerSurface` gesture handling:
+  - Horizontal swipe → `jumpChannel(+/-1)` for LIVE playback
+  - 60px threshold, throttled to 200ms
+  - VOD/SERIES gestures ignored (future phases)
+
+**Testing:**
+- ✅ 68+ Live-TV controller tests (behavior, robustness, edge cases)
+- ✅ 19 UI rendering tests (InternalPlayerContentPhase3LiveUiTest)
+- ✅ 19 gesture handling tests (PlayerSurfacePhase3LiveGestureTest)
+- ✅ 15 Task 2 tests (throttle, EPG hide, LiveEpgInfoState)
+- ✅ All tests pass without modification
+
+**Runtime Status:**
+- ✅ **Legacy InternalPlayerScreen remains the active runtime implementation**
+- ✅ SIP Live-TV path is complete and ready for activation
+- ✅ Not wired to production navigation (future phase activation)
+- ✅ No changes to legacy code or behavior
+
+**Architecture:**
+```
+InternalPlayerSession (SIP - non-runtime)
+  └─→ DefaultLivePlaybackController
+      ├─→ DefaultLiveChannelRepository → ObxLive
+      └─→ DefaultLiveEpgRepository → EpgRepository
+
+InternalPlayerContent (SIP - non-runtime)
+  ├─→ LiveChannelHeader (conditional on isLive && liveChannelName)
+  ├─→ LiveEpgOverlay (AnimatedVisibility, fade 200ms)
+  └─→ PlayerSurface (horizontal swipe → jumpChannel for LIVE)
+```
+
+---
+
+### Remaining Phases (Phase 4-10): ⬜ **NOT STARTED**
+
+The following phases remain as future work:
+
+- **Phase 4** – Subtitle style & CC menu centralization
+- **Phase 5** – PlayerSurface, aspect ratio, trickplay & auto-hide
+- **Phase 6** – TV remote (DPAD) and focus handling
+- **Phase 7** – PlaybackSession & MiniPlayer integration
+- **Phase 8** – Lifecycle, rotation, and Xtream worker pause
+- **Phase 9** – Diagnostics & internal debug screen
+- **Phase 10** – Tooling, testing, and quality
+
+---
+
+### Additional Work (Shadow Mode - Phase 3 Diagnostics)
+
+The following shadow-mode diagnostics infrastructure exists but is not yet wired to runtime:
+
+- ✅ `InternalPlayerShadow` entry point
+- ✅ `ShadowComparisonService` (spec-driven three-way comparison)
+- ✅ `InternalPlayerControlsShadow` (diagnostic string emission)
+- ✅ `ShadowDiagnosticsAggregator` (event collection)
+
+Shadow mode work remains:
+- [ ] Implement shadow session internals
+- [ ] Wire shadow session to observe real playback inputs
+- [ ] Add diagnostics logging for shadow state
+- [ ] Create verification workflow
+- [ ] Add developer toggle for activation
+
+---
+
+### Summary Table
+
+| Phase | Status | Completion Date | Runtime Active | SIP Complete |
+|-------|--------|-----------------|----------------|--------------|
+| Phase 1 – PlaybackContext | ✅ Complete | 2025-11-24 | Legacy | ✅ Yes |
+| Phase 2 – Resume & Kids Gate | ✅ Complete | 2025-11-25 | Legacy | ✅ Yes |
+| Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
+| Phase 4 – Subtitles | ⬜ Not Started | - | Legacy | ⬜ No |
+| Phase 5 – PlayerSurface | ⬜ Not Started | - | Legacy | ⬜ No |
+| Phase 6 – TV Remote | ⬜ Not Started | - | Legacy | ⬜ No |
+| Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
+| Phase 8 – Lifecycle | ⬜ Not Started | - | Legacy | ⬜ No |
+| Phase 9 – Diagnostics | ⬜ Not Started | - | Legacy | ⬜ No |
+| Phase 10 – Tooling | ⬜ Not Started | - | Legacy | ⬜ No |
+
+**Legend:**
+- **Runtime Active:** Which implementation is currently active in production
+- **SIP Complete:** Whether the SIP (reference) implementation is complete
+
+---
+
+**Last Updated:** 2025-11-26
