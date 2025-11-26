@@ -94,6 +94,7 @@ data class InternalPlayerUiState(
     val showTracksDialog: Boolean = false,
     val showSpeedDialog: Boolean = false,
     val showSleepTimerDialog: Boolean = false,
+    val showCcMenuDialog: Boolean = false, // Phase 4 Group 4
     val showDebugInfo: Boolean = false,
     val aspectRatioMode: AspectRatioMode = AspectRatioMode.FIT,
     // ════════════════════════════════════════════════════════════════════════════
