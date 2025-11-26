@@ -113,6 +113,9 @@ class DefaultLivePlaybackController(
     private val _liveMetrics = MutableStateFlow(LiveMetrics())
     override val liveMetrics: StateFlow<LiveMetrics> = _liveMetrics.asStateFlow()
 
+    private val _liveEpgInfoState = MutableStateFlow(LiveEpgInfoState())
+    override val liveEpgInfoState: StateFlow<LiveEpgInfoState> = _liveEpgInfoState.asStateFlow()
+
     /**
      * Internal list of loaded channels. This mirrors the legacy `libraryLive` / `favorites` list.
      * Exposed for testing; not part of the public interface.
@@ -139,6 +142,23 @@ class DefaultLivePlaybackController(
      * Last known nowTitle for stale detection.
      */
     private var lastKnownNowTitle: String? = null
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 3 Task 2: Jump Throttle State
+    // ════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Timestamp of the last channel jump in milliseconds (realtime).
+     * Used for deterministic 200ms throttle on rapid jumps.
+     * Initialized to a value that ensures first jump is never throttled.
+     */
+    private var lastJumpAtRealtimeMs: Long = 0L
+
+    /**
+     * Jump throttle duration in milliseconds (default: 200ms).
+     * Prevents rapid channel zapping from overwhelming the player.
+     */
+    private val jumpThrottleMs: Long = 200L
 
     // ════════════════════════════════════════════════════════════════════════════
     // Interface Methods
@@ -212,12 +232,22 @@ class DefaultLivePlaybackController(
      * - Auto-hides EPG overlay when switching channels.
      * - Maintains wrap-around behavior with mod arithmetic.
      *
+     * **Phase 3 Task 2 Enhancements**:
+     * - Deterministic 200ms jump throttle using injected TimeProvider.
+     * - EPG overlay hidden immediately with hideAtRealtimeMs = now.
+     *
      * **Note**: This controller does NOT call `BehaviorContractEnforcer` directly.
      * LIVE behavior is validated by shadow diagnostics externally.
      *
      * @param delta The number of channels to jump (+1 for next, -1 for previous).
      */
     override fun jumpChannel(delta: Int) {
+        // Phase 3 Task 2: Deterministic 200ms throttle
+        val now = clock.currentTimeMillis()
+        if (now - lastJumpAtRealtimeMs < jumpThrottleMs) {
+            return // Throttle rapid jumps
+        }
+
         // Phase 3 Task 1: Sanity guard against empty list
         if (channels.isEmpty()) return
 
@@ -235,8 +265,11 @@ class DefaultLivePlaybackController(
 
         _currentChannel.value = newChannel
 
-        // Phase 3 Task 1: Hide overlay when switching channels (safety)
-        hideEpgOverlay()
+        // Phase 3 Task 2: Update throttle timestamp after successful jump
+        lastJumpAtRealtimeMs = now
+
+        // Phase 3 Task 2: Hide overlay immediately with hideAtRealtimeMs = now
+        hideEpgOverlayImmediate(now)
     }
 
     /**
@@ -248,6 +281,9 @@ class DefaultLivePlaybackController(
      * **Phase 3 Task 1 Enhancements**:
      * - Auto-hides EPG overlay when switching channels.
      *
+     * **Phase 3 Task 2 Enhancements**:
+     * - EPG overlay hidden immediately with hideAtRealtimeMs = now.
+     *
      * **Note**: This controller does NOT call `BehaviorContractEnforcer` directly.
      * LIVE behavior is validated by shadow diagnostics externally.
      *
@@ -257,8 +293,9 @@ class DefaultLivePlaybackController(
         val channel = channels.find { it.id == channelId }
         if (channel != null) {
             _currentChannel.value = channel
-            // Phase 3 Task 1: Hide overlay when switching channels
-            hideEpgOverlay()
+            // Phase 3 Task 2: Hide overlay immediately with current time
+            val now = clock.currentTimeMillis()
+            hideEpgOverlayImmediate(now)
         }
     }
 
@@ -362,6 +399,8 @@ class DefaultLivePlaybackController(
      *
      * Sets `visible = true` and calculates `hideAtRealtimeMs` based on the current time
      * plus [epgOverlayDurationMs].
+     *
+     * **Phase 3 Task 2**: Also updates LiveEpgInfoState when EPG overlay updates.
      */
     private fun showEpgOverlayWithAutoHide(
         nowTitle: String?,
@@ -375,6 +414,14 @@ class DefaultLivePlaybackController(
                 nowTitle = nowTitle,
                 nextTitle = nextTitle,
                 hideAtRealtimeMs = hideAt,
+            )
+
+        // Phase 3 Task 2: Update LiveEpgInfoState whenever EPG overlay updates
+        _liveEpgInfoState.value =
+            LiveEpgInfoState(
+                nowTitle = nowTitle,
+                nextTitle = nextTitle,
+                progressPercent = 0.0f, // LIVE content has no progress
             )
     }
 
@@ -422,6 +469,9 @@ class DefaultLivePlaybackController(
 
     /**
      * Hides the EPG overlay immediately (Phase 3 Task 1: Auto-hide on channel switch).
+     * 
+     * **Note**: This is the legacy method that sets hideAtRealtimeMs to null.
+     * For Phase 3 Task 2, use [hideEpgOverlayImmediate] which sets hideAtRealtimeMs to now.
      */
     private fun hideEpgOverlay() {
         try {
@@ -431,6 +481,25 @@ class DefaultLivePlaybackController(
             )
         } catch (_: Throwable) {
             // Phase 3 Task 1: Sanity guard - never throw
+        }
+    }
+
+    /**
+     * Hides the EPG overlay immediately with hideAtRealtimeMs set to current time.
+     * 
+     * **Phase 3 Task 2**: Used by jumpChannel and selectChannel to hide overlay
+     * immediately on channel changes. Sets hideAtRealtimeMs to `now` instead of null.
+     *
+     * @param now Current time from clock.currentTimeMillis()
+     */
+    private fun hideEpgOverlayImmediate(now: Long) {
+        try {
+            _epgOverlay.value = _epgOverlay.value.copy(
+                visible = false,
+                hideAtRealtimeMs = now,
+            )
+        } catch (_: Throwable) {
+            // Phase 3 Task 2: Sanity guard - never throw
         }
     }
 

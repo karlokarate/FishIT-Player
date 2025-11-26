@@ -490,6 +490,9 @@ class LiveControllerRobustnessTest {
             // Then: Wraps to last channel
             assertEquals("Should wrap to last channel", 2L, controller.currentChannel.value?.id)
 
+            // Phase 3 Task 2: Advance time to avoid throttle
+            timeProvider.advanceBy(250)
+
             // When: Jump forward from last channel
             controller.jumpChannel(+1)
 

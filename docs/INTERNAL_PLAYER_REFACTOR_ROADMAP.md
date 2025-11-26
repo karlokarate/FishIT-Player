@@ -146,6 +146,13 @@ All player call sites now use typed PlaybackContext and route through InternalPl
   - ✅ Live metrics exposure for shadow diagnostics
   - ✅ Comprehensive test suite (32 new tests in LiveControllerRobustnessTest)
 
+- ✅ **Phase 3 Task 2: SIP Live-TV Interaction & UX Polish** ✅ **COMPLETE**
+  - ✅ Deterministic 200ms jump throttle using injected TimeProvider
+  - ✅ EPG overlay hides immediately on channel change (hideAtRealtimeMs = now)
+  - ✅ LiveEpgInfoState StateFlow populated when EPG overlay updates
+  - ✅ AnimatedVisibility uses epgOverlay.visible directly (~200ms fade animations)
+  - ✅ Comprehensive test suite (15 + 19 new tests, all existing tests pass)
+
 - ⬜ Migrate legacy Live-TV logic
   - ⬜ Extract live lists (`libraryLive`, favorites) from legacy screen into controller
   - ⬜ Move `switchToLive(...)` into controller
@@ -171,6 +178,7 @@ All player call sites now use typed PlaybackContext and route through InternalPl
     - ✅ Show EPG overlay when controller marks it visible
     - ✅ Render live channel title and EPG snippet
     - ✅ Add comprehensive UI tests (InternalPlayerContentPhase3LiveUiTest)
+    - ✅ AnimatedVisibility with 200ms fade animations (Task 2)
   - ✅ Map gestures in `PlayerSurface` (Step 3.D - **SIP PATH COMPLETE**):
     - ✅ Horizontal swipe ⇒ `jumpChannel(+/-1)` for Live (SIP only)
     - ✅ Created PlayerSurface.kt with gesture handling

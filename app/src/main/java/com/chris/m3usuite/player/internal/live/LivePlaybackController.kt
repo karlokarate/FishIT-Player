@@ -85,6 +85,13 @@ interface LivePlaybackController {
      * Exposes diagnostic counters and state for SIP validation.
      */
     val liveMetrics: StateFlow<LiveMetrics>
+
+    /**
+     * Live EPG information state (Phase 3 Task 2).
+     * Provides structured EPG information for UI consumption.
+     * Updated whenever the EPG overlay state changes.
+     */
+    val liveEpgInfoState: StateFlow<LiveEpgInfoState>
 }
 
 /**
