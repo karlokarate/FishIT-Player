@@ -1098,8 +1098,15 @@ The Phase 6 roadmap is now **fully aligned** with `INTERNAL_PLAYER_TV_INPUT_CONT
 - ✅ **Zone markers** – InternalPlayerControls (PLAYER_CONTROLS), ProfileGate (PROFILE_GRID), SettingsScreen (SETTINGS_LIST)
 - ✅ **TvNavigationDelegateTest** – 20+ unit tests
 
-**Remaining Tasks (6+):**
-- ⬜ **Task 6+:** TV Input Debug Overlay, full screen consumer integration, testing & validation
+**Task 6 (TV Input Inspector overlay + build fixes) — DONE:**
+- ✅ **Build fixes** – Fixed AppLog (added Entry, history, events, setMasterEnabled, setCategoriesEnabled, bypassMaster), LogViewerScreen (remember import), InternalPlaybackSourceResolver (ObjectBox equal type), MainActivity (coroutine scope)
+- ✅ **DefaultTvInputDebugSink** – Implementation using GlobalDebug + DiagnosticsLogger, StateFlow history, SharedFlow events
+- ✅ **TvInputInspectorOverlay** – Debug-only composable showing KeyEvent, TvKeyRole, TvAction, ScreenId, FocusZone, handled
+- ✅ **GlobalDebug inspector toggle** – setTvInputInspectorEnabled(), isTvInputInspectorEnabled()
+- ✅ **DefaultTvInputDebugSinkTest** – Unit tests for event capture, history limits, enable/disable
+
+**Remaining Tasks (7+):**
+- ⬜ **Task 7+:** Full screen consumer integration, testing & validation
 
 **Mandatory Items Added:**
 - ✅ **TvScreenInputConfig & Declarative DSL** – Per-screen key→action mapping with compile-time type safety
