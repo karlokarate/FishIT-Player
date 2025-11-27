@@ -2776,7 +2776,7 @@ The remaining work is primarily:
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 4 – Subtitles | ✅ SIP Complete | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 5 – PlayerSurface | ✅ Validated & Complete | 2025-11-27 | Legacy | ✅ Yes |
-| Phase 6 – Global TV Input | 🔄 Roadmap Aligned | 2025-11-27 | Legacy | ⬜ No |
+| Phase 6 – Global TV Input | 🔄 Task 4 Complete | 2025-11-27 | Legacy | 🔄 Partial |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 8 – Lifecycle | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 9 – Diagnostics | ⬜ Not Started | - | Legacy | ⬜ No |
@@ -2789,9 +2789,10 @@ The remaining work is primarily:
   - 🔄 Partial = Foundation/domain models complete, some tests remaining
   - ⬜ No = Not started
 
-**Phase 6 Status:** 🔄 **ROADMAP FULLY ALIGNED WITH CONTRACT** (2025-11-27)
+**Phase 6 Status:** 🔄 **TASK 4 COMPLETE - TvInput Mapping Aligned with GLOBAL_TV_REMOTE_BEHAVIOR_MAP** (2025-11-27)
 
-Phase 6 roadmap fully aligned with `INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md`.
+Phase 6 Task 4 completed. All screen configurations now align with `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`.
+Tasks 1-4 are complete. Tasks 5+ (FocusKit integration, Debug UI, etc.) remain pending.
 
 **Added mandatory items:**
 - ✅ **TvScreenInputConfig & Declarative DSL** – Per-screen key→action mapping with DSL syntax (MANDATORY)
@@ -3791,6 +3792,130 @@ Extended `InternalPlayerContent` composable with TV input support:
 - ❌ Legacy InternalPlayerScreen modifications
 
 All new code is isolated in the `tv/input` package and `player/internal/ui` with minimal footprint.
+
+---
+
+## Phase 6 — Task 4 (TvInput Mapping Aligned with GLOBAL_TV_REMOTE_BEHAVIOR_MAP) — DONE
+
+**Date:** 2025-11-27
+
+**Status:** ✅ **COMPLETE**
+
+This task aligned the tv/input configuration layer with the behavior specification in `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`.
+
+### What Was Implemented
+
+**1. Extended TvAction Enum (`tv/input/TvAction.kt`)**
+
+Added 24 new actions to cover all behaviors from GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md:
+
+| Category | New Actions |
+|----------|-------------|
+| Player | `OPEN_PLAYER_MENU` |
+| Library/Browse | `OPEN_DETAILS`, `ROW_FAST_SCROLL_FORWARD`, `ROW_FAST_SCROLL_BACKWARD`, `PLAY_FOCUSED_RESUME`, `OPEN_FILTER_SORT` |
+| Detail Screen | `NEXT_EPISODE`, `PREVIOUS_EPISODE`, `OPEN_DETAIL_MENU` |
+| Settings | `ACTIVATE_FOCUSED_SETTING`, `SWITCH_SETTINGS_TAB_NEXT`, `SWITCH_SETTINGS_TAB_PREVIOUS`, `OPEN_ADVANCED_SETTINGS` |
+| Profile Gate | `SELECT_PROFILE`, `OPEN_PROFILE_OPTIONS` |
+| Mini Player/PIP | `PIP_SEEK_FORWARD`, `PIP_SEEK_BACKWARD`, `PIP_TOGGLE_PLAY_PAUSE`, `PIP_ENTER_RESIZE_MODE`, `PIP_CONFIRM_RESIZE`, `PIP_MOVE_LEFT`, `PIP_MOVE_RIGHT`, `PIP_MOVE_UP`, `PIP_MOVE_DOWN` |
+| Global/System | `EXIT_TO_HOME`, `OPEN_GLOBAL_SEARCH` |
+
+New helper extension functions:
+- `isPipAction()` - Check if action is PIP-specific
+- `isDetailAction()` - Check if action is for detail screen
+- `isSettingsAction()` - Check if action is for settings screen
+- `isProfileGateAction()` - Check if action is for profile gate
+- `isLibraryAction()` - Check if action is for library/browse
+
+**2. Added MINI_PLAYER Screen ID (`tv/input/TvScreenId.kt`)**
+
+Added `MINI_PLAYER` enum value for PIP mode support.
+
+**3. Updated DefaultTvScreenConfigs (`tv/input/DefaultTvScreenConfigs.kt`)**
+
+Aligned all screen configurations with GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md:
+
+| Screen | Key Behavior Changes |
+|--------|---------------------|
+| PLAYER | DPAD_LEFT/RIGHT → SEEK_BACKWARD_10S/SEEK_FORWARD_10S, MENU → OPEN_PLAYER_MENU, CENTER → PLAY_PAUSE |
+| LIBRARY | CENTER → OPEN_DETAILS, FF/RW → ROW_FAST_SCROLL_*, PLAY_PAUSE → PLAY_FOCUSED_RESUME, MENU → OPEN_FILTER_SORT |
+| START | Same as LIBRARY (per behavior map) |
+| DETAIL | CENTER/PLAY_PAUSE → PLAY_FOCUSED_RESUME, FF/RW → NEXT/PREVIOUS_EPISODE, MENU → OPEN_DETAIL_MENU |
+| SETTINGS | CENTER → ACTIVATE_FOCUSED_SETTING, FF/RW → SWITCH_SETTINGS_TAB_*, MENU → OPEN_ADVANCED_SETTINGS |
+| PROFILE_GATE | CENTER → SELECT_PROFILE, MENU → OPEN_PROFILE_OPTIONS |
+| MINI_PLAYER | FF/RW → PIP_SEEK_*, PLAY_PAUSE → PIP_TOGGLE_PLAY_PAUSE, DPAD → PIP_MOVE_*, CENTER → PIP_CONFIRM_RESIZE |
+
+**4. Double BACK → Exit to Home Hook (`tv/input/GlobalTvInputHost.kt`)**
+
+Implemented contract-level hook for double-BACK detection:
+- Added `DOUBLE_BACK_THRESHOLD_MS = 500L` constant
+- Added `lastBackPressTimeMs` tracking
+- Added `resolveActionWithDoubleBackCheck()` method
+- Single BACK → normal `TvAction.BACK`
+- Double BACK within 500ms → `TvAction.EXIT_TO_HOME`
+- Added `resetDoubleBackState()` method
+
+**Note:** Actual navigation to home is NOT implemented. This is a contract-level hook for future navigation layer integration.
+
+**5. Extended TvScreenContext (`tv/input/TvScreenContext.kt`)**
+
+Added factory methods:
+- `start()` - For START/home screen context
+- `miniPlayer()` - For mini-player/PIP mode context
+
+**6. Updated Kids Mode Filter (`tv/input/TvScreenInputConfig.kt`)**
+
+Extended `isBlockedForKids()` to block:
+- `PIP_SEEK_FORWARD`, `PIP_SEEK_BACKWARD`
+- `OPEN_ADVANCED_SETTINGS`
+
+### Unit Tests Created/Updated
+
+| Test File | Changes |
+|-----------|---------|
+| `DefaultTvScreenConfigsTest.kt` | **NEW** - 30+ tests verifying all screen mappings match behavior map |
+| `TvActionEnumTest.kt` | Extended with 100+ lines for GLOBAL_TV_REMOTE_BEHAVIOR_MAP compliance |
+| `KidsModeFilteringTest.kt` | Extended with tests for PIP seek and advanced settings blocking |
+| `OverlayBlockingTest.kt` | Extended with tests for all new actions |
+| `TvScreenInputConfigResolveTest.kt` | Updated tests to match new LIBRARY/PLAYER mappings |
+
+### Contract Compliance
+
+| Behavior Map Section | Requirement | Status |
+|---------------------|-------------|--------|
+| PLAYER SCREEN | DPAD seek, MENU → options, CENTER → play/pause | ✅ |
+| HOME/BROWSE/LIBRARY | OPEN_DETAILS, ROW_FAST_SCROLL, PLAY_FOCUSED_RESUME | ✅ |
+| DETAIL SCREEN | NEXT/PREVIOUS_EPISODE, OPEN_DETAIL_MENU | ✅ |
+| SETTINGS SCREEN | ACTIVATE_FOCUSED_SETTING, tab switching | ✅ |
+| PROFILE GATE | SELECT_PROFILE, OPEN_PROFILE_OPTIONS | ✅ |
+| GLOBAL PIP/MINIPLAYER | All PIP_* actions | ✅ |
+| Global Double BACK | EXIT_TO_HOME action + detection hook | ✅ |
+
+### Files Modified
+
+**Main Source:**
+- `tv/input/TvAction.kt` - Added 24 new actions + helper methods
+- `tv/input/TvScreenId.kt` - Added MINI_PLAYER
+- `tv/input/DefaultTvScreenConfigs.kt` - Aligned all screen configs
+- `tv/input/GlobalTvInputHost.kt` - Added double-BACK detection
+- `tv/input/TvScreenContext.kt` - Added start() and miniPlayer() factories
+- `tv/input/TvScreenInputConfig.kt` - Extended Kids Mode filter
+
+**Test Source:**
+- `tv/input/DefaultTvScreenConfigsTest.kt` - **NEW**
+- `tv/input/TvActionEnumTest.kt` - Extended
+- `tv/input/KidsModeFilteringTest.kt` - Extended
+- `tv/input/OverlayBlockingTest.kt` - Extended
+- `tv/input/TvScreenInputConfigResolveTest.kt` - Updated
+
+### What Was NOT Implemented (Per Task Constraints)
+
+- ❌ FocusKit navigation wiring (separate task)
+- ❌ Long-press MENU → OPEN_GLOBAL_SEARCH timing (TODO documented)
+- ❌ Actual EXIT_TO_HOME navigation implementation
+- ❌ Legacy InternalPlayerScreen modifications
+- ❌ UI changes
+
+All changes are pure tv/input layer updates plus tests.
 
 ---
 

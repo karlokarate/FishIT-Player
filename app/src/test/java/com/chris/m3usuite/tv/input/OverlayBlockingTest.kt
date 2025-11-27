@@ -245,6 +245,33 @@ class OverlayBlockingTest {
                 TvAction.FOCUS_TIMELINE,
                 TvAction.CHANNEL_UP,
                 TvAction.CHANNEL_DOWN,
+                // Phase 6 Task 4: Additional blocked actions
+                TvAction.OPEN_PLAYER_MENU,
+                TvAction.OPEN_DETAILS,
+                TvAction.ROW_FAST_SCROLL_FORWARD,
+                TvAction.ROW_FAST_SCROLL_BACKWARD,
+                TvAction.PLAY_FOCUSED_RESUME,
+                TvAction.OPEN_FILTER_SORT,
+                TvAction.NEXT_EPISODE,
+                TvAction.PREVIOUS_EPISODE,
+                TvAction.OPEN_DETAIL_MENU,
+                TvAction.ACTIVATE_FOCUSED_SETTING,
+                TvAction.SWITCH_SETTINGS_TAB_NEXT,
+                TvAction.SWITCH_SETTINGS_TAB_PREVIOUS,
+                TvAction.OPEN_ADVANCED_SETTINGS,
+                TvAction.SELECT_PROFILE,
+                TvAction.OPEN_PROFILE_OPTIONS,
+                TvAction.PIP_SEEK_FORWARD,
+                TvAction.PIP_SEEK_BACKWARD,
+                TvAction.PIP_TOGGLE_PLAY_PAUSE,
+                TvAction.PIP_ENTER_RESIZE_MODE,
+                TvAction.PIP_CONFIRM_RESIZE,
+                TvAction.PIP_MOVE_LEFT,
+                TvAction.PIP_MOVE_RIGHT,
+                TvAction.PIP_MOVE_UP,
+                TvAction.PIP_MOVE_DOWN,
+                TvAction.EXIT_TO_HOME,
+                TvAction.OPEN_GLOBAL_SEARCH,
             )
 
         for (action in blockedActions) {
@@ -280,9 +307,10 @@ class OverlayBlockingTest {
         // Kid profile with blocking overlay - most restrictive
         val ctx = TvScreenContext.player(isKidProfile = true, hasBlockingOverlay = true)
 
-        // Navigation should still work
-        val navAction = resolve(DefaultTvScreenConfigs.forScreen(TvScreenId.PLAYER), TvKeyRole.DPAD_LEFT, ctx)
-        assertEquals(TvAction.NAVIGATE_LEFT, navAction)
+        // Navigation should still work - but note DPAD_LEFT now maps to SEEK_BACKWARD_10S in PLAYER
+        // which is blocked by kids filter, so we test with a manual navigation action
+        val navResult = filterForOverlays(TvAction.NAVIGATE_LEFT, ctx)
+        assertEquals(TvAction.NAVIGATE_LEFT, navResult)
 
         // BACK should still work
         val backAction = resolve(DefaultTvScreenConfigs.forScreen(TvScreenId.PLAYER), TvKeyRole.BACK, ctx)
@@ -307,5 +335,63 @@ class OverlayBlockingTest {
 
         val action = resolve(quickActionsConfig, TvKeyRole.MENU, ctx)
         assertNull(action) // Blocked by overlay filter, even though allowed by kids filter
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PHASE 6 TASK 4: NEW ACTION OVERLAY BLOCKING TESTS
+    // ══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `PIP actions are blocked in overlay`() {
+        val ctx = TvScreenContext.miniPlayer().copy(hasBlockingOverlay = true)
+
+        val pipActions =
+            listOf(
+                TvAction.PIP_SEEK_FORWARD,
+                TvAction.PIP_SEEK_BACKWARD,
+                TvAction.PIP_TOGGLE_PLAY_PAUSE,
+                TvAction.PIP_ENTER_RESIZE_MODE,
+                TvAction.PIP_CONFIRM_RESIZE,
+                TvAction.PIP_MOVE_LEFT,
+                TvAction.PIP_MOVE_RIGHT,
+                TvAction.PIP_MOVE_UP,
+                TvAction.PIP_MOVE_DOWN,
+            )
+
+        for (action in pipActions) {
+            assertNull("$action should be blocked in overlay", filterForOverlays(action, ctx))
+        }
+    }
+
+    @Test
+    fun `library actions are blocked in overlay`() {
+        val ctx = TvScreenContext.library().copy(hasBlockingOverlay = true)
+
+        val libraryActions =
+            listOf(
+                TvAction.OPEN_DETAILS,
+                TvAction.ROW_FAST_SCROLL_FORWARD,
+                TvAction.ROW_FAST_SCROLL_BACKWARD,
+                TvAction.PLAY_FOCUSED_RESUME,
+                TvAction.OPEN_FILTER_SORT,
+            )
+
+        for (action in libraryActions) {
+            assertNull("$action should be blocked in overlay", filterForOverlays(action, ctx))
+        }
+    }
+
+    @Test
+    fun `EXIT_TO_HOME is blocked in overlay`() {
+        val ctx = TvScreenContext.player(hasBlockingOverlay = true)
+        val result = filterForOverlays(TvAction.EXIT_TO_HOME, ctx)
+        assertNull(result)
+    }
+
+    @Test
+    fun `OPEN_GLOBAL_SEARCH is blocked in overlay`() {
+        val ctx = TvScreenContext.library().copy(hasBlockingOverlay = true)
+        val result = filterForOverlays(TvAction.OPEN_GLOBAL_SEARCH, ctx)
+        assertNull(result)
     }
 }

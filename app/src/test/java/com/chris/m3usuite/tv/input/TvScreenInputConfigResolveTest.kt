@@ -75,11 +75,12 @@ class TvScreenInputConfigResolveTest {
     }
 
     @Test
-    fun `PLAYER config resolves MENU to OPEN_QUICK_ACTIONS`() {
+    fun `PLAYER config resolves MENU to OPEN_PLAYER_MENU`() {
         val ctx = TvScreenContext.player()
         val action = DefaultTvScreenConfigs.resolve(TvScreenId.PLAYER, TvKeyRole.MENU, ctx)
 
-        assertEquals(TvAction.OPEN_QUICK_ACTIONS, action)
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: MENU → Player options
+        assertEquals(TvAction.OPEN_PLAYER_MENU, action)
     }
 
     @Test
@@ -119,19 +120,21 @@ class TvScreenInputConfigResolveTest {
     // ══════════════════════════════════════════════════════════════════
 
     @Test
-    fun `LIBRARY config resolves FAST_FORWARD to PAGE_DOWN`() {
+    fun `LIBRARY config resolves FAST_FORWARD to ROW_FAST_SCROLL_FORWARD`() {
         val ctx = TvScreenContext.library()
         val action = DefaultTvScreenConfigs.resolve(TvScreenId.LIBRARY, TvKeyRole.FAST_FORWARD, ctx)
 
-        assertEquals(TvAction.PAGE_DOWN, action)
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: FF → Enter Row Fast Scroll Mode
+        assertEquals(TvAction.ROW_FAST_SCROLL_FORWARD, action)
     }
 
     @Test
-    fun `LIBRARY config resolves REWIND to PAGE_UP`() {
+    fun `LIBRARY config resolves REWIND to ROW_FAST_SCROLL_BACKWARD`() {
         val ctx = TvScreenContext.library()
         val action = DefaultTvScreenConfigs.resolve(TvScreenId.LIBRARY, TvKeyRole.REWIND, ctx)
 
-        assertEquals(TvAction.PAGE_UP, action)
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: RW → Row Fast Scroll backwards
+        assertEquals(TvAction.ROW_FAST_SCROLL_BACKWARD, action)
     }
 
     @Test
@@ -143,11 +146,12 @@ class TvScreenInputConfigResolveTest {
     }
 
     @Test
-    fun `LIBRARY config resolves DPAD_CENTER to null`() {
+    fun `LIBRARY config resolves DPAD_CENTER to OPEN_DETAILS`() {
         val ctx = TvScreenContext.library()
         val action = DefaultTvScreenConfigs.resolve(TvScreenId.LIBRARY, TvKeyRole.DPAD_CENTER, ctx)
 
-        assertNull(action)
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: CENTER → Open details
+        assertEquals(TvAction.OPEN_DETAILS, action)
     }
 
     // ══════════════════════════════════════════════════════════════════

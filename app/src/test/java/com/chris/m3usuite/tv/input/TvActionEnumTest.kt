@@ -157,8 +157,17 @@ class TvActionEnumTest {
 
     @Test
     fun `TvAction enum has expected number of values`() {
-        // Per contract: 5 playback + 4 overlay + 2 pagination + 2 focus + 4 navigation + 2 channel + 1 system = 20
-        assertEquals(20, TvAction.entries.size)
+        // Phase 6 Task 4: Updated count with GLOBAL_TV_REMOTE_BEHAVIOR_MAP actions
+        // Original: 5 playback + 4 overlay + 2 pagination + 2 focus + 4 navigation + 2 channel + 1 system = 20
+        // Added: OPEN_PLAYER_MENU, OPEN_DETAILS, ROW_FAST_SCROLL_FORWARD, ROW_FAST_SCROLL_BACKWARD,
+        //        PLAY_FOCUSED_RESUME, OPEN_FILTER_SORT, NEXT_EPISODE, PREVIOUS_EPISODE, OPEN_DETAIL_MENU,
+        //        ACTIVATE_FOCUSED_SETTING, SWITCH_SETTINGS_TAB_NEXT, SWITCH_SETTINGS_TAB_PREVIOUS,
+        //        OPEN_ADVANCED_SETTINGS, SELECT_PROFILE, OPEN_PROFILE_OPTIONS,
+        //        PIP_SEEK_FORWARD, PIP_SEEK_BACKWARD, PIP_TOGGLE_PLAY_PAUSE, PIP_ENTER_RESIZE_MODE,
+        //        PIP_CONFIRM_RESIZE, PIP_MOVE_LEFT, PIP_MOVE_RIGHT, PIP_MOVE_UP, PIP_MOVE_DOWN,
+        //        EXIT_TO_HOME, OPEN_GLOBAL_SEARCH
+        // Total: 20 original + 24 new = 44
+        assertEquals(44, TvAction.entries.size)
     }
 
     @Test
@@ -167,12 +176,14 @@ class TvActionEnumTest {
             TvAction.entries.filter {
                 with(TvAction.Companion) { it.isPlaybackAction() }
             }
-        assertEquals(5, playbackActions.size)
+        // Phase 6 Task 4: Now includes PLAY_FOCUSED_RESUME
+        assertEquals(6, playbackActions.size)
         assertTrue(playbackActions.contains(TvAction.PLAY_PAUSE))
         assertTrue(playbackActions.contains(TvAction.SEEK_FORWARD_10S))
         assertTrue(playbackActions.contains(TvAction.SEEK_FORWARD_30S))
         assertTrue(playbackActions.contains(TvAction.SEEK_BACKWARD_10S))
         assertTrue(playbackActions.contains(TvAction.SEEK_BACKWARD_30S))
+        assertTrue(playbackActions.contains(TvAction.PLAY_FOCUSED_RESUME))
     }
 
     @Test
@@ -181,11 +192,19 @@ class TvActionEnumTest {
             TvAction.entries.filter {
                 with(TvAction.Companion) { it.isOverlayAction() }
             }
-        assertEquals(4, overlayActions.size)
+        // Phase 6 Task 4: Now includes OPEN_PLAYER_MENU, OPEN_FILTER_SORT, OPEN_DETAIL_MENU,
+        //                 OPEN_ADVANCED_SETTINGS, OPEN_PROFILE_OPTIONS, OPEN_GLOBAL_SEARCH
+        assertEquals(10, overlayActions.size)
         assertTrue(overlayActions.contains(TvAction.OPEN_CC_MENU))
         assertTrue(overlayActions.contains(TvAction.OPEN_ASPECT_MENU))
         assertTrue(overlayActions.contains(TvAction.OPEN_QUICK_ACTIONS))
         assertTrue(overlayActions.contains(TvAction.OPEN_LIVE_LIST))
+        assertTrue(overlayActions.contains(TvAction.OPEN_PLAYER_MENU))
+        assertTrue(overlayActions.contains(TvAction.OPEN_FILTER_SORT))
+        assertTrue(overlayActions.contains(TvAction.OPEN_DETAIL_MENU))
+        assertTrue(overlayActions.contains(TvAction.OPEN_ADVANCED_SETTINGS))
+        assertTrue(overlayActions.contains(TvAction.OPEN_PROFILE_OPTIONS))
+        assertTrue(overlayActions.contains(TvAction.OPEN_GLOBAL_SEARCH))
     }
 
     @Test
