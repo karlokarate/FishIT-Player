@@ -4083,4 +4083,148 @@ FocusZone Modifiers (PLAYER_CONTROLS, SETTINGS_LIST, PROFILE_GRID)
 
 ---
 
+## Phase 6 — Task 6 (TV Input Inspector overlay + debug/build fixes) — DONE
+
+**Date:** 2025-11-27
+
+**Status:** ✅ **COMPLETE**
+
+This task implemented the TV Input Inspector debug overlay and fixed pre-existing build failures in LogViewerViewModel, LogViewerScreen, and InternalPlaybackSourceResolver.
+
+### What Was Implemented
+
+**1. Fixed Pre-existing Build Failures**
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `AppLog.kt` | Missing `setMasterEnabled`, `setCategoriesEnabled`, `bypassMaster`, `Entry`, `history`, `events` | Added all missing features |
+| `LogViewerScreen.kt` | Missing `remember` import | Added import |
+| `InternalPlaybackSourceResolver.kt` | ObjectBox `equal()` type mismatch (Int vs Long) | Cast `fileId.toLong()` |
+| `MainActivity.kt` | Missing coroutine `launch` import, missing CoroutineScope | Added import and `rememberCoroutineScope()` |
+| `TvNavigationDelegateTest.kt` | Wrong assertion imports (`kotlin.test` vs `org.junit.Assert`) | Fixed imports and parameter order |
+
+**2. DefaultTvInputDebugSink Implementation (`tv/input/DefaultTvInputDebugSink.kt`)**
+
+Default implementation of TvInputDebugSink that:
+- Logs events via `GlobalDebug.logDpad()` when GlobalDebug is enabled
+- Logs structured events via `DiagnosticsLogger.ComposeTV.logKeyEvent()`
+- Emits events to `events` SharedFlow for inspector overlay consumption
+- Maintains rolling `history` StateFlow of last 10 events
+- Supports enable/disable via `captureEnabled` flag
+
+**Data Model:**
+```kotlin
+data class TvInputEventSnapshot(
+    val timestamp: Long,
+    val keyCodeName: String,
+    val actionType: String,
+    val role: TvKeyRole?,
+    val action: TvAction?,
+    val screenId: TvScreenId,
+    val focusZone: FocusZoneId?,
+    val handled: Boolean,
+)
+```
+
+**3. GlobalDebug TV Input Inspector Toggle (`core/debug/GlobalDebug.kt`)**
+
+Added inspector toggle methods:
+- `setTvInputInspectorEnabled(on: Boolean)` - Enable/disable inspector overlay
+- `isTvInputInspectorEnabled()` - Check if inspector is enabled
+- Syncs with `DefaultTvInputDebugSink.captureEnabled`
+
+**4. TvInputInspectorOverlay Composable (`ui/debug/TvInputInspectorOverlay.kt`)**
+
+Debug-only UI overlay that displays real-time TV input events:
+
+Features:
+- Shows last 5 key events (most recent at top)
+- Displays: timestamp, keycode, TvKeyRole, TvAction, screen ID, focus zone, handled status
+- Color-coded: green background for handled, red for unhandled
+- Monospace font for readability
+- Semi-transparent black background (75% opacity)
+- Only visible in DEBUG builds and when `GlobalDebug.isTvInputInspectorEnabled()` returns true
+
+Layout:
+- Header: "📺 TV Input Inspector"
+- Event rows showing: time → keycode → role → action
+- Second line: screen=X zone=Y ✓/✗
+
+**5. Unit Tests (`tv/input/DefaultTvInputDebugSinkTest.kt`)**
+
+Created comprehensive test suite:
+- Event capture when enabled
+- No capture when disabled
+- Null role/action handling
+- Blocked action recording
+- History size limits (max 10)
+- Clear history functionality
+- Timestamp recording
+- Action type recording (DOWN/UP)
+
+### Contract Compliance
+
+| Contract Section | Requirement | Status |
+|-----------------|-------------|--------|
+| 7 | TvInputDebugSink interface | ✅ Already existed |
+| 7 | Default implementation using GlobalDebug | ✅ |
+| 7 | Default implementation using DiagnosticsLogger | ✅ |
+| 7 | Event capture for inspector | ✅ |
+| Inspector | Debug-only visibility | ✅ BuildConfig.DEBUG check |
+| Inspector | Shows KeyEvent, TvKeyRole, TvAction | ✅ |
+| Inspector | Shows ScreenId, FocusZone | ✅ |
+| Inspector | Shows handled flag | ✅ |
+| Inspector | Togglable via debug mechanism | ✅ GlobalDebug toggle |
+
+### Files Created
+
+**Main Source:**
+- `tv/input/DefaultTvInputDebugSink.kt` (136 lines) - Debug sink implementation
+- `ui/debug/TvInputInspectorOverlay.kt` (210 lines) - Debug overlay composable
+
+**Test Source:**
+- `tv/input/DefaultTvInputDebugSinkTest.kt` (200+ lines) - Unit tests
+
+### Files Modified
+
+**Main Source:**
+- `core/logging/AppLog.kt` - Added Entry, history, events, setMasterEnabled, setCategoriesEnabled, bypassMaster
+- `core/debug/GlobalDebug.kt` - Added setTvInputInspectorEnabled, isTvInputInspectorEnabled
+- `logs/ui/LogViewerScreen.kt` - Added missing `remember` import
+- `player/internal/source/InternalPlaybackSourceResolver.kt` - Fixed ObjectBox equal() type
+- `MainActivity.kt` - Added launch import, rememberCoroutineScope for settings lambdas
+
+**Test Source:**
+- `tv/input/TvNavigationDelegateTest.kt` - Fixed assertion imports
+
+### Build Status
+
+- ✅ `./gradlew compileDebugKotlin` builds successfully
+- ✅ All main source code compiles
+- ⚠️ Some pre-existing test compilation issues remain (unrelated to this task)
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ TV Input Inspector is debug-only (BuildConfig.DEBUG guard)
+- ✅ Inspector can be enabled via `GlobalDebug.setTvInputInspectorEnabled(true)`
+- ✅ No functional changes to production player flow
+- ✅ Legacy InternalPlayerScreen remains untouched
+
+### Architecture After Phase 6 Task 6
+
+```
+KeyEvent
+    ↓
+GlobalTvInputHost
+    ↓
+TvKeyDebouncer → TvKeyMapper → TvInputController
+    ↓                              ↓
+DefaultTvInputDebugSink      Action Dispatch
+    ↓
+TvInputInspectorOverlay (debug only)
+```
+
+---
+
 **Last Updated:** 2025-11-27

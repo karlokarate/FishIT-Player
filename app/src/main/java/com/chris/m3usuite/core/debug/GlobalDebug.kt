@@ -11,11 +11,39 @@ object GlobalDebug {
     private const val TAG = "GlobalDebug"
     private val enabled = AtomicBoolean(false)
 
+    /**
+     * Toggle for the TV Input Inspector overlay.
+     * When enabled, the inspector overlay shows real-time TV input events.
+     * Controlled separately from the main debug logging toggle.
+     */
+    private val tvInputInspectorEnabled = AtomicBoolean(false)
+
     fun setEnabled(on: Boolean) {
         enabled.set(on)
     }
 
     fun isEnabled(): Boolean = enabled.get()
+
+    /**
+     * Enable or disable the TV Input Inspector overlay.
+     *
+     * When enabled, [DefaultTvInputDebugSink] will capture events and the
+     * [TvInputInspectorOverlay] will display them in real-time.
+     *
+     * @param on True to enable the inspector overlay
+     */
+    fun setTvInputInspectorEnabled(on: Boolean) {
+        tvInputInspectorEnabled.set(on)
+        // Sync with DefaultTvInputDebugSink capture flag
+        com.chris.m3usuite.tv.input.DefaultTvInputDebugSink.captureEnabled = on
+    }
+
+    /**
+     * Check if the TV Input Inspector overlay is enabled.
+     *
+     * @return True if the inspector overlay should be displayed
+     */
+    fun isTvInputInspectorEnabled(): Boolean = tvInputInspectorEnabled.get()
 
     // Navigation route changes
     fun logNavigation(
