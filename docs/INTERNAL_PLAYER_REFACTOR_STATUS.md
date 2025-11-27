@@ -3557,4 +3557,109 @@ All new code is isolated in the `tv/input` package as pure foundation primitives
 
 ---
 
+## Phase 6 — Task 2 (TvScreenInputConfig + DSL + KidsMode/Overlay filtering) — DONE
+
+**Date:** 2025-11-27
+
+**Status:** ✅ **COMPLETE**
+
+This task implemented the declarative screen-specific mapping system and filtering logic for Kids Mode and overlay blocking.
+
+### What Was Implemented
+
+**1. TvScreenInputConfig Model (`tv/input/TvScreenInputConfig.kt`)**
+
+Data model for per-screen key mappings:
+- `screenId: TvScreenId` - The screen this config applies to
+- `bindings: Map<TvKeyRole, TvAction?>` - Key role to action mappings
+
+Helper methods:
+- `getRawAction(role)` - Get raw action without filtering
+- `hasBinding(role)` - Check if role is bound
+- `boundRoles()` - Get all bound roles
+
+Top-level resolution function:
+- `resolve(config, role, ctx)` - Resolves action with Kids Mode and overlay filtering
+
+**2. DSL Builder (`tv/input/TvInputConfigDsl.kt`)**
+
+Declarative DSL for screen configuration:
+
+```kotlin
+tvInputConfig {
+    screen(TvScreenId.PLAYER) {
+        on(TvKeyRole.FAST_FORWARD) mapsTo TvAction.SEEK_FORWARD_30S
+        on(TvKeyRole.MENU) mapsTo TvAction.OPEN_QUICK_ACTIONS
+    }
+    screen(TvScreenId.LIBRARY) {
+        on(TvKeyRole.FAST_FORWARD) mapsTo TvAction.PAGE_DOWN
+    }
+}
+```
+
+DSL classes:
+- `TvInputConfigBuilder` - Top-level builder
+- `ScreenConfigBuilder` - Per-screen builder
+- `KeyBindingBuilder` - Individual binding builder with `mapsTo` infix
+
+Extension functions:
+- `Map<TvScreenId, TvScreenInputConfig>.getOrEmpty(screenId)` - Get config or empty
+- `Map<TvScreenId, TvScreenInputConfig>.resolve(screenId, role, ctx)` - Resolve with filtering
+
+**3. Kids Mode Filtering (`filterForKidsMode`)**
+
+Blocks actions for kid profiles (Contract Section 7.1):
+- **Blocked:** All `SEEK_*` actions, `OPEN_CC_MENU`, `OPEN_ASPECT_MENU`, `OPEN_LIVE_LIST`
+- **Allowed:** `NAVIGATE_*`, `BACK`, `PLAY_PAUSE`, `OPEN_QUICK_ACTIONS`, `PAGE_*`, `CHANNEL_*`, `FOCUS_*`
+
+**4. Overlay Blocking Filtering (`filterForOverlays`)**
+
+Restricts input when blocking overlay is active (Contract Section 8.1):
+- **Allowed:** `NAVIGATE_*`, `BACK` (to close overlay)
+- **Blocked:** All other actions
+
+**5. Default Configurations (`tv/input/DefaultTvScreenConfigs.kt`)**
+
+Baseline configurations for major screens:
+
+| Screen | Key Mappings |
+|--------|--------------|
+| PLAYER | FF→SEEK_30S, RW→SEEK_-30S, MENU→QUICK_ACTIONS, DPAD→nav/seek |
+| LIBRARY | FF→PAGE_DOWN, RW→PAGE_UP, DPAD→NAVIGATE_* |
+| SETTINGS | DPAD→NAVIGATE_*, BACK |
+| PROFILE_GATE | DPAD→NAVIGATE_*, NUM keys for PIN |
+| START | FF→PAGE_DOWN, RW→PAGE_UP, DPAD→NAVIGATE_* |
+| DETAIL | DPAD→NAVIGATE_*, BACK |
+
+### Unit Tests Created
+
+| Test File | Test Count | Coverage |
+|-----------|------------|----------|
+| `TvScreenInputConfigResolveTest.kt` | 25+ | Config resolution, screen mappings, unmapped keys |
+| `TvInputConfigDslTest.kt` | 25+ | DSL syntax, bindings, immutability, extensions |
+| `KidsModeFilteringTest.kt` | 30+ | Blocked actions, allowed actions, integration |
+| `OverlayBlockingTest.kt` | 30+ | Overlay restrictions, ProfileGate, combined filters |
+
+### Contract Compliance
+
+| Contract Section | Requirement | Status |
+|-----------------|-------------|--------|
+| 4.2 | TvScreenInputConfig data model | ✅ |
+| 4.2 | Declarative DSL | ✅ |
+| 7.1 | Kids Mode blocked actions | ✅ |
+| 7.1 | Kids Mode allowed actions | ✅ |
+| 8.1 | Overlay blocking rules | ✅ |
+| 8.1 | NAVIGATE + BACK allowed in overlay | ✅ |
+
+### What Was NOT Implemented (Per Task Constraints)
+
+- ❌ TvInputController (Task 3)
+- ❌ FocusKit integration (Task 3)
+- ❌ UI wiring
+- ❌ Legacy InternalPlayerScreen modifications
+
+All new code is isolated in the `tv/input` package as configuration primitives.
+
+---
+
 **Last Updated:** 2025-11-27
