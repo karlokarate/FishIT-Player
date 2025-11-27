@@ -149,9 +149,9 @@ data class TvScreenContext(
  * The mapping is:
  * - screenId = PLAYER (always, since this is for the player)
  * - isPlayerScreen = true
- * - isLive = state.playbackType == LIVE
+ * - isLive = state.isLive (computed property: playbackType == PlaybackType.LIVE)
  * - isKidProfile = state.kidActive
- * - hasBlockingOverlay = state.hasBlockingOverlay
+ * - hasBlockingOverlay = state.hasBlockingOverlay (computed property)
  *
  * @receiver The InternalPlayerUiState from which to derive context
  * @return A TvScreenContext representing the player's current state
