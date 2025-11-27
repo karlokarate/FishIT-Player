@@ -2801,11 +2801,11 @@ The remaining work is primarily:
 
 ---
 
-## Phase 5 – PlayerSurface, Aspect Ratio, Trickplay & Auto-Hide (Kickoff Complete)
+## Phase 5 – PlayerSurface, Aspect Ratio, Trickplay & Auto-Hide (Groups 1 & 2 Complete)
 
 **Date:** 2025-11-26
 
-**Status:** 🔄 **KICKOFF COMPLETE** – Checklist created and contract analyzed
+**Status:** 🔄 **GROUPS 1 & 2 COMPLETE** – Black bars and aspect ratio modes implemented
 
 ### What Was Done (Kickoff Task)
 
@@ -2846,11 +2846,11 @@ The remaining work is primarily:
 **4. Checklist Created:**
 - ✅ Created `docs/INTERNAL_PLAYER_PHASE5_CHECKLIST.md`
 - ✅ 5 Task Groups with 22 specific tasks:
-  - Group 1: PlayerSurface Foundation & Black Bars (3 tasks)
-  - Group 2: Aspect Ratio Modes & Switching (3 tasks)
+  - Group 1: PlayerSurface Foundation & Black Bars (3 tasks) ✅ **DONE**
+  - Group 2: Aspect Ratio Modes & Switching (3 tasks) ✅ **DONE**
   - Group 3: Trickplay Behavior & UI Hooks (6 tasks)
   - Group 4: Controls Auto-Hide (TV vs Touch) (5 tasks)
-  - Group 5: Tests & Validation (5 tasks)
+  - Group 5: Tests & Validation (5 tasks) 🔄 **PARTIAL** (Black bar + aspect ratio tests done)
 - ✅ All contract requirements mapped to checklist items
 - ✅ Legacy behavior mapped to SIP modules
 
@@ -2858,38 +2858,118 @@ The remaining work is primarily:
 - ✅ Updated `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` with Phase 5 task groups
 - ✅ Updated `INTERNAL_PLAYER_REFACTOR_STATUS.md` with kickoff entry
 
+---
+
+### Phase 5 Groups 1 & 2 Implementation (2025-11-26)
+
+**Task 1: Implementation Task 1 - PlayerSurface Foundation (Black Bars + Aspect Ratio)**
+
+**What Was Implemented:**
+
+**Group 1: Black Bars Must Be Black ✅ COMPLETE**
+
+- ✅ **Task 1.1: PlayerView Background Configuration**
+  - Added `setBackgroundColor(AndroidColor.BLACK)` in PlayerView factory block
+  - Added `setShutterBackgroundColor(AndroidColor.BLACK)` for initial buffering state
+  - Contract Reference: Section 4.2 Rules 1-2
+
+- ✅ **Task 1.2: Compose Container Background**
+  - Added `.background(Color.Black)` to PlayerSurface Box modifier
+  - Ensures non-video areas (letterbox/pillarbox) are always black
+  - Contract Reference: Section 4.2 Rule 3
+
+- ✅ **Task 1.3: XML Layout Black Background**
+  - Added `android:background="@android:color/black"` to `compose_player_view.xml`
+  - Provides XML-level safety for black background
+  - Contract Reference: Section 4.2
+
+**Group 2: Aspect Ratio Modes & Switching ✅ COMPLETE**
+
+- ✅ **Task 2.1: AspectRatioMode Enum Verified**
+  - Existing FIT/FILL/ZOOM/STRETCH enum matches contract
+  - `toResizeMode()` mapping is correct:
+    - FIT → RESIZE_MODE_FIT (entire video fits, black bars if needed)
+    - FILL → RESIZE_MODE_FILL (fills viewport, crops edges)
+    - ZOOM → RESIZE_MODE_ZOOM (aggressive crop)
+    - STRETCH → RESIZE_MODE_FIXED_WIDTH (legacy compatibility)
+  - Contract Reference: Section 4.1
+
+- ✅ **Task 2.2: Aspect Ratio Cycling Logic**
+  - Added `AspectRatioMode.next()` extension function
+  - Deterministic cycling: FIT → FILL → ZOOM → FIT
+  - STRETCH returns to FIT (fallback)
+  - Contract Reference: Section 4.1, Legacy L1374-1379
+
+- ✅ **Task 2.3: Controller Integration**
+  - `onCycleAspectRatio` callback already exists in `InternalPlayerController`
+  - Black background maintained during mode switches (verified by tests)
+
+**Group 5 (Partial): Tests ✅ PARTIAL**
+
+- ✅ **Created `PlayerSurfacePhase5BlackBarTest.kt`**
+  - 14 unit tests covering:
+    - Black background constant verification
+    - 21:9 video on 16:9 viewport (letterbox) black bar assertion
+    - 4:3 video on 16:9 viewport (pillarbox) black bar assertion
+    - Shutter background during initial buffering
+    - AspectRatioMode → resizeMode mapping (all 4 modes)
+    - Aspect ratio cycling (FIT → FILL → ZOOM → FIT)
+    - STRETCH fallback to FIT
+    - Deterministic cycling behavior
+    - Aspect ratio changes don't affect black background
+
+### Files Modified
+
+**Main Source:**
+1. `app/src/main/java/com/chris/m3usuite/player/internal/ui/PlayerSurface.kt`
+   - Added `import android.graphics.Color as AndroidColor`
+   - Added `import androidx.compose.ui.graphics.Color`
+   - Added `import androidx.compose.foundation.background`
+   - Added `.background(Color.Black)` to Box modifier (Task 1.2)
+   - Added `setBackgroundColor(AndroidColor.BLACK)` in PlayerView factory (Task 1.1)
+   - Added `setShutterBackgroundColor(AndroidColor.BLACK)` in PlayerView factory (Task 1.1)
+   - Updated KDoc with Phase 5 documentation
+
+2. `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
+   - Added `next()` function to `AspectRatioMode` enum (Task 2.2)
+   - Implements deterministic FIT → FILL → ZOOM → FIT cycling
+
+3. `app/src/main/res/layout/compose_player_view.xml`
+   - Added `android:background="@android:color/black"` attribute (Task 1.3)
+   - Added XML comment documenting Phase 5 contract compliance
+
+**Test Source:**
+1. `app/src/test/java/com/chris/m3usuite/player/internal/ui/PlayerSurfacePhase5BlackBarTest.kt`
+   - New test file with 14 tests for Groups 1 & 2
+
 ### Contract Compliance Mapping
 
-| Contract Section | Requirement | Checklist Task(s) |
-|-----------------|-------------|-------------------|
-| 3.1 | Black bars must be black | 1.1, 1.2, 1.3 |
-| 4.1 | FIT/FILL/ZOOM modes | 2.1, 2.2 |
-| 4.2 | Background black in all modes | 1.1, 1.2, 2.3 |
-| 5.1 | PlayerSurface responsibilities | 1.1, 1.2, 3.6, 4.5 |
-| 6.2 | Trickplay behavior | 3.1, 3.2, 3.3, 3.4, 3.5 |
-| 7.2 | Auto-hide timing | 4.2 |
-| 7.3 | Never hide with overlays | 4.4 |
-| 8.1 | Single tap toggles controls | 4.5 |
-| 10.1-10.4 | Testing requirements | 5.1-5.5 |
+| Contract Section | Requirement | Implementation Status |
+|-----------------|-------------|----------------------|
+| 3.1 | Black bars must be black | ✅ PlayerView + Compose + XML backgrounds all black |
+| 4.1 | FIT/FILL/ZOOM modes | ✅ AspectRatioMode enum verified, toResizeMode() correct |
+| 4.2 | Background black in all modes | ✅ Background set at multiple layers |
+| 4.2 Rule 1 | PlayerView background black | ✅ setBackgroundColor(BLACK) |
+| 4.2 Rule 2 | Shutter color black | ✅ setShutterBackgroundColor(BLACK) |
+| 4.2 Rule 3 | Compose container black | ✅ .background(Color.Black) |
+| 4.2 Rule 5 | Black during mode switch | ✅ Background persists during changes |
 
 ### Runtime Status
 
 - ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
-- ✅ No code changes made in this kickoff task
-- ✅ All Phase 5 tasks are now documented and ready for implementation
+- ✅ SIP PlayerSurface + InternalPlayerState are non-runtime (SIP reference only)
+- ✅ No functional changes to production player flow
 - ✅ Legacy InternalPlayerScreen remains untouched
+- ✅ All 14 new tests pass
+- ✅ Build compiles successfully
 
-### What's Next (Phase 5 Implementation)
+### What's Next (Phase 5 Remaining Work)
 
-The following task groups are ready for implementation:
+The following task groups remain for future implementation:
 
-1. **Task Group 1:** PlayerSurface Foundation & Black Bars (3 tasks)
-2. **Task Group 2:** Aspect Ratio Modes & Switching (3 tasks)
-3. **Task Group 3:** Trickplay Behavior & UI Hooks (6 tasks)
-4. **Task Group 4:** Controls Auto-Hide (TV vs Touch) (5 tasks)
-5. **Task Group 5:** Tests & Validation (5 tests)
-
-All implementation must follow the checklist and contract. No new tasks will be added. Legacy InternalPlayerScreen must remain untouched.
+1. **Task Group 3:** Trickplay Behavior & UI Hooks (6 tasks)
+2. **Task Group 4:** Controls Auto-Hide (TV vs Touch) (5 tasks)
+3. **Task Group 5 (Remaining):** Trickplay, Auto-Hide, Kid Mode Tests
 
 ---
 

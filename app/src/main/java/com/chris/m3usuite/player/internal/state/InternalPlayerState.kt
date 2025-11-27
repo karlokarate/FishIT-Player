@@ -258,6 +258,26 @@ enum class AspectRatioMode {
     FILL,
     ZOOM,
     STRETCH,
+    ;
+
+    /**
+     * Returns the next AspectRatioMode in the cycling order.
+     *
+     * **Phase 5 Group 2: Aspect Ratio Cycling**
+     * Contract Section 4.1: Deterministic mode cycling
+     *
+     * Cycling order: FIT → FILL → ZOOM → FIT
+     * STRETCH is excluded from cycling (kept for legacy compatibility but not in main cycle)
+     *
+     * This matches the contract-specified cycle and legacy behavior (L1374-1379).
+     */
+    fun next(): AspectRatioMode =
+        when (this) {
+            FIT -> FILL
+            FILL -> ZOOM
+            ZOOM -> FIT
+            STRETCH -> FIT // Fallback: STRETCH returns to FIT
+        }
 }
 
 /**

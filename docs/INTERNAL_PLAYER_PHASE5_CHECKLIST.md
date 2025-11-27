@@ -56,7 +56,7 @@ Phase 5 implements the PlayerSurface composable as the visual rendering foundati
 
 **Goal:** Ensure PlayerSurface always renders non-video areas as black
 
-### Task 1.1: PlayerView Background Configuration ⬜
+### Task 1.1: PlayerView Background Configuration ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/java/com/chris/m3usuite/player/internal/ui/PlayerSurface.kt`
 - `app/src/main/res/layout/compose_player_view.xml` (optional)
@@ -78,9 +78,11 @@ setBackgroundColor(android.graphics.Color.BLACK)
 - Shutter color is black
 - No white/gray visible during initial buffering
 
+**Completed:** 2025-11-26 - Added `setBackgroundColor(AndroidColor.BLACK)` and `setShutterBackgroundColor(AndroidColor.BLACK)` to PlayerView factory block in PlayerSurface.kt.
+
 ---
 
-### Task 1.2: Compose Container Background ⬜
+### Task 1.2: Compose Container Background ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/java/com/chris/m3usuite/player/internal/ui/PlayerSurface.kt`
 
@@ -101,9 +103,11 @@ Box(
 - Background persists during aspect ratio changes
 - Background visible during video loading
 
+**Completed:** 2025-11-26 - Added `.background(Color.Black)` to PlayerSurface Box modifier.
+
 ---
 
-### Task 1.3: XML Layout Black Background ⬜
+### Task 1.3: XML Layout Black Background ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/res/layout/compose_player_view.xml`
 
@@ -120,13 +124,15 @@ Box(
 - XML-inflated PlayerView has black background
 - Background survives orientation changes
 
+**Completed:** 2025-11-26 - Added `android:background="@android:color/black"` to compose_player_view.xml.
+
 ---
 
 ## Task Group 2: Aspect Ratio Modes & Switching
 
 **Goal:** Implement contract-compliant FIT/FILL/ZOOM modes with clean switching
 
-### Task 2.1: AspectRatioMode Enum Cleanup ⬜
+### Task 2.1: AspectRatioMode Enum Cleanup ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
 
@@ -148,7 +154,7 @@ Box(
 
 ---
 
-### Task 2.2: Aspect Ratio Cycling Logic ⬜
+### Task 2.2: Aspect Ratio Cycling Logic ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
 
@@ -169,9 +175,11 @@ fun AspectRatioMode.next(): AspectRatioMode = when (this) {
 - Cycling behavior is deterministic
 - All modes cycle correctly
 
+**Completed:** 2025-11-26 - Added `next()` function to AspectRatioMode enum with deterministic FIT → FILL → ZOOM → FIT cycling.
+
 ---
 
-### Task 2.3: Aspect Ratio Controller Integration ⬜
+### Task 2.3: Aspect Ratio Controller Integration ✅ **DONE**
 **Files to Modify:**
 - `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
 - `app/src/main/java/com/chris/m3usuite/player/internal/session/InternalPlayerSession.kt`
@@ -187,6 +195,8 @@ fun AspectRatioMode.next(): AspectRatioMode = when (this) {
 - Controller callback updates state
 - PlayerSurface receives new mode
 - Black background maintained during switch
+
+**Completed:** 2025-11-26 - Verified `onCycleAspectRatio` callback already exists in InternalPlayerController. Black background enforcement is independent of aspect ratio mode.
 
 ---
 
@@ -490,7 +500,7 @@ LaunchedEffect(controlsVisible, controlsTick, isTv) {
 
 **Goal:** Comprehensive test coverage for all Phase 5 modules
 
-### Task 5.1: PlayerSurface Black-Bar Tests ⬜
+### Task 5.1: PlayerSurface Black-Bar Tests ✅ **DONE**
 **Files to Create:**
 - `app/src/test/java/com/chris/m3usuite/player/internal/ui/PlayerSurfacePhase5BlackBarTest.kt`
 
@@ -504,9 +514,11 @@ LaunchedEffect(controlsVisible, controlsTick, isTv) {
 
 **Contract Reference:** Section 10.1
 
+**Completed:** 2025-11-26 - Created PlayerSurfacePhase5BlackBarTest.kt with 14 tests covering black bar verification, aspect ratio mapping, and cycling behavior.
+
 ---
 
-### Task 5.2: Aspect Ratio Tests ⬜
+### Task 5.2: Aspect Ratio Tests ✅ **DONE**
 **Files to Create:**
 - `app/src/test/java/com/chris/m3usuite/player/internal/ui/PlayerSurfacePhase5AspectRatioTest.kt`
 
@@ -518,6 +530,8 @@ LaunchedEffect(controlsVisible, controlsTick, isTv) {
 - No white/gray visible during mode switch
 
 **Contract Reference:** Section 10.1
+
+**Completed:** 2025-11-26 - Tests included in PlayerSurfacePhase5BlackBarTest.kt (combined with black bar tests for efficiency).
 
 ---
 

@@ -30,18 +30,20 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `VOD - selects English track when system language is English`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "de", "German", false),
-            SubtitleTrack(0, 1, "en", "English", false),
-            SubtitleTrack(0, 2, "fr", "French", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "de", "German", false),
+                SubtitleTrack(0, 1, "en", "English", false),
+                SubtitleTrack(0, 2, "fr", "French", false),
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.VOD,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.VOD,
+                isKidMode = false,
+            )
 
         assertNotNull("Should select English track", selected)
         assertEquals("en", selected?.language)
@@ -50,17 +52,19 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `VOD - fallback to default flag when no language match`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "de", "German", true), // default flag
-            SubtitleTrack(0, 1, "fr", "French", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "de", "German", true), // default flag
+                SubtitleTrack(0, 1, "fr", "French", false),
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.VOD,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.VOD,
+                isKidMode = false,
+            )
 
         assertNotNull("Should fallback to track with default flag", selected)
         assertEquals("de", selected?.language)
@@ -69,17 +73,19 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `VOD - returns null when no suitable track and no default flag`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "de", "German", false),
-            SubtitleTrack(0, 1, "fr", "French", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "de", "German", false),
+                SubtitleTrack(0, 1, "fr", "French", false),
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.VOD,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.VOD,
+                isKidMode = false,
+            )
 
         // Contract Section 6.2: Without "always show subtitles" enabled, return null
         assertNull("Should return null when no suitable track", selected)
@@ -91,19 +97,21 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `SERIES - language priority order (system, primary, secondary)`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "de", "German", false),
-            SubtitleTrack(0, 1, "en", "English", false),
-            SubtitleTrack(0, 2, "es", "Spanish", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "de", "German", false),
+                SubtitleTrack(0, 1, "en", "English", false),
+                SubtitleTrack(0, 2, "es", "Spanish", false),
+            )
 
         // Test primary language match
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("de", "en", "es"),
-            playbackType = PlaybackType.SERIES,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("de", "en", "es"),
+                playbackType = PlaybackType.SERIES,
+                isKidMode = false,
+            )
 
         assertNotNull("Should select first matching language", selected)
         assertEquals("de", selected?.language)
@@ -111,17 +119,19 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `SERIES - respects secondary language when primary not available`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "en", "English", false),
-            SubtitleTrack(0, 1, "es", "Spanish", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "en", "English", false),
+                SubtitleTrack(0, 1, "es", "Spanish", false),
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("de", "en"),
-            playbackType = PlaybackType.SERIES,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("de", "en"),
+                playbackType = PlaybackType.SERIES,
+                isKidMode = false,
+            )
 
         assertNotNull("Should fallback to secondary language", selected)
         assertEquals("en", selected?.language)
@@ -133,16 +143,18 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `LIVE - selects subtitle track normally`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "en", "English", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "en", "English", false),
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.LIVE,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.LIVE,
+                isKidMode = false,
+            )
 
         // LIVE content allows subtitles (Contract Section 6.2)
         assertNotNull("LIVE content should allow subtitles", selected)
@@ -155,36 +167,39 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `no tracks - returns null without crashing (VOD)`() {
-        val selected = policy.selectInitialTrack(
-            availableTracks = emptyList(),
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.VOD,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = emptyList(),
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.VOD,
+                isKidMode = false,
+            )
 
         assertNull("Should return null when no tracks available", selected)
     }
 
     @Test
     fun `no tracks - returns null without crashing (SERIES)`() {
-        val selected = policy.selectInitialTrack(
-            availableTracks = emptyList(),
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.SERIES,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = emptyList(),
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.SERIES,
+                isKidMode = false,
+            )
 
         assertNull("Should return null when no tracks available", selected)
     }
 
     @Test
     fun `no tracks - returns null without crashing (LIVE)`() {
-        val selected = policy.selectInitialTrack(
-            availableTracks = emptyList(),
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.LIVE,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = emptyList(),
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.LIVE,
+                isKidMode = false,
+            )
 
         assertNull("Should return null when no tracks available", selected)
     }
@@ -195,16 +210,18 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `Kid Mode - no subtitles selected (VOD)`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "en", "English", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "en", "English", false),
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.VOD,
-            isKidMode = true,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.VOD,
+                isKidMode = true,
+            )
 
         // Contract Section 3.1: Kid Mode → always "no subtitles"
         assertNull("Kid Mode should block all subtitle selection", selected)
@@ -212,48 +229,54 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `Kid Mode - no subtitles selected (SERIES)`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "en", "English", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "en", "English", false),
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.SERIES,
-            isKidMode = true,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.SERIES,
+                isKidMode = true,
+            )
 
         assertNull("Kid Mode should block all subtitle selection", selected)
     }
 
     @Test
     fun `Kid Mode - no subtitles selected (LIVE)`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "en", "English", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "en", "English", false),
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.LIVE,
-            isKidMode = true,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.LIVE,
+                isKidMode = true,
+            )
 
         assertNull("Kid Mode should block all subtitle selection", selected)
     }
 
     @Test
     fun `Kid Mode - blocks even with default flag`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "en", "English", true), // default flag
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "en", "English", true), // default flag
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.VOD,
-            isKidMode = true,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.VOD,
+                isKidMode = true,
+            )
 
         assertNull("Kid Mode should block even tracks with default flag", selected)
     }
@@ -264,17 +287,19 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `handles null language in track gracefully`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, null, "Unknown", false),
-            SubtitleTrack(0, 1, "en", "English", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, null, "Unknown", false),
+                SubtitleTrack(0, 1, "en", "English", false),
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("en"),
-            playbackType = PlaybackType.VOD,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("en"),
+                playbackType = PlaybackType.VOD,
+                isKidMode = false,
+            )
 
         assertNotNull("Should skip null language and find English", selected)
         assertEquals("en", selected?.language)
@@ -282,17 +307,19 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `empty preferred languages list - fallback to default flag`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "de", "German", true), // default flag
-            SubtitleTrack(0, 1, "en", "English", false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "de", "German", true), // default flag
+                SubtitleTrack(0, 1, "en", "English", false),
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = emptyList(),
-            playbackType = PlaybackType.VOD,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = emptyList(),
+                playbackType = PlaybackType.VOD,
+                isKidMode = false,
+            )
 
         assertNotNull("Should fallback to default flag", selected)
         assertEquals("de", selected?.language)
@@ -300,16 +327,18 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `case-insensitive language matching`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "EN", "English", false), // uppercase
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "EN", "English", false), // uppercase
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("en"), // lowercase
-            playbackType = PlaybackType.VOD,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("en"), // lowercase
+                playbackType = PlaybackType.VOD,
+                isKidMode = false,
+            )
 
         assertNotNull("Should match language case-insensitively", selected)
         assertEquals("EN", selected?.language)
@@ -317,17 +346,19 @@ class InternalPlayerSessionSubtitleIntegrationTest {
 
     @Test
     fun `multiple default flags - selects first one`() {
-        val tracks = listOf(
-            SubtitleTrack(0, 0, "de", "German", true), // first default
-            SubtitleTrack(0, 1, "en", "English", true), // second default
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(0, 0, "de", "German", true), // first default
+                SubtitleTrack(0, 1, "en", "English", true), // second default
+            )
 
-        val selected = policy.selectInitialTrack(
-            availableTracks = tracks,
-            preferredLanguages = listOf("fr"), // no match
-            playbackType = PlaybackType.VOD,
-            isKidMode = false,
-        )
+        val selected =
+            policy.selectInitialTrack(
+                availableTracks = tracks,
+                preferredLanguages = listOf("fr"), // no match
+                playbackType = PlaybackType.VOD,
+                isKidMode = false,
+            )
 
         assertNotNull("Should select first track with default flag", selected)
         assertEquals("de", selected?.language)
@@ -350,9 +381,10 @@ private class TestSubtitleSelectionPolicy : SubtitleSelectionPolicy {
 
         // Try to match preferred languages in order
         for (lang in preferredLanguages) {
-            val match = availableTracks.firstOrNull { track ->
-                track.language?.equals(lang, ignoreCase = true) == true
-            }
+            val match =
+                availableTracks.firstOrNull { track ->
+                    track.language?.equals(lang, ignoreCase = true) == true
+                }
             if (match != null) return match
         }
 
