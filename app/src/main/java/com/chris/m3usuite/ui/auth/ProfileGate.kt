@@ -42,6 +42,8 @@ import com.chris.m3usuite.ui.auth.CreateProfileSheet
 import com.chris.m3usuite.ui.debug.safePainter
 import com.chris.m3usuite.ui.focus.TvRow
 import com.chris.m3usuite.ui.focus.focusGroup
+import com.chris.m3usuite.ui.focus.focusZone
+import com.chris.m3usuite.ui.focus.FocusZoneId
 import com.chris.m3usuite.ui.theme.DesignTokens
 import com.chris.m3usuite.ui.util.rememberAvatarModel
 import kotlinx.coroutines.Dispatchers
@@ -465,12 +467,14 @@ fun ProfileGate(onEnter: () -> Unit) {
             com.chris.m3usuite.ui.state
                 .rememberRouteListState("profiles:gate")
 
+        // Phase 6 Task 5: Mark profile selection area as PROFILE_GRID FocusZone
         LazyColumn(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(16.dp)
-                    .focusGroup(),
+                    .focusGroup()
+                    .focusZone(FocusZoneId.PROFILE_GRID),
             state = listState,
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),

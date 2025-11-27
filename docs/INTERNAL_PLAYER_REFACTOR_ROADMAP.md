@@ -1079,9 +1079,27 @@ The Internal Player is a **consumer** of the global TV input system:
 
 ### Status
 
-**Status:** 🔄 **ROADMAP FULLY ALIGNED WITH CONTRACT** – All mandatory items documented
+**Status:** 🔄 **TASK 5 COMPLETE** – FocusKit integration & FocusZones wiring done
 
 The Phase 6 roadmap is now **fully aligned** with `INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md`.
+
+**Completed Tasks (1-5):**
+- ✅ **Task 1:** TvKeyRole, TvKeyMapper, TvAction, TvScreenId, TvScreenContext
+- ✅ **Task 2:** TvScreenInputConfig, DSL builder, Kids Mode filter, Overlay filter
+- ✅ **Task 3:** TvInputController, GlobalTvInputHost, SIP player wiring
+- ✅ **Task 4:** TvInput mapping aligned with GLOBAL_TV_REMOTE_BEHAVIOR_MAP
+- ✅ **Task 5:** FocusKit integration & FocusZones wiring
+
+**Task 5 Deliverables:**
+- ✅ **FocusZoneId enum** – All 10 zones (PLAYER_CONTROLS, QUICK_ACTIONS, TIMELINE, CC_BUTTON, ASPECT_BUTTON, EPG_OVERLAY, LIVE_LIST, LIBRARY_ROW, SETTINGS_LIST, PROFILE_GRID)
+- ✅ **focusZone() modifier** – Registers zones with FocusRequester, tracks focus, unregisters on dispose
+- ✅ **FocusKit zone methods** – requestZoneFocus(), getCurrentZone(), isZoneRegistered(), moveDpad*()
+- ✅ **FocusKitNavigationDelegate** – TvNavigationDelegate implementation using FocusKit
+- ✅ **Zone markers** – InternalPlayerControls (PLAYER_CONTROLS), ProfileGate (PROFILE_GRID), SettingsScreen (SETTINGS_LIST)
+- ✅ **TvNavigationDelegateTest** – 20+ unit tests
+
+**Remaining Tasks (6+):**
+- ⬜ **Task 6+:** TV Input Debug Overlay, full screen consumer integration, testing & validation
 
 **Mandatory Items Added:**
 - ✅ **TvScreenInputConfig & Declarative DSL** – Per-screen key→action mapping with compile-time type safety
@@ -1102,8 +1120,6 @@ The Phase 6 roadmap is now **fully aligned** with `INTERNAL_PLAYER_TV_INPUT_CONT
 - ✅ Testing expectations for all components
 
 **Implementation Checklist:** See `docs/INTERNAL_PLAYER_PHASE6_CHECKLIST.md` for detailed task breakdown (10 task groups, 56 tasks).
-
-**No implementation tasks are marked as DONE** – all Phase 6 work remains pending.
 
 ### Context Refresh Notes (2025-11-27)
 

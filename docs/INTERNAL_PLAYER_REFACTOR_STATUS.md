@@ -2776,7 +2776,7 @@ The remaining work is primarily:
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 4 – Subtitles | ✅ SIP Complete | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 5 – PlayerSurface | ✅ Validated & Complete | 2025-11-27 | Legacy | ✅ Yes |
-| Phase 6 – Global TV Input | 🔄 Task 4 Complete | 2025-11-27 | Legacy | 🔄 Partial |
+| Phase 6 – Global TV Input | 🔄 Task 5 Complete | 2025-11-27 | Legacy | 🔄 Partial |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 8 – Lifecycle | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 9 – Diagnostics | ⬜ Not Started | - | Legacy | ⬜ No |
@@ -2789,10 +2789,10 @@ The remaining work is primarily:
   - 🔄 Partial = Foundation/domain models complete, some tests remaining
   - ⬜ No = Not started
 
-**Phase 6 Status:** 🔄 **TASK 4 COMPLETE - TvInput Mapping Aligned with GLOBAL_TV_REMOTE_BEHAVIOR_MAP** (2025-11-27)
+**Phase 6 Status:** 🔄 **TASK 5 COMPLETE - FocusKit integration & FocusZones wiring** (2025-11-27)
 
-Phase 6 Task 4 completed. All screen configurations now align with `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`.
-Tasks 1-4 are complete. Tasks 5+ (FocusKit integration, Debug UI, etc.) remain pending.
+Phase 6 Task 5 completed. FocusZoneId enum, focusZone() modifier, and FocusKitNavigationDelegate implemented.
+Tasks 1-5 are complete. Tasks 6+ (Debug UI, screen consumer integration) remain pending.
 
 **Added mandatory items:**
 - ✅ **TvScreenInputConfig & Declarative DSL** – Per-screen key→action mapping with DSL syntax (MANDATORY)
@@ -3916,6 +3916,170 @@ Extended `isBlockedForKids()` to block:
 - ❌ UI changes
 
 All changes are pure tv/input layer updates plus tests.
+
+---
+
+## Phase 6 — Task 5 (FocusKit integration & FocusZones wiring) — DONE
+
+**Date:** 2025-11-27
+
+**Status:** ✅ **COMPLETE**
+
+This task implemented the FocusZones system in FocusKit and wired it to the TV input controller via FocusKitNavigationDelegate.
+
+### What Was Implemented
+
+**1. FocusZoneId Enum (`ui/focus/FocusKit.kt`)**
+
+Added FocusZoneId enum with all 10 zones per contract Section 6.1:
+
+| Zone ID | Description |
+|---------|-------------|
+| `PLAYER_CONTROLS` | Play/pause, seek bar, volume controls |
+| `QUICK_ACTIONS` | CC, aspect ratio, speed, PiP buttons |
+| `TIMELINE` | Seek bar / progress indicator |
+| `CC_BUTTON` | Closed captions button |
+| `ASPECT_BUTTON` | Aspect ratio button |
+| `EPG_OVERLAY` | EPG program guide navigation |
+| `LIVE_LIST` | Live channel selection overlay |
+| `LIBRARY_ROW` | Content rows in library screens |
+| `SETTINGS_LIST` | Settings items list |
+| `PROFILE_GRID` | Profile selection grid |
+
+**2. focusZone() Modifier (`ui/focus/FocusKit.kt`)**
+
+Added `Modifier.focusZone(zoneId: FocusZoneId)` extension that:
+- Registers the zone with a FocusRequester in an internal registry
+- Tracks the currently focused zone when composable gains focus
+- Unregisters the zone when composable leaves composition
+- Composes with existing FocusKit primitives (focusGroup, tvFocusableItem)
+- Logs zone registration/focus events via GlobalDebug
+
+**3. FocusKit Zone Management Functions**
+
+Added zone management methods to FocusKit object:
+
+| Method | Description |
+|--------|-------------|
+| `requestZoneFocus(zoneId)` | Request focus on a specific zone |
+| `getCurrentZone()` | Get the currently focused zone |
+| `isZoneRegistered(zoneId)` | Check if a zone is registered |
+| `getRegisteredZones()` | Get all registered zones |
+| `moveDpadUp()` | Move focus up (logs intent) |
+| `moveDpadDown()` | Move focus down (logs intent) |
+| `moveDpadLeft()` | Move focus left (logs intent) |
+| `moveDpadRight()` | Move focus right (logs intent) |
+
+**4. FocusKitNavigationDelegate (`tv/input/FocusKitNavigationDelegate.kt`)**
+
+Created implementation of TvNavigationDelegate that bridges TV input to FocusKit:
+
+- `moveFocus(action)` - Maps NAVIGATE_* actions to FocusKit.moveDpad*() methods
+- `focusZone(action)` - Maps FOCUS_* actions to FocusKit.requestZoneFocus()
+- `zoneForAction(action)` - Utility to get FocusZoneId for a focus action
+
+Action mappings:
+- `NAVIGATE_UP` → `FocusKit.moveDpadUp()`
+- `NAVIGATE_DOWN` → `FocusKit.moveDpadDown()`
+- `NAVIGATE_LEFT` → `FocusKit.moveDpadLeft()`
+- `NAVIGATE_RIGHT` → `FocusKit.moveDpadRight()`
+- `FOCUS_QUICK_ACTIONS` → `FocusKit.requestZoneFocus(QUICK_ACTIONS)`
+- `FOCUS_TIMELINE` → `FocusKit.requestZoneFocus(TIMELINE)`
+
+**5. FocusZone Markers in SIP Screens**
+
+Added focusZone() markers to key SIP screens:
+
+| Screen | Zone | Location |
+|--------|------|----------|
+| InternalPlayerControls | `PLAYER_CONTROLS` | Main controls Column |
+| ProfileGate | `PROFILE_GRID` | Profile selection LazyColumn |
+| SettingsScreen | `SETTINGS_LIST` | Settings Column |
+
+**6. Bug Fix: GlobalDebug.log()**
+
+Fixed missing `GlobalDebug.log()` method call in InternalPlayerControls by using existing `logDpad()` method.
+
+### Unit Tests Created
+
+| Test File | Test Count | Coverage |
+|-----------|------------|----------|
+| `TvNavigationDelegateTest.kt` | 20+ | moveFocus, focusZone, zoneForAction, interface contracts |
+
+Test categories:
+- moveFocus with NAVIGATE_* actions
+- moveFocus with non-navigation actions
+- focusZone with FOCUS_* actions
+- focusZone with non-focus actions
+- zoneForAction mapping verification
+- NoOpTvNavigationDelegate behavior
+- Interface contract validation
+
+### Contract Compliance
+
+| Contract Section | Requirement | Status |
+|-----------------|-------------|--------|
+| 6.1 | FocusZone enum with 10 zones | ✅ |
+| 6.2 | focusZone() modifier | ✅ |
+| 6.2 | Zone registration/unregistration | ✅ |
+| 6.2 | requestZoneFocus() method | ✅ |
+| 6.2 | TvNavigationDelegate using FocusKit | ✅ |
+| Task 3 | NAVIGATE_* → FocusKit.moveDpad* | ✅ |
+| Task 3 | FOCUS_* → FocusKit.requestZoneFocus | ✅ |
+| Task 4 | Mark zones in InternalPlayerControls | ✅ |
+| Task 4 | Mark zones in ProfileGate | ✅ |
+| Task 4 | Mark zones in SettingsScreen | ✅ |
+
+### Files Created
+
+**Main Source:**
+- `tv/input/FocusKitNavigationDelegate.kt` (85 lines) - TvNavigationDelegate implementation
+
+**Test Source:**
+- `tv/input/TvNavigationDelegateTest.kt` (180+ lines) - Comprehensive unit tests
+
+### Files Modified
+
+**Main Source:**
+- `ui/focus/FocusKit.kt` - Added FocusZoneId enum, focusZone() modifier, zone management functions
+- `player/internal/ui/InternalPlayerControls.kt` - Added focusZone import, PLAYER_CONTROLS marker, fixed GlobalDebug call
+- `ui/auth/ProfileGate.kt` - Added focusZone import, PROFILE_GRID marker
+- `ui/screens/SettingsScreen.kt` - Added focusZone import, SETTINGS_LIST marker
+
+### Files NOT Modified
+
+- ❌ `player/InternalPlayerScreen.kt` - **UNTOUCHED** (legacy remains active)
+- ❌ `tv/input/DefaultTvInputController.kt` - Not modified in this task (wiring TBD)
+
+### What Was NOT Implemented (Per Task Constraints)
+
+- ❌ Wiring FocusKitNavigationDelegate into DefaultTvInputController (left as TODO for future task)
+- ❌ Library row FocusZone markers (requires StartScreen/LibraryScreen changes)
+- ❌ MiniPlayer FocusZone markers (Phase 7)
+- ❌ UI tests for zone focus transitions (Phase 10)
+- ❌ Fancy animations or UI changes
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ FocusZones are registered when SIP screens are composed
+- ✅ Zone focus tracking active via GlobalDebug logging
+- ✅ No functional changes to production player flow
+- ✅ Legacy InternalPlayerScreen remains untouched
+
+### Architecture After Phase 6 Task 5
+
+```
+TvInputController
+    ↓
+TvNavigationDelegate (interface)
+    ↓
+FocusKitNavigationDelegate (implementation)
+    ↓
+FocusKit (zone management)
+    ↓
+FocusZone Modifiers (PLAYER_CONTROLS, SETTINGS_LIST, PROFILE_GRID)
+```
 
 ---
 

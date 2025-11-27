@@ -45,6 +45,8 @@ import com.chris.m3usuite.tv.input.GlobalTvInputHost
 import com.chris.m3usuite.tv.input.TvAction
 import com.chris.m3usuite.tv.input.TvInputController
 import com.chris.m3usuite.tv.input.toTvScreenContext
+import com.chris.m3usuite.ui.focus.FocusZoneId
+import com.chris.m3usuite.ui.focus.focusZone
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
@@ -114,9 +116,9 @@ fun InternalPlayerContent(
 
     LaunchedEffect(focusedAction?.value) {
         focusedAction?.value?.let { action ->
-            GlobalDebug.log(
-                tag = "TvInput",
-                message = "Focused action: $action",
+            GlobalDebug.logDpad(
+                action = "TvInput:FocusedAction",
+                extras = mapOf("action" to action.name),
             )
         }
     }
@@ -362,11 +364,13 @@ fun InternalPlayerContent(
                 ),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
+            // Phase 6 Task 5: Mark controls container as PLAYER_CONTROLS FocusZone
             Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(16.dp)
+                        .focusZone(FocusZoneId.PLAYER_CONTROLS),
             ) {
                 MainControlsRow(
                     state = state,
@@ -382,6 +386,8 @@ fun InternalPlayerContent(
                     onPipClick = { requestPictureInPicture(activity) },
                 )
                 Spacer(Modifier.height(8.dp))
+                // Phase 6 Task 5: The timeline/seekbar is part of PLAYER_CONTROLS zone
+                // A dedicated TIMELINE zone can be added if separate focus behavior is needed
                 ProgressRow(state = state, onScrubTo = controller.onSeekTo)
             }
         }

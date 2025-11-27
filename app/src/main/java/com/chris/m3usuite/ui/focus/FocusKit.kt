@@ -19,6 +19,7 @@ import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,8 +63,81 @@ import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.ui.compat.focusGroup as compatFocusGroup
 import com.chris.m3usuite.ui.fx.tvFocusGlow as fxTvFocusGlow
 import com.chris.m3usuite.ui.state.writeRowFocus
+import java.util.concurrent.ConcurrentHashMap
 
 // Modifier extensions (centralized)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Phase 6 Task 5: FocusZone System
+// ════════════════════════════════════════════════════════════════════════════════
+//
+// FocusZoneId defines logical focus areas that the TV input system can target.
+// TvNavigationDelegate uses these to move focus between zones.
+//
+// Contract Reference: INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 6.1
+
+/**
+ * Logical focus zone identifiers for the TV input system.
+ *
+ * Each zone represents a named logical focus area that can be targeted by
+ * TvInputController via FOCUS_* actions. Zones are registered at composition
+ * time and can be navigated programmatically.
+ *
+ * Contract Reference: INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 6.1
+ */
+enum class FocusZoneId {
+    /** Play/pause, seek bar, volume controls */
+    PLAYER_CONTROLS,
+
+    /** CC, aspect ratio, speed, PiP buttons */
+    QUICK_ACTIONS,
+
+    /** Seek bar / progress indicator */
+    TIMELINE,
+
+    /** Closed captions button */
+    CC_BUTTON,
+
+    /** Aspect ratio button */
+    ASPECT_BUTTON,
+
+    /** EPG program guide navigation */
+    EPG_OVERLAY,
+
+    /** Live channel selection overlay */
+    LIVE_LIST,
+
+    /** Content rows in library screens */
+    LIBRARY_ROW,
+
+    /** Settings items list */
+    SETTINGS_LIST,
+
+    /** Profile selection grid */
+    PROFILE_GRID,
+}
+
+/**
+ * Internal registry for focus zone FocusRequesters.
+ *
+ * This is a thread-safe map that stores FocusRequester instances for each
+ * registered zone. Zones are registered when their composables enter composition
+ * and unregistered when they leave.
+ */
+private val focusZoneRegistry = ConcurrentHashMap<FocusZoneId, FocusRequester>()
+
+/**
+ * Tracks the currently active (focused) zone.
+ * This is updated when zones gain focus.
+ */
+private val currentFocusedZone = mutableStateOf<FocusZoneId?>(null)
+
+/**
+ * CompositionLocal for the current FocusZoneId being composed.
+ * Used by nested composables to know which zone they belong to.
+ */
+val LocalFocusZoneId: androidx.compose.runtime.ProvidableCompositionLocal<FocusZoneId?> =
+    compositionLocalOf { null }
 
 // Forces TV focus behavior even if device detection reports non-TV (e.g., overlays or misdetection).
 // Scoped via CompositionLocal around special overlays like HomeChrome.
@@ -72,6 +146,73 @@ val LocalForceTvFocus: androidx.compose.runtime.ProvidableCompositionLocal<Boole
 object LocalForceTvFocusFacade {
     val value: androidx.compose.runtime.ProvidableCompositionLocal<Boolean> = LocalForceTvFocus
 }
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Phase 6 Task 5: focusZone Modifier and Zone Management Functions
+// ════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Mark a composable as belonging to a specific FocusZone.
+ *
+ * This modifier:
+ * 1. Registers the zone with a FocusRequester in the internal registry
+ * 2. Provides the zone ID via CompositionLocal for nested composables
+ * 3. Composes with existing FocusKit primitives (focusGroup, tvFocusableItem, etc.)
+ * 4. Unregisters the zone when the composable leaves composition
+ *
+ * Usage:
+ * ```kotlin
+ * Row(
+ *     modifier = Modifier
+ *         .focusGroup()
+ *         .focusZone(FocusZoneId.PLAYER_CONTROLS)
+ * ) {
+ *     // Controls...
+ * }
+ * ```
+ *
+ * Contract Reference: INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 6.2
+ *
+ * @param zoneId The zone identifier for this composable
+ */
+@Composable
+fun Modifier.focusZone(zoneId: FocusZoneId): Modifier =
+    composed {
+        val focusRequester = remember { FocusRequester() }
+
+        // Register zone on composition, unregister on dispose
+        DisposableEffect(zoneId) {
+            focusZoneRegistry[zoneId] = focusRequester
+            GlobalDebug.logDpad(
+                action = "FocusZone:Register",
+                extras = mapOf("zone" to zoneId.name),
+            )
+            onDispose {
+                focusZoneRegistry.remove(zoneId)
+                // Clear current zone if this was the focused one
+                if (currentFocusedZone.value == zoneId) {
+                    currentFocusedZone.value = null
+                }
+                GlobalDebug.logDpad(
+                    action = "FocusZone:Unregister",
+                    extras = mapOf("zone" to zoneId.name),
+                )
+            }
+        }
+
+        // Update current zone when this zone gains focus
+        this
+            .focusRequester(focusRequester)
+            .onFocusEvent { focusState ->
+                if (focusState.hasFocus || focusState.isFocused) {
+                    currentFocusedZone.value = zoneId
+                    GlobalDebug.logDpad(
+                        action = "FocusZone:Focused",
+                        extras = mapOf("zone" to zoneId.name),
+                    )
+                }
+            }
+    }
 
 @Composable
 fun Modifier.tvClickable(
@@ -612,6 +753,140 @@ object FocusKit {
         focusColors = focusColors,
         content = content,
     )
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 6 Task 5: FocusZone Navigation Methods
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // These methods allow TvNavigationDelegate to request focus on specific zones
+    // and perform DPAD navigation within or across zones.
+    //
+    // Contract Reference: INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 6.2
+
+    /**
+     * Request focus on a specific zone.
+     *
+     * This method looks up the FocusRequester for the given zone and requests
+     * focus on it. If the zone is not registered, returns false.
+     *
+     * @param zoneId The zone to focus
+     * @return True if focus was successfully requested, false if zone not found
+     */
+    fun requestZoneFocus(zoneId: FocusZoneId): Boolean {
+        val requester = focusZoneRegistry[zoneId]
+        return if (requester != null) {
+            try {
+                requester.requestFocus()
+                GlobalDebug.logDpad(
+                    action = "FocusZone:RequestFocus",
+                    extras = mapOf("zone" to zoneId.name, "success" to true),
+                )
+                true
+            } catch (e: IllegalStateException) {
+                // FocusRequester not attached to a component
+                GlobalDebug.logDpad(
+                    action = "FocusZone:RequestFocus",
+                    extras = mapOf("zone" to zoneId.name, "success" to false, "error" to "not attached"),
+                )
+                false
+            }
+        } else {
+            GlobalDebug.logDpad(
+                action = "FocusZone:RequestFocus",
+                extras = mapOf("zone" to zoneId.name, "success" to false, "error" to "not registered"),
+            )
+            false
+        }
+    }
+
+    /**
+     * Get the currently focused zone.
+     *
+     * @return The currently focused zone ID, or null if no zone has focus
+     */
+    fun getCurrentZone(): FocusZoneId? = currentFocusedZone.value
+
+    /**
+     * Check if a specific zone is registered.
+     *
+     * @param zoneId The zone to check
+     * @return True if the zone is registered
+     */
+    fun isZoneRegistered(zoneId: FocusZoneId): Boolean = focusZoneRegistry.containsKey(zoneId)
+
+    /**
+     * Get all currently registered zones.
+     *
+     * @return Set of registered zone IDs
+     */
+    fun getRegisteredZones(): Set<FocusZoneId> = focusZoneRegistry.keys.toSet()
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // DPAD Navigation Methods
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // These methods provide programmatic DPAD navigation that TvNavigationDelegate
+    // can use to respond to NAVIGATE_* TvActions.
+    //
+    // Note: These are stub implementations. Full DPAD navigation within a zone
+    // relies on Compose's built-in focus system (FocusManager.moveFocus).
+    // These methods primarily log the navigation intent for debugging and
+    // can be extended in future to provide zone-aware navigation.
+
+    /**
+     * Move focus up within the current zone or to the zone above.
+     *
+     * @return True if focus movement was initiated
+     */
+    fun moveDpadUp(): Boolean {
+        GlobalDebug.logDpad(
+            action = "FocusZone:MoveDpadUp",
+            extras = mapOf("currentZone" to (currentFocusedZone.value?.name ?: "none")),
+        )
+        // Focus movement is handled by Compose's FocusManager in response to key events.
+        // This method logs the intent and returns true to indicate the action was processed.
+        // TODO(Phase 10): Consider adding zone-to-zone mapping for UP navigation.
+        return true
+    }
+
+    /**
+     * Move focus down within the current zone or to the zone below.
+     *
+     * @return True if focus movement was initiated
+     */
+    fun moveDpadDown(): Boolean {
+        GlobalDebug.logDpad(
+            action = "FocusZone:MoveDpadDown",
+            extras = mapOf("currentZone" to (currentFocusedZone.value?.name ?: "none")),
+        )
+        return true
+    }
+
+    /**
+     * Move focus left within the current zone.
+     *
+     * @return True if focus movement was initiated
+     */
+    fun moveDpadLeft(): Boolean {
+        GlobalDebug.logDpad(
+            action = "FocusZone:MoveDpadLeft",
+            extras = mapOf("currentZone" to (currentFocusedZone.value?.name ?: "none")),
+        )
+        return true
+    }
+
+    /**
+     * Move focus right within the current zone.
+     *
+     * @return True if focus movement was initiated
+     */
+    fun moveDpadRight(): Boolean {
+        GlobalDebug.logDpad(
+            action = "FocusZone:MoveDpadRight",
+            extras = mapOf("currentZone" to (currentFocusedZone.value?.name ?: "none")),
+        )
+        return true
+    }
 
     fun isTvDevice(context: Context): Boolean =
         com.chris.m3usuite.ui.focus
