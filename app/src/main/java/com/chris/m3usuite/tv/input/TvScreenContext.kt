@@ -139,3 +139,28 @@ data class TvScreenContext(
             )
     }
 }
+
+/**
+ * Extension function to build TvScreenContext from SIP InternalPlayerUiState.
+ *
+ * Phase 6 Task 3: This function converts the player's UI state into a
+ * TvScreenContext that can be used by the TV input pipeline.
+ *
+ * The mapping is:
+ * - screenId = PLAYER (always, since this is for the player)
+ * - isPlayerScreen = true
+ * - isLive = state.isLive (computed property: playbackType == PlaybackType.LIVE)
+ * - isKidProfile = state.kidActive
+ * - hasBlockingOverlay = state.hasBlockingOverlay (computed property)
+ *
+ * @receiver The InternalPlayerUiState from which to derive context
+ * @return A TvScreenContext representing the player's current state
+ */
+fun com.chris.m3usuite.player.internal.state.InternalPlayerUiState.toTvScreenContext(): TvScreenContext =
+    TvScreenContext(
+        screenId = TvScreenId.PLAYER,
+        isPlayerScreen = true,
+        isLive = this.isLive,
+        isKidProfile = this.kidActive,
+        hasBlockingOverlay = this.hasBlockingOverlay,
+    )

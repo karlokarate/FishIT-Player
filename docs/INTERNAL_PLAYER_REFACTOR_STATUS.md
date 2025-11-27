@@ -3662,4 +3662,136 @@ All new code is isolated in the `tv/input` package as configuration primitives.
 
 ---
 
+## Phase 6 — Task 3 (TvInputController + GlobalTvInputHost + SIP Player Wiring) — DONE
+
+**Date:** 2025-11-27
+
+**Status:** ✅ **COMPLETE**
+
+This task implemented the global TV input controller, host, and initial SIP Internal Player integration as specified in the Phase 6 contract.
+
+### What Was Implemented
+
+**1. TvInputController Interface (`tv/input/TvInputController.kt`)**
+
+Defines the global TV input controller API per contract Section 5.1:
+
+- `onKeyEvent(role: TvKeyRole, ctx: TvScreenContext): Boolean` - Process key events
+- `quickActionsVisible: State<Boolean>` - Observable quick actions visibility
+- `focusedAction: State<TvAction?>` - Observable focused action for UI highlighting
+
+Supporting interfaces:
+- `TvNavigationDelegate` - Stub interface for FocusKit integration (Task 4)
+- `TvActionListener` - Callback interface for screen-specific action dispatch
+
+**2. DefaultTvInputController Implementation (`tv/input/DefaultTvInputController.kt`)**
+
+Default implementation with:
+
+- Config-based action resolution via `TvScreenInputConfig`
+- Quick actions visibility management (`OPEN_QUICK_ACTIONS` → true, `BACK` → false)
+- Focused action tracking for UI highlighting
+- Navigation delegate dispatch (stub for Task 4)
+- Action listener dispatch for playback/menu actions
+- State management: `resetState()`, `setQuickActionsVisible()`, `setFocusedAction()`
+
+**3. TvInputDebugSink Interface (`tv/input/TvInputDebugSink.kt`)**
+
+Debug logging interface per contract Section 7:
+
+- `onTvInputEvent(event, role, action, ctx, handled)` - Log pipeline events
+- `NoOpTvInputDebugSink` - Silent implementation for production
+
+**4. GlobalTvInputHost (`tv/input/GlobalTvInputHost.kt`)**
+
+Global entry point for TV key events per contract Section 9.1:
+
+Pipeline:
+```
+KeyEvent → TvKeyDebouncer → TvKeyMapper → TvInputController → TvAction dispatch
+```
+
+Features:
+- Owns `TvKeyDebouncer` instance (300ms default for Fire TV)
+- Maps debounced KeyEvents to `TvKeyRole` via `TvKeyMapper`
+- Resolves `TvAction` via `TvScreenInputConfig` (Kids Mode + overlay filtering)
+- Dispatches to `TvInputController`
+- Logs events via `TvInputDebugSink`
+- `reset()` and `resetKey()` for debouncer state management
+
+**5. TvScreenContext Extension (`tv/input/TvScreenContext.kt`)**
+
+Added `toTvScreenContext()` extension function for `InternalPlayerUiState`:
+
+- Maps `playbackType == LIVE` to `isLive`
+- Maps `kidActive` to `isKidProfile`
+- Maps `hasBlockingOverlay` to `hasBlockingOverlay`
+- Always sets `screenId = PLAYER` and `isPlayerScreen = true`
+
+**6. SIP Player Integration (`player/internal/ui/InternalPlayerControls.kt`)**
+
+Extended `InternalPlayerContent` composable with TV input support:
+
+- Added `tvInputHost: GlobalTvInputHost?` parameter
+- Added `tvInputController: TvInputController?` parameter
+- Builds `TvScreenContext` from player state via `toTvScreenContext()`
+- Forwards key events to `GlobalTvInputHost` via `onPreviewKeyEvent` modifier
+- Observes `quickActionsVisible` and `focusedAction` states
+- Logs focused action changes via `GlobalDebug`
+
+**Constraints Honored:**
+- ✅ Does NOT modify legacy `InternalPlayerScreen`
+- ✅ FocusKit integration is stub-only (TvNavigationDelegate)
+- ✅ SIP player is a consumer only (no direct focus manipulation)
+- ✅ Existing gesture/trickplay logic from Phase 5 is preserved
+
+### Unit Tests Created
+
+| Test File | Test Count | Coverage |
+|-----------|------------|----------|
+| `TvInputControllerBasicTest.kt` | 25+ | Config resolution, quick actions, focused action, state management |
+| `GlobalTvInputHostTest.kt` | 25+ | Pipeline, debouncing, debug sink, reset |
+| `SipPlayerTvInputIntegrationTest.kt` | 25+ | End-to-end pipeline, player state conversion, kids mode |
+
+### Contract Compliance
+
+| Contract Section | Requirement | Status |
+|-----------------|-------------|--------|
+| 5.1 | TvInputController interface | ✅ |
+| 5.2 | DefaultTvInputController implementation | ✅ |
+| 5.3 | quickActionsVisible state | ✅ |
+| 5.4 | focusedAction state | ✅ |
+| 7 | TvInputDebugSink interface | ✅ |
+| 9.1 | GlobalTvInputHost entry point | ✅ |
+| 9.2 | TvKeyDebouncer integration | ✅ |
+| SIP | Player consumer integration | ✅ |
+
+### Files Created
+
+**Main Source (`app/src/main/java/com/chris/m3usuite/tv/input/`):**
+- `TvInputController.kt` (127 lines) - Interface + supporting types
+- `DefaultTvInputController.kt` (154 lines) - Default implementation
+- `TvInputDebugSink.kt` (55 lines) - Debug logging interface
+- `GlobalTvInputHost.kt` (159 lines) - Global key event host
+
+**Modified Files:**
+- `TvScreenContext.kt` - Added `toTvScreenContext()` extension
+- `InternalPlayerControls.kt` - Added TV input host/controller parameters
+
+**Test Source (`app/src/test/java/com/chris/m3usuite/tv/input/`):**
+- `TvInputControllerBasicTest.kt` - Controller unit tests
+- `GlobalTvInputHostTest.kt` - Host unit tests
+- `SipPlayerTvInputIntegrationTest.kt` - SIP player integration tests
+
+### What Was NOT Implemented (Per Task Constraints)
+
+- ❌ FocusKit zone implementation (Task 4)
+- ❌ TV Input Debug Overlay UI (Task 5)
+- ❌ HomeChromeScaffold integration (future task)
+- ❌ Legacy InternalPlayerScreen modifications
+
+All new code is isolated in the `tv/input` package and `player/internal/ui` with minimal footprint.
+
+---
+
 **Last Updated:** 2025-11-27
