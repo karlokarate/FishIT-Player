@@ -594,16 +594,16 @@ The following items are **REQUIRED** and **NON-NEGOTIABLE** for Phase 6 completi
 A **declarative DSL** must be created for per-screen key → action mapping:
 
 ```
-(TvKeyRole, TvScreenId) → TvAction?
+(TvScreenId, TvKeyRole) → TvAction?
 ```
 
 **The DSL MUST support the following syntax:**
 
 ```kotlin
 screen(PLAYER) {
-    on(FAST_FORWARD) -> SEEK_FORWARD_30S
-    on(DPAD_UP) -> FOCUS_QUICK_ACTIONS
-    on(MENU) -> OPEN_QUICK_ACTIONS
+    on(FAST_FORWARD) → SEEK_FORWARD_30S
+    on(DPAD_UP) → FOCUS_QUICK_ACTIONS
+    on(MENU) → OPEN_QUICK_ACTIONS
 }
 ```
 

@@ -2805,11 +2805,13 @@ Phase 6 roadmap fully aligned with `INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md`
 - Created `docs/INTERNAL_PLAYER_PHASE6_CHECKLIST.md` with 10 task groups (56 tasks)
 - Full repo scan completed: FocusKit, TvKeyDebouncer, HomeChromeScaffold, ProfileGate, InternalPlayerScreen
 - Repository analysis summary with "good/reusable", "becomes global", "becomes screen-specific", "must be replaced" classifications
-- TvKeyRole enum specification (DPAD_*, PLAY_PAUSE, FAST_FORWARD, REWIND, MENU, BACK, CHANNEL_*, INFO, GUIDE, NUM_0..NUM_9)
+- TvKeyRole enum specification (DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, DPAD_CENTER, PLAY_PAUSE, FAST_FORWARD, REWIND, MENU, BACK, CHANNEL_UP, CHANNEL_DOWN, INFO, GUIDE, NUM_0..NUM_9)
 - Full TvAction space (playback, menu/overlay, pagination, focus, navigation, channel, system actions)
 - ScreenConfig DSL requirement with example syntax
 - Complete FocusZones list (10 zones)
-- Kids Mode global input filtering rules (blocked: FAST_FORWARD, REWIND, SEEK_*, OPEN_*; allowed: DPAD, BACK, MENU)
+- Kids Mode global input filtering rules:
+  - **Blocked:** `FAST_FORWARD`, `REWIND`, `SEEK_FORWARD_10S`, `SEEK_FORWARD_30S`, `SEEK_BACKWARD_10S`, `SEEK_BACKWARD_30S`, `OPEN_CC_MENU`, `OPEN_ASPECT_MENU`, `OPEN_LIVE_LIST`
+  - **Allowed:** DPAD navigation, `BACK`, `MENU`, `PLAY_PAUSE`
 - Blocking overlay behavior specification (7 overlay types)
 - TV Input Debug Overlay requirements
 - Testing expectations for all components
@@ -3292,7 +3294,10 @@ Kids Mode filtering **ALWAYS** happens **BEFORE** screen-level config.
 - `OPEN_CC_MENU`, `OPEN_ASPECT_MENU`, `OPEN_LIVE_LIST`
 
 **Allowed Actions for Kids:**
-- DPAD navigation, `BACK`, `MENU` → kid-specific overlay only, `PLAY_PAUSE`
+- `DPAD_UP`, `DPAD_DOWN`, `DPAD_LEFT`, `DPAD_RIGHT`, `DPAD_CENTER` (all DPAD navigation)
+- `BACK`
+- `MENU` → Opens kid-specific overlay only
+- `PLAY_PAUSE`
 
 ### Blocking Overlays Behavior (MANDATORY)
 
@@ -3300,7 +3305,7 @@ Kids Mode filtering **ALWAYS** happens **BEFORE** screen-level config.
 - CC Menu, Aspect Ratio Menu, Live List, Settings Dialog, Sleep Timer, ProfileGate, Error Dialogs
 
 **Input Restrictions When Blocking Overlay is Active:**
-- `NAVIGATE_*` → Allowed inside overlay
+- `NAVIGATE_UP`, `NAVIGATE_DOWN`, `NAVIGATE_LEFT`, `NAVIGATE_RIGHT` → Allowed inside overlay
 - `BACK` → Closes overlay
 - All other TvActions → Return `null` (blocked)
 
