@@ -29,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.C
@@ -39,8 +38,31 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.chris.m3usuite.player.internal.state.InternalPlayerController
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 import com.chris.m3usuite.player.internal.system.requestPictureInPicture
-import kotlin.math.abs
 import kotlinx.coroutines.delay
+import kotlin.math.abs
+
+/**
+ * Phase 5 Controls Constants.
+ *
+ * Named constants for auto-hide timeouts and UI styling.
+ * Contract: INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md Section 7
+ */
+object ControlsConstants {
+    /** Auto-hide timeout for TV devices (7 seconds). Contract: 5-7s for TV. */
+    const val AUTO_HIDE_TIMEOUT_TV_MS = 7_000L
+
+    /** Auto-hide timeout for phone/tablet devices (4 seconds). Contract: 3-5s for touch. */
+    const val AUTO_HIDE_TIMEOUT_TOUCH_MS = 4_000L
+
+    /** Overlay background opacity (semi-transparent black). */
+    const val OVERLAY_BACKGROUND_OPACITY = 0.7f
+
+    /** Animation duration for fade transitions (ms). */
+    const val FADE_ANIMATION_DURATION_MS = 150
+
+    /** Animation duration for controls fade transitions (ms). */
+    const val CONTROLS_FADE_ANIMATION_DURATION_MS = 200
+}
 
 /**
  * InternalPlayerContent - Main SIP player content composable
@@ -70,8 +92,12 @@ fun InternalPlayerContent(
     // Phase 5 Group 4: Auto-hide timer
     // ════════════════════════════════════════════════════════════════════════════
     // Contract Section 7.2: TV 5-7s, phone 3-5s timeouts
-    // We use 7s for TV, 4s for phone/tablet
-    val autoHideTimeoutMs = if (isTv) 7_000L else 4_000L
+    val autoHideTimeoutMs =
+        if (isTv) {
+            ControlsConstants.AUTO_HIDE_TIMEOUT_TV_MS
+        } else {
+            ControlsConstants.AUTO_HIDE_TIMEOUT_TOUCH_MS
+        }
 
     // Auto-hide effect: Hides controls after timeout when no blocking overlay is open
     LaunchedEffect(state.controlsVisible, state.controlsTick, state.hasBlockingOverlay, state.trickplayActive) {
@@ -132,8 +158,20 @@ fun InternalPlayerContent(
         // Contract Section 6.2 Rule 2: Clear visual feedback during trickplay
         AnimatedVisibility(
             visible = state.trickplayActive,
-            enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(durationMillis = 150)),
-            exit = fadeOut(animationSpec = androidx.compose.animation.core.tween(durationMillis = 150)),
+            enter =
+                fadeIn(
+                    animationSpec =
+                        androidx.compose.animation.core.tween(
+                            durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+                        ),
+                ),
+            exit =
+                fadeOut(
+                    animationSpec =
+                        androidx.compose.animation.core.tween(
+                            durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+                        ),
+                ),
             modifier = Modifier.align(Alignment.Center),
         ) {
             TrickplayIndicator(speed = state.trickplaySpeed)
@@ -145,8 +183,20 @@ fun InternalPlayerContent(
         // Shows target position during seek preview
         AnimatedVisibility(
             visible = state.seekPreviewVisible && state.seekPreviewTargetMs != null,
-            enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(durationMillis = 150)),
-            exit = fadeOut(animationSpec = androidx.compose.animation.core.tween(durationMillis = 150)),
+            enter =
+                fadeIn(
+                    animationSpec =
+                        androidx.compose.animation.core.tween(
+                            durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+                        ),
+                ),
+            exit =
+                fadeOut(
+                    animationSpec =
+                        androidx.compose.animation.core.tween(
+                            durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+                        ),
+                ),
             modifier = Modifier.align(Alignment.Center),
         ) {
             state.seekPreviewTargetMs?.let { targetMs ->
@@ -165,14 +215,16 @@ fun InternalPlayerContent(
             enter =
                 fadeIn(
                     animationSpec =
-                        androidx.compose.animation.core
-                            .tween(durationMillis = 200),
+                        androidx.compose.animation.core.tween(
+                            durationMillis = ControlsConstants.CONTROLS_FADE_ANIMATION_DURATION_MS,
+                        ),
                 ),
             exit =
                 fadeOut(
                     animationSpec =
-                        androidx.compose.animation.core
-                            .tween(durationMillis = 200),
+                        androidx.compose.animation.core.tween(
+                            durationMillis = ControlsConstants.CONTROLS_FADE_ANIMATION_DURATION_MS,
+                        ),
                 ),
             modifier =
                 Modifier
@@ -191,8 +243,20 @@ fun InternalPlayerContent(
         // Contract Section 7.1: Controls auto-hide after period of inactivity
         AnimatedVisibility(
             visible = state.controlsVisible,
-            enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(durationMillis = 200)),
-            exit = fadeOut(animationSpec = androidx.compose.animation.core.tween(durationMillis = 200)),
+            enter =
+                fadeIn(
+                    animationSpec =
+                        androidx.compose.animation.core.tween(
+                            durationMillis = ControlsConstants.CONTROLS_FADE_ANIMATION_DURATION_MS,
+                        ),
+                ),
+            exit =
+                fadeOut(
+                    animationSpec =
+                        androidx.compose.animation.core.tween(
+                            durationMillis = ControlsConstants.CONTROLS_FADE_ANIMATION_DURATION_MS,
+                        ),
+                ),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             Column(
@@ -265,19 +329,20 @@ fun InternalPlayerContent(
 private fun TrickplayIndicator(speed: Float) {
     val isForward = speed > 0
     val absSpeed = abs(speed)
-    val speedText = if (absSpeed == absSpeed.toInt().toFloat()) {
-        "${absSpeed.toInt()}x"
-    } else {
-        "${"%.1f".format(absSpeed)}x"
-    }
+    val speedText =
+        if (absSpeed == absSpeed.toInt().toFloat()) {
+            "${absSpeed.toInt()}x"
+        } else {
+            "${"%.1f".format(absSpeed)}x"
+        }
 
     Box(
-        modifier = Modifier
-            .background(
-                color = Color.Black.copy(alpha = 0.7f),
-                shape = RoundedCornerShape(8.dp),
-            )
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .background(
+                    color = Color.Black.copy(alpha = ControlsConstants.OVERLAY_BACKGROUND_OPACITY),
+                    shape = RoundedCornerShape(8.dp),
+                ).padding(horizontal = 24.dp, vertical = 12.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -325,12 +390,12 @@ private fun SeekPreviewOverlay(
     durationMs: Long,
 ) {
     Box(
-        modifier = Modifier
-            .background(
-                color = Color.Black.copy(alpha = 0.7f),
-                shape = RoundedCornerShape(8.dp),
-            )
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+        modifier =
+            Modifier
+                .background(
+                    color = Color.Black.copy(alpha = ControlsConstants.OVERLAY_BACKGROUND_OPACITY),
+                    shape = RoundedCornerShape(8.dp),
+                ).padding(horizontal = 24.dp, vertical = 16.dp),
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -348,7 +413,7 @@ private fun SeekPreviewOverlay(
             val sign = if (delta >= 0) "+" else ""
             Text(
                 text = "$sign${formatMs(abs(delta))}",
-                color = Color.White.copy(alpha = 0.7f),
+                color = Color.White.copy(alpha = ControlsConstants.OVERLAY_BACKGROUND_OPACITY),
                 fontSize = 16.sp,
             )
 

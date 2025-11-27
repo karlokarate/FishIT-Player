@@ -38,10 +38,11 @@ class InternalPlayerTrickplayPhase5Test {
 
     @Test
     fun `trickplay state can be activated with forward speed`() {
-        val state = InternalPlayerUiState(
-            trickplayActive = true,
-            trickplaySpeed = 2f,
-        )
+        val state =
+            InternalPlayerUiState(
+                trickplayActive = true,
+                trickplaySpeed = 2f,
+            )
 
         assertTrue("Trickplay should be active", state.trickplayActive)
         assertEquals("Speed should be 2x forward", 2f, state.trickplaySpeed)
@@ -49,10 +50,11 @@ class InternalPlayerTrickplayPhase5Test {
 
     @Test
     fun `trickplay state can be activated with rewind speed`() {
-        val state = InternalPlayerUiState(
-            trickplayActive = true,
-            trickplaySpeed = -2f,
-        )
+        val state =
+            InternalPlayerUiState(
+                trickplayActive = true,
+                trickplaySpeed = -2f,
+            )
 
         assertTrue("Trickplay should be active", state.trickplayActive)
         assertEquals("Speed should be 2x rewind (negative)", -2f, state.trickplaySpeed)
@@ -63,10 +65,11 @@ class InternalPlayerTrickplayPhase5Test {
         val expectedSpeeds = listOf(2f, 3f, 5f)
 
         expectedSpeeds.forEach { speed ->
-            val state = InternalPlayerUiState(
-                trickplayActive = true,
-                trickplaySpeed = speed,
-            )
+            val state =
+                InternalPlayerUiState(
+                    trickplayActive = true,
+                    trickplaySpeed = speed,
+                )
             assertEquals("Speed $speed should be supported", speed, state.trickplaySpeed)
         }
     }
@@ -76,10 +79,11 @@ class InternalPlayerTrickplayPhase5Test {
         val expectedSpeeds = listOf(-2f, -3f, -5f)
 
         expectedSpeeds.forEach { speed ->
-            val state = InternalPlayerUiState(
-                trickplayActive = true,
-                trickplaySpeed = speed,
-            )
+            val state =
+                InternalPlayerUiState(
+                    trickplayActive = true,
+                    trickplaySpeed = speed,
+                )
             assertEquals("Speed $speed should be supported", speed, state.trickplaySpeed)
         }
     }
@@ -131,10 +135,11 @@ class InternalPlayerTrickplayPhase5Test {
 
     @Test
     fun `seek preview can show target position`() {
-        val state = InternalPlayerUiState(
-            seekPreviewVisible = true,
-            seekPreviewTargetMs = 45_000L,
-        )
+        val state =
+            InternalPlayerUiState(
+                seekPreviewVisible = true,
+                seekPreviewTargetMs = 45_000L,
+            )
 
         assertTrue("Seek preview should be visible", state.seekPreviewVisible)
         assertEquals("Target should be 45 seconds", 45_000L, state.seekPreviewTargetMs)
@@ -142,11 +147,12 @@ class InternalPlayerTrickplayPhase5Test {
 
     @Test
     fun `seek preview target can be forward from current position`() {
-        val state = InternalPlayerUiState(
-            positionMs = 30_000L,
-            seekPreviewVisible = true,
-            seekPreviewTargetMs = 40_000L,
-        )
+        val state =
+            InternalPlayerUiState(
+                positionMs = 30_000L,
+                seekPreviewVisible = true,
+                seekPreviewTargetMs = 40_000L,
+            )
 
         val delta = state.seekPreviewTargetMs!! - state.positionMs
         assertTrue("Delta should be positive for forward seek", delta > 0)
@@ -155,11 +161,12 @@ class InternalPlayerTrickplayPhase5Test {
 
     @Test
     fun `seek preview target can be backward from current position`() {
-        val state = InternalPlayerUiState(
-            positionMs = 30_000L,
-            seekPreviewVisible = true,
-            seekPreviewTargetMs = 20_000L,
-        )
+        val state =
+            InternalPlayerUiState(
+                positionMs = 30_000L,
+                seekPreviewVisible = true,
+                seekPreviewTargetMs = 20_000L,
+            )
 
         val delta = state.seekPreviewTargetMs!! - state.positionMs
         assertTrue("Delta should be negative for backward seek", delta < 0)
@@ -172,14 +179,16 @@ class InternalPlayerTrickplayPhase5Test {
 
     @Test
     fun `aspect ratio mode unchanged during trickplay`() {
-        val baseState = InternalPlayerUiState(
-            aspectRatioMode = AspectRatioMode.FILL,
-        )
+        val baseState =
+            InternalPlayerUiState(
+                aspectRatioMode = AspectRatioMode.FILL,
+            )
 
-        val trickplayState = baseState.copy(
-            trickplayActive = true,
-            trickplaySpeed = 2f,
-        )
+        val trickplayState =
+            baseState.copy(
+                trickplayActive = true,
+                trickplaySpeed = 2f,
+            )
 
         assertEquals(
             "Aspect ratio should remain FILL during trickplay",
@@ -191,11 +200,12 @@ class InternalPlayerTrickplayPhase5Test {
     @Test
     fun `all aspect ratio modes work during trickplay`() {
         AspectRatioMode.entries.forEach { mode ->
-            val state = InternalPlayerUiState(
-                aspectRatioMode = mode,
-                trickplayActive = true,
-                trickplaySpeed = 3f,
-            )
+            val state =
+                InternalPlayerUiState(
+                    aspectRatioMode = mode,
+                    trickplayActive = true,
+                    trickplaySpeed = 3f,
+                )
 
             assertEquals(
                 "Aspect ratio $mode should be preserved during trickplay",
@@ -212,10 +222,11 @@ class InternalPlayerTrickplayPhase5Test {
         // This test ensures the state model doesn't inadvertently affect background behavior
 
         val normalState = InternalPlayerUiState()
-        val trickplayState = InternalPlayerUiState(
-            trickplayActive = true,
-            trickplaySpeed = 5f,
-        )
+        val trickplayState =
+            InternalPlayerUiState(
+                trickplayActive = true,
+                trickplaySpeed = 5f,
+            )
 
         // Both states should have the same aspect ratio default
         assertEquals(
@@ -234,11 +245,12 @@ class InternalPlayerTrickplayPhase5Test {
 
     @Test
     fun `trickplay can be activated for VOD content`() {
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.VOD,
-            trickplayActive = true,
-            trickplaySpeed = 2f,
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.VOD,
+                trickplayActive = true,
+                trickplaySpeed = 2f,
+            )
 
         assertTrue("Trickplay should be active for VOD", state.trickplayActive)
         assertEquals("Playback type should be VOD", PlaybackType.VOD, state.playbackType)
@@ -246,11 +258,12 @@ class InternalPlayerTrickplayPhase5Test {
 
     @Test
     fun `trickplay can be activated for SERIES content`() {
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.SERIES,
-            trickplayActive = true,
-            trickplaySpeed = 3f,
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.SERIES,
+                trickplayActive = true,
+                trickplaySpeed = 3f,
+            )
 
         assertTrue("Trickplay should be active for SERIES", state.trickplayActive)
         assertEquals("Playback type should be SERIES", PlaybackType.SERIES, state.playbackType)
@@ -259,11 +272,12 @@ class InternalPlayerTrickplayPhase5Test {
     @Test
     fun `trickplay state independent of LIVE playback type`() {
         // LIVE content typically doesn't use trickplay (no seeking), but the state model allows it
-        val state = InternalPlayerUiState(
-            playbackType = PlaybackType.LIVE,
-            trickplayActive = true,
-            trickplaySpeed = 2f,
-        )
+        val state =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.LIVE,
+                trickplayActive = true,
+                trickplaySpeed = 2f,
+            )
 
         // State model allows this; behavior enforcement is in the session layer
         assertTrue("State should allow trickplay flag for LIVE (enforcement elsewhere)", state.trickplayActive)
@@ -275,15 +289,17 @@ class InternalPlayerTrickplayPhase5Test {
 
     @Test
     fun `trickplay can be stopped by setting speed to 1`() {
-        val activeState = InternalPlayerUiState(
-            trickplayActive = true,
-            trickplaySpeed = 3f,
-        )
+        val activeState =
+            InternalPlayerUiState(
+                trickplayActive = true,
+                trickplaySpeed = 3f,
+            )
 
-        val stoppedState = activeState.copy(
-            trickplayActive = false,
-            trickplaySpeed = 1f,
-        )
+        val stoppedState =
+            activeState.copy(
+                trickplayActive = false,
+                trickplaySpeed = 1f,
+            )
 
         assertFalse("Trickplay should be inactive after stopping", stoppedState.trickplayActive)
         assertEquals("Speed should be normal (1.0) after stopping", 1f, stoppedState.trickplaySpeed)
@@ -297,10 +313,11 @@ class InternalPlayerTrickplayPhase5Test {
         var currentIndex = 0
         repeat(6) { iteration ->
             val expectedSpeed = speeds[currentIndex % speeds.size]
-            val state = InternalPlayerUiState(
-                trickplayActive = true,
-                trickplaySpeed = expectedSpeed,
-            )
+            val state =
+                InternalPlayerUiState(
+                    trickplayActive = true,
+                    trickplaySpeed = expectedSpeed,
+                )
 
             assertEquals(
                 "Cycle $iteration should have speed ${expectedSpeed}x",
@@ -315,19 +332,21 @@ class InternalPlayerTrickplayPhase5Test {
     @Test
     fun `trickplay exit updates position correctly`() {
         // Simulates exiting trickplay and updating position
-        val trickplayState = InternalPlayerUiState(
-            positionMs = 30_000L,
-            trickplayActive = true,
-            trickplaySpeed = 2f,
-        )
+        val trickplayState =
+            InternalPlayerUiState(
+                positionMs = 30_000L,
+                trickplayActive = true,
+                trickplaySpeed = 2f,
+            )
 
         // After exiting trickplay, position should reflect where we stopped
         val finalPosition = 45_000L // After fast forwarding
-        val exitedState = trickplayState.copy(
-            positionMs = finalPosition,
-            trickplayActive = false,
-            trickplaySpeed = 1f,
-        )
+        val exitedState =
+            trickplayState.copy(
+                positionMs = finalPosition,
+                trickplayActive = false,
+                trickplaySpeed = 1f,
+            )
 
         assertEquals("Position should be updated after trickplay exit", finalPosition, exitedState.positionMs)
         assertFalse("Trickplay should be inactive", exitedState.trickplayActive)
@@ -340,10 +359,11 @@ class InternalPlayerTrickplayPhase5Test {
     @Test
     fun `zero speed is not a valid trickplay speed`() {
         // Zero speed shouldn't be used in practice, but verify state handles it
-        val state = InternalPlayerUiState(
-            trickplayActive = true,
-            trickplaySpeed = 0f,
-        )
+        val state =
+            InternalPlayerUiState(
+                trickplayActive = true,
+                trickplaySpeed = 0f,
+            )
 
         // State model allows this; validation should be in session layer
         assertEquals("State should store zero speed (validation elsewhere)", 0f, state.trickplaySpeed)
@@ -351,12 +371,13 @@ class InternalPlayerTrickplayPhase5Test {
 
     @Test
     fun `seek preview can coexist with trickplay`() {
-        val state = InternalPlayerUiState(
-            trickplayActive = true,
-            trickplaySpeed = 2f,
-            seekPreviewVisible = true,
-            seekPreviewTargetMs = 60_000L,
-        )
+        val state =
+            InternalPlayerUiState(
+                trickplayActive = true,
+                trickplaySpeed = 2f,
+                seekPreviewVisible = true,
+                seekPreviewTargetMs = 60_000L,
+            )
 
         assertTrue("Trickplay should be active", state.trickplayActive)
         assertTrue("Seek preview should also be visible", state.seekPreviewVisible)
@@ -365,20 +386,23 @@ class InternalPlayerTrickplayPhase5Test {
 
     @Test
     fun `isLive and isSeries helpers work with trickplay state`() {
-        val vodTrickplay = InternalPlayerUiState(
-            playbackType = PlaybackType.VOD,
-            trickplayActive = true,
-        )
+        val vodTrickplay =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.VOD,
+                trickplayActive = true,
+            )
 
-        val seriesTrickplay = InternalPlayerUiState(
-            playbackType = PlaybackType.SERIES,
-            trickplayActive = true,
-        )
+        val seriesTrickplay =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.SERIES,
+                trickplayActive = true,
+            )
 
-        val liveTrickplay = InternalPlayerUiState(
-            playbackType = PlaybackType.LIVE,
-            trickplayActive = true,
-        )
+        val liveTrickplay =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.LIVE,
+                trickplayActive = true,
+            )
 
         assertFalse("VOD should not be LIVE", vodTrickplay.isLive)
         assertFalse("VOD should not be SERIES", vodTrickplay.isSeries)
