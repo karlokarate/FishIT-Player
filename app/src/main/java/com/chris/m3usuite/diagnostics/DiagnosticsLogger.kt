@@ -1,5 +1,6 @@
 package com.chris.m3usuite.diagnostics
 
+import com.chris.m3usuite.core.logging.AppLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -398,4 +399,3 @@ object DiagnosticsLogger {
         }
     }
 }
-import com.chris.m3usuite.core.logging.AppLog

@@ -3427,4 +3427,134 @@ This context refresh was documentation-only. No Kotlin or XML code changes were 
 
 ---
 
+## Phase 6 — Task 1 (Global TV Input Foundation: TvKeyRole, TvKeyMapper, TvAction, ScreenId/Context) — DONE
+
+**Date:** 2025-11-27
+
+**Status:** ✅ **COMPLETE**
+
+This task implemented the fundamental building blocks of the global TV input pipeline as specified in the Phase 6 contract.
+
+### What Was Implemented
+
+**1. TvKeyRole Enum (`tv/input/TvKeyRole.kt`)**
+
+Defines all hardware key roles per contract Section 3.1:
+
+| Category | Roles |
+|----------|-------|
+| DPAD Navigation | `DPAD_UP`, `DPAD_DOWN`, `DPAD_LEFT`, `DPAD_RIGHT`, `DPAD_CENTER` |
+| Playback | `PLAY_PAUSE`, `FAST_FORWARD`, `REWIND` |
+| Menu/System | `MENU`, `BACK` |
+| Channel | `CHANNEL_UP`, `CHANNEL_DOWN` |
+| Information | `INFO`, `GUIDE` |
+| Numbers | `NUM_0` through `NUM_9` |
+
+Helper extension functions:
+- `isDpad()` - Check if role is DPAD navigation
+- `isMediaKey()` - Check if role is media playback
+- `isNumberKey()` - Check if role is number key
+- `toDigit()` - Get numeric value for number keys
+
+**2. TvKeyMapper (`tv/input/TvKeyMapper.kt`)**
+
+Deterministic KeyEvent → TvKeyRole mapping:
+- Maps Android `KeyEvent.KEYCODE_*` values to `TvKeyRole`
+- Returns `null` for unsupported keycodes
+- `mapDebounced(event)` - Entry point for debounced events
+- `isSupported(keyCode)` - Check if keycode is supported
+
+Integration pattern:
+- TvKeyDebouncer is placed at GlobalTvInputHost layer
+- TvKeyMapper receives already-debounced KeyEvents
+
+**3. TvAction Enum (`tv/input/TvAction.kt`)**
+
+Full semantic action set per contract:
+
+| Category | Actions |
+|----------|---------|
+| Playback | `PLAY_PAUSE`, `SEEK_FORWARD_10S`, `SEEK_FORWARD_30S`, `SEEK_BACKWARD_10S`, `SEEK_BACKWARD_30S` |
+| Menu/Overlay | `OPEN_CC_MENU`, `OPEN_ASPECT_MENU`, `OPEN_QUICK_ACTIONS`, `OPEN_LIVE_LIST` |
+| Pagination | `PAGE_UP`, `PAGE_DOWN` |
+| Focus | `FOCUS_QUICK_ACTIONS`, `FOCUS_TIMELINE` |
+| Navigation | `NAVIGATE_UP`, `NAVIGATE_DOWN`, `NAVIGATE_LEFT`, `NAVIGATE_RIGHT` |
+| Channel | `CHANNEL_UP`, `CHANNEL_DOWN` |
+| System | `BACK` |
+
+Helper extension functions:
+- `isPlaybackAction()`, `isOverlayAction()`, `isNavigationAction()`, `isFocusAction()`, `isSeekAction()`, `isChannelAction()`
+- `getSeekDeltaMs()` - Get seek delta for seek actions
+
+**4. TvScreenId Enum (`tv/input/TvScreenId.kt`)**
+
+All app screen identifiers:
+- Main screens: `START`, `LIBRARY`, `PLAYER`, `SETTINGS`, `DETAIL`, `SEARCH`
+- Profile: `PROFILE_GATE`
+- Overlays: `LIVE_LIST`, `CC_MENU`, `ASPECT_MENU`, `QUICK_ACTIONS`, `EPG_GUIDE`, `ERROR_DIALOG`, `SLEEP_TIMER`, `SPEED_DIALOG`, `TRACKS_DIALOG`
+- Special: `TELEGRAM_BROWSER`, `UNKNOWN`
+
+Helper methods:
+- `isOverlay()` - Check if screen is a dialog/overlay
+- `isBlockingOverlay()` - Check if overlay blocks input
+
+**5. TvScreenContext (`tv/input/TvScreenContext.kt`)**
+
+Pure data class for screen input context:
+- `screenId: TvScreenId` - Current screen identifier
+- `isPlayerScreen: Boolean` - True if player screen
+- `isLive: Boolean` - True if playing live TV
+- `isKidProfile: Boolean` - True if kid profile active
+- `hasBlockingOverlay: Boolean` - True if blocking overlay shown
+
+Factory methods:
+- `player()`, `library()`, `settings()`, `profileGate()`, `detail()`, `blockingOverlay()`, `unknown()`
+
+### Unit Tests Created
+
+| Test File | Test Count | Coverage |
+|-----------|------------|----------|
+| `TvKeyRoleMappingTest.kt` | 50+ | All keycodes, helper methods, determinism |
+| `TvKeyDebouncerIntegrationTest.kt` | 25+ | Pipeline integration, debounce behavior |
+| `TvActionEnumTest.kt` | 40+ | All actions, helper methods, contract compliance |
+| `TvScreenContextTest.kt` | 40+ | Screen IDs, context factories, data model |
+
+### Contract Compliance
+
+| Contract Section | Requirement | Status |
+|-----------------|-------------|--------|
+| 3.1 Level 1 | TvKeyRole abstraction | ✅ All 24 roles defined |
+| 3.1 Level 2 | TvAction commands | ✅ All 20 actions defined |
+| 4.1 | TvScreenId per screen | ✅ All screens enumerated |
+| 4.2 | TvScreenContext data model | ✅ Pure data class with factories |
+| 9.2 | TvKeyDebouncer integration | ✅ Pipeline position documented |
+
+### Files Created
+
+**Main Source (`app/src/main/java/com/chris/m3usuite/tv/input/`):**
+- `TvKeyRole.kt` (121 lines) - Key role enum
+- `TvKeyMapper.kt` (157 lines) - KeyEvent → TvKeyRole mapper
+- `TvAction.kt` (171 lines) - Semantic action enum
+- `TvScreenId.kt` (96 lines) - Screen identifier enum
+- `TvScreenContext.kt` (139 lines) - Screen context data class
+
+**Test Source (`app/src/test/java/com/chris/m3usuite/tv/input/`):**
+- `TvKeyRoleMappingTest.kt` - Key mapping tests
+- `TvKeyDebouncerIntegrationTest.kt` - Debouncer integration tests
+- `TvActionEnumTest.kt` - Action enum tests
+- `TvScreenContextTest.kt` - Context data model tests
+
+### What Was NOT Implemented (Per Task Constraints)
+
+- ❌ DSL (Task 2)
+- ❌ TvInputController (Task 3)
+- ❌ FocusZones wiring (Task 3/4)
+- ❌ Debugging UI (Task 5)
+- ❌ Legacy InternalPlayerScreen modifications
+- ❌ Integration with existing screens
+
+All new code is isolated in the `tv/input` package as pure foundation primitives.
+
+---
+
 **Last Updated:** 2025-11-27
