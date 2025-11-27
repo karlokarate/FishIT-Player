@@ -587,49 +587,282 @@ Phase 6 shifts from a player-local TV input module to a **global TV input system
 
 The following requirements must be addressed by Phase 6 implementation:
 
-- **Introduce TvKeyRole** – A semantic categorization of raw key events:
-  - DPAD keys (CENTER, UP, DOWN, LEFT, RIGHT)
-  - Media keys (PLAY_PAUSE, STOP, FAST_FORWARD, REWIND, etc.)
-  - Menu key
-  - Back key
-  - Number keys (0-9)
-  - Other remappable keys
+#### 1. TvKeyRole Enum (Complete Hardware Roles)
 
-- **Introduce TvAction** – Semantic actions that screens can handle:
-  - Playback: PLAY_PAUSE, SEEK_10S_FORWARD, SEEK_10S_BACK, SEEK_30S_FORWARD, SEEK_30S_BACK
-  - Navigation: NAVIGATE_UP, NAVIGATE_DOWN, NAVIGATE_LEFT, NAVIGATE_RIGHT, SELECT, GO_BACK
-  - Player-specific: OPEN_CC_MENU, OPEN_LIVE_LIST, TOGGLE_CONTROLS, CYCLE_ASPECT_RATIO, TOGGLE_DEBUG
-  - Live-TV: CHANNEL_UP, CHANNEL_DOWN, SHOW_EPG
-  - Global: OPEN_SETTINGS, TOGGLE_PIP
+`TvKeyRole` provides a semantic categorization of all raw key events used by TV remotes:
 
-- **Add screen-specific configuration (TvScreenInputConfig)** – Each screen provides its own mapping from `TvKeyRole` to `TvAction`, allowing:
-  - Player screen: DPAD_LEFT → SEEK_10S_BACK
-  - Browse screen: DPAD_LEFT → NAVIGATE_LEFT
-  - Detail screen: DPAD_LEFT → NAVIGATE_LEFT (or custom behavior)
+**DPAD Navigation:**
+- `DPAD_UP`
+- `DPAD_DOWN`
+- `DPAD_LEFT`
+- `DPAD_RIGHT`
+- `DPAD_CENTER`
 
-- **Integrate FocusZones on top of FocusKit** – Define logical focus zones within screens:
-  - `player_controls`: Play/pause, seek bar, volume
-  - `quick_actions`: CC, aspect ratio, speed, PiP, etc.
-  - `live_list`: Live channel selection overlay
-  - `epg_overlay`: EPG navigation
-  - FocusZones interact with FocusKit's existing focus group and requester infrastructure
+**Playback Media Keys:**
+- `PLAY_PAUSE`
+- `FAST_FORWARD`
+- `REWIND`
 
-- **Make DPAD/Media keys profile-aware (Kids Mode restrictions)** – When a kid profile is active:
-  - Certain actions may be blocked (e.g., OPEN_SETTINGS, channel surfing)
-  - Visual feedback for blocked actions
-  - Action filtering at the TvInputController level before dispatch
+**Menu & Navigation:**
+- `MENU`
+- `BACK`
 
-- **Add TV Input Debug Overlay (development-only)** – A debug overlay showing:
-  - Current TvScreenContext
-  - Active FocusZone
-  - Recent key events and resolved actions
-  - Blocked actions (for Kids Mode debugging)
-  - Toggle via developer settings (similar to existing GlobalDebug)
+**Channel Control:**
+- `CHANNEL_UP`
+- `CHANNEL_DOWN`
 
-- **Ensure InternalPlayerControls forwards key events to the global controller** – The player does not handle key events directly. Instead:
-  - Player registers a `TvScreenContext` with the global controller
-  - Key events flow: `KeyEvent` → `TvInputController` → `TvAction` → `TvScreenContext.onAction()`
-  - Player's `TvScreenInputConfig` defines how key roles map to player-specific actions
+**Information:**
+- `INFO`
+- `GUIDE`
+
+**Number Keys:**
+- `NUM_0`, `NUM_1`, `NUM_2`, `NUM_3`, `NUM_4`, `NUM_5`, `NUM_6`, `NUM_7`, `NUM_8`, `NUM_9`
+
+#### 2. TvAction Enum (Full Action Space)
+
+`TvAction` defines all semantic actions that screens can handle:
+
+**Playback Actions:**
+- `PLAY_PAUSE` – Toggle playback state
+- `SEEK_FORWARD_10S` – Seek forward 10 seconds
+- `SEEK_FORWARD_30S` – Seek forward 30 seconds
+- `SEEK_BACKWARD_10S` – Seek backward 10 seconds
+- `SEEK_BACKWARD_30S` – Seek backward 30 seconds
+
+**Menu/Overlay Actions:**
+- `OPEN_CC_MENU` – Open closed captions menu
+- `OPEN_ASPECT_MENU` – Open aspect ratio menu
+- `OPEN_QUICK_ACTIONS` – Open quick actions panel
+- `OPEN_LIVE_LIST` – Open live channel list
+
+**Pagination:**
+- `PAGE_UP` – Page up in lists
+- `PAGE_DOWN` – Page down in lists
+
+**Focus Management:**
+- `FOCUS_TIMELINE` – Move focus to timeline/seek bar
+- `FOCUS_QUICK_ACTIONS` – Move focus to quick actions panel
+
+**Navigation:**
+- `NAVIGATE_UP` – Navigate up in current focus zone
+- `NAVIGATE_DOWN` – Navigate down in current focus zone
+- `NAVIGATE_LEFT` – Navigate left in current focus zone
+- `NAVIGATE_RIGHT` – Navigate right in current focus zone
+
+**Channel Control:**
+- `CHANNEL_UP` – Switch to next channel (live TV)
+- `CHANNEL_DOWN` – Switch to previous channel (live TV)
+
+**System:**
+- `BACK` – Go back / close overlay / exit screen
+
+#### 3. ScreenConfig DSL Requirement
+
+A declarative **ScreenConfig DSL** is required for mapping `(TvKeyRole, ScreenId) → TvAction?`.
+
+The DSL enables per-screen customization of key behavior:
+
+```kotlin
+screen(PLAYER) {
+    on(FAST_FORWARD) -> SEEK_FORWARD_30S
+    on(REWIND) -> SEEK_BACKWARD_30S
+    on(MENU) -> OPEN_QUICK_ACTIONS
+    on(DPAD_UP) -> FOCUS_QUICK_ACTIONS
+    on(DPAD_LEFT) -> SEEK_BACKWARD_10S
+    on(DPAD_RIGHT) -> SEEK_FORWARD_10S
+    on(DPAD_CENTER) -> PLAY_PAUSE
+    on(CHANNEL_UP) -> CHANNEL_UP
+    on(CHANNEL_DOWN) -> CHANNEL_DOWN
+    on(INFO) -> OPEN_QUICK_ACTIONS
+}
+
+screen(BROWSE) {
+    on(DPAD_LEFT) -> NAVIGATE_LEFT
+    on(DPAD_RIGHT) -> NAVIGATE_RIGHT
+    on(DPAD_UP) -> NAVIGATE_UP
+    on(DPAD_DOWN) -> NAVIGATE_DOWN
+    on(DPAD_CENTER) -> null  // Let FocusKit handle selection
+    on(MENU) -> OPEN_SETTINGS  // Note: For kid profiles, MENU is filtered before reaching screen config
+}
+
+screen(LIVE_LIST) {
+    on(DPAD_UP) -> NAVIGATE_UP
+    on(DPAD_DOWN) -> NAVIGATE_DOWN
+    on(DPAD_CENTER) -> null  // Select channel
+    on(BACK) -> BACK
+    on(CHANNEL_UP) -> PAGE_UP
+    on(CHANNEL_DOWN) -> PAGE_DOWN
+}
+```
+
+**DSL Requirements:**
+- Every screen must have a `ScreenId` constant
+- Mappings return `TvAction?` (null = delegate to FocusKit)
+- Unmapped keys fall through to default behavior
+- DSL is evaluated at compile-time for type safety
+
+#### 4. FocusZones (Complete List)
+
+All logical focus zones required by the contract:
+
+| FocusZone | Description | Screens Used |
+|-----------|-------------|--------------|
+| `player_controls` | Play/pause, seek bar, volume | Player |
+| `quick_actions` | CC, aspect ratio, speed, PiP buttons | Player |
+| `timeline` | Seek bar / progress indicator | Player |
+| `cc_button` | Closed captions button | Player |
+| `aspect_button` | Aspect ratio button | Player |
+| `epg_overlay` | EPG program guide navigation | Player (Live) |
+| `live_list` | Live channel selection overlay | Player (Live) |
+| `library_row` | Content rows in library screens | Library, Home |
+| `settings_list` | Settings items list | Settings |
+| `profile_grid` | Profile selection grid | Profile Picker |
+
+FocusZones interact with FocusKit's existing infrastructure:
+- Each zone has a `FocusRequester`
+- Zones are grouped using `focusGroup()` containers
+- Zone transitions use FocusKit's `requestFocus()` mechanism
+
+#### 5. Kids Mode Global Input Filtering
+
+**Kids Mode globally overrides DPAD/media key behavior BEFORE screen config.**
+
+When a kid profile is active, the `TvInputController` applies the following restrictions:
+
+**Disabled Keys/Actions (return null, no action dispatched):**
+- `FAST_FORWARD`
+- `REWIND`
+- `SEEK_FORWARD_10S`
+- `SEEK_FORWARD_30S`
+- `SEEK_BACKWARD_10S`
+- `SEEK_BACKWARD_30S`
+- `OPEN_LIVE_LIST`
+- `OPEN_CC_MENU`
+- `OPEN_ASPECT_MENU`
+
+**Allowed Keys/Actions:**
+- All DPAD navigation (`DPAD_UP`, `DPAD_DOWN`, `DPAD_LEFT`, `DPAD_RIGHT`, `DPAD_CENTER`)
+- `BACK`
+- `MENU` → Opens kids overlay (not settings)
+- `PLAY_PAUSE`
+
+**Implementation Notes:**
+- Kids Mode check happens FIRST in `TvInputController.onKeyEvent()`
+- Check uses `SettingsStore.currentProfileId` + `ObxProfile.type == "kid"`
+- Blocked actions are logged to diagnostics
+- Visual feedback (toast or overlay) when blocked action attempted
+
+#### 6. Blocking Overlays Behavior
+
+**When any blocking overlay is active, `TvInputController` restricts input.**
+
+Blocking overlays:
+- CC Menu (`showCcMenuDialog`)
+- Aspect Ratio Menu (`showAspectMenuDialog`)
+- Live List Overlay (`showLiveList`)
+- Settings Dialog (`showSettingsDialog`)
+- Profile Gate (`profileGateActive`)
+- Error Dialogs (`showErrorDialog`)
+
+**Input restrictions when blocking overlay is active:**
+- `NAVIGATE_*` actions → Allowed inside overlay
+- `BACK` → Closes overlay
+- All other actions → Return `null` (not dispatched)
+
+**Implementation:**
+```kotlin
+fun onKeyEvent(event: KeyEvent, overlayState: OverlayState): TvAction? {
+    if (overlayState.hasBlockingOverlay()) {
+        val role = mapToRole(event)
+        return when (role) {
+            DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, DPAD_CENTER ->
+                mapToNavigationAction(role) // Allow navigation inside overlay
+            TvKeyRole.BACK -> TvAction.BACK // Close overlay (TvAction.BACK = close/dismiss)
+            else -> null // Block all other actions
+        }
+    }
+    // ... normal mapping flow
+}
+```
+
+**Note:** Both `TvKeyRole.BACK` and `TvAction.BACK` exist intentionally. The key role represents the physical BACK button, while the action represents the semantic "go back/dismiss" behavior.
+
+#### 7. TV Input Debug Overlay
+
+**Introduce a TV Input Inspector overlay (debug only).**
+
+The overlay displays:
+- **KeyEvent:** Raw Android KeyEvent code and action
+- **TvKeyRole:** Resolved semantic key role
+- **TvAction:** Resolved semantic action (or "null" if blocked)
+- **ScreenId:** Current active screen
+- **FocusZone:** Current focused zone
+- **Handled State:** Whether the action was consumed
+
+**Example overlay output:**
+```
+─── TV Input Inspector ───
+KeyEvent: KEYCODE_DPAD_LEFT (DOWN)
+TvKeyRole: DPAD_LEFT
+TvAction: SEEK_BACKWARD_10S
+ScreenId: PLAYER
+FocusZone: player_controls
+Handled: true
+──────────────────────────
+```
+
+**Activation:**
+- Toggle via developer settings (similar to existing GlobalDebug)
+- Only available in debug builds
+- Semi-transparent overlay in bottom-right corner
+- Shows last 5 key events with timestamps
+
+#### 8. Player Screen Integration
+
+The Internal Player is a **consumer** of the global TV input system:
+
+- `InternalPlayerControls` does NOT handle KeyEvents directly
+- Player provides a `TvScreenContext` with player-specific `TvScreenInputConfig`
+- Player receives `TvAction` callbacks (e.g., `onAction(PLAY_PAUSE)`, `onAction(SEEK_FORWARD_30S)`)
+- Player uses FocusKit for focus management within its FocusZones
+- Quick actions, live list, EPG overlay are FocusZones that receive focus via the global system
+
+**Key event flow:**
+```
+KeyEvent → TvInputController → TvAction → TvScreenContext.onAction() → Player handler
+```
+
+#### 9. Testing Requirements
+
+The following tests are required for Phase 6:
+
+**Unit Tests:**
+- TvKeyRole mapping from KeyEvent codes
+- TvScreenInputConfig resolution (key role + screen → action)
+- ScreenConfig DSL parsing and validation
+
+**FocusZones Tests:**
+- Navigation via TvAction within each zone
+- Zone-to-zone transitions
+- Focus persistence across zone changes
+
+**Kids Mode Tests:**
+- Input override for all disabled actions
+- Allowed actions pass through
+- Profile detection integration
+
+**Blocking Overlay Tests:**
+- Overlay detection accuracy
+- Navigation restriction inside overlays
+- BACK closes overlay behavior
+- Non-navigation actions blocked
+
+**Player-Specific Tests:**
+- PLAY_PAUSE action handling
+- SEEK_FORWARD_10S / SEEK_FORWARD_30S handling
+- SEEK_BACKWARD_10S / SEEK_BACKWARD_30S handling
+- CHANNEL_UP / CHANNEL_DOWN for live content
+- Quick actions focus management
 
 ### Architecture Overview
 
@@ -671,7 +904,17 @@ The Internal Player is a **consumer** of the global TV input system:
 
 ### Status
 
-**Status:** 🔄 **KICKOFF** – Roadmap updated, checklist pending code scan
+**Status:** 🔄 **KICKOFF – ROADMAP REFINED** – Full specification documented, checklist pending code scan
+
+The Phase 6 roadmap now includes:
+- ✅ Complete TvKeyRole enum (DPAD_*, PLAY_PAUSE, FAST_FORWARD, REWIND, MENU, BACK, CHANNEL_*, INFO, GUIDE, NUM_0..NUM_9)
+- ✅ Full TvAction space (playback, menu/overlay, pagination, focus, navigation, channel, system)
+- ✅ ScreenConfig DSL specification with examples
+- ✅ Complete FocusZones list (10 zones with descriptions)
+- ✅ Kids Mode global input filtering rules
+- ✅ Blocking overlay behavior specification
+- ✅ TV Input Debug Overlay requirements
+- ✅ Testing expectations for all components
 
 A full implementation checklist will be generated in the next task after Copilot performs a complete code scan of all relevant modules (FocusKit, existing TV input handling, player controls, screen navigation, etc.).
 
