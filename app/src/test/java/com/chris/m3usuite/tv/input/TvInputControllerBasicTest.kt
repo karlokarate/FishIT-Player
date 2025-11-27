@@ -113,12 +113,25 @@ class TvInputControllerBasicTest {
 
     @Test
     fun `OPEN_QUICK_ACTIONS sets quickActionsVisible to true`() {
+        // Create a config that explicitly maps a key to OPEN_QUICK_ACTIONS
+        // Note: In the default PLAYER config, DPAD_UP maps to FOCUS_QUICK_ACTIONS (focus zone)
+        // and MENU maps to OPEN_PLAYER_MENU. 
+        // This test verifies the controller behavior when OPEN_QUICK_ACTIONS is resolved.
+        val customConfigs = tvInputConfig {
+            screen(TvScreenId.PLAYER) {
+                on(TvKeyRole.MENU) mapsTo TvAction.OPEN_QUICK_ACTIONS
+            }
+        }
+        val customController = DefaultTvInputController(
+            configs = customConfigs,
+            navigationDelegate = mockNavigationDelegate,
+        )
         val ctx = TvScreenContext.player()
 
-        // MENU -> OPEN_QUICK_ACTIONS on PLAYER screen
-        controller.onKeyEvent(TvKeyRole.MENU, ctx)
+        // MENU -> OPEN_QUICK_ACTIONS with custom config
+        customController.onKeyEvent(TvKeyRole.MENU, ctx)
 
-        assertTrue(controller.quickActionsVisible.value)
+        assertTrue(customController.quickActionsVisible.value)
     }
 
     @Test
@@ -314,29 +327,33 @@ class TvInputControllerBasicTest {
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `LIBRARY screen uses PAGE navigation for FF_RW`() {
+    fun `LIBRARY screen uses ROW_FAST_SCROLL for FF_RW`() {
         val ctx = TvScreenContext.library()
 
         controller.onKeyEvent(TvKeyRole.FAST_FORWARD, ctx)
-        assertEquals(TvAction.PAGE_DOWN, mockActionListener.lastAction)
+        assertEquals(TvAction.ROW_FAST_SCROLL_FORWARD, mockActionListener.lastAction)
 
         controller.onKeyEvent(TvKeyRole.REWIND, ctx)
-        assertEquals(TvAction.PAGE_UP, mockActionListener.lastAction)
+        assertEquals(TvAction.ROW_FAST_SCROLL_BACKWARD, mockActionListener.lastAction)
     }
 
     @Test
-    fun `SETTINGS screen only allows NAVIGATE actions`() {
+    fun `SETTINGS screen maps FF_RW to tab switching`() {
         val ctx = TvScreenContext.settings()
 
+        // DPAD navigation works
         controller.onKeyEvent(TvKeyRole.DPAD_UP, ctx)
         assertEquals(TvAction.NAVIGATE_UP, mockNavigationDelegate.lastMoveFocusAction)
 
-        // FAST_FORWARD is not mapped in SETTINGS
+        // FF/RW are mapped to tab switching in SETTINGS per behavior map
         mockNavigationDelegate.lastMoveFocusAction = null
         mockActionListener.lastAction = null
 
-        val handled = controller.onKeyEvent(TvKeyRole.FAST_FORWARD, ctx)
-        assertFalse(handled)
+        controller.onKeyEvent(TvKeyRole.FAST_FORWARD, ctx)
+        assertEquals(TvAction.SWITCH_SETTINGS_TAB_NEXT, mockActionListener.lastAction)
+        
+        controller.onKeyEvent(TvKeyRole.REWIND, ctx)
+        assertEquals(TvAction.SWITCH_SETTINGS_TAB_PREVIOUS, mockActionListener.lastAction)
     }
 
     // ════════════════════════════════════════════════════════════════════════════

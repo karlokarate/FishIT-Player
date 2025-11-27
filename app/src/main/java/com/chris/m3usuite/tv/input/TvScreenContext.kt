@@ -60,14 +60,18 @@ data class TvScreenContext(
          * Create a context for the library screen.
          *
          * @param isKidProfile True if a kid profile is active
+         * @param hasBlockingOverlay True if a blocking overlay is shown
          */
-        fun library(isKidProfile: Boolean = false): TvScreenContext =
+        fun library(
+            isKidProfile: Boolean = false,
+            hasBlockingOverlay: Boolean = false,
+        ): TvScreenContext =
             TvScreenContext(
                 screenId = TvScreenId.LIBRARY,
                 isPlayerScreen = false,
                 isLive = false,
                 isKidProfile = isKidProfile,
-                hasBlockingOverlay = false,
+                hasBlockingOverlay = hasBlockingOverlay,
             )
 
         /**

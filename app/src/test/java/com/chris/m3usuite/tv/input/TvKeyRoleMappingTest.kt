@@ -9,6 +9,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Unit tests for TvKeyRole mapping via TvKeyMapper.
@@ -22,6 +23,7 @@ import org.robolectric.RobolectricTestRunner
  * Contract Reference: INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 10.1
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class TvKeyRoleMappingTest {
     // ══════════════════════════════════════════════════════════════════
     // DPAD NAVIGATION MAPPING TESTS

@@ -2,8 +2,9 @@ package com.chris.m3usuite.tv.input
 
 import android.view.KeyEvent
 import com.chris.m3usuite.player.TvKeyDebouncer
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -13,6 +14,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Integration tests for TvKeyDebouncer with TvKeyMapper.
@@ -23,13 +25,14 @@ import org.robolectric.RobolectricTestRunner
  * Contract Reference: INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 9.2
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class TvKeyDebouncerIntegrationTest {
-    private lateinit var testScope: TestScope
+    private lateinit var testScope: CoroutineScope
     private lateinit var debouncer: TvKeyDebouncer
 
     @Before
     fun setUp() {
-        testScope = TestScope(StandardTestDispatcher())
+        testScope = CoroutineScope(Dispatchers.Unconfined + Job())
         debouncer = TvKeyDebouncer(testScope, debounceMs = 300L)
     }
 
