@@ -53,6 +53,7 @@ import com.chris.m3usuite.ui.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -554,6 +555,7 @@ class MainActivity : ComponentActivity() {
 
                         // Settings (permissions)
                         composable("settings") {
+                            val settingsScope = androidx.compose.runtime.rememberCoroutineScope()
                             val profileId = store.currentProfileId.collectAsStateWithLifecycle(initialValue = -1L).value
                             LaunchedEffect(profileId) {
                                 val perms =
@@ -583,7 +585,7 @@ class MainActivity : ComponentActivity() {
                                 onOpenLogViewer = { nav.navigate("log_viewer") },
                                 runtimeLoggingEnabled = store.logMasterEnabled.collectAsStateWithLifecycle(initialValue = false).value,
                                 onToggleRuntimeLogging = { enabled ->
-                                    launch { store.setLogMasterEnabled(enabled) }
+                                    settingsScope.launch { store.setLogMasterEnabled(enabled) }
                                 },
                                 telemetryForwardingEnabled =
                                     store.logTelemetryEnabled
@@ -591,11 +593,11 @@ class MainActivity : ComponentActivity() {
                                             initialValue = false,
                                         ).value,
                                 onToggleTelemetryForwarding = { enabled ->
-                                    launch { store.setLogTelemetryEnabled(enabled) }
+                                    settingsScope.launch { store.setLogTelemetryEnabled(enabled) }
                                 },
                                 logCategories = store.logCategories.collectAsStateWithLifecycle(initialValue = emptySet()).value,
                                 onUpdateLogCategories = { cats ->
-                                    launch { store.setLogCategories(cats) }
+                                    settingsScope.launch { store.setLogCategories(cats) }
                                 },
                             )
                         }

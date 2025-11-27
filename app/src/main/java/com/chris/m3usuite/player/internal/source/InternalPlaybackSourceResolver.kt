@@ -101,7 +101,7 @@ class PlaybackSourceResolver(
             val box = store.boxFor(ObxTelegramMessage::class.java)
             val queryBuilder = box.query()
             if (fileId != null) {
-                queryBuilder.equal(ObxTelegramMessage_.fileId, fileId)
+                queryBuilder.equal(ObxTelegramMessage_.fileId, fileId.toLong())
             } else if (messageId != null) {
                 queryBuilder.equal(ObxTelegramMessage_.messageId, messageId)
                 if (chatId != null) {
