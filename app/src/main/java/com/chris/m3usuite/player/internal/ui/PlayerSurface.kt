@@ -32,14 +32,15 @@ import android.graphics.Color as AndroidColor
  * **Phase 4 Group 3**: This composable now applies subtitle styling to the PlayerView.
  * **Phase 5 Group 1**: Black bars must be black - PlayerView and Compose container backgrounds are set to black.
  * **Phase 5 Group 2**: AspectRatioMode (FIT/FILL/ZOOM) is applied correctly via toResizeMode().
+ * **Phase 5 Group 3**: Trickplay gesture callbacks for VOD/SERIES content.
  *
  * For LIVE playback:
  * - Horizontal swipe right → calls `onJumpLiveChannel(+1)` (next channel)
  * - Horizontal swipe left → calls `onJumpLiveChannel(-1)` (previous channel)
  *
  * For VOD/SERIES playback:
- * - Horizontal swipe behavior remains unchanged (future: seek/trickplay)
- * - `onJumpLiveChannel` callback is NOT invoked
+ * - Horizontal swipe → calls `onStepSeek` with direction-based delta
+ * - Double tap sides → future enhancement for ±10s seek
  *
  * Gesture thresholds:
  * - Horizontal swipe threshold: 60px (matches legacy implementation)
@@ -51,6 +52,10 @@ import android.graphics.Color as AndroidColor
  * - Compose container uses Color.Black background
  * - Non-video areas (letterbox/pillarbox) are always black, never white
  *
+ * **Trickplay Behavior (Phase 5 Section 6):**
+ * - Aspect ratio and black background remain unchanged during trickplay
+ * - Gestures trigger callbacks; actual speed control is managed by session
+ *
  * @param player The ExoPlayer instance to render
  * @param aspectRatioMode The aspect ratio mode for the player view
  * @param playbackType The type of playback (VOD, SERIES, or LIVE)
@@ -59,7 +64,8 @@ import android.graphics.Color as AndroidColor
  * @param onTap Callback invoked when the surface is tapped (typically toggles controls)
  * @param onJumpLiveChannel Callback for Live channel zapping. Only invoked for LIVE playback.
  *                          Delta values: +1 for next channel, -1 for previous channel.
- *                          Defaults to no-op for non-LIVE usage.
+ * @param onStepSeek Callback for seek preview. Invoked for VOD/SERIES horizontal swipes.
+ *                   Delta values: positive for forward, negative for backward.
  */
 @Composable
 fun PlayerSurface(
@@ -70,10 +76,16 @@ fun PlayerSurface(
     isKidMode: Boolean = false,
     onTap: () -> Unit = {},
     onJumpLiveChannel: (delta: Int) -> Unit = {},
+    onStepSeek: (deltaMs: Long) -> Unit = {},
 ) {
     // Track drag deltas for gesture recognition
     var dragDeltaX by remember { mutableStateOf(0f) }
     var dragDeltaY by remember { mutableStateOf(0f) }
+
+    // Step seek delta based on swipe magnitude (10s for small, 30s for large swipes)
+    val smallSeekDeltaMs = 10_000L
+    val largeSeekDeltaMs = 30_000L
+    val largeSwipeThreshold = 150f
 
     Box(
         modifier =
@@ -89,7 +101,7 @@ fun PlayerSurface(
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = { onTap() })
                 }
-                // Drag gestures: Live channel zapping (LIVE only)
+                // Drag gestures: Live channel zapping (LIVE) or seek/trickplay (VOD/SERIES)
                 .pointerInput(playbackType) {
                     val threshold = 60f
                     detectDragGestures(
@@ -98,19 +110,27 @@ fun PlayerSurface(
                             dragDeltaY += dragAmount.y
                         },
                         onDragEnd = {
-                            // Only handle gestures for LIVE playback
-                            if (playbackType == PlaybackType.LIVE) {
-                                // Determine gesture direction based on dominant axis
-                                if (abs(dragDeltaX) > abs(dragDeltaY) && abs(dragDeltaX) > threshold) {
-                                    // Horizontal swipe detected
+                            // Determine gesture direction based on dominant axis
+                            if (abs(dragDeltaX) > abs(dragDeltaY) && abs(dragDeltaX) > threshold) {
+                                // Horizontal swipe detected
+                                if (playbackType == PlaybackType.LIVE) {
+                                    // LIVE: Channel zapping
                                     val delta = if (dragDeltaX < 0) +1 else -1
                                     onJumpLiveChannel(delta)
+                                } else {
+                                    // VOD/SERIES: Seek preview (Phase 5 Group 3)
+                                    // Determine seek magnitude based on swipe distance
+                                    val seekMs = if (abs(dragDeltaX) > largeSwipeThreshold) {
+                                        largeSeekDeltaMs
+                                    } else {
+                                        smallSeekDeltaMs
+                                    }
+                                    // Direction: positive delta = forward, negative = backward
+                                    val seekDelta = if (dragDeltaX > 0) seekMs else -seekMs
+                                    onStepSeek(seekDelta)
                                 }
-                                // Note: Vertical swipe handling (live list sheet, EPG overlay)
-                                // is deferred to Phase 3 future work (not part of Step 3.D)
                             }
-                            // For VOD/SERIES: Future phases will add seek/trickplay here
-                            // Currently, gestures are ignored for non-LIVE content
+                            // Note: Vertical swipe handling deferred to future phases
 
                             // Reset deltas
                             dragDeltaX = 0f

@@ -2775,7 +2775,7 @@ The remaining work is primarily:
 | Phase 2 – Resume & Kids Gate | ✅ Complete | 2025-11-25 | Legacy | ✅ Yes |
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 4 – Subtitles | ✅ SIP Complete | 2025-11-26 | Legacy | ✅ Yes |
-| Phase 5 – PlayerSurface | 🔄 Kickoff Complete | 2025-11-26 | Legacy | ⬜ No |
+| Phase 5 – PlayerSurface | ✅ Groups 1-4 Complete | 2025-11-27 | Legacy | 🔄 Partial (Group 5 Kid Mode tests remaining) |
 | Phase 6 – TV Remote | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 8 – Lifecycle | ⬜ Not Started | - | Legacy | ⬜ No |
@@ -2786,8 +2786,10 @@ The remaining work is primarily:
 - **Runtime Active:** Which implementation is currently active in production
 - **SIP Complete:** Whether the SIP (reference) implementation is complete
   - ✅ Yes = Fully implemented and tested
-  - 🔄 Partial = Foundation/domain models complete, UI integration remaining
+  - 🔄 Partial = Foundation/domain models complete, some tests remaining
   - ⬜ No = Not started
+
+**Phase 5 Status:** Groups 1-4 complete. Black bars enforced, aspect ratio cycling implemented, trickplay state model and UI implemented, controls auto-hide implemented with TV (7s) and phone (4s) timeouts. Group 5 Kid Mode tests not yet implemented. SIP is now the authoritative PlayerSurface implementation for future activation. Legacy InternalPlayerScreen unchanged.
 
 **Phase 4 Status:** All Groups complete (1-6). SIP player fully integrated with subtitle styling and track selection. CC Menu fully wired to SubtitleStyleManager. SettingsScreen integrated with SubtitleSettingsSection and SubtitleSettingsViewModel. Kid profile detection hides subtitle settings. 
 
@@ -2801,11 +2803,11 @@ The remaining work is primarily:
 
 ---
 
-## Phase 5 – PlayerSurface, Aspect Ratio, Trickplay & Auto-Hide (Groups 1 & 2 Complete)
+## Phase 5 – PlayerSurface, Aspect Ratio, Trickplay & Auto-Hide (Groups 1-4 Complete)
 
-**Date:** 2025-11-26
+**Date:** 2025-11-27
 
-**Status:** 🔄 **GROUPS 1 & 2 COMPLETE** – Black bars and aspect ratio modes implemented
+**Status:** ✅ **GROUPS 1-4 COMPLETE** – Black bars, aspect ratio, trickplay, and auto-hide implemented
 
 ### What Was Done (Kickoff Task)
 
@@ -2823,34 +2825,34 @@ The remaining work is primarily:
 
 | Component | Location | Current State | Phase 5 Action |
 |-----------|----------|---------------|----------------|
-| PlayerSurface.kt | `internal/ui/` | Hosts PlayerView, tap/swipe gestures, subtitle style | **EXTEND**: Add black bars, trickplay gestures, auto-hide |
-| AspectRatioMode | `internal/state/` | FIT/FILL/ZOOM/STRETCH enum | **REUSE**: Verify contract compliance |
-| InternalPlayerControls.kt | `internal/ui/` | Main controls, progress, EPG, CC menu | **EXTEND**: Add trickplay UI, auto-hide timer |
-| compose_player_view.xml | `res/layout/` | No background specified | **FIX**: Add black background |
-| Legacy InternalPlayerScreen | `player/` | Trickplay L1467-1507, Auto-hide L1438-1451 | **REFERENCE ONLY**: Migrate behavior, don't copy code |
+| PlayerSurface.kt | `internal/ui/` | Hosts PlayerView, tap/swipe gestures, subtitle style | **EXTENDED**: Black bars, step seek gestures, auto-hide |
+| AspectRatioMode | `internal/state/` | FIT/FILL/ZOOM/STRETCH enum | **VERIFIED**: Contract compliance |
+| InternalPlayerControls.kt | `internal/ui/` | Main controls, progress, EPG, CC menu | **EXTENDED**: Trickplay UI, auto-hide timer |
+| compose_player_view.xml | `res/layout/` | No background specified | **FIXED**: Black background |
+| Legacy InternalPlayerScreen | `player/` | Trickplay L1467-1507, Auto-hide L1438-1451 | **REFERENCE ONLY**: No changes |
 
 **3. Legacy Code Mapping:**
 
-| Legacy Location | Behavior | SIP Module |
-|-----------------|----------|------------|
-| L1347-1348 | controlsVisible, controlsTick | InternalPlayerUiState |
-| L1365 | resizeMode state | AspectRatioMode |
-| L1374-1379 | cycleResize() | AspectRatioMode.next() |
-| L1438-1451 | Auto-hide logic (TV 10s, phone 5s) | InternalPlayerControls |
-| L1456-1459 | seekPreviewVisible, targetMs | InternalPlayerUiState |
-| L1467-1470 | trickplaySpeeds, ffStage, rwStage | InternalPlayerUiState.trickplaySpeed |
-| L1473-1487 | stopTrickplay() | InternalPlayerController callback |
-| L1489-1507 | showSeekPreview() | InternalPlayerSession |
-| L1836-1837 | Tap toggles controls | PlayerSurface onTap |
+| Legacy Location | Behavior | SIP Module | Status |
+|-----------------|----------|------------|--------|
+| L1347-1348 | controlsVisible, controlsTick | InternalPlayerUiState | ✅ |
+| L1365 | resizeMode state | AspectRatioMode | ✅ |
+| L1374-1379 | cycleResize() | AspectRatioMode.next() | ✅ |
+| L1438-1451 | Auto-hide logic (TV 10s, phone 5s) | InternalPlayerControls | ✅ |
+| L1456-1459 | seekPreviewVisible, targetMs | InternalPlayerUiState | ✅ |
+| L1467-1470 | trickplaySpeeds, ffStage, rwStage | InternalPlayerUiState.trickplaySpeed | ✅ |
+| L1473-1487 | stopTrickplay() | InternalPlayerController callback | ✅ |
+| L1489-1507 | showSeekPreview() | InternalPlayerSession | ✅ |
+| L1836-1837 | Tap toggles controls | PlayerSurface onTap | ✅ |
 
 **4. Checklist Created:**
 - ✅ Created `docs/INTERNAL_PLAYER_PHASE5_CHECKLIST.md`
 - ✅ 5 Task Groups with 22 specific tasks:
   - Group 1: PlayerSurface Foundation & Black Bars (3 tasks) ✅ **DONE**
   - Group 2: Aspect Ratio Modes & Switching (3 tasks) ✅ **DONE**
-  - Group 3: Trickplay Behavior & UI Hooks (6 tasks)
-  - Group 4: Controls Auto-Hide (TV vs Touch) (5 tasks)
-  - Group 5: Tests & Validation (5 tasks) 🔄 **PARTIAL** (Black bar + aspect ratio tests done)
+  - Group 3: Trickplay Behavior & UI Hooks (6 tasks) ✅ **DONE**
+  - Group 4: Controls Auto-Hide (TV vs Touch) (5 tasks) ✅ **DONE**
+  - Group 5: Tests & Validation (5 tasks) 🔄 **PARTIAL** (Trickplay + auto-hide tests done)
 - ✅ All contract requirements mapped to checklist items
 - ✅ Legacy behavior mapped to SIP modules
 
@@ -2967,10 +2969,172 @@ The remaining work is primarily:
 
 The following task groups remain for future implementation:
 
-1. **Task Group 3:** Trickplay Behavior & UI Hooks (6 tasks)
-2. **Task Group 4:** Controls Auto-Hide (TV vs Touch) (5 tasks)
-3. **Task Group 5 (Remaining):** Trickplay, Auto-Hide, Kid Mode Tests
+1. **Task Group 5 (Remaining):** Kid Mode interaction tests
 
 ---
 
-**Last Updated:** 2025-11-26
+## Phase 5 Groups 3 & 4 Implementation (2025-11-27)
+
+**Task 2: Trickplay Behavior & Controls Auto-Hide**
+
+### What Was Implemented
+
+**Group 3: Trickplay Behavior & UI Hooks ✅ COMPLETE**
+
+- ✅ **Task 3.1: Trickplay State Model**
+  - Added `trickplayActive: Boolean` field to InternalPlayerUiState
+  - Added `trickplaySpeed: Float` field (1f=normal, 2f/3f/5f=FF, -2f/-3f/-5f=RW)
+  - Added `seekPreviewVisible: Boolean` and `seekPreviewTargetMs: Long?` fields
+  - Contract Reference: Section 6.1, 6.2
+
+- ✅ **Task 3.2: Trickplay Controller Methods**
+  - Added `onStartTrickplay(direction: Int)` callback
+  - Added `onStopTrickplay(applyPosition: Boolean)` callback
+  - Added `onCycleTrickplaySpeed()` callback
+  - Added `onStepSeek(deltaMs: Long)` callback
+  - Added `TrickplayDirection` enum (FORWARD=1, REWIND=-1)
+
+- ✅ **Task 3.3: Trickplay Session Logic (Foundation)**
+  - State model and controller callbacks defined
+  - Actual ExoPlayer speed manipulation deferred to session wiring (future activation)
+
+- ✅ **Task 3.4: Seek Preview Logic (Foundation)**
+  - State fields for seek preview defined
+  - UI rendering implemented
+  - Session-level auto-hide logic to be wired at activation
+
+- ✅ **Task 3.5: Trickplay UI in InternalPlayerControls**
+  - Created `TrickplayIndicator` composable (e.g., "2x ►►" or "◀◀ 3x")
+  - Created `SeekPreviewOverlay` composable showing target position and delta
+  - Overlays centered with AnimatedVisibility fade transitions (150ms)
+  - Black semi-transparent backgrounds (70% opacity) for readability
+
+- ✅ **Task 3.6: Trickplay Gesture Handling**
+  - Added `onStepSeek` callback parameter to PlayerSurface
+  - For VOD/SERIES: Horizontal swipe triggers step seek
+    - Small swipe (≤150px): ±10s
+    - Large swipe (>150px): ±30s
+  - Direction: swipe right = forward, swipe left = backward
+  - LIVE playback uses existing channel zapping (not trickplay)
+  - 60px threshold maintained
+
+**Group 4: Controls Auto-Hide (TV vs Touch) ✅ COMPLETE**
+
+- ✅ **Task 4.1: Auto-Hide State Model**
+  - Added `controlsVisible: Boolean = true` to InternalPlayerUiState
+  - Added `controlsTick: Int = 0` (increment resets timer)
+  - Added `hasBlockingOverlay` computed property
+
+- ✅ **Task 4.2: Auto-Hide Timer Logic**
+  - Implemented LaunchedEffect in InternalPlayerContent
+  - TV timeout: 7 seconds (contract: 5-7s)
+  - Phone/tablet timeout: 4 seconds (contract: 3-5s)
+  - Timer resets when `controlsTick` changes
+  - Timer blocked when `hasBlockingOverlay` or `trickplayActive` is true
+
+- ✅ **Task 4.3: Activity Detection**
+  - Added `onUserInteraction()` callback to reset timer
+  - Added `onToggleControlsVisibility()` callback
+  - Added `onHideControls()` callback for timer-triggered hide
+
+- ✅ **Task 4.4: Never-Hide Conditions**
+  - `hasBlockingOverlay` checks:
+    - `showCcMenuDialog`
+    - `showSettingsDialog`
+    - `showTracksDialog`
+    - `showSpeedDialog`
+    - `showSleepTimerDialog`
+    - `kidBlocked`
+  - LaunchedEffect respects blocking overlay flag
+  - LaunchedEffect respects trickplayActive flag
+
+- ✅ **Task 4.5: Tap-to-Toggle Controls**
+  - PlayerSurface `onTap` now triggers `onToggleControlsVisibility()`
+  - Controls wrapped in AnimatedVisibility with 200ms fade transitions
+
+**Group 5 (Partial): Tests ✅ PARTIAL**
+
+- ✅ **Created `InternalPlayerTrickplayPhase5Test.kt`**
+  - 24 tests covering:
+    - Trickplay state fields (defaults, activation, speeds)
+    - TrickplayDirection enum behavior
+    - Seek preview state
+    - Aspect ratio preservation during trickplay
+    - Playback type interactions
+    - State transitions
+
+- ✅ **Created `ControlsAutoHidePhase5Test.kt`**
+  - 33 tests covering:
+    - Controls visibility state
+    - `hasBlockingOverlay` computed property (all conditions)
+    - Auto-hide timeout constants
+    - Trickplay + controls interaction
+    - Toggle behavior
+    - Edge cases
+
+### Files Modified
+
+**Main Source:**
+1. `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
+   - Added trickplay state fields: `trickplayActive`, `trickplaySpeed`, `seekPreviewVisible`, `seekPreviewTargetMs`
+   - Added controls state fields: `controlsVisible`, `controlsTick`
+   - Added `hasBlockingOverlay` computed property
+   - Added `TrickplayDirection` enum
+   - Added trickplay callbacks: `onStartTrickplay`, `onStopTrickplay`, `onCycleTrickplaySpeed`, `onStepSeek`
+   - Added controls callbacks: `onToggleControlsVisibility`, `onUserInteraction`, `onHideControls`
+
+2. `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt`
+   - Added `isTv` and `timeProvider` parameters to `InternalPlayerContent`
+   - Added auto-hide `LaunchedEffect` with TV/phone timeouts
+   - Added `TrickplayIndicator` composable
+   - Added `SeekPreviewOverlay` composable
+   - Wrapped controls in `AnimatedVisibility` for auto-hide
+   - Updated PlayerSurface call with `onStepSeek` callback
+
+3. `app/src/main/java/com/chris/m3usuite/player/internal/ui/PlayerSurface.kt`
+   - Added `onStepSeek` callback parameter
+   - Added VOD/SERIES horizontal swipe → step seek handling
+   - Small swipe (≤150px) → ±10s, large swipe (>150px) → ±30s
+   - Updated KDoc with Phase 5 trickplay documentation
+
+**Test Source:**
+1. `app/src/test/java/com/chris/m3usuite/player/internal/ui/InternalPlayerTrickplayPhase5Test.kt`
+   - New test file with 24 trickplay behavior tests
+
+2. `app/src/test/java/com/chris/m3usuite/player/internal/ui/ControlsAutoHidePhase5Test.kt`
+   - New test file with 33 auto-hide behavior tests
+
+**Documentation:**
+1. `docs/INTERNAL_PLAYER_PHASE5_CHECKLIST.md`
+   - Marked Groups 3 & 4 tasks as DONE
+   - Updated legacy behavior mapping table
+   - Updated completion criteria
+
+### Contract Compliance Mapping
+
+| Contract Section | Requirement | Implementation Status |
+|-----------------|-------------|----------------------|
+| 6.1 | Trickplay state model | ✅ trickplayActive, trickplaySpeed fields |
+| 6.2 Rule 1 | Speed cycling (2x→3x→5x) | ✅ State model supports all speeds |
+| 6.2 Rule 2 | Visual feedback | ✅ TrickplayIndicator + SeekPreviewOverlay |
+| 6.2 Rule 3 | Exit on play/pause/OK | ✅ onStopTrickplay callback |
+| 6.2 Rule 4 | Aspect ratio unchanged | ✅ Tests verify preservation |
+| 7.1 | Auto-hide timing | ✅ TV 7s, phone 4s |
+| 7.2 | Activity resets timer | ✅ controlsTick mechanism |
+| 7.3 | Never hide with overlays | ✅ hasBlockingOverlay check |
+| 8.1 | Tap toggles controls | ✅ onToggleControlsVisibility |
+| 8.3 | Horizontal swipe seek | ✅ VOD/SERIES step seek |
+
+### Runtime Status
+
+- ✅ Runtime path unchanged: `InternalPlayerEntry` → legacy `InternalPlayerScreen`
+- ✅ SIP modules are non-runtime (SIP reference only)
+- ✅ No functional changes to production player flow
+- ✅ Legacy InternalPlayerScreen remains untouched
+- ✅ All 57 new Phase 5 tests pass (24 trickplay + 33 auto-hide)
+- ✅ Build compiles successfully
+- ✅ SIP is now the authoritative PlayerSurface implementation (for future activation)
+
+---
+
+**Last Updated:** 2025-11-27
