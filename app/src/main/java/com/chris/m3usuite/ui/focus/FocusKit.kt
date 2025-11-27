@@ -19,6 +19,7 @@ import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -180,7 +181,7 @@ fun Modifier.focusZone(zoneId: FocusZoneId): Modifier =
         val focusRequester = remember { FocusRequester() }
 
         // Register zone on composition, unregister on dispose
-        androidx.compose.runtime.DisposableEffect(zoneId) {
+        DisposableEffect(zoneId) {
             focusZoneRegistry[zoneId] = focusRequester
             GlobalDebug.logDpad(
                 action = "FocusZone:Register",

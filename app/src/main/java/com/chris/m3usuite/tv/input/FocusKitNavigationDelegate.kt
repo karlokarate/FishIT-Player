@@ -52,22 +52,9 @@ class FocusKitNavigationDelegate : TvNavigationDelegate {
      * @return True if focus was moved to the zone, false if zone not found
      */
     override fun focusZone(action: TvAction): Boolean {
-        val zoneId = mapActionToZone(action) ?: return false
+        val zoneId = zoneForAction(action) ?: return false
         return FocusKit.requestZoneFocus(zoneId)
     }
-
-    /**
-     * Map a focus TvAction to a FocusZoneId.
-     *
-     * @param action The focus action
-     * @return The corresponding FocusZoneId, or null if action is not a focus action
-     */
-    private fun mapActionToZone(action: TvAction): FocusZoneId? =
-        when (action) {
-            TvAction.FOCUS_QUICK_ACTIONS -> FocusZoneId.QUICK_ACTIONS
-            TvAction.FOCUS_TIMELINE -> FocusZoneId.TIMELINE
-            else -> null
-        }
 
     companion object {
         /**
