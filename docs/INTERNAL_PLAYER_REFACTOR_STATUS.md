@@ -2776,7 +2776,7 @@ The remaining work is primarily:
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 4 – Subtitles | ✅ SIP Complete | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 5 – PlayerSurface | ✅ Validated & Complete | 2025-11-27 | Legacy | ✅ Yes |
-| Phase 6 – Global TV Input | 🔄 Kickoff (Roadmap Refined) | 2025-11-27 | Legacy | ⬜ No |
+| Phase 6 – Global TV Input | 🔄 Checklist Generated | 2025-11-27 | Legacy | ⬜ No |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 8 – Lifecycle | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 9 – Diagnostics | ⬜ Not Started | - | Legacy | ⬜ No |
@@ -2789,8 +2789,11 @@ The remaining work is primarily:
   - 🔄 Partial = Foundation/domain models complete, some tests remaining
   - ⬜ No = Not started
 
-**Phase 6 Status:** 🔄 **KICKOFF (ROADMAP REFINED)** (2025-11-27). Comprehensive specification added:
-- Complete TvKeyRole enum (DPAD_*, PLAY_PAUSE, FAST_FORWARD, REWIND, MENU, BACK, CHANNEL_*, INFO, GUIDE, NUM_0..NUM_9)
+**Phase 6 Status:** 🔄 **CHECKLIST GENERATED** (2025-11-27). Implementation checklist complete:
+- Full repo scan completed: FocusKit, TvKeyDebouncer, HomeChromeScaffold, ProfileGate, InternalPlayerScreen
+- Created `docs/INTERNAL_PLAYER_PHASE6_CHECKLIST.md` with 10 task groups (56 tasks)
+- Repository analysis summary with "good/reusable", "becomes global", "becomes screen-specific", "must be replaced" classifications
+- TvKeyRole enum specification (DPAD_*, PLAY_PAUSE, FAST_FORWARD, REWIND, MENU, BACK, CHANNEL_*, INFO, GUIDE, NUM_0..NUM_9)
 - Full TvAction space (playback, menu/overlay, pagination, focus, navigation, channel, system actions)
 - ScreenConfig DSL requirement with example syntax
 - Complete FocusZones list (10 zones: player_controls, quick_actions, timeline, cc_button, aspect_button, epg_overlay, live_list, library_row, settings_list, profile_grid)
@@ -2798,7 +2801,7 @@ The remaining work is primarily:
 - Blocking overlay behavior specification
 - TV Input Debug Overlay requirements
 - Testing expectations for all components
-- Implementation checklist pending code scan
+- Phase 6 checklist ready for implementation tasks
 
 **Phase 5 Status:** ✅ **FULLY VALIDATED** (2025-11-27). All groups complete with code quality improvements:
 - Black bars enforced with contract-compliant backgrounds
@@ -3266,7 +3269,21 @@ The roadmap now includes testing expectations:
 
 ### Next Steps
 
-A full implementation checklist will be generated in the next task after Copilot performs a complete code scan of all relevant modules (FocusKit, existing TV input handling, player controls, screen navigation, etc.).
+Phase 6 checklist generated — ready for implementation tasks.
+
+Implementation order:
+1. Task Group 1: TvKeyRole & Global KeyEvent→Role mapping (4 tasks)
+2. Task Group 2: TvAction definitions & ScreenConfig DSL (5 tasks)
+3. Task Group 3: TvScreenContext and screen input routing (3 tasks)
+4. Task Group 4: Global TvInputController implementation (4 tasks)
+5. Task Group 5: FocusZones integration into FocusKit (4 tasks)
+6. Task Group 6: Kids Mode global filtering (3 tasks)
+7. Task Group 7: Overlay blocking rules (3 tasks)
+8. Task Group 8: TV Input Inspector (debug overlay) (3 tasks)
+9. Task Group 9: Player, Library, Settings integration as consumers (4 tasks)
+10. Task Group 10: Testing & Validation Plan (7 tasks)
+
+See `docs/INTERNAL_PLAYER_PHASE6_CHECKLIST.md` for complete task breakdown.
 
 ---
 
