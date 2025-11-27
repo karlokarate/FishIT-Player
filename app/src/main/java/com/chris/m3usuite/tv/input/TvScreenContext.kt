@@ -10,7 +10,9 @@ package com.chris.m3usuite.tv.input
  * This is a pure data class with no behavior. The actual input processing
  * logic lives in TvInputController (to be implemented in Task 3).
  *
- * Contract Reference: INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 4.2, 5.1
+ * Contract Reference:
+ * - INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 4.2, 5.1
+ * - GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md
  *
  * @property screenId The unique identifier for the current screen
  * @property isPlayerScreen True if this is the internal player screen
@@ -69,6 +71,21 @@ data class TvScreenContext(
             )
 
         /**
+         * Create a context for the start/home screen.
+         * Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: HOME / BROWSE / LIBRARY SCREENS
+         *
+         * @param isKidProfile True if a kid profile is active
+         */
+        fun start(isKidProfile: Boolean = false): TvScreenContext =
+            TvScreenContext(
+                screenId = TvScreenId.START,
+                isPlayerScreen = false,
+                isLive = false,
+                isKidProfile = isKidProfile,
+                hasBlockingOverlay = false,
+            )
+
+        /**
          * Create a context for the settings screen.
          *
          * @param isKidProfile True if a kid profile is active
@@ -103,6 +120,21 @@ data class TvScreenContext(
             TvScreenContext(
                 screenId = TvScreenId.DETAIL,
                 isPlayerScreen = false,
+                isLive = false,
+                isKidProfile = isKidProfile,
+                hasBlockingOverlay = false,
+            )
+
+        /**
+         * Create a context for the mini-player / PIP mode.
+         * Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: GLOBAL PIP / MINIPLAYER MODE
+         *
+         * @param isKidProfile True if a kid profile is active
+         */
+        fun miniPlayer(isKidProfile: Boolean = false): TvScreenContext =
+            TvScreenContext(
+                screenId = TvScreenId.MINI_PLAYER,
+                isPlayerScreen = true, // Mini-player is still a player context
                 isLive = false,
                 isKidProfile = isKidProfile,
                 hasBlockingOverlay = false,

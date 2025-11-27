@@ -229,21 +229,33 @@ class KidsModeFilteringTest {
     }
 
     @Test
-    fun `resolve blocks seek for kid profile on LIBRARY`() {
+    fun `resolve allows ROW_FAST_SCROLL for kid profile on LIBRARY`() {
         val ctx = TvScreenContext.library(isKidProfile = true)
         val action = DefaultTvScreenConfigs.resolve(TvScreenId.LIBRARY, TvKeyRole.FAST_FORWARD, ctx)
 
-        // In LIBRARY, FAST_FORWARD maps to PAGE_DOWN, which is allowed for kids
-        assertEquals(TvAction.PAGE_DOWN, action)
+        // In LIBRARY, FAST_FORWARD maps to ROW_FAST_SCROLL_FORWARD, which is allowed for kids
+        assertEquals(TvAction.ROW_FAST_SCROLL_FORWARD, action)
     }
 
     @Test
     fun `resolve allows navigation for kid profile`() {
+        // Use LIBRARY screen where DPAD_LEFT maps to NAVIGATE_LEFT
+        val ctx = TvScreenContext.library(isKidProfile = true)
+        val action = DefaultTvScreenConfigs.resolve(TvScreenId.LIBRARY, TvKeyRole.DPAD_LEFT, ctx)
+
+        // DPAD_LEFT maps to NAVIGATE_LEFT in LIBRARY, which is allowed for kids
+        assertEquals(TvAction.NAVIGATE_LEFT, action)
+    }
+
+    @Test
+    fun `resolve blocks DPAD seek in player for kid profile`() {
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: DPAD_LEFT → SEEK_BACKWARD_10S in PLAYER
+        // which is blocked for kids
         val ctx = TvScreenContext.player(isKidProfile = true)
         val action = DefaultTvScreenConfigs.resolve(TvScreenId.PLAYER, TvKeyRole.DPAD_LEFT, ctx)
 
-        // DPAD_LEFT maps to NAVIGATE_LEFT, which is allowed for kids
-        assertEquals(TvAction.NAVIGATE_LEFT, action)
+        // DPAD_LEFT maps to SEEK_BACKWARD_10S in PLAYER, which is blocked for kids
+        assertNull(action)
     }
 
     @Test
@@ -279,6 +291,10 @@ class KidsModeFilteringTest {
                 TvAction.OPEN_CC_MENU,
                 TvAction.OPEN_ASPECT_MENU,
                 TvAction.OPEN_LIVE_LIST,
+                // Phase 6 Task 4: Additional blocked actions
+                TvAction.PIP_SEEK_FORWARD,
+                TvAction.PIP_SEEK_BACKWARD,
+                TvAction.OPEN_ADVANCED_SETTINGS,
             )
 
         for (action in blockedActions) {
@@ -305,11 +321,88 @@ class KidsModeFilteringTest {
                 TvAction.FOCUS_TIMELINE,
                 TvAction.CHANNEL_UP,
                 TvAction.CHANNEL_DOWN,
+                // Phase 6 Task 4: Additional allowed actions
+                TvAction.OPEN_DETAILS,
+                TvAction.ROW_FAST_SCROLL_FORWARD,
+                TvAction.ROW_FAST_SCROLL_BACKWARD,
+                TvAction.PLAY_FOCUSED_RESUME,
+                TvAction.OPEN_FILTER_SORT,
+                TvAction.NEXT_EPISODE,
+                TvAction.PREVIOUS_EPISODE,
+                TvAction.OPEN_DETAIL_MENU,
+                TvAction.ACTIVATE_FOCUSED_SETTING,
+                TvAction.SELECT_PROFILE,
+                TvAction.OPEN_PROFILE_OPTIONS,
+                TvAction.OPEN_PLAYER_MENU,
+                TvAction.PIP_TOGGLE_PLAY_PAUSE,
+                TvAction.PIP_ENTER_RESIZE_MODE,
+                TvAction.PIP_CONFIRM_RESIZE,
+                TvAction.PIP_MOVE_LEFT,
+                TvAction.PIP_MOVE_RIGHT,
+                TvAction.PIP_MOVE_UP,
+                TvAction.PIP_MOVE_DOWN,
+                TvAction.EXIT_TO_HOME,
+                TvAction.OPEN_GLOBAL_SEARCH,
+                TvAction.SWITCH_SETTINGS_TAB_NEXT,
+                TvAction.SWITCH_SETTINGS_TAB_PREVIOUS,
             )
 
         for (action in allowedActions) {
             assertNotNull("$action should be allowed for kids", filterForKidsMode(action, ctx))
             assertEquals(action, filterForKidsMode(action, ctx))
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PHASE 6 TASK 4: NEW ACTION KIDS MODE TESTS
+    // ══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `PIP_SEEK_FORWARD is blocked for kid profile`() {
+        val ctx = TvScreenContext.miniPlayer(isKidProfile = true)
+        val result = filterForKidsMode(TvAction.PIP_SEEK_FORWARD, ctx)
+        assertNull(result)
+    }
+
+    @Test
+    fun `PIP_SEEK_BACKWARD is blocked for kid profile`() {
+        val ctx = TvScreenContext.miniPlayer(isKidProfile = true)
+        val result = filterForKidsMode(TvAction.PIP_SEEK_BACKWARD, ctx)
+        assertNull(result)
+    }
+
+    @Test
+    fun `OPEN_ADVANCED_SETTINGS is blocked for kid profile`() {
+        val ctx = TvScreenContext.settings(isKidProfile = true)
+        val result = filterForKidsMode(TvAction.OPEN_ADVANCED_SETTINGS, ctx)
+        assertNull(result)
+    }
+
+    @Test
+    fun `PIP_TOGGLE_PLAY_PAUSE is allowed for kid profile`() {
+        val ctx = TvScreenContext.miniPlayer(isKidProfile = true)
+        val result = filterForKidsMode(TvAction.PIP_TOGGLE_PLAY_PAUSE, ctx)
+        assertEquals(TvAction.PIP_TOGGLE_PLAY_PAUSE, result)
+    }
+
+    @Test
+    fun `PLAY_FOCUSED_RESUME is allowed for kid profile`() {
+        val ctx = TvScreenContext.library(isKidProfile = true)
+        val result = filterForKidsMode(TvAction.PLAY_FOCUSED_RESUME, ctx)
+        assertEquals(TvAction.PLAY_FOCUSED_RESUME, result)
+    }
+
+    @Test
+    fun `OPEN_DETAILS is allowed for kid profile`() {
+        val ctx = TvScreenContext.library(isKidProfile = true)
+        val result = filterForKidsMode(TvAction.OPEN_DETAILS, ctx)
+        assertEquals(TvAction.OPEN_DETAILS, result)
+    }
+
+    @Test
+    fun `EXIT_TO_HOME is allowed for kid profile`() {
+        val ctx = TvScreenContext.player(isKidProfile = true)
+        val result = filterForKidsMode(TvAction.EXIT_TO_HOME, ctx)
+        assertEquals(TvAction.EXIT_TO_HOME, result)
     }
 }

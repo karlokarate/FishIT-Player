@@ -333,8 +333,14 @@ class SettingsStore(
     val tgProxySecret: Flow<String> = context.dataStore.data.map { Crypto.decrypt(it[Keys.TG_PROXY_SECRET].orEmpty()) }
     val tgProxyEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_PROXY_ENABLED] ?: false }
     val tgLogVerbosity: Flow<Int> = context.dataStore.data.map { it[Keys.TG_LOG_VERBOSITY] ?: 1 }
-    val logMasterEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.LOG_MASTER_ENABLED] ?: false }.distinctUntilChanged()
-    val logTelemetryEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.LOG_TELEMETRY_ENABLED] ?: false }.distinctUntilChanged()
+    val logMasterEnabled: Flow<Boolean> =
+        context.dataStore.data
+            .map { it[Keys.LOG_MASTER_ENABLED] ?: false }
+            .distinctUntilChanged()
+    val logTelemetryEnabled: Flow<Boolean> =
+        context.dataStore.data
+            .map { it[Keys.LOG_TELEMETRY_ENABLED] ?: false }
+            .distinctUntilChanged()
     val logCategories: Flow<Set<String>> =
         context.dataStore.data
             .map { prefs ->

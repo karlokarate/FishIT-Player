@@ -25,7 +25,16 @@ object ExternalPlayer {
         com.chris.m3usuite.core.logging.AppLog.log(
             category = "player",
             level = com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
-            message = "open external pkg=${preferredPkg ?: "<chooser>"} url=${uri.scheme}://${uri.host}${uri.path?.let { if (it.length > 24) it.takeLast(24) else it } ?: ""}",
+            message = "open external pkg=${preferredPkg ?: "<chooser>"} url=${uri.scheme}://${uri.host}${uri.path?.let {
+                if (it.length > 24) {
+                    it
+                        .takeLast(
+                            24,
+                        )
+                } else {
+                    it
+                }
+            } ?: ""}",
         )
         // Build candidate intents (typed + generic) for robustness with different players
         val typed =

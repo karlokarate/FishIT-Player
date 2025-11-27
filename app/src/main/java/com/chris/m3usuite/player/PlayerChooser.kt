@@ -38,7 +38,11 @@ object PlayerChooser {
 
         when (store.playerMode.first()) {
             "internal" -> {
-                com.chris.m3usuite.core.logging.AppLog.log("player", com.chris.m3usuite.core.logging.AppLog.Level.DEBUG, "mode=internal; starting internal")
+                com.chris.m3usuite.core.logging.AppLog.log(
+                    "player",
+                    com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+                    "mode=internal; starting internal",
+                )
                 buildInternal(startPositionMs, mimeType)
             }
             "external" -> {
@@ -50,7 +54,11 @@ object PlayerChooser {
                 val pkg = store.preferredPlayerPkg.first().ifBlank { null }
                 if (pkg == null) {
                     // No preferred external player selected → avoid system chooser; play internally
-                    com.chris.m3usuite.core.logging.AppLog.log("player", com.chris.m3usuite.core.logging.AppLog.Level.DEBUG, "no preferred package; fallback to internal")
+                    com.chris.m3usuite.core.logging.AppLog.log(
+                        "player",
+                        com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+                        "no preferred package; fallback to internal",
+                    )
                     buildInternal(startPositionMs, mimeType)
                 } else {
                     ExternalPlayer.open(
@@ -65,7 +73,11 @@ object PlayerChooser {
             else -> {
                 // Immer fragen: Dialog mit "Intern" oder "Extern"
                 val wantInternal = askInternalOrExternal(context)
-                com.chris.m3usuite.core.logging.AppLog.log("player", com.chris.m3usuite.core.logging.AppLog.Level.DEBUG, "ask result: wantInternal=$wantInternal")
+                com.chris.m3usuite.core.logging.AppLog.log(
+                    "player",
+                    com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+                    "ask result: wantInternal=$wantInternal",
+                )
                 if (wantInternal) {
                     buildInternal(startPositionMs, mimeType)
                 } else {

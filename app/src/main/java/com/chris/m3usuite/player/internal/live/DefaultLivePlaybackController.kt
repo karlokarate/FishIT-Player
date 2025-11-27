@@ -133,8 +133,7 @@ class DefaultLivePlaybackController(
      */
     private val epgCache =
         object : LinkedHashMap<Long, EpgOverlayState>(32, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, EpgOverlayState>?): Boolean =
-                size > 128
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, EpgOverlayState>?): Boolean = size > 128
         }
 
     /**

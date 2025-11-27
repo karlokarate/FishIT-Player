@@ -168,11 +168,13 @@ fun filterForOverlays(
 /**
  * Check if an action is blocked for kid profiles.
  *
- * Blocked Actions for Kids (Contract Section 7.1):
- * - All SEEK_* actions
+ * Blocked Actions for Kids (Contract Section 7.1 + GLOBAL_TV_REMOTE_BEHAVIOR_MAP):
+ * - All SEEK_* actions (standard and PIP)
  * - OPEN_CC_MENU
  * - OPEN_ASPECT_MENU
  * - OPEN_LIVE_LIST
+ * - PIP seek actions (PIP_SEEK_FORWARD, PIP_SEEK_BACKWARD)
+ * - Advanced settings (OPEN_ADVANCED_SETTINGS)
  *
  * Note: FAST_FORWARD and REWIND are TvKeyRoles, not TvActions.
  * The screen config should NOT map FF/RW to seek actions for kids,
@@ -182,7 +184,10 @@ private fun isBlockedForKids(action: TvAction): Boolean =
     action.isSeekAction() ||
         action == TvAction.OPEN_CC_MENU ||
         action == TvAction.OPEN_ASPECT_MENU ||
-        action == TvAction.OPEN_LIVE_LIST
+        action == TvAction.OPEN_LIVE_LIST ||
+        action == TvAction.PIP_SEEK_FORWARD ||
+        action == TvAction.PIP_SEEK_BACKWARD ||
+        action == TvAction.OPEN_ADVANCED_SETTINGS
 
 /**
  * Check if an action is allowed when a blocking overlay is active.

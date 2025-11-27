@@ -1,10 +1,10 @@
 package com.chris.m3usuite.player.internal.domain
 
 import android.content.Context
-import com.chris.m3usuite.data.repo.ResumeRepository
 import com.chris.m3usuite.data.obx.ObxEpisode
 import com.chris.m3usuite.data.obx.ObxEpisode_
 import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.data.repo.ResumeRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.max
@@ -134,8 +134,7 @@ class DefaultResumeManager(
     private val repo = ResumeRepository(context)
     private val episodeCompositeCache =
         object : LinkedHashMap<Int, SeriesComposite>(32, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, SeriesComposite>?): Boolean =
-                size > 128
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, SeriesComposite>?): Boolean = size > 128
         }
 
     // TODO(Phase 2 Parity): Legacy uses ResumeRepository.recentVod() and recentEpisodes()

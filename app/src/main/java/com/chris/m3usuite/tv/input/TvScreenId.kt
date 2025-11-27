@@ -8,7 +8,9 @@ package com.chris.m3usuite.tv.input
  * to handle the same key role differently (e.g., DPAD_LEFT seeks in player
  * but navigates in browse screens).
  *
- * Contract Reference: INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 4.1
+ * Contract Reference:
+ * - INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 4.1
+ * - GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md
  *
  * @see TvScreenContext for per-screen input context
  * @see TvAction for semantic actions
@@ -31,6 +33,12 @@ enum class TvScreenId {
 
     /** Profile selection/gate screen */
     PROFILE_GATE,
+
+    /**
+     * Mini-player / Picture-in-Picture mode.
+     * Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: GLOBAL PIP / MINIPLAYER MODE
+     */
+    MINI_PLAYER,
 
     /** Live channel list overlay */
     LIVE_LIST,

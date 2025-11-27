@@ -1,7 +1,6 @@
 package com.chris.m3usuite.player.internal.ui
 
 import android.app.Activity
-import android.view.KeyEvent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -963,13 +962,16 @@ private fun KidStatusHint(
     modifier: Modifier = Modifier,
 ) {
     val bg =
-        if (warn) Color(0xFFB71C1C).copy(alpha = 0.8f)
-        else Color(0xFF2E7D32).copy(alpha = 0.8f)
+        if (warn) {
+            Color(0xFFB71C1C).copy(alpha = 0.8f)
+        } else {
+            Color(0xFF2E7D32).copy(alpha = 0.8f)
+        }
     val text =
         when {
             remainingMinutes == null -> "Kid-Profil aktiv"
             remainingMinutes <= 0 -> "Zeit abgelaufen"
-            else -> "Kid: ${remainingMinutes} min"
+            else -> "Kid: $remainingMinutes min"
         }
     Text(
         text = text,

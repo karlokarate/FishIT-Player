@@ -36,10 +36,10 @@ import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.ui.util.ImageHeaders
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
 import com.chris.m3usuite.model.MediaItem as AppMediaItem
 
 /**

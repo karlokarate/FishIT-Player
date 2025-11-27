@@ -2,8 +2,8 @@ package com.chris.m3usuite.metrics
 
 import android.os.Build
 import android.os.SystemClock
-import com.chris.m3usuite.core.logging.AppLog
 import androidx.annotation.RequiresApi
+import com.chris.m3usuite.core.logging.AppLog
 import java.util.concurrent.ConcurrentHashMap
 
 object JankReporter {
