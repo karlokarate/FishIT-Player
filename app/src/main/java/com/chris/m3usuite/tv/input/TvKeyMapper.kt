@@ -48,11 +48,15 @@ object TvKeyMapper {
             KeyEvent.KEYCODE_MEDIA_PAUSE,
             -> TvKeyRole.PLAY_PAUSE
 
+            // Fast Forward: FAST_FORWARD is standard, SKIP_FORWARD is used by some remotes
+            // for chapter/track skip, STEP_FORWARD is frame-by-frame. All map to FAST_FORWARD
+            // role for consistent user experience on TV remotes.
             KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
             KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD,
             KeyEvent.KEYCODE_MEDIA_STEP_FORWARD,
             -> TvKeyRole.FAST_FORWARD
 
+            // Rewind: Same logic as Fast Forward - all variations map to REWIND role.
             KeyEvent.KEYCODE_MEDIA_REWIND,
             KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD,
             KeyEvent.KEYCODE_MEDIA_STEP_BACKWARD,
@@ -81,8 +85,11 @@ object TvKeyMapper {
             KeyEvent.KEYCODE_TV_DATA_SERVICE,
             -> TvKeyRole.INFO
 
+            // Guide: Standard GUIDE key plus PROG_RED which is used by some European
+            // TV remotes (e.g., DVB remotes) where the red colored button opens EPG/Guide.
+            // This is a common convention on cable/satellite remotes.
             KeyEvent.KEYCODE_GUIDE,
-            KeyEvent.KEYCODE_PROG_RED,  // Some remotes use colored buttons for guide
+            KeyEvent.KEYCODE_PROG_RED,
             -> TvKeyRole.GUIDE
 
             // Number Keys

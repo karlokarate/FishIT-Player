@@ -344,7 +344,7 @@ class TvKeyRoleMappingTest {
     }
 
     @Test
-    fun `TvKeyRole enum has exactly 22 values`() {
+    fun `TvKeyRole enum has exactly 24 values`() {
         // 5 DPAD + 3 Media + 2 Menu + 2 Channel + 2 Info + 10 Numbers = 24 total
         assertEquals(24, TvKeyRole.entries.size)
     }
