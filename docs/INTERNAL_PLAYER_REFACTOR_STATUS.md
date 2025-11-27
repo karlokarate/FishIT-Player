@@ -2776,7 +2776,7 @@ The remaining work is primarily:
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 4 – Subtitles | ✅ SIP Complete | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 5 – PlayerSurface | ✅ Validated & Complete | 2025-11-27 | Legacy | ✅ Yes |
-| Phase 6 – Global TV Input | 🔄 Checklist Generated | 2025-11-27 | Legacy | ⬜ No |
+| Phase 6 – Global TV Input | 🔄 Roadmap Aligned | 2025-11-27 | Legacy | ⬜ No |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 8 – Lifecycle | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 9 – Diagnostics | ⬜ Not Started | - | Legacy | ⬜ No |
@@ -2789,19 +2789,32 @@ The remaining work is primarily:
   - 🔄 Partial = Foundation/domain models complete, some tests remaining
   - ⬜ No = Not started
 
-**Phase 6 Status:** 🔄 **CHECKLIST GENERATED** (2025-11-27). Implementation checklist complete:
-- Full repo scan completed: FocusKit, TvKeyDebouncer, HomeChromeScaffold, ProfileGate, InternalPlayerScreen
+**Phase 6 Status:** 🔄 **ROADMAP FULLY ALIGNED WITH CONTRACT** (2025-11-27)
+
+Phase 6 roadmap fully aligned with `INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md`.
+
+**Added mandatory items:**
+- ✅ **TvScreenInputConfig & Declarative DSL** – Per-screen key→action mapping with DSL syntax (MANDATORY)
+- ✅ **TvInputController (Global)** – Single global controller with interface and responsibilities (MANDATORY)
+- ✅ **FocusZones Integration** – All 10 zones with FocusKit integration requirements (MANDATORY)
+- ✅ **Kids Mode TV Input Filtering** – Global filter applied BEFORE screen config (MANDATORY)
+- ✅ **Overlay Blocking Rules** – All 7 overlay types with input restrictions (MANDATORY)
+- ✅ **TV Input Debug Overlay** – Inspector showing KeyEvent, TvKeyRole, TvAction, ScreenId, FocusZone, handled (MANDATORY)
+
+**Implementation checklist:**
 - Created `docs/INTERNAL_PLAYER_PHASE6_CHECKLIST.md` with 10 task groups (56 tasks)
+- Full repo scan completed: FocusKit, TvKeyDebouncer, HomeChromeScaffold, ProfileGate, InternalPlayerScreen
 - Repository analysis summary with "good/reusable", "becomes global", "becomes screen-specific", "must be replaced" classifications
 - TvKeyRole enum specification (DPAD_*, PLAY_PAUSE, FAST_FORWARD, REWIND, MENU, BACK, CHANNEL_*, INFO, GUIDE, NUM_0..NUM_9)
 - Full TvAction space (playback, menu/overlay, pagination, focus, navigation, channel, system actions)
 - ScreenConfig DSL requirement with example syntax
-- Complete FocusZones list (10 zones: player_controls, quick_actions, timeline, cc_button, aspect_button, epg_overlay, live_list, library_row, settings_list, profile_grid)
-- Kids Mode global input filtering rules (disabled: FAST_FORWARD, REWIND, SEEK_*, OPEN_*; allowed: DPAD, BACK, MENU)
-- Blocking overlay behavior specification
+- Complete FocusZones list (10 zones)
+- Kids Mode global input filtering rules (blocked: FAST_FORWARD, REWIND, SEEK_*, OPEN_*; allowed: DPAD, BACK, MENU)
+- Blocking overlay behavior specification (7 overlay types)
 - TV Input Debug Overlay requirements
 - Testing expectations for all components
-- Phase 6 checklist ready for implementation tasks
+
+**No implementation tasks are marked as DONE** – all Phase 6 work remains pending.
 
 **Phase 5 Status:** ✅ **FULLY VALIDATED** (2025-11-27). All groups complete with code quality improvements:
 - Black bars enforced with contract-compliant backgrounds
@@ -3160,13 +3173,21 @@ The following task groups remain for future implementation:
 
 ---
 
-## Phase 6 – Global TV Input System (Kickoff – Roadmap Refined)
+## Phase 6 – Global TV Input System (Roadmap Fully Aligned with Contract)
 
 **Date:** 2025-11-27
 
-**Status:** 🔄 **KICKOFF – ROADMAP REFINED** – Full specification documented, checklist pending code scan
+**Status:** 🔄 **ROADMAP FULLY ALIGNED WITH CONTRACT** – All mandatory items documented, no implementation started
 
-Phase 6 kickoff: Roadmap refined with comprehensive contract-critical details. The Phase 6 section in `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` now includes the complete design specification:
+Phase 6 roadmap has been **fully aligned** with `INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md`.
+
+**Added mandatory items:**
+- **TvScreenInputConfig & Declarative DSL** – Per-screen key→action mapping with DSL syntax
+- **TvInputController (Global)** – Single global controller with explicit interface and responsibilities
+- **FocusZones Integration** – All 10 zones with FocusKit integration requirements
+- **Kids Mode TV Input Filtering** – Global filter applied BEFORE screen config
+- **Overlay Blocking Rules** – All 7 overlay types with input restrictions
+- **TV Input Debug Overlay** – Inspector showing KeyEvent, TvKeyRole, TvAction, ScreenId, FocusZone, handled
 
 ### Core Architecture
 
@@ -3203,19 +3224,44 @@ The roadmap now explicitly lists all semantic actions:
 | Channel | `CHANNEL_UP`, `CHANNEL_DOWN` |
 | System | `BACK` |
 
-### ScreenConfig DSL
+### ScreenConfig DSL (MANDATORY)
 
-The roadmap now includes a **declarative ScreenConfig DSL** for mapping `(TvKeyRole, ScreenId) → TvAction?`:
+A **declarative DSL** is now documented as a **MANDATORY** Phase 6 deliverable:
 
 ```kotlin
 screen(PLAYER) {
     on(FAST_FORWARD) -> SEEK_FORWARD_30S
-    on(MENU) -> OPEN_QUICK_ACTIONS
     on(DPAD_UP) -> FOCUS_QUICK_ACTIONS
+    on(MENU) -> OPEN_QUICK_ACTIONS
 }
 ```
 
-### FocusZones (Complete List)
+**DSL Requirements (ALL MANDATORY):**
+- Override mappings per screen
+- Missing mappings interpreted as "no action" (returns `null`)
+- Profile-dependent policies (Kids Mode filtering applied BEFORE DSL resolution)
+- Integration with FocusZones for navigation actions
+
+### TvInputController (MANDATORY GLOBAL CONTROLLER)
+
+A **single global** `TvInputController` instance is now documented as **MANDATORY**:
+
+```kotlin
+interface TvInputController {
+    fun onKeyEvent(event: KeyEvent, context: TvScreenContext): Boolean
+    val quickActionsVisible: State<Boolean>
+    val focusedAction: State<TvAction?>
+}
+```
+
+**Responsibilities (ALL MANDATORY):**
+1. KeyEvent → TvKeyRole mapping via global mapper
+2. Apply Kids Mode filtering BEFORE screen config
+3. Resolve TvAction via TvScreenInputConfig
+4. Dispatch TvAction to FocusKit / SIP PlayerController / Overlay controllers
+5. Maintain `quickActionsVisible` and `focusedAction` state
+
+### FocusZones (MANDATORY)
 
 All 10 required focus zones are now documented:
 
@@ -3230,31 +3276,38 @@ All 10 required focus zones are now documented:
 9. `settings_list` – Settings items list
 10. `profile_grid` – Profile selection grid
 
-### Kids Mode Global Input Filtering
+**TvActions MUST target FocusZones:**
+- `FOCUS_QUICK_ACTIONS` → `FocusKit.focusZone("quick_actions")`
+- `FOCUS_TIMELINE` → `FocusKit.focusZone("timeline")`
 
-The roadmap now specifies:
+**DPAD navigation MUST pass through TvInputController → FocusKit.**
 
-> "Kids Mode globally overrides DPAD/media key behavior BEFORE screen config.
-> The following keys/actions are disabled: FAST_FORWARD, REWIND, SEEK_xx,
-> OPEN_LIVE_LIST, OPEN_CC_MENU, OPEN_ASPECT_MENU.
-> Allowed: DPAD navigation, BACK, MENU → kids overlay."
+### Kids Mode Global Input Filtering (MANDATORY)
 
-### Blocking Overlays Behavior
+Kids Mode filtering **ALWAYS** happens **BEFORE** screen-level config.
 
-The roadmap now specifies:
+**Blocked Actions for Kids:**
+- `FAST_FORWARD`, `REWIND`
+- `SEEK_FORWARD_10S`, `SEEK_FORWARD_30S`, `SEEK_BACKWARD_10S`, `SEEK_BACKWARD_30S`
+- `OPEN_CC_MENU`, `OPEN_ASPECT_MENU`, `OPEN_LIVE_LIST`
 
-> "When any blocking overlay is active (CC, Aspect, LiveList, SettingsDialog,
-> ProfileGate, error dialogs), TvInputController restricts input to:
-> - NAVIGATION inside overlay
-> - BACK closes overlay
-> - All other actions return null."
+**Allowed Actions for Kids:**
+- DPAD navigation, `BACK`, `MENU` → kid-specific overlay only, `PLAY_PAUSE`
 
-### TV Input Debug Overlay
+### Blocking Overlays Behavior (MANDATORY)
 
-The roadmap now includes a detailed specification for:
+**Blocking Overlays (ALL must be detected):**
+- CC Menu, Aspect Ratio Menu, Live List, Settings Dialog, Sleep Timer, ProfileGate, Error Dialogs
 
-> "Introduce a TV Input Inspector overlay (debug only) showing:
-> KeyEvent, TvKeyRole, resolved TvAction, ScreenId, FocusZone, handled state."
+**Input Restrictions When Blocking Overlay is Active:**
+- `NAVIGATE_*` → Allowed inside overlay
+- `BACK` → Closes overlay
+- All other TvActions → Return `null` (blocked)
+
+### TV Input Debug Overlay (MANDATORY)
+
+A **TV Input Inspector** overlay must be implemented showing:
+- KeyEvent, TvKeyRole, TvAction, ScreenId, FocusZone, handled
 
 ### Testing Requirements
 
@@ -3267,11 +3320,9 @@ The roadmap now includes testing expectations:
 - Blocking-overlay behavior tests
 - Player-specific TvActions (PLAY_PAUSE, SEEK_xx)
 
-### Next Steps
+### Implementation Checklist
 
-Phase 6 checklist generated — ready for implementation tasks.
-
-Implementation order:
+See `docs/INTERNAL_PLAYER_PHASE6_CHECKLIST.md` for complete task breakdown:
 1. Task Group 1: TvKeyRole & Global KeyEvent→Role mapping (4 tasks)
 2. Task Group 2: TvAction definitions & ScreenConfig DSL (5 tasks)
 3. Task Group 3: TvScreenContext and screen input routing (3 tasks)
@@ -3283,7 +3334,7 @@ Implementation order:
 9. Task Group 9: Player, Library, Settings integration as consumers (4 tasks)
 10. Task Group 10: Testing & Validation Plan (7 tasks)
 
-See `docs/INTERNAL_PLAYER_PHASE6_CHECKLIST.md` for complete task breakdown.
+**No implementation tasks are marked as DONE** – all Phase 6 work remains pending.
 
 ---
 
