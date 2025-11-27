@@ -2776,7 +2776,7 @@ The remaining work is primarily:
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 4 – Subtitles | ✅ SIP Complete | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 5 – PlayerSurface | ✅ Validated & Complete | 2025-11-27 | Legacy | ✅ Yes |
-| Phase 6 – Global TV Input | 🔄 Kickoff | 2025-11-27 | Legacy | ⬜ No |
+| Phase 6 – Global TV Input | 🔄 Kickoff (Roadmap Refined) | 2025-11-27 | Legacy | ⬜ No |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 8 – Lifecycle | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 9 – Diagnostics | ⬜ Not Started | - | Legacy | ⬜ No |
@@ -2788,6 +2788,17 @@ The remaining work is primarily:
   - ✅ Yes = Fully implemented and tested
   - 🔄 Partial = Foundation/domain models complete, some tests remaining
   - ⬜ No = Not started
+
+**Phase 6 Status:** 🔄 **KICKOFF (ROADMAP REFINED)** (2025-11-27). Comprehensive specification added:
+- Complete TvKeyRole enum (DPAD_*, PLAY_PAUSE, FAST_FORWARD, REWIND, MENU, BACK, CHANNEL_*, INFO, GUIDE, NUM_0..NUM_9)
+- Full TvAction space (playback, menu/overlay, pagination, focus, navigation, channel, system actions)
+- ScreenConfig DSL requirement with example syntax
+- Complete FocusZones list (10 zones: player_controls, quick_actions, timeline, cc_button, aspect_button, epg_overlay, live_list, library_row, settings_list, profile_grid)
+- Kids Mode global input filtering rules (disabled: FAST_FORWARD, REWIND, SEEK_*, OPEN_*; allowed: DPAD, BACK, MENU)
+- Blocking overlay behavior specification
+- TV Input Debug Overlay requirements
+- Testing expectations for all components
+- Implementation checklist pending code scan
 
 **Phase 5 Status:** ✅ **FULLY VALIDATED** (2025-11-27). All groups complete with code quality improvements:
 - Black bars enforced with contract-compliant backgrounds
@@ -3146,13 +3157,15 @@ The following task groups remain for future implementation:
 
 ---
 
-## Phase 6 – Global TV Input System (Kickoff)
+## Phase 6 – Global TV Input System (Kickoff – Roadmap Refined)
 
 **Date:** 2025-11-27
 
-**Status:** 🔄 **KICKOFF** – Roadmap updated, checklist pending code scan
+**Status:** 🔄 **KICKOFF – ROADMAP REFINED** – Full specification documented, checklist pending code scan
 
-Phase 6 kickoff: Roadmap updated to global TV Input + FocusKit architecture. The Phase 6 section in `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` now reflects the new design direction:
+Phase 6 kickoff: Roadmap refined with comprehensive contract-critical details. The Phase 6 section in `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` now includes the complete design specification:
+
+### Core Architecture
 
 - TV input becomes a **global** system, not a player-local module
 - FocusKit remains the central focus engine for all screens
@@ -3160,16 +3173,99 @@ Phase 6 kickoff: Roadmap updated to global TV Input + FocusKit architecture. The
 - Every screen may define its own mapping via screen-specific `TvScreenInputConfig`
 - Player and all other screens are **consumers** of the global system
 
-**High-level requirements documented:**
-- Introduce TvKeyRole (DPAD, media keys, menu, back, etc.)
-- Introduce TvAction (semantic actions like PLAY_PAUSE, SEEK_30S, OPEN_CC_MENU)
-- Add screen-specific configuration (TvScreenInputConfig)
-- Integrate FocusZones on top of FocusKit (player_controls, quick_actions, etc.)
-- Make DPAD/Media keys profile-aware (Kids Mode restrictions)
-- Add TV Input Debug Overlay (development-only)
-- Ensure InternalPlayerControls forwards key events to the global controller using TvScreenContext
+### TvKeyRole Enum (Complete Hardware Roles)
 
-**Next Steps:**
+The roadmap now explicitly lists all hardware roles:
+
+| Category | Roles |
+|----------|-------|
+| DPAD Navigation | `DPAD_UP`, `DPAD_DOWN`, `DPAD_LEFT`, `DPAD_RIGHT`, `DPAD_CENTER` |
+| Playback | `PLAY_PAUSE`, `FAST_FORWARD`, `REWIND` |
+| Menu/System | `MENU`, `BACK` |
+| Channel | `CHANNEL_UP`, `CHANNEL_DOWN` |
+| Information | `INFO`, `GUIDE` |
+| Numbers | `NUM_0`, `NUM_1`, `NUM_2`, `NUM_3`, `NUM_4`, `NUM_5`, `NUM_6`, `NUM_7`, `NUM_8`, `NUM_9` |
+
+### TvAction Enum (Full Action Space)
+
+The roadmap now explicitly lists all semantic actions:
+
+| Category | Actions |
+|----------|---------|
+| Playback | `PLAY_PAUSE`, `SEEK_FORWARD_10S`, `SEEK_FORWARD_30S`, `SEEK_BACKWARD_10S`, `SEEK_BACKWARD_30S` |
+| Menu/Overlay | `OPEN_CC_MENU`, `OPEN_ASPECT_MENU`, `OPEN_QUICK_ACTIONS`, `OPEN_LIVE_LIST` |
+| Pagination | `PAGE_UP`, `PAGE_DOWN` |
+| Focus | `FOCUS_TIMELINE`, `FOCUS_QUICK_ACTIONS` |
+| Navigation | `NAVIGATE_UP`, `NAVIGATE_DOWN`, `NAVIGATE_LEFT`, `NAVIGATE_RIGHT` |
+| Channel | `CHANNEL_UP`, `CHANNEL_DOWN` |
+| System | `BACK` |
+
+### ScreenConfig DSL
+
+The roadmap now includes a **declarative ScreenConfig DSL** for mapping `(TvKeyRole, ScreenId) → TvAction?`:
+
+```kotlin
+screen(PLAYER) {
+    on(FAST_FORWARD) -> SEEK_FORWARD_30S
+    on(MENU) -> OPEN_QUICK_ACTIONS
+    on(DPAD_UP) -> FOCUS_QUICK_ACTIONS
+}
+```
+
+### FocusZones (Complete List)
+
+All 10 required focus zones are now documented:
+
+1. `player_controls` – Play/pause, seek bar, volume
+2. `quick_actions` – CC, aspect ratio, speed, PiP buttons
+3. `timeline` – Seek bar / progress indicator
+4. `cc_button` – Closed captions button
+5. `aspect_button` – Aspect ratio button
+6. `epg_overlay` – EPG program guide navigation
+7. `live_list` – Live channel selection overlay
+8. `library_row` – Content rows in library screens
+9. `settings_list` – Settings items list
+10. `profile_grid` – Profile selection grid
+
+### Kids Mode Global Input Filtering
+
+The roadmap now specifies:
+
+> "Kids Mode globally overrides DPAD/media key behavior BEFORE screen config.
+> The following keys/actions are disabled: FAST_FORWARD, REWIND, SEEK_xx,
+> OPEN_LIVE_LIST, OPEN_CC_MENU, OPEN_ASPECT_MENU.
+> Allowed: DPAD navigation, BACK, MENU → kids overlay."
+
+### Blocking Overlays Behavior
+
+The roadmap now specifies:
+
+> "When any blocking overlay is active (CC, Aspect, LiveList, SettingsDialog,
+> ProfileGate, error dialogs), TvInputController restricts input to:
+> - NAVIGATION inside overlay
+> - BACK closes overlay
+> - All other actions return null."
+
+### TV Input Debug Overlay
+
+The roadmap now includes a detailed specification for:
+
+> "Introduce a TV Input Inspector overlay (debug only) showing:
+> KeyEvent, TvKeyRole, resolved TvAction, ScreenId, FocusZone, handled state."
+
+### Testing Requirements
+
+The roadmap now includes testing expectations:
+
+- Unit tests for TvKeyRole mapping
+- Tests for TvScreenInputConfig resolution
+- Tests for FocusZones navigation via TvAction
+- Kids Mode input override tests
+- Blocking-overlay behavior tests
+- Player-specific TvActions (PLAY_PAUSE, SEEK_xx)
+
+### Next Steps
+
 A full implementation checklist will be generated in the next task after Copilot performs a complete code scan of all relevant modules (FocusKit, existing TV input handling, player controls, screen navigation, etc.).
 
 ---
