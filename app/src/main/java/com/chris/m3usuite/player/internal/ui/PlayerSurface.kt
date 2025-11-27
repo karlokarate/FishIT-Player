@@ -26,6 +26,26 @@ import kotlin.math.abs
 import android.graphics.Color as AndroidColor
 
 /**
+ * Phase 5 Gesture Constants.
+ *
+ * Named constants to avoid magic numbers in gesture handling logic.
+ * Contract: INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md Section 8
+ */
+private object PlayerSurfaceConstants {
+    /** Minimum swipe distance to recognize a gesture (in pixels). */
+    const val SWIPE_THRESHOLD_PX = 60f
+
+    /** Threshold for distinguishing small vs large swipes (in pixels). */
+    const val LARGE_SWIPE_THRESHOLD_PX = 150f
+
+    /** Seek delta for small swipes (10 seconds). */
+    const val SMALL_SEEK_DELTA_MS = 10_000L
+
+    /** Seek delta for large swipes (30 seconds). */
+    const val LARGE_SEEK_DELTA_MS = 30_000L
+}
+
+/**
  * PlayerSurface composable encapsulates the ExoPlayer PlayerView and handles gesture input.
  *
  * **Phase 3 Step 3.D**: This composable now supports horizontal swipe gestures for Live channel zapping.
@@ -82,11 +102,6 @@ fun PlayerSurface(
     var dragDeltaX by remember { mutableStateOf(0f) }
     var dragDeltaY by remember { mutableStateOf(0f) }
 
-    // Step seek delta based on swipe magnitude (10s for small, 30s for large swipes)
-    val smallSeekDeltaMs = 10_000L
-    val largeSeekDeltaMs = 30_000L
-    val largeSwipeThreshold = 150f
-
     Box(
         modifier =
             Modifier
@@ -103,7 +118,6 @@ fun PlayerSurface(
                 }
                 // Drag gestures: Live channel zapping (LIVE) or seek/trickplay (VOD/SERIES)
                 .pointerInput(playbackType) {
-                    val threshold = 60f
                     detectDragGestures(
                         onDrag = { _, dragAmount ->
                             dragDeltaX += dragAmount.x
@@ -111,7 +125,12 @@ fun PlayerSurface(
                         },
                         onDragEnd = {
                             // Determine gesture direction based on dominant axis
-                            if (abs(dragDeltaX) > abs(dragDeltaY) && abs(dragDeltaX) > threshold) {
+                            val swipeDistance = abs(dragDeltaX)
+                            val isHorizontalSwipe =
+                                swipeDistance > abs(dragDeltaY) &&
+                                    swipeDistance > PlayerSurfaceConstants.SWIPE_THRESHOLD_PX
+
+                            if (isHorizontalSwipe) {
                                 // Horizontal swipe detected
                                 if (playbackType == PlaybackType.LIVE) {
                                     // LIVE: Channel zapping
@@ -120,11 +139,12 @@ fun PlayerSurface(
                                 } else {
                                     // VOD/SERIES: Seek preview (Phase 5 Group 3)
                                     // Determine seek magnitude based on swipe distance
-                                    val seekMs = if (abs(dragDeltaX) > largeSwipeThreshold) {
-                                        largeSeekDeltaMs
-                                    } else {
-                                        smallSeekDeltaMs
-                                    }
+                                    val seekMs =
+                                        if (swipeDistance > PlayerSurfaceConstants.LARGE_SWIPE_THRESHOLD_PX) {
+                                            PlayerSurfaceConstants.LARGE_SEEK_DELTA_MS
+                                        } else {
+                                            PlayerSurfaceConstants.SMALL_SEEK_DELTA_MS
+                                        }
                                     // Direction: positive delta = forward, negative = backward
                                     val seekDelta = if (dragDeltaX > 0) seekMs else -seekMs
                                     onStepSeek(seekDelta)

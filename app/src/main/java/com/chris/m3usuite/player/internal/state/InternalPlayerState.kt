@@ -346,12 +346,13 @@ data class InternalPlayerUiState(
      * - Kid block overlay (kidBlocked)
      */
     val hasBlockingOverlay: Boolean
-        get() = showCcMenuDialog ||
-            showSettingsDialog ||
-            showTracksDialog ||
-            showSpeedDialog ||
-            showSleepTimerDialog ||
-            kidBlocked
+        get() =
+            showCcMenuDialog ||
+                showSettingsDialog ||
+                showTracksDialog ||
+                showSpeedDialog ||
+                showSleepTimerDialog ||
+                kidBlocked
 }
 
 enum class AspectRatioMode {
@@ -495,7 +496,9 @@ data class InternalPlayerController(
  *
  * Phase 5 Group 3: Trickplay behavior
  */
-enum class TrickplayDirection(val multiplier: Int) {
+enum class TrickplayDirection(
+    val multiplier: Int,
+) {
     FORWARD(1),
     REWIND(-1),
 }
