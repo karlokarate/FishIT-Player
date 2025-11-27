@@ -36,10 +36,10 @@ import androidx.media3.common.C
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.ExoPlayer
-import com.chris.m3usuite.player.internal.live.TimeProvider
 import com.chris.m3usuite.player.internal.state.InternalPlayerController
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 import com.chris.m3usuite.player.internal.system.requestPictureInPicture
+import kotlin.math.abs
 import kotlinx.coroutines.delay
 
 /**
@@ -55,7 +55,6 @@ import kotlinx.coroutines.delay
  * @param state The player UI state
  * @param controller The player controller callbacks
  * @param isTv Whether running on TV (affects auto-hide timeout)
- * @param timeProvider Injectable time provider for testable auto-hide
  */
 @Composable
 fun InternalPlayerContent(
@@ -63,7 +62,6 @@ fun InternalPlayerContent(
     state: InternalPlayerUiState,
     controller: InternalPlayerController,
     isTv: Boolean = false,
-    timeProvider: TimeProvider? = null,
 ) {
     val ctx = LocalContext.current
     val activity = ctx as? Activity
@@ -266,7 +264,7 @@ fun InternalPlayerContent(
 @Composable
 private fun TrickplayIndicator(speed: Float) {
     val isForward = speed > 0
-    val absSpeed = kotlin.math.abs(speed)
+    val absSpeed = abs(speed)
     val speedText = if (absSpeed == absSpeed.toInt().toFloat()) {
         "${absSpeed.toInt()}x"
     } else {
@@ -349,7 +347,7 @@ private fun SeekPreviewOverlay(
             val delta = targetPositionMs - currentPositionMs
             val sign = if (delta >= 0) "+" else ""
             Text(
-                text = "$sign${formatMs(kotlin.math.abs(delta))}",
+                text = "$sign${formatMs(abs(delta))}",
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 16.sp,
             )

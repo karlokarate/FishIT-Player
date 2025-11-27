@@ -2775,7 +2775,7 @@ The remaining work is primarily:
 | Phase 2 – Resume & Kids Gate | ✅ Complete | 2025-11-25 | Legacy | ✅ Yes |
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 4 – Subtitles | ✅ SIP Complete | 2025-11-26 | Legacy | ✅ Yes |
-| Phase 5 – PlayerSurface | ✅ Groups 1-4 Complete | 2025-11-27 | Legacy | 🔄 Partial |
+| Phase 5 – PlayerSurface | ✅ Groups 1-4 Complete | 2025-11-27 | Legacy | 🔄 Partial (Group 5 Kid Mode tests remaining) |
 | Phase 6 – TV Remote | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 8 – Lifecycle | ⬜ Not Started | - | Legacy | ⬜ No |
@@ -2786,10 +2786,10 @@ The remaining work is primarily:
 - **Runtime Active:** Which implementation is currently active in production
 - **SIP Complete:** Whether the SIP (reference) implementation is complete
   - ✅ Yes = Fully implemented and tested
-  - 🔄 Partial = Foundation/domain models complete, UI integration remaining
+  - 🔄 Partial = Foundation/domain models complete, some tests remaining
   - ⬜ No = Not started
 
-**Phase 5 Status:** Groups 1-4 complete. Black bars enforced, aspect ratio cycling implemented, trickplay state model and UI implemented, controls auto-hide implemented with TV (7s) and phone (4s) timeouts. SIP is now the authoritative PlayerSurface implementation for future activation. Legacy InternalPlayerScreen unchanged.
+**Phase 5 Status:** Groups 1-4 complete. Black bars enforced, aspect ratio cycling implemented, trickplay state model and UI implemented, controls auto-hide implemented with TV (7s) and phone (4s) timeouts. Group 5 Kid Mode tests not yet implemented. SIP is now the authoritative PlayerSurface implementation for future activation. Legacy InternalPlayerScreen unchanged.
 
 **Phase 4 Status:** All Groups complete (1-6). SIP player fully integrated with subtitle styling and track selection. CC Menu fully wired to SubtitleStyleManager. SettingsScreen integrated with SubtitleSettingsSection and SubtitleSettingsViewModel. Kid profile detection hides subtitle settings. 
 
