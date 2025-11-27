@@ -1,6 +1,7 @@
 package com.chris.m3usuite.player.internal.ui
 
 import android.app.Activity
+import android.view.KeyEvent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -23,10 +24,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,9 +38,14 @@ import androidx.media3.common.C
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.ExoPlayer
+import com.chris.m3usuite.core.debug.GlobalDebug
 import com.chris.m3usuite.player.internal.state.InternalPlayerController
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 import com.chris.m3usuite.player.internal.system.requestPictureInPicture
+import com.chris.m3usuite.tv.input.GlobalTvInputHost
+import com.chris.m3usuite.tv.input.TvAction
+import com.chris.m3usuite.tv.input.TvInputController
+import com.chris.m3usuite.tv.input.toTvScreenContext
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
@@ -73,10 +81,17 @@ object ControlsConstants {
  * - Controls auto-hide with configurable timeouts (TV: 7s, phone: 4s)
  * - Tap-to-toggle controls visibility
  *
+ * **Phase 6 Task 3:**
+ * - Optional TV input host integration for global key event handling
+ * - Reads quickActionsVisible and focusedAction from TvInputController
+ * - Logs TV input events via GlobalDebug when debug sink is connected
+ *
  * @param player The ExoPlayer instance
  * @param state The player UI state
  * @param controller The player controller callbacks
- * @param isTv Whether running on TV (affects auto-hide timeout)
+ * @param isTv Whether running on TV (affects auto-hide timeout and input handling)
+ * @param tvInputHost Optional GlobalTvInputHost for TV key event routing (Phase 6)
+ * @param tvInputController Optional TvInputController for observing quick actions state (Phase 6)
  */
 @Composable
 fun InternalPlayerContent(
@@ -84,9 +99,28 @@ fun InternalPlayerContent(
     state: InternalPlayerUiState,
     controller: InternalPlayerController,
     isTv: Boolean = false,
+    tvInputHost: GlobalTvInputHost? = null,
+    tvInputController: TvInputController? = null,
 ) {
     val ctx = LocalContext.current
     val activity = ctx as? Activity
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 6 Task 3: Observe TV input controller state
+    // ════════════════════════════════════════════════════════════════════════════
+    // For now, log the focused action via GlobalDebug when it changes
+    // Future: Use quickActionsVisible to show/hide quick actions panel
+    val quickActionsVisible: State<Boolean>? = tvInputController?.quickActionsVisible
+    val focusedAction: State<TvAction?>? = tvInputController?.focusedAction
+
+    LaunchedEffect(focusedAction?.value) {
+        focusedAction?.value?.let { action ->
+            GlobalDebug.log(
+                tag = "TvInput",
+                message = "Focused action: $action",
+            )
+        }
+    }
 
     // ════════════════════════════════════════════════════════════════════════════
     // Phase 5 Group 4: Auto-hide timer
@@ -117,11 +151,32 @@ fun InternalPlayerContent(
         }
     }
 
-    Box(
-        modifier =
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 6 Task 3: Build TvScreenContext from player state
+    // ════════════════════════════════════════════════════════════════════════════
+    // This creates a context that reflects the player's current state for
+    // the TV input pipeline to use for action resolution.
+    val tvScreenContext = remember(state) { state.toTvScreenContext() }
+
+    // Build the modifier with optional TV key event handling
+    val boxModifier =
+        if (isTv && tvInputHost != null) {
             Modifier
-                .fillMaxSize(),
-    ) {
+                .fillMaxSize()
+                .onPreviewKeyEvent { keyEvent ->
+                    // Convert Compose key event to Android KeyEvent for the host
+                    val androidKeyEvent = keyEvent.nativeKeyEvent
+                    // Forward to GlobalTvInputHost for processing
+                    val handled = tvInputHost.handleKeyEvent(androidKeyEvent, tvScreenContext)
+                    // If handled by TV input system, consume the event
+                    // Otherwise let it fall through to existing handlers
+                    handled
+                }
+        } else {
+            Modifier.fillMaxSize()
+        }
+
+    Box(modifier = boxModifier) {
         // Phase 3 Step 3.D + Phase 4 Group 3 + Phase 5 Groups 3 & 4:
         // PlayerSurface with gesture handling, subtitle styling, trickplay, and tap-to-toggle
         PlayerSurface(
