@@ -32,6 +32,8 @@ import com.chris.m3usuite.telegram.ui.TelegramSettingsViewModel
 import com.chris.m3usuite.telegram.ui.TelegramSettingsState
 import com.chris.m3usuite.telegram.ui.TelegramAuthState
 import com.chris.m3usuite.telegram.ui.ChatInfo
+import com.chris.m3usuite.ui.focus.focusZone
+import com.chris.m3usuite.ui.focus.FocusZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,12 +103,14 @@ fun SettingsScreen(
             )
         },
     ) { padding ->
+        // Phase 6 Task 5: Mark settings list as SETTINGS_LIST FocusZone
         Column(
             modifier =
                 Modifier
                     .padding(padding)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .verticalScroll(scroll),
+                    .verticalScroll(scroll)
+                    .focusZone(FocusZoneId.SETTINGS_LIST),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             // --- Network ---
