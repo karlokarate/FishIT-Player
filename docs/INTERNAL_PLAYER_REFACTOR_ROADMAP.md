@@ -1105,6 +1105,17 @@ The Phase 6 roadmap is now **fully aligned** with `INTERNAL_PLAYER_TV_INPUT_CONT
 
 **No implementation tasks are marked as DONE** – all Phase 6 work remains pending.
 
+### Context Refresh Notes (2025-11-27)
+
+Before Phase 6 implementation begins, a context refresh confirmed:
+
+1. **TvKeyDebouncer** (`player/TvKeyDebouncer.kt`) is fully functional and should be integrated at the `GlobalTvInputHost` level in the global pipeline
+2. **FocusKit** (`ui/focus/FocusKit.kt`) provides the complete focus infrastructure - FocusZones should compose with it, not replace it
+3. **GlobalDebug/DiagnosticsLogger** provide the debug infrastructure - TV Input Inspector should use these existing systems
+4. **Existing onPreviewKeyEvent usage** in `HomeChromeScaffold`, `ProfileGate`, and `AppIconButton` should migrate to TvScreenInputConfig
+
+See `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` "Phase 6 Context Refresh" section for full analysis.
+
 ---
 
 ## Phase 7 – PlaybackSession & MiniPlayer integration

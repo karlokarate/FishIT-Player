@@ -121,8 +121,29 @@ Phase 6 implements a **global, unified TV Input + Focus system** for the entire 
 **Files to Modify:**
 - `app/src/main/java/com/chris/m3usuite/ui/tv/input/TvKeyRoleMapper.kt`
 
+**⚠️ IMPORTANT: TvKeyDebouncer Pipeline Position**
+
+The existing `TvKeyDebouncer` (`player/TvKeyDebouncer.kt`) provides a 300ms debounce mechanism designed for Fire TV remotes. In the Phase 6 global pipeline:
+
+```
+KeyEvent → TvKeyDebouncer → TvKeyRole → TvInputController → ...
+```
+
+**TvKeyDebouncer Characteristics (from current implementation):**
+- Default 300ms debounce threshold
+- Handles `ACTION_DOWN` events only (ignores `ACTION_UP`)
+- Per-key tracking via `lastKeyTime` map
+- Rate-limited and fully-debounced modes available
+- Requires `CoroutineScope` for job management
+
+**Integration Approach:**
+1. The `TvKeyDebouncer` should be instantiated at the `GlobalTvInputHost` level (Task 4.3)
+2. The `TvKeyRoleMapper` receives **already-debounced** events
+3. The mapper itself does NOT re-implement debouncing
+4. Debounce configuration can be per-screen (via `TvScreenInputConfig`) for flexibility
+
 **Implementation Requirements:**
-- Integrate `TvKeyDebouncer` into the mapping pipeline
+- Integrate `TvKeyDebouncer` into the mapping pipeline at `GlobalTvInputHost`
 - Apply debouncing to seek-related keys (FF, RW, DPAD_LEFT/RIGHT in Player)
 - Configurable debounce threshold (default 300ms per existing debouncer)
 - Skip debounce for navigation keys that must remain responsive
@@ -130,7 +151,7 @@ Phase 6 implements a **global, unified TV Input + Focus system** for the entire 
 **Contract Reference:** Section 9.2
 
 **Legacy Reference:**
-- `TvKeyDebouncer.kt` existing implementation
+- `TvKeyDebouncer.kt` existing implementation (146 lines, fully functional)
 - InternalPlayerScreen.kt L1658-1679 debouncer usage
 
 **Tests Required:**
@@ -411,6 +432,38 @@ Phase 6 implements a **global, unified TV Input + Focus system** for the entire 
 
 **Goal:** Add named logical focus zones to FocusKit
 
+**⚠️ IMPORTANT: FocusKit Integration Pattern**
+
+FocusZones **MUST** integrate with the existing FocusKit infrastructure (`ui/focus/FocusKit.kt`) rather than creating a parallel focus system. The current FocusKit provides:
+
+| Existing Feature | Location | Usage |
+|------------------|----------|-------|
+| `FocusRequester` management | Throughout FocusKit | Zone targets |
+| `focusGroup()` modifier | `Modifier.focusGroup()` | Zone containers |
+| `focusProperties` for neighbors | `FocusKit.focusNeighbors()` | Zone-to-zone transitions |
+| `focusBringIntoViewOnFocus()` | Throughout | Auto-scroll on zone focus |
+| `LocalForceTvFocus` | CompositionLocal | Force TV behavior for overlays |
+| `tvFocusFrame()` / `tvClickable()` | Focus visuals | Zone item focus decoration |
+
+**Integration Approach:**
+1. `FocusZone` enum is a **labeling** mechanism, not a replacement for FocusRequester
+2. `FocusZoneManager` wraps existing `FocusRequester` instances with zone metadata
+3. `Modifier.focusZone(zone)` composes with existing `focusGroup()` and `focusRequester()`
+4. Zone transitions use `FocusRequester.requestFocus()` (existing mechanism)
+5. Navigation within zones uses `FocusManager.moveFocus()` (existing Compose API)
+
+**Example Integration:**
+```kotlin
+// In InternalPlayerControls.kt (Phase 6)
+Row(
+    modifier = Modifier
+        .focusGroup()                          // Existing FocusKit
+        .focusZone(FocusZone.PLAYER_CONTROLS)  // New Phase 6 zone label
+) {
+    // Control buttons with existing tvClickable() modifiers
+}
+```
+
 ### Task 5.1: FocusZone Enum Definition ⬜
 **Files to Create:**
 - `app/src/main/java/com/chris/m3usuite/ui/focus/FocusZone.kt`
@@ -644,6 +697,19 @@ Phase 6 implements a **global, unified TV Input + Focus system** for the entire 
 
 **Goal:** Create debug overlay for TV input diagnostics
 
+**⚠️ IMPORTANT: Use Existing Debug Infrastructure**
+
+The TV Input Inspector **MUST** integrate with the existing debug/diagnostics system rather than creating a parallel logging mechanism:
+
+| Existing Module | Location | Integration Point |
+|-----------------|----------|-------------------|
+| **GlobalDebug** | `core/debug/GlobalDebug.kt` | Use `logDpad()` for DPAD events, add `logTvInput()` method for TvAction events |
+| **RouteTag** | `metrics/RouteTag.kt` | Use `RouteTag.current` for screen context instead of separate tracking |
+| **DiagnosticsLogger** | `diagnostics/DiagnosticsLogger.kt` | Use `ComposeTV.logKeyEvent()` for structured event logging |
+| **AppLog** | `core/logging/AppLog.kt` | All inspector logs flow through unified logging |
+
+The inspector should **consume** events from GlobalDebug/DiagnosticsLogger, not create its own logging path.
+
 ### Task 8.1: TvInputInspectorState Data Model ⬜
 **Files to Create:**
 - `app/src/main/java/com/chris/m3usuite/ui/tv/debug/TvInputInspectorState.kt`
@@ -662,6 +728,7 @@ Phase 6 implements a **global, unified TV Input + Focus system** for the entire 
   )
   ```
 - Store last 5 events with timestamps
+- **Integration:** Events logged via `GlobalDebug.logTvInput()` (new method to add)
 
 **Contract Reference:** Section 7 (TV Input Debug Overlay)
 
@@ -682,11 +749,12 @@ Phase 6 implements a **global, unified TV Input + Focus system** for the entire 
   - KeyEvent code and action
   - Resolved TvKeyRole
   - Resolved TvAction (or "null" if blocked)
-  - Current ScreenId
+  - Current ScreenId (use `RouteTag.current` for context)
   - Current FocusZone
   - Handled state
 - Only visible when `GlobalDebug.tvInputInspectorEnabled`
 - Only available in debug builds
+- **Integration:** Use same pattern as existing debug overlays (e.g., log overlay in HomeChromeScaffold)
 
 **Contract Reference:** Section 7 (TV Input Debug Overlay)
 
@@ -704,8 +772,9 @@ Phase 6 implements a **global, unified TV Input + Focus system** for the entire 
 - `app/src/main/java/com/chris/m3usuite/core/debug/GlobalDebug.kt`
 
 **Implementation Requirements:**
-- Add `tvInputInspectorEnabled` toggle to GlobalDebug
-- Add corresponding toggle in Developer Settings section
+- Add `tvInputInspectorEnabled` toggle to GlobalDebug (follows existing `setEnabled()` pattern)
+- Add `logTvInput()` method to GlobalDebug for TvAction event logging
+- Add corresponding toggle in Developer Settings section (follows existing debug toggle pattern)
 - Default: disabled
 - Persists across sessions (DataStore)
 

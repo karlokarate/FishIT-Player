@@ -3343,4 +3343,88 @@ See `docs/INTERNAL_PLAYER_PHASE6_CHECKLIST.md` for complete task breakdown:
 
 ---
 
+## Phase 6 Context Refresh (2025-11-27)
+
+A comprehensive context refresh was performed to re-align documentation with the current repository state before Phase 6 implementation begins.
+
+### Key Findings
+
+**1. Debug/Diagnostics System (Unchanged - Fully Reusable)**
+
+The existing debug infrastructure is mature and should be leveraged by Phase 6:
+
+| Module | Status | Phase 6 Integration Point |
+|--------|--------|---------------------------|
+| `GlobalDebug` (core/debug/) | ✅ Stable | Add `logTvInput()` method for TvAction logging |
+| `RouteTag` (metrics/) | ✅ Stable | Use `RouteTag.current` for screen context |
+| `DiagnosticsLogger` (diagnostics/) | ✅ Stable | Use `ComposeTV.logKeyEvent()` for structured events |
+| `AppLog` (core/logging/) | ✅ Stable | Unified logging backend |
+
+**2. FocusKit System (Unchanged - Foundation for FocusZones)**
+
+FocusKit (`ui/focus/FocusKit.kt`, 933 lines) provides the complete focus infrastructure:
+- `focusGroup()`, `focusRequester()`, `focusProperties()` - zone containers
+- `tvClickable()`, `tvFocusFrame()`, `focusScaleOnTv()` - focus visuals
+- `focusBringIntoViewOnFocus()` - auto-scroll
+- `LocalForceTvFocus` - overlay focus forcing
+- `isTvDevice()` - device detection
+
+**Phase 6 FocusZones should be a labeling/routing layer on top of existing FocusKit, not a replacement.**
+
+**3. TvKeyDebouncer (Unchanged - Ready for Global Pipeline)**
+
+`TvKeyDebouncer` (`player/TvKeyDebouncer.kt`, 146 lines) is fully functional:
+- 300ms default debounce threshold
+- Per-key tracking via `lastKeyTime` map
+- Rate-limited and fully-debounced modes
+- Requires `CoroutineScope` for job management
+
+**Pipeline position:** `KeyEvent → TvKeyDebouncer → TvKeyRole → TvInputController → ...`
+
+**4. Existing onKeyEvent/onPreviewKeyEvent Usage**
+
+The following modules use key event handling that Phase 6 should consider:
+
+| Module | Key Handling | Phase 6 Action |
+|--------|--------------|----------------|
+| `HomeChromeScaffold` | MENU, BACK, DPAD navigation | Migrate to TvScreenInputConfig |
+| `ProfileGate` | PIN keypad DPAD navigation | Use FocusZone for keypad |
+| `AppIconButton` | CENTER/ENTER handling | Preserve existing behavior |
+| `TvTextFieldFocusHelper` | TextField escape logic | Preserve existing behavior |
+| `FocusKit` | DPAD adjust helpers | Migrate to TvInputController |
+| `InternalPlayerScreen` (legacy) | Full key handling | Reference only (not migrated) |
+
+**5. Contract and Checklist Alignment**
+
+The Phase 6 contract (`INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md`) and checklist (`INTERNAL_PLAYER_PHASE6_CHECKLIST.md`) are fully aligned. Key clarifications added:
+
+1. **TV Input Inspector** must use existing `GlobalDebug`/`DiagnosticsLogger` infrastructure
+2. **TvKeyDebouncer** is positioned in the global pipeline at `GlobalTvInputHost` level
+3. **FocusZones** integrate with existing FocusKit via composition, not replacement
+4. **RouteTag.current** provides screen context for the inspector
+
+### Checklist Updates Made
+
+Minor documentation clarifications added to `INTERNAL_PLAYER_PHASE6_CHECKLIST.md`:
+
+1. **Task Group 8 (TV Input Inspector):** Added integration requirements with GlobalDebug, RouteTag, DiagnosticsLogger
+2. **Task 1.3 (Debounce Integration):** Clarified TvKeyDebouncer pipeline position and characteristics
+3. **Task Group 5 (FocusZones):** Added FocusKit integration pattern documentation
+
+### What Stayed the Same
+
+- ✅ Phase 6 contract remains correct and up-to-date
+- ✅ All 10 task groups remain valid
+- ✅ All 56+ tasks remain applicable
+- ✅ TvKeyRole and TvAction enums are correctly specified
+- ✅ Kids Mode filtering rules are correct
+- ✅ Overlay blocking rules are correct
+- ✅ FocusZone list is complete
+
+### No Code Changes Required
+
+This context refresh was documentation-only. No Kotlin or XML code changes were made. The Phase 6 implementation can proceed using the refreshed documentation.
+
+---
+
 **Last Updated:** 2025-11-27
