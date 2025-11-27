@@ -73,6 +73,7 @@ data class TvInputEventSnapshot(
 object DefaultTvInputDebugSink : TvInputDebugSink {
     private const val MAX_HISTORY_SIZE = 10
 
+    private val historyBuffer = java.util.ArrayDeque<TvInputEventSnapshot>(MAX_HISTORY_SIZE)
     private val _history = MutableStateFlow<List<TvInputEventSnapshot>>(emptyList())
     private val _events = MutableSharedFlow<TvInputEventSnapshot>(extraBufferCapacity = 16)
 
@@ -83,10 +84,11 @@ object DefaultTvInputDebugSink : TvInputDebugSink {
     val events: SharedFlow<TvInputEventSnapshot> = _events.asSharedFlow()
 
     /**
-     * Toggle for enabling/disabling event capture.
-     * When disabled, events are not captured to history/events, but GlobalDebug logging still works.
+     * Check if capture is enabled.
+     * Returns true when GlobalDebug.isTvInputInspectorEnabled() is true.
      */
-    var captureEnabled: Boolean = false
+    val captureEnabled: Boolean
+        get() = GlobalDebug.isTvInputInspectorEnabled()
 
     override fun onTvInputEvent(
         event: KeyEvent,
@@ -114,8 +116,8 @@ object DefaultTvInputDebugSink : TvInputDebugSink {
             action = action?.name ?: "none",
         )
 
-        // Step 3: Capture event for inspector overlay (if enabled)
-        if (captureEnabled) {
+        // Step 3: Capture event for inspector overlay (if enabled via GlobalDebug)
+        if (GlobalDebug.isTvInputInspectorEnabled()) {
             val currentZone = FocusKit.getCurrentZone()
             val snapshot = TvInputEventSnapshot(
                 timestamp = System.currentTimeMillis(),
@@ -132,13 +134,14 @@ object DefaultTvInputDebugSink : TvInputDebugSink {
                 handled = handled,
             )
 
-            // Update history (thread-safe via StateFlow)
-            val current = _history.value.toMutableList()
-            current.add(snapshot)
-            if (current.size > MAX_HISTORY_SIZE) {
-                current.removeAt(0)
+            // Update history using efficient ArrayDeque
+            synchronized(historyBuffer) {
+                if (historyBuffer.size >= MAX_HISTORY_SIZE) {
+                    historyBuffer.removeFirst()
+                }
+                historyBuffer.addLast(snapshot)
+                _history.value = historyBuffer.toList()
             }
-            _history.value = current.toList()
 
             // Emit live event
             _events.tryEmit(snapshot)
@@ -150,6 +153,9 @@ object DefaultTvInputDebugSink : TvInputDebugSink {
      * Called when inspector is closed or reset.
      */
     fun clearHistory() {
-        _history.value = emptyList()
+        synchronized(historyBuffer) {
+            historyBuffer.clear()
+            _history.value = emptyList()
+        }
     }
 }

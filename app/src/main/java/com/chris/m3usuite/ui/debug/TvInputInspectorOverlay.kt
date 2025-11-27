@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -112,7 +113,8 @@ fun TvInputInspectorOverlay(modifier: Modifier = Modifier) {
 
 @Composable
 private fun TvInputEventRow(event: TvInputEventSnapshot) {
-    val timeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
+    // Remember the date formatter to avoid recreating on each recomposition
+    val timeFormat = remember { SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()) }
     val formattedTime = timeFormat.format(Date(event.timestamp))
 
     Row(

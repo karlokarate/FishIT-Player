@@ -1,13 +1,13 @@
 package com.chris.m3usuite.tv.input
 
 import android.view.KeyEvent
+import com.chris.m3usuite.core.debug.GlobalDebug
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -29,13 +29,13 @@ class DefaultTvInputDebugSinkTest {
     @Before
     fun setup() {
         DefaultTvInputDebugSink.clearHistory()
-        DefaultTvInputDebugSink.captureEnabled = true
+        GlobalDebug.setTvInputInspectorEnabled(true)
     }
 
     @After
     fun teardown() {
         DefaultTvInputDebugSink.clearHistory()
-        DefaultTvInputDebugSink.captureEnabled = false
+        GlobalDebug.setTvInputInspectorEnabled(false)
     }
 
     @Test
@@ -63,7 +63,7 @@ class DefaultTvInputDebugSinkTest {
 
     @Test
     fun `onTvInputEvent does not capture when disabled`() = runTest {
-        DefaultTvInputDebugSink.captureEnabled = false
+        GlobalDebug.setTvInputInspectorEnabled(false)
 
         val event = createMockKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
         val ctx = TvScreenContext.player()

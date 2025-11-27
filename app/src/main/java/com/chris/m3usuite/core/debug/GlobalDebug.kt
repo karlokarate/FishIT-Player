@@ -34,8 +34,6 @@ object GlobalDebug {
      */
     fun setTvInputInspectorEnabled(on: Boolean) {
         tvInputInspectorEnabled.set(on)
-        // Sync with DefaultTvInputDebugSink capture flag
-        com.chris.m3usuite.tv.input.DefaultTvInputDebugSink.captureEnabled = on
     }
 
     /**
