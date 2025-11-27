@@ -558,33 +558,122 @@ The **legacy InternalPlayerScreen remains the active runtime implementation**. T
 
 ---
 
-## Phase 6 – TV remote (DPAD) and focus handling
+## Phase 6 – Global TV Input System & FocusKit-First Architecture
 
-**Goal:** Extract DPAD/focus logic and QuickActions into a dedicated TV input controller, so phone/tablet behaviour remains clean.
+**Goal:** Introduce a **global** TV input handling system that works across all screens (not just the player), with FocusKit remaining the central focus engine for the entire application.
 
-### Checklist
+### Design Direction
 
-- ⬜ TvInputController definition
-  - ⬜ Define `TvInputController` with:
-    - ⬜ `fun onKeyEvent(event: KeyEvent): Boolean`
-    - ⬜ `val quickActionsVisible: State<Boolean>`
-    - ⬜ `val focusedAction: State<TvAction?>`
-  - ⬜ Define `TvAction` enum (e.g. PLAY_PAUSE, PIP, CC, ASPECT, LIVE_LIST, etc.)
+Phase 6 shifts from a player-local TV input module to a **global TV input system**:
 
-- ⬜ Migrate focus and DPAD logic
-  - ⬜ Move all `FocusRequester` usage from legacy screen into this controller
-  - ⬜ Move `focusScaleOnTv` setup to a TV-specific layer
-  - ⬜ Migrate DPAD behaviour:
-    - ⬜ Center: toggle controls and play/pause
-    - ⬜ Left/Right: seek or trickplay, jump live
-    - ⬜ Up/Down: quick actions / live list / overlays
-    - ⬜ Back: close menus/overlays, then controls, then exit screen
+1. **TV input becomes a global system**, not a player-local module. The `TvInputController` is an app-wide service that intercepts key events and routes them to the active screen.
 
-- ⬜ Integrate into UI
-  - ⬜ In `InternalPlayerControls`, detect `isTv` and:
-    - ⬜ Wire key events through `TvInputController`
-    - ⬜ Show quick actions when `quickActionsVisible` is true
-    - ⬜ Use `focusedAction` to direct focus to correct button(s)
+2. **FocusKit remains the central focus engine** for all screens. TV input handling builds on top of FocusKit rather than replacing it. All focus management continues to flow through `FocusKit` (`ui/focus/FocusKit.kt`).
+
+3. **Global TvInputController maps key events through multiple layers:**
+   ```
+   KeyEvent → TvKeyRole → TvAction → FocusZones / Screen actions
+   ```
+   - `KeyEvent`: Raw Android key event (DPAD_CENTER, DPAD_LEFT, MEDIA_PLAY_PAUSE, etc.)
+   - `TvKeyRole`: Semantic key role (DPAD, media keys, menu, back, etc.)
+   - `TvAction`: Semantic action (PLAY_PAUSE, SEEK_30S, OPEN_CC_MENU, NAVIGATE_UP, etc.)
+   - `FocusZones`: Logical focus regions (player_controls, quick_actions, live_list, etc.)
+
+4. **Every screen may define its own mapping** via screen-specific input configuration (`TvScreenInputConfig`). This allows different screens to handle the same key role differently (e.g., DPAD_LEFT seeks in player but navigates in browse screens).
+
+5. **Player and all other screens are consumers** of the global TV input system. The player does not own TV input handling; it receives actions from the global controller via a `TvScreenContext`.
+
+### High-Level Requirements
+
+The following requirements must be addressed by Phase 6 implementation:
+
+- **Introduce TvKeyRole** – A semantic categorization of raw key events:
+  - DPAD keys (CENTER, UP, DOWN, LEFT, RIGHT)
+  - Media keys (PLAY_PAUSE, STOP, FAST_FORWARD, REWIND, etc.)
+  - Menu key
+  - Back key
+  - Number keys (0-9)
+  - Other remappable keys
+
+- **Introduce TvAction** – Semantic actions that screens can handle:
+  - Playback: PLAY_PAUSE, SEEK_10S_FORWARD, SEEK_10S_BACK, SEEK_30S_FORWARD, SEEK_30S_BACK
+  - Navigation: NAVIGATE_UP, NAVIGATE_DOWN, NAVIGATE_LEFT, NAVIGATE_RIGHT, SELECT, GO_BACK
+  - Player-specific: OPEN_CC_MENU, OPEN_LIVE_LIST, TOGGLE_CONTROLS, CYCLE_ASPECT_RATIO, TOGGLE_DEBUG
+  - Live-TV: CHANNEL_UP, CHANNEL_DOWN, SHOW_EPG
+  - Global: OPEN_SETTINGS, TOGGLE_PIP
+
+- **Add screen-specific configuration (TvScreenInputConfig)** – Each screen provides its own mapping from `TvKeyRole` to `TvAction`, allowing:
+  - Player screen: DPAD_LEFT → SEEK_10S_BACK
+  - Browse screen: DPAD_LEFT → NAVIGATE_LEFT
+  - Detail screen: DPAD_LEFT → NAVIGATE_LEFT (or custom behavior)
+
+- **Integrate FocusZones on top of FocusKit** – Define logical focus zones within screens:
+  - `player_controls`: Play/pause, seek bar, volume
+  - `quick_actions`: CC, aspect ratio, speed, PiP, etc.
+  - `live_list`: Live channel selection overlay
+  - `epg_overlay`: EPG navigation
+  - FocusZones interact with FocusKit's existing focus group and requester infrastructure
+
+- **Make DPAD/Media keys profile-aware (Kids Mode restrictions)** – When a kid profile is active:
+  - Certain actions may be blocked (e.g., OPEN_SETTINGS, channel surfing)
+  - Visual feedback for blocked actions
+  - Action filtering at the TvInputController level before dispatch
+
+- **Add TV Input Debug Overlay (development-only)** – A debug overlay showing:
+  - Current TvScreenContext
+  - Active FocusZone
+  - Recent key events and resolved actions
+  - Blocked actions (for Kids Mode debugging)
+  - Toggle via developer settings (similar to existing GlobalDebug)
+
+- **Ensure InternalPlayerControls forwards key events to the global controller** – The player does not handle key events directly. Instead:
+  - Player registers a `TvScreenContext` with the global controller
+  - Key events flow: `KeyEvent` → `TvInputController` → `TvAction` → `TvScreenContext.onAction()`
+  - Player's `TvScreenInputConfig` defines how key roles map to player-specific actions
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    TvInputController (Global)                    │
+│  - Intercepts all KeyEvents on TV                               │
+│  - Maps KeyEvent → TvKeyRole → TvAction                         │
+│  - Routes TvAction to active TvScreenContext                    │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   TvScreenContext (Per-Screen)                   │
+│  - Provides TvScreenInputConfig (key role → action mapping)     │
+│  - Receives TvAction from controller                            │
+│  - Dispatches to screen-specific handlers                       │
+│  - Interacts with FocusZones via FocusKit                       │
+└─────────────────────────────────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    FocusKit (Unchanged)                          │
+│  - Central focus engine for all Compose screens                 │
+│  - FocusRequesters, focus groups, focus navigation              │
+│  - TvInputController builds on FocusKit, does not replace it    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Relationship to Player
+
+The Internal Player is a **consumer** of the global TV input system:
+
+- `InternalPlayerControls` does NOT handle KeyEvents directly
+- Player provides a `TvScreenContext` with player-specific `TvScreenInputConfig`
+- Player receives `TvAction` callbacks (e.g., `onAction(PLAY_PAUSE)`, `onAction(SEEK_30S_FORWARD)`)
+- Player uses FocusKit for focus management within its FocusZones
+- Quick actions, live list, EPG overlay are FocusZones that receive focus via the global system
+
+### Status
+
+**Status:** 🔄 **KICKOFF** – Roadmap updated, checklist pending code scan
+
+A full implementation checklist will be generated in the next task after Copilot performs a complete code scan of all relevant modules (FocusKit, existing TV input handling, player controls, screen navigation, etc.).
 
 ---
 

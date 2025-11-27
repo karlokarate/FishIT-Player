@@ -2183,7 +2183,7 @@ The following phases remain as future work:
 
 - **Phase 4** – Subtitle style & CC menu centralization
 - **Phase 5** – PlayerSurface, aspect ratio, trickplay & auto-hide
-- **Phase 6** – TV remote (DPAD) and focus handling
+- **Phase 6** – Global TV Input System & FocusKit-First Architecture
 - **Phase 7** – PlaybackSession & MiniPlayer integration
 - **Phase 8** – Lifecycle, rotation, and Xtream worker pause
 - **Phase 9** – Diagnostics & internal debug screen
@@ -2776,7 +2776,7 @@ The remaining work is primarily:
 | Phase 3 – Live-TV & EPG | ✅ Complete (SIP) | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 4 – Subtitles | ✅ SIP Complete | 2025-11-26 | Legacy | ✅ Yes |
 | Phase 5 – PlayerSurface | ✅ Validated & Complete | 2025-11-27 | Legacy | ✅ Yes |
-| Phase 6 – TV Remote | ⬜ Not Started | - | Legacy | ⬜ No |
+| Phase 6 – Global TV Input | 🔄 Kickoff | 2025-11-27 | Legacy | ⬜ No |
 | Phase 7 – MiniPlayer | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 8 – Lifecycle | ⬜ Not Started | - | Legacy | ⬜ No |
 | Phase 9 – Diagnostics | ⬜ Not Started | - | Legacy | ⬜ No |
@@ -3143,6 +3143,34 @@ The following task groups remain for future implementation:
 - ✅ All 57 new Phase 5 tests pass (24 trickplay + 33 auto-hide)
 - ✅ Build compiles successfully
 - ✅ SIP is now the authoritative PlayerSurface implementation (for future activation)
+
+---
+
+## Phase 6 – Global TV Input System (Kickoff)
+
+**Date:** 2025-11-27
+
+**Status:** 🔄 **KICKOFF** – Roadmap updated, checklist pending code scan
+
+Phase 6 kickoff: Roadmap updated to global TV Input + FocusKit architecture. The Phase 6 section in `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` now reflects the new design direction:
+
+- TV input becomes a **global** system, not a player-local module
+- FocusKit remains the central focus engine for all screens
+- Global TvInputController maps: `KeyEvent → TvKeyRole → TvAction → FocusZones / Screen actions`
+- Every screen may define its own mapping via screen-specific `TvScreenInputConfig`
+- Player and all other screens are **consumers** of the global system
+
+**High-level requirements documented:**
+- Introduce TvKeyRole (DPAD, media keys, menu, back, etc.)
+- Introduce TvAction (semantic actions like PLAY_PAUSE, SEEK_30S, OPEN_CC_MENU)
+- Add screen-specific configuration (TvScreenInputConfig)
+- Integrate FocusZones on top of FocusKit (player_controls, quick_actions, etc.)
+- Make DPAD/Media keys profile-aware (Kids Mode restrictions)
+- Add TV Input Debug Overlay (development-only)
+- Ensure InternalPlayerControls forwards key events to the global controller using TvScreenContext
+
+**Next Steps:**
+A full implementation checklist will be generated in the next task after Copilot performs a complete code scan of all relevant modules (FocusKit, existing TV input handling, player controls, screen navigation, etc.).
 
 ---
 
