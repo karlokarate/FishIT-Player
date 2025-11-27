@@ -2,7 +2,7 @@ package com.chris.m3usuite.data.repo
 
 import android.content.Context
 import android.os.SystemClock
-import android.util.Log
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.core.epg.XmlTv
 import com.chris.m3usuite.core.xtream.EndpointPortStore
 import com.chris.m3usuite.core.xtream.ProviderCapabilityStore
@@ -127,12 +127,12 @@ class EpgRepository(
                 lock.withLock {
                     val eAt = emptyCache[streamId]
                     if (eAt != null && (SystemClock.elapsedRealtime() - eAt) < emptyTtlMillis) {
-                        Log.d(TAG, "sid=$streamId cache=empty within ${emptyTtlMillis}ms")
+                        AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId cache=empty within ${emptyTtlMillis}ms")
                         return@withLock emptyList<XtShortEPGProgramme>()
                     }
                     val hit = cache[streamId]
                     if (hit != null && (SystemClock.elapsedRealtime() - hit.atElapsedMs) < ttlMillis) {
-                        Log.d(TAG, "sid=$streamId cache=hit size=${hit.data.size}")
+                        AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId cache=hit size=${hit.data.size}")
                         return@withLock hit.data
                     }
                     null
@@ -204,7 +204,7 @@ class EpgRepository(
                 if (client != null) {
                     val raw = runCatching { client.fetchShortEpg(streamId, limit) }.getOrNull()
                     val list = if (!raw.isNullOrBlank()) parseShortEpg(raw) else emptyList()
-                    if (list.isNotEmpty()) Log.d(TAG, "sid=$streamId source=xtream size=${list.size}")
+                    if (list.isNotEmpty()) AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId source=xtream size=${list.size}")
                     list
                 } else {
                     emptyList()
@@ -212,7 +212,7 @@ class EpgRepository(
 
             var final =
                 xtreamRes.ifEmpty {
-                    fallbackXmlTvFor(chanId).also { if (it.isNotEmpty()) Log.d(TAG, "sid=$streamId source=xmltv size=${it.size}") }
+                    fallbackXmlTvFor(chanId).also { if (it.isNotEmpty()) AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId source=xmltv size=${it.size}") }
                 }
             // Soft fallback: if network yielded nothing but we have a stale OBX row, reuse it to avoid blank UI
             if (final.isEmpty() && !chanId.isNullOrBlank()) {
@@ -241,7 +241,7 @@ class EpgRepository(
                         list += XtShortEPGProgramme(title = xTitle, start = (xStart / 1000).toString(), end = (xEnd / 1000).toString())
                     }
                     final = list
-                    Log.d(TAG, "sid=$streamId source=obx-stale size=${final.size}")
+                    AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId source=obx-stale size=${final.size}")
                 }
             }
 
@@ -276,7 +276,7 @@ class EpgRepository(
                     if (existing != null) obx.id = existing.id
                     box.put(obx)
                 }
-                Log.d(TAG, "sid=$streamId persist ch=$chanId now=${now?.title} next=${next?.title}")
+                AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId persist ch=$chanId now=${now?.title} next=${next?.title}")
             }
             // Cache hit bookkeeping: content uses normal TTL; empty uses short TTL
             if (final.isNotEmpty()) {
@@ -290,7 +290,7 @@ class EpgRepository(
                     trimIfNeeded()
                 }
             }
-            Log.d(TAG, "sid=$streamId result size=${final.size}")
+            AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId result size=${final.size}")
             final.take(limit)
         }
 
@@ -317,7 +317,7 @@ class EpgRepository(
                             } catch (ce: kotlinx.coroutines.CancellationException) {
                                 // ignore composition/lifecycle cancellations
                             } catch (t: Throwable) {
-                                Log.w(TAG, "prefetch sid=$sid failed: ${t.message}")
+                                AppLog.log("epg", AppLog.Level.WARN, "prefetch sid=$sid failed: ${t.message}")
                             }
                         }
                     }

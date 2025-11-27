@@ -1,7 +1,7 @@
 package com.chris.m3usuite.core.xtream
 
 import android.os.SystemClock
-import android.util.Log
+import com.chris.m3usuite.core.logging.AppLog
 import androidx.core.net.toUri
 import com.chris.m3usuite.core.debug.GlobalDebug
 import kotlinx.coroutines.CoroutineDispatcher
@@ -426,16 +426,16 @@ class XtreamClient(
                 if (imagesStr.isNotBlank()) add("images=$imagesStr")
             }.joinToString(", ")
 
-        Log.i(tag, "vod:$vodId detail { $detailParts }")
+        AppLog.log(tag, AppLog.Level.INFO, "vod:$vodId detail { $detailParts }")
 
         val infoStr = sanitised(info?.toString()) ?: "null"
-        Log.i(tag, "vod:$vodId info=$infoStr")
+        AppLog.log(tag, AppLog.Level.INFO, "vod:$vodId info=$infoStr")
 
         val movieStr = sanitised(movieData?.toString()) ?: "null"
-        Log.i(tag, "vod:$vodId movie_data=$movieStr")
+        AppLog.log(tag, AppLog.Level.INFO, "vod:$vodId movie_data=$movieStr")
 
         val rootStr = sanitised(JsonObject(root).toString()) ?: "null"
-        Log.i(tag, "vod:$vodId raw=$rootStr")
+        AppLog.log(tag, AppLog.Level.INFO, "vod:$vodId raw=$rootStr")
     }
 
     suspend fun getSeriesDetailFull(seriesId: Int): NormalizedSeriesDetail? {
@@ -584,10 +584,24 @@ class XtreamClient(
             val cached = readCache(url, isEpg)
             val body: String =
                 if (cached != null) {
-                    if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
+                    if (com.chris.m3usuite.BuildConfig.DEBUG) {
+                        AppLog.log(
+                            category = "xtream",
+                            level = AppLog.Level.DEBUG,
+                            message = "CACHE hit",
+                            extras = mapOf("url" to redact(url)),
+                        )
+                    }
                     cached
                 } else {
-                    if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "API: ${redact(url)}")
+                    if (com.chris.m3usuite.BuildConfig.DEBUG) {
+                        AppLog.log(
+                            category = "xtream",
+                            level = AppLog.Level.DEBUG,
+                            message = "API call",
+                            extras = mapOf("url" to redact(url)),
+                        )
+                    }
                     takeRateSlot()
                     val req =
                         Request
@@ -600,7 +614,12 @@ class XtreamClient(
                         val code = resp.code
                         val ct = resp.header("Content-Type").orEmpty()
                         if (!resp.isSuccessful) {
-                            Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=$ct")
+                            AppLog.log(
+                                category = "xtream",
+                                level = AppLog.Level.WARN,
+                                message = "HTTP $code action=$action ct=$ct",
+                                extras = mapOf("url" to redact(url)),
+                            )
                             return@withContext emptyList()
                         }
                         val b = resp.body?.string().orEmpty()
@@ -610,16 +629,31 @@ class XtreamClient(
                 }
             val root =
                 runCatching { json.parseToJsonElement(body) }.getOrElse { err ->
-                    Log.w(
-                        "XtreamClient",
-                        "parse_error action=$action len=${body.length} head='${snippet(body)}' err=${err.javaClass.simpleName}",
+                    AppLog.log(
+                        category = "xtream",
+                        level = AppLog.Level.WARN,
+                        message = "parse_error action=$action err=${err.javaClass.simpleName}",
+                        extras =
+                            mapOf(
+                                "bodyLen" to body.length.toString(),
+                                "head" to snippet(body),
+                            ),
                     )
                     null
                 }
             if (root != null && root.isJsonArray()) {
                 root.jsonArray.mapNotNull { el -> el.jsonObjectOrNull()?.let { map(it) } }
             } else {
-                Log.w("XtreamClient", "unexpected_body action=$action len=${body.length} head='${snippet(body)}'")
+                AppLog.log(
+                    category = "xtream",
+                    level = AppLog.Level.WARN,
+                    message = "unexpected_body action=$action",
+                    extras =
+                        mapOf(
+                            "bodyLen" to body.length.toString(),
+                            "head" to snippet(body),
+                        ),
+                )
                 emptyList()
             }
         }
@@ -639,9 +673,10 @@ class XtreamClient(
                     star
                 } else {
                     if (com.chris.m3usuite.BuildConfig.DEBUG) {
-                        Log.i(
-                            "XtreamClient",
-                            "Fallback category_id=0 for action=$action (star empty)",
+                        AppLog.log(
+                            category = "xtream",
+                            level = AppLog.Level.DEBUG,
+                            message = "Fallback category_id=0 for action=$action (star empty)",
                         )
                     }
                     val zero = runCatching { apiArray(action, extra = "&category_id=0", map = map) }.getOrElse { emptyList() }
@@ -649,9 +684,10 @@ class XtreamClient(
                         zero
                     } else {
                         if (com.chris.m3usuite.BuildConfig.DEBUG) {
-                            Log.i(
-                                "XtreamClient",
-                                "Fallback without category_id for action=$action (0 empty)",
+                            AppLog.log(
+                                category = "xtream",
+                                level = AppLog.Level.DEBUG,
+                                message = "Fallback without category_id for action=$action (0 empty)",
                             )
                         }
                         apiArray(action, extra = null, map = map)
@@ -675,10 +711,24 @@ class XtreamClient(
             val cached = readCache(url, isEpg)
             val body: String =
                 if (cached != null) {
-                    if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
+                    if (com.chris.m3usuite.BuildConfig.DEBUG) {
+                        AppLog.log(
+                            category = "xtream",
+                            level = AppLog.Level.DEBUG,
+                            message = "CACHE hit",
+                            extras = mapOf("url" to redact(url)),
+                        )
+                    }
                     cached
                 } else {
-                    if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "API: ${redact(url)}")
+                    if (com.chris.m3usuite.BuildConfig.DEBUG) {
+                        AppLog.log(
+                            category = "xtream",
+                            level = AppLog.Level.DEBUG,
+                            message = "API call",
+                            extras = mapOf("url" to redact(url)),
+                        )
+                    }
                     takeRateSlot()
                     val req =
                         Request
@@ -691,7 +741,12 @@ class XtreamClient(
                         val code = resp.code
                         val ct = resp.header("Content-Type").orEmpty()
                         if (!resp.isSuccessful) {
-                            Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=$ct")
+                            AppLog.log(
+                                category = "xtream",
+                                level = AppLog.Level.WARN,
+                                message = "HTTP $code action=$action ct=$ct",
+                                extras = mapOf("url" to redact(url)),
+                            )
                             return@withContext null
                         }
                         val b = resp.body?.string().orEmpty()
@@ -701,16 +756,31 @@ class XtreamClient(
                 }
             val root =
                 runCatching { json.parseToJsonElement(body) }.getOrElse { err ->
-                    Log.w(
-                        "XtreamClient",
-                        "parse_error action=$action len=${body.length} head='${snippet(body)}' err=${err.javaClass.simpleName}",
+                    AppLog.log(
+                        category = "xtream",
+                        level = AppLog.Level.WARN,
+                        message = "parse_error action=$action err=${err.javaClass.simpleName}",
+                        extras =
+                            mapOf(
+                                "bodyLen" to body.length.toString(),
+                                "head" to snippet(body),
+                            ),
                     )
                     null
                 }
             if (root != null && root.isJsonObject()) {
                 root.jsonObject
             } else {
-                Log.w("XtreamClient", "unexpected_body action=$action len=${body.length} head='${snippet(body)}'")
+                AppLog.log(
+                    category = "xtream",
+                    level = AppLog.Level.WARN,
+                    message = "unexpected_body action=$action",
+                    extras =
+                        mapOf(
+                            "bodyLen" to body.length.toString(),
+                            "head" to snippet(body),
+                        ),
+                )
                 null
             }
         }
@@ -724,10 +794,24 @@ class XtreamClient(
             val isEpg = action == "get_short_epg"
             val cached = readCache(url, isEpg)
             if (cached != null) {
-                if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "CACHE: ${redact(url)}")
+                if (com.chris.m3usuite.BuildConfig.DEBUG) {
+                    AppLog.log(
+                        category = "xtream",
+                        level = AppLog.Level.DEBUG,
+                        message = "CACHE hit",
+                        extras = mapOf("url" to redact(url)),
+                    )
+                }
                 return@withContext cached
             }
-            if (com.chris.m3usuite.BuildConfig.DEBUG) Log.i("XtreamClient", "API: ${redact(url)}")
+            if (com.chris.m3usuite.BuildConfig.DEBUG) {
+                AppLog.log(
+                    category = "xtream",
+                    level = AppLog.Level.DEBUG,
+                    message = "API call",
+                    extras = mapOf("url" to redact(url)),
+                )
+            }
             takeRateSlot()
             val req =
                 Request
@@ -740,7 +824,12 @@ class XtreamClient(
                 val code = resp.code
                 val ct = resp.header("Content-Type").orEmpty()
                 if (!resp.isSuccessful) {
-                    Log.w("XtreamClient", "HTTP $code action=$action url=${redact(url)} ct=$ct")
+                    AppLog.log(
+                        category = "xtream",
+                        level = AppLog.Level.WARN,
+                        message = "HTTP $code action=$action ct=$ct",
+                        extras = mapOf("url" to redact(url)),
+                    )
                     return@withContext null
                 }
                 val body = resp.body?.string()

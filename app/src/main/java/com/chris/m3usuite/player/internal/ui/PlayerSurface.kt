@@ -97,6 +97,7 @@ fun PlayerSurface(
     onTap: () -> Unit = {},
     onJumpLiveChannel: (delta: Int) -> Unit = {},
     onStepSeek: (deltaMs: Long) -> Unit = {},
+    onUserInteraction: () -> Unit = {},
 ) {
     // Track drag deltas for gesture recognition
     var dragDeltaX by remember { mutableStateOf(0f) }
@@ -114,7 +115,10 @@ fun PlayerSurface(
                 .background(Color.Black)
                 // Tap gesture: toggle controls visibility
                 .pointerInput(Unit) {
-                    detectTapGestures(onTap = { onTap() })
+                    detectTapGestures(onTap = {
+                        onUserInteraction()
+                        onTap()
+                    })
                 }
                 // Drag gestures: Live channel zapping (LIVE) or seek/trickplay (VOD/SERIES)
                 .pointerInput(playbackType) {
@@ -149,6 +153,7 @@ fun PlayerSurface(
                                     val seekDelta = if (dragDeltaX > 0) seekMs else -seekMs
                                     onStepSeek(seekDelta)
                                 }
+                                onUserInteraction()
                             }
                             // Note: Vertical swipe handling deferred to future phases
 

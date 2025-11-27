@@ -3,6 +3,7 @@ package com.chris.m3usuite.player.internal.live
 import android.content.Context
 import com.chris.m3usuite.data.obx.ObxLive_
 import com.chris.m3usuite.data.obx.ObxStore
+import io.objectbox.query.QueryBuilder
 
 /**
  * Default implementation of [LiveChannelRepository] that bridges to the existing data layer.
@@ -46,21 +47,27 @@ class DefaultLiveChannelRepository(
     ): List<LiveChannel> =
         try {
             val liveBox = ObxStore.get(context).boxFor(com.chris.m3usuite.data.obx.ObxLive::class.java)
-            val query =
+            val queryBuilder =
                 if (categoryHint != null) {
                     liveBox
                         .query(ObxLive_.categoryId.equal(categoryHint))
-                        .build()
                 } else {
-                    liveBox.query().build()
+                    liveBox.query()
                 }
+
+            if (!providerHint.isNullOrBlank()) {
+                queryBuilder.equal(ObxLive_.providerKey, providerHint, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+            }
+
+            val query = queryBuilder.build()
 
             query.use { q ->
                 q.find().map { obxLive ->
                     LiveChannel(
                         id = obxLive.streamId.toLong(),
                         name = obxLive.name,
-                        url = "", // URL is constructed dynamically, not needed for controller
+                        // URL wird zur Laufzeit gebaut (PlayUrlHelper), hier Platzhalter um Filter im Controller nicht zu verwerfen
+                        url = "stream://${obxLive.streamId}",
                         category = obxLive.categoryId,
                         logoUrl = obxLive.logo,
                     )

@@ -37,10 +37,15 @@ class App : Application() {
 
         Telemetry.registerDefault(this)
         telemetryCloser = FrameTimeWatchdog.install()
+        val store = SettingsStore(this)
+        applicationScope.launch {
+            store.logTelemetryEnabled.collect { enabled ->
+                Telemetry.setExternalEnabled(enabled)
+            }
+        }
 
         // Start Telegram thumbnail prefetcher
         val serviceClient = T_TelegramServiceClient.getInstance(this)
-        val store = SettingsStore(this)
         val tgRepo = TelegramContentRepository(this, store)
         telegramPrefetcher = TelegramThumbPrefetcher(this, serviceClient, tgRepo)
 

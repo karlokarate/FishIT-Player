@@ -1,6 +1,7 @@
 package com.chris.m3usuite.telegram.logging
 
 import com.chris.m3usuite.diagnostics.DiagnosticsLogger
+import com.chris.m3usuite.core.logging.AppLog
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -150,6 +151,22 @@ object TelegramLogRepository {
             level = diagnosticsLevel,
             metadata = metadata,
         )
+
+        runCatching {
+            AppLog.log(
+                category = "telegram",
+                level =
+                    when (level) {
+                        TgLogEntry.LogLevel.VERBOSE -> AppLog.Level.VERBOSE
+                        TgLogEntry.LogLevel.DEBUG -> AppLog.Level.DEBUG
+                        TgLogEntry.LogLevel.INFO -> AppLog.Level.INFO
+                        TgLogEntry.LogLevel.WARN -> AppLog.Level.WARN
+                        TgLogEntry.LogLevel.ERROR -> AppLog.Level.ERROR
+                    },
+                message = message,
+                extras = metadata,
+            )
+        }
     }
 
     /**

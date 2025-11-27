@@ -1,3 +1,9 @@
+2025-11-28
+- fix(player/live): Keep live channels with stable IDs (provider filter honored), avoid URL-based drop; refresh EPG on channel change and process stale refresh requests via session ticks; run live overlay auto-hide/stale checks on playback position updates.
+- fix(player/kids/resume/mime): Surface remaining kid minutes into UiState, add episodeId fallback for resume lookups, and harden MIME resolution (Telegram chatId/messageId/fileId lookup plus containerExt-aware guessing).
+- chore(logging): Unified runtime logging on `AppLog` with Settings master/category switches and LogViewer live/history wiring; migrated player/Xtream/EPG/UI/telemetry paths off `Log.*` and gated stack traces via AppLog extras.
+- fix(logging): Harden AppLog (redaction for values/messages, single-thread dispatch, clear buffer on disable, atomic category gating, bypass for telemetry) and LogViewer (append from live events). Telemetry toggle now retries Crashlytics sink and survives master-off state.
+
 2025-11-20 (Legacy Cleanup & TDLib Priority)
 - **feat(roadmap)**: Set TDLib integration enhancement as Priority 1. `.github/tdlibAgent.md` is now the Single Source of Truth for all Telegram/TDLib work.
 - **chore(cleanup)**: Remove `b/` directory containing 180KB of legacy backup code (PlayerLauncher, Cards, MediaMeta, MetaMappers, FocusToolkit, etc.)

@@ -47,6 +47,12 @@ fun SettingsScreen(
     onOpenTelegramLog: (() -> Unit)? = null, // navigiert zu TelegramLogScreen
     onOpenTelegramFeed: (() -> Unit)? = null, // navigiert zu TelegramActivityFeedScreen
     onOpenLogViewer: (() -> Unit)? = null, // navigiert zu LogViewerScreen
+    runtimeLoggingEnabled: Boolean = false,
+    onToggleRuntimeLogging: (Boolean) -> Unit = {},
+    telemetryForwardingEnabled: Boolean = false,
+    onToggleTelemetryForwarding: (Boolean) -> Unit = {},
+    logCategories: Set<String> = emptySet(),
+    onUpdateLogCategories: (Set<String>) -> Unit = {},
 ) {
     // --- ViewModels (bestehend) ---
     val playerVm: PlayerSettingsViewModel = viewModel(factory = PlayerSettingsViewModel.factory(app))
@@ -281,6 +287,52 @@ fun SettingsScreen(
                         checked = generalState.showAdults,
                         onCheckedChange = { value -> generalVm.onToggleShowAdults(value) },
                     )
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Runtime Logging (AppLog)",
+                        modifier = Modifier.weight(1f),
+                    )
+                    Switch(
+                        checked = runtimeLoggingEnabled,
+                        onCheckedChange = onToggleRuntimeLogging,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Forward telemetry (Crashlytics)",
+                        modifier = Modifier.weight(1f),
+                    )
+                    Switch(
+                        checked = telemetryForwardingEnabled,
+                        onCheckedChange = onToggleTelemetryForwarding,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Text("Log categories", style = MaterialTheme.typography.labelMedium)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val categories = listOf("player", "live", "telegram", "xtream", "ui", "focus", "network", "diagnostics", "misc")
+                    categories.forEach { cat ->
+                        FilterChip(
+                            selected = logCategories.contains(cat),
+                            onClick = {
+                                val updated =
+                                    if (logCategories.contains(cat)) {
+                                        logCategories - cat
+                                    } else {
+                                        logCategories + cat
+                                    }
+                                onUpdateLogCategories(updated)
+                            },
+                            label = { Text(cat) },
+                        )
+                    }
                 }
             }
 

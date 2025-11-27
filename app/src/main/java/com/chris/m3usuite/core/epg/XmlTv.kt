@@ -1,7 +1,7 @@
 package com.chris.m3usuite.core.epg
 
 import android.content.Context
-import android.util.Log
+import com.chris.m3usuite.core.logging.AppLog
 import android.util.Xml
 import com.chris.m3usuite.core.http.HttpClientFactory
 import com.chris.m3usuite.prefs.SettingsStore
@@ -42,14 +42,11 @@ object XmlTv {
             if (url.isBlank()) return@withContext null to null
             val client = HttpClientFactory.create(context, settings)
             val req = Request.Builder().url(url).build()
-            try {
-                val uaVal = settings.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
-                Log.d("XmlTv", "currentNext url=\"${url}\" chan=$channelId ua=\"${uaVal}\"")
-            } catch (_: Throwable) {
-            }
+            val uaVal = settings.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
+            AppLog.log("epg", AppLog.Level.DEBUG, "currentNext url=\"$url\" chan=$channelId ua=\"$uaVal\"")
             client.newCall(req).execute().use { res ->
                 if (!res.isSuccessful) {
-                    Log.w("XmlTv", "status=${res.code} chan=$channelId")
+                    AppLog.log("epg", AppLog.Level.WARN, "status=${res.code} chan=$channelId")
                     return@withContext null to null
                 }
                 val body = res.body ?: return@withContext null to null
@@ -128,12 +125,27 @@ object XmlTv {
             val req = Request.Builder().url(url).build()
             try {
                 val uaVal = settings.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
-                Log.d("XmlTv", "index url=\"${url}\" chans=${channelIds.size} ua=\"${uaVal}\"")
+                AppLog.log(
+                    category = "live",
+                    level = AppLog.Level.DEBUG,
+                    message = "xmltv index",
+                    extras =
+                        mapOf(
+                            "url" to url,
+                            "channels" to channelIds.size.toString(),
+                            "ua" to uaVal,
+                        ),
+                )
             } catch (_: Throwable) {
             }
             client.newCall(req).execute().use { res ->
                 if (!res.isSuccessful) {
-                    Log.w("XmlTv", "status=${res.code} chans=${channelIds.size}")
+                    AppLog.log(
+                        category = "live",
+                        level = AppLog.Level.WARN,
+                        message = "xmltv http status=${res.code}",
+                        extras = mapOf("channels" to channelIds.size.toString()),
+                    )
                     return@withContext emptyMap()
                 }
                 val body = res.body ?: return@withContext emptyMap()

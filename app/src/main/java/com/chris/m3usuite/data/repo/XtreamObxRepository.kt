@@ -573,9 +573,10 @@ class XtreamObxRepository(
                     seriesCount = seriesJob.await()
                 }
 
-                android.util.Log.i(
-                    "XtreamObxRepo",
-                    "seedListsQuick live=$liveCount vod=$vodCount series=$seriesCount perCategoryLimit=$perCategoryLimit",
+                com.chris.m3usuite.core.logging.AppLog.log(
+                    category = "xtream",
+                    level = com.chris.m3usuite.core.logging.AppLog.Level.INFO,
+                    message = "seedListsQuick live=$liveCount vod=$vodCount series=$seriesCount perCategoryLimit=$perCategoryLimit",
                 )
                 runCatching { rebuildAggregatedIndexes(boxStore) }
                 Triple(liveCount, vodCount, seriesCount)

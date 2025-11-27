@@ -2,6 +2,9 @@ package com.chris.m3usuite.player.internal.domain
 
 import android.content.Context
 import com.chris.m3usuite.data.repo.ResumeRepository
+import com.chris.m3usuite.data.obx.ObxEpisode
+import com.chris.m3usuite.data.obx.ObxEpisode_
+import com.chris.m3usuite.data.obx.ObxStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.max
@@ -127,7 +130,13 @@ interface ResumeManager {
 class DefaultResumeManager(
     context: Context,
 ) : ResumeManager {
+    private val appContext = context
     private val repo = ResumeRepository(context)
+    private val episodeCompositeCache =
+        object : LinkedHashMap<Int, SeriesComposite>(32, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, SeriesComposite>?): Boolean =
+                size > 128
+        }
 
     // TODO(Phase 2 Parity): Legacy uses ResumeRepository.recentVod() and recentEpisodes()
     // for lookups. This implementation uses getVodResume/getSeriesResume directly.
@@ -138,24 +147,28 @@ class DefaultResumeManager(
                 PlaybackType.VOD -> {
                     val id = context.mediaId ?: return@withContext null
                     val posSecs = repo.getVodResume(id) ?: return@withContext null
-                    if (posSecs > 10) posSecs.toLong() * 1000L else null
+                    val posMs = posSecs.toLong() * 1000L
+                    if (posSecs > 10 && posMs <= MAX_RESUME_MS) posMs else null
                 }
 
                 PlaybackType.SERIES -> {
-                    val seriesId = context.seriesId
-                    val season = context.season
-                    val episodeNum = context.episodeNumber
-                    if (seriesId == null || season == null || episodeNum == null) {
-                        return@withContext null
-                    }
-                    val posSecs =
-                        repo.getSeriesResume(
-                            seriesId = seriesId,
-                            season = season,
-                            episodeNum = episodeNum,
+                    val composite =
+                        resolveSeriesComposite(
+                            episodeId = context.episodeId,
+                            seriesId = context.seriesId,
+                            season = context.season,
+                            episodeNum = context.episodeNumber,
                         ) ?: return@withContext null
 
-                    if (posSecs > 10) posSecs.toLong() * 1000L else null
+                    val posSecs =
+                        repo.getSeriesResume(
+                            seriesId = composite.seriesId,
+                            season = composite.season,
+                            episodeNum = composite.episodeNum,
+                        ) ?: return@withContext null
+
+                    val posMs = posSecs.toLong() * 1000L
+                    if (posSecs > 10 && posMs <= MAX_RESUME_MS) posMs else null
                 }
 
                 PlaybackType.LIVE -> null
@@ -187,17 +200,20 @@ class DefaultResumeManager(
             }
 
             PlaybackType.SERIES -> {
-                val seriesId = context.seriesId
-                val season = context.season
-                val episodeNum = context.episodeNumber
-                if (seriesId == null || season == null || episodeNum == null) return
+                val composite =
+                    resolveSeriesComposite(
+                        episodeId = context.episodeId,
+                        seriesId = context.seriesId,
+                        season = context.season,
+                        episodeNum = context.episodeNumber,
+                    ) ?: return
 
                 withContext(Dispatchers.IO) {
                     if (durationMs > 0 && remaining in 0L..9999L) {
                         // near end -> clear
-                        repo.clearSeriesResume(seriesId, season, episodeNum)
+                        repo.clearSeriesResume(composite.seriesId, composite.season, composite.episodeNum)
                     } else {
-                        repo.setSeriesResume(seriesId, season, episodeNum, posSecs)
+                        repo.setSeriesResume(composite.seriesId, composite.season, composite.episodeNum, posSecs)
                     }
                 }
             }
@@ -228,5 +244,56 @@ class DefaultResumeManager(
 
             PlaybackType.LIVE -> Unit
         }
+    }
+
+    private data class SeriesComposite(
+        val seriesId: Int,
+        val season: Int,
+        val episodeNum: Int,
+    )
+
+    companion object {
+        // Guard against implausible resume positions (>24h)
+        private const val MAX_RESUME_MS = 24 * 60 * 60 * 1000L
+    }
+
+    /**
+     * Resolve series identifiers from either composite keys or legacy episodeId fallback.
+     */
+    private fun resolveSeriesComposite(
+        episodeId: Int?,
+        seriesId: Int?,
+        season: Int?,
+        episodeNum: Int?,
+    ): SeriesComposite? {
+        if (seriesId != null && season != null && episodeNum != null) {
+            return SeriesComposite(seriesId, season, episodeNum)
+        }
+        if (episodeId == null) return null
+
+        synchronized(episodeCompositeCache) {
+            episodeCompositeCache[episodeId]?.let { return it }
+        }
+
+        return runCatching {
+            val box = ObxStore.get(appContext).boxFor(ObxEpisode::class.java)
+            val query =
+                box
+                    .query(ObxEpisode_.episodeId.equal(episodeId.toLong()))
+                    .build()
+            query.use { q ->
+                val row = q.findFirst() ?: return@use null
+                val sId = row.seriesId
+                val sSeason = row.season
+                val sEpisode = row.episodeNum
+                SeriesComposite(sId, sSeason, sEpisode)
+            }
+        }.onSuccess { composite ->
+            if (composite != null) {
+                synchronized(episodeCompositeCache) {
+                    episodeCompositeCache[episodeId] = composite
+                }
+            }
+        }.getOrNull()
     }
 }

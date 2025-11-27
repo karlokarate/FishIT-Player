@@ -1,6 +1,5 @@
 package com.chris.m3usuite.ui.common
 
-import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -33,6 +32,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chris.m3usuite.R
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.ui.debug.safePainter
 import com.chris.m3usuite.ui.focus.FocusKit
 
@@ -63,9 +63,10 @@ fun AppIconButton(
         if (requestedIcon != 0) {
             requestedIcon
         } else {
-            Log.w(
-                "AppIconButton",
-                "Missing drawable for icon=${icon.name} variant=$variant – falling back to ic_all_primary",
+            AppLog.log(
+                category = "ui",
+                level = AppLog.Level.WARN,
+                message = "Missing drawable for icon=${icon.name} variant=$variant – falling back to ic_all_primary",
             )
             R.drawable.ic_all_primary
         }

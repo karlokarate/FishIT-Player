@@ -1,6 +1,7 @@
 package com.chris.m3usuite.player.internal.domain
 
 import android.content.Context
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.data.obx.ObxProfile
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.ScreenTimeRepository
@@ -16,6 +17,7 @@ data class KidsGateState(
     val kidActive: Boolean,
     val kidBlocked: Boolean,
     val kidProfileId: Long?,
+    val remainingMinutes: Int? = null,
 )
 
 /**
@@ -149,33 +151,51 @@ class DefaultKidsPlaybackGate(
 
     override suspend fun evaluateStart(): KidsGateState =
         withContext(Dispatchers.IO) {
-            val profileId = settings.currentProfileId.first()
-            if (profileId <= 0L) {
-                return@withContext KidsGateState(
+            try {
+                val profileId = settings.currentProfileId.first()
+                if (profileId <= 0L) {
+                    return@withContext KidsGateState(
+                        kidActive = false,
+                        kidBlocked = false,
+                        kidProfileId = null,
+                        remainingMinutes = null,
+                    )
+                }
+
+                val box = store.boxFor(ObxProfile::class.java)
+                val profile = runCatching { box.get(profileId) }.getOrNull()
+
+                val kidActive = profile?.type == "kid"
+                if (!kidActive) {
+                    return@withContext KidsGateState(
+                        kidActive = false,
+                        kidBlocked = false,
+                        kidProfileId = null,
+                        remainingMinutes = null,
+                    )
+                }
+
+                val remaining = screenTimeRepo.remainingMinutes(profileId)
+                KidsGateState(
+                    kidActive = true,
+                    kidBlocked = remaining <= 0,
+                    kidProfileId = profileId,
+                    remainingMinutes = remaining,
+                )
+            } catch (t: Throwable) {
+                AppLog.log(
+                    category = "player",
+                    level = AppLog.Level.WARN,
+                    message = "KidsPlaybackGate evaluateStart fail-open",
+                    extras = mapOf("error" to (t.message ?: t.javaClass.simpleName)),
+                )
+                KidsGateState(
                     kidActive = false,
                     kidBlocked = false,
                     kidProfileId = null,
+                    remainingMinutes = null,
                 )
             }
-
-            val box = store.boxFor(ObxProfile::class.java)
-            val profile = runCatching { box.get(profileId) }.getOrNull()
-
-            val kidActive = profile?.type == "kid"
-            if (!kidActive) {
-                return@withContext KidsGateState(
-                    kidActive = false,
-                    kidBlocked = false,
-                    kidProfileId = null,
-                )
-            }
-
-            val remaining = screenTimeRepo.remainingMinutes(profileId)
-            KidsGateState(
-                kidActive = true,
-                kidBlocked = remaining <= 0,
-                kidProfileId = profileId,
-            )
         }
 
     override suspend fun onPlaybackTick(
@@ -187,10 +207,23 @@ class DefaultKidsPlaybackGate(
         if (deltaSecs <= 0) return current
 
         return withContext(Dispatchers.IO) {
-            // Legacy: tickUsageIfPlaying() arbeitet in Minuten-Schritten
-            screenTimeRepo.tickUsageIfPlaying(kidId, deltaSecs)
-            val remaining = screenTimeRepo.remainingMinutes(kidId)
-            current.copy(kidBlocked = remaining <= 0)
+            runCatching {
+                // Legacy: tickUsageIfPlaying() arbeitet in Minuten-Schritten
+                screenTimeRepo.tickUsageIfPlaying(kidId, deltaSecs)
+                val remaining = screenTimeRepo.remainingMinutes(kidId)
+                current.copy(
+                    kidBlocked = remaining <= 0,
+                    remainingMinutes = remaining,
+                )
+            }.getOrElse { t ->
+                AppLog.log(
+                    category = "player",
+                    level = AppLog.Level.WARN,
+                    message = "KidsPlaybackGate onPlaybackTick fail-open",
+                    extras = mapOf("error" to (t.message ?: t.javaClass.simpleName)),
+                )
+                current
+            }
         }
     }
 }
