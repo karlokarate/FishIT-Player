@@ -199,6 +199,85 @@ data class InternalPlayerUiState(
      */
     val epgOverlayVisible: Boolean = false,
     // ════════════════════════════════════════════════════════════════════════════
+    // Trickplay State - Phase 5 Group 3 fields
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // These fields support trickplay (fast-forward/rewind) behavior for SIP.
+    // Contract: INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md Section 6
+    /**
+     * Whether trickplay mode is currently active.
+     *
+     * Phase 5 UI consumption:
+     * - Show trickplay indicator overlay (e.g., "2x ►►")
+     * - Prevent controls auto-hide while adjusting trickplay
+     * - Exit on play/pause or OK button press
+     *
+     * **Legacy Reference:** L1467-1470 (ffStage/rwStage indicate trickplay direction)
+     */
+    val trickplayActive: Boolean = false,
+    /**
+     * Current trickplay speed multiplier.
+     *
+     * Values:
+     * - 1.0f = normal playback (not in trickplay)
+     * - 2.0f, 3.0f, 5.0f = fast-forward speeds
+     * - -2.0f, -3.0f, -5.0f = rewind speeds (negative = reverse direction)
+     *
+     * Phase 5 UI consumption:
+     * - Display speed label (e.g., "2x", "-3x")
+     * - Icon direction based on sign (►► for positive, ◀◀ for negative)
+     *
+     * **Legacy Reference:** L1467 trickplaySpeeds = listOf(2f, 3f, 5f)
+     */
+    val trickplaySpeed: Float = 1f,
+    /**
+     * Whether the seek preview overlay is visible.
+     *
+     * Phase 5 UI consumption:
+     * - Show target position indicator during seeking
+     * - Auto-hide after 900ms (match legacy behavior)
+     *
+     * **Legacy Reference:** L1456-1459 seekPreviewVisible
+     */
+    val seekPreviewVisible: Boolean = false,
+    /**
+     * Target position in milliseconds for seek preview.
+     *
+     * Phase 5 UI consumption:
+     * - Display target position in seek preview overlay
+     * - Null when seek preview is not active
+     *
+     * **Legacy Reference:** L1489-1507 showSeekPreview()
+     */
+    val seekPreviewTargetMs: Long? = null,
+    // ════════════════════════════════════════════════════════════════════════════
+    // Controls Auto-Hide - Phase 5 Group 4 fields
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // These fields support controls auto-hide behavior for SIP.
+    // Contract: INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md Section 7
+    /**
+     * Whether player controls are currently visible.
+     *
+     * Phase 5 UI consumption:
+     * - Controls (transport bar, buttons) shown when true
+     * - Controls hidden when false
+     * - Toggled by tap or DPAD center
+     *
+     * **Legacy Reference:** L1347-1348 controlsVisible
+     */
+    val controlsVisible: Boolean = true,
+    /**
+     * Counter incremented on user activity to reset auto-hide timer.
+     *
+     * Phase 5 UI consumption:
+     * - LaunchedEffect watches this to restart hide timer
+     * - Any user activity increments this value
+     *
+     * **Legacy Reference:** L1347-1348 controlsTick
+     */
+    val controlsTick: Int = 0,
+    // ════════════════════════════════════════════════════════════════════════════
     // Subtitle & CC - Phase 4 fields
     // ════════════════════════════════════════════════════════════════════════════
     //
@@ -251,6 +330,28 @@ data class InternalPlayerUiState(
 
     val isSeries: Boolean
         get() = playbackType == PlaybackType.SERIES
+
+    /**
+     * Returns true if any blocking overlay/dialog is open.
+     *
+     * Phase 5 Group 4: Never-hide conditions
+     * Contract Section 7.3: Controls must NOT auto-hide when these are open.
+     *
+     * Blocking overlays:
+     * - CC menu (showCcMenuDialog)
+     * - Settings dialog (showSettingsDialog)
+     * - Tracks dialog (showTracksDialog)
+     * - Speed dialog (showSpeedDialog)
+     * - Sleep timer dialog (showSleepTimerDialog)
+     * - Kid block overlay (kidBlocked)
+     */
+    val hasBlockingOverlay: Boolean
+        get() = showCcMenuDialog ||
+            showSettingsDialog ||
+            showTracksDialog ||
+            showSpeedDialog ||
+            showSleepTimerDialog ||
+            kidBlocked
 }
 
 enum class AspectRatioMode {
@@ -337,4 +438,64 @@ data class InternalPlayerController(
      * @param preset The preset to apply.
      */
     val onApplySubtitlePreset: (SubtitlePreset) -> Unit = {},
+    // ════════════════════════════════════════════════════════════════════════════
+    // Trickplay Callbacks - Phase 5 Group 3
+    // ════════════════════════════════════════════════════════════════════════════
+    /**
+     * Starts trickplay (fast-forward or rewind).
+     *
+     * @param direction +1 for fast-forward, -1 for rewind
+     */
+    val onStartTrickplay: (direction: Int) -> Unit = {},
+    /**
+     * Stops trickplay and optionally applies the current position.
+     *
+     * @param applyPosition If true, seek to the current trickplay position
+     */
+    val onStopTrickplay: (applyPosition: Boolean) -> Unit = {},
+    /**
+     * Cycles trickplay speed (2x → 3x → 5x → 2x).
+     *
+     * Only effective when trickplay is active.
+     */
+    val onCycleTrickplaySpeed: () -> Unit = {},
+    /**
+     * Performs a step seek by the given delta.
+     *
+     * Used for seek preview (e.g., ±10s or ±30s jumps).
+     *
+     * @param deltaMs The time delta in milliseconds (positive or negative)
+     */
+    val onStepSeek: (deltaMs: Long) -> Unit = {},
+    // ════════════════════════════════════════════════════════════════════════════
+    // Controls Visibility Callbacks - Phase 5 Group 4
+    // ════════════════════════════════════════════════════════════════════════════
+    /**
+     * Toggles controls visibility.
+     *
+     * Called on tap or DPAD center press.
+     */
+    val onToggleControlsVisibility: () -> Unit = {},
+    /**
+     * Shows controls and resets the auto-hide timer.
+     *
+     * Called on any user interaction.
+     */
+    val onUserInteraction: () -> Unit = {},
+    /**
+     * Hides controls immediately.
+     *
+     * Called by auto-hide timer when timeout expires.
+     */
+    val onHideControls: () -> Unit = {},
 )
+
+/**
+ * Direction for trickplay operations.
+ *
+ * Phase 5 Group 3: Trickplay behavior
+ */
+enum class TrickplayDirection(val multiplier: Int) {
+    FORWARD(1),
+    REWIND(-1),
+}

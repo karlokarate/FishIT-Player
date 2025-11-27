@@ -4,9 +4,11 @@ import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Repeat
@@ -20,35 +22,84 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.media3.common.C
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.ExoPlayer
+import com.chris.m3usuite.player.internal.live.TimeProvider
 import com.chris.m3usuite.player.internal.state.InternalPlayerController
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 import com.chris.m3usuite.player.internal.system.requestPictureInPicture
+import kotlinx.coroutines.delay
 
+/**
+ * InternalPlayerContent - Main SIP player content composable
+ *
+ * **Phase 5 Group 3 & 4:**
+ * - Trickplay indicator overlay when trickplayActive is true
+ * - Seek preview overlay when seekPreviewVisible is true
+ * - Controls auto-hide with configurable timeouts (TV: 7s, phone: 4s)
+ * - Tap-to-toggle controls visibility
+ *
+ * @param player The ExoPlayer instance
+ * @param state The player UI state
+ * @param controller The player controller callbacks
+ * @param isTv Whether running on TV (affects auto-hide timeout)
+ * @param timeProvider Injectable time provider for testable auto-hide
+ */
 @Composable
 fun InternalPlayerContent(
     player: ExoPlayer?,
     state: InternalPlayerUiState,
     controller: InternalPlayerController,
+    isTv: Boolean = false,
+    timeProvider: TimeProvider? = null,
 ) {
     val ctx = LocalContext.current
     val activity = ctx as? Activity
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 5 Group 4: Auto-hide timer
+    // ════════════════════════════════════════════════════════════════════════════
+    // Contract Section 7.2: TV 5-7s, phone 3-5s timeouts
+    // We use 7s for TV, 4s for phone/tablet
+    val autoHideTimeoutMs = if (isTv) 7_000L else 4_000L
+
+    // Auto-hide effect: Hides controls after timeout when no blocking overlay is open
+    LaunchedEffect(state.controlsVisible, state.controlsTick, state.hasBlockingOverlay, state.trickplayActive) {
+        if (!state.controlsVisible) return@LaunchedEffect
+
+        // Never auto-hide when:
+        // - A blocking overlay is open (CC menu, settings, etc.)
+        // - Trickplay is actively being adjusted
+        if (state.hasBlockingOverlay || state.trickplayActive) return@LaunchedEffect
+
+        val startTick = state.controlsTick
+        delay(autoHideTimeoutMs)
+
+        // Only hide if no new activity occurred
+        if (state.controlsTick == startTick) {
+            controller.onHideControls()
+        }
+    }
 
     Box(
         modifier =
             Modifier
                 .fillMaxSize(),
     ) {
-        // Phase 3 Step 3.D + Phase 4 Group 3: PlayerSurface with gesture handling and subtitle styling
+        // Phase 3 Step 3.D + Phase 4 Group 3 + Phase 5 Groups 3 & 4:
+        // PlayerSurface with gesture handling, subtitle styling, trickplay, and tap-to-toggle
         PlayerSurface(
             player = player,
             aspectRatioMode = state.aspectRatioMode,
@@ -56,10 +107,14 @@ fun InternalPlayerContent(
             subtitleStyle = state.subtitleStyle,
             isKidMode = state.kidActive,
             onTap = {
-                // Future: toggle controls visibility
-                // For now, no-op (controls are always shown in SIP reference)
+                // Phase 5 Group 4: Tap toggles controls visibility
+                controller.onToggleControlsVisibility()
             },
             onJumpLiveChannel = controller.onJumpLiveChannel,
+            onStepSeek = { deltaMs ->
+                // Phase 5 Group 3: Step seek for VOD/SERIES
+                controller.onStepSeek(deltaMs)
+            },
         )
 
         // Phase 3 Step 3.C: Live channel name header (LIVE only)
@@ -71,6 +126,38 @@ fun InternalPlayerContent(
                         .align(Alignment.TopCenter)
                         .fillMaxWidth(),
             )
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // Phase 5 Group 3: Trickplay Indicator Overlay
+        // ════════════════════════════════════════════════════════════════════════
+        // Contract Section 6.2 Rule 2: Clear visual feedback during trickplay
+        AnimatedVisibility(
+            visible = state.trickplayActive,
+            enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(durationMillis = 150)),
+            exit = fadeOut(animationSpec = androidx.compose.animation.core.tween(durationMillis = 150)),
+            modifier = Modifier.align(Alignment.Center),
+        ) {
+            TrickplayIndicator(speed = state.trickplaySpeed)
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // Phase 5 Group 3: Seek Preview Overlay
+        // ════════════════════════════════════════════════════════════════════════
+        // Shows target position during seek preview
+        AnimatedVisibility(
+            visible = state.seekPreviewVisible && state.seekPreviewTargetMs != null,
+            enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(durationMillis = 150)),
+            exit = fadeOut(animationSpec = androidx.compose.animation.core.tween(durationMillis = 150)),
+            modifier = Modifier.align(Alignment.Center),
+        ) {
+            state.seekPreviewTargetMs?.let { targetMs ->
+                SeekPreviewOverlay(
+                    currentPositionMs = state.positionMs,
+                    targetPositionMs = targetMs,
+                    durationMs = state.durationMs,
+                )
+            }
         }
 
         // Phase 3 Step 3.C & Task 2: EPG overlay (LIVE only, with AnimatedVisibility)
@@ -100,29 +187,38 @@ fun InternalPlayerContent(
             )
         }
 
-        // Overlay-Controls (vereinfacht)
-        Column(
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(16.dp),
+        // ════════════════════════════════════════════════════════════════════════
+        // Phase 5 Group 4: Controls with Auto-Hide
+        // ════════════════════════════════════════════════════════════════════════
+        // Contract Section 7.1: Controls auto-hide after period of inactivity
+        AnimatedVisibility(
+            visible = state.controlsVisible,
+            enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(durationMillis = 200)),
+            exit = fadeOut(animationSpec = androidx.compose.animation.core.tween(durationMillis = 200)),
+            modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            MainControlsRow(
-                state = state,
-                onPlayPause = controller.onPlayPause,
-                onSeekBack = { controller.onSeekBy(-10_000) },
-                onSeekForward = { controller.onSeekBy(30_000) },
-                onToggleLoop = controller.onToggleLoop,
-                onChangeAspectRatio = controller.onCycleAspectRatio,
-                onSpeedClick = controller.onToggleSpeedDialog,
-                onTracksClick = controller.onToggleTracksDialog,
-                onCcClick = controller.onToggleCcMenu, // Phase 4 Group 4
-                onSettingsClick = controller.onToggleSettingsDialog,
-                onPipClick = { requestPictureInPicture(activity) },
-            )
-            Spacer(Modifier.height(8.dp))
-            ProgressRow(state = state, onScrubTo = controller.onSeekTo)
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+            ) {
+                MainControlsRow(
+                    state = state,
+                    onPlayPause = controller.onPlayPause,
+                    onSeekBack = { controller.onSeekBy(-10_000) },
+                    onSeekForward = { controller.onSeekBy(30_000) },
+                    onToggleLoop = controller.onToggleLoop,
+                    onChangeAspectRatio = controller.onCycleAspectRatio,
+                    onSpeedClick = controller.onToggleSpeedDialog,
+                    onTracksClick = controller.onToggleTracksDialog,
+                    onCcClick = controller.onToggleCcMenu,
+                    onSettingsClick = controller.onToggleSettingsDialog,
+                    onPipClick = { requestPictureInPicture(activity) },
+                )
+                Spacer(Modifier.height(8.dp))
+                ProgressRow(state = state, onScrubTo = controller.onSeekTo)
+            }
         }
 
         if (state.showDebugInfo) {
@@ -154,6 +250,120 @@ fun InternalPlayerContent(
                     controller.onSelectSubtitleTrack(track)
                 },
             )
+        }
+    }
+}
+
+/**
+ * Trickplay indicator overlay showing speed and direction.
+ *
+ * Phase 5 Group 3: Contract Section 6.2 Rule 2
+ *
+ * Display format:
+ * - Positive speed: "2x ►►" (fast-forward)
+ * - Negative speed: "◀◀ 2x" (rewind)
+ */
+@Composable
+private fun TrickplayIndicator(speed: Float) {
+    val isForward = speed > 0
+    val absSpeed = kotlin.math.abs(speed)
+    val speedText = if (absSpeed == absSpeed.toInt().toFloat()) {
+        "${absSpeed.toInt()}x"
+    } else {
+        "${"%.1f".format(absSpeed)}x"
+    }
+
+    Box(
+        modifier = Modifier
+            .background(
+                color = Color.Black.copy(alpha = 0.7f),
+                shape = RoundedCornerShape(8.dp),
+            )
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            if (!isForward) {
+                // Rewind: ◀◀ 2x
+                Text(
+                    text = "◀◀",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text(
+                text = speedText,
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            if (isForward) {
+                // Forward: 2x ►►
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "►►",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Seek preview overlay showing current position → target position.
+ *
+ * Phase 5 Group 3: Contract Section 6.2 Rule 2
+ */
+@Composable
+private fun SeekPreviewOverlay(
+    currentPositionMs: Long,
+    targetPositionMs: Long,
+    durationMs: Long,
+) {
+    Box(
+        modifier = Modifier
+            .background(
+                color = Color.Black.copy(alpha = 0.7f),
+                shape = RoundedCornerShape(8.dp),
+            )
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // Target position (large)
+            Text(
+                text = formatMs(targetPositionMs),
+                color = Color.White,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+            )
+
+            // Current → Target indicator
+            val delta = targetPositionMs - currentPositionMs
+            val sign = if (delta >= 0) "+" else ""
+            Text(
+                text = "$sign${formatMs(kotlin.math.abs(delta))}",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 16.sp,
+            )
+
+            // Progress indicator
+            if (durationMs > 0) {
+                Spacer(Modifier.height(8.dp))
+                val progress = (targetPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 12.sp,
+                )
+            }
         }
     }
 }
