@@ -24,6 +24,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.logs.ui.LogViewerScreen
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.player.InternalPlayerEntry
@@ -49,7 +50,6 @@ import com.chris.m3usuite.ui.screens.TelegramDetailScreen
 import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.screens.XtreamPortalCheckScreen
 import com.chris.m3usuite.ui.theme.AppTheme
-import com.chris.m3usuite.core.logging.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
@@ -585,7 +585,11 @@ class MainActivity : ComponentActivity() {
                                 onToggleRuntimeLogging = { enabled ->
                                     launch { store.setLogMasterEnabled(enabled) }
                                 },
-                                telemetryForwardingEnabled = store.logTelemetryEnabled.collectAsStateWithLifecycle(initialValue = false).value,
+                                telemetryForwardingEnabled =
+                                    store.logTelemetryEnabled
+                                        .collectAsStateWithLifecycle(
+                                            initialValue = false,
+                                        ).value,
                                 onToggleTelemetryForwarding = { enabled ->
                                     launch { store.setLogTelemetryEnabled(enabled) }
                                 },

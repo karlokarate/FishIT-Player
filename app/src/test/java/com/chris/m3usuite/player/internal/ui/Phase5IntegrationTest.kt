@@ -131,15 +131,16 @@ class Phase5IntegrationTest {
         val withTracks =
             InternalPlayerUiState(
                 kidActive = false,
-                availableSubtitleTracks = listOf(
-                    com.chris.m3usuite.player.internal.subtitles.SubtitleTrack(
-                        groupIndex = 0,
-                        trackIndex = 0,
-                        label = "English",
-                        language = "en",
-                        isDefault = true,
+                availableSubtitleTracks =
+                    listOf(
+                        com.chris.m3usuite.player.internal.subtitles.SubtitleTrack(
+                            groupIndex = 0,
+                            trackIndex = 0,
+                            label = "English",
+                            language = "en",
+                            isDefault = true,
+                        ),
                     ),
-                ),
             )
 
         assertFalse("Not in kid mode", withTracks.kidActive)
@@ -158,15 +159,16 @@ class Phase5IntegrationTest {
         val kidWithTracks =
             InternalPlayerUiState(
                 kidActive = true,
-                availableSubtitleTracks = listOf(
-                    com.chris.m3usuite.player.internal.subtitles.SubtitleTrack(
-                        groupIndex = 0,
-                        trackIndex = 0,
-                        label = "English",
-                        language = "en",
-                        isDefault = true,
+                availableSubtitleTracks =
+                    listOf(
+                        com.chris.m3usuite.player.internal.subtitles.SubtitleTrack(
+                            groupIndex = 0,
+                            trackIndex = 0,
+                            label = "English",
+                            language = "en",
+                            isDefault = true,
+                        ),
                     ),
-                ),
             )
 
         assertTrue("Kid mode active", kidWithTracks.kidActive)

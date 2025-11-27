@@ -1,9 +1,9 @@
 package com.chris.m3usuite.core.epg
 
 import android.content.Context
-import com.chris.m3usuite.core.logging.AppLog
 import android.util.Xml
 import com.chris.m3usuite.core.http.HttpClientFactory
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first

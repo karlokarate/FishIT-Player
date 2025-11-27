@@ -99,7 +99,9 @@ class TvInputConfigBuilder {
  *
  * @property screenId The screen being configured
  */
-class ScreenConfigBuilder(val screenId: TvScreenId) {
+class ScreenConfigBuilder(
+    val screenId: TvScreenId,
+) {
     private val bindings = mutableMapOf<TvKeyRole, TvAction?>()
 
     /**

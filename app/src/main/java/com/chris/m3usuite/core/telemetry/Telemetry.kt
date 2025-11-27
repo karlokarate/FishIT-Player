@@ -190,6 +190,5 @@ object Telemetry {
 
     private fun Map<String, Any?>.toLogLine(): String = entries.joinToString(" ") { (k, v) -> "$k=${v.toString().take(200)}" }
 
-    private fun Map<String, Any?>.toExtras(): Map<String, String> =
-        entries.associate { (k, v) -> k to (v?.toString()?.take(200) ?: "") }
+    private fun Map<String, Any?>.toExtras(): Map<String, String> = entries.associate { (k, v) -> k to (v?.toString()?.take(200) ?: "") }
 }

@@ -1,7 +1,7 @@
 package com.chris.m3usuite.telegram.logging
 
-import com.chris.m3usuite.diagnostics.DiagnosticsLogger
 import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.diagnostics.DiagnosticsLogger
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow

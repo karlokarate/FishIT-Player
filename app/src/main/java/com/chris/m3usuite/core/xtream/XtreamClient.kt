@@ -1,9 +1,9 @@
 package com.chris.m3usuite.core.xtream
 
 import android.os.SystemClock
-import com.chris.m3usuite.core.logging.AppLog
 import androidx.core.net.toUri
 import com.chris.m3usuite.core.debug.GlobalDebug
+import com.chris.m3usuite.core.logging.AppLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

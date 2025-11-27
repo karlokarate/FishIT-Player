@@ -406,4 +406,168 @@ class TvActionEnumTest {
             assertTrue("Required action $action should exist", enumNames.contains(action))
         }
     }
+
+    // ══════════════════════════════════════════════════════════════════
+    // GLOBAL_TV_REMOTE_BEHAVIOR_MAP COMPLIANCE TESTS (Phase 6 Task 4)
+    // ══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `all GLOBAL_TV_REMOTE_BEHAVIOR_MAP actions exist`() {
+        // Actions from docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md
+        val behaviorMapActions =
+            listOf(
+                // Player actions
+                "PLAY_PAUSE",
+                "SEEK_FORWARD_10S",
+                "SEEK_FORWARD_30S",
+                "SEEK_BACKWARD_10S",
+                "SEEK_BACKWARD_30S",
+                "OPEN_PLAYER_MENU",
+                "FOCUS_QUICK_ACTIONS",
+                "FOCUS_TIMELINE",
+                // Library/Start actions
+                "OPEN_DETAILS",
+                "ROW_FAST_SCROLL_FORWARD",
+                "ROW_FAST_SCROLL_BACKWARD",
+                "PLAY_FOCUSED_RESUME",
+                "OPEN_FILTER_SORT",
+                // Detail actions
+                "NEXT_EPISODE",
+                "PREVIOUS_EPISODE",
+                "OPEN_DETAIL_MENU",
+                // Settings actions
+                "ACTIVATE_FOCUSED_SETTING",
+                "SWITCH_SETTINGS_TAB_NEXT",
+                "SWITCH_SETTINGS_TAB_PREVIOUS",
+                "OPEN_ADVANCED_SETTINGS",
+                // Profile Gate actions
+                "SELECT_PROFILE",
+                "OPEN_PROFILE_OPTIONS",
+                // Mini Player / PIP actions
+                "PIP_SEEK_FORWARD",
+                "PIP_SEEK_BACKWARD",
+                "PIP_TOGGLE_PLAY_PAUSE",
+                "PIP_ENTER_RESIZE_MODE",
+                "PIP_CONFIRM_RESIZE",
+                "PIP_MOVE_LEFT",
+                "PIP_MOVE_RIGHT",
+                "PIP_MOVE_UP",
+                "PIP_MOVE_DOWN",
+                // Global / System actions
+                "BACK",
+                "EXIT_TO_HOME",
+                "OPEN_GLOBAL_SEARCH",
+            )
+
+        val enumNames = TvAction.entries.map { it.name }
+
+        for (action in behaviorMapActions) {
+            assertTrue(
+                "Action $action from GLOBAL_TV_REMOTE_BEHAVIOR_MAP should exist",
+                enumNames.contains(action),
+            )
+        }
+    }
+
+    @Test
+    fun `EXIT_TO_HOME action exists for double BACK behavior`() {
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: "Global double BACK = Exit to Home"
+        assertNotNull(TvAction.EXIT_TO_HOME)
+    }
+
+    @Test
+    fun `OPEN_GLOBAL_SEARCH action exists for MENU long press`() {
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: "MENU (long press) → Global Search"
+        assertNotNull(TvAction.OPEN_GLOBAL_SEARCH)
+    }
+
+    @Test
+    fun `all PIP actions exist`() {
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: GLOBAL PIP / MINIPLAYER MODE
+        val pipActions =
+            listOf(
+                TvAction.PIP_SEEK_FORWARD,
+                TvAction.PIP_SEEK_BACKWARD,
+                TvAction.PIP_TOGGLE_PLAY_PAUSE,
+                TvAction.PIP_ENTER_RESIZE_MODE,
+                TvAction.PIP_CONFIRM_RESIZE,
+                TvAction.PIP_MOVE_LEFT,
+                TvAction.PIP_MOVE_RIGHT,
+                TvAction.PIP_MOVE_UP,
+                TvAction.PIP_MOVE_DOWN,
+            )
+
+        for (action in pipActions) {
+            assertNotNull("PIP action $action should exist", action)
+        }
+
+        // Verify isPipAction helper
+        for (action in pipActions) {
+            with(TvAction.Companion) {
+                assertTrue("$action should be a PIP action", action.isPipAction())
+            }
+        }
+    }
+
+    @Test
+    fun `all library browsing actions exist`() {
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: HOME / BROWSE / LIBRARY SCREENS
+        val libraryActions =
+            listOf(
+                TvAction.OPEN_DETAILS,
+                TvAction.ROW_FAST_SCROLL_FORWARD,
+                TvAction.ROW_FAST_SCROLL_BACKWARD,
+                TvAction.PLAY_FOCUSED_RESUME,
+                TvAction.OPEN_FILTER_SORT,
+            )
+
+        for (action in libraryActions) {
+            assertNotNull("Library action $action should exist", action)
+        }
+    }
+
+    @Test
+    fun `all detail screen actions exist`() {
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: DETAIL SCREEN
+        val detailActions =
+            listOf(
+                TvAction.NEXT_EPISODE,
+                TvAction.PREVIOUS_EPISODE,
+                TvAction.OPEN_DETAIL_MENU,
+            )
+
+        for (action in detailActions) {
+            assertNotNull("Detail action $action should exist", action)
+        }
+    }
+
+    @Test
+    fun `all settings screen actions exist`() {
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: SETTINGS SCREEN
+        val settingsActions =
+            listOf(
+                TvAction.ACTIVATE_FOCUSED_SETTING,
+                TvAction.SWITCH_SETTINGS_TAB_NEXT,
+                TvAction.SWITCH_SETTINGS_TAB_PREVIOUS,
+                TvAction.OPEN_ADVANCED_SETTINGS,
+            )
+
+        for (action in settingsActions) {
+            assertNotNull("Settings action $action should exist", action)
+        }
+    }
+
+    @Test
+    fun `all profile gate actions exist`() {
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: PROFILE GATE SCREEN
+        val profileGateActions =
+            listOf(
+                TvAction.SELECT_PROFILE,
+                TvAction.OPEN_PROFILE_OPTIONS,
+            )
+
+        for (action in profileGateActions) {
+            assertNotNull("Profile gate action $action should exist", action)
+        }
+    }
 }

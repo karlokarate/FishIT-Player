@@ -2,8 +2,8 @@ package com.chris.m3usuite.data.repo
 
 import android.content.Context
 import android.os.SystemClock
-import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.core.epg.XmlTv
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.core.xtream.EndpointPortStore
 import com.chris.m3usuite.core.xtream.ProviderCapabilityStore
 import com.chris.m3usuite.core.xtream.XtShortEPGProgramme
@@ -212,7 +212,9 @@ class EpgRepository(
 
             var final =
                 xtreamRes.ifEmpty {
-                    fallbackXmlTvFor(chanId).also { if (it.isNotEmpty()) AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId source=xmltv size=${it.size}") }
+                    fallbackXmlTvFor(
+                        chanId,
+                    ).also { if (it.isNotEmpty()) AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId source=xmltv size=${it.size}") }
                 }
             // Soft fallback: if network yielded nothing but we have a stale OBX row, reuse it to avoid blank UI
             if (final.isEmpty() && !chanId.isNullOrBlank()) {
