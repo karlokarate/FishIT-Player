@@ -39,6 +39,7 @@ import com.chris.m3usuite.ui.util.ImageHeaders
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import com.chris.m3usuite.model.MediaItem as AppMediaItem
 
 /**
@@ -333,6 +334,7 @@ fun rememberInternalPlayerSession(
                     kidActive = gateState.kidActive,
                     kidBlocked = gateState.kidBlocked,
                     kidProfileId = gateState.kidProfileId,
+                    remainingKidsMinutes = gateState.remainingMinutes,
                 )
             playerState.value = updated
             onStateChanged(updated)
@@ -615,6 +617,18 @@ fun rememberInternalPlayerSession(
                     val pos = newPlayer.currentPosition
                     val dur = newPlayer.duration
 
+                    // Live playback: keep EPG overlay timing/stale detection running
+                    if (liveController != null) {
+                        liveController.onPlaybackPositionChanged(pos)
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                liveController.refreshEpgIfRequested()
+                            } catch (_: Throwable) {
+                                // swallow: live refresh is best-effort
+                            }
+                        }
+                    }
+
                     // ────────────────────────────────────────────────────────────────
                     // Resume handling (VOD / Series) - Mirrors L692-722
                     // ────────────────────────────────────────────────────────────────
@@ -668,6 +682,7 @@ fun rememberInternalPlayerSession(
                                     kidActive = updatedKids.kidActive,
                                     kidBlocked = updatedKids.kidBlocked,
                                     kidProfileId = updatedKids.kidProfileId,
+                                    remainingKidsMinutes = updatedKids.remainingMinutes,
                                 )
                             playerState.value = updatedState
                             onStateChanged(updatedState)
@@ -707,15 +722,30 @@ fun rememberInternalPlayerSession(
         if (liveController != null) {
             // Collect currentChannel StateFlow
             scope.launch {
+                var lastChannelId: Long? = null
                 liveController.currentChannel.collect { channel ->
                     if (playerHolder.value !== newPlayer) return@collect
+                    val changed = channel?.id != lastChannelId
 
                     val updated =
                         playerState.value.copy(
                             liveChannelName = channel?.name,
+                            controlsVisible = true,
+                            controlsTick = playerState.value.controlsTick + 1,
                         )
                     playerState.value = updated
                     onStateChanged(updated)
+
+                    if (changed) {
+                        lastChannelId = channel?.id
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                liveController.refreshEpgForCurrentChannel()
+                            } catch (_: Throwable) {
+                                // best-effort refresh
+                            }
+                        }
+                    }
                 }
             }
 

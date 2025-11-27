@@ -1,6 +1,5 @@
 package com.chris.m3usuite.diagnostics
 
-import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,7 +35,7 @@ object DiagnosticsLogger {
     // Configuration
     var isEnabled: Boolean = true
     var logLevel: LogLevel = LogLevel.INFO
-    var enableConsoleOutput: Boolean = true
+    var enableConsoleOutput: Boolean = false
 
     enum class LogLevel {
         VERBOSE,
@@ -161,16 +160,21 @@ object DiagnosticsLogger {
         }
         eventQueue.offer(event)
 
-        // Console output
-        if (enableConsoleOutput) {
-            val jsonString = json.encodeToString(event)
-            when (event.level) {
-                "VERBOSE" -> Log.v(TAG, jsonString)
-                "DEBUG" -> Log.d(TAG, jsonString)
-                "INFO" -> Log.i(TAG, jsonString)
-                "WARN" -> Log.w(TAG, jsonString)
-                "ERROR" -> Log.e(TAG, jsonString)
-            }
+        // Unified logging
+        runCatching {
+            AppLog.log(
+                category = "diagnostics",
+                level =
+                    when (event.level) {
+                        "VERBOSE" -> AppLog.Level.VERBOSE
+                        "DEBUG" -> AppLog.Level.DEBUG
+                        "WARN" -> AppLog.Level.WARN
+                        "ERROR" -> AppLog.Level.ERROR
+                        else -> AppLog.Level.INFO
+                    },
+                message = "${event.category}:${event.event}",
+                extras = event.metadata,
+            )
         }
 
         // TODO: Add optional integrations
@@ -394,3 +398,4 @@ object DiagnosticsLogger {
         }
     }
 }
+import com.chris.m3usuite.core.logging.AppLog

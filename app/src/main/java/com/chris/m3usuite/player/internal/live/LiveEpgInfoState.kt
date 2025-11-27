@@ -20,4 +20,5 @@ data class LiveEpgInfoState(
     val nowTitle: String? = null,
     val nextTitle: String? = null,
     val progressPercent: Float = 0.0f,
+    val lastUpdatedAtRealtimeMs: Long? = null,
 )

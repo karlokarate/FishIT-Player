@@ -2,7 +2,7 @@ package com.chris.m3usuite.core.telemetry
 
 import android.content.Context
 import android.os.SystemClock
-import android.util.Log
+import com.chris.m3usuite.core.logging.AppLog
 import java.io.Closeable
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -28,21 +28,35 @@ object Telemetry {
     }
 
     private val sinks = CopyOnWriteArrayList<Sink>()
+    private val appLogSink = AppLogSink()
+    private var crashlyticsSink: CrashlyticsSink? = null
 
     fun register(sink: Sink) {
-        sinks += sink
+        if (!sinks.contains(sink)) {
+            sinks += sink
+        }
     }
 
     fun clear() {
         sinks.clear()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun registerDefault(context: Context) {
-        // Immer Logcat
-        register(LogcatSink())
+        // AppLog sink as primary (LogViewer surface)
+        register(appLogSink)
+    }
 
-        // Crashlytics optional via Reflection (keine harte Abhängigkeit)
-        runCatching { register(CrashlyticsSink()) }
+    fun setExternalEnabled(enabled: Boolean) {
+        if (enabled) {
+            if (crashlyticsSink == null) {
+                crashlyticsSink = runCatching { CrashlyticsSink() }.onFailure { crashlyticsSink = null }.getOrNull()
+            }
+            crashlyticsSink?.let { register(it) }
+        } else {
+            crashlyticsSink?.let { sinks.remove(it) }
+            crashlyticsSink = null
+        }
     }
 
     fun event(
@@ -50,7 +64,21 @@ object Telemetry {
         attrs: Map<String, Any?> = emptyMap(),
     ) {
         sinks.forEach {
-            runCatching { it.event(name, attrs) }.onFailure { Log.w("Telemetry", "event sink failed", it) }
+            runCatching { it.event(name, attrs) }
+                .onFailure { err ->
+                    if (it !is AppLogSink) {
+                        AppLog.log(
+                            category = "diagnostics",
+                            level = AppLog.Level.WARN,
+                            message = "telemetry sink failed on event=$name",
+                            extras =
+                                mapOf(
+                                    "sink" to it.javaClass.simpleName,
+                                    "error" to (err.message ?: "unknown"),
+                                ),
+                        )
+                    }
+                }
         }
     }
 
@@ -60,7 +88,21 @@ object Telemetry {
         attrs: Map<String, Any?> = emptyMap(),
     ) {
         sinks.forEach {
-            runCatching { it.error(name, t, attrs) }.onFailure { Log.w("Telemetry", "error sink failed", it) }
+            runCatching { it.error(name, t, attrs) }
+                .onFailure { err ->
+                    if (it !is AppLogSink) {
+                        AppLog.log(
+                            category = "diagnostics",
+                            level = AppLog.Level.WARN,
+                            message = "telemetry sink failed on error=$name",
+                            extras =
+                                mapOf(
+                                    "sink" to it.javaClass.simpleName,
+                                    "error" to (err.message ?: "unknown"),
+                                ),
+                        )
+                    }
+                }
         }
     }
 
@@ -90,12 +132,18 @@ object Telemetry {
 
     // --- Sinks ---
 
-    private class LogcatSink : Sink {
+    private class AppLogSink : Sink {
         override fun event(
             name: String,
             attrs: Map<String, Any?>,
         ) {
-            Log.d("Telemetry", "event=$name attrs=${attrs.toLogLine()}")
+            AppLog.log(
+                category = "diagnostics",
+                level = AppLog.Level.DEBUG,
+                message = "telemetry event: $name",
+                extras = attrs.toExtras(),
+                bypassMaster = true,
+            )
         }
 
         override fun error(
@@ -103,7 +151,13 @@ object Telemetry {
             t: Throwable,
             attrs: Map<String, Any?>,
         ) {
-            Log.e("Telemetry", "error=$name attrs=${attrs.toLogLine()}", t)
+            AppLog.log(
+                category = "diagnostics",
+                level = AppLog.Level.ERROR,
+                message = "telemetry error: $name",
+                extras = attrs.toExtras() + ("exception" to (t.message ?: t.javaClass.simpleName)),
+                bypassMaster = true,
+            )
         }
     }
 
@@ -135,4 +189,7 @@ object Telemetry {
     }
 
     private fun Map<String, Any?>.toLogLine(): String = entries.joinToString(" ") { (k, v) -> "$k=${v.toString().take(200)}" }
+
+    private fun Map<String, Any?>.toExtras(): Map<String, String> =
+        entries.associate { (k, v) -> k to (v?.toString()?.take(200) ?: "") }
 }

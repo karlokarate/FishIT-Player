@@ -85,6 +85,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.chris.m3usuite.R
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.ResumeRepository
@@ -233,12 +234,11 @@ fun InternalPlayerScreen(
             if (!props.containsKey("Accept-Encoding")) props["Accept-Encoding"] = "identity"
 
             // Lightweight diagnostics
-            runCatching {
-                android.util.Log.d(
-                    "PlayerHTTP",
-                    "prepare ua=\"${ua}\" ref=\"${props["Referer"] ?: ""}\" accept=\"${props["Accept"]}\"",
-                )
-            }
+            com.chris.m3usuite.core.logging.AppLog.log(
+                category = "player",
+                level = com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+                message = "http prepare ua=\"${ua}\" ref=\"${props["Referer"] ?: ""}\" accept=\"${props["Accept"]}\"",
+            )
 
             val baseFactory =
                 DefaultHttpDataSource
@@ -373,7 +373,12 @@ fun InternalPlayerScreen(
     LaunchedEffect(session.isNew, url, mimeType, startPositionMs) {
         val needsConfig = session.isNew || PlaybackSession.currentSource() != url
         if (needsConfig) {
-            android.util.Log.d("ExoSetup", "setMediaItem url=$url")
+            AppLog.log(
+                category = "player",
+                level = AppLog.Level.DEBUG,
+                message = "setMediaItem",
+                extras = mapOf("url" to url),
+            )
             val resolvedUri =
                 if (url.startsWith("tg://", ignoreCase = true)) {
                     val parsed = runCatching { Uri.parse(url) }.getOrNull()
@@ -434,7 +439,11 @@ fun InternalPlayerScreen(
                                     Pair(MimeTypes.VIDEO_MP4, null)
                                 }
                             } catch (e: Exception) {
-                                android.util.Log.w("ExoSetup", "Failed to get Telegram MIME type: ${e.message}")
+                                com.chris.m3usuite.core.logging.AppLog.log(
+                                    category = "player",
+                                    level = com.chris.m3usuite.core.logging.AppLog.Level.WARN,
+                                    message = "Failed to get Telegram MIME type: ${e.message}",
+                                )
                                 Pair(MimeTypes.VIDEO_MP4, null)
                             }
                         }
@@ -467,7 +476,11 @@ fun InternalPlayerScreen(
 
             // Log media item details for Telegram (Requirement 3.3)
             if (url.startsWith("tg://", ignoreCase = true)) {
-                android.util.Log.d("ExoSetup", "Telegram MediaItem: uri=$resolvedUri, mimeType=$inferredMime")
+                com.chris.m3usuite.core.logging.AppLog.log(
+                    category = "player",
+                    level = com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+                    message = "Telegram MediaItem: uri=$resolvedUri, mimeType=$inferredMime",
+                )
 
                 // Log to TelegramLogRepository for observability (Requirement 3.3)
                 com.chris.m3usuite.telegram.logging.TelegramLogRepository.info(
@@ -529,7 +542,12 @@ fun InternalPlayerScreen(
 
         // Log artwork injection for Telegram content
         if (url.startsWith("tg://", ignoreCase = true)) {
-            android.util.Log.d("ExoSetup", "Telegram artwork injected for mediaId=${item.id}")
+            AppLog.log(
+                category = "player",
+                level = AppLog.Level.DEBUG,
+                message = "Telegram artwork injected",
+                extras = mapOf("mediaId" to item.id.toString()),
+            )
             com.chris.m3usuite.telegram.logging.TelegramLogRepository.info(
                 source = "InternalPlayerScreen",
                 message = "Artwork injected into playing MediaItem",
@@ -763,10 +781,15 @@ fun InternalPlayerScreen(
                             append(" message=${error.message ?: "no message"}")
                             append(" cause=${error.cause?.javaClass?.name ?: "no cause"}")
                         }
-                    android.util.Log.e("ExoErr", errorDetails)
-
-                    // Log full stack trace for cause
-                    error.cause?.printStackTrace()
+                    AppLog.log(
+                        category = "player",
+                        level = AppLog.Level.ERROR,
+                        message = errorDetails,
+                        extras =
+                            mapOf(
+                                "stacktrace" to error.stackTraceToString().take(4000),
+                            ),
+                    )
 
                     // For Telegram URLs, log additional context
                     if (url.startsWith("tg://", ignoreCase = true)) {
@@ -783,6 +806,11 @@ fun InternalPlayerScreen(
                                 ),
                         )
                     }
+                    com.chris.m3usuite.core.logging.AppLog.log(
+                        category = "player",
+                        level = com.chris.m3usuite.core.logging.AppLog.Level.ERROR,
+                        message = errorDetails,
+                    )
 
                     try {
                         Toast.makeText(ctx, "Wiedergabefehler: ${error.errorCodeName}", Toast.LENGTH_LONG).show()

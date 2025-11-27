@@ -1,6 +1,5 @@
 package com.chris.m3usuite.ui.focus
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.ui.fx.ShimmerBox
 import com.chris.m3usuite.ui.home.LocalChromeRowFocusSetter
@@ -147,7 +147,12 @@ fun MediaRowCorePaged(
                 } catch (_: CancellationException) {
                     // Row was disposed; ignore silently
                 } catch (t: Throwable) {
-                    Log.d("MediaRowCorePaged", "prefetch cancelled/failed: ${t.message}")
+                    AppLog.log(
+                        category = "focus",
+                        level = AppLog.Level.DEBUG,
+                        message = "row prefetch cancelled/failed",
+                        extras = mapOf("reason" to (t.message ?: "unknown")),
+                    )
                 }
             }
     }

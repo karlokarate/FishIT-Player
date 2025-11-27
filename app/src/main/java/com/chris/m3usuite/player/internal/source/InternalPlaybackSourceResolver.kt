@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.media3.common.MimeTypes
 import com.chris.m3usuite.core.playback.PlayUrlHelper
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
@@ -39,7 +40,10 @@ class PlaybackSourceResolver(
             when {
                 explicitMimeType != null -> explicitMimeType to preparedMediaItem
                 preparedMediaItem != null -> {
-                    val inferred = inferMimeTypeFromFileName(preparedMediaItem.url)
+                    // Prefer explicit mime on the media item (e.g., HLS/DASH), fallback to ext heuristics
+                    val inferred =
+                        PlayUrlHelper.guessMimeType(preparedMediaItem.url, preparedMediaItem.containerExt)
+                            ?: inferMimeTypeFromFileName(preparedMediaItem.url)
                     (inferred ?: MimeTypes.VIDEO_MP4) to preparedMediaItem
                 }
                 isTelegram -> {
@@ -52,12 +56,25 @@ class PlaybackSourceResolver(
                 }
             }
 
-        return ResolvedPlaybackSource(
-            uri = parsed,
-            mimeType = mime,
-            appMediaItem = item,
-            isTelegram = isTelegram,
+        val resolved =
+            ResolvedPlaybackSource(
+                uri = parsed,
+                mimeType = mime,
+                appMediaItem = item,
+                isTelegram = isTelegram,
+            )
+        AppLog.log(
+            category = "player",
+            level = AppLog.Level.DEBUG,
+            message = "resolved mime=$mime telegram=$isTelegram",
+            extras =
+                buildMap {
+                    put("url", url)
+                    explicitMimeType?.let { put("explicit", it) }
+                    preparedMediaItem?.containerExt?.let { put("containerExt", it) }
+                },
         )
+        return resolved
     }
 
     /**
@@ -66,23 +83,43 @@ class PlaybackSourceResolver(
      */
     private suspend fun resolveTelegramMimeFromObx(uri: Uri): String? =
         withContext(Dispatchers.IO) {
+            val fileId =
+                uri
+                    .getQueryParameter("fileId")
+                    ?.toIntOrNull()
             val messageId =
                 uri
                     .getQueryParameter("messageId")
                     ?.toLongOrNull()
-                    ?: return@withContext null
+            val chatId =
+                uri
+                    .getQueryParameter("chatId")
+                    ?.toLongOrNull()
+            if (fileId == null && messageId == null) return@withContext null
 
             val store = ObxStore.get(context)
             val box = store.boxFor(ObxTelegramMessage::class.java)
-            val msg =
-                box
-                    .query()
-                    .equal(ObxTelegramMessage_.messageId, messageId)
-                    .build()
-                    .findFirst()
-                    ?: return@withContext null
+            val queryBuilder = box.query()
+            if (fileId != null) {
+                queryBuilder.equal(ObxTelegramMessage_.fileId, fileId)
+            } else if (messageId != null) {
+                queryBuilder.equal(ObxTelegramMessage_.messageId, messageId)
+                if (chatId != null) {
+                    queryBuilder.equal(ObxTelegramMessage_.chatId, chatId)
+                }
+            }
 
-            inferMimeTypeFromFileName(msg.fileName)
+            val query = queryBuilder.build()
+            try {
+                val msg =
+                    query.findFirst()
+                        ?: return@withContext null
+
+                msg.mimeType
+                    ?: inferMimeTypeFromFileName(msg.fileName)
+            } finally {
+                query.close()
+            }
         }
 }
 

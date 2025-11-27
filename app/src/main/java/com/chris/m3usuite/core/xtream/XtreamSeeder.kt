@@ -2,7 +2,7 @@ package com.chris.m3usuite.core.xtream
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.core.http.HttpClientFactory
 import com.chris.m3usuite.data.repo.XtreamObxRepository
 import com.chris.m3usuite.prefs.Keys
@@ -86,7 +86,11 @@ object XtreamSeeder {
                                 store.set(Keys.EPG_URL, epgUrl)
                             }
                         } catch (e: Throwable) {
-                            Log.w(TAG, "Discovery failed (${reason.orEmpty()}): ${e.message}", e)
+                        AppLog.log(
+                            category = "xtream",
+                            level = AppLog.Level.WARN,
+                            message = "Discovery failed (${reason.orEmpty()}): ${e.message}",
+                        )
                         }
                     }
 
@@ -108,7 +112,11 @@ object XtreamSeeder {
                         }
                     } else {
                         result.exceptionOrNull()?.let { e ->
-                            Log.w(TAG, "Head import failed (${reason.orEmpty()}): ${e.message}", e)
+                        AppLog.log(
+                            category = "xtream",
+                            level = AppLog.Level.WARN,
+                            message = "Head import failed (${reason.orEmpty()}): ${e.message}",
+                        )
                         }
                     }
                     // Immediately complete VOD/Series header lists synchronously (heads-only delta; Live skipped for performance)

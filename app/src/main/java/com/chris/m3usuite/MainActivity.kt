@@ -49,7 +49,9 @@ import com.chris.m3usuite.ui.screens.TelegramDetailScreen
 import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.screens.XtreamPortalCheckScreen
 import com.chris.m3usuite.ui.theme.AppTheme
+import com.chris.m3usuite.core.logging.AppLog
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.net.URLDecoder
@@ -121,6 +123,21 @@ class MainActivity : ComponentActivity() {
                         store.globalDebugEnabled.collect { on ->
                             com.chris.m3usuite.core.debug.GlobalDebug
                                 .setEnabled(on)
+                        }
+                    }
+                }
+                // Keep AppLog switches in sync with Settings
+                LaunchedEffect(lifecycleOwner) {
+                    lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                        launch {
+                            store.logMasterEnabled.collectLatest { enabled ->
+                                AppLog.setMasterEnabled(enabled)
+                            }
+                        }
+                        launch {
+                            store.logCategories.collectLatest { cats ->
+                                AppLog.setCategoriesEnabled(cats)
+                            }
                         }
                     }
                 }
@@ -484,7 +501,12 @@ class MainActivity : ComponentActivity() {
                                                 preparedMediaItem = mediaItems?.find { it.tgMessageId == messageId }
                                             }
                                         } catch (e: Exception) {
-                                            android.util.Log.e("MainActivity", "Failed to resolve Telegram MediaItem: ${e.message}", e)
+                                            com.chris.m3usuite.core.logging.AppLog.log(
+                                                category = "player",
+                                                level = com.chris.m3usuite.core.logging.AppLog.Level.ERROR,
+                                                message = "Failed to resolve Telegram MediaItem: ${e.message}",
+                                                extras = mapOf("url" to url),
+                                            )
                                         }
                                     }
                                 }
@@ -559,6 +581,18 @@ class MainActivity : ComponentActivity() {
                                 onOpenTelegramLog = { nav.navigate("telegram_log") },
                                 onOpenTelegramFeed = { nav.navigate("telegram_feed") },
                                 onOpenLogViewer = { nav.navigate("log_viewer") },
+                                runtimeLoggingEnabled = store.logMasterEnabled.collectAsStateWithLifecycle(initialValue = false).value,
+                                onToggleRuntimeLogging = { enabled ->
+                                    launch { store.setLogMasterEnabled(enabled) }
+                                },
+                                telemetryForwardingEnabled = store.logTelemetryEnabled.collectAsStateWithLifecycle(initialValue = false).value,
+                                onToggleTelemetryForwarding = { enabled ->
+                                    launch { store.setLogTelemetryEnabled(enabled) }
+                                },
+                                logCategories = store.logCategories.collectAsStateWithLifecycle(initialValue = emptySet()).value,
+                                onUpdateLogCategories = { cats ->
+                                    launch { store.setLogCategories(cats) }
+                                },
                             )
                         }
 

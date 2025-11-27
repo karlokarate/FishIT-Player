@@ -119,6 +119,9 @@ object Keys {
     val TG_PROXY_SECRET = stringPreferencesKey("tg_proxy_secret")
     val TG_PROXY_ENABLED = booleanPreferencesKey("tg_proxy_enabled")
     val TG_LOG_VERBOSITY = intPreferencesKey("tg_log_verbosity")
+    val LOG_MASTER_ENABLED = booleanPreferencesKey("log_master_enabled")
+    val LOG_CATEGORIES_CSV = stringPreferencesKey("log_categories_csv")
+    val LOG_TELEMETRY_ENABLED = booleanPreferencesKey("log_telemetry_enabled")
     val LOG_DIR_TREE_URI = stringPreferencesKey("log_dir_tree_uri")
     val TG_LOG_OVERLAY = booleanPreferencesKey("tg_log_overlay")
     val TG_PREFETCH_WINDOW_MB = intPreferencesKey("tg_prefetch_window_mb")
@@ -330,6 +333,17 @@ class SettingsStore(
     val tgProxySecret: Flow<String> = context.dataStore.data.map { Crypto.decrypt(it[Keys.TG_PROXY_SECRET].orEmpty()) }
     val tgProxyEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_PROXY_ENABLED] ?: false }
     val tgLogVerbosity: Flow<Int> = context.dataStore.data.map { it[Keys.TG_LOG_VERBOSITY] ?: 1 }
+    val logMasterEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.LOG_MASTER_ENABLED] ?: false }.distinctUntilChanged()
+    val logTelemetryEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.LOG_TELEMETRY_ENABLED] ?: false }.distinctUntilChanged()
+    val logCategories: Flow<Set<String>> =
+        context.dataStore.data
+            .map { prefs ->
+                prefs[Keys.LOG_CATEGORIES_CSV]
+                    ?.split(',')
+                    ?.filter { it.isNotBlank() }
+                    ?.toSet()
+                    ?: emptySet()
+            }.distinctUntilChanged()
     val logDirTreeUri: Flow<String> = context.dataStore.data.map { it[Keys.LOG_DIR_TREE_URI].orEmpty() }
     val tgLogOverlayEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_LOG_OVERLAY] ?: false }
     val tgPrefetchWindowMb: Flow<Int> = context.dataStore.data.map { it[Keys.TG_PREFETCH_WINDOW_MB] ?: 8 }
@@ -856,6 +870,18 @@ class SettingsStore(
 
     suspend fun setTelegramProxyEnabled(value: Boolean) {
         context.dataStore.edit { it[Keys.TG_PROXY_ENABLED] = value }
+    }
+
+    suspend fun setLogMasterEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.LOG_MASTER_ENABLED] = enabled }
+    }
+
+    suspend fun setLogCategories(categories: Set<String>) {
+        context.dataStore.edit { it[Keys.LOG_CATEGORIES_CSV] = categories.joinToString(",") }
+    }
+
+    suspend fun setLogTelemetryEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.LOG_TELEMETRY_ENABLED] = enabled }
     }
 
     suspend fun setTgProxyType(value: String) = setTelegramProxyType(value)

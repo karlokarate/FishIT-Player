@@ -133,12 +133,15 @@ fun InternalPlayerContent(
             onTap = {
                 // Phase 5 Group 4: Tap toggles controls visibility
                 controller.onToggleControlsVisibility()
+                controller.onUserInteraction()
             },
             onJumpLiveChannel = controller.onJumpLiveChannel,
             onStepSeek = { deltaMs ->
                 // Phase 5 Group 3: Step seek for VOD/SERIES
                 controller.onStepSeek(deltaMs)
+                controller.onUserInteraction()
             },
+            onUserInteraction = controller.onUserInteraction,
         )
 
         // Phase 3 Step 3.C: Live channel name header (LIVE only)
@@ -235,6 +238,52 @@ fun InternalPlayerContent(
                 nowTitle = state.liveNowTitle,
                 nextTitle = state.liveNextTitle,
             )
+        }
+
+        // Kid mode status hint
+        if (state.kidActive && !state.kidBlocked) {
+            val warn = state.remainingKidsMinutes != null && state.remainingKidsMinutes <= 5
+            KidStatusHint(
+                remainingMinutes = state.remainingKidsMinutes,
+                warn = warn,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp),
+            )
+        }
+
+        // Kid block overlay
+        if (state.kidBlocked) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.6f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    modifier =
+                        Modifier
+                            .background(
+                                color = Color.Black.copy(alpha = 0.8f),
+                                shape = RoundedCornerShape(12.dp),
+                            ).padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "Bildschirmzeit abgelaufen",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                    )
+                    val remainText =
+                        state.remainingKidsMinutes?.let { "Restzeit: ${maxOf(it, 0)} min" }
+                            ?: "Bitte zurück zur Startseite"
+                    Spacer(Modifier.height(8.dp))
+                    Text(text = remainText, color = Color.White.copy(alpha = 0.8f))
+                }
+            }
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -850,4 +899,30 @@ private fun formatMs(ms: Long): String {
     val minutes = totalSec / 60
     val seconds = totalSec % 60
     return "%02d:%02d".format(minutes, seconds)
+}
+
+@Composable
+private fun KidStatusHint(
+    remainingMinutes: Int?,
+    warn: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val bg =
+        if (warn) Color(0xFFB71C1C).copy(alpha = 0.8f)
+        else Color(0xFF2E7D32).copy(alpha = 0.8f)
+    val text =
+        when {
+            remainingMinutes == null -> "Kid-Profil aktiv"
+            remainingMinutes <= 0 -> "Zeit abgelaufen"
+            else -> "Kid: ${remainingMinutes} min"
+        }
+    Text(
+        text = text,
+        color = Color.White,
+        modifier =
+            modifier
+                .background(bg, RoundedCornerShape(8.dp))
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        fontWeight = FontWeight.SemiBold,
+    )
 }

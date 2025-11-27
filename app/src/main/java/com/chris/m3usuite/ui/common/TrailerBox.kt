@@ -2,7 +2,6 @@ package com.chris.m3usuite.ui.common
 
 import android.annotation.SuppressLint
 import android.net.Uri
-import android.util.Log
 import android.view.ViewGroup
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -37,6 +36,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import com.chris.m3usuite.R
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.player.PlayerComponents
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.debug.safePainter
@@ -100,7 +100,11 @@ fun TrailerBox(
                     if (requested != 0) {
                         requested
                     } else {
-                        Log.w("TrailerBox", "Missing drawable for AppIcon.PlayCircle – using fallback icon")
+                        AppLog.log(
+                            category = "ui",
+                            level = AppLog.Level.WARN,
+                            message = "Missing drawable for AppIcon.PlayCircle – using fallback icon",
+                        )
                         R.drawable.ic_play_circle_primary
                     }
                 Icon(painter = safePainter(resolved, label = "TrailerBox"), contentDescription = "Vollbild", tint = Color.White)

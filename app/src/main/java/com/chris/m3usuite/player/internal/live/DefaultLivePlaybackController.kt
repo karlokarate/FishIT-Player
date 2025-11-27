@@ -131,7 +131,11 @@ class DefaultLivePlaybackController(
      * Cache of last-known-good EPG data per channel ID.
      * Used for fallback when repository errors occur.
      */
-    private val epgCache = mutableMapOf<Long, EpgOverlayState>()
+    private val epgCache =
+        object : LinkedHashMap<Long, EpgOverlayState>(32, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, EpgOverlayState>?): Boolean =
+                size > 128
+        }
 
     /**
      * Timestamp of last successful EPG update for stale detection.
@@ -142,6 +146,16 @@ class DefaultLivePlaybackController(
      * Last known nowTitle for stale detection.
      */
     private var lastKnownNowTitle: String? = null
+
+    /**
+     * Timestamp of last stale-refresh trigger to throttle repeated refreshes (ms realtime).
+     */
+    private var lastStaleRefreshAt: Long = 0L
+
+    /**
+     * Flag indicating a pending stale-refresh; consumed in refreshEpgIfRequested().
+     */
+    @Volatile private var staleRefreshRequested: Boolean = false
 
     // ════════════════════════════════════════════════════════════════════════════
     // Phase 3 Task 2: Jump Throttle State
@@ -423,6 +437,7 @@ class DefaultLivePlaybackController(
                 nowTitle = nowTitle,
                 nextTitle = nextTitle,
                 progressPercent = 0.0f, // LIVE content has no progress
+                lastUpdatedAtRealtimeMs = clock.currentTimeMillis(),
             )
     }
 
@@ -455,10 +470,13 @@ class DefaultLivePlaybackController(
         val validChannels =
             rawChannels
                 .filter { channel ->
-                    val isValid = !channel.url.isNullOrBlank()
-                    if (!isValid) skippedCount++
-                    isValid
-                }.distinctBy { it.url } // Remove duplicates based on URL
+                    val hasId = channel.id != 0L
+                    if (!hasId) skippedCount++
+                    hasId
+                }.distinctBy { channel ->
+                    // Dedup by URL wenn vorhanden, sonst stabil per ID
+                    channel.url?.takeIf { it.isNotBlank() } ?: "id:${channel.id}"
+                }
 
         // Track how many channels were skipped
         if (skippedCount > 0) {
@@ -527,6 +545,10 @@ class DefaultLivePlaybackController(
         val titleUnchanged = currentNowTitle == lastKnownNowTitle
 
         if (titleUnchanged && timeSinceLastUpdate > epgStaleThresholdMs && lastEpgUpdateTimestamp > 0) {
+            // throttle stale-refresh requests to avoid thundering herd while zapping
+            if (now - lastStaleRefreshAt < 30_000L) return
+            lastStaleRefreshAt = now
+
             // EPG is stale - needs refresh
             updateMetrics {
                 it.copy(
@@ -535,9 +557,8 @@ class DefaultLivePlaybackController(
                 )
             }
 
-            // Note: This is a synchronous context, so we can't call suspend refreshEpgOverlay.
-            // In production, this would be handled by the session coroutine scope.
-            // For now, we just mark the detection in metrics.
+            // Mark refresh request; session consumes in refreshEpgIfRequested()
+            staleRefreshRequested = true
         }
     }
 
@@ -552,6 +573,15 @@ class DefaultLivePlaybackController(
         } catch (_: Throwable) {
             // Phase 3 Task 1: Sanity guard - never throw from metrics update
         }
+    }
+
+    /**
+     * Consumes pending stale-refresh requests and refreshes the current channel if needed.
+     */
+    internal suspend fun refreshEpgIfRequested() {
+        if (!staleRefreshRequested) return
+        staleRefreshRequested = false
+        refreshEpgForCurrentChannel()
     }
 
     companion object {
