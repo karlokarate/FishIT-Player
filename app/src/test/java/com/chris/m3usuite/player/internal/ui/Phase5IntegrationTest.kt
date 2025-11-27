@@ -319,15 +319,13 @@ class Phase5IntegrationTest {
     fun `rapid aspect ratio cycling returns to start`() {
         var mode = AspectRatioMode.FIT
 
-        // Cycle 9 times (should be back to FIT: FIT→FILL→ZOOM→FIT→FILL→ZOOM→FIT→FILL→ZOOM)
+        // Cycle 9 times through FIT → FILL → ZOOM → FIT...
+        // Each cycle of 3 brings us back to the same position
+        // After 9 calls: 3 full cycles (9 / 3 = 3), ending at FIT
         repeat(9) {
             mode = mode.next()
         }
 
-        // 9 cycles = 3 full cycles, should be back at ZOOM (9 mod 3 = 0, start is FIT, so after 9: ZOOM)
-        // Actually: 0:FIT, 1:FILL, 2:ZOOM, 3:FIT, 4:FILL, 5:ZOOM, 6:FIT, 7:FILL, 8:ZOOM, 9:FIT
-        // Wait - let me count: after 9 calls to next():
-        // 1:FILL, 2:ZOOM, 3:FIT, 4:FILL, 5:ZOOM, 6:FIT, 7:FILL, 8:ZOOM, 9:FIT
         assertEquals("After 9 cycles should be FIT", AspectRatioMode.FIT, mode)
     }
 
