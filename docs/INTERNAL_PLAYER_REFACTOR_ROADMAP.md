@@ -1190,29 +1190,42 @@ See `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` "Phase 6 Context Refresh" section 
 
 ---
 
-## Phase 8 – Lifecycle, rotation, and Xtream worker pause
+## Phase 8 – Performance, Lifecycle & Stability
 
-**Goal:** Centralize lifecycle handling (pause/resume/destroy), rotation lock/unlock, and Xtream worker pausing/resuming into a dedicated lifecycle composable.
+**Goal:** Ensure the unified PlaybackSession + In-App MiniPlayer behave robustly and efficiently under real-world conditions: app background/foreground, rotation, process death, background workers, memory pressure, and Compose performance.
 
-### Checklist
+**Status:** 🔄 **KICKOFF COMPLETE** – Contract analyzed and implementation checklist created
 
-- ⬜ InternalPlayerLifecycle composable
-  - ⬜ Create `InternalPlayerLifecycle(...)` that:
-    - ⬜ Listens to `ON_RESUME`, `ON_PAUSE`, `ON_DESTROY`
-    - ⬜ Coordinates with:
-      - ⬜ `ResumeManager` (final save/clear on destroy)
-      - ⬜ `KidsPlaybackGate` (optional) for resume/resume gating
-    - ⬜ Manages rotation:
-      - ⬜ Reads `settings.rotationLocked`
-      - ⬜ Locks orientation on entry, restores on exit
-    - ⬜ Manages Xtream workers:
-      - ⬜ Reads initial `settings.m3uWorkersEnabled`
-      - ⬜ Disables workers while player is active
-      - ⬜ Restores previous state on exit
+**Full Specification:** See [INTERNAL_PLAYER_PHASE8_CHECKLIST.md](INTERNAL_PLAYER_PHASE8_CHECKLIST.md) and [INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md](INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md)
 
-- ⬜ Screen integration
-  - ⬜ Add `InternalPlayerLifecycle(...)` into `InternalPlayerScreen`
-  - ⬜ Ensure that the lifecycle composable does not directly depend on UI types
+**Key Principles:**
+1. **One Playback Session per app** – No second ExoPlayer for SIP or MiniPlayer
+2. **Warm Resume, Cold Start only when necessary** – Lifecycle events must not rebuild PlaybackSession
+3. **Playback-Aware Resource Usage** – Workers throttle when playback is active
+4. **No UI Jank** – No main-thread blocking, no unnecessary recomposition bursts
+5. **Full Observability** – Errors and performance symptoms are testable and debuggable
+
+### Summary of Checklist Groups
+
+| Group | Description |
+|-------|-------------|
+| **1** | PlaybackSession Lifecycle & Ownership – SessionLifecycleState enum, lifecycle transitions, observer |
+| **2** | UI Rebinding & Rotation – PlayerSurface/MiniPlayer rebind on config changes, position preservation |
+| **3** | Navigation & Backstack Stability – Full↔Mini↔Home flows, EXIT_TO_HOME with MiniPlayer |
+| **4** | System PiP vs In-App MiniPlayer – PIP button validation, system PiP phone/tablet only, safe restore |
+| **5** | Playback-Aware Worker Scheduling – PlaybackPriority, worker throttling during playback |
+| **6** | Memory & Leak Hygiene – LeakCanary integration, static reference audit, image loading |
+| **7** | Compose & FocusKit Performance – Hot/cold state split, isolated Composables, effect consolidation |
+| **8** | Error Handling & Recovery – Soft error reporting, worker isolation from playback |
+| **9** | Regression Suite – Phase 4-7 behavior verification |
+
+### Contract Highlights
+
+- **SessionLifecycleState**: IDLE → PREPARED → PLAYING → PAUSED → BACKGROUND → STOPPED → RELEASED
+- **Lifecycle Rules**: onResume rebinds without recreation; onDestroy releases only when no consumers
+- **PlaybackPriority**: Workers check `isPlaybackActive` and throttle heavy operations
+- **Memory**: LeakCanary for debug, no static Context/Activity refs, Coil for images
+- **Compose**: Split hot (position/buffering) vs cold (context/style) state for minimal recomposition
 
 ---
 
