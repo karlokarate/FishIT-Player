@@ -12,6 +12,7 @@ package com.chris.m3usuite.tv.input
  *
  * Contract Reference:
  * - INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 4.2, 5.1
+ * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 5
  * - GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md
  *
  * @property screenId The unique identifier for the current screen
@@ -19,6 +20,7 @@ package com.chris.m3usuite.tv.input
  * @property isLive True if playing live TV content (affects seek behavior)
  * @property isKidProfile True if a kid profile is active (restricts certain actions)
  * @property hasBlockingOverlay True if a blocking overlay is currently shown
+ * @property isMiniPlayerVisible True if the MiniPlayer overlay is visible (Phase 7)
  *
  * @see TvScreenId for screen identifiers
  * @see TvAction for semantic actions
@@ -34,6 +36,12 @@ data class TvScreenContext(
     val isKidProfile: Boolean = false,
     /** True if a blocking overlay is currently shown */
     val hasBlockingOverlay: Boolean = false,
+    /**
+     * True if the MiniPlayer overlay is visible (Phase 7).
+     * When MiniPlayer is visible, ROW_FAST_SCROLL actions are blocked.
+     * Contract Reference: INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 5
+     */
+    val isMiniPlayerVisible: Boolean = false,
 ) {
     companion object {
         /**
@@ -61,10 +69,12 @@ data class TvScreenContext(
          *
          * @param isKidProfile True if a kid profile is active
          * @param hasBlockingOverlay True if a blocking overlay is shown
+         * @param isMiniPlayerVisible True if MiniPlayer overlay is visible (Phase 7)
          */
         fun library(
             isKidProfile: Boolean = false,
             hasBlockingOverlay: Boolean = false,
+            isMiniPlayerVisible: Boolean = false,
         ): TvScreenContext =
             TvScreenContext(
                 screenId = TvScreenId.LIBRARY,
@@ -72,6 +82,7 @@ data class TvScreenContext(
                 isLive = false,
                 isKidProfile = isKidProfile,
                 hasBlockingOverlay = hasBlockingOverlay,
+                isMiniPlayerVisible = isMiniPlayerVisible,
             )
 
         /**
@@ -79,14 +90,19 @@ data class TvScreenContext(
          * Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: HOME / BROWSE / LIBRARY SCREENS
          *
          * @param isKidProfile True if a kid profile is active
+         * @param isMiniPlayerVisible True if MiniPlayer overlay is visible (Phase 7)
          */
-        fun start(isKidProfile: Boolean = false): TvScreenContext =
+        fun start(
+            isKidProfile: Boolean = false,
+            isMiniPlayerVisible: Boolean = false,
+        ): TvScreenContext =
             TvScreenContext(
                 screenId = TvScreenId.START,
                 isPlayerScreen = false,
                 isLive = false,
                 isKidProfile = isKidProfile,
                 hasBlockingOverlay = false,
+                isMiniPlayerVisible = isMiniPlayerVisible,
             )
 
         /**

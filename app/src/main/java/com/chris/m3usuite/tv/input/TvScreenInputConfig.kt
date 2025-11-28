@@ -66,10 +66,12 @@ data class TvScreenInputConfig(
  * 1. Looks up the raw action from the screen's config
  * 2. Applies Kids Mode filtering if ctx.isKidProfile is true
  * 3. Applies overlay blocking if ctx.hasBlockingOverlay is true
+ * 4. Applies MiniPlayer filtering if ctx.isMiniPlayerVisible is true (Phase 7)
  *
  * Contract Reference:
  * - Section 7.1: Kids Mode filtering rules
  * - Section 8.1: Overlay blocking rules
+ * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 5: MiniPlayer filtering
  *
  * @param config The screen input configuration
  * @param role The key role to resolve
@@ -88,7 +90,10 @@ fun resolve(
     val afterKidsFilter = filterForKidsMode(rawAction, ctx)
 
     // Step 3: Apply overlay blocking filter
-    return filterForOverlays(afterKidsFilter, ctx)
+    val afterOverlayFilter = filterForOverlays(afterKidsFilter, ctx)
+
+    // Step 4: Apply MiniPlayer visibility filter (Phase 7)
+    return filterForMiniPlayer(afterOverlayFilter, ctx)
 }
 
 /**
@@ -197,3 +202,55 @@ private fun isBlockedForKids(action: TvAction): Boolean =
  * - BACK (closes overlay)
  */
 private fun isAllowedInOverlay(action: TvAction): Boolean = action.isNavigationAction() || action == TvAction.BACK
+
+// ══════════════════════════════════════════════════════════════════
+// PHASE 7 – MiniPlayer Visibility Filter
+// Contract Reference: INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 5
+// ══════════════════════════════════════════════════════════════════
+
+/**
+ * Filter an action for MiniPlayer visibility restrictions.
+ *
+ * When the MiniPlayer overlay is visible, row fast-scroll actions are blocked:
+ * - ROW_FAST_SCROLL_FORWARD → Blocked
+ * - ROW_FAST_SCROLL_BACKWARD → Blocked
+ *
+ * All other actions pass through unchanged.
+ *
+ * Contract Reference: INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 5
+ *
+ * @param action The action to filter (may be null)
+ * @param ctx The screen context with MiniPlayer visibility info
+ * @return The action if allowed, null if blocked
+ */
+fun filterForMiniPlayer(
+    action: TvAction?,
+    ctx: TvScreenContext,
+): TvAction? {
+    // MiniPlayer not visible - pass through
+    if (!ctx.isMiniPlayerVisible) return action
+
+    // Null action passes through
+    if (action == null) return null
+
+    // Check if action is blocked when MiniPlayer is visible
+    return if (isBlockedForMiniPlayer(action)) {
+        null
+    } else {
+        action
+    }
+}
+
+/**
+ * Check if an action is blocked when MiniPlayer is visible.
+ *
+ * Blocked Actions with MiniPlayer (Phase 7 Contract Section 5):
+ * - ROW_FAST_SCROLL_FORWARD
+ * - ROW_FAST_SCROLL_BACKWARD
+ *
+ * This prevents accidental row fast-scrolling while the MiniPlayer overlay
+ * is visible, which could cause navigation confusion.
+ */
+private fun isBlockedForMiniPlayer(action: TvAction): Boolean =
+    action == TvAction.ROW_FAST_SCROLL_FORWARD ||
+        action == TvAction.ROW_FAST_SCROLL_BACKWARD

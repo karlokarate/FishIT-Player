@@ -57,6 +57,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.core.xtream.XtreamImportCoordinator
+import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
+import com.chris.m3usuite.player.miniplayer.MiniPlayerOverlayContainer
 import com.chris.m3usuite.ui.focus.FocusKit
 import com.chris.m3usuite.ui.home.MiniPlayerHost
 import com.chris.m3usuite.ui.home.MiniPlayerState
@@ -133,6 +135,8 @@ fun HomeChromeScaffold(
     preferSettingsFirstFocus: Boolean = false,
     // TV-only: allow DPAD LEFT to expand chrome (default true). Detail screens can disable this.
     enableDpadLeftChrome: Boolean = true,
+    // Phase 7: Callback when MiniPlayer overlay requests to expand to full player
+    onMiniPlayerExpandToFullPlayer: (() -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     // TV device detection
@@ -494,6 +498,15 @@ fun HomeChromeScaffold(
 
         // Global TV mini player overlay (bottom-right). When chrome is Expanded, leave it visible but non-focusable.
         MiniPlayerHost(focusEnabled = !(isTv && tvChromeMode.value == ChromeMode.Expanded))
+
+        // Phase 7: Global MiniPlayer overlay using Phase 7 MiniPlayerManager
+        // This uses the unified PlaybackSession and MiniPlayerState from Phase 7
+        if (onMiniPlayerExpandToFullPlayer != null) {
+            MiniPlayerOverlayContainer(
+                miniPlayerManager = DefaultMiniPlayerManager,
+                onRequestFullPlayer = onMiniPlayerExpandToFullPlayer,
+            )
+        }
 
         // SnackbarHost for global app messages (always present)
         Box(
