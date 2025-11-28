@@ -4898,12 +4898,39 @@ Implementation aligns with:
 | 3 | In-App MiniPlayer UI | ✅ DONE (skeleton) |
 | 4 | PIP Button Refactor | ✅ DONE |
 | 5 | System PiP (phones/tablets) | ✅ DONE |
-| 6 | TV Input & MiniPlayer Behavior | ✅ PARTIALLY DONE |
+| 6 | TV Input & MiniPlayer Behavior | ✅ DONE |
 | 7 | FocusZones Integration | ✅ DONE |
-| 8 | Navigation & Return Behavior | ⬜ PENDING |
-| 9 | Testing & Quality | ⬜ PENDING |
+| 8 | Navigation & Return Behavior | ✅ DONE |
+| 9 | Testing & Quality | ✅ DONE |
 | 10 | Validation & Hardening | ✅ DONE |
 | **11** | **MiniPlayer Resize Mode** | ✅ **DONE** |
+| **12** | **MiniPlayer Polish & UX** | ✅ **DONE** |
+| **13** | **Finalization — Regression Pass** | ✅ **DONE** |
+
+---
+
+## ✅ PHASE 7 FULLY COMPLETE
+
+**Summary:**
+Phase 7 introduces a unified PlaybackSession that owns the ExoPlayer instance globally, and an In-App MiniPlayer overlay that allows video playback to continue seamlessly while navigating the app.
+
+**Key Achievements:**
+- **Unified PlaybackSession**: Single ExoPlayer instance shared across Full Player and MiniPlayer
+- **In-App MiniPlayer**: Floating overlay with play/pause, expand, and resize capabilities
+- **Resize Mode**: FF/RW resize, DPAD move, CENTER confirm, BACK cancel
+- **Visual Polish**: Drop shadows, rounded corners, animations, snapping, safe margins
+- **Touch Gestures**: Drag-to-move on phones/tablets (disabled on TV)
+- **System PiP**: Only via app exit (Home/Recents) on phones/tablets, never from UI button
+- **Fire TV**: UI PIP button → In-App MiniPlayer only
+- **TV Input Compliance**: Full compliance with GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md
+- **Focus Management**: TOGGLE_MINI_PLAYER_FOCUS via long-press PLAY
+- **Kids Mode + Overlay Filtering**: Correct action blocking in combined states
+- **Regression Tests**: Comprehensive test suite for transitions, input isolation, behavior map
+
+**Constraints Honored:**
+- SIP-only changes (legacy InternalPlayerScreen untouched)
+- No Phase 8/9 behavior introduced
+- No breaking changes to TV input, Player, Subtitles, Live TV
 
 ---
 
