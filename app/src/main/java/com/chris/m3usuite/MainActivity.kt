@@ -1,7 +1,10 @@
 package com.chris.m3usuite
 
+import android.app.PictureInPictureParams
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -27,14 +30,17 @@ import androidx.navigation.navArgument
 import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.logs.ui.LogViewerScreen
 import com.chris.m3usuite.navigation.navigateTopLevel
+import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.player.InternalPlayerEntry
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
 import com.chris.m3usuite.player.internal.domain.PlaybackType
+import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.ui.TelegramLogScreen
 import com.chris.m3usuite.telegram.ui.feed.TelegramActivityFeedScreen
 import com.chris.m3usuite.ui.auth.ProfileGate
+import com.chris.m3usuite.ui.focus.isTvDevice
 import com.chris.m3usuite.ui.home.LocalMiniPlayerResume
 import com.chris.m3usuite.ui.home.MiniPlayerSnapshot
 import com.chris.m3usuite.ui.home.MiniPlayerState
@@ -695,6 +701,161 @@ class MainActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) hideSystemBars()
+    }
+
+    /**
+     * Called when the user is about to leave the app (Home button, Recents, etc.).
+     *
+     * ════════════════════════════════════════════════════════════════════════════════
+     * PHASE 7 – System PiP on Phone/Tablet
+     * ════════════════════════════════════════════════════════════════════════════════
+     *
+     * This method triggers system PiP when:
+     * - The device is NOT a TV (phones/tablets only)
+     * - PlaybackSession is currently playing
+     * - MiniPlayer is NOT visible (in-app mini player takes precedence)
+     *
+     * On TV devices:
+     * - Do NOT call enterPictureInPictureMode()
+     * - Let FireOS handle Home/Recents as it does today
+     *
+     * **Contract Reference:**
+     * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 4.3
+     */
+    @Suppress("DEPRECATION")
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // Only trigger system PiP on non-TV devices (API < 31)
+        // API >= 31 uses auto-enter PiP via setPictureInPictureParams
+        if (Build.VERSION.SDK_INT < 31) {
+            tryEnterSystemPip()
+        }
+    }
+
+    /**
+     * Attempt to enter system PiP mode if conditions are met.
+     *
+     * Conditions:
+     * - NOT a TV device
+     * - PlaybackSession is playing
+     * - In-app MiniPlayer is NOT visible
+     */
+    private fun tryEnterSystemPip() {
+        // Do NOT enter PiP on TV devices
+        if (isTvDevice(this)) {
+            return
+        }
+
+        // Check if playback is active
+        val isPlaying = PlaybackSession.isPlaying.value
+        if (!isPlaying) {
+            return
+        }
+
+        // Check if in-app MiniPlayer is visible (takes precedence)
+        val miniPlayerVisible = DefaultMiniPlayerManager.state.value.visible
+        if (miniPlayerVisible) {
+            return
+        }
+
+        // Enter system PiP mode
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val params = buildPictureInPictureParams()
+                enterPictureInPictureMode(params)
+            } catch (e: Exception) {
+                // PiP not supported or failed - ignore silently
+                AppLog.log(
+                    category = "pip",
+                    level = AppLog.Level.WARN,
+                    message = "Failed to enter system PiP: ${e.message}",
+                )
+            }
+        }
+    }
+
+    /**
+     * Build PictureInPictureParams for system PiP entry.
+     *
+     * For API >= 31, enables auto-enter PiP when leaving the app.
+     * Uses 16:9 aspect ratio by default for video content.
+     */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+    private fun buildPictureInPictureParams(): PictureInPictureParams {
+        val builder = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(16, 9))
+
+        // API 31+ supports auto-enter PiP
+        if (Build.VERSION.SDK_INT >= 31) {
+            builder.setAutoEnterEnabled(shouldAutoEnterPip())
+        }
+
+        return builder.build()
+    }
+
+    /**
+     * Determine if auto-enter PiP should be enabled.
+     *
+     * Auto-enter is enabled when:
+     * - NOT a TV device
+     * - PlaybackSession is playing
+     * - In-app MiniPlayer is NOT visible
+     */
+    private fun shouldAutoEnterPip(): Boolean {
+        // Do NOT auto-enter PiP on TV devices
+        if (isTvDevice(this)) {
+            return false
+        }
+
+        // Only auto-enter if playing
+        val isPlaying = PlaybackSession.isPlaying.value
+        if (!isPlaying) {
+            return false
+        }
+
+        // Do NOT auto-enter if in-app MiniPlayer is visible
+        val miniPlayerVisible = DefaultMiniPlayerManager.state.value.visible
+        if (miniPlayerVisible) {
+            return false
+        }
+
+        return true
+    }
+
+    /**
+     * Update PiP params when playback state changes.
+     *
+     * ════════════════════════════════════════════════════════════════════════════════
+     * When to Call This Method
+     * ════════════════════════════════════════════════════════════════════════════════
+     *
+     * This method should be called when playback state changes that affect PiP behavior:
+     * - When playback starts/stops (`PlaybackSession.isPlaying` changes)
+     * - When MiniPlayer visibility changes (`MiniPlayerState.visible`)
+     * - Before entering/leaving activities that may trigger PiP
+     *
+     * **Why it's needed:**
+     * On API 31+, `setAutoEnterEnabled(true)` only takes effect when the params are
+     * actively set via `setPictureInPictureParams()`. Calling this method ensures
+     * the system has the latest state for auto-enter decisions.
+     *
+     * **Callers:**
+     * - Compose layer via `LaunchedEffect` observing playback state
+     * - Activity lifecycle hooks if needed
+     *
+     * **Contract Reference:**
+     * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 4.3
+     */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+    fun updatePipParams() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val params = buildPictureInPictureParams()
+                setPictureInPictureParams(params)
+            } catch (_: Exception) {
+                // Ignore if PiP not supported
+            }
+        }
     }
 
     private fun hideSystemBars() {

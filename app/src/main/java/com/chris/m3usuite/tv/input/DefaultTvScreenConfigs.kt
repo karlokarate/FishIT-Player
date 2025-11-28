@@ -11,11 +11,15 @@ package com.chris.m3usuite.tv.input
  *
  * Contract Reference:
  * - INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 4.2
+ * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6
  * - docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md
  *
  * Phase 6 Task 4:
  * - Aligned configurations with GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md
  * - PLAYER, LIBRARY, START, DETAIL, SETTINGS, PROFILE_GATE, MINI_PLAYER
+ *
+ * Phase 7 Task 2:
+ * - Added PLAY_PAUSE_LONG → TOGGLE_MINI_PLAYER_FOCUS mapping
  *
  * @see TvScreenInputConfig for the data model
  * @see TvInputConfigDsl for the DSL syntax
@@ -31,6 +35,9 @@ object DefaultTvScreenConfigs {
      * - SETTINGS: Settings navigation with tab switching (future)
      * - PROFILE_GATE: Profile selection with options menu
      * - MINI_PLAYER: PIP mode with seek, resize, move
+     *
+     * Phase 7 Addition:
+     * - PLAY_PAUSE_LONG → TOGGLE_MINI_PLAYER_FOCUS on LIBRARY, START screens
      *
      * Screens not explicitly configured will use empty configs (all keys unmapped).
      */
@@ -48,6 +55,7 @@ object DefaultTvScreenConfigs {
             // - FF / RW → SEEK_FORWARD_30S / SEEK_BACKWARD_30S
             // - MENU → OPEN_PLAYER_MENU (player options)
             // - BACK → BACK (later participates in double BACK behavior)
+            // - PLAY_PAUSE_LONG → TOGGLE_MINI_PLAYER_FOCUS (Phase 7)
             // ══════════════════════════════════════════════════════════════════
             screen(TvScreenId.PLAYER) {
                 // Center → Play/Pause (per spec: CENTER → Play/Pause toggle in playback mode)
@@ -55,6 +63,9 @@ object DefaultTvScreenConfigs {
 
                 // Play/Pause media key
                 on(TvKeyRole.PLAY_PAUSE) mapsTo TvAction.PLAY_PAUSE
+
+                // Long-press PLAY → Toggle MiniPlayer focus (Phase 7)
+                on(TvKeyRole.PLAY_PAUSE_LONG) mapsTo TvAction.TOGGLE_MINI_PLAYER_FOCUS
 
                 // DPAD Left/Right → 10s step seek (per spec)
                 on(TvKeyRole.DPAD_LEFT) mapsTo TvAction.SEEK_BACKWARD_10S
@@ -92,6 +103,7 @@ object DefaultTvScreenConfigs {
             // - CENTER → OPEN_DETAILS
             // - FF / RW → ROW_FAST_SCROLL_FORWARD / ROW_FAST_SCROLL_BACKWARD
             // - PLAY_PAUSE → PLAY_FOCUSED_RESUME (resume-point playback)
+            // - PLAY_PAUSE_LONG → TOGGLE_MINI_PLAYER_FOCUS (Phase 7)
             // - MENU (short) → OPEN_FILTER_SORT
             // - MENU (long) → OPEN_GLOBAL_SEARCH (TODO: long-press handled elsewhere)
             // - BACK → BACK
@@ -112,6 +124,9 @@ object DefaultTvScreenConfigs {
 
                 // Play/Pause → Start focused item with resume logic (per spec)
                 on(TvKeyRole.PLAY_PAUSE) mapsTo TvAction.PLAY_FOCUSED_RESUME
+
+                // Long-press PLAY → Toggle MiniPlayer focus (Phase 7)
+                on(TvKeyRole.PLAY_PAUSE_LONG) mapsTo TvAction.TOGGLE_MINI_PLAYER_FOCUS
 
                 // Menu (short) → Filters/Sort (per spec)
                 // TODO: Long press MENU → OPEN_GLOBAL_SEARCH is handled at host layer
@@ -142,6 +157,9 @@ object DefaultTvScreenConfigs {
 
                 // Play/Pause → Start focused item with resume logic (per spec)
                 on(TvKeyRole.PLAY_PAUSE) mapsTo TvAction.PLAY_FOCUSED_RESUME
+
+                // Long-press PLAY → Toggle MiniPlayer focus (Phase 7)
+                on(TvKeyRole.PLAY_PAUSE_LONG) mapsTo TvAction.TOGGLE_MINI_PLAYER_FOCUS
 
                 // Menu (short) → Filters/Sort (per spec)
                 // TODO: Long press MENU → OPEN_GLOBAL_SEARCH is handled at host layer

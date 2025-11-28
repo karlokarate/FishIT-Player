@@ -13,6 +13,7 @@ package com.chris.m3usuite.tv.input
  * ```
  *
  * Contract Reference: INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 3.1
+ * Contract Reference: INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6
  *
  * @see TvKeyMapper for converting KeyEvent to TvKeyRole
  * @see TvAction for semantic application-level commands
@@ -35,8 +36,23 @@ enum class TvKeyRole {
     DPAD_CENTER,
 
     // Playback Media Keys
-    /** Toggle play/pause */
+    /** Toggle play/pause (short press) */
     PLAY_PAUSE,
+
+    /**
+     * Long-press play/pause.
+     *
+     * ════════════════════════════════════════════════════════════════════════════════
+     * PHASE 7 – Long-press PLAY for MiniPlayer Focus Toggle
+     * ════════════════════════════════════════════════════════════════════════════════
+     *
+     * When MiniPlayer is visible, long-press PLAY triggers TOGGLE_MINI_PLAYER_FOCUS
+     * to switch focus between PRIMARY_UI and MINI_PLAYER zones.
+     *
+     * **Contract Reference:**
+     * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6
+     */
+    PLAY_PAUSE_LONG,
 
     /** Fast forward / skip forward */
     FAST_FORWARD,
@@ -88,7 +104,7 @@ enum class TvKeyRole {
         /**
          * Check if this role represents a media playback key.
          */
-        fun TvKeyRole.isMediaKey(): Boolean = this == PLAY_PAUSE || this == FAST_FORWARD || this == REWIND
+        fun TvKeyRole.isMediaKey(): Boolean = this == PLAY_PAUSE || this == PLAY_PAUSE_LONG || this == FAST_FORWARD || this == REWIND
 
         /**
          * Check if this role represents a number key.
