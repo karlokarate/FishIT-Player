@@ -189,12 +189,12 @@ class TvScreenInputConfigResolveTest {
     }
 
     @Test
-    fun `SETTINGS config has no mapping for FAST_FORWARD`() {
+    fun `SETTINGS config maps FAST_FORWARD to tab switching`() {
         val ctx = TvScreenContext.settings()
         val action = DefaultTvScreenConfigs.resolve(TvScreenId.SETTINGS, TvKeyRole.FAST_FORWARD, ctx)
 
-        // Settings doesn't define FF mapping, so it should return null
-        assertNull(action)
+        // Settings maps FF to SWITCH_SETTINGS_TAB_NEXT per behavior map
+        assertEquals(TvAction.SWITCH_SETTINGS_TAB_NEXT, action)
     }
 
     // ══════════════════════════════════════════════════════════════════

@@ -3,16 +3,18 @@ package com.chris.m3usuite.tv.input
 import android.view.KeyEvent
 import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Integration tests for TvInputController with SIP Internal Player.
@@ -24,16 +26,17 @@ import org.mockito.Mockito
  * - Kids Mode filtering works with player state
  * - Quick actions visibility toggling
  */
-@OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class SipPlayerTvInputIntegrationTest {
-    private lateinit var testScope: TestScope
+    private lateinit var testScope: CoroutineScope
     private lateinit var controller: DefaultTvInputController
     private lateinit var mockActionListener: MockTvActionListener
     private lateinit var host: GlobalTvInputHost
 
     @Before
     fun setup() {
-        testScope = TestScope()
+        testScope = CoroutineScope(Dispatchers.Unconfined + Job())
         mockActionListener = MockTvActionListener()
         controller =
             DefaultTvInputController(
@@ -55,52 +58,48 @@ class SipPlayerTvInputIntegrationTest {
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `PLAY_PAUSE key on PLAYER screen triggers PLAY_PAUSE action`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player()
-            val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+    fun `PLAY_PAUSE key on PLAYER screen triggers PLAY_PAUSE action`() {
+        val ctx = TvScreenContext.player()
+        val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
 
-            host.handleKeyEvent(event, ctx)
+        host.handleKeyEvent(event, ctx)
 
-            assertEquals(TvAction.PLAY_PAUSE, mockActionListener.lastAction)
-        }
+        assertEquals(TvAction.PLAY_PAUSE, mockActionListener.lastAction)
+    }
 
     @Test
-    fun `DPAD_CENTER on PLAYER screen triggers PLAY_PAUSE action`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player()
-            val event = createKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
+    fun `DPAD_CENTER on PLAYER screen triggers PLAY_PAUSE action`() {
+        val ctx = TvScreenContext.player()
+        val event = createKeyEvent(KeyEvent.KEYCODE_DPAD_CENTER)
 
-            host.handleKeyEvent(event, ctx)
+        host.handleKeyEvent(event, ctx)
 
-            assertEquals(TvAction.PLAY_PAUSE, mockActionListener.lastAction)
-        }
+        assertEquals(TvAction.PLAY_PAUSE, mockActionListener.lastAction)
+    }
 
     // ════════════════════════════════════════════════════════════════════════════
     // SEEK TESTS
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `FAST_FORWARD on PLAYER screen triggers SEEK_FORWARD_30S`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player()
-            val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_FAST_FORWARD)
+    fun `FAST_FORWARD on PLAYER screen triggers SEEK_FORWARD_30S`() {
+        val ctx = TvScreenContext.player()
+        val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_FAST_FORWARD)
 
-            host.handleKeyEvent(event, ctx)
+        host.handleKeyEvent(event, ctx)
 
-            assertEquals(TvAction.SEEK_FORWARD_30S, mockActionListener.lastAction)
-        }
+        assertEquals(TvAction.SEEK_FORWARD_30S, mockActionListener.lastAction)
+    }
 
     @Test
-    fun `REWIND on PLAYER screen triggers SEEK_BACKWARD_30S`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player()
-            val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_REWIND)
+    fun `REWIND on PLAYER screen triggers SEEK_BACKWARD_30S`() {
+        val ctx = TvScreenContext.player()
+        val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_REWIND)
 
-            host.handleKeyEvent(event, ctx)
+        host.handleKeyEvent(event, ctx)
 
-            assertEquals(TvAction.SEEK_BACKWARD_30S, mockActionListener.lastAction)
-        }
+        assertEquals(TvAction.SEEK_BACKWARD_30S, mockActionListener.lastAction)
+    }
 
     // ════════════════════════════════════════════════════════════════════════════
     // TV SCREEN CONTEXT FROM PLAYER STATE TESTS
@@ -195,169 +194,162 @@ class SipPlayerTvInputIntegrationTest {
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `FAST_FORWARD is blocked for kid profile on PLAYER`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player(isKidProfile = true)
-            val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_FAST_FORWARD)
+    fun `FAST_FORWARD is blocked for kid profile on PLAYER`() {
+        val ctx = TvScreenContext.player(isKidProfile = true)
+        val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_FAST_FORWARD)
 
-            val handled = host.handleKeyEvent(event, ctx)
+        val handled = host.handleKeyEvent(event, ctx)
 
-            // Should not be handled (blocked)
-            assertFalse(handled)
-            assertNull(mockActionListener.lastAction)
-        }
+        // Should not be handled (blocked)
+        assertFalse(handled)
+        assertNull(mockActionListener.lastAction)
+    }
 
     @Test
-    fun `PLAY_PAUSE is allowed for kid profile on PLAYER`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player(isKidProfile = true)
-            val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+    fun `PLAY_PAUSE is allowed for kid profile on PLAYER`() {
+        val ctx = TvScreenContext.player(isKidProfile = true)
+        val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
 
-            host.handleKeyEvent(event, ctx)
+        host.handleKeyEvent(event, ctx)
 
-            assertEquals(TvAction.PLAY_PAUSE, mockActionListener.lastAction)
-        }
+        assertEquals(TvAction.PLAY_PAUSE, mockActionListener.lastAction)
+    }
 
     // ════════════════════════════════════════════════════════════════════════════
-    // QUICK ACTIONS VISIBILITY TESTS
+    // QUICK ACTIONS / PLAYER MENU TESTS
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `MENU key opens quick actions on PLAYER`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player()
-            val event = createKeyEvent(KeyEvent.KEYCODE_MENU)
+    fun `MENU key on PLAYER triggers OPEN_PLAYER_MENU action`() {
+        // Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: MENU → Player options
+        // This action goes to the action listener, not internal quick actions state
+        val ctx = TvScreenContext.player()
+        val event = createKeyEvent(KeyEvent.KEYCODE_MENU)
 
-            host.handleKeyEvent(event, ctx)
+        host.handleKeyEvent(event, ctx)
 
-            assertTrue(controller.quickActionsVisible.value)
-        }
+        // OPEN_PLAYER_MENU is dispatched to action listener
+        assertEquals(TvAction.OPEN_PLAYER_MENU, mockActionListener.lastAction)
+    }
 
     @Test
-    fun `BACK key closes quick actions when visible`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player()
+    fun `BACK key closes quick actions when visible`() {
+        val ctx = TvScreenContext.player()
 
-            // First open quick actions
-            controller.setQuickActionsVisible(true)
-            assertTrue(controller.quickActionsVisible.value)
+        // First open quick actions (programmatically)
+        controller.setQuickActionsVisible(true)
+        assertTrue(controller.quickActionsVisible.value)
 
-            // Then press BACK
-            val event = createKeyEvent(KeyEvent.KEYCODE_BACK)
-            host.handleKeyEvent(event, ctx)
+        // Then press BACK
+        val event = createKeyEvent(KeyEvent.KEYCODE_BACK)
+        host.handleKeyEvent(event, ctx)
 
-            assertFalse(controller.quickActionsVisible.value)
-        }
+        assertFalse(controller.quickActionsVisible.value)
+    }
 
     // ════════════════════════════════════════════════════════════════════════════
     // CHANNEL CONTROL TESTS (LIVE)
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `CHANNEL_UP on LIVE player triggers CHANNEL_UP action`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player(isLive = true)
-            val event = createKeyEvent(KeyEvent.KEYCODE_CHANNEL_UP)
+    fun `CHANNEL_UP on LIVE player triggers CHANNEL_UP action`() {
+        val ctx = TvScreenContext.player(isLive = true)
+        val event = createKeyEvent(KeyEvent.KEYCODE_CHANNEL_UP)
 
-            host.handleKeyEvent(event, ctx)
+        host.handleKeyEvent(event, ctx)
 
-            assertEquals(TvAction.CHANNEL_UP, mockActionListener.lastAction)
-        }
+        assertEquals(TvAction.CHANNEL_UP, mockActionListener.lastAction)
+    }
 
     @Test
-    fun `CHANNEL_DOWN on LIVE player triggers CHANNEL_DOWN action`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player(isLive = true)
-            val event = createKeyEvent(KeyEvent.KEYCODE_CHANNEL_DOWN)
+    fun `CHANNEL_DOWN on LIVE player triggers CHANNEL_DOWN action`() {
+        val ctx = TvScreenContext.player(isLive = true)
+        val event = createKeyEvent(KeyEvent.KEYCODE_CHANNEL_DOWN)
 
-            host.handleKeyEvent(event, ctx)
+        host.handleKeyEvent(event, ctx)
 
-            assertEquals(TvAction.CHANNEL_DOWN, mockActionListener.lastAction)
-        }
+        assertEquals(TvAction.CHANNEL_DOWN, mockActionListener.lastAction)
+    }
 
     // ════════════════════════════════════════════════════════════════════════════
     // OVERLAY BLOCKING IN PLAYER
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `playback actions are blocked when overlay is open`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player(hasBlockingOverlay = true)
-            val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+    fun `playback actions are blocked when overlay is open`() {
+        val ctx = TvScreenContext.player(hasBlockingOverlay = true)
+        val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
 
-            val handled = host.handleKeyEvent(event, ctx)
+        val handled = host.handleKeyEvent(event, ctx)
 
-            // Should not be handled (blocked by overlay)
-            assertFalse(handled)
-        }
+        // Should not be handled (blocked by overlay)
+        assertFalse(handled)
+    }
 
     @Test
-    fun `BACK is allowed when overlay is open`() =
-        testScope.runTest {
-            val ctx = TvScreenContext.player(hasBlockingOverlay = true)
-            val event = createKeyEvent(KeyEvent.KEYCODE_BACK)
+    fun `BACK is allowed when overlay is open`() {
+        val ctx = TvScreenContext.player(hasBlockingOverlay = true)
+        val event = createKeyEvent(KeyEvent.KEYCODE_BACK)
 
-            val handled = host.handleKeyEvent(event, ctx)
+        val handled = host.handleKeyEvent(event, ctx)
 
-            // BACK should still work to close the overlay
-            assertTrue(handled)
-        }
+        // BACK should still work to close the overlay
+        assertTrue(handled)
+    }
 
     // ════════════════════════════════════════════════════════════════════════════
     // FULL PIPELINE END-TO-END TEST
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `end-to-end pipeline from KeyEvent to action callback`() =
-        testScope.runTest {
-            // Build player state
-            val playerState =
-                InternalPlayerUiState(
-                    playbackType = PlaybackType.VOD,
-                    isPlaying = true,
-                    kidActive = false,
-                )
+    fun `end-to-end pipeline from KeyEvent to action callback`() {
+        // Build player state
+        val playerState =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.VOD,
+                isPlaying = true,
+                kidActive = false,
+            )
 
-            // Convert to TvScreenContext
-            val tvCtx = playerState.toTvScreenContext()
+        // Convert to TvScreenContext
+        val tvCtx = playerState.toTvScreenContext()
 
-            // Simulate key event
-            val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+        // Simulate key event
+        val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
 
-            // Process through pipeline
-            host.handleKeyEvent(event, tvCtx)
+        // Process through pipeline
+        host.handleKeyEvent(event, tvCtx)
 
-            // Verify action was received
-            assertEquals(TvAction.PLAY_PAUSE, mockActionListener.lastAction)
-            assertEquals(1, mockActionListener.actionCount)
-        }
+        // Verify action was received
+        assertEquals(TvAction.PLAY_PAUSE, mockActionListener.lastAction)
+        assertEquals(1, mockActionListener.actionCount)
+    }
 
     @Test
-    fun `end-to-end pipeline with kid profile blocking`() =
-        testScope.runTest {
-            // Build player state with kid profile
-            val playerState =
-                InternalPlayerUiState(
-                    playbackType = PlaybackType.VOD,
-                    isPlaying = true,
-                    kidActive = true,
-                    kidProfileId = 42L,
-                )
+    fun `end-to-end pipeline with kid profile blocking`() {
+        // Build player state with kid profile
+        val playerState =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.VOD,
+                isPlaying = true,
+                kidActive = true,
+                kidProfileId = 42L,
+            )
 
-            // Convert to TvScreenContext
-            val tvCtx = playerState.toTvScreenContext()
-            assertTrue(tvCtx.isKidProfile) // Verify conversion
+        // Convert to TvScreenContext
+        val tvCtx = playerState.toTvScreenContext()
+        assertTrue(tvCtx.isKidProfile) // Verify conversion
 
-            // Simulate blocked key event (FAST_FORWARD blocked for kids)
-            val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_FAST_FORWARD)
+        // Simulate blocked key event (FAST_FORWARD blocked for kids)
+        val event = createKeyEvent(KeyEvent.KEYCODE_MEDIA_FAST_FORWARD)
 
-            // Process through pipeline
-            val handled = host.handleKeyEvent(event, tvCtx)
+        // Process through pipeline
+        val handled = host.handleKeyEvent(event, tvCtx)
 
-            // Verify action was blocked
-            assertFalse(handled)
-            assertNull(mockActionListener.lastAction)
-        }
+        // Verify action was blocked
+        assertFalse(handled)
+        assertNull(mockActionListener.lastAction)
+    }
 
     // ════════════════════════════════════════════════════════════════════════════
     // HELPERS
@@ -366,11 +358,7 @@ class SipPlayerTvInputIntegrationTest {
     private fun createKeyEvent(
         keyCode: Int,
         action: Int = KeyEvent.ACTION_DOWN,
-    ): KeyEvent =
-        Mockito.mock(KeyEvent::class.java).also {
-            Mockito.`when`(it.keyCode).thenReturn(keyCode)
-            Mockito.`when`(it.action).thenReturn(action)
-        }
+    ): KeyEvent = KeyEvent(action, keyCode)
 
     // ════════════════════════════════════════════════════════════════════════════
     // MOCKS

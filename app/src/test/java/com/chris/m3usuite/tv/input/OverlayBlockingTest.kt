@@ -176,11 +176,20 @@ class OverlayBlockingTest {
     }
 
     @Test
-    fun `resolve allows navigation with overlay`() {
+    fun `resolve blocks seek action with overlay on PLAYER`() {
         val ctx = TvScreenContext.player(hasBlockingOverlay = true)
 
-        // DPAD_LEFT maps to NAVIGATE_LEFT, which is allowed in overlay
+        // DPAD_LEFT maps to SEEK_BACKWARD_10S on PLAYER, which is NOT allowed in overlay
         val action = DefaultTvScreenConfigs.resolve(TvScreenId.PLAYER, TvKeyRole.DPAD_LEFT, ctx)
+        assertNull(action) // Blocked because it's a seek action, not navigation
+    }
+    
+    @Test
+    fun `resolve allows navigation in screen with navigation mapping and overlay`() {
+        // Use LIBRARY where DPAD_LEFT maps to NAVIGATE_LEFT
+        val ctx = TvScreenContext.library(hasBlockingOverlay = true)
+
+        val action = DefaultTvScreenConfigs.resolve(TvScreenId.LIBRARY, TvKeyRole.DPAD_LEFT, ctx)
         assertEquals(TvAction.NAVIGATE_LEFT, action)
     }
 
