@@ -374,20 +374,30 @@ class T_TelegramServiceClient private constructor(
 
     /**
      * Check if authentication is ready for ingestion/sync operations.
-     * 
-     * Per design decision 6.11: Ingestion MUST NOT run unless auth state is READY.
-     * 
-     * @return true if auth state is Ready, false otherwise
+     *
+     * Per design decision 6.11 (Auth & Ingestion Constraints):
+     * - Ingestion MUST NOT run unless auth state is [TelegramAuthState.Ready]
+     * - All sync workers and ingestion pipelines must check this before processing
+     *
+     * @return true if auth state is [TelegramAuthState.Ready], false otherwise
      */
     fun isAuthReady(): Boolean = _authState.value == TelegramAuthState.Ready
 
     /**
      * Wait for authentication to become ready, with timeout.
-     * 
-     * Per design decision 6.11: Ingestion MUST NOT run unless auth state is READY.
-     * If TDLib DB is already authorized from a previous session, this will return
-     * immediately once the auth state collector receives the Ready state.
-     * 
+     *
+     * Per design decision 6.11 (Auth & Ingestion Constraints):
+     * - Ingestion MUST NOT run unless auth state is [TelegramAuthState.Ready]
+     * - If TDLib DB is already authorized from a previous session, this returns
+     *   immediately once the auth state collector receives the Ready state
+     * - All auth state transitions are logged via [TelegramLogRepository]
+     *
+     * Typical usage in sync workers:
+     * ```kotlin
+     * val isReady = serviceClient.awaitAuthReady(timeoutMs = 30_000L)
+     * if (!isReady) return Result.failure(workDataOf("error" to "Auth not ready"))
+     * ```
+     *
      * @param timeoutMs Maximum time to wait in milliseconds (default 30 seconds)
      * @return true if auth became ready within timeout, false otherwise
      */
@@ -396,13 +406,13 @@ class T_TelegramServiceClient private constructor(
             "T_TelegramServiceClient",
             "Waiting for auth ready (current: ${_authState.value::class.simpleName}, timeout: ${timeoutMs}ms)",
         )
-        
+
         // If already ready, return immediately
         if (_authState.value == TelegramAuthState.Ready) {
             TelegramLogRepository.debug("T_TelegramServiceClient", "Auth already ready")
             return true
         }
-        
+
         return try {
             withTimeout(timeoutMs) {
                 _authState
@@ -422,9 +432,11 @@ class T_TelegramServiceClient private constructor(
 
     /**
      * Wait for authentication to reach a specific state, with timeout.
-     * Useful for UI to wait for specific states like WaitingForCode.
-     * 
-     * @param targetState The state to wait for
+     *
+     * Useful for UI to wait for specific states like [TelegramAuthState.WaitingForCode]
+     * during interactive login flows.
+     *
+     * @param targetState The specific [TelegramAuthState] to wait for
      * @param timeoutMs Maximum time to wait in milliseconds (default 10 seconds)
      * @return true if target state was reached within timeout, false otherwise
      */
@@ -433,7 +445,7 @@ class T_TelegramServiceClient private constructor(
         timeoutMs: Long = 10_000L,
     ): Boolean {
         if (_authState.value == targetState) return true
-        
+
         return try {
             withTimeout(timeoutMs) {
                 _authState
