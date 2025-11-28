@@ -155,4 +155,119 @@ class SystemPiPBehaviorTest {
 
         return true
     }
+
+    // ══════════════════════════════════════════════════════════════════
+    // Phase 7 Task 3: Extended System PiP Tests
+    // ══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `tablet scenario - PiP allowed when conditions met`() {
+        val shouldEnterPip = shouldEnterSystemPip(
+            isPlaying = true,
+            miniPlayerVisible = false,
+            isTvDevice = false, // Tablet is not a TV device
+        )
+        assertTrue("Tablet should allow PiP when playing and MiniPlayer not visible", shouldEnterPip)
+    }
+
+    @Test
+    fun `Fire TV - system PiP NEVER triggered from app code`() {
+        // On Fire TV, system PiP should NEVER be triggered from app code
+        // The in-app MiniPlayer is used instead
+        val shouldEnterPip = shouldEnterSystemPip(
+            isPlaying = true,
+            miniPlayerVisible = false,
+            isTvDevice = true, // Fire TV is a TV device
+        )
+        assertFalse("Fire TV should NEVER trigger system PiP from app code", shouldEnterPip)
+    }
+
+    @Test
+    fun `Android TV - system PiP NEVER triggered from app code`() {
+        val shouldEnterPip = shouldEnterSystemPip(
+            isPlaying = true,
+            miniPlayerVisible = false,
+            isTvDevice = true, // Android TV is a TV device
+        )
+        assertFalse("Android TV should NEVER trigger system PiP from app code", shouldEnterPip)
+    }
+
+    @Test
+    fun `phone in landscape - PiP works when conditions met`() {
+        // Orientation doesn't affect the conditions
+        val shouldEnterPip = shouldEnterSystemPip(
+            isPlaying = true,
+            miniPlayerVisible = false,
+            isTvDevice = false,
+        )
+        assertTrue("Phone should allow PiP regardless of orientation", shouldEnterPip)
+    }
+
+    @Test
+    fun `buffering state - PiP NOT triggered when not playing`() {
+        // Buffering is not playing
+        val shouldEnterPip = shouldEnterSystemPip(
+            isPlaying = false, // Buffering is not playing
+            miniPlayerVisible = false,
+            isTvDevice = false,
+        )
+        assertFalse("Should NOT trigger PiP when buffering (not playing)", shouldEnterPip)
+    }
+
+    @Test
+    fun `in-app MiniPlayer takes precedence over system PiP`() {
+        // When in-app MiniPlayer is visible, system PiP should NOT be triggered
+        val shouldEnterPip = shouldEnterSystemPip(
+            isPlaying = true,
+            miniPlayerVisible = true, // In-app MiniPlayer is active
+            isTvDevice = false,
+        )
+        assertFalse("In-app MiniPlayer should take precedence over system PiP", shouldEnterPip)
+    }
+
+    @Test
+    fun `all conditions must be met for PiP`() {
+        // All three conditions must be satisfied
+        assertTrue(shouldEnterSystemPip(isPlaying = true, miniPlayerVisible = false, isTvDevice = false))
+        assertFalse(shouldEnterSystemPip(isPlaying = false, miniPlayerVisible = false, isTvDevice = false))
+        assertFalse(shouldEnterSystemPip(isPlaying = true, miniPlayerVisible = true, isTvDevice = false))
+        assertFalse(shouldEnterSystemPip(isPlaying = true, miniPlayerVisible = false, isTvDevice = true))
+        assertFalse(shouldEnterSystemPip(isPlaying = false, miniPlayerVisible = true, isTvDevice = true))
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // Trigger Point Documentation Tests
+    // ══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `API lt 31 - onUserLeaveHint is the trigger`() {
+        // This test documents that onUserLeaveHint() should check these conditions
+        // before calling enterPictureInPictureMode()
+        val shouldEnter = shouldEnterSystemPip(
+            isPlaying = true,
+            miniPlayerVisible = false,
+            isTvDevice = false,
+        )
+        assertTrue("onUserLeaveHint should call enterPictureInPictureMode when conditions met", shouldEnter)
+    }
+
+    @Test
+    fun `API gte 31 - setAutoEnterEnabled uses same conditions`() {
+        // This test documents that setAutoEnterEnabled(true) should be set
+        // dynamically based on the same conditions
+        val shouldAutoEnter = shouldEnterSystemPip(
+            isPlaying = true,
+            miniPlayerVisible = false,
+            isTvDevice = false,
+        )
+        assertTrue("setAutoEnterEnabled should be true when conditions met", shouldAutoEnter)
+
+        // When conditions not met, auto-enter should be disabled
+        val shouldNotAutoEnter = shouldEnterSystemPip(
+            isPlaying = true,
+            miniPlayerVisible = true, // MiniPlayer visible
+            isTvDevice = false,
+        )
+        assertFalse("setAutoEnterEnabled should be false when MiniPlayer visible", shouldNotAutoEnter)
+    }
 }

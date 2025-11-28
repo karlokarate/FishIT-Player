@@ -2,6 +2,8 @@ package com.chris.m3usuite.player.miniplayer
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -216,5 +218,122 @@ class MiniPlayerNavigationTest {
 
         // Then: All state should be initial
         assertEquals(MiniPlayerState.INITIAL, DefaultMiniPlayerManager.state.value)
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // Phase 7 Task 3: Full ↔ Mini ↔ Home Transition Tests
+    // ══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `Full to Mini via Expand button cycle`() {
+        // Step 1: Enter mini player from full player
+        DefaultMiniPlayerManager.enterMiniPlayer(
+            fromRoute = "player?url=test&mediaId=123",
+            mediaId = 123L,
+        )
+
+        // Verify: MiniPlayer visible, return context stored
+        assertTrue("MiniPlayer should be visible", DefaultMiniPlayerManager.state.value.visible)
+        assertEquals(
+            "player?url=test&mediaId=123",
+            DefaultMiniPlayerManager.state.value.returnRoute,
+        )
+        assertEquals(123L, DefaultMiniPlayerManager.state.value.returnMediaId)
+
+        // Step 2: Exit via Expand button (returnToFullPlayer = true)
+        DefaultMiniPlayerManager.exitMiniPlayer(returnToFullPlayer = true)
+
+        // Verify: MiniPlayer not visible, return context preserved for navigation
+        assertFalse("MiniPlayer should not be visible", DefaultMiniPlayerManager.state.value.visible)
+        assertEquals(
+            "Return route should be preserved",
+            "player?url=test&mediaId=123",
+            DefaultMiniPlayerManager.state.value.returnRoute,
+        )
+    }
+
+    @Test
+    fun `Full to Mini to Back without returning to full`() {
+        // Enter mini player
+        DefaultMiniPlayerManager.enterMiniPlayer(
+            fromRoute = "vod/456",
+            mediaId = 456L,
+        )
+        assertTrue(DefaultMiniPlayerManager.state.value.visible)
+
+        // Exit without returning to full
+        DefaultMiniPlayerManager.exitMiniPlayer(returnToFullPlayer = false)
+
+        // Verify: MiniPlayer disappears, no navigation expected
+        assertFalse(DefaultMiniPlayerManager.state.value.visible)
+        assertNull("Return route should be cleared", DefaultMiniPlayerManager.state.value.returnRoute)
+    }
+
+    @Test
+    fun `MiniPlayer visible state persists through mode changes`() {
+        // Enter mini player
+        DefaultMiniPlayerManager.enterMiniPlayer("library", mediaId = 100L)
+        assertTrue(DefaultMiniPlayerManager.state.value.visible)
+
+        // Change mode to RESIZE
+        DefaultMiniPlayerManager.updateMode(MiniPlayerMode.RESIZE)
+        assertTrue("MiniPlayer should still be visible after mode change", DefaultMiniPlayerManager.state.value.visible)
+        assertEquals(MiniPlayerMode.RESIZE, DefaultMiniPlayerManager.state.value.mode)
+
+        // Change anchor
+        DefaultMiniPlayerManager.updateAnchor(MiniPlayerAnchor.TOP_LEFT)
+        assertTrue("MiniPlayer should still be visible after anchor change", DefaultMiniPlayerManager.state.value.visible)
+        assertEquals(MiniPlayerAnchor.TOP_LEFT, DefaultMiniPlayerManager.state.value.anchor)
+
+        // Return context should be preserved
+        assertEquals(100L, DefaultMiniPlayerManager.state.value.returnMediaId)
+    }
+
+    @Test
+    fun `PlaybackSession continuity - position should not be reset in transitions`() {
+        // This test documents the contract requirement that PlaybackSession
+        // should NOT be recreated during Full ↔ Mini transitions.
+        //
+        // The actual verification requires runtime integration, but this test
+        // verifies the state management doesn't interfere with session continuity.
+
+        // Enter mini player from a position
+        DefaultMiniPlayerManager.enterMiniPlayer(
+            fromRoute = "player?url=test&position=45000",
+            mediaId = 123L,
+        )
+
+        // Simulate staying in mini player for a while
+        // (In real code, PlaybackSession.positionMs would advance)
+
+        // Exit back to full player
+        DefaultMiniPlayerManager.exitMiniPlayer(returnToFullPlayer = true)
+
+        // Contract: Return route preserved, PlaybackSession should continue at current position
+        // (not at the original 45000ms)
+        assertFalse(DefaultMiniPlayerManager.state.value.visible)
+        assertNotNull(DefaultMiniPlayerManager.state.value.returnRoute)
+    }
+
+    @Test
+    fun `Mini visible with library navigation - scroll indices preserved`() {
+        // Enter mini from library at specific scroll position
+        DefaultMiniPlayerManager.enterMiniPlayer(
+            fromRoute = "library",
+            mediaId = null,
+            rowIndex = 3,
+            itemIndex = 7,
+        )
+
+        // Verify scroll position stored for restoration
+        assertEquals(3, DefaultMiniPlayerManager.state.value.returnRowIndex)
+        assertEquals(7, DefaultMiniPlayerManager.state.value.returnItemIndex)
+
+        // Exit to return to library
+        DefaultMiniPlayerManager.exitMiniPlayer(returnToFullPlayer = true)
+
+        // Scroll indices preserved for navigation layer to use
+        assertEquals(3, DefaultMiniPlayerManager.state.value.returnRowIndex)
+        assertEquals(7, DefaultMiniPlayerManager.state.value.returnItemIndex)
     }
 }

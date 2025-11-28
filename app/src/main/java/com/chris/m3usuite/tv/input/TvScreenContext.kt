@@ -50,11 +50,13 @@ data class TvScreenContext(
          * @param isLive True if playing live TV content
          * @param isKidProfile True if a kid profile is active
          * @param hasBlockingOverlay True if a blocking overlay is shown
+         * @param isMiniPlayerVisible True if MiniPlayer overlay is visible (Phase 7)
          */
         fun player(
             isLive: Boolean = false,
             isKidProfile: Boolean = false,
             hasBlockingOverlay: Boolean = false,
+            isMiniPlayerVisible: Boolean = false,
         ): TvScreenContext =
             TvScreenContext(
                 screenId = TvScreenId.PLAYER,
@@ -62,6 +64,7 @@ data class TvScreenContext(
                 isLive = isLive,
                 isKidProfile = isKidProfile,
                 hasBlockingOverlay = hasBlockingOverlay,
+                isMiniPlayerVisible = isMiniPlayerVisible,
             )
 
         /**
