@@ -782,8 +782,10 @@ class MainActivity : ComponentActivity() {
      */
     @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
     private fun buildPictureInPictureParams(): PictureInPictureParams {
-        val builder = PictureInPictureParams.Builder()
-            .setAspectRatio(Rational(16, 9))
+        val builder =
+            PictureInPictureParams
+                .Builder()
+                .setAspectRatio(Rational(16, 9))
 
         // API 31+ supports auto-enter PiP
         if (Build.VERSION.SDK_INT >= 31) {

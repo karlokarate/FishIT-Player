@@ -34,11 +34,12 @@ class KidsAndMiniPlayerOverlayTest {
     @Test
     fun `triple filter - almost everything blocked except safe navigation`() {
         // Scenario: Kid profile + MiniPlayer visible + Blocking overlay
-        val ctx = TvScreenContext.library(
-            isKidProfile = true,
-            isMiniPlayerVisible = true,
-            hasBlockingOverlay = true,
-        )
+        val ctx =
+            TvScreenContext.library(
+                isKidProfile = true,
+                isMiniPlayerVisible = true,
+                hasBlockingOverlay = true,
+            )
 
         // Only NAVIGATE_* and BACK should pass through
         assertEquals(
@@ -361,18 +362,19 @@ class KidsAndMiniPlayerOverlayTest {
         val ctx = TvScreenContext.player(isKidProfile = true)
 
         // Contract Section 7.1: Blocked actions for kids
-        val blockedActions = listOf(
-            TvAction.SEEK_FORWARD_10S,
-            TvAction.SEEK_FORWARD_30S,
-            TvAction.SEEK_BACKWARD_10S,
-            TvAction.SEEK_BACKWARD_30S,
-            TvAction.OPEN_CC_MENU,
-            TvAction.OPEN_ASPECT_MENU,
-            TvAction.OPEN_LIVE_LIST,
-            TvAction.PIP_SEEK_FORWARD,
-            TvAction.PIP_SEEK_BACKWARD,
-            TvAction.OPEN_ADVANCED_SETTINGS,
-        )
+        val blockedActions =
+            listOf(
+                TvAction.SEEK_FORWARD_10S,
+                TvAction.SEEK_FORWARD_30S,
+                TvAction.SEEK_BACKWARD_10S,
+                TvAction.SEEK_BACKWARD_30S,
+                TvAction.OPEN_CC_MENU,
+                TvAction.OPEN_ASPECT_MENU,
+                TvAction.OPEN_LIVE_LIST,
+                TvAction.PIP_SEEK_FORWARD,
+                TvAction.PIP_SEEK_BACKWARD,
+                TvAction.OPEN_ADVANCED_SETTINGS,
+            )
 
         for (action in blockedActions) {
             assertNull("$action should be blocked for kids", filterForKidsMode(action, ctx))
@@ -384,21 +386,22 @@ class KidsAndMiniPlayerOverlayTest {
         val ctx = TvScreenContext.player(isKidProfile = true)
 
         // Contract Section 7.1: Allowed actions for kids
-        val allowedActions = listOf(
-            TvAction.NAVIGATE_UP,
-            TvAction.NAVIGATE_DOWN,
-            TvAction.NAVIGATE_LEFT,
-            TvAction.NAVIGATE_RIGHT,
-            TvAction.BACK,
-            TvAction.PLAY_PAUSE,
-            TvAction.OPEN_QUICK_ACTIONS,
-            TvAction.PAGE_UP,
-            TvAction.PAGE_DOWN,
-            TvAction.CHANNEL_UP,
-            TvAction.CHANNEL_DOWN,
-            TvAction.FOCUS_QUICK_ACTIONS,
-            TvAction.FOCUS_TIMELINE,
-        )
+        val allowedActions =
+            listOf(
+                TvAction.NAVIGATE_UP,
+                TvAction.NAVIGATE_DOWN,
+                TvAction.NAVIGATE_LEFT,
+                TvAction.NAVIGATE_RIGHT,
+                TvAction.BACK,
+                TvAction.PLAY_PAUSE,
+                TvAction.OPEN_QUICK_ACTIONS,
+                TvAction.PAGE_UP,
+                TvAction.PAGE_DOWN,
+                TvAction.CHANNEL_UP,
+                TvAction.CHANNEL_DOWN,
+                TvAction.FOCUS_QUICK_ACTIONS,
+                TvAction.FOCUS_TIMELINE,
+            )
 
         for (action in allowedActions) {
             assertEquals("$action should be allowed for kids", action, filterForKidsMode(action, ctx))
@@ -410,26 +413,28 @@ class KidsAndMiniPlayerOverlayTest {
         val ctx = TvScreenContext.player(hasBlockingOverlay = true)
 
         // Contract Section 8.1: Only NAVIGATE_* and BACK allowed
-        val allowedActions = listOf(
-            TvAction.NAVIGATE_UP,
-            TvAction.NAVIGATE_DOWN,
-            TvAction.NAVIGATE_LEFT,
-            TvAction.NAVIGATE_RIGHT,
-            TvAction.BACK,
-        )
+        val allowedActions =
+            listOf(
+                TvAction.NAVIGATE_UP,
+                TvAction.NAVIGATE_DOWN,
+                TvAction.NAVIGATE_LEFT,
+                TvAction.NAVIGATE_RIGHT,
+                TvAction.BACK,
+            )
 
         for (action in allowedActions) {
             assertEquals("$action should be allowed in overlay", action, filterForOverlays(action, ctx))
         }
 
         // Everything else blocked
-        val blockedActions = listOf(
-            TvAction.PLAY_PAUSE,
-            TvAction.SEEK_FORWARD_10S,
-            TvAction.OPEN_QUICK_ACTIONS,
-            TvAction.ROW_FAST_SCROLL_FORWARD,
-            TvAction.OPEN_DETAILS,
-        )
+        val blockedActions =
+            listOf(
+                TvAction.PLAY_PAUSE,
+                TvAction.SEEK_FORWARD_10S,
+                TvAction.OPEN_QUICK_ACTIONS,
+                TvAction.ROW_FAST_SCROLL_FORWARD,
+                TvAction.OPEN_DETAILS,
+            )
 
         for (action in blockedActions) {
             assertNull("$action should be blocked in overlay", filterForOverlays(action, ctx))
@@ -445,13 +450,14 @@ class KidsAndMiniPlayerOverlayTest {
         assertNull(filterForMiniPlayer(TvAction.ROW_FAST_SCROLL_BACKWARD, ctx))
 
         // Everything else passes through
-        val allowedActions = listOf(
-            TvAction.NAVIGATE_UP,
-            TvAction.PLAY_PAUSE,
-            TvAction.SEEK_FORWARD_10S,
-            TvAction.OPEN_DETAILS,
-            TvAction.BACK,
-        )
+        val allowedActions =
+            listOf(
+                TvAction.NAVIGATE_UP,
+                TvAction.PLAY_PAUSE,
+                TvAction.SEEK_FORWARD_10S,
+                TvAction.OPEN_DETAILS,
+                TvAction.BACK,
+            )
 
         for (action in allowedActions) {
             assertEquals("$action should pass through MiniPlayer filter", action, filterForMiniPlayer(action, ctx))

@@ -184,13 +184,14 @@ private class FakeMiniPlayerManager : MiniPlayerManager {
         rowIndex: Int?,
         itemIndex: Int?,
     ) {
-        _state.value = _state.value.copy(
-            visible = true,
-            returnRoute = fromRoute,
-            returnMediaId = mediaId,
-            returnRowIndex = rowIndex,
-            returnItemIndex = itemIndex,
-        )
+        _state.value =
+            _state.value.copy(
+                visible = true,
+                returnRoute = fromRoute,
+                returnMediaId = mediaId,
+                returnRowIndex = rowIndex,
+                returnItemIndex = itemIndex,
+            )
     }
 
     override fun exitMiniPlayer(returnToFullPlayer: Boolean) {
@@ -218,42 +219,74 @@ private class FakeMiniPlayerManager : MiniPlayerManager {
     }
 
     override fun enterResizeMode() {
-        _state.value = _state.value.copy(
-            mode = com.chris.m3usuite.player.miniplayer.MiniPlayerMode.RESIZE,
-            previousSize = _state.value.size,
-            previousPosition = _state.value.position,
-        )
+        _state.value =
+            _state.value.copy(
+                mode = com.chris.m3usuite.player.miniplayer.MiniPlayerMode.RESIZE,
+                previousSize = _state.value.size,
+                previousPosition = _state.value.position,
+            )
     }
 
     override fun applyResize(deltaSize: androidx.compose.ui.unit.DpSize) {
         // Simplified implementation for testing
         val newWidth = _state.value.size.width + deltaSize.width
         val newHeight = _state.value.size.height + deltaSize.height
-        _state.value = _state.value.copy(size = androidx.compose.ui.unit.DpSize(newWidth, newHeight))
+        _state.value =
+            _state.value.copy(
+                size =
+                    androidx.compose.ui.unit
+                        .DpSize(newWidth, newHeight),
+            )
     }
 
     override fun moveBy(delta: androidx.compose.ui.geometry.Offset) {
         val current = _state.value.position ?: androidx.compose.ui.geometry.Offset.Zero
-        _state.value = _state.value.copy(
-            position = androidx.compose.ui.geometry.Offset(current.x + delta.x, current.y + delta.y),
-        )
+        _state.value =
+            _state.value.copy(
+                position =
+                    androidx.compose.ui.geometry
+                        .Offset(current.x + delta.x, current.y + delta.y),
+            )
     }
 
     override fun confirmResize() {
-        _state.value = _state.value.copy(
-            mode = com.chris.m3usuite.player.miniplayer.MiniPlayerMode.NORMAL,
-            previousSize = null,
-            previousPosition = null,
-        )
+        _state.value =
+            _state.value.copy(
+                mode = com.chris.m3usuite.player.miniplayer.MiniPlayerMode.NORMAL,
+                previousSize = null,
+                previousPosition = null,
+            )
     }
 
     override fun cancelResize() {
-        _state.value = _state.value.copy(
-            mode = com.chris.m3usuite.player.miniplayer.MiniPlayerMode.NORMAL,
-            size = _state.value.previousSize ?: _state.value.size,
-            position = _state.value.previousPosition,
-            previousSize = null,
-            previousPosition = null,
-        )
+        _state.value =
+            _state.value.copy(
+                mode = com.chris.m3usuite.player.miniplayer.MiniPlayerMode.NORMAL,
+                size = _state.value.previousSize ?: _state.value.size,
+                position = _state.value.previousPosition,
+                previousSize = null,
+                previousPosition = null,
+            )
+    }
+
+    override fun snapToNearestAnchor(
+        screenWidthPx: Float,
+        screenHeightPx: Float,
+        density: androidx.compose.ui.unit.Density,
+    ) {
+        // Simplified: just reset position
+        _state.value = _state.value.copy(position = null)
+    }
+
+    override fun clampToSafeArea(
+        screenWidthPx: Float,
+        screenHeightPx: Float,
+        density: androidx.compose.ui.unit.Density,
+    ) {
+        // No-op for tests
+    }
+
+    override fun markFirstTimeHintShown() {
+        _state.value = _state.value.copy(hasShownFirstTimeHint = true)
     }
 }

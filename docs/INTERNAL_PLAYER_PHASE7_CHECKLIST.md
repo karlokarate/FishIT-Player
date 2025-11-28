@@ -1266,12 +1266,96 @@ This task group implements the basic MiniPlayer Resize Mode functionality as spe
 
 ---
 
+## Task Group 12: MiniPlayer Polish & UX Improvements
+
+**Status:** ✅ **COMPLETE**
+
+This task group implements visual polish, animations, snapping/bounds, touch gestures, and hints for the MiniPlayer overlay.
+
+### Task 12.1: Visual Polish ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerOverlay.kt`
+
+**Changes:**
+- Added drop shadow (`shadow()` modifier with 12dp elevation)
+- Added rounded corners (16dp radius with `clip()`)
+- Added translucent background behind controls (`Color.Black.copy(alpha = 0.4f)`)
+- Added scale-up effect in resize mode (1.03f via `graphicsLayer`)
+- Used MaterialTheme typography tokens (`labelSmall`, `bodySmall`)
+
+### Task 12.2: Snapping & Bounds Behavior ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerState.kt`
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerManager.kt`
+
+**Changes:**
+- Added `CENTER_TOP` and `CENTER_BOTTOM` snap anchors
+- Added `SAFE_MARGIN_DP = 16.dp` for safe padding from edges
+- Added `CENTER_SNAP_THRESHOLD_DP = 80.dp` for center snapping
+- Implemented `snapToNearestAnchor()` method
+- Implemented `clampToSafeArea()` method
+- Snapping occurs on drag end (non-TV) or resize mode exit
+
+### Task 12.3: Animation Polish ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerOverlay.kt`
+
+**Changes:**
+- Added fade/slide-in animation on MiniPlayer visibility (200ms duration)
+- Added animated size changes via `animateDpAsState`
+- Added scale animation for resize mode transition
+- All animations use `tween(200ms)` spec for smooth transitions
+- Controls and hints use `AnimatedVisibility` for fade transitions
+
+### Task 12.4: Touch Gestures (non-TV) ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerOverlay.kt`
+
+**Changes:**
+- Added drag-to-move via `detectDragGestures`
+- Drag automatically enters resize mode for position tracking
+- Drag end triggers `snapToNearestAnchor()`
+- Gestures gated behind `!FocusKit.isTvDevice(context)`
+- Gestures do not consume clicks on controls
+
+### Task 12.5: Hints & Discoverability ✅
+**Files Modified:**
+- `app/src/main/res/values/strings.xml`
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerOverlay.kt`
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerState.kt`
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerManager.kt`
+
+**Changes:**
+- Added string resources for all hints (internationalizable)
+- Added first-time hint chip (auto-dismisses after 4 seconds)
+- Added `hasShownFirstTimeHint` state field
+- Added `markFirstTimeHintShown()` method
+- First-time hint only shown on TV devices
+- Resize mode hint uses existing string resource
+
+### Task 12.6: Unit Tests ✅
+**Files Created:**
+- `app/src/test/java/com/chris/m3usuite/player/miniplayer/MiniPlayerBoundsTest.kt`
+
+**Test Coverage:**
+- `snapToNearestAnchor()` for all 6 anchors
+- `clampToSafeArea()` bounds clamping
+- `markFirstTimeHintShown()` state management
+- New anchor types (CENTER_TOP, CENTER_BOTTOM)
+
+**Files Modified:**
+- `app/src/test/java/com/chris/m3usuite/player/miniplayer/MiniPlayerStateTest.kt` - Updated anchor count test
+- `app/src/test/java/com/chris/m3usuite/tv/input/ToggleMiniPlayerFocusTest.kt` - Added new interface methods to FakeMiniPlayerManager
+
+---
+
 ## Phase 7 Completion Criteria
 
 - [x] Task Groups 1-2b complete (PlaybackSession, MiniPlayerState, TV Input primitives)
 - [x] Task Group 6-7 complete (TV Input & FocusZones)
 - [x] Task Group 10 complete (Validation & Hardening)
 - [x] Task Group 11 complete (MiniPlayer Resize Mode)
+- [x] Task Group 12 complete (MiniPlayer Polish & UX Improvements)
 - [ ] Task Groups 3-5, 8-9 remaining (UI wiring, System PiP host, Navigation, Integration tests)
 - [x] PlaybackSession is truly global (single ExoPlayer instance)
 - [x] MiniPlayerManager state management functional
@@ -1281,6 +1365,7 @@ This task group implements the basic MiniPlayer Resize Mode functionality as spe
 - [x] Filter composition (Kids + MiniPlayer + Overlay) verified
 - [x] No changes to legacy `InternalPlayerScreen.kt`
 - [x] Phase 7 Validation tests passing
+- [x] MiniPlayer polish complete (visuals, snapping, animations, gestures, hints)
 - [ ] Full UI wiring and integration pending
 
 ---
