@@ -183,10 +183,11 @@ object TelegramItemBuilder {
 
         // Extract metadata, preferring audio title
         val baseMetadata = extractMetadata(nearestText, audio.caption, audio.audio.fileName, chatTitle)
-        val metadata = if (baseMetadata.title == null && audio.audio.title.isNotBlank()) {
-            baseMetadata.copy(
-                title = "${audio.audio.performer} - ${audio.audio.title}".trim(' ', '-'),
-            )
+        val audioTitle = listOf(audio.audio.performer, audio.audio.title)
+            .filter { it.isNotBlank() }
+            .joinToString(" - ")
+        val metadata = if (baseMetadata.title == null && audioTitle.isNotBlank()) {
+            baseMetadata.copy(title = audioTitle)
         } else {
             baseMetadata
         }

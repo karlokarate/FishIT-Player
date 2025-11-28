@@ -1,5 +1,7 @@
 package com.chris.m3usuite.telegram.domain
 
+import com.chris.m3usuite.telegram.parser.ExportMessage
+
 /**
  * Domain models for Telegram content items.
  *
@@ -225,5 +227,5 @@ data class TelegramItem(
  */
 data class MessageBlock(
     val chatId: Long,
-    val messages: List<com.chris.m3usuite.telegram.parser.ExportMessage>,
+    val messages: List<ExportMessage>,
 )
