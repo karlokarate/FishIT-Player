@@ -1,5 +1,6 @@
 package com.chris.m3usuite.player.session
 
+import androidx.media3.common.Player
 import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.playback.PlaybackSessionController
 import org.junit.After
@@ -85,7 +86,7 @@ class PlaybackSessionCoreTest {
     @Test
     fun `playbackState initial value is STATE_IDLE`() {
         // Player.STATE_IDLE = 1
-        assertEquals(1, PlaybackSession.playbackState.value)
+        assertEquals(Player.STATE_IDLE, PlaybackSession.playbackState.value)
     }
 
     @Test

@@ -48,6 +48,19 @@ object PlaybackSession : PlaybackSessionController {
     private val listenerRef = AtomicReference<Player.Listener?>(null)
 
     // ══════════════════════════════════════════════════════════════════
+    // CONSTANTS
+    // ══════════════════════════════════════════════════════════════════
+
+    /** Minimum playback speed multiplier */
+    private const val MIN_PLAYBACK_SPEED = 0.25f
+
+    /** Maximum normal playback speed multiplier */
+    private const val MAX_PLAYBACK_SPEED = 4.0f
+
+    /** Maximum trickplay speed multiplier */
+    private const val MAX_TRICKPLAY_SPEED = 8.0f
+
+    // ══════════════════════════════════════════════════════════════════
     // STATE FLOWS (Phase 7)
     // ══════════════════════════════════════════════════════════════════
 
@@ -183,7 +196,7 @@ object PlaybackSession : PlaybackSessionController {
 
     override fun setSpeed(speed: Float) {
         val player = playerRef.get() ?: return
-        player.playbackParameters = PlaybackParameters(speed.coerceIn(0.25f, 4.0f))
+        player.playbackParameters = PlaybackParameters(speed.coerceIn(MIN_PLAYBACK_SPEED, MAX_PLAYBACK_SPEED))
     }
 
     override fun enableTrickplay(speed: Float) {
@@ -191,7 +204,7 @@ object PlaybackSession : PlaybackSessionController {
         // Negative speeds are not supported by ExoPlayer; for rewind trickplay,
         // the UI should perform periodic seekBy calls instead
         val player = playerRef.get() ?: return
-        val safeSpeed = speed.coerceIn(0.25f, 8.0f)
+        val safeSpeed = speed.coerceIn(MIN_PLAYBACK_SPEED, MAX_TRICKPLAY_SPEED)
         player.playbackParameters = PlaybackParameters(safeSpeed)
     }
 
