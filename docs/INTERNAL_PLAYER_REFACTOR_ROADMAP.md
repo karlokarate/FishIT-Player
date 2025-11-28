@@ -1141,35 +1141,52 @@ See `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` "Phase 6 Context Refresh" section 
 
 ---
 
-## Phase 7 – PlaybackSession & MiniPlayer integration
+## Phase 7 – Unified PlaybackSession & In-App MiniPlayer
 
-**Goal:** Make the player instance sharable across screens (mini-player / PiP behaviour & TV mini-player compatibility) using existing session/mini components.
+**Goal:** Introduce a unified PlaybackSession that owns the ExoPlayer instance globally, and an In-App MiniPlayer overlay that allows video playback to continue seamlessly while navigating the app.
 
-### Checklist
+**Status:** 🔄 **KICKOFF COMPLETE** – Contract analyzed and implementation checklist created
 
-- ⬜ PlaybackSession integration
-  - ⬜ Replace direct `ExoPlayer.Builder(...)` in `InternalPlayerSession` with:
-    - ⬜ `PlaybackSession.acquire(context)` (or equivalent existing helper)
-  - ⬜ Let `PlaybackSession` take ownership of:
-    - ⬜ the `ExoPlayer` lifecycle
-    - ⬜ the `currentSource` (final URL / resolved source)
+**Full Specification:** See [INTERNAL_PLAYER_PHASE7_CHECKLIST.md](INTERNAL_PLAYER_PHASE7_CHECKLIST.md) and [INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md](INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md)
 
-- ⬜ MiniPlayerOrchestrator
-  - ⬜ Create `MiniPlayerOrchestrator` that wraps:
-    - ⬜ `MiniPlayerState`
-    - ⬜ `MiniPlayerDescriptor`
-  - ⬜ Provide methods:
-    - ⬜ `onEnterPipOrMini(...)`
-    - ⬜ `onLeaveScreen(...)`
-  - ⬜ Move logic for:
-    - ⬜ TV mini-player vs Android system PiP
-    - ⬜ updating descriptors on exit
-    - ⬜ keeping the player alive for mini mode
+**Key Principles:**
+- SIP-Only: No modifications to legacy `InternalPlayerScreen.kt`
+- Single PlaybackSession: One shared playback session across the entire app
+- In-App MiniPlayer: Floating overlay, not system PiP (for TV devices)
+- System PiP for Phones/Tablets Only: Native PiP only when backgrounding the app
+- Fire TV: UI PiP button → In-App MiniPlayer only, never `enterPictureInPictureMode()`
 
-- ⬜ SystemUi integration
-  - ⬜ Update `requestPictureInPicture(...)`:
-    - ⬜ On TVs: activate mini-player flow via `MiniPlayerOrchestrator`
-    - ⬜ On phones/tablets: retain current system PiP behaviour
+### Summary of Checklist Groups
+
+| Group | Description |
+|-------|-------------|
+| **Group 1** | PlaybackSession Core – Define/extend unified PlaybackSession with StateFlows and command methods |
+| **Group 2** | MiniPlayer Domain Model & Manager – MiniPlayerState, MiniPlayerManager with enter/exit APIs |
+| **Group 3** | In-App MiniPlayer UI Skeleton – Basic MiniPlayer overlay composable with FocusZone integration |
+| **Group 4** | PiP Button Refactor – Wire UI PiP button to MiniPlayerManager, remove `enterPictureInPictureMode()` |
+| **Group 5** | System PiP (Phones/Tablets) – Implement Activity lifecycle PiP entry, block from UI button |
+| **Group 6** | TV Input & MiniPlayer Behavior – TOGGLE_MINI_PLAYER_FOCUS, ROW_FAST_SCROLL blocking, PIP_* actions |
+| **Group 7** | FocusZones & Focus Integration – MINI_PLAYER/PRIMARY_UI zones, zone-based focus toggle |
+| **Group 8** | Navigation & Return Behavior – returnRoute storage, Full↔Mini transitions |
+| **Group 9** | Testing & Quality – Unit tests, integration tests, Phase 4-6 regression tests |
+
+### Current State Summary (from Analysis)
+
+- **Existing PlaybackSession**: Singleton holder for shared ExoPlayer (`playback/PlaybackSession.kt`)
+- **Existing MiniPlayer**: `MiniPlayerState`, `MiniPlayerDescriptor`, `MiniPlayerHost` (TV-only)
+- **Issue**: InternalPlayerSession creates its own ExoPlayer, not using `PlaybackSession.acquire()`
+- **PiP Button**: Currently calls native `enterPictureInPictureMode()` on phones; in-app MiniPlayer on TV
+- **Missing**: `MINI_PLAYER` FocusZoneId, `TOGGLE_MINI_PLAYER_FOCUS` TvAction, returnRoute storage
+
+### Contract Requirements Highlights
+
+1. **Single global PlaybackSession owns ExoPlayer** – Session survives MiniPlayer/full transitions
+2. **UI PiP button → In-App MiniPlayer only** – Never call `enterPictureInPictureMode()` from UI button
+3. **System PiP for phones/tablets only** – Activity lifecycle triggers (onUserLeaveHint/onStop)
+4. **Fire TV: No native PiP from app code** – Allow OS-driven PiP if FireOS invokes it
+5. **Long-press PLAY toggles focus** – Between MINI_PLAYER and PRIMARY_UI zones
+6. **ROW_FAST_SCROLL disabled** – When MiniPlayer is visible
+7. **Seamless transitions** – No rebuffering between Full↔Mini
 
 ---
 
