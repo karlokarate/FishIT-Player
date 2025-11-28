@@ -273,18 +273,20 @@ The following plan is concrete, repository-aware, and sequences work from offlin
   - Given a `MessageBlock`:
     - Choose anchor `ExportVideo` (best resolution/longest duration).
     - Find nearest `ExportText` by time, with loose title/year matching.
-    - Choose `posterRef` and `backdropRef` from `ExportPhoto.sizes` by aspect ratio (2:3 for poster, ≥16:9 for backdrop).
+    - Choose `posterRef` and `backdropRef` from `ExportPhoto.sizes` by aspect ratio (≤0.85 for poster, ≥1.6 for backdrop).
     - Fallback to video `thumbnail` if no photo.
   - Handle `POSTER_ONLY` (no video), `RAR_ITEM`, `AUDIOBOOK` cases.
-  - Output: contract's `TelegramItem`, `TelegramMediaRef`, `TelegramImageRef`, `TelegramMetadata`.
+  - Output: contract's `TelegramItem`, `TelegramMediaRef`, `TelegramImageRef`, `TelegramDocumentRef`, `TelegramMetadata`.
 
 - [ ] **A.6 Create domain DTOs per contract**:
   - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/domain/TelegramDomainModels.kt`
   - `TelegramItemType` enum: MOVIE, SERIES_EPISODE, CLIP, AUDIOBOOK, RAR_ITEM, POSTER_ONLY.
-  - `TelegramMediaRef(remoteId, uniqueId, sizeBytes, mimeType, durationSeconds, width, height)`.
+  - `TelegramMediaRef(remoteId, uniqueId, sizeBytes, mimeType, durationSeconds, width, height)` – for video files.
+  - `TelegramDocumentRef(remoteId, uniqueId, sizeBytes, mimeType, fileName)` – for documents/archives (RAR, ZIP, audiobooks).
   - `TelegramImageRef(remoteId, uniqueId, width, height, sizeBytes)`.
   - `TelegramMetadata(title, originalTitle, year, lengthMinutes, fsk, productionCountry, collection, director, tmdbRating, genres[], tmdbUrl, isAdult)`.
-  - `TelegramItem(chatId, anchorMessageId, type, videoRef, posterRef, backdropRef, textMessageId, photoMessageId, createdAtIso, metadata)`.
+  - `TelegramItem(chatId, anchorMessageId, type, videoRef?, documentRef?, posterRef, backdropRef, textMessageId, photoMessageId, createdAtIso, metadata)`.
+  - **NOTE**: `videoRef` is used for MOVIE/SERIES_EPISODE/CLIP; `documentRef` is used for RAR_ITEM/AUDIOBOOK.
 
 - [ ] **A.7 Add unit tests for offline parser**:
   - **NEW**: `app/src/test/java/com/chris/m3usuite/telegram/parser/ExportMessageLoaderTest.kt`
@@ -485,11 +487,23 @@ The following items are unclear from the current codebase or contract and may ne
 
 **Question**: The contract mentions `RAR_ITEM` and `AUDIOBOOK` types for archive chats. The current `MediaKind` enum has `RAR_ARCHIVE`. How should audiobook chats be detected?
 
-**Assumption**: Use chat title heuristics (e.g., "Hörbuch", "Audiobook" in title) and file extension (`.mp3`, `.m4b`, `.aac` for audio; `.rar`, `.zip`, `.7z` for archives). `TelegramItemBuilder` will set `type = AUDIOBOOK` or `RAR_ITEM` accordingly. `videoRef` will be null for these types; a future `documentRef` or `archiveRef` field may be needed.
+**Assumption**: Use chat title heuristics (e.g., "Hörbuch", "Audiobook" in title) and file extension (`.mp3`, `.m4b`, `.aac` for audio; `.rar`, `.zip`, `.7z` for archives). `TelegramItemBuilder` will set `type = AUDIOBOOK` or `RAR_ITEM` accordingly. `videoRef` will be null for these types; `documentRef` will hold the archive/audio file reference (see updated domain model in A.6).
 
 ---
 
-### 6.6 Poster/Backdrop Aspect Ratio Thresholds
+### 6.6 Adult Content Detection (`isAdult` field)
+
+**Question**: The `TelegramMetadata` includes an `isAdult` field. The current `MediaParser` has `isAdultChannel()` which checks for explicit words in chat titles/captions. Should this be the only detection mechanism?
+
+**Assumption**: Reuse the existing `isAdultChannel()` logic from `MediaParser.kt` (regex matching words like "porn", "xxx", "18+", etc.). The `TelegramItemBuilder` will set `metadata.isAdult = true` if:
+1. Chat title matches adult patterns, OR
+2. Message caption matches adult patterns, OR
+3. FSK value is 18 or higher.
+This flag can be used by the UI to filter content based on profile settings (kid/adult profiles).
+
+---
+
+### 6.7 Poster/Backdrop Aspect Ratio Thresholds
 
 **Question**: The contract says poster should be "roughly 2:3 / 3:4" and backdrop should be "wide aspect ratio (e.g. ≥ 16:9)". What exact thresholds should be used?
 
@@ -501,7 +515,7 @@ The following items are unclear from the current codebase or contract and may ne
 
 ---
 
-### 6.7 TMDb URL Extraction
+### 6.8 TMDb URL Extraction
 
 **Question**: The contract mentions extracting `tmdbUrl` from `ExportText`. The CLI code extracts it from `TextEntityTypeTextUrl` entities in the text. Is this the only source, or should we also parse raw text for URLs like `https://www.themoviedb.org/movie/...`?
 
@@ -509,7 +523,7 @@ The following items are unclear from the current codebase or contract and may ne
 
 ---
 
-### 6.8 kotlinx.serialization vs. Moshi
+### 6.9 kotlinx.serialization vs. Moshi
 
 **Question**: The contract recommends `kotlinx.serialization` or Moshi for JSON parsing. The CLI reference code uses Gson. Which should be used?
 
@@ -517,7 +531,7 @@ The following items are unclear from the current codebase or contract and may ne
 
 ---
 
-### 6.9 Per-Chat Scan Persistence
+### 6.10 Per-Chat Scan Persistence
 
 **Question**: Should `ChatScanState` be persisted across app restarts? If so, where?
 
