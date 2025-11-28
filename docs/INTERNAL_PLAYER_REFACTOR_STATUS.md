@@ -4227,4 +4227,103 @@ TvInputInspectorOverlay (debug only)
 
 ---
 
-**Last Updated:** 2025-11-27
+## Phase 7 – Unified PlaybackSession & In-App MiniPlayer (Kickoff Complete)
+
+**Date:** 2025-11-28
+
+**Status:** 🔄 **KICKOFF COMPLETE** – Contract analyzed and implementation checklist created
+
+This phase introduces a unified PlaybackSession that owns the ExoPlayer instance globally, and an In-App MiniPlayer overlay that allows video playback to continue seamlessly while navigating the app.
+
+### What Was Done
+
+**1. Current State Analysis**
+
+Analyzed the repository for all Phase 7–related code:
+
+| Component | Current State | Phase 7 Change Needed |
+|-----------|---------------|----------------------|
+| `PlaybackSession.kt` | Singleton holder with `acquire()` and `current()` | Extend with StateFlows, command methods, Player.Listener |
+| `InternalPlayerSession.kt` | Creates own ExoPlayer instance directly | Use `PlaybackSession.acquire()` instead |
+| `MiniPlayerState.kt` | Singleton with visible/descriptor state | Add mode, anchor, returnRoute fields |
+| `MiniPlayerHost.kt` | TV-only overlay using PlaybackSession.current() | Add controls, FocusZone integration |
+| PIP button (SIP) | Calls `requestPictureInPicture(activity)` | Wire to MiniPlayerManager.enterMiniPlayer() |
+| FocusZoneId enum | Missing MINI_PLAYER zone | Add MINI_PLAYER |
+| TvAction enum | Has PIP_* actions, missing TOGGLE_MINI_PLAYER_FOCUS | Add TOGGLE_MINI_PLAYER_FOCUS |
+
+**Key Issue Identified:** `InternalPlayerSession` creates its own ExoPlayer instance in a `LaunchedEffect` (lines 237-244), completely bypassing the existing `PlaybackSession.acquire()` pattern. This defeats the purpose of having a global session for MiniPlayer continuity.
+
+**2. Phase 7 Goals & Constraints Summary (from Contract)**
+
+| Principle | Description |
+|-----------|-------------|
+| Single PlaybackSession | One shared ExoPlayer instance across the entire app |
+| In-App MiniPlayer | Floating overlay, not system PiP (for TV devices) |
+| System PiP (phones/tablets) | Native PiP only when backgrounding the app (Home/Recents) |
+| Fire TV | UI PIP button → In-App MiniPlayer only, never enterPictureInPictureMode() |
+| Long-press PLAY | Toggles focus between MiniPlayer and primary UI |
+| ROW_FAST_SCROLL disabled | When MiniPlayer is visible |
+
+**3. Phase 7 Checklist Created**
+
+Created comprehensive implementation checklist at `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` with 9 task groups:
+
+| Group | Description | Tasks |
+|-------|-------------|-------|
+| **1** | PlaybackSession Core | Define/extend PlaybackSession with StateFlows and commands |
+| **2** | MiniPlayer Domain Model | MiniPlayerState, MiniPlayerManager with enter/exit APIs |
+| **3** | In-App MiniPlayer UI | Basic overlay composable with FocusZone integration |
+| **4** | PIP Button Refactor | Wire UI button to MiniPlayerManager, remove native PiP calls |
+| **5** | System PiP (Phones/Tablets) | Activity lifecycle PiP entry, block from UI button |
+| **6** | TV Input & MiniPlayer | TOGGLE_MINI_PLAYER_FOCUS, ROW_FAST_SCROLL blocking |
+| **7** | FocusZones Integration | MINI_PLAYER/PRIMARY_UI zones, focus toggle |
+| **8** | Navigation & Return | returnRoute storage, Full↔Mini transitions |
+| **9** | Testing & Quality | Unit tests, integration tests, regression tests |
+
+**4. Documentation Updated**
+
+- ✅ Created `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` (32KB, comprehensive implementation guide)
+- ✅ Updated `docs/INTERNAL_PLAYER_REFACTOR_ROADMAP.md` (Phase 7 section rewritten with goals and group summary)
+- ✅ Updated `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` (this entry)
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` | Full implementation checklist with 9 task groups |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `docs/INTERNAL_PLAYER_REFACTOR_ROADMAP.md` | Rewrote Phase 7 section with goals and checklist group summary |
+| `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added Phase 7 kickoff entry |
+
+### What Was NOT Done (Documentation Only)
+
+- ❌ **No Kotlin code changes** – This was a kickoff/analysis task only
+- ❌ **No XML changes**
+- ❌ **No test changes**
+- ❌ **Phase 7 implementation tasks NOT started**
+
+### Contract Reference
+
+All analysis and checklist items align with:
+- `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md`
+
+### What's Next (Phase 7 Implementation)
+
+Phase 7 implementation can proceed following the checklist groups in order:
+
+1. **Group 1:** PlaybackSession Core (StateFlows, command methods)
+2. **Group 2:** MiniPlayerManager (enter/exit APIs, state persistence)
+3. **Group 3:** MiniPlayer UI skeleton
+4. **Group 4:** PIP button refactor
+5. **Group 5:** System PiP for phones/tablets
+6. **Group 6-7:** TV input and FocusZone integration
+7. **Group 8:** Navigation and return behavior
+8. **Group 9:** Testing and quality
+
+---
+
+**Last Updated:** 2025-11-28
