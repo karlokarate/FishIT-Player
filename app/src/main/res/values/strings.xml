@@ -13,4 +13,11 @@
     <string name="action_retry">Erneut versuchen</string>
     <!-- Player UI -->
     <string name="pip_not_available">Picture-in-Picture not available on this device</string>
+    <!-- MiniPlayer hints -->
+    <string name="miniplayer_first_time_hint">Press Menu to resize and move the mini player</string>
+    <string name="miniplayer_resize_hint">FF/RW: Size • DPAD: Move • OK: Confirm • Back: Cancel</string>
+    <string name="miniplayer_resize_label">RESIZE</string>
+    <string name="miniplayer_play">Play</string>
+    <string name="miniplayer_pause">Pause</string>
+    <string name="miniplayer_expand">Expand to full player</string>
 </resources>

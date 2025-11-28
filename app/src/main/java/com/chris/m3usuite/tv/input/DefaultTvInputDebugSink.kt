@@ -100,13 +100,14 @@ object DefaultTvInputDebugSink : TvInputDebugSink {
         // Step 1: Log via GlobalDebug (respects GlobalDebug.isEnabled())
         GlobalDebug.logDpad(
             action = "TvInput",
-            extras = mapOf(
-                "keyCode" to KeyEvent.keyCodeToString(event.keyCode),
-                "role" to (role?.name ?: "null"),
-                "action" to (action?.name ?: "null"),
-                "screen" to ctx.screenId.name,
-                "handled" to handled.toString(),
-            ),
+            extras =
+                mapOf(
+                    "keyCode" to KeyEvent.keyCodeToString(event.keyCode),
+                    "role" to (role?.name ?: "null"),
+                    "action" to (action?.name ?: "null"),
+                    "screen" to ctx.screenId.name,
+                    "handled" to handled.toString(),
+                ),
         )
 
         // Step 2: Log via DiagnosticsLogger for structured logging
@@ -119,20 +120,22 @@ object DefaultTvInputDebugSink : TvInputDebugSink {
         // Step 3: Capture event for inspector overlay (if enabled via GlobalDebug)
         if (GlobalDebug.isTvInputInspectorEnabled()) {
             val currentZone = FocusKit.getCurrentZone()
-            val snapshot = TvInputEventSnapshot(
-                timestamp = System.currentTimeMillis(),
-                keyCodeName = KeyEvent.keyCodeToString(event.keyCode),
-                actionType = when (event.action) {
-                    KeyEvent.ACTION_DOWN -> "DOWN"
-                    KeyEvent.ACTION_UP -> "UP"
-                    else -> "OTHER"
-                },
-                role = role,
-                action = action,
-                screenId = ctx.screenId,
-                focusZone = currentZone,
-                handled = handled,
-            )
+            val snapshot =
+                TvInputEventSnapshot(
+                    timestamp = System.currentTimeMillis(),
+                    keyCodeName = KeyEvent.keyCodeToString(event.keyCode),
+                    actionType =
+                        when (event.action) {
+                            KeyEvent.ACTION_DOWN -> "DOWN"
+                            KeyEvent.ACTION_UP -> "UP"
+                            else -> "OTHER"
+                        },
+                    role = role,
+                    action = action,
+                    screenId = ctx.screenId,
+                    focusZone = currentZone,
+                    handled = handled,
+                )
 
             // Update history using efficient ArrayDeque
             synchronized(historyBuffer) {

@@ -1,7 +1,6 @@
 package com.chris.m3usuite.tv.input
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -126,10 +125,11 @@ class TvInputMiniPlayerFilterTest {
     @Test
     fun `resolve() blocks ROW_FAST_SCROLL when MiniPlayer is visible`() {
         // Create a config that maps FF to ROW_FAST_SCROLL_FORWARD
-        val config = TvScreenInputConfig(
-            screenId = TvScreenId.LIBRARY,
-            bindings = mapOf(TvKeyRole.FAST_FORWARD to TvAction.ROW_FAST_SCROLL_FORWARD),
-        )
+        val config =
+            TvScreenInputConfig(
+                screenId = TvScreenId.LIBRARY,
+                bindings = mapOf(TvKeyRole.FAST_FORWARD to TvAction.ROW_FAST_SCROLL_FORWARD),
+            )
         val ctx = TvScreenContext.library(isMiniPlayerVisible = true)
 
         val result = resolve(config, TvKeyRole.FAST_FORWARD, ctx)
@@ -139,10 +139,11 @@ class TvInputMiniPlayerFilterTest {
 
     @Test
     fun `resolve() allows ROW_FAST_SCROLL when MiniPlayer is not visible`() {
-        val config = TvScreenInputConfig(
-            screenId = TvScreenId.LIBRARY,
-            bindings = mapOf(TvKeyRole.FAST_FORWARD to TvAction.ROW_FAST_SCROLL_FORWARD),
-        )
+        val config =
+            TvScreenInputConfig(
+                screenId = TvScreenId.LIBRARY,
+                bindings = mapOf(TvKeyRole.FAST_FORWARD to TvAction.ROW_FAST_SCROLL_FORWARD),
+            )
         val ctx = TvScreenContext.library(isMiniPlayerVisible = false)
 
         val result = resolve(config, TvKeyRole.FAST_FORWARD, ctx)
@@ -153,14 +154,16 @@ class TvInputMiniPlayerFilterTest {
     @Test
     fun `resolve() applies MiniPlayer filter after overlay filter`() {
         // Verify that MiniPlayer filter is applied even when overlay is not blocking
-        val config = TvScreenInputConfig(
-            screenId = TvScreenId.LIBRARY,
-            bindings = mapOf(TvKeyRole.REWIND to TvAction.ROW_FAST_SCROLL_BACKWARD),
-        )
-        val ctx = TvScreenContext.library(
-            hasBlockingOverlay = false,
-            isMiniPlayerVisible = true,
-        )
+        val config =
+            TvScreenInputConfig(
+                screenId = TvScreenId.LIBRARY,
+                bindings = mapOf(TvKeyRole.REWIND to TvAction.ROW_FAST_SCROLL_BACKWARD),
+            )
+        val ctx =
+            TvScreenContext.library(
+                hasBlockingOverlay = false,
+                isMiniPlayerVisible = true,
+            )
 
         val result = resolve(config, TvKeyRole.REWIND, ctx)
 

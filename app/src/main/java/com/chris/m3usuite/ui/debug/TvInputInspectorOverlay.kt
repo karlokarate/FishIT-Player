@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -73,14 +72,14 @@ fun TvInputInspectorOverlay(modifier: Modifier = Modifier) {
 
     // Position at bottom-right corner with semi-transparent background
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .background(
-                color = Color.Black.copy(alpha = 0.75f),
-                shape = RoundedCornerShape(8.dp),
-            )
-            .padding(12.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .background(
+                    color = Color.Black.copy(alpha = 0.75f),
+                    shape = RoundedCornerShape(8.dp),
+                ).padding(12.dp),
     ) {
         // Header
         Text(
@@ -118,14 +117,18 @@ private fun TvInputEventRow(event: TvInputEventSnapshot) {
     val formattedTime = timeFormat.format(Date(event.timestamp))
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = if (event.handled) Color(0xFF1B5E20).copy(alpha = 0.3f)
-                else Color(0xFFB71C1C).copy(alpha = 0.3f),
-                shape = RoundedCornerShape(4.dp),
-            )
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    color =
+                        if (event.handled) {
+                            Color(0xFF1B5E20).copy(alpha = 0.3f)
+                        } else {
+                            Color(0xFFB71C1C).copy(alpha = 0.3f)
+                        },
+                    shape = RoundedCornerShape(4.dp),
+                ).padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Time

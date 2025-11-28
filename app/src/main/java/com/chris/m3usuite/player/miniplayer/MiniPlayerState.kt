@@ -56,6 +56,12 @@ enum class MiniPlayerAnchor {
 
     /** Bottom-right corner of the screen (default) */
     BOTTOM_RIGHT,
+
+    /** Center-top of the screen (horizontal center, near top) */
+    CENTER_TOP,
+
+    /** Center-bottom of the screen (horizontal center, near bottom) */
+    CENTER_BOTTOM,
 }
 
 /**
@@ -82,6 +88,18 @@ val RESIZE_SIZE_DELTA = DpSize(40.dp, 22.5.dp)
  * Position delta for move operations (fine adjustment via DPAD).
  */
 const val MOVE_POSITION_DELTA = 20f
+
+/**
+ * Safe margin from screen edges in dp.
+ * MiniPlayer should never overlap this margin after confirm/cancel.
+ */
+val SAFE_MARGIN_DP = 16.dp
+
+/**
+ * Threshold (in dp) for snapping to center anchors.
+ * If the MiniPlayer center is within this distance of screen center, it snaps to center anchor.
+ */
+val CENTER_SNAP_THRESHOLD_DP = 80.dp
 
 /**
  * State representation for the In-App MiniPlayer.
@@ -115,6 +133,7 @@ const val MOVE_POSITION_DELTA = 20f
  * @property returnItemIndex Item index within row to focus when returning
  * @property previousSize Size before entering resize mode (for cancel restoration)
  * @property previousPosition Position before entering resize mode (for cancel restoration)
+ * @property hasShownFirstTimeHint Whether the first-time hint has been shown
  */
 @Immutable
 data class MiniPlayerState(
@@ -129,6 +148,7 @@ data class MiniPlayerState(
     val returnItemIndex: Int? = null,
     val previousSize: DpSize? = null,
     val previousPosition: Offset? = null,
+    val hasShownFirstTimeHint: Boolean = false,
 ) {
     companion object {
         /** Default/initial state */

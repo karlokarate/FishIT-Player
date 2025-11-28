@@ -46,8 +46,8 @@ class DoubleBackNavigator(
      *
      * @return True if navigation was successful, false otherwise
      */
-    fun navigateToHome(): Boolean {
-        return try {
+    fun navigateToHome(): Boolean =
+        try {
             navController.navigate(startRoute) {
                 // Clear the entire back stack up to and including start
                 popUpTo(navController.graph.startDestinationId) {
@@ -61,7 +61,6 @@ class DoubleBackNavigator(
             // Navigation failed - likely no valid route
             false
         }
-    }
 
     /**
      * Check if the current destination is the home screen.
@@ -84,9 +83,9 @@ class DoubleBackNavigator(
  */
 fun TvAction.handleExitToHome(navigator: DoubleBackNavigator): Boolean {
     if (this != TvAction.EXIT_TO_HOME) return false
-    
+
     // Don't navigate if already at home
     if (navigator.isAtHome()) return false
-    
+
     return navigator.navigateToHome()
 }

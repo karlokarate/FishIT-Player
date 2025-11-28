@@ -2,12 +2,10 @@ package com.chris.m3usuite.player.miniplayer
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 /**
@@ -155,13 +153,15 @@ class MiniPlayerStateTest {
     }
 
     @Test
-    fun `MiniPlayerAnchor has all four corners`() {
+    fun `MiniPlayerAnchor has all six anchor positions`() {
         val anchors = MiniPlayerAnchor.entries.toList()
-        assertEquals(4, anchors.size)
+        assertEquals(6, anchors.size)
         assertTrue(anchors.contains(MiniPlayerAnchor.TOP_LEFT))
         assertTrue(anchors.contains(MiniPlayerAnchor.TOP_RIGHT))
         assertTrue(anchors.contains(MiniPlayerAnchor.BOTTOM_LEFT))
         assertTrue(anchors.contains(MiniPlayerAnchor.BOTTOM_RIGHT))
+        assertTrue(anchors.contains(MiniPlayerAnchor.CENTER_TOP))
+        assertTrue(anchors.contains(MiniPlayerAnchor.CENTER_BOTTOM))
     }
 
     // ══════════════════════════════════════════════════════════════════
