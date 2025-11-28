@@ -19,11 +19,23 @@ import android.view.KeyEvent
  * - The mapper does NOT implement debouncing itself
  *
  * Contract Reference: INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 3.1
+ * Contract Reference: INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6
  *
  * @see TvKeyRole for the semantic key role enum
  * @see TvAction for semantic application-level commands
  */
 object TvKeyMapper {
+    /**
+     * Minimum repeat count to consider a key press as "long press".
+     *
+     * On Android TV/Fire TV, holding a key generates repeated ACTION_DOWN events
+     * with increasing repeatCount. A repeatCount >= this threshold indicates a long press.
+     *
+     * Threshold of 3 provides approximately 450-600ms hold time on most devices
+     * (typical key repeat rate is ~150-200ms).
+     */
+    private const val LONG_PRESS_REPEAT_THRESHOLD = 3
+
     /**
      * Map an Android KeyEvent keycode to a semantic TvKeyRole.
      *
@@ -137,16 +149,41 @@ object TvKeyMapper {
     fun map(event: KeyEvent): TvKeyRole? = mapKeyCode(event.keyCode)
 
     /**
-     * Map a debounced KeyEvent to a TvKeyRole.
+     * Map a debounced KeyEvent to a TvKeyRole, with long-press detection.
      *
      * This is the preferred entry point when using TvKeyDebouncer.
      * The event should have already passed through debouncing at the
      * GlobalTvInputHost layer.
      *
+     * ════════════════════════════════════════════════════════════════════════════════
+     * PHASE 7 – Long-press PLAY Detection
+     * ════════════════════════════════════════════════════════════════════════════════
+     *
+     * For PLAY_PAUSE keys, this method detects long-press using:
+     * 1. KeyEvent.isLongPress() - set by the system for long press
+     * 2. repeatCount >= LONG_PRESS_REPEAT_THRESHOLD - for held keys
+     *
+     * When long-press is detected on PLAY_PAUSE, returns PLAY_PAUSE_LONG instead.
+     *
+     * **Contract Reference:**
+     * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6
+     *
      * @param event The already-debounced KeyEvent
      * @return The corresponding TvKeyRole, or null if unsupported
      */
-    fun mapDebounced(event: KeyEvent): TvKeyRole? = map(event)
+    fun mapDebounced(event: KeyEvent): TvKeyRole? {
+        val baseRole = map(event)
+
+        // Check for long-press on PLAY_PAUSE keys
+        if (baseRole == TvKeyRole.PLAY_PAUSE) {
+            val isLongPress = event.isLongPress || event.repeatCount >= LONG_PRESS_REPEAT_THRESHOLD
+            if (isLongPress) {
+                return TvKeyRole.PLAY_PAUSE_LONG
+            }
+        }
+
+        return baseRole
+    }
 
     /**
      * Check if a keycode is supported by this mapper.
