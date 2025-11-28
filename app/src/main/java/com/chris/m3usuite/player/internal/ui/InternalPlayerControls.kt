@@ -1,6 +1,5 @@
 package com.chris.m3usuite.player.internal.ui
 
-import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -40,7 +39,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.chris.m3usuite.core.debug.GlobalDebug
 import com.chris.m3usuite.player.internal.state.InternalPlayerController
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
-import com.chris.m3usuite.player.internal.system.requestPictureInPicture
 import com.chris.m3usuite.tv.input.GlobalTvInputHost
 import com.chris.m3usuite.tv.input.TvAction
 import com.chris.m3usuite.tv.input.TvInputController
@@ -104,7 +102,8 @@ fun InternalPlayerContent(
     tvInputController: TvInputController? = null,
 ) {
     val ctx = LocalContext.current
-    val activity = ctx as? Activity
+    // Note: Activity was previously used for native PiP, but Phase 7 removed that call
+    // from this UI button. Native PiP is now only used for lifecycle-based entry.
 
     // ════════════════════════════════════════════════════════════════════════════
     // Phase 6 Task 3: Observe TV input controller state
@@ -383,7 +382,9 @@ fun InternalPlayerContent(
                     onTracksClick = controller.onToggleTracksDialog,
                     onCcClick = controller.onToggleCcMenu,
                     onSettingsClick = controller.onToggleSettingsDialog,
-                    onPipClick = { requestPictureInPicture(activity) },
+                    // Phase 7: PIP button now uses MiniPlayerManager instead of native PiP
+                    // No more enterPictureInPictureMode() calls from UI button
+                    onPipClick = controller.onEnterMiniPlayer,
                 )
                 Spacer(Modifier.height(8.dp))
                 // Phase 6 Task 5: The timeline/seekbar is part of PLAYER_CONTROLS zone

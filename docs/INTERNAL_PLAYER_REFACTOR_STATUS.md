@@ -4449,4 +4449,106 @@ All implementations align with:
 
 ---
 
+## Phase 7 – Task 2: MiniPlayer UI Skeleton + PIP Button Refactor (COMPLETE)
+
+**Date:** 2025-11-28
+
+**Status:** ✅ **COMPLETE** – Groups 3–4 implemented, tests passing
+
+This task implements the In-App MiniPlayer UI overlay and refactors the SIP PIP button to use the new MiniPlayer system.
+
+### What Was Done
+
+**1. MiniPlayer Overlay UI (Group 3)**
+
+| Component | Implementation |
+|-----------|----------------|
+| `MiniPlayerOverlay.kt` | New composable in `player/miniplayer/` |
+| Video Surface | `AndroidView(PlayerView)` using `PlaybackSession.current()` |
+| Play/Pause Button | Toggles via `playbackSession.togglePlayPause()` |
+| Expand Button | Calls `onRequestFullPlayer()` callback |
+| Focus Integration | Marked with `FocusZoneId.MINI_PLAYER` |
+| Positioning | Based on `MiniPlayerState.anchor` (corners) |
+| Animation | `AnimatedVisibility` with fadeIn/fadeOut |
+
+**2. HomeChromeScaffold Integration**
+
+| Change | Description |
+|--------|-------------|
+| Import | Added `MiniPlayerOverlayContainer` and `DefaultMiniPlayerManager` |
+| Parameter | Added `onMiniPlayerExpandToFullPlayer: (() -> Unit)?` |
+| Overlay | Added `MiniPlayerOverlayContainer` rendered above all screens |
+
+**3. PIP Button Refactor (Group 4)**
+
+| Change | Description |
+|--------|-------------|
+| `InternalPlayerController` | Added `onEnterMiniPlayer: () -> Unit` callback |
+| `InternalPlayerControls` | Changed `onPipClick` from `requestPictureInPicture()` to `controller.onEnterMiniPlayer` |
+| Removed Imports | `android.app.Activity` and `requestPictureInPicture` no longer imported |
+
+**4. TV Input MiniPlayer Filter**
+
+| Change | Description |
+|--------|-------------|
+| `TvScreenContext` | Added `isMiniPlayerVisible: Boolean` field |
+| Factory Methods | Updated `library()` and `start()` with `isMiniPlayerVisible` parameter |
+| `TvScreenInputConfig` | Added `filterForMiniPlayer()` function |
+| Blocked Actions | `ROW_FAST_SCROLL_FORWARD`, `ROW_FAST_SCROLL_BACKWARD` when MiniPlayer visible |
+| `resolve()` | Extended to apply MiniPlayer filter after overlay filter |
+
+### Unit Tests Added
+
+| Test Class | Coverage |
+|------------|----------|
+| `TvInputMiniPlayerFilterTest.kt` | MiniPlayer visibility filtering, ROW_FAST_SCROLL blocking, TvScreenContext factories |
+| `PIPButtonRefactorTest.kt` | onEnterMiniPlayer callback, PIP button behavior, backward compatibility |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerOverlay.kt` | MiniPlayer overlay composable |
+| `app/src/test/java/com/chris/m3usuite/tv/input/TvInputMiniPlayerFilterTest.kt` | MiniPlayer filter tests |
+| `app/src/test/java/com/chris/m3usuite/player/internal/ui/PIPButtonRefactorTest.kt` | PIP button refactor tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt` | Added `onEnterMiniPlayer` callback |
+| `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt` | Refactored PIP button, removed native PiP imports |
+| `app/src/main/java/com/chris/m3usuite/tv/input/TvScreenContext.kt` | Added `isMiniPlayerVisible` field |
+| `app/src/main/java/com/chris/m3usuite/tv/input/TvScreenInputConfig.kt` | Added `filterForMiniPlayer()` |
+| `app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt` | Added MiniPlayer overlay integration |
+| `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` | Marked Groups 3–4 as DONE |
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest` passes all tests
+
+### Contract Reference
+
+All implementations align with:
+- `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Sections 3.2, 4.2, 5, 6
+- `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` Groups 3–4, Task 6.3
+
+### What Was NOT Done (Per Task Scope)
+
+- ❌ **Full navigation wiring** – `onEnterMiniPlayer` callback exists but navigation logic is app-level
+- ❌ **Session lifecycle keepAlive** – Requires deeper integration
+- ❌ **System PiP for phones/tablets** – Group 5
+- ❌ **TV input action routing to PlaybackSession** – Tasks 6.4, 6.5
+
+### What's Next (Phase 7 Remaining)
+
+- **Group 5:** System PiP for phones/tablets (lifecycle-based)
+- **Group 6:** Complete TV input MiniPlayer actions (PIP_SEEK_*, TOGGLE_MINI_PLAYER_FOCUS)
+- **Group 7:** FocusZone PRIMARY_UI toggle
+- **Group 8:** Navigation and return behavior
+- **Group 9:** Testing and quality
+
+---
+
 **Last Updated:** 2025-11-28

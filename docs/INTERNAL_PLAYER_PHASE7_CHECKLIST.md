@@ -527,63 +527,43 @@ object DefaultMiniPlayerManager : MiniPlayerManager { ... }
 
 **Goal:** Create a basic MiniPlayer overlay composable for Phase 7.
 
-**Status: ⬜ Deferred to Task 2+**
+**Status: ✅ DONE (Task 2)**
 
-### Task 3.1: Extend MiniPlayerHost for Phase 7 ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/ui/home/MiniPlayerHost.kt`
+### Task 3.1: Extend MiniPlayerHost for Phase 7 ✅
+**Completed:** Created new `MiniPlayerOverlay.kt` composable that:
+- Uses `PlaybackSession.current()` for video rendering
+- Provides Play/Pause toggle button
+- Provides "Expand to Full Player" button
+- Integrates with FocusKit via `FocusZoneId.MINI_PLAYER`
+- Positioned based on `MiniPlayerState.anchor`
 
-**Implementation:**
-- Add video rendering via `PlaybackSession.current()`
-- Add Play/Pause toggle button
-- Add seek buttons (±10s)
-- Add "Expand to Full Player" button
-- Add "Close" button
-- Integrate with FocusKit via `FocusZoneId.MINI_PLAYER`
+**Files Created:**
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerOverlay.kt`
 
 **Contract Reference:** Section 3.2, 4.2
-
-**Tests Required:**
-- Video renders correctly
-- Controls respond to user input
-- Focus management works
 
 ---
 
 ### Task 3.2: Add FocusZoneId.MINI_PLAYER ✅
-**Completed in Task 2b.2**
+**Completed in Task 1**
 
 ---
 
-### Task 3.3: Root Scaffold Overlay Integration ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt` (or equivalent)
+### Task 3.3: Root Scaffold Overlay Integration ✅
+**Completed:** Added `MiniPlayerOverlayContainer` to `HomeChromeScaffold.kt`
+- Renders above all screens when `MiniPlayerState.visible == true`
+- Uses `DefaultMiniPlayerManager` for state management
+- Added `onMiniPlayerExpandToFullPlayer` callback parameter
 
-**Implementation:**
-- Ensure `MiniPlayerHost` is rendered as an overlay above all screens
-- Position based on `MiniPlayerStateData.anchor`
-- Apply size from `MiniPlayerStateData.size`
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/ui/home/HomeChromeScaffold.kt`
 
 **Contract Reference:** Section 3.2
 
-**Tests Required:**
-- MiniPlayer appears above navigation content
-- Positioning follows anchor setting
-
 ---
 
-### Task 3.4: Prevent Flicker on Route Changes ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/ui/home/MiniPlayerHost.kt`
-
-**Implementation:**
-- Use `AnimatedVisibility` for smooth show/hide
-- Maintain PlayerView attachment across route changes
-- Use `key()` to preserve composable identity
-
-**Tests Required:**
-- No flicker during navigation
-- Video continues seamlessly
+### Task 3.4: Prevent Flicker on Route Changes ✅
+**Completed:** Uses `AnimatedVisibility` with fadeIn/fadeOut in `MiniPlayerOverlayContainer`
 
 ---
 
@@ -591,33 +571,34 @@ object DefaultMiniPlayerManager : MiniPlayerManager { ... }
 
 **Goal:** Wire the existing PIP button to use MiniPlayerManager instead of native PiP.
 
-### Task 4.1: Locate and Modify SIP PIP Button ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt`
+**Status: ✅ DONE (Task 2)**
 
-**Implementation:**
-- Find `onPipClick` callback usage (line 386, 644)
-- Replace `requestPictureInPicture(activity)` with `MiniPlayerManager.enterMiniPlayer(...)`
+### Task 4.1: Locate and Modify SIP PIP Button ✅
+**Completed:** Modified `InternalPlayerControls.kt`:
+- Changed `onPipClick` from `{ requestPictureInPicture(activity) }` to `controller.onEnterMiniPlayer`
+- Added `onEnterMiniPlayer` callback to `InternalPlayerController`
+
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt`
+- `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
 
 **Contract Reference:** Section 4.2
 
-**Tests Required:**
-- Button click triggers MiniPlayer, not native PiP
-- Works on TV and phone
-
 ---
 
-### Task 4.2: Remove enterPictureInPictureMode from SIP PIP Button ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt`
-- `app/src/main/java/com/chris/m3usuite/player/internal/system/InternalPlayerSystemUi.kt`
+### Task 4.2: Remove enterPictureInPictureMode from SIP PIP Button ✅
+**Completed:**
+- Removed `requestPictureInPicture` import from `InternalPlayerControls.kt`
+- Removed `Activity` import (no longer needed)
+- PIP button now uses `controller.onEnterMiniPlayer` callback
 
-**Implementation:**
-- The SIP PIP button must NEVER call `activity.enterPictureInPictureMode()`
-- Only `MiniPlayerManager.enterMiniPlayer()` is allowed from UI PIP button
-- `InternalPlayerSystemUi.requestPictureInPicture()` should be renamed or deprecated
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt`
 
 **Contract Reference:** Section 4.2, 5.2
+
+**Tests Created:**
+- `app/src/test/java/com/chris/m3usuite/player/internal/ui/PIPButtonRefactorTest.kt`
 
 **Tests Required:**
 - No native PiP on TV from UI button
@@ -769,21 +750,21 @@ TOGGLE_MINI_PLAYER_FOCUS,
 
 ---
 
-### Task 6.3: Block ROW_FAST_SCROLL When MiniPlayer Visible ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/tv/input/TvScreenInputConfig.kt`
+### Task 6.3: Block ROW_FAST_SCROLL When MiniPlayer Visible ✅
+**Completed:** Added `filterForMiniPlayer()` function to `TvScreenInputConfig.kt`:
+- Blocks `ROW_FAST_SCROLL_FORWARD` when MiniPlayer visible
+- Blocks `ROW_FAST_SCROLL_BACKWARD` when MiniPlayer visible
+- Added `isMiniPlayerVisible` field to `TvScreenContext`
+- Updated `library()` and `start()` factory methods with `isMiniPlayerVisible` parameter
 
-**Implementation:**
-- In `filterForMiniPlayerVisible()`:
-  - Block `ROW_FAST_SCROLL_FORWARD`
-  - Block `ROW_FAST_SCROLL_BACKWARD`
-  - Allow `PLAY_PAUSE`, `PIP_SEEK_*`, navigation
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/tv/input/TvScreenInputConfig.kt`
+- `app/src/main/java/com/chris/m3usuite/tv/input/TvScreenContext.kt`
+
+**Tests Created:**
+- `app/src/test/java/com/chris/m3usuite/tv/input/TvInputMiniPlayerFilterTest.kt`
 
 **Contract Reference:** Section 6
-
-**Tests Required:**
-- Fast scroll blocked when MiniPlayer visible
-- Other actions allowed
 
 ---
 

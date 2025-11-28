@@ -489,6 +489,27 @@ data class InternalPlayerController(
      * Called by auto-hide timer when timeout expires.
      */
     val onHideControls: () -> Unit = {},
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 7 – MiniPlayer Callbacks
+    // ════════════════════════════════════════════════════════════════════════════
+    /**
+     * Enters the in-app MiniPlayer mode.
+     *
+     * Phase 7: This replaces the native PiP behavior for the UI PIP button.
+     * The button no longer calls enterPictureInPictureMode() from app code.
+     * Instead, it triggers MiniPlayerManager.enterMiniPlayer() which shows
+     * the in-app MiniPlayer overlay.
+     *
+     * **Behavior:**
+     * - Saves the current playback context (route, media ID, etc.)
+     * - Closes the full player screen
+     * - Shows the MiniPlayer overlay
+     * - Playback continues seamlessly via shared PlaybackSession
+     *
+     * **Contract Reference:**
+     * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 4.2
+     */
+    val onEnterMiniPlayer: () -> Unit = {},
 )
 
 /**
