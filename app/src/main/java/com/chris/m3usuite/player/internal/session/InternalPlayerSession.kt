@@ -20,6 +20,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.chris.m3usuite.core.playback.RememberPlayerController
 import com.chris.m3usuite.data.repo.EpgRepository
+import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
 import com.chris.m3usuite.player.internal.domain.DefaultKidsPlaybackGate
 import com.chris.m3usuite.player.internal.domain.DefaultResumeManager
@@ -43,13 +44,16 @@ import kotlinx.coroutines.launch
 import com.chris.m3usuite.model.MediaItem as AppMediaItem
 
 /**
- * SIP (Session Integration Point) - Builds and manages the ExoPlayer instance for the internal player.
+ * SIP (Session Integration Point) - Manages the ExoPlayer instance for the internal player.
  *
  * ════════════════════════════════════════════════════════════════════════════════════════════════════
- * PHASE 2 STATUS: NON-RUNTIME / REFERENCE IMPLEMENTATION
+ * PHASE 7 STATUS: USES SHARED PlaybackSession
  * ════════════════════════════════════════════════════════════════════════════════════════════════════
  *
- * This SIP session is part of the Phase 2 modular refactor infrastructure.
+ * **PHASE 7 CHANGES:**
+ * - Now uses `PlaybackSession.acquire()` instead of creating its own ExoPlayer instance
+ * - Enables MiniPlayer continuity: same player survives Full↔MiniPlayer transitions
+ * - Player is NOT released on dispose - managed by PlaybackSession singleton
  *
  * **CURRENT STATUS:**
  * - This code path is NOT activated at runtime.
@@ -65,7 +69,7 @@ import com.chris.m3usuite.model.MediaItem as AppMediaItem
  * - Phase 3: Wire this session into InternalPlayerEntry (runtime activation)
  * - Phase 4: Sleep timer integration (playerSleepTimerMinutes)
  * - Phase 5: Subtitle support (MediaItem.subtitles field)
- * - Phase 7: RememberPlayerController full implementation
+ * - Phase 7: PlaybackSession integration (COMPLETE)
  * - Phase 8: Lifecycle management (ON_DESTROY save/clear)
  *
  * **INDEPENDENCE GUARANTEES:**
@@ -75,8 +79,14 @@ import com.chris.m3usuite.model.MediaItem as AppMediaItem
  * - ObjectBox (uses abstracted repositories)
  * - Legacy screen state (no shared mutable state)
  *
+ * **PlaybackSession Integration (Phase 7):**
+ * - Uses `PlaybackSession.acquire(context) { ... }` to get shared player instance
+ * - Configures player with appropriate buffering and seek increments
+ * - Does NOT release player on dispose (shared ownership via PlaybackSession)
+ * - Sets source URL via `PlaybackSession.setSource(url)` for MiniPlayer visibility
+ *
  * Responsibilities:
- * - Create and configure ExoPlayer (buffering, seek increments)
+ * - Configure ExoPlayer (buffering, seek increments) via PlaybackSession
  * - Wire up Media3 MediaSource via DelegatingDataSourceFactory
  * - Resolve the URL + mime type (incl. Telegram/Xtream) via PlaybackSourceResolver
  * - Push state updates into InternalPlayerUiState via onStateChanged
@@ -85,6 +95,8 @@ import com.chris.m3usuite.model.MediaItem as AppMediaItem
  * - Log playback events into TelegramLogRepository
  *
  * This composable does NOT know about UI, DPAD, gestures or series/live logic.
+ *
+ * @see PlaybackSession for the shared player management singleton
  */
 @Composable
 fun rememberInternalPlayerSession(
@@ -187,9 +199,18 @@ fun rememberInternalPlayerSession(
     val playerHolder = remember { mutableStateOf<ExoPlayer?>(null) }
 
     LaunchedEffect(url, startMs, mimeType, preparedMediaItem, networkHeaders, playbackContext.type) {
-        // Release previous instance
-        playerHolder.value?.release()
-        playerHolder.value = null
+        // ════════════════════════════════════════════════════════════════════════════
+        // PHASE 7: Use PlaybackSession.acquire() instead of creating ExoPlayer directly
+        // ════════════════════════════════════════════════════════════════════════════
+        //
+        // This change enables MiniPlayer continuity:
+        // - Same player instance survives Full↔MiniPlayer transitions
+        // - Player is NOT destroyed when navigating away from player screen
+        // - PlaybackSession.acquire() returns existing player if one exists
+        //
+        // Note: We do NOT release the previous player instance anymore.
+        // The shared player is managed by PlaybackSession singleton.
+        // If source URL changes, we stop and set new media item instead.
 
         val headersMap = networkHeaders.asMap().toMutableMap()
 
@@ -234,16 +255,33 @@ fun rememberInternalPlayerSession(
 
         val mediaSourceFactory = DefaultMediaSourceFactory(delegatingFactory)
 
-        val newPlayer =
-            ExoPlayer
-                .Builder(context)
-                .setLoadControl(loadControl)
-                .setSeekBackIncrementMs(10_000L)
-                .setSeekForwardIncrementMs(10_000L)
-                .setMediaSourceFactory(mediaSourceFactory)
-                .build()
+        // ════════════════════════════════════════════════════════════════════════════
+        // PHASE 7: Acquire shared player from PlaybackSession
+        // ════════════════════════════════════════════════════════════════════════════
+        //
+        // Instead of: ExoPlayer.Builder(context).build()
+        // Use: PlaybackSession.acquire(context) { ExoPlayer.Builder(context)...build() }
+        //
+        // This ensures:
+        // - Only one ExoPlayer instance per process
+        // - Player survives Full↔MiniPlayer transitions
+        // - Consistent state management across the app
+        val holder =
+            PlaybackSession.acquire(context) {
+                ExoPlayer
+                    .Builder(context)
+                    .setLoadControl(loadControl)
+                    .setSeekBackIncrementMs(10_000L)
+                    .setSeekForwardIncrementMs(10_000L)
+                    .setMediaSourceFactory(mediaSourceFactory)
+                    .build()
+            }
 
+        val newPlayer = holder.player
         playerHolder.value = newPlayer
+
+        // Store source URL for MiniPlayer visibility checks
+        PlaybackSession.setSource(url)
 
         val resolver = PlaybackSourceResolver(context)
         val resolved: ResolvedPlaybackSource =
@@ -796,11 +834,28 @@ fun rememberInternalPlayerSession(
         }
     }
 
-    // Release when the composable leaves composition
+    // ════════════════════════════════════════════════════════════════════════════
+    // PHASE 7: Do NOT release the player when composable leaves composition
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // The player is now managed by PlaybackSession singleton and shared across:
+    // - Full player screen
+    // - MiniPlayer overlay
+    // - Any other screens that need to observe playback state
+    //
+    // Player cleanup happens only when:
+    // - User explicitly stops playback
+    // - App is closed
+    // - Errors require player recreation
     DisposableEffect(Unit) {
         onDispose {
-            playerHolder.value?.release()
+            // Phase 7: Do NOT release the player - it's managed by PlaybackSession
+            // Only clear the local holder reference
             playerHolder.value = null
+
+            // Note: We intentionally keep the player alive via PlaybackSession.
+            // This enables MiniPlayer to continue playback when navigating away
+            // from the full player screen.
         }
     }
 

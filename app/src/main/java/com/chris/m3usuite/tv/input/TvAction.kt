@@ -305,6 +305,24 @@ enum class TvAction {
      * Per GLOBAL_TV_REMOTE_BEHAVIOR_MAP: MENU (long press) → Global Search
      */
     OPEN_GLOBAL_SEARCH,
+
+    // ══════════════════════════════════════════════════════════════════
+    // PHASE 7 – MINI PLAYER FOCUS TOGGLE
+    // Contract Reference: INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6
+    // ══════════════════════════════════════════════════════════════════
+
+    /**
+     * Toggle focus between MiniPlayer and primary UI.
+     * Triggered by long-press PLAY when MiniPlayer is visible.
+     *
+     * **Behavior:**
+     * - If MiniPlayer has focus → move focus to PRIMARY_UI
+     * - If PRIMARY_UI has focus → move focus to MINI_PLAYER
+     *
+     * **Contract Reference:**
+     * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6
+     */
+    TOGGLE_MINI_PLAYER_FOCUS,
     ;
 
     companion object {
@@ -346,7 +364,10 @@ enum class TvAction {
         /**
          * Check if this action is a focus management action.
          */
-        fun TvAction.isFocusAction(): Boolean = this == FOCUS_QUICK_ACTIONS || this == FOCUS_TIMELINE
+        fun TvAction.isFocusAction(): Boolean =
+            this == FOCUS_QUICK_ACTIONS ||
+                this == FOCUS_TIMELINE ||
+                this == TOGGLE_MINI_PLAYER_FOCUS
 
         /**
          * Check if this action is a seek action.

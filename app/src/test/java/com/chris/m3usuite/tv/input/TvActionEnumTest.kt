@@ -159,8 +159,9 @@ class TvActionEnumTest {
     fun `TvAction enum has minimum required values`() {
         // Phase 6 Task 4: Minimum count after GLOBAL_TV_REMOTE_BEHAVIOR_MAP alignment
         // Original 20 actions + 24 new = 44 minimum
+        // Phase 7: Added TOGGLE_MINI_PLAYER_FOCUS = 45 minimum
         // Using >= to allow future additions without breaking the test
-        val minimumExpectedActions = 44
+        val minimumExpectedActions = 45
         assertTrue(
             "TvAction should have at least $minimumExpectedActions entries, found ${TvAction.entries.size}",
             TvAction.entries.size >= minimumExpectedActions,
@@ -223,9 +224,11 @@ class TvActionEnumTest {
             TvAction.entries.filter {
                 with(TvAction.Companion) { it.isFocusAction() }
             }
-        assertEquals(2, focusActions.size)
+        // Phase 7: Now includes TOGGLE_MINI_PLAYER_FOCUS
+        assertEquals(3, focusActions.size)
         assertTrue(focusActions.contains(TvAction.FOCUS_QUICK_ACTIONS))
         assertTrue(focusActions.contains(TvAction.FOCUS_TIMELINE))
+        assertTrue(focusActions.contains(TvAction.TOGGLE_MINI_PLAYER_FOCUS))
     }
 
     @Test
@@ -305,6 +308,8 @@ class TvActionEnumTest {
     fun `isFocusAction returns true for focus actions`() {
         assertTrue(TvAction.FOCUS_QUICK_ACTIONS.isFocusAction())
         assertTrue(TvAction.FOCUS_TIMELINE.isFocusAction())
+        // Phase 7: TOGGLE_MINI_PLAYER_FOCUS is also a focus action
+        assertTrue(TvAction.TOGGLE_MINI_PLAYER_FOCUS.isFocusAction())
     }
 
     @Test
@@ -585,5 +590,48 @@ class TvActionEnumTest {
         for (action in profileGateActions) {
             assertNotNull("Profile gate action $action should exist", action)
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PHASE 7 – MINI PLAYER FOCUS TOGGLE TESTS
+    // Contract Reference: INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6
+    // ══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun `TOGGLE_MINI_PLAYER_FOCUS action exists`() {
+        assertNotNull(TvAction.TOGGLE_MINI_PLAYER_FOCUS)
+    }
+
+    @Test
+    fun `TOGGLE_MINI_PLAYER_FOCUS is a focus action`() {
+        assertTrue(TvAction.TOGGLE_MINI_PLAYER_FOCUS.isFocusAction())
+    }
+
+    @Test
+    fun `TOGGLE_MINI_PLAYER_FOCUS is not a navigation action`() {
+        assertFalse(TvAction.TOGGLE_MINI_PLAYER_FOCUS.isNavigationAction())
+    }
+
+    @Test
+    fun `TOGGLE_MINI_PLAYER_FOCUS is not a playback action`() {
+        assertFalse(TvAction.TOGGLE_MINI_PLAYER_FOCUS.isPlaybackAction())
+    }
+
+    @Test
+    fun `TOGGLE_MINI_PLAYER_FOCUS is not an overlay action`() {
+        assertFalse(TvAction.TOGGLE_MINI_PLAYER_FOCUS.isOverlayAction())
+    }
+
+    @Test
+    fun `Phase 7 mini player focus action contract compliance`() {
+        // Per INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6:
+        // - Long-Press PLAY = TvAction.TOGGLE_MINI_PLAYER_FOCUS
+        // - Toggle focus between MiniPlayer and primary UI
+
+        // Verify the action is classified correctly
+        val action = TvAction.TOGGLE_MINI_PLAYER_FOCUS
+        assertTrue(action.isFocusAction())
+        assertFalse(action.isNavigationAction())
+        assertFalse(action.isPlaybackAction())
     }
 }
