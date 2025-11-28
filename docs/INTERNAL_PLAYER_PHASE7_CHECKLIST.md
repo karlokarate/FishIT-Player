@@ -25,7 +25,7 @@ Phase 7 introduces a **unified PlaybackSession** that owns the ExoPlayer instanc
 ### Current ExoPlayer Ownership
 
 **Where is ExoPlayer created?**
-- **SIP Path**: `InternalPlayerSession.kt` creates its own `ExoPlayer` instance in a `LaunchedEffect` (lines 237-244).
+- **SIP Path**: `InternalPlayerSession.kt` (`player/internal/session/`) creates its own `ExoPlayer` instance in the `rememberInternalPlayerSession()` composable via `ExoPlayer.Builder(context).build()`.
 - **Legacy Path**: `InternalPlayerScreen.kt` (monolithic) creates its own `ExoPlayer` locally.
 - **Existing PlaybackSession**: `PlaybackSession.kt` (in `playback/`) is a singleton holder that:
   - Uses `AtomicReference<ExoPlayer?>` to hold a shared player instance
@@ -51,15 +51,15 @@ Phase 7 introduces a **unified PlaybackSession** that owns the ExoPlayer instanc
   - Only visible when `MiniPlayerState.visible == true`
 
 **PiP Overlay Button Wiring (Legacy InternalPlayerScreen.kt):**
-- Lines 1253-1270: `requestPictureInPicture()` function:
+- `requestPictureInPicture()` function:
   - On TV: Calls `MiniPlayerState.show()` (in-app mini player)
   - On Phone/Tablet: Calls `activity.enterPictureInPictureMode()`
-- Lines 2214-2220 and 2273-2278: PiP buttons in overlay controls call `requestPictureInPicture()`
+- PiP buttons in overlay controls call `requestPictureInPicture()`
 
 **SIP InternalPlayerControls.kt:**
-- Line 386: `onPipClick` callback passed to `PlayerOverlayContent`
-- Line 555: `onPipClick: () -> Unit` parameter
-- Line 644: `IconButton(onClick = onPipClick)` – currently calls `requestPictureInPicture(activity)` which triggers native PiP on all devices
+- `onPipClick` callback passed to `PlayerOverlayContent`
+- `onPipClick: () -> Unit` parameter
+- `IconButton(onClick = onPipClick)` – currently calls `requestPictureInPicture(activity)` which triggers native PiP on all devices
 
 ### Navigation Patterns
 

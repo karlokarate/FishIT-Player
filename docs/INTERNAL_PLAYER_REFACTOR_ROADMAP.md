@@ -1154,7 +1154,7 @@ See `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` "Phase 6 Context Refresh" section 
 - Single PlaybackSession: One shared playback session across the entire app
 - In-App MiniPlayer: Floating overlay, not system PiP (for TV devices)
 - System PiP for Phones/Tablets Only: Native PiP only when backgrounding the app
-- Fire TV: UI PIP button → In-App MiniPlayer only, never `enterPictureInPictureMode()`
+- Fire TV: UI PiP button → In-App MiniPlayer only, never `enterPictureInPictureMode()`
 
 ### Summary of Checklist Groups
 
@@ -1163,7 +1163,7 @@ See `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` "Phase 6 Context Refresh" section 
 | **Group 1** | PlaybackSession Core – Define/extend unified PlaybackSession with StateFlows and command methods |
 | **Group 2** | MiniPlayer Domain Model & Manager – MiniPlayerState, MiniPlayerManager with enter/exit APIs |
 | **Group 3** | In-App MiniPlayer UI Skeleton – Basic MiniPlayer overlay composable with FocusZone integration |
-| **Group 4** | PIP Button Refactor – Wire UI PIP button to MiniPlayerManager, remove `enterPictureInPictureMode()` |
+| **Group 4** | PiP Button Refactor – Wire UI PiP button to MiniPlayerManager, remove `enterPictureInPictureMode()` |
 | **Group 5** | System PiP (Phones/Tablets) – Implement Activity lifecycle PiP entry, block from UI button |
 | **Group 6** | TV Input & MiniPlayer Behavior – TOGGLE_MINI_PLAYER_FOCUS, ROW_FAST_SCROLL blocking, PIP_* actions |
 | **Group 7** | FocusZones & Focus Integration – MINI_PLAYER/PRIMARY_UI zones, zone-based focus toggle |
@@ -1175,13 +1175,13 @@ See `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` "Phase 6 Context Refresh" section 
 - **Existing PlaybackSession**: Singleton holder for shared ExoPlayer (`playback/PlaybackSession.kt`)
 - **Existing MiniPlayer**: `MiniPlayerState`, `MiniPlayerDescriptor`, `MiniPlayerHost` (TV-only)
 - **Issue**: InternalPlayerSession creates its own ExoPlayer, not using `PlaybackSession.acquire()`
-- **PIP Button**: Currently calls native `enterPictureInPictureMode()` on phones; in-app MiniPlayer on TV
+- **PiP Button**: Currently calls native `enterPictureInPictureMode()` on phones; in-app MiniPlayer on TV
 - **Missing**: `MINI_PLAYER` FocusZoneId, `TOGGLE_MINI_PLAYER_FOCUS` TvAction, returnRoute storage
 
 ### Contract Requirements Highlights
 
 1. **Single global PlaybackSession owns ExoPlayer** – Session survives MiniPlayer/full transitions
-2. **UI PIP button → In-App MiniPlayer only** – Never call `enterPictureInPictureMode()` from UI button
+2. **UI PiP button → In-App MiniPlayer only** – Never call `enterPictureInPictureMode()` from UI button
 3. **System PiP for phones/tablets only** – Activity lifecycle triggers (onUserLeaveHint/onStop)
 4. **Fire TV: No native PiP from app code** – Allow OS-driven PiP if FireOS invokes it
 5. **Long-press PLAY toggles focus** – Between MINI_PLAYER and PRIMARY_UI zones

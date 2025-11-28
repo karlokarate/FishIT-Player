@@ -4243,15 +4243,15 @@ Analyzed the repository for all Phase 7–related code:
 
 | Component | Current State | Phase 7 Change Needed |
 |-----------|---------------|----------------------|
-| `PlaybackSession.kt` | Singleton holder with `acquire()` and `current()` | Extend with StateFlows, command methods, Player.Listener |
-| `InternalPlayerSession.kt` | Creates own ExoPlayer instance directly | Use `PlaybackSession.acquire()` instead |
-| `MiniPlayerState.kt` | Singleton with visible/descriptor state | Add mode, anchor, returnRoute fields |
-| `MiniPlayerHost.kt` | TV-only overlay using PlaybackSession.current() | Add controls, FocusZone integration |
+| `playback/PlaybackSession.kt` | Singleton holder with `acquire()` and `current()` | Extend with StateFlows, command methods, Player.Listener |
+| `player/internal/session/InternalPlayerSession.kt` | Creates own ExoPlayer instance directly | Use `PlaybackSession.acquire()` instead |
+| `ui/home/MiniPlayerState.kt` | Singleton with visible/descriptor state | Add mode, anchor, returnRoute fields |
+| `ui/home/MiniPlayerHost.kt` | TV-only overlay using PlaybackSession.current() | Add controls, FocusZone integration |
 | PIP button (SIP) | Calls `requestPictureInPicture(activity)` | Wire to MiniPlayerManager.enterMiniPlayer() |
 | FocusZoneId enum | Missing MINI_PLAYER zone | Add MINI_PLAYER |
 | TvAction enum | Has PIP_* actions, missing TOGGLE_MINI_PLAYER_FOCUS | Add TOGGLE_MINI_PLAYER_FOCUS |
 
-**Key Issue Identified:** `InternalPlayerSession` creates its own ExoPlayer instance in a `LaunchedEffect` (lines 237-244), completely bypassing the existing `PlaybackSession.acquire()` pattern. This defeats the purpose of having a global session for MiniPlayer continuity.
+**Key Issue Identified:** `InternalPlayerSession` creates its own ExoPlayer instance directly in the `rememberInternalPlayerSession()` composable via `ExoPlayer.Builder(context).build()`, completely bypassing the existing `PlaybackSession.acquire()` pattern. This defeats the purpose of having a global session for MiniPlayer continuity.
 
 **2. Phase 7 Goals & Constraints Summary (from Contract)**
 
