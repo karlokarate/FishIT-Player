@@ -256,6 +256,7 @@ fun MiniPlayerOverlayContainer(
     modifier: Modifier = Modifier,
 ) {
     val state by miniPlayerManager.state.collectAsState()
+    val isResizeMode = state.mode == MiniPlayerMode.RESIZE
 
     AnimatedVisibility(
         visible = state.visible && PlaybackSession.current() != null,
@@ -268,7 +269,7 @@ fun MiniPlayerOverlayContainer(
             miniPlayerState = state,
             onRequestFullPlayer = {
                 // If in resize mode, cancel it first
-                if (state.mode == MiniPlayerMode.RESIZE) {
+                if (isResizeMode) {
                     miniPlayerManager.cancelResize()
                 }
                 miniPlayerManager.exitMiniPlayer(returnToFullPlayer = true)

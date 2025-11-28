@@ -25,7 +25,7 @@ enum class MiniPlayerMode {
     NORMAL,
 
     /**
-     * Resize/move mode (Phase 8+).
+     * Resize/move mode.
      * - FF/RW → resize width
      * - DPAD → move position
      * - CENTER → confirm
