@@ -505,6 +505,64 @@ Todos für die Umstrukturierung:
 
 ---
 
+## 7.1 Auth & Ingestion Constraints (FINAL DECISION)
+
+**IMPORTANT**: This section defines the mandatory constraints for authorization and ingestion.
+
+### Auth State Machine
+
+The authorization state is exposed via `T_TelegramServiceClient.authState: StateFlow<TelegramAuthState>`:
+
+```kotlin
+sealed class TelegramAuthState {
+    object Idle : TelegramAuthState()
+    object Connecting : TelegramAuthState()
+    object WaitingForPhone : TelegramAuthState()
+    object WaitingForCode : TelegramAuthState()
+    object WaitingForPassword : TelegramAuthState()
+    object Ready : TelegramAuthState()
+    data class Error(val message: String) : TelegramAuthState()
+}
+```
+
+### Ingestion Constraint
+
+**Ingestion MUST NOT run unless auth state is `Ready`.**
+
+Implementation:
+- `TelegramSyncWorker` MUST call `serviceClient.awaitAuthReady(timeoutMs)` before syncing
+- If auth is not ready within timeout, the worker MUST fail with appropriate error message
+- This ensures no sync attempts are made with expired or invalid sessions
+
+### Session Persistence
+
+- If TDLib DB is already authorized from a previous session, auth state will transition directly to `Ready`
+- No re-login is required if the session is still valid
+- If session expires, auth state will transition to `WaitingForPhone` and `ReauthRequired` event is emitted
+
+### Auth Logging
+
+All auth state transitions MUST be logged via `TelegramLogRepository`:
+- State transitions logged at INFO level
+- Errors logged at ERROR level
+- Re-auth requirements logged at WARN level
+
+### Helper Methods
+
+```kotlin
+// Check if auth is ready
+fun isAuthReady(): Boolean
+
+// Wait for auth to become ready (with timeout)
+suspend fun awaitAuthReady(timeoutMs: Long = 30_000L): Boolean
+
+// Wait for specific auth state (with timeout)
+suspend fun awaitAuthState(targetState: TelegramAuthState, timeoutMs: Long): Boolean
+```
+
+---
+
+
 ## 8. Implementierungsstatus & Test-Coverage (Stand: 2025-11-20)
 
 ### 8.1 Implementierte Module

@@ -9,6 +9,7 @@ import androidx.work.workDataOf
 import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
+import com.chris.m3usuite.telegram.core.TelegramAuthState
 import com.chris.m3usuite.telegram.core.TgSyncState
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +66,23 @@ class TelegramSyncWorker(
                 // Ensure Telegram service is started
                 val serviceClient = T_TelegramServiceClient.getInstance(applicationContext)
                 serviceClient.ensureStarted(applicationContext, settingsStore)
+
+                // Per design decision 6.11: Ingestion MUST NOT run unless auth state is READY
+                // Wait for auth to become ready (may already be ready if DB was authorized)
+                val isReady = serviceClient.awaitAuthReady(timeoutMs = 30_000L)
+                if (!isReady) {
+                    val currentAuthState = serviceClient.authState.value
+                    TelegramLogRepository.warn(
+                        "TelegramSyncWorker",
+                        "Auth not ready after timeout, cannot sync (state: ${currentAuthState::class.simpleName})",
+                    )
+                    serviceClient.updateSyncState(TgSyncState.Failed("Auth not ready: ${currentAuthState::class.simpleName}"))
+                    return@withContext Result.failure(
+                        workDataOf("error" to "Auth not ready: ${currentAuthState::class.simpleName}"),
+                    )
+                }
+
+                TelegramLogRepository.info("TelegramSyncWorker", "Auth ready, proceeding with sync")
 
                 // Update sync state to Running
                 serviceClient.updateSyncState(TgSyncState.Running(0, 0))
