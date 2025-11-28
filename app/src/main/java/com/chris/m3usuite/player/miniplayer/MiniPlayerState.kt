@@ -64,6 +64,26 @@ enum class MiniPlayerAnchor {
 val DEFAULT_MINI_SIZE = DpSize(320.dp, 180.dp)
 
 /**
+ * Minimum MiniPlayer size (aspect ratio preserved).
+ */
+val MIN_MINI_SIZE = DpSize(160.dp, 90.dp)
+
+/**
+ * Maximum MiniPlayer size (aspect ratio preserved).
+ */
+val MAX_MINI_SIZE = DpSize(640.dp, 360.dp)
+
+/**
+ * Size delta for resize operations (coarse adjustment via FF/RW).
+ */
+val RESIZE_SIZE_DELTA = DpSize(40.dp, 22.5.dp)
+
+/**
+ * Position delta for move operations (fine adjustment via DPAD).
+ */
+const val MOVE_POSITION_DELTA = 20f
+
+/**
  * State representation for the In-App MiniPlayer.
  *
  * ════════════════════════════════════════════════════════════════════════════════
@@ -93,6 +113,8 @@ val DEFAULT_MINI_SIZE = DpSize(320.dp, 180.dp)
  * @property returnMediaId Media ID to highlight when returning to library
  * @property returnRowIndex Row index to scroll to when returning
  * @property returnItemIndex Item index within row to focus when returning
+ * @property previousSize Size before entering resize mode (for cancel restoration)
+ * @property previousPosition Position before entering resize mode (for cancel restoration)
  */
 @Immutable
 data class MiniPlayerState(
@@ -105,6 +127,8 @@ data class MiniPlayerState(
     val returnMediaId: Long? = null,
     val returnRowIndex: Int? = null,
     val returnItemIndex: Int? = null,
+    val previousSize: DpSize? = null,
+    val previousPosition: Offset? = null,
 ) {
     companion object {
         /** Default/initial state */

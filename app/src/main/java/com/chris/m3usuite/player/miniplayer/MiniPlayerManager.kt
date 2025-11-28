@@ -108,6 +108,67 @@ interface MiniPlayerManager {
      * Does NOT stop playback - that's controlled by PlaybackSession.
      */
     fun reset()
+
+    // ══════════════════════════════════════════════════════════════════
+    // PHASE 7 – RESIZE MODE METHODS
+    // Contract Reference: INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md
+    // ══════════════════════════════════════════════════════════════════
+
+    /**
+     * Enter resize mode.
+     *
+     * **Behavior:**
+     * - Sets mode = RESIZE
+     * - Stores current size as previousSize (if not already set)
+     * - Stores current position as previousPosition (if not already set)
+     *
+     * After entering resize mode:
+     * - FF/RW change size (coarse)
+     * - DPAD moves the MiniPlayer (fine)
+     * - CENTER confirms new size/position
+     * - BACK cancels and restores previous size/position
+     */
+    fun enterResizeMode()
+
+    /**
+     * Apply a size delta to the MiniPlayer.
+     *
+     * Only effective in RESIZE mode.
+     * Size is clamped to MIN_MINI_SIZE and MAX_MINI_SIZE.
+     *
+     * @param deltaSize Size change to apply (positive = larger, negative = smaller)
+     */
+    fun applyResize(deltaSize: DpSize)
+
+    /**
+     * Move the MiniPlayer by a position delta.
+     *
+     * Only effective in RESIZE mode.
+     * Position is clamped inside layout bounds (screen edges).
+     *
+     * @param delta Position offset to add (positive X = right, positive Y = down)
+     */
+    fun moveBy(delta: Offset)
+
+    /**
+     * Confirm the resize operation.
+     *
+     * **Behavior:**
+     * - Sets mode = NORMAL
+     * - Clears previousSize and previousPosition
+     * - Keeps current size and position as the new baseline
+     */
+    fun confirmResize()
+
+    /**
+     * Cancel the resize operation.
+     *
+     * **Behavior:**
+     * - Restores previousSize/previousPosition if present
+     * - Sets mode = NORMAL
+     * - Clears previousSize and previousPosition
+     */
+    fun cancelResize()
 }
 
 /**
@@ -184,6 +245,84 @@ object DefaultMiniPlayerManager : MiniPlayerManager {
 
     override fun reset() {
         _state.value = MiniPlayerState.INITIAL
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PHASE 7 – RESIZE MODE IMPLEMENTATION
+    // ══════════════════════════════════════════════════════════════════
+
+    override fun enterResizeMode() {
+        _state.update { current ->
+            // Only enter resize mode if MiniPlayer is visible
+            if (!current.visible) return@update current
+
+            current.copy(
+                mode = MiniPlayerMode.RESIZE,
+                // Store current size/position for cancel restoration (only if not already in resize)
+                previousSize = current.previousSize ?: current.size,
+                previousPosition = current.previousPosition ?: current.position,
+            )
+        }
+    }
+
+    override fun applyResize(deltaSize: DpSize) {
+        _state.update { current ->
+            // Only apply resize in RESIZE mode
+            if (current.mode != MiniPlayerMode.RESIZE) return@update current
+
+            // Calculate new size with clamping
+            val newWidth = (current.size.width + deltaSize.width).coerceIn(MIN_MINI_SIZE.width, MAX_MINI_SIZE.width)
+            val newHeight = (current.size.height + deltaSize.height).coerceIn(MIN_MINI_SIZE.height, MAX_MINI_SIZE.height)
+
+            current.copy(size = DpSize(newWidth, newHeight))
+        }
+    }
+
+    override fun moveBy(delta: Offset) {
+        _state.update { current ->
+            // Only move in RESIZE mode
+            if (current.mode != MiniPlayerMode.RESIZE) return@update current
+
+            // Calculate new position (or start from Offset.Zero if null)
+            val currentPos = current.position ?: Offset.Zero
+            val newPosition = Offset(
+                x = currentPos.x + delta.x,
+                y = currentPos.y + delta.y,
+            )
+
+            current.copy(position = newPosition)
+        }
+    }
+
+    override fun confirmResize() {
+        _state.update { current ->
+            // Only confirm if in RESIZE mode
+            if (current.mode != MiniPlayerMode.RESIZE) return@update current
+
+            current.copy(
+                mode = MiniPlayerMode.NORMAL,
+                // Clear previous values - current size/position is now the baseline
+                previousSize = null,
+                previousPosition = null,
+            )
+        }
+    }
+
+    override fun cancelResize() {
+        _state.update { current ->
+            // Only cancel if in RESIZE mode
+            if (current.mode != MiniPlayerMode.RESIZE) return@update current
+
+            current.copy(
+                mode = MiniPlayerMode.NORMAL,
+                // Restore previous size/position if available
+                size = current.previousSize ?: current.size,
+                position = current.previousPosition,
+                // Clear previous values
+                previousSize = null,
+                previousPosition = null,
+            )
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════
