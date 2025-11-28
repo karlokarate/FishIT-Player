@@ -84,6 +84,7 @@ import java.util.concurrent.ConcurrentHashMap
  * time and can be navigated programmatically.
  *
  * Contract Reference: INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 6.1
+ * Contract Reference: INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6
  */
 enum class FocusZoneId {
     /** Play/pause, seek bar, volume controls */
@@ -115,6 +116,25 @@ enum class FocusZoneId {
 
     /** Profile selection grid */
     PROFILE_GRID,
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Phase 7 – MiniPlayer FocusZones
+    // Contract Reference: INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6
+    // ════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Mini player overlay when visible.
+     * Used for TOGGLE_MINI_PLAYER_FOCUS action.
+     * Focus can be toggled between MINI_PLAYER and PRIMARY_UI via long-press PLAY.
+     */
+    MINI_PLAYER,
+
+    /**
+     * Main app UI area (non-MiniPlayer).
+     * Represents the primary content area when MiniPlayer is visible.
+     * Focus can be toggled between PRIMARY_UI and MINI_PLAYER via long-press PLAY.
+     */
+    PRIMARY_UI,
 }
 
 /**
