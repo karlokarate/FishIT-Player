@@ -1035,6 +1035,102 @@ TOGGLE_MINI_PLAYER_FOCUS,
 
 ---
 
+## Task Group 10: Phase 7 Validation & Hardening
+
+**Goal:** Validate and harden all Phase 7 behavior against contracts and behavior maps.
+
+**Status: ✅ DONE (Phase 7 Task 3)**
+
+### Task 10.1: Verify Runtime Behavior vs GLOBAL_TV_REMOTE_BEHAVIOR_MAP ✅
+**Files Created:**
+- `app/src/test/java/com/chris/m3usuite/tv/input/GlobalTvInputBehaviorTest.kt`
+
+**Coverage:**
+- PLAYER screen: DPAD_CENTER, PLAY_PAUSE, LEFT/RIGHT seek, UP/DOWN focus, FF/RW seek, MENU, BACK
+- LIBRARY/START screens: CENTER → OPEN_DETAILS, DPAD navigation, FF/RW → ROW_FAST_SCROLL
+- DETAIL screen: CENTER/PLAY → PLAY_FOCUSED_RESUME, FF/RW → episode navigation
+- SETTINGS screen: CENTER → ACTIVATE_FOCUSED_SETTING, MENU → OPEN_ADVANCED_SETTINGS
+- PROFILE_GATE screen: CENTER → SELECT_PROFILE, MENU → OPEN_PROFILE_OPTIONS
+- MINI_PLAYER screen: FF/RW → PIP_SEEK, PLAY → PIP_TOGGLE_PLAY_PAUSE, DPAD → PIP_MOVE
+
+**Contract Reference:** GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md
+
+---
+
+### Task 10.2: Clean Up Stray Key Event Handlers ✅
+**Analysis Completed:**
+
+**Review of existing handlers:**
+- **Legacy InternalPlayerScreen.kt**: Only resets auto-hide timer (DO NOT MODIFY per constraints)
+- **HomeChromeScaffold.kt**: Handles chrome expansion/collapse, integrates MiniPlayer focus
+- **InternalPlayerControls.kt**: Properly forwards to GlobalTvInputHost
+- **FocusKit.kt**: Utility modifiers for specific UI patterns (horizontal/vertical nav)
+- **AppIconButton.kt**: Local CENTER handling for activation (allowed per spec)
+- **TvTextFieldFocusHelper.kt**: Focus escape from text fields (necessary)
+
+**Conclusion:** All existing handlers are legitimate local behaviors that complement 
+TvInputController. No cleanup required.
+
+---
+
+### Task 10.3: End-to-End Navigation Tests (Full ↔ Mini ↔ Home) ✅
+**Files Modified:**
+- `app/src/test/java/com/chris/m3usuite/player/miniplayer/MiniPlayerNavigationTest.kt`
+
+**Tests Added:**
+- Full → Mini → Full (via Expand button) transition cycle
+- Full → Mini → Back without returning to full
+- MiniPlayer visibility persistence through mode/anchor changes
+- PlaybackSession continuity verification
+- Library navigation scroll position preservation
+
+**Contract Reference:** INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 4.2
+
+---
+
+### Task 10.4: System PiP Behavior Verification ✅
+**Files Modified:**
+- `app/src/test/java/com/chris/m3usuite/player/miniplayer/SystemPiPBehaviorTest.kt`
+
+**Tests Added:**
+- Phone/tablet scenarios for PiP entry conditions
+- Fire TV and Android TV blocking (never trigger system PiP from app code)
+- MiniPlayer precedence over system PiP
+- Buffering state handling (not playing = no PiP)
+- API level trigger point documentation (onUserLeaveHint < 31, setAutoEnterEnabled >= 31)
+
+**Contract Reference:** INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 4.3
+
+---
+
+### Task 10.5: Kids Mode & Overlays Cross-Check ✅
+**Files Created:**
+- `app/src/test/java/com/chris/m3usuite/tv/input/KidsAndMiniPlayerOverlayTest.kt`
+
+**Coverage:**
+- Triple filter composition (Kids + MiniPlayer + Overlay → almost everything blocked)
+- Kids Mode blocks: SEEK_*, OPEN_CC_MENU, OPEN_ASPECT_MENU, OPEN_LIVE_LIST, PIP_SEEK_*, OPEN_ADVANCED_SETTINGS
+- Overlay allows: NAVIGATE_* + BACK only
+- MiniPlayer filter blocks: ROW_FAST_SCROLL_FORWARD, ROW_FAST_SCROLL_BACKWARD
+- Filter order independence verification
+
+**Contract Reference:** 
+- INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 7 (Kids Mode)
+- INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md Section 8 (Overlays)
+- INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 5 (MiniPlayer filter)
+
+---
+
+### Task 10.6: TvScreenContext Factory Update ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/tv/input/TvScreenContext.kt`
+
+**Changes:**
+- Added `isMiniPlayerVisible` parameter to `TvScreenContext.player()` factory method
+- Ensures player screen can correctly filter ROW_FAST_SCROLL when MiniPlayer is visible
+
+---
+
 ## Summary: Files Overview
 
 ### New Files to Create (SIP Only)
@@ -1073,20 +1169,19 @@ TOGGLE_MINI_PLAYER_FOCUS,
 
 ## Phase 7 Completion Criteria
 
-- [ ] All Task Groups 1-9 complete
-- [ ] All tests passing (unit + integration)
-- [ ] PlaybackSession is truly global (single ExoPlayer instance)
-- [ ] MiniPlayer UI functional with basic controls
-- [ ] PIP button triggers in-app MiniPlayer (not native PiP)
-- [ ] System PiP only on phone/tablet Activity background
-- [ ] Fire TV never calls native PiP from app code
-- [ ] TV input handles MiniPlayer actions correctly
-- [ ] Focus toggle via long-press PLAY works
-- [ ] ROW_FAST_SCROLL blocked when MiniPlayer visible
-- [ ] Full ↔ Mini transitions preserve playback position
-- [ ] No changes to legacy `InternalPlayerScreen.kt`
-- [ ] Documentation updated (Roadmap, Status)
-- [ ] Phase 4, 5, 6 regression tests pass
+- [x] Task Groups 1-2b complete (PlaybackSession, MiniPlayerState, TV Input primitives)
+- [x] Task Group 6-7 complete (TV Input & FocusZones)
+- [x] Task Group 10 complete (Validation & Hardening)
+- [ ] Task Groups 3-5, 8-9 remaining (UI wiring, System PiP host, Navigation, Integration tests)
+- [x] PlaybackSession is truly global (single ExoPlayer instance)
+- [x] MiniPlayerManager state management functional
+- [x] TV input handles MiniPlayer actions correctly
+- [x] Focus toggle via long-press PLAY works
+- [x] ROW_FAST_SCROLL blocked when MiniPlayer visible
+- [x] Filter composition (Kids + MiniPlayer + Overlay) verified
+- [x] No changes to legacy `InternalPlayerScreen.kt`
+- [x] Phase 7 Validation tests passing
+- [ ] Full UI wiring and integration pending
 
 ---
 
