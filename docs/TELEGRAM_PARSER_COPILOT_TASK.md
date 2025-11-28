@@ -436,103 +436,145 @@ As Copilot implements the system, it MUST:
 
 ---
 
-## 6. Open Questions / Assumptions
+## 6. Resolved Design Decisions
 
-The following items are unclear from the current codebase or contract and may need human confirmation before implementation proceeds:
-
-### 6.1 Playback File ID Strategy
-
-**Question**: The current playback system (`TelegramPlayUrl`, `TelegramFileDataSource`) uses TDLib's **integer `fileId`** (local file ID) in URLs like `tg://file/<fileId>?chatId=...&messageId=...`. The contract specifies storing **`remoteId` / `uniqueId`** for stable cross-session references.
-
-- **Option A**: Keep integer `fileId` for playback URLs (simpler, already works), but also store `remoteId`/`uniqueId` in the database for potential future use (e.g., re-resolving files after TDLib cache clear).
-- **Option B**: Switch playback URLs to use `remoteId`, and have `TelegramFileDataSource` call TDLib's `getRemoteFile(remoteId)` to resolve to integer `fileId` at playback time.
-
-**Assumption**: **Option A** is preferred for backward compatibility and simplicity. We will store both `fileId` (for immediate playback) and `remoteId`/`uniqueId` (for stable identity) in `TelegramMediaRef` and `ObxTelegramItem`.
+The following design decisions have been finalized and MUST be followed by all implementation work.
 
 ---
 
-### 6.2 Migration Strategy for `ObxTelegramMessage`
+### 6.1 Playback File ID Strategy — FINAL DECISION
 
-**Question**: The existing `ObxTelegramMessage` entity has many records. Should we:
-
-- **Migrate data** from `ObxTelegramMessage` to the new `ObxTelegramItem` at app startup?
-- **Run both entities in parallel** during a transition period and deprecate `ObxTelegramMessage` later?
-- **Drop old data** and require a fresh sync?
-
-**Assumption**: Run both entities in parallel. The new parser pipeline will populate `ObxTelegramItem`, while existing UI code can fall back to `ObxTelegramMessage` until migration is complete. Add a one-time migration worker to copy compatible fields.
-
----
-
-### 6.3 Existing `MediaInfo` / `ParsedItem` Usage
-
-**Question**: The current `MediaParser` returns `MediaInfo` and `ParsedItem`, which are used by `TelegramContentRepository.indexChatMessages()` and possibly other code. Should we:
-
-- **Refactor `MediaParser`** to return the contract's `ExportMessage` / `TelegramItem` directly?
-- **Create adapters** that convert `MediaInfo` → `TelegramItem`?
-- **Create a parallel new parser** and deprecate the old one?
-
-**Assumption**: Create the new parser pipeline (`ExportMessageModels`, `TelegramBlockGrouper`, `TelegramItemBuilder`) as new classes. The old `MediaParser` remains temporarily for backward compatibility. Once the new pipeline is verified, migrate `TelegramSyncWorker` to use it and deprecate `MediaParser` + `MediaInfo`.
+- `remoteId` and `uniqueId` are the **primary identifiers** for media and artwork.
+- `fileId` is a volatile TDLib-local cache value and **MUST NEVER be the primary key**.
+- **Playback flow**:
+  1. Given `remoteId`, call `getRemoteFile(remoteId)` to resolve or refresh a valid `fileId`.
+  2. Then call `downloadFile(fileId)` or `getFile(fileId)` to prepare the file.
+- The new domain model MUST store:
+  - `remoteId` (required)
+  - `uniqueId` (required)
+  - `fileId` (optional — cached for convenience, may become stale)
+  - Full video/photo/document metadata (size, width, height, mime, duration, etc.)
 
 ---
 
-### 6.4 Structured vs. Block-Based Grouping
+### 6.2 Migration Strategy for ObxTelegramMessage — FINAL DECISION
 
-**Question**: The current `MediaParser.parseStructuredMovieChat()` detects explicit **Video+Text+Photo triplets** in ascending message ID order. The contract specifies **120-second time-window grouping** which is more general. Are these complementary or should one replace the other?
-
-**Assumption**: They are complementary. The `TelegramBlockGrouper` implements the 120-second time-window rule as the primary grouping mechanism. Within each block, `TelegramItemBuilder` can still detect the Video+Text+Photo pattern for rich metadata extraction. Non-structured blocks (e.g., a lone video without nearby text) still yield a `TelegramItem` with best-effort metadata from filename/caption.
-
----
-
-### 6.5 Audiobook / RAR Chat Handling
-
-**Question**: The contract mentions `RAR_ITEM` and `AUDIOBOOK` types for archive chats. The current `MediaKind` enum has `RAR_ARCHIVE`. How should audiobook chats be detected?
-
-**Assumption**: Use chat title heuristics (e.g., "Hörbuch", "Audiobook" in title) and file extension (`.mp3`, `.m4b`, `.aac` for audio; `.rar`, `.zip`, `.7z` for archives). `TelegramItemBuilder` will set `type = AUDIOBOOK` or `RAR_ITEM` accordingly. `videoRef` will be null for these types; `documentRef` will hold the archive/audio file reference (see updated domain model in A.6).
+- **Do NOT migrate or reuse** the legacy ObjectBox model.
+- Introduce a new ObjectBox entity `ObxTelegramItem` aligned with the new domain model.
+- Old data may be discarded; a **full resync is acceptable** because the old pipeline is non-functional.
+- Keep `ObxTelegramMessage` only temporarily to avoid breaking legacy screens, but **no new code may depend on it**.
 
 ---
 
-### 6.6 Adult Content Detection (`isAdult` field)
+### 6.3 MediaInfo / ParsedItem — FINAL DECISION
 
-**Question**: The `TelegramMetadata` includes an `isAdult` field. The current `MediaParser` has `isAdultChannel()` which checks for explicit words in chat titles/captions. Should this be the only detection mechanism?
-
-**Assumption**: Reuse the existing `isAdultChannel()` logic from `MediaParser.kt` (regex matching words like "porn", "xxx", "18+", etc.). The `TelegramItemBuilder` will set `metadata.isAdult = true` if:
-1. Chat title matches adult patterns, OR
-2. Message caption matches adult patterns, OR
-3. FSK value is 18 or higher.
-This flag can be used by the UI to filter content based on profile settings (kid/adult profiles).
-
----
-
-### 6.7 Poster/Backdrop Aspect Ratio Thresholds
-
-**Question**: The contract says poster should be "roughly 2:3 / 3:4" and backdrop should be "wide aspect ratio (e.g. ≥ 16:9)". What exact thresholds should be used?
-
-**Assumption**:
-- **Poster**: aspect ratio (width/height) ≤ 0.85 (portrait, roughly 2:3 or narrower).
-- **Backdrop**: aspect ratio ≥ 1.6 (landscape, roughly 16:10 or wider).
-- If no photo qualifies, use the largest resolution photo for both roles.
-- If no photo exists, use video `thumbnail` as `posterRef`, and `backdropRef` may be null.
+- These are **legacy parsing types** and MUST NOT be used in the new pipeline.
+- A fresh parser pipeline will be built:
+  - `ExportMessage` DTOs (from CLI JSON schema)
+  - `TelegramBlockGrouper`
+  - `TelegramMetadataExtractor`
+  - `TelegramItemBuilder`
+- Old parser modules (`MediaParser`, `MediaInfo`, `ParsedItem`) should be marked for deprecation after migration.
 
 ---
 
-### 6.8 TMDb URL Extraction
+### 6.4 Grouping Strategy — FINAL DECISION
 
-**Question**: The contract mentions extracting `tmdbUrl` from `ExportText`. The CLI code extracts it from `TextEntityTypeTextUrl` entities in the text. Is this the only source, or should we also parse raw text for URLs like `https://www.themoviedb.org/movie/...`?
-
-**Assumption**: Check `TextEntityTypeTextUrl` entities first. If none found, fall back to regex extraction from raw text for patterns like `https?://(?:www\.)?themoviedb\.org/(movie|tv)/\d+`.
-
----
-
-### 6.9 kotlinx.serialization vs. Moshi
-
-**Question**: The contract recommends `kotlinx.serialization` or Moshi for JSON parsing. The CLI reference code uses Gson. Which should be used?
-
-**Assumption**: Use **kotlinx.serialization** for new code (it's already a Kotlin-first library with compile-time safety). The existing codebase may have Moshi/Gson dependencies; ensure no conflicts. For reading CLI-generated JSON fixtures, kotlinx.serialization's `Json.decodeFromString()` with lenient mode should handle any minor schema variations.
+- The **120-second time-window block grouping** is the **canonical** grouping mechanism.
+- Structured triplet detection (Video+Text+Photo) is **optional** and only applied inside blocks as a refinement.
+- This ensures consistent behavior regardless of message ordering or chat structure.
 
 ---
 
-### 6.10 Per-Chat Scan Persistence
+### 6.5 Audiobook / RAR Handling — FINAL DECISION
 
-**Question**: Should `ChatScanState` be persisted across app restarts? If so, where?
+- **Audiobook detection**:
+  - Based on file extensions: `.mp3`, `.m4b`, `.aac`, `.flac`
+  - OR explicit chat title indicators: "Hörbuch", "Audiobook", "AudioBook"
+- **RAR/Archive detection**:
+  - Based on file extensions: `.rar`, `.zip`, `.7z`
+- For these item types:
+  - `videoRef` is **NULL**
+  - `documentRef` is used instead with full file reference fields
 
-**Assumption**: Persist in a new ObjectBox entity `ObxChatScanState` with fields `chatId`, `lastScannedMessageId`, `hasMoreHistory`, `status`, `lastError`, `updatedAt`. This allows resuming partial scans after app restart without re-scanning entire chat history.
+---
+
+### 6.6 Adult Content Detection (isAdult) — FINAL DECISION
+
+**Conservative detection rules only:**
+
+- **Primary signal**: Chat title only.
+  - Helper: `AdultHeuristics.isAdultChatTitle(title: String): Boolean`
+  - Matches common adult indicators in chat titles (e.g., "porn", "xxx", "adult", "18+")
+
+- **Secondary signal**: Caption text ONLY for **extremely explicit sexual terms**:
+  - Whitelist: `bareback`, `gangbang`, `bukkake`, `fisting`, `bdsm`, `deepthroat`, `cumshot`
+  - Helper: `AdultHeuristics.hasExtremeExplicitTerms(caption: String): Boolean`
+
+- **NOT USED for adult classification**:
+  - FSK value (FSK 18 does NOT imply adult content)
+  - Genre-based classification
+  - Broad NSFW heuristics or fuzzy matching
+
+---
+
+### 6.7 Poster / Backdrop Aspect Ratio — FINAL DECISION
+
+- **Poster**: aspect ratio `width / height <= 0.85` (portrait orientation)
+- **Backdrop**: aspect ratio `width / height >= 1.6` (landscape orientation)
+- **Fallback logic**:
+  - If no photo matches poster criteria → use largest available photo
+  - If no photo matches backdrop criteria → leave backdrop null or use poster
+  - If no photos exist → use video thumbnail as poster; backdrop is optional
+
+---
+
+### 6.8 TMDb URL Extraction — FINAL DECISION
+
+1. **Step 1**: Parse structured URL entities from `TextEntityTypeTextUrl` if available.
+2. **Step 2**: Fallback to regex extraction from raw text:
+   ```
+   https?://(?:www\.)?themoviedb\.org/(movie|tv)/\d+
+   ```
+3. **First valid match wins** — no priority between movie/tv types.
+
+---
+
+### 6.9 JSON Library — FINAL DECISION
+
+- **ALL new parser code MUST use `kotlinx.serialization`**.
+- Gson may remain for legacy components only.
+- For reading CLI-generated JSON fixtures, use `Json { ignoreUnknownKeys = true }` configuration.
+
+---
+
+### 6.10 Chat Scan Persistence — FINAL DECISION
+
+- Create a new ObjectBox entity `ObxChatScanState` with fields:
+  - `chatId: Long` (indexed)
+  - `lastScannedMessageId: Long`
+  - `hasMoreHistory: Boolean`
+  - `status: String` (enum: IDLE, SCANNING, ERROR)
+  - `lastError: String?`
+  - `updatedAt: Long` (epoch millis)
+- Used by `TelegramIngestionCoordinator` to resume scans across app restarts.
+
+---
+
+### 6.11 Auth & Ingestion Constraints — FINAL DECISION
+
+- **Ingestion MUST NOT run unless auth state is `READY`**.
+- The auth state machine exposes:
+  ```kotlin
+  sealed class AuthState {
+      object NOT_AUTHORIZED : AuthState()
+      object WAIT_PHONE : AuthState()
+      object WAIT_CODE : AuthState()
+      object WAIT_PASSWORD : AuthState()
+      object READY : AuthState()
+      data class ERROR(val message: String) : AuthState()
+  }
+  ```
+- `TelegramIngestionCoordinator` MUST check `authState == READY` before starting any scan.
+- If TDLib DB is already authorized, skip re-login and emit `READY` directly.
+- All auth transitions MUST be logged via `TelegramLogRepository`.

@@ -373,6 +373,80 @@ class T_TelegramServiceClient private constructor(
     }
 
     /**
+     * Check if authentication is ready for ingestion/sync operations.
+     * 
+     * Per design decision 6.11: Ingestion MUST NOT run unless auth state is READY.
+     * 
+     * @return true if auth state is Ready, false otherwise
+     */
+    fun isAuthReady(): Boolean = _authState.value == TelegramAuthState.Ready
+
+    /**
+     * Wait for authentication to become ready, with timeout.
+     * 
+     * Per design decision 6.11: Ingestion MUST NOT run unless auth state is READY.
+     * If TDLib DB is already authorized from a previous session, this will return
+     * immediately once the auth state collector receives the Ready state.
+     * 
+     * @param timeoutMs Maximum time to wait in milliseconds (default 30 seconds)
+     * @return true if auth became ready within timeout, false otherwise
+     */
+    suspend fun awaitAuthReady(timeoutMs: Long = 30_000L): Boolean {
+        TelegramLogRepository.debug(
+            "T_TelegramServiceClient",
+            "Waiting for auth ready (current: ${_authState.value::class.simpleName}, timeout: ${timeoutMs}ms)",
+        )
+        
+        // If already ready, return immediately
+        if (_authState.value == TelegramAuthState.Ready) {
+            TelegramLogRepository.debug("T_TelegramServiceClient", "Auth already ready")
+            return true
+        }
+        
+        return try {
+            withTimeout(timeoutMs) {
+                _authState
+                    .filter { it == TelegramAuthState.Ready }
+                    .first()
+                TelegramLogRepository.info("T_TelegramServiceClient", "Auth became ready")
+                true
+            }
+        } catch (e: TimeoutCancellationException) {
+            TelegramLogRepository.warn(
+                "T_TelegramServiceClient",
+                "Auth ready timeout after ${timeoutMs}ms (current: ${_authState.value::class.simpleName})",
+            )
+            false
+        }
+    }
+
+    /**
+     * Wait for authentication to reach a specific state, with timeout.
+     * Useful for UI to wait for specific states like WaitingForCode.
+     * 
+     * @param targetState The state to wait for
+     * @param timeoutMs Maximum time to wait in milliseconds (default 10 seconds)
+     * @return true if target state was reached within timeout, false otherwise
+     */
+    suspend fun awaitAuthState(
+        targetState: TelegramAuthState,
+        timeoutMs: Long = 10_000L,
+    ): Boolean {
+        if (_authState.value == targetState) return true
+        
+        return try {
+            withTimeout(timeoutMs) {
+                _authState
+                    .filter { it == targetState }
+                    .first()
+                true
+            }
+        } catch (e: TimeoutCancellationException) {
+            false
+        }
+    }
+
+    /**
      * Start distributing TDLib updates to components.
      */
     private fun startUpdateDistribution() {

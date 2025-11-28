@@ -284,17 +284,26 @@ class T_TelegramSession(
     /**
      * Start collecting authorization state updates from TDLib.
      * This runs in the ServiceClient's scope.
+     * 
+     * Per design decision 6.11: All auth transitions MUST be logged via TelegramLogRepository.
      */
     private fun startAuthCollectorIfNeeded() {
         if (!collectorStarted.compareAndSet(false, true)) return
 
-        TelegramLogRepository.debug("T_TelegramSession", " Starting auth state flow collector...")
+        TelegramLogRepository.info("T_TelegramSession", "Starting auth state flow collector...")
 
         scope.launch {
             try {
                 client.authorizationStateUpdates.collect { update ->
                     val state = update.authorizationState
-                    TelegramLogRepository.debug("T_TelegramSession", " State update: ${state::class.simpleName}")
+                    val previousStateName = previousState?.let { it::class.simpleName } ?: "None"
+                    val currentStateName = state::class.simpleName
+                    
+                    // Log all state transitions at INFO level for visibility
+                    TelegramLogRepository.info(
+                        "T_TelegramSession",
+                        "Auth state transition: $previousStateName → $currentStateName",
+                    )
 
                     // Update state tracking first
                     previousState = currentState
@@ -307,9 +316,9 @@ class T_TelegramSession(
                             is AuthorizationStateWaitCode,
                             is AuthorizationStateWaitPassword,
                             -> {
-                                TelegramLogRepository.debug(
+                                TelegramLogRepository.warn(
                                     "T_TelegramSession",
-                                    " Reauth required: was Ready, now ${state::class.simpleName}",
+                                    "Reauth required: session expired (was Ready, now $currentStateName)",
                                 )
                                 _authEvents.emit(
                                     AuthEvent.ReauthRequired("Telegram session expired, please login again"),
@@ -322,7 +331,7 @@ class T_TelegramSession(
                     handleAuthState(state)
                 }
             } catch (t: Throwable) {
-                TelegramLogRepository.debug("T_TelegramSession", " Error in auth flow: ${t.message}")
+                TelegramLogRepository.error("T_TelegramSession", "Error in auth flow: ${t.message}")
                 t.printStackTrace()
                 _authEvents.emit(AuthEvent.Error("Auth flow error: ${t.message}"))
             }
@@ -339,16 +348,16 @@ class T_TelegramSession(
             is AuthorizationStateWaitCode -> onWaitCode()
             is AuthorizationStateWaitPassword -> onWaitPassword()
             is AuthorizationStateReady -> {
-                TelegramLogRepository.debug("T_TelegramSession", " Ready state received")
+                TelegramLogRepository.info("T_TelegramSession", "Auth READY ✅ - Telegram session is authorized")
             }
             is AuthorizationStateLoggingOut,
             is AuthorizationStateClosing,
             is AuthorizationStateClosed,
             -> {
-                TelegramLogRepository.debug("T_TelegramSession", " Terminal state: ${state::class.simpleName}")
+                TelegramLogRepository.info("T_TelegramSession", "Terminal state: ${state::class.simpleName}")
             }
             else -> {
-                TelegramLogRepository.debug("T_TelegramSession", " Unhandled state: ${state::class.simpleName}")
+                TelegramLogRepository.debug("T_TelegramSession", "Unhandled state: ${state::class.simpleName}")
             }
         }
     }
