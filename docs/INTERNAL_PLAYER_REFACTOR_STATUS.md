@@ -4654,4 +4654,134 @@ All implementations align with:
 
 ---
 
+## Phase 7 – Task 3: Validation, Navigation Hardening & Cleanup (COMPLETE)
+
+**Date:** 2025-11-28
+
+**Status:** ✅ **COMPLETE** – Group 10 (Validation & Hardening) implemented
+
+This task validates and hardens all Phase 7 behavior against the contracts and behavior maps.
+
+### What Was Done
+
+**1. Comprehensive Behavior Map Verification (Task 10.1)**
+
+| Component | Tests |
+|-----------|-------|
+| `GlobalTvInputBehaviorTest.kt` | **NEW** – 50+ tests verifying GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md compliance |
+| PLAYER Screen | DPAD_CENTER, PLAY_PAUSE, LEFT/RIGHT seek, UP/DOWN focus, FF/RW seek, MENU, BACK |
+| LIBRARY/START Screens | CENTER → OPEN_DETAILS, DPAD navigation, FF/RW → ROW_FAST_SCROLL |
+| DETAIL Screen | CENTER/PLAY → PLAY_FOCUSED_RESUME, FF/RW → episode navigation |
+| SETTINGS Screen | CENTER → ACTIVATE_FOCUSED_SETTING, MENU → OPEN_ADVANCED_SETTINGS |
+| PROFILE_GATE Screen | CENTER → SELECT_PROFILE, MENU → OPEN_PROFILE_OPTIONS |
+| MINI_PLAYER Screen | FF/RW → PIP_SEEK, PLAY → PIP_TOGGLE_PLAY_PAUSE, DPAD → PIP_MOVE |
+
+**2. Stray Key Event Handler Analysis (Task 10.2)**
+
+| File | Analysis Result |
+|------|-----------------|
+| `InternalPlayerScreen.kt` | Only resets auto-hide timer – **DO NOT MODIFY** per constraints |
+| `HomeChromeScaffold.kt` | Chrome expansion/collapse, MiniPlayer focus – **LEGITIMATE** local behavior |
+| `InternalPlayerControls.kt` | Properly forwards to GlobalTvInputHost – **CORRECT** |
+| `FocusKit.kt` | Utility modifiers for UI patterns – **LEGITIMATE** |
+| `AppIconButton.kt` | Local CENTER handling – **ALLOWED** per spec |
+| `TvTextFieldFocusHelper.kt` | Focus escape from text fields – **NECESSARY** |
+
+**Conclusion:** No cleanup required. All handlers complement TvInputController.
+
+**3. End-to-End Navigation Tests (Task 10.3)**
+
+| Test | Coverage |
+|------|----------|
+| `MiniPlayerNavigationTest.kt` | Extended with 5 new Full↔Mini↔Home tests |
+| Full → Mini → Full cycle | Visibility, return context, PlaybackSession continuity |
+| Full → Mini → Back | Exit without returning to full |
+| Mode/anchor changes | Visibility persistence during state changes |
+| Scroll position | Row/item indices preservation |
+
+**4. System PiP Behavior Tests (Task 10.4)**
+
+| Test | Coverage |
+|------|----------|
+| `SystemPiPBehaviorTest.kt` | Extended with 10+ new scenarios |
+| Phone/tablet | PiP allowed when conditions met |
+| Fire TV | System PiP NEVER triggered from app code |
+| Android TV | System PiP NEVER triggered from app code |
+| MiniPlayer precedence | In-app MiniPlayer blocks system PiP |
+| API level | onUserLeaveHint (< 31) and setAutoEnterEnabled (>= 31) documented |
+
+**5. Kids Mode & Overlays Cross-Check (Task 10.5)**
+
+| Test | Coverage |
+|------|----------|
+| `KidsAndMiniPlayerOverlayTest.kt` | **NEW** – 25+ combined filter tests |
+| Triple filter | Kids + MiniPlayer + Overlay → almost everything blocked |
+| Kids Mode blocks | SEEK_*, OPEN_CC_MENU, OPEN_ASPECT_MENU, OPEN_LIVE_LIST, PIP_SEEK_*, OPEN_ADVANCED_SETTINGS |
+| Overlay allows | NAVIGATE_* + BACK only |
+| MiniPlayer filter | ROW_FAST_SCROLL_FORWARD, ROW_FAST_SCROLL_BACKWARD blocked |
+| Filter composition | Order-independent, correct precedence |
+
+**6. TvScreenContext Factory Update (Task 10.6)**
+
+| Change | Description |
+|--------|-------------|
+| `TvScreenContext.player()` | Added `isMiniPlayerVisible` parameter |
+| Ensures | Player screen can correctly filter ROW_FAST_SCROLL when MiniPlayer is visible |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `app/src/test/java/com/chris/m3usuite/tv/input/GlobalTvInputBehaviorTest.kt` | Comprehensive behavior map verification |
+| `app/src/test/java/com/chris/m3usuite/tv/input/KidsAndMiniPlayerOverlayTest.kt` | Combined filter tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `app/src/main/java/com/chris/m3usuite/tv/input/TvScreenContext.kt` | Added `isMiniPlayerVisible` to `player()` factory |
+| `app/src/test/java/com/chris/m3usuite/player/miniplayer/MiniPlayerNavigationTest.kt` | Extended with Full↔Mini↔Home tests |
+| `app/src/test/java/com/chris/m3usuite/player/miniplayer/SystemPiPBehaviorTest.kt` | Extended with phone/tablet/TV tests |
+| `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` | Added Group 10, marked tasks DONE |
+| `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added Task 3 documentation |
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest` passes all tests
+
+### Contract Reference
+
+All implementations align with:
+- `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`
+- `docs/INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md` Sections 7, 8
+- `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Sections 4.2, 4.3, 5, 6
+- `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` Group 10
+
+### Phase 7 Status Summary
+
+| Group | Description | Status |
+|-------|-------------|--------|
+| 1 | PlaybackSession Core | ✅ DONE |
+| 2 | MiniPlayer Domain Model | ✅ DONE |
+| 2b | TV Input & FocusKit Primitives | ✅ DONE |
+| 3 | In-App MiniPlayer UI | ✅ DONE (skeleton) |
+| 4 | PIP Button Refactor | ✅ DONE |
+| 5 | System PiP (phones/tablets) | ✅ DONE |
+| 6 | TV Input & MiniPlayer Behavior | ✅ PARTIALLY DONE (6.1-6.3) |
+| 7 | FocusZones Integration | ✅ DONE |
+| 8 | Navigation & Return Behavior | ⬜ PENDING |
+| 9 | Testing & Quality | ⬜ PENDING |
+| **10** | **Validation & Hardening** | ✅ **DONE** |
+
+### What's Next
+
+Phase 7 Groups 1-7 and 10 are complete. Remaining work:
+
+- **Group 6 (remaining):** Task 6.4 (PIP_* action routing), Task 6.5 (DOUBLE_BACK with MiniPlayer)
+- **Group 8:** Full navigation wiring with returnRoute
+- **Group 9:** Integration tests, regression tests
+
+---
+
 **Last Updated:** 2025-11-28
