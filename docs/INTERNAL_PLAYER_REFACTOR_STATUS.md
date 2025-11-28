@@ -4784,4 +4784,127 @@ Phase 7 Groups 1-7 and 10 are complete. Remaining work:
 
 ---
 
+## Phase 7 – MiniPlayer Resize Mode Implemented (in-app only)
+
+**Date:** 2025-11-28
+
+**Status:** ✅ **COMPLETE** – Task Group 11 implemented
+
+This task implements the basic MiniPlayer Resize Mode functionality, allowing users to resize and reposition the MiniPlayer overlay using TV remote controls.
+
+### What Was Done
+
+**1. MiniPlayerState Extended**
+
+| Addition | Description |
+|----------|-------------|
+| `previousSize: DpSize?` | Stores size before entering resize mode for cancel restoration |
+| `previousPosition: Offset?` | Stores position before entering resize mode for cancel restoration |
+| `MIN_MINI_SIZE` | Minimum size constant (160x90 dp) |
+| `MAX_MINI_SIZE` | Maximum size constant (640x360 dp) |
+| `RESIZE_SIZE_DELTA` | Size delta for FF/RW resize (40x22.5 dp) |
+| `MOVE_POSITION_DELTA` | Position delta for DPAD move (20f) |
+
+**2. MiniPlayerManager Extended with Resize Methods**
+
+| Method | Behavior |
+|--------|----------|
+| `enterResizeMode()` | mode = RESIZE, stores previousSize/position (only if not already set) |
+| `applyResize(deltaSize)` | Changes size with clamping to MIN/MAX (only in RESIZE mode) |
+| `moveBy(delta)` | Moves position by offset (only in RESIZE mode) |
+| `confirmResize()` | mode = NORMAL, clears previousSize/position, keeps changes |
+| `cancelResize()` | mode = NORMAL, restores previousSize/position |
+
+**3. MiniPlayerOverlay UI Updates**
+
+| Change | Description |
+|--------|-------------|
+| Resize indicator | "RESIZE" label shown when mode == RESIZE |
+| Border | 3dp primary color border in resize mode |
+| Hint text | "FF/RW: Size • DPAD: Move • OK: Confirm • Back: Cancel" |
+| Controls | Hidden during resize mode |
+| Position | Applied via IntOffset modifier from state.position |
+| Expand button | Cancels resize mode before going full-screen |
+
+**4. MiniPlayerResizeActionHandler Created**
+
+Handles TV input actions based on MiniPlayer mode:
+
+| Mode | Action | Behavior |
+|------|--------|----------|
+| NORMAL | `PIP_SEEK_FORWARD/BACKWARD` | Seek playback ±10s |
+| NORMAL | `PIP_TOGGLE_PLAY_PAUSE` | Toggle playback |
+| NORMAL | `PIP_ENTER_RESIZE_MODE` | Enter resize mode |
+| NORMAL | `PIP_MOVE_*` | Not handled (pass through) |
+| RESIZE | `PIP_SEEK_FORWARD` | Increase size |
+| RESIZE | `PIP_SEEK_BACKWARD` | Decrease size |
+| RESIZE | `PIP_MOVE_*` | Move position |
+| RESIZE | `PIP_CONFIRM_RESIZE` | Confirm and exit |
+| RESIZE | `BACK` | Cancel and restore |
+
+**5. Unit Tests Added**
+
+| Test File | Coverage |
+|-----------|----------|
+| `MiniPlayerResizeStateTest.kt` | enterResizeMode, applyResize, moveBy, confirmResize, cancelResize, size clamping |
+| `MiniPlayerResizeInputTest.kt` | Action handling in NORMAL/RESIZE modes, mode transitions, full flow tests |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `player/miniplayer/MiniPlayerResizeActionHandler.kt` | TV input action handler for resize mode |
+| `test/.../MiniPlayerResizeStateTest.kt` | State management unit tests |
+| `test/.../MiniPlayerResizeInputTest.kt` | Input handling unit tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `player/miniplayer/MiniPlayerState.kt` | Added previousSize, previousPosition, MIN/MAX constants |
+| `player/miniplayer/MiniPlayerManager.kt` | Added resize methods to interface and implementation |
+| `player/miniplayer/MiniPlayerOverlay.kt` | Added resize mode UI (border, label, hint, position offset) |
+| `tv/input/ToggleMiniPlayerFocusTest.kt` | Updated FakeMiniPlayerManager with resize methods |
+| `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` | Added Task Group 11 |
+| `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added this entry |
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*MiniPlayerResize*"` passes all tests
+
+### Contract Reference
+
+Implementation aligns with:
+- `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Section 4.1, 4.2
+- `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`: Mini-Context: Player + PIP Enabled
+- `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` Task Group 11
+
+### Constraints Honored
+
+- ✅ SIP-only: No changes to legacy `InternalPlayerScreen.kt`
+- ✅ No changes to system PiP behavior
+- ✅ No changes to existing Phase 7 behavior outside MiniPlayer
+- ✅ MiniPlayerManager remains pure domain (no Compose imports)
+- ✅ Kids Mode and overlay filters respected
+
+### Phase 7 Status Summary (Updated)
+
+| Group | Description | Status |
+|-------|-------------|--------|
+| 1 | PlaybackSession Core | ✅ DONE |
+| 2 | MiniPlayer Domain Model | ✅ DONE |
+| 2b | TV Input & FocusKit Primitives | ✅ DONE |
+| 3 | In-App MiniPlayer UI | ✅ DONE (skeleton) |
+| 4 | PIP Button Refactor | ✅ DONE |
+| 5 | System PiP (phones/tablets) | ✅ DONE |
+| 6 | TV Input & MiniPlayer Behavior | ✅ PARTIALLY DONE |
+| 7 | FocusZones Integration | ✅ DONE |
+| 8 | Navigation & Return Behavior | ⬜ PENDING |
+| 9 | Testing & Quality | ⬜ PENDING |
+| 10 | Validation & Hardening | ✅ DONE |
+| **11** | **MiniPlayer Resize Mode** | ✅ **DONE** |
+
+---
+
 **Last Updated:** 2025-11-28

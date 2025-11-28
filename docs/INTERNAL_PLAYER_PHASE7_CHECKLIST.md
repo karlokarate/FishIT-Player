@@ -1167,11 +1167,111 @@ TvInputController. No cleanup required.
 
 ---
 
+## Task Group 11: MiniPlayer Resize Mode (Phase 7 UX)
+
+**Status:** ✅ **COMPLETE**
+
+This task group implements the basic MiniPlayer Resize Mode functionality as specified in the Phase 7 UX task.
+
+### Task 11.1: Extend MiniPlayerState for Resize Mode ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerState.kt`
+
+**Changes:**
+- Added `previousSize: DpSize?` field for cancel restoration
+- Added `previousPosition: Offset?` field for cancel restoration
+- Added `MIN_MINI_SIZE`, `MAX_MINI_SIZE` constants for size clamping
+- Added `RESIZE_SIZE_DELTA` for coarse resize adjustments
+- Added `MOVE_POSITION_DELTA` for fine position adjustments
+
+**Contract Reference:** INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 4.1
+
+---
+
+### Task 11.2: Extend MiniPlayerManager with Resize Methods ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerManager.kt`
+
+**Methods Added:**
+- `enterResizeMode()` - Sets mode = RESIZE, stores previousSize/position
+- `applyResize(deltaSize: DpSize)` - Changes size with clamping
+- `moveBy(delta: Offset)` - Moves position by offset
+- `confirmResize()` - Commits changes, clears previous fields, mode = NORMAL
+- `cancelResize()` - Restores previous values, mode = NORMAL
+
+**Behavior:**
+- enterResizeMode() only works when MiniPlayer is visible
+- applyResize() only works in RESIZE mode, clamps to MIN/MAX
+- moveBy() only works in RESIZE mode
+- confirmResize()/cancelResize() only work in RESIZE mode
+
+---
+
+### Task 11.3: MiniPlayerOverlay UI Updates for Resize Mode ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerOverlay.kt`
+
+**UI Changes:**
+- Added "RESIZE" label indicator when mode == RESIZE
+- Added visible border (3dp primary color) in resize mode
+- Added resize mode hint text: "FF/RW: Size • DPAD: Move • OK: Confirm • Back: Cancel"
+- Controls row hidden during resize mode
+- Position offset applied via IntOffset modifier
+- Expand button exits resize mode before going full-screen
+
+---
+
+### Task 11.4: MiniPlayerResizeActionHandler for TV Input ✅
+**Files Created:**
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerResizeActionHandler.kt`
+
+**Behavior in NORMAL mode:**
+- `PIP_SEEK_FORWARD/BACKWARD` → Seek playback (10s)
+- `PIP_TOGGLE_PLAY_PAUSE` → Toggle playback
+- `PIP_ENTER_RESIZE_MODE` → Enter resize mode
+- `PIP_MOVE_*` → Not handled (pass through to UI navigation)
+
+**Behavior in RESIZE mode:**
+- `PIP_SEEK_FORWARD` → Increase size
+- `PIP_SEEK_BACKWARD` → Decrease size
+- `PIP_MOVE_LEFT/RIGHT/UP/DOWN` → Move position
+- `PIP_CONFIRM_RESIZE` → Confirm and exit resize mode
+- `BACK` → Cancel and restore previous size/position
+- `PIP_TOGGLE_PLAY_PAUSE` → Still toggles playback
+
+---
+
+### Task 11.5: Unit Tests ✅
+**Files Created:**
+- `app/src/test/java/com/chris/m3usuite/player/miniplayer/MiniPlayerResizeStateTest.kt`
+- `app/src/test/java/com/chris/m3usuite/player/miniplayer/MiniPlayerResizeInputTest.kt`
+
+**Test Coverage (MiniPlayerResizeStateTest):**
+- enterResizeMode() sets previousSize/position and mode = RESIZE
+- confirmResize() commits new size/position and clears previous fields
+- cancelResize() reverts to previousSize/position and sets mode = NORMAL
+- applyResize() with size clamping to MIN/MAX bounds
+- moveBy() accumulates position correctly
+
+**Test Coverage (MiniPlayerResizeInputTest):**
+- NORMAL mode: PIP_ENTER_RESIZE_MODE enters resize
+- NORMAL mode: PIP_SEEK_* triggers seek (not size change)
+- RESIZE mode: PIP_SEEK_* affects size, not playback
+- RESIZE mode: PIP_MOVE_* changes position
+- RESIZE mode: PIP_CONFIRM_RESIZE exits and retains changes
+- RESIZE mode: BACK cancels and reverts changes
+
+**Files Modified:**
+- `app/src/test/java/com/chris/m3usuite/tv/input/ToggleMiniPlayerFocusTest.kt` - Updated FakeMiniPlayerManager with resize methods
+
+---
+
 ## Phase 7 Completion Criteria
 
 - [x] Task Groups 1-2b complete (PlaybackSession, MiniPlayerState, TV Input primitives)
 - [x] Task Group 6-7 complete (TV Input & FocusZones)
 - [x] Task Group 10 complete (Validation & Hardening)
+- [x] Task Group 11 complete (MiniPlayer Resize Mode)
 - [ ] Task Groups 3-5, 8-9 remaining (UI wiring, System PiP host, Navigation, Integration tests)
 - [x] PlaybackSession is truly global (single ExoPlayer instance)
 - [x] MiniPlayerManager state management functional
